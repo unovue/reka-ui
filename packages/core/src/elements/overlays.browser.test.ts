@@ -168,3 +168,84 @@ describe('popover elements', () => {
     await vi.waitFor(() => expect(content.hasAttribute('data-reka-unmounted')).toBe(true))
   })
 })
+
+const FORCED = `
+  <reka-dialog-root>
+    <reka-dialog-portal force-mount>
+      <reka-dialog-content force-mount aria-describedby="">
+        <reka-dialog-title>Title</reka-dialog-title>
+      </reka-dialog-content>
+    </reka-dialog-portal>
+  </reka-dialog-root>`
+
+describe('force-mounted portals', () => {
+  it('move to their target with the first render', () => {
+    render(FORCED)
+    // Elements mount when connected: no scheduler turn before the portal moves.
+    expect(query('reka-dialog-portal').parentElement).toBe(document.body)
+  })
+})
+
+describe('inside another shadow root', () => {
+  function inShadowRoot(html: string) {
+    const shadowRoot = render('<div id="app"></div>').querySelector('#app')!.attachShadow({ mode: 'open' })
+    shadowRoot.innerHTML = html
+    const get = <E extends Element = HTMLElement>(selector: string) => shadowRoot.querySelector<E>(selector)!
+    const active = () => {
+      let el = document.activeElement
+      while (el?.shadowRoot?.activeElement)
+        el = el.shadowRoot.activeElement
+      return el
+    }
+    return { shadowRoot, get, active }
+  }
+
+  it('keeps the dialog in the shadow root: labelled, focus trapped, Escape closes', async () => {
+    const { shadowRoot, get, active } = inShadowRoot(DIALOG)
+    const trigger = get('reka-dialog-trigger')
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-haspopup')).toBe('dialog'))
+    await userEvent.click(trigger)
+    await vi.waitFor(() => expect(active()).toBe(get('#name')))
+
+    const content = get('reka-dialog-content')
+    expect(content.closest('reka-dialog-portal')!.parentNode).toBe(shadowRoot)
+    expect(shadowRoot.getElementById(content.getAttribute('aria-labelledby')!)!.textContent).toBe('Edit profile')
+
+    await userEvent.keyboard('{Tab}')
+    expect(active()).toBe(get('reka-dialog-close'))
+    await userEvent.keyboard('{Tab}')
+    expect(active()).toBe(get('#name'))
+
+    await userEvent.keyboard('{Escape}')
+    await vi.waitFor(() => expect(content.hasAttribute('data-reka-unmounted')).toBe(true))
+    expect(active()).toBe(trigger)
+  })
+
+  it('closes the popover on a click outside it, in the shadow root or the document', async () => {
+    const page = render('<button id="page">Page</button>').querySelector('#page')!
+    const { get } = inShadowRoot(POPOVER)
+    const trigger = get('reka-popover-trigger')
+    const content = get('reka-popover-content')
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
+
+    await userEvent.click(trigger)
+    await vi.waitFor(() => expect(content.getAttribute('data-state')).toBe('open'))
+    // A click inside the content keeps it open (deep target, not the retargeted host).
+    await userEvent.click(get('#width'))
+    await settle()
+    expect(content.getAttribute('data-state')).toBe('open')
+    await userEvent.click(get('#outside'))
+    await vi.waitFor(() => expect(content.hasAttribute('data-reka-unmounted')).toBe(true))
+
+    await userEvent.click(trigger)
+    await vi.waitFor(() => expect(content.getAttribute('data-state')).toBe('open'))
+    await userEvent.click(page)
+    await vi.waitFor(() => expect(content.hasAttribute('data-reka-unmounted')).toBe(true))
+  })
+
+  it('renders a force-mounted portal into the shadow root, never via the body', () => {
+    const { shadowRoot, get } = inShadowRoot(FORCED)
+    expect(get('reka-dialog-portal').parentNode).toBe(shadowRoot)
+    expect(document.body.querySelector(':scope > reka-dialog-portal')).toBeNull()
+  })
+})

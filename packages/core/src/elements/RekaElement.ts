@@ -3,8 +3,8 @@ import type { ContextProviderEvent, ContextRequestEvent } from './context'
 import type { ElementEventOptions } from './events'
 import type { PartMeta } from './meta'
 import { camelize, defineComponent, h, queuePostFlushCb, shallowReactive, toHandlerKey } from 'vue'
+import { containsComposed, getRootNode, resolveTeleportTarget } from '@/shared/getRootNode'
 import {
-  composedContains,
   getRegistry,
   hasLiveDescendants,
   PARENT_CONTEXT,
@@ -423,6 +423,8 @@ export class RekaElement extends BaseElement {
     }
     if (this._extra.fieldsetDisabled && meta.propNames.has('disabled'))
       props.disabled = true
+    if (meta.propNames.has('to') && meta.propNames.has('forceMount') && !props.disabled)
+      props.to = this._portalTarget(props.to)
     return h(
       component,
       {
@@ -440,6 +442,23 @@ export class RekaElement extends BaseElement {
     )
   }
 
+  /**
+   * A portal's target, resolved from where the element sits. The portal's own
+   * lookup runs from its DOM anchor, which here is in the element's detached
+   * container, and only once mounted: on a force-mounted portal that costs a render,
+   * and inside a shadow root it would send the content to the document's body.
+   * A selector that matches nothing yet is left to the portal.
+   */
+  private _portalTarget(to: unknown): unknown {
+    if (to && typeof to !== 'string')
+      return to
+    const root = getRootNode(this._binding.homeNode)
+    const target = resolveTeleportTarget(to as string | undefined, root)
+    if (typeof target !== 'string')
+      return target
+    return root.querySelector(target) ?? this.ownerDocument.querySelector(target) ?? to
+  }
+
   private _onContextRequest = (event: ContextRequestEvent<RekaElement>) => {
     if (event.context !== PARENT_CONTEXT || event.contextTarget === this)
       return
@@ -451,7 +470,7 @@ export class RekaElement extends BaseElement {
     if (event.context !== PARENT_CONTEXT || event.contextTarget === this)
       return
     for (const child of [...this._rekaChildren]) {
-      if (composedContains(event.contextTarget, child))
+      if (containsComposed(event.contextTarget, child))
         child._resolveParent()
     }
   }

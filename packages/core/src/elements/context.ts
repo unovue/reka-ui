@@ -14,6 +14,8 @@
  * undefined ancestor is simply skipped instead of waited for.
  */
 
+import { containsComposed } from '@/shared/getRootNode'
+
 /** The context key: shared between copies of the library through the global symbol registry. */
 export const PARENT_CONTEXT = Symbol.for('reka-ui.elements.parent')
 
@@ -67,23 +69,12 @@ export function getRegistry(): ElementsRegistry {
   }
 }
 
-/** `ancestor` contains `node`, looking through shadow roots. */
-export function composedContains(ancestor: Node, node: Node): boolean {
-  let current: Node | null = node
-  while (current) {
-    if (current === ancestor)
-      return true
-    current = current.parentNode ?? (current instanceof ShadowRoot ? current.host : null)
-  }
-  return false
-}
-
 function onProviderAtRoot(event: ContextProviderEvent) {
   if (event.context !== PARENT_CONTEXT)
     return
   const provider = event.contextTarget
   for (const [orphan, retry] of [...getRegistry().orphans]) {
-    if (orphan !== provider && composedContains(provider, orphan))
+    if (orphan !== provider && containsComposed(provider, orphan))
       retry()
   }
 }

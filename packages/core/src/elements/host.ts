@@ -257,6 +257,11 @@ export class HostBinding {
     return this.homeMarker !== null
   }
 
+  /** Where the host sits in the consumer's tree: itself, or its marker while moved away. */
+  get homeNode(): Node {
+    return this.homeMarker ?? this.el
+  }
+
   /** Puts the host back at its home position. */
   goHome() {
     const marker = this.homeMarker

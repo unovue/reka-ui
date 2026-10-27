@@ -240,7 +240,9 @@ reka-accordion-content[data-state='closed'] { … }
 - Ids work the same way. A part that takes an `id` prop (Switch, Checkbox) uses yours. A part whose id other parts point to (a dialog title, a collapsible content) uses its own while rendered, and gives yours back when it unmounts.
 - A copy made with `cloneNode()` starts from your attributes, not from the rendered state of the element it was copied from.
 
-Portals move the element. `<reka-dialog-portal>` and what it contains are moved to `<body>` while mounted, and moved back when they unmount.
+Portals move the element. `<reka-dialog-portal>` and what it contains are moved to `<body>` while mounted, and moved back when they unmount. Inside a shadow root they move to that shadow root instead, so your shadow styles still apply. Set `to` to choose another target: a selector is looked up in the element's shadow root first, then in the document.
+
+Each element runs its own small Vue app, mounted when the element is connected. The portal's target is resolved from where the element sits before that first render, so a `force-mount` portal is already in place once the element is connected, with no extra render or scheduler turn. A `to` selector that matches nothing yet is resolved once the portal mounts, as in Vue.
 
 ### Parts that are not rendered
 
@@ -286,7 +288,7 @@ defineSwitchElements({ prefix: 'my', shadowRoot: true, styles: [sheet] })
 
 The shadow root holds a single default `<slot>`, and children stay in the light DOM, so ARIA id references, `<label for>`, form participation and focus behave the same as without it. Nothing is rendered inside it, so it gives you `:host(...)` styling only: there are no `::part()`s to style. Only `mode` is supported (`delegatesFocus` would take focus away from the element, which is the focusable part).
 
-Placing Reka elements inside your own components' shadow roots depends on Shadow DOM support in the core components ([#2725](https://github.com/unovue/reka-ui/issues/2725)): active-element tracking, outside-click detection and focus trapping across shadow boundaries. Until that lands, light DOM is the supported setup.
+You can also place Reka elements inside your own components' shadow roots. Parent lookup, active-element tracking, outside-click detection, focus trapping and portals all work across shadow boundaries ([Shadow DOM support](https://github.com/unovue/reka-ui/issues/2725)). Portaled content stays in the shadow root it was rendered in.
 
 ## TypeScript
 
