@@ -131,7 +131,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled value of the field. Can be bound as <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled value of the field. Can be bound as <code>v-model</code>. <code>null</code> is a controlled empty field.</p>\n',
     'type': 'DateValue | null',
     'required': false
   },
@@ -229,9 +229,19 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Called before the value changes, from the field or the calendar; <code>details.cancel()</code> keeps the current value.</p>\n',
+    'type': '[date: DateValue | undefined, details: ChangeEventDetails&lt;DatePickerChangeReason, Event&gt;]'
+  },
+  {
     'name': 'beforeUpdate:open',
     'description': '<p>Called before the open state changes; <code>details.cancel()</code> keeps the current state.</p>\n',
     'type': '[value: boolean, details: ChangeEventDetails&lt;DatePickerOpenChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'beforeUpdate:placeholder',
+    'description': '<p>Called before the placeholder changes; <code>details.cancel()</code> keeps the current placeholder.</p>\n',
+    'type': '[date: DateValue, details: ChangeEventDetails&lt;DatePickerChangeReason, Event&gt;]'
   },
   {
     'name': 'beforeUpdate:view',
@@ -241,7 +251,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called whenever the model value changes</p>\n',
-    'type': '[date: DateValue | undefined]'
+    'type': '[date: DateValue | undefined, details: ChangeEventDetails&lt;DatePickerChangeReason, Event&gt;]'
   },
   {
     'name': 'update:open',
@@ -251,7 +261,7 @@
   {
     'name': 'update:placeholder',
     'description': '<p>Event handler called whenever the placeholder value changes</p>\n',
-    'type': '[date: DateValue]'
+    'type': '[date: DateValue, details: ChangeEventDetails&lt;DatePickerChangeReason, Event&gt;]'
   },
   {
     'name': 'update:view',
@@ -287,7 +297,7 @@
 | `maxView` | The coarsest view DatePickerViewTrigger can switch to. | `"day" \| "month" \| "year"` | No | `"year"` |
 | `minValue` | The minimum date that can be selected | `DateValue` | No | - |
 | `modal` | The modality of the popover. When true, page scroll is locked, the rest of the page (except the trigger) is covered by an internal backdrop that closes the popover on press, and only the popover content is visible to screen readers. | `boolean` | No | `false` |
-| `modelValue` | The controlled value of the field. Can be bound as v-model. | `DateValue \| null` | No | - |
+| `modelValue` | The controlled value of the field. Can be bound as v-model. null is a controlled empty field. | `DateValue \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `numberOfMonths` | The number of months to display at once in the day view | `number` | No | `1` |
 | `open` | The controlled open state of the popover. | `boolean` | No | - |
@@ -307,11 +317,13 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `beforeUpdate:modelValue` | Called before the value changes, from the field or the calendar; details.cancel() keeps the current value. | `[date: DateValue \| undefined, details: ChangeEventDetails<DatePickerChangeReason, Event>]` |
 | `beforeUpdate:open` | Called before the open state changes; details.cancel() keeps the current state. | `[value: boolean, details: ChangeEventDetails<DatePickerOpenChangeReason, Event>]` |
+| `beforeUpdate:placeholder` | Called before the placeholder changes; details.cancel() keeps the current placeholder. | `[date: DateValue, details: ChangeEventDetails<DatePickerChangeReason, Event>]` |
 | `beforeUpdate:view` | Called before the calendar view changes; details.cancel() keeps the current view. | `[view: CalendarUnit, details: ChangeEventDetails<CalendarChangeReason, Event>]` |
-| `update:modelValue` | Event handler called whenever the model value changes | `[date: DateValue \| undefined]` |
+| `update:modelValue` | Event handler called whenever the model value changes | `[date: DateValue \| undefined, details: ChangeEventDetails<DatePickerChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the popover changes. | `[value: boolean, details: ChangeEventDetails<DatePickerOpenChangeReason, Event>]` |
-| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
+| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue, details: ChangeEventDetails<DatePickerChangeReason, Event>]` |
 | `update:view` | Event handler called whenever the calendar view changes | `[view: CalendarUnit, details: ChangeEventDetails<CalendarChangeReason, Event>]` |
 
 </llm-only>

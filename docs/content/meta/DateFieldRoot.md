@@ -90,7 +90,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled value of the field. Can be bound as <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled value of the field. Can be bound as <code>v-model</code>. <code>null</code> is a controlled empty field.</p>\n',
     'type': 'DateValue | null',
     'required': false
   },
@@ -136,14 +136,24 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Called before the value changes; <code>details.cancel()</code> keeps the current value.</p>\n',
+    'type': '[date: DateValue | undefined, details: ChangeEventDetails&lt;DateFieldChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'beforeUpdate:placeholder',
+    'description': '<p>Called before the placeholder changes; <code>details.cancel()</code> keeps the current placeholder.</p>\n',
+    'type': '[date: DateValue, details: ChangeEventDetails&lt;DateFieldChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called whenever the model value changes</p>\n',
-    'type': '[date: DateValue | undefined]'
+    'type': '[date: DateValue | undefined, details: ChangeEventDetails&lt;DateFieldChangeReason, Event&gt;]'
   },
   {
     'name': 'update:placeholder',
     'description': '<p>Event handler called whenever the placeholder value changes</p>\n',
-    'type': '[date: DateValue]'
+    'type': '[date: DateValue, details: ChangeEventDetails&lt;DateFieldChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -194,7 +204,7 @@
 | `locale` | The locale to use for formatting dates | `string` | No | - |
 | `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
 | `minValue` | The minimum date that can be selected | `DateValue` | No | - |
-| `modelValue` | The controlled value of the field. Can be bound as v-model. | `DateValue \| null` | No | - |
+| `modelValue` | The controlled value of the field. Can be bound as v-model. null is a controlled empty field. | `DateValue \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `placeholder` | The placeholder date, which is used to determine what month to display when no date is selected. This updates as the user navigates the calendar and can be used to programmatically control the calendar view | `DateValue` | No | - |
 | `readonly` | Whether or not the date field is readonly | `boolean` | No | `false` |
@@ -206,8 +216,10 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called whenever the model value changes | `[date: DateValue \| undefined]` |
-| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
+| `beforeUpdate:modelValue` | Called before the value changes; details.cancel() keeps the current value. | `[date: DateValue \| undefined, details: ChangeEventDetails<DateFieldChangeReason, Event>]` |
+| `beforeUpdate:placeholder` | Called before the placeholder changes; details.cancel() keeps the current placeholder. | `[date: DateValue, details: ChangeEventDetails<DateFieldChangeReason, Event>]` |
+| `update:modelValue` | Event handler called whenever the model value changes | `[date: DateValue \| undefined, details: ChangeEventDetails<DateFieldChangeReason, Event>]` |
+| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue, details: ChangeEventDetails<DateFieldChangeReason, Event>]` |
 
 **Slots**
 

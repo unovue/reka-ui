@@ -22,6 +22,20 @@ export {
 export { getPlaceholder, type SupportedLocale } from './placeholders'
 export * from './segment'
 
+export {
+  bridgeChange,
+  createSegmentFieldRootSurface,
+  createSegmentFieldSegmentSurface,
+  editableSegments,
+  isSameTemporalValue,
+  type SegmentContents,
+  type SegmentFieldRootState,
+  type SegmentFieldSegmentContext,
+  type SegmentFieldSegmentState,
+  useSegmentFieldNavigation,
+  wasCanceled,
+  watchSegmentFieldLocale,
+} from './segmentField'
 export type {
   AnyExceptLiteral,
   DateAndTimeSegmentObj,
@@ -41,6 +55,6 @@ export type {
   TimeSegmentPart,
 } from './types'
 export { useCalendarGrid, type UseCalendarGridProps, type UseCalendarGridReturn } from './useCalendarGrid'
-export { useDateField } from './useDateField'
+export { type SegmentFieldChangeReason, useDateFieldSegment } from './useDateFieldSegment'
 export { useSegmentNavigation } from './useSegmentNavigation'
 export * from './utils'

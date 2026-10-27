@@ -264,8 +264,8 @@
   },
   {
     'name': 'update:startValue',
-    'description': '<p>Event handler called whenever the start value changes</p>\n',
-    'type': '[date: DateValue | undefined]'
+    'description': '<p>Event handler called whenever the start value changes. The details carry the reason and event; the change has already happened.</p>\n',
+    'type': '[date: DateValue | undefined, details: ChangeEventDetails&lt;RangeCalendarChangeReason, Event&gt;]'
   },
   {
     'name': 'update:validModelValue',
@@ -380,7 +380,7 @@
 | `beforeUpdate:view` | Event handler called before the view changes; details.cancel() vetoes the change. | `[view: CalendarUnit, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
 | `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
 | `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
-| `update:startValue` | Event handler called whenever the start value changes | `[date: DateValue \| undefined]` |
+| `update:startValue` | Event handler called whenever the start value changes. The details carry the reason and event; the change has already happened. | `[date: DateValue \| undefined, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
 | `update:validModelValue` | Event handler called whenever there is a new validModel | `[date: DateRange]` |
 | `update:view` | Event handler called whenever the view changes | `[view: CalendarUnit, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
 

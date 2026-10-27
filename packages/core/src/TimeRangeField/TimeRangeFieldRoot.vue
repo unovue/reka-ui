@@ -1,36 +1,22 @@
 <script lang="ts">
 import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
+import type { TimeRangeFieldChangeReason } from './useTimeRangeField'
 import type { Matcher } from '@/date'
 import type { DateRangeType } from '@/DateRangeField/DateRangeFieldRoot.vue'
 import type { PrimitiveProps } from '@/Primitive'
-import type { Formatter } from '@/shared'
-import type { DateStep, HourCycle, SegmentPart, SegmentValueObj, TimeValue } from '@/shared/date'
-import type { TimeRange } from '@/shared/date/types'
+import type { BaseChangeReason, ChangeEventDetails, Formatter } from '@/shared'
+import type { DateStep, HourCycle, SegmentPart, SegmentValueObj, TimeRange, TimeValue } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { getLocalTimeZone, Time, toCalendarDateTime, today } from '@internationalized/date'
-import { areAllDaysBetweenValid, isBefore, isBeforeOrSame } from '@/date'
-import { createContext, isNullish, mergeExpose, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
-import {
-  createContent,
-  getDefaultTime,
-  getTimeFieldSegmentElements,
-  initializeTimeSegmentValues,
-  isSegmentNavigationKey,
-  normalizeDateStep,
-  normalizeHourCycle,
+import { createContext, mergeExpose, useDirection, useLocale } from '@/shared'
 
-  syncSegmentValues,
-
-  syncTimeSegmentValues,
-
-  useSegmentNavigation,
-} from '@/shared/date'
-
-type TimeRangeFieldRootContext = {
+export type TimeRangeFieldRootContext = {
   locale: Ref<string>
+  /** The start as a date-time. Assigning it requests a change with reason `imperative-action`; prefer `setRangeValue`. */
   startValue: Ref<DateValue | undefined>
+  /** The end as a date-time. Assigning it requests a change with reason `imperative-action`; prefer `setRangeValue`. */
   endValue: Ref<DateValue | undefined>
+  /** The placeholder as a date-time. Assigning it requests a change; prefer `setPlaceholder`. */
   placeholder: Ref<DateValue>
   isInvalid: Ref<boolean>
   disabled: Ref<boolean>
@@ -38,11 +24,18 @@ type TimeRangeFieldRootContext = {
   formatter: Formatter
   hourCycle: HourCycle
   step: Ref<DateStep>
+  stepSnapping: Ref<boolean>
   segmentValues: Record<DateRangeType, Ref<SegmentValueObj>>
-  segmentContents: Ref<{ start: { part: SegmentPart, value: string }[], end: { part: SegmentPart, value: string }[] }>
+  segmentContents: Ref<Record<DateRangeType, { part: SegmentPart, value: string }[]>>
   elements: Ref<Set<HTMLElement>>
   focusNext: () => void
   setFocusedElement: (el: HTMLElement) => void
+  /** Request a range change. Returns `false` when unchanged or cancelled. */
+  setModelValue: (value: TimeRange, reason?: TimeRangeFieldChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Change one end from a date-time; it is written back as a `Time` when that end is one. */
+  setRangeValue: (type: DateRangeType, value: DateValue | undefined, reason?: TimeRangeFieldChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Request a placeholder change from a date-time. */
+  setPlaceholder: (value: DateValue, reason?: TimeRangeFieldChangeReason | BaseChangeReason, event?: Event) => boolean
 }
 
 export interface TimeRangeFieldRootProps extends PrimitiveProps, FormFieldProps {
@@ -52,12 +45,14 @@ export interface TimeRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   defaultPlaceholder?: TimeValue
   /** The placeholder time, which is used to determine what time to display when no time is selected. This updates as the user navigates the field */
   placeholder?: TimeValue
-  /** The controlled checked state of the field. Can be bound as `v-model`. */
+  /** The controlled checked state of the field. Can be bound as `v-model`. `null` is a controlled empty range. */
   modelValue?: TimeRange | null
   /** The hour cycle used for formatting times. Defaults to the local preference */
   hourCycle?: HourCycle
   /** The stepping interval for the time fields. Defaults to `1`. */
   step?: DateStep
+  /** Whether to enforce snapping the value to the nearest step increment after input. Defaults to `false`. */
+  stepSnapping?: boolean
   /** The granularity to use for formatting times. Defaults to minute. The field will render segments for each part of the time up to and including the specified granularity */
   granularity?: 'hour' | 'minute' | 'second'
   /** Whether or not to hide the time zone segment of the field */
@@ -81,29 +76,25 @@ export interface TimeRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
 }
 
 export type TimeRangeFieldRootEmits = {
+  /** Called before the range changes; `details.cancel()` keeps the current range. */
+  'beforeUpdate:modelValue': [date: TimeRange, details: ChangeEventDetails<TimeRangeFieldChangeReason>]
   /** Event handler called whenever the model value changes */
-  'update:modelValue': [date: TimeRange]
+  'update:modelValue': [date: TimeRange, details: ChangeEventDetails<TimeRangeFieldChangeReason>]
+  /** Called before the placeholder changes; `details.cancel()` keeps the current placeholder. */
+  'beforeUpdate:placeholder': [date: TimeValue, details: ChangeEventDetails<TimeRangeFieldChangeReason>]
   /** Event handler called whenever the placeholder value changes */
-  'update:placeholder': [date: TimeValue]
+  'update:placeholder': [date: TimeValue, details: ChangeEventDetails<TimeRangeFieldChangeReason>]
 }
 
 export const [injectTimeRangeFieldRootContext, provideTimeRangeFieldRootContext]
   = createContext<TimeRangeFieldRootContext>('TimeRangeFieldRoot')
-
-function convertValue(value: TimeValue, date: DateValue = today(getLocalTimeZone())) {
-  if (value && 'day' in value) {
-    return value
-  }
-
-  return toCalendarDateTime(date, value)
-}
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
-import { computed, nextTick, onMounted, ref, toRefs, watch } from 'vue'
+import { computed, mergeProps, toRefs } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { VisuallyHidden } from '@/VisuallyHidden'
+import { useTimeRangeField } from './useTimeRangeField'
 
 defineOptions({
   inheritAttrs: false,
@@ -115,309 +106,50 @@ const props = withDefaults(defineProps<TimeRangeFieldRootProps>(), {
   readonly: false,
   placeholder: undefined,
   isTimeUnavailable: undefined,
+  stepSnapping: false,
 })
 const emits = defineEmits<TimeRangeFieldRootEmits>()
 defineSlots<{
   default?: (props: {
-    /** The current time of the field */
-    modelValue: TimeRange | undefined
+    /** The current time range of the field */
+    modelValue: TimeRange
     /** The time field segment contents */
-    segments: { start: { part: SegmentPart, value: string }[], end: { part: SegmentPart, value: string }[] }
+    segments: Record<DateRangeType, { part: SegmentPart, value: string }[]>
     /** Value if the input is invalid */
     isInvalid: boolean
   }) => any
 }>()
 
-const { disabled, readonly, granularity, defaultValue, minValue, maxValue, dir: propDir, locale: propLocale, isTimeUnavailable: propsIsTimeUnavailable } = toRefs(props)
+const { dir: propDir, locale: propLocale } = toRefs(props)
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
 
-const formatter = useDateFormatter(locale.value, {
-  hourCycle: normalizeHourCycle(props.hourCycle),
-})
 const { primitiveElement, currentElement: parentElement, expose } = usePrimitiveElement()
-const segmentElements = ref<Set<HTMLElement>>(new Set())
 
-const step = computed(() => normalizeDateStep(props))
-
-const convertedMinValue = computed(() => minValue.value ? convertValue(minValue.value) : undefined)
-const convertedMaxValue = computed(() => maxValue.value ? convertValue(maxValue.value) : undefined)
-
-onMounted(() => {
-  getTimeFieldSegmentElements(parentElement.value).forEach(item => segmentElements.value.add(item as HTMLElement))
-})
-
-const modelValue = useVModel(props, 'modelValue', emits, {
-  defaultValue: defaultValue.value ?? { start: undefined, end: undefined },
-  passive: (props.modelValue === undefined) as false,
-}) as Ref<TimeRange>
-
-const isStartInvalid = computed(() => {
-  if (!modelValue.value?.start)
-    return false
-
-  const convertedStartValue = convertValue(modelValue.value.start)
-
-  if (propsIsTimeUnavailable.value?.(convertedStartValue))
-    return true
-
-  if (convertedMinValue.value && isBefore(convertedStartValue, convertedMinValue.value))
-    return true
-
-  if (convertedMaxValue.value && isBefore(convertedMaxValue.value, convertedStartValue))
-    return true
-
-  return false
-})
-
-const isEndInvalid = computed(() => {
-  if (!modelValue.value?.end)
-    return false
-
-  const convertedEndValue = convertValue(modelValue.value.end)
-
-  if (propsIsTimeUnavailable.value?.(convertedEndValue))
-    return true
-
-  if (convertedMinValue.value && isBefore(convertedEndValue, convertedMinValue.value))
-    return true
-
-  if (convertedMaxValue.value && isBefore(convertedMaxValue.value, convertedEndValue))
-    return true
-
-  return false
-})
-
-const isInvalid = computed(() => {
-  if (isStartInvalid.value || isEndInvalid.value)
-    return true
-
-  if (!modelValue.value?.start || !modelValue.value?.end)
-    return false
-
-  const convertedModelValue = {
-    start: convertValue(modelValue.value.start),
-    end: convertValue(modelValue.value.end),
-  }
-
-  if (!isBeforeOrSame(convertedModelValue.start, convertedModelValue.end))
-    return true
-
-  if (propsIsTimeUnavailable.value !== undefined) {
-    const allValid = areAllDaysBetweenValid(
-      convertedModelValue.start,
-      convertedModelValue.end,
-      propsIsTimeUnavailable.value,
-      undefined,
-    )
-    if (!allValid)
-      return true
-  }
-  return false
-})
-
-const startValue = ref(modelValue.value?.start?.copy()) as Ref<TimeValue | undefined>
-const endValue = ref(modelValue.value?.end?.copy()) as Ref<TimeValue | undefined>
-
-watch([startValue, endValue], ([_startValue, _endValue]) => {
-  modelValue.value = { start: _startValue?.copy(), end: _endValue?.copy() }
-})
-
-const convertedStartValue = computed({
-  get() {
-    if (isNullish(startValue.value))
-      return startValue.value
-    return convertValue(startValue.value)
-  },
-  set(newValue) {
-    if (newValue) {
-      startValue.value = startValue.value && 'day' in startValue.value ? newValue : new Time(newValue.hour, newValue.minute, newValue.second, startValue.value?.millisecond)
-    }
-    else {
-      startValue.value = newValue
-    }
-    return newValue
-  },
-})
-
-const convertedEndValue = computed({
-  get() {
-    if (isNullish(endValue.value))
-      return endValue.value
-    return convertValue(endValue.value)
-  },
-  set(newValue) {
-    if (newValue) {
-      endValue.value = endValue.value && 'day' in endValue.value ? newValue : new Time(newValue.hour, newValue.minute, newValue.second, endValue.value?.millisecond)
-    }
-    else {
-      endValue.value = newValue
-    }
-    return newValue
-  },
-})
-
-const convertedModelValue = computed(() => ({ start: convertedStartValue.value, end: convertedEndValue.value }))
-
-const defaultDate = getDefaultTime({
-  defaultPlaceholder: props.placeholder,
-  defaultValue: modelValue.value?.start,
-})
-
-const placeholder = useVModel(props, 'placeholder', emits, {
-  defaultValue: props.defaultPlaceholder ?? defaultDate.copy(),
-  passive: (props.placeholder === undefined) as false,
-}) as Ref<TimeValue>
-
-const convertedPlaceholder = computed({
-  get() {
-    return convertValue(placeholder.value)
-  },
-  set(newValue) {
-    if (newValue)
-      placeholder.value = 'day' in placeholder.value ? newValue.copy() : new Time(newValue.hour, newValue.minute, newValue.second, placeholder.value?.millisecond)
-    return newValue
-  },
-})
-
-const inferredGranularity = computed(() => {
-  if (granularity.value)
-    return granularity.value
-
-  return 'minute'
-})
-
-const initialSegments = initializeTimeSegmentValues(inferredGranularity.value)
-
-const startSegmentValues = ref<SegmentValueObj>(convertedStartValue.value ? { ...syncTimeSegmentValues({ value: convertedStartValue.value, formatter }) } : { ...initialSegments })
-const endSegmentValues = ref<SegmentValueObj>(convertedEndValue.value ? { ...syncTimeSegmentValues({ value: convertedEndValue.value, formatter }) } : { ...initialSegments })
-
-const startSegmentContent = computed(() => createContent({
-  granularity: inferredGranularity.value,
-  dateRef: convertedPlaceholder.value,
-  formatter,
-  hideTimeZone: props.hideTimeZone,
-  hourCycle: props.hourCycle,
-  segmentValues: startSegmentValues.value,
+// Controlled/uncontrolled + the `beforeUpdate:` / `update:` emits for the range
+// and the placeholder live in the composable's `useControllableState`.
+const { root, context, modelValue, segments, isInvalid, setFocusedElement, focusFirstSegment } = useTimeRangeField({
+  modelValue: () => props.modelValue,
+  defaultValue: props.defaultValue,
+  placeholder: () => props.placeholder,
+  defaultPlaceholder: props.defaultPlaceholder,
   locale,
-  isTimeValue: true,
-}))
-
-const endSegmentContent = computed(() => createContent({
-  granularity: inferredGranularity.value,
-  dateRef: convertedPlaceholder.value,
-  formatter,
-  hideTimeZone: props.hideTimeZone,
-  hourCycle: props.hourCycle,
-  segmentValues: endSegmentValues.value,
-  locale,
-  isTimeValue: true,
-}))
-
-const segmentContents = computed(() => ({
-  start: startSegmentContent.value.arr,
-  end: endSegmentContent.value.arr,
-}))
-
-const editableSegmentContents = computed(() => ({ start: segmentContents.value.start.filter(({ part }) => part !== 'literal'), end: segmentContents.value.end.filter(({ part }) => part !== 'literal') }))
-
-watch(modelValue, (_modelValue) => {
-  const isStartChanged = _modelValue?.start && startValue.value
-    ? convertValue(_modelValue.start).compare(convertValue(startValue.value)) !== 0
-    : _modelValue?.start !== startValue.value
-  if (isStartChanged) {
-    startValue.value = _modelValue?.start?.copy()
-  }
-
-  const isEndChanged = _modelValue?.end && endValue.value
-    ? convertValue(_modelValue.end).compare(convertValue(endValue.value)) !== 0
-    : _modelValue?.end !== endValue.value
-  if (isEndChanged) {
-    endValue.value = _modelValue?.end?.copy()
-  }
-})
-
-watch([convertedStartValue, locale], ([_startValue]) => {
-  if (_startValue !== undefined) {
-    startSegmentValues.value = { ...syncSegmentValues({ value: _startValue, formatter }) }
-  }
-  // If segment has null value, means that user modified it, thus do not reset the segmentValues
-  else if (Object.values(startSegmentValues.value).every(value => value !== null) && _startValue === undefined) {
-    startSegmentValues.value = { ...initialSegments }
-  }
-})
-
-watch(locale, (value) => {
-  if (formatter.getLocale() !== value) {
-    formatter.setLocale(value)
-    // Locale changed, so we need to clear the segment elements and re-get them (different order)
-    // Get the focusable elements again on the next tick
-    nextTick(() => {
-      segmentElements.value.clear()
-      getTimeFieldSegmentElements(parentElement.value).forEach(item => segmentElements.value.add(item as HTMLElement))
-    })
-  }
-})
-
-watch(convertedModelValue, (_modelValue) => {
-  if (_modelValue && _modelValue.start !== undefined && placeholder.value.compare(_modelValue.start) !== 0)
-    placeholder.value = _modelValue.start.copy()
-})
-
-watch([convertedEndValue, locale], ([_endValue]) => {
-  if (_endValue !== undefined) {
-    endSegmentValues.value = { ...syncSegmentValues({ value: _endValue, formatter }) }
-  }
-  // If segment has null value, means that user modified it, thus do not reset the segmentValues
-  else if (Object.values(endSegmentValues.value).every(value => value !== null) && _endValue === undefined) {
-    endSegmentValues.value = { ...initialSegments }
-  }
-})
-
-const currentFocusedElement = ref<HTMLElement | null>(null)
-
-const { nextFocusableSegment, prevFocusableSegment, focusNext } = useSegmentNavigation({
-  segmentElements,
-  currentFocusedElement,
   dir,
-  segmentAttributes: ['data-reka-time-field-segment', 'data-reka-time-range-field-segment-type'],
-})
-
-const kbd = useKbd()
-
-function handleKeydown(e: KeyboardEvent) {
-  // Don't navigate between segments mid-composition, arrow keys are used for IME candidate navigation
-  if (e.isComposing)
-    return
-  if (!isSegmentNavigationKey(e.key))
-    return
-  if (e.key === kbd.ARROW_LEFT)
-    prevFocusableSegment.value?.focus()
-  if (e.key === kbd.ARROW_RIGHT)
-    nextFocusableSegment.value?.focus()
-}
-
-function setFocusedElement(el: HTMLElement) {
-  currentFocusedElement.value = el
-}
-
-provideTimeRangeFieldRootContext({
-  locale,
-  startValue: convertedStartValue,
-  endValue: convertedEndValue,
-  placeholder: convertedPlaceholder,
-  disabled,
-  formatter,
   hourCycle: props.hourCycle,
-  step,
-  readonly,
-  isInvalid,
-  segmentValues: { start: startSegmentValues, end: endSegmentValues },
-  segmentContents: editableSegmentContents,
-  elements: segmentElements,
-  setFocusedElement,
-  focusNext,
+  step: () => props.step,
+  stepSnapping: () => props.stepSnapping,
+  granularity: () => props.granularity,
+  hideTimeZone: () => props.hideTimeZone,
+  minValue: () => props.minValue,
+  maxValue: () => props.maxValue,
+  disabled: () => props.disabled,
+  readonly: () => props.readonly,
+  isTimeUnavailable: computed(() => props.isTimeUnavailable),
+  parentElement,
+  emit: emits,
 })
+
+provideTimeRangeFieldRootContext(context)
 
 defineExpose(mergeExpose(expose, {
   /** Helper to set the focused element inside the TimeRangeField */
@@ -427,19 +159,12 @@ defineExpose(mergeExpose(expose, {
 
 <template>
   <Primitive
-    v-bind="$attrs"
+    v-bind="mergeProps($attrs, root.attrs.value)"
     ref="primitiveElement"
-    role="group"
-    :aria-disabled="disabled ? true : undefined"
-    :data-disabled="disabled ? '' : undefined"
-    :data-readonly="readonly ? '' : undefined"
-    :data-invalid="isInvalid ? '' : undefined"
-    :dir="dir"
-    @keydown.left.right="handleKeydown"
   >
     <slot
       :model-value="modelValue"
-      :segments="segmentContents"
+      :segments="segments"
       :is-invalid="isInvalid"
     />
 
@@ -449,11 +174,11 @@ defineExpose(mergeExpose(expose, {
       feature="focusable"
       aria-hidden="true"
       tabindex="-1"
-      :value="`${modelValue?.start?.toString()} - ${modelValue?.end?.toString()}`"
+      :value="`${modelValue.start?.toString()} - ${modelValue.end?.toString()}`"
       :name="name"
       :disabled="disabled"
       :required="required"
-      @focus="Array.from(segmentElements)?.[0]?.focus()"
+      @focus="focusFirstSegment"
     />
   </Primitive>
 </template>
