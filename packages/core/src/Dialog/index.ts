@@ -34,6 +34,7 @@ export {
   default as DialogTrigger,
   type DialogTriggerProps,
 } from './DialogTrigger.vue'
+export { createDialogHandle, DialogHandle } from './handle'
 export {
   type DialogContentState,
   type DialogOverlayState,

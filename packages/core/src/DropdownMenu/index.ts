@@ -79,6 +79,7 @@ export {
   default as DropdownMenuTrigger,
   type DropdownMenuTriggerProps,
 } from './DropdownMenuTrigger.vue'
+export { createDropdownMenuHandle, DropdownMenuHandle } from './handle'
 export {
   type DropdownMenuContentSurface,
   type DropdownMenuOpenChangeReason,

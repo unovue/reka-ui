@@ -1,8 +1,11 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { DialogOpenChangeReason, DialogRootContext } from './DialogRoot.vue'
+import type { DialogHandle } from './handle'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
+import type { PopupRootStore } from '@/shared/popupHandle'
 import { computed, ref, toValue } from 'vue'
 import { createPartSurface, disclosureState, useControllableState } from '@/shared'
+import { createPopupRootStore, setPopupRootStore } from '@/shared/popupHandle'
 
 // =============================================================================
 // Headless composable for the Dialog (overlay) family — issue #2723.
@@ -110,7 +113,16 @@ export function getDialogDescriptionSurface(
   )
 }
 
-export interface UseDialogProps {
+export interface UseDialogProps<Payload = unknown> {
+  /**
+   * Connects detached `DialogTrigger`s (#2826): focus returns to, and the
+   * `payload` comes from, whichever trigger opened the dialog.
+   */
+  handle?: MaybeRefOrGetter<DialogHandle<Payload> | undefined>
+  /** Controlled id of the trigger that owns the dialog (with a `handle`). */
+  triggerId?: MaybeRefOrGetter<string | null | undefined>
+  /** Id of the trigger that owns a dialog that starts open (with a `handle`). */
+  defaultTriggerId?: string | null
   /**
    * Controlled open state. A getter/ref resolving to `undefined` is uncontrolled;
    * a writable `Ref` (with no `emit`/`onUpdate`) is written back ("ref-owned").
@@ -151,8 +163,14 @@ export interface UseDialogProps {
   onOpenComplete?: (value: boolean) => void
 }
 
-export interface UseDialogReturn {
+export interface UseDialogReturn<Payload = unknown> {
   open: ComputedRef<boolean>
+  /** The `payload` of the trigger that opened the dialog, or from `handle.openWithPayload()`. */
+  payload: ComputedRef<Payload | undefined>
+  /** The id of the trigger that opened the dialog (with a `handle`), kept after close. */
+  activeTriggerId: ComputedRef<string | null>
+  /** The detached-trigger store the Root attaches to its `handle`. */
+  handleStore: PopupRootStore<Payload>
   modal: ComputedRef<boolean>
   unmountOnHide: ComputedRef<boolean>
   /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
@@ -188,7 +206,7 @@ export interface UseDialogReturn {
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle pure
  */
-export function useDialog(props: UseDialogProps = {}): UseDialogReturn {
+export function useDialog<Payload = unknown>(props: UseDialogProps<Payload> = {}): UseDialogReturn<Payload> {
   const baseId = props.baseId ?? `reka-dialog-${++dialogCount}`
 
   // Every open/close path (trigger, close button, dismiss) goes through one
@@ -204,7 +222,24 @@ export function useDialog(props: UseDialogProps = {}): UseDialogReturn {
   const modal = computed<boolean>(() => toValue(props.modal) ?? true)
   const unmountOnHide = computed<boolean>(() => toValue(props.unmountOnHide) ?? true)
 
-  const triggerElement = ref<HTMLElement>()
+  const handleStore = createPopupRootStore<Payload>({
+    handle: () => toValue(props.handle),
+    open,
+    setState,
+    baseId,
+    triggerId: props.triggerId,
+    defaultTriggerId: props.defaultTriggerId,
+  })
+  // With a `handle`, focus returns to whichever detached trigger opened the
+  // dialog; without one (or for `openWithPayload()`), to the element recorded
+  // by the trigger / the content on open.
+  const ownTriggerElement = ref<HTMLElement>()
+  const triggerElement = computed<HTMLElement | undefined>({
+    get: () => (handleStore.handle.value && handleStore.activeTriggerElement.value) || ownTriggerElement.value,
+    set: (element) => {
+      ownTriggerElement.value = element
+    },
+  })
   const contentElement = ref<HTMLElement>()
 
   function onOpenChange(value: boolean, reason?: DialogOpenChangeReason | BaseChangeReason, event?: Event): boolean {
@@ -231,9 +266,13 @@ export function useDialog(props: UseDialogProps = {}): UseDialogReturn {
     descriptionId: `${baseId}-description`,
     notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
+  setPopupRootStore(context, handleStore)
 
   return {
     open,
+    payload: handleStore.payload,
+    activeTriggerId: handleStore.activeTriggerId,
+    handleStore,
     modal,
     unmountOnHide,
     onOpenChange,

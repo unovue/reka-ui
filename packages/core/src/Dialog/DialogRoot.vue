@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
+import type { DialogHandle } from './handle'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { createContext, useId } from '@/shared'
 
@@ -11,7 +12,7 @@ export type DialogOpenChangeReason
     | 'outside-press'
     | 'focus-outside'
 
-export interface DialogRootProps {
+export interface DialogRootProps<Payload = unknown> {
   /** The controlled open state of the dialog. Can be binded as `v-model:open`. */
   open?: boolean
   /** The open state of the dialog when it is initially rendered. Use when you do not need to control its open state. */
@@ -30,6 +31,19 @@ export interface DialogRootProps {
    * @defaultValue true
    */
   unmountOnHide?: boolean
+  /**
+   * A handle from `createDialogHandle()` that connects detached
+   * `DialogTrigger`s rendered anywhere in the app. Focus returns to, and the
+   * default slot's `payload` comes from, the trigger that opened the dialog.
+   */
+  handle?: DialogHandle<Payload>
+  /**
+   * The id of the trigger that owns the dialog, for a controlled dialog with
+   * detached triggers. Use with `open`.
+   */
+  triggerId?: string | null
+  /** The id of the trigger that owns a dialog that starts open (with `defaultOpen` and a `handle`). */
+  defaultTriggerId?: string | null
 }
 
 export type DialogRootEmits = {
@@ -73,19 +87,22 @@ export const [injectDialogOverlayElementContext, provideDialogOverlayElementCont
   = createContext<Ref<HTMLElement | undefined>>('DialogRoot', 'DialogOverlayElementContext')
 </script>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="Payload = unknown">
 import { ref } from 'vue'
+import { usePopupHandleAttachment } from '@/shared/popupHandle'
 import { useDialog } from './useDialog'
 
 defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<DialogRootProps>(), {
+const props = withDefaults(defineProps<DialogRootProps<Payload>>(), {
   open: undefined,
   defaultOpen: false,
   modal: true,
   unmountOnHide: true,
+  triggerId: undefined,
+  defaultTriggerId: undefined,
 })
 const emit = defineEmits<DialogRootEmits>()
 
@@ -95,6 +112,10 @@ defineSlots<{
     open: boolean
     /** Close the dialog */
     close: () => void
+    /** The `payload` of the detached trigger that opened the dialog, or from `handle.openWithPayload()` */
+    payload: Payload | undefined
+    /** The id of the detached trigger that opened the dialog */
+    activeTriggerId: string | null
   }) => any
 }>()
 
@@ -102,7 +123,7 @@ defineSlots<{
 // path goes through its `setState` so `beforeUpdate:open` can cancel it) and
 // builds the context; `useId` (SSR-stable) stays in the shell and seeds the
 // content/title/description ids.
-const { open, onOpenChange, context } = useDialog({
+const { open, onOpenChange, context, payload, activeTriggerId, handleStore } = useDialog<Payload>({
   open: () => props.open,
   defaultOpen: props.defaultOpen,
   modal: () => props.modal,
@@ -110,15 +131,22 @@ const { open, onOpenChange, context } = useDialog({
   baseId: useId(undefined, 'reka-dialog'),
   emit,
   onOpenComplete: value => emit('update:openComplete', value),
+  handle: () => props.handle,
+  triggerId: () => props.triggerId,
+  defaultTriggerId: props.defaultTriggerId,
 })
 
 provideDialogRootContext(context)
 provideDialogOverlayElementContext(ref())
+// Client-only: the Root's state reaches a (possibly module-scope) handle only once mounted.
+usePopupHandleAttachment(handleStore)
 </script>
 
 <template>
   <slot
     :open="open"
     :close="() => onOpenChange(false)"
+    :payload="payload"
+    :active-trigger-id="activeTriggerId"
   />
 </template>
