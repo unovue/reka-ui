@@ -15,6 +15,14 @@ import { transformJSDocLinks } from './utils'
 const traverse = ((_traverse as any).default ?? _traverse) as typeof _traverse
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
+// Declared before the top-level `forEach` calls below, which use them through
+// `generateMarkdownTables`.
+const CODE_TAG_RE = /<code>([\s\S]*?)<\/code>/g
+const CODE_SPAN_SPLIT_RE = /(`[^`]*`)/
+const LT_RE = /</g
+const PIPE_RE = /\|/g
+const NEWLINE_RE = /\n/g
+
 const md = new MarkdownIt()
 md.use(transformJSDocLinks)
 
@@ -165,12 +173,6 @@ function writeComponentMeta(componentPath: string, componentName: string) {
 function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&#39;/g, '\'').replace(/&quot;/g, '"').trim()
 }
-
-const CODE_TAG_RE = /<code>([\s\S]*?)<\/code>/g
-const CODE_SPAN_SPLIT_RE = /(`[^`]*`)/
-const LT_RE = /</g
-const PIPE_RE = /\|/g
-const NEWLINE_RE = /\n/g
 
 function generateMarkdownTables(meta: ReturnType<typeof parseMeta>): string {
   // Keep `<code>` spans as Markdown code and escape any other `<`, so a decoded
