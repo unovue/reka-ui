@@ -1,5 +1,7 @@
+import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, defineComponent, h, ref } from 'vue'
+import { ConfigProvider } from '@/ConfigProvider'
 import { useFilter } from './useFilter'
 
 describe('useFilter', () => {
@@ -104,5 +106,35 @@ describe('useFilter', () => {
       expect(filtered.value).toHaveLength(3)
       expect(runs).toBe(2)
     })
+  })
+})
+
+// #2824 item 10: the collator follows the `ConfigProvider` locale instead of a hardcoded `'en'`.
+describe('useFilter locale', () => {
+  function containsUnder(locale: string | undefined) {
+    let contains!: (string: string, substring: string) => boolean
+    const Probe = defineComponent({
+      setup() {
+        contains = useFilter({ sensitivity: 'base' }).contains
+        return () => null
+      },
+    })
+    mount(locale ? defineComponent({ setup: () => () => h(ConfigProvider, { locale }, () => h(Probe)) }) : Probe)
+    return contains
+  }
+
+  it('collates with `en` without a provider', () => {
+    // English base sensitivity folds the diaeresis: `ä` matches `a`.
+    expect(containsUnder(undefined)('ä', 'a')).toBe(true)
+  })
+
+  it('collates with the ConfigProvider locale', () => {
+    // Swedish treats `ä` as a letter of its own.
+    expect(containsUnder('sv')('ä', 'a')).toBe(false)
+    expect(containsUnder('sv')('Ärlig', 'ä')).toBe(true)
+  })
+
+  it('falls back to `en` outside a component', () => {
+    expect(useFilter({ sensitivity: 'base' }).contains('ä', 'a')).toBe(true)
   })
 })

@@ -1,9 +1,13 @@
 import type { MaybeRef } from 'vue'
-import { computed, unref } from 'vue'
+import { computed, hasInjectionContext, unref } from 'vue'
+import { useLocale } from './useLocale'
 
 /**
  * Provides locale-aware string filtering functions.
  * Uses `Intl.Collator` for comparison to ensure proper Unicode handling.
+ *
+ * The collator uses the `ConfigProvider` locale (`useLocale()`, #2824 item 10).
+ * Outside a component `setup()` there is no provider to read, so it falls back to `'en'`.
  *
  * @param options - Optional collator options to customize comparison behavior.
  *   See [Intl.CollatorOptions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Collator/Collator#options) for details.
@@ -18,7 +22,8 @@ import { computed, unref } from 'vue'
  */
 export function useFilter(options?: MaybeRef<Intl.CollatorOptions>) {
   const computedOptions = computed(() => unref(options))
-  const collator = computed(() => new Intl.Collator('en', { usage: 'search', ...computedOptions.value }))
+  const locale = hasInjectionContext() ? useLocale() : computed(() => 'en')
+  const collator = computed(() => new Intl.Collator(locale.value, { usage: 'search', ...computedOptions.value }))
 
   const startsWith = (string: string, substring: string) => {
     if (substring.length === 0)
