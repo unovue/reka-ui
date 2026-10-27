@@ -32,13 +32,16 @@ let registeredElement: HTMLElement | null = null
 
 onMounted(() => {
   registeredElement = currentElement.value
-  if (registeredElement)
+  if (registeredElement) {
+    rootContext.itemDisabled.set(registeredElement, () => itemContext.disabled.value)
     rootContext.totalStepperItems.value.add(registeredElement)
+  }
 })
 
 onUnmounted(() => {
   if (registeredElement) {
     rootContext.totalStepperItems.value.delete(registeredElement)
+    rootContext.itemDisabled.delete(registeredElement)
     registeredElement = null
   }
 })

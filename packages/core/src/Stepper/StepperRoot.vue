@@ -18,6 +18,12 @@ export interface StepperRootContext {
   dir: Ref<Direction>
   linear: Ref<boolean>
   totalStepperItems: Ref<Set<HTMLElement>>
+  /**
+   * The item's own `disabled` state for each registered trigger, read by
+   * `goToStep` at call time. A trigger registered without an entry falls back
+   * to its rendered `disabled` attribute.
+   */
+  itemDisabled: WeakMap<HTMLElement, () => boolean>
 }
 
 export interface StepperRootProps extends PrimitiveProps {

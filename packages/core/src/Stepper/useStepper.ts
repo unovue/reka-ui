@@ -100,7 +100,9 @@ export function getStepperItemSurface(context: StepperRootContext, item: Stepper
  * The `StepperTrigger` surface: roving `tabindex`, title/description wiring,
  * and the mousedown/keydown handlers ported verbatim from `StepperTrigger.vue`.
  * Registration in `totalStepperItems` stays with the caller (the SFC does it
- * on mount), since arrow navigation walks the registered elements.
+ * on mount), since arrow navigation walks the registered elements. Also set
+ * `context.itemDisabled.set(el, () => item.disabled.value)` so `goToStep`
+ * reads the item's current state instead of the last-rendered attribute.
  */
 export function getStepperTriggerSurface(context: StepperRootContext, item: StepperItemContext): PartSurface<StepperItemState> {
   const kbd = useKbd()
@@ -270,6 +272,7 @@ export function useStepper(props: UseStepperProps = {}): UseStepperReturn {
 
   const totalStepperItems = ref<Set<HTMLElement>>(new Set())
   const totalStepperItemsArray = computed(() => Array.from(totalStepperItems.value))
+  const itemDisabled = new WeakMap<HTMLElement, () => boolean>()
 
   const isFirstStep = computed(() => modelValue.value === 1)
   const isLastStep = computed(() => modelValue.value === totalStepperItemsArray.value.length)
@@ -286,11 +289,14 @@ export function useStepper(props: UseStepperProps = {}): UseStepperReturn {
     if (step < 1)
       return false
 
-    // The target step's trigger renders `disabled=""` while the step is
-    // disabled (or not reachable in a linear stepper). v2 read the wrong index
-    // and tested the empty attribute value for truthiness, so it never blocked.
+    // Block a step whose item is disabled. This reads the item's own state at
+    // call time, not the trigger's `disabled` attribute: that attribute also
+    // encodes linear reachability and only updates on the next render, so two
+    // synchronous `nextStep()` calls would read it stale. (v2 read the wrong
+    // index and tested the empty attribute for truthiness, so it never blocked.)
     const target = totalStepperItemsArray.value[step - 1]
-    if (target?.hasAttribute('disabled'))
+    const isTargetDisabled = target && itemDisabled.get(target)
+    if (isTargetDisabled ? isTargetDisabled() : target?.hasAttribute('disabled'))
       return false
 
     if (linear.value) {
@@ -340,6 +346,7 @@ export function useStepper(props: UseStepperProps = {}): UseStepperReturn {
     dir: dir as Ref<Direction>,
     linear: linear as Ref<boolean>,
     totalStepperItems,
+    itemDisabled,
   }
 
   const root = createPartSurface<StepperRootState>(

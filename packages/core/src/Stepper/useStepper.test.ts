@@ -217,6 +217,32 @@ describe('stepperRoot — details contract', () => {
     expect(onUpdate).toHaveBeenCalledWith(3, expect.objectContaining({ reason: 'imperative-action' }))
   })
 
+  // Regression (#3074 CodeRabbit): the trigger's `disabled` attribute also
+  // encodes linear reachability and is only updated on the next render, so a
+  // second synchronous call read step 3 as disabled.
+  it('two synchronous nextStep() calls in a linear stepper reach step 3', async () => {
+    const root = ref<any>()
+    const onUpdate = vi.fn()
+    const { getByTestId } = mountRoot({ 'ref': root, 'onUpdate:modelValue': onUpdate })
+    await nextTick()
+    expect(root.value.nextStep()).toBe(true)
+    expect(root.value.nextStep()).toBe(true)
+    expect(onUpdate).toHaveBeenLastCalledWith(3, expect.objectContaining({ reason: 'next-step' }))
+    await nextTick()
+    expect(getByTestId('trigger-3')).toHaveAttribute('data-state', 'current')
+  })
+
+  it('consecutive nextStep() calls still stop at a disabled step', async () => {
+    const root = ref<any>()
+    const onUpdate = vi.fn()
+    mountRoot({ 'ref': root, 'onUpdate:modelValue': onUpdate }, [3])
+    await nextTick()
+    expect(root.value.nextStep()).toBe(true)
+    expect(root.value.nextStep()).toBe(false)
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+    expect(onUpdate).toHaveBeenLastCalledWith(2, expect.objectContaining({ reason: 'next-step' }))
+  })
+
   it('emits update:modelValue with details', async () => {
     const onUpdate = vi.fn()
     const { getByTestId } = mountRoot({ 'onUpdate:modelValue': onUpdate })
