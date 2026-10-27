@@ -98,7 +98,9 @@ An **uncontrolled** component manages its own state internally, without requirin
 
 ## Change details
 
-Every `update:*` event of a stateful component receives a second argument, a `ChangeEventDetails` object: `reason` (why the state changed, typed with the family's exported reason union, for example `SwitchChangeReason`, plus `'imperative-action'` for programmatic changes), `event` (the native event behind the change, if any), `isCanceled` and `cancel()`. A cancellable `beforeUpdate:*` event fires before it with the same object. Both fire only when the value actually changes, and in uncontrolled mode they fire synchronously, inside the interaction that caused them.
+Every converted `update:*` event receives a second argument, a `ChangeEventDetails` object: `reason` (why the state changed, typed with the family's exported reason union, for example `SwitchChangeReason`, plus `'imperative-action'` for programmatic changes), `event` (the native event behind the change, if any), `isCanceled` and `cancel()`. A cancellable `beforeUpdate:*` event fires before it with the same object. Both fire only when the value actually changes, and in uncontrolled mode they fire synchronously, inside the interaction that caused them.
+
+A few events are not converted and keep a single argument: `ListboxFilter` and `DropdownMenuFilter` `update:modelValue`, `RovingFocusGroup` `update:currentTabStopId`, derived notifications such as `update:openComplete`, and the `ProgressRoot` correction events. `AutocompleteInput` and `FieldControl` pass details with `update:modelValue` but have no `beforeUpdate:modelValue`. See [Change details coverage](./migration-v3#change-details-coverage) for the full list.
 
 ### With `v-model`
 

@@ -134,6 +134,11 @@ describe('useFilter locale', () => {
     expect(containsUnder('sv')('Ärlig', 'ä')).toBe(true)
   })
 
+  it('keeps `ä` apart from `a` under German search collation', () => {
+    // `usage: 'search'`: German search collation keeps the umlaut apart, unlike the default `sort` usage.
+    expect(containsUnder('de')('ä', 'a')).toBe(false)
+  })
+
   it('falls back to `en` with a warning for an invalid locale tag instead of throwing', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const contains = containsUnder('en_US')
