@@ -2,7 +2,7 @@ import type { Ref } from 'vue'
 import type { Side } from '@/Popper/utils'
 import { createEventHook, refAutoReset, tryOnScopeDispose } from '@vueuse/shared'
 import { ref, watchEffect } from 'vue'
-import { getEventTarget } from './getRootNode'
+import { containsComposed, getEventTarget } from './getRootNode'
 
 export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, containerElement: Ref<HTMLElement | undefined>) {
 // Reset the inTransit state if idle/scrolled.
@@ -62,7 +62,9 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
           return
 
         const pointerPosition = { x: event.clientX, y: event.clientY }
-        const hasEnteredTarget = triggerElement.value?.contains(target) || containerElement.value?.contains(target)
+        // Composed: the target can sit inside a shadow root nested in the content.
+        const hasEnteredTarget = (!!triggerElement.value && containsComposed(triggerElement.value, target))
+          || (!!containerElement.value && containsComposed(containerElement.value, target))
         const isPointerOutsideGraceArea = !isPointInPolygon(pointerPosition, pointerGraceArea.value)
         const isAnotherGraceAreaTrigger = !!target.closest('[data-grace-area-trigger]')
 

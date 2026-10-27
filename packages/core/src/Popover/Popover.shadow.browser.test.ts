@@ -4,14 +4,14 @@ import { defineComponent, h } from 'vue'
 import { mountInShadowRoot } from '@/shared/test/shadowDom'
 import { PopoverClose, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '.'
 
-function mountPopover(rootProps: Record<string, unknown> = {}) {
+function mountPopover(rootProps: Record<string, unknown> = {}, portalProps: Record<string, unknown> = {}) {
   const Fixture = defineComponent({
     setup() {
       return () => h('div', { style: 'padding: 200px;' }, [
         h('button', { 'data-testid': 'outside', 'style': 'position: fixed; top: 0; left: 0;' }, 'Outside'),
         h(PopoverRoot, rootProps, () => [
           h(PopoverTrigger, { 'data-testid': 'trigger', 'style': 'width: 100px; height: 30px;' }, () => 'Open'),
-          h(PopoverPortal, null, () => h(PopoverContent, {
+          h(PopoverPortal, portalProps, () => h(PopoverContent, {
             'data-testid': 'content',
             'side': 'bottom',
             'sideOffset': 8,
@@ -68,5 +68,20 @@ describe.each([false, true])('given a Popover (modal: %s) inside a shadow root, 
     await expect.poll(() => get('content')).not.toBeNull()
     await userEvent.click(get('trigger')!)
     await expect.poll(() => get('content')).toBeNull()
+  })
+
+  // A force-mounted portal renders before its own mount, when its DOM anchor is
+  // not known yet; the content must still mount straight into the shadow root,
+  // so root-scoped setup (focus guards) lands there and never in the document.
+  it('mounts force-mounted content that starts open directly into the shadow root', async () => {
+    const { get, shadowRoot, activeElement } = mountPopover({ modal, defaultOpen: true }, { forceMount: true })
+
+    await expect.poll(() => get('content')).not.toBeNull()
+    expect(get('content')!.getRootNode()).toBe(shadowRoot)
+    // The guards sit at the edges of the shadow root.
+    await expect.poll(() => [shadowRoot.firstElementChild, shadowRoot.lastElementChild].map(el => el?.hasAttribute('data-reka-focus-guard'))).toEqual([true, true])
+    expect(document.querySelector('[data-reka-focus-guard]')).toBeNull()
+    expect(document.querySelector('[data-reka-internal-backdrop]')).toBeNull()
+    await expect.poll(activeElement).toBe(get('input'))
   })
 })

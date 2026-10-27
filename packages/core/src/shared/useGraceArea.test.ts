@@ -185,6 +185,24 @@ describe('useGraceArea', () => {
     host.remove()
   })
 
+  it('recognizes the pointer entering a shadow root nested inside the container', async () => {
+    const api = setup()
+    const exitSpy = vi.fn()
+    api.onPointerExit(exitSpy)
+    const widget = document.createElement('div')
+    container.appendChild(widget)
+    const inner = document.createElement('span')
+    widget.attachShadow({ mode: 'open' }).appendChild(inner)
+
+    trigger.dispatchEvent(pointerEvent('pointerleave', { clientX: 100, clientY: 50 }))
+    await nextTick()
+    const Ctor = typeof PointerEvent !== 'undefined' ? PointerEvent : MouseEvent
+    inner.dispatchEvent(new Ctor('pointermove', { bubbles: true, composed: true, clientX: 150, clientY: 500 }))
+
+    expect(exitSpy).not.toHaveBeenCalled()
+    expect(api.isPointerInTransit.value).toBe(false)
+  })
+
   it('auto-resets isPointerInTransit after 300ms', () => {
     vi.useFakeTimers()
     const api = setup()
