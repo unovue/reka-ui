@@ -9,7 +9,7 @@ import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { DateRange, DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { isEqualDay } from '@internationalized/date'
-import { computed, ref, toValue, unref, watch } from 'vue'
+import { computed, ref, shallowRef, toValue, unref, watch } from 'vue'
 import { getWeekStartsOn } from '@/date'
 import { isSameRange } from '@/DateRangeField/useDateRangeField'
 import { usePopover } from '@/Popover/usePopover'
@@ -74,8 +74,9 @@ export interface UseDateRangePickerProps {
   emit?: (event: any, ...args: any[]) => void
   onBeforeUpdate?: (value: DateRange, details: ChangeEventDetails<DateRangePickerChangeReason>) => void
   onUpdate?: (value: DateRange, details: ChangeEventDetails<DateRangePickerChangeReason>) => void
+  onBeforeUpdatePlaceholder?: (value: DateValue, details: ChangeEventDetails<DateRangePickerChangeReason>) => void
   onUpdatePlaceholder?: (value: DateValue, details: ChangeEventDetails<DateRangePickerChangeReason>) => void
-  onUpdateStartValue?: (value: DateValue | undefined, details: ChangeEventDetails<DateRangePickerChangeReason>) => void
+  onUpdateStartValue?: (value: DateValue | undefined, details: ChangeEventDetails<RangeCalendarChangeReason>) => void
   onUpdateOpen?: (value: boolean, details: ChangeEventDetails<DateRangePickerOpenChangeReason>) => void
   onUpdateView?: (value: CalendarUnit, details: ChangeEventDetails<RangeCalendarChangeReason>) => void
 }
@@ -89,7 +90,7 @@ export interface UseDateRangePickerReturn {
   view: ComputedRef<CalendarUnit>
   setModelValue: (value: DateRange, reason?: DateRangePickerChangeReason | BaseChangeReason, event?: Event) => boolean
   setPlaceholder: (value: DateValue, reason?: DateRangePickerChangeReason | BaseChangeReason, event?: Event) => boolean
-  setStartValue: (value: DateValue | undefined, reason?: DateRangePickerChangeReason | BaseChangeReason, event?: Event) => boolean
+  setStartValue: (value: DateValue | undefined, reason?: RangeCalendarChangeReason | BaseChangeReason, event?: Event) => boolean
   setOpen: (value: boolean, reason?: DateRangePickerOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   setView: (value: CalendarUnit, reason?: RangeCalendarChangeReason | BaseChangeReason, event?: Event) => boolean
   lastChangeDetails: Readonly<Ref<ChangeEventDetails<DateRangePickerChangeReason>>>
@@ -141,16 +142,24 @@ export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDate
     }).copy(),
     name: 'placeholder',
     emit: props.emit,
+    onBeforeUpdate: props.onBeforeUpdatePlaceholder,
     onUpdate: props.onUpdatePlaceholder,
     isEqual: isSameTemporalValue,
   })
 
-  const { state: startValue, setState: setStartState } = useControllableState<DateValue | undefined, DateRangePickerChangeReason>({
-    defaultValue: () => modelValue.value.start,
+  // The calendar's real anchor. It moves even when `beforeUpdate:startValue` is
+  // cancelled (the cancel only suppresses the event), and follows the range's
+  // start when the field changes it, so a later press is never compared
+  // against a stale value.
+  const anchor = shallowRef<DateValue | undefined>(modelValue.value.start?.copy())
+  const startValue = computed(() => anchor.value)
+  // Emits only: the calendar reports real changes, so nothing is deduped here.
+  const { setState: emitStartValue } = useControllableState<DateValue | undefined, RangeCalendarChangeReason>({
+    defaultValue: undefined,
     name: 'startValue',
     emit: props.emit,
     onUpdate: props.onUpdateStartValue,
-    isEqual: isSameTemporalValue,
+    isEqual: () => false,
   })
 
   const popover = usePopover({
@@ -176,8 +185,15 @@ export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDate
   function setPlaceholder(value: DateValue, reason: DateRangePickerChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
     return setPlaceholderState(value.copy(), reason, event)
   }
-  function setStartValue(value: DateValue | undefined, reason: DateRangePickerChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    return setStartState(value?.copy(), reason, event)
+  /** The calendar's anchor moved: always emitted (the calendar only reports changes). */
+  function reportStartValue(value: DateValue | undefined, reason: RangeCalendarChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
+    anchor.value = value?.copy()
+    return emitStartValue(value?.copy(), reason, event)
+  }
+  function setStartValue(value: DateValue | undefined, reason: RangeCalendarChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
+    if (isSameTemporalValue(value, anchor.value))
+      return false
+    return reportStartValue(value, reason, event)
   }
   function setOpen(value: boolean, reason: DateRangePickerOpenChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
     return popover.onOpenChange(value, reason as PopoverOpenChangeReason, event)
@@ -192,6 +208,8 @@ export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDate
   })
 
   watch(modelValue, (value) => {
+    if (!isSameTemporalValue(value.start, anchor.value))
+      anchor.value = value.start?.copy()
     if (value.start && value.start.compare(placeholder.value) !== 0)
       setPlaceholder(value.start)
     if (value.start && value.end && closeOnSelect.value)
@@ -255,7 +273,7 @@ export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDate
     modal: computed(() => toValue(props.modal) ?? false),
     onDateChange: (value, reason, event) => setModelValue(value, reason, event),
     onPlaceholderChange: setPlaceholder,
-    onStartValueChange: (value, details) => setStartValue(value, details?.reason, details?.event),
+    onStartValueChange: (value, details) => reportStartValue(value, details?.reason, details?.event),
     dir,
     allowNonContiguousRanges: computed(() => toValue(props.allowNonContiguousRanges) ?? false),
     fixedDate: computed(() => toValue(props.fixedDate)),
@@ -328,7 +346,7 @@ export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDate
       onBeforeUpdate: onCalendarBeforeUpdate,
       onUpdatePlaceholder: onCalendarPlaceholderChange,
       onUpdateView: (value, details) => setView(value, details.reason, details.event),
-      onUpdateStartValue: (value, details) => setStartValue(value, details.reason, details.event),
+      onUpdateStartValue: (value, details) => reportStartValue(value, details.reason, details.event),
     }
   }
 

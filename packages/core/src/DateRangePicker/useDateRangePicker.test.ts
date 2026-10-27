@@ -132,7 +132,7 @@ describe('useDateRangePicker', () => {
     expect(api().picker.modelValue.value.end?.toString()).toBe('2024-01-26')
   })
 
-  it('cancelling the picker change cancels the typed change and resyncs the segments', async () => {
+  it('cancelling the picker change cancels the typed change and keeps the typed segments', async () => {
     const onUpdate = vi.fn()
     const { getByTestId, user, api } = setupStandalone({
       defaultValue: range,
@@ -145,7 +145,7 @@ describe('useDateRangePicker', () => {
     await nextTick()
     expect(onUpdate).not.toHaveBeenCalled()
     expect(api().picker.modelValue.value.start?.toString()).toBe('2024-01-20')
-    expect(getByTestId('start-day').textContent).toBe('20')
+    expect(getByTestId('start-day').textContent).toBe('21')
   })
 
   it('is controllable; null is a controlled empty range', () => {
@@ -239,7 +239,7 @@ describe('useDateRangePicker', () => {
       expect(details.reason).toBe('cell-press')
     })
 
-    it('a cancelled change keeps the field segments', async () => {
+    it('a cancelled change keeps the value and the typed segments', async () => {
       const onUpdate = vi.fn()
       const user = userEvent.setup()
       const { getByTestId } = render(DateRangePicker, {
@@ -249,7 +249,7 @@ describe('useDateRangePicker', () => {
       await user.keyboard('{ArrowUp}')
       await nextTick()
       expect(onUpdate).not.toHaveBeenCalled()
-      expect(getByTestId('end-day').textContent?.trim()).toBe('25')
+      expect(getByTestId('end-day').textContent?.trim()).toBe('26')
     })
 
     it('renders on the server', async () => {
@@ -262,6 +262,49 @@ describe('useDateRangePicker', () => {
       const html = await renderToString(createSSRApp(createStandalonePicker({ defaultValue: range, defaultOpen: true, locale: 'en-US' })))
       expect(html).toContain('role="dialog"')
       expect(html).toContain('data-testid="date-1-25"')
+    })
+  })
+})
+
+describe('useDateRangePicker review fixes', () => {
+  it('a press is compared with the real start, not the last emitted one', async () => {
+    const onUpdateStartValue = vi.fn()
+    const picker = withScope(() => useDateRangePicker({ defaultValue: range, locale: 'en-US', onUpdateStartValue }))
+
+    // Open: press Jan 8, then close (the calendar unmounts).
+    const first = effectScope()
+    const calendar = first.run(() => useRangeCalendar(picker.getCalendarProps()))!
+    calendar.select(new CalendarDate(2024, 1, 8), 'cell-press')
+    await nextTick()
+    expect(onUpdateStartValue).toHaveBeenLastCalledWith(new CalendarDate(2024, 1, 8), expect.objectContaining({ reason: 'cell-press' }))
+    first.stop()
+
+    // The field moves the range while the popover is closed.
+    picker.setModelValue({ start: new CalendarDate(2024, 1, 3), end: new CalendarDate(2024, 1, 12) }, 'segment-input')
+    await nextTick()
+    expect(picker.startValue.value?.toString()).toBe('2024-01-03')
+
+    // Reopen and press Jan 8 again: a real change, so it is emitted.
+    onUpdateStartValue.mockClear()
+    const reopened = withScope(() => useRangeCalendar(picker.getCalendarProps()))
+    reopened.select(new CalendarDate(2024, 1, 8), 'cell-press')
+    await nextTick()
+    expect(onUpdateStartValue).toHaveBeenCalledWith(new CalendarDate(2024, 1, 8), expect.objectContaining({ reason: 'cell-press' }))
+    expect(picker.startValue.value?.toString()).toBe('2024-01-08')
+  })
+
+  it('cancels a placeholder change through onBeforeUpdatePlaceholder', () => {
+    withScope(() => {
+      const onUpdatePlaceholder = vi.fn()
+      const picker = useDateRangePicker({
+        defaultValue: range,
+        locale: 'en-US',
+        onBeforeUpdatePlaceholder: (_value, details) => details.cancel(),
+        onUpdatePlaceholder,
+      })
+      expect(picker.setPlaceholder(new CalendarDate(2024, 5, 1))).toBe(false)
+      expect(onUpdatePlaceholder).not.toHaveBeenCalled()
+      expect(picker.placeholder.value.toString()).toBe('2024-01-20')
     })
   })
 })

@@ -10,14 +10,13 @@ const rootContext = injectDateRangePickerRootContext()
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
+
+// The range calendar is controlled by the picker. Its `beforeUpdate:modelValue`
+// runs the picker's change, so a pick emits once, from the picker, and a
+// cancel on the picker restores the calendar's last range.
 </script>
 
 <template>
-  <!--
-    The range calendar is controlled by the picker. Its `beforeUpdate:modelValue`
-    runs the picker's change, so a pick emits once, from the picker, and a
-    cancel on the picker restores the calendar's last range.
-  -->
   <RangeCalendarRoot
     :ref="forwardRef"
     v-slot="{ weekDays, grid, date, weekStartsOn, locale, fixedWeeks, view }"

@@ -111,9 +111,9 @@ export type DateRangePickerRootEmits = {
   /** Event handler called whenever the placeholder value changes */
   'update:placeholder': [date: DateValue, details: ChangeEventDetails<DateRangePickerChangeReason>]
   /** Called before `update:startValue`; `details.cancel()` suppresses that event (the calendar's anchor still moves). */
-  'beforeUpdate:startValue': [date: DateValue | undefined, details: ChangeEventDetails<DateRangePickerChangeReason>]
+  'beforeUpdate:startValue': [date: DateValue | undefined, details: ChangeEventDetails<RangeCalendarChangeReason>]
   /** Event handler called whenever the start value changes */
-  'update:startValue': [date: DateValue | undefined, details: ChangeEventDetails<DateRangePickerChangeReason>]
+  'update:startValue': [date: DateValue | undefined, details: ChangeEventDetails<RangeCalendarChangeReason>]
   /** Called before the calendar view changes; `details.cancel()` keeps the current view. */
   'beforeUpdate:view': [view: CalendarUnit, details: ChangeEventDetails<RangeCalendarChangeReason>]
   /** Event handler called whenever the calendar view changes */
@@ -153,6 +153,7 @@ const props = withDefaults(defineProps<DateRangePickerRootProps>(), {
   maximumDays: undefined,
   maximumLength: undefined,
   closeOnSelect: false,
+  stepSnapping: false,
   view: undefined,
   defaultView: undefined,
   maxView: 'year',

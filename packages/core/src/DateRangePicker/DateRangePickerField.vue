@@ -18,14 +18,14 @@ function setFieldRef(el: Element | ComponentPublicInstance | null) {
   rootContext.dateFieldRef.value = (el ?? undefined) as typeof rootContext.dateFieldRef.value
   forwardRef(el)
 }
+
+// The field is controlled by the picker. Its `beforeUpdate:modelValue` runs
+// the picker's change, so the picker emits once with the field's reason. A
+// cancel on the picker keeps the last committed range; the typed segments
+// stay as they are.
 </script>
 
 <template>
-  <!--
-    The field is controlled by the picker. Its `beforeUpdate:modelValue` runs
-    the picker's change, so the picker emits once with the field's reason, and
-    a cancel on the picker puts the segments back.
-  -->
   <DateRangeFieldRoot
     v-slot="{ segments, modelValue }"
     :ref="setFieldRef"
