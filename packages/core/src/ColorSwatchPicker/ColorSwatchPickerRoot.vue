@@ -4,7 +4,7 @@ import type { ListboxRootEmits, ListboxRootProps } from '@/Listbox'
 import type { ChangeEventDetails } from '@/shared'
 import { useForwardPropsEmits } from '@/shared'
 
-export interface ColorSwatchPickerRootProps extends Omit<ListboxRootProps<ColorSwatchPickerValue>, 'by' | 'modelValue' | 'defaultValue'> {
+export interface ColorSwatchPickerRootProps extends Omit<ListboxRootProps<ColorSwatchPickerValue>, 'by' | 'filter' | 'modelValue' | 'defaultValue'> {
   /** The selected color, or colors with `multiple`, as color strings or `Color` objects (uncontrolled). Compared structurally with the item values. */
   defaultValue?: ColorSwatchPickerValue | ColorSwatchPickerValue[]
   /** The selected color, or colors with `multiple`, as color strings or `Color` objects (controlled). Compared structurally with the item values. */

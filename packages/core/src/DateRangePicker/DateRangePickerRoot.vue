@@ -63,7 +63,13 @@ type DateRangePickerRootContext = {
  * full dates), so the calendar's `granularity` is not exposed here; the
  * drill-down views are.
  */
-export type DateRangePickerRootProps = Omit<DateRangeFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<RangeCalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'maximumDays' | 'yearsPerPage' | 'columns'> & {
+export type DateRangePickerRootProps = Omit<DateRangeFieldRootProps, 'as' | 'asChild' | 'isDateUnavailable'> & PopoverRootProps & Pick<RangeCalendarRootProps, 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'maximumDays' | 'yearsPerPage' | 'columns'> & {
+  /** A function that returns whether or not a date is disabled. The picker's calendar always commits days, so it is called only for day-view cells (with `'day'` as its second argument); the month and year views apply only `minValue`, `maxValue` and `disabled`. */
+  isDateDisabled?: Matcher
+  /** A function that returns whether or not a date is unavailable. The field marks the range invalid when either end, or any day between them, is unavailable. The picker's calendar always commits days, so it is called there only for day-view cells (with `'day'` as its second argument); the month and year views apply only `minValue`, `maxValue` and `disabled`. */
+  isDateUnavailable?: Matcher
+  /** In the day view, makes the previous and next buttons move by the number of months displayed at once (`numberOfMonths`) rather than one month. The month view always pages by one year and the year view by `yearsPerPage` years. */
+  pagedNavigation?: boolean
   /** The maximum length of the range in days (inclusive). */
   maximumLength?: number
   /** The controlled view: the unit the calendar currently shows. Can be bound as `v-model:view`. */

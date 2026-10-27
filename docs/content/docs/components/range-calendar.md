@@ -368,14 +368,14 @@ Set `granularity="year"` to select a range of years.
       keys: ['Home'],
       description:
       `
-        When the focus is on <Code>RangeCalendarCellTrigger</Code>, in the day view, it moves focus to the first day of the current week.
+        When the focus is on <Code>RangeCalendarCellTrigger</Code>, in the day view, it moves focus to the first day of the current week. In the month and year views, it moves focus to the first month or year of the current page, skipping disabled cells and cells outside <Code>minValue</Code> / <Code>maxValue</Code>.
       `
     },
     {
       keys: ['End'],
       description:
       `
-        When the focus is on <Code>RangeCalendarCellTrigger</Code>, in the day view, it moves focus to the last day of the current week.
+        When the focus is on <Code>RangeCalendarCellTrigger</Code>, in the day view, it moves focus to the last day of the current week. In the month and year views, it moves focus to the last month or year of the current page, skipping disabled cells and cells outside <Code>minValue</Code> / <Code>maxValue</Code>.
       `
     },
     {

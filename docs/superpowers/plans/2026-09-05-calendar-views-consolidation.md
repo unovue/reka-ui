@@ -138,7 +138,7 @@ Verify: `vitest run src/date src/shared/date src/Calendar src/RangeCalendar src/
 - [ ] **6.1** `selectionMode` spike (D12): prototype `CalendarRoot selection-mode="range"` on top of the shared surfaces; measure the type-level cost of the model union before committing.
 - [ ] **6.2** `DatePicker` pass-through parts (D13): decide with #2726 whether `DatePickerCalendar` should simply host `Calendar*` parts.
 - [x] **6.0** Review follow-ups (2026-10-26): user matchers and the root `nextPage` / `prevPage` apply only in the `granularity` view; no selection state on coarser cells; 13-month years (Hebrew leap years, Ethiopic) and era-safe year / month maths (Japanese eras, BC); a cancelled `beforeUpdate:placeholder` does not drill; keyboard moves in coarser views keep the placeholder's day / month; the range hover is cleared on a view change; the view trigger has no default `aria-label`.
-- [ ] **6.3** `Home` / `End` keyboard support (first/last cell of the page) — cheap once the keyboard is unit-generic.
+- [x] **6.3** `Home` / `End` keyboard support (first/last cell of the page) — cheap once the keyboard is unit-generic. Done in the month and year views of `Calendar` and `RangeCalendar`: focus moves to the first / last cell of the current page, skipping disabled cells and cells outside `minValue` / `maxValue` inward toward the focused cell, without flipping the page. The day view keeps the v2 week start / end.
 
 ---
 

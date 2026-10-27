@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '..'
 import { useVModel } from '@vueuse/core'
-import { computed, onMounted, onUnmounted, ref, watchSyncEffect } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch, watchSyncEffect } from 'vue'
 import { usePrimitiveElement } from '@/Primitive'
 import { useComposing } from '@/shared'
 import { Primitive } from '..'
@@ -41,6 +41,11 @@ const modelValue = useVModel(props, 'modelValue', emits, {
 
 const rootContext = injectListboxRootContext()
 
+// The root's `filter` (#2824 item 7) runs against this input's value; a no-op
+// for a listbox without one. Synchronous, so the items re-render in the same
+// flush as the input and `highlightFirstItem` below sees the filtered list.
+watch(modelValue, value => rootContext.setFilterSearch(value ?? ''), { immediate: true, flush: 'sync' })
+
 const { primitiveElement, currentElement } = usePrimitiveElement()
 const disabled = computed(() => props.disabled || rootContext.disabled.value || false)
 
@@ -59,6 +64,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   rootContext.focusable.value = true
+  rootContext.setFilterSearch('')
 })
 
 const { isComposing, shouldDeferInput, handleCompositionStart, handleCompositionUpdate, handleCompositionEnd } = useComposing((event) => {

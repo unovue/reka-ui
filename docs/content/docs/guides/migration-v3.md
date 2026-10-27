@@ -243,6 +243,10 @@ Two additions come with it:
 
 The `update:modelValue` and `beforeUpdate:modelValue` events of `ListboxRoot` are now typed as `T | T[] | undefined`: an array with `multiple`, and `undefined` when a single selection is cleared. A handler typed for a single `T` may need widening; the runtime payload is unchanged.
 
+## Listbox filtering
+
+`ListboxRoot` has a new, opt-in `filter` prop. Nothing changes until you pass one: without it (or with `null`) the listbox filters nothing, and a list you already filter by hand from the `ListboxFilter` value keeps working as in v2. With a filter function, for example `contains` from `useFilter({ sensitivity: 'base' })`, items whose text does not match the `ListboxFilter` value are not rendered, a group whose items all fail to match is hidden, and keyboard navigation, typeahead and select-all only see the matching items. In a `ListboxVirtualizer`, the filter runs over `options` (matching `textContent(option)`), so a filtered-out option takes no virtual index. See [Filtering](../components/listbox#filtering). `ComboboxRoot` and `AutocompleteRoot` keep their own filtering and `ignoreFilter` for now.
+
 ## Color values are `Color` objects
 
 `ColorAreaRoot`, `ColorFieldRoot` and `ColorSliderRoot` now emit a `Color` object instead of a hex string. A `Color` is a plain object in one color space, such as `{ space: 'hsl', h: 217, s: 91, l: 60, alpha: 1 }`. Each component emits it in the space it edits: the `colorSpace` prop, or the space that holds the edited channel (`rgb` for `red`, `hsb` for `brightness`). The hex string could not hold the hue of a grey or anything finer than one 8-bit step, so v2 kept that precision in hidden internal state; in v3 the emitted value carries it, and components that share one `v-model` no longer drift.

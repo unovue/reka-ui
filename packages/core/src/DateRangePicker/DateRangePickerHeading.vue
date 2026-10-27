@@ -9,7 +9,7 @@ export interface DateRangePickerHeadingProps extends RangeCalendarHeadingProps {
 const props = defineProps<DateRangePickerHeadingProps>()
 defineSlots<{
   default?: (props: {
-    /** Current month and year */
+    /** Heading of the active view: `September 2026`, `2026`, `2020 - 2031` */
     headingValue: string
   }) => any
 }>()
