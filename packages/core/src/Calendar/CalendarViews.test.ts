@@ -155,15 +155,46 @@ describe('calendar — granularity="month" (replaces MonthPicker)', () => {
     expect(getByTestId('heading')).toHaveTextContent('1975')
   })
 
-  it('lets Home and End bubble: only the day view has a week', async () => {
+  it('moves to the first and last month of the page on Home and End', async () => {
+    const onPlaceholder = vi.fn()
+    const { user, getByTestId } = setupUnit({ granularity: 'month', defaultPlaceholder: sep5 }, { 'onUpdate:placeholder': onPlaceholder })
+    getByTestId('cell-2026-09-01').focus()
+    await user.keyboard(kbd.HOME)
+    expect(getByTestId('cell-2026-01-01')).toHaveFocus()
+    // Like the arrow keys, the placeholder keeps its day.
+    expect((onPlaceholder.mock.calls.at(-1)![0] as DateValue).toString()).toBe('2026-01-05')
+    await user.keyboard(kbd.END)
+    expect(getByTestId('cell-2026-12-01')).toHaveFocus()
+    expect(getByTestId('heading')).toHaveTextContent('2026')
+  })
+
+  it('skips disabled and out-of-range months on Home and End without leaving the page', async () => {
+    const { user, getByTestId } = setupUnit({
+      granularity: 'month',
+      defaultPlaceholder: sep5,
+      minValue: new CalendarDate(2026, 2, 10),
+      maxValue: new CalendarDate(2026, 11, 20),
+      isDateDisabled: (date, unit) => unit === 'month' && date.month === 2,
+    })
+    getByTestId('cell-2026-09-01').focus()
+    await user.keyboard(kbd.HOME)
+    expect(getByTestId('cell-2026-03-01')).toHaveFocus()
+    await user.keyboard(kbd.END)
+    expect(getByTestId('cell-2026-11-01')).toHaveFocus()
+    // Already on the last focusable month: End keeps focus where it is.
+    await user.keyboard(kbd.END)
+    expect(getByTestId('cell-2026-11-01')).toHaveFocus()
+    expect(getByTestId('heading')).toHaveTextContent('2026')
+  })
+
+  it('handles Home and End in the cell and does not let them bubble', async () => {
     const onKeydown = vi.fn()
     const { user, getByTestId, calendar } = setupUnit({ granularity: 'month', defaultPlaceholder: sep5 })
     calendar.addEventListener('keydown', onKeydown)
     getByTestId('cell-2026-09-01').focus()
     await user.keyboard(kbd.HOME)
     await user.keyboard(kbd.END)
-    expect(onKeydown).toHaveBeenCalledTimes(2)
-    expect(getByTestId('cell-2026-09-01')).toHaveFocus()
+    expect(onKeydown).not.toHaveBeenCalled()
   })
 
   it('passes the unit to matchers', () => {
@@ -209,6 +240,32 @@ describe('calendar — granularity="year" (replaces YearPicker)', () => {
 
     await rerender({ modelValue: new CalendarDate(1975, 6, 1) })
     expect(getByTestId('heading')).toHaveTextContent('1970 - 1981')
+  })
+
+  it('moves to the first and last year of the page on Home and End', async () => {
+    const { user, getByTestId } = setupUnit({ granularity: 'year', defaultPlaceholder: sep5 })
+    getByTestId('cell-2026-01-01').focus()
+    await user.keyboard(kbd.HOME)
+    expect(getByTestId('cell-2020-01-01')).toHaveFocus()
+    await user.keyboard(kbd.END)
+    expect(getByTestId('cell-2031-01-01')).toHaveFocus()
+    expect(getByTestId('heading')).toHaveTextContent('2020 - 2031')
+  })
+
+  it('skips disabled and out-of-range years on Home and End', async () => {
+    const { user, getByTestId } = setupUnit({
+      granularity: 'year',
+      defaultPlaceholder: sep5,
+      minValue: new CalendarDate(2021, 6, 1),
+      maxValue: new CalendarDate(2029, 6, 1),
+      isDateDisabled: (date, unit) => unit === 'year' && date.year === 2021,
+    })
+    getByTestId('cell-2026-01-01').focus()
+    await user.keyboard(kbd.HOME)
+    expect(getByTestId('cell-2022-01-01')).toHaveFocus()
+    await user.keyboard(kbd.END)
+    expect(getByTestId('cell-2029-01-01')).toHaveFocus()
+    expect(getByTestId('heading')).toHaveTextContent('2020 - 2031')
   })
 
   it('pages by yearsPerPage', async () => {
@@ -361,6 +418,23 @@ describe('calendar — coarser views are navigation only', () => {
     const { getByTestId } = setupViews({ defaultPlaceholder: sep5, defaultView: 'month', minValue: new CalendarDate(2026, 3, 15) })
     expect(getByTestId('month-2026-02-01')).toHaveAttribute('data-disabled')
     expect(getByTestId('month-2026-03-01')).not.toHaveAttribute('data-disabled')
+  })
+
+  it('moves to the page edges on Home and End in the coarser views, within minValue / maxValue', async () => {
+    const { user, getByTestId, unmount } = setupViews({ defaultPlaceholder: sep5, defaultView: 'month', minValue: new CalendarDate(2026, 3, 15) })
+    getByTestId('month-2026-09-01').focus()
+    await user.keyboard(kbd.HOME)
+    expect(getByTestId('month-2026-03-01')).toHaveFocus()
+    await user.keyboard(kbd.END)
+    expect(getByTestId('month-2026-12-01')).toHaveFocus()
+    unmount()
+
+    const views = setupViews({ defaultPlaceholder: sep5, defaultView: 'year', maxValue: new CalendarDate(2030, 1, 1) })
+    views.getByTestId('year-2026-01-01').focus()
+    await views.user.keyboard(kbd.END)
+    expect(views.getByTestId('year-2030-01-01')).toHaveFocus()
+    await views.user.keyboard(kbd.HOME)
+    expect(views.getByTestId('year-2020-01-01')).toHaveFocus()
   })
 
   it('marks no selection in views coarser than the granularity', () => {

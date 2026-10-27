@@ -45,8 +45,9 @@ const CELL_TRIGGER_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRi
  * The day view keeps the v2 shortcuts (#2530): Home / End move to the start /
  * end of the week, PageUp / PageDown to the same day one month away and
  * Shift+PageUp / Shift+PageDown one year away, clamped to `minValue` /
- * `maxValue`. The month and year views have no week, so Home / End bubble
- * there, and PageUp / PageDown move to the same cell one page away.
+ * `maxValue`. The month and year views have no week: there Home / End move to
+ * the first / last cell of the page, and PageUp / PageDown to the same cell one
+ * page away.
  *
  * @lifecycle pure — DOM access happens only inside the handlers.
  */
@@ -138,6 +139,31 @@ export function createCellFocusNavigation(
     })
   }
 
+  /**
+   * Month and year views: Home / End move to the first / last cell of the
+   * current page. Like the arrow keys, a target that is disabled or outside
+   * `minValue` / `maxValue` is skipped, here inward toward the focused cell, so
+   * focus never leaves the page; when nothing between the edge and the focused
+   * cell can take focus, it stays put.
+   */
+  function focusPageBoundary(boundary: 'start' | 'end', event?: Event) {
+    const cells = Array.from(host.parentElement.value?.querySelectorAll<HTMLElement>('[data-reka-calendar-cell-trigger]:not([data-outside-view])') ?? [])
+    const current = cells.findIndex(el => el.getAttribute('data-value') === date.value.toString())
+    if (current < 0)
+      return
+    // Cells on a month / year page are consecutive units, so a cell's offset in
+    // the page is its distance in units from the focused cell.
+    const step = boundary === 'start' ? 1 : -1
+    for (let index = boundary === 'start' ? 0 : cells.length - 1; index !== current; index += step) {
+      const el = cells[index]
+      const candidate = adapter.value.add(date.value, index - current)
+      if (el.hasAttribute('data-disabled') || !isWithinBounds(candidate))
+        continue
+      focusCell(candidate, el, event)
+      return
+    }
+  }
+
   /** Day view: Home / End / PageUp / PageDown, shared with v2 (`useCalendarKeyboardNavigation`). */
   function handleDayShortcut(event: KeyboardEvent) {
     const parentElement = host.parentElement.value
@@ -177,10 +203,6 @@ export function createCellFocusNavigation(
     if (options.disabled)
       return
     const isDayView = adapter.value.unit === 'day'
-    const isWeekKey = event.code === kbd.HOME || event.code === kbd.END
-    // Only the day view has a week to jump within.
-    if (isWeekKey && !isDayView)
-      return
     // Modifier combos on Enter/Space (e.g. Ctrl+Enter) are not handled by the cell —
     // let them bubble so parent listeners can react (e.g. submit a form).
     if ((event.code === kbd.ENTER || event.code === kbd.SPACE_CODE) && (event.ctrlKey || event.metaKey || event.altKey))
@@ -205,7 +227,10 @@ export function createCellFocusNavigation(
         break
       case kbd.HOME:
       case kbd.END:
-        handleDayShortcut(event)
+        if (isDayView)
+          handleDayShortcut(event)
+        else
+          focusPageBoundary(event.code === kbd.HOME ? 'start' : 'end', event)
         break
       case kbd.PAGE_UP:
         if (isDayView)
