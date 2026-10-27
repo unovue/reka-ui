@@ -260,6 +260,8 @@ export interface CreatePopupRootStoreOptions<Payload> {
   setState: (value: boolean, reason?: any, event?: Event, options?: SetStateOptions) => boolean
   /** The Root's base id; the content id (`<baseId>-content`) and a fallback trigger id derive from it. */
   baseId: string
+  /** The popup's current id, when a content `id` prop can replace `<baseId>-content`. */
+  contentId?: MaybeRefOrGetter<string>
   /** Controlled active trigger (the Root's `triggerId` prop); `undefined` = uncontrolled. */
   triggerId?: MaybeRefOrGetter<string | null | undefined>
   /** Active trigger when the Root mounts open (the Root's `defaultTriggerId` prop). */
@@ -331,7 +333,7 @@ export function createPopupRootStore<Payload>(options: CreatePopupRootStoreOptio
   return {
     handle,
     open,
-    contentId: `${options.baseId}-content`,
+    get contentId() { return toValue(options.contentId) ?? `${options.baseId}-content` },
     fallbackTriggerId: `${options.baseId}-trigger`,
     activeTriggerId,
     activeTriggerElement,
@@ -477,7 +479,7 @@ export interface UsePopupHandleTriggerOptions<Payload> {
   handle: MaybeRefOrGetter<PopupHandle<Payload> | undefined>
   /** The enclosing family Root context, when the Trigger renders inside its Root. */
   rootContext: object | null | undefined
-  /** The `id` attribute the trigger was given, if any (tracked across renders). */
+  /** The trigger's own `id` prop, if any. */
   attrId: MaybeRefOrGetter<string | undefined>
   /** The id the trigger generated for itself, if it drew one at setup. */
   generatedId?: string

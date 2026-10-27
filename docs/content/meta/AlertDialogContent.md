@@ -26,6 +26,12 @@
     'description': '<p>Used to force mounting when more control is needed. Useful when\ncontrolling animation with Vue animation libraries.</p>\n',
     'type': 'boolean',
     'required': false
+  },
+  {
+    'name': 'id',
+    'description': '<p>Id of the element, which the trigger\'s <code>aria-controls</code> points at.\nAuto-generated when not provided.</p>\n',
+    'type': 'string',
+    'required': false
   }
 ]" />
 
@@ -73,6 +79,7 @@
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `disableOutsidePointerEvents` | When `true`, hover/focus/click interactions will be disabled on elements outside the `DismissableLayer`. Users will need to click twice on outside elements to interact with them: once to close the `DismissableLayer`, and again to trigger the element. Outside elements are covered by a transparent internal backdrop (`[data-reka-internal-backdrop]`) rendered right below the layer; `<body>` styles are never touched. | `boolean` | No | - |
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
+| `id` | Id of the element, which the trigger's `aria-controls` points at. Auto-generated when not provided. | `string` | No | - |
 
 **Events**
 

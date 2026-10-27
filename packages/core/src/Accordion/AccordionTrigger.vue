@@ -1,12 +1,18 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 
-export interface AccordionTriggerProps extends PrimitiveProps {}
+export interface AccordionTriggerProps extends PrimitiveProps {
+  /**
+   * Id of the element, which the content's `aria-labelledby` points at.
+   * Auto-generated when not provided.
+   */
+  id?: string
+}
 </script>
 
 <script setup lang="ts">
 import { CollapsibleTrigger } from '@/Collapsible'
-import { useForwardElement } from '@/shared'
+import { useForwardElement, usePartId } from '@/shared'
 import { injectAccordionItemContext } from './AccordionItem.vue'
 
 import { injectAccordionRootContext } from './AccordionRoot.vue'
@@ -16,6 +22,8 @@ const props = defineProps<AccordionTriggerProps>()
 
 const rootContext = injectAccordionRootContext()
 const itemContext = injectAccordionItemContext()
+// Rendered on the element; mirrored into the item context for the content's `aria-labelledby`.
+const triggerId = usePartId(() => props.id, itemContext, 'triggerId')
 
 const surface = getAccordionTriggerSurface(rootContext, itemContext)
 
@@ -28,7 +36,7 @@ defineExpose(expose)
     :ref="forwardRef"
     :as="props.as"
     :as-child="props.asChild"
-    v-bind="surface.attrs.value"
+    v-bind="{ ...surface.attrs.value, id: triggerId }"
   >
     <slot />
   </CollapsibleTrigger>

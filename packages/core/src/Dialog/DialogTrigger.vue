@@ -10,11 +10,13 @@ export interface DialogTriggerProps<Payload = unknown> extends PrimitiveProps {
   handle?: DialogHandle<Payload>
   /** Passed to the Root's default slot while this trigger owns the dialog. Requires a `handle`. */
   payload?: Payload
+  /** Id of the element. With a `handle`, also the id the Root's `triggerId` refers to. */
+  id?: string
 }
 </script>
 
 <script setup lang="ts" generic="Payload = unknown">
-import { computed, onBeforeUpdate, shallowRef, useAttrs, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useForwardElement, useId } from '@/shared'
 import { getPopupRootStore, usePopupHandleTrigger } from '@/shared/popupHandle'
@@ -33,17 +35,12 @@ defineExpose(expose)
 // or its Root's) and derives its own open state, so only the trigger that
 // opened the dialog reports `aria-expanded` / `aria-controls`. Only such a
 // trigger draws an id (an extra `useId()` would shift later generated ids);
-// one whose Root gets a `handle` later uses the Root's trigger id. An `id`
-// attribute wins and is tracked across renders.
-const attrs = useAttrs()
-const attrId = shallowRef(attrs.id as string | undefined)
-onBeforeUpdate(() => {
-  attrId.value = attrs.id as string | undefined
-})
+// one whose Root gets a `handle` later uses the Root's trigger id. The `id`
+// prop wins.
 const detached = usePopupHandleTrigger<Payload>({
   handle: () => props.handle,
   rootContext,
-  attrId,
+  attrId: () => props.id,
   generatedId: props.handle || getPopupRootStore(rootContext)?.handle.value ? useId(undefined, 'reka-dialog-trigger') : undefined,
   element: currentElement,
   payload: () => props.payload,
@@ -63,7 +60,7 @@ const detachedTrigger = getDialogTriggerSurface({
 const trigger = rootContext ? getDialogTriggerSurface(rootContext) : detachedTrigger
 const triggerAttrs = computed(() => detached.enabled.value
   ? { ...detachedTrigger.attrs.value, id: detached.id.value }
-  : trigger.attrs.value)
+  : { ...trigger.attrs.value, id: props.id })
 
 // Write this trigger's element into the Root's existing `triggerElement` ref
 // (never replace the ref: with a `handle` it is a writable computed that

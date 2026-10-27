@@ -22,6 +22,12 @@
     'required': false
   },
   {
+    'name': 'id',
+    'description': '<p>Id of the element, which the content\'s <code>aria-labelledby</code> points at. With a\n<code>handle</code>, also the id the Root\'s <code>triggerId</code> refers to. Auto-generated when\nnot provided.</p>\n',
+    'type': 'string',
+    'required': false
+  },
+  {
     'name': 'payload',
     'description': '<p>Passed to the Root\'s default slot while this trigger owns the popover. Requires a <code>handle</code>.</p>\n',
     'type': 'Payload',
@@ -39,6 +45,7 @@
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"button"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `handle` | A handle from `createPopoverHandle()` that connects this trigger to a `PopoverRoot` rendered elsewhere (outside this trigger's tree or portal). | `PopoverHandle<Payload>` | No | - |
+| `id` | Id of the element, which the content's `aria-labelledby` points at. With a `handle`, also the id the Root's `triggerId` refers to. Auto-generated when not provided. | `string` | No | - |
 | `payload` | Passed to the Root's default slot while this trigger owns the popover. Requires a `handle`. | `Payload` | No | - |
 
 </llm-only>
