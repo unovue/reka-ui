@@ -429,3 +429,24 @@ describe('given checkboxGroup in a form', async () => {
     })
   })
 })
+
+describe('given a CheckboxGroup rendered asChild in a form', () => {
+  it('submits its values (the hidden inputs render next to the child)', async () => {
+    const wrapper = mount({
+      components: { CheckboxGroupRoot, CheckboxRoot },
+      template: `
+        <form>
+          <CheckboxGroupRoot name="toppings" :default-value="['cheese', 'ham']" as-child>
+            <div>
+              <CheckboxRoot value="cheese" />
+              <CheckboxRoot value="ham" />
+            </div>
+          </CheckboxGroupRoot>
+        </form>`,
+    }, { attachTo: document.body })
+    await nextTick()
+    const form = wrapper.find('form').element
+    expect([...new FormData(form)]).toEqual([['toppings[0]', 'cheese'], ['toppings[1]', 'ham']])
+    wrapper.unmount()
+  })
+})

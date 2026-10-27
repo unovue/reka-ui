@@ -45,6 +45,12 @@
     "./elements": {
       "import": "./dist/elements.js"
     },
+    "./elements/global": {
+      "types": "./dist/elements/global.d.ts"
+    },
+    "./elements/react": {
+      "types": "./dist/elements/react.d.ts"
+    },
     "./namespaced": {
       "import": "./dist/namespaced/index.mjs"
     },
@@ -450,6 +456,12 @@
       ],
       "elements": [
         "./dist/elements.d.ts"
+      ],
+      "elements/global": [
+        "./dist/elements/global.d.ts"
+      ],
+      "elements/react": [
+        "./dist/elements/react.d.ts"
       ],
       "namespaced": [
         "./dist/namespaced/index.d.mts"

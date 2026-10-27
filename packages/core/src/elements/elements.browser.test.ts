@@ -88,6 +88,40 @@ describe('registration', () => {
     await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
   })
 
+  it('rebinds a part inside a shadow root below an ancestor defined later', async () => {
+    const container = render(`<lateb-collapsible-root><div class="host"></div><lateb-collapsible-content>c</lateb-collapsible-content></lateb-collapsible-root>`)
+    const shadowRoot = container.querySelector('.host')!.attachShadow({ mode: 'open' })
+    shadowRoot.innerHTML = `<latea-collapsible-trigger>T</latea-collapsible-trigger>`
+    const trigger = shadowRoot.querySelector('latea-collapsible-trigger')!
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    defineRekaElements([collapsibleElements], { prefix: 'latea' })
+    await settle()
+    expect(trigger.hasAttribute('aria-expanded')).toBe(false)
+    warn.mockRestore()
+    defineRekaElements([collapsibleElements], { prefix: 'lateb' })
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
+  })
+
+  it('binds a nested trigger to the nearest root of its family', async () => {
+    defineRekaElements([collapsibleElements], { prefix: 'nest' })
+    render(`
+      <nest-collapsible-root default-open>
+        <nest-collapsible-trigger>O</nest-collapsible-trigger>
+        <nest-collapsible-content class="outer">
+          <nest-collapsible-root>
+            <nest-collapsible-trigger id="inner-trigger">I</nest-collapsible-trigger>
+            <nest-collapsible-content class="inner">inner</nest-collapsible-content>
+          </nest-collapsible-root>
+        </nest-collapsible-content>
+      </nest-collapsible-root>`)
+    const trigger = query('#inner-trigger')
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
+    await userEvent.click(trigger)
+    await vi.waitFor(() => expect(query('.inner').getAttribute('data-state')).toBe('open'))
+    expect(query('.outer').getAttribute('data-state')).toBe('open')
+    expect(trigger.getAttribute('aria-controls')).toBe(query('.inner').id)
+  })
+
   it('keeps properties set before the element was defined', async () => {
     const el = document.createElement('late-switch-root') as SwitchElement
     el.setAttribute('aria-label', 'Wi-Fi')

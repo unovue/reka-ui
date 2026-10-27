@@ -115,7 +115,8 @@ export function getTypesVersions(exports: Record<string, unknown>): { '*': Recor
   for (const [key, value] of Object.entries(exports)) {
     if (key === '.' || key === './package.json')
       continue
-    const target = (value as { import: string | { types: string } }).import
+    // Types-only entries (`{ types }`) have no `import` condition.
+    const target = (value as { import?: string | { types: string } }).import ?? value as { types: string }
     const types = typeof target === 'string' ? target.replace(JS_EXTENSION, '.d.$1ts') : target.types
     paths[key.slice(2)] = [types]
   }

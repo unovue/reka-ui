@@ -45,6 +45,12 @@ export default defineConfig({
       },
       {
         extends: true,
+        // `react18` / `react-dom18` are npm aliases of React 18. pnpm satisfies
+        // `react-dom18`'s `react` peer with the package's own `react` devDependency,
+        // which is React 19, so on disk React DOM 18 is linked to React 19. These
+        // aliases apply to every import Vite resolves, the ones inside
+        // `react-dom18` (and its pre-bundle) included, so its `react` becomes
+        // `react18` too and both halves are React 18.
         resolve: {
           alias: [
             { find: /^react$/, replacement: 'react18' },

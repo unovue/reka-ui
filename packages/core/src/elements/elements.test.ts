@@ -175,6 +175,12 @@ describe.skipIf(!hasDist)('built `reka-ui/elements` entry (dist)', () => {
     const pkg = JSON.parse(readFileSync(join(PACKAGE_DIR, 'package.json'), 'utf8'))
     expect(pkg.exports['./elements'].import).toBe('./dist/elements.js')
     expect(existsSync(join(PACKAGE_DIR, 'dist/elements.d.ts'))).toBe(true)
+    // Types-only subpaths, augmenting global / React types on request.
+    for (const name of ['global', 'react']) {
+      const types = pkg.exports[`./elements/${name}`].types
+      expect(types).toBe(`./dist/elements/${name}.d.ts`)
+      expect(readFileSync(join(PACKAGE_DIR, types), 'utf8')).toContain(`from '../elements.js'`)
+    }
 
     const built = await import(/* @vite-ignore */ pathToFileURL(ELEMENTS_DIST).href)
     expect(Object.keys(built).sort()).toEqual(Object.keys(source).sort())

@@ -2,7 +2,8 @@ import type { App, Component, VNode } from 'vue'
 import type { ContextProviderEvent, ContextRequestEvent } from './context'
 import type { ElementEventOptions } from './events'
 import type { PartMeta } from './meta'
-import { camelize, defineComponent, h, queuePostFlushCb, shallowReactive, toHandlerKey } from 'vue'
+import type { RootNode } from '@/shared/getRootNode'
+import { camelize, defineComponent, h, nextTick, queuePostFlushCb, shallowReactive, toHandlerKey } from 'vue'
 import { containsComposed, getRootNode, resolveTeleportTarget } from '@/shared/getRootNode'
 import {
   getRegistry,
@@ -12,7 +13,7 @@ import {
   requestParent,
 } from './context'
 import { dispatchElementEvent } from './events'
-import { getRenderer, HOST_PROP, HOST_TAG, HostBinding } from './host'
+import { getRenderer, HOST_PROP, HOST_TAG, HostBinding, hostsAwayFrom } from './host'
 import { parseAttribute } from './meta'
 import { ensureRootSetup, UNMOUNTED_ATTR } from './styles'
 
@@ -39,6 +40,11 @@ export const REKA_ELEMENT: unique symbol = Symbol.for('reka-ui.element') as neve
 const REFLECTED_PROPS = new Set(['disabled'])
 /** Attributes an element adds while its part is not rendered. */
 const UNMOUNTED_STATE_ATTRS = ['inert', 'hidden']
+/**
+ * Roots of parts that open over the page: an open overlay is not reopened by
+ * moving it, like a remounted Vue component starts closed.
+ */
+const OVERLAY_ROOTS = new Set(['AlertDialogRoot', 'DialogRoot', 'DrawerRoot', 'HoverCardRoot', 'PopoverRoot', 'TooltipRoot'])
 const UPDATE_EMIT = /^update:(.+)$/
 
 const BaseElement = (typeof HTMLElement === 'undefined' ? class {} : HTMLElement) as typeof HTMLElement
@@ -54,6 +60,10 @@ function warn(message: string) {
 /** The uncontrolled-default prop of a model: `modelValue` → `defaultValue`, `open` → `defaultOpen`. */
 function defaultPropOf(model: string) {
   return model === 'modelValue' ? 'defaultValue' : `default${model[0].toUpperCase()}${model.slice(1)}`
+}
+
+function isMissingInjection(error: unknown) {
+  return error instanceof Error && error.message.startsWith('Injection `')
 }
 
 function modelOfDefault(name: string): string | undefined {
@@ -108,7 +118,7 @@ export class RekaElement extends BaseElement {
   private readonly _part: ResolvedPart
   private readonly _props = shallowReactive<Record<string, unknown>>({})
   /** State the element adds to the props: a disabled `<fieldset>` around it. */
-  private readonly _extra = shallowReactive({ fieldsetDisabled: false })
+  private readonly _extra = shallowReactive<{ fieldsetDisabled: boolean, rootNode?: RootNode }>({ fieldsetDisabled: false })
   private readonly _listeners: Record<string, (...args: unknown[]) => void> = {}
   /**
    * Last value of each uncontrolled model (`update:modelValue`, `update:open`):
@@ -166,6 +176,11 @@ export class RekaElement extends BaseElement {
     // Moved by its own part (a `Teleport`, a wrapper): same parent, nothing to do.
     if (this._binding.moving)
       return
+    // Moved by the consumer: portals (here, or moved away from here) follow to the
+    // new document or shadow root.
+    this._checkRootNode()
+    for (const host of hostsAwayFrom(this))
+      (host as RekaElement)._checkRootNode?.()
     if (this._state !== 'idle') {
       // Moved by the consumer: remount if it now sits under another parent.
       this._resolveParent()
@@ -183,19 +198,32 @@ export class RekaElement extends BaseElement {
   disconnectedCallback() {
     // Moves (a Teleport, a reorder) disconnect and reconnect within the same task.
     queueMicrotask(() => {
-      if (!this.isConnected)
-        this._teardown()
+      if (this.isConnected)
+        return
+      // A portal whose target went away while its home moved: the move retargets
+      // it in the next render.
+      if (this._binding.away && this._binding.homeNode.isConnected) {
+        void nextTick(() => {
+          if (!this.isConnected)
+            this._teardown()
+        })
+        return
+      }
+      this._teardown()
     })
   }
 
   static get observedAttributes(): string[] {
-    return this.rekaPart?.meta.observedAttributes ?? []
+    // `hidden` / `inert`: a consumer write takes them over from the unrendered state.
+    return [...(this.rekaPart?.meta.observedAttributes ?? []), ...UNMOUNTED_STATE_ATTRS]
   }
 
   attributeChangedCallback(name: string, _previous: string | null, value: string | null) {
     // The part writing its own attributes (`disabled`, `id`, …) is not consumer input.
     if (this._binding.writing)
       return
+    if (UNMOUNTED_STATE_ATTRS.includes(name))
+      this._consumerStateWrite(name)
     this._binding.consumerWrote(name, value)
     if (this._reflecting)
       return
@@ -229,6 +257,16 @@ export class RekaElement extends BaseElement {
   /** @internal */
   _getProp(name: string): unknown {
     return this._props[name]
+  }
+
+  /**
+   * A prop read as a property. A reflected one (`disabled`) is its attribute, like
+   * a native control's: the consumer's setting, not the part's effective state
+   * (that is `data-disabled` / `aria-disabled`).
+   * @internal
+   */
+  _getProperty(name: string): unknown {
+    return REFLECTED_PROPS.has(name) ? this.hasAttribute(name) : this._props[name]
   }
 
   /** @internal */
@@ -285,8 +323,20 @@ export class RekaElement extends BaseElement {
     this._attach(parent)
   }
 
+  /**
+   * The root node the element sits in (its home, while a Teleport has it away).
+   * Read by portals' render, so they retarget when it changes.
+   * @internal
+   */
+  _checkRootNode() {
+    const root = getRootNode(this._binding.homeNode)
+    if (this._extra.rootNode !== root)
+      this._extra.rootNode = root
+  }
+
   /** @internal */
   _mount() {
+    this._checkRootNode()
     const app = getRenderer().createApp(defineComponent({
       name: this._part.name,
       setup: () => () => this._render(),
@@ -298,33 +348,38 @@ export class RekaElement extends BaseElement {
     const provides = parent?._binding.provides
     if (provides)
       Object.setPrototypeOf(app._context.provides, provides)
-    // Without a parent, a part that needs one (a trigger outside its root) fails to
-    // set up: it waits for a parent instead of throwing.
+    // A part that cannot find its family's context fails to set up: without a
+    // parent (a trigger outside its root) it waits for one; under a parent from
+    // another copy of the library (contexts are per copy) it stays unrendered.
+    // Either way it warns once instead of throwing.
     let failed = false
-    if (!parent) {
-      app.config.errorHandler = () => {
+    app.config.errorHandler = (error) => {
+      if (!parent || isMissingInjection(error)) {
         failed = true
+        return
       }
-      app.config.warnHandler = (message, _instance, trace) => {
-        if (!message.startsWith('injection'))
-          console.warn(`[Vue warn]: ${message}${trace}`)
-      }
+      console.error(error)
+    }
+    app.config.warnHandler = (message, _instance, trace) => {
+      if (!message.startsWith('injection'))
+        console.warn(`[Vue warn]: ${message}${trace}`)
     }
     this._app = app
     this._state = 'mounted'
     app.mount(this._binding.container)
-    if (parent)
-      return
     app.config.errorHandler = undefined
     app.config.warnHandler = undefined
-    if (failed) {
-      this._unmountApp()
-      this._state = 'waiting'
-      if (!this._warnedOrphan) {
-        this._warnedOrphan = true
-        warn(`<${this.localName}> cannot render outside its family's root element. It renders once it is placed (or its ancestors are defined) under one.`)
-      }
-    }
+    if (!failed)
+      return
+    this._unmountApp()
+    this._state = 'waiting'
+    if (this._warnedOrphan)
+      return
+    this._warnedOrphan = true
+    if (parent)
+      warn(`<${this.localName}> cannot find its family's context in <${parent.localName}>. Elements share context within one copy of reka-ui: are both defined by the same copy?`)
+    else
+      warn(`<${this.localName}> cannot render outside its family's root element. It renders once it is placed (or its ancestors are defined) under one.`)
   }
 
   /** @internal */
@@ -390,8 +445,18 @@ export class RekaElement extends BaseElement {
   /** Remembers an uncontrolled model's value for the next mount. */
   private _track(emit: string, value: unknown) {
     const model = UPDATE_EMIT.exec(emit)?.[1]
+    if (model === 'open' && OVERLAY_ROOTS.has(this._part.name))
+      return
     if (model && this._props[model] === undefined)
       this._carried[model] = value
+  }
+
+  /** The consumer wrote `hidden` / `inert`: it is theirs, not the unrendered state's. */
+  private _consumerStateWrite(name: string) {
+    const current = this.getAttribute(UNMOUNTED_ATTR)
+    if (current === null || !current.split(' ').includes(name))
+      return
+    this.setAttribute(UNMOUNTED_ATTR, current.split(' ').filter(added => added !== name).join(' '))
   }
 
   /** `data-reka-unmounted`, plus `inert` and `hidden` unless the consumer set them. */
@@ -452,7 +517,7 @@ export class RekaElement extends BaseElement {
   private _portalTarget(to: unknown): unknown {
     if (to && typeof to !== 'string')
       return to
-    const root = getRootNode(this._binding.homeNode)
+    const root = this._extra.rootNode ?? getRootNode(this._binding.homeNode)
     const target = resolveTeleportTarget(to as string | undefined, root)
     if (typeof target !== 'string')
       return target
@@ -502,6 +567,9 @@ export class RekaElement extends BaseElement {
       for (const child of children) {
         if (child._rekaParent !== this || child._state !== 'mounted')
           continue
+        // The part around it went away, as a Vue subtree would: it starts over
+        // when it renders again. (Moves by the consumer keep the state.)
+        child._carried = {}
         child._unmountApp()
         child._state = 'waiting'
         if (this._isReady())

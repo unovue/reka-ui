@@ -127,7 +127,7 @@ describe('moves and reconnects', () => {
     expect(el.getAttribute('aria-checked')).toBe('true')
   })
 
-  it('keeps uncontrolled state across its parent part re-rendering', async () => {
+  it('starts over when its parent part re-renders, like a Vue subtree', async () => {
     render(`
       <reka-collapsible-root default-open>
         <reka-collapsible-trigger>T</reka-collapsible-trigger>
@@ -140,11 +140,93 @@ describe('moves and reconnects', () => {
     await userEvent.click(trigger)
     await vi.waitFor(() => expect(el.hasAttribute('data-reka-unmounted')).toBe(true))
     await userEvent.click(trigger)
-    await vi.waitFor(() => expect(el.getAttribute('aria-checked')).toBe('true'))
+    await vi.waitFor(() => expect(el.getAttribute('role')).toBe('switch'))
+    expect(el.getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('does not reopen an overlay that was open when moved', async () => {
+    render(`<div id="dest"></div>
+      <reka-popover-root>
+        <reka-popover-trigger>P</reka-popover-trigger>
+        <reka-popover-portal><reka-popover-content>pop</reka-popover-content></reka-popover-portal>
+      </reka-popover-root>`)
+    const trigger = query('reka-popover-trigger')
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
+    await userEvent.click(trigger)
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('true'))
+    const root = query('reka-popover-root')
+    root.remove()
+    await settle()
+    query('#dest').append(root)
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
+  })
+
+  it('a popover open in a tab that is switched away is closed when the tab comes back', async () => {
+    render(`
+      <reka-tabs-root default-value="a">
+        <reka-tabs-list aria-label="t"><reka-tabs-trigger value="a">A</reka-tabs-trigger><reka-tabs-trigger value="b">B</reka-tabs-trigger></reka-tabs-list>
+        <reka-tabs-content value="a">
+          <reka-popover-root>
+            <reka-popover-trigger>P</reka-popover-trigger>
+            <reka-popover-portal><reka-popover-content>pop</reka-popover-content></reka-popover-portal>
+          </reka-popover-root>
+        </reka-tabs-content>
+        <reka-tabs-content value="b">b</reka-tabs-content>
+      </reka-tabs-root>`)
+    const tabs = query('reka-tabs-root') as HTMLElement & { modelValue?: string }
+    const trigger = query('reka-popover-trigger')
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
+    await userEvent.click(trigger)
+    await vi.waitFor(() => expect(query('reka-popover-content').getAttribute('data-state')).toBe('open'))
+    tabs.modelValue = 'b'
+    await vi.waitFor(() => expect(query('reka-tabs-content[value="a"]').hasAttribute('data-reka-unmounted')).toBe(true))
+    tabs.modelValue = 'a'
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).not.toBeNull())
+    await settle()
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
   })
 })
 
 describe('forms', () => {
+  it('a required, unchecked checkbox makes its form invalid', async () => {
+    const form = render(`<form><reka-checkbox-root aria-label="Terms" name="terms" required ${SW}></reka-checkbox-root></form>`).querySelector('form')!
+    const el = query('reka-checkbox-root')
+    await vi.waitFor(() => expect(el.getAttribute('role')).toBe('checkbox'))
+    await settle()
+    expect(form.checkValidity()).toBe(false)
+    expect(el.matches(':invalid')).toBe(true)
+    await userEvent.click(el)
+    await settle()
+    expect(form.checkValidity()).toBe(true)
+    expect(el.matches(':valid')).toBe(true)
+  })
+
+  it('a checkbox group submits its values through the group element, named like the Vue component\'s', async () => {
+    const form = render(`
+      <form>
+        <reka-checkbox-group-root name="t" aria-label="Toppings">
+          <reka-checkbox-root value="cheese" aria-label="Cheese" ${SW}></reka-checkbox-root>
+          <reka-checkbox-root value="ham" aria-label="Ham" ${SW}></reka-checkbox-root>
+        </reka-checkbox-group-root>
+      </form>`).querySelector('form')!
+    const [cheese, ham] = document.querySelectorAll<HTMLElement>('reka-checkbox-root')
+    await vi.waitFor(() => expect(ham.getAttribute('role')).toBe('checkbox'))
+    await userEvent.click(cheese)
+    await userEvent.click(ham)
+    await settle()
+    expect([...new FormData(form)]).toEqual([['t[0]', 'cheese'], ['t[1]', 'ham']])
+  })
+
+  it('leaving a disabled fieldset re-enables a switch', async () => {
+    const c = render(`<form><fieldset disabled><reka-switch-root aria-label="x" name="wifi" ${SW}></reka-switch-root></fieldset></form>`)
+    const el = query('reka-switch-root')
+    await vi.waitFor(() => expect(el.getAttribute('aria-disabled')).toBe('true'))
+    c.querySelector('fieldset')!.disabled = false
+    await vi.waitFor(() => expect(el.getAttribute('aria-disabled')).toBeNull())
+    await userEvent.click(el)
+    expect(el.getAttribute('aria-checked')).toBe('true')
+  })
+
   it('moving a switch to another form moves its value with it', async () => {
     render(`<form id="f1"><reka-switch-root aria-label="x" name="wifi" default-value ${SW}></reka-switch-root></form><form id="f2"></form>`)
     const el = query('reka-switch-root')
@@ -187,6 +269,68 @@ describe('forms', () => {
 
     await userEvent.click(query('reka-collapsible-trigger'))
     await vi.waitFor(() => expect(new FormData(form).getAll('secret')).toEqual(['visible', 'hidden']))
+  })
+})
+
+describe('`hidden` / `inert` while not rendered', () => {
+  const COLLAPSIBLE = (open: boolean, contentAttrs = '') => `
+    <reka-collapsible-root${open ? ' default-open' : ''}>
+      <reka-collapsible-trigger>T</reka-collapsible-trigger>
+      <reka-collapsible-content${contentAttrs}>Body</reka-collapsible-content>
+    </reka-collapsible-root>`
+
+  it('keeps a `hidden` the consumer adds while the part is closed', async () => {
+    render(COLLAPSIBLE(false))
+    const trigger = query('reka-collapsible-trigger')
+    const content = query('reka-collapsible-content')
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
+    content.setAttribute('hidden', '')
+    content.setAttribute('inert', '')
+    await userEvent.click(trigger)
+    await vi.waitFor(() => expect(content.getAttribute('data-state')).toBe('open'))
+    expect(content.hasAttribute('hidden')).toBe(true)
+    expect(content.hasAttribute('inert')).toBe(true)
+  })
+
+  it('keeps a consumer `hidden` set before the part closed', async () => {
+    render(COLLAPSIBLE(true, ' hidden'))
+    const trigger = query('reka-collapsible-trigger')
+    const content = query('reka-collapsible-content')
+    await vi.waitFor(() => expect(content.getAttribute('data-state')).toBe('open'))
+    await userEvent.click(trigger, { force: true })
+    await vi.waitFor(() => expect(content.hasAttribute('data-reka-unmounted')).toBe(true))
+    await userEvent.click(trigger, { force: true })
+    await vi.waitFor(() => expect(content.getAttribute('data-state')).toBe('open'))
+    expect(content.hasAttribute('hidden')).toBe(true)
+  })
+})
+
+describe('disabled through context', () => {
+  it('a trigger disabled through its root (no host attribute) is not focusable or clickable', async () => {
+    render(`
+      <reka-accordion-root type="single" disabled>
+        <reka-accordion-item value="a"><reka-accordion-header><reka-accordion-trigger>A</reka-accordion-trigger></reka-accordion-header><reka-accordion-content>a</reka-accordion-content></reka-accordion-item>
+      </reka-accordion-root>`)
+    const trigger = query('reka-accordion-trigger')
+    await vi.waitFor(() => expect(trigger.hasAttribute('data-disabled')).toBe(true))
+    expect(trigger.hasAttribute('disabled')).toBe(false)
+    expect(trigger.getAttribute('aria-disabled')).toBe('true')
+    expect(trigger.hasAttribute('tabindex')).toBe(false)
+    trigger.click()
+    await settle()
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('`el.disabled` is the consumer\'s attribute, as a boolean', async () => {
+    render(`<reka-switch-root aria-label="x" ${SW}></reka-switch-root>`)
+    const el = query<SwitchElement>('reka-switch-root')
+    await vi.waitFor(() => expect(el.getAttribute('role')).toBe('switch'))
+    expect(el.disabled).toBe(false)
+    el.setAttribute('disabled', '')
+    expect(el.disabled).toBe(true)
+    el.disabled = false
+    expect(el.hasAttribute('disabled')).toBe(false)
+    await vi.waitFor(() => expect(el.hasAttribute('data-disabled')).toBe(false))
   })
 })
 

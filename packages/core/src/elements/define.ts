@@ -74,7 +74,7 @@ function createElementClass(part: ResolvedPart): typeof RekaElement {
       configurable: true,
       enumerable: true,
       get(this: RekaElement) {
-        return this._getProp(name)
+        return this._getProperty(name)
       },
       set(this: RekaElement, value: unknown) {
         this._setProperty(name, value)

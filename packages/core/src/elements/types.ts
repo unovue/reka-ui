@@ -156,15 +156,11 @@ interface RekaElementParts {
  * `document.querySelector('reka-switch-root')` / `createElement()` with:
  *
  * ```ts
- * import type { RekaElementTagNameMap } from 'reka-ui/elements'
- *
- * declare global {
- *   interface HTMLElementTagNameMap extends RekaElementTagNameMap {}
- * }
+ * /// <reference types="reka-ui/elements/global" />
  * ```
  *
- * (Not declared by the package itself: every entry shares one declaration chunk,
- * so it would reach every `reka-ui` user, elements or not.)
+ * (A separate, types-only entry: every JavaScript entry shares one declaration
+ * chunk, so a global declared there would reach every `reka-ui` user.)
  */
 export type RekaElementTagNameMap = {
   [Tag in keyof RekaElementParts]: RekaElementParts[Tag]['element']
@@ -175,9 +171,12 @@ export type RekaElementTagNameMap = {
  * own attributes type; the element's props replace the ones it shares with it
  * (`defaultValue`, `dir`, …).
  *
+ * React 19 typings for these are in `reka-ui/elements/react`
+ * (`/// <reference types="reka-ui/elements/react" />`).
+ *
  * @example
  * ```ts
- * // React 19
+ * // React 19, by hand
  * import type { HTMLAttributes, RefAttributes } from 'react'
  * import type { RekaIntrinsicElements } from 'reka-ui/elements'
  *

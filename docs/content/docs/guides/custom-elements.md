@@ -177,7 +177,7 @@ accordion.modelValue = ['a', 'b']
 collapsible.open = false // controlled and closed
 ```
 
-Elements do not reflect props back to attributes, with one exception: `el.disabled` sets or removes the `disabled` attribute, which the browser reads (`:disabled`, `<fieldset disabled>`). Read the current state from the `data-*` and ARIA attributes the part renders, or from events.
+Elements do not reflect props back to attributes, with one exception: `disabled` reflects both ways, like a native control's. `el.disabled = true` sets the attribute, and `el.disabled` is `true` whenever the attribute is present. It is your setting only. Whether the part is actually disabled (by its own prop, a disabled root, or a `<fieldset disabled>`) shows in `data-disabled` and `aria-disabled`. Read other state from the `data-*` and ARIA attributes the part renders, or from events.
 
 `id`, `dir` and `hidden` are native `HTMLElement` properties, so they stay attribute-driven.
 
@@ -221,7 +221,12 @@ switchRoot.addEventListener('update-model-value', (event) => {
 })
 ```
 
-**Uncontrolled state is kept by the element.** Removed from the page and added back, or unmounted with its parent part (a closed collapsible's content), an element comes back with the value it had, not its default. A form reset brings it back to its default.
+**Uncontrolled state is kept when you move the element.** Removed from the page and added back, or moved elsewhere, an element comes back with the value it had, not its default. There are two exceptions, both matching Vue:
+
+- An element unmounted with its parent part (a switch in a collapsible's content that closes) starts over when that part renders again.
+- An open overlay (a dialog or popover root) does not reopen after a move.
+
+A form reset brings an element back to its default.
 
 ## The element is the part
 
@@ -238,15 +243,15 @@ reka-accordion-content[data-state='closed'] { … }
 - Custom elements are `display: inline` by default. Set `display` for parts that need a box (a switch, a dialog content).
 - Your own attributes, classes and styles are kept. Classes and styles merge with the part's. An attribute the part renders (`data-state`, `aria-expanded`, …) belongs to the part while it is rendered: if you change it meanwhile, the part's value stays, and yours is what remains when the part unmounts. The `role`, `tabindex` and `aria-level` added for native semantics (above) give way to yours.
 - Ids work the same way. A part that takes an `id` prop (Switch, Checkbox) uses yours. A part whose id other parts point to (a dialog title, a collapsible content) uses its own while rendered, and gives yours back when it unmounts.
-- A copy made with `cloneNode()` starts from your attributes, not from the rendered state of the element it was copied from.
+- A copy made with `cloneNode()` starts from your attributes, not from the rendered state of the element it was copied from. While mounted, an element carries a `data-reka-owned` attribute that makes this work. It is internal: don't style or script against it.
 
-Portals move the element. `<reka-dialog-portal>` and what it contains are moved to `<body>` while mounted, and moved back when they unmount. Inside a shadow root they move to that shadow root instead, so your shadow styles still apply. Set `to` to choose another target: a selector is looked up in the element's shadow root first, then in the document.
+Portals move the element. `<reka-dialog-portal>` and what it contains are moved to `<body>` while mounted, and moved back when they unmount. Inside a shadow root they move to that shadow root instead, so your shadow styles still apply. Set `to` to choose another target: a selector is looked up in the element's shadow root first, then in the document. Move the root into or out of a shadow root and the portal follows it there.
 
 Each element runs its own small Vue app, mounted when the element is connected. The portal's target is resolved from where the element sits before that first render, so a `force-mount` portal is already in place once the element is connected, with no extra render or scheduler turn. A `to` selector that matches nothing yet is resolved once the portal mounts, as in Vue.
 
 ### Parts that are not rendered
 
-A part that is not rendered (closed content, an inactive tab panel) gets `data-reka-unmounted`, `inert` and `hidden`, and Reka hides it with `display: none`.
+A part that is not rendered (closed content, an inactive tab panel) gets `data-reka-unmounted`, `inert` and `hidden`, and Reka hides it with `display: none`. A `hidden` or `inert` you set yourself is yours: Reka doesn't add or remove it, even if you set it while the part is closed.
 
 This is the one place elements differ from the Vue components. In Vue, closed content is not in the DOM at all. As an element, its children are yours, so they stay where you put them, hidden and inert. Fields inside are left out of their form's data, as they would be in Vue. Reka elements inside unmount, and mount again when the part renders.
 
@@ -258,6 +263,8 @@ Parts with a `name` (Switch, Checkbox, Checkbox group, Toggle) are [form-associa
 
 - they submit their value with their form, wherever you move them;
 - `<label for>` labels them, `<fieldset disabled>` disables them, and resetting the form resets them;
+- they are validated with it: a `required` checkbox left unchecked makes the form invalid, and matches `:invalid`;
+- they submit the same names as the Vue components (a checkbox group named `toppings` submits `toppings[0]`, `toppings[1]`, …);
 - nothing is added next to them: the hidden inputs the Vue components render are not in the document.
 
 Form participation needs `ElementInternals` (Safari 16.4 and later). Without it, the elements work but do not submit.
@@ -274,6 +281,7 @@ Context passes through the DOM the way it passes through components in Vue. An e
 - Nesting must follow the component structure. A part has to be a DOM descendant of the parts it depends on, though other elements may sit in between.
 - Moved under another root, an element remounts there.
 - Context crosses shadow roots: an element inside a shadow root finds the Reka element hosting it.
+- Context is shared within one copy of `reka-ui`. Elements from two copies on one page nest freely (a switch from one inside a collapsible from the other), but a part can't use another copy's family context (a trigger from one copy inside a dialog root from the other). It stays unrendered, with a warning in development.
 
 ## Shadow DOM
 
@@ -292,18 +300,16 @@ You can also place Reka elements inside your own components' shadow roots. Paren
 
 ## TypeScript
 
-Element types for the default-prefixed tags are opt-in:
+Element types for the default-prefixed tags are opt-in, through a types-only entry:
 
 ```ts
 // reka-elements.d.ts
-import type { RekaElementTagNameMap } from 'reka-ui/elements'
-
-declare global {
-  interface HTMLElementTagNameMap extends RekaElementTagNameMap {}
-}
+/// <reference types="reka-ui/elements/global" />
 ```
 
 `document.querySelector('reka-switch-root')` is then typed with the switch's props as properties, and `addEventListener('update-model-value', …)` with the event's `detail`.
+
+`reka-ui/elements/global` has no JavaScript: reference it from a `.d.ts` file or with `import type {} from 'reka-ui/elements/global'`, not with a runtime `import`. With a custom prefix, declare your tags from `RekaElementTagNameMap` yourself.
 
 ## React
 
@@ -332,15 +338,10 @@ export function AirplaneMode() {
 
 ```ts
 // reka-elements.d.ts
-import type { HTMLAttributes, RefAttributes } from 'react'
-import type { RekaIntrinsicElements } from 'reka-ui/elements'
-
-declare module 'react' {
-  namespace JSX {
-    interface IntrinsicElements extends RekaIntrinsicElements<HTMLAttributes<HTMLElement> & RefAttributes<HTMLElement>> {}
-  }
-}
+/// <reference types="reka-ui/elements/react" />
 ```
+
+For another JSX framework, or a custom prefix, build the declarations from `RekaIntrinsicElements<YourAttributes>`.
 
 React 18 passes everything as string attributes and does not listen to custom events. Use a ref:
 

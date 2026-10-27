@@ -1,5 +1,6 @@
 import type { ComponentInternalInstance, ElementNamespace, Renderer } from 'vue'
 import { createRenderer, nodeOps, normalizeClass, normalizeStyle, patchProp } from 'vue'
+import { containsComposed } from '@/shared/getRootNode'
 
 /**
  * Vnode type of the placeholder each element's Vue tree renders in place of the
@@ -80,6 +81,16 @@ const containers = new WeakMap<Node, HostBinding>()
 /** Bindings whose element currently sits away from its home position (teleported or wrapped). */
 const awayBindings = new Set<HostBinding>()
 
+/** Hosts a Teleport moved away whose home position is inside `node`. */
+export function hostsAwayFrom(node: Node): HTMLElement[] {
+  const hosts: HTMLElement[] = []
+  for (const binding of awayBindings) {
+    if (containsComposed(node, binding.homeNode))
+      hosts.push(binding.el)
+  }
+  return hosts
+}
+
 let attributeObserver: MutationObserver | undefined
 
 /** Consumer writes to attributes the part owns but the element does not observe (`id`, `role`, …). */
@@ -124,6 +135,28 @@ function toAttributeValue(name: string, value: unknown): string | null {
   if (BOOLEAN_ATTRS.has(name))
     return value === false ? null : ''
   return String(value)
+}
+
+const VALIDITY_FLAGS = [
+  'badInput',
+  'customError',
+  'patternMismatch',
+  'rangeOverflow',
+  'rangeUnderflow',
+  'stepMismatch',
+  'tooLong',
+  'tooShort',
+  'typeMismatch',
+  'valueMissing',
+] as const
+
+function copyValidity(validity: ValidityState): ValidityStateFlags {
+  const flags: ValidityStateFlags = {}
+  for (const flag of VALIDITY_FLAGS) {
+    if (validity[flag])
+      flags[flag] = true
+  }
+  return flags
 }
 
 /** The entries a form field contributes to its form's data set. */
@@ -315,6 +348,7 @@ export class HostBinding {
     this.strip()
     this.goHome()
     this.internals?.setFormValue(null)
+    this.internals?.setValidity({})
   }
 
   /** Called by the renderer for every prop the part's tree sets on the host. */
@@ -453,13 +487,22 @@ export class HostBinding {
     const internals = this.internals!
     const data = new FormData()
     let count = 0
-    for (const field of this.container.querySelectorAll('input, select, textarea')) {
+    let invalid: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | undefined
+    for (const field of this.container.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea')) {
       for (const [name, value] of fieldEntries(field)) {
         data.append(name, value)
         count++
       }
+      if (!invalid && field.willValidate && !field.validity.valid)
+        invalid = field
     }
     internals.setFormValue(count ? data : null, this.lifecycle.formState?.())
+    // The hidden fields' constraints (`required`, …) are the element's: the form
+    // checks them through the element, as it checks the fields in a Vue app.
+    if (invalid)
+      internals.setValidity(copyValidity(invalid.validity), invalid.validationMessage || 'Invalid value')
+    else
+      internals.setValidity({})
   }
 
   private write(fn: () => void) {

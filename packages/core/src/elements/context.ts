@@ -105,10 +105,12 @@ export function requestParent<T>(el: Element): T | null {
  * it is already live, so it resolved its parent (or found none) before `el` was
  * upgraded. Elements upgrade in tree order, so this is false on the common path.
  */
-export function hasLiveDescendants(el: Element): boolean {
+export function hasLiveDescendants(el: Element | ShadowRoot): boolean {
   const registry = getRegistry()
+  // Shadow-including: an element inside an (open) shadow root below `el` asked
+  // through it too.
   for (const node of el.querySelectorAll('*')) {
-    if (registry.live.has(node))
+    if (registry.live.has(node) || (node.shadowRoot && hasLiveDescendants(node.shadowRoot)))
       return true
   }
   return false

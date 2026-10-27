@@ -187,8 +187,8 @@ describe('force-mounted portals', () => {
 })
 
 describe('inside another shadow root', () => {
-  function inShadowRoot(html: string) {
-    const shadowRoot = render('<div id="app"></div>').querySelector('#app')!.attachShadow({ mode: 'open' })
+  function inShadowRoot(html: string, host = render('<div id="app"></div>').querySelector<HTMLElement>('#app')!) {
+    const shadowRoot = host.attachShadow({ mode: 'open' })
     shadowRoot.innerHTML = html
     const get = <E extends Element = HTMLElement>(selector: string) => shadowRoot.querySelector<E>(selector)!
     const active = () => {
@@ -247,5 +247,31 @@ describe('inside another shadow root', () => {
     const { shadowRoot, get } = inShadowRoot(FORCED)
     expect(get('reka-dialog-portal').parentNode).toBe(shadowRoot)
     expect(document.body.querySelector(':scope > reka-dialog-portal')).toBeNull()
+  })
+
+  it('portals into the shadow root a dialog is moved into', async () => {
+    const container = render(`<div id="app"></div><div id="staging">${DIALOG}</div>`)
+    const shadowRoot = container.querySelector('#app')!.attachShadow({ mode: 'open' })
+    const trigger = query('reka-dialog-trigger')
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-haspopup')).toBe('dialog'))
+    shadowRoot.append(query('reka-dialog-root'))
+    await settle()
+    await userEvent.click(trigger)
+    const content = shadowRoot.querySelector('reka-dialog-content')!
+    await vi.waitFor(() => expect(content.getAttribute('data-state')).toBe('open'))
+    expect(content.closest('reka-dialog-portal')!.parentNode).toBe(shadowRoot)
+  })
+
+  it('portals into the body a dialog moved out of a shadow root that is then removed', async () => {
+    const container = render(`<div id="app"></div><div id="dest"></div>`)
+    const { shadowRoot, get } = inShadowRoot(DIALOG, container.querySelector<HTMLElement>('#app')!)
+    const trigger = get('reka-dialog-trigger')
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-haspopup')).toBe('dialog'))
+    container.querySelector('#dest')!.append(shadowRoot.querySelector('reka-dialog-root')!)
+    shadowRoot.host.remove()
+    await settle()
+    await userEvent.click(trigger)
+    await vi.waitFor(() => expect(document.querySelector('reka-dialog-content')?.getAttribute('data-state')).toBe('open'))
+    expect(document.querySelector('reka-dialog-portal')!.parentNode).toBe(document.body)
   })
 })
