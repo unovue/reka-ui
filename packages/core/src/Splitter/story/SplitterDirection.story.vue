@@ -9,7 +9,7 @@ const direction = ref<DataOrientation>('horizontal')
 <template>
   <Story
     title="Splitter/Direction"
-    :layout="{ type: 'single', width: '100%', iframe: false }"
+    :layout="{ type: 'single', iframe: false }"
   >
     <Variant title="default">
       <div class="w-full">

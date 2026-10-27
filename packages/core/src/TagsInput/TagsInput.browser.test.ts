@@ -10,7 +10,7 @@ function mountInForm({ addOnTab = false } = {}) {
   const Form = defineComponent({
     setup() {
       return () => h('form', { onSubmit }, [
-        h(TagsInputRoot, {
+        h(TagsInputRoot<string>, {
           addOnTab,
           'modelValue': values.value,
           'onUpdate:modelValue': (v: string[]) => { values.value = v },

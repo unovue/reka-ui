@@ -1031,7 +1031,7 @@ describe('given a Combobox with popper content', () => {
       },
     }), { attachTo: document.body })
 
-    const content = () => document.querySelector<HTMLElement>('[role="listbox"]')?.closest('[data-side]')
+    const content = () => document.querySelector<HTMLElement>('[role="listbox"]')?.closest<HTMLElement>('[data-side]')
     await vi.waitFor(() => expect(content()?.dataset.side).toBe('bottom'))
 
     side.value = 'top'
@@ -1045,13 +1045,13 @@ describe('comboboxContent with popper positioning', () => {
 
   const PopperCombobox = defineComponent({
     setup() {
-      const modelValue = ref('')
+      const modelValue = ref<string | null>('')
       const slotRenderCount = getSlotRenderCount()
       const options = Array.from({ length: 60 }, (_, index) => `Option ${index}`)
 
-      return () => h(ComboboxRoot, {
+      return () => h(ComboboxRoot<string | null>, {
         'modelValue': modelValue.value,
-        'onUpdate:modelValue': (value: string) => modelValue.value = value,
+        'onUpdate:modelValue': (value: string | null) => modelValue.value = value,
       }, {
         default: () => [
           h(ComboboxAnchor, null, {
@@ -1155,13 +1155,13 @@ describe('combobox highlight scrolling with popper positioning', () => {
       },
     },
     setup(props) {
-      const modelValue = ref<string>()
+      const modelValue = ref<string | null>()
       const open = ref(false)
 
-      return () => h(ComboboxRoot, {
+      return () => h(ComboboxRoot<string | null>, {
         'modelValue': modelValue.value,
         'open': open.value,
-        'onUpdate:modelValue': (value: string) => modelValue.value = value,
+        'onUpdate:modelValue': (value: string | null) => modelValue.value = value,
         'onUpdate:open': (value: boolean) => open.value = value,
       }, {
         default: () => [
@@ -1193,11 +1193,11 @@ describe('combobox highlight scrolling with popper positioning', () => {
 
   const InlineCombobox = defineComponent({
     setup() {
-      const modelValue = ref<string>()
+      const modelValue = ref<string | null>()
 
-      return () => h(ComboboxRoot, {
+      return () => h(ComboboxRoot<string | null>, {
         'modelValue': modelValue.value,
-        'onUpdate:modelValue': (value: string) => modelValue.value = value,
+        'onUpdate:modelValue': (value: string | null) => modelValue.value = value,
       }, {
         default: () => [
           h(ComboboxAnchor, null, { default: () => h(ComboboxInput) }),
@@ -1229,12 +1229,12 @@ describe('combobox highlight scrolling with popper positioning', () => {
           h(ComboboxPortal, null, {
             default: () => h(ComboboxContent, { position: 'popper' }, {
               default: () => h(ComboboxViewport, { style: 'height: 200px; overflow: auto' }, {
-                default: () => h(ComboboxVirtualizer, {
+                default: () => h(ComboboxVirtualizer<(typeof virtualOptions)[number]>, {
                   options: virtualOptions,
                   estimateSize: 25,
                   textContent: option => option.label,
                 }, {
-                  default: ({ option }) => h(ComboboxItem, { value: option }, { default: () => option.label }),
+                  default: ({ option }: { option: (typeof virtualOptions)[number] }) => h(ComboboxItem, { value: option }, { default: () => option.label }),
                 }),
               }),
             }),

@@ -8,7 +8,7 @@ const defaultValue = { start: new CalendarDate(2024, 2, 20), end: new CalendarDa
 <template>
   <Story
     title="Range Calendar/Multiple"
-    :layout="{ type: 'grid', width: '100%', iframe: false }"
+    :layout="{ type: 'grid', width: '100%' }"
   >
     <Variant title="2 months">
       <RangeCalendar

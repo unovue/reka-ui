@@ -1,4 +1,4 @@
-import type { ComponentPublicInstance } from 'vue'
+import type { Component, ComponentPublicInstance } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { unrefElement } from '@vueuse/core'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -10,8 +10,9 @@ import { mergeExpose, useForwardElement } from './useForwardElement'
 import { useForwardExpose } from './useForwardExpose'
 
 /** A part built on the contract: `defineExpose(expose)` via the options-API `expose`. */
-function definePart(template: string, extra: Record<string, unknown> = {}) {
+function definePart(template: string, extra: Record<string, unknown> = {}, components: Record<string, Component> = {}) {
   return defineComponent({
+    components,
     props: { label: { type: String, default: 'part' } },
     setup(_, { expose }) {
       const api = useForwardElement()
@@ -79,8 +80,7 @@ describe('useForwardElement — frozen spec from useForwardExpose', () => {
           </div>
         </Frag>
       </Frag>
-    `)
-    comp.components = { Frag }
+    `, {}, { Frag })
     const wrapper = mountReadingEl(comp)
     await flushPromises()
     expect(wrapper.attributes('test')).toBe('[object HTMLSpanElement]')
@@ -106,8 +106,7 @@ describe('useForwardElement — frozen spec from useForwardExpose', () => {
       <div>
         <InnerComp :ref="forwardRef" />
       </div>
-    `)
-    comp.components = { InnerComp }
+    `, {}, { InnerComp })
     const wrapper = mountReadingEl(comp)
     await flushPromises()
     expect(wrapper.attributes('test')).toBe('[object HTMLSpanElement]')
@@ -115,8 +114,7 @@ describe('useForwardElement — frozen spec from useForwardExpose', () => {
 
   it('resolves a multi-root (fragment) child through its anchor', async () => {
     const MultiRoot = defineComponent(() => () => [h('span', 'first'), h('div', 'second')])
-    const comp = definePart(`<div><MultiRoot :ref="forwardRef" /></div>`)
-    comp.components = { MultiRoot }
+    const comp = definePart(`<div><MultiRoot :ref="forwardRef" /></div>`, {}, { MultiRoot })
     const wrapper = mountReadingEl(comp)
     await flushPromises()
     expect(wrapper.attributes('test')).toBe('[object HTMLSpanElement]')
@@ -221,8 +219,7 @@ describe('useForwardElement — dual-key expose (`element` + `$el`)', () => {
     })
     // Outer wraps Inner through Primitive `as-child` — Inner is never re-bound,
     // so only reactivity can carry the swap up.
-    const Outer = definePart(`<Primitive as-child :ref="forwardRef"><Inner /></Primitive>`)
-    Outer.components = { Primitive, Inner }
+    const Outer = definePart(`<Primitive as-child :ref="forwardRef"><Inner /></Primitive>`, {}, { Primitive, Inner })
 
     const partRef = ref<any>()
     mount(defineComponent(() => () => h(Outer, { ref: partRef })))

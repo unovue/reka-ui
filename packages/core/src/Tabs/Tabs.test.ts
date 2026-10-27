@@ -320,7 +320,7 @@ describe('v-model (foundation contract)', () => {
     const wrapper = mount(TabsRoot, {
       props: {
         'modelValue': 'tab1',
-        'onBeforeUpdate:modelValue': (_value: string, details: { cancel: () => void }) => details.cancel(),
+        'onBeforeUpdate:modelValue': (_value: unknown, details: { cancel: () => void }) => details.cancel(),
       },
       slots: { default: twoTabs },
       attachTo: document.body,
@@ -392,7 +392,7 @@ describe('given TabsTrigger with consumer event listeners', () => {
     document.body.innerHTML = ''
     const value = ref('one')
     const wrapper = mount(defineComponent({
-      setup: () => () => h(TabsRoot, {
+      setup: () => () => h(TabsRoot<string>, {
         'modelValue': value.value,
         'onUpdate:modelValue': (next: string) => { value.value = next },
         'activationMode': 'manual',

@@ -1,4 +1,5 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
+import type { ChangeEventDetails } from '@/shared'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -166,14 +167,14 @@ describe('hoverCardRoot change events (v3 foundation contract)', () => {
 
     const keys = Object.keys(root.emitted()).filter(k => k.endsWith(':open'))
     expect(keys).toEqual(['beforeUpdate:open', 'update:open'])
-    const [beforeValue, beforeDetails] = root.emitted('beforeUpdate:open')![0]
-    const [value, details] = root.emitted('update:open')![0]
+    const [beforeValue, beforeDetails] = root.emitted<[boolean, ChangeEventDetails]>('beforeUpdate:open')![0]
+    const [value, details] = root.emitted<[boolean, ChangeEventDetails]>('update:open')![0]
     expect(beforeValue).toBe(true)
     expect(value).toBe(true)
     expect(beforeDetails).toBe(details)
     expect(details).toMatchObject({ reason: 'trigger-hover', isCanceled: false })
     expect(details.event).toBeInstanceOf(Event)
-    expect(details.event.type).toBe('pointerenter')
+    expect(details.event?.type).toBe('pointerenter')
     expect(typeof details.cancel).toBe('function')
     expect(trigger().attributes('data-state')).toBe('open')
     expect(content().exists()).toBe(true)
@@ -191,10 +192,10 @@ describe('hoverCardRoot change events (v3 foundation contract)', () => {
     // Presence resolves the exit after its own `nextTick`; flush so the content is gone.
     await flushPromises()
 
-    const [value, details] = root.emitted('update:open')![1]
+    const [value, details] = root.emitted<[boolean, ChangeEventDetails]>('update:open')![1]
     expect(value).toBe(false)
     expect(details).toMatchObject({ reason: 'trigger-leave' })
-    expect(details.event.type).toBe('pointerleave')
+    expect(details.event?.type).toBe('pointerleave')
     expect(vm.open).toBe(false)
     expect(trigger().attributes('data-state')).toBe('closed')
     expect(content().exists()).toBe(false)
@@ -213,10 +214,10 @@ describe('hoverCardRoot change events (v3 foundation contract)', () => {
     vi.advanceTimersByTime(300)
     await flushPromises()
 
-    const [value, details] = root.emitted('update:open')![1]
+    const [value, details] = root.emitted<[boolean, ChangeEventDetails]>('update:open')![1]
     expect(value).toBe(false)
     expect(details).toMatchObject({ reason: 'content-leave' })
-    expect(details.event.type).toBe('pointerleave')
+    expect(details.event?.type).toBe('pointerleave')
     expect(vm.open).toBe(false)
   })
 
@@ -228,7 +229,7 @@ describe('hoverCardRoot change events (v3 foundation contract)', () => {
     vi.advanceTimersByTime(700)
     await nextTick()
 
-    const [value, details] = root.emitted('update:open')![0]
+    const [value, details] = root.emitted<[boolean, ChangeEventDetails]>('update:open')![0]
     expect(value).toBe(true)
     expect(details).toMatchObject({ reason: 'trigger-focus' })
     expect(details.event).toBeInstanceOf(FocusEvent)
@@ -245,7 +246,7 @@ describe('hoverCardRoot change events (v3 foundation contract)', () => {
     vi.advanceTimersByTime(300)
     await flushPromises()
 
-    const [value, details] = root.emitted('update:open')![1]
+    const [value, details] = root.emitted<[boolean, ChangeEventDetails]>('update:open')![1]
     expect(value).toBe(false)
     expect(details).toMatchObject({ reason: 'trigger-blur' })
     expect(details.event).toBeInstanceOf(FocusEvent)
@@ -260,7 +261,7 @@ describe('hoverCardRoot change events (v3 foundation contract)', () => {
     await content().trigger('keydown', { key: 'Escape' })
     await flushPromises()
 
-    const [value, details] = root.emitted('update:open')![1]
+    const [value, details] = root.emitted<[boolean, ChangeEventDetails]>('update:open')![1]
     expect(value).toBe(false)
     expect(details).toMatchObject({ reason: 'escape-key' })
     expect(details.event).toBeInstanceOf(KeyboardEvent)

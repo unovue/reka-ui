@@ -1,4 +1,4 @@
-import type vueuse from '@vueuse/core'
+import type * as vueuse from '@vueuse/core'
 import { renderToString } from '@vue/server-renderer'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createSSRApp, defineComponent, h, nextTick, shallowRef } from 'vue'
