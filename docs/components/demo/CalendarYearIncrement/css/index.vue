@@ -67,6 +67,7 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
       <CalendarGrid
         v-for="month in grid"
         :key="month.value.toString()"
+        :value="month.value"
         class="CalendarGrid"
       >
         <CalendarGridHead>
@@ -89,12 +90,11 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
             <CalendarCell
               v-for="weekDate in weekDates"
               :key="weekDate.toString()"
-              :date="weekDate"
+              :value="weekDate"
               class="CalendarCell"
             >
               <CalendarCellTrigger
-                :day="weekDate"
-                :month="month.value"
+                :value="weekDate"
                 class="CalendarCellTrigger"
               />
             </CalendarCell>

@@ -1,6 +1,9 @@
+import type { Ref } from 'vue'
 import type { Granularity } from './comparators'
 import type { DateInputType, DateStep, DateValue, HourCycle } from './types'
 import { defu } from 'defu'
+import { nextTick, watch } from 'vue'
+import { getActiveElement } from '@/shared/getActiveElement'
 
 export function getOptsByGranularity(granularity: Granularity, hourCycle: HourCycle, isTimeValue: boolean = false) {
   const opts: Intl.DateTimeFormatOptions = {
@@ -65,6 +68,32 @@ export function handleCalendarInitialFocus(calendar: HTMLElement) {
   const firstDay = calendar.querySelector<HTMLElement>('[data-value]:not([data-outside-view]):not([data-disabled])')
   if (firstDay)
     return firstDay.focus()
+}
+
+/**
+ * Keeps keyboard focus inside the calendar when the view changes. Selecting a
+ * month or year cell above the granularity drills down, which unmounts the
+ * focused cell; without this the focus falls back to `<body>`. Focus moves to
+ * the tabbable cell of the new view (the placeholder, else the first focusable
+ * cell). A view change that leaves the focus alone (the view trigger, a
+ * controlled `view`) is not touched.
+ *
+ * @lifecycle setup — installs a watcher.
+ */
+export function useCalendarViewFocus(calendar: Ref<HTMLElement | undefined>, view: Ref<unknown>) {
+  // Default (pre) flush: runs before the outgoing view is unmounted.
+  watch(view, () => {
+    const root = calendar.value
+    const active = root ? getActiveElement(root) : null
+    if (!root || !active || !root.contains(active) || !active.hasAttribute('data-reka-calendar-cell-trigger'))
+      return
+
+    nextTick(() => {
+      if (root.contains(getActiveElement(root)))
+        return
+      root.querySelector<HTMLElement>('[data-reka-calendar-cell-trigger][tabindex="0"]')?.focus()
+    })
+  })
 }
 
 export function normalizeHourCycle(hourCycle: HourCycle) {

@@ -4,26 +4,29 @@ import type { PrimitiveProps } from '@/Primitive'
 
 export interface CalendarCellProps extends PrimitiveProps {
   /** The date value for the cell */
-  date: DateValue
+  value: DateValue
 }
 </script>
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
+import { injectCalendarGridContext } from './CalendarGrid.vue'
 import { injectCalendarRootContext } from './CalendarRoot.vue'
+import { getCalendarCellSurface } from './useCalendar'
 
-withDefaults(defineProps<CalendarCellProps>(), { as: 'td' })
+const props = withDefaults(defineProps<CalendarCellProps>(), { as: 'td' })
+
 const rootContext = injectCalendarRootContext()
+const gridContext = injectCalendarGridContext(null)
+
+const surface = getCalendarCellSurface(rootContext, () => props.value, () => gridContext?.value.value)
 </script>
 
 <template>
   <Primitive
     :as="as"
     :as-child="asChild"
-    role="gridcell"
-    :aria-selected="rootContext.isDateSelected(date) ? true : undefined"
-    :aria-disabled="rootContext.isDateDisabled(date) || rootContext.isDateUnavailable?.(date) || rootContext.disableDaysOutsideCurrentView.value"
-    :data-disabled="rootContext.isDateDisabled(date) || rootContext.disableDaysOutsideCurrentView.value ? '' : undefined"
+    v-bind="surface.attrs.value"
   >
     <slot />
   </Primitive>

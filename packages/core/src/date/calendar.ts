@@ -5,7 +5,7 @@
 import type { DateValue, DayOfWeek } from '@internationalized/date'
 import type { Grid } from './types'
 import type { DateRange } from '@/shared'
-import { CalendarDate, endOfMonth, endOfYear, getDayOfWeek, startOfMonth, startOfWeek, startOfYear } from '@internationalized/date'
+import { CalendarDate, endOfMonth, endOfYear, getDayOfWeek, GregorianCalendar, startOfMonth, startOfWeek, startOfYear, toCalendar, toCalendarDate } from '@internationalized/date'
 import { getDaysInMonth, getLastFirstDayOfWeek, getNextLastDayOfWeek } from './comparators'
 import { chunk } from './utils'
 
@@ -116,14 +116,36 @@ type SetDecadeProps = CreateSelectProps & {
   endIndex: number
 }
 
+/**
+ * A continuous year number for decade alignment. `year` restarts in each era
+ * (Japanese eras, BC / AD, ROC before / after Minguo), so multi-era calendars
+ * are mapped onto one running count: the Gregorian-based calendars use the
+ * proleptic Gregorian year (1 BC = 0), Ethiopic Amete Alem is offset onto Amete
+ * Mihret, and the first era of the other two-era calendars counts backwards.
+ */
+function getExtendedYear(dateObj: DateValue): number {
+  const eras = dateObj.calendar.getEras()
+  if (eras.length <= 1)
+    return dateObj.year
+  const identifier = dateObj.calendar.identifier
+  if (identifier === 'gregory' || identifier === 'japanese') {
+    const gregorian = toCalendar(toCalendarDate(dateObj), new GregorianCalendar())
+    return gregorian.era === 'BC' ? 1 - gregorian.year : gregorian.year
+  }
+  if (identifier === 'ethiopic' && dateObj.era === 'AA')
+    return dateObj.year - 5500
+  return dateObj.era === eras[0] ? 1 - dateObj.year : dateObj.year
+}
+
 export function startOfDecade(dateObj: DateValue) {
-  // round to the lowest nearest 10 when building the decade
-  return startOfYear(dateObj.subtract({ years: dateObj.year - Math.floor(dateObj.year / 10) * 10 }).set({ day: 1, month: 1 }))
+  // Round down to the nearest 10 on a continuous year count, then step back
+  // with date arithmetic so era boundaries are crossed correctly.
+  const offset = ((getExtendedYear(dateObj) % 10) + 10) % 10
+  return startOfYear(startOfYear(dateObj).subtract({ years: offset }))
 }
 
 export function endOfDecade(dateObj: DateValue) {
-  // round to the lowest nearest 10 when building the decade
-  return endOfYear(dateObj.add({ years: Math.ceil((dateObj.year + 1) / 10) * 10 - dateObj.year - 1 }).set({ day: 35, month: 12 }))
+  return endOfYear(startOfDecade(dateObj).add({ years: 9 }))
 }
 
 export function createDecade(props: SetDecadeProps): DateValue[] {
@@ -139,17 +161,21 @@ export function createDecade(props: SetDecadeProps): DateValue[] {
   return decadeArray
 }
 
+/**
+ * The months of the year containing `dateObj`. The count comes from the
+ * calendar (13 in a Hebrew leap year or the Ethiopic / Coptic calendars), and
+ * the months are stepped with date arithmetic so a year spanning two eras
+ * (Heisei 31 / Reiwa 1) is built correctly.
+ */
 export function createYear(props: SetYearProps): DateValue[] {
   const { dateObj, numberOfMonths = 1, pagedNavigation = false } = props
+  const firstMonth = startOfYear(dateObj)
+  const monthsInYear = dateObj.calendar.getMonthsInYear(firstMonth)
 
-  if (numberOfMonths && pagedNavigation) {
-    const monthsArray = Array.from({ length: Math.floor(12 / numberOfMonths) }, (_, i) => startOfMonth(dateObj.set({ month: i * numberOfMonths + 1 })))
+  if (numberOfMonths && pagedNavigation)
+    return Array.from({ length: Math.floor(monthsInYear / numberOfMonths) }, (_, i) => startOfMonth(firstMonth.add({ months: i * numberOfMonths })))
 
-    return monthsArray
-  }
-
-  const monthsArray = Array.from({ length: 12 }, (_, i) => startOfMonth(dateObj.set({ month: i + 1 })))
-  return monthsArray
+  return Array.from({ length: monthsInYear }, (_, i) => startOfMonth(firstMonth.add({ months: i })))
 }
 
 export function createMonths(props: SetMonthProps) {
@@ -189,32 +215,44 @@ export function createMonths(props: SetMonthProps) {
 }
 
 /**
- * Creates a 3x4 grid of months for a given year.
+ * Normalises a layout count (`columns`, `yearsPerPage`, `numberOfMonths`) to a
+ * positive integer: `NaN`, `Infinity`, non-numbers and values below 1 fall back
+ * to `fallback`, fractions are floored. `chunk` never terminates at 0 and an
+ * empty year page has no `value`, so every layout count passes through here.
  */
-export function createMonthGrid(props: CreateSelectProps): Grid<DateValue> {
-  const { dateObj } = props
-  const months = createYear({ dateObj })
-  return { value: dateObj, cells: months, rows: chunk(months, 4) }
+export function clampLayoutCount(value: number | undefined, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value))
+    return fallback
+  const count = Math.floor(value)
+  return count >= 1 ? count : fallback
 }
 
 /**
- * Creates a 3x4 grid of years (decade-aligned).
- * The grid starts from the decade that contains the given date.
+ * Creates a grid of the 12 months of the given year, `columns` per row
+ * (default 4, i.e. 3 rows of 4).
  */
-export function createYearGrid(props: CreateSelectProps & { yearsPerPage?: number, decadeAligned?: boolean }): Grid<DateValue> {
-  const { dateObj, yearsPerPage = 12, decadeAligned = true } = props
+export function createMonthGrid(props: CreateSelectProps & { columns?: number }): Grid<DateValue> {
+  const { dateObj } = props
+  const columns = clampLayoutCount(props.columns, 4)
+  const months = createYear({ dateObj })
+  return { value: dateObj, cells: months, rows: chunk(months, columns) }
+}
 
-  let startYear: number
-  if (decadeAligned) {
-    startYear = startOfDecade(dateObj).year
-  }
-  else {
-    startYear = dateObj.year
-  }
+/**
+ * Creates a grid of `yearsPerPage` years (default 12), `columns` per row
+ * (default 4). When `decadeAligned` (the default) the grid starts from the
+ * decade that contains the given date; otherwise it starts at the given year.
+ */
+export function createYearGrid(props: CreateSelectProps & { yearsPerPage?: number, decadeAligned?: boolean, columns?: number }): Grid<DateValue> {
+  const { dateObj, decadeAligned = true } = props
+  const yearsPerPage = clampLayoutCount(props.yearsPerPage, 12)
+  const columns = clampLayoutCount(props.columns, 4)
 
-  const years = Array.from({ length: yearsPerPage }, (_, i) => startOfYear(dateObj.set({ year: startYear + i })))
-  const firstYear = years[0]
-  return { value: firstYear, cells: years, rows: chunk(years, 4) }
+  // Step from the first year with date arithmetic (not `set({ year })`): the
+  // `year` field restarts in each era, so a page may cross an era boundary.
+  const firstYear = decadeAligned ? startOfDecade(dateObj) : startOfYear(dateObj)
+  const years = Array.from({ length: yearsPerPage }, (_, i) => startOfYear(firstYear.add({ years: i })))
+  return { value: years[0], cells: years, rows: chunk(years, columns) }
 }
 
 export function createYearRange({ start, end }: DateRange): DateValue[] {

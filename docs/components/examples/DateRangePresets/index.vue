@@ -99,6 +99,7 @@ function applyPreset(preset: Preset) {
               <RangeCalendarGrid
                 v-for="month in grid"
                 :key="month.value.toString()"
+                :value="month.value"
                 class="w-full border-collapse"
               >
                 <RangeCalendarGridHead>
@@ -121,13 +122,12 @@ function applyPreset(preset: Preset) {
                     <RangeCalendarCell
                       v-for="weekDate in weekDates"
                       :key="weekDate.toString()"
-                      :date="weekDate"
+                      :value="weekDate"
                     >
                       <!-- `data-selected` covers every day inside the committed range;
                            `data-highlighted` previews the range being dragged out. -->
                       <RangeCalendarCellTrigger
-                        :day="weekDate"
-                        :month="month.value"
+                        :value="weekDate"
                         class="flex h-8 w-full items-center justify-center rounded-md text-sm text-foreground outline-none hover:bg-muted focus:ring-2 focus:ring-primary/40 data-[outside-view]:text-muted-foreground/50 data-[disabled]:pointer-events-none data-[disabled]:opacity-40 data-[today]:font-semibold data-[highlighted]:bg-primary/10 data-[selected]:bg-primary/15 data-[selection-end]:!bg-primary data-[selection-start]:!bg-primary data-[selection-end]:text-primary-foreground data-[selection-start]:text-primary-foreground"
                       />
                     </RangeCalendarCell>

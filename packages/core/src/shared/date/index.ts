@@ -1,3 +1,4 @@
+export { type CellKeydownOptions, type CellNavigationHost, createCellFocusNavigation } from './cellFocusNavigation'
 export {
   getDefaultDate,
   getDefaultTime,
@@ -39,6 +40,7 @@ export type {
   TimeSegmentObj,
   TimeSegmentPart,
 } from './types'
+export { useCalendarGrid, type UseCalendarGridProps, type UseCalendarGridReturn } from './useCalendarGrid'
 export { useDateField } from './useDateField'
 export { useSegmentNavigation } from './useSegmentNavigation'
 export * from './utils'

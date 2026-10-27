@@ -26,6 +26,7 @@ const props = defineProps<{ calendarProps?: CalendarRootProps, emits?: { 'onUpda
     <CalendarGrid
       v-for="month in grid"
       :key="month.value.toString()"
+      :value="month.value"
       :data-testid="`grid-${month.value.month}`"
     >
       <CalendarGridHead :data-testid="`grid-head-${month.value.month}`">
@@ -50,11 +51,10 @@ const props = defineProps<{ calendarProps?: CalendarRootProps, emits?: { 'onUpda
             v-for="(weekDate, d) in weekDates"
             :key="weekDate.toString()"
             :data-testid="`cell-${weekDate.month}-${d}`"
-            :date="weekDate"
+            :value="weekDate"
           >
             <CalendarCellTrigger
-              :day="weekDate"
-              :month="month.value"
+              :value="weekDate"
               :data-testid="`date-${weekDate.month}-${weekDate.day}`"
             />
           </CalendarCell>
