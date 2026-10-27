@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { DisclosureState } from '@/shared'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export type TooltipTriggerDataState = DisclosureState
 
@@ -22,7 +22,8 @@ const props = withDefaults(defineProps<TooltipTriggerProps>(), {
 })
 const rootContext = injectTooltipRootContext()
 
-const { forwardRef, currentElement: triggerElement } = useForwardExpose()
+const { forwardRef, currentElement: triggerElement, expose } = useForwardElement()
+defineExpose(expose)
 
 // aria-describedby / data-state / data-delayed / the grace-area selector and
 // every pointer / focus / click listener come from the shared trigger factory

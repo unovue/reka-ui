@@ -36,7 +36,7 @@ import { mergeProps } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { PopperContent } from '@/Popper'
-import { useFocusGuards, useForwardExpose, useForwardProps } from '@/shared'
+import { useFocusGuards, useForwardElement, useForwardProps } from '@/shared'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 import { getPopoverContentSurface } from './usePopover'
 
@@ -44,7 +44,8 @@ const props = defineProps<PopoverContentImplPrivateProps>()
 const emits = defineEmits<PopoverContentImplEmits>()
 
 const forwarded = useForwardProps(reactiveOmit(props, 'trapFocus', 'disableOutsidePointerEvents'))
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const rootContext = injectPopoverRootContext()
 useFocusGuards(currentElement)

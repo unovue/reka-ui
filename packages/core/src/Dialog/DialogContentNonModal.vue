@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DialogContentImplEmits, DialogContentImplProps } from './DialogContentImpl.vue'
 import { computed, ref, watch } from 'vue'
-import { useEmitAsProps, useForwardExpose } from '@/shared'
+import { useEmitAsProps, useForwardElement } from '@/shared'
 import DialogContentImpl from './DialogContentImpl.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
 
@@ -9,7 +9,8 @@ const props = defineProps<DialogContentImplProps & { present: boolean }>()
 const emits = defineEmits<DialogContentImplEmits>()
 
 const emitsAsProps = useEmitAsProps(emits)
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const rootContext = injectDialogRootContext()
 const hasInteractedOutsideRef = ref(false)
@@ -35,6 +36,7 @@ watch(() => props.present, (isPresent, wasPresent) => {
 
 <template>
   <DialogContentImpl
+    :ref="forwardRef"
     v-bind="{ ...forwardedProps, ...emitsAsProps }"
     :present="present"
     :trap-focus="false"

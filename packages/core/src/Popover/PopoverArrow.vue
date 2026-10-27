@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PopperArrowProps } from '@/Popper'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface PopoverArrowProps extends PopperArrowProps {}
 </script>
@@ -13,11 +13,15 @@ const props = withDefaults(defineProps<PopoverArrowProps>(), {
   height: 5,
   as: 'svg',
 })
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
-  <PopperArrow v-bind="props">
+  <PopperArrow
+    :ref="forwardRef"
+    v-bind="props"
+  >
     <slot />
   </PopperArrow>
 </template>

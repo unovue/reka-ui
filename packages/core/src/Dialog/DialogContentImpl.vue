@@ -3,7 +3,7 @@ import type {
   DismissableLayerEmits,
   DismissableLayerProps,
 } from '@/DismissableLayer'
-import { getActiveElement, useForwardExpose } from '@/shared'
+import { getActiveElement, useForwardElement } from '@/shared'
 
 export type DialogContentImplEmits = DismissableLayerEmits & {
   /**
@@ -50,7 +50,8 @@ const props = defineProps<DialogContentImplProps & {
 const emits = defineEmits<DialogContentImplEmits>()
 
 const rootContext = injectDialogRootContext()
-const { forwardRef, currentElement: contentElement } = useForwardExpose()
+const { forwardRef, currentElement: contentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 // id/role/aria-labelledby/aria-describedby/data-state come from the shared
 // surface builder (single source with `useDialog()`); the FocusScope +

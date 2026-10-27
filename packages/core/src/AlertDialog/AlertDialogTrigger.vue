@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { DialogTriggerProps } from '@/Dialog'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface AlertDialogTriggerProps extends DialogTriggerProps {}
 </script>
@@ -9,11 +9,15 @@ export interface AlertDialogTriggerProps extends DialogTriggerProps {}
 import { DialogTrigger } from '@/Dialog'
 
 const props = withDefaults(defineProps<AlertDialogTriggerProps>(), { as: 'button' })
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
-  <DialogTrigger v-bind="props">
+  <DialogTrigger
+    :ref="forwardRef"
+    v-bind="props"
+  >
     <slot />
   </DialogTrigger>
 </template>

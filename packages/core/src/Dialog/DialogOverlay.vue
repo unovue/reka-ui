@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { DialogOverlayImplProps } from './DialogOverlayImpl.vue'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import DialogOverlayImpl from './DialogOverlayImpl.vue'
 
 export interface DialogOverlayProps extends DialogOverlayImplProps {
@@ -20,7 +20,8 @@ import { injectDialogRootContext } from './DialogRoot.vue'
 const props = defineProps<DialogOverlayProps>()
 const rootContext = injectDialogRootContext()
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 // See `DialogContent.vue`: when the overlay is kept mounted across open/close it
 // must report the real presence state, otherwise `DialogOverlayImpl` keeps the

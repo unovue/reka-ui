@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface PopoverCloseProps extends PrimitiveProps {}
 </script>
@@ -14,7 +14,8 @@ const props = withDefaults(defineProps<PopoverCloseProps>(), {
   as: 'button',
 })
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectPopoverRootContext()
 
 // The closing `onClick` (reason `close-press`) comes from the shared surface
@@ -25,6 +26,7 @@ const close = getPopoverCloseSurface(rootContext)
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as="as"
     :as-child="props.asChild"
     v-bind="close.attrs.value"

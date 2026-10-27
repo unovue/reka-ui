@@ -7,7 +7,7 @@ export interface DialogOverlayImplProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { watch } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import { injectDialogRootContext } from './DialogRoot.vue'
 import { getDialogOverlaySurface } from './useDialog'
@@ -20,7 +20,8 @@ const rootContext = injectDialogRootContext()
 const scrollLocked = useBodyScrollLock(props.present)
 watch(() => props.present, val => scrollLocked.value = val)
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 // `data-state` from the shared surface builder; the scroll lock and the
 // pointerdown guard (#2655/#2660) stay in the SFC.
 const overlay = getDialogOverlaySurface(rootContext)
@@ -28,6 +29,7 @@ const overlay = getDialogOverlaySurface(rootContext)
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
     style="pointer-events: auto"

@@ -6,7 +6,7 @@ export interface HoverCardTriggerProps extends PopperAnchorProps {}
 import type { PopperAnchorProps } from '@/Popper'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectHoverCardRootContext } from './HoverCardRoot.vue'
 import { getHoverCardTriggerSurface } from './useHoverCard'
 
@@ -14,7 +14,8 @@ withDefaults(defineProps<HoverCardTriggerProps>(), {
   as: 'a',
 })
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectHoverCardRootContext()
 rootContext.triggerElement = currentElement
 

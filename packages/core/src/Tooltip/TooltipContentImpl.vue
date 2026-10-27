@@ -2,7 +2,7 @@
 import type { PopperContentProps } from '@/Popper'
 import type { PrimitiveProps } from '@/Primitive'
 import { defu } from 'defu'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectTooltipProviderContext } from './TooltipProvider.vue'
 
 export type TooltipContentImplEmits = {
@@ -62,7 +62,8 @@ const emits = defineEmits<TooltipContentImplEmits>()
 const rootContext = injectTooltipRootContext()
 const providerContext = injectTooltipProviderContext()
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const ariaLabel = computed(() => props.ariaLabel || currentElement.value?.textContent)
 
 // data-state / data-delayed on the content and id / role="tooltip" on the
