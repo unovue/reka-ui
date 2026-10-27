@@ -24,3 +24,8 @@ export {
   default as ScrollAreaViewport,
   type ScrollAreaViewportProps,
 } from './ScrollAreaViewport.vue'
+export {
+  useScrollArea,
+  type UseScrollAreaProps,
+  type UseScrollAreaReturn,
+} from './useScrollArea'
