@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMediaQuery } from '@vueuse/core'
-import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger, DrawerClose, DrawerContent, DrawerDescription, DrawerHandle, DrawerOverlay, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from 'reka-ui'
+import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger, DrawerBackdrop, DrawerClose, DrawerDescription, DrawerGrabber, DrawerPopup, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from 'reka-ui'
 import { reactive, ref } from 'vue'
 import ProfileForm from './ProfileForm.vue'
 
@@ -55,9 +55,9 @@ const triggerClass = 'inline-flex items-center h-9 px-4 rounded-lg border border
         Edit profile
       </DrawerTrigger>
       <DrawerPortal>
-        <DrawerOverlay class="ResponsiveDrawerOverlay fixed inset-0 z-30 bg-background/80" />
-        <DrawerContent class="ResponsiveDrawerContent fixed inset-x-0 bottom-0 z-[100] mx-auto flex max-w-[500px] flex-col rounded-t-2xl border-t border-muted bg-card outline-none">
-          <DrawerHandle class="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-muted-foreground/40" />
+        <DrawerBackdrop class="ResponsiveDrawerOverlay fixed inset-0 z-30 bg-background/80" />
+        <DrawerPopup class="ResponsiveDrawerContent fixed inset-x-0 bottom-0 z-[100] mx-auto flex max-w-[500px] flex-col rounded-t-2xl border-t border-muted bg-card outline-none">
+          <DrawerGrabber class="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-muted-foreground/40" />
           <div class="p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
             <DrawerTitle class="text-base font-semibold text-foreground">
               Edit profile
@@ -78,7 +78,7 @@ const triggerClass = 'inline-flex items-center h-9 px-4 rounded-lg border border
               </DrawerClose>
             </div>
           </div>
-        </DrawerContent>
+        </DrawerPopup>
       </DrawerPortal>
     </DrawerRoot>
 
@@ -103,7 +103,7 @@ const triggerClass = 'inline-flex items-center h-9 px-4 rounded-lg border border
 }
 
 .ResponsiveDrawerContent {
-  /* `--drawer-swipe-movement-y` is written by DrawerContent while dragging. */
+  /* `--drawer-swipe-movement-y` is written by DrawerPopup while dragging. */
   transform: translateY(var(--drawer-swipe-movement-y, 0px));
   transition: transform 450ms cubic-bezier(0.32, 0.72, 0, 1);
   will-change: transform;

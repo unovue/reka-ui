@@ -2,25 +2,27 @@ export {
   default as DrawerClose,
   type DrawerCloseProps,
 } from './DrawerClose.vue'
+// `DrawerPopup` is the canonical name (Base UI `Drawer.Popup`). `DrawerContent`
+// is a deprecated alias of it; Base UI's own `Drawer.Content` is a different,
+// inner part that reka does not ship, so the alias goes in v4.
 export {
   default as DrawerContent,
   type DrawerContentEmits,
   type DrawerContentProps,
-} from './DrawerContent.vue'
-// Base UI alias: Drawer.Popup === DrawerContent
-export {
   default as DrawerPopup,
-  type DrawerContentEmits as DrawerPopupEmits,
-  type DrawerContentProps as DrawerPopupProps,
+  type DrawerPopupEmits,
+  type DrawerPopupProps,
 } from './DrawerContent.vue'
 export {
   default as DrawerDescription,
   type DrawerDescriptionProps,
 } from './DrawerDescription.vue'
+// The visual grab bar. Was `DrawerHandle`; that name is kept free for the
+// detached-trigger handle (Base UI `Drawer.Handle` / `createHandle`).
 export {
-  default as DrawerHandle,
-  type DrawerHandleProps,
-} from './DrawerHandle.vue'
+  default as DrawerGrabber,
+  type DrawerGrabberProps,
+} from './DrawerGrabber.vue'
 export {
   default as DrawerIndent,
   type DrawerIndentProps,
@@ -29,14 +31,13 @@ export {
   default as DrawerIndentBackground,
   type DrawerIndentBackgroundProps,
 } from './DrawerIndentBackground.vue'
-export {
-  default as DrawerOverlay,
-  type DrawerOverlayProps,
-} from './DrawerOverlay.vue'
-// Base UI alias: Drawer.Backdrop === DrawerOverlay
+// `DrawerBackdrop` is the canonical name (Base UI `Drawer.Backdrop`);
+// `DrawerOverlay` is a deprecated alias of it.
 export {
   default as DrawerBackdrop,
-  type DrawerOverlayProps as DrawerBackdropProps,
+  type DrawerBackdropProps,
+  default as DrawerOverlay,
+  type DrawerOverlayProps,
 } from './DrawerOverlay.vue'
 export {
   default as DrawerPortal,
@@ -52,6 +53,7 @@ export {
   default as DrawerRoot,
   type DrawerRootEmits,
   type DrawerRootProps,
+  type DrawerSnapPointChangeReason,
   // Public advanced-composition contract: lets consumers read the Drawer root
   // context to build custom parts (mirrors `injectDialogRootContext`).
   injectDrawerRootContext,
@@ -77,7 +79,7 @@ export {
 } from './DrawerVirtualKeyboardProvider.vue'
 export {
   type DrawerContentState,
-  type DrawerHandleState,
+  type DrawerGrabberState,
   type DrawerOverlayState,
   type DrawerSwipeAreaState,
   type DrawerTriggerState,

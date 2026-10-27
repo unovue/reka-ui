@@ -116,11 +116,17 @@ export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, F
   filter?: ListboxFilterFunction<T> | null
 }
 
-export type ListboxRootEmits<T = AcceptableValue> = {
+/**
+ * The model of a listbox: an array when `multiple` is `true`, a single value (or `undefined` once a single selection
+ * is cleared) when it is absent or `false`, either while it is a plain `boolean` (#2824 item 4).
+ */
+export type ListboxModelValue<T, M extends boolean = boolean> = boolean extends M ? T | T[] | undefined : M extends true ? T[] : T | undefined
+
+export type ListboxRootEmits<T = AcceptableValue, M extends boolean = boolean> = {
   /** Event handler called before the value changes; call `details.cancel()` to keep the current value. The value is an array when `multiple`, and `undefined` when a single selection is cleared. */
-  'beforeUpdate:modelValue': [value: T | T[] | undefined, details: ChangeEventDetails<ListboxChangeReason>]
+  'beforeUpdate:modelValue': [value: ListboxModelValue<T, M>, details: ChangeEventDetails<ListboxChangeReason>]
   /** Event handler called when the value changes. */
-  'update:modelValue': [value: T | T[] | undefined, details: ChangeEventDetails<ListboxChangeReason>]
+  'update:modelValue': [value: ListboxModelValue<T, M>, details: ChangeEventDetails<ListboxChangeReason>]
   /** Event handler when highlighted element changes. */
   'highlight': [payload: { ref: HTMLElement, value: T } | undefined]
   /** Event handler called when container is being focused. Can be prevented. */
@@ -130,17 +136,19 @@ export type ListboxRootEmits<T = AcceptableValue> = {
 }
 </script>
 
-<script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
+<script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false">
 import { ref, toRef, toRefs } from 'vue'
 import { useCollection } from '@/Collection'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useListboxRoot } from './useListbox'
 
-const props = withDefaults(defineProps<ListboxRootProps>(), {
+const props = withDefaults(defineProps<ListboxRootProps & { multiple?: M }>(), {
   selectionBehavior: 'toggle',
   orientation: 'vertical',
 })
-const emits = defineEmits<ListboxRootEmits>()
+// Typed by `multiple` only (#2824 item 4); the props are not generic over `T`,
+// so the value type stays `AcceptableValue` as in v2.
+const emits = defineEmits<ListboxRootEmits<AcceptableValue, M>>()
 
 defineSlots<{
   default?: (props: {
@@ -178,7 +186,7 @@ const listbox = useListboxRoot<AcceptableValue>({
   loop: () => props.loop,
   by: props.by,
   getNavigationIntent: event => props.getNavigationIntent?.(event),
-  filter: toRef(props, 'filter'),
+  filter: toRef(() => props.filter) as Ref<ListboxFilterFunction<AcceptableValue> | null | undefined>,
   // `useCollection` (the item registry) stays in the shell — injected as the collection seam.
   getItems,
   getItem,
@@ -193,7 +201,7 @@ const { root, context, highlightedElement, highlightFirstItem, highlightSelected
 
 // The composable is typed over `AcceptableValue` (the props are); narrow once
 // here for the slot payload and the exposed `highlightItem`, as before.
-const modelValue = listbox.modelValue as ComputedRef<T | T[] | undefined>
+const modelValue = listbox.modelValue as ComputedRef<ListboxModelValue<T, M>>
 const highlightItem = listbox.highlightItem as (value: T) => void
 
 defineExpose(mergeExpose(expose, {

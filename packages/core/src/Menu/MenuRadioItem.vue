@@ -20,6 +20,7 @@ import { computed, toRefs } from 'vue'
 import MenuItem from './MenuItem.vue'
 import { provideMenuItemIndicatorContext } from './MenuItemIndicator.vue'
 import { injectMenuRadioGroupContext } from './MenuRadioGroup.vue'
+import { getItemSelectOriginalEvent } from './utils'
 
 const props = defineProps<MenuRadioItemProps>()
 const emits = defineEmits<MenuRadioItemEmits>()
@@ -55,7 +56,7 @@ defineExpose(expose)
     @select="
       async (event) => {
         emits('select', event);
-        radioGroupContext.onValueChange(value);
+        radioGroupContext.onValueChange(value, 'item-press', getItemSelectOriginalEvent(event));
       }
     "
   >

@@ -1,6 +1,6 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { SegmentFieldChangeReason } from './useDateFieldSegment'
-import type { ChangeEventDetails, Formatter, PartSurface } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, Formatter, PartSurface } from '@/shared'
 import type { DateStep, DateValue, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date/types'
 import type { Direction } from '@/shared/types'
 import { computed, getCurrentInstance, nextTick, onMounted, ref, toValue, watch } from 'vue'
@@ -270,7 +270,7 @@ export function isSameTemporalValue(a: DateValue | Temporal.PlainTime | null | u
  *
  * @internal
  */
-export function wasCanceled(lastChangeDetails: Readonly<Ref<ChangeEventDetails<any>>>, before: ChangeEventDetails<any>) {
+export function wasCanceled(lastChangeDetails: Readonly<Ref<ChangeEventDetails<string>>>, before: ChangeEventDetails<string>) {
   return lastChangeDetails.value !== before && lastChangeDetails.value.isCanceled
 }
 
@@ -284,10 +284,10 @@ export function wasCanceled(lastChangeDetails: Readonly<Ref<ChangeEventDetails<a
  * @internal
  */
 export function bridgeChange<T, R extends string>(
-  setState: (value: T, reason?: any, event?: Event) => boolean,
+  setState: (value: T, reason?: R | BaseChangeReason, event?: Event) => boolean,
   lastChangeDetails: Readonly<Ref<ChangeEventDetails<R>>>,
 ) {
-  return (value: T, details: ChangeEventDetails<any>) => {
+  return (value: T, details: ChangeEventDetails<R>) => {
     const before = lastChangeDetails.value
     setState(value, details.reason, details.event)
     if (wasCanceled(lastChangeDetails, before))

@@ -4,7 +4,7 @@ import {
   DrawerClose,
   DrawerContent,
   DrawerDescription,
-  DrawerHandle,
+  DrawerGrabber,
   DrawerIndent,
   DrawerIndentBackground,
   DrawerOverlay,
@@ -96,7 +96,7 @@ const navLinks = [
         <DrawerPortal>
           <DrawerOverlay class="drawer-overlay" />
           <DrawerContent class="drawer-content-bottom">
-            <DrawerHandle class="drawer-handle" />
+            <DrawerGrabber class="drawer-handle" />
             <div class="p-6">
               <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                 Bottom Drawer
@@ -139,7 +139,7 @@ const navLinks = [
                 </DrawerClose>
               </div>
             </div>
-            <DrawerHandle class="drawer-handle drawer-handle-bottom" />
+            <DrawerGrabber class="drawer-handle drawer-handle-bottom" />
           </DrawerContent>
         </DrawerPortal>
       </DrawerRoot>
@@ -215,7 +215,7 @@ const navLinks = [
         <DrawerPortal>
           <DrawerOverlay class="drawer-overlay" />
           <DrawerContent class="drawer-content-snap">
-            <DrawerHandle class="drawer-handle drawer-snap-handle" />
+            <DrawerGrabber class="drawer-handle drawer-snap-handle" />
             <div class="drawer-snap-scroll">
               <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                 Snap Points
@@ -265,7 +265,7 @@ const navLinks = [
           </DrawerTrigger>
           <DrawerPortal>
             <DrawerContent class="drawer-content-bottom drawer-content-nonmodal">
-              <DrawerHandle class="drawer-handle" />
+              <DrawerGrabber class="drawer-handle" />
               <div class="p-6">
                 <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                   Non-modal Drawer
@@ -298,7 +298,7 @@ const navLinks = [
           <DrawerPortal>
             <DrawerOverlay class="drawer-overlay" />
             <DrawerContent class="drawer-content-bottom">
-              <DrawerHandle class="drawer-handle" />
+              <DrawerGrabber class="drawer-handle" />
               <div class="p-6">
                 <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                   Swipe to Open
@@ -326,7 +326,7 @@ const navLinks = [
         <DrawerPortal>
           <DrawerOverlay class="drawer-overlay" />
           <DrawerContent class="drawer-content-bottom">
-            <DrawerHandle class="drawer-handle" />
+            <DrawerGrabber class="drawer-handle" />
             <div class="p-6">
               <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                 Outer Drawer
@@ -342,7 +342,7 @@ const navLinks = [
                   <DrawerPortal>
                     <DrawerOverlay class="drawer-overlay" />
                     <DrawerContent class="drawer-content-bottom drawer-content-inner">
-                      <DrawerHandle class="drawer-handle" />
+                      <DrawerGrabber class="drawer-handle" />
                       <div class="p-6">
                         <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                           Inner Drawer
@@ -382,7 +382,7 @@ const navLinks = [
                 <DrawerPortal>
                   <DrawerOverlay class="drawer-overlay" />
                   <DrawerContent class="drawer-content-bottom">
-                    <DrawerHandle class="drawer-handle" />
+                    <DrawerGrabber class="drawer-handle" />
                     <div class="p-6">
                       <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                         Indent Effect
@@ -480,7 +480,7 @@ const navLinks = [
         <DrawerPortal>
           <DrawerOverlay class="drawer-overlay" />
           <DrawerContent class="drawer-content-bottom drawer-content-fullheight">
-            <DrawerHandle class="drawer-handle" />
+            <DrawerGrabber class="drawer-handle" />
             <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
               <DrawerTitle class="text-lg font-semibold text-gray-900">
                 Navigation
@@ -519,7 +519,7 @@ const navLinks = [
             <DrawerOverlay class="drawer-overlay" />
             <DrawerViewport class="keyboard-viewport">
               <DrawerContent class="drawer-content-keyboard">
-                <DrawerHandle class="drawer-handle" />
+                <DrawerGrabber class="drawer-handle" />
                 <div class="border-b border-gray-200 px-6 py-4">
                   <DrawerTitle class="text-lg font-semibold text-gray-900">
                     Contact us

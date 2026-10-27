@@ -53,7 +53,7 @@ export type DatePickerRootContext = {
   setModelValue: (value: DateValue | undefined, reason?: DatePickerChangeReason | BaseChangeReason, event?: Event) => boolean
   setPlaceholder: (value: DateValue, reason?: DatePickerChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Bound to the field's `beforeUpdate:modelValue`: runs the picker's change inside it, and cancels the field's when the picker's is cancelled. */
-  onFieldBeforeUpdate: (value: DateValue | undefined, details: ChangeEventDetails<any>) => void
+  onFieldBeforeUpdate: (value: DateValue | undefined, details: ChangeEventDetails<DatePickerChangeReason>) => void
   /** Bound to the calendar's `beforeUpdate:modelValue`. */
   onCalendarBeforeUpdate: (value: CalendarModelValue, details: ChangeEventDetails<CalendarChangeReason>) => void
   /** Bound to the calendar's `update:placeholder`. */

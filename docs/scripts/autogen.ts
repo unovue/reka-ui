@@ -1,5 +1,5 @@
 import type { ComponentMeta, MetaCheckerOptions, PropertyMeta, PropertyMetaSchema } from 'vue-component-meta'
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, parse, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import _traverse from '@babel/traverse'
@@ -51,8 +51,28 @@ function toSingleQuotedJson(obj: unknown): string {
     .replace(/"/g, '\'')
 }
 
+const coreDir = resolve(__dirname, '../../packages/core')
+// An `export { … } from '<source>'` block of a family `index.ts`.
+const EXPORT_BLOCK_RE = /export \{([^}]*)\} from '([^']+)'/g
+// A value specifier inside it that renames: `ComboboxItem as AutocompleteItem`
+// (another family's part) or `default as DrawerPopup` (a second name for an SFC).
+const ALIAS_SPECIFIER_RE = /(?:^|,)\s*(?!type\s)(\w+) as (\w+)/g
+
+/**
+ * Descriptions an alias needs instead of the original's, where the original's
+ * text is wrong for the alias (`AutocompleteItem` is `ComboboxItem`, whose
+ * `value` doc describes form submission, which Autocomplete does not do).
+ */
+const ALIAS_DESCRIPTION_OVERRIDES: Record<string, { props?: Record<string, string> }> = {
+  AutocompleteItem: {
+    props: {
+      value: 'The value of the item, of the root\'s item type `T` (`string` by default). Selecting the item writes `displayValue(value)` into the input, else `String(value)`.',
+    },
+  },
+}
+
 const allComponents = fg.sync(['src/**/*.vue', '!src/**/story/*.vue', '!src/**/*.story.vue'], {
-  cwd: resolve(__dirname, '../../packages/core'),
+  cwd: coreDir,
   absolute: true,
 })
 
@@ -69,6 +89,31 @@ allComponents.forEach((i) => {
 
 // 2. Generate component meta
 primitiveComponents.forEach((componentPath) => {
+  writeComponentMeta(componentPath, parse(componentPath).name)
+})
+
+// 3. A part exported under another name gets a meta file per alias, so its
+// page includes tables under its own part names: a family re-exporting another
+// family's parts (`ComboboxItem as AutocompleteItem` from '@/Combobox'), or a
+// second name for an SFC (`default as DrawerPopup` from './DrawerContent.vue').
+fg.sync(['src/*/index.ts'], { cwd: coreDir, absolute: true }).forEach((indexPath) => {
+  const source = readFileSync(indexPath, 'utf8')
+  for (const [, specifiers, from] of source.matchAll(EXPORT_BLOCK_RE)) {
+    for (const [, original, alias] of specifiers.matchAll(ALIAS_SPECIFIER_RE)) {
+      let originalPath: string | undefined
+      if (from.startsWith('@/'))
+        originalPath = resolve(coreDir, 'src', from.slice(2), `${original}.vue`)
+      // Only a second name: the SFC's own name is a documented component too.
+      else if (original === 'default' && from.endsWith('.vue') && (listOfComponents as string[]).includes(parse(from).name))
+        originalPath = resolve(parse(indexPath).dir, from)
+      if (!originalPath || !existsSync(originalPath) || parse(originalPath).name === alias)
+        continue
+      writeComponentMeta(originalPath, alias)
+    }
+  }
+})
+
+function writeComponentMeta(componentPath: string, componentName: string) {
   const dir = parse(componentPath).dir.split('/').at(-1) ?? ''
   const flattenDeps = [dir, ...getDependencies(dir)]
   if (!arraysAreEqual(prevDeps, flattenDeps)) {
@@ -78,8 +123,17 @@ primitiveComponents.forEach((componentPath) => {
     prevDeps = flattenDeps
   }
 
-  const componentName = parse(componentPath).name
-  const meta = parseMeta(tsconfigChecker.getComponentMeta(componentPath))
+  // Emits the component declares itself describe themselves: a dependency's
+  // description of the same emit name (e.g. ListboxRoot's `update:modelValue`
+  // under AutocompleteRoot) must not replace them.
+  const ownEventDescriptions = readEventDescriptions(componentPath)
+  const meta = parseMeta(tsconfigChecker.getComponentMeta(componentPath), name => ownEventDescriptions.get(name) ?? eventDescriptionMap.get(name))
+  const overrides = ALIAS_DESCRIPTION_OVERRIDES[componentName]
+  for (const prop of meta.props) {
+    const description = overrides?.props?.[prop.name]
+    if (description)
+      prop.description = md.render(description)
+  }
 
   const metaDirPath = resolve(__dirname, '../content/meta')
   mkdirSync(metaDirPath, { recursive: true })
@@ -106,7 +160,7 @@ primitiveComponents.forEach((componentPath) => {
     parsedString += `\n<llm-only>\n\n${llmParts}</llm-only>\n`
 
   writeFileSync(metaMdFilePath, parsedString)
-})
+}
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&#39;/g, '\'').replace(/&quot;/g, '"').trim()
@@ -159,7 +213,48 @@ function parseTypeFromSchema(schema: PropertyMetaSchema): string {
 }
 
 // Utilities
-function parseMeta(meta: ComponentMeta) {
+
+// Drops the `| undefined` an optional prop adds to its type, and only that one:
+// an `undefined` nested in the type, such as a callback's `T[] | undefined`
+// return, is part of the contract and stays.
+function stripOptionalUndefined(type: string): string {
+  const members: string[] = []
+  let depth = 0
+  let quote = ''
+  let start = 0
+  for (let i = 0; i < type.length; i++) {
+    const char = type[i]
+    if (quote) {
+      if (char === quote && type[i - 1] !== '\\')
+        quote = ''
+      continue
+    }
+    if (char === '\'' || char === '"' || char === '`') {
+      quote = char
+    }
+    else if (char === '=' && type[i + 1] === '>') {
+      // A top-level arrow: the union after it is the return type, keep it whole.
+      if (depth === 0)
+        return type.trim()
+      i++
+    }
+    else if ('([{<'.includes(char)) {
+      depth++
+    }
+    else if (')]}>'.includes(char)) {
+      depth--
+    }
+    else if (char === '|' && depth === 0) {
+      members.push(type.slice(start, i))
+      start = i + 1
+    }
+  }
+  members.push(type.slice(start))
+  const kept = members.map(m => m.trim()).filter(m => m && m !== 'undefined')
+  return kept.length ? kept.join(' | ') : type.trim()
+}
+
+function parseMeta(meta: ComponentMeta, getEventDescription: (name: string) => string | undefined) {
   const props = meta.props
   // Exclude global props
     .filter(prop => !prop.global)
@@ -186,7 +281,7 @@ function parseMeta(meta: ComponentMeta) {
       return ({
         name,
         description: md.render(description),
-        type: type.replace(/\s*\|\s*undefined/g, '').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+        type: stripOptionalUndefined(type).replace(/</g, '&lt;').replace(/>/g, '&gt;'),
         required,
         default: defaultValue ?? undefined,
       })
@@ -198,7 +293,7 @@ function parseMeta(meta: ComponentMeta) {
       const { name, type } = event
       return ({
         name,
-        description: md.render((eventDescriptionMap.get(name) ?? '').replace(/^[ \t]+/gm, '')),
+        description: md.render((getEventDescription(name) ?? '').replace(/^[ \t]+/gm, '')),
         // Unlike optional props, undefined in an event payload is a value consumers can receive.
         type: type.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
       })
@@ -242,58 +337,60 @@ function getEventFromComponentPath(dir: string) {
   const files = readdirSync(resolve(__dirname, '../../packages/core/src', dir), { withFileTypes: true }).filter(file => file.name.includes('.vue'))
 
   files.forEach((file) => {
-    const { name, parentPath } = file
-    const source = readFileSync(join(parentPath, name), { encoding: 'utf8' })
-    const { descriptor } = sfcParse(source, {
-      filename: name,
+    readEventDescriptions(join(file.parentPath, file.name)).forEach((description, key) => {
+      eventDescriptionMap.set(key, description)
     })
+  })
+}
 
-    const code = descriptor.script?.content
-    if (code) {
-      const result = babelParse(code, {
-        sourceType: 'module',
-        plugins: ['typescript'],
-      })
+interface TypeLiteralMember {
+  type: string
+  key?: { type: string, value?: unknown, name?: unknown }
+  leadingComments?: { value: string, loc?: unknown }[] | null
+}
 
-      for (const node of result.program.body) {
-        if (node.type === 'ExportNamedDeclaration' && node.loc) {
-          if (node.declaration?.type === 'TSTypeAliasDeclaration') {
-            if (node.declaration.typeAnnotation.type === 'TSTypeLiteral') {
-              node.declaration.typeAnnotation.members.forEach((member) => {
-                if (member.type === 'TSPropertySignature' && member.key.type === 'StringLiteral' && member.leadingComments?.[0].loc) {
-                  const key = member.key.value
-                  const description = member.leadingComments?.[0].value.replaceAll('*', '').trim()
-                  eventDescriptionMap.set(key, description)
-                }
-                else if (member.type === 'TSPropertySignature' && member.key.type === 'Identifier' && member.leadingComments?.[0].loc) {
-                  const key = member.key.name
-                  const description = member.leadingComments?.[0].value.replaceAll('*', '').trim()
-                  eventDescriptionMap.set(key, description)
-                }
-              })
-            }
-            else if (node.declaration.typeAnnotation.type === 'TSIntersectionType') {
-              const literalType = node.declaration.typeAnnotation.types.find(t => t.type === 'TSTypeLiteral')
-              if (literalType?.type === 'TSTypeLiteral') {
-                literalType.members.forEach((member) => {
-                  if (member.type === 'TSPropertySignature' && member.key.type === 'StringLiteral' && member.leadingComments?.[0].loc) {
-                    const key = member.key.value
-                    const description = member.leadingComments?.[0].value.replaceAll('*', '').trim()
-                    eventDescriptionMap.set(key, description)
-                  }
-                  else if (member.type === 'TSPropertySignature' && member.key.type === 'Identifier' && member.leadingComments?.[0].loc) {
-                    const key = member.key.name
-                    const description = member.leadingComments?.[0].value.replaceAll('*', '').trim()
-                    eventDescriptionMap.set(key, description)
-                  }
-                })
-              }
-            }
-          }
-        }
+/** The JSDoc of each member of the type literals a `.vue` file exports, keyed by member name. */
+function readEventDescriptions(filePath: string) {
+  const descriptions = new Map<string, string>()
+  const source = readFileSync(filePath, { encoding: 'utf8' })
+  const { descriptor } = sfcParse(source, {
+    filename: parse(filePath).base,
+  })
+
+  const code = descriptor.script?.content
+  if (!code)
+    return descriptions
+
+  const result = babelParse(code, {
+    sourceType: 'module',
+    plugins: ['typescript'],
+  })
+
+  const readMembers = (members: TypeLiteralMember[]) => {
+    members.forEach((member) => {
+      const comment = member.leadingComments?.[0]
+      if (member.type !== 'TSPropertySignature' || !member.key || !comment?.loc)
+        return
+      const key = member.key.type === 'StringLiteral' ? member.key.value : member.key.type === 'Identifier' ? member.key.name : undefined
+      if (typeof key === 'string')
+        descriptions.set(key, comment.value.replaceAll('*', '').trim())
+    })
+  }
+
+  for (const node of result.program.body) {
+    if (node.type === 'ExportNamedDeclaration' && node.loc && node.declaration?.type === 'TSTypeAliasDeclaration') {
+      const annotation = node.declaration.typeAnnotation
+      if (annotation.type === 'TSTypeLiteral') {
+        readMembers(annotation.members)
+      }
+      else if (annotation.type === 'TSIntersectionType') {
+        const literalType = annotation.types.find(t => t.type === 'TSTypeLiteral')
+        if (literalType?.type === 'TSTypeLiteral')
+          readMembers(literalType.members)
       }
     }
-  })
+  }
+  return descriptions
 }
 
 function generateDependencies(componentPath: string) {

@@ -5,9 +5,10 @@ import type { SelectRootContext } from './SelectRoot.vue'
 import type { ListboxNavigationIntent } from '@/Listbox/useListbox'
 import type { BaseChangeReason, By, ChangeEventDetails, DisclosureState, PartSurface, SelectionState } from '@/shared'
 import type { AcceptableValue, Direction } from '@/shared/types'
-import { computed, isRef, nextTick, onBeforeUnmount, onMounted, ref, toValue, watch, watchEffect } from 'vue'
+import { computed, isRef, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, toValue, watch, watchEffect } from 'vue'
 import { focusFirst } from '@/Menu/utils'
 import {
+  containsComposed,
   createLabelRegistry,
   createPartSurface,
   disclosureState,
@@ -341,6 +342,7 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
     selectedLabels,
     displayValue,
     getNavigationIntent,
+    virtualTypeaheadItems: shallowRef(undefined),
     notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
 
@@ -402,6 +404,10 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
   // closed content renders nothing, so only items that rendered while open
   // (and registered their text) can be typed to.
   function getTypeaheadItems(): SelectTypeaheadItem<T>[] {
+    // A `SelectVirtualizer` knows every option, rendered or not.
+    const virtualItems = context.virtualTypeaheadItems?.value
+    if (virtualItems)
+      return virtualItems()
     const items = options.getItems?.() ?? []
     if (items.length)
       return items
@@ -667,6 +673,9 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
   const isPositioned = ref(false)
   let firstValidItemFound = false
   let firstSelectedItemInArrayFound = false
+  // Assigned below; read lazily by the handlers, where `SelectVirtualizer` may
+  // have replaced `focusSelectedItem` / set `onVirtualKeydown` on it.
+  let contentContext: SelectContentContext
 
   function focusSelectedItem() {
     if (selectedItem.value && contentElement.value)
@@ -674,7 +683,9 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
   }
 
   watch(isPositioned, () => {
-    focusSelectedItem()
+    // Through the context: `SelectVirtualizer` replaces it to reach a selected
+    // item whose row is not rendered.
+    contentContext.focusSelectedItem?.()
   })
 
   // prevent selecting items on `pointerup` in some cases after opening from `pointerdown`
@@ -714,7 +725,7 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
         // otherwise, if the event was outside the content, close. Document-level
         // listener → read the composed target so a shadow-mounted content isn't
         // seen as "outside" itself.
-        if (!contentElement.value?.contains(getEventTarget<HTMLElement>(event)))
+        if (!contentElement.value || !containsComposed(contentElement.value, getEventTarget<HTMLElement>(event)))
           context.onOpenChange(false, 'outside-press', event)
       }
       document.removeEventListener('pointermove', handlePointerMove)
@@ -747,10 +758,15 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
       event.preventDefault()
     }
 
+    const intent = context.getNavigationIntent(event)
+    if (contentContext.onVirtualKeydown?.(event, intent)) {
+      event.preventDefault()
+      return
+    }
+
     if (!isModifierKey && event.key.length === 1)
       handleTypeaheadSearch(event.key, getItems())
 
-    const intent = context.getNavigationIntent(event)
     if (intent === 'first' || intent === 'last' || intent === 'prev' || intent === 'next') {
       let candidateNodes = getItems().map(i => i.ref)
 
@@ -785,7 +801,7 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
     base.state,
   )
 
-  const contentContext: SelectContentContext = {
+  contentContext = {
     content: contentElement,
     viewport,
     onViewportChange: (node) => {
@@ -827,6 +843,7 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
     position: options.position ?? 'item-aligned',
     isPositioned,
     searchRef: search,
+    loop: () => !!toValue(options.loop),
   }
 
   return { content, contentContext, isPositioned, focusSelectedItem }

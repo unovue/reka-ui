@@ -4,8 +4,8 @@ import type { ComboboxOpenChangeReason } from '@/Combobox/useCombobox'
 import type { ListboxFilterFunction, ListboxNavigationIntent } from '@/Listbox/useListbox'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import type { Direction } from '@/shared/types'
-import { createContext, mergeExpose, useDirection, useFormControl, useForwardElement, useId } from '@/shared'
+import type { AcceptableValue, Direction } from '@/shared/types'
+import { createChangeEventDetails, createContext, mergeExpose, useDirection, useFormControl, useForwardElement, useId } from '@/shared'
 
 /**
  * Why the Autocomplete value (the input text) changed; carried as `details.reason` (#2828).
@@ -16,7 +16,11 @@ import { createContext, mergeExpose, useDirection, useFormControl, useForwardEle
  */
 export type AutocompleteChangeReason = 'input-change' | 'item-press' | 'clear-press'
 
-export interface AutocompleteRootProps extends PrimitiveProps {
+/**
+ * `T` is the type of the item values (`AutocompleteItem` `value`); it defaults to `string`. The model is always the
+ * input text.
+ */
+export interface AutocompleteRootProps<T extends AcceptableValue = string> extends PrimitiveProps {
   /** The controlled value of the Autocomplete (the input text). Can be bound with `v-model`. */
   modelValue?: string
   /** The value of the autocomplete when initially rendered. Use when you do not need to control the state. */
@@ -53,7 +57,7 @@ export interface AutocompleteRootProps extends PrimitiveProps {
    * its text content). Omitted, items are matched with `useFilter`'s `contains` (base sensitivity). `null` turns client
    * filtering off: filter the items yourself, or on a server.
    */
-  filter?: ListboxFilterFunction<string> | null
+  filter?: ListboxFilterFunction<T> | null
   /**
    * Deprecated alias for `:filter="null"`: when `true`, turns client filtering off. Wins over `filter`.
    * @deprecated Use `:filter="null"`.
@@ -71,21 +75,23 @@ export interface AutocompleteRootProps extends PrimitiveProps {
    */
   getNavigationIntent?: (event: KeyboardEvent) => ListboxNavigationIntent | null | undefined
   /**
-   * The text a selected item writes into the value (the input text). Defaults to the item's value.
+   * The text a selected item writes into the value (the input text), from the item's value. Defaults to
+   * `String(value)`.
    */
-  displayValue?: (value: string) => string
+  displayValue?: (value: T) => string
 }
 
-export type AutocompleteRootEmits = {
+export type AutocompleteRootEmits<T extends AcceptableValue = string> = {
   /**
    * Event handler called before the value (the input text) changes; call `details.cancel()` to keep the current
-   * value. The value is `''` when `AutocompleteCancel` clears it.
+   * value. The value is `''` when `AutocompleteCancel` clears it. Only a controlled (`v-model`) value can be kept:
+   * an uncontrolled one ignores `cancel()`, as in Base UI.
    */
   'beforeUpdate:modelValue': [value: string, details: ChangeEventDetails<AutocompleteChangeReason>]
   /** Event handler called when the value (the input text) changes. The value is `''` when `AutocompleteCancel` clears it. */
   'update:modelValue': [value: string, details: ChangeEventDetails<AutocompleteChangeReason>]
   /** Event handler when highlighted element changes. */
-  'highlight': [payload: { ref: HTMLElement, value: string } | undefined]
+  'highlight': [payload: { ref: HTMLElement, value: T } | undefined]
   /** Event handler called before the open state changes; call `details.cancel()` to keep it. */
   'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason>]
   /** Event handler called when the open state of the autocomplete changes. */
@@ -105,7 +111,7 @@ export const [injectAutocompleteRootContext, provideAutocompleteRootContext]
   = createContext<AutocompleteRootContext>('AutocompleteRoot')
 </script>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends AcceptableValue = string">
 import { mergeProps, toRef } from 'vue'
 import { useCollection } from '@/Collection'
 import { provideComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
@@ -117,14 +123,14 @@ import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
 defineOptions({ inheritAttrs: false })
 
-const props = withDefaults(defineProps<AutocompleteRootProps>(), {
+const props = withDefaults(defineProps<AutocompleteRootProps<T>>(), {
   open: undefined,
   resetSearchTermOnBlur: false,
   openOnFocus: false,
   openOnClick: false,
   highlightOnHover: true,
 })
-const emits = defineEmits<AutocompleteRootEmits>()
+const emits = defineEmits<AutocompleteRootEmits<T>>()
 
 defineSlots<{
   default?: (props: {
@@ -142,7 +148,12 @@ const isFormControl = useFormControl(currentElement)
 
 // The Combobox root over a single string model: the value is the input text,
 // a selected item writes its (display) value, a clear writes `''`.
-const combobox = useComboboxRoot<string>({
+// Typed over every item value, as the Listbox and Combobox contexts it provides
+// are: `AutocompleteItem` is `ComboboxItem`, whose `value` is any
+// `AcceptableValue`. `toModelValue` turns it into the text (`displayValue`, else
+// `String(value)`). The public `filter`, `displayValue`, `highlight` and
+// `highlightItem` types use the root's `T`, so they are narrowed here.
+const combobox = useComboboxRoot<AcceptableValue>({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue ?? '',
   dir,
@@ -150,7 +161,7 @@ const combobox = useComboboxRoot<string>({
   highlightOnHover: () => props.highlightOnHover,
   loop: () => props.loop,
   getNavigationIntent: event => props.getNavigationIntent?.(event),
-  filter: toRef(() => props.filter) as Ref<ListboxFilterFunction<string> | null | undefined>,
+  filter: toRef(() => props.filter) as Ref<ListboxFilterFunction<AcceptableValue> | null | undefined>,
   ignoreFilter: () => props.ignoreFilter,
   open: () => props.open,
   defaultOpen: props.defaultOpen,
@@ -161,14 +172,23 @@ const combobox = useComboboxRoot<string>({
   openOnClick: () => props.openOnClick,
   resetModelValueOnClear: true,
   emptyValue: '',
-  toModelValue: value => props.displayValue ? props.displayValue(value) : String(value),
+  toModelValue: value => props.displayValue ? props.displayValue(value as T) : String(value),
   // Opening filters by the text already in the input.
   openSearchTerm: () => modelValue.value || '',
   getItems,
   getItem,
   element: currentElement,
-  emit: emits,
-  onHighlight: payload => emits('highlight', payload),
+  // Base UI parity (`AutocompleteRoot` writes an uncontrolled value before
+  // `onValueChange`): an uncontrolled value ignores `cancel()`, so the listener
+  // gets details of its own that nothing reads.
+  emit: (event: string, ...args: unknown[]) => {
+    if (event === 'beforeUpdate:modelValue' && !combobox.isControlled.value) {
+      const details = args[1] as ChangeEventDetails<AutocompleteChangeReason>
+      return (emits as (event: string, ...args: unknown[]) => void)(event, args[0], createChangeEventDetails(details.reason, details.event, details.trigger))
+    }
+    return (emits as (event: string, ...args: unknown[]) => void)(event, ...args)
+  },
+  onHighlight: payload => emits('highlight', payload as { ref: HTMLElement, value: T } | undefined),
   onOpenComplete: value => emits('update:openComplete', value),
 })
 const { root, context, open, highlightedElement, highlightItem, highlightFirstItem, highlightSelected, filterState } = combobox
@@ -178,16 +198,16 @@ defineExpose(mergeExpose(expose, {
   /** The filtering result: `{ search, active, count }`. */
   filtered: filterState,
   highlightedElement,
-  highlightItem,
+  highlightItem: highlightItem as (value: T) => void,
   highlightFirstItem,
   highlightSelected,
 }))
 
-provideListboxRootContext(context as any)
-provideComboboxRootContext(context as any)
+provideListboxRootContext(context)
+provideComboboxRootContext(context)
 provideAutocompleteRootContext({
   modelValue,
-  onModelValueChange: (value, reason, event) => combobox.setModelValue(value, reason as any, event),
+  onModelValueChange: (value, reason, event) => combobox.setModelValue(value, reason, event),
 })
 </script>
 

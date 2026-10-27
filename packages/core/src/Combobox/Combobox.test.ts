@@ -270,6 +270,17 @@ describe('given default Combobox', () => {
       expect(input.element.value).toBe('Testing')
     })
 
+    // #2789: the reset runs a tick after the close; a reopen inside that tick cancels it.
+    it('should keep text typed into a popup reopened before the reset runs', async () => {
+      const input = wrapper.find('input')
+      await input.trigger('keydown', { key: 'Escape' })
+      input.element.value = 'Ban'
+      await input.trigger('input')
+      await sleep(10)
+      expect(wrapper.find('[role=listbox]').exists()).toBe(true)
+      expect(input.element.value).toBe('Ban')
+    })
+
     it('should remove aria-activedescendant when close', async () => {
       await valueBox.trigger('keydown', { key: 'ArrowDown' })
       expect(valueBox.attributes('aria-activedescendant')).toBeTruthy()
@@ -1682,6 +1693,116 @@ describe('given a Combobox with a `beforeUpdate:modelValue` listener', () => {
     expect(onBeforeUpdate.mock.calls[0][1].reason).toBe('item-press')
     // Other attrs still reach the listbox root element.
     expect(document.querySelector('[data-testid=root]')).not.toBeNull()
+    wrapper.unmount()
+  })
+})
+
+// #2789: the deferred `resetSearchTermOnBlur` reset must not wipe text typed
+// right after a close, even when `beforeUpdate:open` cancels the reopen.
+describe('combobox blur reset with a cancelled reopen', () => {
+  const Host = defineComponent({
+    components: { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport },
+    setup() {
+      const value = ref('Apple')
+      const allowOpen = ref(true)
+      function onBeforeOpen(open: boolean, details: { cancel: () => void }) {
+        if (open && !allowOpen.value)
+          details.cancel()
+      }
+      return { value, allowOpen, onBeforeOpen }
+    },
+    template: `<ComboboxRoot v-model="value" @before-update:open="onBeforeOpen">
+  <ComboboxAnchor>
+    <ComboboxInput />
+    <ComboboxTrigger data-testid="trigger">Open</ComboboxTrigger>
+  </ComboboxAnchor>
+  <ComboboxPortal>
+    <ComboboxContent>
+      <ComboboxViewport>
+        <ComboboxItem value="Apple">Apple</ComboboxItem>
+        <ComboboxItem value="Banana">Banana</ComboboxItem>
+      </ComboboxViewport>
+    </ComboboxContent>
+  </ComboboxPortal>
+</ComboboxRoot>`,
+  })
+
+  it('keeps text typed right after Escape when the reopen is cancelled', async () => {
+    const wrapper = mount(Host, { attachTo: document.body })
+    const input = wrapper.find('input')
+    await wrapper.find('[data-testid=trigger]').trigger('click')
+    await nextTick()
+    ;(wrapper.vm as unknown as { allowOpen: boolean }).allowOpen = false
+    await input.trigger('keydown', { key: 'Escape' })
+    input.element.value = 'Ban'
+    await input.trigger('input')
+    await sleep(10)
+    await nextTick()
+    expect(input.element.value).toBe('Ban')
+    wrapper.unmount()
+  })
+
+  it('still restores the selected value when a trigger reopen is cancelled', async () => {
+    const wrapper = mount(Host, { attachTo: document.body })
+    const input = wrapper.find('input')
+    await wrapper.find('[data-testid=trigger]').trigger('click')
+    await nextTick()
+    input.element.value = 'Ban'
+    await input.trigger('input')
+    await nextTick()
+    ;(wrapper.vm as unknown as { allowOpen: boolean }).allowOpen = false
+    await input.trigger('keydown', { key: 'Escape' })
+    await wrapper.find('[data-testid=trigger]').trigger('click')
+    await sleep(10)
+    await nextTick()
+    expect(wrapper.find('[role=listbox]').exists()).toBe(false)
+    expect(input.element.value).toBe('Apple')
+    wrapper.unmount()
+  })
+})
+
+// #2789: a controlled parent can reopen through `open` alone, without an
+// `onOpenChange` call; the pending blur reset must not wipe the open input.
+describe('combobox blur reset with a controlled reopen', () => {
+  const Host = defineComponent({
+    components: { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport },
+    setup() {
+      const value = ref('Apple')
+      const open = ref(false)
+      return { value, open }
+    },
+    template: `<ComboboxRoot v-model="value" v-model:open="open">
+  <ComboboxAnchor>
+    <ComboboxInput />
+    <ComboboxTrigger data-testid="trigger">Open</ComboboxTrigger>
+  </ComboboxAnchor>
+  <ComboboxPortal>
+    <ComboboxContent>
+      <ComboboxViewport>
+        <ComboboxItem value="Apple">Apple</ComboboxItem>
+        <ComboboxItem value="Banana">Banana</ComboboxItem>
+      </ComboboxViewport>
+    </ComboboxContent>
+  </ComboboxPortal>
+</ComboboxRoot>`,
+  })
+
+  it('keeps the input text when the parent reopens before the reset runs', async () => {
+    const wrapper = mount(Host, { attachTo: document.body })
+    const vm = wrapper.vm as unknown as { open: boolean }
+    const input = wrapper.find('input')
+    await wrapper.find('[data-testid=trigger]').trigger('click')
+    await nextTick()
+    input.element.value = 'Ban'
+    await input.trigger('input')
+    await nextTick()
+    await input.trigger('keydown', { key: 'Escape' })
+    expect(vm.open).toBe(false)
+    vm.open = true
+    await sleep(10)
+    await nextTick()
+    expect(vm.open).toBe(true)
+    expect(input.element.value).toBe('Ban')
     wrapper.unmount()
   })
 })

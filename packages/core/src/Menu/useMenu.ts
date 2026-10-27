@@ -295,7 +295,9 @@ export function createMenuItemSelectSurface(
   async function handleSelect(event?: Event) {
     const menuItem = options.currentElement.value
     if (!isDisabled.value && menuItem) {
-      const itemSelectEvent = new CustomEvent(ITEM_SELECT, { bubbles: true, cancelable: true })
+      // `detail.originalEvent` is the click behind the selection; checkbox and
+      // radio items report it as `details.event` on their model change (#2828).
+      const itemSelectEvent = new CustomEvent(ITEM_SELECT, { bubbles: true, cancelable: true, detail: { originalEvent: event } })
       options.onSelect(itemSelectEvent)
       await nextTick()
       if (itemSelectEvent.defaultPrevented)

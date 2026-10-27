@@ -13,7 +13,7 @@
 <EmitsTable :data="[
   {
     'name': 'update:openComplete',
-    'description': '<p>Event handler called after the open or close animations of the submenu content have finished.</p>\n',
+    'description': '<p>Event handler called after the open or close animations of the content have finished.</p>\n',
     'type': '[value: boolean]'
   }
 ]" />
@@ -31,6 +31,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:openComplete` | Event handler called after the open or close animations of the submenu content have finished. | `[value: boolean]` |
+| `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 
 </llm-only>

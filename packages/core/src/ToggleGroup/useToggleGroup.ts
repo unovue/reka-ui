@@ -55,7 +55,7 @@ export interface UseToggleGroupProps {
   modelValue?: MaybeRefOrGetter<ToggleGroupValue | undefined>
   /**
    * Initial value when uncontrolled. Defaults to `undefined` when `type` is
-   * `'single'`, else `[]` (the `useSingleOrMultipleValue` rule).
+   * `'single'`, else `[]` (the rule of v2's `useSingleOrMultipleValue`).
    */
   defaultValue?: ToggleGroupValue
   /** Component `emit`; receives `beforeUpdate:modelValue` then `update:modelValue`. */
@@ -101,7 +101,7 @@ export interface UseToggleGroupReturn {
  * item, but must still wrap items in `RovingFocusGroup`/`RovingFocusItem` for
  * arrow-key navigation — a component family a pure composable cannot absorb.
  *
- * The model semantics are ported verbatim from `useSingleOrMultipleValue`
+ * The model semantics are ported verbatim from v2's `useSingleOrMultipleValue`
  * (type inference, default value, single-mode toggle-off, multiple-mode
  * add/remove with deep equality), now routed through `useControllableState`
  * so `beforeUpdate:modelValue` can cancel a press.

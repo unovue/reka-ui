@@ -60,7 +60,7 @@
   {
     'name': 'getNavigationIntent',
     'description': '<p>Resolves what a keydown in the input means for keyboard navigation. Return <code>undefined</code> to fall back to the default\nmapping, <code>null</code> to opt the key out (for Enter this also skips the selection), or <code>\'select\'</code> to select the\nhighlighted item as Enter does. A <code>\'next\'</code> or <code>\'prev\'</code> intent also opens a closed popup. Unmodified printable keys,\nArrowLeft and ArrowRight always stay text input.</p>\n',
-    'type': '((event: KeyboardEvent) =&gt; ListboxNavigationIntent | null)',
+    'type': '((event: KeyboardEvent) =&gt; ListboxNavigationIntent | null | undefined)',
     'required': false
   },
   {
@@ -159,7 +159,7 @@
 <EmitsTable :data="[
   {
     'name': 'beforeUpdate:modelValue',
-    'description': '<p>Event handler called before the value changes; call <code>details.cancel()</code> to keep the current value. The value is an array when <code>multiple</code>, and <code>undefined</code> when a single selection is cleared.</p>\n',
+    'description': '<p>Event handler called before the value changes; call <code>details.cancel()</code> to keep the current value. The value is\nan array when <code>multiple</code>, and <code>null</code> when <code>ComboboxCancel</code> clears a single selection.</p>\n',
     'type': '[value: ComboboxModelValue&lt;T, M&gt;, details: ChangeEventDetails&lt;ComboboxChangeReason, Event&gt;]'
   },
   {
@@ -174,7 +174,7 @@
   },
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value changes.</p>\n',
+    'description': '<p>Event handler called when the value changes. The value is an array when <code>multiple</code>, and <code>null</code> when\n<code>ComboboxCancel</code> clears a single selection.</p>\n',
     'type': '[value: ComboboxModelValue&lt;T, M&gt;, details: ChangeEventDetails&lt;ComboboxChangeReason, Event&gt;]'
   },
   {
@@ -218,7 +218,7 @@
 | `disabled` | When true, prevents the user from interacting with listbox | `boolean` | No | - |
 | `displayValue` | The text the input shows for the selected value of a single combobox, when ComboboxInput has no displayValue of its own. Without either, a primitive value shows as its string form and an object value as an empty input. | `((value: T) => string)` | No | - |
 | `filter` | Whether an item matches the search term: called as filter(text, search, value) with the item's textValue (or its text content; in a ComboboxVirtualizer, textContent(option)). Omitted, items are matched with useFilter's contains (base sensitivity). null turns client filtering off: filter the items yourself, or on a server. | `ListboxFilterFunction<T> \| null` | No | - |
-| `getNavigationIntent` | Resolves what a keydown in the input means for keyboard navigation. Return undefined to fall back to the default mapping, null to opt the key out (for Enter this also skips the selection), or 'select' to select the highlighted item as Enter does. A 'next' or 'prev' intent also opens a closed popup. Unmodified printable keys, ArrowLeft and ArrowRight always stay text input. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null)` | No | - |
+| `getNavigationIntent` | Resolves what a keydown in the input means for keyboard navigation. Return undefined to fall back to the default mapping, null to opt the key out (for Enter this also skips the selection), or 'select' to select the highlighted item as Enter does. A 'next' or 'prev' intent also opens a closed popup. Unmodified printable keys, ArrowLeft and ArrowRight always stay text input. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null \| undefined)` | No | - |
 | `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | `true` |
 | `ignoreFilter` | Deprecated alias for :filter="null": when true, turns client filtering off. Wins over filter. | `boolean` | No | - |
 | `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
@@ -238,10 +238,10 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the value changes; call details.cancel() to keep the current value. The value is an array when multiple, and undefined when a single selection is cleared. | `[value: ComboboxModelValue<T, M>, details: ChangeEventDetails<ComboboxChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the value changes; call details.cancel() to keep the current value. The value is an array when multiple, and null when ComboboxCancel clears a single selection. | `[value: ComboboxModelValue<T, M>, details: ChangeEventDetails<ComboboxChangeReason, Event>]` |
 | `beforeUpdate:open` | Event handler called before the open state changes; call details.cancel() to keep it. | `[value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason, Event>]` |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: T; } \| undefined]` |
-| `update:modelValue` | Event handler called when the value changes. | `[value: ComboboxModelValue<T, M>, details: ChangeEventDetails<ComboboxChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the value changes. The value is an array when multiple, and null when ComboboxCancel clears a single selection. | `[value: ComboboxModelValue<T, M>, details: ChangeEventDetails<ComboboxChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the combobox changes. | `[value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason, Event>]` |
 | `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 

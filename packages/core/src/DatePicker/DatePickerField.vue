@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { DateValue } from '@/date'
+import type { DateFieldChangeReason } from '@/DateField'
 import type { ChangeEventDetails } from '@/shared'
 import { DateFieldRoot } from '..'
 import { injectDatePickerRootContext } from './DatePickerRoot.vue'
@@ -49,7 +50,7 @@ function setFieldRef(el: Element | ComponentPublicInstance | null) {
       stepSnapping: rootContext.stepSnapping.value,
     }"
     @before-update:model-value="rootContext.onFieldBeforeUpdate"
-    @update:placeholder="(date: DateValue, details: ChangeEventDetails<any>) => rootContext.setPlaceholder(date, details.reason, details.event)"
+    @update:placeholder="(date: DateValue, details: ChangeEventDetails<DateFieldChangeReason>) => rootContext.setPlaceholder(date, details.reason, details.event)"
   >
     <slot
       :segments="segments"

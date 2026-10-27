@@ -2,6 +2,7 @@ import type { Component } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
+import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from '@/Dialog'
 import { DrawerContent, DrawerPortal, DrawerRoot, DrawerTitle } from '@/Drawer'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '@/Popover'
@@ -90,4 +91,19 @@ describe('forceMount modal content', () => {
       expect(isScrollLocked()).toBe(false)
     })
   }
+})
+
+describe('force-mounted portal of a modal that starts open', () => {
+  // The portal mounts its content right after it mounts itself on the app's
+  // first render; the content still takes focus.
+  it('moves focus to the first tabbable element', async () => {
+    mount(defineComponent({
+      setup: () => () => h('div', [
+        h('button', 'Before'),
+        h(DialogRoot, { defaultOpen: true }, () => h(DialogPortal, { forceMount: true }, () =>
+          h(DialogContent, { 'aria-describedby': undefined }, () => [h(DialogTitle, () => 'Title'), h('input', { id: 'first' })]))),
+      ]),
+    }), { attachTo: document.body })
+    await vi.waitFor(() => expect(document.activeElement?.id).toBe('first'))
+  })
 })

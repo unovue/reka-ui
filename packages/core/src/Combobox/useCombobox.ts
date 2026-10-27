@@ -3,7 +3,7 @@ import type { ComboboxRootContext } from './ComboboxRoot.vue'
 import type { ListboxChangeReason, ListboxFilterFunction, ListboxItemState, ListboxState, UseListboxRootProps, UseListboxRootReturn } from '@/Listbox/useListbox'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import type { AcceptableValue } from '@/shared/types'
-import { createEventHook } from '@vueuse/core'
+import { createEventHook, tryOnScopeDispose } from '@vueuse/core'
 import { computed, isRef, nextTick, ref, toValue } from 'vue'
 import { useListboxRoot } from '@/Listbox/useListbox'
 import { createPartSurface, disclosureState, getActiveElement, getElementByIdFrom, useComposing, useControllableState, useFilter } from '@/shared'
@@ -36,6 +36,21 @@ import { useComboboxContentPositioning } from './useComboboxContentPositioning'
  *   Shift+arrow in a `multiple` combobox).
  */
 export type ComboboxChangeReason = 'clear-press' | ListboxChangeReason
+
+/**
+ * Why the text of `ComboboxInput` / `AutocompleteInput` changed; carried as
+ * `details.reason` of its `update:modelValue` (#2828). Modelled on Base UI's
+ * `onInputValueChange` reasons.
+ *
+ * - `'input-change'`: the user typed (or an IME composition was committed).
+ * - `'input-clear'`: the text was reset to `''` when the popup closed without a selection.
+ * - `'clear-press'`: `ComboboxCancel` cleared the text.
+ * - `'escape-key'`: the text was reset when Escape closed the popup.
+ * - `'item-press'`: a selection wrote the selected item's text.
+ * - `'none'` (from `BaseChangeReason`): any other reset, such as the text
+ *   following a value the parent set, or the popup closing on an outside press.
+ */
+export type ComboboxInputChangeReason = 'input-change' | 'input-clear' | 'clear-press' | 'escape-key' | 'item-press'
 
 /**
  * Why the combobox opened or closed; carried as `details.reason` (#2828).
@@ -108,13 +123,22 @@ export function getComboboxCancelSurface(context: ComboboxRootContext<any>): Par
     () => ({
       tabindex: '-1',
       onClick: (event: MouseEvent) => {
+        // A cancelled value clear (`beforeUpdate:modelValue` on the root)
+        // keeps everything: the value, the input text and the filter.
+        if (context.resetModelValueOnClear.value) {
+          const before = context.lastChangeDetails.value
+          if (!context.clearModelValue(event) && context.lastChangeDetails.value !== before && context.lastChangeDetails.value.isCanceled)
+            return
+        }
+        // A cancelled text clear (`beforeUpdate:modelValue` on `ComboboxInput`)
+        // keeps the text and the filter.
+        if (!context.clearInput(event))
+          return
         const input = context.inputElement.value
         if (input) {
           input.value = ''
           input.focus()
         }
-        if (context.resetModelValueOnClear.value)
-          context.clearModelValue(event)
         // Done last: focusing can re-open the popup (`openOnFocus`), which may restore the filter from the previous value.
         context.filterSearch.value = ''
       },
@@ -132,8 +156,13 @@ export function getComboboxContentSurface(context: ComboboxRootContext<any>): Pa
 }
 
 export interface ComboboxInputSurfaceOptions {
-  /** The text in the input (the SFC's `v-model`); typing writes it. */
-  modelValue: Ref<string | undefined>
+  /** The text in the input (the SFC's `v-model`); typing writes it unless `setText` is given. */
+  modelValue: Readonly<Ref<string | undefined>>
+  /**
+   * Writes typed text instead of assigning `modelValue`. Returning `false` vetoes
+   * the change (an unchanged value is not a veto): the input is restored to `modelValue`.
+   */
+  setText?: (value: string, event?: Event) => boolean
   /** @defaultValue `false` */
   disabled?: MaybeRefOrGetter<boolean | undefined>
   /**
@@ -165,18 +194,27 @@ export function createComboboxInputSurface(
 ): PartSurface<ComboboxInputState> {
   const isDisabled = computed(() => toValue(options.disabled) || context.disabled.value || false)
 
+  function restoreInput(event?: Event) {
+    // The DOM already shows the typed text and the bound value did not change,
+    // so Vue would not patch it back.
+    const input = event?.target as HTMLInputElement | null
+    const text = options.modelValue.value ?? ''
+    if (input && input.value !== text)
+      input.value = text
+  }
+
   function onTextChange(value: string, event?: Event) {
-    if (options.onTextChange?.(value, event) === false) {
-      // Vetoed (a cancelled Autocomplete `beforeUpdate:modelValue`): the DOM
-      // already shows the typed text and the bound value did not change, so
-      // Vue would not patch it back.
-      const input = event?.target as HTMLInputElement | null
-      const text = options.modelValue.value ?? ''
-      if (input && input.value !== text)
-        input.value = text
-      return
+    // Vetoed: a cancelled Autocomplete `beforeUpdate:modelValue`.
+    if (options.onTextChange?.(value, event) === false)
+      return restoreInput(event)
+    if (options.setText) {
+      // Vetoed: a cancelled `ComboboxInput` `beforeUpdate:modelValue`.
+      if (!options.setText(value, event) && value !== (options.modelValue.value ?? ''))
+        return restoreInput(event)
     }
-    options.modelValue.value = value
+    else {
+      (options.modelValue as Ref<string | undefined>).value = value
+    }
     context.highlightFirstItem()
     if (!context.open.value) {
       context.onOpenChange(true, 'input-change', event)
@@ -372,8 +410,8 @@ export interface UseComboboxRootReturn<T = AcceptableValue> extends Pick<UseList
   select: (value: T, reason?: ComboboxChangeReason | BaseChangeReason, event?: Event) => boolean
   /** The current value: an array when `multiple`; `null` once a single selection is cleared. */
   modelValue: ComputedRef<T | T[] | null | undefined>
-  /** Write the whole model; returns `false` when unchanged or cancelled. */
-  setModelValue: (value: T | T[] | null | undefined, reason?: ComboboxChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Write the whole model; returns `false` when unchanged or cancelled. `AutocompleteRoot` writes the typed text with `'input-change'`. */
+  setModelValue: (value: T | T[] | null | undefined, reason?: ComboboxChangeReason | 'input-change' | BaseChangeReason, event?: Event) => boolean
   open: ComputedRef<boolean>
   /** Returns `false` when the change was cancelled via `beforeUpdate:open`. */
   onOpenChange: (value: boolean, reason?: ComboboxOpenChangeReason | BaseChangeReason, event?: Event) => boolean
@@ -440,17 +478,35 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     highlightScroll,
   })
 
-  const resetSearchTerm = createEventHook()
+  const resetSearchTerm = createEventHook<ComboboxOpenChangeReason | BaseChangeReason | undefined>()
+  const clearInputHandlers = new Set<(event?: Event) => boolean | void>()
   const isUserInputted = ref(false)
   const inputElement = ref<HTMLInputElement>()
   const triggerElement = ref<HTMLElement>()
   const bool = (source: MaybeRefOrGetter<boolean | undefined>, fallback = false) => computed(() => toValue(source) ?? fallback) as Ref<boolean>
 
+  // The blur reset runs a tick after the close. A reopen inside that window
+  // (typing straight after an outside press, a quick re-click) cancels it, so
+  // it never wipes the text of a popup that is open again (#2789).
+  let resetSearchTermTimer: ReturnType<typeof setTimeout> | undefined
+  function clearResetSearchTermTimer() {
+    clearTimeout(resetSearchTermTimer)
+    resetSearchTermTimer = undefined
+  }
+  tryOnScopeDispose(clearResetSearchTermTimer)
+
   function onOpenChange(value: boolean, reason?: ComboboxOpenChangeReason | BaseChangeReason, event?: Event) {
     // v2 ran the open/close side effects even for a no-op write (a controlled
     // `open` the parent keeps); only a cancelled change skips them.
+    // Typing drops a pending blur reset even when `beforeUpdate:open` cancels
+    // the reopen it requests: the reset would wipe the text being typed. Any
+    // other request drops it only once it went through, so a cancelled trigger
+    // press or focus still restores the input text.
+    if (reason === 'input-change')
+      clearResetSearchTermTimer()
     if (value !== open.value && !setOpen(value, reason, event))
       return false
+    clearResetSearchTermTimer()
     filterSearch.value = value ? (props.openSearchTerm?.() ?? '') : ''
     if (value) {
       // make sure the DOM is ready, then highlight the selected item
@@ -462,15 +518,19 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     }
     else {
       isUserInputted.value = false
-      setTimeout(() => {
-        if (toValue(props.resetSearchTermOnBlur) ?? true)
-          resetSearchTerm.trigger()
+      resetSearchTermTimer = setTimeout(() => {
+        resetSearchTermTimer = undefined
+        // The close reason tells the input why its text is reset. A
+        // controlled parent may have reopened the popup through `open` (or
+        // kept it open) without going through `onOpenChange`.
+        if (!open.value && (toValue(props.resetSearchTermOnBlur) ?? true))
+          resetSearchTerm.trigger(reason)
       }, 1)
     }
     return true
   }
 
-  function setModelValue(value: T | T[] | null | undefined, reason?: ComboboxChangeReason | BaseChangeReason, event?: Event) {
+  function setModelValue(value: T | T[] | null | undefined, reason?: ComboboxChangeReason | 'input-change' | BaseChangeReason, event?: Event) {
     // The Listbox model treats `null` like any other single value.
     return listbox.setModelValue(value as T | T[] | undefined, reason as ListboxChangeReason, event)
   }
@@ -513,6 +573,20 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     parentElement: computed(() => toValue(props.element) ?? undefined),
     resetSearchTermOnSelect: bool(props.resetSearchTermOnSelect, true),
     onResetSearchTerm: resetSearchTerm.on,
+    clearInput: (event) => {
+      let accepted = true
+      clearInputHandlers.forEach((handler) => {
+        if (handler(event) === false)
+          accepted = false
+      })
+      return accepted
+    },
+    onClearInput: (handler) => {
+      clearInputHandlers.add(handler)
+      // Off when the registering input unmounts.
+      tryOnScopeDispose(() => clearInputHandlers.delete(handler))
+    },
+    lastChangeDetails: listbox.lastChangeDetails,
     filter,
     filterSearch,
     filterState: listbox.filterState,
