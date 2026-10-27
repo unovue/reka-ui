@@ -82,13 +82,22 @@ Because both values are now always emitted, any styles that relied on the attrib
 
 `update:*` events on stateful roots now receive a second argument, a `ChangeEventDetails` object, and a cancellable `beforeUpdate:*` event fires before every change. `v-model` keeps working unchanged. The details tell you *why* the state changed (`details.reason`) and which native event caused it (`details.event`), and `details.cancel()` inside `beforeUpdate:*` keeps the current state.
 
-Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `CheckboxRoot`, `CheckboxGroupRoot`, `RadioGroupRoot`, `ListboxRoot`, `AccordionRoot` (`modelValue`), `DropdownMenuRoot`, `DropdownMenuSub`, `ContextMenuRoot`, `ContextMenuSub`, `MenubarSub`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `CollapsibleRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`, `view`), `CalendarRoot` and `RangeCalendarRoot` (`modelValue`, `placeholder`, `view`), and `ColorAreaRoot`, `ColorFieldRoot`, `ColorSliderRoot` and `ColorSwatchPickerRoot` (`modelValue`). The remaining families follow as they move to their headless composables.
+Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `CheckboxRoot`, `CheckboxGroupRoot`, `RadioGroupRoot`, `ListboxRoot`, `AccordionRoot` (`modelValue`), `DropdownMenuRoot`, `DropdownMenuSub`, `ContextMenuRoot`, `ContextMenuSub`, `MenubarRoot` (`modelValue`), `MenubarSub`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `CollapsibleRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`, `view`), `CalendarRoot` and `RangeCalendarRoot` (`modelValue`, `placeholder`, `view`), and `ColorAreaRoot`, `ColorFieldRoot`, `ColorSliderRoot` and `ColorSwatchPickerRoot` (`modelValue`). The remaining families follow as they move to their headless composables.
+
+`DrawerRoot` keeps the contract it was ported with from Base UI. Its `update:open` already carried `(value, details)` and still fires before the change, so `details.cancel()` inside `update:open` keeps the drawer as it is. It has no `beforeUpdate:open`, and `update:snapPoint` stays single-argument.
 
 A change to a value that is already current no longer emits: `update:modelValue` fires only when the value actually changes, so re-pressing the checked radio or the selected single-mode toggle emits nothing (the `select` event on `RadioGroupItem` still fires). A multiple selection follows the same rule, compared entry by entry: a `ListboxRoot` with `multiple` and `selection-behavior="replace"` no longer emits a fresh `[value]` array when the selected item is pressed again.
 
 `ColorAreaRoot` now emits `change`, which v2 declared but never fired, on every pointer move and arrow-key step that changes the color. It also emits `changeEnd` after each keyboard step, not only when the pointer is released. A listener on either event that assumed it never fired, or fired only once per drag, runs more often. Both events carry a `Color` object, see [Color values are `Color` objects](#color-values-are-color-objects).
 
 Each family exports its reason union, for example `DialogOpenChangeReason` (`'trigger-press' | 'close-press' | 'escape-key' | 'outside-press' | 'focus-outside'`), `TooltipOpenChangeReason` (`'trigger-hover' | 'trigger-leave' | 'trigger-focus' | 'trigger-blur' | 'trigger-press' | 'content-leave' | 'escape-key' | 'outside-press'`) or `ListboxChangeReason` (`'item-press' | 'item-keydown' | 'select-all' | 'range-select'` — an Enter selection synthesizes a click on the highlighted item, so it reports `'item-press'`). `AccordionChangeReason` and `CollapsibleChangeReason` are both `'trigger-press' | 'content-found'`, where `content-found` is the browser's find-in-page revealing content kept in the DOM with `:unmount-on-hide="false"`. Those unions only list the interaction reasons: `details.reason` is typed as the family union plus the shared `BaseChangeReason`, so every family also reports `'imperative-action'` for programmatic changes such as the slot's `close()`, and a `switch` written against the family union alone misses it. A delayed hover open on Tooltip and HoverCard reports `trigger-hover` with the pointer event that armed the timer.
+
+Wrapper families reuse the union of the family they wrap. `AlertDialogOpenChangeReason` is `DialogOpenChangeReason`. `DropdownMenuOpenChangeReason`, `ContextMenuOpenChangeReason` and `MenubarChangeReason` are `MenuOpenChangeReason` (`'trigger-press' | 'trigger-hover' | 'item-press' | 'list-navigation' | 'sibling-open' | 'escape-key' | 'outside-press' | 'focus-outside'`). On `MenubarRoot`:
+
+- a press or Enter, Space or ArrowDown on a trigger reports `trigger-press`;
+- moving the pointer to another trigger while a menu is open reports `trigger-hover`;
+- ArrowLeft or ArrowRight inside a menu reports `list-navigation`;
+- a close reports the menu's reason (`item-press`, `escape-key`, `outside-press` or `focus-outside`).
 
 What to check in your code:
 
@@ -129,7 +138,7 @@ What to check in your code:
 
 ## Generated ids
 
-The ids Reka UI generates for overlay parts are now derived from the root. This covers the Dialog content, title and description, the Popover trigger and content, and the Tooltip label that the trigger's `aria-describedby` points at. Their shape differs from v2, for example `reka-tooltip-<n>-content` instead of `reka-tooltip-content-<n>`.
+The ids Reka UI generates for overlay parts are now derived from the root. This covers the Dialog and AlertDialog content, title and description, the Drawer content, title and description, the Popover trigger and content, the DropdownMenu trigger and content, and the Tooltip label that the trigger's `aria-describedby` points at. Their shape differs from v2, for example `reka-tooltip-<n>-content` instead of `reka-tooltip-content-<n>`. A `MenubarMenu` now allocates its content id when the menu is set up instead of when its content first renders.
 
 Only code that hard-coded the shape of a generated id is affected. In tests, select by role, label or text, or compare the attribute with the id read from the other element. In CSS, style by data attribute or class. An `id` you pass to a part yourself is unchanged.
 
@@ -361,3 +370,12 @@ defineExpose(expose) // [!code ++]
 ```
 
 If the component already calls `defineExpose({ ... })`, wrap the object in `mergeExpose(expose, { ... })`.
+
+## Menu wrapper contexts
+
+These changes only affect custom parts and tests built on the contexts the menu wrappers provide. Components used through their props, events and `v-model` work as before.
+
+- **Menubar root context.** On `injectMenubarRootContext()`, `modelValue` is now a readonly ref: assigning `modelValue.value` no longer opens or closes a menu. Call `onMenuOpen(value)`, `onMenuClose()` or `onMenuToggle(value)` instead. Each one accepts an optional reason and native event, and returns `false` when the change was cancelled or did not change the value.
+- **`MenubarRoot` emit type.** `update:modelValue` is typed `[value: string, details: ChangeEventDetails<MenubarChangeReason>]`. v2 declared it as `[value: boolean]`, although the payload was always the open menu's value (`''` when every menu is closed). A wrapper that re-declares the emit needs the new tuple.
+- **No inner `MenuRoot`.** `DropdownMenuRoot`, `ContextMenuRoot` and `MenubarMenu` provide the Menu contexts themselves, through `useDropdownMenu()`, `useContextMenu()` and `useMenubarMenu()`. A test that looked up a `MenuRoot` component under them finds nothing; assert on the wrapper root's events instead.
+- **Dropdown ids are set by the root.** The `DropdownMenuRoot` context fills in `triggerId` and `contentId` up front, so a custom trigger or content that assigned them keeps the root's ids. Pass `id` to the part if you need a specific one.
