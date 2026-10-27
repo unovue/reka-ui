@@ -16,6 +16,10 @@ export interface DismissableLayerProps extends PrimitiveProps {
    * When `true`, hover/focus/click interactions will be disabled on elements outside
    * the `DismissableLayer`. Users will need to click twice on outside elements to
    * interact with them: once to close the `DismissableLayer`, and again to trigger the element.
+   *
+   * Outside elements are covered by a transparent internal backdrop
+   * (`[data-reka-internal-backdrop]`) rendered right below the layer; `<body>`
+   * styles are never touched.
    */
   disableOutsidePointerEvents?: boolean
 }
@@ -68,7 +72,7 @@ import {
   useRender,
 } from '@/Primitive'
 import { containsComposed } from '@/shared'
-import { acquireBodyPointerEvents, releaseBodyPointerEvents } from '@/shared/bodyPointerEvents'
+import { blockPositioningWrapper, mountInternalBackdrop } from './internalBackdrop'
 import {
   branches,
   highestDisabledIndex,
@@ -90,6 +94,12 @@ const props = withDefaults(defineProps<DismissableLayerProps & {
    * internal plumbing between primitives.
    */
   present?: boolean
+  /**
+   * Element left interactive through a hole in the internal backdrop while
+   * `disableOutsidePointerEvents` is on (Base UI's backdrop `cutout`), e.g. a
+   * Combobox input or a ContextMenu trigger area. Internal plumbing.
+   */
+  backdropCutout?: HTMLElement | null
 }>(), {
   disableOutsidePointerEvents: false,
   present: true,
@@ -123,7 +133,7 @@ const stackLayer: StackLayer = {
 // `-1` when this layer is not in the stack (not present) — same as before.
 const index = computed(() => indexOfLayer(stackLayer))
 
-const isBodyPointerEventsDisabled = computed(() => highestDisabledIndex() >= 0)
+const hasModalLayer = computed(() => highestDisabledIndex() >= 0)
 
 const isPointerEventsEnabled = computed(() => index.value >= highestDisabledIndex())
 
@@ -160,22 +170,31 @@ const focusOutside = useFocusOutside((event) => {
     emits('dismiss', { reason: 'focus-outside', event })
 }, layerElement, () => props.present)
 
-// Body pointer-events lock (#2674). `watch` with explicit sources (not
-// `watchEffect`) so it re-runs only when this layer's `element` /
-// `disableOutsidePointerEvents` / `present` change — never on other layers'
-// membership churn. The shared owner (also held by `useBodyScrollLock`) restores
-// the body only once the last layer or scroll lock lets go, so the cleanup here
-// (prop toggle or unmount) is order-independent (#2674, #2867).
+// Internal backdrop (#2822, replaces the body `pointer-events: none` lock of
+// #2674/#2867). `watch` with explicit sources (not `watchEffect`) so it re-runs
+// only when this layer's `element` / `disableOutsidePointerEvents` / `present`
+// / cutout change, never on other layers' membership churn. Each modal layer
+// owns its own backdrop, so the cleanup (prop toggle or unmount) is
+// order-independent, and nothing is ever mounted during SSR (`layerElement`
+// only resolves on the client).
 watch(
-  [layerElement, () => props.disableOutsidePointerEvents, () => props.present],
-  ([element, disableOutsidePointerEvents, present], _, onCleanup) => {
-    if (!element || !present)
+  [layerElement, () => props.disableOutsidePointerEvents, () => props.present, () => props.backdropCutout],
+  ([element, disableOutsidePointerEvents, present, cutout], _, onCleanup) => {
+    if (!element || !present || !disableOutsidePointerEvents)
       return
-    if (disableOutsidePointerEvents) {
-      const doc = element.ownerDocument
-      acquireBodyPointerEvents(doc, element)
-      onCleanup(() => releaseBodyPointerEvents(doc, element))
-    }
+    onCleanup(mountInternalBackdrop(element, cutout))
+  },
+  { immediate: true },
+)
+
+// A layer below a modal one is inert (`pointer-events: none` on the layer,
+// see the template). Its positioning wrapper, which sits outside the layer
+// element, must not stay hit-testable over the modal layer's backdrop.
+watch(
+  [layerElement, () => hasModalLayer.value && !isPointerEventsEnabled.value],
+  ([element, blocked], _, onCleanup) => {
+    if (element && blocked)
+      onCleanup(blockPositioningWrapper(element))
   },
   { immediate: true },
 )
@@ -183,7 +202,7 @@ watch(
 // Membership in the layer stack follows presence, not mount: a hidden layer
 // (e.g. a closed Dialog with `unmountOnHide: false`) must leave the stack so
 // Escape and outside interactions target the layer that is actually visible.
-// Kept separate from the pointer-events watch above so a
+// Kept separate from the backdrop watch above so a
 // `disableOutsidePointerEvents` toggle alone never re-orders the stack.
 watch(
   [layerElement, () => props.present],
@@ -205,7 +224,7 @@ watch(
     :ref="elementRef"
     data-dismissable-layer
     :style="{
-      pointerEvents: isBodyPointerEventsDisabled
+      pointerEvents: hasModalLayer
         ? isPointerEventsEnabled
           ? 'auto'
           : 'none'

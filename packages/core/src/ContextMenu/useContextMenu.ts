@@ -150,7 +150,6 @@ export function createContextMenuTriggerSurface(
     () => ({
       style: {
         WebkitTouchCallout: 'none',
-        pointerEvents: 'auto',
       },
       onContextmenu: handleContextMenu,
       onPointerdown: handlePointerDown,

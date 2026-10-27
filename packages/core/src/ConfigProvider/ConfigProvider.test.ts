@@ -2,8 +2,10 @@ import type { VueWrapper } from '@vue/test-utils'
 import type vueuse from '@vueuse/core'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h } from 'vue'
 import { useId } from '@/shared'
+import { resetBodyScrollLock } from '@/shared/useBodyScrollLock'
+import { sleep } from '@/test'
 import ConfigProviderTest from './_ConfigProvider.vue'
 import ConfigProvider from './ConfigProvider.vue'
 
@@ -17,6 +19,12 @@ vi.mock('@vueuse/core', async (importOriginal) => {
   }
 })
 
+function resetPageStyles() {
+  resetBodyScrollLock()
+  document.body.removeAttribute('style')
+  document.documentElement.removeAttribute('style')
+}
+
 describe('given a default ConfigProvider', async () => {
   globalThis.ResizeObserver = class ResizeObserver {
     observe() {}
@@ -28,9 +36,11 @@ describe('given a default ConfigProvider', async () => {
   Object.defineProperty(document, 'clientWidth', { writable: true, configurable: true, value: 190 })
   Object.defineProperty(document.documentElement, 'clientWidth', { writable: true, configurable: true, value: 190 })
 
-  beforeEach(() => {
+  beforeEach(async () => {
     document.body.innerHTML = ''
+    resetPageStyles()
     wrapper = mount(ConfigProviderTest, { attachTo: document.body })
+    await sleep(10) // the scroll lock applies a macrotask later
   })
 
   it('it should render config provider, and all it\'s slot correctly', () => {
@@ -41,11 +51,13 @@ describe('given a default ConfigProvider', async () => {
     expect(document.body.innerHTML).toContain('dir="ltr"')
   })
 
-  it('should add scrollBody\'s css to body', () => {
-    expect(document.body.style.paddingRight).toBe('10px')
-    expect(document.body.style.marginRight).toBe('0px')
-    expect(document.body.style.overflow).toBe('hidden')
-    expect(document.documentElement.style.getPropertyValue('--scrollbar-width')).toBe('10px')
+  it('should lock page scroll without shifting the layout', () => {
+    expect(document.body.style.overflowY).toBe('hidden')
+    expect(document.documentElement.style.scrollbarGutter).toBe('stable')
+    // No padding compensation, no inherited `--scrollbar-width` (#2822)
+    expect(document.body.style.paddingRight).toBe('')
+    expect(document.documentElement.style.getPropertyValue('--scrollbar-width')).toBe('')
+    expect(document.body.style.pointerEvents).toBe('')
   })
 })
 
@@ -63,25 +75,28 @@ describe('given a dir="rtl" ConfigProvider', async () => {
 describe('given a scrollBody ConfigProvider', async () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    resetPageStyles()
   })
 
-  it('should set 0 padding, 0 margin body', async () => {
+  it('should only hide the overflow when scrollBody is false', async () => {
     mount(ConfigProviderTest, { props: { scrollBody: false }, attachTo: document.body })
-    await nextTick()
-    expect(document.body.style.paddingRight).toBe('0px')
-    expect(document.body.style.marginRight).toBe('0px')
+    await sleep(10)
+    expect(document.body.style.overflowY).toBe('hidden')
+    expect(document.documentElement.style.scrollbarGutter).toBe('')
+    expect(document.body.style.paddingRight).toBe('')
+    expect(document.body.style.marginRight).toBe('')
   })
 
-  it('should set 0 padding body', async () => {
+  it('should set the given padding on body', async () => {
     mount(ConfigProviderTest, { props: { scrollBody: { padding: 20 } }, attachTo: document.body })
-    await nextTick()
+    await sleep(10)
     expect(document.body.style.paddingRight).toBe('20px')
     expect(document.body.style.marginRight).toBe('0px')
   })
 
-  it('should set 0 margin body', async () => {
+  it('should set the given margin on body', async () => {
     mount(ConfigProviderTest, { props: { scrollBody: { margin: 20, padding: 0 } }, attachTo: document.body })
-    await nextTick()
+    await sleep(10)
     expect(document.body.style.paddingRight).toBe('0px')
     expect(document.body.style.marginRight).toBe('20px')
   })

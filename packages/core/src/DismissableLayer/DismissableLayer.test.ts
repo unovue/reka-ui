@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { createShadowHost } from '@/shared/test/shadowDom'
-import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
+import { resetBodyScrollLock, useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import { sleep } from '@/test'
 import { DismissableLayerBranch, DismissableLayer as DismissableLayerPrimitive } from '.'
 import { branches, resetLayerStack } from './layerStack'
@@ -81,10 +81,23 @@ describe('given a DismissableLayerBranch', () => {
   })
 })
 
-describe('nested layers with disableOutsidePointerEvents (#2674)', () => {
+/** Every internal backdrop currently in the document, in DOM order. */
+function backdrops() {
+  return [...document.querySelectorAll<HTMLElement>('[data-reka-internal-backdrop]')]
+}
+
+/** The internal backdrop that sits right below the layer with `testId`. */
+function backdropOf(testId: string) {
+  const layer = document.querySelector(`[data-testid="${testId}"]`)
+  const previous = layer?.previousElementSibling
+  return previous?.hasAttribute('data-reka-internal-backdrop') ? previous as HTMLElement : null
+}
+
+describe('nested layers with disableOutsidePointerEvents (#2674, #2822)', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
     document.body.style.pointerEvents = ''
+    resetLayerStack()
   })
 
   function mountNested() {
@@ -110,82 +123,89 @@ describe('nested layers with disableOutsidePointerEvents (#2674)', () => {
     return { wrapper, outerOpen, innerOpen, innerDisable }
   }
 
-  it('should keep body pointer-events none after a nested layer closes while outer stays open', async () => {
+  it('should mount one backdrop right below each modal layer and never touch body pointer-events', async () => {
     const { wrapper, innerOpen } = mountNested()
     await sleep(1)
+    expect(backdrops()).toHaveLength(1)
+    expect(backdropOf('outer')).not.toBeNull()
+    expect(document.body.style.pointerEvents).toBe('')
 
-    // Outer (dialog) open -> body locked
-    expect(document.body.style.pointerEvents).toBe('none')
-
-    // Open inner (menu) layer
     innerOpen.value = true
     await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
+    expect(backdrops()).toHaveLength(2)
+    expect(backdropOf('inner')).not.toBeNull()
+    expect(document.body.style.pointerEvents).toBe('')
 
-    // Close inner layer while outer is still open
     innerOpen.value = false
     await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
+    expect(backdrops()).toHaveLength(1)
+    expect(backdropOf('outer')).not.toBeNull()
+    expect(document.body.style.pointerEvents).toBe('')
 
     wrapper.unmount()
+    expect(backdrops()).toHaveLength(0)
   })
 
-  it('should keep body pointer-events none when a nested layer toggles disableOutsidePointerEvents to false while mounted', async () => {
+  it('should remove only the nested backdrop when the nested layer toggles disableOutsidePointerEvents to false', async () => {
     const { wrapper, innerOpen, innerDisable } = mountNested()
-    await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
-
-    // Open inner layer (still disabling outside pointer events)
     innerOpen.value = true
     await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
+    expect(backdrops()).toHaveLength(2)
 
     // Toggle the prop off without unmounting (a modal Menu closing)
     innerDisable.value = false
     await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
+    expect(backdropOf('inner')).toBeNull()
+    expect(backdropOf('outer')).not.toBeNull()
 
-    // Now unmount the inner layer entirely; outer still open
     innerOpen.value = false
     await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
+    expect(backdrops()).toHaveLength(1)
 
     wrapper.unmount()
   })
 
-  it('should restore and re-lock body pointer-events as the only layer toggles disableOutsidePointerEvents', async () => {
+  it('should remove and re-mount the backdrop as the only layer toggles disableOutsidePointerEvents', async () => {
     const disable = ref(true)
     const wrapper = mount(defineComponent({
       setup() {
-        return () => h(DismissableLayerPrimitive, { disableOutsidePointerEvents: disable.value }, () => 'Only')
+        return () => h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': disable.value, 'data-testid': 'only' }, () => 'Only')
       },
     }), { attachTo: document.body })
 
     await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
+    expect(backdropOf('only')).not.toBeNull()
 
-    // Toggle off -> body restored, and the layer must leave the tracking set
     disable.value = false
     await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('')
+    expect(backdrops()).toHaveLength(0)
 
-    // Toggle back on -> body must lock again (would stay '' if a stale entry
-    // remained in the set, making `size === 0` false on re-add)
     disable.value = true
     await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
+    expect(backdropOf('only')).not.toBeNull()
+    expect(backdrops()).toHaveLength(1)
 
     wrapper.unmount()
+    expect(backdrops()).toHaveLength(0)
   })
 
-  it('should restore body pointer-events after the last layer closes', async () => {
-    const { wrapper, outerOpen } = mountNested()
+  it('should dismiss only the top modal layer on a press on its backdrop', async () => {
+    const outerDismiss = vi.fn()
+    const innerDismiss = vi.fn()
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h('div', [
+          h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'data-testid': 'outer', 'onDismiss': outerDismiss }, () => 'Outer'),
+          h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'data-testid': 'inner', 'onDismiss': innerDismiss }, () => 'Inner'),
+        ])
+      },
+    }), { attachTo: document.body })
     await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
 
-    outerOpen.value = false
+    await fireEvent.pointerDown(backdropOf('inner')!)
     await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('')
+    expect(innerDismiss).toHaveBeenCalledWith(expect.objectContaining({ reason: 'outside-press' }))
+    expect(outerDismiss).not.toHaveBeenCalled()
 
     wrapper.unmount()
   })
@@ -200,10 +220,9 @@ describe('sibling layers with disableOutsidePointerEvents', () => {
     resetLayerStack()
   })
 
-  // The mirrored direction of the #2674 tests above: the OLDER disabling
-  // layer leaves the stack while a NEWER sibling is still present. This is the
-  // layer-registry half of the #2784 scenario (a closing animated Popover
-  // whose layer unmounts after a Dialog has already opened).
+  // The older disabling layer leaves the stack while a newer sibling is still
+  // present: the #2784 scenario (a closing animated Popover whose layer
+  // unmounts after a Dialog has already opened).
   function mountSiblings() {
     const popoverOpen = ref(true)
     const dialogOpen = ref(false)
@@ -224,148 +243,55 @@ describe('sibling layers with disableOutsidePointerEvents', () => {
     return { wrapper, popoverOpen, dialogOpen }
   }
 
-  it('should keep body pointer-events none after the older layer unmounts while a newer one is open', async () => {
+  it('should keep the newer layer\'s backdrop after the older layer unmounts', async () => {
     const { wrapper, popoverOpen, dialogOpen } = mountSiblings()
     await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
+    expect(backdropOf('popover')).not.toBeNull()
 
-    // Dialog mounts while the popover is still animating out (still mounted)
     dialogOpen.value = true
     await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
+    expect(backdrops()).toHaveLength(2)
 
-    // Popover's exit animation ends -> its layer unmounts; dialog still open
     popoverOpen.value = false
     await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
+    expect(backdrops()).toHaveLength(1)
+    expect(backdropOf('dialog')).not.toBeNull()
 
-    // Closing the dialog restores the body
     dialogOpen.value = false
     await sleep(1)
+    expect(backdrops()).toHaveLength(0)
     expect(document.body.style.pointerEvents).toBe('')
 
     wrapper.unmount()
   })
 
-  it('should keep body pointer-events none when the handoff happens in the same tick', async () => {
+  it('should hand off the backdrop when both change in the same tick', async () => {
     const { wrapper, popoverOpen, dialogOpen } = mountSiblings()
     await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
 
-    // "Pick" action: close the popover and open the dialog in the same tick
     popoverOpen.value = false
     dialogOpen.value = true
     await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
+    expect(backdrops()).toHaveLength(1)
+    expect(backdropOf('dialog')).not.toBeNull()
 
     dialogOpen.value = false
     await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('')
+    expect(backdrops()).toHaveLength(0)
 
     wrapper.unmount()
   })
 })
 
-describe('scroll-lock handoff to a modal layer without its own scroll lock (#2784)', () => {
+describe('scroll locks and modal layers are independent (#2784, #2867, #2822)', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
     document.body.style.pointerEvents = ''
     resetLayerStack()
+    resetBodyScrollLock()
   })
 
-  // Mimics `PopoverContentModal`: a modal layer that also holds a body scroll
-  // lock, released when the content unmounts (for an animated popover that is
-  // the end of the exit animation).
-  const ModalLayerWithScrollLock = defineComponent({
-    setup() {
-      useBodyScrollLock(true)
-      return () => h(DismissableLayerPrimitive, { disableOutsidePointerEvents: true }, () => 'popover')
-    },
-  })
-
-  // Mimics an overlay-less modal `DialogContent`: disables outside pointer
-  // events but registers no scroll lock (that lives on `DialogOverlayImpl`).
-  function mountHandoff() {
-    const popoverOpen = ref(false)
-    const dialogOpen = ref(false)
-
-    const wrapper = mount(defineComponent({
-      setup() {
-        return () => h('div', [
-          popoverOpen.value ? h(ModalLayerWithScrollLock) : null,
-          dialogOpen.value
-            ? h(DismissableLayerPrimitive, { disableOutsidePointerEvents: true }, () => 'dialog')
-            : null,
-        ])
-      },
-    }), { attachTo: document.body })
-
-    return { wrapper, popoverOpen, dialogOpen }
-  }
-
-  it('should keep body pointer-events none when the scroll-lock holder unmounts while a modal layer remains open', async () => {
-    const { wrapper, popoverOpen, dialogOpen } = mountHandoff()
-
-    // Modal popover opens: dismissable layer + scroll lock
-    popoverOpen.value = true
-    await nextTick() // scroll lock applies its own pointer-events on next tick
-    await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
-
-    // Modal dialog (no overlay -> no scroll lock) opens while the popover
-    // is still mounted (e.g. animating out)
-    dialogOpen.value = true
-    await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
-
-    // Popover unmounts: the last scroll lock releases and must not clear the
-    // body pointer-events still owned by the dialog's dismissable layer
-    popoverOpen.value = false
-    await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
-
-    // Closing the dialog restores the body
-    dialogOpen.value = false
-    await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('')
-
-    wrapper.unmount()
-  })
-
-  it('should keep body pointer-events none when a scroll-locking layer opens and closes over a modal layer', async () => {
-    const { wrapper, popoverOpen, dialogOpen } = mountHandoff()
-
-    // Overlay-less modal dialog open first
-    dialogOpen.value = true
-    await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
-
-    // A modal popover (scroll-lock holder) opens on top, then closes
-    popoverOpen.value = true
-    await nextTick()
-    await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
-
-    popoverOpen.value = false
-    await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
-
-    dialogOpen.value = false
-    await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('')
-
-    wrapper.unmount()
-  })
-})
-
-describe('body pointer-events shared by scroll locks and modal layers (#2867)', () => {
-  beforeEach(() => {
-    document.body.innerHTML = ''
-    document.body.style.pointerEvents = ''
-    resetLayerStack()
-  })
-
-  // Mimics `DialogOverlayImpl`: holds a body scroll lock while mounted.
+  // Mimics a modal content that holds a page scroll lock while mounted.
   const ScrollLock = defineComponent({
     setup() {
       useBodyScrollLock(true)
@@ -383,75 +309,41 @@ describe('body pointer-events shared by scroll locks and modal layers (#2867)', 
         return () => h('div', [
           lockOpen.value ? h(ScrollLock) : null,
           layerOpen.value
-            ? h(DismissableLayerPrimitive, { disableOutsidePointerEvents: true }, () => 'dialog')
+            ? h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'data-testid': 'dialog' }, () => 'dialog')
             : null,
         ])
       },
     }), { attachTo: document.body })
 
-    /**
-     * Engages the scroll lock (its `nextTick` included) before the layer mounts,
-     * as happens when an open modal Dialog hydrates outside a scheduler flush.
-     */
-    async function openLockThenLayer() {
-      lockOpen.value = true
-      await nextTick()
-      await sleep(1)
-      expect(document.body.style.pointerEvents).toBe('none')
-      layerOpen.value = true
-      await sleep(1)
-      expect(document.body.style.pointerEvents).toBe('none')
-    }
-
-    return { wrapper, lockOpen, layerOpen, openLockThenLayer }
+    return { wrapper, lockOpen, layerOpen }
   }
 
-  it('should restore body pointer-events when the lock releases before a layer that mounted under it', async () => {
-    const { wrapper, lockOpen, layerOpen, openLockThenLayer } = mountLockAndLayer()
-    await openLockThenLayer()
+  const isScrollLocked = () => getComputedStyle(document.body).overflowY === 'hidden'
 
-    lockOpen.value = false
-    await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
-
-    layerOpen.value = false
-    await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('')
-
-    wrapper.unmount()
-  })
-
-  it('should restore body pointer-events when a layer that mounted under the lock releases first', async () => {
-    const { wrapper, lockOpen, layerOpen, openLockThenLayer } = mountLockAndLayer()
-    await openLockThenLayer()
-
-    layerOpen.value = false
-    await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
-
-    lockOpen.value = false
-    await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('')
-
-    wrapper.unmount()
-  })
-
-  it('should keep body pointer-events none while a scroll lock still holds after the layer releases', async () => {
+  it.each([
+    ['the lock', 'the layer'],
+    ['the layer', 'the lock'],
+  ] as const)('should restore the page once %s and then %s release', async (first) => {
     const { wrapper, lockOpen, layerOpen } = mountLockAndLayer()
-
-    layerOpen.value = true
-    await sleep(1)
     lockOpen.value = true
-    await nextTick()
-    await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
+    layerOpen.value = true
+    await sleep(10) // the scroll lock applies a macrotask later
+    expect(isScrollLocked()).toBe(true)
+    expect(backdrops()).toHaveLength(1)
 
-    layerOpen.value = false
-    await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
+    if (first === 'the lock')
+      lockOpen.value = false
+    else
+      layerOpen.value = false
+    await sleep(10) // the scroll lock applies a macrotask later
+    expect(isScrollLocked()).toBe(first !== 'the lock')
+    expect(backdrops()).toHaveLength(first === 'the lock' ? 1 : 0)
 
     lockOpen.value = false
-    await sleep(1)
+    layerOpen.value = false
+    await sleep(10) // the scroll lock applies a macrotask later
+    expect(isScrollLocked()).toBe(false)
+    expect(backdrops()).toHaveLength(0)
     expect(document.body.style.pointerEvents).toBe('')
 
     wrapper.unmount()
@@ -459,25 +351,146 @@ describe('body pointer-events shared by scroll locks and modal layers (#2867)', 
 
   it('should preserve a page-defined body pointer-events value through the whole cycle', async () => {
     document.body.style.pointerEvents = 'auto'
-    const { wrapper, lockOpen, layerOpen, openLockThenLayer } = mountLockAndLayer()
-    await openLockThenLayer()
-
-    lockOpen.value = false
-    await sleep(1)
-    layerOpen.value = false
-    await sleep(1)
+    const { wrapper, lockOpen, layerOpen } = mountLockAndLayer()
+    lockOpen.value = true
+    layerOpen.value = true
+    await sleep(10) // the scroll lock applies a macrotask later
     expect(document.body.style.pointerEvents).toBe('auto')
 
-    lockOpen.value = true
-    await nextTick()
-    await sleep(1)
-    expect(document.body.style.pointerEvents).toBe('none')
-
     lockOpen.value = false
-    await sleep(1)
+    layerOpen.value = false
+    await sleep(10) // the scroll lock applies a macrotask later
     expect(document.body.style.pointerEvents).toBe('auto')
 
     wrapper.unmount()
+  })
+})
+
+describe('given a DismissableLayer inside a positioned popper wrapper', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    resetLayerStack()
+  })
+
+  it('should mount the backdrop next to the wrapper, not inside it, and cut the cutout element out', async () => {
+    const cutout = document.createElement('button')
+    document.body.append(cutout)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h('div', { 'data-reka-popper-content-wrapper': '', 'style': 'transform: translate(10px, 10px)' }, [
+          h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'backdropCutout': cutout, 'data-testid': 'content' }, () => 'Content'),
+        ])
+      },
+    }), { attachTo: document.body })
+    await sleep(1)
+
+    const popperWrapper = document.querySelector('[data-reka-popper-content-wrapper]')!
+    const [backdrop] = backdrops()
+    expect(backdrop.nextElementSibling).toBe(popperWrapper)
+    expect(backdrop.style.position).toBe('fixed')
+    expect(backdrop.getAttribute('role')).toBe('presentation')
+    expect(backdrop.style.clipPath).toContain('polygon(')
+
+    wrapper.unmount()
+    expect(backdrops()).toHaveLength(0)
+  })
+
+  it('should keep the cutout in place as the cutout or the viewport resizes, and stop tracking on unmount', async () => {
+    const observers: { callback: () => void, disconnect: ReturnType<typeof vi.fn> }[] = []
+    vi.stubGlobal('ResizeObserver', class {
+      disconnect = vi.fn()
+      constructor(public callback: () => void) {
+        observers.push(this)
+      }
+
+      observe() {}
+    })
+    onTestFinished(() => vi.unstubAllGlobals())
+
+    const cutout = document.createElement('button')
+    document.body.append(cutout)
+    let rect = { left: 10, top: 20, right: 110, bottom: 60 }
+    vi.spyOn(cutout, 'getBoundingClientRect').mockImplementation(() => ({ ...rect }) as DOMRect)
+
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(DismissableLayerPrimitive, { disableOutsidePointerEvents: true, backdropCutout: cutout }, () => 'Content'),
+    }), { attachTo: document.body })
+    await sleep(1)
+
+    const [backdrop] = backdrops()
+    expect(backdrop.style.clipPath).toContain('10px 20px')
+
+    rect = { left: 30, top: 40, right: 130, bottom: 80 }
+    observers[0].callback()
+    expect(backdrop.style.clipPath).toContain('30px 40px')
+
+    rect = { left: 50, top: 60, right: 150, bottom: 100 }
+    window.dispatchEvent(new Event('resize'))
+    expect(backdrop.style.clipPath).toContain('50px 60px')
+
+    wrapper.unmount()
+    expect(observers[0].disconnect).toHaveBeenCalled()
+    rect = { left: 70, top: 80, right: 170, bottom: 120 }
+    window.dispatchEvent(new Event('resize'))
+    expect(backdrop.style.clipPath).toContain('50px 60px')
+  })
+
+  it('should give the backdrop the z-index of the layer, or of the popper wrapper', async () => {
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => [
+          h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'style': 'position: fixed; z-index: 30', 'data-testid': 'fixed' }, () => 'Fixed'),
+          h('div', { 'data-reka-popper-content-wrapper': '', 'style': 'position: fixed' }, [
+            h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'style': 'z-index: 50', 'data-testid': 'popper' }, () => 'Popper'),
+          ]),
+        ]
+      },
+    }), { attachTo: document.body })
+    await sleep(1)
+
+    const zIndexes = backdrops().map(el => el.style.zIndex)
+    expect(zIndexes).toEqual(['30', '50'])
+    wrapper.unmount()
+  })
+
+  it('should mount the backdrop in body, with a hole over the layer, when a transformed ancestor would contain it', async () => {
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h('div', { 'data-testid': 'card', 'style': 'transform: translateX(0)' }, [
+          h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'style': 'position: fixed; z-index: 50', 'data-testid': 'layer' }, () => 'Content'),
+        ])
+      },
+    }), { attachTo: document.body })
+    const layer = document.querySelector<HTMLElement>('[data-testid="layer"]')!
+    vi.spyOn(layer, 'getBoundingClientRect').mockReturnValue({ left: 5, top: 6, right: 105, bottom: 106 } as DOMRect)
+    await sleep(1)
+    window.dispatchEvent(new Event('resize'))
+
+    const [backdrop] = backdrops()
+    expect(backdrop.parentElement).toBe(document.body)
+    expect(document.querySelector('[data-testid="card"]')!.contains(backdrop)).toBe(false)
+    expect(backdrop.style.zIndex).toBe('50')
+    expect(backdrop.style.clipPath).toContain('5px 6px')
+
+    wrapper.unmount()
+    expect(backdrops()).toHaveLength(0)
+  })
+
+  it('should mount the backdrop before a fixed container that wraps the layer (scrollable overlay)', async () => {
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h('div', { 'data-testid': 'overlay', 'style': 'position: fixed; inset: 0; overflow-y: auto' }, [
+          h(DismissableLayerPrimitive, { 'disableOutsidePointerEvents': true, 'data-testid': 'content' }, () => 'Content'),
+        ])
+      },
+    }), { attachTo: document.body })
+    await sleep(1)
+
+    const [backdrop] = backdrops()
+    expect(backdrop.nextElementSibling).toBe(document.querySelector('[data-testid="overlay"]'))
+
+    wrapper.unmount()
+    expect(backdrops()).toHaveLength(0)
   })
 })
 
@@ -631,27 +644,27 @@ describe('given a mounted DismissableLayer toggling disableOutsidePointerEvents'
   beforeEach(() => {
     document.body.innerHTML = ''
     document.body.style.pointerEvents = ''
+    resetLayerStack()
   })
 
   // Regression: with `unmountOnHide: false` the layer stays mounted while
-  // `disableOutsidePointerEvents` toggles `true` -> `false`. The body pointer-events
-  // must be restored even though the component is never unmounted.
-  it('should restore body pointer-events when toggled off while staying mounted', async () => {
+  // `disableOutsidePointerEvents` toggles `true` -> `false`. Its backdrop must
+  // go away even though the component is never unmounted.
+  it('should remove the backdrop when toggled off while staying mounted', async () => {
     const wrapper = mount(DismissableLayerPrimitive, {
       attachTo: document.body,
       props: { disableOutsidePointerEvents: true },
     })
     await nextTick()
-
-    expect(document.body.style.pointerEvents).toBe('none')
+    expect(backdrops()).toHaveLength(1)
 
     await wrapper.setProps({ disableOutsidePointerEvents: false })
     await nextTick()
-
+    expect(backdrops()).toHaveLength(0)
     expect(document.body.style.pointerEvents).toBe('')
   })
 
-  it('should keep body locked while another layer still disables pointer events', async () => {
+  it('should keep the other layer\'s backdrop while it still disables pointer events', async () => {
     const first = mount(DismissableLayerPrimitive, {
       attachTo: document.body,
       props: { disableOutsidePointerEvents: true },
@@ -661,20 +674,17 @@ describe('given a mounted DismissableLayer toggling disableOutsidePointerEvents'
       props: { disableOutsidePointerEvents: true },
     })
     await nextTick()
-
-    expect(document.body.style.pointerEvents).toBe('none')
+    expect(backdrops()).toHaveLength(2)
 
     // Close the second (topmost) layer without unmounting it.
     await second.setProps({ disableOutsidePointerEvents: false })
     await nextTick()
-
-    // First layer is still open, so the body stays locked.
-    expect(document.body.style.pointerEvents).toBe('none')
+    expect(backdrops()).toHaveLength(1)
+    expect(backdrops()[0].nextElementSibling).toBe(first.element)
 
     await first.setProps({ disableOutsidePointerEvents: false })
     await nextTick()
-
-    expect(document.body.style.pointerEvents).toBe('')
+    expect(backdrops()).toHaveLength(0)
   })
 })
 

@@ -58,7 +58,9 @@ describe('given a modal Dialog, in a real browser', () => {
 
     await userEvent.click(get('trigger')!)
     await expect.poll(() => get('content')).not.toBeNull()
-    expect(getComputedStyle(document.body).pointerEvents).toBe('none')
+    // <body> is never made inert (#2822): the overlay and the content's internal
+    // backdrop cover the page instead.
+    expect(getComputedStyle(document.body).pointerEvents).toBe('auto')
     // Hit testing is real here: the point over the outside button resolves to the overlay.
     const rect = get('outside')!.getBoundingClientRect()
     const hit = document.elementFromPoint(rect.left + 2, rect.top + 2)
@@ -66,7 +68,7 @@ describe('given a modal Dialog, in a real browser', () => {
 
     await userEvent.keyboard('{Escape}')
     await expect.poll(() => get('content')).toBeNull()
-    expect(getComputedStyle(document.body).pointerEvents).not.toBe('none')
+    expect(document.querySelector('[data-reka-internal-backdrop]')).toBeNull()
 
     await userEvent.click(get('outside')!)
     expect(onOutsideClick).toHaveBeenCalledTimes(1)

@@ -56,7 +56,8 @@ describe('useContextMenu — trigger surface', () => {
   it('carries the touch-callout style and handlers; data-state/data-disabled from state', () => {
     const { api } = harness()
     expect(noDataAttrs(api.trigger.props.value)).toBe(true)
-    expect(api.trigger.props.value.style).toEqual({ WebkitTouchCallout: 'none', pointerEvents: 'auto' })
+    // No `pointer-events: auto` override: nothing sets `pointer-events: none` on <body> (#2822)
+    expect(api.trigger.props.value.style).toEqual({ WebkitTouchCallout: 'none' })
     expect(api.trigger.attrs.value['data-state']).toBe('closed')
     expect(api.trigger.attrs.value['data-disabled']).toBeUndefined()
     expect(harness({ disabled: true }).api.trigger.attrs.value['data-disabled']).toBe('')

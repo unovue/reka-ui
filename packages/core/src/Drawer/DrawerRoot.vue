@@ -90,6 +90,8 @@ export interface DrawerRootContext {
   triggerElement: Ref<HTMLElement | undefined>
   contentElement: Ref<HTMLElement | undefined>
   viewportElement: Ref<HTMLElement | undefined>
+  /** The mounted `DrawerOverlay` element; a press on it dismisses a modal drawer. */
+  overlayElement: Ref<HTMLElement | undefined>
   contentId: string
   titleId: string
   descriptionId: string

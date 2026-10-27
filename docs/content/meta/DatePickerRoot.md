@@ -124,7 +124,7 @@
   },
   {
     'name': 'modal',
-    'description': '<p>The modality of the popover. When set to true, interaction with outside elements will be disabled and only popover content will be visible to screen readers.</p>\n',
+    'description': '<p>The modality of the popover. When <code>true</code>, page scroll is locked, the rest of\nthe page (except the trigger) is covered by an internal backdrop that\ncloses the popover on press, and only the popover content is visible to\nscreen readers.</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'false'
@@ -286,7 +286,7 @@
 | `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
 | `maxView` | The coarsest view DatePickerViewTrigger can switch to. | `"day" \| "month" \| "year"` | No | `"year"` |
 | `minValue` | The minimum date that can be selected | `DateValue` | No | - |
-| `modal` | The modality of the popover. When set to true, interaction with outside elements will be disabled and only popover content will be visible to screen readers. | `boolean` | No | `false` |
+| `modal` | The modality of the popover. When true, page scroll is locked, the rest of the page (except the trigger) is covered by an internal backdrop that closes the popover on press, and only the popover content is visible to screen readers. | `boolean` | No | `false` |
 | `modelValue` | The controlled value of the field. Can be bound as v-model. | `DateValue \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `numberOfMonths` | The number of months to display at once in the day view | `number` | No | `1` |

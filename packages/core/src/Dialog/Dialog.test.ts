@@ -5,6 +5,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, nextTick, ref } from 'vue'
+import { resetBodyScrollLock } from '@/shared/useBodyScrollLock'
 import { sleep } from '@/test'
 import { DialogClose, DialogContent, DialogOverlay, DialogRoot, DialogTitle, DialogTrigger } from '.'
 
@@ -309,8 +310,7 @@ describe('given a Dialog with forceMount', () => {
   // a failed assertion keeps the lock held and cascades into unrelated tests.
   afterEach(() => {
     wrapper?.unmount()
-    document.body.style.overflow = ''
-    document.body.style.pointerEvents = ''
+    resetBodyScrollLock()
   })
 
   it('should emit openAutoFocus on every open, not only the first', async () => {
@@ -325,7 +325,8 @@ describe('given a Dialog with forceMount', () => {
     await sleep(100)
     expect(onOpenAutoFocus).toHaveBeenCalledTimes(0)
     expect(document.activeElement).toBe(document.body)
-    expect(document.body.style.overflow).not.toBe('hidden')
+    await sleep(10)
+    expect(document.body.style.overflowY).not.toBe('hidden')
 
     await fireEvent.click(trigger.element)
     await vi.waitFor(() => expect(onOpenAutoFocus).toHaveBeenCalledTimes(1))
@@ -341,10 +342,10 @@ describe('given a Dialog with forceMount', () => {
     const trigger = wrapper.find('button')
 
     await fireEvent.click(trigger.element)
-    await vi.waitFor(() => expect(document.body.style.overflow).toBe('hidden'))
+    await vi.waitFor(() => expect(document.body.style.overflowY).toBe('hidden'))
 
     await fireEvent.click(await findByText(document.body, CLOSE_TEXT))
-    await vi.waitFor(() => expect(document.body.style.overflow).not.toBe('hidden'))
+    await vi.waitFor(() => expect(document.body.style.overflowY).not.toBe('hidden'))
   })
 })
 
@@ -470,9 +471,8 @@ describe('given two Dialogs with unmountOnHide=false', () => {
 
 // Reproduces https://github.com/unovue/reka-ui/issues/2677 — a modal Dialog
 // hardcoded `disableOutsidePointerEvents` to `true`, so the prop passed to
-// `DialogContent` was ignored. These are tested without a `DialogOverlay`,
-// because the overlay's `useBodyScrollLock` locks `body` pointer-events through
-// a separate mechanism unrelated to this prop.
+// `DialogContent` was ignored. The prop now drives the content's internal
+// backdrop (#2822); `<body>` pointer-events are never touched.
 function makeModalDialog(contentBinding: string) {
   return defineComponent({
     components: { DialogRoot, DialogTrigger, DialogContent, DialogClose, DialogTitle },
@@ -499,14 +499,19 @@ describe('given a modal Dialog (#2677)', () => {
     consoleWarnMock.mockRestore()
   })
 
-  it('should lock body pointer-events by default', async () => {
+  const backdrop = () => document.querySelector('[data-reka-internal-backdrop]')
+
+  it('should block outside pointer events with an internal backdrop by default', async () => {
     const wrapper = mount(makeModalDialog(''), { attachTo: document.body })
     fireEvent.click(wrapper.find('button').element)
     await findByText(document.body, CLOSE_TEXT)
     await nextTick()
 
-    expect(document.body.style.pointerEvents).toBe('none')
+    expect(backdrop()).not.toBeNull()
+    expect(backdrop()!.nextElementSibling).toBe(document.querySelector('[role="dialog"]'))
+    expect(document.body.style.pointerEvents).toBe('')
     wrapper.unmount()
+    expect(backdrop()).toBeNull()
   })
 
   it('should respect disableOutsidePointerEvents=false on the content', async () => {
@@ -515,17 +520,18 @@ describe('given a modal Dialog (#2677)', () => {
     await findByText(document.body, CLOSE_TEXT)
     await nextTick()
 
-    expect(document.body.style.pointerEvents).not.toBe('none')
+    expect(backdrop()).toBeNull()
     wrapper.unmount()
   })
 
-  it('should still lock body pointer-events when explicitly true', async () => {
+  it('should still render the internal backdrop when explicitly true', async () => {
     const wrapper = mount(makeModalDialog(':disable-outside-pointer-events="true"'), { attachTo: document.body })
     fireEvent.click(wrapper.find('button').element)
     await findByText(document.body, CLOSE_TEXT)
     await nextTick()
 
-    expect(document.body.style.pointerEvents).toBe('none')
+    expect(backdrop()).not.toBeNull()
+    expect(document.body.style.pointerEvents).toBe('')
     wrapper.unmount()
   })
 })

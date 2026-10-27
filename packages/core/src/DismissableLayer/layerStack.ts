@@ -1,8 +1,5 @@
 import { isClient } from '@vueuse/shared'
 import { shallowReactive } from 'vue'
-// Imported from the plain module (not the `@/shared` barrel) so this file stays
-// free of an import cycle with the components that use it.
-import { resetBodyPointerEvents } from '@/shared/bodyPointerEvents'
 
 /**
  * Centralized DismissableLayer stack manager (transport only).
@@ -321,6 +318,4 @@ export function resetLayerStack(): void {
   for (const doc of foreignDocuments.keys())
     removeForeignListeners(doc)
   foreignDocuments.clear()
-  if (isClient)
-    resetBodyPointerEvents(document)
 }

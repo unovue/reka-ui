@@ -15,7 +15,7 @@ export interface ComboboxContentImplProps extends PopperContentProps, Dismissabl
    * `popper` positions content in the same way as our other primitives, for example `Popover` or `DropdownMenu`.
    */
   position?: 'inline' | 'popper'
-  /** The document.body will be lock, and scrolling will be disabled. */
+  /** When `true`, page scroll is locked while the content is open. */
   bodyLock?: boolean
   /**
    * When `true`, hides the content when there are no items matching the filter.
@@ -151,6 +151,7 @@ const popperContentEvents = {
         as-child
         :present="props.present"
         :disable-outside-pointer-events="disableOutsidePointerEvents"
+        :backdrop-cutout="rootContext.parentElement.value"
         @dismiss="({ reason, event }) => rootContext.onOpenChange(false, reason, event)"
         @focus-outside="(ev) => {
           // if focusing inside the combobox (or a label tied to it), prevent dismiss

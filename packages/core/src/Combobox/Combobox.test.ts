@@ -108,21 +108,21 @@ describe('given a Combobox with unmountOnHide=false', () => {
     await wrapper.setProps({ bodyLock: true })
     const trigger = wrapper.find('[data-testid="persistent-trigger"]')
 
-    expect(document.body.style.overflow).not.toBe('hidden')
+    expect(document.body.style.overflowY).not.toBe('hidden')
     await trigger.trigger('click')
-    await nextTick()
-    expect(document.body.style.overflow).toBe('hidden')
+    await sleep(10)
+    expect(document.body.style.overflowY).toBe('hidden')
 
     await wrapper.setProps({ bodyLock: false })
-    await nextTick()
-    expect(document.body.style.overflow).not.toBe('hidden')
+    await sleep(10)
+    expect(document.body.style.overflowY).not.toBe('hidden')
 
     await wrapper.setProps({ bodyLock: true })
-    await nextTick()
-    expect(document.body.style.overflow).toBe('hidden')
+    await sleep(10)
+    expect(document.body.style.overflowY).toBe('hidden')
 
     document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-    await vi.waitFor(() => expect(document.body.style.overflow).not.toBe('hidden'))
+    await vi.waitFor(() => expect(document.body.style.overflowY).not.toBe('hidden'))
   })
 
   it('removes persistent portal content when the root unmounts', () => {
