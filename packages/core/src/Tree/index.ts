@@ -16,3 +16,15 @@ export {
   default as TreeVirtualizer,
   type TreeVirtualizerProps,
 } from './TreeVirtualizer.vue'
+export {
+  type TreeChangeReason,
+  type TreeCollectionItem,
+  type TreeExpandedChangeReason,
+  type TreeItemState,
+  type TreeItemStatus,
+  type TreeItemSurfaceOptions,
+  type TreeNavigationIntent,
+  useTree,
+  type UseTreeProps,
+  type UseTreeReturn,
+} from './useTree'
