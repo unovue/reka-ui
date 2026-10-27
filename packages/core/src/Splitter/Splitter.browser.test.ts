@@ -1,3 +1,4 @@
+import type { ChangeEventDetails } from '@/shared'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
@@ -11,7 +12,7 @@ afterEach(() => {
 })
 
 function mountSplitter(panelA: Record<string, any>, model = ref<number[]>()) {
-  const onUpdate = vi.fn((value: number[]) => {
+  const onUpdate = vi.fn((value: number[], _details?: ChangeEventDetails) => {
     model.value = value
   })
   const Test = defineComponent({
@@ -45,7 +46,7 @@ describe('given a SplitterGroup in a real browser', () => {
     await userEvent.dragAndDrop(document.getElementById('h')!, document.getElementById('b')!, { force: true } as any)
 
     await expect.poll(() => model.value![0]).toBeGreaterThan(60)
-    const details = onUpdate.mock.calls.at(-1)![1] as any
+    const details = onUpdate.mock.calls.at(-1)![1]!
     expect(details.reason).toBe('drag')
     expect(details.event).toBeInstanceOf(MouseEvent)
     expect(width('a')).toBeGreaterThan(width('b'))

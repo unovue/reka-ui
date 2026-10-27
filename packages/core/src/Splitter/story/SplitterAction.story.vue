@@ -15,7 +15,7 @@ onMounted(() => {
 <template>
   <Story
     title="Splitter/Action"
-    :layout="{ type: 'single', width: '100%', iframe: false }"
+    :layout="{ type: 'single', iframe: false }"
   >
     <Variant title="default">
       <div>

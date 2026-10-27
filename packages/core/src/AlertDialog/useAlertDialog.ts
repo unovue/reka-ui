@@ -40,9 +40,9 @@ export function getAlertDialogContentSurface(
   )
 }
 
-export interface UseAlertDialogProps extends Omit<UseDialogProps, 'modal'> {}
+export interface UseAlertDialogProps<Payload = unknown> extends Omit<UseDialogProps<Payload>, 'modal'> {}
 
-export interface UseAlertDialogReturn extends UseDialogReturn {
+export interface UseAlertDialogReturn<Payload = unknown> extends UseDialogReturn<Payload> {
   /** `role="alertdialog"` content surface (replaces Dialog's `role="dialog"`). */
   content: PartSurface<AlertDialogContentState>
   /** The Action button: closes with `close-press`. */
@@ -67,8 +67,8 @@ export interface UseAlertDialogReturn extends UseDialogReturn {
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle pure
  */
-export function useAlertDialog(props: UseAlertDialogProps = {}): UseAlertDialogReturn {
-  const dialog = useDialog({
+export function useAlertDialog<Payload = unknown>(props: UseAlertDialogProps<Payload> = {}): UseAlertDialogReturn<Payload> {
+  const dialog = useDialog<Payload>({
     ...props,
     modal: true,
     baseId: props.baseId ?? `reka-alert-dialog-${++alertDialogCount}`,

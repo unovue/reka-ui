@@ -44,7 +44,7 @@
   {
     "path": "dist/index.js",
     "import": "{ PopoverRoot, PopoverTrigger, PopoverContent, PopoverPortal }",
-    "limit": "22 KB",
+    "limit": "23 KB",
     "name": "Popover"
   },
   {

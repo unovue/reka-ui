@@ -163,6 +163,17 @@ What to check in your code:
 - Vite, Nuxt and Vitest need no change.
 - Jest needs ESM support for the package: run Jest in ESM mode, or let it transform `reka-ui` by excluding it from `transformIgnorePatterns`.
 
+## Auto-imports use per-component entry points
+
+Every component family now has its own entry point, named after it in kebab-case (`reka-ui/dialog`, `reka-ui/alert-dialog`, …). It exports the very same components as the package root, so `import { DialogRoot } from 'reka-ui'` keeps working, and parts from both can be mixed in one component tree. See [Importing components](../overview/installation#importing-components).
+
+The [Nuxt module](../overview/installation#nuxt-modules) now imports each component from its entry point instead of from `reka-ui`. It also adds `reka-ui` and those entry points to Vite's `optimizeDeps.include`, so layers and libraries that import from `reka-ui` share the same components. Most apps need no change. Check:
+
+- Configuration that matches the exact specifier `reka-ui` does not match `reka-ui/dialog`. Examples are an `alias` entry, a regular expression in `vite.optimizeDeps` or `vite.ssr.noExternal` that ends at `reka-ui`, and a Vitest or Jest mapping keyed on `^reka-ui$`. Extend these to the subpaths.
+- To keep the v2 imports, set `reka: { subpaths: false }` in `nuxt.config.ts`.
+
+The [`unplugin-vue-components` resolver](../overview/installation#unplugin-vue-components) still imports from `reka-ui` by default. `RekaResolver({ subpaths: true })` switches it to the entry points. That option also needs `reka-ui` and the entry points in Vite's `optimizeDeps.include`; see [Per-component entry points](../overview/installation#per-component-entry-points).
+
 ## Generated ids
 
 The ids Reka UI generates for overlay parts are now derived from the root. This covers the Dialog and AlertDialog content, title and description, the Drawer content, title and description, the Popover trigger and content, the DropdownMenu trigger and content, and the Tooltip label that the trigger's `aria-describedby` points at. Their shape differs from v2, for example `reka-tooltip-<n>-content` instead of `reka-tooltip-content-<n>`. A `MenubarMenu` now allocates its content id when the menu is set up instead of when its content first renders.
@@ -307,6 +318,7 @@ What changed:
 - **Content ids** derive from the root's id: `reka-combobox-v-0-content` instead of `reka-combobox-content-v-1`, and `reka-autocomplete-v-0-content` for Autocomplete. The input's and the trigger's `aria-controls` point at it from the first render; in v2 they stayed empty until the content first mounted. Selectors and snapshots that hard-code the old ids need updating.
 - **`ComboboxInput` and `AutocompleteInput` render the input themselves** instead of wrapping `ListboxFilter`. The rendered `<input>` and its attributes are unchanged. Tests that look up `ListboxRoot` or `ListboxFilter` with `findComponent` inside a combobox no longer find them.
 - **`update:modelValue` is typed by `multiple`**: `T[]` when `multiple` is set, `T | null` when it is absent (`ComboboxCancel` with `reset-model-value-on-clear` emits `null`), either while it is a plain `boolean`. The runtime payload is unchanged.
+- **`modelValue` and `defaultValue` accept `null`** (`T | T[] | null`, v2: `T | T[]`), so the `null` a clear emits can be bound back: `v-model` on a `ref<string | null>` type-checks even when `T` is pinned to `string`. Type-only; the same holds for `useComboboxRoot()`'s `modelValue`, `defaultValue` and `setModelValue`.
 - **New:** `displayValue` on `ComboboxRoot` sets the input text for the selected value when `ComboboxInput` has no `displayValue` of its own. On `AutocompleteRoot` it sets the text a selected item writes into the value.
 
 ## Color values are `Color` objects
@@ -598,6 +610,12 @@ Two fixes in neighbouring families:
 - **Root context.** `injectToastRootContext().onClose(event?, reason?)` takes an optional reason (`'imperative-action'` by default) and returns `false` when the toast was already closed or the close was cancelled. `ToastClose` closes with `close-press` and `ToastAction` with `action-press`.
 - **Provider context.** The `ToastProviderContext` type is exported. Its `label`, `duration`, `disableSwipe`, `swipeDirection` and `swipeThreshold` are read-only refs, and the unused `isFocusedToastEscapeKeyDownRef` is gone.
 - **New and additive:** the composables.
+
+## Detached triggers
+
+New and additive, so nothing to migrate. `PopoverTrigger`, `DialogTrigger`, `AlertDialogTrigger` and `DropdownMenuTrigger` can render outside their root: create a handle with `createPopoverHandle()`, `createDialogHandle()`, `createAlertDialogHandle()` or `createDropdownMenuHandle()` and pass it to the `handle` prop of the root and of each trigger. A trigger's `payload` reaches the root's default slot, and the popup anchors to and returns focus to the trigger that opened it. The handle also opens and closes the popup from code, reporting `'imperative-action'`. Without a `handle` the components behave as before. See the Detached triggers section on the [Popover](../components/popover#detached-triggers), [Dialog](../components/dialog#detached-triggers), [AlertDialog](../components/alert-dialog#detached-triggers) and [DropdownMenu](../components/dropdown-menu#detached-triggers) pages.
+
+`ChangeEventDetails` gains an optional `trigger` element. It is set when a detached trigger's press opens, switches or closes the popup, or `handle.open(triggerId)` opens it. Code that builds details with `createChangeEventDetails()` or reads them is unaffected.
 
 ## Drawer, Tree and Combobox corrections
 

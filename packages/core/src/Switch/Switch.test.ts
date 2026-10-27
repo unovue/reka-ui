@@ -1,3 +1,4 @@
+import type { ChangeEventDetails } from '@/shared'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -142,8 +143,8 @@ describe('switchRoot change events (v3 foundation contract)', () => {
     await wrapper.find('button').trigger('click')
     const keys = Object.keys(wrapper.emitted()).filter(k => k.endsWith(':modelValue'))
     expect(keys).toEqual(['beforeUpdate:modelValue', 'update:modelValue'])
-    const [beforeValue, beforeDetails] = wrapper.emitted('beforeUpdate:modelValue')![0]
-    const [value, details] = wrapper.emitted('update:modelValue')![0]
+    const [beforeValue, beforeDetails] = wrapper.emitted<[boolean, ChangeEventDetails]>('beforeUpdate:modelValue')![0]
+    const [value, details] = wrapper.emitted<[boolean, ChangeEventDetails]>('update:modelValue')![0]
     expect(beforeValue).toBe(true)
     expect(value).toBe(true)
     expect(beforeDetails).toBe(details)

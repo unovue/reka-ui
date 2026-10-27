@@ -66,7 +66,7 @@ export type DatePickerRootContext = {
  * dates), so the calendar's `granularity` is not exposed here; the drill-down
  * views are.
  */
-export type DatePickerRootProps = Omit<DateFieldRootProps, 'as' | 'asChild' | 'isDateUnavailable'> & PopoverRootProps & Pick<CalendarRootProps, 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'yearsPerPage' | 'columns'> & {
+export type DatePickerRootProps = Omit<DateFieldRootProps, 'as' | 'asChild' | 'isDateUnavailable'> & Omit<PopoverRootProps, 'handle' | 'triggerId' | 'defaultTriggerId'> & Pick<CalendarRootProps, 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'yearsPerPage' | 'columns'> & {
   /** A function that returns whether or not a date is disabled. The picker's calendar always commits days, so it is called only for day-view cells (with `'day'` as its second argument); the month and year views apply only `minValue`, `maxValue` and `disabled`. */
   isDateDisabled?: Matcher
   /** A function that returns whether or not a date is unavailable. The field marks an unavailable value invalid. The picker's calendar always commits days, so it is called there only for day-view cells (with `'day'` as its second argument); the month and year views apply only `minValue`, `maxValue` and `disabled`. */

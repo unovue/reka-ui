@@ -1,5 +1,5 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import type { ListboxFilterFunction } from './useListbox'
+import type { ListboxFilterFunction, ListboxFilterState } from './useListbox'
 import { mount } from '@vue/test-utils'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -51,6 +51,11 @@ async function settle() {
 
 function optionTexts(wrapper: VueWrapper) {
   return wrapper.findAll('[role=option]').map(i => i.text())
+}
+
+/** The `filtered` state the `ListboxRoot` in a `createListbox` fixture exposes. */
+function filteredOf(wrapper: VueWrapper): ListboxFilterState {
+  return (wrapper.vm as unknown as { root: { filtered: ListboxFilterState } }).root.filtered
 }
 
 function highlightedText(wrapper: VueWrapper) {
@@ -218,7 +223,7 @@ describe('given a Listbox without a `filter`', () => {
 
     await type(wrapper.find('input'), 'an')
     expect(optionTexts(wrapper)).toEqual([...fruits, ...vegetables])
-    expect(wrapper.vm.root.filtered).toEqual({ search: 'an', active: false, count: 8 })
+    expect(filteredOf(wrapper)).toEqual({ search: 'an', active: false, count: 8 })
     // The ListboxFilter still highlights the first item on input, as before.
     expect(highlightedText(wrapper)).toBe('Apple')
   })
@@ -275,7 +280,7 @@ describe('given a virtualized Listbox with a `filter`', () => {
     const { contains } = useFilter({ sensitivity: 'base' })
     const wrapper = mount(createVirtualListbox({ filter: contains }), { attachTo: document.body })
     await flush()
-    expect(wrapper.vm.root.filtered.count).toBe(100)
+    expect(filteredOf(wrapper).count).toBe(100)
 
     await wrapper.find('input').setValue('match')
     await flush()
@@ -286,7 +291,7 @@ describe('given a virtualized Listbox with a `filter`', () => {
     expect(rows.map(r => r.attributes('data-index'))).toEqual(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
     expect(rows.map(r => r.attributes('aria-posinset'))).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'])
     expect(rows.every(r => r.attributes('aria-setsize') === '10')).toBe(true)
-    expect(wrapper.vm.root.filtered).toEqual({ search: 'match', active: true, count: 10 })
+    expect(filteredOf(wrapper)).toEqual({ search: 'match', active: true, count: 10 })
   })
 
   it('skips filtered-out options in keyboard navigation', async () => {

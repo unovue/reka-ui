@@ -1,4 +1,5 @@
 import type { VueWrapper } from '@vue/test-utils'
+import type { ChangeEventDetails } from '@/shared'
 import { findAllByText, findByRole, findByText, fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -79,7 +80,7 @@ describe('alertDialogRoot change events (v3 foundation contract)', () => {
     const root = wrapper.findComponent(AlertDialogRoot)
     const keys = Object.keys(root.emitted()).filter(k => k.endsWith(':open'))
     expect(keys).toEqual(['beforeUpdate:open', 'update:open'])
-    const [value, details] = root.emitted('update:open')![0]
+    const [value, details] = root.emitted<[boolean, ChangeEventDetails]>('update:open')![0]
     expect(value).toBe(true)
     expect(details).toMatchObject({ reason: 'trigger-press', isCanceled: false })
     expect(details.event).toBeInstanceOf(MouseEvent)
@@ -94,7 +95,7 @@ describe('alertDialogRoot change events (v3 foundation contract)', () => {
     await fireEvent.click(cancelButton)
     await nextTick()
 
-    const [value, details] = wrapper.findComponent(AlertDialogRoot).emitted('update:open')!.at(-1)!
+    const [value, details] = wrapper.findComponent(AlertDialogRoot).emitted<[boolean, ChangeEventDetails]>('update:open')!.at(-1)!
     expect(value).toBe(false)
     expect(details).toMatchObject({ reason: 'close-press' })
     expect(details.event).toBeInstanceOf(MouseEvent)
@@ -108,7 +109,7 @@ describe('alertDialogRoot change events (v3 foundation contract)', () => {
     await fireEvent.click(actionButton)
     await nextTick()
 
-    const [value, details] = wrapper.findComponent(AlertDialogRoot).emitted('update:open')!.at(-1)!
+    const [value, details] = wrapper.findComponent(AlertDialogRoot).emitted<[boolean, ChangeEventDetails]>('update:open')!.at(-1)!
     expect(value).toBe(false)
     expect(details).toMatchObject({ reason: 'close-press' })
     expect((wrapper.vm as any).isOpen).toBe(false)

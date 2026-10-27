@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
+import type { PopoverHandle } from './handle'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { createContext, useId } from '@/shared'
 
@@ -11,7 +12,7 @@ export type PopoverOpenChangeReason
     | 'outside-press'
     | 'focus-outside'
 
-export interface PopoverRootProps {
+export interface PopoverRootProps<Payload = unknown> {
   /**
    * The open state of the popover when it is initially rendered. Use when you do not need to control its open state.
    */
@@ -29,6 +30,19 @@ export interface PopoverRootProps {
    * @defaultValue false
    */
   modal?: boolean
+  /**
+   * A handle from `createPopoverHandle()` that connects detached
+   * `PopoverTrigger`s rendered anywhere in the app. The popover anchors to,
+   * returns focus to and exposes the `payload` of the trigger that opened it.
+   */
+  handle?: PopoverHandle<Payload>
+  /**
+   * The id of the trigger that owns the popover, for a controlled popover with
+   * detached triggers. Use with `open`.
+   */
+  triggerId?: string | null
+  /** The id of the trigger that owns a popover that starts open (with `defaultOpen` and a `handle`). */
+  defaultTriggerId?: string | null
 }
 export type PopoverRootEmits = {
   /**
@@ -58,14 +72,17 @@ export const [injectPopoverRootContext, providePopoverRootContext]
   = createContext<PopoverRootContext>('PopoverRoot')
 </script>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="Payload = unknown">
 import { PopperRoot } from '@/Popper'
+import { usePopupHandleAttachment } from '@/shared/popupHandle'
 import { usePopover } from './usePopover'
 
-const props = withDefaults(defineProps<PopoverRootProps>(), {
+const props = withDefaults(defineProps<PopoverRootProps<Payload>>(), {
   defaultOpen: false,
   open: undefined,
   modal: false,
+  triggerId: undefined,
+  defaultTriggerId: undefined,
 })
 const emit = defineEmits<PopoverRootEmits>()
 
@@ -75,6 +92,10 @@ defineSlots<{
     open: typeof open.value
     /** Close the popover */
     close: () => void
+    /** The `payload` of the detached trigger that opened the popover */
+    payload: Payload | undefined
+    /** The id of the detached trigger that opened the popover */
+    activeTriggerId: string | null
   }) => any
 }>()
 
@@ -82,22 +103,29 @@ defineSlots<{
 // the composable's `useControllableState` (`open === undefined` → uncontrolled).
 // `useId` (ConfigProvider/SSR-aware) stays in the shell: the trigger/content ids
 // derive from this base inside the composable.
-const { open, onOpenChange, context } = usePopover({
+const { open, onOpenChange, context, payload, activeTriggerId, handleStore } = usePopover<Payload>({
   open: () => props.open,
   defaultOpen: props.defaultOpen,
   modal: () => props.modal,
   baseId: useId(undefined, 'reka-popover'),
   emit,
+  handle: () => props.handle,
+  triggerId: () => props.triggerId,
+  defaultTriggerId: props.defaultTriggerId,
 })
 
 providePopoverRootContext(context)
+// Client-only: the Root's state reaches a (possibly module-scope) handle only once mounted.
+usePopupHandleAttachment(handleStore)
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot :reference="handleStore.handle.value ? handleStore.anchor.value : undefined">
     <slot
       :open="open"
       :close="() => onOpenChange(false)"
+      :payload="payload"
+      :active-trigger-id="activeTriggerId"
     />
   </PopperRoot>
 </template>

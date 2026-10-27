@@ -1,4 +1,4 @@
-import type { HSBColor, HSLColor } from './types'
+import type { HSBColor, HSLColor, RGBColor } from './types'
 import { describe, expect, it } from 'vitest'
 import {
   colorToHex,

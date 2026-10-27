@@ -34,7 +34,7 @@ describe('color shell characterization', () => {
     input.element.dispatchEvent(new Event('input', { bubbles: true }))
     expect(listener).toHaveBeenCalledOnce()
     expect(input.attributes()).toMatchObject({ 'data-disabled': '', 'data-readonly': '', 'readonly': '', 'disabled': '' })
-    expect(wrapper.find('input[name=color]').element.value).toBe('#000000')
+    expect(wrapper.find<HTMLInputElement>('input[name=color]').element.value).toBe('#000000')
     wrapper.unmount()
   })
 

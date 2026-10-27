@@ -351,7 +351,6 @@ describe('keyboard interactions', () => {
     const event = new InputEvent('beforeinput', {
       data: 'あ',
       cancelable: true,
-      // @ts-expect-error InputEvent doesn't expose isComposing in constructor but it's set on the event
     })
     Object.defineProperty(event, 'isComposing', { value: true })
     input.element.dispatchEvent(event)

@@ -385,7 +385,7 @@ describe('tagsInputRoot — change details', () => {
     const model = ref<string[]>(['a'])
     const wrapper = mount(defineComponent({
       setup() {
-        return () => h(TagsInputRoot, {
+        return () => h(TagsInputRoot<string>, {
           'modelValue': model.value,
           'onUpdate:modelValue': (value: string[]) => { model.value = value },
         }, {

@@ -1,16 +1,17 @@
+import type { Mock } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import { useSize } from './useSize'
 
 describe('useSize', () => {
-  let observeMock: ReturnType<typeof vi.fn>
-  let disconnectMock: ReturnType<typeof vi.fn>
+  let observeMock: Mock<ResizeObserver['observe']>
+  let disconnectMock: Mock<ResizeObserver['disconnect']>
   let MockResizeObserver: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
-    observeMock = vi.fn()
-    disconnectMock = vi.fn()
+    observeMock = vi.fn<ResizeObserver['observe']>()
+    disconnectMock = vi.fn<ResizeObserver['disconnect']>()
     const _observeMock = observeMock
     const _disconnectMock = disconnectMock
     // Must be a real class so `new ResizeObserver(...)` works
