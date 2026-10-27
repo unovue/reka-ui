@@ -78,6 +78,11 @@ interface ChangeEventDetails<Reason extends string = string, E extends Event = E
   readonly reason: Reason | BaseChangeReason
   /** Native event that caused the change, if any. */
   readonly event?: E
+  /**
+   * The trigger element the change is attributed to, when a popup with
+   * detached triggers (`handle`) opens, switches trigger or closes (#2826).
+   */
+  readonly trigger?: Element
   /** Prevent the change. Synchronous; honoured only during `beforeUpdate` / `onBeforeUpdate`. */
   cancel: () => void
   readonly isCanceled: boolean
