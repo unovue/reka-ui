@@ -178,7 +178,7 @@
 <MethodsTable :data="[
   {
     'name': 'setFocusedElement',
-    'description': '',
+    'description': '<p>Helper to set the focused element inside the DateRangeField</p>\n',
     'type': '(el: HTMLElement) =&gt; void'
   }
 ]" />
@@ -233,6 +233,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `setFocusedElement` |  | `(el: HTMLElement) => void` |
+| `setFocusedElement` | Helper to set the focused element inside the DateRangeField | `(el: HTMLElement) => void` |
 
 </llm-only>

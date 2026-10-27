@@ -1,7 +1,8 @@
 <script lang="ts">
 import type { DateValue } from '@/date'
-import type { DateRangeFieldChangeReason } from '@/DateRangeField'
+import type { DateRangeFieldChangeReason, DateRangeType } from '@/DateRangeField'
 import type { ChangeEventDetails } from '@/shared'
+import type { DateRange, SegmentPart } from '@/shared/date'
 import { DateRangeFieldRoot } from '..'
 import { injectDateRangePickerRootContext } from './DateRangePickerRoot.vue'
 </script>
@@ -9,6 +10,15 @@ import { injectDateRangePickerRootContext } from './DateRangePickerRoot.vue'
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 import { useForwardElement } from '@/shared'
+
+defineSlots<{
+  default?: (props: {
+    /** The current date range of the field */
+    modelValue: DateRange
+    /** The date field segment contents */
+    segments: Record<DateRangeType, { part: SegmentPart, value: string }[]>
+  }) => any
+}>()
 
 const rootContext = injectDateRangePickerRootContext()
 
