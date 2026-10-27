@@ -13,3 +13,10 @@ export {
   default as CollapsibleTrigger,
   type CollapsibleTriggerProps,
 } from './CollapsibleTrigger.vue'
+export {
+  type CollapsibleChangeReason,
+  type CollapsiblePartState,
+  useCollapsible,
+  type UseCollapsibleProps,
+  type UseCollapsibleReturn,
+} from './useCollapsible'
