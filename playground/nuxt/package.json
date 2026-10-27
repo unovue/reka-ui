@@ -9,9 +9,9 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@internationalized/date": "^3.7.0",
     "@internationalized/number": "^3.6.0",
-    "reka-ui": "file:../../packages/core"
+    "reka-ui": "file:../../packages/core",
+    "temporal-polyfill-lite": "^0.4.3"
   },
   "devDependencies": {
     "@iconify/vue": "^4.3.0",

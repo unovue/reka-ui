@@ -1,13 +1,12 @@
-import type { DateValue } from '@internationalized/date'
 import type { ComputedRef, MaybeRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { TimeFieldRootContext } from './TimeFieldRoot.vue'
-import type { Matcher } from '@/date'
+import type { DateValue, Matcher } from '@/date'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { DateStep, HourCycle, SegmentContents, SegmentFieldRootState, SegmentFieldSegmentState, SegmentPart, SegmentValueObj, TimeGranularity, TimeValue } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { getLocalTimeZone, isEqualDay, Time, toCalendarDateTime, today } from '@internationalized/date'
 import { computed, ref, toValue, unref, watch } from 'vue'
-import { isBefore } from '@/date'
+import { isBefore, today, toPlainDate } from '@/date'
+import { assertTemporal, getTemporal } from '@/date/runtime'
 import { useControllableState, useDateFormatter } from '@/shared'
 import {
   createContent,
@@ -45,26 +44,28 @@ export type TimeFieldRootState = SegmentFieldRootState
 export type TimeFieldInputState = SegmentFieldSegmentState
 
 /**
- * A `Time` has no date; the segments and the comparisons run on a date-time.
+ * A `PlainTime` has no date; the segments and the comparisons run on a date-time.
  * A value that already carries a date is used as is.
  *
  * @internal
  */
-export function timeValueToDateTime(value: TimeValue, date: DateValue = today(getLocalTimeZone())): DateValue {
+export function timeValueToDateTime(value: TimeValue, date: DateValue = today()): DateValue {
   if (value && 'day' in value)
     return value
-  return toCalendarDateTime(date, value)
+  return toPlainDate(date).toPlainDateTime(value)
 }
 
-/** The inverse of `timeValueToDateTime`: keep the shape (`Time` or date-time) of `like`. @internal */
+/** The inverse of `timeValueToDateTime`: keep the shape (`PlainTime` or date-time) of `like`. @internal */
 export function dateTimeToTimeValue(value: DateValue, like: TimeValue | undefined): TimeValue {
   if (like && 'day' in like)
     return value as TimeValue
-  return new Time(
+  return new (getTemporal().PlainTime)(
     'hour' in value ? value.hour : 0,
     'minute' in value ? value.minute : 0,
     'second' in value ? value.second : 0,
-    like?.millisecond,
+    like?.millisecond ?? 0,
+    like?.microsecond ?? 0,
+    like?.nanosecond ?? 0,
   )
 }
 
@@ -92,7 +93,7 @@ export interface UseTimeFieldProps {
   readonly?: MaybeRefOrGetter<boolean | undefined>
   /**
    * Marks the field invalid when it returns `true`. It receives the time as a
-   * date-time (a `Time` is placed on today's date). A plain function or a ref to one.
+   * date-time (a `PlainTime` is placed on today's date). A plain function or a ref to one.
    */
   isTimeUnavailable?: MaybeRef<Matcher | undefined>
   parentElement?: Ref<HTMLElement | undefined>
@@ -138,7 +139,7 @@ export function createTimeFieldInputSurface(context: TimeFieldRootContext, part:
 }
 
 /**
- * Headless TimeField logic: the value and placeholder models (a `Time`, or a
+ * Headless TimeField logic: the value and placeholder models (a `PlainTime`, or a
  * date-time whose time is edited), the segments, validation and the root /
  * segment surfaces. Typing commits the value with a `TimeFieldChangeReason`.
  *
@@ -146,6 +147,7 @@ export function createTimeFieldInputSurface(context: TimeFieldRootContext, part:
  * @lifecycle setup — installs watchers and collects the segments on mount.
  */
 export function useTimeField(props: UseTimeFieldProps = {}): UseTimeFieldReturn {
+  assertTemporal()
   const locale = computed(() => toValue(props.locale) ?? 'en')
   const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
   const disabled = computed(() => toValue(props.disabled) ?? false)
@@ -178,7 +180,7 @@ export function useTimeField(props: UseTimeFieldProps = {}): UseTimeFieldReturn 
 
   const { state: placeholder, setState: setPlaceholderState } = useControllableState<TimeValue, TimeFieldChangeReason>({
     prop: () => toValue(props.placeholder),
-    defaultValue: () => props.defaultPlaceholder ?? defaultTime.copy(),
+    defaultValue: () => props.defaultPlaceholder ?? defaultTime,
     name: 'placeholder',
     emit: props.emit,
     onBeforeUpdate: props.onBeforeUpdatePlaceholder,
@@ -246,7 +248,7 @@ export function useTimeField(props: UseTimeFieldProps = {}): UseTimeFieldReturn 
   watchSegmentFieldLocale(locale, formatter, navigation.refreshSegmentElements)
 
   function setPlaceholder(value: TimeValue, reason: TimeFieldChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    return setPlaceholderState(value.copy(), reason, event)
+    return setPlaceholderState(value, reason, event)
   }
 
   // A cancelled commit rolls back only the model: the segments keep what the
@@ -266,8 +268,9 @@ export function useTimeField(props: UseTimeFieldProps = {}): UseTimeFieldReturn 
 
   watch(convertedModelValue, (value) => {
     const current = convertedPlaceholder.value
-    if (value && (!isEqualDay(current, value) || current.compare(value) !== 0))
-      setConvertedPlaceholder(value.copy())
+    // Exact equality: a same-instant change of zone must still move the placeholder (its zone is shown).
+    if (value && !isSameTemporalValue(current, value))
+      setConvertedPlaceholder(value)
   })
 
   watch([convertedModelValue, locale], ([value]) => {

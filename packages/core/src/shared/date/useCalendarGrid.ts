@@ -1,9 +1,9 @@
-import type { DateValue } from '@internationalized/date'
 import type { ComputedRef, MaybeRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { CalendarGridData, CalendarLayout, CalendarPageFunction, CalendarUnit, CalendarUnitAdapter, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
+import type { DateValue } from '@/date/types'
 import type { DateFormatterOptions, Formatter } from '@/shared/useDateFormatter'
 import { computed, ref, toValue, unref, watch } from 'vue'
-import { clampLayoutCount, getUnitAdapter, isAfter, isBefore, toDate } from '@/date'
+import { clampLayoutCount, compareDateValues, getUnitAdapter, isAfter, isBefore } from '@/date'
 import { useDateFormatter } from '@/shared/useDateFormatter'
 
 export interface UseCalendarGridProps {
@@ -122,10 +122,12 @@ export function useCalendarGrid(props: UseCalendarGridProps): UseCalendarGridRet
   const formatter = useDateFormatter(locale.value)
 
   const headingFormatOptions = computed(() => {
+    const { calendarId, year } = props.placeholder.value
     const options: DateFormatterOptions = {
-      calendar: props.placeholder.value.calendar.identifier,
+      calendar: calendarId,
     }
-    if (props.placeholder.value.calendar.identifier === 'gregory' && props.placeholder.value.era === 'BC')
+    // Before year 1 (`year` is the arithmetic year: 0 is 1 BC), show the era.
+    if ((calendarId === 'gregory' || calendarId === 'iso8601') && year < 1)
       options.era = 'short'
     return options
   })
@@ -191,7 +193,7 @@ export function useCalendarGrid(props: UseCalendarGridProps): UseCalendarGridRet
     const accepted = props.setPlaceholder(next)
     // A cancelled `beforeUpdate:placeholder` keeps the page too. `false` for an
     // unchanged placeholder is a no-op write, not a cancel: the page still flips.
-    if (accepted === false && next.compare(props.placeholder.value) !== 0)
+    if (accepted === false && compareDateValues(next, props.placeholder.value) !== 0)
       grid.value = previousGrid
   }
 
@@ -221,7 +223,7 @@ export function useCalendarGrid(props: UseCalendarGridProps): UseCalendarGridRet
   const weekdays = computed(() => {
     if (unit.value !== 'day' || !grid.value.length)
       return []
-    return grid.value[0].rows[0].map(date => formatter.dayOfWeek(toDate(date), toValue(props.weekdayFormat) ?? 'narrow'))
+    return grid.value[0].rows[0].map(date => formatter.dayOfWeek(date, toValue(props.weekdayFormat) ?? 'narrow'))
   })
 
   const rowLength = computed(() => adapter.value.rowLength(layout.value))

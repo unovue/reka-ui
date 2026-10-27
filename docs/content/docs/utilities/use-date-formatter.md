@@ -1,27 +1,29 @@
 ---
 title: useDateFormatter
-description: Creates a wrapper around the `DateFormatter`, which is an improved version of the Intl.DateTimeFormat API, that is used internally by the various date builders to easily format dates in a consistent way.
+description: A cached wrapper around Intl.DateTimeFormat that formats Temporal values and Dates the way the date components do.
 ---
 
 # useDateFormatter
 
 <Description>
-Creates a wrapper around the `DateFormatter`, which is an improved version of the Intl.DateTimeFormat API, that is used internally by the various date builders to easily format dates in a consistent way.
+A cached wrapper around Intl.DateTimeFormat that formats Temporal values and Dates the way the date components do.
 </Description>
 
-More information on the DateFormatter [here](https://react-spectrum.adobe.com/internationalized/date/DateFormatter.html).
+The formatter accepts a `Temporal.PlainDate`, `Temporal.PlainDateTime`, `Temporal.ZonedDateTime`, `Temporal.PlainTime` or a `Date`:
+
+- A plain value is formatted as its own fields, whatever the user's time zone.
+- A `ZonedDateTime` is formatted in its own time zone.
+- A value in a non-ISO calendar (`hebrew`, `japanese`, …) is formatted in that calendar.
 
 ## Usage
 
 ```vue
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
-import type { Ref } from 'vue'
-import { CalendarDate, getLocalTimeZone } from '@internationalized/date'
-import { toDate, useDateFormatter } from 'reka-ui'
-import { ref } from 'vue'
+import type { DateValue } from 'reka-ui'
+import { useDateFormatter } from 'reka-ui'
+import { shallowRef } from 'vue'
 
-const value = ref(new CalendarDate(1995, 8, 18)) as Ref<DateValue>
+const value = shallowRef<DateValue>(new Temporal.PlainDate(1995, 8, 18))
 // provide the locale
 const formatter = useDateFormatter('en')
 </script>
@@ -29,7 +31,7 @@ const formatter = useDateFormatter('en')
 <template>
   <span>
     <!-- output the month in short format. e.g.: Jan, Feb, etc. -->
-    {{ formatter.custom(value.toDate(getLocalTimeZone()), { month: 'short' }) }}
+    {{ formatter.custom(value, { month: 'short' }) }}
   </span>
 </template>
 ```

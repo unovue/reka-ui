@@ -1,5 +1,4 @@
 import type { SegmentValueObj } from './types'
-import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 import { useDateFormatter } from '@/shared/useDateFormatter'
@@ -30,12 +29,12 @@ describe('initializeTimeSegmentValues', () => {
 describe('syncSegmentValues', () => {
   const formatter = useDateFormatter('en-US')
 
-  it('reads the date parts of a CalendarDate', () => {
-    expect(syncSegmentValues({ value: new CalendarDate(2024, 2, 29), formatter })).toEqual({ day: 29, month: 2, year: 2024 })
+  it('reads the date parts of a PlainDate', () => {
+    expect(syncSegmentValues({ value: new Temporal.PlainDate(2024, 2, 29), formatter })).toEqual({ day: 29, month: 2, year: 2024 })
   })
 
-  it('adds the time parts and the day period of a CalendarDateTime', () => {
-    expect(syncSegmentValues({ value: new CalendarDateTime(2024, 2, 29, 14, 5, 9), formatter })).toEqual({
+  it('adds the time parts and the day period of a PlainDateTime', () => {
+    expect(syncSegmentValues({ value: new Temporal.PlainDateTime(2024, 2, 29, 14, 5, 9), formatter })).toEqual({
       day: 29,
       month: 2,
       year: 2024,
@@ -49,7 +48,7 @@ describe('syncSegmentValues', () => {
   it('reads the day period in the value\'s own time zone', () => {
     // 18:00 in Tokyo is 09:00 UTC: a formatter that ignored the value's zone
     // would report AM on a UTC runner.
-    const zoned = toZoned(new CalendarDateTime(2024, 2, 29, 18, 0), 'Asia/Tokyo')
+    const zoned = new Temporal.PlainDateTime(2024, 2, 29, 18, 0).toZonedDateTime('Asia/Tokyo')
     expect(syncSegmentValues({ value: zoned, formatter })).toMatchObject({ hour: 18, dayPeriod: 'PM' })
   })
 })
@@ -57,7 +56,7 @@ describe('syncSegmentValues', () => {
 describe('syncTimeSegmentValues', () => {
   it('reads only the time parts', () => {
     const formatter = useDateFormatter('en-US')
-    const value = new CalendarDateTime(2024, 1, 1, 0, 30, 0)
+    const value = new Temporal.PlainDateTime(2024, 1, 1, 0, 30, 0)
     expect(syncTimeSegmentValues({ value, formatter })).toEqual({ hour: 0, minute: 30, second: 0, dayPeriod: 'AM' })
   })
 })
@@ -67,14 +66,14 @@ describe('createContent', () => {
     granularity: 'day' | 'hour' | 'minute' | 'second'
     segmentValues: SegmentValueObj
     locale?: string
-    dateRef?: CalendarDate | CalendarDateTime
+    dateRef?: Temporal.PlainDate | Temporal.PlainDateTime
     hourCycle?: 12 | 24
     hideTimeZone?: boolean
   }) {
     const locale = ref(options.locale ?? 'en-US')
     return createContent({
       granularity: options.granularity,
-      dateRef: options.dateRef ?? (options.granularity === 'day' ? new CalendarDate(2024, 1, 1) : new CalendarDateTime(2024, 1, 1)),
+      dateRef: options.dateRef ?? (options.granularity === 'day' ? new Temporal.PlainDate(2024, 1, 1) : new Temporal.PlainDateTime(2024, 1, 1)),
       formatter: useDateFormatter(locale.value),
       hideTimeZone: options.hideTimeZone ?? false,
       hourCycle: options.hourCycle,
@@ -98,12 +97,12 @@ describe('createContent', () => {
   })
 
   it('formats a day the month cannot hold against January, so any day can be typed first', () => {
-    const { obj } = content({ granularity: 'day', dateRef: new CalendarDate(2024, 2, 1), segmentValues: { day: 31, month: null, year: null } })
+    const { obj } = content({ granularity: 'day', dateRef: new Temporal.PlainDate(2024, 2, 1), segmentValues: { day: 31, month: null, year: null } })
     expect(obj.day).toBe('31')
   })
 
   it('snaps the day to the filled month', () => {
-    const { obj } = content({ granularity: 'day', dateRef: new CalendarDate(2023, 2, 1), segmentValues: { day: 31, month: 2, year: null } })
+    const { obj } = content({ granularity: 'day', dateRef: new Temporal.PlainDate(2023, 2, 1), segmentValues: { day: 31, month: 2, year: null } })
     expect(obj.day).toBe('28')
   })
 
@@ -130,7 +129,7 @@ describe('createContent', () => {
     const { arr } = createContent({
       granularity: 'minute',
       // The time fields format a `Time` through a date-time reference.
-      dateRef: new CalendarDateTime(2024, 1, 1, 9, 5),
+      dateRef: new Temporal.PlainDateTime(2024, 1, 1, 9, 5),
       formatter: useDateFormatter(locale.value),
       hideTimeZone: true,
       hourCycle: 24,

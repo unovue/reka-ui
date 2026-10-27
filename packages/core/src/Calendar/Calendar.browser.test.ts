@@ -1,4 +1,3 @@
-import { CalendarDate, CalendarDateTime } from '@internationalized/date'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
@@ -12,7 +11,7 @@ describe('given a Calendar, in a real browser', () => {
   it('moves focus by a month with PageUp / PageDown and by a week with arrow keys', async () => {
     mount(Calendar, {
       attachTo: document.body,
-      props: { calendarProps: { placeholder: new CalendarDate(2024, 3, 20) } },
+      props: { calendarProps: { placeholder: new Temporal.PlainDate(2024, 3, 20) } },
     })
     document.querySelector<HTMLElement>('[data-testid="date-3-20"]')!.focus()
 
@@ -28,8 +27,8 @@ describe('given a Calendar, in a real browser', () => {
       attachTo: document.body,
       props: {
         calendarProps: {
-          placeholder: new CalendarDateTime(2024, 3, 20, 10, 30),
-          minValue: new CalendarDate(2024, 2, 25),
+          placeholder: new Temporal.PlainDateTime(2024, 3, 20, 10, 30),
+          minValue: new Temporal.PlainDate(2024, 2, 25),
         },
       },
     })

@@ -2,13 +2,13 @@
 import type { DateRange } from 'reka-ui'
 import type { Preset } from './presets'
 import { Icon } from '@iconify/vue'
-import { DateFormatter, getLocalTimeZone, today } from '@internationalized/date'
 import { useMediaQuery } from '@vueuse/core'
-import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger, RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCalendarGridBody, RangeCalendarGridHead, RangeCalendarGridRow, RangeCalendarHeadCell, RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot } from 'reka-ui'
+import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger, RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCalendarGridBody, RangeCalendarGridHead, RangeCalendarGridRow, RangeCalendarHeadCell, RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot, useDateFormatter } from 'reka-ui'
+import { compareDateValues } from 'reka-ui/date'
 import { computed, ref } from 'vue'
 import { presets } from './presets'
 
-const formatter = new DateFormatter('en-US', { dateStyle: 'medium' })
+const formatter = useDateFormatter('en-US')
 const isWide = useMediaQuery('(min-width: 768px)')
 
 const open = ref(false)
@@ -16,12 +16,14 @@ const value = ref<DateRange>(presets[2].range())
 // The calendar navigates from `placeholder`, so a preset has to move it too —
 // otherwise picking "Last month" leaves the view sitting on the current month.
 const placeholder = ref(value.value.start)
+// Templates cannot reach the `Temporal` global, so build the bound here.
+const maxValue = Temporal.Now.plainDateISO()
 
 const activePreset = computed(() => presets.find((preset) => {
   const { start, end } = preset.range()
   return start && end
-    && value.value.start?.compare(start) === 0
-    && value.value.end?.compare(end) === 0
+    && value.value.start && compareDateValues(value.value.start, start) === 0
+    && value.value.end && compareDateValues(value.value.end, end) === 0
 }))
 
 const label = computed(() => {
@@ -29,7 +31,7 @@ const label = computed(() => {
   if (!start || !end)
     return 'Pick a date range'
 
-  const range = `${formatter.format(start.toDate(getLocalTimeZone()))} – ${formatter.format(end.toDate(getLocalTimeZone()))}`
+  const range = `${formatter.custom(start, { dateStyle: 'medium' })} – ${formatter.custom(end, { dateStyle: 'medium' })}`
   return activePreset.value ? `${activePreset.value.label}: ${range}` : range
 })
 
@@ -75,7 +77,7 @@ function applyPreset(preset: Preset) {
             v-model:placeholder="placeholder"
             class="select-none"
             :number-of-months="isWide ? 2 : 1"
-            :max-value="today(getLocalTimeZone())"
+            :max-value="maxValue"
             paged-navigation
             fixed-weeks
           >

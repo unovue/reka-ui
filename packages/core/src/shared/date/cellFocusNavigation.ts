@@ -1,8 +1,9 @@
-import type { DateValue } from '@internationalized/date'
 import type { ComputedRef, Ref } from 'vue'
 import type { CalendarLayout, CalendarPageFunction, CalendarUnitAdapter, WeekStartsOn } from '@/date'
+import type { DateValue } from '@/date/types'
 import type { Direction } from '@/shared/types'
 import { nextTick } from 'vue'
+import { compareDateValues, toIsoString } from '@/date/temporal'
 import { focusPagination, focusWeekBoundary } from '@/shared/useCalendarKeyboardNavigation'
 import { useKbd } from '@/shared/useKbd'
 
@@ -59,15 +60,15 @@ export function createCellFocusNavigation(
   const kbd = useKbd()
 
   function isWithinBounds(candidate: DateValue) {
-    if (host.minValue.value && adapter.value.endOf(candidate).compare(host.minValue.value) < 0)
+    if (host.minValue.value && compareDateValues(adapter.value.endOf(candidate), host.minValue.value) < 0)
       return false
-    if (host.maxValue.value && adapter.value.startOf(candidate).compare(host.maxValue.value) > 0)
+    if (host.maxValue.value && compareDateValues(adapter.value.startOf(candidate), host.maxValue.value) > 0)
       return false
     return true
   }
 
   function queryCell(candidate: DateValue) {
-    return host.parentElement.value?.querySelector<HTMLElement>(`[data-value='${candidate.toString()}']:not([data-outside-view])`) ?? null
+    return host.parentElement.value?.querySelector<HTMLElement>(`[data-value='${toIsoString(candidate)}']:not([data-outside-view])`) ?? null
   }
 
   /** Flip one page in `direction`; `false` when that button is disabled. */
@@ -148,7 +149,7 @@ export function createCellFocusNavigation(
    */
   function focusPageBoundary(boundary: 'start' | 'end', event?: Event) {
     const cells = Array.from(host.parentElement.value?.querySelectorAll<HTMLElement>('[data-reka-calendar-cell-trigger]:not([data-outside-view])') ?? [])
-    const current = cells.findIndex(el => el.getAttribute('data-value') === date.value.toString())
+    const current = cells.findIndex(el => el.getAttribute('data-value') === toIsoString(date.value))
     if (current < 0)
       return
     // Cells on a month / year page are consecutive units, so a cell's offset in

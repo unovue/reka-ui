@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
-import { CalendarDate, PersianCalendar, toCalendar } from '@internationalized/date'
+import type { DateValue } from '@/date'
 import { ref } from 'vue'
+import { toCalendar } from '@/date'
 import RangeCalendar from './_DummyRangeCalendar.vue'
 
-const defaultValue = { start: new CalendarDate(2024, 2, 20), end: new CalendarDate(2024, 2, 27) }
-const persianCalendar = ref({ start: toCalendar(defaultValue.start, new PersianCalendar()), end: toCalendar(defaultValue.end, new PersianCalendar()) }) as Ref<{ start: DateValue, end: DateValue }>
+const defaultValue = { start: new Temporal.PlainDate(2024, 2, 20), end: new Temporal.PlainDate(2024, 2, 27) }
+const persianCalendar = ref({ start: toCalendar(defaultValue.start, 'persian'), end: toCalendar(defaultValue.end, 'persian') }) as Ref<{ start: DateValue, end: DateValue }>
 const modelValue = ref(defaultValue) as Ref<{ start: DateValue, end: DateValue }>
 
-const placeholder = ref(new CalendarDate(2024, 4, 1)) as Ref<CalendarDate>
+const placeholder = ref(new Temporal.PlainDate(2024, 4, 1)) as Ref<DateValue>
 
 function paging(date: DateValue, sign: -1 | 1) {
   if (sign === -1)

@@ -1,13 +1,13 @@
-import type { DateValue } from '@internationalized/date'
 import type { ComputedRef, MaybeRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { RangeCalendarRootContext } from './RangeCalendarRoot.vue'
-import type { CalendarGridData, CalendarPageFunction, CalendarUnit, CalendarUnitAdapter, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
+import type { CalendarGridData, CalendarPageFunction, CalendarUnit, CalendarUnitAdapter, DateValue, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { DateRange } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, unref, watch } from 'vue'
 import { getCalendarGridSurface, getCalendarHeadingSurface, getCalendarNavSurface, getCalendarViewTriggerSurface } from '@/Calendar/useCalendar'
-import { clampCalendarView, coarserUnit, finerUnit, getUnitAdapter, isAfter, isBefore, isCoarserUnit } from '@/date'
+import { clampCalendarView, coarserUnit, compareDateValues, finerUnit, getUnitAdapter, isAfter, isBefore, isCoarserUnit, toIsoString } from '@/date'
+import { assertTemporal } from '@/date/runtime'
 import { createChangeEventDetails, createPartSurface, useControllableState } from '@/shared'
 import { createCellFocusNavigation, getDefaultDate, useCalendarGrid } from '@/shared/date'
 
@@ -244,7 +244,7 @@ export function getRangeCalendarCellTriggerSurface(
   function trackFocus() {
     if (isDisabled.value || isUnavailable.value)
       return
-    context.setFocusedValue(date.value.copy())
+    context.setFocusedValue(date.value)
   }
 
   const surface = createPartSurface<RangeCalendarCellTriggerState>(
@@ -253,7 +253,7 @@ export function getRangeCalendarCellTriggerSurface(
       'aria-label': labelText.value,
       'aria-pressed': showSelected.value ? true : undefined,
       'aria-disabled': isDisabled.value || isUnavailable.value ? true : undefined,
-      'data-value': date.value.toString(),
+      'data-value': toIsoString(date.value),
       'data-reka-calendar-cell-trigger': '',
       'tabindex': isFocused.value ? 0 : isOutsideView.value || isDisabled.value ? undefined : -1,
       'onClick': (event: MouseEvent) => {
@@ -298,6 +298,7 @@ export function getRangeCalendarCellTriggerSurface(
  * @lifecycle setup — installs watchers.
  */
 export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendarReturn {
+  assertTemporal()
   const locale = computed(() => toValue(props.locale))
   const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
   const disabled = computed(() => toValue(props.disabled) ?? false)
@@ -348,15 +349,15 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
 
   const { state: placeholder, setState: setPlaceholderState } = useControllableState<DateValue, RangeCalendarChangeReason>({
     prop: () => toValue(props.placeholder),
-    defaultValue: () => props.defaultPlaceholder?.copy() ?? getDefaultDate({
+    defaultValue: () => props.defaultPlaceholder ?? getDefaultDate({
       defaultPlaceholder: toValue(props.placeholder),
       defaultValue: modelValue.value.start,
       locale: locale.value,
-    }).copy(),
+    }),
     name: 'placeholder',
     emit: props.emit,
     onUpdate: props.onUpdatePlaceholder,
-    isEqual: (a, b) => a.compare(b) === 0,
+    isEqual: (a, b) => compareDateValues(a, b) === 0,
   })
 
   const { state: rawView, setState: setViewState } = useControllableState<CalendarUnit, RangeCalendarChangeReason>({
@@ -369,7 +370,7 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
   const view = computed(() => clampCalendarView(rawView.value, granularity.value, maxView.value))
 
   function setPlaceholder(value: DateValue, reason: RangeCalendarChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    return setPlaceholderState(value.copy(), reason, event)
+    return setPlaceholderState(value, reason, event)
   }
 
   function setView(next: CalendarUnit, reason: RangeCalendarChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
@@ -549,9 +550,9 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
   watch(modelValue, (next) => {
     const a = granularityAdapter.value
     if (!isSameOrBothEmpty(a, next.start, startValue.value))
-      startValue.value = next.start?.copy()
+      startValue.value = next.start
     if (!isSameOrBothEmpty(a, next.end, endValue.value))
-      endValue.value = next.end?.copy()
+      endValue.value = next.end
   })
 
   watch(startValue, (start) => {
@@ -582,24 +583,24 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
     let next: DateRange
     if (start && end) {
       next = a.compare(end, start) < 0
-        ? { start: end.copy(), end: start.copy() }
-        : { start: start.copy(), end: end.copy() }
+        ? { start: end, end: start }
+        : { start, end }
     }
     else {
-      next = start ? { start: start.copy(), end: undefined } : { start: end?.copy(), end: undefined }
+      next = start ? { start, end: undefined } : { start: end, end: undefined }
     }
 
     setModelValue(next, reason, event)
     if (lastChangeDetails.value.isCanceled) {
       // A vetoed change restores the last committed range.
-      startValue.value = modelValue.value.start?.copy()
-      endValue.value = modelValue.value.end?.copy()
+      startValue.value = modelValue.value.start
+      endValue.value = modelValue.value.end
       isEditing.value = false
       return
     }
     if (start && end) {
       isEditing.value = false
-      validModelValue.value = { start: next.start!.copy(), end: next.end!.copy() }
+      validModelValue.value = { start: next.start!, end: next.end! }
     }
   })
 
@@ -612,8 +613,8 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
     if (!isEditing.value)
       return
     setPending('escape-key')
-    startValue.value = validModelValue.value.start?.copy()
-    endValue.value = validModelValue.value.end?.copy()
+    startValue.value = validModelValue.value.start
+    endValue.value = validModelValue.value.end
   }
 
   // A hover in another view leaves a value of that view's unit behind; it must
@@ -638,7 +639,7 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
       // A cancelled `beforeUpdate:placeholder` keeps the current page, so don't
       // drill into it. `false` for an unchanged placeholder is a no-op, not a cancel.
       const target = gridApi.adapter.value.resolve(date, placeholder.value)
-      if (!setPlaceholder(target, 'view-drill', event) && target.compare(placeholder.value) !== 0)
+      if (!setPlaceholder(target, 'view-drill', event) && compareDateValues(target, placeholder.value) !== 0)
         return
       setView(finer, 'view-drill', event)
       return
@@ -667,19 +668,19 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
       if (a.isSame(date, startValue.value) && !preventDeselect.value && !endValue.value) {
         startValue.value = undefined
         setPlaceholder(date, reason, event)
-        lastPressedDateValue.value = date.copy()
+        lastPressedDateValue.value = date
         return
       }
       else if (!endValue.value) {
         event?.preventDefault()
         if (lastPressedDateValue.value && a.isSame(lastPressedDateValue.value, date))
-          startValue.value = date.copy()
-        lastPressedDateValue.value = date.copy()
+          startValue.value = date
+        lastPressedDateValue.value = date
         return
       }
     }
 
-    lastPressedDateValue.value = date.copy()
+    lastPressedDateValue.value = date
 
     if (
       startValue.value
@@ -695,26 +696,26 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
     }
 
     if (!startValue.value) {
-      startValue.value = date.copy()
+      startValue.value = date
     }
     else if (!endValue.value) {
-      endValue.value = date.copy()
+      endValue.value = date
     }
     else if (!fixedDate.value) {
       endValue.value = undefined
-      startValue.value = date.copy()
+      startValue.value = date
     }
     else if (fixedDate.value === 'start') {
       if (a.compare(date, startValue.value) < 0)
-        startValue.value = date.copy()
+        startValue.value = date
       else
-        endValue.value = date.copy()
+        endValue.value = date
     }
     else if (a.compare(date, endValue.value) > 0) {
-      endValue.value = date.copy()
+      endValue.value = date
     }
     else {
-      startValue.value = date.copy()
+      startValue.value = date
     }
   }
 

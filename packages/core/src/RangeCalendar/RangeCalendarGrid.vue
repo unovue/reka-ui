@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { ComputedRef } from 'vue'
+import type { DateValue } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import { createContext, useForwardElement } from '@/shared'
 

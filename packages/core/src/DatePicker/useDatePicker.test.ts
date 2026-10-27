@@ -1,10 +1,9 @@
-import type { DateValue } from '@internationalized/date'
 import type { PropType } from 'vue'
 import type { UseDatePickerProps, UseDatePickerReturn } from './useDatePicker'
 import type { UseCalendarReturn } from '@/Calendar/useCalendar'
+import type { DateValue } from '@/date'
 import type { UseDateFieldReturn } from '@/DateField'
 import type { SegmentPart } from '@/shared/date'
-import { CalendarDate, CalendarDateTime } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -23,7 +22,7 @@ import { useDatePicker } from './useDatePicker'
  * `DatePicker.test.ts` / `DatePickerViews.test.ts`.
  */
 
-const jan20 = new CalendarDate(2024, 1, 20)
+const jan20 = new Temporal.PlainDate(2024, 1, 20)
 
 function withScope<T>(fn: () => T): T {
   return effectScope().run(fn)!
@@ -107,7 +106,7 @@ describe('useDatePicker', () => {
 
     await user.click(getByTestId('date-1-10'))
     expect(onUpdate).toHaveBeenCalledTimes(1)
-    expect(onUpdate).toHaveBeenLastCalledWith(new CalendarDate(2024, 1, 10), expect.objectContaining({ reason: 'cell-press' }))
+    expect(onUpdate).toHaveBeenLastCalledWith(new Temporal.PlainDate(2024, 1, 10), expect.objectContaining({ reason: 'cell-press' }))
     await nextTick()
     expect(getByTestId('day').textContent).toBe('10')
     expect(api().picker.lastChangeDetails.value.reason).toBe('cell-press')
@@ -119,7 +118,7 @@ describe('useDatePicker', () => {
     await user.click(getByTestId('day'))
     await user.keyboard('{ArrowUp}')
     expect(onUpdate).toHaveBeenCalledTimes(1)
-    expect(onUpdate).toHaveBeenLastCalledWith(new CalendarDate(2024, 1, 21), expect.objectContaining({ reason: 'segment-increment' }))
+    expect(onUpdate).toHaveBeenLastCalledWith(new Temporal.PlainDate(2024, 1, 21), expect.objectContaining({ reason: 'segment-increment' }))
     expect(api().picker.modelValue.value?.toString()).toBe('2024-01-21')
     await nextTick()
     expect(api().calendar.modelValue.value?.toString()).toBe('2024-01-21')
@@ -146,7 +145,7 @@ describe('useDatePicker', () => {
       const onUpdate = vi.fn()
       const picker = useDatePicker({ defaultValue: jan20, locale: 'en-US', onBeforeUpdate: (_v, d) => d.cancel(), onUpdate })
       const calendar = useCalendar(picker.getCalendarProps())
-      calendar.select(new CalendarDate(2024, 1, 5), 'cell-press')
+      calendar.select(new Temporal.PlainDate(2024, 1, 5), 'cell-press')
       expect(onUpdate).not.toHaveBeenCalled()
       expect(picker.modelValue.value?.toString()).toBe('2024-01-20')
     })
@@ -158,17 +157,17 @@ describe('useDatePicker', () => {
       const emit = vi.fn()
       const picker = useDatePicker({ modelValue: () => model.value, emit, locale: 'en-US' })
       expect(picker.isControlled.value).toBe(true)
-      expect(picker.setModelValue(new CalendarDate(2024, 2, 2))).toBe(true)
-      expect(emit).toHaveBeenCalledWith('beforeUpdate:modelValue', new CalendarDate(2024, 2, 2), expect.objectContaining({ reason: 'imperative-action' }))
-      expect(emit).toHaveBeenCalledWith('update:modelValue', new CalendarDate(2024, 2, 2), expect.objectContaining({ reason: 'imperative-action' }))
+      expect(picker.setModelValue(new Temporal.PlainDate(2024, 2, 2))).toBe(true)
+      expect(emit).toHaveBeenCalledWith('beforeUpdate:modelValue', new Temporal.PlainDate(2024, 2, 2), expect.objectContaining({ reason: 'imperative-action' }))
+      expect(emit).toHaveBeenCalledWith('update:modelValue', new Temporal.PlainDate(2024, 2, 2), expect.objectContaining({ reason: 'imperative-action' }))
       expect(picker.modelValue.value?.toString()).toBe('2024-01-20')
       model.value = null
       expect(picker.modelValue.value).toBeUndefined()
 
       const uncontrolled = useDatePicker({ defaultValue: jan20, locale: 'en-US' })
       expect(uncontrolled.isControlled.value).toBe(false)
-      expect(uncontrolled.setModelValue(new CalendarDate(2024, 1, 20))).toBe(false)
-      expect(uncontrolled.setModelValue(new CalendarDate(2024, 2, 2))).toBe(true)
+      expect(uncontrolled.setModelValue(new Temporal.PlainDate(2024, 1, 20))).toBe(false)
+      expect(uncontrolled.setModelValue(new Temporal.PlainDate(2024, 2, 2))).toBe(true)
       expect(uncontrolled.modelValue.value?.toString()).toBe('2024-02-02')
     })
   })
@@ -177,17 +176,17 @@ describe('useDatePicker', () => {
     const onUpdateOpen = vi.fn()
     const onUpdatePlaceholder = vi.fn()
     const picker = withScope(() => useDatePicker({ defaultValue: jan20, defaultOpen: true, closeOnSelect: true, locale: 'en-US', onUpdateOpen, onUpdatePlaceholder }))
-    picker.setModelValue(new CalendarDate(2024, 3, 1), 'cell-press')
+    picker.setModelValue(new Temporal.PlainDate(2024, 3, 1), 'cell-press')
     await nextTick()
     expect(picker.open.value).toBe(false)
     expect(onUpdateOpen).toHaveBeenLastCalledWith(false, expect.objectContaining({ reason: 'date-select' }))
-    expect(onUpdatePlaceholder).toHaveBeenLastCalledWith(new CalendarDate(2024, 3, 1), expect.objectContaining({ reason: 'imperative-action' }))
+    expect(onUpdatePlaceholder).toHaveBeenLastCalledWith(new Temporal.PlainDate(2024, 3, 1), expect.objectContaining({ reason: 'imperative-action' }))
   })
 
   it('hands locale and hour cycle to the field', async () => {
     const locale = ref('de-DE')
     const field = withScope(() => {
-      const picker = useDatePicker({ defaultValue: new CalendarDateTime(2024, 1, 20, 14, 30), locale, hourCycle: 24 })
+      const picker = useDatePicker({ defaultValue: new Temporal.PlainDateTime(2024, 1, 20, 14, 30), locale, hourCycle: 24 })
       return useDateField(picker.getFieldProps())
     })
     expect(field.editableSegments.value.map(s => s.part)).toEqual(['day', 'month', 'year', 'hour', 'minute'])
@@ -209,11 +208,11 @@ describe('useDatePicker', () => {
       await user.keyboard('{ArrowUp}')
       expect(onBefore).toHaveBeenCalledTimes(1)
       expect(onUpdate).toHaveBeenCalledTimes(1)
-      expect(onUpdate).toHaveBeenLastCalledWith(new CalendarDate(2024, 1, 21), expect.objectContaining({ reason: 'segment-increment' }))
+      expect(onUpdate).toHaveBeenLastCalledWith(new Temporal.PlainDate(2024, 1, 21), expect.objectContaining({ reason: 'segment-increment' }))
 
       await user.click(getByTestId('trigger'))
       await user.click(getByTestId('date-1-5'))
-      expect(onUpdate).toHaveBeenLastCalledWith(new CalendarDate(2024, 1, 5), expect.objectContaining({ reason: 'cell-press' }))
+      expect(onUpdate).toHaveBeenLastCalledWith(new Temporal.PlainDate(2024, 1, 5), expect.objectContaining({ reason: 'cell-press' }))
     })
 
     it('a cancelled change keeps the value and the typed segments', async () => {
@@ -245,9 +244,9 @@ describe('useDatePicker', () => {
 })
 
 describe('useDatePicker review fixes', () => {
-  const minDate = new CalendarDate(2000, 1, 1)
+  const minDate = new Temporal.PlainDate(2000, 1, 1)
   const noPastDates = (value: DateValue | undefined, details: { cancel: () => void }) => {
-    if (value && value.compare(minDate) < 0)
+    if (value && Temporal.PlainDate.compare(value, minDate) < 0)
       details.cancel()
   }
 
@@ -267,7 +266,7 @@ describe('useDatePicker review fixes', () => {
     const onUpdate = vi.fn()
     const user = userEvent.setup()
     const { getByTestId } = render(DatePicker, {
-      props: { datePickerProps: { 'defaultValue': new CalendarDate(2024, 1, 15), 'granularity': 'day', 'locale': 'en-US', 'onBeforeUpdate:modelValue': noPastDates, 'onUpdate:modelValue': onUpdate } as any },
+      props: { datePickerProps: { 'defaultValue': new Temporal.PlainDate(2024, 1, 15), 'granularity': 'day', 'locale': 'en-US', 'onBeforeUpdate:modelValue': noPastDates, 'onUpdate:modelValue': onUpdate } as any },
     })
     await user.click(getByTestId('year'))
     await user.keyboard('2025')
@@ -281,7 +280,7 @@ describe('useDatePicker review fixes', () => {
     const user = userEvent.setup()
     const { getByTestId } = render(DatePicker, {
       props: {
-        datePickerProps: { modelValue: null, defaultOpen: true, placeholder: new CalendarDate(2024, 1, 1), granularity: 'day' } as any,
+        datePickerProps: { modelValue: null, defaultOpen: true, placeholder: new Temporal.PlainDate(2024, 1, 1), granularity: 'day' } as any,
         emits: { 'onUpdate:modelValue': () => {} },
       },
     })
@@ -301,7 +300,7 @@ describe('useDatePicker review fixes', () => {
         onBeforeUpdatePlaceholder: (_value, details) => details.cancel(),
         onUpdatePlaceholder,
       })
-      expect(picker.setPlaceholder(new CalendarDate(2024, 5, 1))).toBe(false)
+      expect(picker.setPlaceholder(new Temporal.PlainDate(2024, 5, 1))).toBe(false)
       expect(onUpdatePlaceholder).not.toHaveBeenCalled()
       expect(picker.placeholder.value.toString()).toBe('2024-01-20')
     })

@@ -1,7 +1,6 @@
 import type { PropType } from 'vue'
 import type { UseTimeFieldProps, UseTimeFieldReturn } from './useTimeField'
 import type { SegmentPart, TimeValue } from '@/shared/date'
-import { CalendarDateTime, Time } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -15,7 +14,7 @@ import { useTimeField } from './useTimeField'
  * `TimeField.test.ts`.
  */
 
-const t1030 = new Time(10, 30)
+const t1030 = new Temporal.PlainTime(10, 30)
 
 function withScope<T>(fn: () => T): T {
   return effectScope().run(fn)!
@@ -69,8 +68,8 @@ describe('useTimeField', () => {
     await user.click(getByTestId('minute'))
     await user.keyboard('{ArrowUp}')
     const [value, details] = onUpdate.mock.lastCall!
-    expect(value).toBeInstanceOf(Time)
-    expect((value as Time).toString()).toBe('10:31:00')
+    expect(value).toBeInstanceOf(Temporal.PlainTime)
+    expect((value as Temporal.PlainTime).toString()).toBe('10:31:00')
     expect(details.reason).toBe('segment-increment')
 
     await user.keyboard('{ArrowDown}')
@@ -85,19 +84,19 @@ describe('useTimeField', () => {
   it('keeps a date-time value as a date-time', () => {
     withScope(() => {
       const onUpdate = vi.fn()
-      const api = useTimeField({ defaultValue: new CalendarDateTime(2024, 1, 20, 10, 30), onUpdate, locale: 'en-US' })
-      api.setModelValue(new CalendarDateTime(2024, 1, 20, 11, 0))
-      expect(onUpdate.mock.lastCall![0]).toBeInstanceOf(CalendarDateTime)
+      const api = useTimeField({ defaultValue: new Temporal.PlainDateTime(2024, 1, 20, 10, 30), onUpdate, locale: 'en-US' })
+      api.setModelValue(new Temporal.PlainDateTime(2024, 1, 20, 11, 0))
+      expect(onUpdate.mock.lastCall![0]).toBeInstanceOf(Temporal.PlainDateTime)
     })
   })
 
   it('emits a Time placeholder when the placeholder is a Time', async () => {
     const onUpdatePlaceholder = vi.fn()
     const api = withScope(() => useTimeField({ defaultValue: t1030, onUpdatePlaceholder, locale: 'en-US' }))
-    api.setModelValue(new Time(14, 0), 'segment-input')
+    api.setModelValue(new Temporal.PlainTime(14, 0), 'segment-input')
     await nextTick()
     const [value, details] = onUpdatePlaceholder.mock.lastCall!
-    expect(value).toBeInstanceOf(Time)
+    expect(value).toBeInstanceOf(Temporal.PlainTime)
     expect(value.toString()).toBe('14:00:00')
     expect(details.reason).toBe('imperative-action')
   })
@@ -124,16 +123,16 @@ describe('useTimeField', () => {
       const emit = vi.fn()
       const api = useTimeField({ modelValue: () => model.value, emit, locale: 'en-US' })
       expect(api.isControlled.value).toBe(true)
-      api.setModelValue(new Time(9, 0))
-      expect(emit).toHaveBeenCalledWith('update:modelValue', new Time(9, 0), expect.objectContaining({ reason: 'imperative-action' }))
+      api.setModelValue(new Temporal.PlainTime(9, 0))
+      expect(emit).toHaveBeenCalledWith('update:modelValue', new Temporal.PlainTime(9, 0), expect.objectContaining({ reason: 'imperative-action' }))
       expect(api.modelValue.value?.toString()).toBe('10:30:00')
       model.value = null
       expect(api.modelValue.value).toBeUndefined()
 
       const uncontrolled = useTimeField({ defaultValue: t1030, locale: 'en-US' })
       expect(uncontrolled.isControlled.value).toBe(false)
-      expect(uncontrolled.setModelValue(new Time(10, 30))).toBe(false)
-      expect(uncontrolled.setModelValue(new Time(9, 0))).toBe(true)
+      expect(uncontrolled.setModelValue(new Temporal.PlainTime(10, 30))).toBe(false)
+      expect(uncontrolled.setModelValue(new Temporal.PlainTime(9, 0))).toBe(true)
       expect(uncontrolled.modelValue.value?.toString()).toBe('09:00:00')
     })
   })
@@ -146,15 +145,15 @@ describe('useTimeField', () => {
       expect(matcher.mock.calls[0][0]).toHaveProperty('day')
       expect(api.root.attrs.value['data-invalid']).toBe('')
 
-      expect(useTimeField({ defaultValue: t1030, minValue: new Time(11), locale: 'en-US' }).isInvalid.value).toBe(true)
-      expect(useTimeField({ defaultValue: t1030, maxValue: new Time(10), locale: 'en-US' }).isInvalid.value).toBe(true)
-      expect(useTimeField({ defaultValue: t1030, minValue: new Time(9), maxValue: new Time(11), locale: 'en-US' }).isInvalid.value).toBe(false)
+      expect(useTimeField({ defaultValue: t1030, minValue: new Temporal.PlainTime(11), locale: 'en-US' }).isInvalid.value).toBe(true)
+      expect(useTimeField({ defaultValue: t1030, maxValue: new Temporal.PlainTime(10), locale: 'en-US' }).isInvalid.value).toBe(true)
+      expect(useTimeField({ defaultValue: t1030, minValue: new Temporal.PlainTime(9), maxValue: new Temporal.PlainTime(11), locale: 'en-US' }).isInvalid.value).toBe(false)
     })
   })
 
   it('follows the hour cycle and the locale', async () => {
     const locale = ref('en-US')
-    const value = new Time(14, 5)
+    const value = new Temporal.PlainTime(14, 5)
     const h12 = withScope(() => useTimeField({ defaultValue: value, locale, hourCycle: 12 }))
     expect(h12.segments.value.find(s => s.part === 'hour')?.value).toBe('2')
     expect(h12.editableSegments.value.map(s => s.part)).toContain('dayPeriod')

@@ -3,12 +3,11 @@ import type { Ref } from 'vue'
 import type { CalendarUnit } from '@/date'
 import type { DateRange } from '@/shared/date'
 import { Icon } from '@iconify/vue'
-import { CalendarDate } from '@internationalized/date'
 import { ref } from 'vue'
 import { RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCalendarGridBody, RangeCalendarGridHead, RangeCalendarGridRow, RangeCalendarHeadCell, RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot, RangeCalendarView, RangeCalendarViewTrigger } from '..'
 
-const days = ref({ start: new CalendarDate(2026, 9, 5), end: new CalendarDate(2026, 9, 12) }) as Ref<DateRange>
-const months = ref({ start: new CalendarDate(2026, 3, 1), end: new CalendarDate(2026, 6, 1) }) as Ref<DateRange>
+const days = ref({ start: new Temporal.PlainDate(2026, 9, 5), end: new Temporal.PlainDate(2026, 9, 12) }) as Ref<DateRange>
+const months = ref({ start: new Temporal.PlainDate(2026, 3, 1), end: new Temporal.PlainDate(2026, 6, 1) }) as Ref<DateRange>
 const years = ref({ start: undefined, end: undefined }) as Ref<DateRange>
 const view = ref<CalendarUnit>('day')
 

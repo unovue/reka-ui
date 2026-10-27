@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { CalendarDate } from '@internationalized/date'
 import { RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCalendarGridBody, RangeCalendarGridRow, RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot } from 'reka-ui'
 
 const defaultValue = {
-  start: new CalendarDate(2024, 3, 1),
-  end: new CalendarDate(2024, 6, 1),
+  start: new Temporal.PlainDate(2024, 3, 1),
+  end: new Temporal.PlainDate(2024, 6, 1),
 }
 </script>
 

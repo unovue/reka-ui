@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { CalendarDate } from '@internationalized/date'
 import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridRow, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from 'reka-ui'
 import './styles.css'
 
-const date = new CalendarDate(2024, 1, 1)
+const date = new Temporal.PlainDate(2024, 1, 1)
 </script>
 
 <template>

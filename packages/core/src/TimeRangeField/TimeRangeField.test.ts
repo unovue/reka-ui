@@ -1,21 +1,20 @@
 import type { TimeRangeFieldRootProps } from './TimeRangeFieldRoot.vue'
 import type { TimeValue } from '@/shared/date'
-import { CalendarDateTime, Time, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
 import TimeField from './story/_TimeRangeField.vue'
 
-const time = { start: new Time(9, 15, 29), end: new Time(17, 45, 0) }
+const time = { start: new Temporal.PlainTime(9, 15, 29), end: new Temporal.PlainTime(17, 45, 0) }
 const calendarDateTime = {
-  start: new CalendarDateTime(2022, 1, 1, 9, 15),
-  end: new CalendarDateTime(2022, 1, 1, 17, 45),
+  start: new Temporal.PlainDateTime(2022, 1, 1, 9, 15),
+  end: new Temporal.PlainDateTime(2022, 1, 1, 17, 45),
 }
 const zonedDateTime = {
-  start: toZoned(calendarDateTime.start, 'America/New_York'),
-  end: toZoned(calendarDateTime.end, 'America/New_York'),
+  start: calendarDateTime.start.toZonedDateTime('America/New_York'),
+  end: calendarDateTime.end.toZonedDateTime('America/New_York'),
 }
 
 const kbd = useTestKbd()
@@ -181,7 +180,7 @@ describe('timeField', () => {
       timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },
     })
 
-    const nextTime = { start: new Time(10, 0), end: new Time(11, 30) }
+    const nextTime = { start: new Temporal.PlainTime(10, 0), end: new Temporal.PlainTime(11, 30) }
     await rerender({ timeRangeFieldProps: { modelValue: nextTime, locale: 'en-GB' } })
 
     expect(start.hour).toHaveTextContent(String(nextTime.start.hour))
@@ -282,8 +281,8 @@ describe('timeField', () => {
 
   it('displays data-invalid when start is after end', async () => {
     const invalidTime = {
-      start: new Time(17, 0),
-      end: new Time(9, 0),
+      start: new Temporal.PlainTime(17, 0),
+      end: new Temporal.PlainTime(9, 0),
     }
     const { input } = setup({
       timeRangeFieldProps: { modelValue: invalidTime, locale: 'en-GB' },
@@ -305,7 +304,7 @@ describe('timeField', () => {
       timeRangeFieldProps: {
         modelValue: time,
         locale: 'en-GB',
-        minValue: new Time(10, 0),
+        minValue: new Temporal.PlainTime(10, 0),
       },
     })
 
@@ -364,5 +363,28 @@ describe('timeField', () => {
     await user.keyboard('{1}{5}')
     // After finishing start minute, focus should move to end hour
     expect(end.hour).toHaveFocus()
+  })
+})
+
+describe('coderabbit review (#3088)', () => {
+  const hiddenInput = (container: Element) => container.querySelector<HTMLInputElement>('input[name="range"]')!
+
+  it('submits an empty endpoint as an empty string, and an empty range as nothing', async () => {
+    const partial = render(TimeField, { props: { timeRangeFieldProps: { name: 'range', modelValue: { start: new Temporal.PlainTime(9, 15), end: undefined } } } })
+    expect(hiddenInput(partial.container).value).toBe('09:15:00 - ')
+    partial.unmount()
+
+    const empty = render(TimeField, { props: { timeRangeFieldProps: { name: 'range', modelValue: { start: undefined, end: undefined } } } })
+    expect(hiddenInput(empty.container).value).toBe('')
+  })
+
+  it('follows a same-instant change of time zone of the start', async () => {
+    const start = Temporal.ZonedDateTime.from('2024-07-10T12:30[America/New_York]')
+    const end = start.add({ hours: 2 })
+    const { getByTestId, rerender } = render(TimeField, { props: { timeRangeFieldProps: { modelValue: { start, end }, locale: 'en-US' } } })
+    expect(getByTestId('start-timeZoneName')).toHaveTextContent('EDT')
+
+    await rerender({ timeRangeFieldProps: { modelValue: { start: start.withTimeZone('America/Chicago'), end }, locale: 'en-US' } })
+    await vi.waitFor(() => expect(getByTestId('start-timeZoneName')).toHaveTextContent('CDT'))
   })
 })

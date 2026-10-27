@@ -32,15 +32,20 @@ Allows users to input a range of times within a designated field.
 
 ## Preface
 
-The component depends on the [@internationalized/date](https://react-spectrum.adobe.com/internationalized/date/index.html) package, which solves a lot of the problems that come with working with dates and times in JavaScript.
-
-We highly recommend reading through the documentation for the package to get a solid feel for how it works, and you'll need to install it in your project to use the time-related components.
+The component works with the [Temporal API](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal): its values are `Temporal.PlainTime`, `Temporal.PlainDateTime` or `Temporal.ZonedDateTime`. Reka UI does not bundle a Temporal implementation, so on runtimes without native Temporal your app loads a polyfill. See [Dates & Times](/docs/guides/dates) for the setup and how the components treat calendars and time zones.
 
 ## Installation
 
-Install the date package.
+On runtimes without native Temporal, install a polyfill and load it once, before the app mounts.
 
-<InstallationTabs value="@internationalized/date" />
+<InstallationTabs value="temporal-polyfill-lite" />
+
+```ts
+// main.ts
+import { install } from 'temporal-polyfill-lite/shim'
+
+install(false) // keeps the native Temporal when the browser has one
+```
 
 Install the component from your command line.
 
@@ -160,13 +165,12 @@ Contains the time field segments.
 
 ```vue
 <script setup>
-import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
 import { ref } from 'vue'
 
 const timeRange = ref({
-  start: new Time(9, 0),
-  end: new Time(17, 0)
+  start: new Temporal.PlainTime(9, 0),
+  end: new Temporal.PlainTime(17, 0)
 })
 </script>
 
@@ -225,13 +229,12 @@ function handleTimeRangeChange(newRange) {
 
 ```vue
 <script setup>
-import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
 import { ref } from 'vue'
 
 const timeRange = ref({
-  start: new Time(9, 0),
-  end: new Time(17, 0)
+  start: new Temporal.PlainTime(9, 0),
+  end: new Temporal.PlainTime(17, 0)
 })
 
 // Disable times before 8 AM and after 6 PM
@@ -269,13 +272,12 @@ function isTimeUnavailable(time) {
 
 ```vue
 <script setup>
-import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
 import { ref } from 'vue'
 
 const timeRange = ref({
-  start: new Time(9, 0, 30),
-  end: new Time(17, 30, 0)
+  start: new Temporal.PlainTime(9, 0, 30),
+  end: new Temporal.PlainTime(17, 30, 0)
 })
 </script>
 
@@ -336,13 +338,12 @@ const timeRange = ref({
 
 ```vue
 <script setup>
-import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
 import { ref } from 'vue'
 
 const timeRange = ref({
-  start: new Time(9, 0),
-  end: new Time(17, 0)
+  start: new Temporal.PlainTime(9, 0),
+  end: new Temporal.PlainTime(17, 0)
 })
 </script>
 
@@ -405,18 +406,17 @@ const timeRange = ref({
 
 ```vue
 <script setup>
-import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
 import { ref } from 'vue'
 
 const timeRange = ref({
-  start: new Time(9, 0),
-  end: new Time(17, 0)
+  start: new Temporal.PlainTime(9, 0),
+  end: new Temporal.PlainTime(17, 0)
 })
 
 // Restrict times between 8 AM and 6 PM
-const minTime = new Time(8, 0)
-const maxTime = new Time(18, 0)
+const minTime = new Temporal.PlainTime(8, 0)
+const maxTime = new Temporal.PlainTime(18, 0)
 </script>
 
 <template>
@@ -445,13 +445,12 @@ const maxTime = new Time(18, 0)
 
 ```vue
 <script setup>
-import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
 import { ref } from 'vue'
 
 const timeRange = ref({
-  start: new Time(9, 0),
-  end: new Time(17, 0)
+  start: new Temporal.PlainTime(9, 0),
+  end: new Temporal.PlainTime(17, 0)
 })
 
 // Increment minutes by 15
@@ -483,13 +482,12 @@ const step = { minute: 15 }
 
 ```vue
 <script setup>
-import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
 import { ref } from 'vue'
 
 const timeRange = ref({
-  start: new Time(9, 0),
-  end: new Time(17, 0)
+  start: new Temporal.PlainTime(9, 0),
+  end: new Temporal.PlainTime(17, 0)
 })
 
 const isDisabled = ref(true)
@@ -524,13 +522,12 @@ const isDisabled = ref(true)
 
 ```vue
 <script setup>
-import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
 import { ref } from 'vue'
 
 const timeRange = ref({
-  start: new Time(9, 0),
-  end: new Time(17, 0)
+  start: new Temporal.PlainTime(9, 0),
+  end: new Temporal.PlainTime(17, 0)
 })
 
 const isReadonly = ref(true)
@@ -567,13 +564,12 @@ The TimeRangeField provides intuitive keyboard navigation for efficient time inp
 
 ```vue
 <script setup>
-import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
 import { ref } from 'vue'
 
 const timeRange = ref({
-  start: new Time(9, 0),
-  end: new Time(17, 0)
+  start: new Temporal.PlainTime(9, 0),
+  end: new Temporal.PlainTime(17, 0)
 })
 </script>
 
@@ -606,13 +602,12 @@ Integrate TimeRangeField with HTML forms to handle submissions and validation.
 
 ```vue
 <script setup>
-import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
 import { ref } from 'vue'
 
 const timeRange = ref({
-  start: new Time(9, 0),
-  end: new Time(17, 0)
+  start: new Temporal.PlainTime(9, 0),
+  end: new Temporal.PlainTime(17, 0)
 })
 
 function handleSubmit() {
@@ -650,13 +645,12 @@ Customize the appearance of the TimeRangeField using CSS classes or Tailwind uti
 
 ```vue
 <script setup>
-import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
 import { ref } from 'vue'
 
 const timeRange = ref({
-  start: new Time(9, 0),
-  end: new Time(17, 0)
+  start: new Temporal.PlainTime(9, 0),
+  end: new Temporal.PlainTime(17, 0)
 })
 </script>
 
@@ -697,13 +691,12 @@ Implement complex validation rules, such as ensuring the end time is after the s
 
 ```vue
 <script setup>
-import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
 import { ref, watch } from 'vue'
 
 const timeRange = ref({
-  start: new Time(9, 0),
-  end: new Time(17, 0)
+  start: new Temporal.PlainTime(9, 0),
+  end: new Temporal.PlainTime(17, 0)
 })
 
 const errors = ref([])
@@ -711,7 +704,7 @@ const errors = ref([])
 watch(timeRange, (newRange) => {
   errors.value = []
   if (newRange.start && newRange.end) {
-    if (newRange.start.compare(newRange.end) >= 0) {
+    if (Temporal.PlainTime.compare(newRange.start, newRange.end) >= 0) {
       errors.value.push('End time must be after start time')
     }
     if (newRange.start.hour < 8 || newRange.start.hour > 18) {
@@ -750,13 +743,12 @@ The TimeRangeField is built with accessibility in mind. Enhance it further with 
 
 ```vue
 <script setup>
-import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
 import { ref } from 'vue'
 
 const timeRange = ref({
-  start: new Time(9, 0),
-  end: new Time(17, 0)
+  start: new Temporal.PlainTime(9, 0),
+  end: new Temporal.PlainTime(17, 0)
 })
 </script>
 
@@ -803,15 +795,14 @@ Use TimeRangeField in practical scenarios like scheduling appointments or bookin
 
 ```vue
 <script setup>
-import { Time } from '@internationalized/date'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
 import { ref } from 'vue'
 
 const appointment = ref({
   date: new Date(),
   timeRange: {
-    start: new Time(10, 0),
-    end: new Time(11, 0)
+    start: new Temporal.PlainTime(10, 0),
+    end: new Temporal.PlainTime(11, 0)
   },
   title: ''
 })

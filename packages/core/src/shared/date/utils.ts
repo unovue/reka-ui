@@ -3,7 +3,22 @@ import type { Granularity } from './comparators'
 import type { DateInputType, DateStep, DateValue, HourCycle } from './types'
 import { defu } from 'defu'
 import { nextTick, watch } from 'vue'
+import { toCalendar, toIsoString } from '@/date/temporal'
 import { getActiveElement } from '@/shared/getActiveElement'
+
+/**
+ * The value a range field submits in a form: `start - end` as ISO strings.
+ * A missing endpoint is empty (`2024-01-01 - `), and an empty range is an
+ * empty string, so `required` sees it as missing.
+ *
+ * @internal
+ */
+export function toRangeFormValue(range: { start?: DateValue | Temporal.PlainTime | null, end?: DateValue | Temporal.PlainTime | null }): string {
+  const { start, end } = range
+  if (!start && !end)
+    return ''
+  return `${start ? toIsoString(start) : ''} - ${end ? toIsoString(end) : ''}`
+}
 
 export function getOptsByGranularity(granularity: Granularity, hourCycle: HourCycle, isTimeValue: boolean = false) {
   const opts: Intl.DateTimeFormatOptions = {
@@ -122,6 +137,8 @@ export function normalizeInputValue(date: DateValue | undefined, granularity: Gr
 
   const type = getInputType(granularity)
 
+  // Native date inputs take ISO fields, whatever calendar the value is in.
+  date = toCalendar(date, 'iso8601')
   const year = String(date.year).padStart(4, '0')
   const month = String(date.month).padStart(2, '0')
   const day = String(date.day).padStart(2, '0')

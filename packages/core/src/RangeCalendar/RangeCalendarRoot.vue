@@ -1,8 +1,7 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
 import type { ComputedRef, Ref } from 'vue'
 import type { RangeCalendarChangeReason } from './useRangeCalendar'
-import type { CalendarGridData, CalendarLayout, CalendarPageFunction, CalendarUnit, CalendarUnitAdapter, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
+import type { CalendarGridData, CalendarLayout, CalendarPageFunction, CalendarUnit, CalendarUnitAdapter, DateValue, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails, Formatter } from '@/shared'
 import type { DateRange } from '@/shared/date'

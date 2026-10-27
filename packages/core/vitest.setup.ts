@@ -4,6 +4,7 @@ import { configureAxe } from 'vitest-axe'
 import * as matchers from 'vitest-axe/matchers'
 import '@testing-library/jest-dom/vitest'
 import 'vitest-canvas-mock'
+import './temporal.setup'
 
 expect.extend(matchers)
 

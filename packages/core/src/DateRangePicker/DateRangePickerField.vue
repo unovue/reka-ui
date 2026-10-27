@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { DateValue } from '@internationalized/date'
+import type { DateValue } from '@/date'
 import type { DateRangeFieldChangeReason } from '@/DateRangeField'
 import type { ChangeEventDetails } from '@/shared'
 import { DateRangeFieldRoot } from '..'

@@ -1,12 +1,12 @@
-import type { DateValue } from '@internationalized/date'
 import type { ComputedRef, MaybeRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { DateRangeFieldRootContext, DateRangeType } from './DateRangeFieldRoot.vue'
-import type { Matcher } from '@/date'
+import type { DateValue, Matcher } from '@/date'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { DateRange, DateStep, Granularity, HourCycle, SegmentContents, SegmentFieldRootState, SegmentFieldSegmentState, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, unref, watch } from 'vue'
 import { areAllDaysBetweenValid, hasTime, isBefore, isBeforeOrSame } from '@/date'
+import { assertTemporal } from '@/date/runtime'
 import { useControllableState, useDateFormatter } from '@/shared'
 import {
   createContent,
@@ -133,6 +133,7 @@ export function createDateRangeFieldInputSurface(
  * @lifecycle setup — installs watchers and collects the segments on mount.
  */
 export function useDateRangeField(props: UseDateRangeFieldProps = {}): UseDateRangeFieldReturn {
+  assertTemporal()
   const locale = computed(() => toValue(props.locale) ?? 'en')
   const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
   const disabled = computed(() => toValue(props.disabled) ?? false)
@@ -169,7 +170,7 @@ export function useDateRangeField(props: UseDateRangeFieldProps = {}): UseDateRa
 
   const { state: placeholder, setState: setPlaceholderState } = useControllableState<DateValue, DateRangeFieldChangeReason>({
     prop: () => toValue(props.placeholder),
-    defaultValue: () => props.defaultPlaceholder ?? defaultDate.copy(),
+    defaultValue: () => props.defaultPlaceholder ?? defaultDate,
     name: 'placeholder',
     emit: props.emit,
     onBeforeUpdate: props.onBeforeUpdatePlaceholder,
@@ -245,7 +246,7 @@ export function useDateRangeField(props: UseDateRangeFieldProps = {}): UseDateRa
   watchSegmentFieldLocale(locale, formatter, navigation.refreshSegmentElements)
 
   function setPlaceholder(value: DateValue, reason: DateRangeFieldChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    return setPlaceholderState(value.copy(), reason, event)
+    return setPlaceholderState(value, reason, event)
   }
 
   function syncSegments(type: DateRangeType, value: DateValue | undefined) {
@@ -259,7 +260,7 @@ export function useDateRangeField(props: UseDateRangeFieldProps = {}): UseDateRa
   // A cancelled commit rolls back only the model: the segments keep what the
   // user typed (both ends stay untouched), so typing can continue.
   function setModelValue(value: DateRange, reason: DateRangeFieldChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    return setState({ start: value.start?.copy(), end: value.end?.copy() }, reason, event)
+    return setState({ start: value.start, end: value.end }, reason, event)
   }
 
   function setRangeValue(type: DateRangeType, value: DateValue | undefined, reason: DateRangeFieldChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
@@ -268,7 +269,8 @@ export function useDateRangeField(props: UseDateRangeFieldProps = {}): UseDateRa
   }
 
   watch(modelValue, (value) => {
-    if (value.start && placeholder.value.compare(value.start) !== 0)
+    // Exact equality, as in DateField: a same-instant change of zone must still move the placeholder.
+    if (value.start && !isSameTemporalValue(placeholder.value, value.start))
       setPlaceholder(value.start)
   })
 
