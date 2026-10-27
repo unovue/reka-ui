@@ -161,6 +161,36 @@ describe('useBodyScrollLock', () => {
     expect(body.getAttribute('style')).toBe(bodyBefore)
   })
 
+  it.each([
+    ['scrollbar-gutter', () => {}],
+    ['body size', () => vi.spyOn(CSS, 'supports').mockReturnValue(false)],
+    ['overlay scrollbars', () => setViewport({ innerWidth: 1024, clientWidth: 1024 })],
+  ])('should leave no `style` attribute behind when there was none (%s)', async (_, setup) => {
+    setup()
+    expect(html.hasAttribute('style')).toBe(false)
+    expect(body.hasAttribute('style')).toBe(false)
+
+    const locked = useBodyScrollLock(true)
+    await flush()
+    expect(isLocked()).toBe(true)
+
+    locked.value = false
+    await flush()
+    expect(html.hasAttribute('style')).toBe(false)
+    expect(body.hasAttribute('style')).toBe(false)
+  })
+
+  it('should leave no `style` attribute behind with ConfigProvider `scrollBody` offsets', async () => {
+    const wrapper = createWrapper(true, { padding: true, margin: 4 })
+    await flush()
+    expect(body.style.paddingRight).toBe('15px')
+
+    wrapper.unmount()
+    await flush()
+    expect(html.hasAttribute('style')).toBe(false)
+    expect(body.hasAttribute('style')).toBe(false)
+  })
+
   it('should wait for a lock it does not own instead of restoring it later', async () => {
     // Another library (or the page) already locked scroll
     body.style.overflow = 'hidden'

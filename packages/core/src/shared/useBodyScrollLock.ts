@@ -30,7 +30,13 @@ const WEBKIT_RE = /AppleWebKit/
 const NON_SAFARI_RE = /Chrome|Chromium|CriOS|Edg|Android/
 
 type ScrollBodyConfig = boolean | ScrollBodyOption
-type StyleSnapshot = Partial<Record<'overflowX' | 'overflowY' | 'scrollbarGutter' | 'scrollBehavior' | 'position' | 'height' | 'width' | 'boxSizing' | 'paddingRight' | 'marginRight', string>>
+type StyleKey = 'overflowX' | 'overflowY' | 'scrollbarGutter' | 'scrollBehavior' | 'position' | 'height' | 'width' | 'boxSizing' | 'paddingRight' | 'marginRight'
+interface StyleSnapshot {
+  element: HTMLElement
+  values: Partial<Record<StyleKey, string>>
+  /** Whether the element had a `style` attribute at all, so restoring does not leave an empty `style=""`. */
+  hadStyleAttribute: boolean
+}
 
 function isOverflowElement(element: Element) {
   const { overflow, overflowX, overflowY, display } = getComputedStyle(element)
@@ -61,11 +67,19 @@ function isWebKit() {
   return WEBKIT_RE.test(ua) && !NON_SAFARI_RE.test(ua)
 }
 
-function snapshot(element: HTMLElement, keys: (keyof StyleSnapshot)[]): StyleSnapshot {
-  const result: StyleSnapshot = {}
+function snapshot(element: HTMLElement, keys: StyleKey[]): StyleSnapshot {
+  const values: StyleSnapshot['values'] = {}
   for (const key of keys)
-    result[key] = element.style[key]
-  return result
+    values[key] = element.style[key]
+  return { element, values, hadStyleAttribute: element.hasAttribute('style') }
+}
+
+function restoreStyle(snap: StyleSnapshot | undefined) {
+  if (!snap)
+    return
+  Object.assign(snap.element.style, snap.values)
+  if (!snap.hadStyleAttribute && !snap.element.getAttribute('style'))
+    snap.element.removeAttribute('style')
 }
 
 function supportsStableScrollbarGutter(doc: Document) {
@@ -102,7 +116,7 @@ function preventScrollOverlayScrollbars(doc: Document) {
   Object.assign(elementToLock.style, { overflowY: 'hidden', overflowX: 'hidden' })
 
   return () => {
-    Object.assign(elementToLock.style, original)
+    restoreStyle(original)
   }
 }
 
@@ -127,7 +141,7 @@ function preventScrollWithBodyOffset(doc: Document, option: ScrollBodyOption) {
 
   return () => {
     restoreOverflow()
-    Object.assign(body.style, original)
+    restoreStyle(original)
   }
 }
 
@@ -140,8 +154,8 @@ function preventScrollInsetScrollbars(doc: Document) {
   let scrollTop = 0
   let scrollLeft = 0
   let updateGutterOnly = false
-  let originalHtml: StyleSnapshot = {}
-  let originalBody: StyleSnapshot = {}
+  let originalHtml: StyleSnapshot | undefined
+  let originalBody: StyleSnapshot | undefined
   let resizeFrame = 0
 
   // Pinch-zoom in Safari causes a shift. Don't lock scroll while pinch-zoomed.
@@ -214,8 +228,8 @@ function preventScrollInsetScrollbars(doc: Document) {
   function cleanup() {
     // `overflowY`/`overflowX` touched by the gutter-only path are restored by
     // `originalHtml` / `originalBody`, whichever element was locked.
-    Object.assign(html.style, originalHtml)
-    Object.assign(body.style, originalBody)
+    restoreStyle(originalHtml)
+    restoreStyle(originalBody)
 
     if (!updateGutterOnly) {
       html.scrollTop = scrollTop
