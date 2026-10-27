@@ -75,6 +75,7 @@ function constructFiles(componentName: string, sources: Record<string, string>) 
     'reka-ui': version,
     '@radix-ui/colors': 'latest',
     '@iconify/vue': 'latest',
+    'temporal-polyfill-lite': 'latest',
   }
 
   const devDependencies = {
@@ -119,9 +120,13 @@ function constructFiles(componentName: string, sources: Record<string, string>) 
       isBinary: false,
     },
     'src/main.ts': {
-      content: `import { createApp } from 'vue';
+      content: `import { install } from 'temporal-polyfill-lite/calendars-full/shim';
+import { createApp } from 'vue';
 import App from './App.vue';
 import './global.css';
+
+// The date components need Temporal; keep the browser's own when it has one.
+install(false);
 
 createApp(App).mount('#app')`,
       isBinary: false,

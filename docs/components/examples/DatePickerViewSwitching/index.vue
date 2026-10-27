@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import type { DateValue } from '@internationalized/date'
-import type { CalendarUnit } from 'reka-ui'
+import type { CalendarUnit, DateValue } from 'reka-ui'
 import { Icon } from '@iconify/vue'
-import { CalendarDate } from '@internationalized/date'
 import {
   CalendarCell,
   CalendarCellTrigger,
@@ -20,7 +18,7 @@ import {
 } from 'reka-ui'
 import { ref } from 'vue'
 
-const selectedDate = ref<DateValue | undefined>(new CalendarDate(2024, 10, 3))
+const selectedDate = ref<DateValue | undefined>(new Temporal.PlainDate(2024, 10, 3))
 const view = ref<CalendarUnit>('day')
 
 const navButtonClass = 'inline-flex items-center cursor-default text-black justify-center rounded-md bg-transparent w-7 h-7 hover:bg-stone-100 active:scale-98 active:transition-all focus:shadow-[0_0_0_2px] focus:shadow-green10 disabled:opacity-50'

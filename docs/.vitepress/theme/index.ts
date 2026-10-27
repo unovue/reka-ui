@@ -1,4 +1,5 @@
 import type { Theme } from 'vitepress'
+import { install as installTemporal } from 'temporal-polyfill-lite/calendars-full/shim'
 import CopyOrDownloadAsMarkdownButtons from 'vitepress-plugin-llms/vitepress-components/CopyOrDownloadAsMarkdownButtons.vue'
 import ComponentPreview from '../components/ComponentPreview.vue'
 import EmbedIframe from '../components/EmbedIframe.vue'
@@ -7,6 +8,9 @@ import InstallationTabs from '../components/InstallationTabs.vue'
 import Layout from '../custom/Layout.vue'
 
 import './style.css'
+
+// The date demos need Temporal; keep the browser's own when it has one.
+installTemporal(false)
 
 const regex = /\/(\w+)\.vue/
 const baseModules = import.meta.glob('../../components/*.vue', { eager: true })

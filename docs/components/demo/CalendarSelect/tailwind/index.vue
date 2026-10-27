@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { createCalendar, getLocalTimeZone, toCalendar, today } from '@internationalized/date'
 import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot, Label, SelectContent, SelectGroup, SelectItem, SelectItemIndicator, SelectItemText, SelectLabel, SelectPortal, SelectRoot, SelectScrollDownButton, SelectScrollUpButton, SelectSeparator, SelectTrigger, SelectValue, SelectViewport } from 'reka-ui'
 import { computed, ref } from 'vue'
 
@@ -47,7 +46,7 @@ function updateLocale(newLocale: string) {
   locale.value = newLocale
   calendar.value = pref.value!.ordering.split(' ')[0]
 }
-const value = computed(() => toCalendar(today(getLocalTimeZone()), createCalendar(calendar.value)))
+const value = computed(() => Temporal.Now.plainDateISO().withCalendar(calendar.value))
 </script>
 
 <template>

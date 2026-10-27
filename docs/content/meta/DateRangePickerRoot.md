@@ -77,7 +77,7 @@
   },
   {
     'name': 'granularity',
-    'description': '<p>The granularity to use for formatting times. Defaults to day if a CalendarDate is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity</p>\n',
+    'description': '<p>The granularity to use for formatting times. Defaults to day if a <code>Temporal.PlainDate</code> is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity</p>\n',
     'type': '\'day\' | \'hour\' | \'minute\' | \'second\'',
     'required': false
   },
@@ -349,7 +349,7 @@
 | `disabled` | Whether or not the date field is disabled | `boolean` | No | `false` |
 | `fixedDate` | Which part of the range should be fixed | `"start" \| "end"` | No | - |
 | `fixedWeeks` | Whether or not to always display 6 weeks in the calendar | `boolean` | No | `false` |
-| `granularity` | The granularity to use for formatting times. Defaults to day if a CalendarDate is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity | `"day" \| "hour" \| "minute" \| "second"` | No | - |
+| `granularity` | The granularity to use for formatting times. Defaults to day if a Temporal.PlainDate is provided, otherwise defaults to minute. The field will render segments for each part of the date up to and including the specified granularity | `"day" \| "hour" \| "minute" \| "second"` | No | - |
 | `hideTimeZone` | Whether or not to hide the time zone segment of the field | `boolean` | No | - |
 | `hourCycle` | The hour cycle used for formatting times. Defaults to the local preference | `12 \| 24` | No | - |
 | `id` | Id of the element | `string` | No | - |

@@ -548,14 +548,14 @@ What changed:
 - **`null` is a controlled empty value.** `:model-value="null"` keeps a field or picker controlled and empty, and a controlled-empty `DatePickerRoot` keeps its calendar controlled too: a pick the parent does not accept is not shown as selected. `CalendarRoot` treats `null` the same way, as v2 did. For a controlled `null`, `modelValue` on the `DateFieldRoot`, `TimeFieldRoot` and `DatePickerRoot` contexts reads `undefined`; the `DateRangeFieldRoot` and `TimeRangeFieldRoot` contexts have no `modelValue` and read `undefined` from `startValue` and `endValue`; `modelValue` on the `DateRangePickerRoot` context reads the empty range `{ start: undefined, end: undefined }`. Clearing a field emits `undefined` (a single field) or `{ start: undefined, end: undefined }` (a range). The range roots' `modelValue` slot prop is typed `DateRange` / `TimeRange` (v2: `DateRange | null` / `TimeRange | undefined`), and is `{ start: undefined, end: undefined }` when empty.
 - **No event for an unchanged value.** Setting the model to a value equal to the current one (the same date in the same calendar, compared by value) emits nothing. `DateRangePickerRoot` compares both ends.
 - **`update:startValue` carries details.** `RangeCalendarRoot` and `DateRangePickerRoot` emit `update:startValue(date, details)` with the press reason and event. On `DateRangePickerRoot`, `beforeUpdate:startValue` is new; cancelling it only suppresses that `update:startValue`. The calendar's anchor still moves, because the next press needs it.
-- **`TimeFieldRoot` emits a `Time` placeholder** when its placeholder is a `Time`. v2 converted it to a `CalendarDateTime` before emitting `update:placeholder`.
+- **`TimeFieldRoot` emits a time placeholder** when its placeholder is a time (a `Temporal.PlainTime`, see [Temporal instead of `@internationalized/date`](#temporal-instead-of-internationalized-date)). v2 converted it to a `CalendarDateTime` before emitting `update:placeholder`.
 - **Root contexts.** On the field and picker root contexts, `modelValue` and `placeholder` (and `startValue` / `endValue` on the range field contexts) are writable computeds: assigning them still works and reports `'imperative-action'`. New on every context: `setModelValue(value, reason?, event?)` and `setPlaceholder(value, reason?, event?)`, plus `setRangeValue(type, value, reason?, event?)` on the range field contexts. Each returns `false` when the change was cancelled or did not change the value. On the picker contexts, `onDateChange` and `onPlaceholderChange` take the same optional reason and event and return a boolean, and `onStartValueChange(date, details?)` takes the calendar's details.
 - **Segment attributes.** The time zone segment renders `data-readonly=""` instead of `data-readonly="true"`. Select it with `[data-readonly]`.
-- **The default placeholder of `DateFieldRoot`, `DateRangeFieldRoot`, `DatePickerRoot` and `DateRangePickerRoot` uses the `ConfigProvider` locale** when the root has no `locale` prop and no `placeholder`. v2 built it from the prop alone. The placeholder carries the locale's calendar system, and typed values are built from it, so under `<ConfigProvider locale="th-TH">` (or `fa-IR`, `ar-SA`, and other locales with a non-Gregorian default) a field emits dates in that calendar: a Buddhist `CalendarDate` whose `.year` is 2567 for 2024, and the year segment is typed in that calendar too. This matches passing the same `locale` to the field directly. To keep Gregorian values, pass a Gregorian `placeholder` (`today(getLocalTimeZone())`) or `locale="en-US"`, or convert with `toCalendar(value, new GregorianCalendar())` from `@internationalized/date`. `TimeFieldRoot` and `TimeRangeFieldRoot` are unaffected: their default placeholder is a `Time`, which has no calendar, and a `CalendarDateTime` or `ZonedDateTime` placeholder or model keeps the calendar it was created with.
+- **The default placeholder of `DateFieldRoot`, `DateRangeFieldRoot`, `DatePickerRoot` and `DateRangePickerRoot` uses the `ConfigProvider` locale** when the root has no `locale` prop and no `placeholder`. v2 built it from the prop alone. The placeholder carries the locale's calendar system, and typed values are built from it, so under `<ConfigProvider locale="th-TH">` (or `fa-IR`, `ar-SA`, and other locales with a non-Gregorian default) a field emits dates in that calendar: a Buddhist `Temporal.PlainDate` whose `.year` is 2567 for 2024, and the year segment is typed in that calendar too. This matches passing the same `locale` to the field directly. To keep Gregorian values, pass an ISO `placeholder` (`Temporal.Now.plainDateISO()`) or `locale="en-US"`, or convert with `value.withCalendar('iso8601')`. `TimeFieldRoot` and `TimeRangeFieldRoot` are unaffected: their default placeholder is a `Temporal.PlainTime`, which has no calendar, and a `PlainDateTime` or `ZonedDateTime` placeholder or model keeps the calendar it was created with.
 
 New and additive:
 
-- **`isTimeUnavailable` on `TimeFieldRoot`**, as on `TimeRangeFieldRoot`. It receives the time as a date-time (a `Time` is placed on today's date) and marks the field invalid when it returns `true`.
+- **`isTimeUnavailable` on `TimeFieldRoot`**, as on `TimeRangeFieldRoot`. It receives the time as a date-time (a `Temporal.PlainTime` is placed on today's date) and marks the field invalid when it returns `true`.
 - **`stepSnapping` on `DateRangeFieldRoot`, `TimeRangeFieldRoot` and `DateRangePickerRoot`**, as on the single fields. `DatePickerRoot` and `DateRangePickerRoot` now pass `stepSnapping` on to their field; v2 accepted it on `DatePickerRoot` but never applied it.
 - **The composables.** A field built without the components binds `root.attrs` on a container and one `createInputSurface(part)` per segment. `useDatePicker()` / `useDateRangePicker()` return `getFieldProps()` and `getCalendarProps()`, which make a `useDateField()` / `useCalendar()` (or the range ones) the picker's field and calendar.
 
@@ -628,3 +628,93 @@ Two fixes in neighbouring families:
 New and additive, so nothing to migrate. `PopoverTrigger`, `DialogTrigger`, `AlertDialogTrigger` and `DropdownMenuTrigger` can render outside their root: create a handle with `createPopoverHandle()`, `createDialogHandle()`, `createAlertDialogHandle()` or `createDropdownMenuHandle()` and pass it to the `handle` prop of the root and of each trigger. A trigger's `payload` reaches the root's default slot, and the popup anchors to and returns focus to the trigger that opened it. The handle also opens and closes the popup from code, reporting `'imperative-action'`. Without a `handle` the components behave as before. See the Detached triggers section on the [Popover](../components/popover#detached-triggers), [Dialog](../components/dialog#detached-triggers), [AlertDialog](../components/alert-dialog#detached-triggers) and [DropdownMenu](../components/dropdown-menu#detached-triggers) pages.
 
 `ChangeEventDetails` gains an optional `trigger` element. It is set when a detached trigger's press opens, switches or closes the popup, or `handle.open(triggerId)` opens it. Code that builds details with `createChangeEventDetails()` or reads them is unaffected.
+
+
+## Temporal instead of `@internationalized/date` {#temporal-instead-of-internationalized-date}
+
+The date components (Calendar, RangeCalendar, DateField, DateRangeField, DatePicker, DateRangePicker, TimeField and TimeRangeField) take and emit [Temporal](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal) values. Reka UI no longer depends on `@internationalized/date`. See [Dates & Times](./dates) for how the components work with Temporal.
+
+```ts
+// v2
+import type { DateValue } from '@internationalized/date'
+import type { Ref } from 'vue'
+import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date'
+import { ref } from 'vue'
+
+const value = ref(new CalendarDate(2024, 7, 10)) as Ref<DateValue>
+const start = today(getLocalTimeZone())
+```
+
+```ts
+// v3
+import type { DateValue } from 'reka-ui'
+import { ref } from 'vue'
+
+const value = ref<DateValue>(new Temporal.PlainDate(2024, 7, 10))
+const start = Temporal.Now.plainDateISO()
+```
+
+### Load Temporal
+
+Reka UI reads the global `Temporal` and does not bundle a polyfill. On runtimes without native Temporal, install one and load it before the app mounts. Load it on the server too when you render there, and in your test setup.
+
+```sh
+npm install temporal-polyfill-lite
+```
+
+```ts
+// main.ts
+import { install } from 'temporal-polyfill-lite/shim'
+
+install(false) // keeps the native Temporal when the browser has one
+```
+
+Use `temporal-polyfill-lite/calendars-full/shim` if you use calendars other than `iso8601` and `gregory`, or serve locales whose default calendar is not Gregorian (`th`, `fa`, `ar-SA`, …). In development, a date component that mounts without a global `Temporal` throws an error saying so.
+
+The types come from TypeScript 6's `esnext.temporal` lib: use TypeScript 6 with `"lib": ["ESNext", "DOM", "DOM.Iterable"]`. On TypeScript 5, add `import 'temporal-polyfill-lite/types/global'` to a `.d.ts` file.
+
+### Types
+
+| v2 (`@internationalized/date`) | v3 (Temporal) |
+| --- | --- |
+| `CalendarDate` | `Temporal.PlainDate` |
+| `CalendarDateTime` | `Temporal.PlainDateTime` |
+| `ZonedDateTime` | `Temporal.ZonedDateTime` |
+| `Time` | `Temporal.PlainTime` |
+| `DateValue` from `@internationalized/date` | `DateValue` from `reka-ui` (`PlainDate \| PlainDateTime \| ZonedDateTime`) |
+
+`TimeValue` is `Temporal.PlainTime | Temporal.PlainDateTime | Temporal.ZonedDateTime`. Every `modelValue`, `placeholder`, `minValue`, `maxValue`, matcher argument, slot prop and emitted value uses these types.
+
+### Behavior changes
+
+- **Years in calendars with eras.** A Temporal value's `year` is the arithmetic year, and `eraYear` is the year of the era: Reiwa 6 has `year` 2024 and `eraYear` 6, and 1 BCE has `year` 0 and `eraYear` 1. `@internationalized/date`'s `year` was the year of the era. The fields' year segment still shows and edits the year of the era.
+- **ISO, not Gregorian.** New values for Gregorian locales (the default placeholder, today) use the `iso8601` calendar where v2 used `gregory`. They display the same, but `calendarId` is `'iso8601'` and `era` is `undefined`. Locales with another default calendar still get it.
+- **First day of the week.** It comes from `Intl.Locale.prototype.getWeekInfo()`, with a CLDR table as fallback. A few regions differ from v2, for example `AE` now starts on Monday. `weekStartsOn` still overrides it.
+- **Not in templates.** Vue templates only see an allow-list of globals, and `Temporal` is not on it. Create values in `<script setup>` and bind them by name instead of writing `:min-value="new Temporal.PlainDate(2024, 1, 1)"`.
+- **No comparison operators.** Temporal values throw on `valueOf()`, so `<`, `>` and `+date` throw, and `===` compares identity. Use `Temporal.PlainDate.compare(a, b)`, `a.equals(b)`, or `compareDateValues(a, b)` from `reka-ui/date` for values of different types.
+- **Unchanged:** form input values, `data-value` attributes and the `ZonedDateTime` daylight saving handling. Form values and `data-value` are ISO strings without a calendar annotation, as v2's `toString()` produced.
+
+### Functions and methods
+
+| v2 | v3 |
+| --- | --- |
+| `new CalendarDate(2024, 7, 10)` | `new Temporal.PlainDate(2024, 7, 10)` |
+| `new CalendarDate(new JapaneseCalendar(), 'reiwa', 6, 5, 1)` | `Temporal.PlainDate.from({ calendar: 'japanese', era: 'reiwa', eraYear: 6, month: 5, day: 1 })` |
+| `new Time(9, 30)` | `new Temporal.PlainTime(9, 30)` |
+| `parseDate(s)`, `parseDateTime(s)`, `parseTime(s)`, `parseZonedDateTime(s)` | `Temporal.PlainDate.from(s)`, `Temporal.PlainDateTime.from(s)`, `Temporal.PlainTime.from(s)`, `Temporal.ZonedDateTime.from(s)` |
+| `parseAbsolute(s, tz)` | `Temporal.Instant.from(s).toZonedDateTimeISO(tz)` |
+| `today(tz)`, `now(tz)`, `getLocalTimeZone()` | `Temporal.Now.plainDateISO(tz)`, `Temporal.Now.zonedDateTimeISO(tz)`, `Temporal.Now.timeZoneId()` |
+| `value.toDate(tz)` | `toDate(value, tz)` from `reka-ui/date` |
+| `toZoned(value, tz)`, `toCalendarDate(value)`, `toCalendarDateTime(date, time)` | `value.toZonedDateTime(tz)`, `value.toPlainDate()`, `date.toPlainDateTime(time)` |
+| `toCalendar(value, new GregorianCalendar())` | `value.withCalendar('gregory')` |
+| `value.calendar.identifier` | `value.calendarId` |
+| `value.set({ month: 8 })` | `value.with({ month: 8 })` |
+| `value.cycle('month', 1)` | `cycleField(value, 'month', 1)` from `reka-ui/date` |
+| `value.copy()` | not needed: Temporal values are immutable |
+| `a.compare(b)` | `Temporal.PlainDate.compare(a, b)`, or `compareDateValues(a, b)` from `reka-ui/date` |
+| `isSameDay`, `isSameMonth`, `isToday`, `startOfMonth`, `endOfMonth`, `startOfWeek`, `getDayOfWeek` | the functions of the same names in `reka-ui/date` |
+| `isWeekend(value, locale)` | `value.dayOfWeek >= 6` (Saturday and Sunday) |
+| `value.timeZone` | `value.timeZoneId` |
+| `value instanceof CalendarDate` | `isPlainDate(value)` from `reka-ui/date` (also `isPlainDateTime`, `isZonedDateTime`, `isPlainTime`) |
+| `isCalendarDateTime(value)` from `reka-ui/date` | `isPlainDateTime(value)` |
+| `formatter.custom(value.toDate(tz), options)` | `formatter.custom(value, options)`: `useDateFormatter` accepts Temporal values |
