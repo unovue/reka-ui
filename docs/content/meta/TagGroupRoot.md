@@ -96,7 +96,7 @@
   {
     'name': 'modelValue',
     'description': '<p>Current selected value(s)</p>\n',
-    'type': 'TagGroupValue&lt;T&gt;'
+    'type': 'T | T[] | undefined'
   }
 ]" />
 </llm-exclude>
@@ -131,6 +131,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current selected value(s) | `TagGroupValue<T>` |
+| `modelValue` | Current selected value(s) | `T \| T[] \| undefined` |
 
 </llm-only>
