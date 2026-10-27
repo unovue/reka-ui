@@ -253,7 +253,9 @@ Each channel is a native `input type="range"`, visually hidden inside `ColorArea
 
 Only one input is in the tab order: the x input, or the y input once it has had focus. An arrow key moves focus to the input of the axis it changes, so the screen reader announces that channel. The area itself has no role; it is the pointer surface.
 
-The thumb no longer receives focus itself, so style its focus ring with `:focus-within` (Tailwind: `focus-within:`) on the thumb or the area, or `:has(:focus-visible)` for keyboard focus only.
+The thumb does not receive focus itself, so style its focus ring with `:focus-within` (Tailwind: `focus-within:`) on the thumb or the area, or `:has(:focus-visible)` for keyboard focus only. With `<ColorAreaThumb as-child>` the inputs cannot go inside your element: they render next to it, placed at the thumb's position, so put the focus style on `ColorAreaArea`.
+
+Enter on a channel input does not submit an enclosing form.
 
 ### Keyboard Interactions
 

@@ -287,6 +287,12 @@ export function createColorAreaAreaSurface(rootContext: ColorAreaRootContext, ar
     let yDelta = 0
 
     switch (event.key) {
+      case 'Enter':
+        // A range input submits its form on Enter; the v2 thumb (a span) did not, and
+        // ColorSlider's thumb does not.
+        if (event.target === rootContext.xInputRef.value || event.target === rootContext.yInputRef.value)
+          event.preventDefault()
+        return
       case 'ArrowLeft':
         xDelta = -xStepSize * xForward
         break
@@ -350,32 +356,36 @@ export function createColorAreaAreaSurface(rootContext: ColorAreaRootContext, ar
  * @internal
  */
 export function getColorAreaThumbSurface(rootContext: ColorAreaRootContext) {
-  const xPercent = computed(() =>
-    convertValueToPercentage(
-      rootContext.xValue.value,
-      rootContext.xRange.value.min,
-      rootContext.xRange.value.max,
-    ),
-  )
-
-  const yPercent = computed(() =>
-    convertValueToPercentage(
-      rootContext.yValue.value,
-      rootContext.yRange.value.min,
-      rootContext.yRange.value.max,
-    ),
-  )
-
+  const position = getColorAreaThumbPosition(rootContext)
   return createPartSurface<ColorAreaThumbState>(() => ({
     style: {
       position: 'absolute',
-      left: `${rootContext.dir.value === 'rtl' ? 100 - xPercent.value : xPercent.value}%`,
-      top: `${100 - yPercent.value}%`,
+      left: position.value.left,
+      top: position.value.top,
       transform: 'translate(-50%, -50%)',
       touchAction: 'none',
     },
   }), () => ({ disabled: rootContext.disabled.value }))
 }
+
+/** The thumb's `left` / `top` within the area, mirrored in RTL. */
+function getColorAreaThumbPosition(rootContext: ColorAreaRootContext) {
+  return computed(() => {
+    const x = convertValueToPercentage(rootContext.xValue.value, rootContext.xRange.value.min, rootContext.xRange.value.max)
+    const y = convertValueToPercentage(rootContext.yValue.value, rootContext.yRange.value.min, rootContext.yRange.value.max)
+    return {
+      left: `${rootContext.dir.value === 'rtl' ? 100 - x : x}%`,
+      top: `${100 - y}%`,
+    }
+  })
+}
+
+/**
+ * Where a channel input sits. `'thumb'`: inside the thumb element, at its center.
+ * `'area'`: next to the thumb (an `asChild` thumb, which cannot hold the inputs), at the
+ * thumb's position in the area. Either way a screen reader's focus rect lands on the thumb.
+ */
+export type ColorAreaInputAnchor = 'thumb' | 'area'
 
 // Same rules as `VisuallyHidden`: out of sight, still focusable and in the accessibility tree.
 const VISUALLY_HIDDEN_STYLE = {
@@ -402,7 +412,8 @@ const VISUALLY_HIDDEN_STYLE = {
  * value) writes that one channel. One input is in the tab order at a time.
  * @internal
  */
-export function getColorAreaInputSurface(rootContext: ColorAreaRootContext, axis: ColorAreaAxis) {
+export function getColorAreaInputSurface(rootContext: ColorAreaRootContext, axis: ColorAreaAxis, anchor: MaybeRefOrGetter<ColorAreaInputAnchor> = 'thumb') {
+  const position = getColorAreaThumbPosition(rootContext)
   const isX = axis === 'x'
   const channel = computed(() => isX ? rootContext.xChannel.value : rootContext.yChannel.value)
   const otherChannel = computed(() => isX ? rootContext.yChannel.value : rootContext.xChannel.value)
@@ -444,7 +455,10 @@ export function getColorAreaInputSurface(rootContext: ColorAreaRootContext, axis
     'aria-orientation': isX ? 'horizontal' : 'vertical',
     // The channel's own value, then the other channel for context.
     'aria-valuetext': `${inputValue.value}, ${getChannelName(otherChannel.value)} ${Math.round(otherValue.value)}`,
-    'style': VISUALLY_HIDDEN_STYLE,
+    'style': {
+      ...VISUALLY_HIDDEN_STYLE,
+      ...(toValue(anchor) === 'area' ? position.value : { left: '50%', top: '50%' }),
+    },
     'onFocus': () => { rootContext.focusedAxis.value = axis },
     'onInput': handleInput,
   }), () => ({ disabled: rootContext.disabled.value }))

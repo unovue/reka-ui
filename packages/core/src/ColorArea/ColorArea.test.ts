@@ -681,10 +681,47 @@ describe('colorArea channel inputs', () => {
     expect(await axe(wrapper.element)).toHaveNoViolations()
   })
 
-  it('renders the inputs next to an asChild thumb element', () => {
-    const wrapper = mount(() => h(ColorAreaRoot, { defaultValue: '#bf40bf' }, () => h(ColorAreaArea, {}, () => h(ColorAreaThumb, { asChild: true }, () => h('div', { class: 'my-thumb' })))))
-    const thumb = wrapper.find('.my-thumb')
-    expect(thumb.attributes('style')).toContain('position: absolute')
-    expect(wrapper.findAll('input[type="range"]')).toHaveLength(2)
+  it('centers the inputs in the thumb that holds them', () => {
+    const wrapper = mount(ColorArea, { props })
+    for (const input of [xInput(wrapper), yInput(wrapper)]) {
+      expect(input.element.parentElement!.style.position).toBe('absolute')
+      expect(input.element.style.left).toBe('50%')
+      expect(input.element.style.top).toBe('50%')
+    }
+  })
+
+  it.each(['ltr', 'rtl'] as const)('places the inputs at an asChild thumb\'s position in the area (%s)', async (dir) => {
+    const wrapper = mount(() => h(ColorAreaRoot, { defaultValue: { space: 'hsl', h: 300, s: 50, l: 50, alpha: 1 }, colorSpace: 'hsl', xChannel: 'saturation', yChannel: 'lightness', dir }, () =>
+      h(ColorAreaArea, { 'data-testid': 'area' }, () => h(ColorAreaThumb, { asChild: true }, () => h('div', { class: 'my-thumb' })))))
+    const thumb = wrapper.find<HTMLElement>('.my-thumb').element
+    const inputs = wrapper.findAll<HTMLInputElement>('input[type="range"]')
+    expect(thumb.style.position).toBe('absolute')
+    expect(inputs).toHaveLength(2)
+    expect(thumb.style.left).toBe('50%')
+    await keydown(wrapper, 'ArrowRight', { shiftKey: true })
+    await keydown(wrapper, 'ArrowUp', { shiftKey: true })
+    // The inputs are siblings of the thumb, so they follow its left/top within the area.
+    // ArrowRight moves the thumb right in both directions (in RTL it lowers x).
+    expect(thumb.style.left).toBe('60%')
+    expect(getXValue(wrapper)).toBe(dir === 'rtl' ? 40 : 60)
+    expect(thumb.style.top).toBe('40%')
+    for (const input of inputs) {
+      expect(input.element.parentElement).toBe(wrapper.find('[data-testid=area]').element)
+      expect(input.element.style.left).toBe(thumb.style.left)
+      expect(input.element.style.top).toBe(thumb.style.top)
+    }
+  })
+})
+
+// ─── Enter in a form ─────────────────────────────────────────────────────────
+
+describe('colorArea inside a form', () => {
+  it('prevents Enter on a channel input, so it does not submit the form', async () => {
+    const wrapper = mount(ColorArea, { props: { defaultValue: '#bf40bf' } })
+    for (const input of [xInput(wrapper), yInput(wrapper)]) {
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+      input.element.dispatchEvent(event)
+      expect(event.defaultPrevented).toBe(true)
+    }
   })
 })
