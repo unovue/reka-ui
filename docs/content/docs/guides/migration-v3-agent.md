@@ -229,7 +229,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - `update:modelValue`, `beforeUpdate:modelValue`, `change` and `changeEnd` carry a `Color`; `update:color` carries the same `Color`. `modelValue` and `defaultValue` still accept strings, so a `v-model` ref that starts as a hex string holds a `Color` after the first change.
 - New `update:hex` event (`onHexUpdate` on `useColorArea`, `useColorField`, `useColorSlider`): the lossy hex string after each change. The hidden form input still submits hex.
 - Updates fire only for a structurally different color (`isEqualColor`, now exported). The v2 repeat of an unchanged hex string on `ColorAreaRoot` and `ColorSliderRoot` is gone.
-- `ColorFieldRoot` now emits `change` and `changeEnd` after each committed change. `changeEnd` fires only when the interaction changed the color on every component.
+- `ColorFieldRoot` now emits `change` and `changeEnd` after each committed change. On every component `changeEnd` fires only when the interaction changed the color and the model holds it: a drag back to its start or an update a controlled parent rejects reports nothing, and with a controlled `modelValue` it fires after the parent re-renders.
 - `ColorAreaRoot` has a `dir` prop and inherits the `ConfigProvider` direction (mirrored x axis, arrow keys, thumb and gradient under `rtl`).
 - `ColorSwatchPickerRoot` / `ColorSwatchPickerItem` accept `string | Color` and compare values structurally; they still emit the item value as declared.
 - `injectColorAreaRootContext()` / `injectColorSliderRootContext()` / `injectColorFieldRootContext()`: `color`, `xValue` and `yValue` are read-only computeds.
@@ -245,7 +245,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 **Rewrite rules.**
 - A `v-model` variable that is only passed between color components (or into `ColorSwatch`, which accepts `Color`): widen its type to `string | Color` (import `type Color` from `reka-ui`) and change nothing else.
 - A variable also used as a string: keep the `v-model` and add `const hex = computed(() => colorToHex(normalizeColor(color.value)))` (import `colorToHex`, `normalizeColor` from `reka-ui`); replace the string uses with `hex`.
-- A variable that must stay a hex string (persisted, sent to an API, typed `string` across module boundaries): replace `v-model="x"` with `:model-value="x" @update:hex="x = $event"`. *Ask* the developer first if the component edits hue or saturation, because a hex round trip loses the hue of greys.
+- A variable that must stay a hex string (persisted, sent to an API, typed `string` across module boundaries): replace `v-model="x"` with `:model-value="x" @update:hex="x = $event"`. *Ask* the developer first if the component edits hue or saturation, because a hex round trip loses the hue of greys. `update:hex` can repeat the same string (moves finer than one 8-bit step still emit), so a handler with side effects must compare against the previous string.
 - Listeners typed `(value: string)` on `update:model-value`, `before-update:model-value`, `change` or `change-end`: retype to `(value: Color)` and format with `colorToHex(value)` where a string was used.
 - Remove hex-equality guards that only existed to skip the v2 repeated emit; use `isEqualColor(a, b)` where a guard is still needed.
 - `ColorSwatchPickerRoot` comparisons with `===`: use `isEqualColor`.

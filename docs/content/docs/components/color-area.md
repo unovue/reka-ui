@@ -107,7 +107,7 @@ Hidden form inputs remain part of `ColorAreaRoot`; add them yourself when render
 
 `v-model` accepts a color string (`'#3b82f6'`, `'hsl(217, 91%, 60%)'`) or a `Color` object, and every emitted value is a `Color` object: a plain `{ space, ... }` object in the component's color space, such as `{ space: 'hsl', h: 217, s: 91, l: 60, alpha: 1 }`. A string is parsed once on the way in. Keeping the object keeps information a hex string cannot hold, such as the hue of a grey and fractional channel values, so several color components can share one `v-model` without drift.
 
-`update:color` carries the same `Color` as `update:modelValue`. Listen to `update:hex` when you need a hex string, for example for an API or a text label. Hex is lossy: it drops the hue of greys and anything finer than one 8-bit step, so feed the `Color` back into `v-model`, not the hex. A form submits the hex value through the hidden input either way.
+`update:color` carries the same `Color` as `update:modelValue`. Listen to `update:hex` when you need a hex string, for example for an API or a text label. Hex is lossy: it drops the hue of greys and anything finer than one 8-bit step, so feed the `Color` back into `v-model`, not the hex. For the same reason `update:hex` can repeat the same string when the color moves by less than one step. A form submits the hex value through the hidden input either way.
 
 ```vue
 <script setup>
