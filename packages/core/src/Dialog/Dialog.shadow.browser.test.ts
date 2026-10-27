@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
+import { mount } from '@vue/test-utils'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { mountInShadowRoot } from '@/shared/test/shadowDom'
@@ -150,5 +151,152 @@ describe('given a modal Dialog inside a shadow root, in a real browser', () => {
     await vi.waitFor(() => expect(getComputedStyle(document.documentElement).overflowY === 'hidden' || getComputedStyle(document.body).overflowY === 'hidden').toBe(true))
     await userEvent.keyboard('{Escape}')
     await vi.waitFor(() => expect(getComputedStyle(document.documentElement).overflowY !== 'hidden' && getComputedStyle(document.body).overflowY !== 'hidden').toBe(true))
+  })
+})
+
+/** A trigger and a modal Dialog, for mounting into a shadow root of the test's choosing. */
+const MinimalDialog = defineComponent({
+  props: { defaultOpen: Boolean },
+  setup: props => () => h(DialogRoot, { defaultOpen: props.defaultOpen }, () => [
+    h(DialogTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
+    h(DialogPortal, null, () => h(DialogContent, { 'data-testid': 'content' }, () => [
+      h(DialogTitle, null, () => 'Title'),
+      h(DialogDescription, null, () => 'Description'),
+    ])),
+  ]),
+})
+
+/** The nearest composed ancestor-or-self with `aria-hidden="true"`. */
+function hiddenAncestor(el: Element) {
+  for (let node: Element | null = el; node; node = node.parentElement ?? ((node.parentNode as ShadowRoot | null)?.host ?? null)) {
+    if (node.getAttribute('aria-hidden') === 'true')
+      return node
+  }
+  return null
+}
+
+describe('given modal Dialogs in several shadow roots, in a real browser', () => {
+  it('keeps the most recently opened one exposed to assistive technology', async () => {
+    vi.stubEnv('MODE', 'production')
+    onTestFinished(() => {
+      vi.unstubAllEnvs()
+    })
+    const a = mountInShadowRoot(MinimalDialog)
+    const b = mountInShadowRoot(MinimalDialog)
+
+    await userEvent.click(a.get('trigger')!)
+    await expect.poll(() => a.get('content')).not.toBeNull()
+    await vi.waitFor(() => expect(b.host.getAttribute('aria-hidden')).toBe('true'))
+
+    // The first modal blocks pointer input to the page: open the second one
+    // the way an app would, from code.
+    b.get('trigger')!.click()
+    await expect.poll(() => b.get('content')).not.toBeNull()
+    await vi.waitFor(() => expect(a.host.getAttribute('aria-hidden')).toBe('true'))
+    expect(hiddenAncestor(b.get('content')!)).toBeNull()
+
+    // Closing the newer one hands the page back to the older one.
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => b.get('content')).toBeNull()
+    await vi.waitFor(() => expect(a.host.hasAttribute('aria-hidden')).toBe(false))
+    expect(b.host.getAttribute('aria-hidden')).toBe('true')
+    expect(hiddenAncestor(a.get('content')!)).toBeNull()
+
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => a.get('content')).toBeNull()
+    await vi.waitFor(() => expect(document.querySelectorAll('[data-aria-hidden]')).toHaveLength(0))
+    expect(b.host.hasAttribute('aria-hidden')).toBe(false)
+  })
+
+  it('portals into the inner of nested shadow roots and hides siblings at every level', async () => {
+    vi.stubEnv('MODE', 'production')
+    const outerHost = document.createElement('div')
+    const pageSibling = document.createElement('main')
+    document.body.append(pageSibling, outerHost)
+    const outer = outerHost.attachShadow({ mode: 'open' })
+    const outerSibling = document.createElement('div')
+    const innerHost = document.createElement('div')
+    outer.append(outerSibling, innerHost)
+    const inner = innerHost.attachShadow({ mode: 'open' })
+    const mountPoint = document.createElement('div')
+    inner.append(mountPoint)
+    const wrapper = mount(MinimalDialog, { attachTo: mountPoint })
+    onTestFinished(() => {
+      wrapper.unmount()
+      outerHost.remove()
+      pageSibling.remove()
+      vi.unstubAllEnvs()
+    })
+    const get = (testId: string) => inner.querySelector<HTMLElement>(`[data-testid="${testId}"]`)
+
+    await userEvent.click(get('trigger')!)
+    await expect.poll(() => get('content')).not.toBeNull()
+    expect(get('content')!.parentNode).toBe(inner)
+    await vi.waitFor(() => expect(pageSibling.getAttribute('aria-hidden')).toBe('true'))
+    expect(outerSibling.getAttribute('aria-hidden')).toBe('true')
+    expect(mountPoint.getAttribute('aria-hidden')).toBe('true')
+    expect(hiddenAncestor(get('content')!)).toBeNull()
+
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => get('content')).toBeNull()
+    expect(inner.activeElement).toBe(get('trigger'))
+    expect([pageSibling, outerSibling, mountPoint].map(el => el.hasAttribute('aria-hidden'))).toEqual([false, false, false])
+  })
+
+  it('leaves nothing hidden when the shadow host is removed while a modal is open', async () => {
+    vi.stubEnv('MODE', 'production')
+    const pageSibling = document.createElement('main')
+    document.body.prepend(pageSibling)
+    onTestFinished(() => {
+      pageSibling.remove()
+      vi.unstubAllEnvs()
+    })
+    const { get, host, wrapper } = mountInShadowRoot(MinimalDialog, { props: { defaultOpen: true } })
+    await expect.poll(() => get('content')).not.toBeNull()
+    await vi.waitFor(() => expect(pageSibling.getAttribute('aria-hidden')).toBe('true'))
+
+    host.remove()
+    wrapper.unmount()
+    expect(pageSibling.hasAttribute('aria-hidden')).toBe(false)
+    expect(document.querySelectorAll('[data-aria-hidden]')).toHaveLength(0)
+  })
+})
+
+// A shadow-root wrapper whose box is the containing block for fixed elements
+// around its slot.
+if (!customElements.get('x-transformed-frame')) {
+  customElements.define('x-transformed-frame', class extends HTMLElement {
+    constructor() {
+      super()
+      const frame = document.createElement('div')
+      frame.style.cssText = 'transform: translateZ(0); width: 300px; height: 200px;'
+      frame.append(document.createElement('slot'))
+      this.attachShadow({ mode: 'open' }).append(frame)
+    }
+  })
+}
+
+describe('given an inline modal Dialog slotted into a transformed shadow container, in a real browser', () => {
+  it('covers the whole page, not just the container', async () => {
+    const pageButton = document.createElement('button')
+    pageButton.textContent = 'Page'
+    pageButton.style.cssText = 'position: fixed; right: 0; bottom: 0;'
+    document.body.append(pageButton)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('x-transformed-frame', null, h(DialogRoot, { defaultOpen: true }, () =>
+        h(DialogPortal, { disabled: true }, () => h(DialogContent, { 'data-testid': 'content', 'style': 'position: fixed; top: 10px; left: 10px; background: white;' }, () => [
+          h(DialogTitle, null, () => 'Title'),
+          h(DialogDescription, null, () => 'Description'),
+        ])))),
+    }), { attachTo: document.body })
+    onTestFinished(() => {
+      wrapper.unmount()
+      pageButton.remove()
+    })
+
+    await expect.poll(() => document.querySelector('[data-testid="content"]')).not.toBeNull()
+    await expect.poll(() => document.querySelector('[data-reka-internal-backdrop]')?.parentElement).toBe(document.body)
+    const rect = pageButton.getBoundingClientRect()
+    expect(document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)).not.toBe(pageButton)
   })
 })

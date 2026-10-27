@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { hideOthers } from 'aria-hidden'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
-import { useHideOthers } from './useHideOthers'
+import { hideOthersAcrossShadowRoots, useHideOthers } from './useHideOthers'
 
 vi.mock('aria-hidden', () => ({ hideOthers: vi.fn() }))
 
@@ -85,5 +85,27 @@ describe('useHideOthers', () => {
     wrapper.unmount()
     expect(undos.every(undo => undo.mock.calls.length === 1)).toBe(true)
     outerHost.remove()
+  })
+
+  it('runs the cross-root undo once, in reverse order, however often it is called', () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const element = document.createElement('div')
+    host.attachShadow({ mode: 'open' }).appendChild(element)
+    const order: number[] = []
+    vi.mocked(hideOthers).mockImplementation(() => {
+      const index = undos.length
+      const undo = vi.fn(() => {
+        order.push(index)
+      })
+      undos.push(undo)
+      return undo
+    })
+
+    const undo = hideOthersAcrossShadowRoots(element)
+    undo()
+    undo()
+    expect(order).toEqual([1, 0])
+    host.remove()
   })
 })
