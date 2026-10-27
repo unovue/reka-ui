@@ -1,11 +1,11 @@
 import type { CalendarDateTime, DateFields, DateValue, TimeFields } from '@internationalized/date'
-import type { Ref } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
 import type { AnyExceptLiteral, DateStep, HourCycle, SegmentPart, SegmentValueObj } from './types'
 import type { Formatter } from '@/shared'
 import {
   DateFormatter,
 } from '@internationalized/date'
-import { computed } from 'vue'
+import { computed, toValue } from 'vue'
 import { getDaysInMonth, toDate } from '@/date'
 import { getActiveElement, snapValueToStep, useKbd } from '@/shared'
 import { isAcceptableSegmentKey, isNumberString, isSegmentNavigationKey } from './segment'
@@ -72,7 +72,6 @@ function daySegmentAttrs(props: SegmentAttrProps) {
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
     'aria-valuetext': valueText,
-    'data-placeholder': isEmpty ? '' : undefined,
   }
 }
 
@@ -95,7 +94,6 @@ function monthSegmentAttrs(props: SegmentAttrProps) {
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
     'aria-valuetext': valueText,
-    'data-placeholder': isEmpty ? '' : undefined,
   }
 }
 
@@ -115,7 +113,6 @@ function yearSegmentAttrs(props: SegmentAttrProps) {
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
     'aria-valuetext': valueText,
-    'data-placeholder': isEmpty ? '' : undefined,
   }
 }
 
@@ -138,7 +135,6 @@ function hourSegmentAttrs(props: SegmentAttrProps) {
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
     'aria-valuetext': valueText,
-    'data-placeholder': isEmpty ? '' : undefined,
   }
 }
 
@@ -162,7 +158,6 @@ function minuteSegmentAttrs(props: SegmentAttrProps) {
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
     'aria-valuetext': valueText,
-    'data-placeholder': isEmpty ? '' : undefined,
   }
 }
 
@@ -186,7 +181,6 @@ function secondSegmentAttrs(props: SegmentAttrProps) {
     'aria-valuemax': valueMax,
     'aria-valuenow': valueNow,
     'aria-valuetext': valueText,
-    'data-placeholder': isEmpty ? '' : undefined,
   }
 }
 
@@ -214,7 +208,6 @@ function dayPeriodSegmentAttrs(props: SegmentAttrProps) {
 function literalSegmentAttrs(_props: SegmentAttrProps) {
   return {
     'aria-hidden': true,
-    'data-segment': 'literal',
   }
 }
 
@@ -222,8 +215,6 @@ function timeZoneSegmentAttrs(props: SegmentAttrProps) {
   return {
     'role': 'textbox',
     'aria-label': 'timezone, ',
-    'data-readonly': true,
-    'data-segment': 'timeZoneName',
     'tabindex': props.disabled ? undefined : 0,
     'style': 'caret-color: transparent;',
   }
@@ -280,7 +271,23 @@ export const segmentBuilders = {
   },
 }
 
-export type UseDateFieldProps = {
+/**
+ * Why a segmented field's value changed (#2828); shared by DateField,
+ * DateRangeField, TimeField and TimeRangeField.
+ *
+ * - `segment-input`: a digit, or `a` / `p` on the day period, completed or edited the value.
+ * - `segment-increment` / `segment-decrement`: ArrowUp / ArrowDown on a segment.
+ * - `segment-clear`: Backspace removed a digit, or cleared the value.
+ * - `step-snap`: `stepSnapping` rounded a segment to its step when it lost focus.
+ */
+export type SegmentFieldChangeReason
+  = | 'segment-input'
+    | 'segment-increment'
+    | 'segment-decrement'
+    | 'segment-clear'
+    | 'step-snap'
+
+export type UseDateFieldSegmentProps = {
   hasLeftFocus: Ref<boolean>
   lastKeyZero: Ref<boolean>
   placeholder: Ref<DateValue>
@@ -291,12 +298,32 @@ export type UseDateFieldProps = {
   segmentValues: Ref<SegmentValueObj>
   disabled: Ref<boolean>
   readonly: Ref<boolean>
-  part: SegmentPart
-  modelValue: Ref<DateValue | undefined>
+  part: MaybeRefOrGetter<SegmentPart>
+  modelValue: Readonly<Ref<DateValue | undefined>>
+  /** Every value change goes through here, with the interaction that caused it. */
+  setModelValue: (value: DateValue | undefined, reason: SegmentFieldChangeReason, event?: Event) => void
   focusNext: () => void
 }
 
-export function useDateField(props: UseDateFieldProps) {
+/** The reason a committing keydown reports. */
+function keydownReason(key: string, kbd: ReturnType<typeof useKbd>): SegmentFieldChangeReason {
+  if (key === kbd.ARROW_UP)
+    return 'segment-increment'
+  if (key === kbd.ARROW_DOWN)
+    return 'segment-decrement'
+  if (key === kbd.BACKSPACE)
+    return 'segment-clear'
+  return 'segment-input'
+}
+
+/**
+ * The per-segment keyboard / IME logic every segmented field shares. Writes
+ * segment values in place and commits a complete value through
+ * `setModelValue(value, reason, event)`.
+ *
+ * @internal
+ */
+export function useDateFieldSegment(props: UseDateFieldSegmentProps) {
   const kbd = useKbd()
 
   function minuteSecondIncrementation({ e, part, dateRef, prevValue }: MinuteSecondIncrementProps): number {
@@ -312,14 +339,14 @@ export function useDateField(props: UseDateFieldProps) {
     return (dateRef as CalendarDateTime).set({ [part]: prevValue }).cycle(...cycleArgs)[part]
   }
 
-  function deleteValue(prevValue: number | null) {
+  function deleteValue(prevValue: number | null, e: KeyboardEvent) {
     props.hasLeftFocus.value = false
     if (prevValue === null)
       return prevValue
 
     const str = prevValue.toString()
     if (str.length === 1) {
-      props.modelValue.value = undefined
+      props.setModelValue(undefined, 'segment-clear', e)
       return null
     }
 
@@ -625,7 +652,7 @@ export function useDateField(props: UseDateFieldProps) {
     return { value: int, moveToNext }
   }
 
-  const attributes = computed(() => segmentBuilders[props.part]?.attrs({
+  const attributes = computed(() => segmentBuilders[toValue(props.part)]?.attrs({
     disabled: props.disabled.value,
     placeholder: props.placeholder.value,
     hourCycle: props.hourCycle,
@@ -665,7 +692,7 @@ export function useDateField(props: UseDateFieldProps) {
 
     if (e.key === kbd.BACKSPACE) {
       props.hasLeftFocus.value = false
-      props.segmentValues.value.day = deleteValue(prevValue)
+      props.segmentValues.value.day = deleteValue(prevValue, e)
     }
   }
 
@@ -692,7 +719,7 @@ export function useDateField(props: UseDateFieldProps) {
 
     if (e.key === kbd.BACKSPACE) {
       props.hasLeftFocus.value = false
-      props.segmentValues.value.month = deleteValue(prevValue)
+      props.segmentValues.value.month = deleteValue(prevValue, e)
     }
   }
 
@@ -719,7 +746,7 @@ export function useDateField(props: UseDateFieldProps) {
 
     if (e.key === kbd.BACKSPACE) {
       props.hasLeftFocus.value = false
-      props.segmentValues.value.year = deleteValue(prevValue)
+      props.segmentValues.value.year = deleteValue(prevValue, e)
     }
   }
 
@@ -784,7 +811,7 @@ export function useDateField(props: UseDateFieldProps) {
 
     if (e.key === kbd.BACKSPACE) {
       props.hasLeftFocus.value = false
-      props.segmentValues.value.hour = deleteValue(prevValue)
+      props.segmentValues.value.hour = deleteValue(prevValue, e)
     }
   }
 
@@ -813,7 +840,7 @@ export function useDateField(props: UseDateFieldProps) {
 
     if (e.key === kbd.BACKSPACE) {
       props.hasLeftFocus.value = false
-      props.segmentValues.value.minute = deleteValue(prevValue)
+      props.segmentValues.value.minute = deleteValue(prevValue, e)
     }
   }
 
@@ -841,7 +868,7 @@ export function useDateField(props: UseDateFieldProps) {
 
     if (e.key === kbd.BACKSPACE) {
       props.hasLeftFocus.value = false
-      props.segmentValues.value.second = deleteValue(prevValue)
+      props.segmentValues.value.second = deleteValue(prevValue, e)
     }
   }
 
@@ -903,7 +930,7 @@ export function useDateField(props: UseDateFieldProps) {
       timeZoneName: () => { },
     } as const
 
-    segmentKeydownHandlers[props.part as keyof typeof segmentKeydownHandlers](e)
+    segmentKeydownHandlers[toValue(props.part) as keyof typeof segmentKeydownHandlers](e)
 
     if (![kbd.ARROW_LEFT, kbd.ARROW_RIGHT].includes(e.key) && e.key !== kbd.TAB && e.key !== kbd.SHIFT && isAcceptableSegmentKey(e.key)) {
       if (Object.values(props.segmentValues.value).every(item => item !== null)) {
@@ -913,16 +940,17 @@ export function useDateField(props: UseDateFieldProps) {
         // (e.g., setting day: 31 before month: 3 would incorrectly constrain the day)
         const dateRef = props.placeholder.value.set(updateObject)
 
-        props.modelValue.value = dateRef.copy()
+        props.setModelValue(dateRef.copy(), keydownReason(e.key, kbd), e)
       }
     }
   }
 
-  function handleSegmentFocusOut() {
+  function handleSegmentFocusOut(event?: FocusEvent) {
     if (!props.stepSnapping?.value)
       return
 
-    if (props.part === 'hour' && 'hour' in props.segmentValues.value && props.segmentValues.value.hour !== null && props.step.value.hour && props.step.value.hour > 1) {
+    const part = toValue(props.part)
+    if (part === 'hour' && 'hour' in props.segmentValues.value && props.segmentValues.value.hour !== null && props.step.value.hour && props.step.value.hour > 1) {
       props.segmentValues.value.hour = snapValueToStep(props.segmentValues.value.hour, 0, 23, props.step.value.hour)
       if ('dayPeriod' in props.segmentValues.value) {
         if (props.segmentValues.value.hour < 12)
@@ -931,16 +959,16 @@ export function useDateField(props: UseDateFieldProps) {
           props.segmentValues.value.dayPeriod = 'PM'
       }
     }
-    else if (props.part === 'minute' && 'minute' in props.segmentValues.value && props.segmentValues.value.minute !== null && props.step.value.minute && props.step.value.minute > 1) {
+    else if (part === 'minute' && 'minute' in props.segmentValues.value && props.segmentValues.value.minute !== null && props.step.value.minute && props.step.value.minute > 1) {
       props.segmentValues.value.minute = snapValueToStep(props.segmentValues.value.minute, 0, 59, props.step.value.minute)
     }
-    else if (props.part === 'second' && 'second' in props.segmentValues.value && props.segmentValues.value.second !== null && props.step.value.second && props.step.value.second > 1) {
+    else if (part === 'second' && 'second' in props.segmentValues.value && props.segmentValues.value.second !== null && props.step.value.second && props.step.value.second > 1) {
       props.segmentValues.value.second = snapValueToStep(props.segmentValues.value.second, 0, 59, props.step.value.second)
     }
 
     if (Object.values(props.segmentValues.value).every(item => item !== null)) {
       const dateRef = props.placeholder.value.set({ ...props.segmentValues.value as Record<AnyExceptLiteral, number> })
-      props.modelValue.value = dateRef.copy()
+      props.setModelValue(dateRef.copy(), 'step-snap', event)
     }
   }
 
