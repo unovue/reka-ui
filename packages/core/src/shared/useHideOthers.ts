@@ -12,6 +12,13 @@ import { onUnmounted, watch } from 'vue'
  */
 export function useHideOthers(target: MaybeElementRef) {
   let undo: ReturnType<typeof hideOthers> | undefined
+
+  function release() {
+    undo?.()
+    // A retained component instance must not keep the hidden elements alive.
+    undo = undefined
+  }
+
   watch(() => unrefElement(target), (el) => {
     // disable hideOthers on test mode
     if (import.meta.env.MODE === 'test')
@@ -23,20 +30,10 @@ export function useHideOthers(target: MaybeElementRef) {
       isInsideClosedPopover = !!el?.closest('[popover]:not(:popover-open)')
     }
     catch {}
-    if (el && !isInsideClosedPopover) {
+    release()
+    if (el && !isInsideClosedPopover)
       undo = hideOthers(el)
-    }
-    else if (undo) {
-      undo()
-      // A retained component instance must not keep the hidden elements alive.
-      undo = undefined
-    }
   })
 
-  onUnmounted(() => {
-    if (undo) {
-      undo()
-      undo = undefined
-    }
-  })
+  onUnmounted(release)
 }

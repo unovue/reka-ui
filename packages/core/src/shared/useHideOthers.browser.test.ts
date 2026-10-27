@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { cdp } from 'vitest/browser'
 import { defineComponent, h, nextTick, shallowRef } from 'vue'
 import { useHideOthers } from './useHideOthers'
@@ -77,6 +77,24 @@ describe('useHideOthers cleanup', () => {
     target.value = element
     await nextTick()
     expect(background.deref()?.getAttribute('aria-hidden')).toBe('true')
+
+    wrapper.unmount()
+    expect(background.deref()?.hasAttribute('aria-hidden')).toBe(false)
+  })
+
+  it('releases the previous hide when the target switches directly', async () => {
+    const background = createBackground()
+    const { target, wrapper } = mountTarget()
+    const nextTarget = document.createElement('div')
+    document.body.append(nextTarget)
+    onTestFinished(() => nextTarget.remove())
+    await nextTick()
+    expect(background.deref()?.getAttribute('aria-hidden')).toBe('true')
+
+    target.value = nextTarget
+    await nextTick()
+    expect(background.deref()?.getAttribute('aria-hidden')).toBe('true')
+    expect(nextTarget.hasAttribute('aria-hidden')).toBe(false)
 
     wrapper.unmount()
     expect(background.deref()?.hasAttribute('aria-hidden')).toBe(false)
