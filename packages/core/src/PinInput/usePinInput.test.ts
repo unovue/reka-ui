@@ -204,6 +204,96 @@ describe('pinInputRoot — change details', () => {
   })
 })
 
+describe('pinInputRoot — focus and completion follow the committed value', () => {
+  // `writeBack: false` is a one-way `:model-value` whose parent ignores updates.
+  const Controlled = defineComponent({
+    props: { initial: { type: Array, default: () => [] }, writeBack: { type: Boolean, default: true } },
+    setup(props) {
+      const model = ref<string[]>([...props.initial as string[]])
+      return () => h(PinInputRoot, {
+        'modelValue': model.value,
+        'onUpdate:modelValue': (value: string[]) => {
+          if (props.writeBack)
+            model.value = value
+        },
+      }, () => [0, 1, 2].map(index => h(PinInputInput, { index })))
+    },
+  })
+
+  function inputsOf(container: Element) {
+    return [...container.querySelectorAll<HTMLInputElement>('input:not([aria-hidden])')]
+  }
+
+  it('a controlled parent that applies the value: focus advances', async () => {
+    const wrapper = mount(Controlled, { attachTo: document.body })
+    const inputs = inputsOf(wrapper.element.parentElement!)
+    inputs[0].focus()
+    await userEvent.keyboard('a')
+    await nextTick()
+    expect(inputs[0].value).toBe('a')
+    expect(document.activeElement).toBe(inputs[1])
+    wrapper.unmount()
+  })
+
+  it('a controlled parent that rejects the value: focus stays and the text is restored', async () => {
+    const wrapper = mount(Controlled, { props: { writeBack: false }, attachTo: document.body })
+    const inputs = inputsOf(wrapper.element.parentElement!)
+    inputs[0].focus()
+    await userEvent.keyboard('a')
+    await nextTick()
+    expect(inputs[0].value).toBe('')
+    expect(document.activeElement).toBe(inputs[0])
+    wrapper.unmount()
+  })
+
+  it('a controlled parent that rejects a paste: focus stays', async () => {
+    const wrapper = mount(Controlled, { props: { writeBack: false }, attachTo: document.body })
+    const inputs = inputsOf(wrapper.element.parentElement!)
+    inputs[0].focus()
+    await userEvent.paste('xyz')
+    await nextTick()
+    expect(document.activeElement).toBe(inputs[0])
+    wrapper.unmount()
+  })
+
+  it('retyping the same character still advances focus (v2 parity)', async () => {
+    const wrapper = mount(Controlled, { props: { initial: ['a'] }, attachTo: document.body })
+    const inputs = inputsOf(wrapper.element.parentElement!)
+    inputs[0].focus()
+    await userEvent.keyboard('a')
+    expect(document.activeElement).toBe(inputs[1])
+    wrapper.unmount()
+  })
+
+  it('a rejected last digit never flashes data-complete', async () => {
+    const wrapper = mount(Controlled, { props: { initial: ['a', 'b'], writeBack: false }, attachTo: document.body })
+    const root = wrapper.element as HTMLElement
+    const seen: boolean[] = []
+    const observer = new MutationObserver(() => seen.push(root.hasAttribute('data-complete')))
+    observer.observe(root, { attributes: true, attributeFilter: ['data-complete'] })
+    const inputs = inputsOf(root.parentElement!)
+    inputs[2].focus()
+    await userEvent.keyboard('c')
+    await nextTick()
+    await nextTick()
+    observer.disconnect()
+    expect(seen).not.toContain(true)
+    expect(root.hasAttribute('data-complete')).toBe(false)
+    wrapper.unmount()
+  })
+})
+
+describe('usePinInput — cancelled multi-character input', () => {
+  it('a cancelled paste leaves focus on the pasted-into input', async () => {
+    const { container } = render(Standalone, { props: { onBeforeUpdate: (_v: unknown, d: { cancel: () => void }) => d.cancel() } })
+    const inputs = [...container.querySelectorAll('input')]
+    inputs[0].focus()
+    await userEvent.paste('xyz')
+    expect(inputs.map(i => i.value)).toEqual(['', '', ''])
+    expect(document.activeElement).toBe(inputs[0])
+  })
+})
+
 describe('usePinInput — public export', () => {
   it('is exported from the package barrel; the input factory is internal', () => {
     expect(typeof Reka.usePinInput).toBe('function')

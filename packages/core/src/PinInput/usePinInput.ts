@@ -158,8 +158,11 @@ export function usePinInput(props: UsePinInputProps = {}): UsePinInputReturn {
     inputElements.value.delete(el)
   }
 
+  // Completeness reads the committed model only, never `pending`: a controlled
+  // parent that rejects the last digit must not flash `data-complete` for a tick.
   const isCompleted = computed(() => {
-    const modelValues = currentModelValue.value.filter(i => !!i || (isNumericMode.value && i === 0))
+    const committed = Array.isArray(modelValue.value) ? modelValue.value : []
+    const modelValues = committed.filter(i => !!i || (isNumericMode.value && i === 0))
     return modelValues.length === inputElements.value.size
   })
 
@@ -265,15 +268,37 @@ export function createPinInputInputSurface(
   }
 
   /**
-   * Writes `value` at `at`. `false` only when a `beforeUpdate` handler (or a
-   * disabled consumer) refused it — an unchanged value still counts as handled,
-   * so focus keeps advancing as in v2.
+   * Runs `fn` once the model holds `expected`. Uncontrolled and ref-owned models
+   * are written synchronously, so `fn` runs at once; a controlled parent applies
+   * the change on its next render, so the check waits a tick and `fn` is skipped
+   * when the parent rejected the value.
    */
-  function writeAt(at: number, value: string, reason: PinInputChangeReason, event?: Event) {
+  function whenCommitted(expected: PinInputModel, fn: () => void) {
+    if (isPinInputValueEqual(context.modelValue.value, expected))
+      return fn()
+    nextTick(() => {
+      if (isPinInputValueEqual(context.modelValue.value, expected))
+        fn()
+    })
+  }
+
+  /**
+   * Writes `value` at `at`, then runs `onCommitted` once the value took. Returns
+   * `false` only when a `beforeUpdate` handler (or a disabled consumer) refused
+   * it. An unchanged value still counts as committed, so focus keeps advancing
+   * on a retyped character as in v2.
+   */
+  function writeAt(at: number, value: string, reason: PinInputChangeReason, event?: Event, onCommitted?: () => void) {
     const next = nextValueAt(context.currentModelValue.value, at, value, context.isNumericMode.value)
-    if (isPinInputValueEqual(next, context.currentModelValue.value))
+    if (isPinInputValueEqual(next, context.currentModelValue.value)) {
+      onCommitted?.()
       return true
-    return context.setModelValue(next, reason, event)
+    }
+    if (!context.setModelValue(next, reason, event))
+      return false
+    if (onCommitted)
+      whenCommitted(next, onCommitted)
+    return true
   }
 
   function focusNext() {
@@ -295,9 +320,8 @@ export function createPinInputInputSurface(
         return
       }
       target.value = filtered
-      if (!writeAt(index(), filtered, 'input', event))
-        return syncInput(target)
-      focusNext()
+      if (!writeAt(index(), filtered, 'input', event, focusNext))
+        syncInput(target)
       return
     }
 
@@ -307,9 +331,8 @@ export function createPinInputInputSurface(
     }
 
     target.value = value
-    if (!writeAt(index(), value, 'input', event))
-      return syncInput(target)
-    focusNext()
+    if (!writeAt(index(), value, 'input', event, focusNext))
+      syncInput(target)
   })
 
   function handleInput(event: InputEvent) {
@@ -328,9 +351,8 @@ export function createPinInputInputSurface(
     }
 
     target.value = event.data || target.value.slice(-1)
-    if (!writeAt(index(), target.value, 'input', event))
-      return syncInput(target)
-    focusNext()
+    if (!writeAt(index(), target.value, 'input', event, focusNext))
+      syncInput(target)
   }
 
   function updatePlaceholder() {
@@ -459,6 +481,7 @@ export function createPinInputInputSurface(
     const tempModelValue = [...context.currentModelValue.value] as PinInputModel
     const initialIndex = values.length >= inputElements.value.length ? 0 : index()
     const lastIndex = Math.min(initialIndex + values.length, inputElements.value.length)
+    let lastFilled: HTMLInputElement | undefined
     for (let i = initialIndex; i < lastIndex; i++) {
       const input = inputElements.value[i]
       const value = values[i - initialIndex]
@@ -471,18 +494,22 @@ export function createPinInputInputSurface(
       else {
         tempModelValue[i] = value
       }
-      input.focus()
+      lastFilled = input
     }
-    const changed = isPinInputValueEqual(tempModelValue, context.currentModelValue.value)
-      || context.setModelValue(tempModelValue, reason, event)
-    if (!changed) {
+    // Focus moves only once the value took: v2 focused each filled input in turn,
+    // ending on the one after the last (or the last filled when none follows).
+    const focusAfterFill = () => (inputElements.value[lastIndex] ?? lastFilled)?.focus()
+    const unchanged = isPinInputValueEqual(tempModelValue, context.currentModelValue.value)
+    if (unchanged)
+      return focusAfterFill()
+    if (!context.setModelValue(tempModelValue, reason, event)) {
       // Cancelled: put back the text an IME or autofill wrote into this input.
       const target = event?.target
       if (target instanceof HTMLInputElement)
         syncInput(target)
       return
     }
-    inputElements.value[lastIndex]?.focus()
+    whenCommitted(tempModelValue, focusAfterFill)
   }
 
   const surface = createPartSurface<PinInputInputState>(
