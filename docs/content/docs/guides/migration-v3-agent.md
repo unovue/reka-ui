@@ -240,6 +240,8 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - `ColorSwatchPickerRoot` / `ColorSwatchPickerItem` accept `string | Color` and compare values structurally; they still emit the item value as declared.
 - `injectColorAreaRootContext()` / `injectColorSliderRootContext()` / `injectColorFieldRootContext()`: `color`, `xValue` and `yValue` are read-only computeds.
 - Utilities: `convertToHsl` / `convertToHsb` keep the hue between HSL and HSB. The channel and gradient helpers are no longer exported (section 12).
+- `ColorSliderTrack`'s gradient follows the slider: bottom to top when `orientation="vertical"` (top to bottom when also `inverted`); on a horizontal slider, right to left when exactly one of `inverted` and right-to-left (also inherited from `ConfigProvider`) is set. In v2 it always ran left to right.
+- `ColorFieldInput` validates on commit: when Enter or blur rejects text that does not parse, the text reverts to the current color as before, and the input gets `aria-invalid="true"` and the input and `ColorFieldRoot` get `data-invalid`. They stay until an edit parses or a later change commits. Typing alone never sets them.
 
 **How to find it.**
 - Every `ColorAreaRoot`, `ColorFieldRoot` and `ColorSliderRoot` usage: search for `ColorAreaRoot`, `ColorFieldRoot`, `ColorSliderRoot`, `useColorArea`, `useColorField` and `useColorSlider`. For each, find the variable bound with `v-model` / `:model-value` and every listener on `@update:model-value`, `@before-update:model-value`, `@change`, `@change-end`, `onChange`, `onChangeEnd`, `onUpdate` and `onBeforeUpdate`.
@@ -259,14 +261,12 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - An app wrapped in `ConfigProvider` with `dir="rtl"` that wants a left-to-right color area: add `dir="ltr"` to `ColorAreaRoot`. Otherwise no change.
 - Tests that assert a hex string from these events: assert `colorToHex(payload)` or the `Color` object instead.
 
-- `ColorSliderTrack`'s gradient follows the slider: bottom to top when `orientation="vertical"`, right to left when `inverted` or right-to-left (also inherited from `ConfigProvider`). In v2 it always ran left to right.
-- `ColorFieldInput` has `aria-invalid="true"` while the typed text does not parse, and the input and `ColorFieldRoot` get `data-invalid`. Committing still reverts the text.
 
 **Verify.** The type-check passes. In each migrated picker, drag the area and the sliders and type into the fields: the shared color stays in sync, any hex label updates, and a grey keeps its hue when the hue slider moves. A form containing a color component still submits a hex string.
 
 ### 11. ColorArea renders one range input per channel
 
-**What changed.** `ColorAreaThumb` renders two visually hidden `<input type="range">` elements after its slot content, one per channel. Each is named after its channel (`aria-label="Saturation"`), has its own value, `min`, `max` and `aria-orientation` (`horizontal` for x, `vertical` for y), and `aria-valuetext` like `"50, Lightness 40"`. Focus goes to these inputs, not the thumb; one is in the tab order, and an arrow key moves focus to the input of the axis it changes. The thumb lost `role="slider"`, `tabindex` and every `aria-*` attribute; `ColorAreaArea` lost `role="application"`, `aria-roledescription` and `aria-disabled` (`ColorAreaRoot` keeps `aria-disabled`; `data-disabled` is unchanged). `useColorArea()` returns new `xInput` / `yInput` surfaces and `setInputElement(axis, el)`. Pointer, keyboard and RTL behaviour are unchanged.
+**What changed.** `ColorAreaThumb` renders two visually hidden `<input type="range">` elements after its slot content, one per channel. Each is named after its channel (`aria-label="Saturation"`), has its own value, `min`, `max` and `aria-orientation` (`horizontal` for x, `vertical` for y), and `aria-valuetext` like `"50, Lightness 40"`. Focus goes to these inputs, not the thumb; one is in the tab order, and an arrow key moves focus to the input of the axis it changes. The thumb lost `role="slider"`, `tabindex` and every `aria-*` attribute; `ColorAreaArea` lost `role="application"`, `aria-roledescription` and `aria-disabled` (`ColorAreaRoot` keeps `aria-disabled`; `data-disabled` is unchanged). `useColorArea()` returns new `xInput` / `yInput` surfaces and `setInputElement(axis, el)`. With `<ColorAreaThumb as-child>` the inputs render next to the child element, placed at the thumb's position. Enter on an input does not submit an enclosing form. Pointer, keyboard and RTL behaviour are unchanged.
 
 **How to find it.**
 - Styles on `ColorAreaThumb` or `ColorAreaArea` that use `:focus`, `:focus-visible`, `focus:` or `focus-visible:`.
@@ -274,7 +274,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - Direct `useColorArea()` usage that renders `thumb.attrs` (search for `useColorArea`).
 
 **Rewrite rules.**
-- Focus styles on the thumb or the area: `:focus` → `:focus-within`, `focus:` → `focus-within:`. Use `:has(:focus-visible)` (Tailwind `has-[:focus-visible]:`) for keyboard-only rings.
+- Focus styles on the thumb or the area: `:focus` → `:focus-within`, `focus:` → `focus-within:`. Use `:has(:focus-visible)` (Tailwind `has-[:focus-visible]:`) for keyboard-only rings. With `<ColorAreaThumb as-child>` the inputs render next to the child element, not inside it, so put the focus style on `ColorAreaArea` instead.
 - Test selectors: `getByRole('slider')` → `getByRole('slider', { name: '<x channel name>' })` (or the y channel name); `[role=slider]` → `input[type=range][aria-orientation=horizontal]` (x) or `[aria-orientation=vertical]` (y). Read values from the input's `value` instead of `aria-valuenow`, and the y value from the y input instead of parsing the thumb's `aria-valuetext`. Keydown and focus assertions target the input.
 - `[role=application]` used to reach the area: select the `ColorAreaArea` element by class or test id.
 - Direct `useColorArea()`: inside the thumb element, render `<input :ref="el => setInputElement('x', el)" v-bind="xInput.attrs.value">` and the same for `'y'` with `yInput`. Keep `setThumbElement` only if the thumb must still receive focus when no input is rendered.

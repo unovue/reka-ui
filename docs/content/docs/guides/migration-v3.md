@@ -289,9 +289,9 @@ If the app stores a hex string and you accept the precision loss, keep the strin
 
 The color utilities changed with the model. `convertToHsl` and `convertToHsb` convert between HSL and HSB directly and keep the hue of a grey. The channel and gradient helpers are no longer exported; see [Color utilities removed from the package root](#color-utilities-removed-from-the-package-root). The red, green and blue slider gradients use the color's real channel values for HSL and HSB colors instead of a fixed 128, and `parseColor` accepts `hsv()` as documented.
 
-`ColorSliderTrack`'s gradient now runs from the slider's minimum to its maximum: bottom to top on a vertical slider, and right to left on an `inverted` or right-to-left one (the direction is inherited from `ConfigProvider`). In v2 it always ran left to right, so it did not match the thumb on those sliders. Remove any CSS that rotated or flipped the track to compensate.
+`ColorSliderTrack`'s gradient now runs from the slider's minimum to its maximum: bottom to top on a vertical slider (top to bottom when it is also `inverted`), and right to left on a horizontal slider when exactly one of `inverted` and right-to-left is set (the direction is inherited from `ConfigProvider`). In v2 it always ran left to right, so it did not match the thumb on those sliders. Remove any CSS that rotated or flipped the track to compensate.
 
-`ColorFieldInput` sets `aria-invalid="true"` while the typed text does not parse (a color string, or a number with a `channel`), and the input and `ColorFieldRoot` get `data-invalid`. Committing such text still reverts it to the current color.
+`ColorFieldInput` now validates on commit. When Enter or blur rejects text that does not parse (a color string, or a number with a `channel`), the text still reverts to the current color, and the input gets `aria-invalid="true"` and the input and `ColorFieldRoot` get `data-invalid`. They stay until an edit parses or a later change commits; partial input while typing is never flagged.
 
 ## ColorArea exposes one range input per channel
 
@@ -300,7 +300,8 @@ The color utilities changed with the model. `convertToHsl` and `convertToHsb` co
 - Each input is named after its channel ("Saturation", "Lightness"), has its own value, `min`, `max` and `aria-orientation` (`horizontal` for x, `vertical` for y), and reports the other channel as context in `aria-valuetext` ("50, Lightness 40").
 - Focus goes to the inputs, not the thumb. One input is in the tab order; an arrow key moves focus to the input of the axis it changes. Pointer, keyboard and right-to-left behaviour are unchanged.
 - `ColorAreaThumb` no longer has `role`, `tabindex`, `aria-label`, `aria-valuenow`, `aria-valuetext`, `aria-roledescription` or `aria-orientation`. `ColorAreaArea` no longer has `role`, `aria-roledescription` or `aria-disabled`; `ColorAreaRoot` keeps `aria-disabled`, and every part keeps `data-disabled`.
-- Focus styles on the thumb (`:focus`, `focus:`) never match now. Use `:focus-within` / `focus-within:` on the thumb or the area, or `:has(:focus-visible)` for keyboard focus only.
+- Focus styles on the thumb (`:focus`, `focus:`) never match now. Use `:focus-within` / `focus-within:` on the thumb or the area, or `:has(:focus-visible)` for keyboard focus only. With `<ColorAreaThumb as-child>` the inputs render next to your element (placed at the thumb's position), not inside it, so put the focus style on `ColorAreaArea`.
+- Enter on a channel input does not submit an enclosing form, as with the v2 thumb.
 - Tests that find the thumb with `getByRole('slider')` find two sliders now: select one by name (`getByRole('slider', { name: 'Saturation' })`). Tests that read the y value from the thumb's `aria-valuetext` read the y input's value instead.
 - With `useColorArea()` directly, render the new `xInput` and `yInput` surfaces as `<input>` elements in the thumb and bind them with `setInputElement('x' | 'y', el)`. The thumb surface no longer carries the ARIA slider attributes.
 
@@ -320,7 +321,7 @@ The package root now exports the color utilities an app needs to work with the `
 | Removed | Replacement |
 | --- | --- |
 | `colorToRgb(color)`, `colorToHsl(color)`, `colorToHsb(color)` | `colorToString(color, 'rgb')`, `colorToString(color, 'hsl')`, `colorToString(color, 'hsb')` |
-| `getChannelValue(color, 'hue')` | Read the channel from the converted color: `convertToHsl(color).h` (`r`/`g`/`b` from `convertToRgb`, `b` for brightness from `convertToHsb`) |
+| `getChannelValue(color, channel)` | The property of the converted color: `hue` → `convertToHsl(color).h`, `saturation` → `convertToHsl(color).s` (or `convertToHsb(color).s` for an HSB color), `lightness` → `convertToHsl(color).l`, `brightness` → `convertToHsb(color).b`, `red`/`green`/`blue` → `convertToRgb(color).r`/`.g`/`.b`, `alpha` → `color.alpha * 100` |
 | `setChannelValue(color, 'hue', 120)`, `setChannelValues(color, [...])` | Spread the converted color: `{ ...convertToHsl(color), h: 120 }` |
 | `getChannelRange(channel)` | The fixed ranges: hue 0 to 360; saturation, lightness, brightness and alpha 0 to 100 (alpha is stored 0 to 1 on the `Color`); red, green and blue 0 to 255. All step by 1 |
 | `getChannelName(channel)` | Your own (localized) label for the channel |
