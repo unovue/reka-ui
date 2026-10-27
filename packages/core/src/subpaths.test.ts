@@ -16,7 +16,7 @@ const pkg = JSON.parse(readFileSync(join(PACKAGE_DIR, 'package.json'), 'utf8'))
 const exportsMap: Record<string, any> = pkg.exports
 
 /** Subpaths that are not component families. They must keep working. */
-const NON_FAMILY_SUBPATHS = ['.', './internal', './constant', './date', './namespaced', './nuxt', './resolver', './package.json']
+const NON_FAMILY_SUBPATHS = ['.', './internal', './constant', './date', './elements', './namespaced', './nuxt', './resolver', './package.json']
 
 const familyIndexes = import.meta.glob<Record<string, unknown>>('./*/index.ts', { eager: true })
 const barrel = RekaUI as Record<string, unknown>

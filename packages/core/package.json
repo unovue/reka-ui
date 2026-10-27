@@ -42,6 +42,9 @@
     "./date": {
       "import": "./dist/date.js"
     },
+    "./elements": {
+      "import": "./dist/elements.js"
+    },
     "./namespaced": {
       "import": "./dist/namespaced/index.mjs"
     },
