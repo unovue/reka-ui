@@ -120,6 +120,7 @@ export default defineConfig({
             link: '/docs/guides/server-side-rendering',
           },
           { text: 'Namespaced', link: '/docs/guides/namespaced-components' },
+          { text: `Custom elements ${BadgeHTML('Alpha', true)}`, link: '/docs/guides/custom-elements' },
           { text: 'Dates', link: '/docs/guides/dates' },
           { text: 'Internationalization (RTL)', link: '/docs/guides/i18n' },
           {
