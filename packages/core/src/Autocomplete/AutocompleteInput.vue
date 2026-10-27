@@ -116,6 +116,7 @@ watch(rootContext.filterState, (_newValue, oldValue) => {
     :disabled="disabled"
     :aria-expanded="rootContext.open.value"
     :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
+    :aria-activedescendant="rootContext.open.value ? listboxContext.highlightedElement.value?.id : undefined"
     aria-autocomplete="list"
     role="combobox"
     autocomplete="off"

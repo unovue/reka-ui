@@ -172,7 +172,7 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
       @focus="handleVisuallyHiddenFocus"
     />
     <span
-      v-if="menuContext.viewport"
+      v-if="menuContext.viewport.value"
       :aria-owns="itemContext.contentId"
     />
   </template>
