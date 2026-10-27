@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface PopoverTriggerProps extends PrimitiveProps {}
 </script>
@@ -18,7 +18,8 @@ const props = withDefaults(defineProps<PopoverTriggerProps>(), {
 
 const rootContext = injectPopoverRootContext()
 
-const { forwardRef, currentElement: triggerElement } = useForwardExpose()
+const { forwardRef, currentElement: triggerElement, expose } = useForwardElement()
+defineExpose(expose)
 
 // id/aria/data-state + the toggling `onClick` all come from the shared surface
 // builder (single source with `usePopover()`); the PopperAnchor wrapper (skipped

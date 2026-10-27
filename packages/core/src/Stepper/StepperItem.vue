@@ -4,7 +4,7 @@ import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { computed, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
-import { createContext, useForwardExpose, useId } from '@/shared'
+import { createContext, useForwardElement, useId } from '@/shared'
 import { injectStepperRootContext } from './StepperRoot.vue'
 
 export const [injectStepperItemContext, provideStepperItemContext] = createContext<StepperItemContext>('StepperItem')
@@ -53,7 +53,8 @@ defineSlots<{
 
 const { disabled, step, completed } = toRefs(props)
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const rootContext = injectStepperRootContext()
 

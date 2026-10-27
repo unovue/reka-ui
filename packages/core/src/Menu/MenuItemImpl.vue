@@ -16,7 +16,7 @@ export interface MenuItemImplProps extends PrimitiveProps {
 import { mergeProps } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectMenuContentContext } from './MenuContentImpl.vue'
 import { createMenuItemSurface } from './useMenu'
 
@@ -27,7 +27,8 @@ defineOptions({
 const props = defineProps<MenuItemImplProps>()
 
 const contentContext = injectMenuContentContext()
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const { CollectionItem } = useCollection()
 
 // role/aria/data-* + the hover-highlight (pointermove/leave/focus/blur) come from

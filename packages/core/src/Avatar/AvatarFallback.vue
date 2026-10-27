@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { isClient } from '@vueuse/shared'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface AvatarFallbackProps extends PrimitiveProps {
   /** Useful for delaying rendering so it only appears for those with slower connections. */
@@ -19,7 +19,8 @@ const props = withDefaults(defineProps<AvatarFallbackProps>(), {
 })
 
 const rootContext = injectAvatarRootContext()
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const canRender = ref(props.delayMs === undefined)
 
@@ -39,6 +40,7 @@ watchEffect((onCleanup) => {
 <template>
   <Primitive
     v-if="canRender && rootContext.imageLoadingStatus.value !== 'loaded'"
+    :ref="forwardRef"
     :as-child="asChild"
     :as="as"
   >

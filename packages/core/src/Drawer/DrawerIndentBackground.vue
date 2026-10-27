@@ -6,11 +6,12 @@ export interface DrawerIndentBackgroundProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectDrawerProviderContext } from './DrawerProvider.vue'
 
 const props = withDefaults(defineProps<DrawerIndentBackgroundProps>(), { as: 'div' })
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const providerContext = injectDrawerProviderContext(null)
 </script>
 

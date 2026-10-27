@@ -4,7 +4,7 @@ import type {
   MenuItemProps,
 } from './MenuItem.vue'
 import type { CheckedState } from './utils'
-import { selectionState, useForwardProps } from '@/shared'
+import { selectionState, useForwardElement, useForwardProps } from '@/shared'
 
 export type MenuCheckboxItemEmits = MenuItemEmits & {
   /** Event handler called when the checked state changes. */
@@ -43,10 +43,14 @@ const forwarded = useForwardProps(delegatedProps)
 const modelValue = useVModel(props, 'modelValue', emits)
 
 provideMenuItemIndicatorContext({ modelValue })
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <MenuItem
+    :ref="forwardRef"
     role="menuitemcheckbox"
     v-bind="forwarded"
     :aria-checked="isIndeterminate(modelValue) ? 'mixed' : modelValue"

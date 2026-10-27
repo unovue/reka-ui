@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface PaginationFirstProps extends PrimitiveProps {}
 </script>
@@ -13,13 +13,15 @@ import { injectPaginationRootContext } from './PaginationRoot.vue'
 const props = withDefaults(defineProps<PaginationFirstProps>(), { as: 'button' })
 
 const rootContext = injectPaginationRootContext()
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const disabled = computed((): boolean => rootContext.page.value === 1 || rootContext.disabled.value)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     v-bind="props"
     aria-label="First Page"
     :type="as === 'button' ? 'button' : undefined"

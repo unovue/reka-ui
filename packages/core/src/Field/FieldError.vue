@@ -20,7 +20,7 @@ export interface FieldErrorProps extends PrimitiveProps {
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
-import { disclosureState, useForwardExpose, useId } from '@/shared'
+import { disclosureState, useForwardElement, useId } from '@/shared'
 import { injectFieldRootContext } from './FieldRoot.vue'
 
 const props = withDefaults(defineProps<FieldErrorProps>(), {
@@ -41,7 +41,8 @@ defineSlots<{
 
 const fieldContext = injectFieldRootContext()
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const errorId = ref(useId(props.id))
 

@@ -10,6 +10,7 @@ export interface RangeCalendarCellProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
+import { useForwardElement } from '@/shared'
 import { injectRangeCalendarGridContext } from './RangeCalendarGrid.vue'
 import { injectRangeCalendarRootContext } from './RangeCalendarRoot.vue'
 import { getRangeCalendarCellSurface } from './useRangeCalendar'
@@ -20,10 +21,14 @@ const rootContext = injectRangeCalendarRootContext()
 const gridContext = injectRangeCalendarGridContext(null)
 
 const surface = getRangeCalendarCellSurface(rootContext, () => props.value, () => gridContext?.value.value)
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
     v-bind="surface.attrs.value"

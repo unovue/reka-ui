@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface TagGroupItemTextProps extends PrimitiveProps {}
 </script>
@@ -15,7 +15,8 @@ const props = withDefaults(defineProps<TagGroupItemTextProps>(), {
 })
 
 const itemContext = injectTagGroupItemContext()
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 watchEffect(() => {
   itemContext.textElement.value = currentElement.value

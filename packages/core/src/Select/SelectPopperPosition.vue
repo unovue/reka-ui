@@ -6,6 +6,7 @@ export interface SelectPopperPositionProps extends PopperContentProps {}
 
 <script setup lang="ts">
 import { PopperContent } from '@/Popper'
+import { useForwardElement } from '@/shared'
 import { useForwardProps } from '..'
 import { CONTENT_MARGIN } from './utils'
 
@@ -14,10 +15,14 @@ const props = withDefaults(defineProps<SelectPopperPositionProps>(), {
   collisionPadding: CONTENT_MARGIN,
 })
 const forwarded = useForwardProps(props)
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <PopperContent
+    :ref="forwardRef"
     v-bind="forwarded"
     :style="{
       // Ensure border-box for floating-ui calculations

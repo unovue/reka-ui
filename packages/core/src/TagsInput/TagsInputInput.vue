@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useComposing, useForwardExpose } from '@/shared'
+import { useComposing, useForwardElement } from '@/shared'
 
 export interface TagsInputInputProps extends PrimitiveProps {
   /** The placeholder character to use for empty tags input. */
@@ -22,7 +22,8 @@ const props = withDefaults(defineProps<TagsInputInputProps>(), {
 })
 
 const context = injectTagsInputRootContext()
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 function handleBlur(event: FocusEvent) {
   context.selectedElement.value = undefined

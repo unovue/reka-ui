@@ -11,13 +11,19 @@ export interface DatePickerNextProps extends Omit<CalendarNextProps, 'nextPage'>
 </script>
 
 <script setup lang="ts">
+import { useForwardElement } from '@/shared'
+
 const props = defineProps<DatePickerNextProps>()
 
 defineSlots<CalendarNextSlot>()
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <CalendarNext
+    :ref="forwardRef"
     v-slot="slotProps"
     v-bind="props"
   >

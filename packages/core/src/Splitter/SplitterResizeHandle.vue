@@ -32,7 +32,7 @@ export type SplitterResizeHandleEmits = {
 import type { PointerHitAreaMargins, ResizeHandlerAction } from './utils/registry'
 import type { ResizeEvent, ResizeHandler } from './utils/types'
 import { Primitive } from '@/Primitive'
-import { isBrowser, useForwardExpose, useId } from '@/shared'
+import { isBrowser, useForwardElement, useId } from '@/shared'
 import { injectPanelGroupContext } from './SplitterGroup.vue'
 import { assert } from './utils/assert'
 import { registerResizeHandle } from './utils/registry'
@@ -42,7 +42,8 @@ const props = withDefaults(defineProps<SplitterResizeHandleProps>(), {
 })
 const emits = defineEmits<SplitterResizeHandleEmits>()
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const { disabled } = toRefs(props)
 
 const panelGroupContext = injectPanelGroupContext()

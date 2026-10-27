@@ -424,14 +424,18 @@ describe('accordion characterization contract', () => {
       open: boolean
       dataDisabled: '' | undefined
       value: string
+      element: HTMLElement
       $el: HTMLElement
     }
 
     expect(item.open).toBe(true)
     expect(item.dataDisabled).toBe('')
-    expect(item.value).toBe('one')
-    expect(item.$el).toBeInstanceOf(HTMLElement)
+    expect(item.element).toBeInstanceOf(HTMLElement)
+    expect(item.$el).toBe(item.element)
     expect(warn.mock.calls.flat().join('\n')).not.toContain('expose() should be called only once')
+    // #2808: props are no longer readable off a part ref (dev warns once).
+    expect(item.value).toBeUndefined()
+    expect(warn.mock.calls.flat().join('\n')).toContain('reading the prop `value` off a component ref')
     wrapper.unmount()
   })
 

@@ -1,21 +1,28 @@
-import type { ComponentPublicInstance } from 'vue'
-import { unrefElement } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import type { ComponentPublicInstance, ComputedRef, ShallowRef } from 'vue'
+import type { ElementExpose } from '../shared/useForwardElement'
+// Direct relative import (not the `@/shared` barrel) to avoid a Primitive ↔ shared cycle.
+import { useForwardElement } from '../shared/useForwardElement'
 
-export function usePrimitiveElement<T extends ComponentPublicInstance>() {
-  const primitiveElement = ref<T>()
-  const currentElement = computed<HTMLElement>(() => {
-    // The ref may be a component instance (has `$el`) or a raw Element (from
-    // `<component :is>` / a direct element ref, which has no `$el`).
-    const el = (primitiveElement.value as { $el?: HTMLElement } | undefined)?.$el
-    // Non-single/text root: `$el` is a text/comment node → use the next element.
-    return el && ['#text', '#comment'].includes(el.nodeName)
-      ? el.nextElementSibling as HTMLElement
-      : unrefElement(primitiveElement) as HTMLElement
-  })
+export interface UsePrimitiveElementReturn<T> {
+  /** Template ref target — bind with `ref="primitiveElement"`. */
+  primitiveElement: ShallowRef<T | undefined>
+  /** The resolved DOM element (text/comment-root aware, reactive through conforming children). */
+  currentElement: ComputedRef<HTMLElement>
+  /** Ready-made element-first expose object: `defineExpose(expose)`. */
+  expose: ElementExpose<HTMLElement>
+}
 
+/**
+ * Object-ref flavour of `useForwardElement`, for parts that bind
+ * `ref="primitiveElement"` and also call the bound child's exposed methods.
+ * The ref may hold a component's expose proxy (resolved element-first:
+ * `element`, then `$el`) or a raw Element.
+ */
+export function usePrimitiveElement<T extends ComponentPublicInstance>(): UsePrimitiveElementReturn<T> {
+  const { currentRef, currentElement, expose } = useForwardElement()
   return {
-    primitiveElement,
+    primitiveElement: currentRef as ShallowRef<T | undefined>,
     currentElement,
+    expose,
   }
 }

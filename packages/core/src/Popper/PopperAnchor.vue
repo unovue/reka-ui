@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ReferenceElement } from '@floating-ui/vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface PopperAnchorProps extends PrimitiveProps {
   /**
@@ -22,7 +22,8 @@ import { injectPopperRootContext } from './PopperRoot.vue'
 
 const props = defineProps<PopperAnchorProps>()
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const rootContext = injectPopperRootContext()
 

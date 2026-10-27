@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import type { TooltipContentImplProps } from './TooltipContentImpl.vue'
 import { useEventListener } from '@vueuse/core'
-import { useForwardExpose, useForwardProps, useGraceArea } from '@/shared'
+import { useForwardElement, useForwardProps, useGraceArea } from '@/shared'
 import TooltipContentImpl from './TooltipContentImpl.vue'
 import { injectTooltipProviderContext } from './TooltipProvider.vue'
 import { injectTooltipRootContext } from './TooltipRoot.vue'
 
 const props = defineProps<TooltipContentImplProps>()
 const forwardedProps = useForwardProps(props)
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const { trigger, onClose } = injectTooltipRootContext()
 const providerContext = injectTooltipProviderContext()

@@ -7,7 +7,7 @@ export interface ScrollAreaScrollbarHoverProps extends ScrollAreaScrollbarAutoPr
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 import { Presence } from '@/Presence'
-import { disclosureState, useForwardExpose } from '@/shared'
+import { disclosureState, useForwardElement } from '@/shared'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import ScrollAreaScrollbarAuto from './ScrollAreaScrollbarAuto.vue'
 
@@ -19,7 +19,8 @@ defineProps<ScrollAreaScrollbarHoverProps>()
 
 const rootContext = injectScrollAreaRootContext()
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 let timeout: ReturnType<typeof setTimeout> | undefined | number
 const visible = ref(false)

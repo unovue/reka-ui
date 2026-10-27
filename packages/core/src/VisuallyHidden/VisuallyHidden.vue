@@ -18,12 +18,17 @@ export interface VisuallyHiddenProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
+import { useForwardElement } from '@/shared'
 
 withDefaults(defineProps<VisuallyHiddenProps>(), { as: 'span', feature: 'focusable' })
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
     :aria-hidden="feature === 'fully-hidden' ? 'true' : undefined"

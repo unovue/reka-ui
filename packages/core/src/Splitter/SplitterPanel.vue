@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { disclosureState, useId } from '@/shared'
+import { disclosureState, mergeExpose, useForwardElement, useId } from '@/shared'
 import { PRECISION } from './utils/constants'
 
 export interface SplitterPanelProps extends PrimitiveProps {
@@ -157,7 +157,8 @@ function resize(size: number) {
   resizePanel(panelDataRef.value, size)
 }
 
-defineExpose({
+const { forwardRef, expose } = useForwardElement()
+defineExpose(mergeExpose(expose, {
   /** If panel is `collapsible`, collapse it fully. */
   collapse,
   /** If panel is currently collapsed, expand it to its most recent size. */
@@ -172,12 +173,13 @@ defineExpose({
   isCollapsed,
   /** Returns `true` if the panel is currently not collapsed */
   isExpanded,
-})
+}))
 </script>
 
 <template>
   <Primitive
     :id="panelId"
+    :ref="forwardRef"
     :style="style"
     :as="as"
     :as-child="asChild"

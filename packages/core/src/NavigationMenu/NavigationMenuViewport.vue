@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { disclosureState, useForwardExpose } from '@/shared'
+import { disclosureState, useForwardElement } from '@/shared'
 
 export interface NavigationMenuViewportProps extends PrimitiveProps {
   /**
@@ -34,7 +34,8 @@ const props = withDefaults(defineProps<NavigationMenuViewportProps>(), {
   align: 'center',
 })
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const menuContext = injectNavigationMenuContext()
 const { activeTrigger, rootNavigationMenu, modelValue } = menuContext

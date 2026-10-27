@@ -2,7 +2,7 @@
 import type { PrimitiveProps } from '@/Primitive'
 import { isEqual } from 'ohash'
 import { computed } from 'vue'
-import { selectionState, useForwardExpose } from '@/shared'
+import { selectionState, useForwardElement } from '@/shared'
 import { injectTagsInputItemContext } from './TagsInputItem.vue'
 import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 
@@ -16,7 +16,8 @@ const props = withDefaults(defineProps<TagsInputItemDeleteProps>(), {
   as: 'button',
 })
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const context = injectTagsInputRootContext()
 const itemContext = injectTagsInputItemContext()
 
@@ -32,6 +33,7 @@ function handleDelete() {
 
 <template>
   <Primitive
+    :ref="forwardRef"
     tabindex="-1"
     v-bind="props"
     :aria-labelledby="itemContext.textId"

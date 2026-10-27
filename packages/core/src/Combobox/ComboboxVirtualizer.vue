@@ -7,6 +7,7 @@ import type { VirtualItem, Virtualizer } from '@tanstack/vue-virtual'
 import type { ListboxVirtualizerProps } from '@/Listbox/ListboxVirtualizer.vue'
 import type { AcceptableValue } from '@/shared/types'
 import ListboxVirtualizer from '@/Listbox/ListboxVirtualizer.vue'
+import { useForwardElement } from '@/shared'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 const props = defineProps<ComboboxVirtualizerProps<T>>()
@@ -22,10 +23,14 @@ defineSlots<{
 const rootContext = injectComboboxRootContext()
 // set virtual true when this component mounted
 rootContext.isVirtual.value = true
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <ListboxVirtualizer
+    :ref="forwardRef"
     v-slot="slotProps"
     v-bind="props"
   >

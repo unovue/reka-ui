@@ -10,7 +10,7 @@ export interface DropdownMenuSubProps extends MenuSubProps {
 
 <script setup lang="ts">
 import { MenuSub } from '@/Menu'
-import { useControllableState, useForwardExpose } from '@/shared'
+import { useControllableState } from '@/shared'
 
 const props = withDefaults(defineProps<DropdownMenuSubProps>(), {
   open: undefined,
@@ -32,8 +32,6 @@ const { state: open, setState } = useControllableState<boolean, MenuOpenChangeRe
   name: 'open',
   emit,
 })
-
-useForwardExpose()
 </script>
 
 <template>

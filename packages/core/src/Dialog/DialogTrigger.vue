@@ -7,7 +7,7 @@ export interface DialogTriggerProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectDialogRootContext } from './DialogRoot.vue'
 import { getDialogTriggerSurface } from './useDialog'
 
@@ -15,7 +15,8 @@ withDefaults(defineProps<DialogTriggerProps>(), {
   as: 'button',
 })
 const rootContext = injectDialogRootContext()
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 // aria-haspopup/aria-expanded/aria-controls/data-state + the click handler come
 // from the shared surface builder (single source with `useDialog()`); the

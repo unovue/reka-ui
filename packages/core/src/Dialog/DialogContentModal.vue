@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DialogContentImplEmits, DialogContentImplProps } from './DialogContentImpl.vue'
 import { computed, watch } from 'vue'
-import { useEmitAsProps, useForwardExpose, useHideOthers } from '@/shared'
+import { useEmitAsProps, useForwardElement, useHideOthers } from '@/shared'
 import DialogContentImpl from './DialogContentImpl.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
 
@@ -14,7 +14,8 @@ const rootContext = injectDialogRootContext()
 
 const emitsAsProps = useEmitAsProps(emits)
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const ariaHiddenTarget = computed(() => props.present ? currentElement.value : undefined)
 useHideOthers(ariaHiddenTarget)

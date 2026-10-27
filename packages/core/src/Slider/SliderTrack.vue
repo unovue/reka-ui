@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface SliderTrackProps extends PrimitiveProps {}
 </script>
@@ -13,11 +13,13 @@ withDefaults(defineProps<SliderTrackProps>(), { as: 'span' })
 
 const rootContext = injectSliderRootContext()
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as-child="asChild"
     :as="as"
     :data-disabled="rootContext.disabled.value ? '' : undefined"

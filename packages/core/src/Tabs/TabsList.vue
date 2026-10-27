@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface TabsListProps extends PrimitiveProps {
   /** When `true`, keyboard navigation will loop from last tab to first, and vice versa. */
@@ -20,7 +20,8 @@ const props = withDefaults(defineProps<TabsListProps>(), {
 })
 const { loop } = toRefs(props)
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const context = injectTabsRootContext()
 
 context.tabsList = currentElement

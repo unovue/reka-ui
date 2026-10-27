@@ -19,7 +19,7 @@ export type FieldControlEmits = {
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, useAttrs, watch } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectFieldRootContext } from './FieldRoot.vue'
 
 defineOptions({
@@ -36,7 +36,8 @@ const emits = defineEmits<FieldControlEmits>()
 const fieldContext = injectFieldRootContext()
 const attrs = useAttrs()
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const controlId = computed(() => props.id ?? fieldContext.fieldId.value)
 

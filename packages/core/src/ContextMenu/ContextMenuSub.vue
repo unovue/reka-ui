@@ -10,7 +10,7 @@ export interface ContextMenuSubProps extends MenuSubProps {
 
 <script setup lang="ts">
 import { MenuSub } from '@/Menu'
-import { useControllableState, useForwardExpose } from '@/shared'
+import { useControllableState } from '@/shared'
 
 const props = withDefaults(defineProps<ContextMenuSubProps>(), {
   open: undefined,
@@ -23,8 +23,6 @@ defineSlots<{
     open: typeof open.value
   }) => any
 }>()
-
-useForwardExpose()
 
 // Owns the model so `beforeUpdate:open` can cancel: the inner `MenuSub` is
 // controlled and reports each change with its reason.

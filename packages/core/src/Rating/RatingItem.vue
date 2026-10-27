@@ -3,7 +3,7 @@ import type { ComputedRef } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
-import { createContext } from '@/shared'
+import { createContext, useForwardElement } from '@/shared'
 import { injectRatingRootContext } from './RatingRoot.vue'
 
 interface RatingItemContext {
@@ -41,10 +41,14 @@ const steps = computed(() => {
 })
 
 provideRatingItemContext({ steps })
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
   >

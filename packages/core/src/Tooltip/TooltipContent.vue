@@ -14,7 +14,7 @@ export interface TooltipContentProps extends TooltipContentImplProps {
 
 <script setup lang="ts">
 import { Presence } from '@/Presence'
-import { useForwardExpose, useForwardPropsEmits } from '@/shared'
+import { useForwardElement, useForwardPropsEmits } from '@/shared'
 import TooltipContentHoverable from './TooltipContentHoverable.vue'
 import TooltipContentImpl from './TooltipContentImpl.vue'
 import { injectTooltipRootContext } from './TooltipRoot.vue'
@@ -24,7 +24,8 @@ const emits = defineEmits<TooltipContentEmits>()
 
 const rootContext = injectTooltipRootContext()
 const forwarded = useForwardPropsEmits(props, emits)
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>

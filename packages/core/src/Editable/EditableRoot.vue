@@ -2,7 +2,7 @@
 import type { PrimitiveProps } from '@/Primitive'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { useFocusOutside, usePointerDownOutside } from '@/DismissableLayer'
-import { createContext, useDirection, useFormControl } from '@/shared'
+import { createContext, mergeExpose, useDirection, useFormControl } from '@/shared'
 
 type ActivationMode = 'focus' | 'dblclick' | 'none'
 type SubmitMode = 'blur' | 'enter' | 'none' | 'both'
@@ -137,7 +137,7 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
 })
 
-const { primitiveElement, currentElement } = usePrimitiveElement()
+const { primitiveElement, currentElement, expose } = usePrimitiveElement()
 
 const isFormControl = useFormControl(currentElement)
 
@@ -185,14 +185,14 @@ const focusOutside = useFocusOutside(() => handleDismiss(), currentElement, isEd
 
 const isEmpty = computed(() => modelValue.value === '')
 
-defineExpose({
+defineExpose(mergeExpose(expose, {
   /** Function to submit the value of the editable */
   submit,
   /** Function to cancel the value of the editable */
   cancel,
   /** Function to set the editable in edit mode */
   edit,
-})
+}))
 
 provideEditableRootContext({
   id,

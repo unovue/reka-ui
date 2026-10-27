@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { PopoverContentImplEmits, PopoverContentImplProps } from './PopoverContentImpl.vue'
 import { ref } from 'vue'
-import { useForwardExpose, useForwardPropsEmits, useHideOthers } from '@/shared'
+import { useForwardElement, useForwardPropsEmits, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import PopoverContentImpl from './PopoverContentImpl.vue'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
@@ -15,7 +15,8 @@ useBodyScrollLock(true)
 
 const forwarded = useForwardPropsEmits(props, emits)
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 useHideOthers(currentElement)
 </script>
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface ToastTitleProps extends PrimitiveProps {}
 </script>
@@ -10,7 +10,8 @@ import { Primitive } from '@/Primitive'
 import { injectToastRootContext } from './ToastRootImpl.vue'
 
 const props = defineProps<ToastTitleProps>()
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectToastRootContext(null)
 // A managed toast without a title renders nothing, unless slot content is given.
 // Keep this note out of the template: a root comment turns the root into a
@@ -20,6 +21,7 @@ const rootContext = injectToastRootContext(null)
 <template>
   <Primitive
     v-if="$slots.default || !rootContext?.toast.value || rootContext.toast.value.title"
+    :ref="forwardRef"
     v-bind="props"
   >
     <slot>{{ rootContext?.toast.value?.title }}</slot>

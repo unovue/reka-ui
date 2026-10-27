@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
-import { createContext, getActiveElement, handleAndDispatchCustomEvent, selectionState, useForwardExpose, useId } from '@/shared'
+import { createContext, getActiveElement, handleAndDispatchCustomEvent, selectionState, useForwardElement, useId } from '@/shared'
 
 interface SelectItemContext<T = AcceptableValue> {
   value: T
@@ -65,7 +65,8 @@ const { disabled } = toRefs(props)
 
 const rootContext = injectSelectRootContext()
 const contentContext = injectSelectContentContext()
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const { CollectionItem } = useCollection()
 
 const isSelected = computed(() => valueComparator(rootContext.modelValue?.value, props.value, rootContext.by))

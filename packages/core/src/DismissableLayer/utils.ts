@@ -30,7 +30,7 @@ function isElement(node: unknown): node is Element {
  * listens; a no-op for the top-level document. Tracks `element`, since the
  * layer is usually not mounted yet when the composable runs.
  */
-function useOwnerDocumentListeners(element: Ref<HTMLElement | undefined> | undefined, enabled: MaybeRefOrGetter<boolean>) {
+function useOwnerDocumentListeners(element: Readonly<Ref<HTMLElement | null | undefined>> | undefined, enabled: MaybeRefOrGetter<boolean>) {
   watchEffect((cleanupFn) => {
     if (!isClient || !toValue(enabled))
       return
@@ -116,7 +116,7 @@ function closestStackLayer(node: Node, nodeList: Element[]): Element | null {
  */
 export function usePointerDownOutside(
   onPointerDownOutside?: (event: PointerDownOutsideEvent) => void,
-  element?: Ref<HTMLElement | undefined>,
+  element?: Readonly<Ref<HTMLElement | null | undefined>>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {
   const subscriber: OutsideSubscriber = {
@@ -206,7 +206,7 @@ export function usePointerDownOutside(
  */
 export function useFocusOutside(
   onFocusOutside?: (event: FocusOutsideEvent) => void,
-  element?: Ref<HTMLElement | undefined>,
+  element?: Readonly<Ref<HTMLElement | null | undefined>>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {
   const subscriber: OutsideSubscriber = {

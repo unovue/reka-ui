@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { toRefs } from 'vue'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { useNonce } from '@/shared/useNonce'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
@@ -17,7 +17,8 @@ export interface ComboboxViewportProps extends PrimitiveProps {
 import { Primitive } from '@/Primitive'
 
 const props = defineProps<ComboboxViewportProps>()
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const { nonce: propNonce } = toRefs(props)
 const nonce = useNonce(propNonce)

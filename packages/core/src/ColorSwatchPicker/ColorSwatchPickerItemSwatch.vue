@@ -7,6 +7,7 @@ export interface ColorSwatchPickerItemSwatchProps extends Omit<ColorSwatchProps,
 <script setup lang="ts">
 import { mergeProps } from 'vue'
 import { ColorSwatch } from '@/ColorSwatch'
+import { useForwardElement } from '@/shared'
 import { injectColorSwatchPickerItemContext } from './ColorSwatchPickerItem.vue'
 import { getColorSwatchPickerItemSwatchSurface } from './useColorSwatchPicker'
 
@@ -14,10 +15,14 @@ const props = defineProps<ColorSwatchPickerItemSwatchProps>()
 
 const colorSwatchPickerItemContext = injectColorSwatchPickerItemContext()
 const part = getColorSwatchPickerItemSwatchSurface(colorSwatchPickerItemContext)
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <ColorSwatch
+    :ref="forwardRef"
     v-bind="mergeProps(props, part.attrs.value)"
   />
 </template>

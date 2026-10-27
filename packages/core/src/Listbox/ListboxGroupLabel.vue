@@ -8,6 +8,7 @@ export interface ListboxGroupLabelProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
+import { useForwardElement } from '@/shared'
 import { injectListboxGroupContext } from './ListboxGroup.vue'
 
 const props = withDefaults(defineProps<ListboxGroupLabelProps>(), {
@@ -15,12 +16,16 @@ const props = withDefaults(defineProps<ListboxGroupLabelProps>(), {
 })
 
 const groupContext = injectListboxGroupContext({ id: '' })
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
     v-bind="props"
     :id="groupContext.id"
+    :ref="forwardRef"
   >
     <slot />
   </Primitive>

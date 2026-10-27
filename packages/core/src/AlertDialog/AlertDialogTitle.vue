@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { DialogTitleProps } from '@/Dialog'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface AlertDialogTitleProps extends DialogTitleProps {}
 </script>
@@ -9,11 +9,15 @@ export interface AlertDialogTitleProps extends DialogTitleProps {}
 import { DialogTitle } from '@/Dialog'
 
 const props = withDefaults(defineProps<AlertDialogTitleProps>(), { as: 'h2' })
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
-  <DialogTitle v-bind="props">
+  <DialogTitle
+    :ref="forwardRef"
+    v-bind="props"
+  >
     <slot />
   </DialogTitle>
 </template>

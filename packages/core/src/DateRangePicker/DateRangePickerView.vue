@@ -18,12 +18,18 @@ export interface DateRangePickerViewSlot {
 </script>
 
 <script setup lang="ts">
+import { useForwardElement } from '@/shared'
+
 const props = defineProps<DateRangePickerViewProps>()
 defineSlots<DateRangePickerViewSlot>()
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <RangeCalendarView
+    :ref="forwardRef"
     v-slot="slotProps"
     v-bind="props"
   >

@@ -6,11 +6,12 @@ export interface ComboboxAnchorProps extends PopperAnchorProps {}
 import type { PopperAnchorProps } from '@/Popper'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 defineProps<ComboboxAnchorProps>()
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>

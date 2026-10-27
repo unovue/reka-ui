@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose, useId } from '@/shared'
+import { useForwardElement, useId } from '@/shared'
 import { injectTagsInputItemContext } from './TagsInputItem.vue'
 
 export interface TagsInputItemTextProps extends PrimitiveProps {}
@@ -14,7 +14,8 @@ const props = withDefaults(defineProps<TagsInputItemTextProps>(), {
 })
 
 const itemContext = injectTagsInputItemContext()
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 itemContext.textId ||= useId(undefined, 'reka-tags-input-item-text')
 </script>
@@ -23,6 +24,7 @@ itemContext.textId ||= useId(undefined, 'reka-tags-input-item-text')
   <Primitive
     v-bind="props"
     :id="itemContext.textId"
+    :ref="forwardRef"
   >
     <slot>{{ itemContext.displayValue.value }}</slot>
   </Primitive>

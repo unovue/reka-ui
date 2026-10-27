@@ -5,7 +5,7 @@ export interface AccordionContentProps extends CollapsibleContentProps {}
 </script>
 
 <script setup lang="ts">
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { CollapsibleContent } from '../Collapsible'
 import { injectAccordionItemContext } from './AccordionItem.vue'
 import { injectAccordionRootContext } from './AccordionRoot.vue'
@@ -17,11 +17,13 @@ const rootContext = injectAccordionRootContext()
 const itemContext = injectAccordionItemContext()
 const surface = getAccordionContentSurface(rootContext, itemContext)
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <CollapsibleContent
+    :ref="forwardRef"
     :as-child="props.asChild"
     :as="as"
     :force-mount="props.forceMount"

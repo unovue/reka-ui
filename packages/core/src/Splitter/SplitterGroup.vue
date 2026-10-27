@@ -2,7 +2,7 @@
 import type { CSSProperties, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { computed, ref, toRefs, watch, watchEffect } from 'vue'
-import { areEqual, createContext, useDirection, useForwardExpose, useId } from '@/shared'
+import { areEqual, createContext, useDirection, useForwardElement, useId } from '@/shared'
 import { useWindowSplitterPanelGroupBehavior } from './utils/composables/useWindowSplitterPanelGroupBehavior'
 import {
   initializeDefaultStorage,
@@ -117,7 +117,8 @@ const debounceMap: {
 const { direction } = toRefs(props)
 const groupId = useId(props.id, 'reka-splitter-group')
 const dir = useDirection()
-const { forwardRef, currentElement: panelGroupElementRef } = useForwardExpose()
+const { forwardRef, currentElement: panelGroupElementRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const dragState = ref<DragState | null>(null)
 const groupSizeInPixels = ref<number | null>(null)

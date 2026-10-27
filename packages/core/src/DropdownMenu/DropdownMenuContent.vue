@@ -13,7 +13,7 @@ export interface DropdownMenuContentProps extends MenuContentProps {}
 import { ref } from 'vue'
 import { MenuContent } from '@/Menu'
 import { omitEntryFocusListener } from '@/Menu/utils'
-import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
+import { useForwardElement, useForwardPropsEmits, useId } from '@/shared'
 import { injectDropdownMenuRootContext } from './DropdownMenuRoot.vue'
 
 defineOptions({
@@ -23,7 +23,8 @@ defineOptions({
 const props = defineProps<DropdownMenuContentProps>()
 const emits = defineEmits<DropdownMenuContentEmits>()
 const forwarded = useForwardPropsEmits(props, emits)
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const rootContext = injectDropdownMenuRootContext()
 
@@ -49,6 +50,7 @@ rootContext.contentId ||= useId(undefined, 'reka-dropdown-menu-content')
 <template>
   <MenuContent
     :id="rootContext.contentId"
+    :ref="forwardRef"
     :aria-labelledby="rootContext?.triggerId"
     :style="{
       '--reka-dropdown-menu-content-transform-origin':

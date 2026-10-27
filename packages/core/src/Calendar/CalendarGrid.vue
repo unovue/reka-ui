@@ -2,7 +2,7 @@
 import type { DateValue } from '@internationalized/date'
 import type { ComputedRef } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext } from '@/shared'
+import { createContext, useForwardElement } from '@/shared'
 
 export interface CalendarGridProps extends PrimitiveProps {
   /**
@@ -33,10 +33,14 @@ const rootContext = injectCalendarRootContext()
 provideCalendarGridContext({ value: computed(() => props.value) })
 
 const surface = getCalendarGridSurface(rootContext)
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
     v-bind="surface.attrs.value"

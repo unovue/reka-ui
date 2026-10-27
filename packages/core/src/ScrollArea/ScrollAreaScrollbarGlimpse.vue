@@ -8,7 +8,7 @@ export interface ScrollAreaScrollbarGlimpseProps extends ScrollAreaScrollbarAuto
 import { useDebounceFn } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, watchEffect } from 'vue'
 import { Presence } from '@/Presence'
-import { disclosureState, useForwardExpose } from '@/shared'
+import { disclosureState, useForwardElement } from '@/shared'
 import { useStateMachine } from '../shared/useStateMachine'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import { injectScrollAreaScrollbarContext } from './ScrollAreaScrollbar.vue'
@@ -23,7 +23,8 @@ defineProps<ScrollAreaScrollbarGlimpseProps>()
 const rootContext = injectScrollAreaRootContext()
 const scrollbarContext = injectScrollAreaScrollbarContext()
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const { state, dispatch } = useStateMachine('hidden', {
   hidden: {

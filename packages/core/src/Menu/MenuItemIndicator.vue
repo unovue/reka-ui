@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { CheckedState } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, selectionState } from '@/shared'
+import { createContext, selectionState, useForwardElement } from '@/shared'
 
 interface MenuItemIndicatorContext {
   modelValue: Ref<CheckedState>
@@ -36,10 +36,14 @@ withDefaults(defineProps<MenuItemIndicatorProps>(), {
 const indicatorContext = injectMenuItemIndicatorContext({
   modelValue: ref(false),
 })
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Presence
+    :ref="forwardRef"
     :present="
       forceMount
         || isIndeterminate(indicatorContext.modelValue.value)

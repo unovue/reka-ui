@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ImageLoadingStatus } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export type AvatarImageEmits = {
   /**
@@ -28,7 +28,8 @@ const props = withDefaults(defineProps<AvatarImageProps>(), { as: 'img' })
 const emits = defineEmits<AvatarImageEmits>()
 
 const { src, referrerPolicy, crossOrigin } = toRefs(props)
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectAvatarRootContext()
 
 const imageLoadingStatus = useImageLoadingStatus(src, { referrerPolicy, crossOrigin })
@@ -47,6 +48,7 @@ watch(
 <template>
   <Primitive
     v-show="imageLoadingStatus === 'loaded'"
+    :ref="forwardRef"
     role="img"
     :as-child="asChild"
     :as="as"

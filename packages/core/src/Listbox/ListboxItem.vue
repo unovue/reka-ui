@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '..'
 import type { AcceptableValue } from '@/shared/types'
-import { createContext, useForwardExpose, useId } from '@/shared'
+import { createContext, useForwardElement, useId } from '@/shared'
 
 export interface ListboxItemProps<T = AcceptableValue> extends PrimitiveProps {
   /** The value given as data when submitted with a `name`. */
@@ -52,7 +52,8 @@ defineSlots<{
 
 const id = useId(undefined, 'reka-listbox-item')
 const { CollectionItem } = useCollection()
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectListboxRootContext()
 
 // role/tabindex/aria-selected/disabled + the click/Space select protocol and

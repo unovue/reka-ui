@@ -1,8 +1,8 @@
 <script lang="ts">
-import type { ComputedRef, VNodeRef } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import type { CollapsibleRootProps } from '../Collapsible'
 import type { DisclosureState } from '@/shared'
-import { createContext, useForwardExpose, useId } from '@/shared'
+import { createContext, mergeExpose, useForwardElement, useId } from '@/shared'
 import { injectAccordionRootContext } from './AccordionRoot.vue'
 
 export interface AccordionItemProps
@@ -26,7 +26,7 @@ interface AccordionItemContext {
   disabled: ComputedRef<boolean>
   dataDisabled: ComputedRef<'' | undefined>
   triggerId: string
-  currentRef: VNodeRef
+  currentRef: Ref<HTMLElement | null | undefined>
   currentElement: ComputedRef<HTMLElement | undefined>
   value: ComputedRef<string>
 }
@@ -36,7 +36,7 @@ export const [injectAccordionItemContext, provideAccordionItemContext]
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, shallowRef } from 'vue'
 import { CollapsibleRoot } from '@/Collapsible'
 import { getAccordionItemState } from './useAccordion'
 
@@ -65,8 +65,12 @@ const { open, disabled, unmountOnHide } = surface
 const dataDisabled = computed(() => (disabled.value ? '' : undefined))
 const dataState = computed<DisclosureState>(() => surface.state.value.state)
 
-defineExpose({ open, dataDisabled })
-const { currentRef, currentElement } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(mergeExpose(expose, { open, dataDisabled }))
+
+// `AccordionTrigger` feeds its element here; it drives keyboard navigation.
+const currentRef = shallowRef<HTMLElement | null>()
+const currentElement = computed(() => currentRef.value ?? undefined)
 
 // Allocated here rather than in AccordionTrigger: content may render before its
 // trigger, and SSR serializes `aria-labelledby` once, without a second pass.
@@ -85,6 +89,7 @@ provideAccordionItemContext({
 
 <template>
   <CollapsibleRoot
+    :ref="forwardRef"
     :as="props.as"
     :as-child="props.asChild"
     :open="open"

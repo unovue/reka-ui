@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { MenuEmits, MenuOpenChangeReason, MenuProps } from '@/Menu'
 import type { BaseChangeReason, Direction } from '@/shared/types'
-import { createContext, useControllableState, useDirection, useForwardExpose } from '@/shared'
+import { createContext, useControllableState, useDirection } from '@/shared'
 
 type ContextMenuRootContext = {
   open: ComputedRef<boolean>
@@ -42,7 +42,6 @@ const props = withDefaults(defineProps<ContextMenuRootProps>(), {
 })
 const emits = defineEmits<ContextMenuRootEmits>()
 const { dir: propDir, modal, pressOpenDelay } = toRefs(props)
-useForwardExpose()
 const dir = useDirection(propDir)
 
 // The trigger opens the menu and the controlled `MenuRoot` below reports closes

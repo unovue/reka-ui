@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose, useId } from '@/shared'
+import { useForwardElement, useId } from '@/shared'
 
 export interface TagGroupItemDeleteProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with the delete button. */
@@ -18,7 +18,8 @@ const props = withDefaults(defineProps<TagGroupItemDeleteProps>(), {
 })
 
 const itemContext = injectTagGroupItemContext()
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const id = useId(undefined, 'reka-tag-group-item-delete')
 const disabled = computed(() => itemContext.disabled.value || props.disabled)

@@ -6,7 +6,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
 import { usePrimitiveElement } from '@/Primitive'
-import { createContext, useDirection, useFormControl } from '@/shared'
+import { createContext, mergeExpose, useDirection, useFormControl } from '@/shared'
 import { Primitive } from '..'
 
 export type ListboxRootContext<T> = {
@@ -151,7 +151,7 @@ defineSlots<{
 
 const { dir: propDir } = toRefs(props)
 const { getItems, getItem } = useCollection<{ value: T }>({ isProvider: true })
-const { primitiveElement, currentElement } = usePrimitiveElement()
+const { primitiveElement, currentElement, expose } = usePrimitiveElement()
 // `dir` resolution (ConfigProvider-aware) stays in the shell; the composable
 // owns the model (`useControllableState` via `useListSelection`), the emits,
 // the highlight/keyboard brain and the context.
@@ -196,7 +196,7 @@ const { root, context, highlightedElement, highlightFirstItem, highlightSelected
 const modelValue = listbox.modelValue as ComputedRef<T | T[] | undefined>
 const highlightItem = listbox.highlightItem as (value: T) => void
 
-defineExpose({
+defineExpose(mergeExpose(expose, {
   highlightedElement,
   highlightItem,
   highlightFirstItem,
@@ -204,7 +204,7 @@ defineExpose({
   getItems,
   /** The filtering result: `{ search, active, count }`. */
   filtered: filterState,
-})
+}))
 
 provideListboxRootContext(context)
 </script>

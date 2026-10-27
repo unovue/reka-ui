@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import type { StringOrNumber } from '@/shared/types'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface TabsContentProps extends PrimitiveProps {
   /** A unique value that associates the content with a trigger. */
@@ -23,7 +23,8 @@ import { getTabsContentSurface } from './useTabs'
 
 const props = defineProps<TabsContentProps>()
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectTabsRootContext()
 
 // id/role/aria-labelledby/tabindex + data-state/data-orientation from the shared

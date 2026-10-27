@@ -14,7 +14,7 @@ export interface ScrollAreaScrollbarImplProps {
 import { useResizeObserver } from '@vueuse/core'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { Primitive } from '@/Primitive'
-import { getEventTarget, getOwnerDocument, useForwardExpose } from '@/shared'
+import { getEventTarget, getOwnerDocument, useForwardElement } from '@/shared'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import { injectScrollAreaScrollbarContext } from './ScrollAreaScrollbar.vue'
 import { injectScrollAreaScrollbarVisibleContext } from './ScrollAreaScrollbarVisible.vue'
@@ -26,7 +26,8 @@ const rootContext = injectScrollAreaRootContext()
 const scrollbarVisibleContext = injectScrollAreaScrollbarVisibleContext()
 const scrollbarContext = injectScrollAreaScrollbarContext()
 
-const { forwardRef, currentElement: scrollbar } = useForwardExpose()
+const { forwardRef, currentElement: scrollbar, expose } = useForwardElement()
+defineExpose(expose)
 const prevWebkitUserSelectRef = ref('')
 const rectRef = ref<DOMRect>()
 

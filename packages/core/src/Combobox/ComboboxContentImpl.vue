@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { DismissableLayerEmits, DismissableLayerProps } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 
-import { createContext, disclosureState, getActiveElement, useFocusGuards, useForwardExpose, useForwardProps, useHideOthers } from '@/shared'
+import { createContext, disclosureState, getActiveElement, useFocusGuards, useForwardElement, useForwardProps, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 
 export type ComboboxContentImplEmits = DismissableLayerEmits
@@ -56,7 +56,8 @@ const isEmpty = computed(() => rootContext.ignoreFilter.value
   : rootContext.filterState.value.count === 0,
 )
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const scrollLocked = useBodyScrollLock(props.present && props.bodyLock)
 watch([() => props.present, () => props.bodyLock], ([present, bodyLock]) => scrollLocked.value = present && bodyLock)
 useFocusGuards(currentElement)

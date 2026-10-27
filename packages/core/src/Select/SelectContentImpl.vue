@@ -12,6 +12,7 @@ import {
   disclosureState,
   getEventTarget,
   useFocusGuards,
+  useForwardElement,
   useForwardProps,
   useHideOthers,
   useTypeahead,
@@ -291,10 +292,13 @@ provideSelectContentContext({
   isPositioned,
   searchRef: search,
 })
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
-  <CollectionSlot>
+  <CollectionSlot :ref="forwardRef">
     <FocusScope
       as-child
       @mount-auto-focus.prevent

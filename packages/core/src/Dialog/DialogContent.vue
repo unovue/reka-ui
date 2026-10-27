@@ -18,7 +18,7 @@ export interface DialogContentProps extends Omit<DialogContentImplProps, 'trapFo
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Presence } from '@/Presence'
-import { useEmitAsProps, useForwardExpose } from '@/shared'
+import { useEmitAsProps, useForwardElement } from '@/shared'
 import DialogContentModal from './DialogContentModal.vue'
 import DialogContentNonModal from './DialogContentNonModal.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
@@ -35,7 +35,8 @@ const emits = defineEmits<DialogContentEmits>()
 const rootContext = injectDialogRootContext()
 
 const emitsAsProps = useEmitAsProps(emits)
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 // The node stays in the DOM across open/close when force-mounted, or when the
 // root opts out of unmounting. Only then does the child need the real presence

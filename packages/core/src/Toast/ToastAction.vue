@@ -23,7 +23,7 @@ export interface ToastActionProps extends ToastCloseProps {
 <script setup lang="ts">
 import { computed, useSlots } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import ToastAnnounceExclude from './ToastAnnounceExclude.vue'
 import { injectToastRootContext } from './ToastRootImpl.vue'
 
@@ -33,7 +33,8 @@ const props = withDefaults(defineProps<ToastActionProps>(), {
 })
 
 const rootContext = injectToastRootContext()
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const slots = useSlots()
 
 const actionProps = computed(() => rootContext.toast.value?.actionProps)

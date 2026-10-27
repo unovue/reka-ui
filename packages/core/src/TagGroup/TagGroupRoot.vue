@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, Direction } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
-import { createContext, getActiveElement, useDirection, useForwardExpose, useTypeahead } from '@/shared'
+import { createContext, getActiveElement, useDirection, useForwardElement, useTypeahead } from '@/shared'
 
 export type TagGroupSelectionMode = 'none' | 'single' | 'multiple'
 
@@ -96,7 +96,8 @@ defineSlots<{
 
 const { selectionMode, loop, dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const instance = getCurrentInstance()
 
 // Optional Field participation: `injectFieldRootContext(null)` returns `null`

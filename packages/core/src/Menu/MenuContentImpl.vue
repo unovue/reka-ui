@@ -16,7 +16,7 @@ import type { RovingFocusGroupEmits } from '@/RovingFocus'
 import {
   createContext,
   useFocusGuards,
-  useForwardExpose,
+  useForwardElement,
 } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 
@@ -120,7 +120,8 @@ const { trapFocus, disableOutsidePointerEvents, loop } = toRefs(props)
 useBodyScrollLock(disableOutsidePointerEvents.value)
 
 const rovingFocusGroupRef = ref<InstanceType<typeof RovingFocusGroup>>()
-const { forwardRef, currentElement: contentElement } = useForwardExpose()
+const { forwardRef, currentElement: contentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 // Shadow-safe focus guards scoped to the content's root (#2794).
 useFocusGuards(contentElement)

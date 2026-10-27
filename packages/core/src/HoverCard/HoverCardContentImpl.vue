@@ -2,7 +2,7 @@
 import type { DismissableLayerDismissDetails, DismissableLayerEmits } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 import { syncRef } from '@vueuse/shared'
-import { useForwardExpose, useGraceArea } from '@/shared'
+import { useForwardElement, useGraceArea } from '@/shared'
 
 export type HoverCardContentImplEmits = DismissableLayerEmits
 export interface HoverCardContentImplProps extends PopperContentProps {}
@@ -22,7 +22,8 @@ const props = defineProps<HoverCardContentImplProps>()
 const emits = defineEmits<HoverCardContentImplEmits>()
 const forwarded = useForwardProps(props)
 
-const { forwardRef, currentElement: contentElement } = useForwardExpose()
+const { forwardRef, currentElement: contentElement, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectHoverCardRootContext()
 const { isPointerInTransit, onPointerExit } = useGraceArea(rootContext.triggerElement, contentElement)
 

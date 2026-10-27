@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import type { StringOrNumber } from '@/shared/types'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface TabsTriggerProps extends PrimitiveProps {
   /** A unique value that associates the trigger with a content. */
@@ -22,7 +22,8 @@ const props = withDefaults(defineProps<TabsTriggerProps>(), {
   as: 'button',
 })
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectTabsRootContext()
 
 // id/aria/data-state + the mousedown/keydown/focus handlers all come from the

@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { MenuItemIndicatorProps } from '@/Menu'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface DropdownMenuItemIndicatorProps extends MenuItemIndicatorProps {}
 </script>
@@ -9,11 +9,15 @@ export interface DropdownMenuItemIndicatorProps extends MenuItemIndicatorProps {
 import { MenuItemIndicator } from '@/Menu'
 
 const props = defineProps<DropdownMenuItemIndicatorProps>()
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
-  <MenuItemIndicator v-bind="props">
+  <MenuItemIndicator
+    :ref="forwardRef"
+    v-bind="props"
+  >
     <slot />
   </MenuItemIndicator>
 </template>

@@ -6,14 +6,18 @@ export interface ContextMenuSeparatorProps extends MenuSeparatorProps {}
 
 <script setup lang="ts">
 import { MenuSeparator } from '@/Menu'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 const props = defineProps<ContextMenuSeparatorProps>()
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
-  <MenuSeparator v-bind="props">
+  <MenuSeparator
+    :ref="forwardRef"
+    v-bind="props"
+  >
     <slot />
   </MenuSeparator>
 </template>

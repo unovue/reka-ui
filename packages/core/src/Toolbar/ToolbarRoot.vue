@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { DataOrientation, Direction } from '@/shared/types'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
+import { createContext, useDirection, useForwardElement } from '@/shared'
 
 export interface ToolbarRootProps extends PrimitiveProps {
   /** The orientation of the toolbar */
@@ -32,7 +32,8 @@ const props = withDefaults(defineProps<ToolbarRootProps>(), {
 })
 const { orientation, dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 provideToolbarRootContext({ orientation, dir })
 </script>

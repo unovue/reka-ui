@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 
 export interface TagsInputClearProps extends PrimitiveProps {}
@@ -13,7 +13,8 @@ const props = withDefaults(defineProps<TagsInputClearProps>(), {
   as: 'button',
 })
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const context = injectTagsInputRootContext()
 
 function handleCancel() {
@@ -25,6 +26,7 @@ function handleCancel() {
 
 <template>
   <Primitive
+    :ref="forwardRef"
     v-bind="props"
     :type="as === 'button' ? 'button' : undefined"
     :data-disabled="context.disabled.value ? '' : undefined"

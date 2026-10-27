@@ -46,7 +46,8 @@ const rootContext = injectListboxRootContext()
 // flush as the input and `highlightFirstItem` below sees the filtered list.
 watch(modelValue, value => rootContext.setFilterSearch(value ?? ''), { immediate: true, flush: 'sync' })
 
-const { primitiveElement, currentElement } = usePrimitiveElement()
+const { primitiveElement, currentElement, expose } = usePrimitiveElement()
+defineExpose(expose)
 const disabled = computed(() => props.disabled || rootContext.disabled.value || false)
 
 const activedescendant = ref<string | undefined>()

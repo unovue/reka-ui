@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
-import { createContext, getActiveElement, selectionState, useForwardExpose, useId } from '@/shared'
+import { createContext, getActiveElement, selectionState, useForwardElement, useId } from '@/shared'
 
 export interface TagGroupItemProps<T = AcceptableValue> extends PrimitiveProps {
   /** The unique value of the tag. */
@@ -45,7 +45,8 @@ defineSlots<{
 }>()
 
 const rootContext = injectTagGroupRootContext()
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const id = useId(undefined, 'reka-tag-group-item')
 const textElement = ref<HTMLElement>()

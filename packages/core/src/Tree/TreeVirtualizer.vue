@@ -18,7 +18,7 @@ import { refAutoReset, useParentElement } from '@vueuse/core'
 import { cloneVNode, computed, nextTick, useSlots } from 'vue'
 import { useCollection } from '@/Collection'
 import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
-import { getActiveElement } from '@/shared'
+import { getActiveElement, useForwardElement } from '@/shared'
 import { getNextMatch } from '@/shared/useTypeahead'
 import { injectTreeRootContext } from './TreeRoot.vue'
 
@@ -181,10 +181,14 @@ rootContext.virtualKeydownHook.on((event) => {
       rootContext.handleMultipleReplace(intent, getActiveElement(), getItems, rootContext.expandedItems.value.map(i => i.value))
   })
 })
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <div
+    :ref="forwardRef"
     data-reka-virtualizer
     :style="{
       position: 'relative',

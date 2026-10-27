@@ -2,7 +2,7 @@
 import type { ColorSwatchPickerChangeReason, ColorSwatchPickerValue } from './useColorSwatchPicker'
 import type { ListboxRootEmits, ListboxRootProps } from '@/Listbox'
 import type { ChangeEventDetails } from '@/shared'
-import { useForwardPropsEmits } from '@/shared'
+import { useForwardElement, useForwardPropsEmits } from '@/shared'
 
 export interface ColorSwatchPickerRootProps extends Omit<ListboxRootProps<ColorSwatchPickerValue>, 'by' | 'filter' | 'modelValue' | 'defaultValue'> {
   /** The selected color, or colors with `multiple`, as color strings or `Color` objects (uncontrolled). Compared structurally with the item values. */
@@ -50,10 +50,14 @@ const forwarded = computed(() => {
   const { modelValue, defaultValue, 'onUpdate:modelValue': update, 'onBeforeUpdate:modelValue': beforeUpdate, ...rest } = forwardedProps.value
   return rest
 })
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <ListboxRoot
+    :ref="forwardRef"
     v-bind="mergeProps(forwarded, listboxProps)"
     as-child
   >

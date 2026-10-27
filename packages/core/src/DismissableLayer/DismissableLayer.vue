@@ -99,10 +99,11 @@ const emits = defineEmits<DismissableLayerPrivateEmits>()
 
 // Render via `useRender` (no `Primitive` wrapper instance). `elementRef` is the
 // forwarded callback ref; `layerElement` the resolved root element.
-const { tag, currentElement: layerElement, elementRef } = useRender({
+const { tag, currentElement: layerElement, elementRef, expose } = useRender({
   as: () => props.as,
   asChild: () => props.asChild,
 })
+defineExpose(expose)
 // Participation in the shared stack manager. The manager routes Escape to the
 // top *present* layer only (replacing the per-layer `window` keydown listener),
 // so `onEscapeKeyDown` here just carries the emit + dismiss. Membership is driven

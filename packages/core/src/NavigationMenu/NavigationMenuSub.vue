@@ -29,7 +29,7 @@ import { ref, watchEffect } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectNavigationMenuContext, provideNavigationMenuContext } from './NavigationMenuRoot.vue'
 
 const props = withDefaults(defineProps<NavigationMenuSubProps>(), {
@@ -51,7 +51,8 @@ const modelValue = useVModel(props, 'modelValue', emits, {
 const previousValue = ref('')
 
 const menuContext = injectNavigationMenuContext()
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const indicatorTrack = ref<HTMLElement>()
 const viewport = ref<HTMLElement>()

@@ -18,14 +18,15 @@ export interface FieldLabelProps extends LabelProps {
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
 import { Label } from '@/Label'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 import { injectFieldRootContext } from './FieldRoot.vue'
 
 const props = withDefaults(defineProps<FieldLabelProps>(), {
   nativeLabel: true,
 })
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const fieldContext = injectFieldRootContext()
 
@@ -49,6 +50,7 @@ function handleClick(event: MouseEvent) {
   <Label
     v-bind="fieldContext.dataAttributes.value"
     :id="fieldContext.labelId.value ?? undefined"
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
     :for="nativeLabel ? (props.for ?? fieldContext.getControlId()) : undefined"

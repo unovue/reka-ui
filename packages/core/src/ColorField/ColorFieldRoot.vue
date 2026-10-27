@@ -5,7 +5,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
 import type { FormFieldProps } from '@/shared/types'
-import { createContext, useFormControl, useForwardExpose } from '@/shared'
+import { createContext, useFormControl, useForwardElement } from '@/shared'
 
 export interface ColorFieldRootProps extends PrimitiveProps, FormFieldProps {
   /** The color value (controlled). A string is parsed once; emitted values are always `Color` objects. */
@@ -88,7 +88,8 @@ const props = withDefaults(defineProps<ColorFieldRootProps>(), {
 
 const emits = defineEmits<ColorFieldRootEmits>()
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const isFormControl = useFormControl(currentElement)
 
 const { root, context, color, disabled } = useColorField({

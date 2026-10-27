@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { MenuGroupProps } from '@/Menu'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface ContextMenuGroupProps extends MenuGroupProps {}
 </script>
@@ -9,11 +9,15 @@ export interface ContextMenuGroupProps extends MenuGroupProps {}
 import { MenuGroup } from '@/Menu'
 
 const props = defineProps<ContextMenuGroupProps>()
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
-  <MenuGroup v-bind="props">
+  <MenuGroup
+    :ref="forwardRef"
+    v-bind="props"
+  >
     <slot />
   </MenuGroup>
 </template>

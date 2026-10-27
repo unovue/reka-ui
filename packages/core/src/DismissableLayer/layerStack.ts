@@ -23,7 +23,7 @@ import { resetBodyPointerEvents } from '@/shared/bodyPointerEvents'
  */
 
 export interface StackLayer {
-  element: () => HTMLElement | undefined
+  element: () => HTMLElement | null | undefined
   isPresent: () => boolean
   disableOutsidePointerEvents: () => boolean
   onEscapeKeyDown?: (event: KeyboardEvent) => void

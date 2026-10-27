@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface CollapsibleTriggerProps extends PrimitiveProps {}
 </script>
@@ -14,13 +14,15 @@ const props = withDefaults(defineProps<CollapsibleTriggerProps>(), {
   as: 'button',
 })
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectCollapsibleRootContext()
 const surface = getCollapsibleTriggerSurface(rootContext)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
     :as="as"
     :as-child="props.asChild"

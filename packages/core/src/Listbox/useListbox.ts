@@ -104,7 +104,7 @@ const LISTBOX_SELECT = 'listbox.select'
 
 export interface ListboxItemSurfaceOptions<T = AcceptableValue> {
   /**
-   * The item's own element (the SFC hands its `useForwardExpose`
+   * The item's own element (the SFC hands its `useForwardElement`
    * `currentElement`). Needed for the highlight identity check, the hover
    * highlight and the post-select highlight; without it the item never reads
    * as highlighted.

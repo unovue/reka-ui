@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, isNullish, useForwardExpose } from '@/shared'
+import { createContext, isNullish, useForwardElement } from '@/shared'
 
 export type ProgressRootEmits = {
   /** Event handler called when the progress value changes */
@@ -92,7 +92,8 @@ defineSlots<{
   }) => any
 }>()
 
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const modelValue = useVModel(props, 'modelValue', emit, {
   passive: (props.modelValue === undefined) as false,
 })
@@ -142,6 +143,7 @@ provideProgressRootContext({
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as-child="asChild"
     :as="as"
     :aria-valuemax="max"

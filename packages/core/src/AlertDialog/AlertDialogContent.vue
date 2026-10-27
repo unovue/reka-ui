@@ -3,7 +3,7 @@ import type {
   DialogContentEmits,
   DialogContentProps,
 } from '@/Dialog'
-import { createContext, useEmitAsProps, useForwardExpose } from '@/shared'
+import { createContext, useEmitAsProps, useForwardElement } from '@/shared'
 
 interface AlertDialogContentContext {
   onCancelElementChange: (el: HTMLElement | undefined) => void
@@ -29,7 +29,8 @@ const props = withDefaults(defineProps<AlertDialogContentProps>(), {
 const emits = defineEmits<AlertDialogContentEmits>()
 
 const emitsAsProps = useEmitAsProps(emits)
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 const cancelElement = ref<HTMLElement | undefined>()
 
@@ -42,6 +43,7 @@ provideAlertDialogContentContext({
 
 <template>
   <DialogContent
+    :ref="forwardRef"
     v-bind="{ ...props, ...emitsAsProps }"
     role="alertdialog"
     @pointer-down-outside.prevent

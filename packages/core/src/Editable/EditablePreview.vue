@@ -8,6 +8,7 @@ export interface EditablePreviewProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
+import { useForwardElement } from '@/shared'
 
 const props = withDefaults(defineProps<EditablePreviewProps>(), { as: 'span' })
 
@@ -23,10 +24,14 @@ function handleDoubleClick() {
   if (context.activationMode.value === 'dblclick')
     context.edit()
 }
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     v-bind="props"
     tabindex="0"
     :data-placeholder-shown="context.isEditing.value ? undefined : ''"

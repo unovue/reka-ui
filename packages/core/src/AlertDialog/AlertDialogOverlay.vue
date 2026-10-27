@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { DialogOverlayProps } from '@/Dialog'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface AlertDialogOverlayProps extends DialogOverlayProps {}
 </script>
@@ -9,11 +9,15 @@ export interface AlertDialogOverlayProps extends DialogOverlayProps {}
 import { DialogOverlay } from '@/Dialog'
 
 const props = defineProps<AlertDialogOverlayProps>()
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
-  <DialogOverlay v-bind="props">
+  <DialogOverlay
+    :ref="forwardRef"
+    v-bind="props"
+  >
     <slot />
   </DialogOverlay>
 </template>

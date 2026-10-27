@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { AcceptableValue } from '@/shared/types'
 import type { ToggleEmits, ToggleProps } from '@/Toggle'
-import { useForwardExpose, useForwardScopeId } from '@/shared'
+import { useForwardElement, useForwardScopeId } from '@/shared'
 
 export interface ToggleGroupItemProps extends Omit<ToggleProps, 'name' | 'required' | 'modelValue' | 'defaultValue'> {
   /**
@@ -41,7 +41,8 @@ function onTogglePressed(_value: boolean, details: ToggleEmits['update:modelValu
   rootContext.changeModelValue(props.value, 'item-press', details.event)
 }
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 // `ToggleGroupItem` wraps the multi-root `Toggle`, so the parent's scoped-style id
 // is not auto-forwarded; pass it through manually so consumer `<style scoped>` works.
 const scopeIdAttrs = useForwardScopeId()

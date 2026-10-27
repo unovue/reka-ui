@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { mergeExpose, useForwardElement } from '@/shared'
 import { useNonce } from '@/shared/useNonce'
 
 export interface ScrollAreaViewportProps extends PrimitiveProps {
@@ -34,10 +34,10 @@ onMounted(() => {
   rootContext.onContentChange(contentElement.value!)
 })
 
-defineExpose({
+const { forwardRef, currentElement: contentElement, expose } = useForwardElement()
+defineExpose(mergeExpose(expose, {
   viewportElement,
-})
-const { forwardRef, currentElement: contentElement } = useForwardExpose()
+}))
 </script>
 
 <template>

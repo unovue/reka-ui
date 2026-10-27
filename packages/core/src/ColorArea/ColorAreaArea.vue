@@ -14,7 +14,8 @@ const props = withDefaults(defineProps<ColorAreaAreaProps>(), {
 })
 
 const rootContext = injectColorAreaRootContext()
-const { primitiveElement, currentElement: areaElement } = usePrimitiveElement()
+const { primitiveElement, currentElement: areaElement, expose } = usePrimitiveElement()
+defineExpose(expose)
 const area = createColorAreaAreaSurface(rootContext, areaElement)
 </script>
 

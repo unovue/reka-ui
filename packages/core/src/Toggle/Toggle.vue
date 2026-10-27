@@ -3,7 +3,7 @@ import type { ToggleChangeReason } from './useTogglePressed'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import type { FormFieldProps } from '@/shared/types'
-import { useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { useFormControl, useForwardElement, useForwardScopeId } from '@/shared'
 import { injectToggleGroupRootContext } from '@/ToggleGroup/ToggleGroupRoot.vue'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
@@ -60,7 +60,8 @@ defineSlots<{
   }) => any
 }>()
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 // Hidden form input is a sibling (not nested) of the control to avoid the
 // `nested-interactive` a11y violation; forward the parent scope id for scoped styles.
 const scopeIdAttrs = useForwardScopeId()

@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { TooltipContentProps } from './TooltipContent.vue'
-import { createContext, useForwardExpose } from '@/shared'
+import { createContext } from '@/shared'
 
 interface TooltipProviderContext {
   isOpenDelayed: Ref<boolean>
@@ -75,7 +75,6 @@ const props = withDefaults(defineProps<TooltipProviderProps>(), {
   ignoreNonKeyboardFocus: false,
 })
 const { delayDuration, skipDelayDuration, disableHoverableContent, disableClosingTrigger, ignoreNonKeyboardFocus, disabled, content } = toRefs(props)
-useForwardExpose()
 
 const isOpenDelayed = ref(true)
 // Reset the inTransit state if idle/scrolled.

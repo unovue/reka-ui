@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { selectionState, useForwardExpose } from '@/shared'
+import { selectionState, useForwardElement } from '@/shared'
 
 export interface SelectItemIndicatorProps extends PrimitiveProps {
   /**
@@ -20,7 +20,8 @@ withDefaults(defineProps<SelectItemIndicatorProps>(), {
   as: 'span',
 })
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const itemContext = injectSelectItemContext()
 </script>
 

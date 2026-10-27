@@ -301,10 +301,34 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Verify.** The search above returns nothing, and the type-check passes.
 
+### 13. Template refs on parts
+
+**What changed.** A template ref on a part exposes `element` and `$el` (both read one reactive ref to the part's DOM element) plus the methods in that part's API reference, and nothing else.
+- `partRef.value.$el` and `partRef.value.element` return the element. `$el` is now reactive. No rewrite.
+- When the part renders no element (for example a closed `DialogContent`), `element` is `null` and `$el` falls back to Vue's placeholder comment node, as in v2. No rewrite.
+- Prop values are no longer readable from a part ref: `partRef.value.<prop>` is `undefined`. Development builds warn once per part and prop, with a message that starts with `[reka-ui] <PartName>: reading the prop`.
+- Methods of a component rendered through a part's `as` / `asChild` are no longer reachable on the part's ref.
+- `useForwardExpose` is deprecated and logs a one-time warning in development; `useForwardElement` replaces it.
+
+**How to find it.**
+- Template refs on Reka UI parts: `ref="x"` / `:ref` / `useTemplateRef('x')` / `ref<InstanceType<typeof SomePart>>()` on any component imported from `reka-ui`. For each ref variable, list every property read off `x.value`.
+- Run the app or the tests in development and collect the `reading the prop` warnings.
+- `useForwardExpose` imports.
+- Components passed as the child of an `as-child` part (or as the `as` value) that have more than one root node, a `v-if` on the root, or that render a fragment.
+
+**Rewrite rules.**
+- Reads of `$el`, `element` or a method documented in the part's API reference: leave unchanged.
+- A read of a prop (`x.value.disabled`, `x.value.modelValue`, `x.value.open`, …): replace it with the value the component passes to that prop (the bound variable or literal). If the prop is not bound by the component, use the prop's documented default. *Ask* if the value comes from somewhere you cannot trace.
+- A call to a method that the part does not document, where the method belongs to a component rendered through the part's `as` / `asChild`: add a template ref to that inner component and call the method on it.
+- `const { forwardRef, ... } = useForwardExpose()`: replace with `const { forwardRef, ..., expose } = useForwardElement()` followed by `defineExpose(expose)`. If the component already calls `defineExpose({ ... })`, change it to `defineExpose(mergeExpose(expose, { ... }))`, with the `useForwardElement()` call placed above it. A bare `useForwardExpose()` call without `forwardRef`: replace it the same way and add `:ref="forwardRef"` to the template's root element. Import `useForwardElement` / `mergeExpose` from `reka-ui`.
+- A component used as an `as-child` child with several root nodes, a root `v-if`, or a fragment root: add `const { forwardRef, expose } = useForwardElement()` and `defineExpose(expose)`, bind `:ref="forwardRef"` on the element the part should target, and if it has several root nodes add `defineOptions({ inheritAttrs: false })` with `v-bind="$attrs"` on that element. Leave single-root children unchanged.
+
+**Verify.** The type-check passes. No `reading the prop` warnings remain in development. Every `$el` / `element` read from a part ref still returns the expected element.
+
 ### Report
 
 When you are done, give the developer:
 
 1. The list of files you changed, grouped by the section above that required the change.
-2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string and every gradient helper call that you left unchanged because the rule said to ask, with file and line.
+2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call and every prop read off a part ref that you left unchanged because the rule said to ask, with file and line.
 3. The result of the type-check, lint and test commands, compared with the baseline you recorded at the start.

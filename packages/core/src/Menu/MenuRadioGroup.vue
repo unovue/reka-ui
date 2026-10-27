@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { MenuGroupProps } from './MenuGroup.vue'
 import type { AcceptableValue } from '@/shared/types'
-import { createContext, useForwardProps } from '@/shared'
+import { createContext, useForwardElement, useForwardProps } from '@/shared'
 
 interface MenuRadioGroupContext {
   modelValue: Ref<AcceptableValue>
@@ -50,10 +50,16 @@ provideMenuRadioGroupContext({
     modelValue.value = payload
   },
 })
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
-  <MenuGroup v-bind="forwarded">
+  <MenuGroup
+    :ref="forwardRef"
+    v-bind="forwarded"
+  >
     <slot :model-value="modelValue" />
   </MenuGroup>
 </template>

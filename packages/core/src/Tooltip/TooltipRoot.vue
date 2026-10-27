@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState } from '@/shared'
-import { createContext, useForwardExpose, useId } from '@/shared'
+import { createContext, useId } from '@/shared'
 
 /**
  * Why the tooltip's `open` state changed (#2828); the `reason` of `ChangeEventDetails`.
@@ -134,7 +134,6 @@ defineSlots<{
   }) => any
 }>()
 
-useForwardExpose()
 const providerContext = injectTooltipProviderContext()
 
 // The composable owns the controlled/uncontrolled `open` model (every write goes

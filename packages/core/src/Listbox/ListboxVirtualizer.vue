@@ -20,7 +20,7 @@ import { useParentElement } from '@vueuse/core'
 import { refAutoReset } from '@vueuse/shared'
 import { cloneVNode, computed, Fragment, onUnmounted, useSlots, watch, watchSyncEffect } from 'vue'
 import { useCollection } from '@/Collection'
-import { findValuesBetween, getActiveElement } from '@/shared'
+import { findValuesBetween, getActiveElement, useForwardElement } from '@/shared'
 import { getNextMatch } from '@/shared/useTypeahead'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 import { compare, queryCheckedElement } from './utils'
@@ -282,10 +282,14 @@ rootContext.virtualKeydownHook.on(({ event, intent: resolvedIntent }) => {
     }
   }
 })
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <div
+    :ref="forwardRef"
     data-reka-virtualizer
     :style="{
       position: 'relative',

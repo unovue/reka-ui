@@ -2,7 +2,7 @@
 import type { ComponentPublicInstance } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { disclosureState, getElementByIdFrom, useForwardExpose } from '@/shared'
+import { disclosureState, getElementByIdFrom, useForwardElement } from '@/shared'
 
 export interface NavigationMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -33,7 +33,8 @@ const menuContext = injectNavigationMenuContext()
 const itemContext = injectNavigationMenuItemContext()
 
 const { CollectionItem } = useCollection({ key: 'NavigationMenu' })
-const { forwardRef, currentElement: triggerElement } = useForwardExpose()
+const { forwardRef, currentElement: triggerElement, expose } = useForwardElement()
+defineExpose(expose)
 const triggerId = ref('')
 const contentId = ref('')
 

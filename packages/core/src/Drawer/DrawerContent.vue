@@ -10,7 +10,7 @@ export interface DrawerContentProps extends Omit<DrawerContentImplProps, 'trapFo
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { Presence } from '@/Presence'
-import { isHTMLElement, useEmitAsProps, useForwardExpose, useHideOthers } from '@/shared'
+import { isHTMLElement, useEmitAsProps, useForwardElement, useHideOthers } from '@/shared'
 import DrawerContentImpl from './DrawerContentImpl.vue'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 
@@ -22,7 +22,8 @@ const emits = defineEmits<DrawerContentEmits>()
 
 const rootContext = injectDrawerRootContext()
 const emitsAsProps = useEmitAsProps(emits)
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const hasInteractedOutside = ref(false)
 const hasPointerDownOutside = ref(false)
 

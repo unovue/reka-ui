@@ -2,7 +2,7 @@
 import type { ComputedRef } from 'vue'
 import type { RadioProps } from './Radio.vue'
 import type { SelectEvent } from './utils'
-import { createContext, useForwardExpose, useForwardScopeId } from '@/shared'
+import { createContext, useForwardElement, useForwardScopeId } from '@/shared'
 
 export interface RadioGroupItemProps extends Omit<RadioProps, 'checked'> {}
 export type RadioGroupItemEmits = {
@@ -48,7 +48,8 @@ defineSlots<{
   }) => any
 }>()
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const rootContext = injectRadioGroupRootContext()
 

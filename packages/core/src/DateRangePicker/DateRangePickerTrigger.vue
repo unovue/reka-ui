@@ -7,12 +7,18 @@ export interface DateRangePickerTriggerProps extends PopoverTriggerProps {}
 </script>
 
 <script setup lang="ts">
+import { useForwardElement } from '@/shared'
+
 const props = defineProps<DateRangePickerTriggerProps>()
 const rootContext = injectDateRangePickerRootContext()
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <PopoverTrigger
+    :ref="forwardRef"
     data-reka-date-field-segment="trigger"
     v-bind="props"
     :disabled="rootContext.disabled.value"

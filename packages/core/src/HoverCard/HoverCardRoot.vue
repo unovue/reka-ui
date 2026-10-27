@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { createContext, useForwardExpose } from '@/shared'
+import { createContext } from '@/shared'
 
 /** Why the hover card's `open` state changed (#2828); the `reason` of `ChangeEventDetails`. */
 export type HoverCardOpenChangeReason
@@ -81,8 +81,6 @@ defineSlots<{
     open: typeof open.value
   }) => any
 }>()
-
-useForwardExpose()
 
 // Controlled/uncontrolled `open`, the `beforeUpdate:` / `update:` emits and the
 // `openDelay` / `closeDelay` timers all live in the composable (`open ===

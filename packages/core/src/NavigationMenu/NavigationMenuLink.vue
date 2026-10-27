@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export type NavigationMenuLinkEmits = {
   /**
@@ -28,7 +28,8 @@ const props = withDefaults(defineProps<NavigationMenuLinkProps>(), {
 const emits = defineEmits<NavigationMenuLinkEmits>()
 
 const { CollectionItem } = useCollection({ key: 'NavigationMenu' })
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 
 async function handleClick(ev: MouseEvent) {
   const linkSelectEvent = new CustomEvent(LINK_SELECT, {
@@ -54,7 +55,7 @@ async function handleClick(ev: MouseEvent) {
 </script>
 
 <template>
-  <CollectionItem>
+  <CollectionItem :ref="forwardRef">
     <Primitive
       :as="as"
       :data-active="active ? '' : undefined"

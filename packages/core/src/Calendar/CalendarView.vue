@@ -2,7 +2,7 @@
 import type { ComputedRef } from 'vue'
 import type { CalendarGridData, CalendarUnit } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardExpose } from '@/shared'
+import { createContext, useForwardElement } from '@/shared'
 
 export interface CalendarViewProps extends PrimitiveProps {
   /** The view this part renders. Its content is shown only while the root's `view` matches. */
@@ -36,7 +36,8 @@ defineSlots<{
   }) => any
 }>()
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const rootContext = injectCalendarRootContext()
 
 provideCalendarViewContext({ unit: computed(() => props.view) })

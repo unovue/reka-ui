@@ -5,6 +5,7 @@ export interface ColorSliderThumbProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
+import { useForwardElement } from '@/shared'
 import { SliderThumb } from '@/Slider'
 import { injectColorSliderRootContext } from './ColorSliderRoot.vue'
 import { getColorSliderThumbSurface } from './useColorSlider'
@@ -24,10 +25,14 @@ defineSlots<{
 
 const rootContext = injectColorSliderRootContext()
 const thumb = getColorSliderThumbSurface(rootContext)
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <SliderThumb
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
     v-bind="thumb.attrs.value"

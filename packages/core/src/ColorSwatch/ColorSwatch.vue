@@ -17,6 +17,7 @@ export interface ColorSwatchProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
+import { useForwardElement } from '@/shared'
 import { useColorSwatch } from './useColorSwatch'
 
 const props = withDefaults(defineProps<ColorSwatchProps>(), { as: 'div', color: '' })
@@ -25,10 +26,14 @@ const { root, colorString, alpha } = useColorSwatch({
   color: () => props.color,
   label: () => props.label,
 })
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as-child="asChild"
     :as="as"
     v-bind="root.attrs.value"

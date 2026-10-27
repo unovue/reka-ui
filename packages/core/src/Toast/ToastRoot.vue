@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { ToastRootImplEmits, ToastRootImplProps } from './ToastRootImpl.vue'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export type ToastRootEmits = Omit<ToastRootImplEmits, 'close'> & {
   /** Event handler called when the open state changes */
@@ -46,7 +46,8 @@ defineSlots<{
   }) => any
 }>()
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 const open = useVModel(props, 'open', emits, {
   defaultValue: props.defaultOpen,
   passive: (props.open === undefined) as false,

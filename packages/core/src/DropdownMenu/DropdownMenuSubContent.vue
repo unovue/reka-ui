@@ -3,7 +3,7 @@ import type {
   MenuSubContentEmits,
   MenuSubContentProps,
 } from '@/Menu'
-import { useForwardExpose } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export type DropdownMenuSubContentEmits = MenuSubContentEmits
 
@@ -17,11 +17,13 @@ import { useForwardPropsEmits } from '..'
 const props = defineProps<DropdownMenuSubContentProps>()
 const emits = defineEmits<DropdownMenuSubContentEmits>()
 const forwarded = useForwardPropsEmits(props, emits)
-useForwardExpose()
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <MenuSubContent
+    :ref="forwardRef"
     v-bind="forwarded"
     :style="{
       '--reka-dropdown-menu-content-transform-origin':

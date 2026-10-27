@@ -4,7 +4,7 @@ import type { CollapsibleChangeReason } from './useCollapsible'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import { computed, toRefs } from 'vue'
-import { createContext, useForwardExpose } from '@/shared'
+import { createContext, mergeExpose, useForwardElement } from '@/shared'
 
 export interface CollapsibleRootProps extends PrimitiveProps {
   /** The open state of the collapsible when it is initially rendered. <br> Use when you do not need to control its open state. */
@@ -71,17 +71,18 @@ context.contentId = ''
 provideCollapsibleRootContext(context)
 
 // Writable like the previous `useVModel` ref: assigning requests a change through the model.
-defineExpose({
+const { forwardRef, expose } = useForwardElement()
+defineExpose(mergeExpose(expose, {
   open: computed({
     get: () => open.value,
     set: value => setOpen(value, 'imperative-action'),
   }),
-})
-useForwardExpose()
+}))
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as="as"
     :as-child="props.asChild"
     v-bind="root.attrs.value"

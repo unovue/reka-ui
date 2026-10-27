@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { FieldValidationMode } from '@/Field/useFieldValidation'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardExpose } from '@/shared'
+import { createContext, mergeExpose, useForwardElement } from '@/shared'
 
 export interface FormRootProps extends PrimitiveProps {
   /**
@@ -81,11 +81,11 @@ function validate(fieldName?: string) {
   return targets.map(field => field.validate()).every(Boolean)
 }
 
-defineExpose({
+const { forwardRef, expose } = useForwardElement()
+defineExpose(mergeExpose(expose, {
   /** Validates every field, or only the field with the given `name`. Returns whether they're all valid. */
   validate,
-})
-useForwardExpose()
+}))
 
 const serverErrors = computed(() => props.errors ?? {})
 const validationMode = computed(() => props.validationMode)
@@ -182,6 +182,7 @@ provideFormRootContext({
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
     novalidate

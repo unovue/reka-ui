@@ -10,7 +10,7 @@ export interface MenubarSubProps extends MenuSubProps {
 
 <script setup lang="ts">
 import { MenuSub } from '@/Menu'
-import { useControllableState, useForwardExpose } from '@/shared'
+import { useControllableState } from '@/shared'
 
 const props = withDefaults(defineProps<MenubarSubProps>(), {
   open: undefined,
@@ -24,7 +24,6 @@ defineSlots<{
   }) => any
 }>()
 
-useForwardExpose()
 // Owns the model so `beforeUpdate:open` can cancel: the inner `MenuSub` is
 // controlled and reports each change with its reason.
 const { state: open, setState } = useControllableState<boolean, MenuOpenChangeReason>({

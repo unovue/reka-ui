@@ -19,6 +19,7 @@ export interface RangeCalendarPrevSlot {
 import { computed } from 'vue'
 import { getCalendarNavSurface } from '@/Calendar/useCalendar'
 import { Primitive } from '@/Primitive'
+import { useForwardElement } from '@/shared'
 import { injectRangeCalendarRootContext } from './RangeCalendarRoot.vue'
 
 const props = withDefaults(defineProps<RangeCalendarPrevProps>(), { as: 'button' })
@@ -26,10 +27,14 @@ defineSlots<RangeCalendarPrevSlot>()
 
 const rootContext = injectRangeCalendarRootContext()
 const surface = getCalendarNavSurface(rootContext, 'prev', computed(() => props.prevPage))
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as="props.as"
     :as-child="props.asChild"
     :type="props.as === 'button' ? 'button' : undefined"

@@ -5,7 +5,7 @@ import type { CheckedState } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
-import { createContext, getRootNode, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { createContext, getRootNode, useFormControl, useForwardElement, useForwardScopeId } from '@/shared'
 import { injectCheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 
 export interface CheckboxRootProps<T = boolean> extends PrimitiveProps, FormFieldProps {
@@ -79,7 +79,8 @@ defineSlots<{
   }) => any
 }>()
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 
 const checkboxGroupContext = injectCheckboxGroupRootContext(null)
 

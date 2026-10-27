@@ -37,7 +37,8 @@ const id = useId(undefined, 'reka-combobox-item')
 const rootContext = injectComboboxRootContext()
 const groupContext = injectComboboxGroupContext(null)
 
-const { primitiveElement, currentElement } = usePrimitiveElement()
+const { primitiveElement, currentElement, expose } = usePrimitiveElement()
+defineExpose(expose)
 
 if (props.value === '') {
   throw new Error(

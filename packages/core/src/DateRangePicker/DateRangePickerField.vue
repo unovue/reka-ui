@@ -5,13 +5,24 @@ import { injectDateRangePickerRootContext } from './DateRangePickerRoot.vue'
 </script>
 
 <script setup lang="ts">
+import type { ComponentPublicInstance } from 'vue'
+import { useForwardElement } from '@/shared'
+
 const rootContext = injectDateRangePickerRootContext()
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
+
+function setFieldRef(el: Element | ComponentPublicInstance | null) {
+  rootContext.dateFieldRef.value = (el ?? undefined) as typeof rootContext.dateFieldRef.value
+  forwardRef(el)
+}
 </script>
 
 <template>
   <DateRangeFieldRoot
     v-slot="{ segments, modelValue }"
-    :ref="rootContext.dateFieldRef"
+    :ref="setFieldRef"
     :model-value="rootContext.modelValue.value"
     :placeholder="rootContext.placeholder.value"
     v-bind="{

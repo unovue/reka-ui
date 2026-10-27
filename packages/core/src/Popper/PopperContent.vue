@@ -11,7 +11,7 @@ import type {
 } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Direction } from '@/shared/types'
-import { createContext, useDirection, useForwardExpose, useSize } from '@/shared'
+import { createContext, useDirection, useForwardElement, useSize } from '@/shared'
 
 export const PopperContentPropsDefaultValue = {
   side: 'bottom' as Side,
@@ -233,7 +233,8 @@ const emits = defineEmits<{
 }>()
 
 const rootContext = injectPopperRootContext()
-const { forwardRef, currentElement: contentElement } = useForwardExpose()
+const { forwardRef, currentElement: contentElement, expose } = useForwardElement()
+defineExpose(expose)
 const dir = useDirection(computed(() => props.dir))
 
 const floatingRef = ref<HTMLElement>()

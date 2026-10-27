@@ -135,6 +135,24 @@
     'type': 'string'
   }
 ]" />
+
+<MethodsTable :data="[
+  {
+    'name': 'highlightItem',
+    'description': '',
+    'type': '(value: AcceptableValue) =&gt; void | undefined'
+  },
+  {
+    'name': 'highlightFirstItem',
+    'description': '',
+    'type': '() =&gt; void | undefined'
+  },
+  {
+    'name': 'highlightSelected',
+    'description': '',
+    'type': '(event?: Event | undefined, scroll?: boolean | undefined) =&gt; Promise&lt;void&gt; | undefined'
+  }
+]" />
 </llm-exclude>
 
 <llm-only>
@@ -174,5 +192,13 @@
 | --- | --- | --- |
 | `open` | Current open state | `boolean` |
 | `modelValue` | Current active value | `string` |
+
+**Methods**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `highlightItem` |  | `(value: AcceptableValue) => void \| undefined` |
+| `highlightFirstItem` |  | `() => void \| undefined` |
+| `highlightSelected` |  | `(event?: Event \| undefined, scroll?: boolean \| undefined) => Promise<void> \| undefined` |
 
 </llm-only>

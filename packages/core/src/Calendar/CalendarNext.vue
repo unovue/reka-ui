@@ -18,6 +18,7 @@ export interface CalendarNextSlot {
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
+import { useForwardElement } from '@/shared'
 import { injectCalendarRootContext } from './CalendarRoot.vue'
 import { getCalendarNavSurface } from './useCalendar'
 
@@ -26,10 +27,14 @@ defineSlots<CalendarNextSlot>()
 
 const rootContext = injectCalendarRootContext()
 const surface = getCalendarNavSurface(rootContext, 'next', computed(() => props.nextPage))
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     :as="props.as"
     :as-child="props.asChild"
     :type="props.as === 'button' ? 'button' : undefined"

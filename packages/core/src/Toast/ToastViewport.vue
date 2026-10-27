@@ -2,7 +2,7 @@
 import type { ComponentPublicInstance } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { getActiveElement, useForwardExpose } from '@/shared'
+import { getActiveElement, useForwardElement } from '@/shared'
 
 export interface ToastViewportProps extends PrimitiveProps {
   /**
@@ -41,7 +41,8 @@ const props = withDefaults(defineProps<ToastViewportProps>(), {
 })
 const { hotkey, label } = toRefs(props)
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef, currentElement, expose } = useForwardElement()
+defineExpose(expose)
 const { CollectionSlot, getItems } = useCollection()
 const providerContext = injectToastProviderContext()
 const hasToasts = computed(() => providerContext.toastCount.value > 0)

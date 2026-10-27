@@ -2,7 +2,6 @@ import type {
   SlotsType,
   VNode,
 } from 'vue'
-import { unrefElement } from '@vueuse/core'
 import {
   defineComponent,
   getCurrentInstance,
@@ -11,6 +10,7 @@ import {
   toRefs,
 } from 'vue'
 import { renderSlotFragments } from '@/shared'
+import { mergeExpose, useForwardElement } from '@/shared/useForwardElement'
 import { usePresence } from './usePresence'
 
 export interface PresenceProps {
@@ -50,7 +50,11 @@ export default defineComponent({
     const node = ref<HTMLElement>()
     // Mount composables once to prevent duplicated eventListener
     const { isPresent } = usePresence(present, node)
-    expose({ present: isPresent })
+    // Element-first contract (#2808): a parent ref on `<Presence>` resolves the
+    // child's element reactively (follows the child's own root swaps and the
+    // unmount once presence ends).
+    const { forwardRef, currentElement, expose: elementExpose } = useForwardElement()
+    expose(mergeExpose(elementExpose, { present: isPresent }))
 
     let children = slots.default({ present: isPresent.value })
     children = renderSlotFragments(children || [])
@@ -81,7 +85,8 @@ export default defineComponent({
       if (forceMount.value || present.value || isPresent.value) {
         return h(slots.default({ present: isPresent.value })[0] as VNode, {
           ref: (v) => {
-            const el = unrefElement(v as HTMLElement)
+            forwardRef(v)
+            const el = currentElement.value
             if (typeof el?.hasAttribute === 'undefined')
               return el
 

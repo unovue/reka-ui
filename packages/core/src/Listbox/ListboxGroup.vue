@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useId } from '@/shared'
+import { createContext, useForwardElement, useId } from '@/shared'
 
 export interface ListboxGroupProps extends PrimitiveProps {}
 
@@ -25,10 +25,14 @@ provideListboxGroupContext({ id })
 const rootContext = injectListboxRootContext(null)
 // Hidden (not unmounted, so its items stay registered) while a filter leaves none of its items.
 const isFilteredOut = computed(() => rootContext?.isGroupFilteredOut(id) ?? false)
+
+const { forwardRef, expose } = useForwardElement()
+defineExpose(expose)
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     role="group"
     v-bind="props"
     :aria-labelledby="id"
