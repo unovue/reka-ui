@@ -1,21 +1,77 @@
 ---
 title: Animation/Transition
-description: Animate Reka UI with CSS keyframes, native Vue Transition or JavaScript animation library of your choice.
+description: Animate Reka UI with CSS transitions, CSS keyframes, native Vue Transition or JavaScript animation library of your choice.
 ---
 
 # Animation
 
 <Description>
-Animate Reka UI with CSS keyframes, native Vue Transition or JavaScript animation library of your choice.
+Animate Reka UI with CSS transitions, CSS keyframes, native Vue Transition or JavaScript animation library of your choice.
 </Description>
 
-Adding animation to Reka UI should feel similar to any other component, but there are some caveats noted here in regards to exiting animations with JS animation libraries.
+Adding animation to Reka UI should feel similar to any other component. Parts that mount and unmount (contents, overlays, indicators, toasts, …) are managed by [Presence](/docs/utilities/presence), which keeps the element in the DOM until its exit transition or animation has finished. There are three ways to animate them:
+
+1. **CSS transitions** (recommended): style the enter and exit states with `data-starting-style` and `data-ending-style`.
+2. **CSS keyframe animations** on `data-state="open"` / `data-state="closed"`.
+3. **JavaScript animation libraries**, which take over mounting with `forceMount` and can listen to `update:openComplete`.
+
+## Animating with CSS transitions
+
+Presence stamps two attributes on the element it manages:
+
+- `data-starting-style` is present for the first frame after the element is mounted (or shown again) by an open. Style the state the element enters *from*.
+- `data-ending-style` is present from the close until every transition and animation on the element has finished. Style the state the element leaves *to*. The element unmounts once they have all finished.
+
+A plain `transition` then animates both phases, including with Tailwind CSS `transition-*` utilities:
+
+```css
+.DialogOverlay,
+.DialogContent {
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+.DialogOverlay[data-starting-style],
+.DialogOverlay[data-ending-style] {
+  opacity: 0;
+}
+
+.DialogContent[data-starting-style],
+.DialogContent[data-ending-style] {
+  opacity: 0;
+  transform: scale(0.95);
+}
+```
+
+```vue
+<DialogContent
+  class="transition duration-200 data-[starting-style]:opacity-0 data-[starting-style]:scale-95 data-[ending-style]:opacity-0 data-[ending-style]:scale-95"
+>
+  …
+</DialogContent>
+```
+
+Because a transition starts from the element's current style, closing while the element is still opening (or reopening while it is closing) reverses the transition from wherever it is, without remounting.
+
+Collapsible and Accordion content measure the panel into `--reka-collapsible-content-height` / `--reka-collapsible-content-width` (and the `--reka-accordion-content-*` aliases), so a height transition is written the same way:
+
+```css
+.CollapsibleContent {
+  overflow: hidden;
+  height: var(--reka-collapsible-content-height);
+  transition: height 300ms ease;
+}
+
+.CollapsibleContent[data-starting-style],
+.CollapsibleContent[data-ending-style] {
+  height: 0;
+}
+```
+
+Presence waits for the transitions and animations of the managed element itself (read with [`element.getAnimations()`](https://developer.mozilla.org/en-US/docs/Web/API/Element/getAnimations)), not for those of its descendants. Infinite animations are not waited for. When nothing is running, for example when a `prefers-reduced-motion` media query turns the transition off, the element unmounts right away.
 
 ## Animating with CSS animation
 
-The simplest way to animate Primitives is with CSS.
-
-You can use CSS animation to animate both mount and unmount phases. The latter is possible because the Reka UI will suspend unmount while your animation plays out.
+You can also use CSS animation to animate both mount and unmount phases. The latter is possible because the Reka UI will suspend unmount while your animation plays out.
 
 ```css
 @keyframes fadeIn {
@@ -134,6 +190,18 @@ import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPor
 Check out this [Stackblitz Demo](https://stackblitz.com/edit/x7y44ngl?file=src%2FApp.vue) 🤩
 
 </Callout>
+
+## Knowing when an animation finished
+
+Every root with an `open` model (`DialogRoot`, `AlertDialogRoot`, `DrawerRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `DropdownMenuRoot`, `ContextMenuRoot`, the `*Sub` menus, `SelectRoot`, `ComboboxRoot`, `AutocompleteRoot`, `DatePickerRoot`, `DateRangePickerRoot`, `CollapsibleRoot` and `ToastRoot`) emits `update:openComplete` once the content's open or close transitions and animations have finished: `true` after opening, `false` after closing (right before the content unmounts). An interrupted change is not reported: closing while still opening only emits `false`.
+
+```vue
+<DialogRoot v-model:open="open" @update:open-complete="(open) => !open && resetForm()">
+  …
+</DialogRoot>
+```
+
+The composables take the same callback as `onOpenComplete` (for example `useDialog({ onOpenComplete })`).
 
 ## Delegating unmounting for JavaScript Animation
 

@@ -646,10 +646,37 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Verify.** The type-check passes. The dev server and the build start without `Failed to resolve import "reka-ui/…"` or `Cannot find module 'reka-ui/…'` errors.
 
+### 25. Exit animations wait for CSS transitions
+
+**What changed.**
+- `Presence` (every content, overlay, indicator and toast) keeps a closing element mounted until all of its own CSS transitions and animations have finished (`element.getAnimations()`); v2 only waited for a changed `animation-name`. Elements with no transition or animation, and keyframe exits, behave as before. Descendants' animations and infinite animations are not waited for.
+- The managed element carries `data-starting-style` for the first frame after an open mounts it and `data-ending-style` from the close until its exit finishes. Neither is rendered without Web Animations (jsdom).
+- Every root with an `open` model emits `update:openComplete` (`true` after the open animations finish, `false` after the close animations finish): `DialogRoot`, `AlertDialogRoot`, `DrawerRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `DropdownMenuRoot`, `DropdownMenuSub`, `ContextMenuRoot`, `ContextMenuSub`, `MenubarSub`, `SelectRoot`, `ComboboxRoot`, `AutocompleteRoot`, `DatePickerRoot`, `DateRangePickerRoot`, `CollapsibleRoot`, `ToastRoot`. The root composables take `onOpenComplete`; the root contexts (`DialogRootContext`, `PopoverRootContext`, `TooltipContext`, `HoverCardRootContext`, `MenuContext`, `SelectRootContext`, `ComboboxRootContext`, `CollapsibleRootContext`) have a new required `notifyOpenComplete(value: boolean)` method.
+- `DrawerRoot`'s `update:openComplete` fires once all popup animations finish (not on the first `transitionend` / `animationend`), also when nothing animates, and after opening as well as closing.
+- `Presence` has a new `appear` prop and a `complete` event; its `after-enter` event fires after the enter transitions finish.
+
+**How to find it.**
+- CSS, Tailwind classes and `cva` / `tailwind-variants` definitions that put a `transition` (`transition`, `transition-*`, `transition-all`, `duration-*`) on a Reka UI content, overlay, viewport, indicator, toast or scrollbar element.
+- Exit animation workarounds: `forceMount` combined with a hand-written `v-if`, `setTimeout` or `transitionend` listener that delays unmounting a Reka UI part; `<Transition>` wrappers around a Reka UI part that only exist to animate its exit.
+- `@update:open-complete` / `onUpdate:openComplete` on `DrawerRoot`.
+- Objects passed to `provideDialogRootContext`, `providePopoverRootContext`, `provideTooltipRootContext`, `provideHoverCardRootContext`, `provideMenuContext`, `provideSelectRootContext`, `provideComboboxRootContext` or `provideCollapsibleRootContext` that are written by hand rather than taken from a composable's `context`.
+- Real-browser tests (Playwright, Cypress, Vitest browser mode) that assert a part is removed right after closing it, and real-browser DOM snapshots of opening or closing parts.
+
+**Rewrite rules.**
+- A `transition` on a part that is meant to animate open and close: leave it, and if the enter or exit state is expressed with `data-state="closed"` or a hand-made class, *ask* whether to move it to `[data-starting-style]` / `[data-ending-style]` (Tailwind: `data-[starting-style]:…` / `data-[ending-style]:…`).
+- A `transition` on a part that is only meant for hover or focus feedback (for example `transition-colors` on a menu content): leave it. The close now waits for any of those transitions that are running, which is at most their duration. *Ask* if the developer wants the content to disappear instantly; then scope the transition to the hovered state.
+- A workaround that delays unmounting by hand: *ask* before replacing it with `data-ending-style` styles, since it may coordinate more than the animation.
+- A `DrawerRoot` `update:openComplete` handler that assumed it fires only after closing: add a check on the emitted value (`if (!value) …`).
+- A hand-written root context object: add `notifyOpenComplete: () => {}` (or forward it to the code that should know about the finished animation).
+- A real-browser test that expects a part to be gone immediately after closing: wait for its removal (`expect.poll`, `vi.waitFor`, `await expect(locator).toBeHidden()`) instead of asserting it synchronously.
+- A real-browser snapshot that now contains `data-starting-style` or `data-ending-style`: take it after the animation settled, or update it.
+
+**Verify.** Open and close each animated part: enter and exit transitions play, and the part leaves the DOM once they end. The type-check passes. jsdom unit tests and their snapshots are unchanged.
+
 ### Report
 
 When you are done, give the developer:
 
 1. The list of files you changed, grouped by the section above that required the change.
-2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, every Splitter handler that ignores keyboard collapses, cancelled structural layout change or `v-model:layout` suggestion from section 22, every `NavigationMenuContent` double-emit compensation or focus-only `interactOutside` handler from section 23, and every alias to a copy without per-component entry points from section 24 that you left unchanged because the rule said to ask, with file and line.
+2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, every Splitter handler that ignores keyboard collapses, cancelled structural layout change or `v-model:layout` suggestion from section 22, every `NavigationMenuContent` double-emit compensation or focus-only `interactOutside` handler from section 23, every alias to a copy without per-component entry points from section 24, and every transition on a part, hover-only transition and hand-written unmount delay from section 25 that you left unchanged because the rule said to ask, with file and line.
 3. The result of the type-check, lint and test commands, compared with the baseline you recorded at the start.

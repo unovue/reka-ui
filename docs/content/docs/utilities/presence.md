@@ -13,11 +13,18 @@ Manages mounting and unmounting of element with transition support.
 
 How is this component different from [Vue Transition](https://vuejs.org/guide/built-ins/transition.html#transition)?
 
-A: The biggest difference is it accepts css animation, and control the visibility of element.
+A: The biggest difference is it waits for whatever CSS transition or animation the element itself runs, without transition classes, and controls the visibility of the element.
 
 </Callout>
 
 Presence component provides enhanced control over element mounting/unmounting. It ensures animations and transitions complete before removing elements from the DOM, making it perfect for animated UI components.
+
+It renders two attributes on its child element, so CSS transitions can animate both phases:
+
+- `data-starting-style` for the first frame after the element is mounted (or shown again) by `present` turning `true`.
+- `data-ending-style` from `present` turning `false` until every transition and animation of the element has finished (read with `element.getAnimations()`); the element then unmounts.
+
+When nothing is running (no transition or animation, or `prefers-reduced-motion` styles that remove them), the element unmounts right away. Infinite animations and animations of descendants are not waited for. In environments without Web Animations (jsdom), no attribute is rendered and changes settle right away.
 
 ## API Reference
 
@@ -35,9 +42,21 @@ Presence component provides enhanced control over element mounting/unmounting. I
     'required': false,
     'default': false
   },
+  {
+    'name': 'appear',
+    'description': '<p>Treat an initial <code>present</code> of <code>true</code> as an open: render the child with <code>data-starting-style</code> on its first frame, like Vue <code>Transition</code> with <code>appear</code>. Without it only a later change to <code>present</code> does.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': false
+  },
 ]" />
 
 <EmitsTable :data="[
+  {
+    'name': 'complete',
+    'description': '<p>Emitted once the enter (<code>true</code>) or exit (<code>false</code>) transitions and animations of the child element have finished; on exit, right before the element unmounts. A change interrupted by another one is not reported.</p>\n',
+    'type': '[present: boolean]'
+  },
   {
     'name': 'enter',
     'description': '<p>Event handler called when the enter animation has started</p>\n',
@@ -67,6 +86,20 @@ Read our [Animation Guide](/docs/guides/animation) to learn more about implement
 </Callout>
 
 ## Example
+
+```vue line=2,4
+<template>
+  <Presence :present="isVisible">
+    <div
+      class="transition-opacity duration-200 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0"
+    >
+      <slot />
+    </div>
+  </Presence>
+</template>
+```
+
+Keyframe animations work too:
 
 ```vue line=2,4,5
 <template>
