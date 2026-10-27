@@ -288,3 +288,27 @@ const hex = computed(() => colorToHex(normalizeColor(color.value))) // [!code ++
 If the app stores a hex string and you accept the precision loss, keep the string and update it from `update:hex`: `:model-value="hex" @update:hex="hex = $event"`. `update:hex` follows every model update, and a move finer than one 8-bit step still updates the model, so it can repeat the same string. Compare against the previous value before doing anything costly with it.
 
 The color utilities changed with the model. `convertToHsl` and `convertToHsb` convert between HSL and HSB directly and keep the hue of a grey, and `getChannelValue` reads `hue` and `saturation` from an HSB color without converting it. `setChannelValues` returns the color in a space that holds every channel it sets, the color's own space when it does: hue and saturation on an HSB color now stay in HSB instead of moving to HSL. The red, green and blue slider gradients use the color's real channel values for HSL and HSB colors instead of a fixed 128, and `parseColor` accepts `hsv()` as documented.
+
+## Template refs on parts
+
+A template ref on a part now exposes the part's element and its documented methods, and nothing else. Every part exposes `element` and `$el`, both backed by the same reactive ref to its rendered DOM element, next to the methods listed in its API reference. See [the element-first ref contract](../utilities/use-forward-expose#the-element-first-ref-contract).
+
+What changed:
+
+- **`$el` needs no migration.** `partRef.value.$el` still returns the part's element. It is now reactive: a `computed` that reads it re-runs when the part's root element changes (a `v-if`, an `as` change, an `asChild` child swap). In v2 it was a snapshot that could point at a removed element. `partRef.value.element` returns the same element.
+- **Props are no longer readable from a part ref.** In v2, `partRef.value.disabled` or `partRef.value.modelValue` returned the part's prop value. This was never documented and is now `undefined`. Read the value from the state you pass to the part. In development, the first such read logs a warning that names the part and the prop.
+- **Methods are no longer forwarded through `as` / `asChild`.** In v2, when a part rendered your component through `as` or `asChild`, the methods your component exposed were also reachable on the part's ref. Put a ref on your own component to call them. The methods a part documents (`validate`, `scrollTop`, `highlightItem`, …) are unchanged.
+- **Components passed to `asChild` should expose `element`.** A component with a single root element works without changes. A component with several root nodes, a root that changes with `v-if`, or a target on an inner element should call `useForwardElement()` and `defineExpose(expose)`, and bind `forwardRef` on the element the part should target. Without it, Reka UI falls back to the component's `$el`, which Vue does not keep up to date.
+- **`useForwardExpose` is deprecated.** It keeps its v2 behavior and logs a one-time warning in development. Replace it with `useForwardElement`, imported from `reka-ui`:
+
+```vue
+<script setup lang="ts">
+import { useForwardElement } from 'reka-ui'
+
+const { forwardRef } = useForwardExpose() // [!code --]
+const { forwardRef, expose } = useForwardElement() // [!code ++]
+defineExpose(expose) // [!code ++]
+</script>
+```
+
+If the component already calls `defineExpose({ ... })`, wrap the object in `mergeExpose(expose, { ... })`.

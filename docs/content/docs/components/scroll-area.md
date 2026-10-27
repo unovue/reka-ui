@@ -111,7 +111,7 @@ The corner where both vertical and horizontal scrollbars meet.
 
 ## Examples
 ### Custom Scroll
-Use the exposed `viewport` to modify / or set the scroll position outside default methods
+Use the exposed `viewport` to modify / or set the scroll position outside default methods. `$el` on the root's template ref is the root element; it is a reactive ref under the hood, so it always points at the element currently rendered (see [the element-first ref contract](../utilities/use-forward-expose#the-element-first-ref-contract)).
 ```vue line=4,18
 <script setup lang="ts">
 import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport } from 'reka-ui'
