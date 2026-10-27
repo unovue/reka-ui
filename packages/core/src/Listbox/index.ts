@@ -30,6 +30,7 @@ export {
 } from './ListboxItemIndicator.vue'
 export {
   injectListboxRootContext,
+  type ListboxModelValue,
   default as ListboxRoot,
   type ListboxRootEmits,
   type ListboxRootProps,
