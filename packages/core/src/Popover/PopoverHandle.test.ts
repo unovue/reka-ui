@@ -246,13 +246,180 @@ describe('popover detached triggers (#2826)', () => {
     expect(await axe(document.body)).toHaveNoViolations()
   })
 
+  it('does not re-render in a loop for an in-tree trigger with an inline function / Date payload', async () => {
+    const handle = createPopoverHandle<{ at: Date, onPick: () => void }>()
+    let renders = 0
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(PopoverRoot, { handle }, {
+        default: ({ payload }: { payload?: { at: Date } }) => {
+          renders++
+          // A fresh object (with a function and a Date) on every slot render.
+          return [
+            h(PopoverTrigger, { id: 'inline', payload: { at: new Date(0), onPick: () => {} } }, () => 'Open'),
+            h(PopoverContent, { 'aria-label': 'Details' }, () => h('p', { 'data-testid': 'payload' }, String(payload?.at.getTime()))),
+          ]
+        },
+      }),
+    }), { attachTo: document.body })
+    cleanup = () => wrapper.unmount()
+
+    document.getElementById('inline')!.click()
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="payload"]')?.textContent).toBe('0'))
+    for (let i = 0; i < 5; i++) await nextTick()
+    expect(renders).toBeLessThan(5)
+  })
+
+  it('follows a trigger whose id changes after mount', async () => {
+    const handle = createPopoverHandle<Item>()
+    const id = ref('first')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('div', [
+        h(PopoverTrigger, { id: id.value, handle, payload: { name: 'Ada' } }, () => 'Ada'),
+        h(PopoverRoot, { handle }, {
+          default: ({ activeTriggerId }: { activeTriggerId: string | null }) =>
+            h(PopoverContent, { 'aria-label': 'Details' }, () => h('p', { 'data-testid': 'active' }, activeTriggerId)),
+        }),
+      ]),
+    }), { attachTo: document.body })
+    cleanup = () => wrapper.unmount()
+
+    document.getElementById('first')!.click()
+    await nextTick()
+    id.value = 'second'
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="active"]')?.textContent).toBe('second'))
+    const trigger = document.getElementById('second')!
+    expect(trigger.getAttribute('aria-expanded')).toBe('true')
+    expect(document.querySelector('[role="dialog"]')!.getAttribute('aria-labelledby')).toBe('second')
+
+    handle.close()
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
+    expect(() => handle.open('first')).toThrow(/no trigger with that id/)
+    handle.open('second')
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('true'))
+  })
+
+  it('joins a handle the Root receives after mount', async () => {
+    const handle = createPopoverHandle<Item>()
+    const rootHandle = ref<PopoverHandle<Item>>()
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('div', [
+        h(PopoverTrigger, { id: 'outer', handle, payload: { name: 'Outer' } }, () => 'Outer'),
+        h(PopoverRoot, { handle: rootHandle.value }, {
+          default: ({ payload }: { payload?: Item }) => [
+            h(PopoverTrigger, { payload: { name: 'Inner' } }, () => 'Inner'),
+            h(PopoverContent, { 'aria-label': 'Details' }, () => h('p', { 'data-testid': 'payload' }, payload?.name)),
+          ],
+        }),
+      ]),
+    }), { attachTo: document.body })
+    cleanup = () => wrapper.unmount()
+    await nextTick()
+    rootHandle.value = handle
+    await nextTick()
+
+    const inner = [...document.querySelectorAll('button')].find(b => b.textContent === 'Inner')!
+    inner.click()
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="payload"]')?.textContent).toBe('Inner'))
+    expect(inner.getAttribute('aria-expanded')).toBe('true')
+    expect(handle.triggers.has(inner.id)).toBe(true)
+    document.getElementById('outer')!.click()
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="payload"]')?.textContent).toBe('Outer'))
+    expect(inner.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('drops aria-labelledby when the active trigger unmounts while open', async () => {
+    const t = mountDetached()
+    cleanup = () => t.wrapper.unmount()
+
+    t.byId('trigger-b').click()
+    await nextTick()
+    expect(t.content()!.getAttribute('aria-labelledby')).toBe('trigger-b')
+    t.showSecond.value = false
+    await vi.waitFor(() => expect(document.getElementById('trigger-b')).toBeNull())
+    expect(t.content()!.hasAttribute('aria-labelledby')).toBe(false)
+  })
+
+  it('does not point at a trigger it never claimed when it starts open with several triggers', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const t = mountDetached({ rootProps: { defaultOpen: true } })
+    cleanup = () => {
+      t.wrapper.unmount()
+      warn.mockRestore()
+    }
+    await nextTick()
+    expect(t.text('active')).toBe('none')
+    expect(t.content()!.hasAttribute('aria-labelledby')).toBe(false)
+    expect(t.byId('trigger-a').getAttribute('aria-expanded')).toBe('false')
+    expect(t.byId('trigger-b').getAttribute('aria-expanded')).toBe('false')
+    await vi.waitFor(() => expect(warn).toHaveBeenCalledWith(expect.stringContaining('without a trigger to anchor to')))
+  })
+
+  it('forgets a closed popover\'s trigger (and its payload) once it unmounts', async () => {
+    const handle = createPopoverHandle<Item>()
+    const show = ref(true)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('div', [
+        show.value ? h(PopoverTrigger, { id: 'gone', handle, payload: { name: 'Gone' } }, () => 'Gone') : null,
+        h(PopoverRoot, { handle }, {
+          default: ({ payload, activeTriggerId }: { payload?: Item, activeTriggerId: string | null }) => [
+            h('output', `${activeTriggerId ?? 'none'}:${payload?.name ?? 'none'}`),
+            h(PopoverContent, { 'aria-label': 'Details' }, () => 'content'),
+          ],
+        }),
+      ]),
+    }), { attachTo: document.body })
+    cleanup = () => wrapper.unmount()
+    const output = () => document.querySelector('output')?.textContent
+
+    document.getElementById('gone')!.click()
+    await vi.waitFor(() => expect(output()).toBe('gone:Gone'))
+    handle.close()
+    await vi.waitFor(() => expect(handle.isOpen).toBe(false))
+    expect(output()).toBe('gone:Gone')
+    show.value = false
+    await vi.waitFor(() => expect(output()).toBe('none:none'))
+  })
+
+  it('a second Root on the handle takes over: the first closes, with a dev warning', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const handle = createPopoverHandle<Item>()
+    const second = ref(false)
+    const root = (name: string) => h(PopoverRoot, { handle }, {
+      default: () => h(PopoverContent, { 'aria-label': name, 'data-root': name }, () => name),
+    })
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('div', [
+        h(PopoverTrigger, { id: 'a', handle }, () => 'A'),
+        root('one'),
+        second.value ? root('two') : null,
+      ]),
+    }), { attachTo: document.body })
+    cleanup = () => {
+      wrapper.unmount()
+      warn.mockRestore()
+    }
+
+    document.getElementById('a')!.click()
+    await vi.waitFor(() => expect(document.querySelector('[data-root="one"]')).not.toBeNull())
+    second.value = true
+    await vi.waitFor(() => expect(document.querySelector('[data-root="one"]')).toBeNull())
+    expect(handle.isOpen).toBe(false)
+    expect(document.getElementById('a')!.getAttribute('aria-expanded')).toBe('false')
+    await vi.waitFor(() => expect(warn).toHaveBeenCalledWith(expect.stringContaining('attached to more than one mounted root')))
+
+    document.getElementById('a')!.click()
+    await vi.waitFor(() => expect(document.querySelector('[data-root="two"]')).not.toBeNull())
+    expect(document.querySelector('[data-root="one"]')).toBeNull()
+  })
+
   it('does not leak state across SSR renders of a module-scope handle', async () => {
     const handle = createPopoverHandle<Item>()
     const App = defineComponent({
       setup: () => () => h('div', [
         h(PopoverTrigger, { id: 'ssr-trigger', handle, payload: { name: 'Ada' } }, () => 'Ada'),
         h(PopoverRoot, { handle, defaultOpen: true }, {
-          default: ({ payload }: { payload?: Item }) => h('span', payload?.name ?? 'none'),
+          default: ({ payload }: { payload?: Item }) =>
+            h(PopoverContent, { 'aria-label': 'Details' }, () => h('span', payload?.name ?? 'none')),
         }),
       ]),
     })
@@ -260,6 +427,9 @@ describe('popover detached triggers (#2826)', () => {
     const second = await renderToString(h(App))
     expect(second).toBe(first)
     expect(first).toContain('aria-expanded="false"')
+    // No dangling ids: nothing labels the content before a trigger registers.
+    expect(first).not.toContain('undefined')
+    expect(first).not.toContain('aria-labelledby')
     expect(handle.isOpen).toBe(false)
     expect(handle.triggers.size).toBe(0)
   })

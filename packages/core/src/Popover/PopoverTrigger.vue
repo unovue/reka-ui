@@ -15,7 +15,7 @@ export interface PopoverTriggerProps<Payload = unknown> extends PrimitiveProps {
 </script>
 
 <script setup lang="ts" generic="Payload = unknown">
-import { computed, onMounted, useAttrs } from 'vue'
+import { computed, onBeforeUpdate, onMounted, shallowRef, useAttrs } from 'vue'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
 import { getPopupRootStore, usePopupHandleTrigger } from '@/shared/popupHandle'
@@ -36,25 +36,32 @@ defineExpose(expose)
 // or its Root's) and derives its own open state, so only the trigger that
 // opened the popover reports `aria-expanded` / `aria-controls`. The shared
 // surface builder runs against that per-trigger view of the context.
-// Only a trigger that joins a handle draws its own id (an extra `useId()` call
-// would shift every later generated id in handle-less trees).
-const triggerId = props.handle || getPopupRootStore(rootContext)?.handle.value
-  ? useId(useAttrs().id as string | undefined, 'reka-popover-trigger')
-  : rootContext!.triggerId
+// Only a trigger that joins a handle at setup draws its own id (an extra
+// `useId()` call would shift every later generated id in handle-less trees);
+// one whose Root gets a `handle` later uses the Root's trigger id. An `id`
+// attribute wins and is tracked across renders.
+const attrs$ = useAttrs()
+const attrId = shallowRef(attrs$.id as string | undefined)
+onBeforeUpdate(() => {
+  attrId.value = attrs$.id as string | undefined
+})
 const detached = usePopupHandleTrigger<Payload>({
   handle: () => props.handle,
   rootContext,
-  id: triggerId,
+  attrId,
+  generatedId: props.handle || getPopupRootStore(rootContext)?.handle.value ? useId(undefined, 'reka-popover-trigger') : undefined,
   element: triggerElement,
   payload: () => props.payload,
 })
 const detachedTrigger = getPopoverTriggerSurface({
-  triggerId,
+  get triggerId() {
+    return detached.id.value
+  },
   get contentId() {
     return detached.contentId.value!
   },
   open: detached.open,
-  onOpenToggle: (reason, event) => detached.store.value?.pressTrigger(triggerId, 'toggle', reason, event) ?? false,
+  onOpenToggle: (reason, event) => detached.store.value?.pressTrigger(detached.id.value, 'toggle', reason, event) ?? false,
 } as Parameters<typeof getPopoverTriggerSurface>[0])
 
 // id/aria/data-state + the toggling `onClick` all come from the shared surface

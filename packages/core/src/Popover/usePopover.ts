@@ -70,7 +70,7 @@ export function getPopoverContentSurface(context: PopoverRootContext): PartSurfa
     () => ({
       'id': context.contentId,
       'role': 'dialog',
-      'aria-labelledby': context.triggerId,
+      'aria-labelledby': context.triggerId || undefined,
     }),
     () => ({ state: disclosureState(context.open.value) }),
   )
@@ -172,7 +172,7 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
     handle: () => toValue(props.handle),
     open,
     setState,
-    contentId: `${baseId}-content`,
+    baseId,
     triggerId: props.triggerId,
     defaultTriggerId: props.defaultTriggerId,
   })
@@ -199,9 +199,13 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
   const ownTriggerId = `${baseId}-trigger`
   const context: PopoverRootContext = {
     triggerElement,
-    // The content's `aria-labelledby` follows the active detached trigger.
+    // With a `handle`, the content's `aria-labelledby` follows the active
+    // trigger while it is mounted, and is dropped (`''`) while no mounted
+    // trigger owns the popover, so it never points at a missing id.
     get triggerId() {
-      return (handleStore.handle.value && handleStore.activeTriggerId.value) || ownTriggerId
+      if (!handleStore.handle.value)
+        return ownTriggerId
+      return handleStore.activeTriggerElement.value ? handleStore.activeTriggerId.value! : ''
     },
     contentId: `${baseId}-content`,
     open,
