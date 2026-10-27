@@ -5,7 +5,7 @@ import type { SelectRootContext } from './SelectRoot.vue'
 import type { ListboxNavigationIntent } from '@/Listbox/useListbox'
 import type { BaseChangeReason, By, ChangeEventDetails, DisclosureState, PartSurface, SelectionState } from '@/shared'
 import type { AcceptableValue, Direction } from '@/shared/types'
-import { computed, isRef, nextTick, onBeforeUnmount, onMounted, ref, toValue, watch, watchEffect } from 'vue'
+import { computed, isRef, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, toValue, watch, watchEffect } from 'vue'
 import { focusFirst } from '@/Menu/utils'
 import {
   createLabelRegistry,
@@ -335,6 +335,7 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
     selectedLabels,
     displayValue,
     getNavigationIntent,
+    virtualTypeaheadItems: shallowRef(undefined),
   }
 
   return {
@@ -395,6 +396,10 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
   // closed content renders nothing, so only items that rendered while open
   // (and registered their text) can be typed to.
   function getTypeaheadItems(): SelectTypeaheadItem<T>[] {
+    // A `SelectVirtualizer` knows every option, rendered or not.
+    const virtualItems = context.virtualTypeaheadItems?.value
+    if (virtualItems)
+      return virtualItems()
     const items = options.getItems?.() ?? []
     if (items.length)
       return items

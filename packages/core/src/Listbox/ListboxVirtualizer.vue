@@ -1,16 +1,18 @@
 <script lang="ts">
 export interface ListboxVirtualizerProps<T extends AcceptableValue = AcceptableValue> {
   /**
-   * List of items, or groups of items (`{ label, options, disabled? }`). Groups
-   * are flattened to rows: a header row rendered by the `group` slot, then the
-   * group's options. Each option is the value of the item the default slot renders.
+   * List of items, or, with `grouped`, groups of items (`{ label, options, disabled? }`).
+   * Groups are flattened to rows: a header row rendered by the `group` slot, then
+   * the group's options. Each option is the value of the item the default slot renders.
    */
   options: T[] | VirtualGroup<T>[]
+  /** When `true`, `options` holds groups (`VirtualGroup`) rather than options. */
+  grouped?: boolean
   /** Number of items rendered outside the visible area */
   overscan?: number
   /** Estimated size (in px) of each item. A function receives the row index (group header rows included). */
   estimateSize?: number | ((index: number) => number)
-  /** Text content for each item, used by typeahead, by the label registry and by a `ListboxRoot` `filter` (which otherwise matches the option's string form) */
+  /** Text content for each item, used by typeahead and by a `ListboxRoot` `filter` (both otherwise use the option's string form). Required for object options. */
   textContent?: (option: T) => string
 }
 </script>
@@ -26,7 +28,7 @@ import { onUnmounted, useSlots, watch, watchSyncEffect } from 'vue'
 import { useCollection } from '@/Collection'
 import { findValuesBetween, getActiveElement, useForwardElement, useId } from '@/shared'
 import { injectListboxRootContext } from './ListboxRoot.vue'
-import { flattenVirtualOptions, useListVirtualizer } from './useListVirtualizer'
+import { useListVirtualizer } from './useListVirtualizer'
 import { compare, queryCheckedElement } from './utils'
 
 const props = defineProps<ListboxVirtualizerProps<T>>()
@@ -59,6 +61,7 @@ rootContext.isVirtual.value = true
 let hasWarnedTextContent = false
 const list = useListVirtualizer<T>({
   options: () => props.options,
+  grouped: () => props.grouped,
   filter: () => {
     if (!rootContext.isFilterActive.value)
       return undefined
@@ -78,16 +81,6 @@ const list = useListVirtualizer<T>({
   idPrefix: useId(undefined, 'reka-listbox-virtualizer'),
 })
 const { options, virtualizer } = list
-
-// The sticky label registry (#2824 item 2) gets every option's text, rendered
-// or not, so a selected value whose row is virtualized away still resolves its
-// label. Without `textContent` only primitive options have a meaningful text.
-watch(() => [props.options, props.textContent] as const, () => {
-  for (const option of flattenVirtualOptions(props.options)) {
-    if (props.textContent || (option !== null && typeof option !== 'object'))
-      rootContext.labels.register(option, list.optionText(option))
-  }
-}, { immediate: true })
 
 // Rows are keyed by index, so a highlighted row is reused for another option
 // once the list is filtered. Before the rows re-render, drop the highlight if

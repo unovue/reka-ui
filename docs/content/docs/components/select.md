@@ -640,9 +640,9 @@ With `multiple`, an item press toggles its value and the content stays open. `v-
 
 ### Virtualized
 
-For a long list (thousands of options), render the items through a `SelectVirtualizer` inside the `SelectViewport`: only the visible window of options is mounted. Each option is the `value` of the `SelectItem` it renders, and `text-content` gives its text for typeahead and for `SelectValue` (needed for object options; a string option is its own text). The virtualizer registers every option's text up front, so the trigger shows the selected value even when its item has never rendered, and the keyboard (arrows, Home/End, typeahead) reaches options outside the rendered window.
+For a long list (thousands of options), render the items through a `SelectVirtualizer` inside the `SelectViewport`: only the visible window of options is mounted. Each option is the `value` of the `SelectItem` it renders, and `text-content` gives its text for typeahead (needed for object options; a string option is its own text). The virtualizer also renders the selected options while the content is closed, so their `SelectItemText` shows in `SelectValue` even when the selected item was never scrolled into view, and the keyboard (arrows, Home/End, typeahead) reaches options outside the rendered window. For object options, set a key `by` (`by="id"`): a function `by` compares values one by one, which gets slow with thousands of options.
 
-`SelectVirtualizer` needs `position="popper"` and a height on the viewport. With the default `item-aligned` position it renders every option without virtualization and warns in development, because item-aligned positioning measures the selected item. Options can also be grouped: pass `{ label, options, disabled? }` groups and render each header through the `group` slot. See the [virtualization guide](../guides/virtualization.md).
+`SelectVirtualizer` needs `position="popper"` and a height on the viewport. With the default `item-aligned` position it renders every option without virtualization and warns in development, because item-aligned positioning measures the selected item. Options can also be grouped: set `grouped`, pass `{ label, options, disabled? }` groups and render each header through the `group` slot. See the [virtualization guide](../guides/virtualization.md).
 
 ```vue
 <script setup lang="ts">

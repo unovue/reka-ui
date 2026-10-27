@@ -7,6 +7,7 @@ import { defineComponent, h, nextTick } from 'vue'
 import { ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot, ComboboxViewport, ComboboxVirtualizer } from '@/Combobox'
 import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot, ListboxVirtualizer } from '.'
 import { injectListboxRootContext } from './ListboxRoot.vue'
+import { flattenVirtualOptions, isGroupedOptions } from './useListVirtualizer'
 
 interface Fruit { id: number, name: string }
 
@@ -59,17 +60,17 @@ const Probe = defineComponent({
   },
 })
 
-function mountListbox(props: { options?: unknown[], filter?: boolean, modelValue?: Fruit } = {}) {
+function mountListbox(props: { options?: unknown[], filter?: boolean, modelValue?: Fruit, by?: unknown } = {}) {
   return mount(defineComponent({
     setup: () => () => h(ListboxRoot, {
-      by: 'id',
+      by: (props.by ?? 'id') as string,
       modelValue: props.modelValue,
       ...(props.filter ? { filter: (text: string, search: string) => text.toLowerCase().includes(search.toLowerCase()) } : {}),
     }, () => [
       h(Probe),
       props.filter ? h(ListboxFilter, { 'aria-label': 'Search' }) : null,
       h(ListboxContent, { 'style': 'height: 400px; overflow: auto', 'aria-label': 'Fruits' }, () =>
-        h(ListboxVirtualizer as any, { options: props.options ?? groups, textContent: (option: Fruit) => option.name }, {
+        h(ListboxVirtualizer as any, { options: props.options ?? groups, grouped: !props.options, textContent: (option: Fruit) => option.name }, {
           default: ({ option }: { option: Fruit }) => h(ListboxItem, { value: option }, () => option.name),
           group: ({ group }: { group: { label: string } }) => h('div', { class: 'group-label' }, group.label),
         })),
@@ -132,27 +133,121 @@ describe('listboxVirtualizer grouped rows', () => {
   })
 })
 
+// #3086 review: the virtualizer registers no label eagerly. Each registration
+// under a function `by` is a linear scan, so registering every option made a
+// 10k-option mount quadratic (about 1 s per mount).
 describe('listboxVirtualizer label registry', () => {
-  it('registers the label of every option, rendered or not', async () => {
+  it('registers only the rendered options', async () => {
     const many = Array.from({ length: 2000 }, (_, i) => fruit(i, `Fruit ${i}`))
     mountListbox({ options: many })
     await flush()
     expect(options().length).toBeLessThan(100)
-    expect(document.querySelector('[aria-posinset="1500"]')).toBeNull()
-    expect(rootContext!.labels.get(fruit(1500, 'ignored by `by`'))).toBe('Fruit 1500')
+    expect(rootContext!.labels.get(fruit(1500, 'ignored by `by`'))).toBeUndefined()
   })
 
-  it('registers primitive options without `textContent`', async () => {
+  it('does not register primitive options as their string form', async () => {
     mount(defineComponent({
       setup: () => () => h(ListboxRoot, null, () => [
         h(Probe),
         h(ListboxContent, () => h(ListboxVirtualizer as any, { options: Array.from({ length: 500 }, (_, i) => `n${i}`) }, {
-          default: ({ option }: { option: string }) => h(ListboxItem, { value: option }, () => option),
+          default: ({ option }: { option: string }) => h(ListboxItem, { value: option }, () => option.toUpperCase()),
         })),
       ]),
     }), { attachTo: document.body })
     await flush()
-    expect((rootContext as unknown as ListboxRootContext<string>).labels.get('n499')).toBe('n499')
+    const labels = (rootContext as unknown as ListboxRootContext<string>).labels
+    expect(labels.get('n499')).toBeUndefined()
+    // A rendered item keeps the label its content registers.
+    expect(labels.get('n0')).toBe('N0')
+  })
+
+  it('mounts 10k options under a function `by` without a quadratic registration', async () => {
+    const many = Array.from({ length: 10000 }, (_, i) => fruit(i, `Fruit ${i}`))
+    const byId = (a: Fruit | undefined, b: Fruit | undefined) => a?.id === b?.id
+    const start = performance.now()
+    const wrapper = mountListbox({ options: many, by: byId })
+    await nextTick()
+    await nextTick()
+    const elapsed = performance.now() - start
+    wrapper.unmount()
+    // ~15 ms without registration, ~1 s with it; generous for slow CI.
+    expect(elapsed).toBeLessThan(400)
+  })
+})
+
+// #3086 review: groups are declared with `grouped`, never sniffed from the shape.
+describe('listboxVirtualizer group detection', () => {
+  const presets = [
+    { label: 'Small', options: [] as string[] },
+    { label: 'Large', options: ['xl'] },
+  ]
+
+  it('treats flat object options with `label` and `options` fields as options', () => {
+    expect(isGroupedOptions(presets)).toBe(false)
+    expect(flattenVirtualOptions(presets)).toHaveLength(2)
+    expect(isGroupedOptions(presets, true)).toBe(true)
+    expect(flattenVirtualOptions(presets, true)).toEqual(['xl'])
+  })
+
+  it('renders such options as option rows without `grouped`', async () => {
+    mount(defineComponent({
+      setup: () => () => h(ListboxRoot, null, () =>
+        h(ListboxContent, { 'aria-label': 'Presets' }, () => h(ListboxVirtualizer as any, { options: presets, textContent: (preset: { label: string }) => preset.label }, {
+          default: ({ option }: { option: { label: string } }) => h(ListboxItem, { value: option }, () => option.label),
+        }))),
+    }), { attachTo: document.body })
+    await flush()
+    expect(headers()).toHaveLength(0)
+    expect(options().map(option => option.textContent)).toEqual(['Small', 'Large'])
+  })
+})
+
+// #3086 review: an option's `aria-describedby` names its group header, which
+// must stay mounted once it scrolls out of the rendered window.
+describe('listboxVirtualizer group headers', () => {
+  const food = [
+    { label: 'Fruits', options: Array.from({ length: 300 }, (_, i) => `Fruit ${i}`) },
+    { label: 'Vegetables', options: Array.from({ length: 300 }, (_, i) => `Veg ${i}`) },
+  ]
+
+  async function mountScrolled() {
+    const scrollTops = new WeakMap<Element, number>()
+    const descriptor = Object.getOwnPropertyDescriptor(window.HTMLElement.prototype, 'scrollTop')
+    Object.defineProperty(window.HTMLElement.prototype, 'scrollTop', {
+      configurable: true,
+      get(this: HTMLElement) { return scrollTops.get(this) ?? 0 },
+      set(this: HTMLElement, value: number) { scrollTops.set(this, value) },
+    })
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ListboxRoot, null, () =>
+        h(ListboxContent, { 'style': 'height: 400px; overflow: auto', 'aria-label': 'Food' }, () =>
+          h(ListboxVirtualizer as any, { options: food, grouped: true, estimateSize: 28 }, {
+            default: ({ option }: { option: string }) => h(ListboxItem, { value: option }, () => option),
+            group: ({ group }: { group: { label: string } }) => h('div', group.label),
+          }))),
+    }), { attachTo: document.body })
+    await flush()
+    const content = document.querySelector<HTMLElement>('[role=listbox]')!
+    content.scrollTop = 150 * 28
+    content.dispatchEvent(new Event('scroll'))
+    await flush()
+    if (descriptor)
+      Object.defineProperty(window.HTMLElement.prototype, 'scrollTop', descriptor)
+    return wrapper
+  }
+
+  it('keeps the header of a group scrolled mid-way mounted', async () => {
+    await mountScrolled()
+    const rendered = options()
+    expect(rendered[0].textContent).not.toBe('Fruit 0')
+    const dangling = rendered.filter(option => !document.getElementById(option.getAttribute('aria-describedby')!))
+    expect(dangling.map(option => option.textContent)).toEqual([])
+    expect(headers().map(header => header.textContent)).toContain('Fruits')
+  })
+
+  it('passes axe mid-group', async () => {
+    const wrapper = await mountScrolled()
+    expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
   })
 })
 
@@ -162,7 +257,7 @@ describe('comboboxVirtualizer grouped rows', () => {
       setup: () => () => h(ComboboxRoot, { open: true, by: 'id' }, () => [
         h(ComboboxInput, { 'aria-label': 'Fruit' }),
         h(ComboboxContent, () => h(ComboboxViewport, { style: 'height: 400px' }, () =>
-          h(ComboboxVirtualizer as any, { options: groups, textContent: (option: Fruit) => option.name }, {
+          h(ComboboxVirtualizer as any, { options: groups, grouped: true, textContent: (option: Fruit) => option.name }, {
             default: ({ option }: { option: Fruit }) => h(ComboboxItem, { value: option }, () => option.name),
             group: ({ group }: { group: { label: string } }) => h('div', group.label),
           }))),

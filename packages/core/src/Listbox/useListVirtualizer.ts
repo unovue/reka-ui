@@ -1,12 +1,12 @@
 import type { VirtualItem, Virtualizer } from '@tanstack/vue-virtual'
 import type { ComputedRef, Ref, VNode } from 'vue'
-import { useVirtualizer } from '@tanstack/vue-virtual'
+import { defaultRangeExtractor, useVirtualizer } from '@tanstack/vue-virtual'
 import { cloneVNode, computed, Fragment, h } from 'vue'
 import { getNextMatch } from '@/shared/useTypeahead'
 
 /**
- * A group of options for a virtualized list (#2824 item 6). Groups are
- * flattened into one row index space: a header row for the group, then a row
+ * A group of options for a virtualized list (#2824 item 6), used when the
+ * virtualizer's `grouped` prop is set. Groups are flattened into one row index space: a header row for the group, then a row
  * per option. Header rows are not options: navigation, typeahead, select-all
  * and range selection skip them, and `aria-setsize` / `aria-posinset` count
  * options only.
@@ -32,6 +32,12 @@ export interface ListVirtualizerSlots<T> {
 export interface UseListVirtualizerOptions<T> {
   /** Flat options, or groups of options. */
   options: () => T[] | VirtualGroup<T>[]
+  /**
+   * `true` when `options` holds `VirtualGroup`s. Explicit rather than sniffed
+   * from the shape, so flat object options that happen to have `label` and
+   * `options` fields stay options.
+   */
+  grouped?: () => boolean | undefined
   /** Keeps an option when it returns `true`; a group left with no option is dropped. */
   filter?: () => ((option: T, text: string) => boolean) | undefined
   /** Text of an option, for typeahead, filtering and the label registry. */
@@ -51,14 +57,17 @@ export function isVirtualGroup<T>(entry: unknown): entry is VirtualGroup<T> {
     && typeof (entry as VirtualGroup<T>).label === 'string'
 }
 
-/** `true` when every entry is a `VirtualGroup` (an empty list is flat). */
-export function isGroupedOptions<T>(options: T[] | VirtualGroup<T>[]): options is VirtualGroup<T>[] {
-  return options.length > 0 && options.every(entry => isVirtualGroup<T>(entry))
+/**
+ * `true` when the list is declared `grouped` and every entry is a
+ * `VirtualGroup`. The shape alone never makes a list grouped.
+ */
+export function isGroupedOptions<T>(options: T[] | VirtualGroup<T>[], grouped = false): options is VirtualGroup<T>[] {
+  return grouped && options.every(entry => isVirtualGroup<T>(entry))
 }
 
-/** Every option of `options`, groups flattened. */
-export function flattenVirtualOptions<T>(options: T[] | VirtualGroup<T>[]): T[] {
-  return isGroupedOptions(options) ? options.flatMap(group => group.options) : options as T[]
+/** Every option of `options`, groups flattened when `grouped`. */
+export function flattenVirtualOptions<T>(options: T[] | VirtualGroup<T>[], grouped = false): T[] {
+  return isGroupedOptions(options, grouped) ? options.flatMap(group => group.options) : options as T[]
 }
 
 /**
@@ -83,7 +92,7 @@ export function useListVirtualizer<T>(options: UseListVirtualizerOptions<T>) {
     const keep = (option: T) => !filter || filter(option, optionText(option))
     const result: ListVirtualizerRow<T>[] = []
     let optionIndex = 0
-    if (isGroupedOptions(source)) {
+    if (isGroupedOptions(source, options.grouped?.() ?? false)) {
       source.forEach((group, groupIndex) => {
         const kept = group.options.filter(keep)
         if (!kept.length)
@@ -107,6 +116,17 @@ export function useListVirtualizer<T>(options: UseListVirtualizerOptions<T>) {
   const flatOptions = computed(() => rows.value.flatMap(row => row.type === 'option' ? [row.option] : []))
   /** Row index of each option index. */
   const optionRowIndex = computed(() => rows.value.flatMap((row, index) => row.type === 'option' ? [index] : []))
+  /** For each row, the row index of its group header (`-1` outside a group and for headers). */
+  const headerRowIndex = computed(() => {
+    let header = -1
+    return rows.value.map((row, index) => {
+      if (row.type === 'group') {
+        header = index
+        return -1
+      }
+      return row.groupId ? header : -1
+    })
+  })
 
   const padding = computed(() => {
     const el = options.scrollElement.value
@@ -132,6 +152,20 @@ export function useListVirtualizer<T>(options: UseListVirtualizerOptions<T>) {
     },
     getScrollElement() { return options.scrollElement.value ?? null },
     overscan: options.overscan() ?? 12,
+    // Keep the header row of every rendered option's group mounted, so the
+    // option's `aria-describedby` always resolves, also mid-group once the
+    // header itself has scrolled out of the window.
+    rangeExtractor(range) {
+      const indexes = defaultRangeExtractor(range)
+      const headers = headerRowIndex.value
+      const extra = new Set<number>()
+      for (const index of indexes) {
+        const header = headers[index] ?? -1
+        if (header !== -1 && header < range.startIndex - range.overscan)
+          extra.add(header)
+      }
+      return extra.size ? [...extra].sort((a, b) => a - b).concat(indexes) : indexes
+    },
   })
 
   function rowIndexOfOption(optionIndex: number) {

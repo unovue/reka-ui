@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { ComputedRef, Ref } from 'vue'
-import type { SelectChangeReason, SelectModelValue, SelectNavigationIntent, SelectOpenChangeReason } from './useSelect'
+import type { ComputedRef, Ref, ShallowRef } from 'vue'
+import type { SelectChangeReason, SelectModelValue, SelectNavigationIntent, SelectOpenChangeReason, SelectTypeaheadItem } from './useSelect'
 import type { BaseChangeReason, By, ChangeEventDetails, LabelRegistry } from '@/shared'
 import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
 import { useCollection } from '@/Collection'
@@ -96,6 +96,12 @@ export interface SelectRootContext<T = AcceptableValue> {
   displayValue: Ref<((value: T) => string) | undefined>
   /** The root's `getNavigationIntent` over the default mapping. */
   getNavigationIntent: (event: KeyboardEvent) => SelectNavigationIntent | null | undefined
+  /**
+   * Set by a mounted `SelectVirtualizer`: every option with its typeahead text,
+   * rendered or not, for the closed trigger's typeahead. Read lazily, so a long
+   * list costs nothing until a key is typed.
+   */
+  virtualTypeaheadItems?: ShallowRef<(() => SelectTypeaheadItem<T>[]) | undefined>
 }
 
 export const [injectSelectRootContext, provideSelectRootContext]

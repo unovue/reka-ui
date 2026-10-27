@@ -105,6 +105,7 @@ const itemClass = 'text-[13px] leading-none text-violet11 rounded-[3px] flex ite
             <SelectViewport class="p-[5px] max-h-72">
               <SelectVirtualizer
                 :options="groupedCountries"
+                grouped
                 :estimate-size="25"
               >
                 <template #group="{ group }">

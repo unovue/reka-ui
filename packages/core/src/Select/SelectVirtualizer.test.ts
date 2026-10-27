@@ -2,8 +2,9 @@ import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { SelectContent, SelectItem, SelectItemText, SelectRoot, SelectTrigger, SelectValue, SelectViewport, SelectVirtualizer } from '.'
+import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { getScrollStep } from './utils'
 
 interface Fruit { id: number, name: string }
@@ -53,12 +54,12 @@ afterAll(() => {
   window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
 })
 
-function mountSelect(rootProps: Record<string, unknown> = {}, contentProps: Record<string, unknown> = { position: 'popper' }, options: unknown[] = fruits) {
+function mountSelect(rootProps: Record<string, unknown> = {}, contentProps: Record<string, unknown> = { position: 'popper' }, options: unknown[] = fruits, grouped = false) {
   return mount(defineComponent({
     setup: () => () => h(SelectRoot, { by: 'id', ...rootProps }, () => [
       h(SelectTrigger, { 'aria-label': 'Fruit' }, () => h(SelectValue, { placeholder: 'Pick a fruit' })),
       h(SelectContent, contentProps, () => h(SelectViewport, { style: 'height: 200px' }, () =>
-        h(SelectVirtualizer as any, { options, textContent: (fruit: Fruit) => fruit.name }, {
+        h(SelectVirtualizer as any, { options, grouped, textContent: (fruit: Fruit) => fruit.name }, {
           default: ({ option }: { option: Fruit }) => h(SelectItem, { value: option }, () => h(SelectItemText, () => option.name)),
           group: ({ group }: { group: { label: string } }) => h('div', { class: 'group-label' }, group.label),
         }))),
@@ -167,7 +168,7 @@ describe('selectVirtualizer', () => {
     ]
 
     it('renders header rows and counts options only', async () => {
-      mountSelect({ open: true }, { position: 'popper' }, groups)
+      mountSelect({ open: true }, { position: 'popper' }, groups, true)
       await flush()
       const headers = [...document.querySelectorAll<HTMLElement>('[data-reka-virtualizer-group]')]
       expect(headers.map(header => header.textContent)).toEqual(['Red', 'Green'])
@@ -182,7 +183,7 @@ describe('selectVirtualizer', () => {
     })
 
     it('passes axe', async () => {
-      const wrapper = mountSelect({ open: true }, { position: 'popper' }, groups)
+      const wrapper = mountSelect({ open: true }, { position: 'popper' }, groups, true)
       await flush()
       expect(await axe(wrapper.element.ownerDocument.body)).toHaveNoViolations()
     })
@@ -192,6 +193,100 @@ describe('selectVirtualizer', () => {
     const wrapper = mountSelect({ open: true })
     await flush()
     expect(await axe(wrapper.element.ownerDocument.body)).toHaveNoViolations()
+  })
+
+  // #3086 review: primitive options without `textContent` registered their
+  // string form, overwriting the `SelectItemText` label.
+  describe('the label of a primitive option', () => {
+    const produce = ['apple', 'banana', 'cherry']
+    const label = (value: string) => value[0].toUpperCase() + value.slice(1)
+
+    function mountPrimitive(options: { value: string[] }, open?: { value: boolean }) {
+      return mount(defineComponent({
+        setup: () => () => h(SelectRoot, { defaultValue: 'banana', ...(open ? { 'open': open.value, 'onUpdate:open': (value: boolean) => { open.value = value } } : {}) }, () => [
+          h(SelectTrigger, { 'aria-label': 'Fruit' }, () => h(SelectValue, { placeholder: 'Pick' })),
+          h(SelectContent, { position: 'popper' }, () => h(SelectViewport, { style: 'height: 200px' }, () =>
+            h(SelectVirtualizer as any, { options: options.value }, {
+              default: ({ option }: { option: string }) => h(SelectItem, { value: option }, () => h(SelectItemText, () => label(option))),
+            }))),
+        ]),
+      }), { attachTo: document.body })
+    }
+
+    it('is the `SelectItemText` while closed', async () => {
+      const wrapper = mountPrimitive(ref(produce))
+      await flush()
+      expect(wrapper.find('[role=combobox]').text()).toBe('Banana')
+    })
+
+    it('stays the `SelectItemText` when `options` is replaced by an equal array', async () => {
+      const list = ref([...produce])
+      const wrapper = mountPrimitive(list, ref(true))
+      await flush()
+      await flush()
+      expect(options()).toHaveLength(3)
+      expect(wrapper.find('[role=combobox]').text()).toBe('Banana')
+      list.value = [...produce]
+      await flush()
+      expect(wrapper.find('[role=combobox]').text()).toBe('Banana')
+    })
+  })
+
+  // #3086 review: a function `by` makes each label registration a linear scan;
+  // registering every option made a 10k-option Select quadratic.
+  it('mounts and opens 10k options under a function `by` without a quadratic registration', async () => {
+    const many = Array.from({ length: 10000 }, (_, i) => ({ id: i, name: `Item ${i}` }))
+    const open = ref(false)
+    const start = performance.now()
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('form', [h(SelectRoot, { 'by': (a: any, b: any) => a?.id === b?.id, 'name': 'item', 'defaultValue': many[5000], 'open': open.value, 'onUpdate:open': (value: boolean) => { open.value = value } }, () => [
+        h(SelectTrigger, { 'aria-label': 'Item' }, () => h(SelectValue)),
+        h(SelectContent, { position: 'popper' }, () => h(SelectViewport, { style: 'height: 200px' }, () =>
+          h(SelectVirtualizer as any, { options: many, textContent: (item: Fruit) => item.name }, {
+            default: ({ option }: { option: Fruit }) => h(SelectItem, { value: option }, () => h(SelectItemText, () => option.name)),
+          }))),
+      ])]),
+    }), { attachTo: document.body })
+    await flush()
+    expect(wrapper.find('[role=combobox]').text()).toBe('Item 5000')
+    open.value = true
+    await flush()
+    open.value = false
+    await flush()
+    const elapsed = performance.now() - start
+    wrapper.unmount()
+    // ~0.1 s without eager registration, several seconds with it; generous for slow CI.
+    expect(elapsed).toBeLessThan(1500)
+  })
+
+  // #3086 review: the virtualizer replaces the content's `focusSelectedItem`.
+  it('restores the content `focusSelectedItem` when it unmounts', async () => {
+    let contentContext: ReturnType<typeof injectSelectContentContext> | undefined
+    const Probe = defineComponent({
+      setup() {
+        contentContext = injectSelectContentContext()
+        return () => null
+      },
+    })
+    const virtual = ref(true)
+    mount(defineComponent({
+      setup: () => () => h(SelectRoot, { open: true, by: 'id' }, () => [
+        h(SelectTrigger, { 'aria-label': 'Fruit' }, () => h(SelectValue)),
+        h(SelectContent, { position: 'popper' }, () => h(SelectViewport, { style: 'height: 200px' }, () => [
+          h(Probe),
+          virtual.value
+            ? h(SelectVirtualizer as any, { options: fruits.slice(0, 20), textContent: (fruit: Fruit) => fruit.name }, {
+                default: ({ option }: { option: Fruit }) => h(SelectItem, { value: option }, () => h(SelectItemText, () => option.name)),
+              })
+            : null,
+        ])),
+      ]),
+    }), { attachTo: document.body })
+    await flush()
+    const replaced = contentContext!.focusSelectedItem
+    virtual.value = false
+    await flush()
+    expect(contentContext!.focusSelectedItem).not.toBe(replaced)
   })
 })
 

@@ -163,6 +163,7 @@ const groupedOptions = Array.from(byLetter, ([letter, countries]) => ({
           <ListboxContent class="w-full h-64 overflow-auto">
             <ListboxVirtualizer
               :options="groupedOptions"
+              grouped
               :text-content="(option) => option.label"
             >
               <template #group="{ group }">

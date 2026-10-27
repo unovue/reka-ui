@@ -34,7 +34,8 @@ All virtualizer ([Combobox](/docs/components/combobox#virtualizer), [Listbox](/d
 - Custom item rendering: Flexibility to render complex item structures
 - `estimateSize`: Set estimate item heights for static or dynamic item
 - `overscan`: Control the number of items rendered outside the visible area
-- `textContent`: Text content for each item to achieve type-ahead feature. The Combobox, Listbox and Select virtualizers also register it as the option's label, so a selected value whose item never rendered still shows its text
+- `textContent`: Text content for each item, used by type-ahead and by the root's `filter`. Required for object options; a primitive option otherwise uses its string form. It is not registered as the option's label: `SelectVirtualizer` renders the selected option's `SelectItemText` (even while closed) for `SelectValue`
+- `by` on the root: for long lists of object options, use a key (`by="id"`). A function `by` compares values one by one, so every lookup of a value walks the list
 - Grouped options (Combobox, Listbox and Select): see [Grouped options](#grouped-options)
 
 ## Usage
@@ -80,10 +81,10 @@ const items = [
 
 ## Grouped options
 
-`ComboboxVirtualizer`, `ListboxVirtualizer` and `SelectVirtualizer` accept groups instead of a flat list: an array of `{ label, options, disabled? }` objects (the `VirtualGroup` type). The groups are flattened into one list of rows, a header row per group followed by its options, so headers scroll with the list and are virtualized like any other row. Render a header through the `group` slot (without one, the label renders in a plain `div`).
+`ComboboxVirtualizer`, `ListboxVirtualizer` and `SelectVirtualizer` accept groups instead of a flat list: set `grouped` and pass an array of `{ label, options, disabled? }` objects (the `VirtualGroup` type). Without `grouped`, `options` is always a flat list, so object options that happen to have `label` and `options` fields stay options. The groups are flattened into one list of rows, a header row per group followed by its options, so headers scroll with the list and are virtualized like any other row. Render a header through the `group` slot (without one, the label renders in a plain `div`).
 
 - Header rows are not options: arrow keys, Home/End, typeahead, select-all and range selection skip them, and `aria-setsize` / `aria-posinset` count options only.
-- Each option is described by its group's header (`aria-describedby`), and a group with `disabled: true` disables its options.
+- Each option is described by its group's header (`aria-describedby`), and a group with `disabled: true` disables its options. The header of every rendered option's group stays mounted, also once it has scrolled out of the window, so the description always resolves.
 - With a filter, a group with no matching option is dropped.
 - A function `estimateSize` receives the row index, header rows included.
 
@@ -100,7 +101,7 @@ const groups = [
 <template>
   <ListboxRoot>
     <ListboxContent class="h-72 overflow-auto">
-      <ListboxVirtualizer :options="groups">
+      <ListboxVirtualizer :options="groups" grouped>
         <template #group="{ group }">
           <div class="text-xs font-semibold">
             {{ group.label }}

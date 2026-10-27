@@ -4,15 +4,21 @@ import type { AcceptableValue } from '@/shared/types'
 
 export interface SelectVirtualizerProps<T extends AcceptableValue = AcceptableValue> {
   /**
-   * List of items, or groups of items (`{ label, options, disabled? }`). Each
-   * option is the `value` of the `SelectItem` the default slot renders.
+   * List of items, or, with `grouped`, groups of items (`{ label, options, disabled? }`).
+   * Each option is the `value` of the `SelectItem` the default slot renders.
    */
   options: T[] | VirtualGroup<T>[]
+  /** When `true`, `options` holds groups (`VirtualGroup`) rather than options. */
+  grouped?: boolean
   /** Number of items rendered outside the visible area */
   overscan?: number
   /** Estimated size (in px) of each item. A function receives the row index (group header rows included). */
   estimateSize?: number | ((index: number) => number)
-  /** Text content for each item, used by typeahead and by `SelectValue` while the item is not rendered. Required for object options. */
+  /**
+   * Text content for each item, used by typeahead (open, and on the closed trigger). Required for object options;
+   * primitive options otherwise use their string form. `SelectValue` always shows the `SelectItemText` of the
+   * selected item, rendered or not.
+   */
   textContent?: (option: T) => string
 }
 </script>
@@ -23,7 +29,7 @@ import type { Ref, VNode } from 'vue'
 import { useParentElement } from '@vueuse/core'
 import { cloneVNode, computed, Fragment, h, onUnmounted, useSlots, watch } from 'vue'
 import { useCollection } from '@/Collection'
-import { isGroupedOptions, useListVirtualizer } from '@/Listbox/useListVirtualizer'
+import { useListVirtualizer } from '@/Listbox/useListVirtualizer'
 import { compare, getActiveElement, useForwardElement, useId } from '@/shared'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
@@ -50,8 +56,9 @@ const parentEl = useParentElement() as Ref<HTMLElement | undefined>
 const { getItems } = useCollection()
 
 // Closed, the content renders its items into a detached fragment only so they
-// register their labels; the virtualizer registers every label itself (below)
-// and renders no row there.
+// register their labels. Here that is only the selected options (below): their
+// `SelectItemText` registers the real label for `SelectValue` and the native
+// select, without registering (or rendering) every option of a long list.
 const isOpenContent = computed(() => !!contentContext.content)
 // Virtualization needs a scroll container the content does not resize to its
 // items: `position="popper"`. Item-aligned positioning measures the selected
@@ -63,6 +70,7 @@ if (process.env.NODE_ENV !== 'production' && isOpenContent.value && contentConte
 
 const list = useListVirtualizer<T>({
   options: () => props.options,
+  grouped: () => props.grouped,
   textContent: () => props.textContent,
   estimateSize: () => props.estimateSize,
   overscan: () => props.overscan,
@@ -71,24 +79,39 @@ const list = useListVirtualizer<T>({
 })
 const { options, virtualizer } = list
 
-// The sticky label registry (#2824 item 2): every option's text, rendered or
-// not, so `SelectValue`, the native select and the closed-trigger typeahead
-// know every option. Without `textContent` only primitive options have a
-// meaningful text. A rendered `SelectItemText` overwrites its entry.
-watch(() => [props.options, props.textContent] as const, () => {
-  const source = props.options
-  const register = (option: T, disabled = false) => {
-    if (props.textContent || (option !== null && typeof option !== 'object'))
-      rootContext.labels.register(option, list.optionText(option), disabled)
-  }
-  if (isGroupedOptions(source)) {
-    for (const group of source)
-      group.options.forEach(option => register(option, !!group.disabled))
-  }
-  else {
-    (source as T[]).forEach(option => register(option))
-  }
-}, { immediate: true })
+// The closed trigger's typeahead reaches every option, rendered or not. It is a
+// lazy getter: nothing walks `options` until a key is typed, and no label is
+// registered eagerly (a function `by` makes each registration a linear scan).
+function typeaheadItems() {
+  return list.rows.value.flatMap(row => row.type === 'option'
+    ? [{ value: row.option as AcceptableValue, textValue: list.optionText(row.option), disabled: !!row.group?.disabled }]
+    : [])
+}
+const typeaheadSource = rootContext.virtualTypeaheadItems
+if (typeaheadSource)
+  typeaheadSource.value = typeaheadItems
+onUnmounted(() => {
+  if (typeaheadSource?.value === typeaheadItems)
+    typeaheadSource.value = undefined
+})
+
+// Closed: render the selected options only, so their `SelectItemText`
+// registers the label `SelectValue` shows.
+const selectedRows = computed(() => {
+  if (isOpenContent.value)
+    return []
+  const value = rootContext.modelValue.value
+  const selected = (Array.isArray(value) ? value : value === undefined || value === null ? [] : [value]) as T[]
+  if (!selected.length)
+    return []
+  return list.rows.value.flatMap((row, index) => {
+    if (row.type !== 'option' || !selected.some(v => compare(row.option, v, rootContext.by)))
+      return []
+    const virtualItem = { index, key: index, start: 0, end: 0, size: 0, lane: 0 } as VirtualItem
+    const node = firstNode(slots.default?.({ option: row.option, virtualizer: virtualizer.value, virtualItem }))
+    return node ? [{ key: index, is: node }] : []
+  })
+})
 
 const virtualRows = list.renderRows(slots as any)
 
@@ -194,9 +217,16 @@ function onVirtualKeydown(event: KeyboardEvent, intent: string | null | undefine
   return false
 }
 
+// The content's own `focusSelectedItem`, restored on unmount.
+let originalFocusSelectedItem: (() => void) | undefined
+let replacedFocusSelectedItem = false
 watch(isVirtual, (virtual) => {
   if (virtual) {
     contentContext.onVirtualKeydown = onVirtualKeydown
+    if (!replacedFocusSelectedItem) {
+      originalFocusSelectedItem = contentContext.focusSelectedItem
+      replacedFocusSelectedItem = true
+    }
     contentContext.focusSelectedItem = focusSelected
   }
 }, { immediate: true })
@@ -204,6 +234,8 @@ watch(isVirtual, (virtual) => {
 onUnmounted(() => {
   if (contentContext.onVirtualKeydown === onVirtualKeydown)
     contentContext.onVirtualKeydown = undefined
+  if (replacedFocusSelectedItem && contentContext.focusSelectedItem === focusSelected)
+    contentContext.focusSelectedItem = originalFocusSelectedItem
 })
 
 const { forwardRef, expose } = useForwardElement()
@@ -231,6 +263,13 @@ defineExpose(expose)
     <component
       :is="is"
       v-for="{ is, key } in flatRows"
+      :key="key"
+    />
+  </template>
+  <template v-else>
+    <component
+      :is="is"
+      v-for="{ is, key } in selectedRows"
       :key="key"
     />
   </template>
