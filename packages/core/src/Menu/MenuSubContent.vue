@@ -43,7 +43,11 @@ menuSubContext.contentId ||= useId(undefined, 'reka-menu-sub-content')
 </script>
 
 <template>
-  <Presence :present="forceMount || menuContext.open.value">
+  <Presence
+    :present="menuContext.open.value"
+    :force-mount="forceMount"
+    @complete="menuContext.notifyOpenComplete"
+  >
     <MenuContentImpl
       v-bind="forwarded"
       :id="menuSubContext.contentId"

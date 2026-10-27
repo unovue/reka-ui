@@ -59,6 +59,7 @@ const { open, context, menuContext, menuRootContext } = useDropdownMenu({
   modal,
   baseId: useId(undefined, 'reka-dropdown-menu'),
   emit,
+  onOpenComplete: value => emit('update:openComplete', value),
 })
 
 provideMenuContext(menuContext)

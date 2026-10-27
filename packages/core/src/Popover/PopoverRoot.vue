@@ -39,6 +39,8 @@ export type PopoverRootEmits = {
    * Event handler called when the open state of the popover changes.
    */
   'update:open': [value: boolean, details: ChangeEventDetails<PopoverOpenChangeReason>]
+  /** Event handler called after the open or close animations of the content have finished. */
+  'update:openComplete': [value: boolean]
 }
 
 export interface PopoverRootContext {
@@ -52,6 +54,8 @@ export interface PopoverRootContext {
   /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
   onOpenToggle: (reason?: PopoverOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   hasCustomAnchor: Ref<boolean>
+  /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
+  notifyOpenComplete: (value: boolean) => void
 }
 
 export const [injectPopoverRootContext, providePopoverRootContext]
@@ -88,6 +92,7 @@ const { open, onOpenChange, context } = usePopover({
   modal: () => props.modal,
   baseId: useId(undefined, 'reka-popover'),
   emit,
+  onOpenComplete: value => emit('update:openComplete', value),
 })
 
 providePopoverRootContext(context)

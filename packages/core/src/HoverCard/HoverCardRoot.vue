@@ -32,6 +32,8 @@ export type HoverCardRootEmits = {
   'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<HoverCardOpenChangeReason>]
   /** Event handler called when the open state of the hover card changes. */
   'update:open': [value: boolean, details: ChangeEventDetails<HoverCardOpenChangeReason>]
+  /** Event handler called after the open or close animations of the content have finished. */
+  'update:openComplete': [value: boolean]
 }
 
 export interface HoverCardRootContext {
@@ -56,6 +58,8 @@ export interface HoverCardRootContext {
   isPointerInTransitRef: Ref<boolean>
   triggerElement: Ref<HTMLElement | undefined>
   enableTouch: Ref<boolean>
+  /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
+  notifyOpenComplete: (value: boolean) => void
 }
 
 export const [injectHoverCardRootContext, provideHoverCardRootContext]
@@ -93,6 +97,7 @@ const { open, context } = useHoverCard({
   closeDelay: () => props.closeDelay,
   enableTouch: () => props.enableTouch,
   emit,
+  onOpenComplete: value => emit('update:openComplete', value),
 })
 
 provideHoverCardRootContext(context)

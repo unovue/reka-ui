@@ -72,6 +72,8 @@ export type TooltipRootEmits = {
   'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<TooltipOpenChangeReason>]
   /** Event handler called when the open state of the tooltip changes. */
   'update:open': [value: boolean, details: ChangeEventDetails<TooltipOpenChangeReason>]
+  /** Event handler called after the open or close animations of the content have finished. */
+  'update:openComplete': [value: boolean]
 }
 
 export interface TooltipContext {
@@ -102,6 +104,8 @@ export interface TooltipContext {
   disableClosingTrigger: Ref<boolean>
   disabled: Ref<boolean>
   ignoreNonKeyboardFocus: Ref<boolean>
+  /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
+  notifyOpenComplete: (value: boolean) => void
 }
 
 export const [injectTooltipRootContext, provideTooltipRootContext]
@@ -156,6 +160,7 @@ const { open, context } = useTooltip({
   ignoreNonKeyboardFocus: () => props.ignoreNonKeyboardFocus ?? providerContext.ignoreNonKeyboardFocus.value,
   baseId: useId(undefined, 'reka-tooltip'),
   emit,
+  onOpenComplete: value => emit('update:openComplete', value),
 })
 
 // Provider coordination stays in the shell: an open arms the provider's

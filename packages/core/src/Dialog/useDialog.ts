@@ -143,6 +143,12 @@ export interface UseDialogProps {
   onBeforeUpdate?: (value: boolean, details: ChangeEventDetails<DialogOpenChangeReason>) => void
   /** Called after a change commits. */
   onUpdate?: (value: boolean, details: ChangeEventDetails<DialogOpenChangeReason>) => void
+  /**
+   * Called once the content's open (`true`) or close (`false`) transitions and
+   * animations have finished (`update:openComplete`), reported by `DialogContent`'s
+   * `Presence` through `context.notifyOpenComplete`.
+   */
+  onOpenComplete?: (value: boolean) => void
 }
 
 export interface UseDialogReturn {
@@ -223,6 +229,7 @@ export function useDialog(props: UseDialogProps = {}): UseDialogReturn {
     contentId: `${baseId}-content`,
     titleId: `${baseId}-title`,
     descriptionId: `${baseId}-description`,
+    notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
 
   return {

@@ -36,7 +36,9 @@ function handlePointerEnter(event: PointerEvent) {
 
 <template>
   <Presence
-    :present="forceMount || rootContext.open.value"
+    :present="rootContext.open.value"
+    :force-mount="forceMount"
+    @complete="rootContext.notifyOpenComplete"
   >
     <HoverCardContentImpl
       v-bind="forwarded"

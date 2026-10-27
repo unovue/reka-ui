@@ -34,6 +34,11 @@
     'name': 'update:open',
     'description': '<p>Event handler called when the open state of the popover changes.</p>\n',
     'type': '[value: boolean, details: ChangeEventDetails&lt;PopoverOpenChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'update:openComplete',
+    'description': '<p>Event handler called after the open or close animations of the content have finished.</p>\n',
+    'type': '[value: boolean]'
   }
 ]" />
 
@@ -67,6 +72,7 @@
 | --- | --- | --- |
 | `beforeUpdate:open` | Event handler called before the open state of the popover changes; details.cancel() keeps the current state. | `[value: boolean, details: ChangeEventDetails<PopoverOpenChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the popover changes. | `[value: boolean, details: ChangeEventDetails<PopoverOpenChangeReason, Event>]` |
+| `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 
 **Slots**
 

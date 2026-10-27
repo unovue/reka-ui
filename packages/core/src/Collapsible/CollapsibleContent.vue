@@ -18,6 +18,7 @@ export type CollapsibleContentEmits = {
 import { useEventListener } from '@vueuse/core'
 import { computed, mergeProps, nextTick, onMounted, ref, watch } from 'vue'
 import { Presence } from '@/Presence'
+import { ENDING_STYLE_ATTR, STARTING_STYLE_ATTR } from '@/Presence/usePresence'
 import {
   Primitive,
 } from '@/Primitive'
@@ -35,6 +36,9 @@ const emits = defineEmits<CollapsibleContentEmits>()
 const rootContext = injectCollapsibleRootContext()
 rootContext.contentId ||= useId(undefined, 'reka-collapsible-content')
 
+const HEIGHT_VAR = '--reka-collapsible-content-height'
+const WIDTH_VAR = '--reka-collapsible-content-width'
+
 const presentRef = ref<InstanceType<typeof Presence>>()
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
@@ -42,7 +46,9 @@ defineExpose(expose)
 const width = ref(0)
 const height = ref(0)
 const surface = getCollapsibleContentSurface(rootContext, {
-  present: () => presentRef.value?.present ?? Boolean(props.forceMount || rootContext.open.value),
+  // `forceMount` keeps the content shown; Presence still tracks the open state
+  // so `update:openComplete` is reported either way.
+  present: () => props.forceMount || (presentRef.value?.present ?? rootContext.open.value),
   width,
   height,
 })
@@ -68,10 +74,36 @@ watch(
     node.style.transitionDuration = '0s'
     node.style.animationName = 'none'
 
+    // Measure the natural size (#2827): a transition-based panel sizes itself
+    // from the CSS variables (`height: var(--reka-collapsible-content-height)`)
+    // and collapses through `data-starting-style` / `data-ending-style`, so
+    // neither may apply while measuring.
+    const lifecycleAttributes = [STARTING_STYLE_ATTR, ENDING_STYLE_ATTR].filter(name => node.hasAttribute(name))
+    lifecycleAttributes.forEach(name => node.removeAttribute(name))
+    node.style.setProperty(HEIGHT_VAR, 'auto')
+    node.style.setProperty(WIDTH_VAR, 'auto')
+
     // get width and height from full dimensions
     const rect = node.getBoundingClientRect()
     height.value = rect.height
     width.value = rect.width
+
+    node.style.setProperty(HEIGHT_VAR, `${rect.height}px`)
+    node.style.setProperty(WIDTH_VAR, `${rect.width}px`)
+    if (lifecycleAttributes.length) {
+      // Settle the styles once more with transitions still off, so the
+      // transition does not start from the `auto` size used for measuring
+      // (which cannot be interpolated): an open settles on its starting style
+      // (the transition runs from it once Presence removes the attribute), a
+      // close on the measured size (the transition runs from it to the ending
+      // style restored below).
+      const closing = lifecycleAttributes.includes(ENDING_STYLE_ATTR)
+      if (!closing)
+        lifecycleAttributes.forEach(name => node.setAttribute(name, ''))
+      void getComputedStyle(node).height
+      if (closing)
+        lifecycleAttributes.forEach(name => node.setAttribute(name, ''))
+    }
 
     // kick off any animations/transitions that were originally set up if it isn't the initial mount
     if (!isMountAnimationPrevented.value) {
@@ -105,8 +137,9 @@ useEventListener(currentElement, 'beforematch', (ev) => {
   <Presence
     v-slot="{ present }"
     ref="presentRef"
-    :present="forceMount || rootContext.open.value"
+    :present="rootContext.open.value"
     :force-mount="true"
+    @complete="rootContext.notifyOpenComplete"
   >
     <Primitive
       v-bind="mergeProps($attrs, surface.attrs.value)"
@@ -114,7 +147,7 @@ useEventListener(currentElement, 'beforematch', (ev) => {
       :as-child="props.asChild"
       :as="as"
     >
-      <slot v-if="rootContext.unmountOnHide.value ? present : true" />
+      <slot v-if="rootContext.unmountOnHide.value ? forceMount || present : true" />
     </Primitive>
   </Presence>
 </template>

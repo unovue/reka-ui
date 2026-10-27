@@ -36,8 +36,8 @@ import {
 //   It is deliberately NOT `useControllableState` (whose cancel window is
 //   `beforeUpdate:*` and whose controlled mode latches).
 // - `useDrawerContent()` is the popup brain (snap points, swipe dismiss, dismiss
-//   reasons, `openComplete` wiring, nested-drawer CSS vars). FocusScope /
-//   DismissableLayer / Presence / `useHideOthers` stay in the SFCs.
+//   reasons, nested-drawer CSS vars). FocusScope / DismissableLayer / Presence
+//   (which reports `openComplete`) / `useHideOthers` stay in the SFCs.
 // - `useDrawerSwipeArea()` is the swipe-to-open area.
 //
 // The DrawerProvider coupling (`watch(open)` → `setDrawerOpen`, `removeDrawer`
@@ -201,7 +201,11 @@ export interface UseDrawerProps {
    * `update:open` from here.
    */
   onOpenChange?: (value: boolean, details: DrawerOpenChangeDetails) => void
-  /** Called after the popup's enter/exit transition finishes (`update:openComplete`). */
+  /**
+   * Called once the popup's open (`true`) or close (`false`) transitions and
+   * animations have finished (`update:openComplete`), reported by
+   * `DrawerContent`'s `Presence` through `context.notifyOpenComplete`.
+   */
   onOpenComplete?: (value: boolean) => void
   /** The parent drawer's context, for nested drawers. */
   parentContext?: DrawerRootContext | null
@@ -409,8 +413,8 @@ export interface UseDrawerContentReturn {
 }
 
 /**
- * Headless Drawer popup — snap points, swipe-to-dismiss, dismiss reasons, the
- * `openComplete` transition wiring and the nested-drawer CSS variables, moved
+ * Headless Drawer popup — snap points, swipe-to-dismiss, dismiss reasons and
+ * the nested-drawer CSS variables, moved
  * verbatim from `DrawerContentImpl`. Owns watchers, a resize observer and
  * mount hooks, so it runs inside the mounted popup's `setup()`.
  *
@@ -649,42 +653,6 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
     }
   }
 
-  // --- update:openComplete wiring ---
-  // Fire `update:openComplete` on the popup's own transitionend/animationend,
-  // not on a microtask — consumers rely on this marker to know the enter/exit
-  // transition has actually finished. We track the current listener so a rapid
-  // open→close doesn't leak or double-fire, and guard with `event.target === el`
-  // so child element transitions don't spuriously resolve the drawer lifecycle.
-  let openCompleteCleanup: (() => void) | undefined
-
-  function clearOpenCompleteListener() {
-    openCompleteCleanup?.()
-    openCompleteCleanup = undefined
-  }
-
-  watch(() => rootContext.open.value, (isOpen) => {
-    clearOpenCompleteListener()
-    const el = currentElement.value
-    if (!el) {
-      // If there's no element (e.g. closed without ever mounting), fire
-      // synchronously so consumers still get the contract.
-      rootContext.notifyOpenComplete(isOpen)
-      return
-    }
-    const handler = (event: Event) => {
-      if (event.target !== el)
-        return
-      clearOpenCompleteListener()
-      rootContext.notifyOpenComplete(isOpen)
-    }
-    el.addEventListener('transitionend', handler)
-    el.addEventListener('animationend', handler)
-    openCompleteCleanup = () => {
-      el.removeEventListener('transitionend', handler)
-      el.removeEventListener('animationend', handler)
-    }
-  })
-
   // Sync nestedOpenDrawerCount onto the popup CSS var so nested scale effects
   // can read it. BaseUI uses a running count, not a boolean.
   watch(() => rootContext.nestedOpenDrawerCount.value, (n) => {
@@ -722,7 +690,6 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
   onUnmounted(() => {
     rootContext.notifyParentHasNestedDrawer?.(false)
     unsubscribeNestedProgress?.()
-    clearOpenCompleteListener()
   })
 
   // Dev warning for missing DrawerTitle

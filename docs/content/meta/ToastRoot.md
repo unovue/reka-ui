@@ -100,6 +100,11 @@
     'name': 'update:open',
     'description': '<p>Event handler called when the open state changes</p>\n',
     'type': '[value: boolean, details: ChangeEventDetails&lt;ToastOpenChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'update:openComplete',
+    'description': '<p>Event handler called after the open or close animations of the toast have finished.</p>\n',
+    'type': '[value: boolean]'
   }
 ]" />
 
@@ -150,6 +155,7 @@
 | `swipeMove` | Event handler called during a swipe interaction. It can be prevented by calling event.preventDefault. | `[event: SwipeEvent]` |
 | `swipeStart` | Event handler called when starting a swipe interaction. It can be prevented by calling event.preventDefault. | `[event: SwipeEvent]` |
 | `update:open` | Event handler called when the open state changes | `[value: boolean, details: ChangeEventDetails<ToastOpenChangeReason, Event>]` |
+| `update:openComplete` | Event handler called after the open or close animations of the toast have finished. | `[value: boolean]` |
 
 **Slots**
 

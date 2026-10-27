@@ -41,6 +41,7 @@ const { open, onOpenChange, context } = useAlertDialog({
   unmountOnHide: () => props.unmountOnHide,
   baseId: useId(undefined, 'reka-alert-dialog'),
   emit,
+  onOpenComplete: value => emit('update:openComplete', value),
 })
 
 provideDialogRootContext(context)
