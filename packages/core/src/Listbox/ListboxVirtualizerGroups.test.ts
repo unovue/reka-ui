@@ -3,11 +3,11 @@ import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot, ComboboxViewport, ComboboxVirtualizer } from '@/Combobox'
 import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot, ListboxVirtualizer } from '.'
 import { injectListboxRootContext } from './ListboxRoot.vue'
-import { flattenVirtualOptions, isGroupedOptions } from './useListVirtualizer'
+import { flattenVirtualOptions, isGroupedOptions, useListVirtualizer } from './useListVirtualizer'
 
 interface Fruit { id: number, name: string }
 
@@ -172,6 +172,31 @@ describe('listboxVirtualizer label registry', () => {
     wrapper.unmount()
     // ~15 ms without registration, ~1 s with it; generous for slow CI.
     expect(elapsed).toBeLessThan(400)
+  })
+})
+
+// #3086 review: an element without `data-index` is no option (`Number(null)` is 0).
+describe('useListVirtualizer optionIndexOfElement', () => {
+  it('maps an element that is not a row to -1, and a row to its option', () => {
+    let list!: ReturnType<typeof useListVirtualizer<string>>
+    mount(defineComponent({
+      setup() {
+        list = useListVirtualizer<string>({
+          options: () => ['Apple', 'Banana'],
+          textContent: () => undefined,
+          estimateSize: () => 24,
+          overscan: () => undefined,
+          scrollElement: ref<HTMLElement>(),
+          idPrefix: 'probe',
+        })
+        return () => null
+      },
+    }))
+    expect(list.optionIndexOfElement(document.createElement('div'))).toBe(-1)
+    expect(list.optionIndexOfElement(null)).toBe(-1)
+    const row = document.createElement('div')
+    row.setAttribute('data-index', '1')
+    expect(list.optionIndexOfElement(row)).toBe(1)
   })
 })
 

@@ -174,7 +174,9 @@ export function useListVirtualizer<T>(options: UseListVirtualizerOptions<T>) {
 
   /** The option index of a rendered row element (`data-index` is the row index). */
   function optionIndexOfElement(element: Element | null | undefined) {
-    const rowIndex = Number(element?.getAttribute('data-index'))
+    // An element that is not a row (no `data-index`) is no option: `Number(null)` would read row 0.
+    const attribute = element?.getAttribute('data-index')
+    const rowIndex = attribute == null || attribute === '' ? Number.NaN : Number(attribute)
     const row = Number.isNaN(rowIndex) ? undefined : rows.value[rowIndex]
     return row?.type === 'option' ? row.optionIndex : -1
   }
