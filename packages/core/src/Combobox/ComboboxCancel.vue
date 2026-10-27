@@ -8,6 +8,7 @@ export interface ComboboxCancelProps extends PrimitiveProps {}
 import { Primitive } from '@/Primitive'
 import { useForwardElement } from '@/shared'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
+import { getComboboxCancelSurface } from './useCombobox'
 
 const props = withDefaults(defineProps<ComboboxCancelProps>(), {
   as: 'button',
@@ -15,31 +16,17 @@ const props = withDefaults(defineProps<ComboboxCancelProps>(), {
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
-const rootContext = injectComboboxRootContext()
-
-function handleClick() {
-  if (rootContext.inputElement.value) {
-    rootContext.inputElement.value.value = ''
-    rootContext.inputElement.value.focus()
-  }
-
-  if (rootContext.resetModelValueOnClear?.value) {
-    rootContext.modelValue.value = rootContext.multiple.value ? [] : null
-  }
-
-  // Reset the search to show all options.
-  // Done last: focusing can re-open the popup (`openOnFocus`), which may restore the filter from the previous value.
-  rootContext.filterSearch.value = ''
-}
+// Clears the input, then the value (`resetModelValueOnClear`, reason `'clear-press'`), then the search term.
+const surface = getComboboxCancelSurface(injectComboboxRootContext())
 </script>
 
 <template>
   <Primitive
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
-    v-bind="props"
-    tabindex="-1"
-    @click="handleClick"
+    :as="props.as"
+    :as-child="props.asChild"
+    v-bind="surface.attrs.value"
   >
     <slot />
   </Primitive>

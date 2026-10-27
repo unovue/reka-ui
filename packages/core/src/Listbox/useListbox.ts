@@ -5,7 +5,7 @@ import type { BaseChangeReason, By, ChangeEventDetails, PartSurface, SelectionSt
 import type { AcceptableValue, DataOrientation, Direction } from '@/shared/types'
 import { createEventHook } from '@vueuse/core'
 import { isClient, refAutoReset } from '@vueuse/shared'
-import { hash } from 'ohash'
+import { serialize } from 'ohash'
 import { computed, isRef, nextTick, ref, shallowReactive, shallowRef, toValue, triggerRef, watch } from 'vue'
 import { getFocusIntent } from '@/RovingFocus/utils'
 import { compare, createPartSurface, findValuesBetween, handleAndDispatchCustomEvent, selectionState, useControllableState, useKbd, useListSelection, useTypeahead, valueComparator } from '@/shared'
@@ -368,6 +368,8 @@ export interface UseListboxRootReturn<T = AcceptableValue> {
    * when unchanged or cancelled. This is what the items call.
    */
   select: (value: T, reason?: ListboxChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** Write the whole model (no toggle rules); returns `false` when unchanged or cancelled. */
+  setModelValue: (value: T | T[] | undefined, reason?: ListboxChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Whether `value` is (part of) the current selection, matched with `by`. */
   isSelected: (value: T) => boolean
   highlightedElement: Ref<HTMLElement | null>
@@ -799,8 +801,9 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   // indexed in a Map, so a registration is O(1) rather than a scan:
   // - a primitive value (or a primitive `value[by]` under a key `by`) by its
   //   tagged string form;
-  // - an object value with no `by` by its ohash `hash`, which agrees with the
-  //   default `isEqual` comparison (both are built on ohash's `serialize`).
+  // - an object value with no `by` by its ohash `serialize` form, which is
+  //   exactly what the default `isEqual` comparison compares (no digest: the
+  //   crypto code would only grow every listbox bundle).
   // Only a function `by` (no stable key exists) and the rare leftovers (an
   // `undefined` value, a non-primitive `value[by]`) fall back to a `compare`
   // scan. The entries array is mutated in place and the ref triggered, so a
@@ -817,7 +820,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
       // Tagged so a plain `'1'`, a `1` and a `{ id: 1 }` under `by: 'id'` never collide.
       return `${keyed ? 'k' : 'v'}:${type}:${String(key)}`
     if (props.by === undefined && type === 'object')
-      return `h:${hash(key)}`
+      return `h:${serialize(key)}`
     return undefined
   }
   function labelIndexOf(value: T, key = labelKey(value)) {
@@ -854,8 +857,8 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
 
   // Filtering (#2824 item 7). Opt-in: without a `filter` function every
   // check below short-circuits on `isFilterActive` and never reads the item
-  // registry, so a listbox that does not filter (Combobox/Autocomplete keep
-  // their own engine) pays nothing per item. A filtered-out item is not
+  // registry, so a listbox that does not filter pays nothing per item
+  // (Combobox and Autocomplete pass `useFilter`'s `contains` by default). A filtered-out item is not
   // rendered at all, so the collection — and with it navigation, typeahead,
   // select-all and range selection — only ever sees the matching items.
   const filterFn = computed(() => {
@@ -983,6 +986,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   return {
     modelValue,
     select: onValueChange,
+    setModelValue,
     isSelected,
     highlightedElement,
     highlightItem,

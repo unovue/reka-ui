@@ -1611,10 +1611,10 @@ describe('given a Combobox with `loop`', () => {
 })
 
 describe('given a Combobox with a `beforeUpdate:modelValue` listener', () => {
-  // ComboboxRoot does not declare the event yet (its writes do not all go through
-  // the listbox pipeline), so the listener must not fall through `$attrs` onto
-  // the inner ListboxRoot and fire for item presses only.
-  it('does not forward the listener to the inner ListboxRoot', async () => {
+  // #2824: ComboboxRoot declares the event itself (v3 #2924 kept it off the
+  // inner ListboxRoot, which no longer exists), so the listener sees every
+  // change with the combobox's own reasons.
+  it('calls the listener with the change details before the value changes', async () => {
     document.body.innerHTML = ''
     const onBeforeUpdate = vi.fn()
     const wrapper = mount(defineComponent({
@@ -1639,9 +1639,10 @@ describe('given a Combobox with a `beforeUpdate:modelValue` listener', () => {
     const item = document.querySelector('[role=option]') as HTMLElement
     item.click()
     await nextTick()
-    // A multiple selection goes through the inner ListboxRoot (a single one bypasses it).
     expect(wrapper.findComponent(ComboboxRoot).emitted('update:modelValue')?.[0]?.[0]).toEqual(['Apple'])
-    expect(onBeforeUpdate).not.toHaveBeenCalled()
+    expect(onBeforeUpdate).toHaveBeenCalledTimes(1)
+    expect(onBeforeUpdate.mock.calls[0][0]).toEqual(['Apple'])
+    expect(onBeforeUpdate.mock.calls[0][1].reason).toBe('item-press')
     // Other attrs still reach the listbox root element.
     expect(document.querySelector('[data-testid=root]')).not.toBeNull()
     wrapper.unmount()

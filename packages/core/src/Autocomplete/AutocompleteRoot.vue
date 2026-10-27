@@ -1,11 +1,20 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
+import type { ComboboxOpenChangeReason } from '@/Combobox/useCombobox'
+import type { ListboxFilterFunction, ListboxNavigationIntent } from '@/Listbox/useListbox'
 import type { PrimitiveProps } from '@/Primitive'
-import type { Direction, GenericComponentInstance } from '@/shared/types'
-import { provideComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
-import { useComboboxContentPositioning } from '@/Combobox/useComboboxContentPositioning'
-import { usePrimitiveElement } from '@/Primitive'
-import { createContext, mergeExpose, useDirection, useFilter } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import type { Direction } from '@/shared/types'
+import { createContext, mergeExpose, useDirection, useFormControl, useForwardElement, useId } from '@/shared'
+
+/**
+ * Why the Autocomplete value (the input text) changed; carried as `details.reason` (#2828).
+ *
+ * - `'input-change'`: the user typed (or an IME composition was committed).
+ * - `'item-press'`: an item was clicked, or Enter selected the highlighted item.
+ * - `'clear-press'`: `AutocompleteCancel` cleared the text.
+ */
+export type AutocompleteChangeReason = 'input-change' | 'item-press' | 'clear-press'
 
 export interface AutocompleteRootProps extends PrimitiveProps {
   /** The controlled value of the Autocomplete (the input text). Can be bound with `v-model`. */
@@ -40,26 +49,51 @@ export interface AutocompleteRootProps extends PrimitiveProps {
    */
   openOnClick?: boolean
   /**
-   * When `true`, disable the default filters
+   * Whether an item matches the typed text: called as `filter(text, search, value)` with the item's `textValue` (or
+   * its text content). Omitted, items are matched with `useFilter`'s `contains` (base sensitivity). `null` turns client
+   * filtering off: filter the items yourself, or on a server.
+   */
+  filter?: ListboxFilterFunction<string> | null
+  /**
+   * Deprecated alias for `:filter="null"`: when `true`, turns client filtering off. Wins over `filter`.
+   * @deprecated Use `:filter="null"`.
    */
   ignoreFilter?: boolean
   /** When `true`, hover over item will trigger highlight */
   highlightOnHover?: boolean
   /** When `true`, keyboard navigation will loop from last item to first, and vice versa. */
   loop?: boolean
+  /**
+   * Resolves what a keydown in the input means for keyboard navigation. Return `undefined` to fall back to the default
+   * mapping, `null` to opt the key out (for Enter this also skips the selection), or `'select'` to select the
+   * highlighted item as Enter does. A `'next'` or `'prev'` intent also opens a closed popup. Unmodified printable keys,
+   * ArrowLeft and ArrowRight always stay text input.
+   */
+  getNavigationIntent?: (event: KeyboardEvent) => ListboxNavigationIntent | null | undefined
+  /**
+   * The text a selected item writes into the value (the input text). Defaults to the item's value.
+   */
+  displayValue?: (value: string) => string
 }
 
 export type AutocompleteRootEmits = {
+  /** Event handler called before the value changes; call `details.cancel()` to keep the current value. */
+  'beforeUpdate:modelValue': [value: string, details: ChangeEventDetails<AutocompleteChangeReason>]
   /** Event handler called when the value changes. */
-  'update:modelValue': [value: string]
+  'update:modelValue': [value: string, details: ChangeEventDetails<AutocompleteChangeReason>]
   /** Event handler when highlighted element changes. */
   'highlight': [payload: { ref: HTMLElement, value: string } | undefined]
+  /** Event handler called before the open state changes; call `details.cancel()` to keep it. */
+  'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason>]
   /** Event handler called when the open state of the autocomplete changes. */
-  'update:open': [value: boolean]
+  'update:open': [value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason>]
 }
 
 export type AutocompleteRootContext = {
-  modelValue: Ref<string>
+  /** The value (the input text). */
+  modelValue: ComputedRef<string>
+  /** Writes the value; returns `false` when unchanged or cancelled. */
+  onModelValueChange: (value: string, reason?: AutocompleteChangeReason | BaseChangeReason, event?: Event) => boolean
 }
 
 export const [injectAutocompleteRootContext, provideAutocompleteRootContext]
@@ -67,11 +101,16 @@ export const [injectAutocompleteRootContext, provideAutocompleteRootContext]
 </script>
 
 <script setup lang="ts">
-import { createEventHook, useVModel } from '@vueuse/core'
-import { computed, nextTick, ref, toRefs } from 'vue'
-import { ListboxRoot } from '@/Listbox'
-import { omitBeforeUpdateModelValue } from '@/Listbox/utils'
+import { mergeProps, toRef } from 'vue'
+import { useCollection } from '@/Collection'
+import { provideComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
+import { useComboboxRoot } from '@/Combobox/useCombobox'
+import { provideListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { PopperRoot } from '@/Popper'
+import { Primitive } from '@/Primitive'
+import { VisuallyHiddenInput } from '@/VisuallyHidden'
+
+defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(defineProps<AutocompleteRootProps>(), {
   open: undefined,
@@ -85,192 +124,87 @@ const emits = defineEmits<AutocompleteRootEmits>()
 defineSlots<{
   default?: (props: {
     /** Current open state */
-    open: typeof open.value
+    open: boolean
     /** Current active value */
-    modelValue: typeof modelValue.value
+    modelValue: string
   }) => any
 }>()
 
-const { primitiveElement, currentElement: parentElement, expose } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
-const { disabled, ignoreFilter, openOnFocus, openOnClick, dir: propDir, highlightOnHover, loop } = toRefs(props)
+const { getItems, getItem } = useCollection<{ value: string }>({ isProvider: true })
+const { forwardRef, currentElement, expose } = useForwardElement()
+const dir = useDirection(toRef(() => props.dir))
+const isFormControl = useFormControl(currentElement)
 
-const dir = useDirection(propDir)
-
-const modelValue = useVModel(props, 'modelValue', emits, {
+// The Combobox root over a single string model: the value is the input text,
+// a selected item writes its (display) value, a clear writes `''`.
+const combobox = useComboboxRoot<string>({
+  modelValue: () => props.modelValue,
   defaultValue: props.defaultValue ?? '',
-  passive: (props.modelValue === undefined) as false,
-}) as Ref<string>
-
-const open = useVModel(props, 'open', emits, {
-  defaultValue: props.defaultOpen,
-  passive: (props.open === undefined) as false,
-}) as Ref<boolean>
-
-// Writable computed that converts any value to string for the ComboboxRootContext.
-// This handles the case when ComboboxItem sets modelValue to a non-string value,
-// or when ComboboxCancel resets modelValue to null.
-const contextModelValue = computed({
-  get: () => modelValue.value,
-  set: (val: any) => {
-    if (val === null || val === undefined) {
-      modelValue.value = ''
-    }
-    else {
-      modelValue.value = String(val)
-    }
-  },
+  dir,
+  disabled: () => props.disabled,
+  highlightOnHover: () => props.highlightOnHover,
+  loop: () => props.loop,
+  getNavigationIntent: event => props.getNavigationIntent?.(event),
+  filter: toRef(() => props.filter) as Ref<ListboxFilterFunction<string> | null | undefined>,
+  ignoreFilter: () => props.ignoreFilter,
+  open: () => props.open,
+  defaultOpen: props.defaultOpen,
+  baseId: useId(undefined, 'reka-autocomplete'),
+  resetSearchTermOnBlur: () => props.resetSearchTermOnBlur,
+  resetSearchTermOnSelect: false,
+  openOnFocus: () => props.openOnFocus,
+  openOnClick: () => props.openOnClick,
+  resetModelValueOnClear: true,
+  emptyValue: '',
+  toModelValue: value => props.displayValue ? props.displayValue(value) : String(value),
+  // Opening filters by the text already in the input.
+  openSearchTerm: () => modelValue.value || '',
+  getItems,
+  getItem,
+  element: currentElement,
+  emit: emits,
+  onHighlight: payload => emits('highlight', payload),
 })
+const { root, context, open, highlightedElement, highlightItem, highlightFirstItem, highlightSelected, filterState } = combobox
+const modelValue = combobox.modelValue as ComputedRef<string>
 
-async function onOpenChange(val: boolean) {
-  open.value = val
-
-  if (val) {
-    // When opening, set filter to current text so items are filtered by what's in the input
-    filterSearch.value = modelValue.value || ''
-
-    await nextTick()
-    primitiveElement.value?.highlightSelected()
-    isUserInputted.value = true
-    inputElement.value?.focus()
-  }
-  else {
-    isUserInputted.value = false
-    filterSearch.value = ''
-    setTimeout(() => {
-      if (!val && props.resetSearchTermOnBlur)
-        resetSearchTerm.trigger()
-    }, 1)
-  }
-}
-
-const resetSearchTerm = createEventHook()
-const isUserInputted = ref(false)
-const isVirtual = ref(false)
-const inputElement = ref<HTMLInputElement>()
-const triggerElement = ref<HTMLElement>()
-
-const highlightedElement = computed(() => primitiveElement.value?.highlightedElement ?? undefined)
-const contentPositioning = useComboboxContentPositioning(open)
-
-const allItems = ref<Map<string, string>>(new Map())
-const allGroups = ref<Map<string, Set<string>>>(new Map())
-
-const { contains } = useFilter({ sensitivity: 'base' })
-
-const filterSearch = ref('')
-
-const filterState = computed<{
-  count: number
-  items: Map<string, number>
-  groups: Set<string>
-}>((oldValue) => {
-  if (!filterSearch.value || props.ignoreFilter || isVirtual.value) {
-    return {
-      count: allItems.value.size,
-      items: oldValue?.items ?? new Map(),
-      groups: oldValue?.groups ?? new Set(allGroups.value.keys()),
-    }
-  }
-
-  let itemCount = 0
-  const filteredItems = new Map<string, number>()
-  const filteredGroups = new Set<string>()
-
-  for (const [id, value] of allItems.value) {
-    const score = contains(value, filterSearch.value)
-    filteredItems.set(id, score ? 1 : 0)
-    if (score)
-      itemCount++
-  }
-
-  for (const [groupId, group] of allGroups.value) {
-    for (const itemId of group) {
-      if (filteredItems.get(itemId)! > 0) {
-        filteredGroups.add(groupId)
-        break
-      }
-    }
-  }
-
-  return {
-    count: itemCount,
-    items: filteredItems,
-    groups: filteredGroups,
-  }
-})
-
-type ListboxRootInstance = NonNullable<typeof primitiveElement.value>
-
-// Delegate to the inner ListboxRoot at call time (it is not mounted during setup),
-// instead of patching `instance.exposed` once mounted.
 defineExpose(mergeExpose(expose, {
+  /** The filtering result: `{ search, active, count }`. */
   filtered: filterState,
   highlightedElement,
-  highlightItem: (...args: Parameters<ListboxRootInstance['highlightItem']>) => primitiveElement.value?.highlightItem(...args),
-  highlightFirstItem: () => primitiveElement.value?.highlightFirstItem(),
-  highlightSelected: (...args: Parameters<ListboxRootInstance['highlightSelected']>) => primitiveElement.value?.highlightSelected(...args),
+  highlightItem,
+  highlightFirstItem,
+  highlightSelected,
 }))
 
-// Provide the Combobox context so all Combobox sub-components work inside Autocomplete
-provideComboboxRootContext({
-  modelValue: contextModelValue as any,
-  multiple: ref(false),
-  disabled,
-  open,
-  onOpenChange,
-  ...contentPositioning,
-  contentId: '',
-  isUserInputted,
-  isVirtual,
-  inputElement,
-  highlightedElement,
-  onInputElementChange: val => inputElement.value = val,
-  triggerElement,
-  onTriggerElementChange: val => triggerElement.value = val,
-  parentElement,
-  resetSearchTermOnSelect: ref(false),
-  onResetSearchTerm: resetSearchTerm.on,
-  allItems,
-  allGroups,
-  filterSearch,
-  filterState,
-  ignoreFilter,
-  openOnFocus,
-  openOnClick,
-  resetModelValueOnClear: ref(true),
-  unmountOnHide: ref(true),
-})
-
-// Provide autocomplete-specific context
+provideListboxRootContext(context as any)
+provideComboboxRootContext(context as any)
 provideAutocompleteRootContext({
   modelValue,
+  onModelValueChange: (value, reason, event) => combobox.setModelValue(value, reason as any, event),
 })
 </script>
 
 <template>
   <PopperRoot>
-    <ListboxRoot
-      ref="primitiveElement"
-      v-bind="omitBeforeUpdateModelValue($attrs)"
-      v-model="(contextModelValue as any)"
-      :style="{
-        pointerEvents: open ? 'auto' : undefined,
-      }"
+    <Primitive
+      :ref="forwardRef"
       :as="as"
       :as-child="asChild"
-      :dir="dir"
-      :name="name"
-      :required="required"
-      :disabled="disabled"
-      :highlight-on-hover="highlightOnHover"
-      :loop="loop"
-      :filter="null"
-      @highlight="emits('highlight', $event as any)"
+      v-bind="mergeProps(root.attrs.value, $attrs)"
     >
       <slot
         :open="open"
         :model-value="modelValue"
       />
-    </ListboxRoot>
+
+      <VisuallyHiddenInput
+        v-if="isFormControl && name"
+        :name="name"
+        :value="modelValue"
+        :disabled="disabled"
+        :required="required"
+      />
+    </Primitive>
   </PopperRoot>
 </template>

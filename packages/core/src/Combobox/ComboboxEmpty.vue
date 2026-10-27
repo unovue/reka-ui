@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { computed } from 'vue'
 
 export interface ComboboxEmptyProps extends PrimitiveProps {}
 </script>
@@ -13,18 +12,13 @@ import { injectComboboxRootContext } from './ComboboxRoot.vue'
 const props = defineProps<ComboboxEmptyProps>()
 const rootContext = injectComboboxRootContext()
 
-const isRender = computed(() => rootContext.ignoreFilter.value
-  ? rootContext.allItems.value.size === 0
-  : rootContext.filterState.value.count === 0,
-)
-
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 </script>
 
 <template>
   <Primitive
-    v-if="isRender"
+    v-if="rootContext.filterState.value.count === 0"
     :ref="forwardRef"
     v-bind="props"
   >
