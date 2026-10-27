@@ -2,7 +2,10 @@
 import type { PrimitiveProps } from '@/Primitive'
 import { useForwardElement } from '@/shared'
 
-export interface CollapsibleTriggerProps extends PrimitiveProps {}
+export interface CollapsibleTriggerProps extends PrimitiveProps {
+  /** Id of the element. */
+  id?: string
+}
 </script>
 
 <script setup lang="ts">
@@ -22,6 +25,7 @@ const surface = getCollapsibleTriggerSurface(rootContext)
 
 <template>
   <Primitive
+    :id="props.id"
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
     :as="as"

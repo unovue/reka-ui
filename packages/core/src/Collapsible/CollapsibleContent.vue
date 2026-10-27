@@ -3,6 +3,11 @@ import type { PrimitiveProps } from '@/Primitive'
 
 export interface CollapsibleContentProps extends PrimitiveProps {
   /**
+   * Id of the element, which the trigger's `aria-controls` points at.
+   * Auto-generated when not provided.
+   */
+  id?: string
+  /**
    * Used to force mounting when more control is needed. Useful when
    * controlling animation with Vue animation libraries.
    */
@@ -22,7 +27,7 @@ import { ENDING_STYLE_ATTR, getRunningAnimations, STARTING_STYLE_ATTR, supportsA
 import {
   Primitive,
 } from '@/Primitive'
-import { useForwardElement, useId } from '@/shared'
+import { useForwardElement, useId, usePartId } from '@/shared'
 import { injectCollapsibleRootContext } from './CollapsibleRoot.vue'
 import { getCollapsibleContentSurface } from './useCollapsible'
 
@@ -34,7 +39,11 @@ const props = defineProps<CollapsibleContentProps>()
 const emits = defineEmits<CollapsibleContentEmits>()
 
 const rootContext = injectCollapsibleRootContext()
-rootContext.contentId ||= useId(undefined, 'reka-collapsible-content')
+usePartId(
+  () => props.id,
+  rootContext.contentId || useId(undefined, 'reka-collapsible-content'),
+  (id) => { rootContext.contentId = id },
+)
 
 const HEIGHT_VAR = '--reka-collapsible-content-height'
 const WIDTH_VAR = '--reka-collapsible-content-width'
