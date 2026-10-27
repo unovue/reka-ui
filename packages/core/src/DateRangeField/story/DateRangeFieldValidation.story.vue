@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Matcher } from '@/shared/date'
+import type { Matcher } from '@/date'
 import { CalendarDate } from '@internationalized/date'
 import DateRangeField from './_DummyDateRangeField.vue'
 

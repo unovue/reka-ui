@@ -2,7 +2,7 @@ import type { DateValue } from '@internationalized/date'
 import type { CalendarUnit } from '@/date'
 import { CalendarDate } from '@internationalized/date'
 import { describe, expect, it } from 'vitest'
-import { effectScope, nextTick, ref } from 'vue'
+import { effectScope, nextTick, ref, shallowRef } from 'vue'
 import { useCalendar } from './__fixtures__/useCalendarV2'
 import { useMonthPicker } from './__fixtures__/useMonthPickerV2'
 import { useYearPicker } from './__fixtures__/useYearPickerV2'
@@ -40,7 +40,7 @@ function withScope<T>(fn: () => T): T {
 }
 
 function buildNew(unit: CalendarUnit, s: Scenario) {
-  const placeholder = ref(s.placeholder) as any
+  const placeholder = shallowRef(s.placeholder)
   const setPlaceholder = (d: DateValue) => { placeholder.value = d }
   const api = useCalendarGrid({
     unit,
@@ -65,15 +65,15 @@ function buildNew(unit: CalendarUnit, s: Scenario) {
 }
 
 function buildOldDay(s: Scenario) {
-  const placeholder = ref(s.placeholder) as any
+  const placeholder = shallowRef(s.placeholder)
   const api = useCalendar({
     locale: ref(s.locale ?? 'en-US'),
     placeholder,
     weekStartsOn: ref(s.weekStartsOn ?? 0),
     fixedWeeks: ref(s.fixedWeeks ?? false),
     numberOfMonths: ref(s.numberOfMonths ?? 1),
-    minValue: ref(s.minValue),
-    maxValue: ref(s.maxValue),
+    minValue: shallowRef(s.minValue),
+    maxValue: shallowRef(s.maxValue),
     disabled: ref(s.disabled ?? false),
     weekdayFormat: ref('narrow'),
     pagedNavigation: ref(s.pagedNavigation ?? false),
@@ -87,12 +87,12 @@ function buildOldDay(s: Scenario) {
 }
 
 function buildOldMonth(s: Scenario) {
-  const placeholder = ref(s.placeholder) as any
+  const placeholder = shallowRef(s.placeholder)
   const api = useMonthPicker({
     locale: ref(s.locale ?? 'en-US'),
     placeholder,
-    minValue: ref(s.minValue),
-    maxValue: ref(s.maxValue),
+    minValue: shallowRef(s.minValue),
+    maxValue: shallowRef(s.maxValue),
     disabled: ref(s.disabled ?? false),
     isMonthDisabled: s.isDateDisabled,
     isMonthUnavailable: s.isDateUnavailable,
@@ -104,12 +104,12 @@ function buildOldMonth(s: Scenario) {
 }
 
 function buildOldYear(s: Scenario) {
-  const placeholder = ref(s.placeholder) as any
+  const placeholder = shallowRef(s.placeholder)
   const api = useYearPicker({
     locale: ref(s.locale ?? 'en-US'),
     placeholder,
-    minValue: ref(s.minValue),
-    maxValue: ref(s.maxValue),
+    minValue: shallowRef(s.minValue),
+    maxValue: shallowRef(s.maxValue),
     disabled: ref(s.disabled ?? false),
     yearsPerPage: ref(s.yearsPerPage ?? 12),
     isYearDisabled: s.isDateDisabled,
@@ -336,7 +336,7 @@ describe('useCalendarGrid — switching unit', () => {
   it('rebuilds the grid for the new unit around the same placeholder', async () => {
     await withScope(async () => {
       const unit = ref<CalendarUnit>('day')
-      const placeholder = ref(sep5) as any
+      const placeholder = shallowRef<DateValue>(sep5)
       const api = useCalendarGrid({
         unit,
         placeholder,
@@ -363,7 +363,7 @@ describe('useCalendarGrid — switching unit', () => {
   it('passes the unit to matchers', () => {
     withScope(() => {
       const seen: CalendarUnit[] = []
-      const placeholder = ref(sep5) as any
+      const placeholder = shallowRef<DateValue>(sep5)
       const api = useCalendarGrid({
         unit: 'month',
         placeholder,

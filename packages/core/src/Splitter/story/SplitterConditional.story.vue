@@ -9,7 +9,7 @@ const isShowingB = ref(false)
 <template>
   <Story
     title="Splitter/Conditional"
-    :layout="{ type: 'single', width: '100%', iframe: false }"
+    :layout="{ type: 'single', iframe: false }"
   >
     <Variant title="default">
       <div class="w-full">

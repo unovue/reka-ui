@@ -20,6 +20,11 @@ export function compare<T>(value?: T, currentValue?: T, comparator?: By<T>) {
   if (value === undefined || currentValue === undefined)
     return false
 
+  // `null` is an empty selection (Combobox): never hand it to a comparator
+  // that reads properties off its arguments.
+  if (value === null || currentValue === null)
+    return value === currentValue
+
   // A comparison function is the caller's whole identity strategy, so it runs
   // for every value, strings included (v2 skipped it for strings).
   if (typeof comparator === 'function')

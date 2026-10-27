@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { PaginationEllipsis, PaginationFirst, PaginationLast, PaginationList, PaginationListItem, PaginationNext, PaginationPrev, PaginationRoot } from '..'
 
 const props = defineProps<{
-  root?: PaginationRootProps
+  root?: Partial<PaginationRootProps>
   list?: PaginationListProps
 
   first?: PaginationFirstProps

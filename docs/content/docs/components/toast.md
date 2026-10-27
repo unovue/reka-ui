@@ -317,8 +317,8 @@ The options of a toast:
     },
     {
       name: 'onClose',
-      description: 'Called when the toast closes.',
-      type: '() =&gt; void',
+      description: 'Called when the toast closes, with the details of the close (the same object update:open receives). details.reason is a ToastOpenChangeReason, or imperative-action for close(id).',
+      type: '(details: ChangeEventDetails&lt;ToastOpenChangeReason&gt;) =&gt; void',
     },
     {
       name: 'onRemove',
@@ -329,6 +329,20 @@ The options of a toast:
 />
 
 Each toast in `toasts` also has `open` and an `updateKey` that increments whenever it is updated or added again.
+
+A managed toast closes through the same path as any other `ToastRoot`: its timeout, `ToastClose`, `ToastAction`, a swipe and Escape fire `beforeUpdate:open` and `update:open` on the `ToastRoot` with the [reason](/docs/components/toast#keeping-a-toast-open), then close the toast in the manager, which calls its `onClose(details)` with the same details.
+
+Calling `close(id)` on the manager also closes a rendered toast through its `ToastRoot`, with the reason `'imperative-action'`: `beforeUpdate:open` fires first and can cancel it, as it can for the `close()` of any other component. `close()` with no `id` asks each open toast in turn, so a cancelled one stays open while the others close. A toast that is not rendered by a `ToastRoot` closes directly, and its `onClose` receives `'imperative-action'` too.
+
+```ts
+toast.add({
+  title: 'Uploaded',
+  onClose: ({ reason }) => {
+    if (reason === 'timeout')
+      track('toast-expired')
+  },
+})
+```
 
 ### createToastManager
 
@@ -575,6 +589,32 @@ When a toast must appear every time a user clicks a button, use state to render 
 </template>
 ```
 
+### Keeping a toast open
+
+`update:open` receives a second argument with the `reason` of the change and the native `event`, and a cancellable `beforeUpdate:open` fires before it. The reasons, exported as `ToastOpenChangeReason`, are `'timeout'`, `'close-press'`, `'action-press'`, `'swipe'` and `'escape-key'`, plus `'imperative-action'` for a programmatic close. Call `details.cancel()` in `beforeUpdate:open` to keep the toast open:
+
+```vue
+<script setup lang="ts">
+import type { ChangeEventDetails, ToastOpenChangeReason } from 'reka-ui'
+
+const props = defineProps<{ uploading: boolean }>()
+
+function onBeforeUpdateOpen(open: boolean, details: ChangeEventDetails<ToastOpenChangeReason>) {
+  // Keep an upload toast on screen until the upload finishes, unless the user closes it.
+  if (!open && details.reason === 'timeout' && props.uploading)
+    details.cancel()
+}
+</script>
+
+<template>
+  <ToastRoot @before-update:open="onBeforeUpdateOpen">
+    …
+  </ToastRoot>
+</template>
+```
+
+When a timeout close is cancelled, the toast stays open and its timer starts again with the full `duration`, so it asks again later: here it closes on the first timeout after the upload finishes. Hovering or focusing the viewport pauses the restarted timer as usual. The same happens when a controlled parent ignores a timeout's `update:open`. A cancelled swipe snaps the toast back with `data-swipe="cancel"`.
+
 ### Animating swipe gesture
 
 Combine `--reka-toast-swipe-move-[x|y]` and `--reka-toast-swipe-end-[x|y]` CSS variables with `data-swipe="[start|move|cancel|end]"` attributes to animate a swipe to close gesture. Here's an example:
@@ -785,6 +825,18 @@ defineProps<{
   </ToastRoot>
 </template>
 ```
+
+### Headless composables
+
+The parts are built on composables you can use on your own elements:
+
+- `useToastProvider()`: the shared settings, the stacking order and the store behind `useToastManager()`, subscribed to a `createToastManager()` manager on mount.
+- `useToastRoot()`: the `open` model and the `close(reason, event)` every dismissal goes through. Pass a managed `toast` and the provider's `toastStore` to drive it from the manager.
+- `useToastTimer()`: the auto-dismiss timer, with `pause()`, `resume()` and the `remaining` time.
+- `useToastSwipe()`: the swipe-to-close gesture, its `data-swipe` attribute and CSS variables.
+- `useToastViewport()`: the hotkey, the pause on hover, focus and window blur, and the tab order from the newest toast to the oldest.
+
+The announcement live region, the focus proxies and the portal are not part of the composables. These composables are experimental.
 
 ### Imperative API
 

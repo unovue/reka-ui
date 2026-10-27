@@ -1031,11 +1031,37 @@ describe('given a Combobox with popper content', () => {
       },
     }), { attachTo: document.body })
 
-    const content = () => document.querySelector<HTMLElement>('[role="listbox"]')?.closest('[data-side]')
+    const content = () => document.querySelector<HTMLElement>('[role="listbox"]')?.closest<HTMLElement>('[data-side]')
     await vi.waitFor(() => expect(content()?.dataset.side).toBe('bottom'))
 
     side.value = 'top'
     await vi.waitFor(() => expect(content()?.dataset.side).toBe('top'))
+    wrapper.unmount()
+  })
+})
+
+describe('given a single Combobox with a null model and an object comparator', () => {
+  it('renders items without passing null to `by`', async () => {
+    const items = [{ id: 1, name: 'Apple' }, { id: 2, name: 'Banana' }]
+    const by = vi.fn((a: { id: number }, b: { id: number }) => a.id === b.id)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ComboboxRoot<{ id: number, name: string }>, { modelValue: null, by, open: true }, {
+          default: () => [
+            h(ComboboxAnchor, null, { default: () => h(ComboboxInput) }),
+            h(ComboboxContent, null, {
+              default: () => h(ComboboxViewport, null, {
+                default: () => items.map(item => h(ComboboxItem, { key: item.id, value: item }, { default: () => item.name })),
+              }),
+            }),
+          ],
+        })
+      },
+    }), { attachTo: document.body })
+
+    await vi.waitFor(() => expect(document.querySelectorAll('[role="option"]').length).toBe(2))
+    expect(document.querySelector('[role="option"][data-state="checked"]')).toBeNull()
+    expect(by.mock.calls.every(args => args.every(arg => arg !== null))).toBe(true)
     wrapper.unmount()
   })
 })
@@ -1045,13 +1071,13 @@ describe('comboboxContent with popper positioning', () => {
 
   const PopperCombobox = defineComponent({
     setup() {
-      const modelValue = ref('')
+      const modelValue = ref<string | null>('')
       const slotRenderCount = getSlotRenderCount()
       const options = Array.from({ length: 60 }, (_, index) => `Option ${index}`)
 
-      return () => h(ComboboxRoot, {
+      return () => h(ComboboxRoot<string>, {
         'modelValue': modelValue.value,
-        'onUpdate:modelValue': (value: string) => modelValue.value = value,
+        'onUpdate:modelValue': (value: string | null) => modelValue.value = value,
       }, {
         default: () => [
           h(ComboboxAnchor, null, {
@@ -1155,13 +1181,13 @@ describe('combobox highlight scrolling with popper positioning', () => {
       },
     },
     setup(props) {
-      const modelValue = ref<string>()
+      const modelValue = ref<string | null>()
       const open = ref(false)
 
-      return () => h(ComboboxRoot, {
+      return () => h(ComboboxRoot<string>, {
         'modelValue': modelValue.value,
         'open': open.value,
-        'onUpdate:modelValue': (value: string) => modelValue.value = value,
+        'onUpdate:modelValue': (value: string | null) => modelValue.value = value,
         'onUpdate:open': (value: boolean) => open.value = value,
       }, {
         default: () => [
@@ -1193,11 +1219,11 @@ describe('combobox highlight scrolling with popper positioning', () => {
 
   const InlineCombobox = defineComponent({
     setup() {
-      const modelValue = ref<string>()
+      const modelValue = ref<string | null>()
 
-      return () => h(ComboboxRoot, {
+      return () => h(ComboboxRoot<string>, {
         'modelValue': modelValue.value,
-        'onUpdate:modelValue': (value: string) => modelValue.value = value,
+        'onUpdate:modelValue': (value: string | null) => modelValue.value = value,
       }, {
         default: () => [
           h(ComboboxAnchor, null, { default: () => h(ComboboxInput) }),
@@ -1229,12 +1255,12 @@ describe('combobox highlight scrolling with popper positioning', () => {
           h(ComboboxPortal, null, {
             default: () => h(ComboboxContent, { position: 'popper' }, {
               default: () => h(ComboboxViewport, { style: 'height: 200px; overflow: auto' }, {
-                default: () => h(ComboboxVirtualizer, {
+                default: () => h(ComboboxVirtualizer<(typeof virtualOptions)[number]>, {
                   options: virtualOptions,
                   estimateSize: 25,
                   textContent: option => option.label,
                 }, {
-                  default: ({ option }) => h(ComboboxItem, { value: option }, { default: () => option.label }),
+                  default: ({ option }: { option: (typeof virtualOptions)[number] }) => h(ComboboxItem, { value: option }, { default: () => option.label }),
                 }),
               }),
             }),

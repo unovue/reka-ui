@@ -5,7 +5,7 @@ import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from '..'
 <template>
   <Story
     title="Splitter/Chromatic"
-    :layout="{ type: 'grid', width: '100%', iframe: false }"
+    :layout="{ type: 'grid', width: '100%' }"
   >
     <Variant title="Horizontal">
       <div class="w-full h-48">

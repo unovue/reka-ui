@@ -37,6 +37,7 @@ export function handleAndDispatchCustomEvent<
     currentTarget.addEventListener(name, handler as EventListener, { once: true })
 
   currentTarget.dispatchEvent(event)
+  return event
 }
 
 export function isDeltaInDirection(delta: { x: number, y: number }, direction: SwipeDirection, threshold = 0) {

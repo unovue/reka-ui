@@ -14,13 +14,12 @@ export interface NavigationMenuContentProps extends NavigationMenuContentImplPro
 
 <script setup lang="ts">
 import { isClient, reactiveOmit } from '@vueuse/shared'
-import { computed } from 'vue'
 import { Presence } from '@/Presence'
-import { disclosureState, useForwardElement, useForwardPropsEmits } from '@/shared'
+import { useForwardElement, useForwardPropsEmits } from '@/shared'
 import NavigationMenuContentImpl from './NavigationMenuContentImpl.vue'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { whenMouse } from './utils'
+import { getNavigationMenuContentPresence } from './useNavigationMenu'
 
 defineOptions({
   inheritAttrs: false,
@@ -36,17 +35,9 @@ defineExpose(expose)
 const menuContext = injectNavigationMenuContext()
 const itemContext = injectNavigationMenuItemContext()
 
-const open = computed(() => itemContext.value === menuContext.modelValue.value)
-
-// We persist the last active content value as the viewport may be animating out
-// and we want the content to remain mounted for the lifecycle of the viewport.
-const isLastActiveValue = computed(() => {
-  if (menuContext.viewport.value) {
-    if (!menuContext.modelValue.value && menuContext.previousValue.value)
-      return (menuContext.previousValue.value === itemContext.value)
-  }
-  return false
-})
+// `data-state`, the hover handlers and the leave-animation `pointer-events`
+// guard are bound by `NavigationMenuContentImpl` from the content surface.
+const { open, isLastActiveValue } = getNavigationMenuContentPresence(menuContext, itemContext)
 </script>
 
 <template>
@@ -61,17 +52,8 @@ const isLastActiveValue = computed(() => {
     >
       <NavigationMenuContentImpl
         :ref="forwardRef"
-        :data-state="disclosureState(open)"
-        :style="{
-          pointerEvents: !open && menuContext.isRootMenu ? 'none' : undefined,
-        }"
         v-bind="{ ...$attrs, ...forwarded }"
         :hidden="!present"
-        @pointerenter="menuContext.onContentEnter(itemContext.value)"
-        @pointerleave="whenMouse(() => menuContext.onContentLeave())($event)"
-        @pointer-down-outside="emits('pointerDownOutside', $event)"
-        @focus-outside="emits('focusOutside', $event)"
-        @interact-outside="emits('interactOutside', $event)"
       >
         <slot />
       </NavigationMenuContentImpl>

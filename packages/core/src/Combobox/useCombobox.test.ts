@@ -494,7 +494,7 @@ describe('comboboxRoot — navigation intent, display value and context', () => 
   it('shows the root `displayValue` in the input after a selection', async () => {
     const people = [{ id: 1, name: 'Ada' }, { id: 2, name: 'Grace' }]
     const wrapper = mount(defineComponent({
-      setup: () => () => h(ComboboxRoot, { by: 'id', displayValue: (person: { name: string }) => person.name }, () => [
+      setup: () => () => h(ComboboxRoot<{ id: number, name: string }>, { by: 'id', displayValue: person => person.name }, () => [
         h(ComboboxInput, { 'aria-label': 'Person' }),
         h(ComboboxTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
         h(ComboboxContent, null, () => people.map(person => h(ComboboxItem, { value: person }, () => person.name))),

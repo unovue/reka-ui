@@ -439,6 +439,37 @@ import {
 </template>
 ```
 
+### Change reasons
+
+`update:modelValue` on `NavigationMenuRoot` and `NavigationMenuSub` receives a second argument with the `reason` of the change and the native `event`, and a cancellable `beforeUpdate:modelValue` fires before it. The reasons, exported as `NavigationMenuChangeReason`, are `'trigger-press'`, `'trigger-hover'`, `'pointer-leave'`, `'escape-key'`, `'outside-press'`, `'focus-outside'` and `'link-press'`, plus `'imperative-action'` for a programmatic change. A delayed hover open reports `trigger-hover` with the pointer event that started the delay.
+
+```vue
+<script setup lang="ts">
+import type { ChangeEventDetails, NavigationMenuChangeReason } from 'reka-ui'
+
+function onBeforeUpdate(value: string, details: ChangeEventDetails<NavigationMenuChangeReason>) {
+  // Only open and close on press: ignore hover intent and pointer leave.
+  if (details.reason === 'trigger-hover' || details.reason === 'pointer-leave')
+    details.cancel()
+}
+</script>
+
+<template>
+  <NavigationMenuRoot @before-update:model-value="onBeforeUpdate">
+    …
+  </NavigationMenuRoot>
+</template>
+```
+
+### Headless composables
+
+The parts are built on composables you can use on your own elements:
+
+- `useNavigationMenu()` and `useNavigationMenuSub()`: the open-item model with hover intent, and the context the parts read.
+- `useNavigationMenuItem()`, `useNavigationMenuTrigger()`, `useNavigationMenuContent()`, `useNavigationMenuLink()`, `useNavigationMenuIndicator()` and `useNavigationMenuViewport()`: one per part.
+
+Each part composable returns a surface whose `attrs` hold the `aria-*` and `data-*` attributes, the CSS variables and the event handlers to bind. Presence, portals, the focus proxy and dismissal are not part of the composables: compose `Presence` and `DismissableLayer` as the components do, and bind the handlers `useNavigationMenuContent()` returns to the layer's events. These composables are experimental.
+
 ### With client side routing
 
 If you need to use the `RouterLink` component provided by your routing package then we recommend adding `asChild="true"` to `NavigationMenuLink`, or setting `as="RouterLink"`.

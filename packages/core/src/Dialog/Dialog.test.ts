@@ -1,5 +1,6 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import type { Mock, MockInstance } from 'vitest'
+import type { ChangeEventDetails } from '@/shared'
 import { createEvent, findByText, fireEvent, render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -728,8 +729,8 @@ describe('dialogRoot change events (v3 foundation contract)', () => {
     const root = wrapper.findComponent(DialogRoot)
     const keys = Object.keys(root.emitted()).filter(k => k.endsWith(':open'))
     expect(keys).toEqual(['beforeUpdate:open', 'update:open'])
-    const [beforeValue, beforeDetails] = root.emitted('beforeUpdate:open')![0]
-    const [value, details] = root.emitted('update:open')![0]
+    const [beforeValue, beforeDetails] = root.emitted<[boolean, ChangeEventDetails]>('beforeUpdate:open')![0]
+    const [value, details] = root.emitted<[boolean, ChangeEventDetails]>('update:open')![0]
     expect(beforeValue).toBe(true)
     expect(value).toBe(true)
     expect(beforeDetails).toBe(details)
@@ -746,7 +747,7 @@ describe('dialogRoot change events (v3 foundation contract)', () => {
     await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
     await nextTick()
 
-    const [value, details] = wrapper.findComponent(DialogRoot).emitted('update:open')![0]
+    const [value, details] = wrapper.findComponent(DialogRoot).emitted<[boolean, ChangeEventDetails]>('update:open')![0]
     expect(value).toBe(false)
     expect(details).toMatchObject({ reason: 'escape-key' })
     expect(details.event).toBeInstanceOf(KeyboardEvent)
@@ -760,7 +761,7 @@ describe('dialogRoot change events (v3 foundation contract)', () => {
     await fireEvent.click(closeButton)
     await nextTick()
 
-    const [value, details] = wrapper.findComponent(DialogRoot).emitted('update:open')![0]
+    const [value, details] = wrapper.findComponent(DialogRoot).emitted<[boolean, ChangeEventDetails]>('update:open')![0]
     expect(value).toBe(false)
     expect(details).toMatchObject({ reason: 'close-press' })
     expect(details.event).toBeInstanceOf(MouseEvent)

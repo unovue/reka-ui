@@ -1,8 +1,8 @@
 <script lang="ts">
-import type { ComponentPublicInstance } from 'vue'
+import type { ComponentPublicInstance, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { getActiveElement, useForwardElement } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface ToastViewportProps extends PrimitiveProps {
   /**
@@ -21,14 +21,13 @@ export interface ToastViewportProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { onKeyStroke, unrefElement } from '@vueuse/core'
-import { computed, onMounted, ref, toRefs, watch, watchEffect } from 'vue'
+import { unrefElement } from '@vueuse/core'
+import { mergeProps, ref } from 'vue'
 import { DismissableLayerBranch } from '@/DismissableLayer'
-import { focusFirst, getTabbableCandidates } from '@/FocusScope/utils'
 import { Primitive } from '@/Primitive'
 import FocusProxy from './FocusProxy.vue'
 import { injectToastProviderContext } from './ToastProvider.vue'
-import { VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'
+import { useToastViewport } from './useToast'
 
 defineOptions({
   inheritAttrs: false,
@@ -39,174 +38,30 @@ const props = withDefaults(defineProps<ToastViewportProps>(), {
   label: 'Notifications ({hotkey})',
   as: 'ol',
 })
-const { hotkey, label } = toRefs(props)
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const { CollectionSlot, getItems } = useCollection()
 const providerContext = injectToastProviderContext()
-const hasToasts = computed(() => providerContext.toastCount.value > 0)
 const headFocusProxyRef = ref<HTMLElement>()
 const tailFocusProxyRef = ref<HTMLElement>()
 
-const KEY_RE = /Key/g
-const DIGIT_RE = /Digit/g
-const hotkeyMessage = computed(() => hotkey.value.join('+').replace(KEY_RE, '').replace(DIGIT_RE, ''))
-
-onKeyStroke(hotkey.value, () => {
-  currentElement.value.focus()
+// Hotkey, pause on hover / focus / window blur, the expanded state and the
+// reversed tab order live in the composable; the focus proxies and the
+// dismissable-layer branch stay here.
+const { hasToasts, region, viewport, onHeadProxyFocus, onTailProxyFocus } = useToastViewport({
+  providerContext,
+  viewportElement: currentElement as Ref<HTMLElement | undefined>,
+  hotkey: props.hotkey,
+  label: () => props.label,
+  getToasts: () => getItems().map(i => i.ref),
+  headFocusProxy: headFocusProxyRef,
+  tailFocusProxy: tailFocusProxyRef,
 })
-
-onMounted(() => {
-  providerContext.onViewportChange(currentElement.value)
-})
-
-// Collapse only once closing toasts have finished animating, so the stack does not
-// shift under the pointer while a toast is dismissed.
-const pendingPointerLeave = ref(false)
-watch([pendingPointerLeave, providerContext.closingCount], ([pending, closingCount]) => {
-  if (pending && closingCount === 0) {
-    providerContext.hovering.value = false
-    pendingPointerLeave.value = false
-  }
-})
-
-watch(hasToasts, (value) => {
-  if (!value) {
-    providerContext.hovering.value = false
-    providerContext.focused.value = false
-    pendingPointerLeave.value = false
-  }
-})
-
-watchEffect((cleanupFn) => {
-  const viewport = currentElement.value
-  if (hasToasts.value && viewport) {
-    const handlePause = () => {
-      if (!providerContext.isClosePausedRef.value) {
-        const pauseEvent = new CustomEvent(VIEWPORT_PAUSE)
-        viewport.dispatchEvent(pauseEvent)
-        providerContext.isClosePausedRef.value = true
-      }
-    }
-
-    const handleResume = () => {
-      if (providerContext.isClosePausedRef.value) {
-        const resumeEvent = new CustomEvent(VIEWPORT_RESUME)
-        viewport.dispatchEvent(resumeEvent)
-        providerContext.isClosePausedRef.value = false
-      }
-    }
-
-    const handleFocusOutResume = (event: FocusEvent) => {
-      const isFocusMovingOutside = !viewport.contains(event.relatedTarget as HTMLElement)
-      if (isFocusMovingOutside) {
-        providerContext.focused.value = false
-        handleResume()
-      }
-    }
-
-    const handlePointerLeaveResume = () => {
-      pendingPointerLeave.value = true
-      const isFocusInside = viewport.contains(getActiveElement())
-      if (!isFocusInside)
-        handleResume()
-    }
-
-    const handlePointerMoveExpand = () => {
-      pendingPointerLeave.value = false
-      providerContext.hovering.value = true
-    }
-
-    const handleFocusInExpand = () => {
-      providerContext.focused.value = true
-    }
-
-    // We programmatically manage tabbing as we are unable to influence
-    // the source order with portals, this allows us to reverse the
-    // tab order so that it runs from most recent toast to least
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const isMetaKey = event.altKey || event.ctrlKey || event.metaKey
-      const isTabKey = event.key === 'Tab' && !isMetaKey
-
-      if (isTabKey) {
-        const focusedElement = getActiveElement()
-        const isTabbingBackwards = event.shiftKey
-        const targetIsViewport = event.target === viewport
-
-        // If we're back tabbing after jumping to the viewport then we simply
-        // proxy focus out to the preceding document
-        if (targetIsViewport && isTabbingBackwards) {
-          headFocusProxyRef.value?.focus()
-          return
-        }
-
-        const tabbingDirection = isTabbingBackwards ? 'backwards' : 'forwards'
-        const sortedCandidates = getSortedTabbableCandidates({ tabbingDirection })
-        const index = sortedCandidates.findIndex(candidate => candidate === focusedElement)
-        if (focusFirst(sortedCandidates.slice(index + 1))) {
-          event.preventDefault()
-        }
-        else {
-          // If we can't focus that means we're at the edges so we
-          // proxy to the corresponding exit point and let the browser handle
-          // tab/shift+tab keypress and implicitly pass focus to the next valid element in the document
-          isTabbingBackwards
-            ? headFocusProxyRef.value?.focus()
-            : tailFocusProxyRef.value?.focus()
-        }
-      }
-    }
-
-    viewport.addEventListener('focusin', handlePause)
-    viewport.addEventListener('focusin', handleFocusInExpand)
-    viewport.addEventListener('focusout', handleFocusOutResume)
-    viewport.addEventListener('pointermove', handlePause)
-    viewport.addEventListener('pointermove', handlePointerMoveExpand)
-    viewport.addEventListener('pointerleave', handlePointerLeaveResume)
-    viewport.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('blur', handlePause)
-    window.addEventListener('focus', handleResume)
-
-    cleanupFn(() => {
-      viewport.removeEventListener('focusin', handlePause)
-      viewport.removeEventListener('focusin', handleFocusInExpand)
-      viewport.removeEventListener('focusout', handleFocusOutResume)
-      viewport.removeEventListener('pointermove', handlePause)
-      viewport.removeEventListener('pointermove', handlePointerMoveExpand)
-      viewport.removeEventListener('pointerleave', handlePointerLeaveResume)
-      viewport.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('blur', handlePause)
-      window.removeEventListener('focus', handleResume)
-    })
-  }
-})
-
-function getSortedTabbableCandidates({ tabbingDirection }: { tabbingDirection: 'forwards' | 'backwards' }) {
-  const toastItems = getItems().map(i => i.ref)
-  const tabbableCandidates = toastItems.map((toastNode) => {
-    const toastTabbableCandidates = [toastNode, ...getTabbableCandidates(toastNode)]
-    return tabbingDirection === 'forwards'
-      ? toastTabbableCandidates
-      : toastTabbableCandidates.reverse()
-  })
-  return (
-    tabbingDirection === 'forwards' ? tabbableCandidates.reverse() : tabbableCandidates
-  ).flat()
-}
 </script>
 
 <template>
-  <DismissableLayerBranch
-    role="region"
-    :aria-label="typeof label === 'string' ? label.replace('{hotkey}', hotkeyMessage) : label(hotkeyMessage)"
-    tabindex="-1"
-    :style="{
-      // incase list has size when empty (e.g. padding), we remove pointer events so
-      // it doesn't prevent interactions with page elements that it overlays
-      pointerEvents: hasToasts ? undefined : 'none',
-    }"
-  >
+  <DismissableLayerBranch v-bind="region.attrs.value">
     <FocusProxy
       v-if="hasToasts"
       :ref="(node: Element | ComponentPublicInstance | null) => {
@@ -214,26 +69,14 @@ function getSortedTabbableCandidates({ tabbingDirection }: { tabbingDirection: '
         headFocusProxyRef = unrefElement(node as ComponentPublicInstance) as HTMLElement
         return undefined
       }"
-      @focus-from-outside-viewport="() => {
-        const tabbableCandidates = getSortedTabbableCandidates({
-          tabbingDirection: 'forwards',
-        })
-        focusFirst(tabbableCandidates)
-      }"
+      @focus-from-outside-viewport="onHeadProxyFocus"
     />
     <CollectionSlot>
       <Primitive
+        v-bind="mergeProps(viewport.attrs.value, $attrs)"
         :ref="forwardRef"
-        tabindex="-1"
         :as="as"
         :as-child="asChild"
-        :data-expanded="providerContext.expanded.value ? '' : undefined"
-        :style="{
-          '--reka-toast-frontmost-height': providerContext.frontmostHeight.value
-            ? `${providerContext.frontmostHeight.value}px`
-            : undefined,
-        }"
-        v-bind="$attrs"
       >
         <slot />
       </Primitive>
@@ -245,12 +88,7 @@ function getSortedTabbableCandidates({ tabbingDirection }: { tabbingDirection: '
         tailFocusProxyRef = unrefElement(node as ComponentPublicInstance) as HTMLElement
         return undefined
       }"
-      @focus-from-outside-viewport="() => {
-        const tabbableCandidates = getSortedTabbableCandidates({
-          tabbingDirection: 'backwards',
-        })
-        focusFirst(tabbableCandidates)
-      }"
+      @focus-from-outside-viewport="onTailProxyFocus"
     />
   </DismissableLayerBranch>
 </template>

@@ -121,7 +121,7 @@ describe('given DropdownMenu tab navigation', () => {
       props: { modal: false },
     })
 
-    const menu = (await findAllByRole(container, 'menu'))[0]
+    const menu = (await findAllByRole(container as HTMLElement, 'menu'))[0]
     const event = new KeyboardEvent('keydown', {
       bubbles: true,
       cancelable: true,
@@ -137,7 +137,7 @@ describe('given DropdownMenu tab navigation', () => {
       props: { modal: true },
     })
 
-    const menu = (await findAllByRole(container, 'menu'))[0]
+    const menu = (await findAllByRole(container as HTMLElement, 'menu'))[0]
     const event = new KeyboardEvent('keydown', {
       bubbles: true,
       cancelable: true,
@@ -153,7 +153,7 @@ describe('given DropdownMenu tab navigation', () => {
       props: { modal: true },
     })
 
-    const submenu = (await findAllByRole(container, 'menu'))[1]
+    const submenu = (await findAllByRole(container as HTMLElement, 'menu'))[1]
     const event = new KeyboardEvent('keydown', {
       bubbles: true,
       cancelable: true,
