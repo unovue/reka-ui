@@ -54,6 +54,13 @@ defineRekaElements([dialogElements, switchElements])
 ```
 
 ```css
+/* Until the script has defined them, the elements are plain unknown elements:
+   hide them, so closed content does not flash on load. */
+reka-dialog-portal:not(:defined),
+reka-switch-thumb:not(:defined) {
+  display: none;
+}
+
 .switch {
   display: inline-block;
   width: 42px;
@@ -116,9 +123,9 @@ Props, events and data attributes are the ones documented on each component page
 
 ```ts
 import {
+  defineAllRekaElements,
   defineDialogElements,
   defineRekaElements,
-  rekaElementFamilies,
   tabsElements,
 } from 'reka-ui/elements'
 
@@ -132,12 +139,20 @@ defineDialogElements()
 defineDialogElements({ prefix: 'acme' })
 
 // Every supported family. This bundles all of them.
-defineRekaElements(rekaElementFamilies)
+defineAllRekaElements()
 ```
 
 - Registration is explicit. Importing the module has no side effects, and a bundler drops the families you never import.
-- Registering is idempotent. A tag that is already defined is skipped, so calling it from several entry points is safe.
-- Order does not matter. An element waits for its Reka ancestors to be defined and rendered before it mounts. Properties set on an element before its tag was defined are kept.
+- Registering is idempotent. A tag that is already defined is skipped, so calling it from several entry points (or from two copies of `reka-ui` on one page) is safe.
+- Order does not matter. Elements find each other when they are connected, whichever was defined first. An element whose ancestors are not defined yet works on its own, and moves under them when they are defined. A part that cannot work alone (a trigger without its root) waits for one, with a warning in development.
+- Properties set on an element before its tag was defined are kept.
+
+| Option | Default | |
+| --- | --- | --- |
+| `prefix` | `'reka'` | Tag prefix. |
+| `events` | `{ bubbles: false, composed: false }` | How events are dispatched. See [events](#events). |
+| `shadowRoot` | `false` | `true` or `{ mode }`. See [Shadow DOM](#shadow-dom). |
+| `styles` | `[]` | Stylesheets adopted by every shadow root. |
 
 ## Props: attributes and properties
 
@@ -145,21 +160,26 @@ Every prop is available as a **property** in camelCase (`el.modelValue`, `el.def
 
 | Prop type | Attribute | Example |
 | --- | --- | --- |
-| `boolean` | Present means `true`. Absent means the default. `"false"` means `false`. | `<reka-dialog-root default-open>` |
+| `boolean` | Like an HTML boolean attribute: present means `true`, whatever its value, and absent means the default. | `<reka-dialog-root default-open>` |
+| `boolean` that defaults to `true` | Also `"false"`, the only way to turn it off with an attribute. | `<reka-dialog-root modal="false">`, `<reka-tabs-list loop="false">` |
 | `number` | Parsed with `Number()` | `<reka-popover-content side-offset="8">` |
 | `string` | As is | `<reka-tabs-root default-value="account">` |
-| `boolean \| 'indeterminate'` (Checkbox, Switch) | Present means `true`, plus `"false"` and `"indeterminate"` | `<reka-checkbox-root default-value="indeterminate">` |
+| `boolean \| 'indeterminate'` (Checkbox and Switch values) | A value, not a flag: `""` or `"true"`, `"false"`, `"indeterminate"` | `<reka-checkbox-root default-value="indeterminate">` |
 | Arrays, objects, elements, functions | None, property only | `accordion.modelValue = ['a', 'b']` |
+
+`disabled="false"` is disabled, as on any HTML element. `open`, `required` and every other native attribute name work the same way. To control a boolean as `false`, set the property:
 
 ```js
 const accordion = document.querySelector('reka-accordion-root')
 accordion.type = 'multiple'
 accordion.modelValue = ['a', 'b']
+
+collapsible.open = false // controlled and closed
 ```
 
-Elements do not reflect props back to attributes. Read the current state from the `data-*` attributes and ARIA attributes the part renders, or from events.
+Elements do not reflect props back to attributes, with one exception: `el.disabled` sets or removes the `disabled` attribute, which the browser reads (`:disabled`, `<fieldset disabled>`). Read the current state from the `data-*` and ARIA attributes the part renders, or from events.
 
-`id` and `dir` are native `HTMLElement` properties, so they stay attribute-driven. A part that needs an id for ARIA (a dialog title, a tab panel) uses its own while it is mounted, and restores yours when it unmounts.
+`id`, `dir` and `hidden` are native `HTMLElement` properties, so they stay attribute-driven.
 
 ## Events
 
@@ -180,9 +200,9 @@ root.addEventListener('update-open', (event) => {
 })
 ```
 
-- `event.detail` is `{ value, details }`. `value` is the emit's first argument, and `details` is the second one when the emit has one (the `beforeUpdate:*` events, for example).
-- Events are cancelable. `event.preventDefault()` cancels the change: it calls `details.cancel()` on `before-update-*` events, and `preventDefault()` on emits whose value is a DOM event (`escape-key-down`, `pointer-down-outside`, …).
-- Events do not bubble, since every part fires its own and `update-model-value` would be ambiguous on an ancestor. Listen on the element itself.
+- `event.detail` is `{ value, details }`. `value` is the emit's first argument, and `details` is the second one when the emit has one (the change details of `update-*` and `before-update-*` events, for example).
+- Only events whose default can be prevented are `cancelable`. `preventDefault()` on a `before-update-*` event cancels the change (`details.cancel()`), and on an event that carries a DOM event (`escape-key-down`, `pointer-down-outside`, …) it prevents that event's default. `update-*` events report a change that already happened, and are not cancelable.
+- Events do not bubble by default, since every part fires its own and `update-model-value` would be ambiguous on an ancestor. Listen on the element itself, or register with `events: { bubbles: true, composed: true }` to listen higher up (`composed` also crosses shadow roots).
 
 ```js
 // Keep the dialog open until the form is valid.
@@ -201,6 +221,8 @@ switchRoot.addEventListener('update-model-value', (event) => {
 })
 ```
 
+**Uncontrolled state is kept by the element.** Removed from the page and added back, or unmounted with its parent part (a closed collapsible's content), an element comes back with the value it had, not its default. A form reset brings it back to its default.
+
 ## The element is the part
 
 Each element renders its part onto itself instead of rendering a child element. `<reka-dialog-trigger>` gets `role="button"`, `aria-haspopup`, `aria-expanded`, `data-state`, `tabindex` and the click and keyboard handlers. You style the element directly:
@@ -214,11 +236,29 @@ reka-accordion-content[data-state='closed'] { … }
 - `as` and `asChild` are not available. The element replaces them.
 - Parts whose default element carries meaning get that meaning added. Button parts get `role="button"`, `tabindex="0"`, and activate on Enter and Space. Headings get `role="heading"` and `aria-level`. Lists get `role="list"` and `role="listitem"`.
 - Custom elements are `display: inline` by default. Set `display` for parts that need a box (a switch, a dialog content).
-- Your own attributes, classes and styles are kept. Classes and styles merge with the part's, and attributes the part writes are restored when it unmounts.
-- A part that is not rendered (closed content, an inactive tab panel) gets `data-reka-unmounted`, and Reka hides it with `display: none`. Its children stay in the DOM but are inert. Content parts with `force-mount` stay visible, so you can animate them with `data-state`.
-- When a part renders extra elements next to itself, they go into a `<div data-reka-fragment style="display: contents">` before the element. Examples are the hidden `<input>` a switch or checkbox renders inside a form.
+- Your own attributes, classes and styles are kept. Classes and styles merge with the part's. An attribute the part renders (`data-state`, `aria-expanded`, …) belongs to the part while it is rendered: if you change it meanwhile, the part's value stays, and yours is what remains when the part unmounts. The `role`, `tabindex` and `aria-level` added for native semantics (above) give way to yours.
+- Ids work the same way. A part that takes an `id` prop (Switch, Checkbox) uses yours. A part whose id other parts point to (a dialog title, a collapsible content) uses its own while rendered, and gives yours back when it unmounts.
+- A copy made with `cloneNode()` starts from your attributes, not from the rendered state of the element it was copied from.
 
-Portals move the element. `<reka-dialog-content>` inside `<reka-dialog-portal>` is moved to `<body>` while the dialog is open, and moved back when it closes.
+Portals move the element. `<reka-dialog-portal>` and what it contains are moved to `<body>` while mounted, and moved back when they unmount.
+
+### Parts that are not rendered
+
+A part that is not rendered (closed content, an inactive tab panel) gets `data-reka-unmounted`, `inert` and `hidden`, and Reka hides it with `display: none`.
+
+This is the one place elements differ from the Vue components. In Vue, closed content is not in the DOM at all. As an element, its children are yours, so they stay where you put them, hidden and inert. Fields inside are left out of their form's data, as they would be in Vue. Reka elements inside unmount, and mount again when the part renders.
+
+`force-mount` content stays rendered, so you can animate it with `data-state`.
+
+## Forms
+
+Parts with a `name` (Switch, Checkbox, Checkbox group, Toggle) are [form-associated](https://html.spec.whatwg.org/multipage/custom-elements.html#form-associated-custom-elements):
+
+- they submit their value with their form, wherever you move them;
+- `<label for>` labels them, `<fieldset disabled>` disables them, and resetting the form resets them;
+- nothing is added next to them: the hidden inputs the Vue components render are not in the document.
+
+Form participation needs `ElementInternals` (Safari 16.4 and later). Without it, the elements work but do not submit.
 
 ## Children instead of slots
 
@@ -228,13 +268,14 @@ Child elements and text work like the default slot. Scoped slots (slot props) ar
 
 Context passes through the DOM the way it passes through components in Vue. An element mounts once the nearest Reka element above it has rendered its part, and it injects the contexts provided there. That is how `<reka-dialog-trigger>` finds its `<reka-dialog-root>`.
 
+- Elements find their parent with the [Context Community Protocol](https://github.com/webcomponents-cg/community-protocols/blob/main/proposals/context.md): a `context-request` event, answered by the nearest Reka element above. Elements defined later announce themselves with `context-provider`, and the elements below them move over.
 - Nesting must follow the component structure. A part has to be a DOM descendant of the parts it depends on, though other elements may sit in between.
-- Context also crosses shadow roots: an element inside a shadow root finds the Reka element hosting it.
-- When a part unmounts (a closed dialog's content), the elements inside it unmount too, and they remount when it renders again.
+- Moved under another root, an element remounts there.
+- Context crosses shadow roots: an element inside a shadow root finds the Reka element hosting it.
 
 ## Shadow DOM
 
-Elements render in the light DOM by default. You can give every element a shadow root to hold encapsulated styles:
+Elements render in the light DOM by default. You can give every element a shadow root, for encapsulated `:host` styles:
 
 ```ts
 const sheet = new CSSStyleSheet()
@@ -243,13 +284,28 @@ sheet.replaceSync(`:host([data-state='checked']) { background: black; }`)
 defineSwitchElements({ prefix: 'my', shadowRoot: true, styles: [sheet] })
 ```
 
-The shadow root contains a single default `<slot>`, and children stay in the light DOM. This means ARIA id references, `<label for>`, form participation and focus behave the same as without it.
+The shadow root holds a single default `<slot>`, and children stay in the light DOM, so ARIA id references, `<label for>`, form participation and focus behave the same as without it. Nothing is rendered inside it, so it gives you `:host(...)` styling only: there are no `::part()`s to style. Only `mode` is supported (`delegatesFocus` would take focus away from the element, which is the focusable part).
 
 Placing Reka elements inside your own components' shadow roots depends on Shadow DOM support in the core components ([#2725](https://github.com/unovue/reka-ui/issues/2725)): active-element tracking, outside-click detection and focus trapping across shadow boundaries. Until that lands, light DOM is the supported setup.
 
+## TypeScript
+
+Element types for the default-prefixed tags are opt-in:
+
+```ts
+// reka-elements.d.ts
+import type { RekaElementTagNameMap } from 'reka-ui/elements'
+
+declare global {
+  interface HTMLElementTagNameMap extends RekaElementTagNameMap {}
+}
+```
+
+`document.querySelector('reka-switch-root')` is then typed with the switch's props as properties, and `addEventListener('update-model-value', …)` with the event's `detail`.
+
 ## React
 
-React 19 sets props as properties on custom elements when one exists, and listens to custom events with `on<event-name>`:
+React 19 sets props as properties on custom elements when one exists, and listens to custom events with `on<event-type>`, in the event's own casing:
 
 ```tsx
 import { useState } from 'react'
@@ -270,7 +326,21 @@ export function AirplaneMode() {
 }
 ```
 
-React 18 passes everything as attributes and does not listen to custom events. Use a ref:
+`onUpdateModelValue` does not work: React would listen to an event named `UpdateModelValue`. The JSX typings reject it and name the prop to use:
+
+```ts
+// reka-elements.d.ts
+import type { HTMLAttributes, RefAttributes } from 'react'
+import type { RekaIntrinsicElements } from 'reka-ui/elements'
+
+declare module 'react' {
+  namespace JSX {
+    interface IntrinsicElements extends RekaIntrinsicElements<HTMLAttributes<HTMLElement> & RefAttributes<HTMLElement>> {}
+  }
+}
+```
+
+React 18 passes everything as string attributes and does not listen to custom events. Use a ref:
 
 ```tsx
 const ref = useRef<HTMLElement & { modelValue: boolean }>(null)
@@ -284,9 +354,13 @@ useEffect(() => {
 }, [checked])
 ```
 
+In React 18, `disabled={false}` becomes `disabled="false"`, which is disabled. Leave the prop out instead: `disabled={isDisabled || undefined}`.
+
+Server-rendered elements hydrate without mismatches: nothing is added next to them.
+
 ## Svelte
 
-Svelte 5 sets props as properties when they exist on the element, and `on<event-name>` adds event listeners:
+Svelte 5 sets props as properties when they exist on the element, and `on<event-type>` adds event listeners:
 
 ```svelte
 <script>
@@ -313,11 +387,12 @@ vue({
 })
 ```
 
+Bind props in camelCase (`:modelValue="checked"`) or with `.prop` (`:model-value.prop="checked"`). Vue sets a camelCase binding as the element's property, but a kebab-case one as an attribute, which turns the value into a string.
+
 ## Limitations
 
 - **Families.** Only the families listed above are available. The rest will follow, and `PopoverArrow` (which renders an SVG) is not included yet.
 - **SSR.** Server rendering and declarative shadow DOM are not supported. Elements render on the client after they are defined.
 - **Bundler required.** See the [quick start](#quick-start).
-- **Types.** There are no JSX or template typings for the tags yet, and no Custom Elements Manifest.
-- **Ids.** Parts that need ids for ARIA use their own while mounted.
-- **Vue 3.5+.** Each element's app uses `app.config.idPrefix`.
+- **Custom Elements Manifest.** Not generated yet.
+- **Vue version.** Tested on Vue 3.5. With older versions generated ids are not unique between elements, and a warning says so in development.
