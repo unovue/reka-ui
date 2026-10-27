@@ -246,27 +246,44 @@ describe('week info', () => {
     }
   })
 
-  // Locales whose region the fallback table does not list, or a macro-region:
-  // the table must match Intl's CLDR data so server and browser grids agree.
-  const fallbackLocales = ['es-419', 'en-150', 'pt-BR', 'en-001', 'he-IL', 'ar-SA', 'fa-IR', 'ar-EG', 'ps-AF', 'ar-AE', 'hi-IN', 'en-UG']
+  // Locales whose region the fallback table does not list, or a macro-region,
+  // with their CLDR 48 week data as ICU 78 reports it (first day 0 = Sunday;
+  // weekend days in Temporal's numbering, Monday = 1). The fallback must give
+  // the same data so server and browser grids agree.
+  const cldrWeeks = [
+    ['es-419', 1, [6, 7]],
+    ['en-150', 1, [6, 7]],
+    ['pt-BR', 0, [6, 7]],
+    ['en-001', 1, [6, 7]],
+    ['he-IL', 0, [5, 6]],
+    ['ar-SA', 0, [5, 6]],
+    ['fa-IR', 6, [5]],
+    ['ar-EG', 6, [5, 6]],
+    ['ps-AF', 6, [4, 5]],
+    ['ar-AE', 1, [6, 7]],
+    ['hi-IN', 0, [7]],
+    ['en-UG', 1, [7]],
+  ] as const
+  const weekendDays = (locale: string) => [1, 2, 3, 4, 5, 6, 7].filter(day => isWeekend(Temporal.PlainDate.from('2024-05-13').add({ days: day - 1 }), locale))
 
-  it('falls back to week data that agrees with Intl', () => {
-    const fromIntl = fallbackLocales.map((locale) => {
-      const info = (new Intl.Locale(locale) as Intl.Locale & { getWeekInfo: () => { firstDay: number, weekend: number[] } }).getWeekInfo()
-      return [locale, info.firstDay % 7, info.weekend] as const
-    })
+  it('falls back to the CLDR week data', () => {
     const saved = removeWeekInfo()
     try {
-      const fromTable = fallbackLocales.map(locale => [
-        locale,
-        getLocaleWeekStart(locale),
-        [1, 2, 3, 4, 5, 6, 7].filter(day => isWeekend(Temporal.PlainDate.from('2024-05-13').add({ days: day - 1 }), locale)),
-      ] as const)
-      expect(fromTable).toEqual(fromIntl)
+      const fromTable = cldrWeeks.map(([locale]) => [locale, getLocaleWeekStart(locale), weekendDays(locale)])
+      expect(fromTable).toEqual(cldrWeeks)
     }
     finally {
       restoreWeekInfo(saved)
     }
+  })
+
+  // Only where the runtime implements it (CI's Node may not).
+  it.runIf(typeof (Intl.Locale.prototype as { getWeekInfo?: unknown }).getWeekInfo === 'function')('agrees with Intl.Locale#getWeekInfo()', () => {
+    const fromIntl = cldrWeeks.map(([locale]) => {
+      const info = (new Intl.Locale(locale) as Intl.Locale & { getWeekInfo: () => { firstDay: number, weekend: number[] } }).getWeekInfo()
+      return [locale, info.firstDay % 7, info.weekend]
+    })
+    expect(fromIntl).toEqual(cldrWeeks)
   })
 
   it('reads the weekend from the locale', () => {
