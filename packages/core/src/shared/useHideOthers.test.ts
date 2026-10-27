@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { hideOthers } from 'aria-hidden'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
-import { useHideOthers } from './useHideOthers'
+import { hideOthersAcrossShadowRoots, useHideOthers } from './useHideOthers'
 
 vi.mock('aria-hidden', () => ({ hideOthers: vi.fn() }))
 
@@ -61,5 +61,51 @@ describe('useHideOthers', () => {
     wrapper.unmount()
     expect(undos[0]).toHaveBeenCalledTimes(1)
     expect(undos[1]).toHaveBeenCalledTimes(1)
+  })
+
+  it('hides siblings in every shadow root around the target, then around the outermost host (#2725)', async () => {
+    const outerHost = document.createElement('div')
+    document.body.appendChild(outerHost)
+    const outerRoot = outerHost.attachShadow({ mode: 'open' })
+    const innerHost = document.createElement('div')
+    outerRoot.appendChild(innerHost)
+    const innerRoot = innerHost.attachShadow({ mode: 'open' })
+    const element = document.createElement('div')
+    innerRoot.appendChild(element)
+
+    const { target, wrapper } = setup()
+    target.value = element
+    await nextTick()
+    expect(vi.mocked(hideOthers).mock.calls).toEqual([
+      [element, innerRoot],
+      [innerHost, outerRoot],
+      [outerHost],
+    ])
+
+    wrapper.unmount()
+    expect(undos.every(undo => undo.mock.calls.length === 1)).toBe(true)
+    outerHost.remove()
+  })
+
+  it('runs the cross-root undo once, in reverse order, however often it is called', () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const element = document.createElement('div')
+    host.attachShadow({ mode: 'open' }).appendChild(element)
+    const order: number[] = []
+    vi.mocked(hideOthers).mockImplementation(() => {
+      const index = undos.length
+      const undo = vi.fn(() => {
+        order.push(index)
+      })
+      undos.push(undo)
+      return undo
+    })
+
+    const undo = hideOthersAcrossShadowRoots(element)
+    undo()
+    undo()
+    expect(order).toEqual([1, 0])
+    host.remove()
   })
 })

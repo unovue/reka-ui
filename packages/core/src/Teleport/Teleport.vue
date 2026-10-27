@@ -1,7 +1,8 @@
 <script lang="ts">
 export interface TeleportProps {
   /**
-   * Vue native teleport component prop `:to`
+   * Vue native teleport component prop `:to`. Defaults to `ConfigProvider`'s
+   * `teleportTo`, then to `body`, or to the shadow root the portal is rendered in.
    *
    * {@link https://vuejs.org/guide/built-ins/teleport.html#basic-usage}
    */
@@ -28,22 +29,117 @@ export interface TeleportProps {
 </script>
 
 <script setup lang="ts">
-import { useMounted } from '@vueuse/core'
-import { computed } from 'vue'
+import type { VNode } from 'vue'
+import type { RootNode } from '@/shared'
+import { isClient } from '@vueuse/shared'
+import { computed, getCurrentInstance, onMounted, ref, shallowRef } from 'vue'
 import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
+import { getRootNode, resolveTeleportTarget } from '@/shared'
 
 const props = defineProps<TeleportProps>()
 
 const configContext = injectConfigProviderContext({})
 
-const target = computed(() => props.to ?? configContext.teleportTo?.value ?? 'body')
+const instance = getCurrentInstance()
 
-const isMounted = useMounted()
+/**
+ * Where `node` sits in `tree` (a parent component's render tree, which does
+ * not descend into child components): `undefined` if absent, otherwise the
+ * innermost native `Teleport` vnode on the way to it, or `null` for none.
+ */
+function findTeleportAbove(tree: VNode, node: VNode, teleport: VNode | null = null): VNode | null | undefined {
+  if (tree === node)
+    return teleport
+  if ((tree.type as { __isTeleport?: boolean } | undefined)?.__isTeleport)
+    teleport = tree
+  if (Array.isArray(tree.children)) {
+    for (const child of tree.children) {
+      if (child && typeof child === 'object') {
+        const found = findTeleportAbove(child as VNode, node, teleport)
+        if (found !== undefined)
+          return found
+      }
+    }
+  }
+  return undefined
+}
+
+function isTeleportDisabled(teleport: VNode) {
+  const disabled = teleport.props?.disabled
+  return !!disabled || disabled === ''
+}
+
+/**
+ * The root this portal is about to render in, before it has a DOM anchor of
+ * its own: the root of its existing node when hydrating, or of the nearest
+ * ancestor already in the DOM. A native `Teleport` between this portal and
+ * that ancestor moves the content elsewhere, so its (already resolved) target
+ * decides instead. `undefined` when unknown, e.g. during the app's first
+ * client render, where nothing is in the DOM yet.
+ */
+function getInitialRootNode(): RootNode | undefined {
+  if (!isClient || !instance)
+    return undefined
+  const hydrated = instance.vnode.el as Node | null | undefined
+  if (hydrated?.isConnected)
+    return getRootNode(hydrated)
+  for (let child = instance, parent = instance.parent; parent; child = parent, parent = parent.parent) {
+    const teleport = parent.subTree && findTeleportAbove(parent.subTree, child.vnode)
+    if (teleport && !isTeleportDisabled(teleport)) {
+      // Resolved before its children mount, unless the Teleport is deferred.
+      const teleportTarget = teleport.target as Node | null | undefined
+      return teleportTarget?.isConnected ? getRootNode(teleportTarget) : undefined
+    }
+    const el = parent.subTree?.el as Node | null | undefined
+    if (parent.isMounted && el?.isConnected)
+      return getRootNode(el)
+  }
+  return undefined
+}
+
+// The root node (document or shadow root) this portal is rendered in, so a
+// portal inside a shadow root keeps its content in that shadow root instead of
+// escaping to `document.body`. Confirmed on mount from the component's own DOM
+// anchor (the `v-if` placeholder, or the Teleport's start anchor).
+const initialRootNode = getInitialRootNode()
+const rootNode = shallowRef<RootNode | undefined>(initialRootNode)
+const isMounted = ref(false)
+onMounted(() => {
+  rootNode.value = getRootNode(instance?.subTree.el as Node | null | undefined)
+  isMounted.value = true
+})
+
+// `forceMount` renders the content before this portal mounts: on the server,
+// when hydrating, when the portal is created inside an already mounted tree,
+// and whenever the root doesn't decide where the content goes (`disabled`, or
+// an element target). Otherwise, on the app's first client render, the root is
+// unknown, so the content waits for the mount instead of mounting into `body`
+// and moving afterwards (root-scoped setup such as focus guards would stay
+// behind in the document).
+const explicitTo = props.to ?? configContext.teleportTo?.value
+// Vue resolves a deferred selector against the document. In a shadow root this
+// component looks it up instead (`resolveTeleportTarget`), so, like `defer`,
+// it waits until the rest of the tree is in the DOM.
+const resolvesDeferredSelectorInShadowRoot = !!props.defer
+  && typeof explicitTo === 'string'
+  && (initialRootNode as ShadowRoot | undefined)?.host !== undefined
+const canRenderBeforeMount = !isClient
+  || props.disabled
+  || (!!explicitTo && typeof explicitTo !== 'string')
+  || (!!initialRootNode && !resolvesDeferredSelectorInShadowRoot)
+
+// Vue's `Teleport` mounts into any parent node (it only calls `insertBefore`), so
+// a `ShadowRoot` target is fine; its prop type just doesn't name it. Read
+// again once mounted: a selector can match an element that mounted since.
+const target = computed(() => {
+  void isMounted.value
+  return resolveTeleportTarget(props.to ?? configContext.teleportTo?.value, rootNode.value) as string | HTMLElement
+})
 </script>
 
 <template>
   <Teleport
-    v-if="isMounted || forceMount"
+    v-if="isMounted || (forceMount && canRenderBeforeMount)"
     :to="target"
     :disabled="disabled"
     :defer="defer"

@@ -131,6 +131,10 @@ export default defineConfig({
             link: '/docs/guides/virtualization',
           },
           {
+            text: `Shadow DOM ${BadgeHTML('New')}`,
+            link: '/docs/guides/shadow-dom',
+          },
+          {
             text: `Migration ${BadgeHTML('New')}`,
             link: '/docs/guides/migration',
           },

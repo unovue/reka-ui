@@ -8,6 +8,7 @@ import type { AcceptableValue, Direction } from '@/shared/types'
 import { computed, isRef, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, toValue, watch, watchEffect } from 'vue'
 import { focusFirst } from '@/Menu/utils'
 import {
+  containsComposed,
   createLabelRegistry,
   createPartSurface,
   disclosureState,
@@ -724,7 +725,7 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
         // otherwise, if the event was outside the content, close. Document-level
         // listener → read the composed target so a shadow-mounted content isn't
         // seen as "outside" itself.
-        if (!contentElement.value?.contains(getEventTarget<HTMLElement>(event)))
+        if (!contentElement.value || !containsComposed(contentElement.value, getEventTarget<HTMLElement>(event)))
           context.onOpenChange(false, 'outside-press', event)
       }
       document.removeEventListener('pointermove', handlePointerMove)

@@ -22,7 +22,7 @@
   },
   {
     'name': 'to',
-    'description': '<p>Vue native teleport component prop <code>:to</code></p>\n<p><a href=\'https://vuejs.org/guide/built-ins/teleport.html#basic-usage\' target=\'_blank\'>reference</a></p>\n',
+    'description': '<p>Vue native teleport component prop <code>:to</code>. Defaults to <code>ConfigProvider</code>\'s\n<code>teleportTo</code>, then to <code>body</code>, or to the shadow root the portal is rendered in.</p>\n<p><a href=\'https://vuejs.org/guide/built-ins/teleport.html#basic-usage\' target=\'_blank\'>reference</a></p>\n',
     'type': 'string | HTMLElement',
     'required': false
   }
@@ -38,6 +38,6 @@
 | `defer` | Defer the resolving of a Teleport target until other parts of the application have mounted (requires Vue 3.5.0+) reference | `boolean` | No | - |
 | `disabled` | Disable teleport and render the component inline reference | `boolean` | No | - |
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
-| `to` | Vue native teleport component prop :to reference | `string \| HTMLElement` | No | - |
+| `to` | Vue native teleport component prop :to. Defaults to ConfigProvider's teleportTo, then to body, or to the shadow root the portal is rendered in. reference | `string \| HTMLElement` | No | - |
 
 </llm-only>
