@@ -13,6 +13,10 @@ import { provideDialogRootContext } from '@/Dialog/DialogRoot.vue'
 import { useId } from '@/shared'
 import { useAlertDialog } from './useAlertDialog'
 
+defineOptions({
+  inheritAttrs: false,
+})
+
 const props = withDefaults(defineProps<AlertDialogProps>(), {
   open: undefined,
   defaultOpen: false,

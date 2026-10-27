@@ -119,6 +119,21 @@ describe('useAlertDialog — through AlertDialogRoot', () => {
     expect(wrapper.find('button').attributes('aria-expanded')).toBe('false')
     wrapper.unmount()
   })
+
+  it('drops fallthrough attrs silently, like DialogRoot (no extraneous-attrs warning)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(Reka.AlertDialogRoot, { class: 'x', id: 'y' }, {
+          default: () => h(Reka.AlertDialogTrigger, () => 'Open'),
+        })
+      },
+    }), { attachTo: document.body })
+    expect(warn.mock.calls.filter(args => String(args[0]).includes('Extraneous non-props attributes'))).toEqual([])
+    expect(wrapper.find('button').classes()).not.toContain('x')
+    wrapper.unmount()
+    warn.mockRestore()
+  })
 })
 
 describe('useAlertDialog — rendered surfaces', () => {
