@@ -7,8 +7,6 @@ name: color-field
 
 # Color Field
 
-<Badge>Alpha</Badge>
-
 <Description>
 An input field component for entering color values. Supports hex color input or individual color channel values with keyboard navigation and wheel interaction.
 </Description>

@@ -7,8 +7,6 @@ name: color-swatch
 
 # Color Swatch
 
-<Badge>Alpha</Badge>
-
 <Description>
 Displays a color swatch, which can be used to represent colors in a UI.
 </Description>

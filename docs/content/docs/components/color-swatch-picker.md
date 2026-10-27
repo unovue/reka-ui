@@ -7,8 +7,6 @@ name: color-swatch-picker
 
 # Color Swatch Picker
 
-<Badge>Alpha</Badge>
-
 <Description>
 A component that allows users to select from a set of predefined colors, often used for themes or branding.
 </Description>

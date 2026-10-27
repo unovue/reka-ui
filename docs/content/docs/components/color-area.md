@@ -7,8 +7,6 @@ name: color-area
 
 # Color Area
 
-<Badge>Alpha</Badge>
-
 <Description>
 A two-dimensional area control that allows users to select color values by interacting with a visual gradient area. Supports multiple color spaces and configurable channels for each axis.
 </Description>

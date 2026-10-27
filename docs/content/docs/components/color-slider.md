@@ -7,8 +7,6 @@ name: color-slider
 
 # Color Slider
 
-<Badge>Alpha</Badge>
-
 <Description>
 A slider component for adjusting individual color channels. Supports all color channels including hue, saturation, lightness, brightness, red, green, blue, and alpha with automatic gradient backgrounds.
 </Description>
