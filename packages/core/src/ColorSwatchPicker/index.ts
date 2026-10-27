@@ -17,4 +17,4 @@ export {
 } from './ColorSwatchPickerRoot.vue'
 
 export { useColorSwatchPicker } from './useColorSwatchPicker'
-export type { ColorSwatchPickerChangeReason, ColorSwatchPickerItemIndicatorState, ColorSwatchPickerItemState, ColorSwatchPickerItemSwatchState, ColorSwatchPickerRootState, UseColorSwatchPickerProps, UseColorSwatchPickerReturn } from './useColorSwatchPicker'
+export type { ColorSwatchPickerChangeReason, ColorSwatchPickerItemIndicatorState, ColorSwatchPickerItemState, ColorSwatchPickerItemSwatchState, ColorSwatchPickerModelValue, ColorSwatchPickerRootState, ColorSwatchPickerValue, UseColorSwatchPickerProps, UseColorSwatchPickerReturn } from './useColorSwatchPicker'

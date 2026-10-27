@@ -3,22 +3,30 @@ import type { ColorFieldRootContext, ColorFieldRootProps } from './ColorFieldRoo
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Color } from '@/shared/color'
 import { computed, ref, toValue, watch } from 'vue'
-import { createPartSurface, useComposing, useControllableState } from '@/shared'
-import { colorToString, convertToRgb, getChannelRange, getChannelValue, isValidColor, normalizeColor, parseColor, setChannelValue } from '@/shared/color'
+import { createPartSurface, snapValueToStep, useComposing, useControllableState } from '@/shared'
+import { colorToHex, convertToRgb, convertToSpace, getChannelColorSpace, getChannelRange, getChannelValue, isEqualColor, isValidColor, normalizeColor, parseColor, setChannelValue } from '@/shared/color'
 
 type Inputs = Pick<ColorFieldRootProps, 'colorSpace' | 'channel' | 'disabled' | 'readonly' | 'disableWheelChange' | 'placeholder' | 'step' | 'modelValue' | 'defaultValue'>
 export type ColorFieldChangeReason = 'keyboard' | 'wheel' | 'blur'
 export type UseColorFieldProps = { [K in keyof Inputs]: MaybeRefOrGetter<Inputs[K]> } & {
+  /** Called with every accepted color; same payload as `onUpdate`. */
   onColorUpdate?: (color: Color) => void
+  /** Called with the hex serialization of every accepted color (lossy: drops hue on greys and sub-byte precision). */
+  onHexUpdate?: (hex: string) => void
+  /** Called with each committed change (edit, step or wheel). */
+  onChange?: (value: Color) => void
+  /** Called after each committed change; every field change is a complete interaction. */
+  onChangeEnd?: (value: Color) => void
   emit?: (event: any, ...args: any[]) => void
-  onBeforeUpdate?: (value: string | Color, details: ChangeEventDetails<ColorFieldChangeReason>) => void
-  onUpdate?: (value: string | Color, details: ChangeEventDetails<ColorFieldChangeReason>) => void
+  onBeforeUpdate?: (value: Color, details: ChangeEventDetails<ColorFieldChangeReason>) => void
+  onUpdate?: (value: Color, details: ChangeEventDetails<ColorFieldChangeReason>) => void
 }
 
 export type ColorFieldRootState = { disabled: boolean, readonly: boolean }
 export interface UseColorFieldReturn {
-  /** Provisional: the model is written as a hex `string` today; in v3 it becomes a `Color` object (#2789). */
+  /** The model as passed in (`string | Color`); every emitted value is a `Color`. */
   readonly modelValue: ComputedRef<string | Color>
+  /** The model as a `Color`; with a `channel`, in the space that holds the channel. */
   readonly color: ComputedRef<Readonly<Color>>
   readonly disabled: ComputedRef<boolean>
   readonly isControlled: ComputedRef<boolean>
@@ -39,11 +47,16 @@ export interface UseColorFieldReturn {
   handleWheel: (event: WheelEvent) => void
 }
 
+const MIN_HEX_INT = 0x000000
+const MAX_HEX_INT = 0xFFFFFF
+const PAGE_STEP_MULTIPLIER = 10
+
 /**
- * Headless ColorField state. Call in setup or an effect scope to dispose synchronization watchers.
+ * Headless ColorField state. Call in setup or an effect scope to dispose the input synchronization watcher.
  *
- * The model types are provisional: `modelValue` is a hex string today and becomes a `Color`
- * object in v3 (#2789).
+ * The model accepts `string | Color` and every emit carries a `Color`. With a
+ * `channel`, the color is edited in the space that holds that channel (the
+ * `colorSpace` prop when it does), so the hue of a grey and fractional steps survive.
  *
  * @experimental
  * @lifecycle setup
@@ -57,30 +70,47 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
   const placeholder = computed(() => toValue(props.placeholder))
   const stepProp = computed(() => toValue(props.step))
 
-  // Normalize the model value
   const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<string | Color, ColorFieldChangeReason>({
     prop: props.modelValue,
     defaultValue: () => toValue(props.defaultValue) ?? '#000000',
+    isEqual: isEqualColor,
     name: 'modelValue',
     emit: props.emit,
-    onBeforeUpdate: props.onBeforeUpdate,
-    onUpdate: props.onUpdate,
+    onBeforeUpdate: props.onBeforeUpdate as ((value: string | Color, details: ChangeEventDetails<ColorFieldChangeReason>) => void) | undefined,
+    onUpdate: props.onUpdate as ((value: string | Color, details: ChangeEventDetails<ColorFieldChangeReason>) => void) | undefined,
   })
 
-  const color = computed(() => normalizeColor(modelValue.value ?? '#000000'))
+  // A string model is parsed once per change. A channel field reads and writes the
+  // color in the space that holds its channel.
+  const parsed = computed(() => normalizeColor(modelValue.value ?? '#000000'))
+  const color = computed(() => channel.value
+    ? convertToSpace(parsed.value, getChannelColorSpace(channel.value, colorSpace.value))
+    : parsed.value)
 
   function reasonFromEvent(event?: Event): ColorFieldChangeReason | BaseChangeReason {
     return event?.type === 'wheel' ? 'wheel' : event?.type === 'blur' ? 'blur' : event ? 'keyboard' : 'imperative-action'
   }
 
   function setColor(newColor: Color, reason: ColorFieldChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    const hexString = colorToString(newColor, 'hex')
-    const changed = setState(hexString, reason, event)
+    const changed = setState(newColor, reason, event)
     if (!changed)
       return false
-
     props.onColorUpdate?.(newColor)
     props.emit?.('update:color', newColor)
+    const hex = colorToHex(newColor)
+    props.onHexUpdate?.(hex)
+    props.emit?.('update:hex', hex)
+    return true
+  }
+
+  /** An interactive change: the model update plus `change` and `changeEnd`. */
+  function applyChange(newColor: Color, event?: Event) {
+    if (!setColor(newColor, reasonFromEvent(event), event))
+      return false
+    props.onChange?.(newColor)
+    props.emit?.('change', newColor)
+    props.onChangeEnd?.(newColor)
+    props.emit?.('changeEnd', newColor)
     return true
   }
 
@@ -88,25 +118,21 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
   const inputValue = ref('')
   const isEditing = ref(false)
 
-  // Update input value when color changes (unless user is editing)
-  watch(() => color.value, (newColor) => {
-    if (!isEditing.value) {
-      inputValue.value = formatValue(newColor)
-    }
-  }, { immediate: true })
-
   function formatValue(c: Color): string {
-    if (channel.value) {
+    if (channel.value)
       return String(Math.round(getChannelValue(c, channel.value)))
-    }
-    // Hex mode
-    return colorToString(c, 'hex')
+    return colorToHex(c)
   }
 
-  // The effective step size
-  const MIN_HEX_INT = 0x000000
-  const MAX_HEX_INT = 0xFFFFFF
-  const PAGE_STEP_MULTIPLIER = 10
+  // Update input value when color changes (unless user is editing)
+  watch(color, (newColor) => {
+    if (!isEditing.value)
+      inputValue.value = formatValue(newColor)
+  }, { immediate: true })
+
+  function resetInput() {
+    inputValue.value = formatValue(color.value)
+  }
 
   function getStep(): number {
     if (stepProp.value != null)
@@ -124,130 +150,70 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
 
   function commit(event?: Event) {
     isEditing.value = false
+    // An unedited value must not be re-parsed: that would round fractional channels
+    // and drop the hue of a grey shown as hex.
+    if (inputValue.value === formatValue(color.value))
+      return
 
     if (channel.value) {
-      // Channel mode - parse as number
       const numValue = parseFloat(inputValue.value)
-      if (!isNaN(numValue)) {
+      if (!Number.isNaN(numValue)) {
         const range = getChannelRange(channel.value)
         const clamped = Math.max(range.min, Math.min(range.max, numValue))
-        setColor(setChannelValue(color.value, channel.value, clamped), reasonFromEvent(event), event)
+        applyChange(setChannelValue(color.value, channel.value, clamped), event)
       }
-      // Reset to formatted value
-      inputValue.value = formatValue(color.value)
     }
     else {
-      // Hex mode - parse as color
       const trimmed = inputValue.value.trim()
-      if (isValidColor(trimmed)) {
-        setColor(parseColor(trimmed), reasonFromEvent(event), event)
-      }
-      // Reset to formatted value
-      inputValue.value = formatValue(color.value)
+      if (isValidColor(trimmed))
+        applyChange(parseColor(trimmed), event)
     }
+    resetInput()
   }
 
   function addHexValue(delta: number, event?: Event) {
-    const intDelta = Math.trunc(delta)
-    const hexInt = color.value.space === 'rgb'
-      ? ((Math.round((color.value as any).r) << 16) | (Math.round((color.value as any).g) << 8) | Math.round((color.value as any).b))
-      : (() => {
-          const rgb = convertToRgb(color.value)
-          return (Math.round(rgb.r) << 16) | (Math.round(rgb.g) << 8) | Math.round(rgb.b)
-        })()
-    const clamped = Math.min(Math.max(hexInt + intDelta, MIN_HEX_INT), MAX_HEX_INT)
-    const hex = `#${clamped.toString(16).padStart(6, '0')}`
-    setColor(parseColor(hex), reasonFromEvent(event), event)
-    inputValue.value = formatValue(color.value)
+    const rgb = convertToRgb(color.value)
+    const hexInt = (Math.round(rgb.r) << 16) | (Math.round(rgb.g) << 8) | Math.round(rgb.b)
+    const clamped = Math.min(Math.max(hexInt + Math.trunc(delta), MIN_HEX_INT), MAX_HEX_INT)
+    applyChange(parseColor(`#${clamped.toString(16).padStart(6, '0')}`), event)
   }
 
-  function increment(event?: Event) {
+  function stepChannel(delta: number, event?: Event) {
+    const ch = channel.value!
+    const { min, max } = getChannelRange(ch)
+    // Snap to the step grid so a fractional value (s = 11.1) moves to the next whole step.
+    const next = snapValueToStep(getChannelValue(color.value, ch) + delta, min, max, getStep())
+    applyChange(setChannelValue(color.value, ch, next), event)
+  }
+
+  function step(delta: number, event?: Event) {
     if (disabled.value || readonly.value)
       return
     isEditing.value = false
-    const step = getStep()
-    if (channel.value) {
-      const currentValue = getChannelValue(color.value, channel.value)
-      setColor(setChannelValue(color.value, channel.value, currentValue + step), reasonFromEvent(event), event)
-      inputValue.value = formatValue(color.value)
-    }
-    else {
-      addHexValue(step, event)
-    }
+    if (channel.value)
+      stepChannel(delta, event)
+    else
+      addHexValue(delta, event)
+    resetInput()
   }
 
-  function decrement(event?: Event) {
+  function setToBound(bound: 'min' | 'max', event?: Event) {
     if (disabled.value || readonly.value)
       return
     isEditing.value = false
-    const step = getStep()
-    if (channel.value) {
-      const currentValue = getChannelValue(color.value, channel.value)
-      setColor(setChannelValue(color.value, channel.value, currentValue - step), reasonFromEvent(event), event)
-      inputValue.value = formatValue(color.value)
-    }
-    else {
-      addHexValue(-step, event)
-    }
+    if (channel.value)
+      applyChange(setChannelValue(color.value, channel.value, getChannelRange(channel.value)[bound]), event)
+    else
+      addHexValue(bound === 'max' ? MAX_HEX_INT : -MAX_HEX_INT, event)
+    resetInput()
   }
 
-  function incrementPage(event?: Event) {
-    if (disabled.value || readonly.value)
-      return
-    isEditing.value = false
-    const step = getStep() * PAGE_STEP_MULTIPLIER
-    if (channel.value) {
-      const currentValue = getChannelValue(color.value, channel.value)
-      setColor(setChannelValue(color.value, channel.value, currentValue + step), reasonFromEvent(event), event)
-      inputValue.value = formatValue(color.value)
-    }
-    else {
-      addHexValue(step, event)
-    }
-  }
-
-  function decrementPage(event?: Event) {
-    if (disabled.value || readonly.value)
-      return
-    isEditing.value = false
-    const step = getStep() * PAGE_STEP_MULTIPLIER
-    if (channel.value) {
-      const currentValue = getChannelValue(color.value, channel.value)
-      setColor(setChannelValue(color.value, channel.value, currentValue - step), reasonFromEvent(event), event)
-      inputValue.value = formatValue(color.value)
-    }
-    else {
-      addHexValue(-step, event)
-    }
-  }
-
-  function incrementToMax(event?: Event) {
-    if (disabled.value || readonly.value)
-      return
-    isEditing.value = false
-    if (channel.value) {
-      const range = getChannelRange(channel.value)
-      setColor(setChannelValue(color.value, channel.value, range.max), reasonFromEvent(event), event)
-      inputValue.value = formatValue(color.value)
-    }
-    else {
-      addHexValue(MAX_HEX_INT, event)
-    }
-  }
-
-  function decrementToMin(event?: Event) {
-    if (disabled.value || readonly.value)
-      return
-    isEditing.value = false
-    if (channel.value) {
-      const range = getChannelRange(channel.value)
-      setColor(setChannelValue(color.value, channel.value, range.min), reasonFromEvent(event), event)
-      inputValue.value = formatValue(color.value)
-    }
-    else {
-      addHexValue(-MAX_HEX_INT, event)
-    }
-  }
+  const increment = (event?: Event) => step(getStep(), event)
+  const decrement = (event?: Event) => step(-getStep(), event)
+  const incrementPage = (event?: Event) => step(getStep() * PAGE_STEP_MULTIPLIER, event)
+  const decrementPage = (event?: Event) => step(-getStep() * PAGE_STEP_MULTIPLIER, event)
+  const incrementToMax = (event?: Event) => setToBound('max', event)
+  const decrementToMin = (event?: Event) => setToBound('min', event)
 
   function handleWheel(event: WheelEvent) {
     if (disableWheelChange.value || disabled.value || readonly.value)
@@ -262,7 +228,7 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
   }
 
   const context: ColorFieldRootContext = {
-    color: computed(() => color.value) as Ref<Color>,
+    color,
     inputValue,
     channel,
     colorSpace,

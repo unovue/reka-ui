@@ -1,9 +1,10 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { ColorSwatchPickerItemContext } from './ColorSwatchPickerItem.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
+import type { Color } from '@/shared/color'
 import { computed, toValue } from 'vue'
 import { createPartSurface, useControllableState } from '@/shared'
-import { getColorName } from '@/shared/color'
+import { colorToHex, getColorName, isEqualColor } from '@/shared/color'
 
 export type ColorSwatchPickerChangeReason = 'selection'
 export type ColorSwatchPickerRootState = Record<string, never>
@@ -11,37 +12,75 @@ export type ColorSwatchPickerItemState = { color: string }
 export type ColorSwatchPickerItemIndicatorState = Record<string, never>
 export type ColorSwatchPickerItemSwatchState = Record<string, never>
 
+/** A swatch value: a color string or a `Color` object. */
+export type ColorSwatchPickerValue = string | Color
+/** The picker model: one value, several with `multiple`, or `undefined` when cleared. */
+export type ColorSwatchPickerModelValue = ColorSwatchPickerValue | ColorSwatchPickerValue[] | undefined
+
 export interface UseColorSwatchPickerProps {
-  modelValue?: MaybeRefOrGetter<string | string[] | undefined>
-  defaultValue?: MaybeRefOrGetter<string | string[] | undefined>
+  modelValue?: MaybeRefOrGetter<ColorSwatchPickerModelValue>
+  defaultValue?: MaybeRefOrGetter<ColorSwatchPickerModelValue>
   multiple?: MaybeRefOrGetter<boolean | undefined>
   disabled?: MaybeRefOrGetter<boolean | undefined>
   selectionBehavior?: MaybeRefOrGetter<'toggle' | 'replace' | undefined>
   emit?: (event: any, ...args: any[]) => void
-  onBeforeUpdate?: (value: string | string[] | undefined, details: ChangeEventDetails<ColorSwatchPickerChangeReason>) => void
-  onUpdate?: (value: string | string[] | undefined, details: ChangeEventDetails<ColorSwatchPickerChangeReason>) => void
+  onBeforeUpdate?: (value: ColorSwatchPickerModelValue, details: ChangeEventDetails<ColorSwatchPickerChangeReason>) => void
+  onUpdate?: (value: ColorSwatchPickerModelValue, details: ChangeEventDetails<ColorSwatchPickerChangeReason>) => void
 }
 
 export interface UseColorSwatchPickerReturn {
-  /** Provisional: values are hex strings today; in v3 they accept and emit `Color` objects (#2789). */
-  readonly modelValue: ComputedRef<string | readonly string[] | undefined>
+  /** The selection: item values as declared on the items (`string | Color`), matched structurally. */
+  readonly modelValue: ComputedRef<ColorSwatchPickerValue | readonly ColorSwatchPickerValue[] | undefined>
   readonly multiple: ComputedRef<boolean>
   readonly disabled: ComputedRef<boolean>
   readonly isControlled: ComputedRef<boolean>
   readonly lastChangeDetails: Readonly<Ref<ChangeEventDetails<ColorSwatchPickerChangeReason>>>
   readonly root: PartSurface<ColorSwatchPickerRootState>
   readonly listboxProps: ComputedRef<{
-    'modelValue': string | string[] | undefined
+    'modelValue': ColorSwatchPickerModelValue
     'multiple': boolean
     'disabled': boolean
     'selectionBehavior': 'toggle' | 'replace'
-    'onUpdate:modelValue': (value: string | string[] | undefined) => void
+    'by': (a: ColorSwatchPickerValue, b: ColorSwatchPickerValue) => boolean
+    'onUpdate:modelValue': (value: ColorSwatchPickerModelValue) => void
   }>
-  setValue: (value: string | string[] | undefined, reason?: ColorSwatchPickerChangeReason | BaseChangeReason, event?: Event) => boolean
-  select: (value: string, event?: Event) => boolean
-  getItemSurface: (value: MaybeRefOrGetter<string>) => PartSurface<ColorSwatchPickerItemState>
-  getItemSwatchSurface: (value: MaybeRefOrGetter<string>) => PartSurface<ColorSwatchPickerItemSwatchState>
+  setValue: (value: ColorSwatchPickerModelValue, reason?: ColorSwatchPickerChangeReason | BaseChangeReason, event?: Event) => boolean
+  select: (value: ColorSwatchPickerValue, event?: Event) => boolean
+  getItemSurface: (value: MaybeRefOrGetter<ColorSwatchPickerValue>) => PartSurface<ColorSwatchPickerItemState>
+  getItemSwatchSurface: (value: MaybeRefOrGetter<ColorSwatchPickerValue>) => PartSurface<ColorSwatchPickerItemSwatchState>
   readonly itemIndicator: PartSurface<ColorSwatchPickerItemIndicatorState>
+}
+
+/**
+ * Structural swatch equality: `#ff0000` matches `{ space: 'hsl', h: 0, s: 100, l: 50, alpha: 1 }`.
+ * Strings that are not parseable colors fall back to string equality.
+ * @internal
+ */
+export function isSameSwatchColor(a: ColorSwatchPickerValue | undefined, b: ColorSwatchPickerValue | undefined): boolean {
+  if (a === b)
+    return true
+  if (a === undefined || b === undefined || a === '' || b === '')
+    return false
+  try {
+    return isEqualColor(a, b)
+  }
+  catch {
+    return false
+  }
+}
+
+function isSameModel(a: ColorSwatchPickerModelValue, b: ColorSwatchPickerModelValue): boolean {
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length)
+      return false
+    return a.every((value, index) => isSameSwatchColor(value, b[index]))
+  }
+  return isSameSwatchColor(a, b)
+}
+
+/** A CSS color string for a swatch value. */
+function toCssColor(value: ColorSwatchPickerValue): string {
+  return typeof value === 'string' ? value : colorToHex(value)
 }
 
 /**
@@ -49,8 +88,8 @@ export interface UseColorSwatchPickerReturn {
  * ListboxContent, ListboxItem and ListboxItemIndicator for collection registration,
  * selection interactions, roving focus, keyboard navigation and indicator presence.
  *
- * The model types are provisional: values are hex strings today and become `Color` objects
- * in v3 (#2789).
+ * Values are `string | Color` and are compared structurally, so a hex model selects
+ * the item declared with the equivalent `Color` and vice versa.
  *
  * @experimental
  * @lifecycle pure
@@ -58,28 +97,30 @@ export interface UseColorSwatchPickerReturn {
 export function useColorSwatchPicker(props: UseColorSwatchPickerProps = {}): UseColorSwatchPickerReturn {
   const multiple = computed(() => toValue(props.multiple) ?? false)
   const disabled = computed(() => toValue(props.disabled) ?? false)
-  const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<string | string[] | undefined, ColorSwatchPickerChangeReason>({
+  const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<ColorSwatchPickerModelValue, ColorSwatchPickerChangeReason>({
     prop: props.modelValue,
     defaultValue: () => toValue(props.defaultValue) ?? (multiple.value ? [] : ''),
+    isEqual: isSameModel,
     name: 'modelValue',
     emit: props.emit,
     onBeforeUpdate: props.onBeforeUpdate,
     onUpdate: props.onUpdate,
   })
 
-  function setValue(value: string | string[] | undefined, reason: ColorSwatchPickerChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
+  function setValue(value: ColorSwatchPickerModelValue, reason: ColorSwatchPickerChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
     return setState(value, reason, event)
   }
 
-  function select(value: string, event?: Event) {
+  function select(value: ColorSwatchPickerValue, event?: Event) {
     if (disabled.value)
       return false
     const toggle = toValue(props.selectionBehavior) !== 'replace'
     if (multiple.value) {
       const values = Array.isArray(modelValue.value) ? modelValue.value : []
-      return setValue(toggle ? values.includes(value) ? values.filter(v => v !== value) : [...values, value] : [value], 'selection', event)
+      const selected = values.some(v => isSameSwatchColor(v, value))
+      return setValue(toggle ? selected ? values.filter(v => !isSameSwatchColor(v, value)) : [...values, value] : [value], 'selection', event)
     }
-    return setValue(toggle && modelValue.value === value ? undefined : value, 'selection', event)
+    return setValue(toggle && isSameSwatchColor(modelValue.value as ColorSwatchPickerValue | undefined, value) ? undefined : value, 'selection', event)
   }
 
   const listboxProps = computed(() => ({
@@ -87,7 +128,8 @@ export function useColorSwatchPicker(props: UseColorSwatchPickerProps = {}): Use
     'multiple': multiple.value,
     'disabled': disabled.value,
     'selectionBehavior': toValue(props.selectionBehavior) ?? 'toggle',
-    'onUpdate:modelValue': (value: string | string[] | undefined) => setValue(value, 'selection'),
+    'by': isSameSwatchColor,
+    'onUpdate:modelValue': (value: ColorSwatchPickerModelValue) => setValue(value, 'selection'),
   }))
   const root = createPartSurface<ColorSwatchPickerRootState>(() => ({
     'role': 'listbox',
@@ -106,7 +148,7 @@ export function useColorSwatchPicker(props: UseColorSwatchPickerProps = {}): Use
     root,
     listboxProps,
     getItemSurface: getColorSwatchPickerItemSurface,
-    getItemSwatchSurface: (color: MaybeRefOrGetter<string>) => getColorSwatchPickerItemSwatchSurface({ color: computed(() => toValue(color)) }),
+    getItemSwatchSurface: (color: MaybeRefOrGetter<ColorSwatchPickerValue>) => getColorSwatchPickerItemSwatchSurface({ color: computed(() => toValue(color)) }),
     itemIndicator: getColorSwatchPickerItemIndicatorSurface(),
   }
 }
@@ -115,19 +157,20 @@ export function useColorSwatchPicker(props: UseColorSwatchPickerProps = {}): Use
  * Context-pure color metadata, layered over ListboxItem.
  * @internal
  */
-export function getColorSwatchPickerItemSurface(value: MaybeRefOrGetter<string>) {
+export function getColorSwatchPickerItemSurface(value: MaybeRefOrGetter<ColorSwatchPickerValue>) {
+  const cssColor = computed(() => toCssColor(toValue(value)))
   const colorLabel = computed(() => {
     try {
-      return getColorName(toValue(value))
+      return getColorName(cssColor.value)
     }
     catch {
-      return toValue(value)
+      return cssColor.value
     }
   })
   return createPartSurface<ColorSwatchPickerItemState>(() => ({
     'aria-label': colorLabel.value,
-    'style': { '--reka-color-swatch-picker-item-color': toValue(value) },
-  }), () => ({ color: toValue(value) }))
+    'style': { '--reka-color-swatch-picker-item-color': cssColor.value },
+  }), () => ({ color: cssColor.value }))
 }
 
 /**

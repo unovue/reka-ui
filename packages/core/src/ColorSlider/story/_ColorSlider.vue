@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import type { Color } from '@/shared/color'
+import { computed, ref } from 'vue'
+import { colorToHex, normalizeColor } from '@/shared/color'
 import {
   ColorSliderRoot,
   ColorSliderThumb,
@@ -16,7 +18,9 @@ const props = defineProps<{
   step?: number
 }>()
 
-const color = ref(props.defaultValue ?? '#ff0000')
+// v-model emits a Color object; the hex is derived for display.
+const color = ref<string | Color>(props.defaultValue ?? '#ff0000')
+const hex = computed(() => colorToHex(normalizeColor(color.value)))
 </script>
 
 <template>
@@ -47,9 +51,9 @@ const color = ref(props.defaultValue ?? '#ff0000')
     <div class="flex items-center gap-2 text-xs text-gray-500">
       <div
         class="w-5 h-5 rounded border border-gray-200 shrink-0"
-        :style="{ background: color }"
+        :style="{ background: hex }"
       />
-      <span class="font-mono">{{ color }}</span>
+      <span class="font-mono">{{ hex }}</span>
     </div>
   </div>
 </template>

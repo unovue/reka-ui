@@ -4,13 +4,13 @@ import type { ColorAreaChangeReason } from './useColorArea'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
-import type { FormFieldProps } from '@/shared/types'
-import { createContext, useFormControl, useForwardExpose } from '@/shared'
+import type { Direction, FormFieldProps } from '@/shared/types'
+import { createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
 
 export interface ColorAreaRootProps extends PrimitiveProps, FormFieldProps {
-  /** The color value (controlled). Can be a hex string or Color object. */
+  /** The color value (controlled). A string is parsed once; emitted values are always `Color` objects. */
   modelValue?: string | Color
-  /** The default color value (uncontrolled). */
+  /** The default color value (uncontrolled). A string is parsed once. */
   defaultValue?: string | Color
   /** The color space to operate in. */
   colorSpace?: ColorSpace
@@ -24,28 +24,34 @@ export interface ColorAreaRootProps extends PrimitiveProps, FormFieldProps {
   xName?: string
   /** The name of the y channel input element for form submission. */
   yName?: string
+  /** The reading direction of the area. In `rtl` the x axis runs right to left. If omitted, inherits from `ConfigProvider` or assumes `ltr`. */
+  dir?: Direction
 }
 
 export type ColorAreaRootEmits = {
   /** Event handler called before the color value changes; `details.cancel()` vetoes the change. */
-  'beforeUpdate:modelValue': [value: string, details: ChangeEventDetails<ColorAreaChangeReason>]
+  'beforeUpdate:modelValue': [value: Color, details: ChangeEventDetails<ColorAreaChangeReason>]
   /** Event handler called when the color value changes. */
-  'update:modelValue': [value: string, details: ChangeEventDetails<ColorAreaChangeReason>]
+  'update:modelValue': [value: Color, details: ChangeEventDetails<ColorAreaChangeReason>]
+  /** Event handler called with the same `Color` as `update:modelValue`, after it. */
   'update:color': [value: Color]
-  /** Event handler called with the hex value on every pointer move or keyboard step that changes the color. */
-  'change': [value: string]
-  /** Event handler called with the hex value when the pointer is released and after each keyboard step. */
-  'changeEnd': [value: string]
+  /** Event handler called with the hex serialization of the new color, after `update:modelValue`. Lossy: drops the hue of greys and sub-byte precision. */
+  'update:hex': [value: string]
+  /** Event handler called on every pointer move or keyboard step that changes the color. */
+  'change': [value: Color]
+  /** Event handler called when an interaction that changed the color ends: on pointer release and after each keyboard step. */
+  'changeEnd': [value: Color]
 }
 
 export interface ColorAreaRootContext {
-  color: Ref<Color>
-  xValue: Ref<number>
-  yValue: Ref<number>
+  color: ComputedRef<Color>
+  xValue: ComputedRef<number>
+  yValue: ComputedRef<number>
   xChannel: Ref<ColorChannel>
   yChannel: Ref<ColorChannel>
   colorSpace: Ref<ColorSpace>
   disabled: Ref<boolean>
+  dir: Ref<Direction>
   xRange: ComputedRef<{ min: number, max: number, step: number }>
   yRange: ComputedRef<{ min: number, max: number, step: number }>
   thumbRef: Ref<HTMLElement | undefined>
@@ -58,6 +64,7 @@ export const [injectColorAreaRootContext, provideColorAreaRootContext]
 </script>
 
 <script setup lang="ts">
+import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useColorArea } from './useColorArea'
@@ -82,6 +89,8 @@ defineSlots<{
 
 const { forwardRef, currentElement } = useForwardExpose()
 const isFormControl = useFormControl(currentElement)
+const { dir: propDir } = toRefs(props)
+const dir = useDirection(propDir)
 
 const { root, context, areaStyles, xValue, yValue } = useColorArea({
   colorSpace: () => props.colorSpace,
@@ -90,6 +99,7 @@ const { root, context, areaStyles, xValue, yValue } = useColorArea({
   disabled: () => props.disabled,
   modelValue: () => props.modelValue,
   defaultValue: () => props.defaultValue,
+  dir: () => dir.value,
   emit: emits,
 })
 

@@ -1,28 +1,31 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { ColorSliderRootContext, ColorSliderRootProps } from './ColorSliderRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
-import type { Color, ColorChannel as ColorChannelType, ColorSpace } from '@/shared/color'
+import type { Color } from '@/shared/color'
 import type { SliderRootProps } from '@/Slider'
-import { computed, ref, toValue, watch } from 'vue'
+import { computed, toValue } from 'vue'
 import { createPartSurface, useControllableState } from '@/shared'
-import { colorToString, convertToHsb, convertToHsl, convertToRgb, getChannelName, getChannelRange, getChannelValue, getSliderBackgroundStyle, normalizeColor, setChannelValue } from '@/shared/color'
-import { isEqualColor } from '@/shared/color/isEqualColor'
+import { colorToHex, convertToSpace, getChannelColorSpace, getChannelName, getChannelRange, getChannelValue, getSliderBackgroundStyle, isEqualColor, normalizeColor, setChannelValue } from '@/shared/color'
 
 type Inputs = Pick<ColorSliderRootProps, 'orientation' | 'disabled' | 'inverted' | 'channel' | 'colorSpace' | 'step' | 'modelValue' | 'defaultValue'>
 export type ColorSliderChangeReason = 'slider'
 export type UseColorSliderProps = { [K in keyof Inputs]: MaybeRefOrGetter<Inputs[K]> } & {
+  /** Called with every accepted color; same payload as `onUpdate`. */
   onColorUpdate?: (color: Color) => void
-  onChange?: (value: string) => void
-  onChangeEnd?: (value: string) => void
+  /** Called with the hex serialization of every accepted color (lossy: drops hue on greys and sub-byte precision). */
+  onHexUpdate?: (hex: string) => void
+  onChange?: (value: Color) => void
+  onChangeEnd?: (value: Color) => void
   emit?: (event: any, ...args: any[]) => void
-  onBeforeUpdate?: (value: string | Color, details: ChangeEventDetails<ColorSliderChangeReason>) => void
-  onUpdate?: (value: string | Color, details: ChangeEventDetails<ColorSliderChangeReason>) => void
+  onBeforeUpdate?: (value: Color, details: ChangeEventDetails<ColorSliderChangeReason>) => void
+  onUpdate?: (value: Color, details: ChangeEventDetails<ColorSliderChangeReason>) => void
 }
 
 export type ColorSliderRootState = { disabled: boolean }
 export interface UseColorSliderReturn {
-  /** Provisional: the model is written as a hex `string` today; in v3 it becomes a `Color` object (#2789). */
+  /** The model as passed in (`string | Color`); every emitted value is a `Color`. */
   readonly modelValue: ComputedRef<string | Color>
+  /** The model as a `Color` in the slider's color space (the `colorSpace` prop, unless the channel is outside it). */
   readonly color: ComputedRef<Readonly<Color>>
   readonly disabled: ComputedRef<boolean>
   readonly isControlled: ComputedRef<boolean>
@@ -46,14 +49,13 @@ export interface UseColorSliderReturn {
 }
 
 /**
- * Headless ColorSlider state. Call in setup or an effect scope to dispose synchronization watchers.
- * Compose SliderRoot/Track/Thumb for pointer and keyboard navigation.
+ * Headless ColorSlider state. Compose SliderRoot/Track/Thumb for pointer and keyboard navigation.
  *
- * The model types are provisional: `modelValue` and the `change`/`changeEnd` payloads are hex
- * strings today and become `Color` objects in v3 (#2789).
+ * The model accepts `string | Color` and every emit carries a `Color` in the slider's
+ * color space. The channel value is derived from the model alone.
  *
  * @experimental
- * @lifecycle setup
+ * @lifecycle pure
  */
 export function useColorSlider(props: UseColorSliderProps): UseColorSliderReturn {
   const orientation = computed(() => toValue(props.orientation) ?? 'horizontal')
@@ -63,128 +65,78 @@ export function useColorSlider(props: UseColorSliderProps): UseColorSliderReturn
   const colorSpace = computed(() => toValue(props.colorSpace) ?? 'hsl')
   const stepProp = computed(() => toValue(props.step))
 
-  let precisionChanged = false
-
-  // Normalize the model value to a Color object
   const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<string | Color, ColorSliderChangeReason>({
     prop: props.modelValue,
     defaultValue: () => toValue(props.defaultValue) ?? '#000000',
-    // Hex equality alone loses hue and fractional channel changes.
-    isEqual: (next, current) => next === current && !precisionChanged,
+    isEqual: isEqualColor,
     name: 'modelValue',
     emit: props.emit,
-    onBeforeUpdate: props.onBeforeUpdate,
-    onUpdate: props.onUpdate,
+    onBeforeUpdate: props.onBeforeUpdate as ((value: string | Color, details: ChangeEventDetails<ColorSliderChangeReason>) => void) | undefined,
+    onUpdate: props.onUpdate as ((value: string | Color, details: ChangeEventDetails<ColorSliderChangeReason>) => void) | undefined,
   })
 
-  // Convert a color to the native color space for the given channel.
-  // This ensures setChannelValue/getChannelValue operate without cross-space round-trips.
-  function toNativeSpace(color: Color, ch: ColorChannelType, space: ColorSpace): Color {
-    switch (ch) {
-      case 'hue':
-      case 'lightness':
-        return convertToHsl(color)
-      case 'saturation':
-        return space === 'hsb' ? convertToHsb(color) : convertToHsl(color)
-      case 'brightness':
-        return convertToHsb(color)
-      case 'red':
-      case 'green':
-      case 'blue':
-        return convertToRgb(color)
-      case 'alpha':
-        return color
-      default:
-        return color
-    }
-  }
+  // A string model is parsed once per change, then read in the space that holds the
+  // channel, so a hue slider on an HSL grey keeps its hue.
+  const parsed = computed(() => normalizeColor(modelValue.value ?? '#000000'))
+  const workingSpace = computed(() => getChannelColorSpace(channel.value, colorSpace.value))
+  const color = computed(() => convertToSpace(parsed.value, workingSpace.value))
 
-  // Internal color ref that preserves color space precision.
-  // Convert to the channel's native space to avoid cross-space round-trips during drag.
-  const internalColor = ref<Color>(toNativeSpace(normalizeColor(modelValue.value ?? toValue(props.defaultValue) ?? '#000000'), channel.value, colorSpace.value))
-
-  // Check if a color is achromatic (hue information is lost in hex round-trips)
-  function isAchromatic(color: Color): boolean {
-    const hsl = convertToHsl(color)
-    return hsl.s === 0 || hsl.l === 0 || hsl.l >= 100
-  }
-
-  const channelRange = computed(() => getChannelRange(channel.value))
-
-  // Sync internal color from external modelValue changes (e.g. parent updates)
-  watch(() => modelValue.value, (newVal) => {
-    if (newVal == null)
-      return
-    const parsed = normalizeColor(newVal)
-    const currentHex = colorToString(internalColor.value, 'hex')
-    const newHex = colorToString(parsed, 'hex')
-    // Only update if the external value actually changed (avoid overwriting
-    // precision during our own drag updates)
-    if (currentHex !== newHex) {
-      const nativeColor = toNativeSpace(parsed, channel.value, colorSpace.value)
-      const currentChannelVal = getChannelValue(internalColor.value, channel.value)
-      const newChannelVal = getChannelValue(nativeColor, channel.value)
-
-      // Preserve this slider's channel value when:
-      // 1. Color is achromatic (hue completely lost in hex round-trip)
-      // 2. Channel value diff is within 2% of range (8-bit RGB quantization drift)
-      // We still update the rest of the color so the track gradient stays correct.
-      const range = channelRange.value.max - channelRange.value.min
-      const shouldPreserve = (channel.value === 'hue' && isAchromatic(parsed))
-        || Math.abs(currentChannelVal - newChannelVal) < range * 0.02
-
-      if (shouldPreserve) {
-        internalColor.value = setChannelValue(nativeColor, channel.value, currentChannelVal)
-      }
-      else {
-        internalColor.value = nativeColor
-      }
-    }
-  })
-
-  const color = computed(() => internalColor.value)
+  // The last accepted color not yet reported by `changeEnd`. A controlled prop only
+  // updates when the parent re-renders, so the commit reads the written color here.
+  let uncommitted: Color | undefined
+  // SliderRoot emits `valueCommit` for a keyboard step *before* the value update it
+  // commits; such a commit is held until that update arrives.
+  let commitRequested = false
 
   function setColor(newColor: Color, reason: ColorSliderChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    precisionChanged = !isEqualColor(internalColor.value, newColor)
-    const hexString = colorToString(newColor, 'hex')
-    const changed = setState(hexString, reason, event)
+    const changed = setState(newColor, reason, event)
     if (!changed)
       return false
-    internalColor.value = newColor
     props.onColorUpdate?.(newColor)
     props.emit?.('update:color', newColor)
+    const hex = colorToHex(newColor)
+    props.onHexUpdate?.(hex)
+    props.emit?.('update:hex', hex)
     return true
   }
 
-  // Get channel range
+  const channelRange = computed(() => getChannelRange(channel.value))
   const min = computed(() => channelRange.value.min)
   const max = computed(() => channelRange.value.max)
   const step = computed(() => stepProp.value ?? channelRange.value.step)
 
-  // Current channel value
   const channelValue = computed(() => getChannelValue(color.value, channel.value))
-
-  // Convert channel value to array format for SliderRoot
   const sliderValue = computed(() => [channelValue.value])
 
   function setValue(newValue: number[], reason: ColorSliderChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
+    const commitNow = commitRequested
+    commitRequested = false
     const clamped = Math.max(min.value, Math.min(max.value, newValue[0]))
+    if (clamped === channelValue.value)
+      return
     const newColor = setChannelValue(color.value, channel.value, clamped)
     if (setColor(newColor, reason, event)) {
-      const value = colorToString(newColor, 'hex')
-      props.onChange?.(value)
-      props.emit?.('change', value)
+      uncommitted = newColor
+      props.onChange?.(newColor)
+      props.emit?.('change', newColor)
+      if (commitNow)
+        handleValueCommit()
     }
   }
 
   function handleValueCommit() {
-    const value = colorToString(color.value, 'hex')
+    if (!uncommitted) {
+      commitRequested = true
+      return
+    }
+    const value = uncommitted
+    uncommitted = undefined
     props.onChangeEnd?.(value)
     props.emit?.('changeEnd', value)
   }
 
   const context: ColorSliderRootContext = {
-    color: computed(() => color.value) as Ref<Color>,
+    color,
     channelValue,
     channel,
     colorSpace,

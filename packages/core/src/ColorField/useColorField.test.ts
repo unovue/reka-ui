@@ -1,5 +1,7 @@
+import type { Color } from '@/shared/color'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
+import { colorToHex, normalizeColor } from '@/shared/color'
 import { useColorField } from './useColorField'
 
 describe('useColorField', () => {
@@ -12,27 +14,27 @@ describe('useColorField', () => {
   afterEach(() => scopes.splice(0).forEach(scope => scope.stop()))
 
   it('steps and commits a ref-owned model, resetting invalid input', () => {
-    const modelValue = ref('#000000')
+    const modelValue = ref<string | Color>('#000000')
     const field = setup({ modelValue })
     field.increment()
-    expect(modelValue.value).toBe('#000001')
+    expect(modelValue.value).toEqual({ space: 'rgb', r: 0, g: 0, b: 1, alpha: 1 })
     field.updateValue('invalid')
     field.commit()
     expect(field.inputValue.value).toBe('#000001')
     field.updateValue('#123456')
     field.commit()
-    expect(modelValue.value).toBe('#123456')
+    expect(colorToHex(normalizeColor(modelValue.value))).toBe('#123456')
   })
 
   it('preserves a draft during external updates and resumes synchronization after commit', async () => {
-    const modelValue = ref('#000000')
+    const modelValue = ref<string | Color>('#000000')
     const field = setup({ modelValue })
     field.updateValue('#123')
     modelValue.value = '#ffffff'
     await nextTick()
     expect(field.inputValue.value).toBe('#123')
     field.commit()
-    expect(modelValue.value).toBe('#112233')
+    expect(colorToHex(normalizeColor(modelValue.value))).toBe('#112233')
     modelValue.value = '#ff0000'
     await nextTick()
     expect(field.inputValue.value).toBe('#ff0000')
@@ -62,40 +64,42 @@ describe('useColorField', () => {
     second.props.value.onWheel(wheel)
     expect(field.modelValue.value).toBe('#000000')
     first.props.value.onWheel(wheel)
-    expect(field.modelValue.value).toBe('#000001')
+    expect(colorToHex(field.color.value)).toBe('#000001')
     expect(field.lastChangeDetails.value.reason).toBe('wheel')
     first.props.value.onCompositionstart()
     const key = new KeyboardEvent('keydown', { key: 'ArrowUp' })
     first.props.value.onKeydown(key)
-    expect(field.modelValue.value).toBe('#000001')
+    expect(colorToHex(field.color.value)).toBe('#000001')
     first.props.value.onCompositionend(new CompositionEvent('compositionend'))
     first.props.value.onKeydown(key)
-    expect(field.modelValue.value).toBe('#000001')
+    expect(colorToHex(field.color.value)).toBe('#000001')
     await nextTick()
     first.props.value.onKeydown(key)
-    expect(field.modelValue.value).toBe('#000002')
+    expect(colorToHex(field.color.value)).toBe('#000002')
   })
 
   it('reacts to disabled, readonly and step inputs and synchronizes external values', async () => {
     const disabled = ref(false)
     const readonly = ref(false)
     const step = ref(2)
-    const model = ref('#000000')
+    const model = ref<string | Color>('#000000')
+    const hex = () => colorToHex(normalizeColor(model.value))
     const field = setup({ modelValue: model, disabled, readonly, step, channel: 'red' })
     const input = field.createInputSurface()
     field.increment()
-    expect(model.value).toBe('#020000')
+    expect(hex()).toBe('#020000')
+    // Steps snap to the step grid, like NumberField: 2 + 3 lands on 6.
     step.value = 3
     field.increment()
-    expect(model.value).toBe('#050000')
+    expect(hex()).toBe('#060000')
     disabled.value = true
     field.increment()
-    expect(model.value).toBe('#050000')
+    expect(hex()).toBe('#060000')
     expect(input.attrs.value['data-disabled']).toBe('')
     disabled.value = false
     readonly.value = true
     field.increment()
-    expect(model.value).toBe('#050000')
+    expect(hex()).toBe('#060000')
     expect(input.attrs.value['data-readonly']).toBe('')
     model.value = '#ff0000'
     await nextTick()

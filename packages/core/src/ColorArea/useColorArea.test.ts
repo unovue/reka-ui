@@ -1,6 +1,7 @@
 import type { Color } from '@/shared/color'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
+import { colorToHex, normalizeColor } from '@/shared/color'
 import { useColorArea } from './useColorArea'
 
 describe('useColorArea', () => {
@@ -41,19 +42,21 @@ describe('useColorArea', () => {
   })
 
   it('keeps controlled ownership and writes a standalone ref-owned model', async () => {
-    const model = ref('#ff0000')
+    const model = ref<string | Color>('#ff0000')
     const onUpdate = vi.fn()
     const controlled = setup({ modelValue: model, onUpdate })
     controlled.updateValues(120, 100)
     expect(model.value).toBe('#ff0000')
-    expect(onUpdate.mock.calls[0][0]).toBe('#00ff00')
+    // The emitted model is a Color in the area's space, not a hex string.
+    expect(onUpdate.mock.calls[0][0]).toEqual({ space: 'hsl', h: 120, s: 100, l: 50, alpha: 1 })
     model.value = '#0000ff'
     await nextTick()
-    await nextTick()
     expect(controlled.color.value).toMatchObject({ b: 255 })
+    expect(controlled.xValue.value).toBe(240)
     const owned = setup({ modelValue: model })
     owned.updateValues(120, 100)
-    expect(model.value).toBe('#00ff00')
+    expect(model.value).toEqual({ space: 'hsl', h: 120, s: 100, l: 50, alpha: 1 })
+    expect(colorToHex(normalizeColor(model.value))).toBe('#00ff00')
   })
 
   it('runs cancellation even when different channel coordinates serialize to the same hex', () => {
@@ -108,10 +111,12 @@ describe('useColorArea', () => {
     const area = setup({ modelValue: () => '#ff0000', emit, onChangeEnd })
     const surface = area.createAreaSurface(ref())
     surface.props.value.onKeydown(new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true }))
-    expect(emit.mock.calls.map(call => call[0])).toEqual(['beforeUpdate:modelValue', 'update:modelValue', 'update:color', 'change', 'changeEnd'])
+    expect(emit.mock.calls.map(call => call[0])).toEqual(['beforeUpdate:modelValue', 'update:modelValue', 'update:color', 'update:hex', 'change', 'changeEnd'])
     // The controlled prop has not changed yet; changeEnd still reports the new color.
-    expect(onChangeEnd).toHaveBeenCalledWith('#ff0400')
-    expect(emit.mock.calls.at(-1)).toEqual(['changeEnd', '#ff0400'])
+    const written = { space: 'hsl', h: 1, s: 100, l: 50, alpha: 1 }
+    expect(onChangeEnd).toHaveBeenCalledWith(written)
+    expect(emit.mock.calls.at(-1)).toEqual(['changeEnd', written])
+    expect(emit.mock.calls.find(call => call[0] === 'update:hex')).toEqual(['update:hex', '#ff0400'])
   })
 
   it('does not commit a keyboard step that is cancelled or clamped', () => {
