@@ -487,6 +487,12 @@ describe('given typing on a Select trigger', () => {
     expect(modelValue.value).toBeUndefined()
   })
 
+  it('should not select when the Select is `multiple`', async () => {
+    const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { rootProps: { multiple: true } })
+    await type(trigger, 'b')
+    expect(modelValue.value).toBeUndefined()
+  })
+
   it('should focus the match without selecting it while open', async () => {
     const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { rootProps: { open: true } })
     await new Promise(resolve => setTimeout(resolve))
