@@ -135,16 +135,32 @@ describe('useTagGroup — reasons', () => {
     expect(calls).toEqual(['update:delete-press', 'remove:Vue', 'update:delete-key', 'remove:Nuxt'])
   })
 
-  it('still removes when the deselection is cancelled', () => {
+  it('does not remove when the deselection is cancelled', () => {
     const onRemove = vi.fn()
-    const { items, group } = standalone({
-      defaultValue: ['Vue'],
+    const onUpdate = vi.fn()
+    const { items, elements, group } = standalone({
+      defaultValue: ['Vue', 'Nuxt'],
       onBeforeUpdate: (_v, d) => d.cancel(),
+      onUpdate,
       onRemove,
     })
     group.getItemDeleteSurface(items[0]).props.value.onClick(new MouseEvent('click'))
-    expect(group.modelValue.value).toEqual(['Vue'])
-    expect(onRemove).toHaveBeenCalledWith(['Vue'])
+    items[1].row.props.value.onKeydown(keydown('Backspace', elements.get('Nuxt')))
+    expect(group.modelValue.value).toEqual(['Vue', 'Nuxt'])
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(onRemove).not.toHaveBeenCalled()
+  })
+
+  it('removes an unselected tag without a selection change', () => {
+    const calls: string[] = []
+    const { items, group } = standalone({
+      defaultValue: ['Nuxt'],
+      onBeforeUpdate: (_v, d) => calls.push(`before:${d.reason}`),
+      onRemove: values => calls.push(`remove:${values.join()}`),
+    })
+    group.getItemDeleteSurface(items[0]).props.value.onClick(new MouseEvent('click'))
+    expect(calls).toEqual(['remove:Vue'])
+    expect(group.modelValue.value).toEqual(['Nuxt'])
   })
 })
 
@@ -242,6 +258,31 @@ describe('tagGroupRoot — change details', () => {
     await nextTick()
     expect(onUpdate).not.toHaveBeenCalled()
     expect(row.attributes('aria-selected')).toBe('false')
+  })
+
+  it('removing a selected tag emits remove after update:modelValue', async () => {
+    const calls: string[] = []
+    const wrapper = mountRoot({
+      'onBeforeUpdate:modelValue': (_v: unknown, d: ChangeEventDetails<TagGroupChangeReason>) => calls.push(`before:${d.reason}`),
+      'onUpdate:modelValue': (_v: unknown, d: ChangeEventDetails<TagGroupChangeReason>) => calls.push(`update:${d.reason}`),
+      'onRemove': (values: string[]) => calls.push(`remove:${values.join()}`),
+    }, { defaultValue: ['Vue'] })
+    await userEvent.setup().click(wrapper.find('button').element)
+    expect(calls).toEqual(['before:delete-press', 'update:delete-press', 'remove:Vue'])
+  })
+
+  it('a cancelled deselection emits no remove', async () => {
+    const onRemove = vi.fn()
+    const onUpdate = vi.fn()
+    const wrapper = mountRoot({
+      'onBeforeUpdate:modelValue': (_v: unknown, d: ChangeEventDetails) => d.cancel(),
+      'onUpdate:modelValue': onUpdate,
+      'onRemove': onRemove,
+    }, { defaultValue: ['Vue'] })
+    await userEvent.setup().click(wrapper.find('button').element)
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(onRemove).not.toHaveBeenCalled()
+    expect(wrapper.findAll('[role="row"]')[0].attributes('aria-selected')).toBe('true')
   })
 
   it('a controlled root reflects the parent and does not emit for an unchanged Escape', async () => {

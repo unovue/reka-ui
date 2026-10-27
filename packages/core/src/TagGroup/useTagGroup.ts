@@ -336,8 +336,15 @@ export function useTagGroup<T extends AcceptableValue = AcceptableValue>(props: 
       : [value]
     if (values.some(item => isSelected(item))) {
       const next = selectedValues.value.filter(item => !valueComparator(values, item, by()))
-      setSelection(next, reason, event)
+      const previousDetails = lastChangeDetails.value
+      const changed = setSelection(next, reason, event)
+      // A deselect cancelled in `beforeUpdate:modelValue` cancels the removal
+      // too: the tags stay selected, so they must not be reported as removed.
+      // (`false` without new cancelled details means "unchanged" — still remove.)
+      if (!changed && lastChangeDetails.value !== previousDetails && lastChangeDetails.value.isCanceled)
+        return
     }
+    // Order: `beforeUpdate:modelValue` → `update:modelValue` → `remove`.
     props.onRemove?.(values)
     props.emit?.('remove', values)
   }
@@ -402,7 +409,7 @@ export function useTagGroup<T extends AcceptableValue = AcceptableValue>(props: 
   const isFocusWithin = ref(false)
 
   const context: TagGroupRootContext<T> = {
-    modelValue: modelValue as unknown as Ref<TagGroupValue<T>>,
+    modelValue,
     selectionMode,
     disabled,
     currentTabStopId: ref<string | null>(),

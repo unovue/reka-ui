@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import type { TagGroupChangeReason } from './useTagGroup'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
@@ -59,7 +59,7 @@ export interface TagGroupItemRegistration {
 
 export interface TagGroupRootContext<T = AcceptableValue> {
   /** Read-only; change the selection with `toggleSelection`. */
-  modelValue: Ref<T | Array<T> | undefined>
+  modelValue: ComputedRef<T | Array<T> | undefined>
   selectionMode: Ref<TagGroupSelectionMode>
   disabled: Ref<boolean>
   currentTabStopId: Ref<string | null | undefined>
@@ -95,7 +95,7 @@ const emits = defineEmits<TagGroupRootEmits<T>>()
 defineSlots<{
   default?: (props: {
     /** Current selected value(s) */
-    modelValue: typeof modelValue.value
+    modelValue: T | Array<T> | undefined
   }) => any
 }>()
 
