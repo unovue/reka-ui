@@ -5,7 +5,7 @@ import type { Direction, Orientation } from './utils'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import { refAutoReset, useDebounceFn, useResizeObserver } from '@vueuse/core'
-import { computed, nextTick, ref, toValue, watch, watchEffect } from 'vue'
+import { computed, mergeProps, nextTick, ref, toValue, watch, watchEffect } from 'vue'
 import {
   createPartSurface,
   disclosureState,
@@ -275,8 +275,9 @@ export function useNavigationMenu(props: UseNavigationMenuProps = {}): UseNaviga
         skipNextClose.value = false
         return
       }
-      setValue(val, pendingReason, pendingEvent)
-      if (val === '')
+      const changed = setValue(val, pendingReason, pendingEvent)
+      // A cancelled pointer-leave close keeps the menu open: no skip window.
+      if (val === '' && (changed || modelValue.value === ''))
         isDelaySkipped.value = true
     }
   }, computedDelay)
@@ -548,8 +549,9 @@ export function useNavigationMenuItem(options: UseNavigationMenuItemOptions): Us
   }
 
   function handleClose(event: KeyboardEvent) {
-    context.onItemDismiss('trigger-press', event)
-    itemContext.triggerRef.value?.focus()
+    // A cancelled close keeps the content open: leave focus where it is.
+    if (context.onItemDismiss('trigger-press', event))
+      itemContext.triggerRef.value?.focus()
   }
 
   function handleKeydown(ev: KeyboardEvent) {
@@ -605,6 +607,23 @@ export function useNavigationMenuItem(options: UseNavigationMenuItemOptions): Us
 // -----------------------------------------------------------------------------
 // Trigger
 // -----------------------------------------------------------------------------
+
+const LISTENER_RE = /^on[A-Z]/
+
+/**
+ * Merges a part surface with the consumer's fallthrough attrs so consumer
+ * listeners run BEFORE the part's own (the v2 order: an `event.preventDefault()`
+ * in them still vetoes the internal handler), while every other consumer attr
+ * overrides the surface.
+ * @internal
+ */
+export function mergeConsumerListenersFirst(attrs: Record<string, unknown>, surface: Record<string, unknown>) {
+  const listeners: Record<string, unknown> = {}
+  const rest: Record<string, unknown> = {}
+  for (const key in attrs)
+    (LISTENER_RE.test(key) ? listeners : rest)[key] = attrs[key]
+  return mergeProps(listeners, surface, rest)
+}
 
 export interface UseNavigationMenuTriggerOptions {
   context: NavigationMenuContext
@@ -695,8 +714,11 @@ export function useNavigationMenuTrigger(options: UseNavigationMenuTriggerOption
       return
     }
 
-    // if open via pointermove, we prevent click event
-    if (hasPointerMoveOpenedRef.value)
+    // If the pointer move just opened this item, the click that follows is
+    // part of the same gesture: ignore it rather than toggling closed. The
+    // latch only counts while the item is open, so a hover open that was
+    // cancelled (or has not fired yet) does not swallow the press.
+    if (hasPointerMoveOpenedRef.value && open.value)
       return
 
     if (open.value)
@@ -884,6 +906,7 @@ export function useNavigationMenuContent(options: UseNavigationMenuContentOption
 
   function onPointerDownOutside(ev: PointerDownOutsideEvent) {
     emit('pointerDownOutside', ev)
+    emit('interactOutside', ev)
 
     if (!ev.defaultPrevented) {
       const target = ev.target as HTMLElement

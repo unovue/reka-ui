@@ -12,11 +12,16 @@ export interface NavigationMenuContentImplProps extends DismissableLayerProps {}
 
 <script setup lang="ts">
 import type { Ref } from 'vue'
+import { useAttrs } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { useForwardElement } from '@/shared'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { useNavigationMenuContent } from './useNavigationMenu'
+import { mergeConsumerListenersFirst, useNavigationMenuContent } from './useNavigationMenu'
+
+defineOptions({
+  inheritAttrs: false,
+})
 
 const props = defineProps<NavigationMenuContentImplProps>()
 const emits = defineEmits<NavigationMenuContentImplEmits>()
@@ -41,11 +46,19 @@ const {
   getItems: () => getItems().map(i => i.ref),
   emit: emits,
 })
+
+// Consumer `@pointerenter` / `@pointerleave` / `@keydown` run before the
+// content's own (as on the trigger and in v2). `useAttrs()` is not reactive,
+// so this is read during render.
+const attrs = useAttrs()
+function getContentAttrs() {
+  return mergeConsumerListenersFirst(attrs, { ...content.attrs.value, ...props })
+}
 </script>
 
 <template>
   <DismissableLayer
-    v-bind="{ ...content.attrs.value, ...props }"
+    v-bind="getContentAttrs()"
     :ref="forwardRef"
     @escape-key-down="onEscapeKeyDown"
     @pointer-down-outside="onPointerDownOutside"

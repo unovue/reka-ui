@@ -12,12 +12,12 @@ export interface NavigationMenuTriggerProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { unrefElement } from '@vueuse/core'
-import { mergeProps, onMounted, useAttrs } from 'vue'
+import { onMounted, useAttrs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { useNavigationMenuTrigger } from './useNavigationMenu'
+import { mergeConsumerListenersFirst, useNavigationMenuTrigger } from './useNavigationMenu'
 
 defineOptions({
   inheritAttrs: false,
@@ -45,18 +45,11 @@ onMounted(() => {
   itemContext.triggerRef = triggerElement
 })
 
-// Consumer listeners run BEFORE the trigger's own (v2 order), so an
-// `event.preventDefault()` in them still vetoes the open/close; every other
-// consumer attr (`id`, `aria-*`, …) overrides the surface. `useAttrs()` is not
-// reactive, so this is read during render.
+// Consumer listeners run BEFORE the trigger's own (v2 order). `useAttrs()` is
+// not reactive, so this is read during render.
 const attrs = useAttrs()
-const LISTENER_RE = /^on[A-Z]/
 function getTriggerAttrs() {
-  const listeners: Record<string, unknown> = {}
-  const rest: Record<string, unknown> = {}
-  for (const key in attrs)
-    (LISTENER_RE.test(key) ? listeners : rest)[key] = attrs[key]
-  return mergeProps(listeners, trigger.attrs.value, rest)
+  return mergeConsumerListenersFirst(attrs, trigger.attrs.value)
 }
 
 function setFocusProxyRef(node: Element | ComponentPublicInstance | null) {

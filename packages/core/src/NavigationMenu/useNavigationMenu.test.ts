@@ -306,6 +306,64 @@ describe('navigationMenuRoot — cancellation', () => {
     expect(byTestId('content-one')).not.toBeNull()
   })
 
+  it('opens on a press that follows a cancelled hover open (trigger-press)', async () => {
+    vi.useFakeTimers()
+    // The docs' press-only menu: hover opens and pointer-leave closes are cancelled.
+    const { byTestId, updates } = mountMenu({
+      onBeforeUpdate: (_, d) => {
+        if (d.reason === 'trigger-hover' || d.reason === 'pointer-leave')
+          d.cancel()
+      },
+    })
+    const trigger = byTestId('trigger-one')!
+    trigger.dispatchEvent(pointer('pointerenter'))
+    trigger.dispatchEvent(pointer('pointermove'))
+    // The hover open fires after `delayDuration` (200ms) and is cancelled.
+    await vi.advanceTimersByTimeAsync(250)
+    // A click within the 300ms hover latch still opens.
+    trigger.click()
+    await nextTick()
+    expect(updates.map(([value, d]) => [value, d.reason])).toEqual([['one', 'trigger-press']])
+    expect(trigger.getAttribute('data-state')).toBe('open')
+  })
+
+  it('still ignores the click that follows a committed hover open', async () => {
+    vi.useFakeTimers()
+    const { byTestId, updates } = mountMenu()
+    const trigger = byTestId('trigger-one')!
+    trigger.dispatchEvent(pointer('pointerenter'))
+    trigger.dispatchEvent(pointer('pointermove'))
+    await vi.advanceTimersByTimeAsync(250)
+    trigger.click()
+    await nextTick()
+    expect(updates.map(([value, d]) => [value, d.reason])).toEqual([['one', 'trigger-hover']])
+    expect(trigger.getAttribute('data-state')).toBe('open')
+  })
+
+  it('does not skip the hover delay after a cancelled pointer-leave close', async () => {
+    vi.useFakeTimers()
+    const { byTestId, updates } = mountMenu({
+      onBeforeUpdate: (_, d) => {
+        if (d.reason === 'pointer-leave')
+          d.cancel()
+      },
+    })
+    byTestId('trigger-one')!.click()
+    await nextTick()
+    byTestId('content-one')!.dispatchEvent(pointer('pointerleave'))
+    await vi.advanceTimersByTimeAsync(150) // the leave close fires and is cancelled
+    byTestId('trigger-one')!.click() // close by press
+    await nextTick()
+    const two = byTestId('trigger-two')!
+    two.dispatchEvent(pointer('pointerenter'))
+    two.dispatchEvent(pointer('pointermove'))
+    // No skip window: the full `delayDuration` (200ms) applies, not the 150ms skip delay.
+    await vi.advanceTimersByTimeAsync(160)
+    expect(updates.map(([value]) => value)).toEqual(['one', ''])
+    await vi.advanceTimersByTimeAsync(60)
+    expect(updates.map(([value, d]) => [value, d.reason])).toEqual([['one', 'trigger-press'], ['', 'trigger-press'], ['two', 'trigger-hover']])
+  })
+
   it('keeps the menu open when a pointer-leave close is cancelled', async () => {
     vi.useFakeTimers()
     const { byTestId, updates } = mountMenu({
@@ -420,8 +478,53 @@ describe('navigationMenuContent — outside events', () => {
       expect(onPointerDownOutside).toHaveBeenCalled()
     })
     expect(onPointerDownOutside).toHaveBeenCalledTimes(1)
-    // `interactOutside` follows the focus move, not the press, as in v2.
-    expect(onInteractOutside).not.toHaveBeenCalled()
+    expect(onInteractOutside).toHaveBeenCalledTimes(1)
+    expect(onInteractOutside.mock.calls[0][0]).toBe(onPointerDownOutside.mock.calls[0][0])
+  })
+
+  it('keeps the menu open when interactOutside is prevented on an outside press', async () => {
+    const onUpdate = vi.fn()
+    const interact = vi.fn((event: Event) => event.preventDefault())
+    mount(defineComponent({
+      setup: () => () => h('div', [
+        h('button', { 'data-testid': 'outside' }, 'Outside'),
+        h(NavigationMenuRoot, { 'defaultValue': 'one', 'onUpdate:modelValue': onUpdate }, () => h(NavigationMenuList, () => h(NavigationMenuItem, { value: 'one' }, () => [
+          h(NavigationMenuTrigger, { 'data-testid': 'trigger' }, () => 'One'),
+          h(NavigationMenuContent, { onInteractOutside: interact }, () => 'Content'),
+        ]))),
+      ]),
+    }), { attachTo: document.body })
+    const outside = document.querySelector<HTMLElement>('[data-testid="outside"]')!
+    // Press outside until the layer listens and reports it.
+    await vi.waitFor(async () => {
+      await fireEvent.pointerDown(outside)
+      await fireEvent.pointerUp(outside)
+      await fireEvent.click(outside)
+      expect(interact).toHaveBeenCalled()
+    })
+    await nextTick()
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(document.querySelector('[data-testid="trigger"]')!.getAttribute('data-state')).toBe('open')
+  })
+
+  it('runs consumer keydown listeners before the content\'s own', async () => {
+    const seen: boolean[] = []
+    mount(defineComponent({
+      setup: () => () => h(NavigationMenuRoot, { defaultValue: 'one' }, () => h(NavigationMenuList, () => h(NavigationMenuItem, { value: 'one' }, () => [
+        h(NavigationMenuTrigger, () => 'One'),
+        h(NavigationMenuContent, { 'data-testid': 'content', 'onKeydown': (event: KeyboardEvent) => seen.push(event.defaultPrevented) }, () => [
+          h(NavigationMenuLink, { 'href': '#a', 'data-testid': 'a' }, () => 'A'),
+          h(NavigationMenuLink, { href: '#b' }, () => 'B'),
+        ]),
+      ]))),
+    }), { attachTo: document.body })
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="a"]')).not.toBeNull())
+    document.querySelector<HTMLElement>('[data-testid="a"]')!.focus()
+    const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    document.querySelector<HTMLElement>('[data-testid="a"]')!.dispatchEvent(event)
+    // The content's Tab handling moves focus and prevents the default afterwards.
+    expect(seen).toEqual([false])
+    expect(event.defaultPrevented).toBe(true)
   })
 })
 
