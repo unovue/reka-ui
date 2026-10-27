@@ -18,32 +18,18 @@ export interface BaseSeparatorProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
+import { useSeparator } from '@/Separator/useSeparator'
 import { useForwardElement } from '@/shared'
 
 const props = withDefaults(defineProps<BaseSeparatorProps>(), {
   orientation: 'horizontal',
 })
 
-const ORIENTATIONS = ['horizontal', 'vertical'] as const
-function isValidOrientation(orientation: any): orientation is DataOrientation {
-  return ORIENTATIONS.includes(orientation)
-}
-
-const computedOrientation = computed(() =>
-  isValidOrientation(props.orientation) ? props.orientation : 'horizontal',
-)
-// `aria-orientation` defaults to `horizontal` so we only need it if `orientation` is vertical
-const ariaOrientation = computed(() =>
-  computedOrientation.value === 'vertical' ? props.orientation : undefined,
-)
-
-const semanticProps = computed(() =>
-  props.decorative
-    ? { role: 'none' }
-    : { 'aria-orientation': ariaOrientation.value, 'role': 'separator' },
-)
+const { root } = useSeparator({
+  orientation: () => props.orientation,
+  decorative: () => props.decorative,
+})
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
@@ -54,8 +40,7 @@ defineExpose(expose)
     :ref="forwardRef"
     :as="as"
     :as-child="asChild"
-    :data-orientation="computedOrientation"
-    v-bind="semanticProps"
+    v-bind="root.attrs.value"
   >
     <slot />
   </Primitive>
