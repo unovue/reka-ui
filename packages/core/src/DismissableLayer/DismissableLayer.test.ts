@@ -327,23 +327,25 @@ describe('scroll locks and modal layers are independent (#2784, #2867, #2822)', 
     const { wrapper, lockOpen, layerOpen } = mountLockAndLayer()
     lockOpen.value = true
     layerOpen.value = true
-    await sleep(10) // the scroll lock applies a macrotask later
-    expect(isScrollLocked()).toBe(true)
+    // the scroll lock applies a macrotask after the flush, which can outlast a fixed sleep under load
+    await vi.waitFor(() => expect(isScrollLocked()).toBe(true))
     expect(backdrops()).toHaveLength(1)
 
     if (first === 'the lock')
       lockOpen.value = false
     else
       layerOpen.value = false
-    await sleep(10) // the scroll lock applies a macrotask later
-    expect(isScrollLocked()).toBe(first !== 'the lock')
-    expect(backdrops()).toHaveLength(first === 'the lock' ? 1 : 0)
+    await vi.waitFor(() => {
+      expect(isScrollLocked()).toBe(first !== 'the lock')
+      expect(backdrops()).toHaveLength(first === 'the lock' ? 1 : 0)
+    })
 
     lockOpen.value = false
     layerOpen.value = false
-    await sleep(10) // the scroll lock applies a macrotask later
-    expect(isScrollLocked()).toBe(false)
-    expect(backdrops()).toHaveLength(0)
+    await vi.waitFor(() => {
+      expect(isScrollLocked()).toBe(false)
+      expect(backdrops()).toHaveLength(0)
+    })
     expect(document.body.style.pointerEvents).toBe('')
 
     wrapper.unmount()
@@ -354,12 +356,12 @@ describe('scroll locks and modal layers are independent (#2784, #2867, #2822)', 
     const { wrapper, lockOpen, layerOpen } = mountLockAndLayer()
     lockOpen.value = true
     layerOpen.value = true
-    await sleep(10) // the scroll lock applies a macrotask later
+    await vi.waitFor(() => expect(isScrollLocked()).toBe(true))
     expect(document.body.style.pointerEvents).toBe('auto')
 
     lockOpen.value = false
     layerOpen.value = false
-    await sleep(10) // the scroll lock applies a macrotask later
+    await vi.waitFor(() => expect(isScrollLocked()).toBe(false))
     expect(document.body.style.pointerEvents).toBe('auto')
 
     wrapper.unmount()
