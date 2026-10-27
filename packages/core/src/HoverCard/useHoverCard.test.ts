@@ -377,6 +377,7 @@ describe('useHoverCard — context', () => {
       'hasSelectionRef',
       'isPointerDownOnContentRef',
       'isPointerInTransitRef',
+      'notifyOpenComplete',
       'onClose',
       'onDismiss',
       'onOpen',

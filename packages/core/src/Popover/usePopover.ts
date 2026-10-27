@@ -111,6 +111,12 @@ export interface UsePopoverProps<Payload = unknown> {
   onBeforeUpdate?: (value: boolean, details: ChangeEventDetails<PopoverOpenChangeReason>) => void
   /** Called after a change commits. */
   onUpdate?: (value: boolean, details: ChangeEventDetails<PopoverOpenChangeReason>) => void
+  /**
+   * Called once the content's open (`true`) or close (`false`) transitions and
+   * animations have finished (`update:openComplete`), reported by the content's
+   * `Presence` through `context.notifyOpenComplete`.
+   */
+  onOpenComplete?: (value: boolean) => void
 }
 
 export interface UsePopoverReturn<Payload = unknown> {
@@ -213,6 +219,7 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
     onOpenChange,
     onOpenToggle,
     hasCustomAnchor,
+    notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
   setPopupRootStore(context, handleStore)
 

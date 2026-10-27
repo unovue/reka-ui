@@ -160,6 +160,12 @@ export interface UseMenubarMenuOptions {
    * standalone bar). Without it the content does not switch menus.
    */
   getItems?: () => MenubarCollectionItem[]
+  /**
+   * Called once the menu content's open (`true`) or close (`false`)
+   * transitions and animations have finished. The SFC emits
+   * `update:openComplete`.
+   */
+  onOpenComplete?: (value: boolean) => void
 }
 
 export interface UseMenubarMenuReturn {
@@ -209,6 +215,7 @@ export function useMenubarMenu(rootContext: MenubarRootContext, options: UseMenu
       if (!next)
         rootContext.onMenuClose(details.reason, details.event)
     },
+    onOpenComplete: options.onOpenComplete,
   })
 
   const context: MenubarMenuContext = {

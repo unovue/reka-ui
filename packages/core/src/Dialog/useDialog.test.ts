@@ -188,6 +188,7 @@ describe('useDialog — context', () => {
       'contentId',
       'descriptionId',
       'modal',
+      'notifyOpenComplete',
       'onOpenChange',
       'onOpenToggle',
       'open',
@@ -203,6 +204,16 @@ describe('useDialog — context', () => {
     expect(d.open.value).toBe(true)
     expect(d.context.onOpenChange(false, 'escape-key')).toBe(true)
     expect(d.lastChangeDetails.value.reason).toBe('escape-key')
+  })
+
+  it('routes notifyOpenComplete to onOpenComplete (#2827)', () => {
+    const onOpenComplete = vi.fn()
+    const d = useDialog({ baseId: 'x', onOpenComplete })
+    d.context.notifyOpenComplete?.(true)
+    d.context.notifyOpenComplete?.(false)
+    expect(onOpenComplete.mock.calls).toEqual([[true], [false]])
+    // Without a listener it is a no-op.
+    expect(() => useDialog({ baseId: 'y' }).context.notifyOpenComplete?.(true)).not.toThrow()
   })
 })
 

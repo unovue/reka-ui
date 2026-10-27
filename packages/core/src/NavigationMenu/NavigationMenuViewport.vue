@@ -42,21 +42,29 @@ const { open, viewport, reset } = useNavigationMenuViewport({
   viewportElement: currentElement as Ref<HTMLElement | undefined>,
   align: () => props.align,
 })
+
+// A force-mounted viewport stays shown and keeps its measurements; Presence
+// still tracks the open state so `update:openComplete` is reported (#2827).
+function onAfterLeave() {
+  if (!props.forceMount)
+    reset()
+}
 </script>
 
 <template>
   <Presence
     v-slot="{ present }"
-    :present="forceMount || open"
-    :force-mount="!menuContext.unmountOnHide.value"
-    @after-leave="reset"
+    :present="open"
+    :force-mount="forceMount || !menuContext.unmountOnHide.value"
+    @after-leave="onAfterLeave"
+    @complete="menuContext.notifyOpenComplete"
   >
     <Primitive
       v-bind="mergeProps($attrs, viewport.attrs.value)"
       :ref="forwardRef"
       :as="as"
       :as-child="asChild"
-      :hidden="!present"
+      :hidden="!(forceMount || present)"
     >
       <slot />
     </Primitive>

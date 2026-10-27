@@ -38,6 +38,7 @@ const { state: open, setState } = useControllableState<boolean, MenuOpenChangeRe
   <MenuSub
     :open="open"
     @update:open="(value, details) => setState(value, details.reason, details.event)"
+    @update:open-complete="(value) => emit('update:openComplete', value)"
   >
     <slot :open="open" />
   </MenuSub>

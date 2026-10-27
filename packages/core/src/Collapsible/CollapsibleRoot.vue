@@ -22,6 +22,8 @@ export type CollapsibleRootEmits = {
   'update:open': [value: boolean, details: ChangeEventDetails<CollapsibleChangeReason>]
   /** Called before a change; call details.cancel() to keep the current state. */
   'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<CollapsibleChangeReason>]
+  /** Event handler called after the open or close animations of the content have finished. */
+  'update:openComplete': [value: boolean]
 }
 
 export interface CollapsibleRootContext {
@@ -31,6 +33,8 @@ export interface CollapsibleRootContext {
   unmountOnHide: Ref<boolean>
   onOpenToggle: (event?: Event) => void
   onContentFound?: (event: Event) => void
+  /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
+  notifyOpenComplete?: (value: boolean) => void
 }
 
 export const [injectCollapsibleRootContext, provideCollapsibleRootContext]
@@ -63,6 +67,7 @@ const { open, setOpen, root, context } = useCollapsible({
   disabled,
   unmountOnHide,
   emit,
+  onOpenComplete: value => emit('update:openComplete', value),
   baseId: '',
 })
 

@@ -11,6 +11,8 @@ export interface MenuContext {
   onOpenChange: (open: boolean, reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   content: Ref<HTMLElement | undefined>
   onContentChange: (content: HTMLElement | undefined) => void
+  /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
+  notifyOpenComplete?: (value: boolean) => void
 }
 
 export interface MenuRootContext {
@@ -48,6 +50,8 @@ export type MenuEmits = {
   'beforeUpdate:open': [payload: boolean, details: ChangeEventDetails<MenuOpenChangeReason>]
   /** Event handler called when the open state of the menu changes. */
   'update:open': [payload: boolean, details: ChangeEventDetails<MenuOpenChangeReason>]
+  /** Event handler called after the open or close animations of the content have finished. */
+  'update:openComplete': [value: boolean]
 }
 
 export const [injectMenuContext, provideMenuContext]
@@ -79,6 +83,7 @@ const { menuContext, menuRootContext } = useMenuRoot({
   dir,
   modal,
   emit: emits,
+  onOpenComplete: value => emits('update:openComplete', value),
 })
 
 provideMenuContext(menuContext)
