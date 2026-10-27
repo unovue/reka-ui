@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { reactive, ref, toRaw } from 'vue'
 import { useListSelection } from './useListSelection'
 
 describe('useListSelection — defaults', () => {
@@ -170,5 +170,35 @@ describe('useListSelection — model plumbing', () => {
     const s = useListSelection<string>()
     s.select('a')
     expect(s.lastChangeDetails.value.reason).toBe('imperative-action')
+  })
+})
+
+describe('useListSelection — replace with `by`', () => {
+  it('single: re-selecting a different instance that `by` matches reports no change', () => {
+    const onUpdate = vi.fn()
+    const s = useListSelection<{ id: number }>({ selectionBehavior: 'replace', by: 'id', defaultValue: { id: 1 }, onUpdate })
+    expect(s.select({ id: 1 })).toBe(false)
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(s.select({ id: 2 })).toBe(true)
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+  })
+
+  it('multiple: re-selecting the sole value through a different instance reports no change and moves the anchor', () => {
+    const onUpdate = vi.fn()
+    const s = useListSelection<{ id: number }>({ multiple: true, selectionBehavior: 'replace', by: 'id', defaultValue: [{ id: 1 }], onUpdate })
+    const again = { id: 1 }
+    expect(s.select(again)).toBe(false)
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(toRaw(s.firstValue.value)).toBe(again)
+  })
+
+  it('multiple: re-selecting the sole value through its reactive proxy, with a function `by`, reports no change', () => {
+    const onUpdate = vi.fn()
+    const raw = { id: 1 }
+    const s = useListSelection<{ id: number }>({ multiple: true, selectionBehavior: 'replace', by: (a, b) => a === b, defaultValue: [raw], onUpdate })
+    const proxy = reactive(raw)
+    expect(s.isSelected(proxy)).toBe(true)
+    expect(s.select(proxy)).toBe(false)
+    expect(onUpdate).not.toHaveBeenCalled()
   })
 })

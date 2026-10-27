@@ -42,7 +42,9 @@ const {
   contentElement: currentElement,
   finalFocus: () => props.finalFocus,
 })
-const shouldHideOthers = computed(() => isFullModal.value ? currentElement.value : undefined)
+// Only while open: a `forceMount`ed drawer that is closed hides nothing and
+// mounts no backdrop.
+const shouldHideOthers = computed(() => isFullModal.value && rootContext.open.value ? currentElement.value : undefined)
 useHideOthers(shouldHideOthers)
 
 // BaseUI parity (`useDialogRoot`): only a fully modal drawer locks page scroll,
@@ -60,7 +62,7 @@ watch(() => isFullModal.value && rootContext.open.value, (locked) => {
       :ref="forwardRef"
       v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
       :trap-focus="shouldTrapFocus"
-      :disable-outside-pointer-events="true"
+      :disable-outside-pointer-events="rootContext.open.value"
       @close-auto-focus="onCloseAutoFocusModal"
       @pointer-down-outside="onPointerDownOutsideModal"
       @focus-outside="onFocusOutsideModal"
