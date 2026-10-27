@@ -1,5 +1,7 @@
 import type { ReferenceElement } from '@floating-ui/vue'
 import type { ToastPositionerProps } from './ToastPositioner.vue'
+import type { ToastOpenChangeReason } from './useToast'
+import type { ChangeEventDetails } from '@/shared'
 import { isClient } from '@vueuse/shared'
 
 /**
@@ -54,8 +56,13 @@ export interface ToastObject<Data extends object = any> {
   positionerProps?: ToastPositionerOptions
   /** Custom data for the toast. */
   data?: Data
-  /** Called when the toast is closed. */
-  onClose?: () => void
+  /**
+   * Called when the toast is closed, with the details of the close: the same
+   * object `update:open` receives. `details.reason` is the `ToastOpenChangeReason`
+   * (`'timeout'`, `'close-press'`, `'action-press'`, `'swipe'`, `'escape-key'`),
+   * or `'imperative-action'` for `close(id)`.
+   */
+  onClose?: (details: ChangeEventDetails<ToastOpenChangeReason>) => void
   /** Called when the toast is removed from the list, after its exit animation. */
   onRemove?: () => void
   /** Increments whenever the toast is updated, or added again with the same `id`. */
@@ -86,7 +93,11 @@ export interface ToastPromiseOptions<Value, Data extends object = any> {
 export interface ToastManager<Data extends object = any> {
   /** Adds a toast and returns its `id`. */
   add: <T extends Data = Data>(options: ToastAddOptions<T>) => string
-  /** Closes the toast with the given `id`, or every toast when no `id` is given. */
+  /**
+   * Closes the toast with the given `id`, or every toast when no `id` is given.
+   * A rendered toast closes through its `ToastRoot`: `beforeUpdate:open` (which
+   * can cancel it) and `update:open` fire with the reason `'imperative-action'`.
+   */
   close: (id?: string) => void
   /** Updates an open toast. */
   update: <T extends Data = Data>(

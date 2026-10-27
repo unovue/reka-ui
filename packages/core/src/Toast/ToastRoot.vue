@@ -1,11 +1,14 @@
 <script lang="ts">
-import type { Ref } from 'vue'
 import type { ToastRootImplEmits, ToastRootImplProps } from './ToastRootImpl.vue'
+import type { ToastOpenChangeReason } from './useToast'
+import type { ChangeEventDetails } from '@/shared'
 import { useForwardElement } from '@/shared'
 
-export type ToastRootEmits = Omit<ToastRootImplEmits, 'close'> & {
+export type ToastRootEmits = ToastRootImplEmits & {
+  /** Event handler called before the open state changes; `details.cancel()` keeps the toast open. */
+  'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<ToastOpenChangeReason>]
   /** Event handler called when the open state changes */
-  'update:open': [value: boolean]
+  'update:open': [value: boolean, details: ChangeEventDetails<ToastOpenChangeReason>]
 }
 
 export interface ToastRootProps extends ToastRootImplProps {
@@ -20,11 +23,11 @@ export interface ToastRootProps extends ToastRootImplProps {
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { Presence } from '@/Presence'
 import { injectToastProviderContext } from './ToastProvider.vue'
 import ToastRootImpl from './ToastRootImpl.vue'
+import { useToastRoot } from './useToast'
 
 const props = withDefaults(defineProps<ToastRootProps>(), {
   type: 'foreground',
@@ -48,28 +51,22 @@ defineSlots<{
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
-const open = useVModel(props, 'open', emits, {
-  defaultValue: props.defaultOpen,
-  passive: (props.open === undefined) as false,
-}) as Ref<boolean>
 
 const providerContext = injectToastProviderContext()
 
-const isOpen = computed(() => props.toast ? props.toast.open : open.value)
-const resolvedType = computed(() => props.toast?.type ?? props.type)
-const resolvedDuration = computed(() => props.toast?.status === 'loading'
-  ? Number.POSITIVE_INFINITY
-  : props.toast?.duration ?? props.duration)
-
-function close() {
-  if (props.toast) {
-    providerContext.toastStore.close(props.toast.id)
-    emits('update:open', false)
-  }
-  else {
-    open.value = false
-  }
-}
+// Every close — timeout, close button, action, swipe, Escape — goes through
+// the composable's `useControllableState`, so `beforeUpdate:open` can cancel
+// it and `update:open` carries the reason. A managed toast is controlled by
+// the manager's store; a committed close is written back to it.
+const { open: isOpen, type: resolvedType, duration: resolvedDuration, close } = useToastRoot({
+  open: () => props.open,
+  defaultOpen: props.defaultOpen,
+  toast: () => props.toast,
+  toastStore: providerContext.toastStore,
+  type: () => props.type,
+  duration: () => props.duration,
+  emit: emits,
+})
 
 // A managed toast leaves the list once it is closed and its exit animation has
 // unmounted the content (or it closed before the content ever mounted).
@@ -91,53 +88,17 @@ watch([() => props.toast, isContentMounted], ([toast, mounted]) => {
       :as-child="asChild"
       :duration="resolvedDuration"
       :toast="toast"
+      :request-close="close"
       v-bind="$attrs"
       @vue:mounted="isContentMounted = true"
       @vue:unmounted="isContentMounted = false"
-      @close="close"
       @pause="emits('pause')"
       @resume="emits('resume')"
       @escape-key-down="emits('escapeKeyDown', $event)"
-      @swipe-start="(event) => {
-        emits('swipeStart', event);
-        if (!event.defaultPrevented) {
-          (event.currentTarget as HTMLElement).setAttribute('data-swipe', 'start');
-        }
-      }"
-      @swipe-move="(event) => {
-        emits('swipeMove', event);
-        if (!event.defaultPrevented) {
-          const { x, y } = event.detail.delta;
-          const target = event.currentTarget as HTMLElement
-          target.setAttribute('data-swipe', 'move');
-          target.style.setProperty('--reka-toast-swipe-move-x', `${x}px`);
-          target.style.setProperty('--reka-toast-swipe-move-y', `${y}px`);
-        }
-      }"
-      @swipe-cancel="(event) => {
-        emits('swipeCancel', event);
-        if (!event.defaultPrevented) {
-          const target = event.currentTarget as HTMLElement
-          target.setAttribute('data-swipe', 'cancel');
-          target.style.removeProperty('--reka-toast-swipe-move-x');
-          target.style.removeProperty('--reka-toast-swipe-move-y');
-          target.style.removeProperty('--reka-toast-swipe-end-x');
-          target.style.removeProperty('--reka-toast-swipe-end-y');
-        }
-      }"
-      @swipe-end="(event) => {
-        emits('swipeEnd', event);
-        if (!event.defaultPrevented) {
-          const { x, y } = event.detail.delta;
-          const target = event.currentTarget as HTMLElement
-          target.setAttribute('data-swipe', 'end');
-          target.style.removeProperty('--reka-toast-swipe-move-x');
-          target.style.removeProperty('--reka-toast-swipe-move-y');
-          target.style.setProperty('--reka-toast-swipe-end-x', `${x}px`);
-          target.style.setProperty('--reka-toast-swipe-end-y', `${y}px`);
-          close();
-        }
-      }"
+      @swipe-start="emits('swipeStart', $event)"
+      @swipe-move="emits('swipeMove', $event)"
+      @swipe-cancel="emits('swipeCancel', $event)"
+      @swipe-end="emits('swipeEnd', $event)"
     >
       <slot
         :remaining="remaining"

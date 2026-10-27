@@ -6,11 +6,12 @@ export interface NavigationMenuListProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { mergeProps, onMounted } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
+import { getNavigationMenuListSurface } from './useNavigationMenu'
 
 defineOptions({
   inheritAttrs: false,
@@ -24,6 +25,8 @@ const menuContext = injectNavigationMenuContext()
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
+const list = getNavigationMenuListSurface(menuContext)
+
 onMounted(() => {
   menuContext.onIndicatorTrackChange(currentElement.value)
 })
@@ -35,10 +38,9 @@ onMounted(() => {
     style="position: relative"
   >
     <Primitive
-      v-bind="$attrs"
+      v-bind="mergeProps(list.attrs.value, $attrs)"
       :as-child="props.asChild"
       :as="as"
-      :data-orientation="menuContext.orientation"
     >
       <slot />
     </Primitive>

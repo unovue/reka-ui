@@ -1,6 +1,9 @@
 import type { ShallowRef } from 'vue'
 import type { ToastAddOptions, ToastManager, ToastObject, ToastUpdateOptions } from './createToastManager'
+import type { ToastOpenChangeReason } from './useToast'
+import type { ChangeEventDetails } from '@/shared'
 import { reactive, shallowRef } from 'vue'
+import { createChangeEventDetails } from '@/shared'
 import { generateToastId, runToastPromise } from './createToastManager'
 
 export interface ToastStore extends ToastManager {
@@ -10,11 +13,27 @@ export interface ToastStore extends ToastManager {
   remove: (id: string) => void
   /** Increments when a toast is added again with the same `id`, to restart its dismiss timer. */
   getRestartKey: (id: string) => number
+  /**
+   * Marks a toast closed and calls its `onClose(details)`. Called by the
+   * `ToastRoot` rendering the toast once its close has committed (after
+   * `beforeUpdate:open` / `update:open`).
+   * @internal
+   */
+  commitClose: (id: string, details: ChangeEventDetails<ToastOpenChangeReason>) => void
+  /**
+   * Registers the close request of the `ToastRoot` rendering a toast, so
+   * `close(id)` asks that root (`beforeUpdate:open`, cancellable, then
+   * `update:open` with `'imperative-action'`) instead of closing the toast
+   * behind its back. Returns the unregister function.
+   * @internal
+   */
+  registerCloseRequest: (id: string, request: (reason: 'imperative-action') => boolean) => () => void
 }
 
 export function useToastStore(): ToastStore {
   const toasts = shallowRef<ToastObject[]>([])
   const restartKeys = reactive(new Map<string, number>())
+  const closeRequests = new Map<string, (reason: 'imperative-action') => boolean>()
 
   function find(id: string) {
     return toasts.value.find(toast => toast.id === id)
@@ -51,13 +70,33 @@ export function useToastStore(): ToastStore {
     return id
   }
 
+  function commitClose(id: string, details: ChangeEventDetails<ToastOpenChangeReason>) {
+    const toast = find(id)
+    if (!toast?.open)
+      return
+    replace(id, { ...toast, open: false })
+    toast.onClose?.(details)
+  }
+
   function close(id?: string) {
     const closing = toasts.value.filter(toast => toast.open && (id === undefined || toast.id === id))
-    if (!closing.length)
-      return
+    closing.forEach((toast) => {
+      const request = closeRequests.get(toast.id)
+      // A rendered toast closes through its `ToastRoot`, which may cancel it;
+      // one that is not rendered (yet) closes directly.
+      if (request)
+        request('imperative-action')
+      else
+        commitClose(toast.id, createChangeEventDetails<ToastOpenChangeReason>('imperative-action'))
+    })
+  }
 
-    toasts.value = toasts.value.map(toast => closing.includes(toast) ? { ...toast, open: false } : toast)
-    closing.forEach(toast => toast.onClose?.())
+  function registerCloseRequest(id: string, request: (reason: 'imperative-action') => boolean) {
+    closeRequests.set(id, request)
+    return () => {
+      if (closeRequests.get(id) === request)
+        closeRequests.delete(id)
+    }
   }
 
   function update(id: string, updates: ToastUpdateOptions | ((prevToast: ToastObject) => ToastUpdateOptions)) {
@@ -82,5 +121,7 @@ export function useToastStore(): ToastStore {
     promise: (promise, options) => runToastPromise(promise, options, add, update),
     remove,
     getRestartKey: id => restartKeys.get(id) ?? 0,
+    commitClose,
+    registerCloseRequest,
   }
 }
