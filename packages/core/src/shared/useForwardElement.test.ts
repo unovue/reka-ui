@@ -3,9 +3,11 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { unrefElement } from '@vueuse/core'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, Fragment, h, isRef, markRaw, nextTick, ref, watchPostEffect } from 'vue'
+import { DialogContent, DialogPortal, DialogRoot } from '../Dialog'
 import { Primitive } from '../Primitive'
 import { SwitchRoot } from '../Switch'
 import { mergeExpose, useForwardElement } from './useForwardElement'
+import { useForwardExpose } from './useForwardExpose'
 
 /** A part built on the contract: `defineExpose(expose)` via the options-API `expose`. */
 function definePart(template: string, extra: Record<string, unknown> = {}) {
@@ -300,5 +302,102 @@ describe('useForwardElement — removed accidental surface', () => {
     expect(partRef.value!.$el).toBe(button)
     expect(partRef.value!.disabled).toBeUndefined()
     expect(warn.mock.calls.flat().join('\n')).toContain('<SwitchRoot>: reading the prop `disabled`')
+  })
+})
+
+describe('useForwardElement — extra refs are released on detach', () => {
+  function mountWithExtraRefs(show = ref(true)) {
+    const objectRef = ref<HTMLElement | null>(null)
+    const log: string[] = []
+    const callbackRef = (el: HTMLElement | null) => {
+      log.push(`attach:${el?.tagName}`)
+      return () => log.push('cleanup')
+    }
+    const Part = defineComponent({
+      setup(_, { expose }) {
+        const api = useForwardElement<HTMLElement>(objectRef, callbackRef)
+        expose(api.expose)
+        return () => h('div', [show.value ? h('section', { ref: api.forwardRef }) : null])
+      },
+    })
+    const wrapper = mount(Part)
+    return { wrapper, objectRef, log, show }
+  }
+
+  it('clears an object ref and runs a callback cleanup on unmount', async () => {
+    const { wrapper, objectRef, log } = mountWithExtraRefs()
+    await nextTick()
+    expect(objectRef.value?.tagName).toBe('SECTION')
+    wrapper.unmount()
+    expect(objectRef.value).toBeNull()
+    expect(log).toEqual(['attach:SECTION', 'cleanup'])
+  })
+
+  it('clears an object ref and runs a callback cleanup when the element is removed by `v-if`', async () => {
+    const { objectRef, log, show } = mountWithExtraRefs()
+    await nextTick()
+    show.value = false
+    await nextTick()
+    expect(objectRef.value).toBeNull()
+    expect(log).toEqual(['attach:SECTION', 'cleanup'])
+  })
+})
+
+describe('useForwardElement — a part that renders no element', () => {
+  function mountClosedDialog(Inner: ReturnType<typeof defineComponent> | typeof DialogContent = DialogContent) {
+    const partRef = ref<any>()
+    const label = ref('a')
+    const wrapper = mount(defineComponent(() => () =>
+      h(DialogRoot, { open: false }, () => h(DialogPortal, { disabled: true }, () =>
+        h(Inner as any, { ref: partRef }, () => label.value)))), { attachTo: document.body })
+    return { wrapper, partRef, label }
+  }
+
+  it('exposes `element` as null and falls back `$el` to the placeholder node (v2 parity)', async () => {
+    const { wrapper, partRef } = mountClosedDialog()
+    await nextTick()
+    expect(partRef.value.element).toBeNull()
+    expect(partRef.value.$el).toBeInstanceOf(Node)
+    expect(partRef.value.$el.nodeType).toBe(Node.COMMENT_NODE)
+    // VueUse resolves to the placeholder, never to the component proxy.
+    const resolved = unrefElement(partRef)
+    expect(resolved).toBeInstanceOf(Node)
+    expect(resolved).toBe(partRef.value.$el)
+    wrapper.unmount()
+  })
+
+  it('resolves to null (not the placeholder) through a conforming wrapper', async () => {
+    const Wrapper = defineComponent({
+      setup(_, { expose, slots }) {
+        const api = useForwardElement()
+        expose(api.expose)
+        return () => h(DialogContent, { ref: api.forwardRef }, slots)
+      },
+    })
+    const { wrapper, partRef } = mountClosedDialog(Wrapper)
+    await nextTick()
+    expect(partRef.value.element).toBeNull()
+    wrapper.unmount()
+  })
+
+  it('a legacy `useForwardExpose` wrapper around a closed DialogContent does not throw on update', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const LegacyWrapper = defineComponent({
+      props: { text: String },
+      setup(props) {
+        const { forwardRef, currentElement } = useForwardExpose()
+        return () => h(DialogContent, { 'ref': forwardRef, 'data-el': String(!!currentElement.value) }, () => props.text)
+      },
+    })
+    const text = ref('a')
+    const wrapper = mount(defineComponent(() => () =>
+      h(DialogRoot, { open: false }, () => h(DialogPortal, { disabled: true }, () =>
+        h(LegacyWrapper, { text: text.value })))), { attachTo: document.body })
+    await nextTick()
+    text.value = 'b'
+    await nextTick()
+    text.value = 'c'
+    await nextTick()
+    wrapper.unmount()
   })
 })

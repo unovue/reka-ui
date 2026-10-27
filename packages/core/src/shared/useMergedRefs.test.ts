@@ -110,10 +110,13 @@ describe('resolveRefTarget', () => {
     expect(resolveRefTarget({ element: ref(element), $el })).toBe(element)
   })
 
-  it('falls back to `$el` when `element` is absent or empty', () => {
+  it('falls back to `$el` only when `element` is absent', () => {
     const $el = document.createElement('div')
     expect(resolveRefTarget({ $el })).toBe($el)
-    expect(resolveRefTarget({ element: null, $el })).toBe($el)
+    // A conforming part with no element resolves to null, never to its `$el`
+    // placeholder (or the placeholder's next sibling).
+    expect(resolveRefTarget({ element: null, $el })).toBeNull()
+    expect(resolveRefTarget({ element: null, $el: document.createComment('') })).toBeNull()
   })
 
   it('resolves a #text / #comment `$el` anchor to the next element sibling', () => {

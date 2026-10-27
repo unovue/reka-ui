@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, markRaw, nextTick, onMounted, ref } from 'vue'
+import { defineComponent, h, markRaw, nextTick, onMounted, ref } from 'vue'
 import * as Reka from '../index'
 import { useForwardElement } from '../shared/useForwardElement'
 import { useForwardExpose } from '../shared/useForwardExpose'
@@ -101,6 +101,26 @@ describe('useRender — element rendering & ref', () => {
     expect(wrapper.find('section[data-testid="el"]').exists()).toBe(true)
     expect(external.value).toBeInstanceOf(HTMLElement)
     expect(wrapper.vm.currentElement).toBeInstanceOf(HTMLElement)
+  })
+
+  it('clears options.ref on unmount', async () => {
+    const external = ref<HTMLElement | null>(null)
+    const wrapper = mount(Harness, { props: { as: 'section', externalRef: external } })
+    await flushPromises()
+    expect(external.value).toBeInstanceOf(HTMLElement)
+    wrapper.unmount()
+    expect(external.value).toBeNull()
+  })
+
+  it('clears options.ref when the rendering part is removed by `v-if`', async () => {
+    const external = ref<HTMLElement | null>(null)
+    const show = ref(true)
+    mount(defineComponent(() => () => h('div', [show.value ? h(Harness, { as: 'section', externalRef: external }) : null])))
+    await flushPromises()
+    expect(external.value).toBeInstanceOf(HTMLElement)
+    show.value = false
+    await flushPromises()
+    expect(external.value).toBeNull()
   })
 })
 

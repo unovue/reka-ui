@@ -1,17 +1,19 @@
 import type { ComponentInternalInstance, ComponentPublicInstance, ComputedRef, Ref, ShallowRef } from 'vue'
 import type { MergeableRef } from './useMergedRefs'
-import { computed, getCurrentInstance, shallowRef, watch } from 'vue'
+import { computed, getCurrentInstance, onScopeDispose, shallowRef, watch } from 'vue'
 import { resolveRefTarget, useMergedRefs } from './useMergedRefs'
 
 /**
  * The element-first ref/expose contract every reka part satisfies (#2808):
- * `defineExpose({ element, $el: element })`, both keys backed by ONE reactive ref.
+ * `defineExpose({ element, $el })`, both keys reading ONE reactive element ref.
  *
  * - `element` is the conformance marker `resolveRefTarget` keys on (aligned with
- *   Base UI).
+ *   Base UI). It is strictly an element: `null` whenever the part renders none.
  * - `$el` shadows Vue's builtin snapshot (exposed keys are looked up before
  *   `publicPropertiesMap`), so `partRef.value.$el` stays the familiar surface and
- *   becomes reactive — VueUse `unrefElement` and floating-ui keep working.
+ *   becomes reactive — VueUse `unrefElement` and floating-ui keep working. When
+ *   the part renders no element it falls back to Vue's own `$el` (the placeholder
+ *   comment), as in v2, so `unrefElement` never returns the component proxy.
  *
  * Both are auto-unwrapped by the expose proxy, so consumers read
  * `partRef.value.element` / `partRef.value.$el` without `.value`.
@@ -19,8 +21,11 @@ import { resolveRefTarget, useMergedRefs } from './useMergedRefs'
 export interface ElementExpose<E extends Element = HTMLElement> {
   /** The part's rendered DOM element; reactive across root swaps. */
   element: Readonly<Ref<E | null>>
-  /** Alias of `element` that shadows Vue's builtin (non-reactive) `$el`. */
-  $el: Readonly<Ref<E | null>>
+  /**
+   * `element`, shadowing Vue's builtin (non-reactive) `$el`; falls back to the
+   * placeholder node Vue renders when the part has no element (v2 parity).
+   */
+  readonly $el: E | Node | null
 }
 
 export interface UseForwardElementReturn<E extends Element = HTMLElement> {
@@ -89,14 +94,17 @@ function createDevExpose<T extends object>(exposed: T, instance: ComponentIntern
 export function createElementExpose<E extends Element = HTMLElement>(
   element: Readonly<Ref<E | null>>,
 ): ElementExpose<E> {
-  const exposed: ElementExpose<E> = { element, $el: element }
+  const instance = getCurrentInstance()
+  const exposed: ElementExpose<E> = {
+    element,
+    get $el() {
+      return element.value ?? instance?.vnode.el as Node | null
+    },
+  }
   // Uses process.env.NODE_ENV (not import.meta.env.DEV, which is neutered in dist).
   // eslint-disable-next-line node/prefer-global/process
-  if (process.env.NODE_ENV !== 'production') {
-    const instance = getCurrentInstance()
-    if (instance)
-      return createDevExpose(exposed, instance)
-  }
+  if (process.env.NODE_ENV !== 'production' && instance)
+    return createDevExpose(exposed, instance)
   return exposed
 }
 
@@ -140,8 +148,13 @@ export function useForwardElement<E extends Element = HTMLElement>(
   const element = computed(() => resolveRefTarget<E>(currentRef.value))
 
   const merged = useMergedRefs<E>(...refs)
-  if (merged)
+  if (merged) {
     watch(element, merged, { flush: 'sync' })
+    // On unmount the scope stops before the subtree's refs are nulled, so the
+    // watcher never sees the detach: clear the extra refs (and run their
+    // cleanups) here.
+    onScopeDispose(() => merged(null))
+  }
 
   function forwardRef(el: Element | ComponentPublicInstance | null) {
     currentRef.value = el

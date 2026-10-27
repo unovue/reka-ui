@@ -25,10 +25,11 @@ function isElement(value: unknown): value is Element {
  * Unwraps a template-ref value to its DOM element, element-first:
  *
  * 1. a raw `Element` is returned as is;
- * 2. a component that exposes an `element` ref (the reka part contract,
- *    `defineExpose({ element, $el: element })`) resolves to that element —
- *    reading it through the expose proxy is tracked, so a `computed` over this
- *    function follows the child's root swaps;
+ * 2. a component that exposes an `element` key (the reka part contract,
+ *    `defineExpose({ element, $el })`) resolves to that element, or `null` when
+ *    it renders none (never to its `$el` placeholder) — reading it through the
+ *    expose proxy is tracked, so a `computed` over this function follows the
+ *    child's root swaps;
  * 3. otherwise the component's `$el`. For multi-root (fragment) and text-root
  *    components `$el` is the anchor `#text` / `#comment` node, so the next
  *    element sibling is used instead.
@@ -43,8 +44,7 @@ export function resolveRefTarget<T extends Element = HTMLElement>(target: unknow
 
   if ('element' in target) {
     const exposed = unref((target as { element: unknown }).element)
-    if (isElement(exposed))
-      return exposed as unknown as T
+    return isElement(exposed) ? exposed as unknown as T : null
   }
 
   // A `#text` / `#comment` anchor (fragment or text root) is the only kind of

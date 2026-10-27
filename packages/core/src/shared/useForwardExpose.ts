@@ -37,9 +37,10 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
 
   function resolveCurrentElement() {
     // $el could be text/comment for non-single root normal or text root, thus we retrieve the nextElementSibling
+    // A reka part that renders nothing (e.g. a closed `DialogContent`) has no element.
     return currentRef.value
       && '$el' in currentRef.value
-      && ['#text', '#comment'].includes(currentRef.value.$el.nodeName)
+      && ['#text', '#comment'].includes(currentRef.value.$el?.nodeName)
       ? currentRef.value.$el.nextElementSibling as HTMLElement
       : unrefElement(currentRef as unknown as MaybeElement) as HTMLElement
   }
