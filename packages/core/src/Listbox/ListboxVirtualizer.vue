@@ -20,7 +20,6 @@ import { useParentElement } from '@vueuse/core'
 import { refAutoReset } from '@vueuse/shared'
 import { cloneVNode, computed, Fragment, useSlots } from 'vue'
 import { useCollection } from '@/Collection'
-import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
 import { findValuesBetween, getActiveElement } from '@/shared'
 import { getNextMatch } from '@/shared/useTypeahead'
 import { injectListboxRootContext } from './ListboxRoot.vue'
@@ -200,13 +199,16 @@ function handleMultipleReplace(event: Event, intent: 'first' | 'last' | 'prev' |
   rootContext.modelValue.value = value
 }
 
-rootContext.virtualKeydownHook.on((event) => {
+rootContext.virtualKeydownHook.on(({ event, intent: resolvedIntent }) => {
   const isMetaKey = event.altKey || event.ctrlKey || event.metaKey
   const isTabKey = event.key === 'Tab' && !isMetaKey
   if (isTabKey)
     return
 
-  let intent = MAP_KEY_TO_FOCUS_INTENT[event.key]
+  // The root resolved the intent (the `getNavigationIntent` override
+  // included); a `null` intent is never re-derived from `event.key`, so an
+  // opted-out key does not move and a custom mapping is honoured.
+  let intent: 'first' | 'last' | 'prev' | 'next' | undefined = resolvedIntent ?? undefined
 
   // Meta + A, select all feature
   if (isMetaKey && event.key === 'a' && rootContext.multiple.value) {
@@ -219,7 +221,7 @@ rootContext.virtualKeydownHook.on((event) => {
     handleMultipleReplace(event, intent)
   }
 
-  if (['first', 'last'].includes(intent)) {
+  if (intent === 'first' || intent === 'last') {
     event.preventDefault()
 
     const index = intent === 'first' ? 0 : props.options.length - 1
@@ -231,7 +233,8 @@ rootContext.virtualKeydownHook.on((event) => {
         rootContext.changeHighlight(item.ref)
     })
   }
-  else if (!intent && !isMetaKey) {
+  // Typeahead only for a printable character (not `Shift`, `Home`, …).
+  else if (!intent && !isMetaKey && event.key.length === 1) {
     search.value += event.key
     const currentIndex = Number(getActiveElement()?.getAttribute('data-index'))
     const currentMatch = optionsWithMetadata.value[currentIndex].textContent

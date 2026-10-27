@@ -90,13 +90,18 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the color value changes; <code>details.cancel()</code> vetoes the change.</p>\n',
+    'type': '[value: string | Color, details: ChangeEventDetails&lt;\'slider\', Event&gt;]'
+  },
+  {
     'name': 'change',
-    'description': '',
+    'description': '<p>Event handler called with the hex value on every pointer move or keyboard step that changes the color.</p>\n',
     'type': '[value: string]'
   },
   {
     'name': 'changeEnd',
-    'description': '',
+    'description': '<p>Event handler called with the hex value when a pointer drag that changed the color ends, and after each keyboard step.</p>\n',
     'type': '[value: string]'
   },
   {
@@ -106,8 +111,8 @@
   },
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value of the checkbox changes.</p>\n',
-    'type': '[value: string | Color]'
+    'description': '<p>Event handler called when the color value changes.</p>\n',
+    'type': '[value: string | Color, details: ChangeEventDetails&lt;\'slider\', Event&gt;]'
   }
 ]" />
 </llm-exclude>
@@ -136,9 +141,10 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `change` |  | `[value: string]` |
-| `changeEnd` |  | `[value: string]` |
+| `beforeUpdate:modelValue` | Event handler called before the color value changes; details.cancel() vetoes the change. | `[value: string \| Color, details: ChangeEventDetails<"slider", Event>]` |
+| `change` | Event handler called with the hex value on every pointer move or keyboard step that changes the color. | `[value: string]` |
+| `changeEnd` | Event handler called with the hex value when a pointer drag that changed the color ends, and after each keyboard step. | `[value: string]` |
 | `update:color` |  | `[value: Color]` |
-| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: string \| Color]` |
+| `update:modelValue` | Event handler called when the color value changes. | `[value: string \| Color, details: ChangeEventDetails<"slider", Event>]` |
 
 </llm-only>

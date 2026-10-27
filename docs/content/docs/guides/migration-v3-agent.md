@@ -29,7 +29,7 @@ Reka UI v3 is still in progress, so this page grows as breaking changes land on 
 
 ## Instructions for the agent
 
-You are migrating a Vue project from Reka UI v2 to Reka UI v3. Work through the sections below in order. Each one says what changed, how to find the affected code, the rules for rewriting it, and how to verify the result. Apply the mechanical rewrites yourself. Where a rule says *ask*, stop and ask the developer instead of guessing. Do not change anything this page does not ask you to change: component names, props, slots and `v-model` bindings are unchanged in v3.
+You are migrating a Vue project from Reka UI v2 to Reka UI v3. Work through the sections below in order. Each one says what changed, how to find the affected code, the rules for rewriting it, and how to verify the result. Apply the mechanical rewrites yourself. Where a rule says *ask*, stop and ask the developer instead of guessing. Do not change anything this page does not ask you to change: apart from the month and year pickers covered in section 6, component names, props, slots and `v-model` bindings are unchanged in v3.
 
 ### Before you start
 
@@ -81,9 +81,9 @@ You are migrating a Vue project from Reka UI v2 to Reka UI v3. Work through the 
 
 **What changed.** `update:*` events on stateful roots now receive a second argument, a `ChangeEventDetails` object with `reason`, `event`, `isCanceled` and `cancel()`, and a cancellable `beforeUpdate:*` event fires before every change. `v-model` keeps working unchanged. Uncontrolled components emit synchronously from the interaction instead of from a watcher on the next tick, and a component that mounts uncontrolled and later receives a defined model value becomes controlled from then on, even if the model is later cleared to `undefined`.
 
-Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `CheckboxRoot`, `CheckboxGroupRoot`, `RadioGroupRoot`, `AccordionRoot` (`modelValue`), `DropdownMenuRoot`, `DropdownMenuSub`, `ContextMenuRoot`, `ContextMenuSub`, `MenubarSub`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `CollapsibleRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`). On the converted families an `update:*` event fires only when the value actually changes; re-selecting the current value emits nothing. Treat every other family as still on the v2 single-argument shape; the [Migration to v3](./migration-v3) guide lists the families as they convert.
+Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `CheckboxRoot`, `CheckboxGroupRoot`, `RadioGroupRoot`, `ListboxRoot`, `AccordionRoot` (`modelValue`), `DropdownMenuRoot`, `DropdownMenuSub`, `ContextMenuRoot`, `ContextMenuSub`, `MenubarSub`, `DialogRoot`, `AlertDialogRoot`, `PopoverRoot`, `TooltipRoot`, `HoverCardRoot`, `CollapsibleRoot`, `DatePickerRoot` and `DateRangePickerRoot` (`open`, `view`), `CalendarRoot` and `RangeCalendarRoot` (`modelValue`, `placeholder`, `view`), and `ColorAreaRoot`, `ColorFieldRoot`, `ColorSliderRoot` and `ColorSwatchPickerRoot` (`modelValue`). On the converted families an `update:*` event fires only when the value actually changes; re-selecting the current value emits nothing, and a multiple selection is compared entry by entry (a `ListboxRoot` with `multiple` and `selection-behavior="replace"` no longer emits a fresh `[value]` array for a re-pressed item). Known exception: `ColorAreaRoot` and `ColorSliderRoot` still emit `beforeUpdate:modelValue` and `update:modelValue` with an unchanged hex string when the change is finer than hex precision (the hue of a grey, a fractional step), so that `update:color` can carry the precise `Color`; this lasts until the color model becomes a `Color` object ([#2789](https://github.com/unovue/reka-ui/issues/2789)). `ColorAreaRoot` also now emits `change` (declared but never fired in v2) on every pointer move and arrow-key step that changes the color, and `changeEnd` after each keyboard step as well as on pointer release. Treat every other family as still on the v2 single-argument shape; the [Migration to v3](./migration-v3) guide lists the families as they convert.
 
-**How to find it.** Search for listeners and emit declarations on those roots: `@update:open`, `@update:model-value`, `@update:modelValue`, `'update:open'`, `'update:modelValue'`, `onUpdate:open`, `onUpdate:modelValue`, `defineEmits` in components that wrap one of the roots, `useForwardPropsEmits`, `emitted('update:open')` and `toHaveBeenCalledWith` in tests, and `watch(` calls that react to these models.
+**How to find it.** Search for listeners and emit declarations on those roots: `@update:open`, `@update:model-value`, `@update:modelValue`, `@update:placeholder`, `'update:open'`, `'update:modelValue'`, `'update:placeholder'`, `onUpdate:open`, `onUpdate:modelValue`, `onUpdate:placeholder`, `defineEmits` in components that wrap one of the roots, `useForwardPropsEmits`, `emitted('update:open')` and `toHaveBeenCalledWith` in tests, and `watch(` calls that react to these models.
 
 **Rewrite rules.**
 
@@ -97,7 +97,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
   }
   ```
 
-  The reason unions, all exported from `reka-ui`, are `DialogOpenChangeReason`, `PopoverOpenChangeReason`, `TooltipOpenChangeReason`, `HoverCardOpenChangeReason`, `MenuOpenChangeReason` (shared by the DropdownMenu, ContextMenu and Menubar parts), `SwitchChangeReason`, `TabsChangeReason`, `ToggleChangeReason`, `ToggleGroupChangeReason`, `CheckboxChangeReason`, `CheckboxGroupChangeReason`, `RadioGroupChangeReason`, `AccordionChangeReason`, `CollapsibleChangeReason`, `DatePickerOpenChangeReason` and `DateRangePickerOpenChangeReason`. `details.reason` is the family union plus the shared `BaseChangeReason` (`'imperative-action'` for programmatic changes such as a slot's `close()`), so a `switch` over the family union alone is incomplete.
+  The reason unions, all exported from `reka-ui`, are `DialogOpenChangeReason`, `PopoverOpenChangeReason`, `TooltipOpenChangeReason`, `HoverCardOpenChangeReason`, `MenuOpenChangeReason` (shared by the DropdownMenu, ContextMenu and Menubar parts), `SwitchChangeReason`, `TabsChangeReason`, `ToggleChangeReason`, `ToggleGroupChangeReason`, `CheckboxChangeReason`, `CheckboxGroupChangeReason`, `RadioGroupChangeReason`, `ListboxChangeReason`, `AccordionChangeReason`, `CollapsibleChangeReason`, `DatePickerOpenChangeReason`, `DateRangePickerOpenChangeReason`, `CalendarChangeReason`, `RangeCalendarChangeReason`, `ColorAreaChangeReason`, `ColorFieldChangeReason`, `ColorSliderChangeReason` and `ColorSwatchPickerChangeReason`. `details.reason` is the family union plus the shared `BaseChangeReason` (`'imperative-action'` for programmatic changes such as a slot's `close()`), so a `switch` over the family union alone is incomplete.
 - Wrappers that forward with `useForwardPropsEmits` need no change.
 - Custom parts built on `injectAccordionRootContext()` or `injectCollapsibleRootContext()`: the Accordion root context's `modelValue` is now a readonly `ComputedRef`, so call `changeModelValue` instead of assigning it, and `changeModelValue(value, reason?, event?)` now takes an optional reason and native event and returns a boolean (`false` when the change was cancelled or did not change the value). On the Collapsible root context, `onOpenToggle(event?)` accepts the native event, `onContentFound(event)` is new, and `contentId` is backed by a ref, so assigning it also updates the trigger's `aria-controls`.
 - Tests: an assertion such as `expect(emit).toHaveBeenCalledWith(true)` or `expect(wrapper.emitted('update:open')[0]).toEqual([true])` now fails because of the extra argument. Assert on the first element (`[0][0]`) or use `expect.objectContaining({ reason: '…' })` for the details. Tests that awaited a tick for an uncontrolled emit may now see it synchronously; remove waits only if the test's intent is unchanged.
@@ -134,10 +134,99 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Verify.** Tests that click a disabled `asChild` control assert that the value did not change.
 
+### 6. Calendar views replace the month and year pickers
+
+**What changed.** The `MonthPicker`, `MonthRangePicker`, `YearPicker` and `YearRangePicker` families no longer exist. `CalendarRoot` and `RangeCalendarRoot` take a `granularity` (`day` | `month` | `year`) that sets what a selection commits, so a month picker is a `Calendar` with `granularity="month"`. The cell parts of `Calendar`, `RangeCalendar`, `DatePicker` and `DateRangePicker` take one `value` prop instead of `date` / `day` + `month`, and the grid part takes the page it renders.
+
+| v2 | v3 |
+| --- | --- |
+| `MonthPickerRoot` | `CalendarRoot` with `granularity="month"` |
+| `YearPickerRoot` | `CalendarRoot` with `granularity="year"` |
+| `MonthRangePickerRoot` | `RangeCalendarRoot` with `granularity="month"` |
+| `YearRangePickerRoot` | `RangeCalendarRoot` with `granularity="year"` |
+| `MonthPicker<Part>`, `YearPicker<Part>` (`Cell`, `CellTrigger`, `Grid`, `GridBody`, `GridRow`, `Header`, `Heading`, `Next`, `Prev`) | `Calendar<Part>` |
+| `MonthRangePicker<Part>`, `YearRangePicker<Part>` | `RangeCalendar<Part>` |
+| `MonthPicker<Part>Props`, `YearPickerRootEmits` and the other exported types | the `Calendar<Part>…` / `RangeCalendar<Part>…` type of the same part |
+| `MonthPicker.*`, `MonthRangePicker.*`, `YearPicker.*`, `YearRangePicker.*` from `reka-ui/namespaced` | `Calendar.*`, `RangeCalendar.*` |
+| `isMonthDisabled`, `isYearDisabled` | `isDateDisabled` |
+| `isMonthUnavailable`, `isYearUnavailable` | `isDateUnavailable` |
+| `maximumMonths`, `maximumYears` | `maximumLength` |
+| `<…Cell :date="x">` | `<…Cell :value="x">` |
+| `<…CellTrigger :day="x" :month="page.value">` | `<…CellTrigger :value="x">`, and `:value="page.value"` on the enclosing `…Grid` |
+| `<MonthPickerCellTrigger :month="x">`, `<YearPickerCellTrigger :year="x">` | `<CalendarCellTrigger :value="x">` |
+| cell trigger slot props `dayValue`, `monthValue`, `yearValue` | `cellValue` |
+
+**How to find it.** Search for `MonthPicker`, `MonthRangePicker`, `YearPicker`, `YearRangePicker` (imports, templates, types, auto-import or resolver configuration), and for every `CalendarCell`, `CalendarCellTrigger`, `CalendarGrid`, `RangeCalendarCell`, `RangeCalendarCellTrigger`, `RangeCalendarGrid`, `DatePickerCell`, `DatePickerCellTrigger`, `DatePickerGrid`, `DateRangePickerCell`, `DateRangePickerCellTrigger` and `DateRangePickerGrid` in templates, including the namespaced forms (`Calendar.Cell`, …). Also search for `maximumMonths`, `maximum-months`, `maximumYears`, `maximum-years`, `dayValue`, `monthValue`, `yearValue`, `isMonth`, `isYear`, and for `data-selected`, `data-selection-start`, `data-selection-end`, `data-highlighted-start` and `data-highlighted-end` in selectors and tests.
+
+**Rewrite rules.**
+
+- Rename the removed families with the table above and add the matching `granularity` to the root. Keep every other prop: `v-model`, `v-model:placeholder`, `minValue`, `maxValue`, `yearsPerPage`, `multiple`, `fixedDate`, `allowNonContiguousRanges` and the rest have the same names on `CalendarRoot` / `RangeCalendarRoot`.
+- The root's `grid` slot prop is always an array of pages. The month and year pickers exposed one object, so wrap their grid in a loop and pass the page to the grid part:
+
+  ```vue
+  <MonthPickerRoot v-slot="{ grid }"> <!-- [!code --] -->
+    <MonthPickerGrid> <!-- [!code --] -->
+      <MonthPickerGridBody> <!-- [!code --] -->
+        <MonthPickerGridRow v-for="(row, i) in grid.rows" :key="i"> <!-- [!code --] -->
+          <MonthPickerCell v-for="month in row" :key="month.toString()" :date="month"> <!-- [!code --] -->
+            <MonthPickerCellTrigger :month="month" /> <!-- [!code --] -->
+  <CalendarRoot v-slot="{ grid }" granularity="month"> <!-- [!code ++] -->
+    <CalendarGrid v-for="page in grid" :key="page.value.toString()" :value="page.value"> <!-- [!code ++] -->
+      <CalendarGridBody> <!-- [!code ++] -->
+        <CalendarGridRow v-for="(row, i) in page.rows" :key="i"> <!-- [!code ++] -->
+          <CalendarCell v-for="month in row" :key="month.toString()" :value="month"> <!-- [!code ++] -->
+            <CalendarCellTrigger :value="month" /> <!-- [!code ++] -->
+  ```
+
+- In existing day calendars, date pickers and date range pickers: replace `:date` on the cell and `:day` on the cell trigger with `:value`, delete `:month` from the cell trigger, and add `:value` with the same expression that `:month` had (usually `month.value`) to the enclosing grid part. Do not skip the grid: without `value` it cannot mark the days of the neighbouring months as `data-outside-view`.
+- A matcher renamed to `isDateDisabled` or `isDateUnavailable` keeps its body: in a month or year picker it is still called with a date inside the month or year being tested. Matchers are called only for cells at the `granularity`, with that unit (`'day'`, `'month'` or `'year'`) as a second argument. The views coarser than the granularity never call them: those cells are disabled only by `minValue`, `maxValue` and `disabled`. Do not add unit checks to existing matchers.
+- `maximumMonths` and `maximumYears` become `maximumLength`, counted in units of the `granularity`. `maximumDays` on a day range calendar still works as a deprecated alias; rename it to `maximumLength` as well.
+- `data-selected`, `data-selection-start`, `data-selection-end`, `data-highlighted-start` and `data-highlighted-end` are now present with an empty value instead of `"true"`. Presence selectors (`[data-selected]`, `data-[selected]:`) need no change. Rewrite value selectors and assertions: `[data-selected='true']` → `[data-selected]`, `toHaveAttribute('data-selected', 'true')` → `toHaveAttribute('data-selected')`.
+- `update:modelValue`, `update:placeholder` and `update:view` on `CalendarRoot` and `RangeCalendarRoot`, and `update:view` on `DatePickerRoot` and `DateRangePickerRoot`, follow section 2.
+- A `nextPage` / `prevPage` function on the root keeps working unchanged. It is used only in the `granularity` view, with that view as an extra second argument; the coarser views page by their default step.
+- The new `view`, `defaultView` and `maxView` props and the `CalendarView` / `CalendarViewTrigger` parts are optional. Do not add them during the migration. If the project built its own month or year switching around a calendar (for example swapping a `MonthPicker` and a `Calendar` with `v-if`), keep that code working with the renames above, and *ask* before replacing it with views.
+- A `granularity` prop on `DatePickerRoot` or `DateRangePickerRoot` is untouched: on those roots it is still the field's time granularity.
+
+**Verify.** A search for `MonthPicker`, `MonthRangePicker`, `YearPicker` and `YearRangePicker` returns nothing in the project's own source. No `CalendarCell`, `RangeCalendarCell`, `DatePickerCell` or `DateRangePickerCell` has a `:date` prop, no cell trigger has `:day` or `:month`, and every grid part in a day view has `:value`. The type-check passes. Render one migrated calendar and check that the days of the neighbouring months carry `data-outside-view`.
+
+### 7. `by` comparison functions receive strings
+
+**What changed.** A function passed as `by` to `ListboxRoot`, `ComboboxRoot` or `SelectRoot` now runs for every value, strings included. In v2 string values were compared with `===` and the function was only called for objects. `by` is still read once at setup.
+
+**How to find it.** Search for `:by="` and `by:` on those roots where the value is a function (not a string key).
+
+**Rewrite rules.** If the list can contain string values and the function dereferences a property (`a.id === b.id`), add a string guard (`typeof a === 'string' ? a === b : a.id === b.id`). A function that already handles both, or a list of objects only, needs no change. A string key (`by="id"`) is unaffected.
+
+**Verify.** Selection and highlighting of string options in those lists behave as before.
+
+### 8. Listbox keyboard handling
+
+**What changed.** `ListboxContent` and `ListboxFilter` (rendered by `ComboboxInput` and `AutocompleteInput`) resolve every keydown through one navigation intent.
+- PageUp and PageDown now move the highlight to the first or last item and prevent the default, both in the content and in the filter input. In v2 they scrolled the container natively.
+- While a filter has focus, ArrowLeft and ArrowRight always stay with the text input, even in a `horizontal` listbox. ArrowUp, ArrowDown, Home and End still navigate from the filter. `ListboxContent` no longer prevents the default of arrow keys while a filter owns the keyboard.
+- Typeahead no longer receives navigation keys.
+- New and additive: `getNavigationIntent` on `ListboxRoot` returns `'first' | 'last' | 'prev' | 'next' | 'select'`, `null` (opt the key out, Enter's selection included) or `undefined` (default mapping). The filter never passes it unmodified printable keys, and a `'select'` intent for Space on a focused item does not select twice. `ComboboxRoot` does not accept it yet. `textValue` on `ListboxItem` sets the label-registry text and defaults to the text content.
+- `ListboxRoot`'s `update:modelValue` and `beforeUpdate:modelValue` are typed `T | T[] | undefined` (type-only).
+
+**How to find it.**
+- Keydown listeners next to these parts that handle PageUp/PageDown themselves: search for `PageUp`, `PageDown`, `'Page` in components that render `ListboxContent`, `ListboxFilter`, `ComboboxInput` or `AutocompleteInput`.
+- Code that re-implemented custom navigation keys: `@keydown` on `ListboxRoot`, `ListboxContent` or `ListboxFilter` that calls `highlightItem`, `highlightFirstItem` or moves focus between options, and `key === 'n'` / `key === 'p'` checks with `ctrlKey`.
+- Tests that press arrow keys in a listbox filter and assert `defaultPrevented`, or that rely on PageUp/PageDown scrolling: search `*.test.*` and `*.spec.*` for `PageUp`, `PageDown` and `defaultPrevented` near `ListboxFilter` / `ComboboxInput`.
+- Handlers typed for one value on `@update:model-value` of `ListboxRoot` (`(value: string) =>`).
+
+**Rewrite rules.**
+- A custom PageUp/PageDown handler on these parts that only jumped to the first/last item: remove it. If the app needs the native scroll, pass `:get-navigation-intent="e => (e.key === 'PageUp' || e.key === 'PageDown') ? null : undefined"` on `ListboxRoot`.
+- A `@keydown` handler that maps extra keys to moves (Ctrl+N/P, vim keys): replace it with `getNavigationIntent` on `ListboxRoot` returning the intent; return `undefined` for every other key. Leave such handlers on `ComboboxRoot` unchanged, since it does not take the prop yet.
+- An item whose visible content is not plain text and that is shown elsewhere by label: add `text-value="…"`. Otherwise no change.
+- A `ListboxRoot` model handler typed for a single value: widen it to `T | T[] | undefined`, or narrow inside (`Array.isArray(v)`). Do not change runtime logic.
+- Tests: update an expectation that ArrowLeft/ArrowRight in a horizontal filter is prevented, or that PageUp/PageDown is not. Ask the developer before changing any other keyboard assertion.
+
+**Verify.** In each affected listbox: PageUp/PageDown move to the first/last option; ArrowLeft/ArrowRight move the caret in a filter; typing letters in a filter still filters; Enter still selects unless `getNavigationIntent` returns `null` for it. Run the type-check for the handler retyping.
+
 ### Report
 
 When you are done, give the developer:
 
 1. The list of files you changed, grouped by the section above that required the change.
-2. Every `active` / `inactive` selector and every `require()` you left unchanged because the rule said to ask, with file and line.
+2. Every `active` / `inactive` selector, every `require()` and every hand-built month or year switcher you left unchanged because the rule said to ask, with file and line.
 3. The result of the type-check, lint and test commands, compared with the baseline you recorded at the start.

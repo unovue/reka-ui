@@ -48,7 +48,9 @@ export type ComboboxRootEmits<T = AcceptableValue> = {
   'update:open': [value: boolean]
 }
 
-export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior'> {
+// `getNavigationIntent` is omitted until the Combobox PR routes `ComboboxInput` through the intent resolution (#2824 item 8);
+// today the root would declare it without forwarding it.
+export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'getNavigationIntent'> {
   /** The controlled open state of the Combobox. Can be binded with `v-model:open`. */
   open?: boolean
   /** The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. */
@@ -95,6 +97,7 @@ import type { EventHookOn } from '@vueuse/core'
 import { createEventHook, useVModel } from '@vueuse/core'
 import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs } from 'vue'
 import { ListboxRoot } from '@/Listbox'
+import { omitBeforeUpdateModelValue } from '@/Listbox/utils'
 import { PopperRoot } from '@/Popper'
 import { useComboboxContentPositioning } from './useComboboxContentPositioning'
 
@@ -265,7 +268,7 @@ provideComboboxRootContext({
   <PopperRoot>
     <ListboxRoot
       ref="primitiveElement"
-      v-bind="$attrs"
+      v-bind="omitBeforeUpdateModelValue($attrs)"
       v-model="modelValue"
       :style="{
         pointerEvents: open ? 'auto' : undefined,

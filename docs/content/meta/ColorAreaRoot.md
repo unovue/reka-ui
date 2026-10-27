@@ -84,13 +84,18 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the color value changes; <code>details.cancel()</code> vetoes the change.</p>\n',
+    'type': '[value: string, details: ChangeEventDetails&lt;ColorAreaChangeReason, Event&gt;]'
+  },
+  {
     'name': 'change',
-    'description': '',
+    'description': '<p>Event handler called with the hex value on every pointer move or keyboard step that changes the color.</p>\n',
     'type': '[value: string]'
   },
   {
     'name': 'changeEnd',
-    'description': '',
+    'description': '<p>Event handler called with the hex value when the pointer is released and after each keyboard step.</p>\n',
     'type': '[value: string]'
   },
   {
@@ -100,8 +105,8 @@
   },
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value of the checkbox changes.</p>\n',
-    'type': '[value: string]'
+    'description': '<p>Event handler called when the color value changes.</p>\n',
+    'type': '[value: string, details: ChangeEventDetails&lt;ColorAreaChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -137,10 +142,11 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `change` |  | `[value: string]` |
-| `changeEnd` |  | `[value: string]` |
+| `beforeUpdate:modelValue` | Event handler called before the color value changes; details.cancel() vetoes the change. | `[value: string, details: ChangeEventDetails<ColorAreaChangeReason, Event>]` |
+| `change` | Event handler called with the hex value on every pointer move or keyboard step that changes the color. | `[value: string]` |
+| `changeEnd` | Event handler called with the hex value when the pointer is released and after each keyboard step. | `[value: string]` |
 | `update:color` |  | `[value: Color]` |
-| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: string]` |
+| `update:modelValue` | Event handler called when the color value changes. | `[value: string, details: ChangeEventDetails<ColorAreaChangeReason, Event>]` |
 
 **Slots**
 

@@ -206,6 +206,7 @@ const value = computed(() => toCalendar(today(getLocalTimeZone()), createCalenda
         <CalendarGrid
           v-for="month in grid"
           :key="month.value.toString()"
+          :value="month.value"
           class="w-full border-collapse select-none space-y-1"
         >
           <CalendarGridHead>
@@ -228,12 +229,11 @@ const value = computed(() => toCalendar(today(getLocalTimeZone()), createCalenda
               <CalendarCell
                 v-for="weekDate in weekDates"
                 :key="weekDate.toString()"
-                :date="weekDate"
+                :value="weekDate"
                 class="relative text-center text-sm"
               >
                 <CalendarCellTrigger
-                  :day="weekDate"
-                  :month="month.value"
+                  :value="weekDate"
                   class="relative flex items-center justify-center rounded-full whitespace-nowrap text-sm font-normal text-black w-8 h-8 outline-none focus:shadow-[0_0_0_2px] focus:shadow-black data-[outside-view]:text-black/30 data-[selected]:!bg-green10 data-[selected]:text-white hover:bg-green5 data-[highlighted]:bg-green5 data-[unavailable]:pointer-events-none data-[unavailable]:text-black/30 data-[unavailable]:line-through before:absolute before:top-[5px] before:hidden before:rounded-full before:w-1 before:h-1 before:bg-white data-[today]:before:block data-[today]:before:bg-green9 "
                 />
               </CalendarCell>

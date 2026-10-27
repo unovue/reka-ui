@@ -36,6 +36,12 @@
     'default': 'false'
   },
   {
+    'name': 'getNavigationIntent',
+    'description': '<p>Resolves what a keydown means for keyboard navigation. Return <code>undefined</code> to fall back to the default mapping\n(arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), <code>null</code> to opt the key out (for\nEnter this also skips the selection), or <code>\'select\'</code> to select the highlighted item as Enter does. <code>ListboxFilter</code>\nnever passes unmodified printable keys (they stay text input), and Space on a focused item already selects it, so a\n<code>\'select\'</code> intent for Space does not select it twice.</p>\n',
+    'type': '((event: KeyboardEvent) =&gt; ListboxNavigationIntent | null)',
+    'required': false
+  },
+  {
     'name': 'highlightOnHover',
     'description': '<p>When <code>true</code>, hover over item will trigger highlight</p>\n',
     'type': 'boolean',
@@ -89,6 +95,11 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the value changes; call <code>details.cancel()</code> to keep the current value. The value is an array when <code>multiple</code>, and <code>undefined</code> when a single selection is cleared.</p>\n',
+    'type': '[value: string | string[] | undefined, details: ChangeEventDetails&lt;\'selection\', Event&gt;]'
+  },
+  {
     'name': 'entryFocus',
     'description': '<p>Event handler called when container is being focused. Can be prevented.</p>\n',
     'type': '[event: CustomEvent&lt;any&gt;]'
@@ -106,7 +117,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[value: AcceptableValue]'
+    'type': '[value: string | string[] | undefined, details: ChangeEventDetails&lt;\'selection\', Event&gt;]'
   }
 ]" />
 
@@ -130,6 +141,7 @@
 | `defaultValue` | The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox | `string \| string[]` | No | - |
 | `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | `"ltr"` |
 | `disabled` | When true, prevents the user from interacting with listbox | `boolean` | No | `false` |
+| `getNavigationIntent` | Resolves what a keydown means for keyboard navigation. Return undefined to fall back to the default mapping (arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), null to opt the key out (for Enter this also skips the selection), or 'select' to select the highlighted item as Enter does. ListboxFilter never passes unmodified printable keys (they stay text input), and Space on a focused item already selects it, so a 'select' intent for Space does not select it twice. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null)` | No | - |
 | `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | - |
 | `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | `false` |
 | `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `string \| string[]` | No | - |
@@ -143,10 +155,11 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `beforeUpdate:modelValue` | Event handler called before the value changes; call details.cancel() to keep the current value. The value is an array when multiple, and undefined when a single selection is cleared. | `[value: string \| string[] \| undefined, details: ChangeEventDetails<"selection", Event>]` |
 | `entryFocus` | Event handler called when container is being focused. Can be prevented. | `[event: CustomEvent<any>]` |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; } \| undefined]` |
 | `leave` | Event handler called when the mouse leave the container | `[event: Event]` |
-| `update:modelValue` | Event handler called when the value changes. | `[value: AcceptableValue]` |
+| `update:modelValue` | Event handler called when the value changes. | `[value: string \| string[] \| undefined, details: ChangeEventDetails<"selection", Event>]` |
 
 **Slots**
 

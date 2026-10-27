@@ -1609,3 +1609,41 @@ describe('given a Combobox with `loop`', () => {
     expect(highlighted()).toBe('Cherry')
   })
 })
+
+describe('given a Combobox with a `beforeUpdate:modelValue` listener', () => {
+  // ComboboxRoot does not declare the event yet (its writes do not all go through
+  // the listbox pipeline), so the listener must not fall through `$attrs` onto
+  // the inner ListboxRoot and fire for item presses only.
+  it('does not forward the listener to the inner ListboxRoot', async () => {
+    document.body.innerHTML = ''
+    const onBeforeUpdate = vi.fn()
+    const wrapper = mount(defineComponent({
+      components: { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport },
+      setup: () => ({ onBeforeUpdate }),
+      template: `<ComboboxRoot multiple :unmount-on-hide="false" data-testid="root" @before-update:model-value="onBeforeUpdate">
+  <ComboboxAnchor>
+    <ComboboxInput />
+    <ComboboxTrigger data-testid="trigger">Open</ComboboxTrigger>
+  </ComboboxAnchor>
+  <ComboboxPortal>
+    <ComboboxContent>
+      <ComboboxViewport>
+        <ComboboxItem value="Apple">Apple</ComboboxItem>
+      </ComboboxViewport>
+    </ComboboxContent>
+  </ComboboxPortal>
+</ComboboxRoot>`,
+    }), { attachTo: document.body })
+    await wrapper.find('[data-testid=trigger]').trigger('click')
+    await nextTick()
+    const item = document.querySelector('[role=option]') as HTMLElement
+    item.click()
+    await nextTick()
+    // A multiple selection goes through the inner ListboxRoot (a single one bypasses it).
+    expect(wrapper.findComponent(ComboboxRoot).emitted('update:modelValue')?.[0]?.[0]).toEqual(['Apple'])
+    expect(onBeforeUpdate).not.toHaveBeenCalled()
+    // Other attrs still reach the listbox root element.
+    expect(document.querySelector('[data-testid=root]')).not.toBeNull()
+    wrapper.unmount()
+  })
+})

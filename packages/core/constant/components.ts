@@ -61,6 +61,8 @@ export const components = {
     'CalendarGridBody',
     'CalendarGridRow',
     'CalendarCellTrigger',
+    'CalendarView',
+    'CalendarViewTrigger',
   ] as const,
 
   checkbox: [
@@ -167,6 +169,8 @@ export const components = {
     'DatePickerClose',
     'DatePickerTrigger',
     'DatePickerContent',
+    'DatePickerView',
+    'DatePickerViewTrigger',
   ] as const,
 
   dateRangePicker: [
@@ -190,6 +194,8 @@ export const components = {
     'DateRangePickerClose',
     'DateRangePickerTrigger',
     'DateRangePickerContent',
+    'DateRangePickerView',
+    'DateRangePickerViewTrigger',
   ] as const,
 
   dateRangeField: [
@@ -310,32 +316,6 @@ export const components = {
     'MenubarMenu',
   ] as const,
 
-  monthPicker: [
-    'MonthPickerRoot',
-    'MonthPickerHeader',
-    'MonthPickerHeading',
-    'MonthPickerGrid',
-    'MonthPickerCell',
-    'MonthPickerNext',
-    'MonthPickerPrev',
-    'MonthPickerGridBody',
-    'MonthPickerGridRow',
-    'MonthPickerCellTrigger',
-  ] as const,
-
-  monthRangePicker: [
-    'MonthRangePickerRoot',
-    'MonthRangePickerHeader',
-    'MonthRangePickerHeading',
-    'MonthRangePickerGrid',
-    'MonthRangePickerCell',
-    'MonthRangePickerNext',
-    'MonthRangePickerPrev',
-    'MonthRangePickerGridBody',
-    'MonthRangePickerGridRow',
-    'MonthRangePickerCellTrigger',
-  ] as const,
-
   navigationMenu: [
     'NavigationMenuRoot',
     'NavigationMenuContent',
@@ -405,6 +385,8 @@ export const components = {
     'RangeCalendarGridBody',
     'RangeCalendarGridRow',
     'RangeCalendarCellTrigger',
+    'RangeCalendarView',
+    'RangeCalendarViewTrigger',
   ] as const,
 
   rating: [
@@ -554,32 +536,6 @@ export const components = {
 
   viewport: [
     'Viewport',
-  ] as const,
-
-  yearPicker: [
-    'YearPickerRoot',
-    'YearPickerHeader',
-    'YearPickerHeading',
-    'YearPickerGrid',
-    'YearPickerCell',
-    'YearPickerNext',
-    'YearPickerPrev',
-    'YearPickerGridBody',
-    'YearPickerGridRow',
-    'YearPickerCellTrigger',
-  ] as const,
-
-  yearRangePicker: [
-    'YearRangePickerRoot',
-    'YearRangePickerHeader',
-    'YearRangePickerHeading',
-    'YearRangePickerGrid',
-    'YearRangePickerCell',
-    'YearRangePickerNext',
-    'YearRangePickerPrev',
-    'YearRangePickerGridBody',
-    'YearRangePickerGridRow',
-    'YearRangePickerCellTrigger',
   ] as const,
 
   // Utility component

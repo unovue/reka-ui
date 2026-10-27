@@ -3,26 +3,30 @@ import type { DateValue } from '@internationalized/date'
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface RangeCalendarCellProps extends PrimitiveProps {
-  date: DateValue
+  /** The date value for the cell */
+  value: DateValue
 }
 </script>
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
+import { injectRangeCalendarGridContext } from './RangeCalendarGrid.vue'
 import { injectRangeCalendarRootContext } from './RangeCalendarRoot.vue'
+import { getRangeCalendarCellSurface } from './useRangeCalendar'
 
-withDefaults(defineProps<RangeCalendarCellProps>(), { as: 'td' })
+const props = withDefaults(defineProps<RangeCalendarCellProps>(), { as: 'td' })
+
 const rootContext = injectRangeCalendarRootContext()
+const gridContext = injectRangeCalendarGridContext(null)
+
+const surface = getRangeCalendarCellSurface(rootContext, () => props.value, () => gridContext?.value.value)
 </script>
 
 <template>
   <Primitive
     :as="as"
     :as-child="asChild"
-    role="gridcell"
-    :aria-selected="rootContext.isSelected(date) ? true : undefined"
-    :aria-disabled="rootContext.isDateDisabled(date) || rootContext.isDateUnavailable?.(date) || rootContext.disableDaysOutsideCurrentView.value"
-    :data-disabled="rootContext.isDateDisabled(date) || rootContext.disableDaysOutsideCurrentView.value ? '' : undefined"
+    v-bind="surface.attrs.value"
   >
     <slot />
   </Primitive>
