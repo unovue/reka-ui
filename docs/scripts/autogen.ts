@@ -42,6 +42,9 @@ const tsconfigChecker = createChecker(
 )
 
 const eventDescriptionMap = new Map<string, string>()
+// The emits declared in the component's own file: they win over a same-named
+// emit elsewhere in its family or dependencies.
+let ownEventDescriptionMap = new Map<string, string>()
 const depTree = new Map<string, string[]>()
 let prevDeps: string[] = []
 
@@ -79,6 +82,8 @@ primitiveComponents.forEach((componentPath) => {
   }
 
   const componentName = parse(componentPath).name
+  ownEventDescriptionMap = new Map()
+  collectEventDescriptions(componentPath, ownEventDescriptionMap)
   const meta = parseMeta(tsconfigChecker.getComponentMeta(componentPath))
 
   const metaDirPath = resolve(__dirname, '../content/meta')
@@ -198,7 +203,7 @@ function parseMeta(meta: ComponentMeta) {
       const { name, type } = event
       return ({
         name,
-        description: md.render((eventDescriptionMap.get(name) ?? '').replace(/^[ \t]+/gm, '')),
+        description: md.render((ownEventDescriptionMap.get(name) ?? eventDescriptionMap.get(name) ?? '').replace(/^[ \t]+/gm, '')),
         // Unlike optional props, undefined in an event payload is a value consumers can receive.
         type: type.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
       })
@@ -242,58 +247,62 @@ function getEventFromComponentPath(dir: string) {
   const files = readdirSync(resolve(__dirname, '../../packages/core/src', dir), { withFileTypes: true }).filter(file => file.name.includes('.vue'))
 
   files.forEach((file) => {
-    const { name, parentPath } = file
-    const source = readFileSync(join(parentPath, name), { encoding: 'utf8' })
-    const { descriptor } = sfcParse(source, {
-      filename: name,
+    collectEventDescriptions(join(file.parentPath, file.name), eventDescriptionMap)
+  })
+}
+
+function collectEventDescriptions(path: string, descriptions: Map<string, string>) {
+  const name = parse(path).base
+  const source = readFileSync(path, { encoding: 'utf8' })
+  const { descriptor } = sfcParse(source, {
+    filename: name,
+  })
+
+  const code = descriptor.script?.content
+  if (code) {
+    const result = babelParse(code, {
+      sourceType: 'module',
+      plugins: ['typescript'],
     })
 
-    const code = descriptor.script?.content
-    if (code) {
-      const result = babelParse(code, {
-        sourceType: 'module',
-        plugins: ['typescript'],
-      })
-
-      for (const node of result.program.body) {
-        if (node.type === 'ExportNamedDeclaration' && node.loc) {
-          if (node.declaration?.type === 'TSTypeAliasDeclaration') {
-            if (node.declaration.typeAnnotation.type === 'TSTypeLiteral') {
-              node.declaration.typeAnnotation.members.forEach((member) => {
+    for (const node of result.program.body) {
+      if (node.type === 'ExportNamedDeclaration' && node.loc) {
+        if (node.declaration?.type === 'TSTypeAliasDeclaration') {
+          if (node.declaration.typeAnnotation.type === 'TSTypeLiteral') {
+            node.declaration.typeAnnotation.members.forEach((member) => {
+              if (member.type === 'TSPropertySignature' && member.key.type === 'StringLiteral' && member.leadingComments?.[0].loc) {
+                const key = member.key.value
+                const description = member.leadingComments?.[0].value.replaceAll('*', '').trim()
+                descriptions.set(key, description)
+              }
+              else if (member.type === 'TSPropertySignature' && member.key.type === 'Identifier' && member.leadingComments?.[0].loc) {
+                const key = member.key.name
+                const description = member.leadingComments?.[0].value.replaceAll('*', '').trim()
+                descriptions.set(key, description)
+              }
+            })
+          }
+          else if (node.declaration.typeAnnotation.type === 'TSIntersectionType') {
+            const literalType = node.declaration.typeAnnotation.types.find(t => t.type === 'TSTypeLiteral')
+            if (literalType?.type === 'TSTypeLiteral') {
+              literalType.members.forEach((member) => {
                 if (member.type === 'TSPropertySignature' && member.key.type === 'StringLiteral' && member.leadingComments?.[0].loc) {
                   const key = member.key.value
                   const description = member.leadingComments?.[0].value.replaceAll('*', '').trim()
-                  eventDescriptionMap.set(key, description)
+                  descriptions.set(key, description)
                 }
                 else if (member.type === 'TSPropertySignature' && member.key.type === 'Identifier' && member.leadingComments?.[0].loc) {
                   const key = member.key.name
                   const description = member.leadingComments?.[0].value.replaceAll('*', '').trim()
-                  eventDescriptionMap.set(key, description)
+                  descriptions.set(key, description)
                 }
               })
-            }
-            else if (node.declaration.typeAnnotation.type === 'TSIntersectionType') {
-              const literalType = node.declaration.typeAnnotation.types.find(t => t.type === 'TSTypeLiteral')
-              if (literalType?.type === 'TSTypeLiteral') {
-                literalType.members.forEach((member) => {
-                  if (member.type === 'TSPropertySignature' && member.key.type === 'StringLiteral' && member.leadingComments?.[0].loc) {
-                    const key = member.key.value
-                    const description = member.leadingComments?.[0].value.replaceAll('*', '').trim()
-                    eventDescriptionMap.set(key, description)
-                  }
-                  else if (member.type === 'TSPropertySignature' && member.key.type === 'Identifier' && member.leadingComments?.[0].loc) {
-                    const key = member.key.name
-                    const description = member.leadingComments?.[0].value.replaceAll('*', '').trim()
-                    eventDescriptionMap.set(key, description)
-                  }
-                })
-              }
             }
           }
         }
       }
     }
-  })
+  }
 }
 
 function generateDependencies(componentPath: string) {

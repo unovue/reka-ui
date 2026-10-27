@@ -126,7 +126,7 @@
 <EmitsTable :data="[
   {
     'name': 'beforeUpdate:modelValue',
-    'description': '<p>Event handler called before the value changes; call <code>details.cancel()</code> to keep the current value. The value is an array when <code>multiple</code>, and <code>undefined</code> when a single selection is cleared.</p>\n',
+    'description': '<p>Event handler called before the value (the input text) changes; call <code>details.cancel()</code> to keep the current\nvalue. The value is <code>\'\'</code> when <code>AutocompleteCancel</code> clears it. Only a controlled (<code>v-model</code>) value can be kept:\nan uncontrolled one ignores <code>cancel()</code>, as in Base UI.</p>\n',
     'type': '[value: string, details: ChangeEventDetails&lt;AutocompleteChangeReason, Event&gt;]'
   },
   {
@@ -141,7 +141,7 @@
   },
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value changes.</p>\n',
+    'description': '<p>Event handler called when the value (the input text) changes. The value is <code>\'\'</code> when <code>AutocompleteCancel</code> clears it.</p>\n',
     'type': '[value: string, details: ChangeEventDetails&lt;AutocompleteChangeReason, Event&gt;]'
   },
   {
@@ -213,10 +213,10 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the value changes; call details.cancel() to keep the current value. The value is an array when multiple, and undefined when a single selection is cleared. | `[value: string, details: ChangeEventDetails<AutocompleteChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the value (the input text) changes; call details.cancel() to keep the current value. The value is '' when AutocompleteCancel clears it. Only a controlled (v-model) value can be kept: an uncontrolled one ignores cancel(), as in Base UI. | `[value: string, details: ChangeEventDetails<AutocompleteChangeReason, Event>]` |
 | `beforeUpdate:open` | Event handler called before the open state changes; call details.cancel() to keep it. | `[value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason, Event>]` |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: string; } \| undefined]` |
-| `update:modelValue` | Event handler called when the value changes. | `[value: string, details: ChangeEventDetails<AutocompleteChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the value (the input text) changes. The value is '' when AutocompleteCancel clears it. | `[value: string, details: ChangeEventDetails<AutocompleteChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the autocomplete changes. | `[value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason, Event>]` |
 
 **Slots**
