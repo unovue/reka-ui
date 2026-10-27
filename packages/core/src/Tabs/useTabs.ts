@@ -22,6 +22,16 @@ export type TabsContentState = { state: SelectionState, orientation: DataOrienta
 /** Standalone `useTabs()` calls without a `baseId` draw `reka-tabs-<n>` from here. */
 let tabsCount = 0
 
+/** The id of the trigger for `value`: its `TabsTrigger` `id`, else `makeTriggerId(baseId, value)`. */
+export function getTabsTriggerId(context: TabsRootContext, value: StringOrNumber): string {
+  return context.customTriggerIds.value.get(value) ?? makeTriggerId(context.baseId, value)
+}
+
+/** The id of the content for `value`: its `TabsContent` `id`, else `makeContentId(baseId, value)`. */
+export function getTabsContentId(context: TabsRootContext, value: StringOrNumber): string {
+  return context.customContentIds.value.get(value) ?? makeContentId(context.baseId, value)
+}
+
 /**
  * The per-item trigger surface, derived purely from `(context, value)`. The
  * `TabsTrigger` SFC (which injects the context) and a standalone `useTabs()`
@@ -34,11 +44,11 @@ export function getTabsTriggerSurface(
 ): PartSurface<TabsTriggerState> {
   const isSelected = computed(() => toValue(value) === context.modelValue.value)
   const isDisabled = computed(() => toValue(disabled) ?? false)
-  const contentId = computed(() => context.contentIds.value.has(toValue(value)) ? makeContentId(context.baseId, toValue(value)) : undefined)
+  const contentId = computed(() => context.contentIds.value.has(toValue(value)) ? getTabsContentId(context, toValue(value)) : undefined)
 
   return createPartSurface<TabsTriggerState>(
     () => ({
-      'id': makeTriggerId(context.baseId, toValue(value)),
+      'id': getTabsTriggerId(context, toValue(value)),
       'role': 'tab',
       'aria-selected': isSelected.value ? 'true' : 'false',
       'aria-controls': contentId.value,
@@ -92,9 +102,9 @@ export function getTabsContentSurface(context: TabsRootContext, value: MaybeRefO
   const isSelected = computed(() => toValue(value) === context.modelValue.value)
   return createPartSurface<TabsContentState>(
     () => ({
-      'id': makeContentId(context.baseId, toValue(value)),
+      'id': getTabsContentId(context, toValue(value)),
       'role': 'tabpanel',
-      'aria-labelledby': makeTriggerId(context.baseId, toValue(value)),
+      'aria-labelledby': getTabsTriggerId(context, toValue(value)),
       'tabindex': 0,
     }),
     () => ({
@@ -219,6 +229,8 @@ export function useTabs(props: UseTabsProps = {}): UseTabsReturn {
     baseId,
     tabsList,
     contentIds,
+    customTriggerIds: shallowRef(new Map()),
+    customContentIds: shallowRef(new Map()),
     registerContent,
     unregisterContent,
   }

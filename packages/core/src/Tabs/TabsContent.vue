@@ -7,6 +7,11 @@ export interface TabsContentProps extends PrimitiveProps {
   /** A unique value that associates the content with a trigger. */
   value: StringOrNumber
   /**
+   * Id of the element, which the trigger with the same `value` points its
+   * `aria-controls` at. Defaults to one derived from the Root's id and `value`.
+   */
+  id?: string
+  /**
    * Used to force mounting when more control is needed. Useful when
    * controlling animation with Vue animation libraries.
    */
@@ -20,12 +25,14 @@ import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
 import { injectTabsRootContext } from './TabsRoot.vue'
 import { getTabsContentSurface } from './useTabs'
+import { useTabsPartId } from './utils'
 
 const props = defineProps<TabsContentProps>()
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectTabsRootContext()
+useTabsPartId(rootContext.customContentIds, () => props.value, () => props.id)
 
 // id/role/aria-labelledby/tabindex + data-state/data-orientation from the shared
 // surface builder (selection is read from its `state`, not re-derived); the

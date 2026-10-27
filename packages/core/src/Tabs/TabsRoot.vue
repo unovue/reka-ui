@@ -17,6 +17,10 @@ export interface TabsRootContext {
   baseId: string
   tabsList: Ref<HTMLElement | undefined>
   contentIds: Ref<Set<StringOrNumber>>
+  /** `TabsTrigger` `id` props by value; a value without one uses `makeTriggerId`. */
+  customTriggerIds: Ref<Map<StringOrNumber, string>>
+  /** `TabsContent` `id` props by value; a value without one uses `makeContentId`. */
+  customContentIds: Ref<Map<StringOrNumber, string>>
   registerContent: (value: StringOrNumber) => void
   unregisterContent: (value: StringOrNumber) => void
 }
