@@ -239,7 +239,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - `ColorAreaRoot` has a `dir` prop and inherits the `ConfigProvider` direction (mirrored x axis, arrow keys, thumb and gradient under `rtl`).
 - `ColorSwatchPickerRoot` / `ColorSwatchPickerItem` accept `string | Color` and compare values structurally; they still emit the item value as declared.
 - `injectColorAreaRootContext()` / `injectColorSliderRootContext()` / `injectColorFieldRootContext()`: `color`, `xValue` and `yValue` are read-only computeds.
-- Utilities: `setChannelValues` returns the color in the space that holds all the channels (preferring the color's own space), and `convertToHsl` / `convertToHsb` keep the hue between HSL and HSB.
+- Utilities: `convertToHsl` / `convertToHsb` keep the hue between HSL and HSB. The channel and gradient helpers are no longer exported (section 12).
 
 **How to find it.**
 - Every `ColorAreaRoot`, `ColorFieldRoot` and `ColorSliderRoot` usage: search for `ColorAreaRoot`, `ColorFieldRoot`, `ColorSliderRoot`, `useColorArea`, `useColorField` and `useColorSlider`. For each, find the variable bound with `v-model` / `:model-value` and every listener on `@update:model-value`, `@before-update:model-value`, `@change`, `@change-end`, `onChange`, `onChangeEnd`, `onUpdate` and `onBeforeUpdate`.
@@ -259,12 +259,52 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - An app wrapped in `ConfigProvider` with `dir="rtl"` that wants a left-to-right color area: add `dir="ltr"` to `ColorAreaRoot`. Otherwise no change.
 - Tests that assert a hex string from these events: assert `colorToHex(payload)` or the `Color` object instead.
 
+- `ColorSliderTrack`'s gradient follows the slider: bottom to top when `orientation="vertical"`, right to left when `inverted` or right-to-left (also inherited from `ConfigProvider`). In v2 it always ran left to right.
+- `ColorFieldInput` has `aria-invalid="true"` while the typed text does not parse, and the input and `ColorFieldRoot` get `data-invalid`. Committing still reverts the text.
+
 **Verify.** The type-check passes. In each migrated picker, drag the area and the sliders and type into the fields: the shared color stays in sync, any hex label updates, and a grey keeps its hue when the hue slider moves. A form containing a color component still submits a hex string.
+
+### 11. ColorArea renders one range input per channel
+
+**What changed.** `ColorAreaThumb` renders two visually hidden `<input type="range">` elements after its slot content, one per channel. Each is named after its channel (`aria-label="Saturation"`), has its own value, `min`, `max` and `aria-orientation` (`horizontal` for x, `vertical` for y), and `aria-valuetext` like `"50, Lightness 40"`. Focus goes to these inputs, not the thumb; one is in the tab order, and an arrow key moves focus to the input of the axis it changes. The thumb lost `role="slider"`, `tabindex` and every `aria-*` attribute; `ColorAreaArea` lost `role="application"`, `aria-roledescription` and `aria-disabled` (`ColorAreaRoot` keeps `aria-disabled`; `data-disabled` is unchanged). `useColorArea()` returns new `xInput` / `yInput` surfaces and `setInputElement(axis, el)`. Pointer, keyboard and RTL behaviour are unchanged.
+
+**How to find it.**
+- Styles on `ColorAreaThumb` or `ColorAreaArea` that use `:focus`, `:focus-visible`, `focus:` or `focus-visible:`.
+- Tests and selectors that use `role="slider"` / `getByRole('slider')` / `[role=slider]` or `role="application"` / `[role=application]` near `ColorArea`, or that read `aria-valuenow` / `aria-valuetext` from the thumb.
+- Direct `useColorArea()` usage that renders `thumb.attrs` (search for `useColorArea`).
+
+**Rewrite rules.**
+- Focus styles on the thumb or the area: `:focus` → `:focus-within`, `focus:` → `focus-within:`. Use `:has(:focus-visible)` (Tailwind `has-[:focus-visible]:`) for keyboard-only rings.
+- Test selectors: `getByRole('slider')` → `getByRole('slider', { name: '<x channel name>' })` (or the y channel name); `[role=slider]` → `input[type=range][aria-orientation=horizontal]` (x) or `[aria-orientation=vertical]` (y). Read values from the input's `value` instead of `aria-valuenow`, and the y value from the y input instead of parsing the thumb's `aria-valuetext`. Keydown and focus assertions target the input.
+- `[role=application]` used to reach the area: select the `ColorAreaArea` element by class or test id.
+- Direct `useColorArea()`: inside the thumb element, render `<input :ref="el => setInputElement('x', el)" v-bind="xInput.attrs.value">` and the same for `'y'` with `yInput`. Keep `setThumbElement` only if the thumb must still receive focus when no input is rendered.
+
+**Verify.** Tab reaches the area once and arrow keys still move the thumb; a screen reader announces the channel name and value. Tests that select the thumb by role pass with the rewritten selectors.
+
+### 12. Color utilities removed from the package root
+
+**What changed.** The package root keeps `parseColor`, `normalizeColor`, `isValidColor`, `isEqualColor`, `colorToHex`, `colorToString`, `convertToRgb`, `convertToHsl`, `convertToHsb` and the types `Color`, `RGBColor`, `HSLColor`, `HSBColor`, `ColorSpace`, `ColorChannel`, `ColorFormat`. These exports are removed:
+
+| Removed | Replacement |
+| --- | --- |
+| `colorToRgb(c)`, `colorToHsl(c)`, `colorToHsb(c)` | `colorToString(c, 'rgb')`, `colorToString(c, 'hsl')`, `colorToString(c, 'hsb')` |
+| `getChannelValue(c, ch)` | the property of the converted color: `hue` → `convertToHsl(c).h`, `saturation` → `convertToHsl(c).s` (or `convertToHsb(c).s` in HSB), `lightness` → `convertToHsl(c).l`, `brightness` → `convertToHsb(c).b`, `red`/`green`/`blue` → `convertToRgb(c).r`/`.g`/`.b`, `alpha` → `c.alpha * 100` |
+| `setChannelValue(c, ch, v)`, `setChannelValues(c, list)` | a spread of the converted color, e.g. `{ ...convertToHsl(c), h: v }`; alpha is `{ ...c, alpha: v / 100 }` |
+| `getChannelRange(ch)` | constants: hue `{ min: 0, max: 360, step: 1 }`; saturation, lightness, brightness, alpha `{ min: 0, max: 100, step: 1 }`; red, green, blue `{ min: 0, max: 255, step: 1 }` |
+| `getChannelName(ch)` | the project's own label (capitalized English names: `'Hue'`, `'Saturation'`, …) |
+| `getAreaBackgroundStyle`, `getAreaGradient` | the `style` slot prop of `ColorAreaRoot` bound to `ColorAreaArea` |
+| `getSliderBackgroundStyle`, `getSliderGradient` | `ColorSliderTrack` (it sets the gradient itself) |
+
+**How to find it.** Search imports from `reka-ui` for `colorToRgb`, `colorToHsl`, `colorToHsb`, `getChannelValue`, `setChannelValue`, `setChannelValues`, `getChannelRange`, `getChannelName`, `getAreaBackgroundStyle`, `getAreaGradient`, `getSliderBackgroundStyle` and `getSliderGradient`.
+
+**Rewrite rules.** Apply the table. For a gradient helper used outside a Color component (a custom track or preview), *ask* before replacing it with hand-written CSS. Do not import from `reka-ui/internal` or deep paths to get the removed helpers back.
+
+**Verify.** The search above returns nothing, and the type-check passes.
 
 ### Report
 
 When you are done, give the developer:
 
 1. The list of files you changed, grouped by the section above that required the change.
-2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher and every color model kept as a hex string that you left unchanged because the rule said to ask, with file and line.
+2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string and every gradient helper call that you left unchanged because the rule said to ask, with file and line.
 3. The result of the type-check, lint and test commands, compared with the baseline you recorded at the start.

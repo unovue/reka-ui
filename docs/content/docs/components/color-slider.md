@@ -131,7 +131,7 @@ The root component that provides the slider functionality and context.
 
 ### ColorSliderTrack
 
-The track component that displays the color gradient background.
+The track component that displays the color gradient background. The gradient runs from the slider's minimum to its maximum, so it follows `orientation`, `inverted` and the reading direction (`dir`, or inherited from `ConfigProvider`).
 
 <!-- @include: @/meta/ColorSliderTrack.md -->
 
@@ -200,7 +200,7 @@ const color = ref('#3b82f6')
 
 ### Vertical Orientation
 
-A vertical slider for space-constrained layouts.
+A vertical slider for space-constrained layouts. The track gradient runs from bottom to top, or top to bottom with `inverted`.
 
 ```vue
 <script setup>

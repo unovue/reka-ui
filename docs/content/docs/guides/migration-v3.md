@@ -287,4 +287,51 @@ const hex = computed(() => colorToHex(normalizeColor(color.value))) // [!code ++
 
 If the app stores a hex string and you accept the precision loss, keep the string and update it from `update:hex`: `:model-value="hex" @update:hex="hex = $event"`. `update:hex` follows every model update, and a move finer than one 8-bit step still updates the model, so it can repeat the same string. Compare against the previous value before doing anything costly with it.
 
-The color utilities changed with the model. `convertToHsl` and `convertToHsb` convert between HSL and HSB directly and keep the hue of a grey, and `getChannelValue` reads `hue` and `saturation` from an HSB color without converting it. `setChannelValues` returns the color in a space that holds every channel it sets, the color's own space when it does: hue and saturation on an HSB color now stay in HSB instead of moving to HSL. The red, green and blue slider gradients use the color's real channel values for HSL and HSB colors instead of a fixed 128, and `parseColor` accepts `hsv()` as documented.
+The color utilities changed with the model. `convertToHsl` and `convertToHsb` convert between HSL and HSB directly and keep the hue of a grey. The channel and gradient helpers are no longer exported; see [Color utilities removed from the package root](#color-utilities-removed-from-the-package-root). The red, green and blue slider gradients use the color's real channel values for HSL and HSB colors instead of a fixed 128, and `parseColor` accepts `hsv()` as documented.
+
+`ColorSliderTrack`'s gradient now runs from the slider's minimum to its maximum: bottom to top on a vertical slider, and right to left on an `inverted` or right-to-left one (the direction is inherited from `ConfigProvider`). In v2 it always ran left to right, so it did not match the thumb on those sliders. Remove any CSS that rotated or flipped the track to compensate.
+
+`ColorFieldInput` sets `aria-invalid="true"` while the typed text does not parse (a color string, or a number with a `channel`), and the input and `ColorFieldRoot` get `data-invalid`. Committing such text still reverts it to the current color.
+
+## ColorArea exposes one range input per channel
+
+`ColorAreaThumb` now renders two visually hidden `<input type="range">` elements, one per channel, after its slot content. In v2 the thumb was a single `role="slider"` that held only the x channel (the y channel was free text in `aria-valuetext`, and `aria-orientation` was always `horizontal`), and `ColorAreaArea` had `role="application"`.
+
+- Each input is named after its channel ("Saturation", "Lightness"), has its own value, `min`, `max` and `aria-orientation` (`horizontal` for x, `vertical` for y), and reports the other channel as context in `aria-valuetext` ("50, Lightness 40").
+- Focus goes to the inputs, not the thumb. One input is in the tab order; an arrow key moves focus to the input of the axis it changes. Pointer, keyboard and right-to-left behaviour are unchanged.
+- `ColorAreaThumb` no longer has `role`, `tabindex`, `aria-label`, `aria-valuenow`, `aria-valuetext`, `aria-roledescription` or `aria-orientation`. `ColorAreaArea` no longer has `role`, `aria-roledescription` or `aria-disabled`; `ColorAreaRoot` keeps `aria-disabled`, and every part keeps `data-disabled`.
+- Focus styles on the thumb (`:focus`, `focus:`) never match now. Use `:focus-within` / `focus-within:` on the thumb or the area, or `:has(:focus-visible)` for keyboard focus only.
+- Tests that find the thumb with `getByRole('slider')` find two sliders now: select one by name (`getByRole('slider', { name: 'Saturation' })`). Tests that read the y value from the thumb's `aria-valuetext` read the y input's value instead.
+- With `useColorArea()` directly, render the new `xInput` and `yInput` surfaces as `<input>` elements in the thumb and bind them with `setInputElement('x' | 'y', el)`. The thumb surface no longer carries the ARIA slider attributes.
+
+```vue
+<style>
+.ColorAreaThumb:focus { /* [!code --] */
+.ColorAreaThumb:focus-within { /* [!code ++] */
+  outline: 2px solid black;
+}
+</style>
+```
+
+## Color utilities removed from the package root
+
+The package root now exports the color utilities an app needs to work with the `Color` model: `parseColor`, `normalizeColor`, `isValidColor`, `isEqualColor`, `colorToHex`, `colorToString`, `convertToRgb`, `convertToHsl`, `convertToHsb` and the `Color`, `RGBColor`, `HSLColor`, `HSBColor`, `ColorSpace`, `ColorChannel` and `ColorFormat` types. The channel and gradient helpers the Color components use internally are no longer exported:
+
+| Removed | Replacement |
+| --- | --- |
+| `colorToRgb(color)`, `colorToHsl(color)`, `colorToHsb(color)` | `colorToString(color, 'rgb')`, `colorToString(color, 'hsl')`, `colorToString(color, 'hsb')` |
+| `getChannelValue(color, 'hue')` | Read the channel from the converted color: `convertToHsl(color).h` (`r`/`g`/`b` from `convertToRgb`, `b` for brightness from `convertToHsb`) |
+| `setChannelValue(color, 'hue', 120)`, `setChannelValues(color, [...])` | Spread the converted color: `{ ...convertToHsl(color), h: 120 }` |
+| `getChannelRange(channel)` | The fixed ranges: hue 0 to 360; saturation, lightness, brightness and alpha 0 to 100 (alpha is stored 0 to 1 on the `Color`); red, green and blue 0 to 255. All step by 1 |
+| `getChannelName(channel)` | Your own (localized) label for the channel |
+| `getAreaBackgroundStyle`, `getAreaGradient` | The `style` slot prop of `ColorAreaRoot`, bound to `ColorAreaArea` |
+| `getSliderBackgroundStyle`, `getSliderGradient` | `ColorSliderTrack`, which sets the gradient for its channel and layout |
+
+```ts
+import { convertToHsl } from 'reka-ui' // was: import { getChannelValue, setChannelValue } from 'reka-ui'
+
+const hue = getChannelValue(color, 'hue') // [!code --]
+const hue = convertToHsl(color).h // [!code ++]
+const shifted = setChannelValue(color, 'hue', hue + 30) // [!code --]
+const shifted = { ...convertToHsl(color), h: (hue + 30) % 360 } // [!code ++]
+```
