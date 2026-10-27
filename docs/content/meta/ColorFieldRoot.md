@@ -30,7 +30,7 @@
   },
   {
     'name': 'defaultValue',
-    'description': '<p>The default color value (uncontrolled).</p>\n',
+    'description': '<p>The default color value (uncontrolled). A string is parsed once.</p>\n',
     'type': 'string | Color',
     'required': false,
     'default': '\'#000000\''
@@ -57,7 +57,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The color value (controlled). Can be a hex string or Color object.</p>\n',
+    'description': '<p>The color value (controlled). A string is parsed once; emitted values are always <code>Color</code> objects.</p>\n',
     'type': 'string | Color',
     'required': false
   },
@@ -98,17 +98,32 @@
   {
     'name': 'beforeUpdate:modelValue',
     'description': '<p>Event handler called before the color value changes; <code>details.cancel()</code> vetoes the change.</p>\n',
-    'type': '[value: string, details: ChangeEventDetails&lt;ColorFieldChangeReason, Event&gt;]'
+    'type': '[value: Color, details: ChangeEventDetails&lt;ColorFieldChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'change',
+    'description': '<p>Event handler called when a committed edit, step or wheel change changes the color. Typing does not change the color until it is committed.</p>\n',
+    'type': '[value: Color]'
+  },
+  {
+    'name': 'changeEnd',
+    'description': '<p>Event handler called after each committed change, together with <code>change</code>: every field change is a complete interaction.</p>\n',
+    'type': '[value: Color]'
   },
   {
     'name': 'update:color',
-    'description': '',
+    'description': '<p>Event handler called with the same <code>Color</code> as <code>update:modelValue</code>, after it.</p>\n',
     'type': '[value: Color]'
+  },
+  {
+    'name': 'update:hex',
+    'description': '<p>Event handler called with the hex serialization of the new color, after <code>update:modelValue</code>. Lossy: drops the hue of greys and sub-byte precision.</p>\n',
+    'type': '[value: string]'
   },
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the color value changes.</p>\n',
-    'type': '[value: string, details: ChangeEventDetails&lt;ColorFieldChangeReason, Event&gt;]'
+    'type': '[value: Color, details: ChangeEventDetails&lt;ColorFieldChangeReason, Event&gt;]'
   }
 ]" />
 </llm-exclude>
@@ -123,11 +138,11 @@
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `channel` | The color channel to display. If not provided, displays hex value. | `"hue" \| "saturation" \| "red" \| "green" \| "blue" \| "alpha" \| "lightness" \| "brightness"` | No | - |
 | `colorSpace` | The color space to operate in when displaying a channel. | `"hsl" \| "rgb" \| "hsb"` | No | `"hsl"` |
-| `defaultValue` | The default color value (uncontrolled). | `string \| Color` | No | `"#000000"` |
+| `defaultValue` | The default color value (uncontrolled). A string is parsed once. | `string \| Color` | No | `"#000000"` |
 | `disabled` | When true, prevents the user from interacting with the field. | `boolean` | No | `false` |
 | `disableWheelChange` | When true, prevents the value from changing on wheel scroll. | `boolean` | No | `false` |
 | `locale` | The locale to use for number formatting. | `string` | No | - |
-| `modelValue` | The color value (controlled). Can be a hex string or Color object. | `string \| Color` | No | - |
+| `modelValue` | The color value (controlled). A string is parsed once; emitted values are always Color objects. | `string \| Color` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `placeholder` | Placeholder text when the field is empty. | `string` | No | - |
 | `readonly` | When true, the field is read-only. | `boolean` | No | `false` |
@@ -138,8 +153,11 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the color value changes; details.cancel() vetoes the change. | `[value: string, details: ChangeEventDetails<ColorFieldChangeReason, Event>]` |
-| `update:color` |  | `[value: Color]` |
-| `update:modelValue` | Event handler called when the color value changes. | `[value: string, details: ChangeEventDetails<ColorFieldChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the color value changes; details.cancel() vetoes the change. | `[value: Color, details: ChangeEventDetails<ColorFieldChangeReason, Event>]` |
+| `change` | Event handler called when a committed edit, step or wheel change changes the color. Typing does not change the color until it is committed. | `[value: Color]` |
+| `changeEnd` | Event handler called after each committed change, together with change: every field change is a complete interaction. | `[value: Color]` |
+| `update:color` | Event handler called with the same Color as update:modelValue, after it. | `[value: Color]` |
+| `update:hex` | Event handler called with the hex serialization of the new color, after update:modelValue. Lossy: drops the hue of greys and sub-byte precision. | `[value: string]` |
+| `update:modelValue` | Event handler called when the color value changes. | `[value: Color, details: ChangeEventDetails<ColorFieldChangeReason, Event>]` |
 
 </llm-only>

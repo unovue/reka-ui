@@ -21,14 +21,6 @@ import { computed, ref } from 'vue'
 
 const colorObj = ref<Color>(normalizeColor('#56d799'))
 const hexColor = computed(() => colorToString(colorObj.value, 'hex'))
-
-function handleColorUpdate(newColor: Color) {
-  colorObj.value = newColor
-}
-
-function handleHexUpdate(hex: string) {
-  colorObj.value = normalizeColor(hex)
-}
 </script>
 
 <template>
@@ -67,12 +59,11 @@ function handleHexUpdate(hex: string) {
           <!-- 2D Color Area (Saturation/Lightness) -->
           <ColorAreaRoot
             v-slot="{ style }"
-            :model-value="colorObj"
+            v-model="colorObj"
             color-space="hsl"
             x-channel="saturation"
             y-channel="lightness"
             class="relative"
-            @update:color="handleColorUpdate"
           >
             <ColorAreaArea
               class="relative w-full h-[140px] rounded-md overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary"
@@ -86,11 +77,10 @@ function handleHexUpdate(hex: string) {
           <div class="flex flex-col gap-2">
             <label class="text-xs font-medium text-muted-foreground">Hue</label>
             <ColorSliderRoot
-              :model-value="colorObj"
+              v-model="colorObj"
               channel="hue"
               color-space="hsl"
               class="relative flex items-center w-full h-4"
-              @update:color="handleColorUpdate"
             >
               <ColorSliderTrack class="relative flex-1 rounded-full h-2">
                 <div class="absolute inset-0 rounded-full hue-gradient" />
@@ -103,11 +93,10 @@ function handleHexUpdate(hex: string) {
           <div class="flex flex-col gap-2">
             <label class="text-xs font-medium text-muted-foreground">Alpha</label>
             <ColorSliderRoot
-              :model-value="colorObj"
+              v-model="colorObj"
               channel="alpha"
               color-space="hsl"
               class="relative flex items-center w-full h-4"
-              @update:color="handleColorUpdate"
             >
               <ColorSliderTrack class="relative flex-1 rounded-full h-2 checkerboard-bg">
                 <div class="absolute inset-0 rounded-full" />
@@ -121,9 +110,8 @@ function handleHexUpdate(hex: string) {
             <label class="text-xs font-medium text-muted-foreground">Values</label>
             <div class="flex gap-2">
               <ColorFieldRoot
-                :model-value="hexColor"
+                v-model="colorObj"
                 class="flex-[2]"
-                @update:model-value="handleHexUpdate"
               >
                 <ColorFieldInput
                   class="w-full px-2 py-1.5 text-sm border border-muted bg-background rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary font-mono"
@@ -131,11 +119,10 @@ function handleHexUpdate(hex: string) {
                 />
               </ColorFieldRoot>
               <ColorFieldRoot
-                :model-value="colorObj"
+                v-model="colorObj"
                 channel="hue"
                 color-space="hsl"
                 class="flex-1"
-                @update:color="handleColorUpdate"
               >
                 <ColorFieldInput
                   class="w-full px-2 py-1.5 text-sm border border-muted bg-background rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-center"
@@ -143,11 +130,10 @@ function handleHexUpdate(hex: string) {
                 />
               </ColorFieldRoot>
               <ColorFieldRoot
-                :model-value="colorObj"
+                v-model="colorObj"
                 channel="saturation"
                 color-space="hsl"
                 class="flex-1"
-                @update:color="handleColorUpdate"
               >
                 <ColorFieldInput
                   class="w-full px-2 py-1.5 text-sm border border-muted bg-background rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-center"
@@ -155,11 +141,10 @@ function handleHexUpdate(hex: string) {
                 />
               </ColorFieldRoot>
               <ColorFieldRoot
-                :model-value="colorObj"
+                v-model="colorObj"
                 channel="lightness"
                 color-space="hsl"
                 class="flex-1"
-                @update:color="handleColorUpdate"
               >
                 <ColorFieldInput
                   class="w-full px-2 py-1.5 text-sm border border-muted bg-background rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-center"

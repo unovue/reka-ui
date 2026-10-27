@@ -17,8 +17,8 @@
   },
   {
     'name': 'defaultValue',
-    'description': '<p>The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox</p>\n',
-    'type': 'string | string[]',
+    'description': '<p>The selected color, or colors with <code>multiple</code>, as color strings or <code>Color</code> objects (uncontrolled). Compared structurally with the item values.</p>\n',
+    'type': 'ColorSwatchPickerValue | ColorSwatchPickerValue[]',
     'required': false
   },
   {
@@ -56,8 +56,8 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled value of the listbox. Can be binded with <code>v-model</code>.</p>\n',
-    'type': 'string | string[]',
+    'description': '<p>The selected color, or colors with <code>multiple</code>, as color strings or <code>Color</code> objects (controlled). Compared structurally with the item values.</p>\n',
+    'type': 'ColorSwatchPickerValue | ColorSwatchPickerValue[]',
     'required': false
   },
   {
@@ -97,7 +97,7 @@
   {
     'name': 'beforeUpdate:modelValue',
     'description': '<p>Event handler called before the value changes; call <code>details.cancel()</code> to keep the current value. The value is an array when <code>multiple</code>, and <code>undefined</code> when a single selection is cleared.</p>\n',
-    'type': '[value: string | string[] | undefined, details: ChangeEventDetails&lt;\'selection\', Event&gt;]'
+    'type': '[value: ColorSwatchPickerValue | ColorSwatchPickerValue[] | undefined, details: ChangeEventDetails&lt;\'selection\', Event&gt;]'
   },
   {
     'name': 'entryFocus',
@@ -117,7 +117,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[value: string | string[] | undefined, details: ChangeEventDetails&lt;\'selection\', Event&gt;]'
+    'type': '[value: ColorSwatchPickerValue | ColorSwatchPickerValue[] | undefined, details: ChangeEventDetails&lt;\'selection\', Event&gt;]'
   }
 ]" />
 
@@ -125,7 +125,7 @@
   {
     'name': 'modelValue',
     'description': '',
-    'type': 'string | string[] | undefined'
+    'type': 'ColorSwatchPickerModelValue'
   }
 ]" />
 </llm-exclude>
@@ -138,13 +138,13 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `defaultValue` | The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox | `string \| string[]` | No | - |
+| `defaultValue` | The selected color, or colors with multiple, as color strings or Color objects (uncontrolled). Compared structurally with the item values. | `ColorSwatchPickerValue \| ColorSwatchPickerValue[]` | No | - |
 | `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | `"ltr"` |
 | `disabled` | When true, prevents the user from interacting with listbox | `boolean` | No | `false` |
 | `getNavigationIntent` | Resolves what a keydown means for keyboard navigation. Return undefined to fall back to the default mapping (arrows, Home, End, PageUp, PageDown — orientation and reading-direction aware), null to opt the key out (for Enter this also skips the selection), or 'select' to select the highlighted item as Enter does. ListboxFilter never passes unmodified printable keys (they stay text input), and Space on a focused item already selects it, so a 'select' intent for Space does not select it twice. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null)` | No | - |
 | `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | - |
 | `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | `false` |
-| `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `string \| string[]` | No | - |
+| `modelValue` | The selected color, or colors with multiple, as color strings or Color objects (controlled). Compared structurally with the item values. | `ColorSwatchPickerValue \| ColorSwatchPickerValue[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `orientation` | The orientation of the listbox. <br>Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"vertical" \| "horizontal"` | No | `"horizontal"` |
@@ -155,16 +155,16 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the value changes; call details.cancel() to keep the current value. The value is an array when multiple, and undefined when a single selection is cleared. | `[value: string \| string[] \| undefined, details: ChangeEventDetails<"selection", Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the value changes; call details.cancel() to keep the current value. The value is an array when multiple, and undefined when a single selection is cleared. | `[value: ColorSwatchPickerValue \| ColorSwatchPickerValue[] \| undefined, details: ChangeEventDetails<"selection", Event>]` |
 | `entryFocus` | Event handler called when container is being focused. Can be prevented. | `[event: CustomEvent<any>]` |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; } \| undefined]` |
 | `leave` | Event handler called when the mouse leave the container | `[event: Event]` |
-| `update:modelValue` | Event handler called when the value changes. | `[value: string \| string[] \| undefined, details: ChangeEventDetails<"selection", Event>]` |
+| `update:modelValue` | Event handler called when the value changes. | `[value: ColorSwatchPickerValue \| ColorSwatchPickerValue[] \| undefined, details: ChangeEventDetails<"selection", Event>]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` |  | `string \| string[] \| undefined` |
+| `modelValue` |  | `ColorSwatchPickerModelValue` |
 
 </llm-only>

@@ -24,6 +24,7 @@ A component that allows users to select from a set of predefined colors, often u
     'Full keyboard navigation.',
     'Supports Right to Left direction.',
     'Different selection behavior.',
+    'Accepts color strings and Color objects, compared structurally.',
   ]"
 />
 
@@ -104,6 +105,35 @@ const { listboxProps, getItemSurface } = useColorSwatchPicker({ defaultValue: '#
 `getItemSwatchSurface(color)` supplies props for `ColorSwatch`; `itemIndicator` composes with `ListboxItemIndicator`. These surfaces do not implement Listbox behavior on plain elements. Delegated model updates have the `selection` reason; Listbox's model event does not supply a native event.
 
 `root.attrs` contains only DOM attributes. `listboxProps` contains the bindings for the child component shown above.
+
+## Values
+
+Item values and the model accept a color string or a `Color` object. Values are compared structurally, so a model of `'#ff0000'` selects an item declared with `{ space: 'hsl', h: 0, s: 100, l: 50, alpha: 1 }`, and the reverse. The picker emits the value of the selected item as you declared it.
+
+```vue
+<script setup>
+import { ColorSwatchPickerItem, ColorSwatchPickerItemSwatch, ColorSwatchPickerRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+const colors = [
+  { space: 'hsl', h: 0, s: 100, l: 50, alpha: 1 },
+  { space: 'hsl', h: 210, s: 100, l: 50, alpha: 1 },
+]
+const color = ref('#ff0000') // selects the first item
+</script>
+
+<template>
+  <ColorSwatchPickerRoot v-model="color">
+    <ColorSwatchPickerItem
+      v-for="(item, index) in colors"
+      :key="index"
+      :value="item"
+    >
+      <ColorSwatchPickerItemSwatch />
+    </ColorSwatchPickerItem>
+  </ColorSwatchPickerRoot>
+</template>
+```
 
 ## API Reference
 

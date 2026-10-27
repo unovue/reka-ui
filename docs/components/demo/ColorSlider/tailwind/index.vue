@@ -1,12 +1,17 @@
 <script setup lang="ts">
+import type { Color } from 'reka-ui'
 import {
   ColorSliderRoot,
   ColorSliderThumb,
   ColorSliderTrack,
+  colorToHex,
+  normalizeColor,
 } from 'reka-ui'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
-const color = ref('#56d799')
+// v-model accepts a string and emits a Color object.
+const color = ref<string | Color>('#56d799')
+const hex = computed(() => colorToHex(normalizeColor(color.value)))
 </script>
 
 <template>
@@ -29,9 +34,9 @@ const color = ref('#56d799')
     <div class="flex items-center gap-2 text-xs text-gray-500">
       <div
         class="w-5 h-5 rounded border border-gray-200 shrink-0"
-        :style="{ background: color }"
+        :style="{ background: hex }"
       />
-      <span class="font-mono">{{ color }}</span>
+      <span class="font-mono">{{ hex }}</span>
     </div>
   </div>
 </template>

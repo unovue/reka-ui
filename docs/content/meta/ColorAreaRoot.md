@@ -24,10 +24,16 @@
   },
   {
     'name': 'defaultValue',
-    'description': '<p>The default color value (uncontrolled).</p>\n',
+    'description': '<p>The default color value (uncontrolled). A string is parsed once.</p>\n',
     'type': 'string | Color',
     'required': false,
     'default': '\'#ff0000\''
+  },
+  {
+    'name': 'dir',
+    'description': '<p>The reading direction of the area. In <code>rtl</code> the x axis runs right to left. If omitted, inherits from <code>ConfigProvider</code> or assumes <code>ltr</code>.</p>\n',
+    'type': '\'ltr\' | \'rtl\'',
+    'required': false
   },
   {
     'name': 'disabled',
@@ -38,7 +44,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The color value (controlled). Can be a hex string or Color object.</p>\n',
+    'description': '<p>The color value (controlled). A string is parsed once; emitted values are always <code>Color</code> objects.</p>\n',
     'type': 'string | Color',
     'required': false
   },
@@ -86,27 +92,32 @@
   {
     'name': 'beforeUpdate:modelValue',
     'description': '<p>Event handler called before the color value changes; <code>details.cancel()</code> vetoes the change.</p>\n',
-    'type': '[value: string, details: ChangeEventDetails&lt;ColorAreaChangeReason, Event&gt;]'
+    'type': '[value: Color, details: ChangeEventDetails&lt;ColorAreaChangeReason, Event&gt;]'
   },
   {
     'name': 'change',
-    'description': '<p>Event handler called with the hex value on every pointer move or keyboard step that changes the color.</p>\n',
-    'type': '[value: string]'
+    'description': '<p>Event handler called on every pointer move or keyboard step that changes the color.</p>\n',
+    'type': '[value: Color]'
   },
   {
     'name': 'changeEnd',
-    'description': '<p>Event handler called with the hex value when the pointer is released and after each keyboard step.</p>\n',
-    'type': '[value: string]'
+    'description': '<p>Event handler called when an interaction that changed the color ends: on pointer release and after each keyboard step.</p>\n',
+    'type': '[value: Color]'
   },
   {
     'name': 'update:color',
-    'description': '',
+    'description': '<p>Event handler called with the same <code>Color</code> as <code>update:modelValue</code>, after it.</p>\n',
     'type': '[value: Color]'
+  },
+  {
+    'name': 'update:hex',
+    'description': '<p>Event handler called with the hex serialization of the new color, after <code>update:modelValue</code>. Lossy: drops the hue of greys and sub-byte precision.</p>\n',
+    'type': '[value: string]'
   },
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the color value changes.</p>\n',
-    'type': '[value: string, details: ChangeEventDetails&lt;ColorAreaChangeReason, Event&gt;]'
+    'type': '[value: Color, details: ChangeEventDetails&lt;ColorAreaChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -128,9 +139,10 @@
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `colorSpace` | The color space to operate in. | `"hsl" \| "rgb" \| "hsb"` | No | `"hsl"` |
-| `defaultValue` | The default color value (uncontrolled). | `string \| Color` | No | `"#ff0000"` |
+| `defaultValue` | The default color value (uncontrolled). A string is parsed once. | `string \| Color` | No | `"#ff0000"` |
+| `dir` | The reading direction of the area. In rtl the x axis runs right to left. If omitted, inherits from ConfigProvider or assumes ltr. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with the area. | `boolean` | No | `false` |
-| `modelValue` | The color value (controlled). Can be a hex string or Color object. | `string \| Color` | No | - |
+| `modelValue` | The color value (controlled). A string is parsed once; emitted values are always Color objects. | `string \| Color` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `xChannel` | Color channel for the horizontal (x) axis. | `"hue" \| "saturation" \| "red" \| "green" \| "blue" \| "alpha" \| "lightness" \| "brightness"` | No | `"hue"` |
@@ -142,11 +154,12 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the color value changes; details.cancel() vetoes the change. | `[value: string, details: ChangeEventDetails<ColorAreaChangeReason, Event>]` |
-| `change` | Event handler called with the hex value on every pointer move or keyboard step that changes the color. | `[value: string]` |
-| `changeEnd` | Event handler called with the hex value when the pointer is released and after each keyboard step. | `[value: string]` |
-| `update:color` |  | `[value: Color]` |
-| `update:modelValue` | Event handler called when the color value changes. | `[value: string, details: ChangeEventDetails<ColorAreaChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the color value changes; details.cancel() vetoes the change. | `[value: Color, details: ChangeEventDetails<ColorAreaChangeReason, Event>]` |
+| `change` | Event handler called on every pointer move or keyboard step that changes the color. | `[value: Color]` |
+| `changeEnd` | Event handler called when an interaction that changed the color ends: on pointer release and after each keyboard step. | `[value: Color]` |
+| `update:color` | Event handler called with the same Color as update:modelValue, after it. | `[value: Color]` |
+| `update:hex` | Event handler called with the hex serialization of the new color, after update:modelValue. Lossy: drops the hue of greys and sub-byte precision. | `[value: string]` |
+| `update:modelValue` | Event handler called when the color value changes. | `[value: Color, details: ChangeEventDetails<ColorAreaChangeReason, Event>]` |
 
 **Slots**
 

@@ -32,6 +32,6 @@ This example shows how to combine multiple color components to create a full-fea
 - **ColorSlider** - Sliders for hue and alpha channels
 - **ColorField** - Input fields for hex and HSL values
 
-The components are synchronized using a shared Color object, with `normalizeColor` and `colorToString` utilities from reka-ui for color conversion.
+Every component emits a `Color` object, so a single `v-model` keeps them in sync without hex round-trip drift (a grey keeps its hue). `colorToString` formats the shared color as hex for the trigger label.
 
 </ExampleSection>
