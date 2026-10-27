@@ -12,7 +12,7 @@ export interface ComboboxItemProps<T = AcceptableValue> extends ListboxItemProps
   /**
    * A string representation of the item contents.
    *
-   * If the children are not plain text, then the `textValue` prop must also be set to a plain text representation, which will be used for autocomplete in the ComboBox.
+   * If the children are not plain text, then the `textValue` prop must also be set to a plain text representation, which is used to filter the items and for typeahead.
    */
   textValue?: string
 }

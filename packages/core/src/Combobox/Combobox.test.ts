@@ -270,6 +270,17 @@ describe('given default Combobox', () => {
       expect(input.element.value).toBe('Testing')
     })
 
+    // #2789: the reset runs a tick after the close; a reopen inside that tick cancels it.
+    it('should keep text typed into a popup reopened before the reset runs', async () => {
+      const input = wrapper.find('input')
+      await input.trigger('keydown', { key: 'Escape' })
+      input.element.value = 'Ban'
+      await input.trigger('input')
+      await sleep(10)
+      expect(wrapper.find('[role=listbox]').exists()).toBe(true)
+      expect(input.element.value).toBe('Ban')
+    })
+
     it('should remove aria-activedescendant when close', async () => {
       await valueBox.trigger('keydown', { key: 'ArrowDown' })
       expect(valueBox.attributes('aria-activedescendant')).toBeTruthy()

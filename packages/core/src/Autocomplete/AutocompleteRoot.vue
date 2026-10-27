@@ -4,7 +4,7 @@ import type { ComboboxOpenChangeReason } from '@/Combobox/useCombobox'
 import type { ListboxFilterFunction, ListboxNavigationIntent } from '@/Listbox/useListbox'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import type { Direction } from '@/shared/types'
+import type { AcceptableValue, Direction } from '@/shared/types'
 import { createContext, mergeExpose, useDirection, useFormControl, useForwardElement, useId } from '@/shared'
 
 /**
@@ -140,7 +140,12 @@ const isFormControl = useFormControl(currentElement)
 
 // The Combobox root over a single string model: the value is the input text,
 // a selected item writes its (display) value, a clear writes `''`.
-const combobox = useComboboxRoot<string>({
+// Typed over every item value, as the Listbox and Combobox contexts it provides
+// are: `AutocompleteItem` is `ComboboxItem`, whose `value` is any
+// `AcceptableValue`. `toModelValue` turns it into the text (`displayValue`, else
+// `String(value)`). The public `filter`, `displayValue` and `highlight` types
+// still say `string`, the documented item value, so they are narrowed here.
+const combobox = useComboboxRoot<AcceptableValue>({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue ?? '',
   dir,
@@ -148,7 +153,7 @@ const combobox = useComboboxRoot<string>({
   highlightOnHover: () => props.highlightOnHover,
   loop: () => props.loop,
   getNavigationIntent: event => props.getNavigationIntent?.(event),
-  filter: toRef(() => props.filter) as Ref<ListboxFilterFunction<string> | null | undefined>,
+  filter: toRef(() => props.filter) as Ref<ListboxFilterFunction<AcceptableValue> | null | undefined>,
   ignoreFilter: () => props.ignoreFilter,
   open: () => props.open,
   defaultOpen: props.defaultOpen,
@@ -159,14 +164,14 @@ const combobox = useComboboxRoot<string>({
   openOnClick: () => props.openOnClick,
   resetModelValueOnClear: true,
   emptyValue: '',
-  toModelValue: value => props.displayValue ? props.displayValue(value) : String(value),
+  toModelValue: value => props.displayValue ? props.displayValue(value as string) : String(value),
   // Opening filters by the text already in the input.
   openSearchTerm: () => modelValue.value || '',
   getItems,
   getItem,
   element: currentElement,
   emit: emits,
-  onHighlight: payload => emits('highlight', payload),
+  onHighlight: payload => emits('highlight', payload as { ref: HTMLElement, value: string } | undefined),
 })
 const { root, context, open, highlightedElement, highlightItem, highlightFirstItem, highlightSelected, filterState } = combobox
 const modelValue = combobox.modelValue as ComputedRef<string>
@@ -180,11 +185,11 @@ defineExpose(mergeExpose(expose, {
   highlightSelected,
 }))
 
-provideListboxRootContext(context as any)
-provideComboboxRootContext(context as any)
+provideListboxRootContext(context)
+provideComboboxRootContext(context)
 provideAutocompleteRootContext({
   modelValue,
-  onModelValueChange: (value, reason, event) => combobox.setModelValue(value, reason as any, event),
+  onModelValueChange: (value, reason, event) => combobox.setModelValue(value, reason, event),
 })
 </script>
 
