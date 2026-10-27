@@ -271,7 +271,7 @@ Virtual container to achieve list virtualization.
 
 <Callout type="warning">
 
-Combobox items **must** be filtered manually before passing them over to the virtualizer. See [example below](#virtualized-combobox-with-working-filtering).
+The root's `filter` runs over `options` before they are virtualized, matching `textContent(option)` (or the option's string form). Pass `text-content` when the options are objects, or set `:filter="null"` on `ComboboxRoot` when you filter `options` yourself. See [example below](#virtualized-combobox-with-filtering).
 
 </Callout>
 
@@ -285,7 +285,7 @@ See the [virtualization guide](../guides/virtualization.md) for more general inf
 
 Unlike native HTML form controls which only allow you to provide strings as values, `reka-ui` supports binding complex objects as well.
 
-Make sure to set the `displayValue` prop to set the input value on item selection.
+Make sure to set the `displayValue` prop to set the input value on item selection. Set it on `ComboboxRoot` or on `ComboboxInput` (the input's own prop wins).
 
 ```vue line=12,17,23
 <script setup lang="ts">
@@ -352,14 +352,41 @@ const selectedPeople = ref([people[0], people[1]])
 
 ### Custom filtering
 
-Internally, `ComboboxRoot` will filter the item based on the rendered text.
+`ComboboxRoot` filters the items by the text typed in `ComboboxInput`. Each item is matched on its `textValue`, or on its rendered text, with `useFilter`'s `contains` (case and accent insensitive). A non-matching item stays mounted but renders nothing, so keyboard navigation skips it, and a `ComboboxGroup` whose items all fail to match is hidden.
 
-However, you may also provide your own custom filtering logic together with setting `ignoreFilter="true"`.
+Pass a `filter` function to change how items match. It is called as `filter(text, search, value)` and returns whether the item matches. `startsWith`, `endsWith` and `contains` from `useFilter` already have that signature.
+
+```vue line=5,9
+<script setup lang="ts">
+import { ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, useFilter } from 'reka-ui'
+
+const { startsWith } = useFilter({ sensitivity: 'base' })
+</script>
+
+<template>
+  <ComboboxRoot :filter="startsWith">
+    <ComboboxInput />
+    <ComboboxPortal>
+      <ComboboxContent>
+        <ComboboxItem
+          v-for="fruit in ['Apple', 'Banana', 'Blueberry']"
+          :key="fruit"
+          :value="fruit"
+        >
+          {{ fruit }}
+        </ComboboxItem>
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>
+</template>
+```
+
+To filter the items yourself (or on a server), set `:filter="null"` and render the filtered list. `ignore-filter` still works as an alias for `:filter="null"`, but it is deprecated.
 
 ```vue line=15,16,22,28
 <script setup lang="ts">
 import { ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, useFilter } from 'reka-ui'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const people = [
   { id: 1, name: 'Durward Reynolds' },
@@ -378,7 +405,7 @@ const filteredPeople = computed(() => people.filter(p => startsWith(p.name, sear
 <template>
   <ComboboxRoot
     v-model="selectedPeople"
-    :ignore-filter="true"
+    :filter="null"
   >
     <ComboboxInput v-model="searchTerm" />
     <ComboboxPortal>
@@ -564,6 +591,28 @@ import { ref } from 'vue'
 </template>
 ```
 
+### Reacting to changes
+
+`update:modelValue` and `update:open` receive a second argument with the `reason` for the change and the native `event`. `beforeUpdate:modelValue` and `beforeUpdate:open` fire first, and `details.cancel()` keeps the current state. The reasons are exported as `ComboboxChangeReason` (`'item-press' | 'clear-press'`) and `ComboboxOpenChangeReason` (`'trigger-press' | 'input-change' | 'input-press' | 'input-focus' | 'list-navigation' | 'item-press' | 'escape-key' | 'outside-press' | 'focus-outside'`), plus `'imperative-action'` for programmatic changes.
+
+```vue
+<template>
+  <ComboboxRoot
+    v-model="selected"
+    reset-model-value-on-clear
+    @before-update:model-value="(value, details) => {
+      // a required field: keep the selection when the cancel button clears it
+      if (details.reason === 'clear-press')
+        details.cancel()
+    }"
+  >
+    <!-- ... -->
+  </ComboboxRoot>
+</template>
+```
+
+`useComboboxRoot()` is the headless composable behind `ComboboxRoot`. It returns the same models, the search term and filter state, and the `role` / `aria-*` / `data-*` attributes for the input, trigger, content and items.
+
 ### Prevent select behavior
 
 By default, selecting `ComboboxItem` would close the content, and update the `modelValue` with the provided value.
@@ -590,34 +639,30 @@ import { ref } from 'vue'
 </template>
 ```
 
-### Virtualized combobox with working filtering
+### Virtualized combobox with filtering
 
-Combobox items **must** be filtered manually before passing them over to the virtualizer.
+The root's `filter` runs over the virtualizer's `options`, matching `textContent(option)`, so a filtered-out option takes no row and is skipped by keyboard navigation. Pass the full list and a `text-content` function. To filter `options` yourself, set `:filter="null"` on `ComboboxRoot` and pass the filtered list.
 
 See the [virtualization guide](../guides/virtualization.md) for more general info on virtualization.
 
-```vue line=9-10,17,19-28
+```vue line=17,19-24
 <script setup lang="ts">
-import { ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxViewport, ComboboxVirtualizer, useFilter } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxViewport, ComboboxVirtualizer } from 'reka-ui'
+import { ref } from 'vue'
 
 const people = Array.from({ length: 100000 }).map((_, id) => ({ id, name: `Person #${id}` }))
 const selectedPeople = ref(people[0])
-const searchTerm = ref('')
-
-const { contains } = useFilter({ sensitivity: 'base' })
-const filteredPeople = computed(() => people.filter(p => contains(p.name, searchTerm.value)))
 </script>
 
 <template>
   <ComboboxRoot v-model="selectedPeople">
-    <ComboboxInput v-model="searchTerm" />
+    <ComboboxInput :display-value="(person) => person?.name ?? ''" />
     <ComboboxPortal>
       <ComboboxContent class="max-h-[40vh] overflow-hidden">
         <ComboboxViewport>
           <ComboboxVirtualizer
             v-slot="{ option }"
-            :options="filteredPeople"
+            :options="people"
             :text-content="(x) => x.name"
             :estimate-size="24"
           >
