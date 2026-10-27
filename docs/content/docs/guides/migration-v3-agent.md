@@ -413,15 +413,17 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **What changed.**
 - `TreeRoot`, `PaginationRoot` and `StepperRoot` follow section 2: `beforeUpdate:modelValue` / `update:modelValue(value, details)` and `beforeUpdate:expanded` / `update:expanded(value, details)` on Tree, `beforeUpdate:page` / `update:page(value, details)` on Pagination, `beforeUpdate:modelValue` / `update:modelValue(value, details)` on Stepper. No emit when the value is unchanged; Tree selections compare by `getKey`.
-- With `propagateSelect` or `bubbleSelect`, one tree press emits `update:modelValue` once, with the final selection. v2 emitted up to three times per press.
+- With `propagateSelect` or `bubbleSelect`, a key that is already selected is no longer added a second time. v2 could list a parent (bubble) or a child (propagate) twice, and the next press removed only one copy. A press still emits once, as in v2, now synchronously with details and after one cancellable `beforeUpdate:modelValue`.
 - `TreeRoot` with `:model-value` and no `update:modelValue` listener no longer changes its selection on click (v2 kept a local copy). `expanded` already behaved this way. Mutating either array in place (`modelValue.push(…)` on the slot value) no longer emits.
-- Root contexts: Tree `modelValue` and `expanded` are read-only, `onSelect(value, reason?, event?)` / `onToggle(value, reason?, event?)` return a boolean, `handleMultipleReplace` takes the keyboard event as a fifth argument; Pagination `page` is read-only and `onPageChange(value, reason?, event?)` returns a boolean; Stepper `modelValue` is read-only and `changeModelValue(value, reason?, event?)` returns a boolean, and the `StepperItem` context's refs are read-only.
+- Root contexts: Tree `modelValue` and `expanded` are read-only, `onSelect(value, reason?, event?)` / `onToggle(value, reason?, event?)` return a boolean, `handleMultipleReplace` takes the keyboard event as a fifth argument, `setModelValue(value, reason?, event?)` and `setExpanded(keys, reason?, event?)` are new and write in one change, and `items` is typed `T[] | undefined`; Pagination `page` is read-only and `onPageChange(value, reason?, event?)` returns a boolean; Stepper `modelValue` is read-only and `changeModelValue(value, reason?, event?)` returns a boolean, and the `StepperItem` context's refs are read-only.
 - `goToStep`, `nextStep` and `prevStep` (StepperRoot slot props and template ref) return `false` when blocked, unchanged or cancelled. v2 returned `undefined`.
+- `goToStep(step)` onto a disabled step (its `StepperItem` has `disabled`) is blocked: it returns `false` and emits nothing. v2's check never fired, so it moved there.
 - New and additive: `useTree()`, `usePagination()`, `useStepper()`, `useToolbar()`.
 
 **How to find it.**
 - `TreeRoot` usages with `:model-value` / `:modelValue` and no `@update:model-value`, `@update:modelValue` or `v-model`.
-- `@update:model-value` / `@update:modelValue` handlers on `TreeRoot` with `propagate-select` or `bubble-select` that count calls, push to a history, or fire requests.
+- `TreeRoot` with `propagate-select` or `bubble-select`, and code reading its selection that removes duplicates by hand or counts entries.
+- Calls to `goToStep(` with a step that can be disabled.
 - `injectTreeRootContext(`, `injectPaginationRootContext(`, `injectStepperRootContext(`, `injectStepperItemContext(` in custom parts; within them, assignments to `.modelValue.value`, `.expanded.value`, `.page.value`, `.step.value`, `.state.value`, `.disabled.value`, `.isFocusable.value`, and calls to `handleMultipleReplace`.
 - In-place mutation of a tree's selection or expanded array: `.push(`, `.splice(`, `.pop(` on the `TreeRoot` slot's `modelValue` / `expanded` or on the bound `v-model` array.
 - Uses of the return value of `goToStep(`, `nextStep(` or `prevStep(`.
@@ -429,13 +431,14 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Rewrite rules.**
 - A `TreeRoot` bound with `:model-value` and no listener: if the developer meant it to be interactive, replace it with `v-model`; if only an initial selection was intended, replace it with `:default-value`. *Ask* when the intent is unclear.
-- A handler that relied on several emits per propagated or bubbled press: leave it unless it counts calls or reads intermediate values; then *ask*.
-- Custom parts: `ctx.modelValue.value = v` on Tree → `ctx.onSelect(item)` for a toggle-style selection, or *ask* when the code writes a whole selection. `ctx.expanded.value = keys` → call `ctx.onToggle(item)` for each item to open or close. `ctx.page.value = n` → `ctx.onPageChange(n)`. Stepper `ctx.modelValue.value = n` → `ctx.changeModelValue(n)`.
+- Hand-written de-duplication of a propagated or bubbled selection: leave it (it is now a no-op). Code that counted duplicated entries: *ask*.
+- A `goToStep(` that relied on reaching a disabled step: *ask* whether the step should stay disabled.
+- Custom parts: `ctx.modelValue.value = v` on Tree → `ctx.onSelect(item)` for a toggle-style selection, or `ctx.setModelValue(v)` when the code writes a whole selection (select-all, clear). `ctx.expanded.value = keys` → `ctx.setExpanded(keys)` (expand-all, collapse-all), or `ctx.onToggle(item)` for a single item. `ctx.page.value = n` → `ctx.onPageChange(n)`. Stepper `ctx.modelValue.value = n` → `ctx.changeModelValue(n)`.
 - In-place mutation of a tree's selection or expanded array: replace it with an assignment of a new array (`model.value = [...model.value, item]`).
 - Code that tested the result of `goToStep`, `nextStep` or `prevStep` against `undefined`: compare against `false` instead. Leave calls whose result is ignored.
 - Wrapper emit types: add the `details` element, importing `ChangeEventDetails` and the reason union (`TreeChangeReason`, `TreeExpandedChangeReason`, `PaginationChangeReason`, `StepperChangeReason`) from `reka-ui`. Wrappers that use `useForwardPropsEmits` need no change.
 
-**Verify.** The type-check passes; selecting, expanding and Shift-range-selecting in each tree, paging, and stepping behave as before; tests that assert on the number of `update:modelValue` emits of a propagated or bubbled tree pass after the updates above.
+**Verify.** The type-check passes; selecting, expanding and Shift-range-selecting in each tree, paging, and stepping behave as before; a propagated or bubbled selection lists each key once; a disabled step cannot be reached through `goToStep`.
 
 ### Report
 
