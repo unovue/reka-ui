@@ -43,7 +43,10 @@ if (autocompleteContext.modelValue.value)
 const surface = createComboboxInputSurface(rootContext, {
   modelValue,
   disabled: () => props.disabled,
-  onTextChange: (value, event) => autocompleteContext.onModelValueChange(value, 'input-change', event),
+  // `false` (a cancelled `beforeUpdate:modelValue`) restores the input; an
+  // unchanged value is not a veto.
+  onTextChange: (value, event) => autocompleteContext.onModelValueChange(value, 'input-change', event)
+    || value === (autocompleteContext.modelValue.value ?? ''),
 })
 
 onMounted(() => {

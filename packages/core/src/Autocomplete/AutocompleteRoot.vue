@@ -77,9 +77,12 @@ export interface AutocompleteRootProps extends PrimitiveProps {
 }
 
 export type AutocompleteRootEmits = {
-  /** Event handler called before the value changes; call `details.cancel()` to keep the current value. */
+  /**
+   * Event handler called before the value (the input text) changes; call `details.cancel()` to keep the current
+   * value. The value is `''` when `AutocompleteCancel` clears it.
+   */
   'beforeUpdate:modelValue': [value: string, details: ChangeEventDetails<AutocompleteChangeReason>]
-  /** Event handler called when the value changes. */
+  /** Event handler called when the value (the input text) changes. The value is `''` when `AutocompleteCancel` clears it. */
   'update:modelValue': [value: string, details: ChangeEventDetails<AutocompleteChangeReason>]
   /** Event handler when highlighted element changes. */
   'highlight': [payload: { ref: HTMLElement, value: string } | undefined]
