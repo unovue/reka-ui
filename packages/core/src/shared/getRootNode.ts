@@ -44,16 +44,82 @@ export function getEventTarget<T extends EventTarget = EventTarget>(event: Event
 }
 
 /**
- * `container.contains(node)`, but crossing shadow boundaries: walks up through
- * shadow hosts so a node inside a nested shadow tree still counts as contained.
- * Used when checking a composed (deep) event target against a scope root.
+ * `el.parentElement`, stepping from a shadow root's top level to its host.
+ * This is the composed tree, without slot assignment.
+ */
+export function getComposedParentElement(el: Element): Element | null {
+  return el.parentElement ?? (el.parentNode as ShadowRoot | null)?.host ?? null
+}
+
+/**
+ * The flat-tree parent: the slot a light-DOM child is assigned to, otherwise
+ * `getComposedParentElement`. Follows what the page actually renders, e.g.
+ * a slotted trigger inside a shadow scroll container.
+ */
+export function getFlatTreeParentElement(el: Element): Element | null {
+  return el.assignedSlot ?? getComposedParentElement(el)
+}
+
+/**
+ * `container.contains(node)`, but in the tree the page renders: crossing
+ * shadow boundaries (a node inside a nested shadow tree counts as contained by
+ * its host's ancestors) and following slots (a light-DOM child counts as
+ * contained by the ancestors of the slot it is assigned to, e.g. content a
+ * custom element slots into a popup in its shadow root). Used when checking a
+ * composed (deep) event target against a scope root. A document or shadow
+ * root contains whatever it holds in its own tree.
  */
 export function containsComposed(container: Node, node: Node | null): boolean {
-  let current: Node | null = node
+  if (!node)
+    return false
+  if (container.contains(node))
+    return true
+  const isTreeRoot = container.nodeType !== Node.ELEMENT_NODE
+  let current: Element | null = node.nodeType === Node.ELEMENT_NODE
+    ? node as Element
+    : (node as ShadowRoot).host ?? node.parentElement
   while (current) {
-    if (container.contains(current))
+    if (current === container || (isTreeRoot && container.contains(current)))
       return true
-    current = (current.getRootNode() as ShadowRoot).host ?? null
+    current = getFlatTreeParentElement(current)
   }
   return false
+}
+
+/**
+ * `el.closest(selector)` along the same tree as `containsComposed`: past
+ * shadow roots into their hosts, and through the slots light-DOM children are
+ * assigned to.
+ */
+export function closestComposed<T extends Element = Element>(el: Element, selector: string): T | null {
+  for (let current: Element | null = el; current; current = getFlatTreeParentElement(current)) {
+    if (current.matches(selector))
+      return current as T
+  }
+  return null
+}
+
+function isShadowRoot(node: RootNode | undefined): node is ShadowRoot {
+  return !!node && (node as ShadowRoot).host !== undefined
+}
+
+/**
+ * The Teleport target for a portal rendered in `root`. Light DOM keeps Vue's
+ * semantics (`to`, defaulting to `'body'`). Inside a shadow root:
+ * - no `to` → the shadow root itself, so the content stays in the root (shadow
+ *   styles still apply, and ids/`aria-*` references, `aria-hidden` and focus
+ *   containment all resolve within one tree);
+ * - a selector → matched inside the shadow root first, then in the document.
+ */
+export function resolveTeleportTarget(
+  to: string | HTMLElement | undefined,
+  root: RootNode | undefined,
+): string | HTMLElement | ShadowRoot {
+  if (to && typeof to !== 'string')
+    return to
+  if (!isShadowRoot(root))
+    return to ?? 'body'
+  if (!to)
+    return root
+  return root.querySelector<HTMLElement>(to) ?? to
 }

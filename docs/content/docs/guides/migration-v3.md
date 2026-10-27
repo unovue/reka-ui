@@ -629,6 +629,17 @@ New and additive, so nothing to migrate. `PopoverTrigger`, `DialogTrigger`, `Ale
 
 `ChangeEventDetails` gains an optional `trigger` element. It is set when a detached trigger's press opens, switches or closes the popup, or `handle.open(triggerId)` opens it. Code that builds details with `createChangeEventDetails()` or reads them is unaffected.
 
+## Shadow DOM
+
+Components rendered inside an open shadow root (a custom element, a micro-frontend mounted with `attachShadow()`) work there without workarounds. See the [Shadow DOM](./shadow-dom) guide. What changed:
+
+- **Portals stay in the shadow root.** A portal rendered inside a shadow root teleports into that shadow root by default instead of into `document.body`, so the shadow root's styles apply to the content and its `aria-*` id references resolve. A string `to` (or `ConfigProvider`'s `teleportTo`) is looked up inside the shadow root first, then in the document; `to="body"` still targets the document body. Move styles for portalled content that you loaded into the document into the shadow root, or keep the old placement with `teleportTo="body"`. Tests that found that content through `document` should query the shadow root, unless the portal targets `body` or another element outside it.
+- **`aria-hidden` inside the shadow root.** A modal layer also hides its siblings inside the shadow root from assistive technology, not only the page around the shadow host. With modals open in two shadow roots, the most recently opened one stays exposed, as in the light DOM.
+- **Scroll dismissal.** `TooltipContent` and `HoverCardContent` close when a scroll container inside the shadow root, or the page, scrolls their trigger.
+- **`forceMount` portals on the first render (light DOM too).** A portal with `forceMount` and the default target (no `to`, or a selector) that renders during the app's first client render mounts its content right after the portal mounts (a microtask later), like a portal without `forceMount`, instead of during that render: only then is it known which root the content belongs in. A parent's template ref to that content is therefore still `undefined` in the parent's `onMounted`; read it after `await nextTick()`, in a `watch` on the ref, or in the content's own `onMounted`. A test that queries that content synchronously after `mount()` needs an `await nextTick()` too. Portals with `disabled` or an element `to`, server rendering, hydration and portals created after the app mounted are unchanged.
+- **Fixed in the shadow DOM:** Combobox mouse selection, focus trapping and focus guards, outside-press and focus-outside dismissal, and `aria-*` id lookups. Workarounds for these (patches, `stopPropagation()` on touch events, re-parenting portalled content) can be removed.
+- **Web components and slots.** Pointer, focus and dismissal checks follow the tree the page renders: a press inside a web component (an icon element in a trigger, a Splitter handle or a popup) counts as a press on the element around it, and light-DOM content a custom element slots into a popup counts as inside the popup.
+
 ## Drawer, Tree and Combobox corrections
 
 These come from the review of the Alpha components for their Stable release ([#2789](https://github.com/unovue/reka-ui/issues/2789)).
