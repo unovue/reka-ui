@@ -1,8 +1,8 @@
 <script lang="ts">
-import type { ComponentPublicInstance } from 'vue'
+import type { ComponentPublicInstance, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { disclosureState, getElementByIdFrom, useForwardElement } from '@/shared'
+import { useForwardElement } from '@/shared'
 
 export interface NavigationMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -11,15 +11,13 @@ export interface NavigationMenuTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { refAutoReset, unrefElement } from '@vueuse/core'
-import { computed, onMounted, ref } from 'vue'
-import {
-  Primitive,
-} from '@/Primitive'
+import { unrefElement } from '@vueuse/core'
+import { onMounted, useAttrs } from 'vue'
+import { Primitive } from '@/Primitive'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { makeContentId, makeTriggerId } from './utils'
+import { mergeConsumerListenersFirst, useNavigationMenuTrigger } from './useNavigationMenu'
 
 defineOptions({
   inheritAttrs: false,
@@ -35,93 +33,23 @@ const itemContext = injectNavigationMenuItemContext()
 const { CollectionItem } = useCollection({ key: 'NavigationMenu' })
 const { forwardRef, currentElement: triggerElement, expose } = useForwardElement()
 defineExpose(expose)
-const triggerId = ref('')
-const contentId = ref('')
 
-const hasPointerMoveOpenedRef = refAutoReset(false, 300)
-const wasClickCloseRef = ref(false)
-
-const open = computed(() => itemContext.value === menuContext.modelValue.value)
+const { open, trigger, onFocusProxyFocus } = useNavigationMenuTrigger({
+  context: menuContext,
+  itemContext,
+  disabled: () => props.disabled,
+  triggerElement: triggerElement as Ref<HTMLElement | undefined>,
+})
 
 onMounted(() => {
   itemContext.triggerRef = triggerElement
-  triggerId.value = makeTriggerId(menuContext.baseId, itemContext.value)
-  contentId.value = makeContentId(menuContext.baseId, itemContext.value)
 })
 
-function handlePointerEnter() {
-  if (menuContext.disableHoverTrigger.value)
-    return
-
-  wasClickCloseRef.value = false
-  itemContext.wasEscapeCloseRef.value = false
-}
-
-function handlePointerMove(ev: PointerEvent) {
-  if (ev.defaultPrevented || menuContext.disableHoverTrigger.value)
-    return
-
-  if (ev.pointerType === 'mouse') {
-    if (
-      props.disabled
-      || wasClickCloseRef.value
-      || itemContext.wasEscapeCloseRef.value
-      || hasPointerMoveOpenedRef.value
-    ) {
-      return
-    }
-
-    menuContext.onTriggerEnter(itemContext.value)
-    hasPointerMoveOpenedRef.value = true
-  }
-}
-
-function handlePointerLeave(ev: PointerEvent) {
-  if (menuContext.disableHoverTrigger.value)
-    return
-
-  if (ev.pointerType === 'mouse') {
-    if (props.disabled)
-      return
-    menuContext.onTriggerLeave()
-    hasPointerMoveOpenedRef.value = false
-  }
-}
-
-function handleClick(event: MouseEvent | PointerEvent) {
-  if (event.defaultPrevented)
-    return
-  if (
-    (!('pointerType' in event) || event.pointerType === 'mouse')
-    && menuContext.disableClickTrigger.value
-  ) {
-    return
-  }
-
-  // if open via pointermove, we prevent click event
-  if (hasPointerMoveOpenedRef.value)
-    return
-
-  if (open.value)
-    menuContext.onItemSelect('')
-  else menuContext.onItemSelect(itemContext.value)
-
-  wasClickCloseRef.value = open.value
-}
-
-function handleKeydown(ev: KeyboardEvent) {
-  if (ev.defaultPrevented)
-    return
-  const verticalEntryKey = menuContext.dir.value === 'rtl' ? 'ArrowLeft' : 'ArrowRight'
-  const entryKey = { horizontal: 'ArrowDown', vertical: verticalEntryKey }[
-    menuContext.orientation
-  ]
-  if (open.value && ev.key === entryKey) {
-    itemContext.onEntryKeyDown()
-    // Prevent FocusGroupItem from handling the event
-    ev.preventDefault()
-    ev.stopPropagation()
-  }
+// Consumer listeners run BEFORE the trigger's own (v2 order). `useAttrs()` is
+// not reactive, so this is read during render.
+const attrs = useAttrs()
+function getTriggerAttrs() {
+  return mergeConsumerListenersFirst(attrs, trigger.attrs.value)
 }
 
 function setFocusProxyRef(node: Element | ComponentPublicInstance | null) {
@@ -131,38 +59,15 @@ function setFocusProxyRef(node: Element | ComponentPublicInstance | null) {
   itemContext.focusProxyRef.value = unrefElement(node)
   return undefined
 }
-
-function handleVisuallyHiddenFocus(ev: FocusEvent) {
-  const content = getElementByIdFrom(triggerElement.value, itemContext.contentId)
-  const prevFocusedElement = ev.relatedTarget as HTMLElement | null
-
-  const wasTriggerFocused = prevFocusedElement === triggerElement.value
-  const wasFocusFromContent = content?.contains(prevFocusedElement)
-
-  if (wasTriggerFocused || !wasFocusFromContent)
-    itemContext.onFocusProxyEnter(wasTriggerFocused ? 'start' : 'end')
-}
 </script>
 
 <template>
   <CollectionItem>
     <Primitive
-      :id="triggerId"
+      v-bind="getTriggerAttrs()"
       :ref="forwardRef"
-      :disabled="disabled"
-      :data-disabled="disabled ? '' : undefined"
-      :data-state="disclosureState(open)"
-      data-navigation-menu-trigger
-      :aria-expanded="open"
-      :aria-controls="contentId"
       :as-child="props.asChild"
       :as="as"
-      v-bind="$attrs"
-      @pointerenter="handlePointerEnter"
-      @pointermove="handlePointerMove"
-      @pointerleave="handlePointerLeave"
-      @click="handleClick"
-      @keydown="handleKeydown"
     >
       <slot />
     </Primitive>
@@ -172,11 +77,11 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
     <VisuallyHidden
       :ref="setFocusProxyRef"
       :tabindex="0"
-      @focus="handleVisuallyHiddenFocus"
+      @focus="onFocusProxyFocus"
     />
     <span
       v-if="menuContext.viewport"
-      :aria-owns="contentId"
+      :aria-owns="itemContext.contentId"
     />
   </template>
 </template>

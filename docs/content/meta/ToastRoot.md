@@ -57,6 +57,11 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:open',
+    'description': '<p>Event handler called before the open state changes; <code>details.cancel()</code> keeps the toast open.</p>\n',
+    'type': '[value: boolean, details: ChangeEventDetails&lt;ToastOpenChangeReason, Event&gt;]'
+  },
+  {
     'name': 'escapeKeyDown',
     'description': '<p>Event handler called when the escape key is down. It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
     'type': '[event: KeyboardEvent]'
@@ -94,7 +99,7 @@
   {
     'name': 'update:open',
     'description': '<p>Event handler called when the open state changes</p>\n',
-    'type': '[value: boolean]'
+    'type': '[value: boolean, details: ChangeEventDetails&lt;ToastOpenChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -136,6 +141,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `beforeUpdate:open` | Event handler called before the open state changes; details.cancel() keeps the toast open. | `[value: boolean, details: ChangeEventDetails<ToastOpenChangeReason, Event>]` |
 | `escapeKeyDown` | Event handler called when the escape key is down. It can be prevented by calling event.preventDefault. | `[event: KeyboardEvent]` |
 | `pause` | Event handler called when the dismiss timer is paused. This occurs when the pointer is moved over the viewport, the viewport is focused or when the window is blurred. | `[]` |
 | `resume` | Event handler called when the dismiss timer is resumed. This occurs when the pointer is moved away from the viewport, the viewport is blurred or when the window is focused. | `[]` |
@@ -143,7 +149,7 @@
 | `swipeEnd` | Event handler called at the end of a swipe interaction. It can be prevented by calling event.preventDefault. | `[event: SwipeEvent]` |
 | `swipeMove` | Event handler called during a swipe interaction. It can be prevented by calling event.preventDefault. | `[event: SwipeEvent]` |
 | `swipeStart` | Event handler called when starting a swipe interaction. It can be prevented by calling event.preventDefault. | `[event: SwipeEvent]` |
-| `update:open` | Event handler called when the open state changes | `[value: boolean]` |
+| `update:open` | Event handler called when the open state changes | `[value: boolean, details: ChangeEventDetails<ToastOpenChangeReason, Event>]` |
 
 **Slots**
 
