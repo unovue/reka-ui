@@ -1,7 +1,7 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { By } from './compare'
 import type { BaseChangeReason, ChangeEventDetails } from './types'
-import { ref, toRaw, toValue } from 'vue'
+import { computed, ref, toRaw, toValue } from 'vue'
 import { compare, valueComparator } from './compare'
 import { isNullish } from './nullish'
 import { useControllableState } from './useControllableState'
@@ -87,7 +87,7 @@ export function useListSelection<T, R extends string = string>(options: UseListS
   const selectionBehavior = () => toValue(options.selectionBehavior) ?? 'toggle'
   const multiple = () => toValue(options.multiple) ?? false
 
-  const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<T | T[] | undefined, R>({
+  const { state, setState, lastChangeDetails, isControlled } = useControllableState<T | T[] | undefined, R>({
     prop: options.modelValue,
     // Evaluated once. Only `undefined` falls back, so an explicit `null` default is kept.
     defaultValue: () => options.defaultValue !== undefined ? options.defaultValue : (multiple() ? [] : undefined),
@@ -97,11 +97,18 @@ export function useListSelection<T, R extends string = string>(options: UseListS
     onUpdate: options.onUpdate,
     isEqual: isSameSelection,
   })
+  // A multiple selection is always an array: a controlled parent clearing the
+  // model to `undefined` / `null` reads `[]`, so `T[]` typings hold.
+  const modelValue = computed(() => {
+    const value = state.value
+    return multiple() && isNullish(value) ? [] : value
+  }) as ComputedRef<T | T[] | undefined>
 
   const firstValue = ref<T>() as Ref<T | undefined>
 
   function setModelValue(value: T | T[] | undefined, reason: R | BaseChangeReason = 'imperative-action', event?: Event) {
-    return setState(value, reason, event)
+    // A context write of `undefined` / `null` clears a multiple selection to `[]`.
+    return setState(multiple() && isNullish(value) ? [] : value, reason, event)
   }
 
   function select(val: T, reason: R | BaseChangeReason = 'imperative-action', event?: Event) {

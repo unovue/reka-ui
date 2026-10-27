@@ -5,7 +5,7 @@ import type { ListboxFilterFunction, ListboxNavigationIntent } from '@/Listbox/u
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, Direction } from '@/shared/types'
-import { createContext, mergeExpose, useDirection, useFormControl, useForwardElement, useId } from '@/shared'
+import { createChangeEventDetails, createContext, mergeExpose, useDirection, useFormControl, useForwardElement, useId } from '@/shared'
 
 /**
  * Why the Autocomplete value (the input text) changed; carried as `details.reason` (#2828).
@@ -84,7 +84,8 @@ export interface AutocompleteRootProps<T extends AcceptableValue = string> exten
 export type AutocompleteRootEmits<T extends AcceptableValue = string> = {
   /**
    * Event handler called before the value (the input text) changes; call `details.cancel()` to keep the current
-   * value. The value is `''` when `AutocompleteCancel` clears it.
+   * value. The value is `''` when `AutocompleteCancel` clears it. Only a controlled (`v-model`) value can be kept:
+   * an uncontrolled one ignores `cancel()`, as in Base UI.
    */
   'beforeUpdate:modelValue': [value: string, details: ChangeEventDetails<AutocompleteChangeReason>]
   /** Event handler called when the value (the input text) changes. The value is `''` when `AutocompleteCancel` clears it. */
@@ -177,7 +178,16 @@ const combobox = useComboboxRoot<AcceptableValue>({
   getItems,
   getItem,
   element: currentElement,
-  emit: emits,
+  // Base UI parity (`AutocompleteRoot` writes an uncontrolled value before
+  // `onValueChange`): an uncontrolled value ignores `cancel()`, so the listener
+  // gets details of its own that nothing reads.
+  emit: (event: string, ...args: unknown[]) => {
+    if (event === 'beforeUpdate:modelValue' && !combobox.isControlled.value) {
+      const details = args[1] as ChangeEventDetails<AutocompleteChangeReason>
+      return (emits as (event: string, ...args: unknown[]) => void)(event, args[0], createChangeEventDetails(details.reason, details.event, details.trigger))
+    }
+    return (emits as (event: string, ...args: unknown[]) => void)(event, ...args)
+  },
   onHighlight: payload => emits('highlight', payload as { ref: HTMLElement, value: T } | undefined),
   onOpenComplete: value => emits('update:openComplete', value),
 })

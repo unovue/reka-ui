@@ -419,6 +419,7 @@ export const components = {
     'SelectItem',
     'SelectItemText',
     'SelectViewport',
+    'SelectVirtualizer',
     'SelectScrollUpButton',
     'SelectScrollDownButton',
     'SelectValue',

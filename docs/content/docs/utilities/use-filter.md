@@ -20,6 +20,10 @@ const { startsWith } = useFilter({ sensitivity: 'base' })
 console.log(startsWith('Résumé', 'resume')) // true (case-insensitive)
 ```
 
+## Locale
+
+The comparison uses the locale of the nearest [`ConfigProvider`](./config-provider) (`'en'` when there is none, or when `useFilter` is called outside a component's `setup()`). Under `<ConfigProvider locale="sv">`, for example, `contains('Ärlig', 'a')` is `false` even with `sensitivity: 'base'`, because Swedish treats `ä` as a letter of its own.
+
 ## Usage
 
 ### Example Usage

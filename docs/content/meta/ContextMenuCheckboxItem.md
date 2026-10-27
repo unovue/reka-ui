@@ -37,6 +37,11 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Called before the value changes; <code>details.cancel()</code> keeps the current value.</p>\n',
+    'type': '[payload: boolean, details: ChangeEventDetails&lt;\'item-press\', Event&gt;]'
+  },
+  {
     'name': 'select',
     'description': '<p>Event handler called when the user selects an item (via mouse or keyboard). &lt;br&gt;\nCalling <code>event.preventDefault</code> in this handler will prevent the menu from closing when selecting that item.</p>\n',
     'type': '[event: Event]'
@@ -44,7 +49,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[payload: boolean]'
+    'type': '[payload: boolean, details: ChangeEventDetails&lt;\'item-press\', Event&gt;]'
   }
 ]" />
 
@@ -78,8 +83,9 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `beforeUpdate:modelValue` | Called before the value changes; details.cancel() keeps the current value. | `[payload: boolean, details: ChangeEventDetails<"item-press", Event>]` |
 | `select` | Event handler called when the user selects an item (via mouse or keyboard). <br> Calling event.preventDefault in this handler will prevent the menu from closing when selecting that item. | `[event: Event]` |
-| `update:modelValue` | Event handler called when the value changes. | `[payload: boolean]` |
+| `update:modelValue` | Event handler called when the value changes. | `[payload: boolean, details: ChangeEventDetails<"item-press", Event>]` |
 
 **Slots**
 

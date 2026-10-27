@@ -1,28 +1,34 @@
 <script lang="ts">
 export interface ListboxVirtualizerProps<T extends AcceptableValue = AcceptableValue> {
-  /** List of items */
-  options: T[]
+  /**
+   * List of items, or, with `grouped`, groups of items (`{ label, options, disabled? }`).
+   * Groups are flattened to rows: a header row rendered by the `group` slot, then
+   * the group's options. Each option is the value of the item the default slot renders.
+   */
+  options: T[] | VirtualGroup<T>[]
+  /** When `true`, `options` holds groups (`VirtualGroup`) rather than options. */
+  grouped?: boolean
   /** Number of items rendered outside the visible area */
   overscan?: number
-  /** Estimated size (in px) of each item */
+  /** Estimated size (in px) of each item. A function receives the row index (group header rows included). */
   estimateSize?: number | ((index: number) => number)
-  /** Text content for each item, used by typeahead and by a `ListboxRoot` `filter` (which otherwise matches the option's string form) */
+  /** Text content for each item, used by typeahead and by a `ListboxRoot` `filter` (both otherwise use the option's string form). Required for object options. */
   textContent?: (option: T) => string
 }
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import type { VirtualItem, Virtualizer } from '@tanstack/vue-virtual'
-import type { Ref, VNode } from 'vue'
+import type { Ref } from 'vue'
+import type { VirtualGroup } from './useListVirtualizer'
 import type { AcceptableValue } from '@/shared/types'
-import { useVirtualizer } from '@tanstack/vue-virtual'
 import { useParentElement } from '@vueuse/core'
 import { refAutoReset } from '@vueuse/shared'
-import { cloneVNode, computed, Fragment, onUnmounted, useSlots, watch, watchSyncEffect } from 'vue'
+import { onUnmounted, useSlots, watch, watchSyncEffect } from 'vue'
 import { useCollection } from '@/Collection'
-import { findValuesBetween, getActiveElement, useForwardElement } from '@/shared'
-import { getNextMatch } from '@/shared/useTypeahead'
+import { findValuesBetween, getActiveElement, useForwardElement, useId } from '@/shared'
 import { injectListboxRootContext } from './ListboxRoot.vue'
+import { useListVirtualizer } from './useListVirtualizer'
 import { compare, queryCheckedElement } from './utils'
 
 const props = defineProps<ListboxVirtualizerProps<T>>()
@@ -31,6 +37,11 @@ defineSlots<{
   default?: (props: {
     option: T
     virtualizer: Virtualizer<HTMLElement, Element>
+    virtualItem: VirtualItem
+  }) => any
+  /** A group header row, when `options` holds groups. */
+  group?: (props: {
+    group: VirtualGroup<T>
     virtualItem: VirtualItem
   }) => any
 }>()
@@ -45,18 +56,32 @@ rootContext.isVirtual.value = true
 
 // The root's `filter` (#2824 item 7) applies to `options`, not to the rendered
 // rows: a filtered-out option takes no virtual index, is not counted in
-// `aria-setsize`, and is skipped by navigation, typeahead and select-all.
+// `aria-setsize`, and is skipped by navigation, typeahead and select-all. A
+// group left with no matching option is dropped.
 let hasWarnedTextContent = false
-const options = computed(() => {
-  if (!rootContext.isFilterActive.value)
-    return props.options
-
-  if (process.env.NODE_ENV !== 'production' && !props.textContent && !hasWarnedTextContent && props.options.some(option => option !== null && typeof option === 'object')) {
-    hasWarnedTextContent = true
-    console.warn('[reka-ui] ListboxVirtualizer: pass `textContent` to filter object options.')
-  }
-  return props.options.filter(option => rootContext.filterOption(option, props.textContent ? props.textContent(option) : String(option)))
+const list = useListVirtualizer<T>({
+  options: () => props.options,
+  grouped: () => props.grouped,
+  filter: () => {
+    if (!rootContext.isFilterActive.value)
+      return undefined
+    return (option, text) => {
+      if (process.env.NODE_ENV !== 'production' && !props.textContent && !hasWarnedTextContent && option !== null && typeof option === 'object') {
+        hasWarnedTextContent = true
+        console.warn('[reka-ui] ListboxVirtualizer: pass `textContent` to filter object options.')
+      }
+      return rootContext.filterOption(option, text)
+    }
+  },
+  textContent: () => props.textContent,
+  estimateSize: () => props.estimateSize,
+  overscan: () => props.overscan,
+  horizontal: () => rootContext.orientation.value === 'horizontal',
+  scrollElement: parentEl,
+  idPrefix: useId(undefined, 'reka-listbox-virtualizer'),
 })
+const { options, virtualizer } = list
+
 // Rows are keyed by index, so a highlighted row is reused for another option
 // once the list is filtered. Before the rows re-render, drop the highlight if
 // its option no longer matches.
@@ -73,65 +98,7 @@ onUnmounted(() => {
   rootContext.virtualFilterCount.value = undefined
 })
 
-const padding = computed(() => {
-  const el = parentEl.value
-  if (!el) {
-    return { start: 0, end: 0 }
-  }
-  else {
-    const styles = window.getComputedStyle(el)
-    return {
-      start: Number.parseFloat(styles.paddingBlockStart || styles.paddingTop),
-      end: Number.parseFloat(styles.paddingBlockEnd || styles.paddingBottom),
-    }
-  }
-})
-
-const virtualizer = useVirtualizer(
-  {
-    get scrollPaddingStart() { return padding.value.start },
-    get scrollPaddingEnd() { return padding.value.end },
-    get count() { return options.value.length },
-    get horizontal() { return rootContext.orientation.value === 'horizontal' },
-    estimateSize(index) {
-      if (typeof props.estimateSize === 'function')
-        return props.estimateSize(index)
-
-      return props.estimateSize ?? 28
-    },
-    getScrollElement() { return parentEl.value },
-    overscan: props.overscan ?? 12,
-  },
-)
-
-const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map((item) => {
-  const defaultNode = slots.default!({
-    option: options.value[item.index],
-    virtualizer: virtualizer.value,
-    virtualItem: item,
-  })[0]
-
-  const targetNode = defaultNode.type === Fragment && Array.isArray(defaultNode.children)
-    ? defaultNode.children.find(child => typeof (child as VNode).type !== 'symbol') as VNode
-    : defaultNode
-
-  return {
-    item,
-    is: cloneVNode(targetNode, {
-      'key': `${item.key}`,
-      'data-index': item.index,
-      'aria-setsize': options.value.length,
-      'aria-posinset': item.index + 1,
-      'style': {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        transform: `translateY(${item.start}px)`,
-        overflowAnchor: 'none',
-      },
-    }),
-  }
-}))
+const virtualizedItems = list.renderRows(slots as any)
 
 rootContext.virtualFocusHook.on(({ event, scroll }) => {
   // `scroll` is `false` only for the initial mount highlight. There we set the
@@ -149,7 +116,7 @@ rootContext.virtualFocusHook.on(({ event, scroll }) => {
 
     // Bringing the checked item into the (internal) scroll viewport is safe — it
     // only scrolls the listbox container, never the page.
-    virtualizer.value.scrollToIndex(index, { align: 'start' })
+    list.scrollToOption(index, 'start')
     requestAnimationFrame(() => {
       const item = queryCheckedElement(parentEl.value)
       if (item) {
@@ -177,7 +144,7 @@ rootContext.virtualHighlightHook.on((value) => {
   const index = options.value.findIndex((option) => {
     return compare(option, value, rootContext.by)
   })
-  virtualizer.value.scrollToIndex(index, { align: 'start' })
+  list.scrollToOption(index, 'start')
   requestAnimationFrame(() => {
     const item = queryCheckedElement(parentEl.value)
     if (item)
@@ -187,19 +154,6 @@ rootContext.virtualHighlightHook.on((value) => {
 
 // Reset `search` 1 second after it was last updated
 const search = refAutoReset('', 1000)
-const optionsWithMetadata = computed(() => {
-  const parseTextContent = (option: T) => {
-    if (props.textContent)
-      return props.textContent(option)
-    else
-      return option?.toString().toLowerCase()
-  }
-
-  return options.value.map((option, index) => ({
-    index,
-    textContent: parseTextContent(option),
-  }))
-})
 
 function handleMultipleReplace(event: Event, intent: 'first' | 'last' | 'prev' | 'next') {
   if (!rootContext.firstValue?.value || !rootContext.multiple.value || !Array.isArray(rootContext.modelValue.value))
@@ -254,8 +208,7 @@ rootContext.virtualKeydownHook.on(({ event, intent: resolvedIntent }) => {
   if (intent === 'first' || intent === 'last') {
     event.preventDefault()
 
-    const index = intent === 'first' ? 0 : options.value.length - 1
-    virtualizer.value.scrollToIndex(index)
+    list.scrollToOption(intent === 'first' ? 0 : options.value.length - 1)
     requestAnimationFrame(() => {
       const items = getItems()
       const item = intent === 'first' ? items[0] : items.at(-1)
@@ -266,16 +219,11 @@ rootContext.virtualKeydownHook.on(({ event, intent: resolvedIntent }) => {
   // Typeahead only for a printable character (not `Shift`, `Home`, …).
   else if (!intent && !isMetaKey && event.key.length === 1) {
     search.value += event.key
-    const currentIndex = Number(getActiveElement()?.getAttribute('data-index'))
-    const currentMatch = optionsWithMetadata.value[currentIndex].textContent
-    const filteredOptions = optionsWithMetadata.value.map(i => i.textContent ?? '')
-    const next = getNextMatch(filteredOptions, search.value, currentMatch)
-
-    const nextMatch = optionsWithMetadata.value.find(option => option.textContent === next)
-    if (nextMatch) {
-      virtualizer.value.scrollToIndex(nextMatch.index, { align: 'start' })
+    const next = list.getTypeaheadMatch(search.value, list.optionIndexOfElement(getActiveElement()))
+    if (next !== undefined) {
+      const rowIndex = list.scrollToOption(next, 'start')
       requestAnimationFrame(() => {
-        const item = parentEl.value.querySelector(`[data-index="${nextMatch.index}"]`)
+        const item = parentEl.value.querySelector(`[data-index="${rowIndex}"]`)
         if (item instanceof HTMLElement)
           rootContext.changeHighlight(item)
       })

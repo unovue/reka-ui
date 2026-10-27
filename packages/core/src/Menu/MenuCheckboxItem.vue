@@ -3,12 +3,15 @@ import type {
   MenuItemEmits,
   MenuItemProps,
 } from './MenuItem.vue'
-import type { CheckedState } from './utils'
-import { selectionState, useForwardElement, useForwardProps } from '@/shared'
+import type { CheckedState, MenuCheckboxItemChangeReason } from './utils'
+import type { ChangeEventDetails } from '@/shared'
+import { selectionState, useControllableState, useForwardElement, useForwardProps } from '@/shared'
 
 export type MenuCheckboxItemEmits = MenuItemEmits & {
+  /** Event handler called before the checked state changes; `details.cancel()` vetoes the change. */
+  'beforeUpdate:modelValue': [payload: boolean, details: ChangeEventDetails<MenuCheckboxItemChangeReason>]
   /** Event handler called when the checked state changes. */
-  'update:modelValue': [payload: boolean]
+  'update:modelValue': [payload: boolean, details: ChangeEventDetails<MenuCheckboxItemChangeReason>]
 }
 
 export interface MenuCheckboxItemProps extends MenuItemProps {
@@ -18,10 +21,10 @@ export interface MenuCheckboxItemProps extends MenuItemProps {
 </script>
 
 <script setup lang="ts">
-import { reactiveOmit, useVModel } from '@vueuse/core'
+import { reactiveOmit } from '@vueuse/core'
 import MenuItem from './MenuItem.vue'
 import { provideMenuItemIndicatorContext } from './MenuItemIndicator.vue'
-import { isIndeterminate } from './utils'
+import { getItemSelectOriginalEvent, isIndeterminate } from './utils'
 
 const props = withDefaults(defineProps<MenuCheckboxItemProps>(), {
   modelValue: false,
@@ -40,7 +43,20 @@ defineSlots<{
 const delegatedProps = reactiveOmit(props, ['modelValue'])
 const forwarded = useForwardProps(delegatedProps)
 
-const modelValue = useVModel(props, 'modelValue', emits)
+// `modelValue` defaults to `false`, so the item is always controlled: a press
+// emits `beforeUpdate:modelValue` / `update:modelValue` and the parent writes
+// the new state (v2 behaviour, now with change details, #2828).
+const { state: modelValue, setState } = useControllableState<CheckedState, MenuCheckboxItemChangeReason>({
+  prop: () => props.modelValue,
+  defaultValue: false,
+  name: 'modelValue',
+  emit: emits,
+})
+
+function onSelect(event: Event) {
+  emits('select', event)
+  setState(isIndeterminate(modelValue.value) ? true : !modelValue.value, 'item-press', getItemSelectOriginalEvent(event))
+}
 
 provideMenuItemIndicatorContext({ modelValue })
 
@@ -55,17 +71,7 @@ defineExpose(expose)
     v-bind="forwarded"
     :aria-checked="isIndeterminate(modelValue) ? 'mixed' : modelValue"
     :data-state="selectionState(modelValue)"
-    @select="
-      async (event) => {
-        emits('select', event);
-        if (isIndeterminate(modelValue)) {
-          modelValue = true;
-        }
-        else {
-          modelValue = !modelValue;
-        }
-      }
-    "
+    @select="onSelect"
   >
     <slot
       :checked="modelValue"

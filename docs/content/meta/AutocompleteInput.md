@@ -38,8 +38,8 @@
 <EmitsTable :data="[
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[string]'
+    'description': '<p>Event handler called when the input text changes. The text is the Autocomplete value: veto typing with\n<code>beforeUpdate:modelValue</code> on <code>AutocompleteRoot</code>.</p>\n',
+    'type': '[value: string, details: ChangeEventDetails&lt;ComboboxInputChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -47,7 +47,7 @@
   {
     'name': 'modelValue',
     'description': '<p>Current input values</p>\n',
-    'type': 'string | undefined'
+    'type': 'string'
   }
 ]" />
 </llm-exclude>
@@ -68,12 +68,12 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value changes. | `[string]` |
+| `update:modelValue` | Event handler called when the input text changes. The text is the Autocomplete value: veto typing with beforeUpdate:modelValue on AutocompleteRoot. | `[value: string, details: ChangeEventDetails<ComboboxInputChangeReason, Event>]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current input values | `string \| undefined` |
+| `modelValue` | Current input values | `string` |
 
 </llm-only>
