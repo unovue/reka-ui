@@ -105,14 +105,24 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:expanded',
+    'description': '<p>Event handler called before the expanded items change; call <code>details.cancel()</code> to keep them.</p>\n',
+    'type': '[val: string[], details: ChangeEventDetails&lt;TreeExpandedChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Event handler called before the selection changes; call <code>details.cancel()</code> to keep the current selection.</p>\n',
+    'type': '[val: M extends true ? U[] : U, details: ChangeEventDetails&lt;TreeChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:expanded',
-    'description': '',
-    'type': '[val: string[]]'
+    'description': '<p>Event handler called when the expanded items change.</p>\n',
+    'type': '[val: string[], details: ChangeEventDetails&lt;TreeExpandedChangeReason, Event&gt;]'
   },
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value of the toggle changes.</p>\n',
-    'type': '[val: M extends true ? U[] : U]'
+    'description': '<p>Event handler called when the selection changes.</p>\n',
+    'type': '[val: M extends true ? U[] : U, details: ChangeEventDetails&lt;TreeChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -162,8 +172,10 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:expanded` |  | `[val: string[]]` |
-| `update:modelValue` | Event handler called when the value of the toggle changes. | `[val: M extends true ? U[] : U]` |
+| `beforeUpdate:expanded` | Event handler called before the expanded items change; call details.cancel() to keep them. | `[val: string[], details: ChangeEventDetails<TreeExpandedChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the selection changes; call details.cancel() to keep the current selection. | `[val: M extends true ? U[] : U, details: ChangeEventDetails<TreeChangeReason, Event>]` |
+| `update:expanded` | Event handler called when the expanded items change. | `[val: string[], details: ChangeEventDetails<TreeExpandedChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the selection changes. | `[val: M extends true ? U[] : U, details: ChangeEventDetails<TreeChangeReason, Event>]` |
 
 **Slots**
 

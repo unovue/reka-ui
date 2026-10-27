@@ -15,7 +15,8 @@ const props = defineProps<PaginationListProps>()
 defineSlots<{
   default?: (props: {
     /** Pages item */
-    items: typeof transformedRange.value
+    // Spelled out (not the `PaginationItem` alias) so the generated docs keep the union.
+    items: Array<{ type: 'ellipsis' } | { type: 'page', value: number }>
   }) => any
 }>()
 
