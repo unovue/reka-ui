@@ -25,7 +25,7 @@
   border-radius: 8px;
 }
 
-.ColorAreaArea:focus {
+.ColorAreaArea:focus-within {
   outline: none;
   box-shadow: 0 0 0 2px var(--grass-7);
 }

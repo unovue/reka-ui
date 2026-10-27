@@ -49,6 +49,7 @@ export interface ColorSliderRootContext {
   channel: Ref<ColorChannel>
   colorSpace: Ref<ColorSpace>
   orientation: Ref<DataOrientation>
+  dir: Ref<Direction>
   disabled: Ref<boolean>
   inverted: Ref<boolean>
   min: ComputedRef<number>
@@ -88,6 +89,7 @@ const dir = useDirection(propDir)
 
 const { sliderProps, context, color, disabled } = useColorSlider({
   orientation: () => props.orientation,
+  dir: () => dir.value,
   disabled: () => props.disabled,
   inverted: () => props.inverted,
   channel: () => props.channel,

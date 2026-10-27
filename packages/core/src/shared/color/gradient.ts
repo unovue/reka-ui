@@ -2,33 +2,60 @@ import type { Color, ColorChannel, ColorSpace, RGBColor } from './types'
 import { colorToString, convertToHsb, convertToHsl, convertToRgb } from './convert'
 
 /**
- * Generates a CSS gradient for a color slider track.
+ * Layout of a slider track. The gradient runs from the track's minimum edge to its
+ * maximum edge, the same way `SliderRoot` lays out its value.
+ */
+export interface SliderGradientLayout {
+  /** @default 'horizontal' */
+  orientation?: 'horizontal' | 'vertical'
+  /** @default 'ltr' */
+  dir?: 'ltr' | 'rtl'
+  /** @default false */
+  inverted?: boolean
+}
+
+/**
+ * The CSS `linear-gradient` direction that runs from a slider's minimum to its maximum.
+ * Mirrors `SliderRoot`: a horizontal slider starts on the left unless exactly one of
+ * `dir: 'rtl'` and `inverted` is set; a vertical slider starts at the bottom unless inverted.
+ */
+export function getSliderGradientDirection({ orientation = 'horizontal', dir = 'ltr', inverted = false }: SliderGradientLayout = {}): string {
+  if (orientation === 'vertical')
+    return inverted ? 'to bottom' : 'to top'
+  return (dir === 'rtl') === inverted ? 'to right' : 'to left'
+}
+
+/**
+ * Generates a CSS gradient for a color slider track. Pass the slider's `layout`
+ * so the gradient follows a vertical, inverted or right-to-left track.
  */
 export function getSliderGradient(
   color: Color,
   channel: ColorChannel,
   colorSpace: ColorSpace = color.space as ColorSpace,
+  layout: SliderGradientLayout = {},
 ): string {
   const hsl = convertToHsl(color)
   const hsb = convertToHsb(color)
+  const direction = getSliderGradientDirection(layout)
 
   switch (channel) {
     case 'hue':
-      return getHueGradient()
+      return getHueGradient(direction)
     case 'saturation':
-      return getSaturationGradient(hsl, colorSpace)
+      return getSaturationGradient(hsl, colorSpace, direction)
     case 'lightness':
-      return getLightnessGradient(hsl)
+      return getLightnessGradient(hsl, direction)
     case 'brightness':
-      return getBrightnessGradient(hsb)
+      return getBrightnessGradient(hsb, direction)
     case 'red':
-      return getRedGradient(color)
+      return getRedGradient(color, direction)
     case 'green':
-      return getGreenGradient(color)
+      return getGreenGradient(color, direction)
     case 'blue':
-      return getBlueGradient(color)
+      return getBlueGradient(color, direction)
     case 'alpha':
-      return getAlphaGradient(color)
+      return getAlphaGradient(color, direction)
     default:
       return ''
   }
@@ -61,48 +88,48 @@ export function getAreaGradient(
   }
 }
 
-function getHueGradient(): string {
-  return 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)'
+function getHueGradient(direction: string): string {
+  return `linear-gradient(${direction}, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)`
 }
 
-function getSaturationGradient(hsl: { h: number, s: number, l: number, alpha: number }, colorSpace: ColorSpace): string {
+function getSaturationGradient(hsl: { h: number, s: number, l: number, alpha: number }, colorSpace: ColorSpace, direction: string): string {
   const start = colorToString({ space: 'hsl', h: hsl.h, s: 0, l: colorSpace === 'hsl' ? hsl.l : 50, alpha: 1 }, 'hsl')
   const end = colorToString({ space: 'hsl', h: hsl.h, s: 100, l: colorSpace === 'hsl' ? hsl.l : 50, alpha: 1 }, 'hsl')
-  return `linear-gradient(to right, ${start}, ${end})`
+  return `linear-gradient(${direction}, ${start}, ${end})`
 }
 
-function getLightnessGradient(hsl: { h: number, s: number, l: number, alpha: number }): string {
+function getLightnessGradient(hsl: { h: number, s: number, l: number, alpha: number }, direction: string): string {
   const start = colorToString({ space: 'hsl', h: hsl.h, s: hsl.s, l: 0, alpha: 1 }, 'hsl')
   const mid = colorToString({ space: 'hsl', h: hsl.h, s: hsl.s, l: 50, alpha: 1 }, 'hsl')
   const end = colorToString({ space: 'hsl', h: hsl.h, s: hsl.s, l: 100, alpha: 1 }, 'hsl')
-  return `linear-gradient(to right, ${start}, ${mid}, ${end})`
+  return `linear-gradient(${direction}, ${start}, ${mid}, ${end})`
 }
 
-function getBrightnessGradient(hsb: { h: number, s: number, b: number, alpha: number }): string {
+function getBrightnessGradient(hsb: { h: number, s: number, b: number, alpha: number }, direction: string): string {
   const start = colorToString({ space: 'hsb', h: hsb.h, s: hsb.s, b: 0, alpha: 1 }, 'rgb')
   const end = colorToString({ space: 'hsb', h: hsb.h, s: hsb.s, b: 100, alpha: 1 }, 'rgb')
-  return `linear-gradient(to right, ${start}, ${end})`
+  return `linear-gradient(${direction}, ${start}, ${end})`
 }
 
-function getRedGradient(color: Color): string {
+function getRedGradient(color: Color, direction: string): string {
   const { g, b } = convertToRgb(color)
   const start = colorToString({ space: 'rgb', r: 0, g, b, alpha: 1 }, 'rgb')
   const end = colorToString({ space: 'rgb', r: 255, g, b, alpha: 1 }, 'rgb')
-  return `linear-gradient(to right, ${start}, ${end})`
+  return `linear-gradient(${direction}, ${start}, ${end})`
 }
 
-function getGreenGradient(color: Color): string {
+function getGreenGradient(color: Color, direction: string): string {
   const { r, b } = convertToRgb(color)
   const start = colorToString({ space: 'rgb', r, g: 0, b, alpha: 1 }, 'rgb')
   const end = colorToString({ space: 'rgb', r, g: 255, b, alpha: 1 }, 'rgb')
-  return `linear-gradient(to right, ${start}, ${end})`
+  return `linear-gradient(${direction}, ${start}, ${end})`
 }
 
-function getBlueGradient(color: Color): string {
+function getBlueGradient(color: Color, direction: string): string {
   const { r, g } = convertToRgb(color)
   const start = colorToString({ space: 'rgb', r, g, b: 0, alpha: 1 }, 'rgb')
   const end = colorToString({ space: 'rgb', r, g, b: 255, alpha: 1 }, 'rgb')
-  return `linear-gradient(to right, ${start}, ${end})`
+  return `linear-gradient(${direction}, ${start}, ${end})`
 }
 
 // Checkerboard pattern used behind alpha gradients to visualize transparency
@@ -113,10 +140,10 @@ const CHECKERBOARD_LAYERS = [
   'linear-gradient(-45deg, transparent 75%, #ccc 75%)',
 ].join(', ')
 
-function getAlphaGradient(color: Color): string {
+function getAlphaGradient(color: Color, direction: string): string {
   const { r, g, b } = color.space === 'rgb' ? color : convertToRgb(color)
   const solidRgb = `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`
-  return `linear-gradient(to right, transparent, ${solidRgb}), ${CHECKERBOARD_LAYERS}`
+  return `linear-gradient(${direction}, transparent, ${solidRgb}), ${CHECKERBOARD_LAYERS}`
 }
 
 function getChannelGradientForArea(
@@ -327,14 +354,16 @@ export function getAreaBackgroundStyle(
 }
 
 /**
- * Gets the CSS background for a slider track.
+ * Gets the CSS background for a slider track. Pass the slider's `layout` so the
+ * gradient follows a vertical, inverted or right-to-left track.
  */
 export function getSliderBackgroundStyle(
   color: Color,
   channel: ColorChannel,
   colorSpace: ColorSpace = color.space as ColorSpace,
+  layout: SliderGradientLayout = {},
 ): Record<string, string> {
-  const gradient = getSliderGradient(color, channel, colorSpace)
+  const gradient = getSliderGradient(color, channel, colorSpace, layout)
 
   if (channel === 'alpha') {
     return {

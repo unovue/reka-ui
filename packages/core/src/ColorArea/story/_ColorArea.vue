@@ -14,6 +14,7 @@ const props = defineProps<{
   xChannel?: ColorChannel
   yChannel?: ColorChannel
   disabled?: boolean
+  dir?: 'ltr' | 'rtl'
 }>()
 
 // v-model emits a Color object; the hex is derived for display.
@@ -34,10 +35,11 @@ const hex = computed(() => colorToHex(normalizeColor(color.value)))
       :x-channel="xChannel"
       :y-channel="yChannel"
       :disabled="disabled"
+      :dir="dir"
       class="relative"
     >
       <ColorAreaArea
-        class="relative w-[200px] h-[200px] rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="relative w-[200px] h-[200px] rounded-lg overflow-hidden focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500"
         :style="style"
       >
         <ColorAreaThumb class="block w-4 h-4 rounded-full bg-white border-2 border-gray-400 shadow cursor-pointer" />

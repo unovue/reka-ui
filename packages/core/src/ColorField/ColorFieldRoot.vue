@@ -48,6 +48,8 @@ export type ColorFieldRootEmits = {
 export interface ColorFieldRootContext {
   color: ComputedRef<Color>
   inputValue: Ref<string>
+  /** `true` once a commit rejected text that does not parse (the text reverts), until an edit parses or a change commits. */
+  invalid: ComputedRef<boolean>
   channel: Ref<ColorChannel | undefined>
   colorSpace: Ref<ColorSpace>
   disabled: Ref<boolean>

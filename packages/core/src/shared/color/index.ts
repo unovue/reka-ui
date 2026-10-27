@@ -15,7 +15,8 @@ export {
 } from './convert'
 
 // Gradients
-export { getAreaBackgroundStyle, getAreaGradient, getSliderBackgroundStyle, getSliderGradient } from './gradient'
+export { getAreaBackgroundStyle, getAreaGradient, getSliderBackgroundStyle, getSliderGradient, getSliderGradientDirection } from './gradient'
+export type { SliderGradientLayout } from './gradient'
 
 // Equality
 export { isEqualColor } from './isEqualColor'

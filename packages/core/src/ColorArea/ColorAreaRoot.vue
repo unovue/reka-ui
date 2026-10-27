@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { ComputedRef, CSSProperties, Ref } from 'vue'
-import type { ColorAreaChangeReason } from './useColorArea'
+import type { ColorAreaAxis, ColorAreaChangeReason } from './useColorArea'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
@@ -55,6 +55,13 @@ export interface ColorAreaRootContext {
   xRange: ComputedRef<{ min: number, max: number, step: number }>
   yRange: ComputedRef<{ min: number, max: number, step: number }>
   thumbRef: Ref<HTMLElement | undefined>
+  /** The hidden range input of each axis, rendered by `ColorAreaThumb`. */
+  xInputRef: Ref<HTMLInputElement | undefined>
+  yInputRef: Ref<HTMLInputElement | undefined>
+  /** The axis whose input last had focus; it holds the area's single tab stop. */
+  focusedAxis: Ref<ColorAreaAxis>
+  /** Focuses the input of `axis` (default: the last focused axis), or the thumb when no input is rendered. */
+  focusInput: (axis?: ColorAreaAxis) => void
   updateValues: (x: number, y: number, reason?: ColorAreaChangeReason | BaseChangeReason, event?: Event) => boolean
   commitValues: () => void
 }

@@ -19,11 +19,11 @@ describe('color shell characterization', () => {
       'yName': 'saturation',
       'onUpdate:modelValue': update,
     }, () => h(ColorAreaArea, { onKeydown: listener }, () => h(ColorAreaThumb)))]))
-    await wrapper.find('[role=application]').trigger('keydown', { key: 'ArrowRight' })
+    await wrapper.find('input[type=range]').trigger('keydown', { key: 'ArrowRight' })
     expect(listener).toHaveBeenCalledOnce()
     expect(update.mock.calls[0][0]).toMatchObject({ space: 'hsl', h: 1 })
-    expect(wrapper.findAll('input').map(i => i.attributes('name'))).toEqual(['hue', 'saturation'])
-    expect(wrapper.find('[role=slider]').attributes('aria-label')).toBe('Hue, Saturation')
+    expect(wrapper.findAll('input:not([type=range])').map(i => i.attributes('name'))).toEqual(['hue', 'saturation'])
+    expect(wrapper.findAll('input[type=range]').map(i => i.attributes('aria-label'))).toEqual(['Hue', 'Saturation'])
     wrapper.unmount()
   })
 
@@ -93,7 +93,7 @@ describe('color shell cancellable updates', () => {
     else if (family === 'field')
       await wrapper.find('input').trigger('keydown', { key: 'ArrowUp' })
     else
-      await wrapper.find(family === 'area' ? '[role=application]' : '[role=slider]').trigger('keydown', { key: 'ArrowRight' })
+      await wrapper.find(family === 'area' ? 'input[type=range]' : '[role=slider]').trigger('keydown', { key: 'ArrowRight' })
     expect(before).toHaveBeenCalledOnce()
     expect(update).not.toHaveBeenCalled()
     expect(colorUpdate).not.toHaveBeenCalled()

@@ -23,7 +23,7 @@ export type UseColorFieldProps = { [K in keyof Inputs]: MaybeRefOrGetter<Inputs[
   onUpdate?: (value: Color, details: ChangeEventDetails<ColorFieldChangeReason>) => void
 }
 
-export type ColorFieldRootState = { disabled: boolean, readonly: boolean }
+export type ColorFieldRootState = { disabled: boolean, readonly: boolean, invalid: boolean }
 export interface UseColorFieldReturn {
   /** The model as passed in (`string | Color`); every emitted value is a `Color`. */
   readonly modelValue: ComputedRef<string | Color>
@@ -36,6 +36,8 @@ export interface UseColorFieldReturn {
   readonly root: PartSurface<ColorFieldRootState>
   readonly context: { readonly [K in keyof ColorFieldRootContext]: ColorFieldRootContext[K] extends Ref ? Readonly<ColorFieldRootContext[K]> : ColorFieldRootContext[K] }
   readonly inputValue: ComputedRef<string>
+  /** `true` once a commit rejected text that does not parse as a color (or, with a `channel`, a number); the text reverts. Cleared by the next edit that parses or the next committed change. */
+  readonly invalid: ComputedRef<boolean>
   createInputSurface: () => PartSurface<ColorFieldInputState>
   updateValue: (value: string) => void
   commit: (event?: Event) => void
@@ -113,11 +115,18 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
     },
   })
 
+  // Validated at commit time, like React Aria's native validation: a commit that rejects
+  // the text marks the field invalid, so partial input while typing never flickers. It
+  // stays invalid until an edit parses or a later change commits.
+  const isInvalid = ref(false)
+  const invalid = computed(() => isInvalid.value)
+
   /** An interactive change: the model update, `change`, and `changeEnd` once the model holds it. */
   function applyChange(newColor: Color, event?: Event) {
     const previous = parsed.value
     if (!setColor(newColor, reasonFromEvent(event), event))
       return false
+    isInvalid.value = false
     props.onChange?.(newColor)
     props.emit?.('change', newColor)
     changeEnd.record(previous, newColor)
@@ -142,6 +151,11 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
       inputValue.value = formatted
   }, { immediate: true })
 
+  /** Whether `text` parses: a number for a channel field, a color string otherwise. */
+  function isParsable(text: string) {
+    return channel.value ? !Number.isNaN(Number.parseFloat(text)) : isValidColor(text.trim())
+  }
+
   function resetInput() {
     inputValue.value = formatValue(color.value)
   }
@@ -158,6 +172,9 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
   function updateValue(value: string) {
     isEditing.value = true
     inputValue.value = value
+    // Only an edit that parses clears a rejected commit; partial input never sets it.
+    if (isInvalid.value && isParsable(value))
+      isInvalid.value = false
   }
 
   function commit(event?: Event) {
@@ -167,18 +184,18 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
     if (inputValue.value === formatValue(color.value))
       return
 
-    if (channel.value) {
-      const numValue = parseFloat(inputValue.value)
-      if (!Number.isNaN(numValue)) {
+    // Text that does not parse is dropped and marks the field invalid; the input reverts
+    // to the model.
+    isInvalid.value = !isParsable(inputValue.value)
+    if (!isInvalid.value) {
+      if (channel.value) {
         const range = getChannelRange(channel.value)
-        const clamped = Math.max(range.min, Math.min(range.max, numValue))
+        const clamped = Math.max(range.min, Math.min(range.max, Number.parseFloat(inputValue.value)))
         applyChange(setChannelValue(color.value, channel.value, clamped), event)
       }
-    }
-    else {
-      const trimmed = inputValue.value.trim()
-      if (isValidColor(trimmed))
-        applyChange(parseColor(trimmed), event)
+      else {
+        applyChange(parseColor(inputValue.value.trim()), event)
+      }
     }
     resetInput()
   }
@@ -242,6 +259,7 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
   const context: ColorFieldRootContext = {
     color,
     inputValue,
+    invalid,
     channel,
     colorSpace,
     disabled,
@@ -259,7 +277,7 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
     handleWheel,
   }
 
-  const root = createPartSurface<ColorFieldRootState>(() => ({ role: 'group' }), () => ({ disabled: disabled.value, readonly: readonly.value }))
+  const root = createPartSurface<ColorFieldRootState>(() => ({ role: 'group' }), () => ({ disabled: disabled.value, readonly: readonly.value, invalid: invalid.value }))
   return {
     modelValue,
     color,
@@ -271,6 +289,7 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
     context,
     createInputSurface: () => createColorFieldInputSurface(context),
     inputValue: computed(() => inputValue.value),
+    invalid,
     updateValue,
     commit,
     increment,
@@ -283,7 +302,7 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
   }
 }
 
-export type ColorFieldInputState = { disabled: boolean, readonly: boolean }
+export type ColorFieldInputState = { disabled: boolean, readonly: boolean, invalid: boolean }
 
 const ALLOWED_INPUT_RE = /[\d.-]/
 
@@ -388,19 +407,21 @@ export function createColorFieldInputSurface(rootContext: ColorFieldRootContext)
     }
   }
   return createPartSurface<ColorFieldInputState>(() => ({
-    type: 'text',
-    inputmode: inputMode.value,
-    value: rootContext.inputValue.value,
-    placeholder: rootContext.placeholder.value,
-    disabled: rootContext.disabled.value,
-    readonly: rootContext.readonly.value,
-    onInput: handleInput,
-    onBlur: handleBlur,
-    onFocus: handleFocus,
-    onKeydown: handleKeydown,
-    onWheel: handleWheel,
-    onBeforeinput: handleBeforeInput,
-    onCompositionstart: handleCompositionStart,
-    onCompositionend: handleCompositionEnd,
-  }), () => ({ disabled: rootContext.disabled.value, readonly: rootContext.readonly.value }))
+    'type': 'text',
+    'inputmode': inputMode.value,
+    'value': rootContext.inputValue.value,
+    'placeholder': rootContext.placeholder.value,
+    'disabled': rootContext.disabled.value,
+    'readonly': rootContext.readonly.value,
+    // Set when a commit rejects the text; cleared by an edit that parses or a committed change.
+    'aria-invalid': rootContext.invalid.value ? 'true' : undefined,
+    'onInput': handleInput,
+    'onBlur': handleBlur,
+    'onFocus': handleFocus,
+    'onKeydown': handleKeydown,
+    'onWheel': handleWheel,
+    'onBeforeinput': handleBeforeInput,
+    'onCompositionstart': handleCompositionStart,
+    'onCompositionend': handleCompositionEnd,
+  }), () => ({ disabled: rootContext.disabled.value, readonly: rootContext.readonly.value, invalid: rootContext.invalid.value }))
 }
