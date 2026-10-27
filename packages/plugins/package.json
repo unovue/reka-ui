@@ -17,7 +17,8 @@
     "prebuild": "pnpm generate",
     "build": "unbuild",
     "prestub": "pnpm generate",
-    "stub": "unbuild --stub"
+    "stub": "unbuild --stub",
+    "test": "vitest run"
   },
   "dependencies": {
     "@nuxt/kit": "^4.1.2",
@@ -25,5 +26,8 @@
     "reka-ui": "link:../core",
     "unbuild": "^3.0.0",
     "unplugin-vue-components": "^32.0.0"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.3"
   }
 }

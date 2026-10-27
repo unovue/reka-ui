@@ -434,6 +434,217 @@
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "internal": [
+        "./dist/internal.d.ts"
+      ],
+      "constant": [
+        "./dist/constant.d.ts"
+      ],
+      "date": [
+        "./dist/date.d.ts"
+      ],
+      "namespaced": [
+        "./dist/namespaced/index.d.mts"
+      ],
+      "nuxt": [
+        "./dist/nuxt/index.d.mts"
+      ],
+      "resolver": [
+        "./dist/resolver/index.d.mts"
+      ],
+      "accordion": [
+        "./dist/accordion.d.ts"
+      ],
+      "alert-dialog": [
+        "./dist/alert-dialog.d.ts"
+      ],
+      "aspect-ratio": [
+        "./dist/aspect-ratio.d.ts"
+      ],
+      "autocomplete": [
+        "./dist/autocomplete.d.ts"
+      ],
+      "avatar": [
+        "./dist/avatar.d.ts"
+      ],
+      "calendar": [
+        "./dist/calendar.d.ts"
+      ],
+      "checkbox": [
+        "./dist/checkbox.d.ts"
+      ],
+      "collapsible": [
+        "./dist/collapsible.d.ts"
+      ],
+      "color-area": [
+        "./dist/color-area.d.ts"
+      ],
+      "color-field": [
+        "./dist/color-field.d.ts"
+      ],
+      "color-slider": [
+        "./dist/color-slider.d.ts"
+      ],
+      "color-swatch": [
+        "./dist/color-swatch.d.ts"
+      ],
+      "color-swatch-picker": [
+        "./dist/color-swatch-picker.d.ts"
+      ],
+      "combobox": [
+        "./dist/combobox.d.ts"
+      ],
+      "config-provider": [
+        "./dist/config-provider.d.ts"
+      ],
+      "context-menu": [
+        "./dist/context-menu.d.ts"
+      ],
+      "date-field": [
+        "./dist/date-field.d.ts"
+      ],
+      "date-picker": [
+        "./dist/date-picker.d.ts"
+      ],
+      "date-range-field": [
+        "./dist/date-range-field.d.ts"
+      ],
+      "date-range-picker": [
+        "./dist/date-range-picker.d.ts"
+      ],
+      "dialog": [
+        "./dist/dialog.d.ts"
+      ],
+      "drawer": [
+        "./dist/drawer.d.ts"
+      ],
+      "dropdown-menu": [
+        "./dist/dropdown-menu.d.ts"
+      ],
+      "editable": [
+        "./dist/editable.d.ts"
+      ],
+      "field": [
+        "./dist/field.d.ts"
+      ],
+      "focus-scope": [
+        "./dist/focus-scope.d.ts"
+      ],
+      "form": [
+        "./dist/form.d.ts"
+      ],
+      "hover-card": [
+        "./dist/hover-card.d.ts"
+      ],
+      "label": [
+        "./dist/label.d.ts"
+      ],
+      "listbox": [
+        "./dist/listbox.d.ts"
+      ],
+      "menubar": [
+        "./dist/menubar.d.ts"
+      ],
+      "navigation-menu": [
+        "./dist/navigation-menu.d.ts"
+      ],
+      "number-field": [
+        "./dist/number-field.d.ts"
+      ],
+      "pagination": [
+        "./dist/pagination.d.ts"
+      ],
+      "pin-input": [
+        "./dist/pin-input.d.ts"
+      ],
+      "popover": [
+        "./dist/popover.d.ts"
+      ],
+      "presence": [
+        "./dist/presence.d.ts"
+      ],
+      "primitive": [
+        "./dist/primitive.d.ts"
+      ],
+      "progress": [
+        "./dist/progress.d.ts"
+      ],
+      "radio-group": [
+        "./dist/radio-group.d.ts"
+      ],
+      "range-calendar": [
+        "./dist/range-calendar.d.ts"
+      ],
+      "rating": [
+        "./dist/rating.d.ts"
+      ],
+      "roving-focus": [
+        "./dist/roving-focus.d.ts"
+      ],
+      "scroll-area": [
+        "./dist/scroll-area.d.ts"
+      ],
+      "select": [
+        "./dist/select.d.ts"
+      ],
+      "separator": [
+        "./dist/separator.d.ts"
+      ],
+      "slider": [
+        "./dist/slider.d.ts"
+      ],
+      "splitter": [
+        "./dist/splitter.d.ts"
+      ],
+      "stepper": [
+        "./dist/stepper.d.ts"
+      ],
+      "switch": [
+        "./dist/switch.d.ts"
+      ],
+      "tabs": [
+        "./dist/tabs.d.ts"
+      ],
+      "tag-group": [
+        "./dist/tag-group.d.ts"
+      ],
+      "tags-input": [
+        "./dist/tags-input.d.ts"
+      ],
+      "time-field": [
+        "./dist/time-field.d.ts"
+      ],
+      "time-range-field": [
+        "./dist/time-range-field.d.ts"
+      ],
+      "toast": [
+        "./dist/toast.d.ts"
+      ],
+      "toggle": [
+        "./dist/toggle.d.ts"
+      ],
+      "toggle-group": [
+        "./dist/toggle-group.d.ts"
+      ],
+      "toolbar": [
+        "./dist/toolbar.d.ts"
+      ],
+      "tooltip": [
+        "./dist/tooltip.d.ts"
+      ],
+      "tree": [
+        "./dist/tree.d.ts"
+      ],
+      "viewport": [
+        "./dist/viewport.d.ts"
+      ],
+      "visually-hidden": [
+        "./dist/visually-hidden.d.ts"
+      ]
+    }
+  },
   "files": [
     "src",
     "dist",
@@ -496,6 +707,7 @@
     "playwright": "^1.63.0",
     "size-limit": "^12.0.1",
     "tsdown": "^0.12.9",
+    "typescript": "5.8.3",
     "vite": "^8.3.1",
     "vitest": "^5.0.3",
     "vitest-axe": "0.1.0",
