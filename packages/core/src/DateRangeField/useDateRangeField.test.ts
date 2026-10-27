@@ -7,7 +7,7 @@ import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { createSSRApp, defineComponent, effectScope, h, nextTick, ref } from 'vue'
+import { createSSRApp, defineComponent, effectScope, h, nextTick, ref, shallowRef } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { useDateRangeField } from './useDateRangeField'
 
@@ -134,7 +134,7 @@ describe('useDateRangeField', () => {
 
   it('is controllable; null is a controlled empty range', () => {
     withScope(() => {
-      const model = ref<DateRange | null>(range)
+      const model = shallowRef<DateRange | null>(range)
       const emit = vi.fn()
       const api = useDateRangeField({ modelValue: () => model.value, emit, locale: 'en-US' })
       expect(api.isControlled.value).toBe(true)

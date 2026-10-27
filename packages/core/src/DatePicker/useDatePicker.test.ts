@@ -9,7 +9,7 @@ import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { createSSRApp, defineComponent, effectScope, h, nextTick, ref } from 'vue'
+import { createSSRApp, defineComponent, effectScope, h, nextTick, ref, shallowRef } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { useCalendar } from '@/Calendar/useCalendar'
 import { useDateField } from '@/DateField'
@@ -154,7 +154,7 @@ describe('useDatePicker', () => {
 
   it('is controllable; null is a controlled empty picker', () => {
     withScope(() => {
-      const model = ref<DateValue | null>(jan20)
+      const model = shallowRef<DateValue | null>(jan20)
       const emit = vi.fn()
       const picker = useDatePicker({ modelValue: () => model.value, emit, locale: 'en-US' })
       expect(picker.isControlled.value).toBe(true)
@@ -252,7 +252,7 @@ describe('useDatePicker review fixes', () => {
   }
 
   it('a picker-root guard lets an empty field be typed to a valid date', async () => {
-    const value = ref<DateValue | undefined>()
+    const value = shallowRef<DateValue | undefined>()
     const user = userEvent.setup()
     const { getByTestId } = render(DatePicker, {
       props: { datePickerProps: { 'granularity': 'day', 'locale': 'en-US', 'onBeforeUpdate:modelValue': noPastDates, 'onUpdate:modelValue': (v: DateValue | undefined) => (value.value = v) } as any },

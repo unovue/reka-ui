@@ -7,7 +7,7 @@ import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { createSSRApp, defineComponent, effectScope, h, nextTick, ref } from 'vue'
+import { createSSRApp, defineComponent, effectScope, h, nextTick, ref, shallowRef } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { useDateField } from './useDateField'
 
@@ -125,7 +125,7 @@ describe('useDateField', () => {
 
   it('emits but does not write when controlled; null is a controlled empty field', async () => {
     withScope(() => {
-      const model = ref<DateValue | null>(jan20)
+      const model = shallowRef<DateValue | null>(jan20)
       const emit = vi.fn()
       const api = useDateField({ modelValue: () => model.value, emit, locale: 'en-US' })
       expect(api.isControlled.value).toBe(true)
@@ -232,7 +232,7 @@ describe('useDateField cancel keeps the typed segments', () => {
   }
 
   it('an empty field reaches a valid date through cancelled intermediate years', async () => {
-    const value = ref<DateValue | undefined>()
+    const value = shallowRef<DateValue | undefined>()
     const { getByTestId, user } = setup({
       modelValue: () => value.value ?? null,
       locale: 'en-US',
@@ -252,7 +252,7 @@ describe('useDateField cancel keeps the typed segments', () => {
   })
 
   it('typing 2025 over 2024 ends at 2025', async () => {
-    const value = ref<DateValue>(new CalendarDate(2024, 1, 15))
+    const value = shallowRef<DateValue>(new CalendarDate(2024, 1, 15))
     const accepted: string[] = []
     const { getByTestId, user } = setup({
       modelValue: () => value.value,
@@ -272,7 +272,7 @@ describe('useDateField cancel keeps the typed segments', () => {
   })
 
   it('a parent that transforms the value still drives the segments', async () => {
-    const value = ref<DateValue>(new CalendarDate(2024, 1, 15))
+    const value = shallowRef<DateValue>(new CalendarDate(2024, 1, 15))
     const { getByTestId, user } = setup({
       modelValue: () => value.value,
       locale: 'en-US',

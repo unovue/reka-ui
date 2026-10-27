@@ -6,7 +6,7 @@ import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { createSSRApp, defineComponent, effectScope, h, nextTick, ref } from 'vue'
+import { createSSRApp, defineComponent, effectScope, h, nextTick, ref, shallowRef } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { useTimeField } from './useTimeField'
 
@@ -120,7 +120,7 @@ describe('useTimeField', () => {
 
   it('is controllable; null is a controlled empty field', () => {
     withScope(() => {
-      const model = ref<TimeValue | null>(t1030)
+      const model = shallowRef<TimeValue | null>(t1030)
       const emit = vi.fn()
       const api = useTimeField({ modelValue: () => model.value, emit, locale: 'en-US' })
       expect(api.isControlled.value).toBe(true)

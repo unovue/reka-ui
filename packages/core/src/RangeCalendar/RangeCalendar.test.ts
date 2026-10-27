@@ -6,7 +6,7 @@ import { fireEvent, render, waitFor } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { effectScope, nextTick, ref } from 'vue'
+import { effectScope, nextTick, shallowRef } from 'vue'
 import { useTestKbd } from '@/shared'
 import { RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot } from '..'
 import RangeCalendar from './story/_RangeCalendar.vue'
@@ -1664,8 +1664,8 @@ describe('update:startValue details', () => {
 
   it('a press that changes nothing leaves no reason behind for a later programmatic change', async () => {
     const onStart = vi.fn()
-    const model = ref<{ start: DateValue | undefined, end: DateValue | undefined }>({ start: new CalendarDate(1980, 1, 20), end: undefined })
-    const calendar = effectScope().run(() => useRangeCalendar({ modelValue: () => model.value, locale: 'en-US', onUpdateStartValue: onStart }))!
+    const model = shallowRef<{ start: DateValue | undefined, end: DateValue | undefined }>({ start: new CalendarDate(1980, 1, 20), end: undefined })
+    const calendar = effectScope().run(() => useRangeCalendar({ modelValue: () => model.value, locale: 'en-US', weekStartsOn: 0, onUpdateStartValue: onStart }))!
     // A start without an end and no hovered day: the press only records itself.
     calendar.select(new CalendarDate(1980, 1, 22), 'cell-press')
     await nextTick()
