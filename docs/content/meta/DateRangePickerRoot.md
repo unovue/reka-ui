@@ -163,7 +163,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled value of the field. Can be bound as <code>v-model</code>.</p>\n',
+    'description': '<p>The controlled value of the field. Can be bound as <code>v-model</code>. <code>null</code> is a controlled empty range.</p>\n',
     'type': 'DateRange | null',
     'required': false
   },
@@ -226,6 +226,12 @@
     'required': false
   },
   {
+    'name': 'stepSnapping',
+    'description': '<p>Whether to enforce snapping the time value to the nearest step increment after input. Defaults to <code>false</code>.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'view',
     'description': '<p>The controlled view: the unit the calendar currently shows. Can be bound as <code>v-model:view</code>.</p>\n',
     'type': '\'day\' | \'month\' | \'year\'',
@@ -255,9 +261,24 @@
 
 <EmitsTable :data="[
   {
+    'name': 'beforeUpdate:modelValue',
+    'description': '<p>Called before the range changes, from the field or the calendar; <code>details.cancel()</code> keeps the current range.</p>\n',
+    'type': '[date: DateRange, details: ChangeEventDetails&lt;DateRangePickerChangeReason, Event&gt;]'
+  },
+  {
     'name': 'beforeUpdate:open',
     'description': '<p>Called before the open state changes; <code>details.cancel()</code> keeps the current state.</p>\n',
     'type': '[value: boolean, details: ChangeEventDetails&lt;DateRangePickerOpenChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'beforeUpdate:placeholder',
+    'description': '<p>Called before the placeholder changes; <code>details.cancel()</code> keeps the current placeholder.</p>\n',
+    'type': '[date: DateValue, details: ChangeEventDetails&lt;DateRangePickerChangeReason, Event&gt;]'
+  },
+  {
+    'name': 'beforeUpdate:startValue',
+    'description': '<p>Called before <code>update:startValue</code>; <code>details.cancel()</code> suppresses that event (the calendar\'s anchor still moves).</p>\n',
+    'type': '[date: DateValue | undefined, details: ChangeEventDetails&lt;DateRangePickerChangeReason, Event&gt;]'
   },
   {
     'name': 'beforeUpdate:view',
@@ -267,7 +288,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called whenever the model value changes</p>\n',
-    'type': '[date: DateRange]'
+    'type': '[date: DateRange, details: ChangeEventDetails&lt;DateRangePickerChangeReason, Event&gt;]'
   },
   {
     'name': 'update:open',
@@ -277,12 +298,12 @@
   {
     'name': 'update:placeholder',
     'description': '<p>Event handler called whenever the placeholder value changes</p>\n',
-    'type': '[date: DateValue]'
+    'type': '[date: DateValue, details: ChangeEventDetails&lt;DateRangePickerChangeReason, Event&gt;]'
   },
   {
     'name': 'update:startValue',
     'description': '<p>Event handler called whenever the start value changes</p>\n',
-    'type': '[date: DateValue | undefined]'
+    'type': '[date: DateValue | undefined, details: ChangeEventDetails&lt;DateRangePickerChangeReason, Event&gt;]'
   },
   {
     'name': 'update:view',
@@ -294,12 +315,12 @@
 <SlotsTable :data="[
   {
     'name': 'modelValue',
-    'description': '',
+    'description': '<p>The current range</p>\n',
     'type': 'DateRange'
   },
   {
     'name': 'open',
-    'description': '',
+    'description': '<p>Whether the popover is open</p>\n',
     'type': 'boolean'
   }
 ]" />
@@ -336,7 +357,7 @@
 | `maxView` | The coarsest view DateRangePickerViewTrigger can switch to. | `"day" \| "month" \| "year"` | No | `"year"` |
 | `minValue` | The minimum date that can be selected | `DateValue` | No | - |
 | `modal` | The modality of the popover. When true, page scroll is locked, the rest of the page (except the trigger) is covered by an internal backdrop that closes the popover on press, and only the popover content is visible to screen readers. | `boolean` | No | `false` |
-| `modelValue` | The controlled value of the field. Can be bound as v-model. | `DateRange \| null` | No | - |
+| `modelValue` | The controlled value of the field. Can be bound as v-model. null is a controlled empty range. | `DateRange \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `numberOfMonths` | The number of months to display at once in the day view | `number` | No | `1` |
 | `open` | The controlled open state of the popover. | `boolean` | No | - |
@@ -346,6 +367,7 @@
 | `readonly` | Whether or not the date field is readonly | `boolean` | No | `false` |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `step` | The stepping interval for the time fields. Defaults to 1. | `DateStep` | No | - |
+| `stepSnapping` | Whether to enforce snapping the time value to the nearest step increment after input. Defaults to false. | `boolean` | No | - |
 | `view` | The controlled view: the unit the calendar currently shows. Can be bound as v-model:view. | `"day" \| "month" \| "year"` | No | - |
 | `weekdayFormat` | The format to use for the weekday strings provided via the weekdays slot prop | `"narrow" \| "short" \| "long"` | No | `"narrow"` |
 | `weekStartsOn` | The day of the week to start the calendar on | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` | No | - |
@@ -355,19 +377,22 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `beforeUpdate:modelValue` | Called before the range changes, from the field or the calendar; details.cancel() keeps the current range. | `[date: DateRange, details: ChangeEventDetails<DateRangePickerChangeReason, Event>]` |
 | `beforeUpdate:open` | Called before the open state changes; details.cancel() keeps the current state. | `[value: boolean, details: ChangeEventDetails<DateRangePickerOpenChangeReason, Event>]` |
+| `beforeUpdate:placeholder` | Called before the placeholder changes; details.cancel() keeps the current placeholder. | `[date: DateValue, details: ChangeEventDetails<DateRangePickerChangeReason, Event>]` |
+| `beforeUpdate:startValue` | Called before update:startValue; details.cancel() suppresses that event (the calendar's anchor still moves). | `[date: DateValue \| undefined, details: ChangeEventDetails<DateRangePickerChangeReason, Event>]` |
 | `beforeUpdate:view` | Called before the calendar view changes; details.cancel() keeps the current view. | `[view: CalendarUnit, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
-| `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange]` |
+| `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange, details: ChangeEventDetails<DateRangePickerChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the popover changes. | `[value: boolean, details: ChangeEventDetails<DateRangePickerOpenChangeReason, Event>]` |
-| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
-| `update:startValue` | Event handler called whenever the start value changes | `[date: DateValue \| undefined]` |
+| `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue, details: ChangeEventDetails<DateRangePickerChangeReason, Event>]` |
+| `update:startValue` | Event handler called whenever the start value changes | `[date: DateValue \| undefined, details: ChangeEventDetails<DateRangePickerChangeReason, Event>]` |
 | `update:view` | Event handler called whenever the calendar view changes | `[view: CalendarUnit, details: ChangeEventDetails<RangeCalendarChangeReason, Event>]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` |  | `DateRange` |
-| `open` |  | `boolean` |
+| `modelValue` | The current range | `DateRange` |
+| `open` | Whether the popover is open | `boolean` |
 
 </llm-only>
