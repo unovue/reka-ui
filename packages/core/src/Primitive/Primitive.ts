@@ -52,19 +52,19 @@ export const Primitive = defineComponent({
       default: 'div',
     },
   },
-  setup(props, { attrs, slots }) {
-    // Compat shim over useRender. useRender unconditionally populates
-    // instance.exposed (prop getters + a live `$el` getter over vnode.el), so the
-    // value a parent `:ref` receives becomes the expose proxy rather than the raw
-    // public instance. This is behaviour-compatible for all `$`-keys and props
-    // (verified against @vue/runtime-core; see #2722): `$el` and props still
-    // resolve, and in prod it removes a pre-existing expose-snapshot staleness.
-    const { tag, renderProps, selfClosing, state, elementRef } = useRender({
+  setup(props, { attrs, slots, expose }) {
+    // Compat shim over useRender. Primitive satisfies the element-first contract
+    // (#2808): a parent `:ref` receives `{ element, $el }`, both the same
+    // reactive ref, so wrapping parts resolve the rendered element — including
+    // across `asChild` child swaps (the `Slot` tracks its child) — with no
+    // `instance.exposed` mutation and no `onUpdated` resync.
+    const { tag, renderProps, selfClosing, state, elementRef, expose: elementExpose } = useRender({
       defaultTagName: 'div',
       as: () => props.as,
       asChild: () => props.asChild,
       props: attrs,
     })
+    expose(elementExpose)
 
     return () => {
       // Honor the opt-in `#render` contract (parity with parts built on
@@ -78,11 +78,9 @@ export const Primitive = defineComponent({
         })
       }
 
-      // Default path binds no `:ref` on the node — the shim must not mutate its
-      // own instance.exposed beyond what useRender already did.
       return h(
         tag.value,
-        renderProps.value,
+        { ...renderProps.value, ref: elementRef },
         selfClosing.value ? undefined : { default: slots.default },
       )
     }

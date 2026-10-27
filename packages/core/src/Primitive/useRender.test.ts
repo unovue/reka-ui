@@ -2,6 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, markRaw, nextTick, onMounted, ref } from 'vue'
 import * as Reka from '../index'
+import { useForwardElement } from '../shared/useForwardElement'
 import { useForwardExpose } from '../shared/useForwardExpose'
 import { Primitive } from './Primitive'
 import { Slot } from './Slot'
@@ -145,9 +146,50 @@ describe('useRender — public export', () => {
 })
 
 describe('useRender — Primitive shim expose contract', () => {
-  // Locks the behaviour verified in #2722: the shim populates instance.exposed,
-  // so a parent ref receives an expose proxy — but $el / currentElement still work.
-  it('a parent forwardRef onto <Primitive> gets a working $el via the expose proxy', async () => {
+  // #2808: Primitive exposes `{ element, $el }` (one reactive ref) via plain
+  // `expose()` — no `instance.exposed` mutation.
+  it('a parent ref onto <Primitive> receives `element` and a shadowing `$el`', async () => {
+    let refValue: any
+    const Parent = defineComponent({
+      components: { Primitive },
+      setup() {
+        const { forwardRef, currentElement } = useForwardElement()
+        const bind = (r: any) => {
+          refValue = r
+          forwardRef(r)
+        }
+        return { bind, currentElement }
+      },
+      template: `<Primitive :ref="bind" as="section"><span /></Primitive>`,
+    })
+    const wrapper = mount(Parent)
+    await flushPromises()
+    const section = wrapper.find('section').element
+    expect(refValue.element).toBe(section)
+    expect(refValue.$el).toBe(section)
+    expect(wrapper.vm.currentElement).toBe(section)
+    // Props are not part of the ref surface any more.
+    expect(refValue.as).toBeUndefined()
+  })
+
+  it('the element follows `as` changes reactively', async () => {
+    const as = ref('section')
+    let refValue: any
+    mount(defineComponent({
+      components: { Primitive },
+      setup: () => ({ as, bind: (r: any) => (refValue = r) }),
+      template: `<Primitive :ref="bind" :as="as" />`,
+    }))
+    await flushPromises()
+    expect(refValue.element.tagName).toBe('SECTION')
+    as.value = 'article'
+    await flushPromises()
+    expect(refValue.element.tagName).toBe('ARTICLE')
+  })
+
+  // The deprecated `useForwardExpose` keeps working on top of the new contract.
+  it('legacy: a useForwardExpose forwardRef onto <Primitive> still gets a working $el', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
     let refValue: any
     let currentEl: any
     const Parent = defineComponent({

@@ -56,8 +56,9 @@ export function useCollection<ItemData = {}>(options: { key?: string, isProvider
   const CollectionSlot = defineComponent({
     name: 'CollectionSlot',
     inheritAttrs: false,
-    setup(_, { slots, attrs }) {
-      const { primitiveElement, currentElement } = usePrimitiveElement()
+    setup(_, { slots, attrs, expose }) {
+      const { primitiveElement, currentElement, expose: elementExpose } = usePrimitiveElement()
+      expose(elementExpose)
       watch(currentElement, () => {
         context.collectionRef.value = currentElement.value
       })
@@ -74,8 +75,9 @@ export function useCollection<ItemData = {}>(options: { key?: string, isProvider
         validator: () => true,
       },
     },
-    setup(props, { slots, attrs }) {
-      const { primitiveElement, currentElement } = usePrimitiveElement()
+    setup(props, { slots, attrs, expose }) {
+      const { primitiveElement, currentElement, expose: elementExpose } = usePrimitiveElement()
+      expose(elementExpose)
 
       watchEffect((cleanupFn) => {
         if (currentElement.value) {

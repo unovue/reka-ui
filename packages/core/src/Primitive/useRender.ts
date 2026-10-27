@@ -1,10 +1,12 @@
-import type { Component, ComponentPublicInstance, ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { Component, ComponentPublicInstance, ComputedRef, MaybeRefOrGetter } from 'vue'
 import type { PartState, StateAttributesMapping } from '../shared/stateToDataAttrs'
+import type { ElementExpose } from '../shared/useForwardElement'
+import type { MergeableRef } from '../shared/useMergedRefs'
 import type { AsTag } from './Primitive'
 import { computed, getCurrentInstance, mergeProps, toValue } from 'vue'
 // Direct relative import (not the `@/shared` barrel) to avoid a Primitive ↔ shared cycle.
 import { stateToDataAttrs } from '../shared/stateToDataAttrs'
-import { useForwardExpose } from '../shared/useForwardExpose'
+import { useForwardElement } from '../shared/useForwardElement'
 import { SELF_CLOSING_TAGS } from './Primitive'
 import { Slot } from './Slot'
 
@@ -25,8 +27,11 @@ export interface UseRenderOptions<S extends PrimitiveState = PrimitiveState> {
   /** State rendered as `data-*` attributes: boolean → present/absent '', string/number → value. Reactive. */
   state?: MaybeRefOrGetter<S | undefined>
   stateAttributesMapping?: StateAttributesMapping<S>
-  /** Optional external ref to keep in sync with the rendered element. */
-  ref?: Ref<HTMLElement | null | undefined> | ((el: Element | ComponentPublicInstance | null) => void)
+  /**
+   * Optional external ref kept in sync with the resolved element (merged via
+   * `useMergedRefs`; a callback ref may return a cleanup function).
+   */
+  ref?: MergeableRef<HTMLElement>
 }
 
 export interface UseRenderReturn<S extends PrimitiveState = PrimitiveState> {
@@ -38,10 +43,12 @@ export interface UseRenderReturn<S extends PrimitiveState = PrimitiveState> {
   renderless: ComputedRef<boolean>
   /** true for 'area' | 'img' | 'input' — render `<component :is>` with no children. */
   selfClosing: ComputedRef<boolean>
-  /** Callback ref: bind `:ref="elementRef"`. Wires useForwardExpose.forwardRef + options.ref. */
+  /** Callback ref: bind `:ref="elementRef"`. Feeds the part's element and `options.ref`. */
   elementRef: (el: Element | ComponentPublicInstance | null) => void
-  /** Resolved DOM element (text/comment-root aware). */
-  currentElement: ComputedRef<HTMLElement | undefined>
+  /** Resolved DOM element (text/comment-root aware, reactive across root swaps). */
+  currentElement: ComputedRef<HTMLElement | null>
+  /** Ready-made element-first expose object: `defineExpose(expose)`. */
+  expose: ElementExpose<HTMLElement>
   /** Unwrapped state for scoped-slot exposure. */
   state: ComputedRef<S | undefined>
 }
@@ -82,14 +89,7 @@ export function useRender<S extends PrimitiveState = PrimitiveState>(
   const stateAttrs = computed(() => stateToDataAttrs(toValue(options.state), options.stateAttributesMapping))
   const renderProps = computed<Record<string, any>>(() => mergeProps(stateAttrs.value, toValue(options.props) ?? {}))
 
-  const { forwardRef, currentElement } = useForwardExpose()
-  function elementRef(el: Element | ComponentPublicInstance | null) {
-    forwardRef(el)
-    if (typeof options.ref === 'function')
-      options.ref(el)
-    else if (options.ref)
-      options.ref.value = (el && '$el' in el ? el.$el : el) as HTMLElement | null | undefined
-  }
+  const { forwardRef: elementRef, element: currentElement, expose } = useForwardElement<HTMLElement>(options.ref)
 
-  return { tag, renderProps, renderless, selfClosing, elementRef, currentElement, state }
+  return { tag, renderProps, renderless, selfClosing, elementRef, currentElement, state, expose }
 }
