@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { MenuContentImplEmits, MenuRootContentTypeProps } from './MenuContentImpl.vue'
+import { computed } from 'vue'
 import { useForwardElement, useForwardPropsEmits, useHideOthers } from '@/shared'
 import MenuContentImpl from './MenuContentImpl.vue'
 import { injectMenuContext } from './MenuRoot.vue'
@@ -15,7 +16,8 @@ type MenuRootContentModalEmits = MenuContentImplEmits
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
-useHideOthers(currentElement)
+// Only while open: a `forceMount`ed content that is closed hides nothing.
+useHideOthers(computed(() => menuContext.open.value ? currentElement.value : undefined))
 </script>
 
 <template>

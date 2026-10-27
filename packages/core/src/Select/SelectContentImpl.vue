@@ -3,23 +3,18 @@ import type {
   ComponentPublicInstance,
   Ref,
 } from 'vue'
-import type { DismissableLayerProps, PointerDownOutsideEvent } from '@/DismissableLayer'
+import type { DismissableLayerDismissDetails, DismissableLayerDismissReason, DismissableLayerProps, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
 import {
   createContext,
-  disclosureState,
-  getEventTarget,
   useFocusGuards,
   useForwardElement,
   useForwardProps,
   useHideOthers,
-  useTypeahead,
 } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
-import { wrapArray } from '@/shared/useTypeahead'
-import { valueComparator } from './utils'
 
 export interface SelectContentContext {
   content?: Ref<HTMLElement | undefined>
@@ -91,18 +86,13 @@ export const [injectSelectContentContext, provideSelectContentContext]
 
 <script setup lang="ts">
 import { reactiveOmit, unrefElement } from '@vueuse/core'
-import {
-  computed,
-  ref,
-  watch,
-  watchEffect,
-} from 'vue'
+import { computed, mergeProps, ref, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
-import { focusFirst } from '@/Menu/utils'
 import SelectItemAlignedPosition from './SelectItemAlignedPosition.vue'
 import SelectPopperPosition from './SelectPopperPosition.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
+import { useSelectContent } from './useSelect'
 
 const props = withDefaults(defineProps<SelectContentImplProps>(), {
   align: 'start',
@@ -114,123 +104,55 @@ const emits = defineEmits<SelectContentImplEmits>()
 
 const rootContext = injectSelectRootContext()
 
-useBodyScrollLock(props.bodyLock)
+// The modal side effects follow the open state, not the mount: a
+// `forceMount`ed content that is closed (or animating out) must not keep the
+// scroll lock, the internal backdrop or `aria-hidden` on its siblings.
+const present = computed(() => rootContext.open.value)
+
+// Modal by default (#2822): page scroll is locked while the content is open,
+// and `disableOutsidePointerEvents` mounts the dismissable layer's internal
+// backdrop under the content.
+const scrollLocked = useBodyScrollLock(present.value && props.bodyLock)
+watch([present, () => props.bodyLock], ([isPresent, bodyLock]) => scrollLocked.value = isPresent && bodyLock)
 const { CollectionSlot, getItems } = useCollection()
 
 const content = ref<HTMLElement>()
 // Scope focus guards to the content's root (shadow-safe); set up after `content`.
 useFocusGuards(content)
-useHideOthers(content)
+useHideOthers(computed(() => present.value ? content.value : undefined))
 
-const { search, handleTypeaheadSearch } = useTypeahead()
+// In `popper` position the trigger stays visible beside the content: cut it
+// out of the backdrop so a press on it toggles the select closed (Base UI).
+const backdropCutout = computed(() => props.position === 'popper' ? rootContext.triggerElement.value : undefined)
 
-const viewport = ref<HTMLElement>()
-const selectedItem = ref<HTMLElement>()
-const selectedItemText = ref<HTMLElement>()
-const isPositioned = ref(false)
-const firstValidItemFoundRef = ref(false)
-const firstSelectedItemInArrayFoundRef = ref(false)
-
-function focusSelectedItem() {
-  if (selectedItem.value && content.value)
-    focusFirst([selectedItem.value, content.value])
+// `focus-outside` is prevented below, so a dismissal is only ever an Escape
+// key or an outside press.
+function handleDismiss({ reason, event }: DismissableLayerDismissDetails) {
+  rootContext.onOpenChange(false, reason as Exclude<DismissableLayerDismissReason, 'focus-outside'>, event)
 }
 
-watch(isPositioned, () => {
-  focusSelectedItem()
-})
-
-// prevent selecting items on `pointerup` in some cases after opening from `pointerdown`
-// and close on `pointerup` outside.
-const { onOpenChange, triggerPointerDownPosRef } = rootContext
-watchEffect((cleanupFn) => {
-  if (!content.value)
+function handlePointerDownOutside(event: PointerDownOutsideEvent) {
+  emits('pointerDownOutside', event)
+  if (event.defaultPrevented)
     return
-  let pointerMoveDelta = { x: 0, y: 0 }
-
-  const handlePointerMove = (event: PointerEvent) => {
-    pointerMoveDelta = {
-      x: Math.abs(
-        Math.round(event.pageX) - (triggerPointerDownPosRef.value?.x ?? 0),
-      ),
-      y: Math.abs(
-        Math.round(event.pageY) - (triggerPointerDownPosRef.value?.y ?? 0),
-      ),
-    }
-  }
-  const handlePointerUp = (event: PointerEvent) => {
-    // Prevent options from being untappable on touch devices
-    // https://github.com/unovue/reka-ui/issues/804
-    if (event.pointerType === 'touch')
-      return
-
-    // If the pointer hasn't moved by a certain threshold then we prevent selecting item on `pointerup`.
-    if (pointerMoveDelta.x <= 10 && pointerMoveDelta.y <= 10) {
-      event.preventDefault()
-    }
-    else {
-      // otherwise, if the event was outside the content, close. Document-level
-      // listener → read the composed target so a shadow-mounted content isn't
-      // seen as "outside" itself.
-      if (!content.value?.contains(getEventTarget<HTMLElement>(event)))
-        onOpenChange(false)
-    }
-    document.removeEventListener('pointermove', handlePointerMove)
-    triggerPointerDownPosRef.value = null
-  }
-
-  if (triggerPointerDownPosRef.value !== null) {
-    document.addEventListener('pointermove', handlePointerMove)
-    document.addEventListener('pointerup', handlePointerUp, {
-      capture: true,
-      once: true,
-    })
-  }
-
-  cleanupFn(() => {
-    document.removeEventListener('pointermove', handlePointerMove)
-    document.removeEventListener('pointerup', handlePointerUp, {
-      capture: true,
-    })
-  })
-})
-
-function handleKeyDown(event: KeyboardEvent) {
-  const isModifierKey = event.ctrlKey || event.altKey || event.metaKey
-
-  // select should not be navigated using tab key so we prevent it
-  if (event.key === 'Tab')
+  // A press on the trigger toggles the select closed: report it as a
+  // `'trigger-press'`, not a dismissal.
+  const target = event.target as Node | null
+  if (target && rootContext.triggerElement.value?.contains(target)) {
     event.preventDefault()
-
-  // Space selects the item when no search is in progress; otherwise it's part of the search
-  if (event.code === 'Space') {
-    if (search.value === '')
-      return
-    // SelectItem skips Space during a search, so prevent the scroll here
-    event.preventDefault()
-  }
-
-  if (!isModifierKey && event.key.length === 1)
-    handleTypeaheadSearch(event.key, getItems())
-
-  if (['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) {
-    const collectionItems = getItems().map(i => i.ref)
-    let candidateNodes = [...collectionItems]
-
-    if (['ArrowUp', 'End'].includes(event.key))
-      candidateNodes = candidateNodes.slice().reverse()
-
-    if (['ArrowUp', 'ArrowDown'].includes(event.key)) {
-      const currentElement = event.target as HTMLElement
-      const currentIndex = candidateNodes.indexOf(currentElement)
-      candidateNodes = props.loop
-        ? wrapArray(candidateNodes, currentIndex + 1)
-        : candidateNodes.slice(currentIndex + 1)
-    }
-    setTimeout(() => focusFirst(candidateNodes))
-    event.preventDefault()
+    rootContext.onOpenChange(false, 'trigger-press', event.detail.originalEvent)
   }
 }
+
+// Keyboard navigation and typeahead, the selected-item tracking for
+// item-aligned positioning, and the pointer-release guard after opening.
+const { content: surface, contentContext, isPositioned } = useSelectContent({
+  context: rootContext,
+  contentElement: content,
+  getItems,
+  position: props.position,
+  loop: () => props.loop,
+})
 
 // `loop` drives keyboard navigation here and is not a positioning prop
 const positionProps = reactiveOmit(props, 'loop')
@@ -242,56 +164,7 @@ const pickedProps = computed(() => {
 
 const forwardedProps = useForwardProps(pickedProps.value)
 
-provideSelectContentContext({
-  content,
-  viewport,
-  onViewportChange: (node) => {
-    viewport.value = node
-  },
-  itemRefCallback: (node, value, disabled) => {
-    const isFirstValidItem = !firstValidItemFoundRef.value && !disabled
-    const isSelectedItem = valueComparator(rootContext.modelValue.value, value, rootContext.by)
-
-    if (rootContext.multiple.value) {
-      if (firstSelectedItemInArrayFoundRef.value) {
-        return
-      }
-      if (isSelectedItem || isFirstValidItem) {
-        selectedItem.value = node
-
-        // make sure to keep the first item highlighted when `multiple`
-        if (isSelectedItem) {
-          firstSelectedItemInArrayFoundRef.value = true
-        }
-      }
-    }
-    else {
-      if (isSelectedItem || isFirstValidItem) {
-        selectedItem.value = node
-      }
-    }
-
-    if (isFirstValidItem) {
-      firstValidItemFoundRef.value = true
-    }
-  },
-  selectedItem,
-  selectedItemText,
-  onItemLeave: () => {
-    content.value?.focus()
-  },
-  itemTextRefCallback: (node, value, disabled) => {
-    const isFirstValidItem = !firstValidItemFoundRef.value && !disabled
-    const isSelectedItem = valueComparator(rootContext.modelValue.value, value, rootContext.by)
-
-    if (isSelectedItem || isFirstValidItem)
-      selectedItemText.value = node
-  },
-  focusSelectedItem,
-  position: props.position,
-  isPositioned,
-  searchRef: search,
-})
+provideSelectContentContext(contentContext)
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
@@ -301,6 +174,7 @@ defineExpose(expose)
   <CollectionSlot :ref="forwardRef">
     <FocusScope
       as-child
+      :present="present"
       @mount-auto-focus.prevent
       @unmount-auto-focus="
         (event) => {
@@ -313,11 +187,13 @@ defineExpose(expose)
     >
       <DismissableLayer
         as-child
+        :present="present"
         :disable-outside-pointer-events="disableOutsidePointerEvents"
+        :backdrop-cutout="backdropCutout"
         @focus-outside.prevent
-        @dismiss="rootContext.onOpenChange(false)"
+        @dismiss="handleDismiss"
         @escape-key-down="emits('escapeKeyDown', $event)"
-        @pointer-down-outside="emits('pointerDownOutside', $event)"
+        @pointer-down-outside="handlePointerDownOutside"
       >
         <component
           :is="
@@ -325,8 +201,7 @@ defineExpose(expose)
               ? SelectPopperPosition
               : SelectItemAlignedPosition
           "
-          v-bind="{ ...$attrs, ...forwardedProps }"
-          :id="rootContext.contentId"
+          v-bind="mergeProps({ ...$attrs, ...forwardedProps }, surface.attrs.value)"
           :ref="
             (vnode: Element | ComponentPublicInstance | null) => {
               if (!vnode) return undefined
@@ -339,19 +214,7 @@ defineExpose(expose)
               return undefined
             }
           "
-          role="listbox"
-          :data-state="disclosureState(rootContext.open.value)"
-          :dir="rootContext.dir.value"
-          :style="{
-            // flex layout so we can place the scroll buttons properly
-            display: 'flex',
-            flexDirection: 'column',
-            // reset the outline by default as the content MAY get focused
-            outline: 'none',
-          }"
-          @contextmenu.prevent
           @placed="isPositioned = true"
-          @keydown="(handleKeyDown as any)"
         >
           <slot />
         </component>

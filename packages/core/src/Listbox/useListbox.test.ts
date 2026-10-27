@@ -501,6 +501,7 @@ describe('useListboxRoot — label registry', () => {
     expect(api.labels.get(values[7])).toBe('Seven')
   })
 
+  // the guard is the read count, not wall time: mounting 2000 items can pass 5s under full-suite load
   it('mounts 2000 object-valued items without a quadratic label registration', () => {
     const { values, reads } = countedValues(2000)
     let context!: ListboxRootContext<AcceptableValue>
@@ -521,7 +522,7 @@ describe('useListboxRoot — label registry', () => {
     expect(context.labels.entries()).toHaveLength(2000)
     expect(reads.count).toBeLessThan(2000 * 20)
     wrapper.unmount()
-  })
+  }, 20_000)
 })
 
 describe('useListboxRoot — surfaces', () => {

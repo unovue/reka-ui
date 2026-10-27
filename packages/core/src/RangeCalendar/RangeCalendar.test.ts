@@ -391,6 +391,7 @@ describe('rangeCalendar', () => {
     expect(heading).toHaveTextContent('January 1983')
   })
 
+  // 36 user clicks: needs more than the default 5s when the full suite runs in parallel
   it('always renders six weeks when `fixedWeeks` is `true`', async () => {
     const { getByTestId, calendar, user } = setup({
       calendarProps: {
@@ -414,7 +415,7 @@ describe('rangeCalendar', () => {
       expect(getNumberOfWeeks()).toBe(6)
       await user.click(nextButton)
     }
-  })
+  }, 20_000)
 
   it('should not allow navigation before the `minValue` (prev button)', async () => {
     const { getByTestId, user } = setup({

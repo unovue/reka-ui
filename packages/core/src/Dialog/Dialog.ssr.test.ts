@@ -1,5 +1,5 @@
 import { renderToString } from '@vue/server-renderer'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createSSRApp, defineComponent, h, ref } from 'vue'
 import { resetBodyScrollLock } from '@/shared/useBodyScrollLock'
 import { sleep } from '@/test'
@@ -54,17 +54,16 @@ describe('given a modal Dialog that is open in the SSR render', () => {
     const open = ref(true)
     const app = createSSRApp(createDialogFixture(open))
     app.mount(container)
-    await sleep(10)
+    // the scroll lock applies a macrotask after the mount flush, which can outlast a fixed sleep under load
+    await vi.waitFor(() => expect(isScrollLocked()).toBe(true))
     expect(container.querySelector('[role="dialog"]')).not.toBeNull()
     expect(backdrop()).not.toBeNull()
-    expect(isScrollLocked()).toBe(true)
     expect(document.body.style.pointerEvents).toBe('')
 
     open.value = false
-    await sleep(10)
+    await vi.waitFor(() => expect(isScrollLocked()).toBe(false))
     expect(container.querySelector('[role="dialog"]')).toBeNull()
     expect(backdrop()).toBeNull()
-    expect(isScrollLocked()).toBe(false)
     expect(document.body.style.pointerEvents).toBe('')
 
     app.unmount()
@@ -77,13 +76,11 @@ describe('given a modal Dialog that is open in the SSR render', () => {
 
     const app = createSSRApp(createDialogFixture())
     app.mount(container)
-    await sleep(10)
-    expect(isScrollLocked()).toBe(true)
+    await vi.waitFor(() => expect(isScrollLocked()).toBe(true))
 
     app.unmount()
-    await sleep(10)
+    await vi.waitFor(() => expect(isScrollLocked()).toBe(false))
     expect(backdrop()).toBeNull()
-    expect(isScrollLocked()).toBe(false)
     expect(document.body.style.pointerEvents).toBe('')
   })
 })
