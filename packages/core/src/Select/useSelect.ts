@@ -673,6 +673,14 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
   // prevent selecting items on `pointerup` in some cases after opening from `pointerdown`
   // and close on `pointerup` outside.
   const { triggerPointerDownPosRef } = context
+  // A press recorded while open (on the trigger of a `popper` select, which
+  // then closes it) must not outlive the open state: its release never reaches
+  // the guard below, and a stale position would swallow the first stationary
+  // release after the next keyboard open.
+  watch(() => context.open.value, (open) => {
+    if (!open)
+      triggerPointerDownPosRef.value = null
+  })
   watchEffect((cleanupFn) => {
     // A `forceMount`ed content listens only while open.
     if (!contentElement.value || !context.open.value)

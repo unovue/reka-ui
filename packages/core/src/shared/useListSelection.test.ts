@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ref, toRaw } from 'vue'
+import { reactive, ref, toRaw } from 'vue'
 import { useListSelection } from './useListSelection'
 
 describe('useListSelection — defaults', () => {
@@ -190,5 +190,15 @@ describe('useListSelection — replace with `by`', () => {
     expect(s.select(again)).toBe(false)
     expect(onUpdate).not.toHaveBeenCalled()
     expect(toRaw(s.firstValue.value)).toBe(again)
+  })
+
+  it('multiple: re-selecting the sole value through its reactive proxy, with a function `by`, reports no change', () => {
+    const onUpdate = vi.fn()
+    const raw = { id: 1 }
+    const s = useListSelection<{ id: number }>({ multiple: true, selectionBehavior: 'replace', by: (a, b) => a === b, defaultValue: [raw], onUpdate })
+    const proxy = reactive(raw)
+    expect(s.isSelected(proxy)).toBe(true)
+    expect(s.select(proxy)).toBe(false)
+    expect(onUpdate).not.toHaveBeenCalled()
   })
 })

@@ -540,6 +540,27 @@ describe('review fixes (#3072)', () => {
     expect(onOpen).toHaveBeenLastCalledWith(false, expect.objectContaining({ reason: 'trigger-press' }))
   })
 
+  it('a trigger press that closes the select leaves no pointer position for the next keyboard open', async () => {
+    const onUpdate = vi.fn()
+    mountSelect({ 'onUpdate:modelValue': onUpdate })
+    await open()
+    await new Promise(resolve => setTimeout(resolve, 20))
+    await fireEvent.pointerDown(trigger(), { button: 0, ctrlKey: false, pageX: 5, pageY: 5 })
+    await flushPromises()
+    expect(isOpen()).toBe(false)
+    // The release of that press lands after the content is gone.
+    await fireEvent.pointerUp(trigger())
+
+    await keydownOn(trigger(), 'Enter')
+    expect(isOpen()).toBe(true)
+    const item = option('Banana')
+    item.focus()
+    // A single stationary release selects: no stale press position arms the guard.
+    await fireEvent.pointerUp(item)
+    await flushPromises()
+    expect(onUpdate).toHaveBeenCalledWith('Banana', expect.objectContaining({ reason: 'item-press' }))
+  })
+
   it('re-pressing the selected value matched with by does not emit', async () => {
     const items = [{ id: 1, name: 'Apple' }, { id: 2, name: 'Banana' }]
     const onUpdate = vi.fn()
