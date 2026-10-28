@@ -19,7 +19,7 @@ export interface FieldErrorProps extends PrimitiveProps {
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { Presence } from '@/Presence'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { disclosureState, useForwardElement, useId } from '@/shared'
 import { injectFieldRootContext } from './FieldRoot.vue'
 
@@ -91,12 +91,11 @@ onBeforeUnmount(() => unregister?.())
 
 <template>
   <Presence :present="forceMount || visible">
-    <Primitive
+    <component
+      :is="renderAs(as, asChild)"
       v-bind="fieldContext.dataAttributes.value"
       :id="errorId"
       :ref="forwardRef"
-      :as="as"
-      :as-child="asChild"
       :data-state="disclosureState(visible)"
     >
       <slot :errors="renderedMessages">
@@ -112,6 +111,6 @@ onBeforeUnmount(() => unregister?.())
           {{ renderedMessages[0] }}
         </template>
       </slot>
-    </Primitive>
+    </component>
   </Presence>
 </template>

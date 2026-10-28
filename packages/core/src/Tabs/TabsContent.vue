@@ -22,7 +22,7 @@ export interface TabsContentProps extends PrimitiveProps {
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { Presence } from '@/Presence'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { onNextFrame } from '@/shared/timeout'
 import { injectTabsRootContext } from './TabsRoot.vue'
 import { getTabsContentSurface } from './useTabs'
@@ -61,10 +61,9 @@ onBeforeUnmount(() => {
     :present="forceMount || surface.state.value.state === 'checked'"
     force-mount
   >
-    <Primitive
+    <component
+      :is="renderAs(as, asChild)"
       :ref="forwardRef"
-      :as="as"
-      :as-child="asChild"
       :hidden="!present"
       v-bind="{ ...surface.attrs.value, id: props.id || surface.attrs.value.id }"
       :style="{
@@ -72,6 +71,6 @@ onBeforeUnmount(() => {
       }"
     >
       <slot v-if="rootContext.unmountOnHide.value ? present : true" />
-    </Primitive>
+    </component>
   </Presence>
 </template>

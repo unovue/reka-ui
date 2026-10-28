@@ -153,7 +153,7 @@ export const [injectFieldRootContext, provideFieldRootContext]
 import { isEqual } from 'ohash'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRef, watch } from 'vue'
 import { injectFormRootContext } from '@/Form/FormRoot.vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { createValidityState, useFieldValidation } from './useFieldValidation'
 
 const props = withDefaults(defineProps<FieldRootProps>(), {
@@ -506,15 +506,14 @@ provideFieldRootContext({
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="dataAttributes"
   >
     <slot
       :invalid="invalid"
       :errors="errors"
     />
-  </Primitive>
+  </component>
 </template>

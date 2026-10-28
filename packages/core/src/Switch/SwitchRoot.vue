@@ -45,7 +45,7 @@ export const [injectSwitchRootContext, provideSwitchRootContext]
 
 <script setup lang="ts" generic="T = boolean">
 import { computed, mergeProps } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useSwitch } from './useSwitch'
 
@@ -107,13 +107,12 @@ const rootAttrs = computed(() => {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :id="id"
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
     :aria-label="$attrs['aria-label'] || ariaLabel"
-    :as-child="asChild"
-    :as="as"
     v-bind="mergeProps(rootAttrs, scopeIdAttrs, $attrs)"
     @click="root.props.value.onClick"
     @keydown="root.props.value.onKeydown"
@@ -122,7 +121,7 @@ const rootAttrs = computed(() => {
       :model-value="modelValue"
       :checked="checked"
     />
-  </Primitive>
+  </component>
 
   <VisuallyHiddenInput
     v-if="isFormControl && name"

@@ -9,9 +9,9 @@ export interface TabsIndicatorProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { useMounted, useResizeObserver } from '@vueuse/core'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 
-const props = defineProps<TabsIndicatorProps>()
+defineProps<TabsIndicatorProps>()
 const context = injectTabsRootContext()
 const { forwardRef, expose } = useForwardElement()
 defineExpose(mergeExpose(expose, {
@@ -66,10 +66,10 @@ function updateIndicatorStyle() {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     v-if="isMounted && typeof indicatorStyle.size === 'number'"
     :ref="forwardRef"
-    v-bind="props"
     :style="{
       '--reka-tabs-indicator-size': `${indicatorStyle.size}px`,
       '--reka-tabs-indicator-thickness': `${indicatorStyle.thickness}px`,
@@ -77,5 +77,5 @@ function updateIndicatorStyle() {
     }"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

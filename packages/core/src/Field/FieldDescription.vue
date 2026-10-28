@@ -9,7 +9,7 @@ export interface FieldDescriptionProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement, useId } from '@/shared'
 import { injectFieldRootContext } from './FieldRoot.vue'
 
@@ -32,13 +32,12 @@ onBeforeUnmount(() => unregister?.())
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     v-bind="fieldContext.dataAttributes.value"
     :id="descriptionId"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

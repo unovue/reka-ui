@@ -42,7 +42,7 @@ export type { ProgressState }
 
 <script setup lang="ts">
 import { nextTick, watch } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { DEFAULT_MAX, useProgress } from './useProgress'
 
 const props = withDefaults(defineProps<ProgressRootProps>(), {
@@ -96,14 +96,13 @@ provideProgressRootContext(context)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as-child="asChild"
-    :as="as"
     v-bind="root.attrs.value"
   >
     <slot
       :model-value="modelValue"
     />
-  </Primitive>
+  </component>
 </template>

@@ -25,7 +25,7 @@ export interface RadioProps extends PrimitiveProps, FormFieldProps {
 
 <script setup lang="ts">
 import { computed, mergeProps } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { getRootNode, useControllableState, useFormControl, useForwardElement, useForwardScopeId } from '@/shared'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { getRadioSurface } from './useRadioGroup'
@@ -95,18 +95,17 @@ const radioAttrs = computed(() => {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :id="id"
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
-    :as="as"
     :aria-label="ariaLabel"
-    :as-child="asChild"
     v-bind="mergeProps(radioAttrs, scopeIdAttrs, $attrs)"
     @click="radio.props.value.onClick"
   >
     <slot :checked="checked" />
-  </Primitive>
+  </component>
 
   <VisuallyHiddenInput
     v-if="isFormControl && name"
