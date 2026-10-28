@@ -113,6 +113,7 @@ const rootAttrs = computed(() => {
     :name="name"
     :value="modelValue"
     :checked="!!modelValue"
+    :disabled="disabled"
     :required="required"
     v-bind="scopeIdAttrs"
   />

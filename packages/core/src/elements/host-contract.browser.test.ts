@@ -222,6 +222,12 @@ describe('forms', () => {
     await vi.waitFor(() => expect(el.getAttribute('aria-pressed')).toBe('true'))
     await settle()
     expect(new FormData(form).get('bold')).toBe('true')
+
+    // Disabled: left out, like a disabled native control.
+    el.setAttribute('disabled', '')
+    await settle()
+    expect(el.getAttribute('aria-pressed')).toBe('true')
+    expect(new FormData(form).get('bold')).toBeNull()
   })
 
   it('a required, unchecked checkbox makes its form invalid', async () => {
