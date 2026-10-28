@@ -479,8 +479,9 @@ export class RekaElement extends BaseElement {
       set.add(listener)
     else
       set.delete(listener)
-    if (this._listened[type] !== set.size > 0)
-      this._listened[type] = set.size > 0
+    const listened = set.size > 0
+    if (this._listened[type] !== listened)
+      this._listened[type] = listened
   }
 
   /** The part's listeners: all of them, except `listenedEmits` nobody listens to. */
