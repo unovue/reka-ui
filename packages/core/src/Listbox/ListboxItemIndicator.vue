@@ -12,9 +12,9 @@ export interface ListboxItemIndicatorProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { getCurrentInstance, shallowRef } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
+import { useLingeringPresence } from '@/shared/useLingeringPresence'
 import { injectListboxItemContext } from './ListboxItem.vue'
 
 const props = withDefaults(defineProps<ListboxItemIndicatorProps>(), {
@@ -25,27 +25,18 @@ const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const itemContext = injectListboxItemContext()
 
-// An indicator that is not shown mounts no `Presence` (as `SelectItemIndicator`).
-// Once shown, it stays mounted until its exit has finished, and one shown
-// after this indicator mounted enters with `data-starting-style`, as it did
-// while `Presence` was always mounted.
-const instance = getCurrentInstance()!
-const lingering = shallowRef(false)
-function onPresenceComplete(present: boolean) {
-  // An exit that finished after the item was selected again (in an
-  // `after-leave` handler) keeps the retained `Presence` armed.
-  if (!present && !(props.forceMount || itemContext.isSelected.value))
-    lingering.value = false
-}
+// Mounts no `Presence` while not shown; see `useLingeringPresence`.
+const shown = () => props.forceMount || itemContext.isSelected.value
+const lingering = useLingeringPresence(shown)
 </script>
 
 <template>
   <Presence
-    v-if="forceMount || itemContext.isSelected.value || lingering"
-    :present="forceMount || itemContext.isSelected.value"
-    :appear="instance.isMounted"
-    @vue:mounted="lingering = true"
-    @complete="onPresenceComplete"
+    v-if="lingering.mounted()"
+    :present="shown()"
+    :appear="lingering.appear()"
+    @vue:mounted="lingering.onMounted"
+    @complete="lingering.onComplete"
   >
     <Primitive
       :ref="forwardRef"
