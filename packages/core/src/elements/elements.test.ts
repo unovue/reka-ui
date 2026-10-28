@@ -271,6 +271,12 @@ describe('accessibility (axe)', () => {
   })
 
   it('numeric and color inputs', async () => {
+    // jsdom has no `ResizeObserver`, which the slider measures its thumbs with.
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    })
     const container = render(`
       <form>
         <reka-number-field-root name="n" default-value="2">
@@ -295,6 +301,8 @@ describe('accessibility (axe)', () => {
     await vi.waitFor(() => expect(query('reka-color-field-input input').getAttribute('data-reka-owned')).not.toBeNull())
     await vi.waitFor(() => expect(query('reka-rating-item-indicator').getAttribute('role')).toBe('radio'))
     expect(await axe(container)).toHaveNoViolations()
+    cleanup()
+    vi.unstubAllGlobals()
   })
 })
 
@@ -337,7 +345,8 @@ describe.skipIf(!hasDist)('built `reka-ui/elements` entry (dist)', () => {
     await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
     trigger.click()
     await vi.waitFor(() => expect(query('built-collapsible-content').getAttribute('data-state')).toBe('open'))
-  })
+  // Importing the whole built entry takes a few seconds under coverage.
+  }, 30_000)
 
   it('loads only the supported families', () => {
     const seen = new Set<string>()
