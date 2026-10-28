@@ -205,6 +205,31 @@ describe('moves and reconnects', () => {
 })
 
 describe('forms', () => {
+  it('a toggle submits its value while pressed, also after the browser restores it', async () => {
+    const form = render(`<form><reka-toggle aria-label="Bold" name="bold">B</reka-toggle></form>`).querySelector('form')!
+    const el = query('reka-toggle') as HTMLElement & { formStateRestoreCallback: (state: unknown, mode: string) => void }
+    await vi.waitFor(() => expect(el.getAttribute('aria-pressed')).toBe('false'))
+    expect(new FormData(form).get('bold')).toBeNull()
+    await userEvent.click(el)
+    await settle()
+    expect(new FormData(form).get('bold')).toBe('true')
+    await userEvent.click(el)
+    await settle()
+    expect(new FormData(form).get('bold')).toBeNull()
+
+    // Back/forward restore: the state the element saved is carried as its default.
+    el.formStateRestoreCallback(JSON.stringify(true), 'restore')
+    await vi.waitFor(() => expect(el.getAttribute('aria-pressed')).toBe('true'))
+    await settle()
+    expect(new FormData(form).get('bold')).toBe('true')
+
+    // Disabled: left out, like a disabled native control.
+    el.setAttribute('disabled', '')
+    await settle()
+    expect(el.getAttribute('aria-pressed')).toBe('true')
+    expect(new FormData(form).get('bold')).toBeNull()
+  })
+
   it('a required, unchecked checkbox makes its form invalid', async () => {
     const form = render(`<form><reka-checkbox-root aria-label="Terms" name="terms" required ${SW}></reka-checkbox-root></form>`).querySelector('form')!
     const el = query('reka-checkbox-root')
