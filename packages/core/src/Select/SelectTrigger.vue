@@ -8,7 +8,7 @@ export interface SelectTriggerProps extends PopperAnchorProps {
 
 <script setup lang="ts">
 import type { PopperAnchorProps } from '@/Popper'
-import { computed, onBeforeUnmount, onMounted, useAttrs } from 'vue'
+import { computed, onBeforeUnmount, onMounted, toRaw, useAttrs } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
@@ -16,7 +16,7 @@ import { useForwardExpose, useId, useTypeahead } from '@/shared'
 import {
   injectSelectRootContext,
 } from './SelectRoot.vue'
-import { OPEN_KEYS, shouldShowPlaceholder } from './utils'
+import { OPEN_KEYS, shouldShowPlaceholder, valueComparator } from './utils'
 
 const props = withDefaults(defineProps<SelectTriggerProps>(), {
   as: 'button',
@@ -77,7 +77,18 @@ onMounted(() => {
 onBeforeUnmount(() => unregisterControl?.())
 
 const { getItems } = useCollection()
-const { search, handleTypeaheadSearch, resetTypeahead } = useTypeahead()
+const { search, handleTypeaheadSearch, findTypeaheadMatch, resetTypeahead } = useTypeahead()
+
+// A closed select has no item to focus, so the match is selected instead, as in
+// a native select. The collection is reactive, so `toRaw` returns the item's own
+// value rather than a proxy of it.
+function selectTypeaheadMatch(key: string) {
+  const items = getItems()
+  const selectedItem = items.find(item => valueComparator(rootContext.modelValue.value, toRaw(item.value).value, rootContext.by))
+  const match = findTypeaheadMatch(key, items, selectedItem)
+  if (match && !isDisabled.value && !rootContext.multiple.value)
+    rootContext.onValueChange(toRaw(match.value).value)
+}
 function handleOpen() {
   if (!isDisabled.value) {
     rootContext.onOpenChange(true)
@@ -173,8 +184,12 @@ function onTriggerKeyDown(event: KeyboardEvent) {
   const isModifierKey = event.ctrlKey || event.altKey || event.metaKey
   // Only printable characters extend the search; otherwise keys like `Shift`
   // or `ArrowLeft` would be appended and swallow the next `Space`.
-  if (!isModifierKey && event.key.length === 1)
-    handleTypeaheadSearch(event.key, getItems())
+  if (!isModifierKey && event.key.length === 1) {
+    if (rootContext.open.value)
+      handleTypeaheadSearch(event.key, getItems())
+    else
+      selectTypeaheadMatch(event.key)
+  }
   if (isTypingAhead && event.key === ' ')
     return
 

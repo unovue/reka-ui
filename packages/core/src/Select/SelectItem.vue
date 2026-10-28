@@ -160,7 +160,7 @@ provideSelectItemContext({
 </script>
 
 <template>
-  <CollectionItem :value="{ textValue }">
+  <CollectionItem :value="{ textValue, value }">
     <Primitive
       :ref="forwardRef"
       role="option"

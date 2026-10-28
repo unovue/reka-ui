@@ -1,32 +1,38 @@
 import { refAutoReset } from '@vueuse/shared'
 import { getActiveElement } from './getActiveElement'
 
+interface TypeaheadItem {
+  ref: HTMLElement
+  value?: any
+}
+
+// An empty `textValue` also falls back to the text content
+function getItemText(item: TypeaheadItem) {
+  return item.value?.textValue || item.ref.textContent?.trim() || ''
+}
+
 export function useTypeahead(callback?: (search: string) => void) {
   // Reset `search` 1 second after it was last updated
   const search = refAutoReset('', 1000)
 
-  const handleTypeaheadSearch = (key: string, items: { ref: HTMLElement, value?: any }[]) => {
+  // Adds `key` to the search and returns the next item it matches after
+  // `currentItem`, without focusing it
+  const findTypeaheadMatch = <T extends TypeaheadItem>(key: string, items: T[], currentItem?: T) => {
     search.value = search.value + key
+    return getNextMatch(items, search.value, currentItem, getItemText)
+  }
 
+  const handleTypeaheadSearch = (key: string, items: TypeaheadItem[]) => {
     if (callback) {
+      search.value = search.value + key
       callback(key)
+      return
     }
-    else {
-      const currentItem = getActiveElement()
-      const itemsWithTextValue = items.map(item => ({
-        ...item,
-        textValue: item.value?.textValue ?? item.ref.textContent?.trim() ?? '',
-      }))
-      const currentMatch = itemsWithTextValue.find(item => item.ref === currentItem)
-      const values = itemsWithTextValue.map(item => item.textValue)
-      const nextMatch = getNextMatch(values, search.value, currentMatch?.textValue)
 
-      const newItem = itemsWithTextValue.find(item => item.textValue === nextMatch)
-
-      if (newItem)
-        (newItem.ref as HTMLElement).focus()
-      return newItem?.ref
-    }
+    const newItem = findTypeaheadMatch(key, items, items.find(item => item.ref === getActiveElement()))
+    if (newItem)
+      newItem.ref.focus()
+    return newItem?.ref
   }
 
   const resetTypeahead = () => {
@@ -36,6 +42,7 @@ export function useTypeahead(callback?: (search: string) => void) {
   return {
     search,
     handleTypeaheadSearch,
+    findTypeaheadMatch,
     resetTypeahead,
   }
 }
@@ -64,11 +71,15 @@ export function wrapArray<T>(array: T[], startIndex: number) {
  * current match from the values because otherwise it would be the first to match always
  * and focus would never move. This is as opposed to the regular case, where we
  * don't want focus to move if the current match still matches.
+ *
+ * The values can be items, with `getText` returning each item's text. The current
+ * match is then found by identity, so items with the same text stay distinct.
  */
-export function getNextMatch(
-  values: string[],
+export function getNextMatch<T>(
+  values: T[],
   search: string,
-  currentMatch?: string,
+  currentMatch?: T,
+  getText: (value: T) => string = String,
 ) {
   const isRepeated
     = search.length > 1 && Array.from(search).every(char => char === search[0])
@@ -79,7 +90,7 @@ export function getNextMatch(
   if (excludeCurrentMatch)
     wrappedValues = wrappedValues.filter(v => v !== currentMatch)
   const nextMatch = wrappedValues.find(value =>
-    value.toLowerCase().startsWith(normalizedSearch.toLowerCase()),
+    getText(value).toLowerCase().startsWith(normalizedSearch.toLowerCase()),
   )
   return nextMatch !== currentMatch ? nextMatch : undefined
 }
