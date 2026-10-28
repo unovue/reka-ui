@@ -1,9 +1,9 @@
 import type { ShallowRef } from 'vue'
 import type { By } from './compare'
 import { serialize } from 'ohash'
-import { shallowRef, watch } from 'vue'
+import { shallowRef } from 'vue'
 import { valueComparator } from './compare'
-import { KeyedSelectorImpl, SelectorHold } from './createKeyedSelector'
+import { KeyedSelectorImpl, lazySelector, SelectorHold } from './createKeyedSelector'
 
 /**
  * The key `compare(a, b, by)` matches on: `compare(a, b, by)` holds exactly
@@ -50,7 +50,8 @@ export function compareKey<T>(value: T, by?: By<T>): string | null | undefined {
  * no exact key, a function `by`, or a model holding such a value fall back to
  * the comparison (tracking the whole model, as before).
  *
- * Construct it in `setup` (it owns one sync watcher).
+ * Construct it in `setup`. Like `createKeyedSelector` it is lazy: the first
+ * item that reads it starts its one sync watcher.
  *
  * @internal
  */
@@ -62,14 +63,15 @@ export class SelectionSelector<T> {
   constructor(readonly model: () => T | T[] | undefined, readonly by?: By<T>) {
     if (typeof by === 'function')
       return
-    const source = () => this.modelKeys()
-    const initial = source()
-    const selector = this.selector = new KeyedSelectorImpl<string>(true, initial)
-    const keyed = this.keyed = shallowRef(initial !== null)
-    watch(source, (next) => {
-      selector.update(next)
-      keyed.value = next !== null
-    }, { flush: 'sync' })
+    const selector = this.selector = new KeyedSelectorImpl<string>(true)
+    lazySelector(selector, () => this.modelKeys(), (next) => {
+      this.keyed!.value = next !== null
+    })
+    const start = selector.pending!
+    selector.pending = () => {
+      start()
+      this.keyed = shallowRef(selector.current !== null)
+    }
   }
 
   /** The model's keys, or `null` when one of its values has no exact key. */
@@ -109,6 +111,7 @@ export class SelectionSelector<T> {
       hold?.release()
       return false
     }
+    this.selector?.init()
     if (key === undefined || !this.keyed!.value) {
       hold?.release()
       return valueComparator(this.model(), value, this.by)

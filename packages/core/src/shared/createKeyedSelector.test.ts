@@ -37,6 +37,24 @@ describe('createKeyedSelector', () => {
     scope.stop()
   })
 
+  it('reads its source only once something reads it', () => {
+    const scope = effectScope()
+    scope.run(() => {
+      let reads = 0
+      const current = shallowRef('a')
+      const selector = createKeyedSelector(() => {
+        reads++
+        return current.value
+      })
+      current.value = 'b'
+      expect(reads).toBe(0)
+      expect(selector.is('b')).toBe(true)
+      current.value = 'c'
+      expect(selector.is('c')).toBe(true)
+    })
+    scope.stop()
+  })
+
   it('answers for keys nobody holds by tracking the whole source', () => {
     const scope = effectScope()
     scope.run(() => {

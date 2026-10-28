@@ -1,4 +1,4 @@
-import type { ShallowRef } from 'vue'
+import type { EffectScope, ShallowRef } from 'vue'
 import { getCurrentScope, onScopeDispose, shallowRef, watch } from 'vue'
 
 /**
@@ -50,20 +50,38 @@ type SetSelectorSource<K> = () => ReadonlySet<K> | null | undefined
 
 const EMPTY: ReadonlySet<never> = new Set()
 
+type Current<K> = K | ReadonlySet<K> | null | undefined
+
 /** @internal */
 export class KeyedSelectorImpl<K> implements KeyedSelector<K> {
   strong: Map<K, Cell> | undefined = undefined
   weak: WeakMap<K & object, Cell> | undefined = undefined
   /** The raw current key (single) or key set (multiple). */
-  current: K | ReadonlySet<K> | null | undefined
+  current: Current<K> = undefined
   /** Tracked by readers that hold no cell. */
-  currentRef: ShallowRef<K | ReadonlySet<K> | null | undefined>
-  activeRef: ShallowRef<boolean>
+  currentRef: ShallowRef<Current<K>> = undefined!
+  activeRef: ShallowRef<boolean> = undefined!
+  /** Watches the source on first use (see `createKeyedSelector`). */
+  pending: (() => void) | undefined = undefined
 
-  constructor(readonly multiple: boolean, initial: K | ReadonlySet<K> | null | undefined) {
+  constructor(readonly multiple: boolean, initial?: Current<K>) {
+    if (arguments.length > 1)
+      this.start(initial)
+  }
+
+  start(initial: Current<K>) {
     this.current = initial
     this.currentRef = shallowRef(initial)
     this.activeRef = shallowRef(this.isActive(initial))
+  }
+
+  /** Starts a lazy selector: its first reader pays for the watcher and refs. */
+  init() {
+    const pending = this.pending
+    if (pending) {
+      this.pending = undefined
+      pending()
+    }
   }
 
   isActive(value: K | ReadonlySet<K> | null | undefined): boolean {
@@ -83,12 +101,14 @@ export class KeyedSelectorImpl<K> implements KeyedSelector<K> {
   }
 
   get active(): boolean {
+    this.init()
     return this.activeRef.value
   }
 
   is(key: K | null | undefined): boolean {
     if (key == null)
       return false
+    this.init()
     const cell = this.cell(key)
     if (cell)
       return cell.ref.value
@@ -96,6 +116,7 @@ export class KeyedSelectorImpl<K> implements KeyedSelector<K> {
   }
 
   hold(key: K): void {
+    this.init()
     const existing = this.cell(key)
     if (existing) {
       existing.holders++
@@ -153,13 +174,37 @@ export class KeyedSelectorImpl<K> implements KeyedSelector<K> {
 /**
  * A selector over a single key: `is(key)` is `source() === key`.
  *
- * Call it in `setup` (it owns one sync watcher, stopped with the scope).
+ * Call it in `setup`. It is lazy: the first reader starts its one sync
+ * watcher (in the calling scope, stopped with it), so a list that never
+ * renders items (a closed popup) pays nothing for it.
  *
  * @internal
  */
 export function createKeyedSelector<K>(source: SelectorSource<K>): KeyedSelector<K> {
-  const selector = new KeyedSelectorImpl<K>(false, source())
-  watch(source, next => selector.update(next), { flush: 'sync' })
+  return lazySelector(new KeyedSelectorImpl<K>(false), source)
+}
+
+/** Defers `selector`'s watcher on `source` to its first use, in the current scope. */
+export function lazySelector<K, S extends Current<K>>(selector: KeyedSelectorImpl<K>, source: () => S, onUpdate?: (next: S) => void): KeyedSelectorImpl<K> {
+  const scope: EffectScope | undefined = getCurrentScope()
+  selector.pending = () => {
+    // `immediate` reads the source inside the watcher, so the reader that
+    // started it (possibly inside a render) does not track the source.
+    let started = false
+    const run = () => watch(source, (next) => {
+      if (!started) {
+        started = true
+        selector.start(next)
+        return
+      }
+      selector.update(next)
+      onUpdate?.(next)
+    }, { flush: 'sync', immediate: true })
+    if (scope)
+      scope.run(run)
+    else
+      run()
+  }
   return selector
 }
 
@@ -171,9 +216,7 @@ export function createKeyedSelector<K>(source: SelectorSource<K>): KeyedSelector
  * @internal
  */
 export function createKeyedSetSelector<K>(source: SetSelectorSource<K>): KeyedSelector<K> {
-  const selector = new KeyedSelectorImpl<K>(true, source())
-  watch(source, next => selector.update(next), { flush: 'sync' })
-  return selector
+  return lazySelector(new KeyedSelectorImpl<K>(true), source)
 }
 
 /**

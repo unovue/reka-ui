@@ -19,7 +19,7 @@ function kebab(key: string): string {
  * `true` → `data-<kebab>=""`; `false`/`null`/`undefined` → omitted; string/number
  * → `data-<kebab>="<value>"`; a `mapping` entry replaces the default for its key.
  *
- * @internal — consumers bind `surface.attrs` / `renderProps` and never see this.
+ * @internal
  */
 export function stateToDataAttrs<S extends PartState>(
   state: S | undefined,
