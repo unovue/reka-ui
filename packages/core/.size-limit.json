@@ -56,7 +56,7 @@
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, switchElements }",
-    "limit": "12 KB",
+    "limit": "13 KB",
     "name": "Elements: runtime + Switch"
   },
   {

@@ -19,10 +19,13 @@ export const HOST_PROP = '__rekaHost'
  */
 export const OWNED_ATTR = 'data-reka-owned'
 /**
- * Marks what an `inside` part (see {@link HostSemantics.inside}) rendered into the
- * host, so a `cloneNode()` copy of a mounted element can drop it.
+ * Marks the nodes a part's tree rendered into the host (an `inside` part, see
+ * {@link HostSemantics.inside}) or next to it (a `siblings` part), so a
+ * `cloneNode()` copy of a mounted element can drop them.
  */
-export const CONTENT_ATTR = 'data-reka-content'
+export const RELOCATED_ATTR = 'data-reka-relocated'
+/** Data of the comment that ends a `siblings` part's nodes next to its host. */
+const SIBLINGS_END = 'reka-siblings-end'
 
 const HYPHENATE = /\B([A-Z])/g
 const WHITESPACE = /\s+/
@@ -100,6 +103,8 @@ const bindings = new WeakMap<Node, HostBinding>()
 const containers = new WeakMap<Node, HostBinding>()
 /** Nodes a `siblings` part rendered next to its host, by binding. */
 const siblingOwners = new WeakMap<Node, HostBinding>()
+/** Nodes a live part rendered into (`inside`) or next to (`siblings`) its host. */
+const liveRelocated = new WeakSet<Node>()
 /** Bindings whose element currently sits away from its home position (teleported or wrapped). */
 const awayBindings = new Set<HostBinding>()
 
@@ -295,8 +300,13 @@ export class HostBinding {
    * `cloneNode()`: a copy starts from the consumer's attributes only.
    */
   static cleanCopiedState(el: HTMLElement) {
-    for (const child of el.querySelectorAll(`:scope > [${CONTENT_ATTR}]`))
-      child.remove()
+    // Copies of nodes a part rendered into or next to a host, anywhere in the copy
+    // (a toast's announcement sits where the toast was declared, not next to it).
+    for (const node of el.querySelectorAll(`[${RELOCATED_ATTR}]`)) {
+      if (!liveRelocated.has(node))
+        node.remove()
+    }
+    HostBinding.removeCopiedSiblings(el)
     const owned = el.getAttribute(OWNED_ATTR)
     if (owned === null)
       return
@@ -392,7 +402,8 @@ export class HostBinding {
   }
 
   /** Puts a root-level node right after the host (and its earlier siblings). */
-  private insertSibling(child: Node, anchor: Node | null): boolean {
+  /** @internal */
+  insertSibling(child: Node, anchor: Node | null): boolean {
     const home = this.homeNode
     const parent = home.parentNode
     if (!parent)
@@ -401,33 +412,90 @@ export class HostBinding {
       parent.insertBefore(child, anchor)
     }
     else {
-      const end = this.siblingEnd ??= this.el.ownerDocument.createComment('')
+      const end = this.siblingEnd ??= this.el.ownerDocument.createComment(SIBLINGS_END)
       if (end.parentNode !== parent)
         parent.insertBefore(end, home.nextSibling)
       parent.insertBefore(child, end)
     }
+    if (child.nodeType === Node.ELEMENT_NODE)
+      this.write(() => (child as Element).setAttribute(RELOCATED_ATTR, ''))
     this.siblingNodes.add(child)
     siblingOwners.set(child, this)
+    liveRelocated.add(child)
     return true
+  }
+
+  /**
+   * Drops the copies of a `siblings` part's nodes that follow a `cloneNode()` copy
+   * of its element: marked nodes up to the end marker that no live part owns.
+   */
+  private static removeCopiedSiblings(el: HTMLElement) {
+    const copies: Node[] = []
+    let node = el.nextSibling
+    while (node && !siblingOwners.has(node)) {
+      const isEnd = node.nodeType === Node.COMMENT_NODE && (node as Comment).data === SIBLINGS_END
+      // Marked elements, and the empty text nodes Vue anchors fragments with.
+      if (!isEnd && !(node as Element).hasAttribute?.(RELOCATED_ATTR) && !(node.nodeType === Node.TEXT_NODE && !node.textContent))
+        break
+      copies.push(node)
+      if (isEnd) {
+        for (const copy of copies)
+          copy.parentNode?.removeChild(copy)
+        return
+      }
+      node = node.nextSibling
+    }
+  }
+
+  /**
+   * Puts the nodes rendered next to the host back after it, in order: the page
+   * moved the element without remounting it (same parent part).
+   */
+  placeSiblings() {
+    const home = this.homeNode
+    const parent = home.parentNode
+    const end = this.siblingEnd
+    if (!parent || !end || !this.siblingNodes.size || this.isPlaced(home))
+      return
+    const nodes = [...this.siblingNodes].sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
+    let after = home
+    for (const node of [...nodes, end]) {
+      parent.insertBefore(node, after.nextSibling)
+      after = node
+    }
+  }
+
+  /** Whether the nodes next to the host directly follow it, up to the end marker. */
+  private isPlaced(home: Node): boolean {
+    let node = home.nextSibling
+    for (let count = 0; count < this.siblingNodes.size; count++) {
+      if (!node || !this.siblingNodes.has(node))
+        return false
+      node = node.nextSibling
+    }
+    return node === this.siblingEnd
   }
 
   /** The part's tree removed a node it rendered next to the host. */
   static siblingRemoved(child: Node) {
     siblingOwners.get(child)?.siblingNodes.delete(child)
     siblingOwners.delete(child)
+    liveRelocated.delete(child)
   }
 
   /** A node of the part's tree rendered into the host (an `inside` part). */
   insertContent(child: Node, anchor: Node | null) {
     this.content.add(child)
+    liveRelocated.add(child)
     if (child.nodeType === Node.ELEMENT_NODE)
-      this.write(() => (child as Element).setAttribute(CONTENT_ATTR, ''))
+      this.write(() => (child as Element).setAttribute(RELOCATED_ATTR, ''))
     this.el.insertBefore(child, anchor && anchor.parentNode === this.el ? anchor : null)
   }
 
   /** The part's tree removed a node it rendered into the host. */
   contentRemoved(child: Node) {
     this.content.delete(child)
+    liveRelocated.delete(child)
   }
 
   /**
@@ -439,6 +507,7 @@ export class HostBinding {
     for (const child of this.content) {
       if (child.parentNode === this.el)
         this.el.removeChild(child)
+      liveRelocated.delete(child)
     }
     this.content.clear()
   }
@@ -452,6 +521,7 @@ export class HostBinding {
     for (const child of this.siblingNodes) {
       child.parentNode?.removeChild(child)
       siblingOwners.delete(child)
+      liveRelocated.delete(child)
     }
     this.siblingNodes.clear()
     this.siblingEnd?.remove()
@@ -851,7 +921,20 @@ export class HostBinding {
       return
     if (event.key === 'Enter') {
       event.preventDefault()
-      this.el.click()
+      // A click with the key's modifiers, as a native control's: Ctrl/Meta+Enter on
+      // a link opens a new tab.
+      const { ctrlKey, metaKey, shiftKey, altKey } = event
+      this.el.dispatchEvent(new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        view: this.el.ownerDocument.defaultView,
+        detail: 0,
+        ctrlKey,
+        metaKey,
+        shiftKey,
+        altKey,
+      }))
     }
     else if (event.key === ' ' && this.semantics?.button) {
       // Stops the page from scrolling, like a native button.
@@ -918,6 +1001,11 @@ export function getRenderer(): Renderer<Element> {
           binding.moveTo(parent, anchor ?? null)
         return
       }
+      // Inserted before a node rendered next to a host (a fragment's end anchor,
+      // once in the document): it goes next to the host too, tracked.
+      const siblingOwner = anchor ? siblingOwners.get(anchor) : undefined
+      if (siblingOwner?.insertSibling(child, anchor!))
+        return
       const owner = containers.get(parent)
       if (owner)
         owner.insertRootNode(child, anchor ?? null)

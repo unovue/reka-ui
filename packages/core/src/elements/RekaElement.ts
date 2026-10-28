@@ -199,8 +199,10 @@ export class RekaElement extends BaseElement {
     for (const host of hostsAwayFrom(this))
       (host as RekaElement)._checkRootNode?.()
     if (this._state !== 'idle') {
-      // Moved by the consumer: remount if it now sits under another parent.
+      // Moved by the consumer: remount if it now sits under another parent, else
+      // bring along what the part renders next to the element.
       this._resolveParent()
+      this._binding.placeSiblings()
       return
     }
     if (!this._binding.active)

@@ -182,4 +182,63 @@ describe('navigation menu elements', () => {
     expect(selected).toHaveBeenCalledTimes(2)
     history.replaceState(null, '', location.pathname + location.search)
   })
+
+  it('opens a new tab on Ctrl+Enter, like Ctrl+click and a native link', async () => {
+    await ready()
+    const link = query('[data-test=github]')
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    try {
+      link.focus()
+      await userEvent.keyboard('{Control>}{Enter}{/Control}')
+      await vi.waitFor(() => expect(open).toHaveBeenCalledOnce())
+      expect(open.mock.calls[0][0]).toBe('#github')
+      expect(location.hash).not.toBe('#github')
+    }
+    finally {
+      open.mockRestore()
+      history.replaceState(null, '', location.pathname + location.search)
+    }
+  })
+})
+
+describe('what an open trigger renders next to itself', () => {
+  async function openLearn() {
+    const { learn } = await ready()
+    await userEvent.click(learn)
+    await vi.waitFor(() => expect(learn.getAttribute('aria-expanded')).toBe('true'))
+    expect(learn.parentElement!.querySelector(':scope > [aria-owns]')).not.toBeNull()
+    return learn
+  }
+
+  it('is left out of a `cloneNode()` copy', async () => {
+    await openLearn()
+    const copy = query('reka-navigation-menu-root').cloneNode(true) as HTMLElement
+    render('').append(copy)
+    const copyTrigger = copy.querySelector('[data-test=learn]')!
+    await vi.waitFor(() => expect(copyTrigger.getAttribute('aria-expanded')).toBe('false'))
+    await settle()
+    expect(copy.querySelectorAll('[aria-owns]').length).toBe(0)
+    expect(copyTrigger.parentElement!.querySelectorAll(':scope > span[tabindex="0"]').length).toBe(0)
+    // The original keeps its own.
+    expect(query('[data-test=learn]').parentElement!.querySelector(':scope > [aria-owns]')).not.toBeNull()
+  })
+
+  it('follows the trigger when the page moves it under the same item', async () => {
+    const learn = await openLearn()
+    const wrapper = document.createElement('div')
+    learn.parentElement!.prepend(wrapper)
+    wrapper.append(learn)
+    await settle()
+    expect(learn.nextElementSibling?.getAttribute('tabindex')).toBe('0')
+    expect(wrapper.querySelector(':scope > [aria-owns]')).not.toBeNull()
+    // Tab still goes from the trigger into the content.
+    learn.focus()
+    await userEvent.keyboard('{Tab}')
+    await vi.waitFor(() => expect(document.activeElement).toBe(query('#stitches')))
+
+    await userEvent.keyboard('{Escape}')
+    await vi.waitFor(() => expect(learn.getAttribute('data-state')).toBe('closed'))
+    expect(wrapper.querySelector('[aria-owns]')).toBeNull()
+    expect(learn.parentElement!.parentElement!.querySelector('[aria-owns]')).toBeNull()
+  })
 })

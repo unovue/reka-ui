@@ -80,6 +80,21 @@ describe('toast elements', () => {
     expect(query('reka-toast-action').getAttribute('role')).toBe('button')
   })
 
+  it('leaves the announcement out of a `cloneNode()` copy', async () => {
+    render(provider(toast('duration="100000"')))
+    const root = query('reka-toast-root')
+    await vi.waitFor(() => expect(document.querySelector('[role=alert]')?.textContent).toContain('Scheduled: Catch up'))
+    const copy = query('reka-toast-provider').cloneNode(true) as HTMLElement
+    const alerts = (node: ParentNode) => node.querySelectorAll('[data-reka-relocated][role=alert], [data-reka-relocated] [role=alert]')
+    expect(alerts(copy).length).toBe(1)
+    render('').append(copy)
+    // The copied toast announces itself again; the original's copy is gone.
+    await vi.waitFor(() => expect(copy.querySelector('reka-toast-root')!.getAttribute('data-state')).toBe('open'))
+    expect(alerts(copy).length).toBeLessThanOrEqual(1)
+    expect(root.isConnected).toBe(true)
+    expect(alerts(query('reka-toast-provider')).length).toBe(1)
+  })
+
   it('closes after its duration with the `timeout` reason, and pauses while hovered', async () => {
     render(provider(toast('duration="2000"')))
     const root = query('reka-toast-root')
