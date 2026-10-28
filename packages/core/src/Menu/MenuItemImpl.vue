@@ -15,7 +15,7 @@ export interface MenuItemImplProps extends PrimitiveProps {
 <script setup lang="ts">
 import { mergeProps } from 'vue'
 import { useCollectionItem } from '@/Collection'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectMenuContentContext } from './MenuContentImpl.vue'
 import { createMenuItemSurface } from './useMenu'
@@ -41,13 +41,12 @@ const surface = createMenuItemSurface(contentContext, {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
     data-reka-collection-item=""
-    :as="as"
-    :as-child="asChild"
     v-bind="mergeProps(surface.attrs.value, $attrs)"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

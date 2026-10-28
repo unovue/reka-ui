@@ -13,9 +13,9 @@ export const [injectMenuGroupContext, provideMenuGroupContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 
-const props = defineProps<MenuGroupProps>()
+defineProps<MenuGroupProps>()
 
 const id = useId(undefined, 'reka-menu-group')
 provideMenuGroupContext({ id })
@@ -25,12 +25,12 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
     role="group"
-    v-bind="props"
     :aria-labelledby="id"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

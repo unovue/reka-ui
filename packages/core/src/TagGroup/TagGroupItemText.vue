@@ -7,7 +7,7 @@ export interface TagGroupItemTextProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { watchEffect } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectTagGroupItemContext } from './TagGroupItem.vue'
 
 const props = withDefaults(defineProps<TagGroupItemTextProps>(), {
@@ -24,11 +24,10 @@ watchEffect(() => {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(props.as, props.asChild)"
     :ref="forwardRef"
-    :as="props.as"
-    :as-child="props.asChild"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

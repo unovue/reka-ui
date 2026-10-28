@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { Ref, VNode } from 'vue'
 import type { PrimitiveProps } from '..'
 import type { AcceptableValue } from '@/shared/types'
 import { createContext, useForwardElement, useId } from '@/shared'
@@ -28,10 +28,11 @@ export const [injectListboxItemContext, provideListboxItemContext]
 </script>
 
 <script setup lang="ts"  generic="T extends AcceptableValue = AcceptableValue">
-import { computed, mergeProps, onUnmounted, onUpdated, ref, watch, watchPostEffect } from 'vue'
+import { isClient } from '@vueuse/shared'
+import { computed, getCurrentInstance, mergeProps, onUnmounted, onUpdated, ref, renderSlot, useSlots, watch, watchPostEffect } from 'vue'
 import { useCollectionItem } from '@/Collection'
+import { renderAs } from '@/Primitive/renderAs'
 import { getterRef } from '@/shared/partSurface'
-import { Primitive } from '..'
 import { injectListboxGroupContext } from './ListboxGroup.vue'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 import { getListboxItemSurface } from './useListbox'
@@ -70,10 +71,47 @@ const surface = getListboxItemSurface(rootContext, () => props.value, () => prop
 })
 const isSelected = getterRef(surface.isSelected)
 
-/** `v-memo` keys: the rendered state, the focusable flag, the element props and the consumer attrs. */
+/**
+ * The item renders its element, and so its slot content, itself; the `v-memo`
+ * below must not freeze what the slot reads (a consumer's text, say). So the
+ * slot also renders in a computed, whose result is a memo key: a re-render a
+ * parent update forces with the same state reads the cached result and still
+ * hits the memo (as when a `Primitive` child rendered the slot in its own
+ * effect), while a change the slot read recomputes it and misses.
+ *
+ * Computed in a render, the content is kept for that render's element (unless
+ * the slot function changed since), so the slot renders once; any other
+ * render renders it afresh, so a mounted vnode is never reused. Vue may also
+ * refresh the computed before a render, to see whether the render is due:
+ * outside a render there is no rendering instance for `renderSlot`, so the
+ * slot only runs (for what it reads) and the result is a new token. On the
+ * server nothing updates, so there is no computed.
+ */
+const slots = useSlots()
+const renderSlotContent = () => renderSlot(slots, 'default', { selected: isSelected.value })
+let freshSlotContent: { content: VNode, slot: unknown } | undefined
+const slotVersion = isClient
+  ? computed<unknown>(() => {
+      if (!getCurrentInstance()) {
+        freshSlotContent = undefined
+        slots.default?.({ selected: isSelected.value })
+        return {}
+      }
+      const content = renderSlotContent()
+      freshSlotContent = { content, slot: slots.default }
+      return content
+    })
+  : { value: undefined }
+function slotContent() {
+  const content = freshSlotContent && freshSlotContent.slot === slots.default ? freshSlotContent.content : renderSlotContent()
+  freshSlotContent = undefined
+  return content
+}
+
+/** `v-memo` keys: the slot version, the rendered state, the focusable flag, the element props and the consumer attrs. */
 function memoKeys(attrs: Record<string, unknown>) {
   const state = surface.state.value
-  return [state.highlighted, state.state, state.disabled, rootContext.focusable.value, props.as, props.asChild, ...Object.entries(attrs).flat()]
+  return [slotVersion.value, state.highlighted, state.state, state.disabled, rootContext.focusable.value, props.as, props.asChild, ...Object.entries(attrs).flat()]
 }
 
 // Sticky: registered once mounted, never unregistered (#2824). Re-registered
@@ -150,16 +188,15 @@ provideListboxItemContext({
 
 <template>
   <template v-if="!isFilteredOut">
-    <Primitive
+    <component
+      :is="renderAs(as, asChild)"
       :id="id"
       v-bind="mergeProps($attrs, surface.attrs.value)"
       :ref="forwardRef"
       v-memo="memoKeys($attrs)"
       data-reka-collection-item=""
-      :as="as"
-      :as-child="asChild"
     >
-      <slot :selected="isSelected" />
-    </Primitive>
+      <component :is="slotContent()" />
+    </component>
   </template>
 </template>

@@ -118,7 +118,7 @@ import { provideComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
 import { useComboboxRoot } from '@/Combobox/useCombobox'
 import { provideListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { PopperRoot } from '@/Popper'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
 defineOptions({ inheritAttrs: false })
@@ -213,10 +213,9 @@ provideAutocompleteRootContext({
 
 <template>
   <PopperRoot>
-    <Primitive
+    <component
+      :is="renderAs(as, asChild)"
       :ref="forwardRef"
-      :as="as"
-      :as-child="asChild"
       v-bind="mergeProps(root.attrs.value, $attrs)"
     >
       <slot
@@ -231,6 +230,6 @@ provideAutocompleteRootContext({
         :disabled="disabled"
         :required="required"
       />
-    </Primitive>
+    </component>
   </PopperRoot>
 </template>

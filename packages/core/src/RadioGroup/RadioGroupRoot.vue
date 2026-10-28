@@ -47,11 +47,18 @@ export const [injectRadioGroupRootContext, provideRadioGroupRootContext]
 </script>
 
 <script setup lang="ts">
+import { mergeProps } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
-import { RovingFocusGroup } from '@/RovingFocus'
+import { useRovingFocusGroup } from '@/RovingFocus/useRovingFocusGroup'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useRadioGroup } from './useRadioGroup'
 import { useArrowKeyListeners } from './utils'
+
+defineOptions({
+  // `$attrs` are merged under the roving and root bindings: the precedence
+  // the former `<RovingFocusGroup as-child>` wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<RadioGroupRootProps>(), {
   disabled: false,
@@ -91,32 +98,33 @@ const { modelValue, root, context } = useRadioGroup({
 
 provideRadioGroupRootContext(context)
 
+// Arrow-key navigation between the radios.
+const roving = useRovingFocusGroup({
+  element: currentElement,
+  orientation: () => props.orientation,
+  dir: () => dir.value,
+  loop: () => props.loop,
+})
+
 // The window arrow-key flag the items read on focus (one shared pair of
 // listeners, not one per item).
 useArrowKeyListeners()
 </script>
 
 <template>
-  <RovingFocusGroup
-    as-child
-    :orientation="orientation"
-    :dir="dir"
-    :loop="loop"
+  <component
+    :is="renderAs(as, asChild)"
+    :ref="forwardRef"
+    v-bind="mergeProps($attrs, roving.attrs(), root.attrs.value)"
   >
-    <component
-      :is="renderAs(as, asChild)"
-      :ref="forwardRef"
-      v-bind="root.attrs.value"
-    >
-      <slot :model-value="modelValue" />
+    <slot :model-value="modelValue" />
 
-      <VisuallyHiddenInput
-        v-if="isFormControl && name"
-        :required="required"
-        :disabled="disabled"
-        :value="modelValue"
-        :name="name"
-      />
-    </component>
-  </RovingFocusGroup>
+    <VisuallyHiddenInput
+      v-if="isFormControl && name"
+      :required="required"
+      :disabled="disabled"
+      :value="modelValue"
+      :name="name"
+    />
+  </component>
 </template>

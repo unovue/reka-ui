@@ -7,9 +7,10 @@ import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
 import type { SelectionSelector } from '@/shared/selectionSelector'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
-import { usePrimitiveElement } from '@/Primitive'
+import {
+  usePrimitiveElement,
+} from '@/Primitive'
 import { createContext, mergeExpose, useDirection, useFormControl } from '@/shared'
-import { Primitive } from '..'
 
 export type ListboxRootContext<T> = {
   modelValue: Ref<T | Array<T> | undefined>
@@ -145,6 +146,7 @@ export type ListboxRootEmits<T = AcceptableValue, M extends boolean = boolean> =
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false">
 import { ref, toRef, toRefs } from 'vue'
 import { useCollection } from '@/Collection'
+import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useListboxRoot } from './useListbox'
 
@@ -224,10 +226,9 @@ provideListboxRootContext(context)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     ref="primitiveElement"
-    :as="as"
-    :as-child="asChild"
     v-bind="root.attrs.value"
   >
     <slot :model-value="modelValue" />
@@ -239,5 +240,5 @@ provideListboxRootContext(context)
       :disabled="disabled"
       :required="required"
     />
-  </Primitive>
+  </component>
 </template>

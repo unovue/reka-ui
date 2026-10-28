@@ -5,22 +5,22 @@ export interface MenuSeparatorProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 
-const props = defineProps<MenuSeparatorProps>()
+defineProps<MenuSeparatorProps>()
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="props"
     role="separator"
     aria-orientation="horizontal"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

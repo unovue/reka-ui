@@ -1,7 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '..'
 import { refAutoReset } from '@vueuse/shared'
-import { Primitive } from '..'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 import { getListboxContentSurface } from './useListbox'
 
@@ -11,6 +10,7 @@ export interface ListboxContentProps extends PrimitiveProps { }
 <script setup lang="ts">
 import { mergeProps } from 'vue'
 import { useCollectionSlot } from '@/Collection'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 
 defineOptions({
@@ -36,12 +36,11 @@ useCollectionSlot(currentElement)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     v-bind="mergeProps($attrs, surface.attrs.value)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

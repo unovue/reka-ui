@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick, reactive, ref } from 'vue'
 import { ListboxContent, ListboxItem, ListboxRoot } from '.'
 
 // Optimisation-pinning tests: a highlight move or a selection change
@@ -85,6 +85,45 @@ describe('listbox render counts', () => {
     tag.value = 'li'
     await nextTick()
     expect(wrapper.find('[role=option]').element.tagName).toBe('LI')
+    wrapper.unmount()
+  })
+
+  // The item renders its slot content itself (no `Primitive` child with its
+  // own effect): what the slot reads must still update a memoized item, alone.
+  it('updates the slot content of a memoized item when what it reads changes', async () => {
+    const labels = reactive(['Apple', 'Banana', 'Cherry'])
+    const renders = [0, 0, 0]
+    const wrapper = mount(defineComponent({
+      components: { ListboxRoot, ListboxContent, ListboxItem },
+      setup: () => ({ labels, count: (i: number) => renders[i]++ }),
+      template: `<ListboxRoot><ListboxContent>
+        <ListboxItem v-for="(label, i) in ['Apple', 'Banana', 'Cherry']" :key="i" :value="i">{{ count(i) }}{{ labels[i] }}</ListboxItem>
+      </ListboxContent></ListboxRoot>`,
+    }), { attachTo: document.body })
+    // Let the mount-time highlight settle first.
+    await new Promise(resolve => setTimeout(resolve))
+    await nextTick()
+    renders.fill(0)
+
+    labels[1] = 'Blueberry'
+    await nextTick()
+    expect(wrapper.findAll('[role=option]').map(o => o.text().replace(/^\d+/, ''))).toEqual(['Apple', 'Blueberry', 'Cherry'])
+    // Only that item renders its slot (twice under Vue 3.5, which also runs it
+    // to see whether the render is due).
+    expect(renders.map(count => count > 0)).toEqual([false, true, false])
+    wrapper.unmount()
+  })
+
+  it('updates the slot content of a memoized item that a parent update re-renders with the same state', async () => {
+    const text = ref('Apple')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ListboxRoot, { 'data-text': text.value }, () => h(ListboxContent, null, () =>
+        h(ListboxItem, { value: 'a' }, () => text.value))),
+    }), { attachTo: document.body })
+    await nextTick()
+    text.value = 'Apricot'
+    await nextTick()
+    expect(wrapper.find('[role=option]').text()).toBe('Apricot')
     wrapper.unmount()
   })
 })

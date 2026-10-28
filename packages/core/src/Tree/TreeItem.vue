@@ -23,7 +23,7 @@ export type TreeItemEmits<T> = {
 import type { PrimitiveProps } from '@/Primitive'
 import { mergeProps } from 'vue'
 import { useCollection } from '@/Collection'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { mergeExpose, useForwardElement } from '@/shared'
 import { injectTreeRootContext } from './TreeRoot.vue'
@@ -96,10 +96,9 @@ const roving = useRovingFocusItem({
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="mergeProps(roving.attrs(), $attrs, surface.attrs.value)"
   >
     <slot
@@ -110,5 +109,5 @@ const roving = useRovingFocusItem({
       :handle-select="handleSelect"
       :handle-toggle="handleToggle"
     />
-  </Primitive>
+  </component>
 </template>

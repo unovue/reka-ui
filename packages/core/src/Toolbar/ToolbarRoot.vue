@@ -23,37 +23,43 @@ export const [injectToolbarRootContext, provideToolbarRootContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
-import { RovingFocusGroup } from '@/RovingFocus'
+import { mergeProps } from 'vue'
+import { renderAs } from '@/Primitive/renderAs'
+import { useRovingFocusGroup } from '@/RovingFocus/useRovingFocusGroup'
 import { useToolbar } from './useToolbar'
+
+defineOptions({
+  // `$attrs` are merged under the roving and root bindings: the precedence
+  // the former `<RovingFocusGroup as-child>` wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<ToolbarRootProps>(), {
   orientation: 'horizontal',
 })
-// `dir` resolution (ConfigProvider-aware) stays in the shell, and so does the
-// `RovingFocusGroup` wrapper (arrow-key navigation).
+// `dir` resolution (ConfigProvider-aware) stays in the shell.
 const dir = useDirection(() => props.dir)
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
 const { root, context } = useToolbar({ orientation: () => props.orientation, dir })
 provideToolbarRootContext(context)
+
+// Arrow-key navigation between the toolbar's items.
+const roving = useRovingFocusGroup({
+  element: currentElement,
+  orientation: () => props.orientation,
+  dir: () => dir.value,
+  loop: () => props.loop,
+})
 </script>
 
 <template>
-  <RovingFocusGroup
-    as-child
-    :orientation="orientation"
-    :dir="dir"
-    :loop="loop"
+  <component
+    :is="renderAs(as, asChild)"
+    :ref="forwardRef"
+    v-bind="mergeProps($attrs, roving.attrs(), root.attrs.value)"
   >
-    <Primitive
-      :ref="forwardRef"
-      :as-child="asChild"
-      :as="as"
-      v-bind="root.attrs.value"
-    >
-      <slot />
-    </Primitive>
-  </RovingFocusGroup>
+    <slot />
+  </component>
 </template>
