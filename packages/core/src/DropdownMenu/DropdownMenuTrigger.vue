@@ -55,24 +55,28 @@ const detached = usePopupHandleTrigger<Payload>({
   element: triggerElement,
   payload: () => props.payload,
 })
-const detachedTrigger = getDropdownMenuTriggerSurface({
-  get triggerId() {
-    return detached.id.value
-  },
-  get contentId() {
-    return detached.contentId.value!
-  },
-  open: detached.open,
-  onOpenToggle: (reason, event) => {
-    detached.store.value?.pressTrigger(detached.id.value, 'toggle', reason, event)
-  },
-  onOpenChange: (value, reason, event) => {
-    if (value)
-      detached.store.value?.pressTrigger(detached.id.value, 'open', reason, event)
-    else
-      detached.store.value?.closePopup(reason, event, triggerElement.value)
-  },
-}, () => props.disabled)
+// The handle's view of the trigger surface, built only once a handle is used.
+let detachedTrigger: ReturnType<typeof getDropdownMenuTriggerSurface> | undefined
+function getDetachedTrigger() {
+  return detachedTrigger ??= getDropdownMenuTriggerSurface({
+    get triggerId() {
+      return detached.id.value
+    },
+    get contentId() {
+      return detached.contentId.value!
+    },
+    open: detached.open,
+    onOpenToggle: (reason, event) => {
+      detached.store.value?.pressTrigger(detached.id.value, 'toggle', reason, event)
+    },
+    onOpenChange: (value, reason, event) => {
+      if (value)
+        detached.store.value?.pressTrigger(detached.id.value, 'open', reason, event)
+      else
+        detached.store.value?.closePopup(reason, event, triggerElement.value)
+    },
+  }, () => props.disabled)
+}
 
 // Write this trigger's element into the Root's existing `triggerElement` ref
 // (never replace the ref: with a `handle` it is a writable computed that
@@ -88,8 +92,8 @@ if (rootContext) {
 
 // Ids, aria, `data-state`/`data-disabled` and the click/keydown handlers come
 // from the same builder `useDropdownMenu().trigger` uses.
-const trigger = rootContext ? getDropdownMenuTriggerSurface(rootContext, () => props.disabled) : detachedTrigger
-const attrs = computed(() => detached.enabled.value ? detachedTrigger.attrs.value : trigger.attrs.value)
+const trigger = rootContext ? getDropdownMenuTriggerSurface(rootContext, () => props.disabled) : getDetachedTrigger()
+const attrs = computed(() => detached.enabled.value ? getDetachedTrigger().attrs.value : trigger.attrs.value)
 </script>
 
 <template>

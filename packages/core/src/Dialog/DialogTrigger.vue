@@ -45,21 +45,25 @@ const detached = usePopupHandleTrigger<Payload>({
   element: currentElement,
   payload: () => props.payload,
 })
-const detachedTrigger = getDialogTriggerSurface({
-  get contentId() {
-    return detached.contentId.value!
-  },
-  open: detached.open,
-  onOpenToggle: (reason, event) => detached.store.value?.pressTrigger(detached.id.value, 'toggle', reason, event) ?? false,
-})
+// The handle's view of the trigger surface, built only once a handle is used.
+let detachedTrigger: ReturnType<typeof getDialogTriggerSurface> | undefined
+function getDetachedTrigger() {
+  return detachedTrigger ??= getDialogTriggerSurface({
+    get contentId() {
+      return detached.contentId.value!
+    },
+    open: detached.open,
+    onOpenToggle: (reason, event) => detached.store.value?.pressTrigger(detached.id.value, 'toggle', reason, event) ?? false,
+  })
+}
 
 // aria-haspopup/aria-expanded/aria-controls/data-state + the click handler come
 // from the shared surface builder (single source with `useDialog()`); the
 // tag-dependent `type` stays in the SFC. Consumer listeners fall through as
 // `$attrs` AFTER the surface's handler, so they chain instead of clobbering it.
-const trigger = rootContext ? getDialogTriggerSurface(rootContext) : detachedTrigger
+const trigger = rootContext ? getDialogTriggerSurface(rootContext) : getDetachedTrigger()
 const triggerAttrs = computed(() => detached.enabled.value
-  ? { ...detachedTrigger.attrs.value, id: detached.id.value }
+  ? { ...getDetachedTrigger().attrs.value, id: detached.id.value }
   : { ...trigger.attrs.value, id: props.id })
 
 // Write this trigger's element into the Root's existing `triggerElement` ref
