@@ -2,6 +2,7 @@ import type { MaybeRefOrGetter, Ref } from 'vue'
 import { isClient } from '@vueuse/shared'
 import { nextTick, ref, toValue, watchEffect } from 'vue'
 import { handleAndDispatchCustomEvent } from '@/shared'
+import { context } from './context'
 
 export type PointerDownOutsideEvent = CustomEvent<{
   originalEvent: PointerEvent
@@ -46,6 +47,13 @@ export function isLayerExist(layerElement: HTMLElement, targetElement: HTMLEleme
     : layerElement.querySelector(
       '[data-dismissable-layer]',
     ) as HTMLElement
+
+  if (mainLayer?.hasAttribute('data-editable-root') && targetLayer?.hasAttribute('data-editable-root')) {
+    const isInAnotherLayer = [...context.layersRoot].some(layer => layer.contains(targetElement) && !layer.contains(layerElement))
+
+    if (!isInAnotherLayer)
+      return false
+  }
 
   const nodeList = Array.from(
     layerElement.ownerDocument.querySelectorAll('[data-dismissable-layer]'),
