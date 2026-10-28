@@ -24,7 +24,7 @@ export interface ToastViewportProps extends PrimitiveProps {
 import { onKeyStroke, unrefElement } from '@vueuse/core'
 import { computed, onMounted, ref, toRefs, watch, watchEffect } from 'vue'
 import { DismissableLayerBranch } from '@/DismissableLayer'
-import { focusFirst, getTabbableCandidates } from '@/FocusScope/utils'
+import { focusFirst, getTabbableCandidates, getTabStopsAfter } from '@/FocusScope/utils'
 import { Primitive } from '@/Primitive'
 import FocusProxy from './FocusProxy.vue'
 import { injectToastProviderContext } from './ToastProvider.vue'
@@ -142,8 +142,7 @@ watchEffect((cleanupFn) => {
 
         const tabbingDirection = isTabbingBackwards ? 'backwards' : 'forwards'
         const sortedCandidates = getSortedTabbableCandidates({ tabbingDirection })
-        const index = sortedCandidates.findIndex(candidate => candidate === focusedElement)
-        if (focusFirst(sortedCandidates.slice(index + 1))) {
+        if (focusFirst(getTabStopsAfter(sortedCandidates, focusedElement))) {
           event.preventDefault()
         }
         else {
