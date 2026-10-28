@@ -167,10 +167,11 @@ const positionProps = reactiveOmit(props, 'loop')
 const pickedProps = computed(() => {
   if (props.position === 'popper')
     return positionProps
-  else return {}
+  // Item-aligned, the content is a plain `Primitive`: it still takes `as` / `asChild`.
+  return { as: props.as, asChild: props.asChild }
 })
 
-const forwardedProps = useForwardProps(pickedProps.value)
+const forwardedProps = useForwardProps(pickedProps)
 
 provideSelectContentContext(contentContext)
 

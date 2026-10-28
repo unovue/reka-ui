@@ -56,6 +56,30 @@ describe.runIf(major >= 19)(`React ${version}`, () => {
     root.unmount()
   })
 
+  it('controlled listbox of objects: `value` and `modelValue` as properties, compared with `by`', async () => {
+    const users = [{ id: 1, name: 'Ada' }, { id: 2, name: 'Grace' }]
+    const seen: unknown[] = []
+    function App() {
+      const [selected, setSelected] = useState<unknown>({ id: 2 })
+      return h('reka-listbox-root', {
+        'by': 'id',
+        'modelValue': selected,
+        'onupdate-model-value': (event: RekaElementEvent) => {
+          seen.push(event.detail.value)
+          setSelected(event.detail.value)
+        },
+      }, h('reka-listbox-content', { 'aria-label': 'Users' }, users.map(user => h('reka-listbox-item', { key: user.id, value: user }, user.name))))
+    }
+    const { host, root } = mount(h(App))
+    const items = [...host.querySelectorAll('reka-listbox-item')]
+    await vi.waitFor(() => expect(items[1].getAttribute('aria-selected')).toBe('true'))
+    await userEvent.click(items[0])
+    await vi.waitFor(() => expect(items[0].getAttribute('aria-selected')).toBe('true'))
+    expect(items[1].getAttribute('aria-selected')).toBe('false')
+    expect(seen).toEqual([users[0]])
+    root.unmount()
+  })
+
   it('does not call a camelCase `onUpdateModelValue` (the typings reject it)', async () => {
     const spy = vi.fn()
     const { host, root } = mount(h('reka-switch-root', { 'aria-label': 'x', 'style': STYLE, 'onUpdateModelValue': spy }))

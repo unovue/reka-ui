@@ -68,9 +68,8 @@ const pickedProps = computed(() => {
     const { present: _, ...forwardedProps } = props
     return forwardedProps
   }
-  else {
-    return {}
-  }
+  // Inline, the content is a plain `Primitive`: it still takes `as` / `asChild`.
+  return { as: props.as, asChild: props.asChild }
 })
 
 const forwardedProps = useForwardProps(pickedProps)
