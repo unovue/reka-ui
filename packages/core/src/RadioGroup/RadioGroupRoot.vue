@@ -100,6 +100,7 @@ provideRadioGroupRootContext(context)
 
 // Arrow-key navigation between the radios.
 const roving = useRovingFocusGroup({
+  consumerAttrs: true,
   element: currentElement,
   orientation: () => props.orientation,
   dir: () => dir.value,
@@ -115,7 +116,7 @@ useArrowKeyListeners()
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps($attrs, roving.attrs(), root.attrs.value)"
+    v-bind="mergeProps(roving.consumerAttrs($attrs), roving.attrs(), root.attrs.value)"
   >
     <slot :model-value="modelValue" />
 

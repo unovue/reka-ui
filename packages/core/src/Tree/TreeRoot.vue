@@ -160,6 +160,7 @@ provideTreeRootContext(context)
 
 const isVirtual = context.isVirtual
 const roving = useRovingFocusGroup({
+  consumerAttrs: true,
   element: currentElement,
   orientation: () => 'vertical',
   dir: () => dir.value,
@@ -171,7 +172,7 @@ const roving = useRovingFocusGroup({
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps($attrs, roving.attrs(), root.attrs.value)"
+    v-bind="mergeProps(roving.consumerAttrs($attrs), roving.attrs(), root.attrs.value)"
   >
     <slot
       :flatten-items="flattenItems"

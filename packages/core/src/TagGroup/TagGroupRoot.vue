@@ -155,6 +155,7 @@ provideTagGroupRootContext(context as unknown as TagGroupRootContext)
 
 // The roving group owns the tab stop; the tags read it to make their delete button tabbable.
 const roving = useRovingFocusGroup({
+  consumerAttrs: true,
   element: currentElement,
   dir: () => dir.value,
   loop: () => props.loop,
@@ -166,7 +167,7 @@ const roving = useRovingFocusGroup({
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps($attrs, roving.attrs(), root.attrs.value)"
+    v-bind="mergeProps(roving.consumerAttrs($attrs), roving.attrs(), root.attrs.value)"
     :aria-labelledby="mergeIds($attrs['aria-labelledby'], fieldContext?.labelId.value)"
     :aria-describedby="mergeIds($attrs['aria-describedby'], fieldContext?.describedBy.value)"
   >

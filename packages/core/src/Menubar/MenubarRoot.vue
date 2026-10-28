@@ -92,6 +92,7 @@ provideMenubarRootContext(context)
 
 // Arrow-key navigation between the triggers.
 const roving = useRovingFocusGroup({
+  consumerAttrs: true,
   element: currentElement,
   orientation: () => 'horizontal',
   dir: () => dir.value,
@@ -104,7 +105,7 @@ const roving = useRovingFocusGroup({
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps($attrs, roving.attrs(), root.attrs.value)"
+    v-bind="mergeProps(roving.consumerAttrs($attrs), roving.attrs(), root.attrs.value)"
   >
     <slot :model-value="modelValue" />
   </component>

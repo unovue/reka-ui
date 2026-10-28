@@ -35,6 +35,7 @@ context.tabsList = currentElement
 // `useTabs().list`); arrow-key navigation is the roving group composable.
 const surface = getTabsListSurface(context)
 const roving = useRovingFocusGroup({
+  consumerAttrs: true,
   element: currentElement,
   orientation: () => context.orientation.value,
   dir: () => context.dir.value,
@@ -46,7 +47,7 @@ const roving = useRovingFocusGroup({
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps($attrs, roving.attrs(), surface.attrs.value)"
+    v-bind="mergeProps(roving.consumerAttrs($attrs), roving.attrs(), surface.attrs.value)"
   >
     <slot />
   </component>

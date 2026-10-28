@@ -47,6 +47,7 @@ provideToolbarRootContext(context)
 
 // Arrow-key navigation between the toolbar's items.
 const roving = useRovingFocusGroup({
+  consumerAttrs: true,
   element: currentElement,
   orientation: () => props.orientation,
   dir: () => dir.value,
@@ -58,7 +59,7 @@ const roving = useRovingFocusGroup({
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps($attrs, roving.attrs(), root.attrs.value)"
+    v-bind="mergeProps(roving.consumerAttrs($attrs), roving.attrs(), root.attrs.value)"
   >
     <slot />
   </component>

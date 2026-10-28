@@ -140,12 +140,17 @@ export function getListboxItemSurface<T extends AcceptableValue = AcceptableValu
   // highlight move or a selection change re-renders only the items it flips,
   // not every item of the list. A context built without them (a hand-made
   // one) compares against the shared state, as before.
-  const isHighlighted = context.highlight
+  const readHighlighted = context.highlight
     ? useSelectorKey(context.highlight, () => toValue(options.element))
     : () => {
         const highlighted = context.highlightedElement.value
         return highlighted != null && highlighted === toValue(options.element)
       }
+  // Cached: the read tracks the item's element, which is set after the item
+  // renders (on mount, or when a filtered-out item comes back). Only a change
+  // of the result re-renders the item, not the element ref itself.
+  const highlightedRef = computed(readHighlighted)
+  const isHighlighted = () => highlightedRef.value
   const selectionHold = context.selection?.createHold()
   if (selectionHold && getCurrentScope())
     onScopeDispose(() => selectionHold.release())

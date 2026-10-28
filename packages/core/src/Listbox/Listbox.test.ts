@@ -784,7 +784,7 @@ describe('given horizontal Listbox', () => {
 })
 
 // Regression test for https://github.com/unovue/reka-ui/issues/2644
-// `v-memo` on ListboxItem must invalidate when `disabled` (or
+// ListboxItem must re-render when `disabled` (or
 // `rootContext.focusable.value`) changes, otherwise `data-disabled` / `disabled`
 // attributes go stale and the item still participates in keyboard navigation.
 describe('given ListboxItem with reactive `disabled` prop', () => {
@@ -823,8 +823,8 @@ describe('given ListboxItem with reactive `disabled` prop', () => {
 })
 
 // Regression test for https://github.com/unovue/reka-ui/issues/2904
-// The VNode memoized by ListboxItem's `v-memo` spreads `$attrs`, so the memo
-// must also invalidate when a fallthrough attribute changes. Otherwise a
+// ListboxItem spreads `$attrs`, so it must re-render when a fallthrough
+// attribute changes. Otherwise a
 // surviving virtualizer row whose `option` changes after filtering keeps the
 // previous option's attributes (`data-testid`, `aria-setsize`, ...) while its
 // slot content updates.

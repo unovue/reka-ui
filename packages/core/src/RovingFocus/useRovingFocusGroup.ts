@@ -3,7 +3,7 @@ import type { RovingFocusItemMeta } from './useRovingFocusItem'
 import type { Direction, Orientation } from './utils'
 import type { ElementSourceLike } from '@/Collection/Collection'
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
-import { nextTick, ref } from 'vue'
+import { computed, getCurrentInstance, nextTick, ref } from 'vue'
 import { getCollectionMeta, useCollection, useCollectionSlot } from '@/Collection'
 import { createContext } from '@/shared/createContext'
 import { createKeyedSelector } from '@/shared/createKeyedSelector'
@@ -44,6 +44,62 @@ export interface UseRovingFocusGroupOptions {
   preventScrollOnEntryFocus?: () => boolean | undefined
   /** The `entryFocus` event; calling `preventDefault()` keeps the focus on the group. */
   onEntryFocus?: (event: Event) => void
+  /**
+   * For a part that replaced `<RovingFocusGroup as-child>`: its consumer's
+   * attrs named after a `RovingFocusGroup` prop or event (`dir`,
+   * `orientation`, `loop`, `currentTabStopId`, `defaultCurrentTabStopId`,
+   * `preventScrollOnEntryFocus`, `onEntryFocus`, `onUpdate:currentTabStopId`)
+   * configure the group over the part's own options, as they did when they
+   * fell through to the wrapper's props. Bind `roving.consumerAttrs($attrs)`,
+   * which leaves them out, instead of `$attrs`.
+   */
+  consumerAttrs?: boolean
+}
+
+/** `RovingFocusGroup`'s props and events, camelCase → kebab-case. */
+const GROUP_PROPS: Record<string, string> = {
+  dir: 'dir',
+  orientation: 'orientation',
+  loop: 'loop',
+  currentTabStopId: 'current-tab-stop-id',
+  defaultCurrentTabStopId: 'default-current-tab-stop-id',
+  preventScrollOnEntryFocus: 'prevent-scroll-on-entry-focus',
+}
+const GROUP_EVENTS = ['onEntryFocus', 'onUpdate:currentTabStopId', 'onUpdate:current-tab-stop-id']
+const GROUP_KEYS = new Set([...Object.keys(GROUP_PROPS), ...Object.values(GROUP_PROPS), ...GROUP_EVENTS])
+
+/** Calls a listener attr (a function, or an array of them as `mergeProps` makes). */
+function callListener(listener: unknown, arg: unknown) {
+  if (Array.isArray(listener))
+    listener.forEach(fn => typeof fn === 'function' && fn(arg))
+  else if (typeof listener === 'function')
+    listener(arg)
+}
+
+/**
+ * Reads the consumer attrs that name a group prop, as Vue would have resolved
+ * them for `RovingFocusGroup`: either spelling, and a boolean prop set by its
+ * bare name. Reading `$attrs` through the instance proxy tracks it.
+ */
+function consumerGroupAttrs() {
+  const instance = getCurrentInstance()!
+  const read = (key: string): { value: unknown } | undefined => {
+    const attrs = instance.proxy!.$attrs
+    if (key in attrs)
+      return { value: attrs[key] }
+    const kebab = GROUP_PROPS[key]
+    if (kebab !== key && kebab in attrs)
+      return { value: attrs[kebab] }
+    return undefined
+  }
+  const readBoolean = (key: string) => {
+    const attr = read(key)
+    if (!attr)
+      return undefined
+    return attr.value === '' || attr.value === GROUP_PROPS[key] ? true : attr.value as boolean | undefined
+  }
+  const listener = (key: string) => instance.proxy!.$attrs[key]
+  return { read, readBoolean, listener }
 }
 
 const OUTLINE_NONE = Object.freeze({ outline: 'none' })
@@ -63,6 +119,8 @@ const OUTLINE_NONE = Object.freeze({ outline: 'none' })
  * @lifecycle setup
  */
 export function useRovingFocusGroup(options: UseRovingFocusGroupOptions) {
+  if (options.consumerAttrs)
+    options = withConsumerAttrs(options)
   const orientation = getterRef(() => options.orientation?.())
   const loop = getterRef(() => !!options.loop?.())
   const dir = useDirection(() => options.dir?.())
@@ -216,6 +274,24 @@ export function useRovingFocusGroup(options: UseRovingFocusGroupOptions) {
   return {
     getItems,
     dir,
+    /**
+     * The consumer's attrs without those that configure the group (see
+     * `consumerAttrs`): `RovingFocusGroup` took them as props, so they never
+     * reached the element.
+     */
+    consumerAttrs: (attrs: Record<string, unknown>): Record<string, unknown> => {
+      for (const key in attrs) {
+        if (GROUP_KEYS.has(key)) {
+          const rest: Record<string, unknown> = {}
+          for (const k in attrs) {
+            if (!GROUP_KEYS.has(k))
+              rest[k] = attrs[k]
+          }
+          return rest
+        }
+      }
+      return attrs
+    },
     /** The group's element bindings, read in render. */
     attrs: (): Record<string, unknown> => ({
       'tabindex': isTabbingBackOut.value || focusableItemsCount.value === 0 ? -1 : 0,
@@ -232,3 +308,40 @@ export function useRovingFocusGroup(options: UseRovingFocusGroupOptions) {
 }
 
 export type UseRovingFocusGroupReturn = ReturnType<typeof useRovingFocusGroup>
+
+/** `options`, with the consumer's group attrs over the part's own (see `consumerAttrs`). */
+function withConsumerAttrs(options: UseRovingFocusGroupOptions): UseRovingFocusGroupOptions {
+  const { read, readBoolean, listener } = consumerGroupAttrs()
+  const owned = options.currentTabStopId ?? ref<string | null | undefined>(read('defaultCurrentTabStopId')?.value as string | undefined)
+  return {
+    ...options,
+    orientation: () => (read('orientation') ? read('orientation')!.value as Orientation | undefined : options.orientation?.()),
+    dir: () => (read('dir') ? read('dir')!.value as Direction | undefined : options.dir?.()),
+    loop: () => {
+      const loop = readBoolean('loop')
+      return loop !== undefined ? loop : options.loop?.()
+    },
+    preventScrollOnEntryFocus: () => {
+      const prevent = readBoolean('preventScrollOnEntryFocus')
+      return prevent !== undefined ? prevent : options.preventScrollOnEntryFocus?.()
+    },
+    // A `v-model:current-tab-stop-id` on the part controls the group, as it
+    // did the wrapper's; the part's own tab stop still follows.
+    currentTabStopId: computed({
+      get: () => {
+        const controlled = read('currentTabStopId')
+        return controlled && controlled.value !== undefined ? controlled.value as string | null : owned.value
+      },
+      set: (value) => {
+        owned.value = value
+        callListener(listener('onUpdate:currentTabStopId') ?? listener('onUpdate:current-tab-stop-id'), value)
+      },
+    }),
+    // The part's listener first, then the consumer's: the order the wrapper's
+    // merged listeners ran in.
+    onEntryFocus: (event) => {
+      options.onEntryFocus?.(event)
+      callListener(listener('onEntryFocus'), event)
+    },
+  }
+}
