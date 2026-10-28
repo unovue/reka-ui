@@ -1,7 +1,7 @@
 import type { ComponentInternalInstance, ComponentPublicInstance, ComputedRef, Ref, ShallowRef } from 'vue'
 import type { MergeableRef } from './useMergedRefs'
-import { getCurrentInstance, onScopeDispose, shallowRef, watch } from 'vue'
-import { resolveRefTarget, useMergedRefs } from './useMergedRefs'
+import { computed, getCurrentInstance, onScopeDispose, shallowRef, watch } from 'vue'
+import { isElement, resolveRefTarget, useMergedRefs } from './useMergedRefs'
 
 /**
  * The element-first ref/expose contract every reka part satisfies (#2808):
@@ -151,11 +151,10 @@ function exposeElementSource<E extends Element>(
  * read: most parts only bind `forwardRef` and expose `element`, which usually
  * nothing reads. The ref starts from the raw value when it is created.
  *
- * `.value` resolves on every read rather than through a computed (one per part,
- * chained through every forwarding layer): the reader tracks the raw ref and,
- * through a conforming child's `element`, the child's own, so a root swap
- * inside the child still re-runs it even though Vue never re-invokes our ref
- * callback. Resolving is a couple of property reads.
+ * A source bound directly on an element (the `Primitive` at the bottom of
+ * every chain) or on a linked child part resolves on read and allocates no
+ * computed: a few property reads, tracked by the reader. Only a source bound
+ * on another component, reached through Vue's proxies, caches its resolution.
  */
 class ElementSource<E extends Element> implements ElementRefSource<E> {
   // Ref markers as prototype getters: no per-instance slots.
@@ -163,6 +162,7 @@ class ElementSource<E extends Element> implements ElementRefSource<E> {
   get __v_isReadonly(): true { return true }
   raw: unknown = null
   ref: ShallowRef<unknown> | undefined = undefined
+  resolved: ComputedRef<E | null> | undefined = undefined
   /** The callback ref handed to the template (`forwardRef`); bound, so it captures no scope. */
   forward: (el: unknown) => void = this.set.bind(this)
   /** A child part bound with `forward` that linked itself here (see `linkToOwner`). */
@@ -174,7 +174,21 @@ class ElementSource<E extends Element> implements ElementRefSource<E> {
 
   /** The resolved element (tracked: see above). */
   get value(): E | null {
-    return resolveRefTarget<E>(this.currentRef.value)
+    if (this.resolved)
+      return this.resolved.value
+    const raw = this.currentRef.value
+    // Bound directly on an element (or detached): nothing to resolve or cache.
+    if (raw === null || isElement(raw))
+      return raw as E | null
+    // A linked child part (see `linkToOwner`): `raw` is its plain expose object,
+    // so resolving is a few property reads, tracked through the child's source.
+    if (raw instanceof Object && (raw as { element?: unknown }).element instanceof ElementSource)
+      return resolveRefTarget<E>(raw)
+    // Bound on any other component (through Vue's expose or public proxy):
+    // cache the walk through its `element` chain, which tracks the child's own
+    // refs, so a root swap inside the child still re-resolves here even though
+    // Vue never re-invokes our ref callback.
+    return (this.resolved = computed(() => resolveRefTarget<E>(this.currentRef.value))).value
   }
 
   get element(): Readonly<Ref<E | null>> {
@@ -221,19 +235,27 @@ function isPublicInstanceOf(el: unknown, instance: ComponentInternalInstance) {
  * proxy, reads the child's expose object directly: same `element`, same
  * tracking, no allocation.
  *
- * Any other ref (a consumer's ref, a merged `asChild` ref array, string or
- * object refs) gets the regular expose proxy, so the public contract is
- * unchanged.
+ * A ref merged from several owners (a cloned vnode) links when every entry is
+ * an owner's own `forwardRef`. Any other ref (a consumer's ref, alone or merged
+ * in, string or object refs) gets the regular expose proxy, so the public
+ * contract is unchanged.
  */
 function linkToOwner(instance: ComponentInternalInstance | null): boolean {
   const vnodeRef = instance?.vnode.ref
-  if (!instance || !vnodeRef || Array.isArray(vnodeRef))
+  if (!instance || !vnodeRef)
     return false
-  const owner = vnodeRef.i?.exposed as { element?: unknown } | null | undefined
-  const ownerSource = owner?.element
-  if (!(ownerSource instanceof ElementSource) || ownerSource.forward !== vnodeRef.r)
-    return false
-  ownerSource.linked = instance
+  // A cloned vnode merges refs into an array (`Presence`, `Slot`): link only
+  // when every one is an owner's own `forwardRef`, i.e. no consumer ref.
+  const refs = Array.isArray(vnodeRef) ? vnodeRef : [vnodeRef]
+  const sources: ElementSource<Element>[] = []
+  for (const { i, r } of refs) {
+    const ownerSource = (i?.exposed as { element?: unknown } | null | undefined)?.element
+    if (!(ownerSource instanceof ElementSource) || ownerSource.forward !== r)
+      return false
+    sources.push(ownerSource)
+  }
+  for (const source of sources)
+    source.linked = instance
   ;(instance as LinkableInstance).exposeProxy = instance.proxy
   return true
 }
