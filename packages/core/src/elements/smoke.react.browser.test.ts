@@ -124,6 +124,51 @@ describe.runIf(major >= 19)(`React ${version}`, () => {
     expect(spy).not.toHaveBeenCalled()
     root.unmount()
   })
+  it('controlled toggle group: an array property in, `onupdate-model-value` out', async () => {
+    const seen: unknown[] = []
+    function App() {
+      const [value, setValue] = useState<string[]>(['bold'])
+      return h('reka-toggle-group-root', {
+        'type': 'multiple',
+        'aria-label': 'Formatting',
+        'modelValue': value,
+        'onupdate-model-value': (event: RekaElementEvent<string[]>) => {
+          seen.push(event.detail.value)
+          setValue(event.detail.value)
+        },
+      }, h('reka-toggle-group-item', { value: 'bold' }, 'B'), h('reka-toggle-group-item', { value: 'italic' }, 'I'))
+    }
+    const { host, root } = mount(h(App))
+    const [bold, italic] = host.querySelectorAll('reka-toggle-group-item')
+    await vi.waitFor(() => expect(bold.getAttribute('aria-pressed')).toBe('true'))
+    await userEvent.click(italic)
+    await vi.waitFor(() => expect(italic.getAttribute('aria-pressed')).toBe('true'))
+    expect(seen).toEqual([['bold', 'italic']])
+    root.unmount()
+  })
+
+  it('an `onform-submit` prop is a listener the form root sees, and prevents the native submission', async () => {
+    const values: unknown[] = []
+    const native: boolean[] = []
+    const onNative = (event: Event) => {
+      native.push(!event.defaultPrevented)
+      event.preventDefault()
+    }
+    document.addEventListener('submit', onNative)
+    const { host, root } = mount(h('reka-form-root', {
+      'onform-submit': (event: RekaElementEvent) => values.push(event.detail.value),
+    }, h('form', { noValidate: true }, h('button', { type: 'submit' }, 'Submit'))))
+    try {
+      await vi.waitFor(() => expect(host.querySelector('reka-form-root')!.hasAttribute('data-reka-unmounted')).toBe(false))
+      await userEvent.click(host.querySelector('button')!)
+      await vi.waitFor(() => expect(values).toEqual([{}]))
+      expect(native).toEqual([false])
+    }
+    finally {
+      document.removeEventListener('submit', onNative)
+      root.unmount()
+    }
+  })
 })
 
 describe.runIf(major === 18)(`React ${version}`, () => {

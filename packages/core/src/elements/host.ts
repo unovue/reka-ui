@@ -20,8 +20,9 @@ export const HOST_PROP = '__rekaHost'
 export const OWNED_ATTR = 'data-reka-owned'
 /**
  * Marks the nodes a part's tree rendered into the host (an `inside` part, see
- * {@link HostSemantics.inside}) or next to it (a `siblings` part), so a
- * `cloneNode()` copy of a mounted element can drop them.
+ * {@link HostSemantics.inside}, or `siblings: 'inside'`) or next to it (`siblings`),
+ * so a `cloneNode()` copy of a mounted element can drop them. A wrapper the part
+ * renders around the host has the value `wrapper`: a copy takes itself out of it.
  */
 export const RELOCATED_ATTR = 'data-reka-relocated'
 /** Data of the comment that ends a `siblings` part's nodes next to its host. */
@@ -39,6 +40,35 @@ const STYLE_PROPERTY = /:([\s\S]+)/
 const IMPORTANT = /\s*!important$/
 const EVENT_KEY = /^on[^a-z]/
 const FORM_FIELD = /^(?:INPUT|SELECT|TEXTAREA)$/
+
+/**
+ * Marks the `CustomEvent`s an element dispatches for its part's emits. The part's
+ * own DOM listeners on the host skip them: `FormRoot` listens to `submit` and
+ * emits `submit`, which would otherwise reach its own listener again.
+ */
+export const ELEMENT_EVENT: unique symbol = Symbol.for('reka-ui.element-event') as never
+
+type Handler = (...args: unknown[]) => unknown
+const guardedHandlers = new WeakMap<Handler, Handler>()
+
+function guardHandler(handler: Handler): Handler {
+  let guarded = guardedHandlers.get(handler)
+  if (!guarded) {
+    guarded = function (this: unknown, ...args: unknown[]) {
+      if (!(args[0] as Record<symbol, unknown> | undefined)?.[ELEMENT_EVENT])
+        return handler.apply(this, args)
+    }
+    guardedHandlers.set(handler, guarded)
+  }
+  return guarded
+}
+
+/** The part's listener, skipping the element's own emit events. */
+function guardListener(value: unknown): unknown {
+  if (typeof value === 'function')
+    return guardHandler(value as Handler)
+  return Array.isArray(value) ? value.map(guardListener) : value
+}
 /**
  * Props of a native `<input>` target that are DOM state, not attributes. (`disabled`
  * reflects its attribute: it is owned like any attribute, so a consumer write while
@@ -116,6 +146,8 @@ const containers = new WeakMap<Node, HostBinding>()
 const siblingOwners = new WeakMap<Node, HostBinding>()
 /** Nodes a live part rendered into (`inside`) or next to (`siblings`) its host. */
 const liveRelocated = new WeakSet<Node>()
+/** Wrappers a part rendered around its host, by binding. */
+const wrapperOwners = new WeakMap<Node, HostBinding>()
 /** Bindings whose element currently sits away from its home position (teleported or wrapped). */
 const awayBindings = new Set<HostBinding>()
 
@@ -260,10 +292,10 @@ export class HostBinding {
   /** The part renders as disabled. */
   partDisabled = false
   /**
-   * Root-level elements the part renders next to itself go next to the host in
-   * the document, instead of staying detached (see `RekaElementPartDefinition.siblings`).
+   * Root-level elements the part renders next to itself go in the document, after
+   * the host or inside it, instead of staying detached (see `RekaElementPartDefinition.siblings`).
    */
-  siblings = false
+  siblings: false | 'after' | 'inside' = false
 
   private homeMarker: Comment | null = null
   private readonly owned = new Map<string, OwnedAttribute>()
@@ -278,6 +310,12 @@ export class HostBinding {
   private readonly siblingNodes = new Set<Node>()
   /** Marks where the host's siblings end, so they keep their order. */
   private siblingEnd: Comment | null = null
+  /**
+   * Wrappers the part rendered around the host, in the consumer's tree. Vue removes
+   * a fragment's nodes by walking between its anchors in the detached container,
+   * so it never reaches one next to a `<style>` (`ScrollAreaViewport`).
+   */
+  private readonly wrappers = new Set<Node>()
   private spaceArmed = false
   private markerQueued = false
   private formQueued = false
@@ -338,8 +376,14 @@ export class HostBinding {
   static cleanCopiedState(el: HTMLElement) {
     // Copies of nodes a part rendered into or next to a host, anywhere in the copy
     // (a toast's announcement sits where the toast was declared, not next to it).
-    for (const node of el.querySelectorAll(`[${RELOCATED_ATTR}]`)) {
+    // (Not copied wrappers: they hold the copies of the elements they wrapped.)
+    for (const node of el.querySelectorAll(`[${RELOCATED_ATTR}]:not([${RELOCATED_ATTR}="wrapper"])`)) {
       if (!liveRelocated.has(node))
+        node.remove()
+    }
+    // The end marker of the nodes a `siblings: 'inside'` part rendered into it.
+    for (const node of [...el.childNodes]) {
+      if (node.nodeType === Node.COMMENT_NODE && (node as Comment).data === SIBLINGS_END)
         node.remove()
     }
     HostBinding.removeCopiedSiblings(el)
@@ -376,6 +420,21 @@ export class HostBinding {
     return !!this.semantics?.inside
   }
 
+  /**
+   * A `cloneNode()` copy inside its own wrapper: takes it out, as the copy's part
+   * renders another one. The nearest marked wrapper above it, short of another
+   * element, is its own. Moving the element connects it again (synchronously).
+   */
+  static unwrapCopy(el: HTMLElement) {
+    for (let node = el.parentElement; node && !node.localName.includes('-'); node = node.parentElement) {
+      if (node.getAttribute(RELOCATED_ATTR) === 'wrapper') {
+        node.replaceWith(el)
+        return true
+      }
+    }
+    return false
+  }
+
   get away() {
     return this.homeMarker !== null
   }
@@ -402,7 +461,7 @@ export class HostBinding {
    */
   canWriteText() {
     for (const child of this.host.childNodes) {
-      if (child !== this.textNode && !(child as Element).hasAttribute?.(CREATED_ATTR) && !(child as Element).hasAttribute?.(RELOCATED_ATTR))
+      if (child !== this.textNode && child !== this.siblingEnd && !this.siblingNodes.has(child) && !(child as Element).hasAttribute?.(CREATED_ATTR) && !(child as Element).hasAttribute?.(RELOCATED_ATTR))
         return false
     }
     return true
@@ -486,6 +545,9 @@ export class HostBinding {
   /** A root-level node of the part's tree: wrappers take the host's place, the rest stays detached. */
   insertRootNode(child: Node, anchor: Node | null) {
     if (child.nodeType === Node.ELEMENT_NODE && this.homeMarker && child.contains(this.host)) {
+      this.write(() => (child as Element).setAttribute(RELOCATED_ATTR, 'wrapper'))
+      this.wrappers.add(child)
+      wrapperOwners.set(child, this)
       this.homeMarker.parentNode?.insertBefore(child, this.homeMarker)
       return
     }
@@ -519,7 +581,8 @@ export class HostBinding {
    */
   insertSibling(child: Node, anchor: Node | null): boolean {
     const home = this.homeNode
-    const parent = home.parentNode
+    const inside = this.siblings === 'inside'
+    const parent = inside ? this.host : home.parentNode
     if (!parent)
       return false
     if (anchor && anchor.parentNode === parent && this.siblingNodes.has(anchor)) {
@@ -528,7 +591,7 @@ export class HostBinding {
     else {
       const end = this.siblingEnd ??= this.host.ownerDocument.createComment(SIBLINGS_END)
       if (end.parentNode !== parent)
-        parent.insertBefore(end, home.nextSibling)
+        parent.insertBefore(end, inside ? null : home.nextSibling)
       parent.insertBefore(child, end)
     }
     if (child.nodeType === Node.ELEMENT_NODE)
@@ -569,7 +632,8 @@ export class HostBinding {
     const home = this.homeNode
     const parent = home.parentNode
     const end = this.siblingEnd
-    if (!parent || !end || !this.siblingNodes.size || this.isPlaced(home))
+    // (Inside the host, they moved with it.)
+    if (this.siblings === 'inside' || !parent || !end || !this.siblingNodes.size || this.isPlaced(home))
       return
     const nodes = [...this.siblingNodes].sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
     let after = home
@@ -639,7 +703,14 @@ export class HostBinding {
     }
     this.siblingNodes.clear()
     this.siblingEnd?.remove()
+    // Taken out of its wrapper or portal target by the consumer: it stays out.
+    if (this.homeMarker && !this.host.parentNode) {
+      this.homeMarker.remove()
+      this.homeMarker = null
+      awayBindings.delete(this)
+    }
     this.goHome()
+    this.removeWrappers()
     this.internals?.setFormValue(null)
     this.internals?.setValidity({})
   }
@@ -669,7 +740,7 @@ export class HostBinding {
         this.patchStyle(prev, next)
       }
       else if (EVENT_KEY.test(key)) {
-        patchProp(this.el, key, prev, next, namespace, parentComponent)
+        patchProp(this.el, key, guardListener(prev), guardListener(next), namespace, parentComponent)
         if (next == null)
           this.events.delete(key)
         else
@@ -705,7 +776,28 @@ export class HostBinding {
     // (Never moved into the fragment, the host is not removed from it either.)
     this.offscreen = false
     this.strip()
+    // Once Vue is done unmounting: the wrapper it could not reach (see `wrappers`).
+    queueMicrotask(() => {
+      if (this.active)
+        return
+      this.goHome()
+      this.removeWrappers()
+    })
     this.lifecycle.onPartUnmount()
+  }
+
+  /** The part's tree removed a wrapper it rendered around the host. */
+  static wrapperRemoved(child: Node) {
+    wrapperOwners.get(child)?.wrappers.delete(child)
+    wrapperOwners.delete(child)
+  }
+
+  private removeWrappers() {
+    for (const wrapper of this.wrappers) {
+      wrapperOwners.delete(wrapper)
+      wrapper.parentNode?.removeChild(wrapper)
+    }
+    this.wrappers.clear()
   }
 
   /**
@@ -1169,6 +1261,7 @@ export function getRenderer(): Renderer<Element> {
         containers.get(parent)?.scheduleFormSync()
         bindings.get(parent)?.contentRemoved(child)
         HostBinding.siblingRemoved(child)
+        HostBinding.wrapperRemoved(child)
       }
     },
     parentNode(node) {

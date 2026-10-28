@@ -12,7 +12,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/AlertDialog'
+import { AspectRatio } from '@/AspectRatio'
 import { AutocompleteInput, AutocompleteRoot } from '@/Autocomplete'
+import { AvatarFallback, AvatarRoot } from '@/Avatar'
 import { CheckboxGroupRoot, CheckboxIndicator, CheckboxRoot } from '@/Checkbox'
 import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from '@/Collapsible'
 import {
@@ -32,6 +34,7 @@ import {
   ComboboxTrigger,
   ComboboxViewport,
 } from '@/Combobox'
+import { ConfigProvider } from '@/ConfigProvider'
 import {
   ContextMenuArrow,
   ContextMenuCheckboxItem,
@@ -106,6 +109,8 @@ import {
   EditableSubmitTrigger,
   injectEditableRootContext,
 } from '@/Editable'
+import { FieldDescription, FieldError, FieldLabel, FieldRoot } from '@/Field'
+import { FormRoot } from '@/Form'
 import { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, HoverCardTrigger } from '@/HoverCard'
 import {
   ListboxContent,
@@ -146,7 +151,20 @@ import {
   NavigationMenuTrigger,
   NavigationMenuViewport,
 } from '@/NavigationMenu'
+import {
+  PaginationEllipsis,
+  PaginationFirst,
+  PaginationLast,
+  PaginationList,
+  PaginationListItem,
+  PaginationNext,
+  PaginationPrev,
+  PaginationRoot,
+} from '@/Pagination'
 import { PopoverAnchor, PopoverArrow, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '@/Popover'
+import { ProgressIndicator, ProgressRoot } from '@/Progress'
+import { RadioGroupIndicator, RadioGroupItem, RadioGroupRoot } from '@/RadioGroup'
+import { ScrollAreaCorner, ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport } from '@/ScrollArea'
 import {
   SelectArrow,
   SelectContent,
@@ -165,6 +183,17 @@ import {
   SelectValue,
   SelectViewport,
 } from '@/Select'
+import { Separator } from '@/Separator'
+import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from '@/Splitter'
+import {
+  StepperDescription,
+  StepperIndicator,
+  StepperItem,
+  StepperRoot,
+  StepperSeparator,
+  StepperTitle,
+  StepperTrigger,
+} from '@/Stepper'
 import { SwitchRoot, SwitchThumb } from '@/Switch'
 import { TabsContent, TabsIndicator, TabsList, TabsRoot, TabsTrigger } from '@/Tabs'
 import { TagGroupItem, TagGroupItemDelete, TagGroupItemText, TagGroupRoot } from '@/TagGroup'
@@ -189,8 +218,11 @@ import {
   ToastViewport,
 } from '@/Toast'
 import { Toggle } from '@/Toggle'
+import { ToggleGroupItem, ToggleGroupRoot } from '@/ToggleGroup'
+import { ToolbarButton, ToolbarRoot, ToolbarSeparator, ToolbarToggleGroup, ToolbarToggleItem } from '@/Toolbar'
 import { TooltipArrow, TooltipContent, TooltipPortal, TooltipProvider, TooltipRoot, TooltipTrigger } from '@/Tooltip'
 import { TreeItem, TreeRoot } from '@/Tree'
+import { VisuallyHidden } from '@/VisuallyHidden'
 import { defineRekaElements } from './define'
 import { ToastProviderElement } from './toast'
 
@@ -400,7 +432,7 @@ export const navigationMenuElements: RekaElementFamily = {
     NavigationMenuItem,
     // While open with a viewport, it renders a focus proxy (Tab moves into the
     // content) and an `aria-owns` element next to itself.
-    NavigationMenuTrigger: { component: NavigationMenuTrigger, siblings: true },
+    NavigationMenuTrigger: { component: NavigationMenuTrigger, siblings: 'after' },
     NavigationMenuContent,
     NavigationMenuLink,
     NavigationMenuIndicator,
@@ -454,7 +486,7 @@ export const toastElements: RekaElementFamily = {
     ToastViewport,
     // Its live-region announcement renders next to it (the toast itself moves
     // into the viewport).
-    ToastRoot: { component: ToastRoot, siblings: true },
+    ToastRoot: { component: ToastRoot, siblings: 'after' },
     ToastTitle,
     ToastDescription,
     ToastAction,
@@ -473,6 +505,15 @@ export const toggleElements: RekaElementFamily = {
   name: 'toggle',
   parts: {
     Toggle,
+  },
+}
+
+/** `<reka-aspect-ratio>`. */
+export const aspectRatioElements: RekaElementFamily = {
+  name: 'aspect-ratio',
+  parts: {
+    // Renders a sizing wrapper around itself, which takes the element's place.
+    AspectRatio,
   },
 }
 
@@ -544,6 +585,18 @@ export const comboboxElements: RekaElementFamily = {
 }
 
 /**
+ * `<reka-avatar-root>`, `-fallback`. `AvatarImage` is not available: a custom
+ * element cannot be an `<img>`.
+ */
+export const avatarElements: RekaElementFamily = {
+  name: 'avatar',
+  parts: {
+    AvatarRoot,
+    AvatarFallback,
+  },
+}
+
+/**
  * `<reka-autocomplete-root>`, `-input`, and the Combobox parts under the
  * Autocomplete name (`-anchor`, `-content`, `-item`, …), as in Vue.
  */
@@ -564,6 +617,47 @@ export const autocompleteElements: RekaElementFamily = {
     AutocompleteGroup: ComboboxGroup,
     AutocompleteLabel: ComboboxLabel,
     AutocompleteSeparator: ComboboxSeparator,
+  },
+}
+
+/**
+ * `<reka-config-provider>`: provides `dir`, `locale`, `nonce`, `scroll-body` and
+ * `teleport-to` to the Reka elements inside it, as `ConfigProvider` does in Vue.
+ */
+export const configProviderElements: RekaElementFamily = {
+  name: 'config-provider',
+  parts: {
+    ConfigProvider,
+  },
+}
+
+/**
+ * `<reka-field-root>`, `-label`, `-description`, `-error`. `FieldControl` (an
+ * `<input>`) and `FieldValidity` (a scoped slot) are not available: use a Reka
+ * element control, such as `<reka-checkbox-root>`.
+ */
+export const fieldElements: RekaElementFamily = {
+  name: 'field',
+  parts: {
+    FieldRoot,
+    // Never a native `<label>`: labels its control through `aria-labelledby`, and
+    // focuses it on click.
+    FieldLabel: { component: FieldLabel, fixedProps: { nativeLabel: false, for: undefined } },
+    FieldDescription,
+    // `match` is a flag or a `ValidityState` key: `match`, `match="valueMissing"`.
+    FieldError: { component: FieldError, attributes: { match: 'booleanish' } },
+  },
+}
+
+/** `<reka-form-root>`, around a native `<form novalidate>`. */
+export const formElements: RekaElementFamily = {
+  name: 'form',
+  parts: {
+    FormRoot: {
+      component: FormRoot,
+      // Listening to `form-submit` prevents the native submission.
+      listenedEmits: ['formSubmit'],
+    },
   },
 }
 
@@ -596,6 +690,74 @@ export const selectElements: RekaElementFamily = {
     SelectLabel,
     SelectSeparator,
     SelectArrow,
+  },
+}
+
+/**
+ * `<reka-pagination-root>`, `-list`, `-list-item`, `-first`, `-prev`, `-next`,
+ * `-last`, `-ellipsis`.
+ */
+export const paginationElements: RekaElementFamily = {
+  name: 'pagination',
+  parts: {
+    PaginationRoot,
+    PaginationList,
+    PaginationListItem,
+    PaginationFirst,
+    PaginationPrev,
+    PaginationNext,
+    PaginationLast,
+    PaginationEllipsis,
+  },
+}
+
+/** `<reka-progress-root>`, `-indicator`. */
+export const progressElements: RekaElementFamily = {
+  name: 'progress',
+  parts: {
+    ProgressRoot,
+    ProgressIndicator,
+  },
+}
+
+/** `<reka-radio-group-root>`, `-item`, `-indicator`. */
+export const radioGroupElements: RekaElementFamily = {
+  name: 'radio-group',
+  parts: {
+    RadioGroupRoot,
+    RadioGroupItem,
+    RadioGroupIndicator,
+  },
+}
+
+/** `<reka-scroll-area-root>`, `-viewport`, `-scrollbar`, `-thumb`, `-corner`. */
+export const scrollAreaElements: RekaElementFamily = {
+  name: 'scroll-area',
+  parts: {
+    ScrollAreaRoot,
+    // The element is the content: the scrolling viewport is a wrapper around it.
+    ScrollAreaViewport,
+    ScrollAreaScrollbar,
+    ScrollAreaThumb,
+    ScrollAreaCorner,
+  },
+}
+
+/** `<reka-separator>`. */
+export const separatorElements: RekaElementFamily = {
+  name: 'separator',
+  parts: {
+    Separator,
+  },
+}
+
+/** `<reka-splitter-group>`, `-panel`, `-resize-handle`. */
+export const splitterElements: RekaElementFamily = {
+  name: 'splitter',
+  parts: {
+    SplitterGroup,
+    SplitterPanel,
+    SplitterResizeHandle,
   },
 }
 
@@ -639,6 +801,57 @@ export const tagGroupElements: RekaElementFamily = {
 }
 
 /**
+ * `<reka-stepper-root>`, `-item`, `-trigger`, `-indicator`, `-title`,
+ * `-description`, `-separator`.
+ */
+export const stepperElements: RekaElementFamily = {
+  name: 'stepper',
+  parts: {
+    // Its "Step 2 of 4" live region goes inside the element.
+    StepperRoot: { component: StepperRoot, siblings: 'inside' },
+    StepperItem,
+    StepperTrigger,
+    StepperIndicator,
+    StepperTitle,
+    StepperDescription,
+    StepperSeparator,
+  },
+}
+
+/** `<reka-toggle-group-root>`, `-item`. */
+export const toggleGroupElements: RekaElementFamily = {
+  name: 'toggle-group',
+  parts: {
+    ToggleGroupRoot,
+    ToggleGroupItem,
+  },
+}
+
+/**
+ * `<reka-toolbar-root>`, `-button`, `-separator`, `-toggle-group`, `-toggle-item`.
+ * `ToolbarLink` is not available: a custom element cannot be a link.
+ */
+export const toolbarElements: RekaElementFamily = {
+  name: 'toolbar',
+  parts: {
+    ToolbarRoot,
+    ToolbarButton,
+    ToolbarSeparator,
+    ToolbarToggleGroup,
+    // Renders `ToggleGroupItem`, a `<button>` by default.
+    ToolbarToggleItem: { component: ToolbarToggleItem, semantics: 'button' },
+  },
+}
+
+/** `<reka-visually-hidden>`. */
+export const visuallyHiddenElements: RekaElementFamily = {
+  name: 'visually-hidden',
+  parts: {
+    VisuallyHidden,
+  },
+}
+
+/**
  * `<reka-editable-root>`, `-area`, `-input`, `-preview`, `-edit-trigger`,
  * `-submit-trigger`, `-cancel-trigger`.
  */
@@ -666,29 +879,44 @@ export const editableElements: RekaElementFamily = {
 export const rekaElementFamilies: readonly RekaElementFamily[] = [
   accordionElements,
   alertDialogElements,
+  aspectRatioElements,
   autocompleteElements,
+  avatarElements,
   checkboxElements,
   collapsibleElements,
   comboboxElements,
+  configProviderElements,
   contextMenuElements,
   dialogElements,
   drawerElements,
   dropdownMenuElements,
   editableElements,
+  fieldElements,
+  formElements,
   hoverCardElements,
   listboxElements,
   menubarElements,
   navigationMenuElements,
+  paginationElements,
   popoverElements,
+  progressElements,
+  radioGroupElements,
+  scrollAreaElements,
   selectElements,
+  separatorElements,
+  splitterElements,
+  stepperElements,
   switchElements,
   tabsElements,
   tagGroupElements,
   tagsInputElements,
   toastElements,
   toggleElements,
+  toggleGroupElements,
+  toolbarElements,
   tooltipElements,
   treeElements,
+  visuallyHiddenElements,
 ]
 
 /**
@@ -762,6 +990,66 @@ export function defineToastElements(options?: DefineRekaElementsOptions) {
 
 export function defineToggleElements(options?: DefineRekaElementsOptions) {
   return defineRekaElements([toggleElements], options)
+}
+
+export function defineAspectRatioElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([aspectRatioElements], options)
+}
+
+export function defineAvatarElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([avatarElements], options)
+}
+
+export function defineConfigProviderElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([configProviderElements], options)
+}
+
+export function defineFieldElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([fieldElements], options)
+}
+
+export function defineFormElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([formElements], options)
+}
+
+export function definePaginationElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([paginationElements], options)
+}
+
+export function defineProgressElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([progressElements], options)
+}
+
+export function defineRadioGroupElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([radioGroupElements], options)
+}
+
+export function defineScrollAreaElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([scrollAreaElements], options)
+}
+
+export function defineSeparatorElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([separatorElements], options)
+}
+
+export function defineSplitterElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([splitterElements], options)
+}
+
+export function defineStepperElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([stepperElements], options)
+}
+
+export function defineToggleGroupElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([toggleGroupElements], options)
+}
+
+export function defineToolbarElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([toolbarElements], options)
+}
+
+export function defineVisuallyHiddenElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([visuallyHiddenElements], options)
 }
 
 export function defineTooltipElements(options?: DefineRekaElementsOptions) {

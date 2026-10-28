@@ -110,29 +110,52 @@ The `reka-ui` package is published as ES modules that reference `process.env.NOD
 | --- | --- | --- |
 | Accordion | `accordionElements` | `reka-accordion-root`, `-item`, `-header`, `-trigger`, `-content` |
 | Alert Dialog | `alertDialogElements` | `reka-alert-dialog-root`, `-trigger`, `-portal`, `-overlay`, `-content`, `-title`, `-description`, `-cancel`, `-action` |
+| AspectRatio | `aspectRatioElements` | `reka-aspect-ratio` |
 | Autocomplete | `autocompleteElements` | `reka-autocomplete-root`, `-input`, `-anchor`, `-trigger`, `-cancel`, `-portal`, `-content`, `-viewport`, `-empty`, `-item`, `-item-indicator`, `-group`, `-label`, `-separator` |
+| Avatar | `avatarElements` | `reka-avatar-root`, `-fallback` (no `AvatarImage`, see [limitations](#limitations)) |
 | Checkbox | `checkboxElements` | `reka-checkbox-root`, `-indicator`, `reka-checkbox-group-root` |
 | Collapsible | `collapsibleElements` | `reka-collapsible-root`, `-trigger`, `-content` |
 | Combobox | `comboboxElements` | `reka-combobox-root`, `-input`, `-anchor`, `-trigger`, `-cancel`, `-portal`, `-content`, `-viewport`, `-empty`, `-item`, `-item-indicator`, `-group`, `-label`, `-separator`, `-arrow` |
+| ConfigProvider | `configProviderElements` | `reka-config-provider` |
 | Context Menu | `contextMenuElements` | `reka-context-menu-root`, `-trigger`, `-portal`, `-content`, `-arrow`, `-item`, `-group`, `-label`, `-checkbox-item`, `-radio-group`, `-radio-item`, `-item-indicator`, `-separator`, `-sub`, `-sub-trigger`, `-sub-content` |
 | Dialog | `dialogElements` | `reka-dialog-root`, `-trigger`, `-portal`, `-overlay`, `-content`, `-title`, `-description`, `-close` |
 | Drawer | `drawerElements` | `reka-drawer-root`, `-trigger`, `-portal`, `-backdrop`, `-viewport`, `-popup`, `-title`, `-description`, `-close`, `-grabber`, `-swipe-area`, `-provider`, `-indent`, `-indent-background`, `-virtual-keyboard-provider` |
 | Dropdown Menu | `dropdownMenuElements` | `reka-dropdown-menu-root`, `-trigger`, `-portal`, `-content`, `-filter`, `-arrow`, `-item`, `-group`, `-label`, `-checkbox-item`, `-radio-group`, `-radio-item`, `-item-indicator`, `-separator`, `-sub`, `-sub-trigger`, `-sub-content` |
 | Editable | `editableElements` | `reka-editable-root`, `-area`, `-input`, `-preview`, `-edit-trigger`, `-submit-trigger`, `-cancel-trigger` |
+| Field | `fieldElements` | `reka-field-root`, `-label`, `-description`, `-error` (no `FieldControl` or `FieldValidity`) |
+| Form | `formElements` | `reka-form-root` |
 | Hover Card | `hoverCardElements` | `reka-hover-card-root`, `-trigger`, `-portal`, `-content`, `-arrow` |
 | Listbox | `listboxElements` | `reka-listbox-root`, `-content`, `-filter`, `-item`, `-item-indicator`, `-group`, `-group-label` |
 | Menubar | `menubarElements` | `reka-menubar-root`, `-menu`, `-trigger`, `-portal`, `-content`, `-arrow`, `-item`, `-group`, `-label`, `-checkbox-item`, `-radio-group`, `-radio-item`, `-item-indicator`, `-separator`, `-sub`, `-sub-trigger`, `-sub-content` |
 | Navigation Menu | `navigationMenuElements` | `reka-navigation-menu-root`, `-sub`, `-list`, `-item`, `-trigger`, `-content`, `-link`, `-indicator`, `-viewport` |
+| Pagination | `paginationElements` | `reka-pagination-root`, `-list`, `-list-item`, `-first`, `-prev`, `-next`, `-last`, `-ellipsis` |
 | Popover | `popoverElements` | `reka-popover-root`, `-trigger`, `-anchor`, `-portal`, `-content`, `-arrow`, `-close` |
+| Progress | `progressElements` | `reka-progress-root`, `-indicator` |
+| RadioGroup | `radioGroupElements` | `reka-radio-group-root`, `-item`, `-indicator` |
+| ScrollArea | `scrollAreaElements` | `reka-scroll-area-root`, `-viewport`, `-scrollbar`, `-thumb`, `-corner` |
 | Select | `selectElements` | `reka-select-root`, `-trigger`, `-value`, `-icon`, `-portal`, `-content`, `-viewport`, `-scroll-up-button`, `-scroll-down-button`, `-item`, `-item-text`, `-item-indicator`, `-group`, `-label`, `-separator`, `-arrow` |
+| Separator | `separatorElements` | `reka-separator` |
+| Splitter | `splitterElements` | `reka-splitter-group`, `-panel`, `-resize-handle` |
+| Stepper | `stepperElements` | `reka-stepper-root`, `-item`, `-trigger`, `-indicator`, `-title`, `-description`, `-separator` |
 | Switch | `switchElements` | `reka-switch-root`, `-thumb` |
 | Tabs | `tabsElements` | `reka-tabs-root`, `-list`, `-trigger`, `-content`, `-indicator` |
 | TagGroup | `tagGroupElements` | `reka-tag-group-root`, `-item`, `-item-text`, `-item-delete` |
 | TagsInput | `tagsInputElements` | `reka-tags-input-root`, `-input`, `-item`, `-item-text`, `-item-delete`, `-clear` |
 | Toast | `toastElements` | `reka-toast-provider`, `-viewport`, `-root`, `-title`, `-description`, `-action`, `-close`, `-portal`, `-positioner`, `-arrow` |
 | Toggle | `toggleElements` | `reka-toggle` |
+| ToggleGroup | `toggleGroupElements` | `reka-toggle-group-root`, `-item` |
+| Toolbar | `toolbarElements` | `reka-toolbar-root`, `-button`, `-separator`, `-toggle-group`, `-toggle-item` (no `ToolbarLink`) |
 | Tooltip | `tooltipElements` | `reka-tooltip-provider`, `reka-tooltip-root`, `-trigger`, `-portal`, `-content`, `-arrow` |
 | Tree | `treeElements` | `reka-tree-root`, `-item` |
+| VisuallyHidden | `visuallyHiddenElements` | `reka-visually-hidden` |
+
+Some parts render more than their own element in Vue. As elements:
+
+- **Wrappers take the element's place.** `<reka-aspect-ratio>` is the content, inside the sizing wrapper it renders. `<reka-scroll-area-viewport>` is the content too: the scrolling viewport is a wrapper around it, so style it through `[data-reka-scroll-area-viewport]` (it needs a size, like `width: 100%; height: 100%`).
+- **Stylesheets** a part renders (`ScrollAreaViewport` hides the native scrollbars) go to the document's `<head>`, or into the shadow root the element is in, and are removed with the part.
+- **`<reka-stepper-root>`** appends its "Step 2 of 4" live region inside itself, as its last child.
+- **Default content isn't rendered.** Your children replace a part's default slot, so its fallback text (`PaginationNext`'s "Next page", `StepperIndicator`'s "Step 1", `FieldError`'s messages) never shows: write it yourself.
+- **Scoped slots aren't available.** `PaginationList` doesn't render its pages for you: write the `<reka-pagination-list-item>`s (and ellipses) yourself, and update them from `update-page`.
 
 Props, events and data attributes are the ones documented on each component page, mapped as described below.
 
@@ -303,16 +326,42 @@ This is the one place elements differ from the Vue components. In Vue, closed co
 
 ## Forms
 
-Parts with a `name` (Switch, Checkbox, Checkbox group, Toggle, and the roots of Listbox, Combobox, Autocomplete, Select, TagsInput and Editable) are [form-associated](https://html.spec.whatwg.org/multipage/custom-elements.html#form-associated-custom-elements):
+Parts with a `name` (Switch, Checkbox, Checkbox group, Toggle, RadioGroup and its items, ToggleGroup, Toolbar toggle group, FieldRoot, and the roots of Listbox, Combobox, Autocomplete, Select, TagsInput and Editable) are [form-associated](https://html.spec.whatwg.org/multipage/custom-elements.html#form-associated-custom-elements):
 
 - they submit their value with their form, wherever you move them, and with a form they are not inside through the `form` attribute (`form="checkout"`); their `form` property is the form, like a native control's;
 - `<label for>` labels them, `<fieldset disabled>` disables them, and resetting the form resets them, firing `update-model-value` (or the part's other model events) when the value changes, so what you render from it follows;
 - they are validated with it: a `required` checkbox left unchecked makes the form invalid, and matches `:invalid`;
+- `<reka-field-root>` is the exception: it submits nothing itself, and its own validation (`invalid`, custom validators) doesn't reach the form's `checkValidity()`. That runs through `<reka-form-root>` (see [Field and Form](#field-and-form)). The control inside the field is still validated natively;
 - they submit the same names as the Vue components (a checkbox group named `toppings` submits `toppings[0]`, `toppings[1]`, …, and so does a `multiple` listbox or combobox, or a tags input; object values submit their fields, `fruit[0][id]`);
 - a select submits through the native `<select>` the Vue component renders, so `required` and `autocomplete` behave the same, and a `multiple` select named `fruit` submits one `fruit` entry per selected value, like `<select multiple>`;
+- a radio group with nothing checked submits an empty value, as in Vue;
 - nothing is added next to them: the hidden inputs the Vue components render are not in the document.
 
 Form participation needs `ElementInternals` (Safari 16.4 and later). Without it, the elements work but do not submit.
+
+### Field and Form
+
+`<reka-form-root>` can't be a `<form>` itself. Put a native `<form novalidate>` inside it: the form root handles the `submit` and `reset` events that bubble up from it, validates its fields, focuses the first invalid control and blocks the submission while any field is invalid. `novalidate` leaves validation to Reka, so the browser doesn't show its own bubbles first.
+
+```html
+<reka-form-root>
+  <form novalidate>
+    <reka-field-root name="terms" required>
+      <reka-field-label>Accept the terms</reka-field-label>
+      <reka-checkbox-root></reka-checkbox-root>
+      <reka-field-description>Required to continue.</reka-field-description>
+      <reka-field-error match="valueMissing">Accept the terms to continue.</reka-field-error>
+    </reka-field-root>
+    <button>Submit</button>
+  </form>
+</reka-form-root>
+```
+
+- Listen to `form-submit` for the values (`event.detail.value`). As in Vue, listening to it prevents the native submission, and only while you listen: the form root knows whether the element has a `form-submit` listener. It only sees listeners added once `<reka-form-root>` is defined: the DOM does not list the listeners an element had before, so call `defineRekaElements()` (or `await customElements.whenDefined('reka-form-root')`) before adding yours. With `events: { bubbles: true }`, the form root cannot see a listener on an ancestor, so it always treats `form-submit` as listened to and never submits natively. (`submit` also works, but the native `submit` event bubbles to the form root too: check `event instanceof CustomEvent`.)
+- Server errors go in the `errors` property: `formRoot.errors = { terms: 'Not accepted.' }`.
+- `<reka-field-label>` is never a native `<label>`. It labels the control through `aria-labelledby` and focuses it when clicked, like `FieldLabel` with `nativeLabel` set to `false`.
+- The control must be a Reka element that takes part in a field (`<reka-checkbox-root>`). `FieldControl` renders a native `<input>`, which a custom element can't be.
+- `<reka-field-error>` shows and hides, but its messages come from you: write one per constraint, with `match` (`match="valueMissing"`, or `match` alone to always show).
 
 ## Text fields
 
@@ -352,7 +401,7 @@ A custom element can't be a text field. Parts that render an `<input>` in Vue (`
   })
   ```
 
-A few parts render an element that has to be in the document next to them: the navigation menu trigger's focus proxy (Tab from an open trigger into its content in the viewport) and the toast's screen-reader announcement. These go right after the element while they are rendered, and nowhere else.
+A few parts render an element that has to be in the document next to them: the navigation menu trigger's focus proxy (Tab from an open trigger into its content in the viewport) and the toast's screen-reader announcement. These go right after the element while they are rendered, and nowhere else. (`<reka-stepper-root>`'s live region goes inside the element instead, as its last child.)
 
 ## Children instead of slots
 
@@ -420,6 +469,19 @@ Context passes through the DOM the way it passes through components in Vue. An e
 - Moved under another root, an element remounts there.
 - Context crosses shadow roots: an element inside a shadow root finds the Reka element hosting it.
 - Context is shared within one copy of `reka-ui`. Elements from two copies on one page nest freely (a switch from one inside a collapsible from the other), but a part can't use another copy's family context (a trigger from one copy inside a dialog root from the other). It stays unrendered, with a warning in development.
+
+## ConfigProvider
+
+`<reka-config-provider>` provides `dir`, `locale`, `nonce`, `scroll-body` and `teleport-to` to the Reka elements inside it, as `ConfigProvider` does in Vue, through the same context lookup, so other elements and shadow roots may sit in between:
+
+```html
+<reka-config-provider dir="rtl" teleport-to="#overlays">
+  <reka-toolbar-root aria-label="Formatting">…</reka-toolbar-root>
+  <reka-dialog-root>…</reka-dialog-root>
+</reka-config-provider>
+```
+
+Changing an attribute updates the elements below. A part's own prop wins (`<reka-toggle-group-root dir="ltr">`, `<reka-dialog-portal to="body">`). Inside a shadow root, a `teleport-to` selector is looked up in the shadow root first, then in the document. `use-id` is a function, so it's a property only.
 
 ## Shadow DOM
 
@@ -539,6 +601,12 @@ Bind props in camelCase (`:modelValue="checked"`, or `:modelValue.prop` to force
 ## Limitations
 
 - **Families.** Only the families listed above are available. The rest will follow.
+- **Parts a custom element can't be.** These parts render a native element whose behaviour a custom element can't take on, so they aren't available:
+  - `Label`: a `<label>`. Its `for` only labels a control when it's on a native `<label>`. Use a native `<label for>`: it labels Reka form elements, which are form-associated. (`<reka-field-label>` works, through `aria-labelledby`.)
+  - `AvatarImage`: an `<img>`. A custom element can't display an image source. `<reka-avatar-root>` and `<reka-avatar-fallback>` work.
+  - `ToolbarLink`: an `<a>`. A custom element can't be a link (navigation, middle click, the link context menu). Put a native `<a>` in the toolbar next to it; it isn't part of the arrow-key navigation.
+  - `FieldControl`: an `<input>` (see [Field and Form](#field-and-form)).
+  - `FieldValidity` renders nothing but a scoped slot.
 - **Drawer.** `DrawerContent` and `DrawerOverlay` (deprecated aliases of `DrawerPopup` and `DrawerBackdrop`) are not included.
 - **Toast text from the toast object.** In Vue, `ToastTitle`, `ToastDescription` and `ToastAction` fall back to the toast object's `title`, `description` and action label. As elements, put that text in the elements yourself.
 - **Virtualizers.** `ListboxVirtualizer`, `ComboboxVirtualizer`, `SelectVirtualizer` and `TreeVirtualizer` render each visible row from a scoped slot (`option`, `virtualItem`), which elements don't have, and they position the rows they create. Render the rows yourself, with your own virtualization, or use the Vue components.

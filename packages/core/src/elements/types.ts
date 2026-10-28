@@ -22,12 +22,14 @@ import type {
   AlertDialogTitleProps,
   AlertDialogTriggerProps,
 } from '@/AlertDialog'
+import type { AspectRatioProps } from '@/AspectRatio'
 import type {
   AutocompleteInputEmits,
   AutocompleteInputProps,
   AutocompleteRootEmits,
   AutocompleteRootProps,
 } from '@/Autocomplete'
+import type { AvatarFallbackProps, AvatarRootProps } from '@/Avatar'
 import type {
   CheckboxGroupRootEmits,
   CheckboxGroupRootProps,
@@ -63,6 +65,7 @@ import type {
   ComboboxTriggerProps,
   ComboboxViewportProps,
 } from '@/Combobox'
+import type { ConfigProviderProps } from '@/ConfigProvider'
 import type {
   ContextMenuArrowProps,
   ContextMenuCheckboxItemEmits,
@@ -156,6 +159,8 @@ import type {
   EditableRootProps,
   EditableSubmitTriggerProps,
 } from '@/Editable'
+import type { FieldDescriptionProps, FieldErrorProps, FieldLabelProps, FieldRootProps } from '@/Field'
+import type { FormRootEmits, FormRootProps } from '@/Form'
 import type {
   HoverCardArrowProps,
   HoverCardContentProps,
@@ -221,6 +226,17 @@ import type {
   NavigationMenuViewportProps,
 } from '@/NavigationMenu'
 import type {
+  PaginationEllipsisProps,
+  PaginationFirstProps,
+  PaginationLastProps,
+  PaginationListItemProps,
+  PaginationListProps,
+  PaginationNextProps,
+  PaginationPrevProps,
+  PaginationRootEmits,
+  PaginationRootProps,
+} from '@/Pagination'
+import type {
   PopoverAnchorProps,
   PopoverArrowProps,
   PopoverCloseProps,
@@ -231,6 +247,21 @@ import type {
   PopoverRootProps,
   PopoverTriggerProps,
 } from '@/Popover'
+import type { ProgressIndicatorProps, ProgressRootEmits, ProgressRootProps } from '@/Progress'
+import type {
+  RadioGroupIndicatorProps,
+  RadioGroupItemEmits,
+  RadioGroupItemProps,
+  RadioGroupRootEmits,
+  RadioGroupRootProps,
+} from '@/RadioGroup'
+import type {
+  ScrollAreaCornerProps,
+  ScrollAreaRootProps,
+  ScrollAreaScrollbarProps,
+  ScrollAreaThumbProps,
+  ScrollAreaViewportProps,
+} from '@/ScrollArea'
 import type {
   SelectArrowProps,
   SelectContentEmits,
@@ -252,6 +283,25 @@ import type {
   SelectValueProps,
   SelectViewportProps,
 } from '@/Select'
+import type { SeparatorProps } from '@/Separator'
+import type {
+  SplitterGroupEmits,
+  SplitterGroupProps,
+  SplitterPanelEmits,
+  SplitterPanelProps,
+  SplitterResizeHandleEmits,
+  SplitterResizeHandleProps,
+} from '@/Splitter'
+import type {
+  StepperDescriptionProps,
+  StepperIndicatorProps,
+  StepperItemProps,
+  StepperRootEmits,
+  StepperRootProps,
+  StepperSeparatorProps,
+  StepperTitleProps,
+  StepperTriggerProps,
+} from '@/Stepper'
 import type { SwitchRootEmits, SwitchRootProps, SwitchThumbProps } from '@/Switch'
 import type {
   TabsContentProps,
@@ -291,6 +341,15 @@ import type {
   ToastViewportProps,
 } from '@/Toast'
 import type { ToggleEmits, ToggleProps } from '@/Toggle'
+import type { ToggleGroupItemProps, ToggleGroupRootEmits, ToggleGroupRootProps } from '@/ToggleGroup'
+import type {
+  ToolbarButtonProps,
+  ToolbarRootProps,
+  ToolbarSeparatorProps,
+  ToolbarToggleGroupEmits,
+  ToolbarToggleGroupProps,
+  ToolbarToggleItemProps,
+} from '@/Toolbar'
 import type {
   TooltipArrowProps,
   TooltipContentEmits,
@@ -307,6 +366,7 @@ import type {
   TreeRootEmits,
   TreeRootProps,
 } from '@/Tree'
+import type { VisuallyHiddenProps } from '@/VisuallyHidden'
 
 type Hyphenate<S extends string> = S extends `${infer Head}${infer Tail}`
   ? `${Head extends Lowercase<Head> ? Head : `-${Lowercase<Head>}`}${Hyphenate<Tail>}`
@@ -374,6 +434,9 @@ interface RekaElementParts {
   'reka-accordion-header': Part<AccordionHeaderProps>
   'reka-accordion-trigger': Part<AccordionTriggerProps>
   'reka-accordion-content': Part<AccordionContentProps>
+  'reka-aspect-ratio': Part<AspectRatioProps>
+  'reka-avatar-root': Part<AvatarRootProps>
+  'reka-avatar-fallback': Part<AvatarFallbackProps>
   'reka-alert-dialog-root': Part<AlertDialogProps, AlertDialogEmits>
   'reka-alert-dialog-trigger': Part<AlertDialogTriggerProps>
   'reka-alert-dialog-portal': Part<AlertDialogPortalProps>
@@ -403,6 +466,7 @@ interface RekaElementParts {
   'reka-collapsible-root': Part<CollapsibleRootProps, CollapsibleRootEmits>
   'reka-collapsible-trigger': Part<CollapsibleTriggerProps>
   'reka-collapsible-content': Part<CollapsibleContentProps, CollapsibleContentEmits>
+  'reka-config-provider': Part<ConfigProviderProps>
   'reka-context-menu-root': Part<ContextMenuRootProps, ContextMenuRootEmits>
   'reka-context-menu-trigger': Part<ContextMenuTriggerProps>
   'reka-context-menu-portal': Part<ContextMenuPortalProps>
@@ -442,6 +506,20 @@ interface RekaElementParts {
   'reka-dialog-title': Part<DialogTitleProps>
   'reka-dialog-description': Part<DialogDescriptionProps>
   'reka-dialog-close': Part<DialogCloseProps>
+  'reka-field-root': Part<FieldRootProps>
+  // Never a native label: `nativeLabel` and `for` are not part of the element.
+  'reka-field-label': Part<Omit<FieldLabelProps, 'nativeLabel' | 'for'>>
+  'reka-field-description': Part<FieldDescriptionProps>
+  'reka-field-error': Part<FieldErrorProps>
+  'reka-form-root': Part<FormRootProps, FormRootEmits>
+  'reka-pagination-root': Part<PaginationRootProps, PaginationRootEmits>
+  'reka-pagination-list': Part<PaginationListProps>
+  'reka-pagination-list-item': Part<PaginationListItemProps>
+  'reka-pagination-first': Part<PaginationFirstProps>
+  'reka-pagination-prev': Part<PaginationPrevProps>
+  'reka-pagination-next': Part<PaginationNextProps>
+  'reka-pagination-last': Part<PaginationLastProps>
+  'reka-pagination-ellipsis': Part<PaginationEllipsisProps>
   'reka-drawer-root': Part<DrawerRootProps, DrawerRootEmits>
   'reka-drawer-trigger': Part<DrawerTriggerProps>
   'reka-drawer-portal': Part<DrawerPortalProps>
@@ -526,6 +604,27 @@ interface RekaElementParts {
   'reka-popover-content': Part<PopoverContentProps, PopoverContentEmits>
   'reka-popover-arrow': Part<PopoverArrowProps>
   'reka-popover-close': Part<PopoverCloseProps>
+  'reka-progress-root': Part<ProgressRootProps, ProgressRootEmits>
+  'reka-progress-indicator': Part<ProgressIndicatorProps>
+  'reka-radio-group-root': Part<RadioGroupRootProps, RadioGroupRootEmits>
+  'reka-radio-group-item': Part<RadioGroupItemProps, RadioGroupItemEmits>
+  'reka-radio-group-indicator': Part<RadioGroupIndicatorProps>
+  'reka-scroll-area-root': Part<ScrollAreaRootProps>
+  'reka-scroll-area-viewport': Part<ScrollAreaViewportProps>
+  'reka-scroll-area-scrollbar': Part<ScrollAreaScrollbarProps>
+  'reka-scroll-area-thumb': Part<ScrollAreaThumbProps>
+  'reka-scroll-area-corner': Part<ScrollAreaCornerProps>
+  'reka-separator': Part<SeparatorProps>
+  'reka-splitter-group': Part<SplitterGroupProps, SplitterGroupEmits>
+  'reka-splitter-panel': Part<SplitterPanelProps, SplitterPanelEmits>
+  'reka-splitter-resize-handle': Part<SplitterResizeHandleProps, SplitterResizeHandleEmits>
+  'reka-stepper-root': Part<StepperRootProps, StepperRootEmits>
+  'reka-stepper-item': Part<StepperItemProps>
+  'reka-stepper-trigger': Part<StepperTriggerProps>
+  'reka-stepper-indicator': Part<StepperIndicatorProps>
+  'reka-stepper-title': Part<StepperTitleProps>
+  'reka-stepper-description': Part<StepperDescriptionProps>
+  'reka-stepper-separator': Part<StepperSeparatorProps>
   'reka-select-root': Part<SelectRootProps, SelectRootEmits>
   'reka-select-trigger': Part<SelectTriggerProps>
   'reka-select-value': Part<SelectValueProps>
@@ -560,6 +659,14 @@ interface RekaElementParts {
   'reka-toast-positioner': Part<ToastPositionerProps>
   'reka-toast-arrow': Part<ToastArrowProps>
   'reka-toggle': Part<ToggleProps, ToggleEmits>
+  'reka-toggle-group-root': Part<ToggleGroupRootProps, ToggleGroupRootEmits>
+  'reka-toggle-group-item': Part<ToggleGroupItemProps>
+  'reka-toolbar-root': Part<ToolbarRootProps>
+  'reka-toolbar-button': Part<ToolbarButtonProps>
+  'reka-toolbar-separator': Part<ToolbarSeparatorProps>
+  'reka-toolbar-toggle-group': Part<ToolbarToggleGroupProps, ToolbarToggleGroupEmits>
+  'reka-toolbar-toggle-item': Part<ToolbarToggleItemProps>
+  'reka-visually-hidden': Part<VisuallyHiddenProps>
   'reka-tooltip-provider': Part<TooltipProviderProps>
   'reka-tooltip-root': Part<TooltipRootProps, TooltipRootEmits>
   'reka-tooltip-trigger': Part<TooltipTriggerProps>

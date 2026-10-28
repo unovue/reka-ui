@@ -4,6 +4,7 @@ import type { ElementEventOptions } from './events'
 import type { PartMeta } from './meta'
 import type { RootNode } from '@/shared/getRootNode'
 import { camelize, defineComponent, h, nextTick, queuePostFlushCb, shallowReactive, toDisplayString, toHandlerKey } from 'vue'
+import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
 import { containsComposed, getRootNode, resolveTeleportTarget } from '@/shared/getRootNode'
 import {
   getRegistry,
@@ -12,7 +13,7 @@ import {
   ContextProviderEvent as ProviderEvent,
   requestParent,
 } from './context'
-import { dispatchElementEvent } from './events'
+import { dispatchElementEvent, toEventType } from './events'
 import { CREATED_ATTR, getRenderer, HOST_PROP, HOST_TAG, HostBinding, hostsAwayFrom } from './host'
 import { parseAttribute } from './meta'
 import { ensureRootSetup, UNMOUNTED_ATTR } from './styles'
@@ -118,6 +119,13 @@ function inDisabledFieldset(el: Element) {
 
 type ElementState = 'idle' | 'waiting' | 'mounted'
 
+/** `addEventListener` options as the DOM reads them: an object or a function is a dictionary, anything else is `capture`. */
+function listenerOptions(options: unknown): AddEventListenerOptions {
+  return options !== null && (typeof options === 'object' || typeof options === 'function')
+    ? options as AddEventListenerOptions
+    : { capture: !!options }
+}
+
 /**
  * Base class of every Reka custom element. Each element runs its own small Vue app
  * that renders the part's component with `asChild` onto the element itself (see
@@ -159,6 +167,14 @@ export class RekaElement extends BaseElement {
   /** Whether the part was in a form when it mounted. */
   private _mountedInForm = false
   private readonly _listeners: Record<string, (...args: unknown[]) => void> = {}
+  /** Listener keys (`onFormSubmit`) of `listenedEmits`, by their event type. */
+  private readonly _gatedListeners = new Map<string, string>()
+  /**
+   * The DOM listeners of those event types, so the part's listener follows them.
+   * The DOM tells a listener apart by its function and `capture`; `done` drops the
+   * helpers that notice it go away by itself (`once`, `signal`).
+   */
+  private readonly _domListeners = new Map<string, { listener: unknown, capture: boolean, done: AbortController }[]>()
   /**
    * Last value of each uncontrolled model (`update:modelValue`, `update:open`):
    * passed as its default when the part mounts again, so the element keeps its
@@ -190,7 +206,10 @@ export class RekaElement extends BaseElement {
     }, internals)
     this._binding.siblings = part.meta.siblings
     for (const emit of part.meta.emits) {
-      this._listeners[toHandlerKey(camelize(emit))] = (...args) => {
+      const key = toHandlerKey(camelize(emit))
+      if (part.meta.listenedEvents.has(toEventType(emit)))
+        this._gatedListeners.set(key, toEventType(emit))
+      this._listeners[key] = (...args) => {
         this._track(emit, args[0])
         dispatchElementEvent(this, emit, args, part.options.events)
       }
@@ -207,6 +226,35 @@ export class RekaElement extends BaseElement {
     this.addEventListener('context-provider', this._onContextProvider)
   }
 
+  override addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, event: HTMLElementEventMap[K]) => unknown, options?: boolean | AddEventListenerOptions): void
+  override addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void
+  override addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) {
+    const { capture, once, signal } = listenerOptions(options)
+    // The DOM ignores a listener added twice, and one whose signal already aborted.
+    if (!listener || !this._part?.meta.listenedEvents.has(type) || signal?.aborted || this._findListener(type, listener, !!capture) >= 0)
+      return super.addEventListener(type, listener, options)
+    const done = new AbortController()
+    const untrack = () => this._untrackListener(type, listener, !!capture)
+    // It goes away by itself: when its signal aborts, or before its one call (which
+    // may add it again). Registered first, this runs before it.
+    signal?.addEventListener('abort', untrack, { once: true, signal: done.signal })
+    if (once)
+      super.addEventListener(type, untrack, { capture, once: true, signal: done.signal })
+    super.addEventListener(type, listener, options)
+    let entries = this._domListeners.get(type)
+    if (!entries)
+      this._domListeners.set(type, entries = [])
+    entries.push({ listener, capture: !!capture, done })
+  }
+
+  override removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, event: HTMLElementEventMap[K]) => unknown, options?: boolean | EventListenerOptions): void
+  override removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void
+  override removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions) {
+    super.removeEventListener(type, listener, options)
+    if (listener && this._part?.meta.listenedEvents.has(type))
+      this._untrackListener(type, listener, !!listenerOptions(options).capture)
+  }
+
   connectedCallback() {
     ensureRootSetup(this)
     if (!this._upgraded) {
@@ -215,6 +263,9 @@ export class RekaElement extends BaseElement {
       HostBinding.cleanCopiedState(this)
       this._setUnmounted(false)
       this._upgradeProperties()
+      // Copied inside its own wrapper: unwrapping connected it again, and that call did the rest.
+      if (HostBinding.unwrapCopy(this))
+        return
     }
     // Moved by its own part (a `Teleport`, a wrapper): same parent, nothing to do.
     if (this._binding.moving)
@@ -612,9 +663,46 @@ export class RekaElement extends BaseElement {
     this.removeAttribute(UNMOUNTED_ATTR)
   }
 
+  private _findListener(type: string, listener: unknown, capture: boolean) {
+    return this._domListeners.get(type)?.findIndex(entry => entry.listener === listener && entry.capture === capture) ?? -1
+  }
+
+  private _untrackListener(type: string, listener: unknown, capture: boolean) {
+    const index = this._findListener(type, listener, capture)
+    if (index < 0)
+      return
+    const [entry] = this._domListeners.get(type)!.splice(index, 1)
+    entry.done.abort()
+  }
+
+  /**
+   * Whether a `listenedEmits` event has a listener: one on the element, or, when
+   * the elements' events bubble, maybe one on an ancestor, which it cannot see.
+   */
+  private _isListened(type: string) {
+    return this._part.options.events.bubbles || !!this._domListeners.get(type)?.length
+  }
+
+  /**
+   * The part's vnode props with its listeners. A `listenedEmits` listener is a getter,
+   * there only while the event is listened to: the part's has-listener check and
+   * Vue's `emit` read it live from `vnode.props` (a plain object, kept as is), so a
+   * listener added or removed right before the event counts, with no render between.
+   */
+  private _withListeners(props: Record<string, unknown>) {
+    for (const [key, listener] of Object.entries(this._listeners)) {
+      const type = this._gatedListeners.get(key)
+      if (type === undefined)
+        props[key] = listener
+      else
+        Object.defineProperty(props, key, { enumerable: true, configurable: true, get: () => this._isListened(type) ? listener : undefined })
+    }
+    return props
+  }
+
   private _render(): VNode {
     const { component, meta } = this._part
-    const props: Record<string, unknown> = { ...this._props }
+    const props: Record<string, unknown> = { ...this._props, ...meta.fixedProps }
     for (const [model, value] of Object.entries(this._carried)) {
       const defaultProp = defaultPropOf(model)
       if (props[model] === undefined && meta.propNames.has(defaultProp))
@@ -622,8 +710,10 @@ export class RekaElement extends BaseElement {
     }
     if (this._extra.fieldsetDisabled && meta.propNames.has('disabled'))
       props.disabled = true
-    if (meta.propNames.has('to') && meta.propNames.has('forceMount') && !props.disabled)
-      props.to = this._portalTarget(props.to)
+    if (meta.propNames.has('to') && meta.propNames.has('forceMount') && !props.disabled) {
+      // A `ConfigProvider` (element) above sets the default target, as in Vue.
+      props.to = this._portalTarget(props.to ?? injectConfigProviderContext({}).teleportTo?.value)
+    }
     const host = (children?: VNode[] | string) => h(HOST_TAG, {
       [HOST_PROP]: this._binding,
       onVnodeMounted: () => this._binding.partMounted(),
@@ -631,14 +721,13 @@ export class RekaElement extends BaseElement {
     }, children)
     // An SVG part renders its own `<svg>` (and default shape) inside the host.
     if (meta.semantics?.inside)
-      return host([h(component, { ...props, ...this._listeners })])
+      return host([h(component, this._withListeners({ ...props }))])
     return h(
       component,
-      {
+      this._withListeners({
         ...props,
-        ...this._listeners,
         ...(meta.hasAsChild ? { asChild: true } : undefined),
-      },
+      }),
       { default: (slotProps?: Record<string, unknown>) => host(meta.text && this._extra.textFree ? toDisplayString(meta.text(slotProps ?? {}, props)) : undefined) },
     )
   }

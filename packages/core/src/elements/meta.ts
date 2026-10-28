@@ -1,5 +1,6 @@
 import type { Component } from 'vue'
 import type { HostSemantics } from './host'
+import { toEventType } from './events'
 import { hyphenate, semanticsForTag } from './host'
 
 /**
@@ -30,11 +31,24 @@ export interface RekaElementPartDefinition {
    */
   semantics?: string | HostSemantics
   /**
-   * The part renders elements next to itself that must be in the document (a
-   * focus proxy): they go right after the element while rendered, instead of
-   * staying detached.
+   * The part renders elements next to itself that must be in the document, instead
+   * of staying detached (hidden form fields excepted):
+   * - `'after'` (or `true`): right after the element while rendered (a focus proxy);
+   * - `'inside'`: appended inside the element (`StepperRoot`'s live region).
    */
-  siblings?: boolean
+  siblings?: boolean | 'after' | 'inside'
+  /**
+   * Props the element always passes, and does not expose as attributes or
+   * properties: settings that only make sense for a native element the host can
+   * never be (`FieldLabel`'s `nativeLabel`).
+   */
+  fixedProps?: Record<string, unknown>
+  /**
+   * Emits the part only gets a listener for while the element has a DOM listener
+   * for their event: parts that behave differently when someone listens
+   * (`FormRoot` prevents the native submission when `formSubmit` is listened to).
+   */
+  listenedEmits?: string[]
   /**
    * `'input'`: the part renders onto the element's `<input>` (or `<textarea>`)
    * child instead of onto the element, which is created when there is none. A
@@ -77,8 +91,8 @@ export interface PartMeta {
   emits: string[]
   hasAsChild: boolean
   semantics: HostSemantics | undefined
-  /** See {@link RekaElementPartDefinition.siblings}. */
-  siblings: boolean
+  /** See {@link RekaElementPartDefinition.siblings}: `true` is `'after'`. */
+  siblings: false | 'after' | 'inside'
   /**
    * Parts with a `name` are form-associated: they submit through `ElementInternals`,
    * and `<label for>`, `<fieldset disabled>` and form reset reach them.
@@ -87,6 +101,9 @@ export interface PartMeta {
   /** The part renders onto an `<input>` child: see {@link RekaElementPartDefinition.target}. */
   inputTarget: boolean
   text: RekaElementPartDefinition['text']
+  fixedProps: Record<string, unknown>
+  /** Event types (`form-submit`) of the emits only listened to while the element has a listener. */
+  listenedEvents: Set<string>
 }
 
 /** Props the element API does not expose: the host is always the rendered element. */
@@ -149,8 +166,9 @@ export function getPartMeta(definition: RekaElementPartDefinition): PartMeta {
     : rawProps
 
   const props: PropMeta[] = []
+  const fixedProps = definition.fixedProps ?? {}
   for (const [name, option] of Object.entries(propOptions)) {
-    if (HIDDEN_PROPS.has(name))
+    if (HIDDEN_PROPS.has(name) || name in fixedProps)
       continue
     const kind = definition.attributes?.[name] ?? inferKind(propTypes(option))
     const attribute = kind === 'property' ? null : hyphenate(name)
@@ -181,7 +199,9 @@ export function getPartMeta(definition: RekaElementPartDefinition): PartMeta {
     hasAsChild: 'asChild' in propOptions,
     semantics,
     formAssociated: 'name' in propOptions,
-    siblings: !!definition.siblings,
+    siblings: definition.siblings === true ? 'after' : definition.siblings || false,
+    fixedProps,
+    listenedEvents: new Set((definition.listenedEmits ?? []).map(toEventType)),
     inputTarget: definition.target === 'input',
     text: definition.text,
   }

@@ -7,6 +7,8 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { CheckboxGroupRoot } from '@/Checkbox'
 import { DialogRoot } from '@/Dialog'
+import { FieldError, FieldLabel } from '@/Field'
+import { FormRoot } from '@/Form'
 import { PopoverContent } from '@/Popover'
 import { SwitchRoot } from '@/Switch'
 import * as source from '.'
@@ -63,6 +65,21 @@ describe('attribute and event mapping', () => {
     expect(dialog.byAttribute.get('modal')?.defaultTrue).toBe(true)
     expect(dialog.byAttribute.get('open')?.defaultTrue).toBeUndefined()
     expect(getPartMeta({ component: SwitchRoot }).byAttribute.get('disabled')?.defaultTrue).toBeUndefined()
+  })
+
+  it('leaves fixed props out of the element API, and gates listened emits', () => {
+    const label = getPartMeta({ component: FieldLabel, fixedProps: { nativeLabel: false, for: undefined } })
+    expect(label.observedAttributes).not.toContain('native-label')
+    expect(label.observedAttributes).not.toContain('for')
+    expect(label.properties).not.toContain('nativeLabel')
+    expect(label.fixedProps).toEqual({ nativeLabel: false, for: undefined })
+    const form = getPartMeta({ component: FormRoot, listenedEmits: ['formSubmit'] })
+    expect([...form.listenedEvents]).toEqual(['form-submit'])
+    expect(getPartMeta({ component: FieldError, attributes: { match: 'booleanish' } }).byAttribute.get('match')?.kind).toBe('booleanish')
+    // `siblings: true` is `'after'`.
+    expect(getPartMeta({ component: FormRoot, siblings: true }).siblings).toBe('after')
+    expect(getPartMeta({ component: FormRoot, siblings: 'inside' }).siblings).toBe('inside')
+    expect(getPartMeta({ component: FormRoot }).siblings).toBe(false)
   })
 
   it('names events in kebab-case, without colons', () => {
@@ -169,6 +186,114 @@ describe('accessibility (axe)', () => {
     `)
     await mounted('reka-dialog-close')
     expect(await axe(document.body)).toHaveNoViolations()
+  })
+
+  it('display parts', async () => {
+    const container = render(`
+      <reka-aspect-ratio ratio="2"><span>Media</span></reka-aspect-ratio>
+      <reka-avatar-root><reka-avatar-fallback>CT</reka-avatar-fallback></reka-avatar-root>
+      <reka-separator></reka-separator>
+      <reka-progress-root model-value="40" aria-label="Upload"><reka-progress-indicator></reka-progress-indicator></reka-progress-root>
+      <button><reka-visually-hidden>Save</reka-visually-hidden></button>
+    `)
+    await mounted('reka-avatar-fallback')
+    await mounted('reka-progress-indicator')
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('radio and toggle groups, and a toolbar', async () => {
+    const container = render(`
+      <form>
+        <reka-radio-group-root aria-label="Density" name="density" default-value="a">
+          <reka-radio-group-item value="a" aria-label="Default"><reka-radio-group-indicator></reka-radio-group-indicator></reka-radio-group-item>
+          <reka-radio-group-item value="b" aria-label="Compact"><reka-radio-group-indicator></reka-radio-group-indicator></reka-radio-group-item>
+        </reka-radio-group-root>
+        <reka-toggle-group-root type="multiple" aria-label="Formatting" name="format">
+          <reka-toggle-group-item value="bold" aria-label="Bold">B</reka-toggle-group-item>
+          <reka-toggle-group-item value="italic" aria-label="Italic">I</reka-toggle-group-item>
+        </reka-toggle-group-root>
+      </form>
+      <reka-toolbar-root aria-label="Editing">
+        <reka-toolbar-toggle-group type="single" aria-label="Alignment">
+          <reka-toolbar-toggle-item value="left">Left</reka-toolbar-toggle-item>
+        </reka-toolbar-toggle-group>
+        <reka-toolbar-separator></reka-toolbar-separator>
+        <reka-toolbar-button>Share</reka-toolbar-button>
+      </reka-toolbar-root>
+    `)
+    await mounted('reka-radio-group-indicator')
+    await mounted('reka-toolbar-button')
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('pagination and stepper', async () => {
+    const container = render(`
+      <reka-pagination-root total="30" items-per-page="10">
+        <reka-pagination-list>
+          <reka-pagination-prev>Previous</reka-pagination-prev>
+          <reka-pagination-list-item value="1">1</reka-pagination-list-item>
+          <reka-pagination-list-item value="2">2</reka-pagination-list-item>
+          <reka-pagination-ellipsis>…</reka-pagination-ellipsis>
+          <reka-pagination-next>Next</reka-pagination-next>
+        </reka-pagination-list>
+      </reka-pagination-root>
+      <reka-stepper-root default-value="1">
+        <reka-stepper-item step="1">
+          <reka-stepper-trigger>
+            <reka-stepper-indicator>1</reka-stepper-indicator>
+            <reka-stepper-title>Address</reka-stepper-title>
+          </reka-stepper-trigger>
+          <reka-stepper-description>Where to ship</reka-stepper-description>
+          <reka-stepper-separator></reka-stepper-separator>
+        </reka-stepper-item>
+        <reka-stepper-item step="2">
+          <reka-stepper-trigger>
+            <reka-stepper-indicator>2</reka-stepper-indicator>
+            <reka-stepper-title>Payment</reka-stepper-title>
+          </reka-stepper-trigger>
+        </reka-stepper-item>
+      </reka-stepper-root>
+    `)
+    await mounted('reka-pagination-next')
+    await mounted('reka-stepper-separator')
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('scroll area and splitter', async () => {
+    const container = render(`
+      <reka-scroll-area-root type="always" style="height: 100px">
+        <reka-scroll-area-viewport><p>Content</p></reka-scroll-area-viewport>
+        <reka-scroll-area-scrollbar><reka-scroll-area-thumb></reka-scroll-area-thumb></reka-scroll-area-scrollbar>
+      </reka-scroll-area-root>
+      <reka-splitter-group direction="horizontal">
+        <reka-splitter-panel default-size="50">Left</reka-splitter-panel>
+        <reka-splitter-resize-handle aria-label="Resize"></reka-splitter-resize-handle>
+        <reka-splitter-panel default-size="50">Right</reka-splitter-panel>
+      </reka-splitter-group>
+    `)
+    await mounted('reka-scroll-area-viewport')
+    await mounted('reka-splitter-resize-handle')
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('a form with a field, in a config provider', async () => {
+    const container = render(`
+      <reka-config-provider dir="rtl">
+        <reka-form-root>
+          <form novalidate>
+            <reka-field-root name="terms" required>
+              <reka-field-label>Accept the terms</reka-field-label>
+              <reka-checkbox-root></reka-checkbox-root>
+              <reka-field-description>Required to continue.</reka-field-description>
+              <reka-field-error match>Accept the terms to continue.</reka-field-error>
+            </reka-field-root>
+          </form>
+        </reka-form-root>
+      </reka-config-provider>
+    `)
+    await mounted('reka-field-error')
+    await vi.waitFor(() => expect(query('reka-checkbox-root').getAttribute('aria-labelledby')).toBe(query('reka-field-label').id))
+    expect(await axe(container)).toHaveNoViolations()
   })
 
   it('an open popover', async () => {
