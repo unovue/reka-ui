@@ -15,6 +15,7 @@ export interface TooltipContentProps extends TooltipContentImplProps {
 <script setup lang="ts">
 import { Presence } from '@/Presence'
 import { useForwardElement, useForwardPropsEmits } from '@/shared'
+import { isPortalOpening } from '@/Teleport/portalGate'
 import TooltipContentHoverable from './TooltipContentHoverable.vue'
 import TooltipContentImpl from './TooltipContentImpl.vue'
 import { injectTooltipRootContext } from './TooltipRoot.vue'
@@ -30,6 +31,7 @@ defineExpose(expose)
 
 <template>
   <Presence
+    :appear="isPortalOpening(rootContext)"
     :present="rootContext.open.value"
     :force-mount="forceMount"
     @complete="rootContext.notifyOpenComplete"

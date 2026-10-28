@@ -14,6 +14,7 @@ export interface ComboboxContentProps extends ComboboxContentImplProps {
 <script setup lang="ts">
 import { Presence } from '@/Presence'
 import { useForwardElement, useForwardPropsEmits } from '@/shared'
+import { isPortalOpening } from '@/Teleport/portalGate'
 import ComboboxContentImpl from './ComboboxContentImpl.vue'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
@@ -29,6 +30,7 @@ const rootContext = injectComboboxRootContext()
 <template>
   <Presence
     v-slot="{ present }"
+    :appear="isPortalOpening(rootContext)"
     :present="rootContext.open.value"
     :force-mount="forceMount || !rootContext.unmountOnHide.value"
     @complete="rootContext.notifyOpenComplete"

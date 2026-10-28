@@ -1,7 +1,6 @@
-import type { Ref } from 'vue'
+import type { Ref, ShallowRef } from 'vue'
 import { isClient } from '@vueuse/shared'
-import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
-import { useStateMachine } from '@/shared'
+import { nextTick, shallowRef } from 'vue'
 
 /**
  * Where a presence-managed element is in its enter/exit lifecycle (#2827),
@@ -14,6 +13,12 @@ import { useStateMachine } from '@/shared'
  * - `undefined`: neither.
  */
 export type PresenceTransitionStatus = 'starting' | 'ending' | undefined
+
+/**
+ * Whether the node is mounted (`'mounted'`), kept mounted until its exit
+ * animations finish (`'unmountSuspended'`), or unmounted.
+ */
+export type PresenceState = 'mounted' | 'unmountSuspended' | 'unmounted'
 
 export interface UsePresenceOptions {
   /** Stamp the starting style on the initial render when `present` starts `true`. */
@@ -31,6 +36,23 @@ function noop() {}
 
 export const STARTING_STYLE_ATTR = 'data-starting-style'
 export const ENDING_STYLE_ATTR = 'data-ending-style'
+
+type PresenceEvent = 'MOUNT' | 'UNMOUNT' | 'ANIMATION_OUT' | 'ANIMATION_END'
+
+/** The presence state machine, shared by every instance. */
+const TRANSITIONS: Record<PresenceState, Partial<Record<PresenceEvent, PresenceState>>> = {
+  mounted: {
+    UNMOUNT: 'unmounted',
+    ANIMATION_OUT: 'unmountSuspended',
+  },
+  unmountSuspended: {
+    MOUNT: 'mounted',
+    ANIMATION_END: 'unmounted',
+  },
+  unmounted: {
+    MOUNT: 'mounted',
+  },
+}
 
 /**
  * Whether the environment runs Web Animations (`Element.getAnimations()`).
@@ -68,48 +90,47 @@ export function getRunningAnimations(node: Element): Animation[] {
  *   `getAnimations()` reports nothing running, then unmounts it;
  * - with nothing running (no transition, no animation, reduced motion that
  *   disables them, `display: none`) the node unmounts in the same tick.
+ *
+ * A class (methods on the prototype, no per-instance closures) that its owner
+ * creates only once the node is first present, and drives from its own
+ * watcher: `onPresentChange` for `present`, `onNodeChange` for the node.
  */
-export function usePresence(
-  present: Ref<boolean>,
-  node: Readonly<Ref<HTMLElement | undefined>>,
-  options: UsePresenceOptions = {},
-) {
-  const { state, dispatch } = useStateMachine(present.value ? 'mounted' : 'unmounted', {
-    mounted: {
-      UNMOUNT: 'unmounted',
-      ANIMATION_OUT: 'unmountSuspended',
-    },
-    unmountSuspended: {
-      MOUNT: 'mounted',
-      ANIMATION_END: 'unmounted',
-    },
-    unmounted: {
-      MOUNT: 'mounted',
-    },
-  })
-  const transitionStatus = ref<PresenceTransitionStatus>()
+export class PresenceController {
+  readonly transitionStatus: ShallowRef<PresenceTransitionStatus> = shallowRef()
 
   // Every `present` change starts a new run; async work from an older run
   // (a pending frame, a pending `finished` promise) checks it and bails out.
-  let run = 0
-  let frame: number | undefined
+  private run = 0
+  private frame: number | undefined
   // A close whose rendered state has not been checked for animations yet.
-  let exitPending = false
+  private exitPending = false
 
-  const dispatchCustomEvent = (name: 'enter' | 'after-enter' | 'leave' | 'after-leave') => {
+  constructor(
+    /** The owner's state; `'mounted'` or `'unmounted'` when this is created. */
+    private readonly state: ShallowRef<PresenceState>,
+    private readonly node: Readonly<Ref<HTMLElement | undefined>>,
+    private readonly options: UsePresenceOptions,
+  ) {}
+
+  private dispatch(event: PresenceEvent) {
+    this.state.value = TRANSITIONS[this.state.value][event] ?? this.state.value
+  }
+
+  private dispatchCustomEvent(name: 'enter' | 'after-enter' | 'leave' | 'after-leave') {
     // We only dispatch this event because CustomEvent is not available in Node18
     // https://github.com/unovue/reka-ui/issues/930
     if (isClient) {
       const customEvent = new CustomEvent(name, { bubbles: false, cancelable: false })
-      node.value?.dispatchEvent(customEvent)
+      this.node.value?.dispatchEvent(customEvent)
     }
   }
 
-  function cancelPending() {
-    run++
-    if (frame !== undefined) {
-      cancelAnimationFrame(frame)
-      frame = undefined
+  /** Cancels the pending frame and invalidates the current run. */
+  cancelPending() {
+    this.run++
+    if (this.frame !== undefined) {
+      cancelAnimationFrame(this.frame)
+      this.frame = undefined
     }
   }
 
@@ -119,16 +140,16 @@ export function usePresence(
    * on changed) re-checks instead of resolving, so a replacement transition is
    * waited for too (Base UI's `treatAbortedAsFinished = false`).
    */
-  function whenAnimationsFinish(currentRun: number, done: () => void) {
-    const element = node.value
+  private whenAnimationsFinish(currentRun: number, done: () => void) {
+    const element = this.node.value
     if (!element || !supportsAnimations(element))
       return done()
     const running = getRunningAnimations(element)
     if (!running.length)
       return done()
     const recheck = () => {
-      if (currentRun === run)
-        whenAnimationsFinish(currentRun, done)
+      if (currentRun === this.run)
+        this.whenAnimationsFinish(currentRun, done)
     }
     // `.then(noop)` so the joined promise does not resolve to (and retain) the
     // finished Animation objects (Base UI #5719).
@@ -137,122 +158,110 @@ export function usePresence(
 
   // Nothing animates on the server: the immediate watcher still runs during
   // SSR, but the completion must only be reported by the client.
-  const notifyComplete = (value: boolean) => {
+  private notifyComplete(value: boolean) {
     if (isClient)
-      options.onComplete?.(value)
+      this.options.onComplete?.(value)
   }
 
-  function finishEnter() {
-    dispatchCustomEvent('after-enter')
-    notifyComplete(true)
+  private finishEnter() {
+    this.dispatchCustomEvent('after-enter')
+    this.notifyComplete(true)
   }
 
-  function finishExit() {
-    dispatch(state.value === 'unmountSuspended' ? 'ANIMATION_END' : 'UNMOUNT')
-    transitionStatus.value = undefined
-    dispatchCustomEvent('after-leave')
-    notifyComplete(false)
+  private finishExit() {
+    this.dispatch(this.state.value === 'unmountSuspended' ? 'ANIMATION_END' : 'UNMOUNT')
+    this.transitionStatus.value = undefined
+    this.dispatchCustomEvent('after-leave')
+    this.notifyComplete(false)
   }
 
   /**
    * Looks at the rendered closed state: with nothing running, the exit is done
    * right away (returns `true`); otherwise the caller decides what to wait for.
    */
-  function settlePendingExit() {
-    dispatchCustomEvent('leave')
-    const element = node.value
+  private settlePendingExit() {
+    this.dispatchCustomEvent('leave')
+    const element = this.node.value
     if (element && supportsAnimations(element) && getRunningAnimations(element).length)
       return false
-    finishExit()
+    this.finishExit()
     return true
   }
 
-  watch(
-    present,
-    async (currentPresent, prevPresent) => {
-      // Closed and reopened before the closed state was checked for exit
-      // animations: settle that close first, so a node with nothing to wait for
-      // still goes through a full unmount/mount cycle.
-      if (currentPresent && exitPending)
-        settlePendingExit()
-      exitPending = false
-      cancelPending()
-      const currentRun = run
-      const isInitial = prevPresent === undefined
+  /** The `present` watcher (`prevPresent` is `undefined` on the initial call). */
+  async onPresentChange(currentPresent: boolean, prevPresent: boolean | undefined) {
+    // Closed and reopened before the closed state was checked for exit
+    // animations: settle that close first, so a node with nothing to wait for
+    // still goes through a full unmount/mount cycle.
+    if (currentPresent && this.exitPending)
+      this.settlePendingExit()
+    this.exitPending = false
+    this.cancelPending()
+    const currentRun = this.run
+    const isInitial = prevPresent === undefined
 
-      if (currentPresent) {
-        // Base UI stamps the starting style only when an unmounted popup opens:
-        // not on the initial render (unless `appear`), and not when reopening
-        // mid-exit (the exit transition reverses from wherever it is).
-        const startsFromUnmounted = isInitial ? !!options.appear : state.value === 'unmounted'
-        transitionStatus.value = startsFromUnmounted && supportsAnimations() ? 'starting' : undefined
+    if (currentPresent) {
+      // Base UI stamps the starting style only when an unmounted popup opens:
+      // not on the initial render (unless `appear`), and not when reopening
+      // mid-exit (the exit transition reverses from wherever it is).
+      const startsFromUnmounted = isInitial ? !!this.options.appear : this.state.value === 'unmounted'
+      this.transitionStatus.value = startsFromUnmounted && supportsAnimations() ? 'starting' : undefined
 
-        await nextTick()
-        if (currentRun !== run)
-          return
-        dispatch('MOUNT')
-        dispatchCustomEvent('enter')
-
-        if (transitionStatus.value !== 'starting')
-          return whenAnimationsFinish(currentRun, finishEnter)
-
-        frame = requestAnimationFrame(() => {
-          frame = undefined
-          // Resolve styles while the starting style is still applied, so it is
-          // the before-change style of the transitions even if nothing has read
-          // styles since the node was inserted.
-          if (node.value)
-            void getComputedStyle(node.value).transitionProperty
-          transitionStatus.value = undefined
-          nextTick(() => {
-            if (currentRun === run)
-              whenAnimationsFinish(currentRun, finishEnter)
-          })
-        })
-        return
-      }
-
-      if (isInitial || state.value === 'unmounted') {
-        transitionStatus.value = undefined
-        return
-      }
-
-      if (supportsAnimations())
-        transitionStatus.value = 'ending'
-
-      // Wait for the closed state (`data-state`, `data-ending-style`) to be
-      // rendered: `getAnimations()` flushes styles, so the exit transitions and
-      // animations it starts are already listed.
-      exitPending = true
       await nextTick()
-      if (currentRun !== run)
+      if (currentRun !== this.run)
         return
-      exitPending = false
-      if (settlePendingExit())
-        return
-      dispatch('ANIMATION_OUT')
-      whenAnimationsFinish(currentRun, finishExit)
-    },
-    { immediate: true },
-  )
+      this.dispatch('MOUNT')
+      this.dispatchCustomEvent('enter')
 
-  // The node can go away while its exit is still suspended (a parent `v-if`,
-  // an `as` swap): there is nothing left to wait for.
-  watch(node, (newNode) => {
-    if (!newNode && state.value === 'unmountSuspended') {
-      cancelPending()
-      finishExit()
+      if (this.transitionStatus.value !== 'starting')
+        return this.whenAnimationsFinish(currentRun, () => this.finishEnter())
+
+      this.frame = requestAnimationFrame(() => {
+        this.frame = undefined
+        // Resolve styles while the starting style is still applied, so it is
+        // the before-change style of the transitions even if nothing has read
+        // styles since the node was inserted.
+        if (this.node.value)
+          void getComputedStyle(this.node.value).transitionProperty
+        this.transitionStatus.value = undefined
+        nextTick(() => {
+          if (currentRun === this.run)
+            this.whenAnimationsFinish(currentRun, () => this.finishEnter())
+        })
+      })
+      return
     }
-  })
 
-  onScopeDispose(cancelPending)
+    if (isInitial || this.state.value === 'unmounted') {
+      this.transitionStatus.value = undefined
+      return
+    }
 
-  const isPresent = computed(() =>
-    state.value === 'mounted' || state.value === 'unmountSuspended',
-  )
+    if (supportsAnimations())
+      this.transitionStatus.value = 'ending'
 
-  return {
-    isPresent,
-    transitionStatus,
+    // Wait for the closed state (`data-state`, `data-ending-style`) to be
+    // rendered: `getAnimations()` flushes styles, so the exit transitions and
+    // animations it starts are already listed.
+    this.exitPending = true
+    await nextTick()
+    if (currentRun !== this.run)
+      return
+    this.exitPending = false
+    if (this.settlePendingExit())
+      return
+    this.dispatch('ANIMATION_OUT')
+    this.whenAnimationsFinish(currentRun, () => this.finishExit())
+  }
+
+  /**
+   * The node watcher. The node can go away while its exit is still suspended
+   * (a parent `v-if`, an `as` swap): there is nothing left to wait for.
+   */
+  onNodeChange(newNode: HTMLElement | undefined) {
+    if (!newNode && this.state.value === 'unmountSuspended') {
+      this.cancelPending()
+      this.finishExit()
+    }
   }
 }

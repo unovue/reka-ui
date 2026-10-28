@@ -251,18 +251,23 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
   ownTriggerSlots.set(context, ownTriggerSlot)
   setPopupRootStore(context, handleStore)
 
+  // The part surfaces are for standalone consumers (the part SFCs build their
+  // own from the context), so each is built on first read.
+  let trigger: PartSurface<PopoverTriggerState> | undefined
+  let close: PartSurface<Record<string, never>> | undefined
+  let content: PartSurface<PopoverContentState> | undefined
   return {
     open,
-    payload: handleStore.payload,
-    activeTriggerId: handleStore.activeTriggerId,
+    get payload() { return handleStore.payload },
+    get activeTriggerId() { return handleStore.activeTriggerId },
     handleStore,
     onOpenChange,
     onOpenToggle,
     lastChangeDetails,
     isControlled,
-    trigger: getPopoverTriggerSurface(context),
-    close: getPopoverCloseSurface(context),
-    content: getPopoverContentSurface(context),
+    get trigger() { return trigger ??= getPopoverTriggerSurface(context) },
+    get close() { return close ??= getPopoverCloseSurface(context) },
+    get content() { return content ??= getPopoverContentSurface(context) },
     context,
   }
 }
