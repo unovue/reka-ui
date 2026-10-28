@@ -1,6 +1,9 @@
 import type { RekaElementEvent, RekaElementTagNameMap, RekaEventType, RekaIntrinsicElements, UseKebabCaseEventProp } from '.'
+<<<<<<< HEAD
 import type { DateValue } from '@/date'
 import type { Color } from '@/shared/color'
+=======
+>>>>>>> origin/v3
 import { describe, expectTypeOf, it } from 'vitest'
 
 // The opt-in documented in the "Custom elements" guide.
@@ -27,6 +30,7 @@ describe('element typings', () => {
     expectTypeOf(el.as).toBeUnknown()
   })
 
+<<<<<<< HEAD
   it('types Temporal, number-array and color values, and the read-only slot props', () => {
     const calendar = document.createElement('reka-calendar-root')
     expectTypeOf(calendar.minValue).toEqualTypeOf<DateValue | undefined>()
@@ -38,6 +42,8 @@ describe('element typings', () => {
     expectTypeOf<string | Color>().toExtend<NonNullable<HTMLElementTagNameMap['reka-color-field-root']['modelValue']>>()
   })
 
+=======
+>>>>>>> origin/v3
   it('types JSX event props in kebab-case, and steers away from camelCase handlers', () => {
     type Switch = RekaIntrinsicElements<{ defaultValue?: string, title?: string }>['reka-switch-root']
     type OnUpdate = NonNullable<Switch['onupdate-model-value']>
