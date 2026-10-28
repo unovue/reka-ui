@@ -1,5 +1,5 @@
 import type { Component, ComponentInternalInstance, ComputedRef, Ref } from 'vue'
-import { defineComponent, getCurrentInstance, h, onScopeDispose, provide, shallowRef } from 'vue'
+import { defineComponent, getCurrentInstance, h, onScopeDispose, onUpdated, provide, shallowRef } from 'vue'
 import { Slot } from '@/Primitive/Slot'
 import { getterRef } from '@/shared/partSurface'
 import { useForwardElement } from '@/shared/useForwardElement'
@@ -318,6 +318,16 @@ export function useCollectionItem(element: ElementSourceLike, value?: () => unkn
     metaByEntry.set(record.entry, options.meta)
   context.register(record)
   onScopeDispose(() => context.unregister(record))
+  // An item that re-renders to another element or to none (a filtered-out
+  // item, a custom element host that stays in the DOM) without a child-list
+  // change the observer sees: drop the cached order.
+  if (getCurrentInstance()) {
+    onUpdated(() => {
+      // Only an item the cached order resolved; the next build reads the others.
+      if (record.ref && context.ordered && (record.element.value ?? null) !== record.ref)
+        context.invalidate()
+    })
+  }
   return true
 }
 
