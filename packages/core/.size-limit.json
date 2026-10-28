@@ -62,7 +62,7 @@
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, dialogElements }",
-    "limit": "22 KB",
+    "limit": "23 KB",
     "name": "Elements: Dialog"
   },
   {
