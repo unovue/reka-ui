@@ -88,9 +88,11 @@ const pageRoot = mkdtempSync(join(BENCH_ROOT, 'dist', 'run-'))
 //
 // The lock is a file holding "<pid> <random token>". It is published with link(), which is
 // atomic and fails if the lock exists, so a lock never exists without its owner recorded.
-// A lock whose pid is dead is reclaimed by renaming it to a name unique to the reclaimer:
-// only one run can win that rename, and the winner deletes it only if it still holds the
-// dead owner's token (otherwise it raced a fresh lock and puts it back).
+// A lock whose pid is dead is reclaimed by one elected run: the first to create the
+// marker file named after that lock's token (O_EXCL). The lock itself is never moved, so a
+// live lock is never briefly absent. The elected run deletes it only while it still holds
+// the dead owner's token; it can't have been replaced, because a lock is only ever
+// replaced after it is removed, and only the elected run removes a stale one.
 const HEAD_LOCK = join(BENCH_ROOT, 'dist', '.head-build.lock')
 const myToken = `${process.pid} ${randomBytes(6).toString('hex')}`
 let holdsLock = false
@@ -130,23 +132,26 @@ function tryLock() {
   }
 }
 function reclaimIfStale(token) {
-  const reap = `${HEAD_LOCK}.reap.${process.pid}`
+  const marker = `${HEAD_LOCK}.reap-${token.replace(/\W+/g, '-')}`
   try {
-    renameSync(HEAD_LOCK, reap)
+    writeFileSync(marker, String(process.pid), { flag: 'wx' })
   }
   catch (e) {
-    if (e.code === 'ENOENT')
-      return // another run reclaimed or released it first
-    throw e
+    if (e.code !== 'EEXIST')
+      throw e
+    // Another run is reclaiming this lock. If that run died mid-way, clear its marker.
+    const reaper = Number(readLock(marker))
+    if (reaper && !isAlive(reaper))
+      rmSync(marker, { force: true })
+    return
   }
-  if (readLock(reap) !== token) {
-    // A fresh lock replaced the stale one before our rename: put it back.
-    try {
-      linkSync(reap, HEAD_LOCK)
-    }
-    catch {}
+  try {
+    if (readLock(HEAD_LOCK) === token)
+      rmSync(HEAD_LOCK, { force: true })
   }
-  rmSync(reap, { force: true })
+  finally {
+    rmSync(marker, { force: true })
+  }
 }
 async function lockHeadBuild() {
   let waiting = false
@@ -157,6 +162,7 @@ async function lockHeadBuild() {
     const pid = Number(token.split(' ')[0])
     if (!isAlive(pid)) {
       reclaimIfStale(token)
+      await sleep(50)
       continue
     }
     if (!waiting)
