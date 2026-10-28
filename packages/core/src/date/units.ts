@@ -134,10 +134,10 @@ function withMonthAndDay(value: DateValue, reference: DateValue): DateValue {
 
 // Cell text and label options: constant objects, so the formatter keys them once
 // (by identity) instead of serialising the options for every cell.
-const DAY_LABEL_OPTIONS: DateFormatterOptions = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }
-const MONTH_CELL_OPTIONS: DateFormatterOptions = { month: 'short' }
-const MONTH_LABEL_OPTIONS: DateFormatterOptions = { month: 'long', year: 'numeric' }
-const YEAR_OPTIONS: DateFormatterOptions = { year: 'numeric' }
+const DAY_LABEL_OPTIONS: DateFormatterOptions = Object.freeze({ weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+const MONTH_CELL_OPTIONS: DateFormatterOptions = Object.freeze({ month: 'short' })
+const MONTH_LABEL_OPTIONS: DateFormatterOptions = Object.freeze({ month: 'long', year: 'numeric' })
+const YEAR_OPTIONS: DateFormatterOptions = Object.freeze({ year: 'numeric' })
 
 const numberFormats = new Map<string, Intl.NumberFormat>()
 /** `n.toLocaleString(locale)` through a cached `Intl.NumberFormat` (same output, no per-call formatter). */

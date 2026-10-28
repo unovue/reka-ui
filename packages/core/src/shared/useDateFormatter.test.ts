@@ -78,3 +78,65 @@ describe('useDateFormatter', () => {
     })
   })
 })
+
+// The Temporal path resolves a cached formatter by key and builds the `Date`
+// from the value's fields directly. It must give what formatting the value's
+// UTC wall clock (or its own zone) in its own calendar gives.
+describe('useDateFormatter: cached Temporal formatting', () => {
+  const plain = new Temporal.PlainDate(2024, 2, 29)
+  const dateTime = new Temporal.PlainDateTime(2024, 2, 29, 23, 45, 12, 345)
+  const zoned = Temporal.ZonedDateTime.from('2024-03-10T01:30:00[America/New_York]')
+  const japanese = plain.withCalendar('japanese')
+  const persian = plain.withCalendar('persian')
+  const reference = (value: Temporal.PlainDate | Temporal.PlainDateTime, locale: string, options: DateFormatterOptions) => {
+    const calendar = options.calendar ?? (value.calendarId === 'iso8601' ? 'gregory' : value.calendarId)
+    const iso = value.withCalendar('iso8601')
+    const fields = 'hour' in iso ? iso : iso.toPlainDateTime()
+    const instant = new Date(0)
+    instant.setUTCFullYear(fields.year, fields.month - 1, fields.day)
+    instant.setUTCHours(fields.hour, fields.minute, fields.second, fields.millisecond)
+    return new Intl.DateTimeFormat(locale, { ...options, calendar, timeZone: 'UTC' }).format(instant)
+  }
+  const DATE: DateFormatterOptions = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }
+  const DATE_TIME: DateFormatterOptions = { ...DATE, hour: 'numeric', minute: 'numeric', second: 'numeric', fractionalSecondDigits: 3 }
+
+  it.each([
+    ['a PlainDate', plain, 'en-US', DATE],
+    ['a PlainDateTime', dateTime, 'en-US', DATE_TIME],
+    ['a Japanese PlainDate', japanese, 'ja-JP', DATE],
+    ['a Persian PlainDate', persian, 'fa-IR', DATE],
+    ['an ISO PlainDate in a non-Gregorian locale', plain, 'th-TH', DATE],
+  ] as const)('formats %s as its wall clock in its own calendar', (_label, value, locale, options) => {
+    expect(useDateFormatter(locale).custom(value, options)).toBe(reference(value, locale, options))
+  })
+
+  it('formats a year before 100 without the two-digit year shift', () => {
+    const early = new Temporal.PlainDate(42, 6, 1)
+    expect(useDateFormatter('en-US').custom(early, { year: 'numeric', month: 'short', day: 'numeric' })).toBe('Jun 1, 42')
+  })
+
+  it('formats a ZonedDateTime in its own zone', () => {
+    const formatted = useDateFormatter('en-US').custom(zoned, { hour: 'numeric', minute: 'numeric', timeZoneName: 'short' })
+    expect(formatted).toBe(new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: 'numeric', timeZoneName: 'short', timeZone: 'America/New_York' }).format(new Date(zoned.epochMilliseconds)))
+  })
+
+  it('follows a locale change on the same formatter', () => {
+    const formatter = useDateFormatter('en-US')
+    expect(formatter.fullMonth(plain)).toBe('February')
+    formatter.setLocale('de-DE')
+    expect(formatter.fullMonth(plain)).toBe('Februar')
+  })
+
+  it('honours an explicit calendar option over the value\'s calendar', () => {
+    const options: DateFormatterOptions = { year: 'numeric', calendar: 'japanese', era: 'short' }
+    expect(useDateFormatter('en-US').custom(plain, options)).toBe(reference(plain, 'en-US', options))
+  })
+
+  it('reads a mutated options object afresh', () => {
+    const formatter = useDateFormatter('en-US')
+    const options: DateFormatterOptions = { month: 'long' }
+    expect(formatter.custom(plain, options)).toBe('February')
+    options.month = 'short'
+    expect(formatter.custom(plain, options)).toBe('Feb')
+  })
+})
