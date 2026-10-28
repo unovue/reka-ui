@@ -212,8 +212,10 @@ pnpm bench --help                           # all options
 
 `--compare <ref>` checks the ref out in a temporary git worktree, installs and
 builds it there, then measures both builds interleaved, family by family. It
-prints the head/base ratio for heap, mount and update time. Add `--keep-base` to
-reuse that worktree on the next run. The first time, install the browser with
+prints the head/base ratio for heap, mount and update time. Each run gets its own
+worktree under `/tmp/rkb-*`, which is removed when the run ends, even on Ctrl-C.
+Concurrent runs against the same ref therefore don't collide. Add `--keep-base`
+to leave the worktree in place for inspection. The first time, install the browser with
 `pnpm --filter bench exec playwright install chromium`. Raw samples go to
 `packages/bench/dist/results.json`.
 

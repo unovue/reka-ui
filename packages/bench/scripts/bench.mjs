@@ -4,10 +4,12 @@
 // Without --compare: builds packages/core, measures every family, prints a table.
 // With --compare <ref>: also checks <ref> out in a temporary git worktree, installs and
 // builds it there, then measures both builds interleaved and compares them per family.
+// Every run gets its own base worktree and page output directory, so concurrent runs
+// (several agents or checkouts comparing against the same ref) never share one.
 // Exits 1 when any family's retained heap per instance regresses beyond the threshold.
 /* eslint-disable no-console */
 import { execFileSync } from 'node:child_process'
-import { appendFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import process from 'node:process'
@@ -45,7 +47,7 @@ if (opts.help) {
   --no-build        use the existing packages/core/dist instead of rebuilding it
   --threshold X     heap regression ratio that fails the run (default 0.03 = +3%)
   --floor KB        ... and only if heap grew by more than this many KB/inst (default 0.2)
-  --keep-base       keep the base worktree (and reuse it on the next run of the same commit)
+  --keep-base       leave the base worktree in place after the run (its path is printed)
   --gate            wait while the machine's load average is above ncpu/2
   --out file        raw samples + summary JSON (default packages/bench/dist/results.json)
   --summary file    append the markdown report here (default $GITHUB_STEP_SUMMARY)`)
@@ -55,7 +57,12 @@ if (opts.help) {
 const log = msg => console.log(`[bench] ${msg}`)
 const REPO = resolve(BENCH_ROOT, '../..')
 const CORE = resolve(REPO, 'packages/core')
-const sh = (cmd, args, cwd, quiet = false) => execFileSync(cmd, args, { cwd, stdio: quiet ? ['ignore', 'pipe', 'inherit'] : 'inherit', encoding: 'utf8' })
+// Short temp root, whatever $TMPDIR is: the base worktree lives there, and the builds run with
+// TMPDIR pointing at it, because tsx (packages/core postbuild) puts its IPC socket under TMPDIR
+// and a Unix socket path over ~104 chars (macOS) fails with EINVAL.
+const SHORT_TMP = process.platform === 'win32' ? tmpdir() : '/tmp'
+const env = { ...process.env, TMPDIR: SHORT_TMP }
+const sh = (cmd, args, cwd, quiet = false) => execFileSync(cmd, args, { cwd, env, stdio: quiet ? ['ignore', 'pipe', 'inherit'] : 'inherit', encoding: 'utf8' })
 const git = (...args) => sh('git', args, REPO, true).trim()
 
 const families = opts.only ? opts.only.split(',').map(s => s.trim()) : Object.keys(FAMILIES)
@@ -78,38 +85,70 @@ if (!existsSync(join(CORE, 'dist/index.js')))
 
 let baseDir = null
 let baseSha = null
+// This run's page builds; dist/ is shared by every run in this checkout.
+mkdirSync(join(BENCH_ROOT, 'dist'), { recursive: true })
+const pageRoot = mkdtempSync(join(BENCH_ROOT, 'dist', 'run-'))
+
+let cleaned = false
+function cleanup() {
+  if (cleaned)
+    return
+  cleaned = true
+  rmSync(pageRoot, { recursive: true, force: true })
+  if (!baseDir)
+    return
+  if (opts['keep-base']) {
+    log(`kept base worktree ${baseDir} (remove with: git worktree remove --force ${baseDir})`)
+    return
+  }
+  // Only this run's directory: other runs have their own.
+  try {
+    git('worktree', 'remove', '--force', baseDir)
+  }
+  catch {}
+  rmSync(baseDir, { recursive: true, force: true })
+  try {
+    git('worktree', 'prune')
+  }
+  catch {}
+  log('removed base worktree')
+}
+for (const [sig, code] of [['SIGINT', 130], ['SIGTERM', 143], ['SIGHUP', 129]]) {
+  process.on(sig, () => {
+    cleanup()
+    process.exit(code)
+  })
+}
+process.on('exit', cleanup)
+
 if (opts.compare) {
   baseSha = git('rev-parse', '--verify', `${opts.compare}^{commit}`)
-  baseDir = join(tmpdir(), `reka-bench-base-${baseSha.slice(0, 12)}`)
-  const built = existsSync(join(baseDir, 'packages/core/dist/index.js'))
-  if (built && opts['keep-base']) {
-    log(`reusing base worktree ${baseDir}`)
-  }
-  else {
-    if (existsSync(baseDir))
-      git('worktree', 'remove', '--force', baseDir)
-    log(`base ${opts.compare} = ${baseSha.slice(0, 12)}: worktree at ${baseDir}`)
-    git('worktree', 'add', '--detach', baseDir, baseSha)
-    // --ignore-scripts: the root `prepare` hook installs git hooks, which a worktree doesn't need
-    sh('pnpm', ['install', '--frozen-lockfile', '--prefer-offline', '--ignore-scripts'], baseDir)
-    sh('pnpm', ['--filter', 'reka-ui', 'build-only'], baseDir)
-  }
+  // Drop registrations of worktrees whose directories are gone (e.g. a killed run, a cleaned
+  // /tmp). Worktrees still being created are locked by git, and live ones still exist, so
+  // a concurrent run is never touched.
+  git('worktree', 'prune')
+  baseDir = mkdtempSync(join(SHORT_TMP, `rkb-${baseSha.slice(0, 7)}-`))
+  log(`base ${opts.compare} = ${baseSha.slice(0, 12)}: worktree at ${baseDir}`)
+  git('worktree', 'add', '--detach', baseDir, baseSha)
+  // --ignore-scripts: the root `prepare` hook installs git hooks, which a worktree doesn't need
+  sh('pnpm', ['install', '--frozen-lockfile', '--prefer-offline', '--ignore-scripts'], baseDir)
+  sh('pnpm', ['--filter', 'reka-ui', 'build-only'], baseDir)
 }
 
 // --- bench page builds ---
 const labels = []
 if (baseDir) {
   log('building bench page against base')
-  await buildPage({ lib: join(baseDir, 'packages/core'), label: 'base' })
+  await buildPage({ lib: join(baseDir, 'packages/core'), label: 'base', outRoot: pageRoot })
   labels.push('base')
 }
 log('building bench page against this checkout')
-await buildPage({ lib: CORE, label: 'head' })
+await buildPage({ lib: CORE, label: 'head', outRoot: pageRoot })
 labels.push('head')
 const tBuilt = Date.now()
 
 // --- run ---
-const raw = await runBench({ labels, families, runs, warmup, concurrency: Number(opts.concurrency), gate: opts.gate, log })
+const raw = await runBench({ root: pageRoot, labels, families, runs, warmup, concurrency: Number(opts.concurrency), gate: opts.gate, log })
 const summary = summarize(raw)
 const tRan = Date.now()
 
@@ -155,10 +194,7 @@ log(`results: ${out}`)
 if (opts.summary)
   appendFileSync(opts.summary, `${md}\n`)
 
-if (baseDir && !opts['keep-base']) {
-  git('worktree', 'remove', '--force', baseDir)
-  log('removed base worktree')
-}
+cleanup()
 
 const headFailed = !baseDir && Object.values(summary).some(s => !s.head?.ok || s.head.failed)
 process.exit(failed.length || headFailed ? 1 : 0)
