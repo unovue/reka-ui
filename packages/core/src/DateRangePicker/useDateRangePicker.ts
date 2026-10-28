@@ -11,7 +11,7 @@ import { computed, ref, shallowRef, toValue, unref, watch } from 'vue'
 import { compareDateValues, getWeekStartsOn, isSameDay } from '@/date'
 import { isSameRange } from '@/DateRangeField/useDateRangeField'
 import { usePopover } from '@/Popover/usePopover'
-import { useControllableState } from '@/shared'
+import { getterRef, useControllableState } from '@/shared'
 import { bridgeChange, getDefaultDate, isSameTemporalValue } from '@/shared/date'
 
 /**
@@ -116,9 +116,9 @@ export interface UseDateRangePickerReturn {
  * @lifecycle setup — installs watchers (range → placeholder sync, close on select, view reset on open).
  */
 export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDateRangePickerReturn {
-  const locale = computed(() => toValue(props.locale) ?? 'en')
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
-  const closeOnSelect = computed(() => toValue(props.closeOnSelect) ?? false)
+  const locale = getterRef(() => toValue(props.locale) ?? 'en')
+  const dir = getterRef<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const closeOnSelect = getterRef(() => toValue(props.closeOnSelect) ?? false)
   const weekStartsOn = computed(() => toValue(props.weekStartsOn) ?? getWeekStartsOn(locale.value))
 
   const { state: rawModelValue, setState: setModelState, lastChangeDetails, isControlled } = useControllableState<DateRange | null | undefined, DateRangePickerChangeReason>({
@@ -234,14 +234,14 @@ export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDate
   }
 
   const context: DateRangePickerRootContext = {
-    id: computed(() => toValue(props.id)),
-    name: computed(() => toValue(props.name)),
-    minValue: computed(() => toValue(props.minValue)),
-    maxValue: computed(() => toValue(props.maxValue)),
-    hourCycle: computed(() => toValue(props.hourCycle)),
-    granularity: computed(() => toValue(props.granularity)),
-    hideTimeZone: computed(() => toValue(props.hideTimeZone) ?? false),
-    required: computed(() => toValue(props.required) ?? false),
+    id: getterRef(() => toValue(props.id)),
+    name: getterRef(() => toValue(props.name)),
+    minValue: getterRef(() => toValue(props.minValue)),
+    maxValue: getterRef(() => toValue(props.maxValue)),
+    hourCycle: getterRef(() => toValue(props.hourCycle)),
+    granularity: getterRef(() => toValue(props.granularity)),
+    hideTimeZone: getterRef(() => toValue(props.hideTimeZone) ?? false),
+    required: getterRef(() => toValue(props.required) ?? false),
     locale,
     dateFieldRef: ref(),
     modelValue: computed({
@@ -252,14 +252,14 @@ export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDate
       get: () => placeholder.value,
       set: value => setPlaceholder(value),
     }),
-    pagedNavigation: computed(() => toValue(props.pagedNavigation) ?? false),
-    preventDeselect: computed(() => toValue(props.preventDeselect) ?? false),
+    pagedNavigation: getterRef(() => toValue(props.pagedNavigation) ?? false),
+    preventDeselect: getterRef(() => toValue(props.preventDeselect) ?? false),
     weekStartsOn,
-    weekdayFormat: computed(() => toValue(props.weekdayFormat) ?? 'narrow'),
-    fixedWeeks: computed(() => toValue(props.fixedWeeks) ?? false),
-    numberOfMonths: computed(() => toValue(props.numberOfMonths) ?? 1),
-    disabled: computed(() => toValue(props.disabled) ?? false),
-    readonly: computed(() => toValue(props.readonly) ?? false),
+    weekdayFormat: getterRef(() => toValue(props.weekdayFormat) ?? 'narrow'),
+    fixedWeeks: getterRef(() => toValue(props.fixedWeeks) ?? false),
+    numberOfMonths: getterRef(() => toValue(props.numberOfMonths) ?? 1),
+    disabled: getterRef(() => toValue(props.disabled) ?? false),
+    readonly: getterRef(() => toValue(props.readonly) ?? false),
     get isDateDisabled() {
       return unref(props.isDateDisabled)
     },
@@ -269,24 +269,24 @@ export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDate
     get isDateHighlightable() {
       return unref(props.isDateHighlightable)
     },
-    defaultOpen: computed(() => props.defaultOpen ?? false),
+    defaultOpen: getterRef(() => props.defaultOpen ?? false),
     open: popover.open,
-    modal: computed(() => toValue(props.modal) ?? false),
+    modal: getterRef(() => toValue(props.modal) ?? false),
     onDateChange: (value, reason, event) => setModelValue(value, reason, event),
     onPlaceholderChange: setPlaceholder,
     onStartValueChange: (value, details) => reportStartValue(value, details?.reason, details?.event),
     dir,
-    allowNonContiguousRanges: computed(() => toValue(props.allowNonContiguousRanges) ?? false),
-    fixedDate: computed(() => toValue(props.fixedDate)),
-    maximumDays: computed(() => toValue(props.maximumDays)),
-    maximumLength: computed(() => toValue(props.maximumLength)),
-    step: computed(() => toValue(props.step)),
-    stepSnapping: computed(() => toValue(props.stepSnapping) ?? false),
+    allowNonContiguousRanges: getterRef(() => toValue(props.allowNonContiguousRanges) ?? false),
+    fixedDate: getterRef(() => toValue(props.fixedDate)),
+    maximumDays: getterRef(() => toValue(props.maximumDays)),
+    maximumLength: getterRef(() => toValue(props.maximumLength)),
+    step: getterRef(() => toValue(props.step)),
+    stepSnapping: getterRef(() => toValue(props.stepSnapping) ?? false),
     closeOnSelect,
     view,
-    maxView: computed(() => toValue(props.maxView) ?? 'year'),
-    yearsPerPage: computed(() => toValue(props.yearsPerPage) ?? 12),
-    columns: computed(() => toValue(props.columns) ?? 4),
+    maxView: getterRef(() => toValue(props.maxView) ?? 'year'),
+    yearsPerPage: getterRef(() => toValue(props.yearsPerPage) ?? 12),
+    columns: getterRef(() => toValue(props.columns) ?? 4),
     onViewChange(next: CalendarUnit, details?: ChangeEventDetails<RangeCalendarChangeReason>) {
       setView(next, details?.reason, details?.event)
     },

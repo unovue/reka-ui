@@ -7,7 +7,7 @@ import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, unref, watch } from 'vue'
 import { areAllDaysBetweenValid, hasTime, isBefore, isBeforeOrSame } from '@/date'
 import { assertTemporal } from '@/date/runtime'
-import { useControllableState, useDateFormatter } from '@/shared'
+import { getterRef, useControllableState, useDateFormatter } from '@/shared'
 import {
   createContent,
   createSegmentFieldRootSurface,
@@ -134,13 +134,13 @@ export function createDateRangeFieldInputSurface(
  */
 export function useDateRangeField(props: UseDateRangeFieldProps = {}): UseDateRangeFieldReturn {
   assertTemporal()
-  const locale = computed(() => toValue(props.locale) ?? 'en')
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
-  const disabled = computed(() => toValue(props.disabled) ?? false)
-  const readonly = computed(() => toValue(props.readonly) ?? false)
-  const stepSnapping = computed(() => toValue(props.stepSnapping) ?? false)
+  const locale = getterRef(() => toValue(props.locale) ?? 'en')
+  const dir = getterRef<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const disabled = getterRef(() => toValue(props.disabled) ?? false)
+  const readonly = getterRef(() => toValue(props.readonly) ?? false)
+  const stepSnapping = getterRef(() => toValue(props.stepSnapping) ?? false)
   const step = computed(() => normalizeDateStep({ step: toValue(props.step) }))
-  const isDateUnavailable = computed(() => unref(props.isDateUnavailable))
+  const isDateUnavailable = getterRef(() => unref(props.isDateUnavailable))
   const parentElement = props.parentElement ?? ref<HTMLElement>()
 
   const formatter = useDateFormatter(locale.value, {
