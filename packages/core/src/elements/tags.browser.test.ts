@@ -101,6 +101,17 @@ describe('tags input elements', () => {
     await vi.waitFor(() => expect(tags()).toEqual(['#vue']))
     expect(changes).toEqual([[{ label: 'vue' }]])
   })
+
+  it('tells the consumer about a form reset, so the shown tags match what submits', async () => {
+    const { container, input, changes } = await mountTagsInput()
+    await userEvent.type(input, 'vue{Enter}')
+    await vi.waitFor(() => expect(tags()).toEqual(['vue']))
+    const form = container.querySelector('form')!
+    form.reset()
+    await vi.waitFor(() => expect(changes.at(-1)).toEqual([]))
+    expect(tags()).toEqual([])
+    expect([...new FormData(form).entries()]).toEqual([])
+  })
 })
 
 describe('tag group elements', () => {

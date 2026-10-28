@@ -18,6 +18,11 @@ export const HOST_PROP = '__rekaHost'
  * `.token` for classes and `;property` for inline style properties.
  */
 export const OWNED_ATTR = 'data-reka-owned'
+/**
+ * Marks an element the binding created inside the consumer's tree (the `<input>`
+ * of a `target: 'input'` part that had none): not the consumer's content.
+ */
+export const CREATED_ATTR = 'data-reka-created'
 
 const HYPHENATE = /\B([A-Z])/g
 const WHITESPACE = /\s+/
@@ -26,8 +31,12 @@ const STYLE_PROPERTY = /:([\s\S]+)/
 const IMPORTANT = /\s*!important$/
 const EVENT_KEY = /^on[^a-z]/
 const FORM_FIELD = /^(?:INPUT|SELECT|TEXTAREA)$/
-/** Props of a native `<input>` target that are DOM state, not attributes. */
-const NATIVE_PROPS = new Set(['value', 'disabled', 'checked', 'indeterminate'])
+/**
+ * Props of a native `<input>` target that are DOM state, not attributes. (`disabled`
+ * reflects its attribute: it is owned like any attribute, so a consumer write while
+ * the part renders is what remains, and a `cloneNode()` copy drops it.)
+ */
+const NATIVE_PROPS = new Set(['value', 'checked', 'indeterminate'])
 
 export function hyphenate(value: string): string {
   return value.replace(HYPHENATE, '-$1').toLowerCase()
@@ -88,7 +97,7 @@ export function hostsAwayFrom(node: Node): HTMLElement[] {
   const hosts: HTMLElement[] = []
   for (const binding of awayBindings) {
     if (containsComposed(node, binding.homeNode))
-      hosts.push(binding.el)
+      hosts.push(binding.host)
   }
   return hosts
 }
@@ -243,10 +252,16 @@ export class HostBinding {
   el: HTMLElement
   /** The host was teleported into a detached `DocumentFragment`: it stays home, unrendered. */
   offscreen = false
-  /** The host's text is the part's fallback content, written by the binding. */
-  private ownsText = false
-  /** DOM properties set on a native target (`value`, `disabled`), with the values they had before: restored when the part lets go. */
+  /** The text node holding the part's fallback content, while the host has no children of its own. */
+  private textNode: Text | null = null
+  /** DOM properties set on a native target (`value`), with the values they had before: restored when the part lets go. */
   private readonly nativeProps = new Map<string, unknown>()
+  /**
+   * The part's root-level `<style>`s, placed in the shadow root or the head. Vue
+   * removes a fragment's nodes by walking between its anchors, which stay in the
+   * detached container: these are removed by the binding.
+   */
+  private readonly styles = new Set<Node>()
 
   constructor(
     /** The custom element. */
@@ -329,22 +344,43 @@ export class HostBinding {
 
   /** Whether the part's fallback text may go in the host: it has no children of the consumer's. */
   canWriteText() {
-    return this.ownsText || !this.host.hasChildNodes()
+    for (const child of this.host.childNodes) {
+      if (child !== this.textNode && !(child as Element).hasAttribute?.(CREATED_ATTR))
+        return false
+    }
+    return true
   }
 
-  /** The part's fallback text, written as the host's text while the host has none of its own. */
+  /**
+   * The part's fallback text, in a text node of its own while the host has no
+   * other children. Only that node is ever changed or removed: children the
+   * consumer adds take its place.
+   */
   setText(text: string) {
-    if (!this.canWriteText())
+    if (!text || !this.canWriteText()) {
+      this.removeText()
       return
-    this.ownsText = text !== ''
-    this.write(() => {
-      this.host.textContent = text
-    })
+    }
+    if (this.textNode?.parentNode === this.host) {
+      if (this.textNode.data !== text)
+        this.textNode.data = text
+      return
+    }
+    this.textNode = this.host.ownerDocument.createTextNode(text)
+    this.write(() => this.host.append(this.textNode!))
+  }
+
+  /** Removes the fallback text node, if it is still the host's. */
+  removeText() {
+    const node = this.textNode
+    this.textNode = null
+    if (node?.parentNode === this.host)
+      this.write(() => node.remove())
   }
 
   /** Where the host sits in the consumer's tree: itself, or its marker while moved away. */
   get homeNode(): Node {
-    return this.homeMarker ?? this.el
+    return this.homeMarker ?? this.host
   }
 
   /** Puts the host back at its home position. */
@@ -358,9 +394,9 @@ export class HostBinding {
     this.moving = true
     try {
       if (marker.parentNode)
-        marker.parentNode.replaceChild(this.el, marker)
+        marker.parentNode.replaceChild(this.host, marker)
       else
-        this.el.remove()
+        this.host.remove()
     }
     finally {
       this.moving = false
@@ -379,11 +415,11 @@ export class HostBinding {
     this.moving = true
     try {
       if (!this.homeMarker) {
-        this.homeMarker = this.el.ownerDocument.createComment('')
-        this.el.parentNode?.insertBefore(this.homeMarker, this.el)
+        this.homeMarker = this.host.ownerDocument.createComment('')
+        this.host.parentNode?.insertBefore(this.homeMarker, this.host)
         awayBindings.add(this)
       }
-      parent.insertBefore(this.el, anchor && anchor.parentNode === parent ? anchor : null)
+      parent.insertBefore(this.host, anchor && anchor.parentNode === parent ? anchor : null)
     }
     finally {
       this.moving = false
@@ -392,16 +428,17 @@ export class HostBinding {
 
   /** A root-level node of the part's tree: wrappers take the host's place, the rest stays detached. */
   insertRootNode(child: Node, anchor: Node | null) {
-    if (child.nodeType === Node.ELEMENT_NODE && this.homeMarker && child.contains(this.el)) {
+    if (child.nodeType === Node.ELEMENT_NODE && this.homeMarker && child.contains(this.host)) {
       this.homeMarker.parentNode?.insertBefore(child, this.homeMarker)
       return
     }
-    // A part's own `<style>` (a viewport's scrollbar rules) applies from the host's
-    // shadow root, or the document's head.
+    // A part's own `<style>` (a viewport's scrollbar rules) applies from the shadow
+    // root the host's home is in, or the document's head, until the part lets go.
     if ((child as Element).tagName === 'STYLE') {
-      const root = this.host.getRootNode() as Document | ShadowRoot
+      const root = this.homeNode.getRootNode() as Document | ShadowRoot
       const parent = (root as ShadowRoot).host ? root : this.host.ownerDocument.head
       parent.insertBefore(child, null)
+      this.styles.add(child)
       return
     }
     // (An element with nothing in it, like the one holding a Teleport's anchors,
@@ -409,7 +446,7 @@ export class HostBinding {
     if (child.nodeType === Node.ELEMENT_NODE && !FORM_FIELD.test((child as Element).tagName) && !this.warned
       && ((child as Element).childElementCount || child.textContent)) {
       this.warned = true
-      warn(`<${this.el.localName}> renders a <${(child as Element).localName}> next to its part. A custom element has nowhere to put it, so it is not in the document.`)
+      warn(`<${this.host.localName}> renders a <${(child as Element).localName}> next to its part. A custom element has nowhere to put it, so it is not in the document.`)
     }
     this.container.insertBefore(child, anchor && anchor.parentNode === this.container ? anchor : null)
     this.scheduleFormSync()
@@ -458,7 +495,7 @@ export class HostBinding {
         if (this.semantics?.button)
           this.addKeyboardShims()
       }
-      else if (key === 'disabled') {
+      else if (key === 'disabled' && this.el === this.host) {
         // Kept as state, not written: on a form-associated host the attribute would
         // disable the element by itself, and hide a `<fieldset disabled>` going
         // away. The host's `disabled` attribute stays the consumer's.
@@ -552,10 +589,10 @@ export class HostBinding {
       for (const [key, value] of this.nativeProps)
         (this.el as unknown as Record<string, unknown>)[key] = value
       this.nativeProps.clear()
-      if (this.ownsText) {
-        this.ownsText = false
-        this.host.textContent = ''
-      }
+      this.removeText()
+      for (const style of this.styles)
+        style.parentNode?.removeChild(style)
+      this.styles.clear()
       this.partDisabled = false
       this.el.removeAttribute(OWNED_ATTR)
     })
@@ -870,7 +907,7 @@ export function getRenderer(): Renderer<Element> {
       }
       // A wrapper the part rendered around the host: bring the host back first.
       for (const away of awayBindings) {
-        if (child.contains(away.el))
+        if (child.contains(away.host))
           away.goHome()
       }
       const parent = child.parentNode

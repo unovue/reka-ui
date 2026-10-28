@@ -295,8 +295,8 @@ This is the one place elements differ from the Vue components. In Vue, closed co
 
 Parts with a `name` (Switch, Checkbox, Checkbox group, Toggle, and the roots of Listbox, Combobox, Autocomplete, Select, TagsInput and Editable) are [form-associated](https://html.spec.whatwg.org/multipage/custom-elements.html#form-associated-custom-elements):
 
-- they submit their value with their form, wherever you move them;
-- `<label for>` labels them, `<fieldset disabled>` disables them, and resetting the form resets them;
+- they submit their value with their form, wherever you move them, and with a form they are not inside through the `form` attribute (`form="checkout"`); their `form` property is the form, like a native control's;
+- `<label for>` labels them, `<fieldset disabled>` disables them, and resetting the form resets them, firing `update-model-value` (or the part's other model events) when the value changes, so what you render from it follows;
 - they are validated with it: a `required` checkbox left unchecked makes the form invalid, and matches `:invalid`;
 - they submit the same names as the Vue components (a checkbox group named `toppings` submits `toppings[0]`, `toppings[1]`, …, and so does a `multiple` listbox or combobox, or a tags input; object values submit their fields, `fruit[0][id]`);
 - a select submits through the native `<select>` the Vue component renders, so `required` and `autocomplete` behave the same, and a `multiple` select named `fruit` submits one `fruit` entry per selected value, like `<select multiple>`;
@@ -316,13 +316,14 @@ A custom element can't be a text field. Parts that render an `<input>` in Vue (`
 
 - The `<input>` gets the role, ARIA, value and listeners. Put your own attributes on it (`id` for `<label for>`, `placeholder`, `class`), and style it rather than the element.
 - The element keeps the part's props (`disabled`, `model-value`, `auto-focus`) and fires its events (`update-model-value`).
-- Removed, the element gives the input back as it was.
+- Removed, the element gives the input back as it was. A `disabled` you set on the input stays, as do your attributes.
+- Replace the input and the part moves to the new one.
 
 ## Children instead of slots
 
 Child elements and text work like the default slot. Scoped slots (slot props) are not available. Read state from `data-*` attributes and events instead.
 
-Some parts show text of their own when you give them no children, as the Vue components' slot fallbacks do: `<reka-select-value>` shows the selected labels or its `placeholder`, `<reka-editable-preview>` the value or its placeholder, `<reka-tags-input-item-text>` the tag's `displayValue`, and an empty `<reka-combobox-item>` its value. Give them children and yours are kept instead.
+Some parts show text of their own when you give them no children, as the Vue components' slot fallbacks do: `<reka-select-value>` shows the selected labels or its `placeholder`, `<reka-editable-preview>` the value or its placeholder, `<reka-tags-input-item-text>` the tag's `displayValue`, and an empty `<reka-combobox-item>` its value. Give them children, now or later, and yours are shown instead; remove them and the text comes back.
 
 Where a Vue template renders from slot props, render from events instead:
 

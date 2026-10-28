@@ -77,6 +77,19 @@ describe('select elements', () => {
     expect(value.hasAttribute('data-placeholder')).toBe(false)
   })
 
+  it('starts closed when moved, like the other overlays, and keeps its value', async () => {
+    const { container, trigger } = await mount()
+    const content = await open(trigger)
+    await userEvent.click(items()[1])
+    await vi.waitFor(() => expect(content.hasAttribute('data-reka-unmounted')).toBe(true))
+    await open(trigger)
+    const root = query('reka-select-root')
+    container.append(root)
+    const moved = query('reka-select-trigger')
+    await vi.waitFor(() => expect(moved.getAttribute('aria-expanded')).toBe('false'))
+    expect(query('reka-select-value').textContent).toBe('Banana')
+  })
+
   it('shows the label of a default value before it was ever opened', async () => {
     const { value } = await mount(SELECT('default-value="cherry"'))
     await vi.waitFor(() => expect(value.textContent).toBe('Cherry'))
