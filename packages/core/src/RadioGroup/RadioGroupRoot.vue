@@ -47,7 +47,7 @@ export const [injectRadioGroupRootContext, provideRadioGroupRootContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useRadioGroup } from './useRadioGroup'
@@ -103,10 +103,9 @@ useArrowKeyListeners()
     :dir="dir"
     :loop="loop"
   >
-    <Primitive
+    <component
+      :is="renderAs(as, asChild)"
       :ref="forwardRef"
-      :as-child="asChild"
-      :as="as"
       v-bind="root.attrs.value"
     >
       <slot :model-value="modelValue" />
@@ -118,6 +117,6 @@ useArrowKeyListeners()
         :value="modelValue"
         :name="name"
       />
-    </Primitive>
+    </component>
   </RovingFocusGroup>
 </template>

@@ -63,7 +63,7 @@ export const [injectFormRootContext, provideFormRootContext]
 
 <script setup lang="ts">
 import { computed, getCurrentInstance, nextTick, ref, watch } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 
 const props = withDefaults(defineProps<FormRootProps>(), {
   as: 'form',
@@ -181,14 +181,13 @@ provideFormRootContext({
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     novalidate
     @submit="handleSubmit"
     @reset="handleReset"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

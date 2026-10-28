@@ -10,7 +10,7 @@ export interface TabsListProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { toRef } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { injectTabsRootContext } from './TabsRoot.vue'
 import { getTabsListSurface } from './useTabs'
@@ -38,13 +38,12 @@ const surface = getTabsListSurface(context)
     :dir="context.dir.value"
     :loop="loop"
   >
-    <Primitive
+    <component
+      :is="renderAs(as, asChild)"
       :ref="forwardRef"
-      :as-child="asChild"
-      :as="as"
       v-bind="surface.attrs.value"
     >
       <slot />
-    </Primitive>
+    </component>
   </RovingFocusGroup>
 </template>

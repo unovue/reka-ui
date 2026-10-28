@@ -24,9 +24,7 @@ import { useEventListener } from '@vueuse/core'
 import { computed, mergeProps, nextTick, onMounted, ref, watch } from 'vue'
 import { Presence } from '@/Presence'
 import { ENDING_STYLE_ATTR, getRunningAnimations, STARTING_STYLE_ATTR, supportsAnimations } from '@/Presence/usePresence'
-import {
-  Primitive,
-} from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { getGeneratedId, setGeneratedIds, useForwardElement, useId, usePartId } from '@/shared'
 import { onNextFrame } from '@/shared/timeout'
 import { injectCollapsibleRootContext } from './CollapsibleRoot.vue'
@@ -182,7 +180,8 @@ useEventListener(currentElement, 'beforematch', (ev) => {
     :force-mount="true"
     @complete="rootContext.notifyOpenComplete"
   >
-    <Primitive
+    <component
+      :is="renderAs(as, props.asChild)"
       v-bind="mergeProps($attrs, surface.attrs.value, {
         id: contentId,
         // `forceMount` keeps the content shown; Presence still tracks the open state
@@ -190,10 +189,8 @@ useEventListener(currentElement, 'beforematch', (ev) => {
         hidden: getCollapsibleContentHidden(forceMount || present, rootContext.unmountOnHide.value),
       })"
       :ref="forwardRef"
-      :as-child="props.asChild"
-      :as="as"
     >
       <slot v-if="rootContext.unmountOnHide.value ? forceMount || present : true" />
-    </Primitive>
+    </component>
   </Presence>
 </template>

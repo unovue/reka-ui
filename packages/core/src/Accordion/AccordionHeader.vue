@@ -5,7 +5,7 @@ export interface AccordionHeaderProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectAccordionItemContext } from './AccordionItem.vue'
 import { injectAccordionRootContext } from './AccordionRoot.vue'
@@ -24,12 +24,11 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(props.as, props.asChild)"
     :ref="forwardRef"
-    :as="props.as"
-    :as-child="props.asChild"
     v-bind="surface.attrs.value"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

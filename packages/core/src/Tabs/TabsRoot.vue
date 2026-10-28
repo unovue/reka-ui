@@ -69,7 +69,7 @@ export const [injectTabsRootContext, provideTabsRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useTabs } from './useTabs'
 
 const props = withDefaults(defineProps<TabsRootProps<T>>(), {
@@ -112,12 +112,11 @@ const slotModelValue = modelValue as ComputedRef<T | undefined>
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="root.attrs.value"
   >
     <slot :model-value="slotModelValue" />
-  </Primitive>
+  </component>
 </template>

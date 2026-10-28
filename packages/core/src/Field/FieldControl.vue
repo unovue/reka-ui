@@ -22,7 +22,7 @@ export type FieldControlEmits = {
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, useAttrs, watch } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
 import { createChangeEventDetails, useForwardElement } from '@/shared'
 import { injectFieldRootContext } from './FieldRoot.vue'
 
@@ -139,16 +139,20 @@ onBeforeUnmount(() => unregister?.())
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAsEmpty(as, asChild)"
     :id="controlId"
     :ref="forwardRef"
     v-bind="getBindings()"
-    :as="as"
-    :as-child="asChild"
     @focus="fieldContext.handleControlFocus()"
     @blur="fieldContext.handleControlBlur()"
     @input="handleInput"
   >
-    <slot />
-  </Primitive>
+    <template
+      v-if="rendersChildren(as, asChild)"
+      #default
+    >
+      <slot />
+    </template>
+  </component>
 </template>

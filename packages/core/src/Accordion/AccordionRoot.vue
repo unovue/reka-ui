@@ -71,7 +71,7 @@ export const [injectAccordionRootContext, provideAccordionRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends (string | string[]), ExplicitType extends SingleOrMultipleType">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useAccordion } from './useAccordion'
 
 const props = withDefaults(defineProps<AccordionRootProps<T>>(), {
@@ -112,11 +112,10 @@ provideAccordionRootContext(context)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as-child="asChild"
-    :as="as"
   >
     <slot :model-value="modelValue" />
-  </Primitive>
+  </component>
 </template>

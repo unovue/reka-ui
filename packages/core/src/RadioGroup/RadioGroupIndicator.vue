@@ -14,7 +14,7 @@ export interface RadioGroupIndicatorProps extends PrimitiveProps {
 <script setup lang="ts">
 import { mergeProps } from 'vue'
 import { Presence } from '@/Presence'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useLingeringPresence } from '@/shared/useLingeringPresence'
 import { injectRadioGroupItemContext } from './RadioGroupItem.vue'
 import { getRadioGroupIndicatorSurface } from './useRadioGroup'
@@ -42,13 +42,12 @@ const lingering = useLingeringPresence(shown)
     @vue:mounted="lingering.onMounted"
     @complete="lingering.onComplete"
   >
-    <Primitive
+    <component
+      :is="renderAs(as, asChild)"
       :ref="forwardRef"
-      :as-child="asChild"
-      :as="as"
       v-bind="mergeProps(indicator.attrs.value, $attrs)"
     >
       <slot />
-    </Primitive>
+    </component>
   </Presence>
 </template>

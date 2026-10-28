@@ -42,7 +42,7 @@ export const [injectCollapsibleRootContext, provideCollapsibleRootContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useCollapsible } from './useCollapsible'
 
 const props = withDefaults(defineProps<CollapsibleRootProps>(), {
@@ -95,12 +95,11 @@ defineExpose(mergeExpose(expose, {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, props.asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="props.asChild"
     v-bind="root.attrs.value"
   >
     <slot :open="open" />
-  </Primitive>
+  </component>
 </template>

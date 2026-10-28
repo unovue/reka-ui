@@ -13,7 +13,7 @@ export interface AspectRatioProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { mergeProps } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useAspectRatio } from './useAspectRatio'
 
 defineOptions({
@@ -38,13 +38,12 @@ const { aspect, wrapper, root } = useAspectRatio({ ratio: () => props.ratio })
 
 <template>
   <div v-bind="wrapper.attrs.value">
-    <Primitive
+    <component
+      :is="renderAs(as, asChild)"
       :ref="forwardRef"
-      :as-child="asChild"
-      :as="as"
       v-bind="mergeProps(root.attrs.value, $attrs)"
     >
       <slot :aspect="aspect" />
-    </Primitive>
+    </component>
   </div>
 </template>

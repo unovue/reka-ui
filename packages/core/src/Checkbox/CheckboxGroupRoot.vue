@@ -5,7 +5,8 @@ import type { RovingFocusGroupProps } from '@/RovingFocus'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
 import { computed, toRef } from 'vue'
-import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { usePrimitiveElement } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { createContext, useDirection, useFormControl } from '@/shared'
 
 export interface CheckboxGroupRootProps<T = AcceptableValue> extends Pick<RovingFocusGroupProps, 'as' | 'asChild' | 'dir' | 'orientation' | 'loop'>, FormFieldProps {
@@ -82,8 +83,10 @@ const { modelValue, context } = useCheckboxGroup<T>({
   max,
 })
 
+// Without roving focus the group renders its own element (no wrapper), so
+// `as` / `asChild` are only props of `RovingFocusGroup`.
 const rovingFocusProps = computed(() => {
-  return rovingFocus.value ? { loop: props.loop, dir: dir.value, orientation: props.orientation } : {}
+  return rovingFocus.value ? { as: props.as, asChild: props.asChild, loop: props.loop, dir: dir.value, orientation: props.orientation } : {}
 })
 
 provideCheckboxGroupRootContext(context)
@@ -91,10 +94,8 @@ provideCheckboxGroupRootContext(context)
 
 <template>
   <component
-    :is="rovingFocus ? RovingFocusGroup : Primitive"
+    :is="rovingFocus ? RovingFocusGroup : renderAs(as, asChild)"
     ref="primitiveElement"
-    :as="as"
-    :as-child="asChild"
     v-bind="rovingFocusProps"
   >
     <slot />

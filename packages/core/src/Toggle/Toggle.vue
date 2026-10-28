@@ -32,7 +32,7 @@ export interface ToggleProps extends PrimitiveProps, FormFieldProps {
 
 <script setup lang="ts">
 import { computed, mergeProps } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useTogglePressed } from './useTogglePressed'
 
 defineOptions({
@@ -91,11 +91,10 @@ const rootAttrs = computed(() => {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, props.asChild)"
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
-    :as-child="props.asChild"
-    :as="as"
     v-bind="mergeProps(rootAttrs, scopeIdAttrs, $attrs)"
     @click="root.props.value.onClick"
   >
@@ -105,7 +104,7 @@ const rootAttrs = computed(() => {
       :pressed="modelValue"
       :state="root.state.value.state"
     />
-  </Primitive>
+  </component>
 
   <VisuallyHiddenInput
     v-if="isFormControl && name && !toggleGroupContext"

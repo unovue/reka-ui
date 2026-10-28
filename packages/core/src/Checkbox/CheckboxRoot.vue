@@ -52,8 +52,8 @@ export const [injectCheckboxRootContext, provideCheckboxRootContext]
 import { isEqual } from 'ohash'
 import { computed, mergeProps, onBeforeUnmount, onMounted, useAttrs, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field'
-import { Primitive } from '@/Primitive'
-import { RovingFocusItem } from '@/RovingFocus'
+import { renderAs } from '@/Primitive/renderAs'
+import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useCheckbox } from './useCheckbox'
 
@@ -193,6 +193,33 @@ onBeforeUnmount(() => unregisterControl?.())
 
 provideCheckboxRootContext(context)
 
+// In a `rovingFocus` group the checkbox is a roving item, as a composable (the
+// former `RovingFocusItem` wrapper). The group renders `RovingFocusGroup` only
+// when `rovingFocus` is set, and switching it remounts the checkboxes, so it is
+// read once.
+const roving = checkboxGroupContext?.rovingFocus.value
+  ? useRovingFocusItem({ element: currentElement, focusable: () => !disabled.value })
+  : null
+
+function renderAttrs() {
+  const own = mergeProps(
+    fieldContext?.dataAttributes.value ?? {},
+    attrs,
+    scopeIdAttrs,
+    getFieldAriaAttrs(),
+    root.attrs.value,
+    {
+      'id': resolvedId.value,
+      'type': props.as === 'button' ? 'button' : undefined,
+      'aria-label': attrs['aria-label'] || ariaLabel.value,
+      'onFocus': handleFocus,
+      'onBlur': handleBlur,
+    },
+  )
+  // The roving bindings merge last, as the wrapper merged them over its attrs.
+  return roving ? mergeProps(own, roving.attrs()) : own
+}
+
 // Precedence is part of the v2 contract: the Field's data attributes, then
 // `$attrs` and `scopeIdAttrs`, were bound BEFORE the component's own `role` /
 // `aria-*` / `data-*` / `disabled`, so the component's attributes win over a
@@ -204,17 +231,9 @@ provideCheckboxRootContext(context)
 
 <template>
   <component
-    v-bind="mergeProps(fieldContext?.dataAttributes.value ?? {}, $attrs, scopeIdAttrs, getFieldAriaAttrs(), root.attrs.value)"
-    :is="checkboxGroupContext?.rovingFocus.value ? RovingFocusItem : Primitive"
-    :id="resolvedId"
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as-child="asChild"
-    :as="as"
-    :type="as === 'button' ? 'button' : undefined"
-    :aria-label="$attrs['aria-label'] || ariaLabel"
-    :focusable="checkboxGroupContext?.rovingFocus.value ? !disabled : undefined"
-    @focus="handleFocus"
-    @blur="handleBlur"
+    v-bind="renderAttrs()"
   >
     <slot
       :model-value="modelValue"
