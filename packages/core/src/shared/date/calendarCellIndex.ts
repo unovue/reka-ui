@@ -1,7 +1,7 @@
 import type { ComputedRef } from 'vue'
 import type { CalendarGridData, CalendarUnit } from '@/date'
 import type { DateValue } from '@/date/types'
-import { computed, shallowReactive, toRaw, watch } from 'vue'
+import { computed, ReactiveEffect, shallowReactive, shallowRef, toRaw, watch } from 'vue'
 import { getLocalTimeZone, startOfMonth, startOfYear, toCalendar, today, toPlainDate } from '@/date/temporal'
 
 // =============================================================================
@@ -77,6 +77,12 @@ export class KeyedFlags {
   }
 }
 
+/**
+ * The key under which the builder records that the index cannot answer for
+ * selection (see `CalendarCellFlagsBuilder.addModelDate`); no date keys to it.
+ */
+const BYPASS_KEY = ''
+
 /** What a cell needs to read its flags from the root. @internal */
 export interface CalendarCellIndex {
   /** The unit the keys are built at: the active view. A cell of another unit computes its flags itself. */
@@ -84,6 +90,8 @@ export interface CalendarCellIndex {
   /** The calendar the keys are built in (the placeholder's). A cell in another calendar computes its flags itself. */
   calendarId: ComputedRef<string>
   flags: KeyedFlags
+  /** Publishes the current flags now if what they derive from changed since the last publish. */
+  refresh: () => void
 }
 
 /** A rendered cell and its key. */
@@ -95,9 +103,13 @@ export class CalendarCellFlagsBuilder {
   constructor(
     readonly unit: CalendarUnit,
     readonly calendarId: string,
-    /** The rendered cells (each date once) with their keys; empty unless the index was given the grid. */
-    readonly cells: readonly CalendarGridCellKey[] = [],
+    private readonly gridCells?: { readonly value: readonly CalendarGridCellKey[] },
   ) {}
+
+  /** The rendered cells (each date once) with their keys; empty unless the index was given the grid. */
+  get cells(): readonly CalendarGridCellKey[] {
+    return this.gridCells?.value ?? []
+  }
 
   key(date: DateValue): string {
     // Day keys are calendar independent; month / year starts are read in the grid's calendar.
@@ -110,6 +122,22 @@ export class CalendarCellFlagsBuilder {
 
   addDate(date: DateValue | undefined, flag: number) {
     if (date)
+      this.add(this.key(date), flag)
+  }
+
+  /**
+   * Adds a model date (a selection or a range end). The root's predicates
+   * compare those in the model's own calendar (`adapter.isSame(model, cell)`),
+   * which a key in the grid's calendar reproduces only for days (ISO days are
+   * calendar independent) or when both calendars agree. Otherwise the index
+   * stops answering and every cell evaluates the predicates directly.
+   */
+  addModelDate(date: DateValue | undefined, flag: number) {
+    if (!date)
+      return
+    if (this.unit !== 'day' && date.calendarId !== this.calendarId)
+      this.flags.set(BYPASS_KEY, 1)
+    else
       this.add(this.key(date), flag)
   }
 }
@@ -128,30 +156,49 @@ export interface CreateCalendarCellIndexOptions {
  * The root side of the keyed cell state: recomputes the flags when what
  * `collect` reads changed, and publishes them through a `KeyedFlags` map.
  *
- * The recompute is a pre-flush watcher, not a sync one: a press updates the
- * model, the range ends, the placeholder and the focused date one after the
- * other, and a sync recompute would publish every intermediate state (a
- * half-updated range flips a dozen cells and back), re-rendering cells whose
- * final state never changed. Pre-flush jobs run before any component renders,
- * so every render (and the DOM after `nextTick()`) sees the settled flags; a
- * read of a cell surface in the same tick as a model change sees the previous
- * ones, as the DOM does.
+ * A change only marks the flags stale (the effect's scheduler: nothing is
+ * recomputed then). A press updates the model, the range ends, the
+ * placeholder and the focused date one after the other; recomputing on each
+ * write would publish every intermediate state (a half-updated range flips a
+ * dozen cells and back) and re-render cells whose final state never changed.
+ * The stale flags are published by a pre-flush watcher, before any component
+ * renders, or earlier by the first read through `refresh()`: a cell surface
+ * read in the same tick as a model change (or inside the change callback)
+ * gets the current answer.
  *
- * @lifecycle setup — installs one pre-flush watcher.
+ * @lifecycle setup — installs one effect (stopped with the scope) and one pre-flush watcher.
  * @internal
  */
 export function createCalendarCellIndex(options: CreateCalendarCellIndexOptions): CalendarCellIndex {
   const calendarId = computed(() => options.placeholder.value.calendarId)
-  const index: CalendarCellIndex = { unit: options.view, calendarId, flags: new KeyedFlags() }
-  const grid = options.grid
-  const cells = grid ? useGridCellKeys(grid, index) : undefined
-  watch(() => {
-    const builder = new CalendarCellFlagsBuilder(options.view.value, calendarId.value, cells?.value)
+  const flags = new KeyedFlags()
+  let stale = false
+  const staleness = shallowRef(0)
+  const index: CalendarCellIndex = { unit: options.view, calendarId, flags, refresh }
+  const cells = options.grid ? useGridCellKeys(options.grid, index) : undefined
+  const derive = new ReactiveEffect(() => {
+    const builder = new CalendarCellFlagsBuilder(options.view.value, calendarId.value, cells)
     options.collect(builder)
     // `isCurrent`: today in the local zone, in the grid's calendar for months and years.
     builder.addDate(today(getLocalTimeZone()), CELL_TODAY)
     return builder.flags
-  }, next => index.flags.sync(next), { flush: 'pre', immediate: true })
+  })
+  derive.scheduler = () => {
+    if (stale)
+      return
+    stale = true
+    staleness.value++
+  }
+  function refresh() {
+    if (!stale)
+      return
+    stale = false
+    // `dirty` is false when only computeds it reads were notified and their values held.
+    if (derive.dirty)
+      flags.sync(derive.run())
+  }
+  flags.sync(derive.run())
+  watch(staleness, refresh, { flush: 'pre' })
   return index
 }
 
@@ -199,7 +246,10 @@ export function getCalendarCellIndex(context: object): CalendarCellIndex | undef
  * @internal
  */
 export function readCalendarCellFlags(index: CalendarCellIndex | undefined, date: DateValue, unit: CalendarUnit): number | undefined {
-  if (!index || unit !== index.unit.value || date.calendarId !== index.calendarId.value)
+  if (!index)
+    return undefined
+  index.refresh()
+  if (unit !== index.unit.value || date.calendarId !== index.calendarId.value || index.flags.get(BYPASS_KEY))
     return undefined
   return index.flags.get(calendarCellKey(date, unit))
 }

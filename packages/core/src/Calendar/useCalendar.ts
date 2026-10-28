@@ -347,21 +347,30 @@ export function getCalendarCellTriggerSurface(
     }
   })
 
+  // The cell's state comes partly from the root's keyed index, which a model
+  // change only marks stale: publish it first, so a read in the same tick as
+  // the change (or in its callback) does not return the cached old state.
+  type CellSnapshot = typeof cell.value
+  function current(): CellSnapshot {
+    getCalendarCellIndex(context)?.refresh()
+    return cell.value
+  }
+
   const navigation = getCellFocusNavigation(context)
   const onClick = (event: MouseEvent) => {
-    if (cell.value.state.disabled)
+    if (current().state.disabled)
       return
     context.onDateChange(toValue(value), 'cell-press', event)
   }
   const onKeydown = (event: KeyboardEvent) => {
     const date = toValue(value)
-    navigation.handleKeydown(event, cell.value.adapter, date, {
-      disabled: cell.value.state.disabled,
+    navigation.handleKeydown(event, current().adapter, date, {
+      disabled: current().state.disabled,
       onSelect: e => context.onDateChange(date, 'cell-keydown', e),
     })
   }
 
-  function props(c: typeof cell.value) {
+  function props(c: CellSnapshot) {
     return {
       'role': 'button',
       'aria-label': c.label,
@@ -377,11 +386,11 @@ export function getCalendarCellTriggerSurface(
   }
 
   return {
-    props: getterRef(() => props(cell.value)),
-    state: getterRef(() => cell.value.state),
+    props: getterRef(() => props(current())),
+    state: getterRef(() => current().state),
     // `stateToDataAttrs(state)` then the props, written out: same attributes in the same order.
     attrs: getterRef(() => {
-      const c = cell.value
+      const c = current()
       const s = c.state
       const attrs: Record<string, unknown> = {}
       if (s.selected)
@@ -401,7 +410,7 @@ export function getCalendarCellTriggerSurface(
       attrs['data-view'] = s.view
       return Object.assign(attrs, props(c))
     }),
-    cellValue: getterRef(() => cell.value.text),
+    cellValue: getterRef(() => current().text),
   }
 }
 
@@ -678,10 +687,10 @@ export function useCalendar(props: UseCalendarProps): UseCalendarReturn {
         const current = modelValue.value
         if (Array.isArray(current)) {
           for (const date of current)
-            builder.addDate(date, CELL_SELECTED)
+            builder.addModelDate(date, CELL_SELECTED)
         }
         else {
-          builder.addDate(current, CELL_SELECTED)
+          builder.addModelDate(current, CELL_SELECTED)
         }
       }
       builder.addDate(calendarFocusTarget(context), CELL_FOCUS_TARGET)
