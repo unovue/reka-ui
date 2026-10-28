@@ -73,4 +73,18 @@ describe('listbox render counts', () => {
     expect(rerendered()).toEqual([1, 4, 5])
     wrapper.unmount()
   })
+
+  it('re-renders a memoized item when `as` changes', async () => {
+    const tag = ref('div')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ListboxRoot, null, () => h(ListboxContent, null, () =>
+        h(ListboxItem, { value: 'a', as: tag.value }, () => 'A'))),
+    }), { attachTo: document.body })
+    await nextTick()
+    expect(wrapper.find('[role=option]').element.tagName).toBe('DIV')
+    tag.value = 'li'
+    await nextTick()
+    expect(wrapper.find('[role=option]').element.tagName).toBe('LI')
+    wrapper.unmount()
+  })
 })

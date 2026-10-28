@@ -70,10 +70,10 @@ const surface = getListboxItemSurface(rootContext, () => props.value, () => prop
 })
 const isSelected = getterRef(surface.isSelected)
 
-/** `v-memo` keys: the rendered state, the focusable flag and the consumer attrs. */
+/** `v-memo` keys: the rendered state, the focusable flag, the element props and the consumer attrs. */
 function memoKeys(attrs: Record<string, unknown>) {
   const state = surface.state.value
-  return [state.highlighted, state.state, state.disabled, rootContext.focusable.value, ...Object.entries(attrs).flat()]
+  return [state.highlighted, state.state, state.disabled, rootContext.focusable.value, props.as, props.asChild, ...Object.entries(attrs).flat()]
 }
 
 // Sticky: registered once mounted, never unregistered (#2824). Re-registered

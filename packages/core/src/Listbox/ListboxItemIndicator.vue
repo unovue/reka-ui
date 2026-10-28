@@ -17,7 +17,7 @@ import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
 import { injectListboxItemContext } from './ListboxItem.vue'
 
-withDefaults(defineProps<ListboxItemIndicatorProps>(), {
+const props = withDefaults(defineProps<ListboxItemIndicatorProps>(), {
   as: 'span',
 })
 
@@ -32,7 +32,9 @@ const itemContext = injectListboxItemContext()
 const instance = getCurrentInstance()!
 const lingering = shallowRef(false)
 function onPresenceComplete(present: boolean) {
-  if (!present)
+  // An exit that finished after the item was selected again (in an
+  // `after-leave` handler) keeps the retained `Presence` armed.
+  if (!present && !(props.forceMount || itemContext.isSelected.value))
     lingering.value = false
 }
 </script>
