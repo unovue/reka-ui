@@ -5,16 +5,19 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { CalendarRoot } from '@/Calendar'
 import { CheckboxGroupRoot } from '@/Checkbox'
+import { DatePickerField } from '@/DatePicker'
 import { DialogRoot } from '@/Dialog'
 import { FieldError, FieldLabel } from '@/Field'
 import { FormRoot } from '@/Form'
+import { NumberFieldInput, NumberFieldRoot } from '@/NumberField'
 import { PopoverContent } from '@/Popover'
 import { SwitchRoot } from '@/Switch'
 import * as source from '.'
 import { defineRekaElements, rekaElementFamilies, toEventType } from '.'
 import { cleanup, query, render } from './elements.test.helpers'
-import { getPartMeta, parseAttribute } from './meta'
+import { getPartMeta, parseAttribute, reviveFormState, serializeFormState } from './meta'
 
 describe('attribute and event mapping', () => {
   it('derives attributes and properties from the runtime props', () => {
@@ -58,6 +61,81 @@ describe('attribute and event mapping', () => {
     expect(parseAttribute(sideOffset, '8')).toBe(8)
     expect(parseAttribute(sideOffset, 'x')).toBeUndefined()
     expect(parseAttribute({ kind: 'string', attribute: 'value' }, 'a')).toBe('a')
+  })
+
+  it('parses number lists and ISO 8601 dates, times and intervals into Temporal values', () => {
+    const numbers = { kind: 'numbers', attribute: 'default-value' } as const
+    expect(parseAttribute(numbers, '10 90')).toEqual([10, 90])
+    expect(parseAttribute(numbers, '10,90')).toEqual([10, 90])
+    expect(parseAttribute(numbers, '10 x')).toBeUndefined()
+
+    const date = { kind: 'date', attribute: 'default-value' } as const
+    expect(parseAttribute(date, '2026-10-14')).toBeInstanceOf(Temporal.PlainDate)
+    expect(parseAttribute(date, '2026-10-14T09:30')).toBeInstanceOf(Temporal.PlainDateTime)
+    const zoned = parseAttribute(date, '2026-10-14T09:30+02:00[Europe/Paris]') as Temporal.ZonedDateTime
+    expect(zoned).toBeInstanceOf(Temporal.ZonedDateTime)
+    expect(zoned.timeZoneId).toBe('Europe/Paris')
+    expect(parseAttribute(date, '')).toBeUndefined()
+
+    const time = { kind: 'time', attribute: 'default-value' } as const
+    expect(parseAttribute(time, '09:30')).toBeInstanceOf(Temporal.PlainTime)
+    expect(String(parseAttribute(time, '09:30'))).toBe('09:30:00')
+    expect(parseAttribute(time, '2026-10-14T09:30')).toBeInstanceOf(Temporal.PlainDateTime)
+
+    const range = parseAttribute({ kind: 'date-range', attribute: 'default-value' }, '2026-10-05/2026-10-07') as Record<string, unknown>
+    expect(Object.keys(range)).toEqual(['start', 'end'])
+    expect(String(range.start)).toBe('2026-10-05')
+    expect(String(range.end)).toBe('2026-10-07')
+    const times = parseAttribute({ kind: 'time-range', attribute: 'default-value' }, '09:00/17:30') as Record<string, unknown>
+    expect(String(times.end)).toBe('17:30:00')
+    // The `/` of a time zone name is not the interval's.
+    const zonedRange = parseAttribute({ kind: 'date-range', attribute: 'default-value' }, '2026-10-05T09:00+02:00[Europe/Paris]/2026-10-07T09:00+02:00[Europe/Paris]') as Record<string, Temporal.ZonedDateTime>
+    expect(zonedRange.start.timeZoneId).toBe('Europe/Paris')
+    expect(zonedRange.end.day).toBe(7)
+
+    // What `toString()` gives for other calendars: a calendar annotation is not a time zone.
+    const japanese = parseAttribute(date, '2026-10-14[u-ca=japanese]') as Temporal.PlainDate
+    expect(japanese).toBeInstanceOf(Temporal.PlainDate)
+    expect(japanese.calendarId).toBe('japanese')
+    expect(parseAttribute(date, String(Temporal.PlainDateTime.from('2026-10-14T09:30').withCalendar('hebrew')))).toBeInstanceOf(Temporal.PlainDateTime)
+    const persian = (day: string) => Temporal.PlainDate.from(day).withCalendar('persian')
+    const persianRange = parseAttribute({ kind: 'date-range', attribute: 'default-value' }, `${persian('2026-10-05')}/${persian('2026-10-07')}`) as Record<string, Temporal.PlainDate>
+    expect(persianRange.end.calendarId).toBe('persian')
+    // Temporal also takes a space between the date and the time.
+    expect(String(parseAttribute(date, '2026-10-14 09:30'))).toBe('2026-10-14T09:30:00')
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(parseAttribute(date, '2026-13-45')).toBeUndefined()
+    expect(parseAttribute({ kind: 'date-range', attribute: 'default-value' }, '2026-10-05')).toBeUndefined()
+    expect(warn).toHaveBeenCalledTimes(2)
+    warn.mockRestore()
+  })
+
+  it('writes Temporal model values to the form state as ISO strings, and reads them back', () => {
+    const date = { kind: 'date', attribute: 'model-value' } as const
+    const state = serializeFormState(date, Temporal.PlainDate.from('2026-11-14'))
+    expect(state).toBe('"2026-11-14"')
+    expect(reviveFormState(date, state)).toBeInstanceOf(Temporal.PlainDate)
+    expect(reviveFormState(date, serializeFormState(date, null))).toBeNull()
+    const range = { kind: 'date-range', attribute: 'model-value' } as const
+    const revived = reviveFormState(range, serializeFormState(range, { start: Temporal.PlainDate.from('2026-10-05'), end: Temporal.PlainDate.from('2026-10-07') })) as Record<string, unknown>
+    expect(String(revived.start)).toBe('2026-10-05')
+    expect(String(revived.end)).toBe('2026-10-07')
+    expect(reviveFormState(range, serializeFormState(range, { start: undefined, end: undefined }))).toEqual({ start: undefined, end: undefined })
+    // Other kinds: JSON as is.
+    expect(reviveFormState({ kind: 'numbers', attribute: 'model-value' }, serializeFormState({ kind: 'numbers' }, [20, 80]))).toEqual([20, 80])
+  })
+
+  it('reads the part hints of the date and numeric families: `asChild` and forms', () => {
+    expect(getPartMeta({ component: NumberFieldInput, target: 'input' }).inputTarget).toBe(true)
+    expect(getPartMeta({ component: CalendarRoot, siblings: 'inside' }).siblings).toBe('inside')
+    // A wrapping part without its own `asChild` prop can still declare it passes it through.
+    expect(getPartMeta({ component: DatePickerField }).hasAsChild).toBe(false)
+    const field = getPartMeta({ component: DatePickerField, asChild: true, formAssociated: true })
+    expect(field.hasAsChild).toBe(true)
+    expect(field.formAssociated).toBe(true)
+    // A `name` prop makes a part form-associated by itself.
+    expect(getPartMeta({ component: NumberFieldRoot }).formAssociated).toBe(true)
   })
 
   it('lets only props that default to `true` take `"false"`, never native attribute names', () => {
@@ -115,6 +193,11 @@ describe('bound from a Vue template', () => {
 describe('accessibility (axe)', () => {
   beforeAll(() => {
     defineRekaElements(rekaElementFamilies)
+  })
+  // Restores the `ResizeObserver` stub of the numeric inputs test, even when it
+  // fails. Registered first: after-each hooks run in reverse, so after `cleanup`.
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
   afterEach(cleanup)
 
@@ -309,6 +392,73 @@ describe('accessibility (axe)', () => {
     `)
     await mounted('reka-popover-close')
     expect(await axe(document.body)).toHaveNoViolations()
+  })
+
+  it('a calendar rendered from its slot props', async () => {
+    const container = render(`
+      <reka-calendar-root default-value="2026-10-14" locale="en-US">
+        <reka-calendar-header>
+          <reka-calendar-prev aria-label="Previous month">‹</reka-calendar-prev>
+          <reka-calendar-heading></reka-calendar-heading>
+          <reka-calendar-next aria-label="Next month">›</reka-calendar-next>
+        </reka-calendar-header>
+      </reka-calendar-root>
+    `)
+    const root = query<HTMLElement & { slotProps?: { grid: { value: unknown, rows: unknown[][] }[], weekDays: string[] } }>('reka-calendar-root')
+    await vi.waitFor(() => expect(root.slotProps).toBeDefined())
+    const { grid, weekDays } = root.slotProps!
+    root.insertAdjacentHTML('beforeend', grid.map(month => `
+      <reka-calendar-grid value="${month.value}">
+        <reka-calendar-grid-head><reka-calendar-grid-row>${weekDays.map(day => `<reka-calendar-head-cell>${day}</reka-calendar-head-cell>`).join('')}</reka-calendar-grid-row></reka-calendar-grid-head>
+        <reka-calendar-grid-body>${month.rows.map(row => `<reka-calendar-grid-row>${row.map(date => `<reka-calendar-cell value="${date}"><reka-calendar-cell-trigger value="${date}">${String(date).slice(8)}</reka-calendar-cell-trigger></reka-calendar-cell>`).join('')}</reka-calendar-grid-row>`).join('')}</reka-calendar-grid-body>
+      </reka-calendar-grid>`).join(''))
+    await vi.waitFor(() => expect(query('reka-calendar-cell-trigger[value="2026-10-14"]').hasAttribute('data-selected')).toBe(true))
+    // The grid is a `role="application"` table, as in the Vue component. There
+    // its rows are native `<tr>`s, whose implicit role axe does not check; an
+    // element's row role is explicit, and axe wants a table or grid around it.
+    expect(await axe(container, { rules: { 'aria-required-parent': { enabled: false } } })).toHaveNoViolations()
+  })
+
+  it('a date field', async () => {
+    const container = render(`<reka-date-field-root default-value="2026-10-14" locale="en-US" aria-label="Birthday"></reka-date-field-root>`)
+    const root = query<HTMLElement & { slotProps?: { segments: { part: string, value: string }[] } }>('reka-date-field-root')
+    await vi.waitFor(() => expect(root.slotProps).toBeDefined())
+    root.innerHTML = root.slotProps!.segments.map(segment => `<reka-date-field-input part="${segment.part}">${segment.value}</reka-date-field-input>`).join('')
+    await vi.waitFor(() => expect(query('[data-reka-date-field-segment="day"]').getAttribute('aria-valuenow')).toBe('14'))
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('numeric and color inputs', async () => {
+    // jsdom has no `ResizeObserver`, which the slider measures its thumbs with.
+    vi.stubGlobal('ResizeObserver', class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    })
+    const container = render(`
+      <form>
+        <reka-number-field-root name="n" default-value="2">
+          <reka-number-field-decrement aria-label="Less">−</reka-number-field-decrement>
+          <reka-number-field-input><input aria-label="Quantity"></reka-number-field-input>
+          <reka-number-field-increment aria-label="More">+</reka-number-field-increment>
+        </reka-number-field-root>
+        <reka-pin-input-root aria-label="Code">
+          <reka-pin-input-input index="0"><input aria-label="Digit 1"></reka-pin-input-input>
+          <reka-pin-input-input index="1"><input aria-label="Digit 2"></reka-pin-input-input>
+        </reka-pin-input-root>
+        <reka-slider-root default-value="50"><reka-slider-track><reka-slider-range></reka-slider-range></reka-slider-track><reka-slider-thumb aria-label="Volume"></reka-slider-thumb></reka-slider-root>
+        <reka-rating-root default-value="2" aria-label="Score">
+          <reka-rating-item item="1"><reka-rating-item-indicator step="1" aria-label="1 star">★</reka-rating-item-indicator></reka-rating-item>
+          <reka-rating-item item="2"><reka-rating-item-indicator step="2" aria-label="2 stars">★</reka-rating-item-indicator></reka-rating-item>
+        </reka-rating-root>
+        <reka-color-field-root default-value="#ff0000"><reka-color-field-input><input aria-label="Color"></reka-color-field-input></reka-color-field-root>
+        <reka-color-swatch color="#00ff00"></reka-color-swatch>
+      </form>
+    `)
+    await vi.waitFor(() => expect(query('reka-slider-thumb').getAttribute('aria-valuenow')).toBe('50'))
+    await vi.waitFor(() => expect(query('reka-color-field-input input').getAttribute('data-reka-owned')).not.toBeNull())
+    await vi.waitFor(() => expect(query('reka-rating-item-indicator').getAttribute('role')).toBe('radio'))
+    expect(await axe(container)).toHaveNoViolations()
   })
 
   it('an open alert dialog', async () => {
@@ -571,6 +721,6 @@ describe.skipIf(!hasDist)('built `reka-ui/elements` entry (dist)', () => {
     walk(ELEMENTS_DIST)
     const loaded = Array.from(seen, file => relative(join(PACKAGE_DIR, 'dist'), file).replaceAll('\\', '/'))
     expect(loaded).toContain('elements/host.js')
-    expect(loaded.filter(file => /^(?:Calendar|DatePicker)\//.test(file))).toEqual([])
+    expect(loaded.filter(file => /^ColorPicker\//.test(file))).toEqual([])
   })
 })

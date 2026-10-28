@@ -31,6 +31,23 @@ import type {
 } from '@/Autocomplete'
 import type { AvatarFallbackProps, AvatarRootProps } from '@/Avatar'
 import type {
+  CalendarCellProps,
+  CalendarCellTriggerProps,
+  CalendarGridBodyProps,
+  CalendarGridHeadProps,
+  CalendarGridProps,
+  CalendarGridRowProps,
+  CalendarHeadCellProps,
+  CalendarHeaderProps,
+  CalendarHeadingProps,
+  CalendarNextProps,
+  CalendarPrevProps,
+  CalendarRootEmits,
+  CalendarRootProps,
+  CalendarViewProps,
+  CalendarViewTriggerProps,
+} from '@/Calendar'
+import type {
   CheckboxGroupRootEmits,
   CheckboxGroupRootProps,
   CheckboxIndicatorProps,
@@ -44,6 +61,33 @@ import type {
   CollapsibleRootProps,
   CollapsibleTriggerProps,
 } from '@/Collapsible'
+import type {
+  ColorAreaAreaProps,
+  ColorAreaRootEmits,
+  ColorAreaRootProps,
+  ColorAreaThumbProps,
+} from '@/ColorArea'
+import type {
+  ColorFieldInputProps,
+  ColorFieldRootEmits,
+  ColorFieldRootProps,
+} from '@/ColorField'
+import type {
+  ColorSliderRootEmits,
+  ColorSliderRootProps,
+  ColorSliderThumbProps,
+  ColorSliderTrackProps,
+} from '@/ColorSlider'
+import type {
+  ColorSwatchProps,
+} from '@/ColorSwatch'
+import type {
+  ColorSwatchPickerItemIndicatorProps,
+  ColorSwatchPickerItemProps,
+  ColorSwatchPickerItemSwatchProps,
+  ColorSwatchPickerRootEmits,
+  ColorSwatchPickerRootProps,
+} from '@/ColorSwatchPicker'
 import type {
   ComboboxAnchorProps,
   ComboboxArrowProps,
@@ -92,6 +136,64 @@ import type {
   ContextMenuSubTriggerProps,
   ContextMenuTriggerProps,
 } from '@/ContextMenu'
+import type {
+  DateFieldInputProps,
+  DateFieldRootEmits,
+  DateFieldRootProps,
+} from '@/DateField'
+import type {
+  DatePickerAnchorProps,
+  DatePickerArrowProps,
+  DatePickerCellProps,
+  DatePickerCellTriggerProps,
+  DatePickerCloseProps,
+  DatePickerContentEmits,
+  DatePickerContentProps,
+  DatePickerGridBodyProps,
+  DatePickerGridHeadProps,
+  DatePickerGridProps,
+  DatePickerGridRowProps,
+  DatePickerHeadCellProps,
+  DatePickerHeaderProps,
+  DatePickerHeadingProps,
+  DatePickerInputProps,
+  DatePickerNextProps,
+  DatePickerPrevProps,
+  DatePickerRootEmits,
+  DatePickerRootProps,
+  DatePickerTriggerProps,
+  DatePickerViewProps,
+  DatePickerViewTriggerProps,
+} from '@/DatePicker'
+import type {
+  DateRangeFieldInputProps,
+  DateRangeFieldRootEmits,
+  DateRangeFieldRootProps,
+} from '@/DateRangeField'
+import type {
+  DateRangePickerAnchorProps,
+  DateRangePickerArrowProps,
+  DateRangePickerCellProps,
+  DateRangePickerCellTriggerProps,
+  DateRangePickerCloseProps,
+  DateRangePickerContentEmits,
+  DateRangePickerContentProps,
+  DateRangePickerGridBodyProps,
+  DateRangePickerGridHeadProps,
+  DateRangePickerGridProps,
+  DateRangePickerGridRowProps,
+  DateRangePickerHeadCellProps,
+  DateRangePickerHeaderProps,
+  DateRangePickerHeadingProps,
+  DateRangePickerInputProps,
+  DateRangePickerNextProps,
+  DateRangePickerPrevProps,
+  DateRangePickerRootEmits,
+  DateRangePickerRootProps,
+  DateRangePickerTriggerProps,
+  DateRangePickerViewProps,
+  DateRangePickerViewTriggerProps,
+} from '@/DateRangePicker'
 import type {
   DialogCloseProps,
   DialogContentEmits,
@@ -226,6 +328,13 @@ import type {
   NavigationMenuViewportProps,
 } from '@/NavigationMenu'
 import type {
+  NumberFieldDecrementProps,
+  NumberFieldIncrementProps,
+  NumberFieldInputProps,
+  NumberFieldRootEmits,
+  NumberFieldRootProps,
+} from '@/NumberField'
+import type {
   PaginationEllipsisProps,
   PaginationFirstProps,
   PaginationLastProps,
@@ -236,6 +345,11 @@ import type {
   PaginationRootEmits,
   PaginationRootProps,
 } from '@/Pagination'
+import type {
+  PinInputInputProps,
+  PinInputRootEmits,
+  PinInputRootProps,
+} from '@/PinInput'
 import type {
   PopoverAnchorProps,
   PopoverArrowProps,
@@ -255,6 +369,29 @@ import type {
   RadioGroupRootEmits,
   RadioGroupRootProps,
 } from '@/RadioGroup'
+import type {
+  RangeCalendarCellProps,
+  RangeCalendarCellTriggerProps,
+  RangeCalendarGridBodyProps,
+  RangeCalendarGridHeadProps,
+  RangeCalendarGridProps,
+  RangeCalendarGridRowProps,
+  RangeCalendarHeadCellProps,
+  RangeCalendarHeaderProps,
+  RangeCalendarHeadingProps,
+  RangeCalendarNextProps,
+  RangeCalendarPrevProps,
+  RangeCalendarRootEmits,
+  RangeCalendarRootProps,
+  RangeCalendarViewProps,
+  RangeCalendarViewTriggerProps,
+} from '@/RangeCalendar'
+import type {
+  RatingItemIndicatorProps,
+  RatingItemProps,
+  RatingRootEmits,
+  RatingRootProps,
+} from '@/Rating'
 import type {
   ScrollAreaCornerProps,
   ScrollAreaRootProps,
@@ -283,7 +420,15 @@ import type {
   SelectValueProps,
   SelectViewportProps,
 } from '@/Select'
+
 import type { SeparatorProps } from '@/Separator'
+import type {
+  SliderRangeProps,
+  SliderRootEmits,
+  SliderRootProps,
+  SliderThumbProps,
+  SliderTrackProps,
+} from '@/Slider'
 import type {
   SplitterGroupEmits,
   SplitterGroupProps,
@@ -327,6 +472,16 @@ import type {
   TagsInputRootEmits,
   TagsInputRootProps,
 } from '@/TagsInput'
+import type {
+  TimeFieldInputProps,
+  TimeFieldRootEmits,
+  TimeFieldRootProps,
+} from '@/TimeField'
+import type {
+  TimeRangeFieldInputProps,
+  TimeRangeFieldRootEmits,
+  TimeRangeFieldRootProps,
+} from '@/TimeRangeField'
 import type {
   ToastActionProps,
   ToastArrowProps,
@@ -685,6 +840,112 @@ interface RekaElementParts {
   'reka-tags-input-clear': Part<TagsInputClearProps>
   'reka-tree-root': Part<TreeRootProps, TreeRootEmits>
   'reka-tree-item': Part<TreeItemProps<Record<string, any>>, TreeItemEmits<Record<string, any>>>
+  'reka-calendar-root': Part<CalendarRootProps, CalendarRootEmits>
+  'reka-calendar-header': Part<CalendarHeaderProps>
+  'reka-calendar-heading': Part<CalendarHeadingProps>
+  'reka-calendar-prev': Part<CalendarPrevProps>
+  'reka-calendar-next': Part<CalendarNextProps>
+  'reka-calendar-grid': Part<CalendarGridProps>
+  'reka-calendar-grid-head': Part<CalendarGridHeadProps>
+  'reka-calendar-grid-body': Part<CalendarGridBodyProps>
+  'reka-calendar-grid-row': Part<CalendarGridRowProps>
+  'reka-calendar-head-cell': Part<CalendarHeadCellProps>
+  'reka-calendar-cell': Part<CalendarCellProps>
+  'reka-calendar-cell-trigger': Part<CalendarCellTriggerProps>
+  'reka-calendar-view': Part<CalendarViewProps>
+  'reka-calendar-view-trigger': Part<CalendarViewTriggerProps>
+  'reka-range-calendar-root': Part<RangeCalendarRootProps, RangeCalendarRootEmits>
+  'reka-range-calendar-header': Part<RangeCalendarHeaderProps>
+  'reka-range-calendar-heading': Part<RangeCalendarHeadingProps>
+  'reka-range-calendar-prev': Part<RangeCalendarPrevProps>
+  'reka-range-calendar-next': Part<RangeCalendarNextProps>
+  'reka-range-calendar-grid': Part<RangeCalendarGridProps>
+  'reka-range-calendar-grid-head': Part<RangeCalendarGridHeadProps>
+  'reka-range-calendar-grid-body': Part<RangeCalendarGridBodyProps>
+  'reka-range-calendar-grid-row': Part<RangeCalendarGridRowProps>
+  'reka-range-calendar-head-cell': Part<RangeCalendarHeadCellProps>
+  'reka-range-calendar-cell': Part<RangeCalendarCellProps>
+  'reka-range-calendar-cell-trigger': Part<RangeCalendarCellTriggerProps>
+  'reka-range-calendar-view': Part<RangeCalendarViewProps>
+  'reka-range-calendar-view-trigger': Part<RangeCalendarViewTriggerProps>
+  'reka-date-field-root': Part<DateFieldRootProps, DateFieldRootEmits>
+  'reka-date-field-input': Part<DateFieldInputProps>
+  'reka-date-range-field-root': Part<DateRangeFieldRootProps, DateRangeFieldRootEmits>
+  'reka-date-range-field-input': Part<DateRangeFieldInputProps>
+  'reka-time-field-root': Part<TimeFieldRootProps, TimeFieldRootEmits>
+  'reka-time-field-input': Part<TimeFieldInputProps>
+  'reka-time-range-field-root': Part<TimeRangeFieldRootProps, TimeRangeFieldRootEmits>
+  'reka-time-range-field-input': Part<TimeRangeFieldInputProps>
+  'reka-date-picker-root': Part<DatePickerRootProps, DatePickerRootEmits>
+  'reka-date-picker-field': Part<object>
+  'reka-date-picker-input': Part<DatePickerInputProps>
+  'reka-date-picker-trigger': Part<DatePickerTriggerProps>
+  'reka-date-picker-anchor': Part<DatePickerAnchorProps>
+  'reka-date-picker-content': Part<DatePickerContentProps, DatePickerContentEmits>
+  'reka-date-picker-arrow': Part<DatePickerArrowProps>
+  'reka-date-picker-close': Part<DatePickerCloseProps>
+  'reka-date-picker-calendar': Part<object>
+  'reka-date-picker-header': Part<DatePickerHeaderProps>
+  'reka-date-picker-heading': Part<DatePickerHeadingProps>
+  'reka-date-picker-prev': Part<DatePickerPrevProps>
+  'reka-date-picker-next': Part<DatePickerNextProps>
+  'reka-date-picker-grid': Part<DatePickerGridProps>
+  'reka-date-picker-grid-head': Part<DatePickerGridHeadProps>
+  'reka-date-picker-grid-body': Part<DatePickerGridBodyProps>
+  'reka-date-picker-grid-row': Part<DatePickerGridRowProps>
+  'reka-date-picker-head-cell': Part<DatePickerHeadCellProps>
+  'reka-date-picker-cell': Part<DatePickerCellProps>
+  'reka-date-picker-cell-trigger': Part<DatePickerCellTriggerProps>
+  'reka-date-picker-view': Part<DatePickerViewProps>
+  'reka-date-picker-view-trigger': Part<DatePickerViewTriggerProps>
+  'reka-date-range-picker-root': Part<DateRangePickerRootProps, DateRangePickerRootEmits>
+  'reka-date-range-picker-field': Part<object>
+  'reka-date-range-picker-input': Part<DateRangePickerInputProps>
+  'reka-date-range-picker-trigger': Part<DateRangePickerTriggerProps>
+  'reka-date-range-picker-anchor': Part<DateRangePickerAnchorProps>
+  'reka-date-range-picker-content': Part<DateRangePickerContentProps, DateRangePickerContentEmits>
+  'reka-date-range-picker-arrow': Part<DateRangePickerArrowProps>
+  'reka-date-range-picker-close': Part<DateRangePickerCloseProps>
+  'reka-date-range-picker-calendar': Part<object>
+  'reka-date-range-picker-header': Part<DateRangePickerHeaderProps>
+  'reka-date-range-picker-heading': Part<DateRangePickerHeadingProps>
+  'reka-date-range-picker-prev': Part<DateRangePickerPrevProps>
+  'reka-date-range-picker-next': Part<DateRangePickerNextProps>
+  'reka-date-range-picker-grid': Part<DateRangePickerGridProps>
+  'reka-date-range-picker-grid-head': Part<DateRangePickerGridHeadProps>
+  'reka-date-range-picker-grid-body': Part<DateRangePickerGridBodyProps>
+  'reka-date-range-picker-grid-row': Part<DateRangePickerGridRowProps>
+  'reka-date-range-picker-head-cell': Part<DateRangePickerHeadCellProps>
+  'reka-date-range-picker-cell': Part<DateRangePickerCellProps>
+  'reka-date-range-picker-cell-trigger': Part<DateRangePickerCellTriggerProps>
+  'reka-date-range-picker-view': Part<DateRangePickerViewProps>
+  'reka-date-range-picker-view-trigger': Part<DateRangePickerViewTriggerProps>
+  'reka-color-area-root': Part<ColorAreaRootProps, ColorAreaRootEmits>
+  'reka-color-area-area': Part<ColorAreaAreaProps>
+  'reka-color-area-thumb': Part<ColorAreaThumbProps>
+  'reka-color-field-root': Part<ColorFieldRootProps, ColorFieldRootEmits>
+  'reka-color-field-input': Part<ColorFieldInputProps>
+  'reka-color-slider-root': Part<ColorSliderRootProps, ColorSliderRootEmits>
+  'reka-color-slider-track': Part<ColorSliderTrackProps>
+  'reka-color-slider-thumb': Part<ColorSliderThumbProps>
+  'reka-color-swatch': Part<ColorSwatchProps>
+  'reka-color-swatch-picker-root': Part<ColorSwatchPickerRootProps, ColorSwatchPickerRootEmits>
+  'reka-color-swatch-picker-item': Part<ColorSwatchPickerItemProps>
+  'reka-color-swatch-picker-item-swatch': Part<ColorSwatchPickerItemSwatchProps>
+  'reka-color-swatch-picker-item-indicator': Part<ColorSwatchPickerItemIndicatorProps>
+  'reka-number-field-root': Part<NumberFieldRootProps, NumberFieldRootEmits>
+  'reka-number-field-input': Part<NumberFieldInputProps>
+  'reka-number-field-increment': Part<NumberFieldIncrementProps>
+  'reka-number-field-decrement': Part<NumberFieldDecrementProps>
+  'reka-pin-input-root': Part<PinInputRootProps, PinInputRootEmits>
+  'reka-pin-input-input': Part<PinInputInputProps>
+  'reka-slider-root': Part<SliderRootProps, SliderRootEmits>
+  'reka-slider-track': Part<SliderTrackProps>
+  'reka-slider-range': Part<SliderRangeProps>
+  'reka-slider-thumb': Part<SliderThumbProps>
+  'reka-rating-root': Part<RatingRootProps, RatingRootEmits>
+  'reka-rating-item': Part<RatingItemProps>
+  'reka-rating-item-indicator': Part<RatingItemIndicatorProps>
 }
 
 /**

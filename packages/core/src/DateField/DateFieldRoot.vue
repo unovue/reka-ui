@@ -258,6 +258,8 @@ defineExpose(mergeExpose(expose, {
   <Primitive
     v-bind="getRootAttrs()"
     ref="primitiveElement"
+    :as="as"
+    :as-child="asChild"
     @focusin="handleFocusin"
     @focusout="handleFocusout"
   >

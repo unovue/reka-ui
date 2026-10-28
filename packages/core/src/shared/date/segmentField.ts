@@ -230,11 +230,17 @@ export function useSegmentFieldNavigation(options: UseSegmentFieldNavigationOpti
   }
 
   function setFocusedElement(el: HTMLElement) {
+    // A segment rendered after the root mounted (re-rendered segments, or segment
+    // custom elements, which mount after their root): collect them again.
+    if (el.hasAttribute(options.segmentAttribute) && !segmentElements.value.has(el))
+      refreshSegmentElements()
     currentFocusedElement.value = el
   }
 
   /** Focus the first segment (the hidden input's focus handler and `FieldLabel` use this). */
   function focusFirstSegment() {
+    if (!segmentElements.value.size)
+      refreshSegmentElements()
     Array.from(segmentElements.value)[0]?.focus()
   }
 

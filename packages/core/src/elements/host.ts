@@ -125,6 +125,13 @@ const TAG_SEMANTICS: Record<string, HostSemantics> = {
   nav: { role: 'navigation' },
   a: { link: true },
   svg: { inside: true },
+  // Tables (calendar grids): the part's own `role` (`application`, `gridcell`) wins.
+  table: { role: 'table' },
+  thead: { role: 'rowgroup' },
+  tbody: { role: 'rowgroup' },
+  tr: { role: 'row' },
+  th: { role: 'columnheader' },
+  td: { role: 'cell' },
 }
 
 export function semanticsForTag(tag: unknown): HostSemantics | undefined {
@@ -1237,11 +1244,23 @@ export function getRenderer(): Renderer<Element> {
       const siblingOwner = anchor ? siblingOwners.get(anchor) : undefined
       if (siblingOwner?.insertSibling(child, anchor!))
         return
-      const owner = containers.get(parent)
-      if (owner)
-        owner.insertRootNode(child, anchor ?? null)
-      else
-        parent.insertBefore(child, anchor && anchor.parentNode === parent ? anchor : null)
+      // A wrapper the part rendered around a host that is away (a teleported popper
+      // wrapper, when one part is both the portal and the content): the host moves
+      // with it, by its own part, not by the consumer.
+      const carried = [...awayBindings].filter(away => child.contains(away.host))
+      for (const away of carried)
+        away.moving = true
+      try {
+        const owner = containers.get(parent)
+        if (owner)
+          owner.insertRootNode(child, anchor ?? null)
+        else
+          parent.insertBefore(child, anchor && anchor.parentNode === parent ? anchor : null)
+      }
+      finally {
+        for (const away of carried)
+          away.moving = false
+      }
     },
     remove(child) {
       const binding = bindings.get(child)

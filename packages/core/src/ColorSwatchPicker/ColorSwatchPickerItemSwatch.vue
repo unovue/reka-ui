@@ -22,7 +22,11 @@ defineExpose(expose)
 
 <template>
   <ColorSwatch
+    v-slot="slotProps"
     :ref="forwardRef"
     v-bind="mergeProps(props, part.attrs.value)"
-  />
+  >
+    <!-- Forwarded, so `asChild` has a child to render as. -->
+    <slot v-bind="slotProps" />
+  </ColorSwatch>
 </template>

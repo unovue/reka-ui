@@ -3,7 +3,7 @@ import type { ContextProviderEvent, ContextRequestEvent } from './context'
 import type { ElementEventOptions } from './events'
 import type { PartMeta } from './meta'
 import type { RootNode } from '@/shared/getRootNode'
-import { camelize, defineComponent, h, nextTick, queuePostFlushCb, shallowReactive, toDisplayString, toHandlerKey } from 'vue'
+import { camelize, defineComponent, h, nextTick, queuePostFlushCb, shallowReactive, toDisplayString, toHandlerKey, toRaw } from 'vue'
 import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
 import { containsComposed, getRootNode, resolveTeleportTarget } from '@/shared/getRootNode'
 import {
@@ -15,7 +15,7 @@ import {
 } from './context'
 import { dispatchElementEvent, toEventType } from './events'
 import { CREATED_ATTR, getRenderer, HOST_PROP, HOST_TAG, HostBinding, hostsAwayFrom } from './host'
-import { parseAttribute } from './meta'
+import { parseAttribute, reviveFormState, serializeFormState } from './meta'
 import { ensureRootSetup, UNMOUNTED_ATTR } from './styles'
 
 export interface ResolvedElementOptions {
@@ -66,6 +66,8 @@ const OVERLAY_MODELS: Record<string, string> = {
   TooltipRoot: 'open',
 }
 const UPDATE_EMIT = /^update:(.+)$/
+/** Event (as a Vue-style emit name) dispatched when the part's slot props change. */
+const SLOT_PROPS_EMIT = 'slotPropsChange'
 
 const BaseElement = (typeof HTMLElement === 'undefined' ? class {} : HTMLElement) as typeof HTMLElement
 
@@ -182,6 +184,9 @@ export class RekaElement extends BaseElement {
    */
   private _carried: Record<string, unknown> = {}
   private _app: App | null = null
+  /** The props the part passes to its default slot (its scoped slot), while rendered. */
+  private _slotProps: Record<string, unknown> | undefined
+  private _slotPropsQueued = false
   private _upgraded = false
   private _reflecting = false
   private _warnedOrphan = false
@@ -202,7 +207,7 @@ export class RekaElement extends BaseElement {
     this._binding = new HostBinding(this, part.meta.semantics, {
       onPartMounted: () => this._onPartMounted(),
       onPartUnmount: () => this._onPartUnmount(),
-      formState: () => 'modelValue' in this._carried ? JSON.stringify(this._carried.modelValue) : undefined,
+      formState: () => 'modelValue' in this._carried ? serializeFormState(this._modelProp, this._carried.modelValue) : undefined,
     }, internals)
     this._binding.siblings = part.meta.siblings
     for (const emit of part.meta.emits) {
@@ -329,6 +334,11 @@ export class RekaElement extends BaseElement {
       this._setProp(prop.name, parseAttribute(prop, value))
   }
 
+  /** The `modelValue` prop, whose kind tells how its form state is written. */
+  private get _modelProp() {
+    return this._part.meta.props.find(prop => prop.name === 'modelValue')
+  }
+
   formResetCallback() {
     const before = this._carried
     this._carried = {}
@@ -344,7 +354,8 @@ export class RekaElement extends BaseElement {
       return
     let value: unknown
     try {
-      value = JSON.parse(state)
+      // Temporal values are read back through their attribute kind's parser.
+      value = reviveFormState(this._modelProp, state)
     }
     catch {
       return
@@ -370,6 +381,16 @@ export class RekaElement extends BaseElement {
   formDisabledCallback(disabled: boolean) {
     // Also called for the host's own `disabled` attribute, which the prop drives.
     this._extra.fieldsetDisabled = disabled && inDisabledFieldset(this)
+  }
+
+  /**
+   * The props the part passes to its default slot, like a Vue scoped slot's (a
+   * calendar's `grid` and `weekDays`, a date field's `segments`), or `undefined`
+   * while the part is not rendered. A `slot-props-change` event follows each new
+   * set (none when the part stops rendering). Read-only: render children from it.
+   */
+  get slotProps(): Readonly<Record<string, unknown>> | undefined {
+    return this._slotProps
   }
 
   /** @internal */
@@ -526,6 +547,7 @@ export class RekaElement extends BaseElement {
     this._childObserver?.disconnect()
     app.unmount()
     this._binding.dispose()
+    this._slotProps = undefined
   }
 
   /** Properties set before the element was defined shadow the prototype accessors. */
@@ -587,6 +609,12 @@ export class RekaElement extends BaseElement {
   /** Dispatches the model's update event for a change the part did not emit (a form reset). */
   private _emitModelChange(model: string, previous: unknown, value: unknown) {
     const emit = `update:${model}`
+    const convert = this._part.meta.model
+    if (convert && model === 'modelValue') {
+      // Emitted as the part emits it (a `Color`, where the default is a CSS string).
+      previous = previous == null ? previous : convert(previous)
+      value = value == null ? value : convert(value)
+    }
     if (this._props[model] !== undefined || !this._part.meta.emits.includes(emit) || sameValue(previous, value))
       return
     dispatchElementEvent(this, emit, [value], this._part.options.events)
@@ -728,8 +756,36 @@ export class RekaElement extends BaseElement {
         ...props,
         ...(meta.hasAsChild ? { asChild: true } : undefined),
       }),
-      { default: (slotProps?: Record<string, unknown>) => host(meta.text && this._extra.textFree ? toDisplayString(meta.text(slotProps ?? {}, props)) : undefined) },
+      {
+        default: (slotProps: Record<string, unknown> = {}) => {
+          this._onSlotProps(slotProps)
+          return host(meta.text && this._extra.textFree ? toDisplayString(meta.text(slotProps, props)) : undefined)
+        },
+      },
     )
+  }
+
+  /**
+   * Keeps the slot props the part rendered with, and announces a change with a
+   * `slot-props-change` event once the render is flushed (children rendered from
+   * them can then be updated in one go).
+   */
+  private _onSlotProps(props: Record<string, unknown>) {
+    const keys = Object.keys(props)
+    const previous = this._slotProps
+    if (!previous && !keys.length)
+      return
+    if (previous && keys.length === Object.keys(previous).length && keys.every(key => Object.is(toRaw(props[key]), previous[key])))
+      return
+    this._slotProps = Object.freeze(Object.fromEntries(keys.map(key => [key, toRaw(props[key])])))
+    if (this._slotPropsQueued)
+      return
+    this._slotPropsQueued = true
+    queuePostFlushCb(() => {
+      this._slotPropsQueued = false
+      if (this._slotProps)
+        dispatchElementEvent(this, SLOT_PROPS_EMIT, [this._slotProps], this._part.options.events)
+    })
   }
 
   /** The `<input>` a part with `target: 'input'` renders onto: the element's own, or a new one. */
@@ -802,6 +858,9 @@ export class RekaElement extends BaseElement {
 
   private _onPartUnmount() {
     this._setUnmounted(true)
+    // Not rendered (closed by its `Presence`): no slot props until it renders again,
+    // which dispatches `slot-props-change` with the new ones.
+    this._slotProps = undefined
     const children = [...this._rekaChildren].filter(child => child._state === 'mounted')
     if (!children.length)
       return

@@ -159,6 +159,8 @@ defineExpose(mergeExpose(expose, {
   <Primitive
     v-bind="mergeProps($attrs, root.attrs.value)"
     ref="primitiveElement"
+    :as="as"
+    :as-child="asChild"
   >
     <slot
       :model-value="modelValue"
