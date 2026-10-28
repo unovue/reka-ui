@@ -40,13 +40,34 @@ export function createPartSurface<S extends PartState>(
   state: ComputedRef<S> | (() => S),
   mapping?: StateAttributesMapping<S>,
 ): PartSurface<S> {
-  const readProps = typeof props === 'function' ? props : () => props.value
-  const readState = typeof state === 'function' ? state : () => state.value
   return {
     props: typeof props === 'function' ? getterRef(props) : props,
     state: typeof state === 'function' ? getterRef(state) : state,
+    attrs: new SurfaceAttrsRef(props, state, mapping) as unknown as ComputedRef<Record<string, any>>,
+  }
+}
+
+function read<T>(source: ComputedRef<T> | (() => T)): T {
+  return typeof source === 'function' ? source() : source.value
+}
+
+/**
+ * The surface's `attrs`: a readonly ref holding its sources rather than a
+ * closure over them (no closure, no captured scope, per rendered part).
+ */
+class SurfaceAttrsRef<S extends PartState> {
+  // Ref markers as prototype getters: no per-instance slots.
+  get __v_isRef(): true { return true }
+  get __v_isReadonly(): true { return true }
+  constructor(
+    readonly props: ComputedRef<Record<string, any>> | (() => Record<string, any>),
+    readonly state: ComputedRef<S> | (() => S),
+    readonly mapping: StateAttributesMapping<S> | undefined,
+  ) {}
+
+  get value(): Record<string, any> {
     // State attrs first, explicit props last — same precedence as `useRender`, so a mapping that emits `aria-*` never overrides a prop.
-    attrs: getterRef(() => mergeProps(stateToDataAttrs(readState(), mapping), readProps())),
+    return mergeProps(stateToDataAttrs(read(this.state), this.mapping), read(this.props))
   }
 }
 

@@ -55,24 +55,28 @@ export const Primitive = defineComponent({
       default: 'div',
     },
   },
-  setup(props, { attrs, slots, expose }) {
+  // `setup(props)` only: a second parameter makes Vue allocate a setup context
+  // (with an attrs proxy and an `expose` closure) per instance. The instance
+  // already holds the same attrs and slots objects, updated in place.
+  setup(props) {
+    const instance = getCurrentInstance()!
+    const { attrs, slots } = instance
     // Same output as `useRender({ as, asChild, props: attrs })`, resolved in the
     // render function instead of through computeds: Primitive wraps nearly every
     // part, so its per-instance reactive cost is multiplied by every part on the
     // page. It satisfies the element-first contract (#2808): a parent `:ref`
     // receives `{ element, $el }`, both the same reactive ref, so wrapping parts
     // resolve the rendered element — including across `asChild` child swaps (the
-    // `Slot` tracks its child) — with no `instance.exposed` mutation and no
-    // `onUpdated` resync. The element ref itself is created on first read.
+    // `Slot` tracks its child) — with no `onUpdated` resync. The element ref
+    // itself is created on first read.
     const { forwardRef: elementRef, expose: elementExpose } = useForwardElement<HTMLElement>()
-    expose(elementExpose)
-    // Render reads the raw props and attrs (`props` is reactive and `attrs` a
-    // tracking proxy): new props/attrs only ever arrive with a parent patch,
-    // which re-renders this component anyway, so tracking them would add a
-    // dep + link per key per Primitive for nothing (and spreading the raw attrs
-    // object is much cheaper than spreading the proxy).
+    // What the setup context's `expose()` does.
+    instance.exposed = elementExpose
+    // Render reads the raw props and attrs (`props` is reactive): new
+    // props/attrs only ever arrive with a parent patch, which re-renders this
+    // component anyway, so tracking them would add a dep + link per key per
+    // Primitive for nothing.
     const rawProps = toRaw(props)
-    const rawAttrs = getCurrentInstance()?.attrs ?? attrs
 
     // eslint-disable-next-line node/prefer-global/process
     if (process.env.NODE_ENV !== 'production')
@@ -93,7 +97,7 @@ export const Primitive = defineComponent({
       const tag = resolveRenderTag(rawProps.as, rawProps.asChild)
       return h(
         tag,
-        { ...rawAttrs, ref: elementRef },
+        { ...attrs, ref: elementRef },
         isSelfClosingTag(tag) ? undefined : { default: slots.default },
       )
     }
