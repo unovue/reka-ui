@@ -2,7 +2,7 @@ import type { RekaElementEvent } from '.'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineRekaElements, paginationElements, stepperElements } from '.'
-import { cleanup, query, render } from './elements.test.helpers'
+import { cleanup, query, render, settle } from './elements.test.helpers'
 
 beforeAll(() => {
   defineRekaElements([paginationElements, stepperElements])
@@ -158,5 +158,20 @@ describe('stepper elements', () => {
     await userEvent.keyboard('{ArrowLeft}')
     await userEvent.keyboard('{ArrowLeft}')
     expect(document.activeElement).toBe(first)
+  })
+
+  it('a `cloneNode()` copy has one live region', async () => {
+    const container = render(`
+      <reka-stepper-root default-value="1">
+        <reka-stepper-item step="1"><reka-stepper-trigger>1</reka-stepper-trigger></reka-stepper-item>
+        <reka-stepper-item step="2"><reka-stepper-trigger>2</reka-stepper-trigger></reka-stepper-item>
+      </reka-stepper-root>`)
+    const root = query('reka-stepper-root')
+    await vi.waitFor(() => expect(root.querySelector(':scope > [role=status]')).not.toBeNull())
+    const clone = root.cloneNode(true) as HTMLElement
+    container.append(clone)
+    await vi.waitFor(() => expect(clone.hasAttribute('data-reka-unmounted')).toBe(false))
+    await settle()
+    expect(clone.querySelectorAll(':scope > [role=status]')).toHaveLength(1)
   })
 })

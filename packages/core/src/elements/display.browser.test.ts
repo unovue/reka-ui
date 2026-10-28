@@ -4,14 +4,15 @@ import {
   aspectRatioElements,
   avatarElements,
   defineRekaElements,
+  dialogElements,
   progressElements,
   separatorElements,
   visuallyHiddenElements,
 } from '.'
-import { cleanup, query, render } from './elements.test.helpers'
+import { cleanup, query, render, settle } from './elements.test.helpers'
 
 beforeAll(() => {
-  defineRekaElements([aspectRatioElements, avatarElements, progressElements, separatorElements, visuallyHiddenElements])
+  defineRekaElements([aspectRatioElements, avatarElements, dialogElements, progressElements, separatorElements, visuallyHiddenElements])
 })
 afterEach(cleanup)
 
@@ -40,6 +41,36 @@ describe('aspect ratio element', () => {
     expect(el.isConnected).toBe(false)
     // No home marker is left behind either.
     expect([...container.firstElementChild!.childNodes].some(node => node.nodeType === Node.COMMENT_NODE)).toBe(false)
+  })
+
+  it('a `cloneNode()` copy gets one sizing wrapper, its own', async () => {
+    const container = render(`<div class="box" style="width: 320px"><reka-aspect-ratio ratio="2"><span>M</span></reka-aspect-ratio></div>`)
+    const el = query('reka-aspect-ratio')
+    const box = container.querySelector('.box')!
+    await vi.waitFor(() => expect(el.parentElement).not.toBe(box))
+    const clone = box.cloneNode(true) as HTMLElement
+    container.append(clone)
+    const copy = clone.querySelector('reka-aspect-ratio')!
+    await vi.waitFor(() => expect(copy.hasAttribute('data-reka-unmounted')).toBe(false))
+    await settle()
+    expect(copy.parentElement!.parentElement).toBe(clone)
+    expect(clone.getBoundingClientRect().height).toBeCloseTo(160, 0)
+  })
+
+  it('a portaled host the consumer removed stays removed', async () => {
+    const container = render(`
+      <reka-dialog-root>
+        <reka-dialog-trigger>Open</reka-dialog-trigger>
+        <reka-dialog-portal><reka-dialog-content><reka-dialog-title>T</reka-dialog-title></reka-dialog-content></reka-dialog-portal>
+      </reka-dialog-root>
+    `)
+    const portal = query('reka-dialog-portal')
+    await vi.waitFor(() => expect(portal.parentElement).toBe(document.body))
+    portal.remove()
+    await settle()
+    await settle()
+    expect(portal.isConnected).toBe(false)
+    expect(container.contains(portal)).toBe(false)
   })
 })
 

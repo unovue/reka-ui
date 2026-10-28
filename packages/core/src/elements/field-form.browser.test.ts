@@ -1,11 +1,13 @@
 import type { RekaElementEvent } from '.'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
-import { checkboxElements, defineRekaElements, fieldElements, formElements } from '.'
-import { cleanup, query, render } from './elements.test.helpers'
+import { checkboxElements, defineRekaElements, fieldElements, formElements, toggleElements } from '.'
+import { cleanup, query, render, settle } from './elements.test.helpers'
 
 beforeAll(() => {
-  defineRekaElements([fieldElements, formElements, checkboxElements])
+  defineRekaElements([fieldElements, formElements, checkboxElements, toggleElements])
+  // Elements whose events bubble, for listeners on an ancestor.
+  defineRekaElements([formElements], { prefix: 'bub', events: { bubbles: true } })
 })
 afterEach(cleanup)
 
@@ -32,6 +34,9 @@ const FORM = `
 function nativeSubmissions() {
   const submitted: boolean[] = []
   const listener = (event: Event) => {
+    // The form root's own `submit` event, when the elements' events bubble.
+    if (event instanceof CustomEvent)
+      return
     submitted.push(!event.defaultPrevented)
     event.preventDefault()
   }
@@ -179,6 +184,72 @@ describe('field elements', () => {
     }
     finally {
       stop()
+    }
+  })
+
+  it('accept listener options the way the DOM reads them', async () => {
+    render(`<reka-toggle>B</reka-toggle>${FORM}`)
+    const formRoot = query('reka-form-root')
+    // `null` options, on any event type and element.
+    expect(() => query('reka-toggle').addEventListener('click', () => {}, null as never)).not.toThrow()
+    const noop = () => {}
+    expect(() => formRoot.addEventListener('form-submit', noop, null as never)).not.toThrow()
+    expect(() => formRoot.removeEventListener('form-submit', noop, null as never)).not.toThrow()
+
+    // A function as options (Lit passes the listener) is a dictionary: capture false.
+    const { submitted, stop } = nativeSubmissions()
+    try {
+      const checkbox = query('reka-checkbox-root')
+      await vi.waitFor(() => expect(checkbox.getAttribute('role')).toBe('checkbox'))
+      await userEvent.click(checkbox)
+      const listener = { handleEvent: vi.fn() }
+      formRoot.addEventListener('form-submit', listener, (() => {}) as never)
+      formRoot.removeEventListener('form-submit', listener, false)
+      await userEvent.click(query('button[type="submit"]'))
+      await vi.waitFor(() => expect(submitted).toEqual([true]))
+    }
+    finally {
+      stop()
+    }
+  })
+
+  it('see a `form-submit` listener added or removed right before the submit', async () => {
+    const { submitted, stop } = nativeSubmissions()
+    try {
+      render('<reka-form-root><form novalidate><button>Go</button></form></reka-form-root>')
+      const formRoot = query('reka-form-root')
+      await vi.waitFor(() => expect(formRoot.hasAttribute('data-reka-unmounted')).toBe(false))
+      const form = query<HTMLFormElement>('form')
+      const listener = vi.fn()
+      formRoot.addEventListener('form-submit', listener)
+      form.requestSubmit()
+      expect(listener).toHaveBeenCalledTimes(1)
+      expect(submitted).toEqual([false])
+      formRoot.removeEventListener('form-submit', listener)
+      form.requestSubmit()
+      expect(submitted).toEqual([false, true])
+      await settle()
+    }
+    finally {
+      stop()
+    }
+  })
+
+  it('with bubbling events, count a `form-submit` listener on an ancestor', async () => {
+    const { submitted, stop } = nativeSubmissions()
+    const values: unknown[] = []
+    const onFormSubmit = (event: Event) => values.push((event as RekaElementEvent).detail.value)
+    document.addEventListener('form-submit', onFormSubmit)
+    try {
+      render('<bub-form-root><form novalidate><button>Go</button></form></bub-form-root>')
+      await vi.waitFor(() => expect(query('bub-form-root').hasAttribute('data-reka-unmounted')).toBe(false))
+      await userEvent.click(query('button'))
+      expect(values).toEqual([{}])
+      expect(submitted).toEqual([false])
+    }
+    finally {
+      stop()
+      document.removeEventListener('form-submit', onFormSubmit)
     }
   })
 

@@ -18,6 +18,12 @@ export const HOST_PROP = '__rekaHost'
  * `.token` for classes and `;property` for inline style properties.
  */
 export const OWNED_ATTR = 'data-reka-owned'
+/**
+ * Marks the nodes a binding placed outside its detached container (siblings in the
+ * host, a `<style>`, and, with the value `wrapper`, a wrapper around the host), so a
+ * `cloneNode()` copy of a mounted element can drop them.
+ */
+export const CONTENT_ATTR = 'data-reka-content'
 
 const HYPHENATE = /\B([A-Z])/g
 const WHITESPACE = /\s+/
@@ -295,6 +301,8 @@ export class HostBinding {
    * `cloneNode()`: a copy starts from the consumer's attributes only.
    */
   static cleanCopiedState(el: HTMLElement) {
+    for (const child of el.querySelectorAll(`:scope > [${CONTENT_ATTR}]:not([${CONTENT_ATTR}="wrapper"])`))
+      child.remove()
     const owned = el.getAttribute(OWNED_ATTR)
     if (owned === null)
       return
@@ -321,6 +329,21 @@ export class HostBinding {
       el.removeAttribute('style')
     if (el.classList.length === 0)
       el.removeAttribute('class')
+  }
+
+  /**
+   * A `cloneNode()` copy inside its own wrapper: takes it out, as the copy's part
+   * renders another one. The nearest marked wrapper above it, short of another
+   * element, is its own. Moving the element connects it again (synchronously).
+   */
+  static unwrapCopy(el: HTMLElement) {
+    for (let node = el.parentElement; node && !node.localName.includes('-'); node = node.parentElement) {
+      if (node.getAttribute(CONTENT_ATTR) === 'wrapper') {
+        node.replaceWith(el)
+        return true
+      }
+    }
+    return false
   }
 
   get away() {
@@ -374,7 +397,7 @@ export class HostBinding {
   insertRootNode(child: Node, anchor: Node | null) {
     const element = child.nodeType === Node.ELEMENT_NODE ? child as Element : null
     if (element && this.homeMarker && element.contains(this.el)) {
-      this.relocate(element)
+      this.relocate(element, 'wrapper')
       this.homeMarker.parentNode?.insertBefore(element, this.homeMarker)
       return
     }
@@ -524,7 +547,8 @@ export class HostBinding {
     relocatedOwners.delete(element)
   }
 
-  private relocate(element: Element) {
+  private relocate(element: Element, kind = '') {
+    element.setAttribute(CONTENT_ATTR, kind)
     this.relocated.add(element)
     relocatedOwners.set(element, this)
   }

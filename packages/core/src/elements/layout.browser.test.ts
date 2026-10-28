@@ -2,7 +2,7 @@ import type { RekaElementEvent } from '.'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineRekaElements, scrollAreaElements, splitterElements } from '.'
-import { cleanup, query, render } from './elements.test.helpers'
+import { cleanup, query, render, settle } from './elements.test.helpers'
 
 beforeAll(() => {
   defineRekaElements([scrollAreaElements, splitterElements])
@@ -78,6 +78,19 @@ describe('scroll area elements', () => {
     expect(styles()).toHaveLength(1)
     await cleanup()
     expect(styles()).toHaveLength(0)
+  })
+
+  it('a `cloneNode()` copy has one viewport wrapper', async () => {
+    const container = render(SCROLL_AREA)
+    const root = query('reka-scroll-area-root')
+    const content = query('reka-scroll-area-viewport')
+    await vi.waitFor(() => expect(content.parentElement!.hasAttribute('data-reka-scroll-area-viewport')).toBe(true))
+    const clone = root.cloneNode(true) as HTMLElement
+    container.append(clone)
+    const copy = clone.querySelector('reka-scroll-area-viewport')!
+    await vi.waitFor(() => expect(copy.hasAttribute('data-reka-unmounted')).toBe(false))
+    await settle()
+    expect(clone.querySelectorAll('[data-reka-scroll-area-viewport]')).toHaveLength(1)
   })
 })
 
