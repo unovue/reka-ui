@@ -102,13 +102,17 @@ let queue: (() => void)[] = []
 /** When the pending frame was requested (`-1`: none pending), and through which `requestAnimationFrame`. */
 let requestedAt = -1
 let requestedWith: typeof requestAnimationFrame | undefined
+/** Bumped per request: a superseded (renewed) request that fires late does nothing. */
+let requestGeneration = 0
 /**
  * A request older than this is treated as lost (a dropped frame, or one
  * requested under fake timers that never ran) and is requested again.
  */
 const STALE_REQUEST_MS = 100
 
-function flush() {
+function flush(generation: number) {
+  if (generation !== requestGeneration)
+    return
   requestedAt = -1
   const callbacks = queue
   queue = []
@@ -140,10 +144,11 @@ export function onNextFrame(callback: () => void): void {
   // shims) runs `flush` before returning. The request is renewed when it is
   // stale (or the clock moved backwards) or `requestAnimationFrame` was swapped
   // since (fake timers installed or removed: that frame may never run). If the
-  // old request fires after all, it flushes an empty queue.
+  // old request fires after all, it is ignored (`requestGeneration`).
   if (requestedAt < 0 || requestedWith !== requestAnimationFrame || !(age >= 0 && age < STALE_REQUEST_MS)) {
     requestedAt = now
     requestedWith = requestAnimationFrame
-    requestAnimationFrame(flush)
+    const generation = ++requestGeneration
+    requestAnimationFrame(() => flush(generation))
   }
 }

@@ -111,4 +111,25 @@ describe('onNextFrame', () => {
     expect(calls).toEqual([1, 2])
     raf.mockRestore()
   })
+
+  it('renews a stale request, and ignores the superseded one if it fires late', () => {
+    const frames: FrameRequestCallback[] = []
+    const raf = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frames.push(callback)
+      return frames.length
+    })
+    let now = 1000
+    const clock = vi.spyOn(performance, 'now').mockImplementation(() => now)
+    const calls: number[] = []
+    onNextFrame(() => calls.push(1))
+    now += 500
+    onNextFrame(() => calls.push(2))
+    expect(frames).toHaveLength(2)
+    frames[0](0)
+    expect(calls).toEqual([])
+    frames[1](0)
+    expect(calls).toEqual([1, 2])
+    clock.mockRestore()
+    raf.mockRestore()
+  })
 })
