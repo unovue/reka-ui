@@ -4,6 +4,7 @@ import type { ElementEventOptions } from './events'
 import type { PartMeta } from './meta'
 import type { RootNode } from '@/shared/getRootNode'
 import { camelize, defineComponent, h, nextTick, queuePostFlushCb, shallowReactive, toHandlerKey } from 'vue'
+import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
 import { containsComposed, getRootNode, resolveTeleportTarget } from '@/shared/getRootNode'
 import {
   getRegistry,
@@ -12,7 +13,7 @@ import {
   ContextProviderEvent as ProviderEvent,
   requestParent,
 } from './context'
-import { dispatchElementEvent } from './events'
+import { dispatchElementEvent, toEventType } from './events'
 import { getRenderer, HOST_PROP, HOST_TAG, HostBinding, hostsAwayFrom } from './host'
 import { parseAttribute } from './meta'
 import { ensureRootSetup, UNMOUNTED_ATTR } from './styles'
@@ -120,6 +121,11 @@ export class RekaElement extends BaseElement {
   /** State the element adds to the props: a disabled `<fieldset>` around it. */
   private readonly _extra = shallowReactive<{ fieldsetDisabled: boolean, rootNode?: RootNode }>({ fieldsetDisabled: false })
   private readonly _listeners: Record<string, (...args: unknown[]) => void> = {}
+  /** Listener keys (`onFormSubmit`) of `listenedEmits`, by their event type. */
+  private readonly _gatedListeners = new Map<string, string>()
+  /** The DOM listeners of those event types, so the part's listener follows them. */
+  private readonly _domListeners = new Map<string, Set<unknown>>()
+  private readonly _listened = shallowReactive<Record<string, boolean>>({})
   /**
    * Last value of each uncontrolled model (`update:modelValue`, `update:open`):
    * passed as its default when the part mounts again, so the element keeps its
@@ -145,9 +151,12 @@ export class RekaElement extends BaseElement {
       onPartMounted: () => this._onPartMounted(),
       onPartUnmount: () => this._onPartUnmount(),
       formState: () => 'modelValue' in this._carried ? JSON.stringify(this._carried.modelValue) : undefined,
-    }, internals)
+    }, internals, part.meta.appendSiblings)
     for (const emit of part.meta.emits) {
-      this._listeners[toHandlerKey(camelize(emit))] = (...args) => {
+      const key = toHandlerKey(camelize(emit))
+      if (part.meta.listenedEvents.has(toEventType(emit)))
+        this._gatedListeners.set(key, toEventType(emit))
+      this._listeners[key] = (...args) => {
         this._track(emit, args[0])
         dispatchElementEvent(this, emit, args, part.options.events)
       }
@@ -162,6 +171,26 @@ export class RekaElement extends BaseElement {
     }
     this.addEventListener('context-request', this._onContextRequest)
     this.addEventListener('context-provider', this._onContextProvider)
+  }
+
+  override addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, event: HTMLElementEventMap[K]) => unknown, options?: boolean | AddEventListenerOptions): void
+  override addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void
+  override addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) {
+    super.addEventListener(type, listener, options)
+    if (!listener || !this._part?.meta.listenedEvents.has(type))
+      return
+    this._trackListener(type, listener, true)
+    // A `once` listener goes away by itself.
+    if (typeof options === 'object' && options.once)
+      super.addEventListener(type, () => this._trackListener(type, listener, false), { once: true })
+  }
+
+  override removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, event: HTMLElementEventMap[K]) => unknown, options?: boolean | EventListenerOptions): void
+  override removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void
+  override removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions) {
+    super.removeEventListener(type, listener, options)
+    if (listener && this._part?.meta.listenedEvents.has(type))
+      this._trackListener(type, listener, false)
   }
 
   connectedCallback() {
@@ -442,6 +471,30 @@ export class RekaElement extends BaseElement {
     this._setUnmounted(false)
   }
 
+  private _trackListener(type: string, listener: unknown, add: boolean) {
+    let set = this._domListeners.get(type)
+    if (!set)
+      this._domListeners.set(type, set = new Set())
+    if (add)
+      set.add(listener)
+    else
+      set.delete(listener)
+    if (this._listened[type] !== set.size > 0)
+      this._listened[type] = set.size > 0
+  }
+
+  /** The part's listeners: all of them, except `listenedEmits` nobody listens to. */
+  private _partListeners() {
+    if (!this._gatedListeners.size)
+      return this._listeners
+    const listeners = { ...this._listeners }
+    for (const [key, type] of this._gatedListeners) {
+      if (!this._listened[type])
+        delete listeners[key]
+    }
+    return listeners
+  }
+
   /** Remembers an uncontrolled model's value for the next mount. */
   private _track(emit: string, value: unknown) {
     const model = UPDATE_EMIT.exec(emit)?.[1]
@@ -480,7 +533,7 @@ export class RekaElement extends BaseElement {
 
   private _render(): VNode {
     const { component, meta } = this._part
-    const props: Record<string, unknown> = { ...this._props }
+    const props: Record<string, unknown> = { ...this._props, ...meta.fixedProps }
     for (const [model, value] of Object.entries(this._carried)) {
       const defaultProp = defaultPropOf(model)
       if (props[model] === undefined && meta.propNames.has(defaultProp))
@@ -488,13 +541,15 @@ export class RekaElement extends BaseElement {
     }
     if (this._extra.fieldsetDisabled && meta.propNames.has('disabled'))
       props.disabled = true
-    if (meta.propNames.has('to') && meta.propNames.has('forceMount') && !props.disabled)
-      props.to = this._portalTarget(props.to)
+    if (meta.propNames.has('to') && meta.propNames.has('forceMount') && !props.disabled) {
+      // A `ConfigProvider` (element) above sets the default target, as in Vue.
+      props.to = this._portalTarget(props.to ?? injectConfigProviderContext({}).teleportTo?.value)
+    }
     return h(
       component,
       {
         ...props,
-        ...this._listeners,
+        ...this._partListeners(),
         ...(meta.hasAsChild ? { asChild: true } : undefined),
       },
       {

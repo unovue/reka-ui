@@ -1,6 +1,6 @@
 import type { ComponentInternalInstance, ElementNamespace, Renderer } from 'vue'
 import { createRenderer, nodeOps, normalizeClass, normalizeStyle, patchProp } from 'vue'
-import { containsComposed } from '@/shared/getRootNode'
+import { containsComposed, getRootNode } from '@/shared/getRootNode'
 
 /**
  * Vnode type of the placeholder each element's Vue tree renders in place of the
@@ -26,6 +26,35 @@ const STYLE_PROPERTY = /:([\s\S]+)/
 const IMPORTANT = /\s*!important$/
 const EVENT_KEY = /^on[^a-z]/
 const FORM_FIELD = /^(?:INPUT|SELECT|TEXTAREA)$/
+
+/**
+ * Marks the `CustomEvent`s an element dispatches for its part's emits. The part's
+ * own DOM listeners on the host skip them: `FormRoot` listens to `submit` and
+ * emits `submit`, which would otherwise reach its own listener again.
+ */
+export const ELEMENT_EVENT: unique symbol = Symbol.for('reka-ui.element-event') as never
+
+type Handler = (...args: unknown[]) => unknown
+const guardedHandlers = new WeakMap<Handler, Handler>()
+
+function guardHandler(handler: Handler): Handler {
+  let guarded = guardedHandlers.get(handler)
+  if (!guarded) {
+    guarded = function (this: unknown, ...args: unknown[]) {
+      if (!(args[0] as Record<symbol, unknown> | undefined)?.[ELEMENT_EVENT])
+        return handler.apply(this, args)
+    }
+    guardedHandlers.set(handler, guarded)
+  }
+  return guarded
+}
+
+/** The part's listener, skipping the element's own emit events. */
+function guardListener(value: unknown): unknown {
+  if (typeof value === 'function')
+    return guardHandler(value as Handler)
+  return Array.isArray(value) ? value.map(guardListener) : value
+}
 
 export function hyphenate(value: string): string {
   return value.replace(HYPHENATE, '-$1').toLowerCase()
@@ -78,6 +107,7 @@ export interface HostLifecycle {
 
 const bindings = new WeakMap<Node, HostBinding>()
 const containers = new WeakMap<Node, HostBinding>()
+const relocatedOwners = new WeakMap<Node, HostBinding>()
 /** Bindings whose element currently sits away from its home position (teleported or wrapped). */
 const awayBindings = new Set<HostBinding>()
 
@@ -229,12 +259,19 @@ export class HostBinding {
   private markerQueued = false
   private formQueued = false
   private warned = false
+  /**
+   * Root-level elements of the part's tree placed outside the detached container:
+   * a wrapper around the host, a `<style>`, siblings appended inside the host.
+   */
+  private readonly relocated = new Set<Element>()
 
   constructor(
     readonly el: HTMLElement,
     private readonly semantics: HostSemantics | undefined,
     readonly lifecycle: HostLifecycle,
     private readonly internals?: ElementInternals,
+    /** Root-level elements next to the part go inside the host (`siblings: 'append'`). */
+    private readonly appendSiblings = false,
   ) {
     bindings.set(el, this)
     this.container = el.ownerDocument.createElement('div')
@@ -329,13 +366,30 @@ export class HostBinding {
     }
   }
 
-  /** A root-level node of the part's tree: wrappers take the host's place, the rest stays detached. */
+  /**
+   * A root-level node of the part's tree: wrappers take the host's place, a
+   * `<style>` goes to the document's head (or the shadow root), and the rest stays
+   * detached, or inside the host with `siblings: 'append'`.
+   */
   insertRootNode(child: Node, anchor: Node | null) {
-    if (child.nodeType === Node.ELEMENT_NODE && this.homeMarker && child.contains(this.el)) {
-      this.homeMarker.parentNode?.insertBefore(child, this.homeMarker)
+    const element = child.nodeType === Node.ELEMENT_NODE ? child as Element : null
+    if (element && this.homeMarker && element.contains(this.el)) {
+      this.relocate(element)
+      this.homeMarker.parentNode?.insertBefore(element, this.homeMarker)
       return
     }
-    if (child.nodeType === Node.ELEMENT_NODE && !FORM_FIELD.test((child as Element).tagName) && !this.warned) {
+    if (element?.localName === 'style') {
+      this.relocate(element)
+      const root = getRootNode(this.homeNode)
+      ;(root.nodeType === Node.DOCUMENT_NODE ? (root as Document).head : root).append(element)
+      return
+    }
+    if (element && this.appendSiblings && !FORM_FIELD.test(element.tagName)) {
+      this.relocate(element)
+      this.el.append(element)
+      return
+    }
+    if (element && !FORM_FIELD.test(element.tagName) && !this.warned) {
       this.warned = true
       warn(`<${this.el.localName}> renders a <${(child as Element).localName}> next to its part. A custom element has nowhere to put it, so it is not in the document.`)
     }
@@ -346,7 +400,14 @@ export class HostBinding {
   /** Removes everything the binding added to the document. */
   dispose() {
     this.strip()
+    // Taken out of its wrapper or portal target by the consumer: it stays out.
+    if (this.homeMarker && !this.el.parentNode) {
+      this.homeMarker.remove()
+      this.homeMarker = null
+      awayBindings.delete(this)
+    }
     this.goHome()
+    this.removeRelocated()
     this.internals?.setFormValue(null)
     this.internals?.setValidity({})
   }
@@ -368,7 +429,7 @@ export class HostBinding {
         this.patchStyle(prev, next)
       }
       else if (EVENT_KEY.test(key)) {
-        patchProp(this.el, key, prev, next, namespace, parentComponent)
+        patchProp(this.el, key, guardListener(prev), guardListener(next), namespace, parentComponent)
         if (next == null)
           this.events.delete(key)
         else
@@ -402,6 +463,13 @@ export class HostBinding {
   partUnmount() {
     this.active = false
     this.strip()
+    // Once Vue is done unmounting: what it could not reach (see `removeRelocated`).
+    queueMicrotask(() => {
+      if (this.active)
+        return
+      this.goHome()
+      this.removeRelocated()
+    })
     this.lifecycle.onPartUnmount()
   }
 
@@ -448,6 +516,29 @@ export class HostBinding {
     if (!entry || this.el.getAttribute(name) === entry.value)
       return
     this.consumerWrote(name, this.el.getAttribute(name))
+  }
+
+  /** Vue removed a root-level node itself. */
+  released(element: Element) {
+    this.relocated.delete(element)
+    relocatedOwners.delete(element)
+  }
+
+  private relocate(element: Element) {
+    this.relocated.add(element)
+    relocatedOwners.set(element, this)
+  }
+
+  /**
+   * Vue removes a fragment's nodes by walking the siblings between its anchors in
+   * the detached container, so it never reaches the ones placed elsewhere (a
+   * wrapper next to a `<style>`, as in `ScrollAreaViewport`): they go here.
+   */
+  private removeRelocated() {
+    for (const element of [...this.relocated]) {
+      this.released(element)
+      element.remove()
+    }
   }
 
   /** Undoes every change the part's tree (and the semantics shim) made to the host. */
@@ -776,6 +867,7 @@ export function getRenderer(): Renderer<Element> {
         if (child.contains(away.el))
           away.goHome()
       }
+      relocatedOwners.get(child)?.released(child as Element)
       const parent = child.parentNode
       if (parent) {
         parent.removeChild(child)

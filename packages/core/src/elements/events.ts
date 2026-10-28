@@ -1,4 +1,4 @@
-import { hyphenate } from './host'
+import { ELEMENT_EVENT, hyphenate } from './host'
 
 /**
  * `event.detail` of every event a Reka element dispatches.
@@ -67,6 +67,7 @@ export function dispatchElementEvent(el: HTMLElement, emit: string, args: unknow
     composed: !!options.composed,
     cancelable: cancellable || value instanceof Event,
   })
+  Object.defineProperty(event, ELEMENT_EVENT, { value: true })
   el.dispatchEvent(event)
   if (!event.defaultPrevented)
     return

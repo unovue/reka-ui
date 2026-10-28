@@ -1,5 +1,6 @@
 import type { Component } from 'vue'
 import type { HostSemantics } from './host'
+import { toEventType } from './events'
 import { hyphenate, semanticsForTag } from './host'
 
 /**
@@ -29,6 +30,25 @@ export interface RekaElementPartDefinition {
    * read from the component's `as` default (a part that delegates to another one).
    */
   semantics?: string | HostSemantics
+  /**
+   * Props the element always passes, and does not expose as attributes or
+   * properties: settings that only make sense for a native element the host can
+   * never be (`FieldLabel`'s `nativeLabel`).
+   */
+  fixedProps?: Record<string, unknown>
+  /**
+   * Emits the part only gets a listener for while the element has a DOM listener
+   * for their event: parts that behave differently when someone listens
+   * (`FormRoot` prevents the native submission when `formSubmit` is listened to).
+   */
+  listenedEmits?: string[]
+  /**
+   * `'append'`: root-level elements the part renders next to itself (other than
+   * hidden form fields) are appended inside the host instead of being left out of
+   * the document. For parts whose sibling matters, like `StepperRoot`'s live
+   * region.
+   */
+  siblings?: 'append'
 }
 
 export interface RekaElementFamily {
@@ -62,6 +82,10 @@ export interface PartMeta {
    * and `<label for>`, `<fieldset disabled>` and form reset reach them.
    */
   formAssociated: boolean
+  fixedProps: Record<string, unknown>
+  /** Event types (`form-submit`) of the emits only listened to while the element has a listener. */
+  listenedEvents: Set<string>
+  appendSiblings: boolean
 }
 
 /** Props the element API does not expose: the host is always the rendered element. */
@@ -124,8 +148,9 @@ export function getPartMeta(definition: RekaElementPartDefinition): PartMeta {
     : rawProps
 
   const props: PropMeta[] = []
+  const fixedProps = definition.fixedProps ?? {}
   for (const [name, option] of Object.entries(propOptions)) {
-    if (HIDDEN_PROPS.has(name))
+    if (HIDDEN_PROPS.has(name) || name in fixedProps)
       continue
     const kind = definition.attributes?.[name] ?? inferKind(propTypes(option))
     const attribute = kind === 'property' ? null : hyphenate(name)
@@ -156,6 +181,9 @@ export function getPartMeta(definition: RekaElementPartDefinition): PartMeta {
     hasAsChild: 'asChild' in propOptions,
     semantics,
     formAssociated: 'name' in propOptions,
+    fixedProps,
+    listenedEvents: new Set((definition.listenedEmits ?? []).map(toEventType)),
+    appendSiblings: definition.siblings === 'append',
   }
 }
 
