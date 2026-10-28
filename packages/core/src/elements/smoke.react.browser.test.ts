@@ -56,6 +56,40 @@ describe.runIf(major >= 19)(`React ${version}`, () => {
     root.unmount()
   })
 
+  it('dropdown menu: `onselect` from an item, a controlled checkbox item', async () => {
+    const selected = vi.fn()
+    function App() {
+      const [bookmarks, setBookmarks] = useState(false)
+      const block = { display: 'block' }
+      const checkbox = h('reka-dropdown-menu-checkbox-item', {
+        'style': block,
+        'modelValue': bookmarks,
+        'onupdate-model-value': (event: RekaElementEvent<boolean>) => setBookmarks(event.detail.value),
+      }, bookmarks ? 'Hide bookmarks' : 'Show bookmarks')
+      const item = h('reka-dropdown-menu-item', { style: block, onselect: selected }, 'New tab')
+      const content = h('reka-dropdown-menu-content', { style: block }, item, checkbox)
+      return h('reka-dropdown-menu-root', null, h('reka-dropdown-menu-trigger', null, 'Options'), h('reka-dropdown-menu-portal', null, content))
+    }
+    const { host, root } = mount(h(App))
+    const trigger = host.querySelector('reka-dropdown-menu-trigger')!
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-haspopup')).toBe('menu'))
+
+    await userEvent.click(trigger)
+    const item = document.querySelector<HTMLElement>('reka-dropdown-menu-checkbox-item')!
+    await vi.waitFor(() => expect(item.getAttribute('role')).toBe('menuitemcheckbox'))
+    expect(item.getAttribute('aria-checked')).toBe('false')
+    await userEvent.click(item)
+    // Selecting closes the menu; React re-rendered the item with the new value.
+    await vi.waitFor(() => expect(item.textContent).toBe('Hide bookmarks'))
+    expect((item as HTMLElement & { modelValue?: boolean }).modelValue).toBe(true)
+
+    await userEvent.click(trigger)
+    await vi.waitFor(() => expect(item.getAttribute('aria-checked')).toBe('true'))
+    await userEvent.click(document.querySelector<HTMLElement>('reka-dropdown-menu-item')!)
+    expect(selected).toHaveBeenCalledOnce()
+    root.unmount()
+  })
+
   it('does not call a camelCase `onUpdateModelValue` (the typings reject it)', async () => {
     const spy = vi.fn()
     const { host, root } = mount(h('reka-switch-root', { 'aria-label': 'x', 'style': STYLE, 'onUpdateModelValue': spy }))

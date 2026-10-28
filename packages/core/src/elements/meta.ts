@@ -29,6 +29,12 @@ export interface RekaElementPartDefinition {
    * read from the component's `as` default (a part that delegates to another one).
    */
   semantics?: string | HostSemantics
+  /**
+   * The part renders elements next to itself that must be in the document (a
+   * focus proxy): they go right after the element while rendered, instead of
+   * staying detached.
+   */
+  siblings?: boolean
 }
 
 export interface RekaElementFamily {
@@ -57,6 +63,8 @@ export interface PartMeta {
   emits: string[]
   hasAsChild: boolean
   semantics: HostSemantics | undefined
+  /** See {@link RekaElementPartDefinition.siblings}. */
+  siblings: boolean
   /**
    * Parts with a `name` are form-associated: they submit through `ElementInternals`,
    * and `<label for>`, `<fieldset disabled>` and form reset reach them.
@@ -156,6 +164,7 @@ export function getPartMeta(definition: RekaElementPartDefinition): PartMeta {
     hasAsChild: 'asChild' in propOptions,
     semantics,
     formAssociated: 'name' in propOptions,
+    siblings: !!definition.siblings,
   }
 }
 

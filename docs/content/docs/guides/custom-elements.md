@@ -109,13 +109,22 @@ The `reka-ui` package is published as ES modules that reference `process.env.NOD
 | Family | Register with | Tags |
 | --- | --- | --- |
 | Accordion | `accordionElements` | `reka-accordion-root`, `-item`, `-header`, `-trigger`, `-content` |
+| Alert Dialog | `alertDialogElements` | `reka-alert-dialog-root`, `-trigger`, `-portal`, `-overlay`, `-content`, `-title`, `-description`, `-cancel`, `-action` |
 | Checkbox | `checkboxElements` | `reka-checkbox-root`, `-indicator`, `reka-checkbox-group-root` |
 | Collapsible | `collapsibleElements` | `reka-collapsible-root`, `-trigger`, `-content` |
+| Context Menu | `contextMenuElements` | `reka-context-menu-root`, `-trigger`, `-portal`, `-content`, `-arrow`, `-item`, `-group`, `-label`, `-checkbox-item`, `-radio-group`, `-radio-item`, `-item-indicator`, `-separator`, `-sub`, `-sub-trigger`, `-sub-content` |
 | Dialog | `dialogElements` | `reka-dialog-root`, `-trigger`, `-portal`, `-overlay`, `-content`, `-title`, `-description`, `-close` |
-| Popover | `popoverElements` | `reka-popover-root`, `-trigger`, `-anchor`, `-portal`, `-content`, `-close` |
+| Drawer | `drawerElements` | `reka-drawer-root`, `-trigger`, `-portal`, `-backdrop`, `-viewport`, `-popup`, `-title`, `-description`, `-close`, `-grabber`, `-swipe-area`, `-provider`, `-indent`, `-indent-background`, `-virtual-keyboard-provider` |
+| Dropdown Menu | `dropdownMenuElements` | `reka-dropdown-menu-root`, `-trigger`, `-portal`, `-content`, `-arrow`, `-item`, `-group`, `-label`, `-checkbox-item`, `-radio-group`, `-radio-item`, `-item-indicator`, `-separator`, `-sub`, `-sub-trigger`, `-sub-content` |
+| Hover Card | `hoverCardElements` | `reka-hover-card-root`, `-trigger`, `-portal`, `-content`, `-arrow` |
+| Menubar | `menubarElements` | `reka-menubar-root`, `-menu`, `-trigger`, `-portal`, `-content`, `-arrow`, `-item`, `-group`, `-label`, `-checkbox-item`, `-radio-group`, `-radio-item`, `-item-indicator`, `-separator`, `-sub`, `-sub-trigger`, `-sub-content` |
+| Navigation Menu | `navigationMenuElements` | `reka-navigation-menu-root`, `-sub`, `-list`, `-item`, `-trigger`, `-content`, `-link`, `-indicator`, `-viewport` |
+| Popover | `popoverElements` | `reka-popover-root`, `-trigger`, `-anchor`, `-portal`, `-content`, `-arrow`, `-close` |
 | Switch | `switchElements` | `reka-switch-root`, `-thumb` |
 | Tabs | `tabsElements` | `reka-tabs-root`, `-list`, `-trigger`, `-content`, `-indicator` |
+| Toast | `toastElements` | `reka-toast-provider`, `-viewport`, `-root`, `-title`, `-description`, `-action`, `-close`, `-portal`, `-positioner`, `-arrow` |
 | Toggle | `toggleElements` | `reka-toggle` |
+| Tooltip | `tooltipElements` | `reka-tooltip-provider`, `reka-tooltip-root`, `-trigger`, `-portal`, `-content`, `-arrow` |
 
 Props, events and data attributes are the ones documented on each component page, mapped as described below.
 
@@ -224,7 +233,7 @@ switchRoot.addEventListener('update-model-value', (event) => {
 **Uncontrolled state is kept when you move the element.** Removed from the page and added back, or moved elsewhere, an element comes back with the value it had, not its default. There are two exceptions, both matching Vue:
 
 - An element unmounted with its parent part (a switch in a collapsible's content that closes) starts over when that part renders again.
-- An open overlay (a dialog or popover root) does not reopen after a move.
+- An open overlay (a dialog, popover, menu, hover card or tooltip root, a submenu) does not reopen after a move, and a menubar or navigation menu does not keep its open item.
 
 A form reset brings an element back to its default.
 
@@ -239,7 +248,8 @@ reka-accordion-content[data-state='closed'] { … }
 ```
 
 - `as` and `asChild` are not available. The element replaces them.
-- Parts whose default element carries meaning get that meaning added. Button parts get `role="button"`, `tabindex="0"`, and activate on Enter and Space. Headings get `role="heading"` and `aria-level`. Lists get `role="list"` and `role="listitem"`.
+- Parts whose default element carries meaning get that meaning added. Button parts get `role="button"`, `tabindex="0"`, and activate on Enter and Space. Headings get `role="heading"` and `aria-level`. Lists get `role="list"` and `role="listitem"`. A link part (`<reka-navigation-menu-link href="…">`) gets `role="link"` and `tabindex="0"` while it has an `href`, activates on Enter, and follows its `href` (and `target`) on a click you don't `preventDefault()`, like an `<a>`. Put a real `<a href>` inside instead if you need everything a link does (the context menu, middle click).
+- Arrow parts (`<reka-popover-arrow>`, `<reka-tooltip-arrow>`, the menus' and the hover card's) render their `<svg>` inside the element, which is the positioned box: an SVG element can't be a custom element. `width`, `height` and `rounded` apply to the SVG, which inherits `fill` from the element: `reka-popover-arrow { fill: white }`. Your own children, if any, stay next to it.
 - Custom elements are `display: inline` by default. Set `display` for parts that need a box (a switch, a dialog content).
 - Your own attributes, classes and styles are kept. Classes and styles merge with the part's. An attribute the part renders (`data-state`, `aria-expanded`, …) belongs to the part while it is rendered: if you change it meanwhile, the part's value stays, and yours is what remains when the part unmounts. The `role`, `tabindex` and `aria-level` added for native semantics (above) give way to yours.
 - Ids are yours. Parts that other parts point to (a collapsible or tab content, a dialog title, a trigger) and form controls render the `id` you set, and `aria-controls` / `aria-labelledby` follow it. Without one, the part generates an id while it is rendered.
@@ -268,6 +278,31 @@ Parts with a `name` (Switch, Checkbox, Checkbox group, Toggle) are [form-associa
 - nothing is added next to them: the hidden inputs the Vue components render are not in the document.
 
 Form participation needs `ElementInternals` (Safari 16.4 and later). Without it, the elements work but do not submit.
+
+## Menus, tooltips and toasts
+
+- **Controlled items.** Checkbox items and radio groups are controlled in Vue too (they take `modelValue`, not `defaultValue`): set `modelValue` (or the `model-value` attribute), and write back the value from `update-model-value`.
+
+  ```js
+  bookmarks.addEventListener('update-model-value', (event) => {
+    bookmarks.modelValue = event.detail.value
+  })
+  ```
+
+- **Typeahead** matches an item's text content, which includes the text of an `-item-indicator` inside it even while the indicator is hidden. Give such items a `text-value`.
+- **Display.** Custom elements are inline: give the menu parts a box (`[role=menu], [role^=menuitem] { display: block }`), as you would the content of a dialog.
+- **Tooltip delay grouping** works through `<reka-tooltip-provider>`, around any number of tooltips.
+- **Detached triggers.** A trigger outside its root (`createDialogHandle()`, `createAlertDialogHandle()`, `createDropdownMenuHandle()`, …) takes the handle as a property, set before or after the element is connected: it renders once it has one. Menu triggers have no `id` prop: open them from the handle with their generated `trigger.id`, or set an `id` attribute.
+- **Toasts.** Declare `<reka-toast-root>`s in `<reka-toast-provider>`; they move into the `<reka-toast-viewport>` while open. For the imperative manager (`createToastManager()`), set it as the provider's `toastManager` property and render the list it reports: the provider dispatches `update-toasts` with the current toasts, and you render one `<reka-toast-root>` per toast with the toast object as its `toast` property.
+
+  ```js
+  provider.toastManager = manager
+  provider.addEventListener('update-toasts', (event) => {
+    render(event.detail.value) // one <reka-toast-root> per toast, `el.toast = item`
+  })
+  ```
+
+A few parts render an element that has to be in the document next to them: the navigation menu trigger's focus proxy (Tab from an open trigger into its content in the viewport) and the toast's screen-reader announcement. These go right after the element while they are rendered, and nowhere else.
 
 ## Children instead of slots
 
@@ -400,7 +435,10 @@ Bind props in camelCase (`:modelValue="checked"`, or `:modelValue.prop` to force
 
 ## Limitations
 
-- **Families.** Only the families listed above are available. The rest will follow, and `PopoverArrow` (which renders an SVG) is not included yet.
+- **Families.** Only the families listed above are available. The rest will follow.
+- **`DropdownMenuFilter`** is not included: it renders an `<input>`, which a custom element can't stand in for.
+- **Drawer.** `DrawerContent` and `DrawerOverlay` (deprecated aliases of `DrawerPopup` and `DrawerBackdrop`) are not included.
+- **Toast text from the toast object.** In Vue, `ToastTitle`, `ToastDescription` and `ToastAction` fall back to the toast object's `title`, `description` and action label. As elements, put that text in the elements yourself.
 - **SSR.** Server rendering and declarative shadow DOM are not supported. Elements render on the client after they are defined.
 - **Bundler required.** See the [quick start](#quick-start).
 - **Custom Elements Manifest.** Not generated yet.

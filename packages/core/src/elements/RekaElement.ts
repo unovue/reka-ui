@@ -41,10 +41,26 @@ const REFLECTED_PROPS = new Set(['disabled'])
 /** Attributes an element adds while its part is not rendered. */
 const UNMOUNTED_STATE_ATTRS = ['inert', 'hidden']
 /**
- * Roots of parts that open over the page: an open overlay is not reopened by
- * moving it, like a remounted Vue component starts closed.
+ * Models of parts that open over the page, by part: an open overlay (a dialog, a
+ * menu, a navigation menu's item) is not reopened by moving it, like a remounted
+ * Vue component starts closed.
  */
-const OVERLAY_ROOTS = new Set(['AlertDialogRoot', 'DialogRoot', 'DrawerRoot', 'HoverCardRoot', 'PopoverRoot', 'TooltipRoot'])
+const OVERLAY_MODELS: Record<string, string> = {
+  AlertDialogRoot: 'open',
+  ContextMenuRoot: 'open',
+  ContextMenuSub: 'open',
+  DialogRoot: 'open',
+  DrawerRoot: 'open',
+  DropdownMenuRoot: 'open',
+  DropdownMenuSub: 'open',
+  HoverCardRoot: 'open',
+  MenubarRoot: 'modelValue',
+  MenubarSub: 'open',
+  NavigationMenuRoot: 'modelValue',
+  NavigationMenuSub: 'modelValue',
+  PopoverRoot: 'open',
+  TooltipRoot: 'open',
+}
 const UPDATE_EMIT = /^update:(.+)$/
 
 const BaseElement = (typeof HTMLElement === 'undefined' ? class {} : HTMLElement) as typeof HTMLElement
@@ -146,6 +162,7 @@ export class RekaElement extends BaseElement {
       onPartUnmount: () => this._onPartUnmount(),
       formState: () => 'modelValue' in this._carried ? JSON.stringify(this._carried.modelValue) : undefined,
     }, internals)
+    this._binding.siblings = part.meta.siblings
     for (const emit of part.meta.emits) {
       this._listeners[toHandlerKey(camelize(emit))] = (...args) => {
         this._track(emit, args[0])
@@ -280,6 +297,10 @@ export class RekaElement extends BaseElement {
     const model = modelOfDefault(name)
     if (model)
       delete this._carried[model]
+    // A part that could not set up without a context may now: a detached trigger
+    // given its `handle` after it was connected.
+    if (this._state === 'waiting' && this.isConnected && (!this._rekaParent || this._rekaParent._isReady()))
+      this._mount()
   }
 
   /**
@@ -354,7 +375,9 @@ export class RekaElement extends BaseElement {
     // Either way it warns once instead of throwing.
     let failed = false
     app.config.errorHandler = (error) => {
-      if (isMissingInjection(error)) {
+      // Once setup failed, the render that follows fails too (the context is
+      // undefined): one cause, reported once below.
+      if (failed || isMissingInjection(error)) {
         failed = true
         return
       }
@@ -369,8 +392,14 @@ export class RekaElement extends BaseElement {
     app.mount(this._binding.container)
     app.config.errorHandler = undefined
     app.config.warnHandler = undefined
-    if (!failed)
+    if (!failed) {
+      // The part rendered: shown now, not after its `mounted` hooks. Mounted inside
+      // its parent's flush, those run after the parent's own post-flush watchers,
+      // which may read this element (a toast reads its children's text).
+      if (this._binding.active)
+        this._setUnmounted(false)
       return
+    }
     this._unmountApp()
     this._state = 'waiting'
     if (this._warnedOrphan)
@@ -445,7 +474,7 @@ export class RekaElement extends BaseElement {
   /** Remembers an uncontrolled model's value for the next mount. */
   private _track(emit: string, value: unknown) {
     const model = UPDATE_EMIT.exec(emit)?.[1]
-    if (model === 'open' && OVERLAY_ROOTS.has(this._part.name))
+    if (model && OVERLAY_MODELS[this._part.name] === model)
       return
     if (model && this._props[model] === undefined)
       this._carried[model] = value
@@ -490,6 +519,14 @@ export class RekaElement extends BaseElement {
       props.disabled = true
     if (meta.propNames.has('to') && meta.propNames.has('forceMount') && !props.disabled)
       props.to = this._portalTarget(props.to)
+    const host = (children?: VNode[]) => h(HOST_TAG, {
+      [HOST_PROP]: this._binding,
+      onVnodeMounted: () => this._binding.partMounted(),
+      onVnodeBeforeUnmount: () => this._binding.partUnmount(),
+    }, children)
+    // An SVG part renders its own `<svg>` (and default shape) inside the host.
+    if (meta.semantics?.inside)
+      return host([h(component, { ...props, ...this._listeners })])
     return h(
       component,
       {
@@ -497,13 +534,7 @@ export class RekaElement extends BaseElement {
         ...this._listeners,
         ...(meta.hasAsChild ? { asChild: true } : undefined),
       },
-      {
-        default: () => h(HOST_TAG, {
-          [HOST_PROP]: this._binding,
-          onVnodeMounted: () => this._binding.partMounted(),
-          onVnodeBeforeUnmount: () => this._binding.partUnmount(),
-        }),
-      },
+      { default: () => host() },
     )
   }
 
