@@ -99,10 +99,17 @@ export function autoResetRef<T>(initial: T, delay: MaybeRefOrGetter<number>): Re
 }
 
 let queue: (() => void)[] = []
-let scheduled = false
+/** When the pending frame was requested (`-1`: none pending), and through which `requestAnimationFrame`. */
+let requestedAt = -1
+let requestedWith: typeof requestAnimationFrame | undefined
+/**
+ * A request older than this is treated as lost (a dropped frame, or one
+ * requested under fake timers that never ran) and is requested again.
+ */
+const STALE_REQUEST_MS = 100
 
 function flush() {
-  scheduled = false
+  requestedAt = -1
   const callbacks = queue
   queue = []
   for (const callback of callbacks) {
@@ -127,10 +134,16 @@ function flush() {
  */
 export function onNextFrame(callback: () => void): void {
   queue.push(callback)
-  // A flag, not the frame id: a synchronous `requestAnimationFrame` (test
-  // shims) runs `flush` before returning.
-  if (!scheduled) {
-    scheduled = true
+  const now = performance.now()
+  const age = now - requestedAt
+  // A timestamp, not the frame id: a synchronous `requestAnimationFrame` (test
+  // shims) runs `flush` before returning. The request is renewed when it is
+  // stale (or the clock moved backwards) or `requestAnimationFrame` was swapped
+  // since (fake timers installed or removed: that frame may never run). If the
+  // old request fires after all, it flushes an empty queue.
+  if (requestedAt < 0 || requestedWith !== requestAnimationFrame || !(age >= 0 && age < STALE_REQUEST_MS)) {
+    requestedAt = now
+    requestedWith = requestAnimationFrame
     requestAnimationFrame(flush)
   }
 }
