@@ -331,7 +331,8 @@ describe.skipIf(!hasDist)('built `reka-ui/elements` entry (dist)', () => {
     await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
     trigger.click()
     await vi.waitFor(() => expect(query('built-collapsible-content').getAttribute('data-state')).toBe('open'))
-  })
+    // Importing the built entry loads every family's modules, slow under coverage.
+  }, 30_000)
 
   it('loads only the supported families', () => {
     const seen = new Set<string>()
