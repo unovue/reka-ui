@@ -67,7 +67,7 @@ describe('config provider element', () => {
     defineRekaElements([configProviderElements])
     render(`
       <div id="layer"></div>
-      <reka-config-provider teleport-to="#layer" nonce="r4nd0m">
+      <reka-config-provider teleport-to="#layer" nonce="test-nonce">
         <reka-dialog-root default-open>
           <reka-dialog-portal>
             <reka-dialog-content aria-describedby="">
@@ -92,7 +92,7 @@ describe('config provider element', () => {
     expect(query('#own').closest('reka-dialog-portal')!.parentElement).toBe(document.body)
     const style = () => [...document.head.querySelectorAll('style')].find(style => style.textContent!.includes('[data-reka-scroll-area-viewport]'))
     await vi.waitFor(() => expect(style()).toBeDefined())
-    expect(style()!.nonce).toBe('r4nd0m')
+    expect(style()!.nonce).toBe('test-nonce')
   })
 
   describe('in shadow roots', () => {
