@@ -95,6 +95,15 @@ describe('items prop', { timeout: 15000 }, () => {
     expect(model.value).toBe('c')
   })
 
+  it('items mixed with SelectItem children: the first key reaches the extra child before any render', async () => {
+    const model = make(() => ({ items: { a: 'Apple' } }), () => [{ value: 'a', text: 'Apple' }, { value: 'c', text: 'Cherry' }])
+    await settle()
+    // A key with no focus first: nothing rendered the items yet.
+    trigger().dispatchEvent(new KeyboardEvent('keydown', { key: 'c', bubbles: true, cancelable: true }))
+    await settle()
+    expect(model.value).toBe('c')
+  })
+
   it('object values with `by`', async () => {
     const items = [{ value: { id: 1, n: 'x' }, label: 'One' }, { value: { id: 2, n: 'y' }, label: 'Two' }]
     const model = make(() => ({ items, by: 'id' }), () => [], ref({ id: 2 }))
