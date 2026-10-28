@@ -23,6 +23,7 @@ export interface TabsContentProps extends PrimitiveProps {
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
+import { onNextFrame } from '@/shared/timeout'
 import { injectTabsRootContext } from './TabsRoot.vue'
 import { getTabsContentSurface } from './useTabs'
 import { useTabsPartId } from './utils'
@@ -44,7 +45,7 @@ const isMountAnimationPreventedRef = ref(surface.state.value.state === 'checked'
 
 onMounted(() => {
   rootContext.registerContent(props.value)
-  requestAnimationFrame(() => {
+  onNextFrame(() => {
     isMountAnimationPreventedRef.value = false
   })
 })

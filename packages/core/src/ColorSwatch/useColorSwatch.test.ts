@@ -46,3 +46,22 @@ describe('useColorSwatch', () => {
     warn.mockRestore()
   })
 })
+
+describe('useColorSwatch derives once per color', () => {
+  it('reading every field and the attrs derives (and warns) once', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const swatch = useColorSwatch({ color: 'invalid' })
+      for (let i = 0; i < 3; i++) {
+        void swatch.label.value
+        void swatch.colorContrast.value
+        void swatch.colorString.value
+        void swatch.root.attrs.value
+      }
+      expect(warn).toHaveBeenCalledOnce()
+    }
+    finally {
+      warn.mockRestore()
+    }
+  })
+})

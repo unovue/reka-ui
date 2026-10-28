@@ -9,7 +9,7 @@ export interface TabsListProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { toRefs } from 'vue'
+import { toRef } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { injectTabsRootContext } from './TabsRoot.vue'
@@ -18,7 +18,7 @@ import { getTabsListSurface } from './useTabs'
 const props = withDefaults(defineProps<TabsListProps>(), {
   loop: true,
 })
-const { loop } = toRefs(props)
+const loop = toRef(props, 'loop')
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)

@@ -77,7 +77,7 @@ export const [injectPinInputRootContext, providePinInputRootContext]
 </script>
 
 <script setup lang="ts" generic="Type extends PinInputType">
-import { mergeProps, toRefs } from 'vue'
+import { mergeProps } from 'vue'
 import { Primitive } from '@/Primitive'
 import { usePinInput } from './usePinInput'
 
@@ -98,10 +98,9 @@ defineSlots<{
   }) => any
 }>()
 
-const { dir: propDir } = toRefs(props)
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
-const dir = useDirection(propDir)
+const dir = useDirection(() => props.dir)
 
 // The composable owns the model (`useControllableState`), `beforeUpdate:` /
 // `update:` and the `complete` watcher; the shell keeps `dir` resolution and

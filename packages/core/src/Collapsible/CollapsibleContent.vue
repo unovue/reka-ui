@@ -28,6 +28,7 @@ import {
   Primitive,
 } from '@/Primitive'
 import { getGeneratedId, setGeneratedIds, useForwardElement, useId, usePartId } from '@/shared'
+import { onNextFrame } from '@/shared/timeout'
 import { injectCollapsibleRootContext } from './CollapsibleRoot.vue'
 import { getCollapsibleContentHidden, getCollapsibleContentSurface } from './useCollapsible'
 
@@ -157,7 +158,7 @@ watch(
 )
 
 onMounted(() => {
-  requestAnimationFrame(() => {
+  onNextFrame(() => {
     isMountAnimationPrevented.value = false
   })
 })

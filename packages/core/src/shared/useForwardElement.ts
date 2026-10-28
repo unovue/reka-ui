@@ -1,6 +1,6 @@
 import type { ComponentInternalInstance, ComponentPublicInstance, ComputedRef, Ref, ShallowRef } from 'vue'
 import type { MergeableRef } from './useMergedRefs'
-import { computed, getCurrentInstance, markRaw, onScopeDispose, proxyRefs, shallowRef, watch } from 'vue'
+import { getCurrentInstance, markRaw, onScopeDispose, proxyRefs, shallowRef, watch } from 'vue'
 import { isElement, resolveRefTarget, useMergedRefs } from './useMergedRefs'
 
 /**
@@ -149,10 +149,12 @@ function exposeElementSource<E extends Element>(
  * read: most parts only bind `forwardRef` and expose `element`, which usually
  * nothing reads. The ref starts from the raw value when it is created.
  *
- * A source bound directly on an element (the `Primitive` at the bottom of
- * every chain) or on a linked child part resolves on read and allocates no
- * computed: a few property reads, tracked by the reader. Only a source bound
- * on another component, reached through Vue's proxies, caches its resolution.
+ * Every source resolves on read and allocates no computed: bound on an
+ * element (the `Primitive` at the bottom of every chain) it is the raw value;
+ * bound on a component (a linked child part, or any other component through
+ * Vue's proxies) it is a few property reads down the child's `element` chain,
+ * tracked by the reader, so a root swap inside the child re-resolves here even
+ * though Vue never re-invokes our ref callback.
  */
 class ElementSource<E extends Element> implements ElementRefSource<E> {
   // Ref markers as prototype getters: no per-instance slots.
@@ -160,7 +162,6 @@ class ElementSource<E extends Element> implements ElementRefSource<E> {
   get __v_isReadonly(): true { return true }
   raw: unknown = null
   ref: ShallowRef<unknown> | undefined = undefined
-  resolved: ComputedRef<E | null> | undefined = undefined
   /** The callback ref handed to the template (`forwardRef`); bound, so it captures no scope. */
   forward: (el: unknown) => void = this.set.bind(this)
   /**
@@ -196,21 +197,11 @@ class ElementSource<E extends Element> implements ElementRefSource<E> {
 
   /** The resolved element (tracked: see above). */
   get value(): E | null {
-    if (this.resolved)
-      return this.resolved.value
     const raw = this.cell.value
-    // Bound directly on an element (or detached): nothing to resolve or cache.
+    // Bound directly on an element (or detached): nothing to resolve.
     if (raw === null || isElement(raw))
       return raw as E | null
-    // A linked child part (see `linkToOwner`): `raw` is its plain expose object,
-    // so resolving is a few property reads, tracked through the child's source.
-    if (raw instanceof Object && (raw as { element?: unknown }).element instanceof ElementSource)
-      return resolveRefTarget<E>(raw)
-    // Bound on any other component (through Vue's expose or public proxy):
-    // cache the walk through its `element` chain, which tracks the child's own
-    // refs, so a root swap inside the child still re-resolves here even though
-    // Vue never re-invokes our ref callback.
-    return (this.resolved = computed(() => resolveRefTarget<E>(this.cell.value))).value
+    return resolveRefTarget<E>(raw)
   }
 
   get element(): Readonly<Ref<E | null>> {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { SliderOrientationPrivateEmits, SliderOrientationPrivateProps } from './utils'
-import { computed, ref, toRefs } from 'vue'
+import { computed, ref, toRef } from 'vue'
 import { useForwardElement } from '@/shared'
 import SliderImpl from './SliderImpl.vue'
 import { injectSliderRootContext } from './SliderRoot.vue'
@@ -9,7 +9,8 @@ import { injectSliderOrientationContext, linearScale } from './utils'
 interface SliderVerticalProps extends SliderOrientationPrivateProps {}
 const props = defineProps<SliderVerticalProps>()
 const emits = defineEmits<SliderOrientationPrivateEmits>()
-const { max, min } = toRefs(props)
+const max = toRef(props, 'max')
+const min = toRef(props, 'min')
 
 const rootContext = injectSliderRootContext()
 // Provided by SliderRoot from `useSlider()`: the one orientation geometry derivation.

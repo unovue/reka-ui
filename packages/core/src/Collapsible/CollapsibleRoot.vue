@@ -3,7 +3,7 @@ import type { Ref, WritableComputedRef } from 'vue'
 import type { CollapsibleChangeReason } from './useCollapsible'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
-import { computed, toRefs } from 'vue'
+import { computed, toRef } from 'vue'
 import { createContext, mergeExpose, setGeneratedIds, useForwardElement, useId } from '@/shared'
 
 export interface CollapsibleRootProps extends PrimitiveProps {
@@ -60,7 +60,9 @@ defineSlots<{
   }) => any
 }>()
 
-const { disabled, unmountOnHide } = toRefs(props)
+const disabled = toRef(props, 'disabled')
+
+const unmountOnHide = toRef(props, 'unmountOnHide')
 const { open, setOpen, root, context } = useCollapsible({
   open: () => props.open,
   defaultOpen: props.defaultOpen,

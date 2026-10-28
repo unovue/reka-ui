@@ -99,7 +99,7 @@ import type { ComponentPublicInstance, Ref } from 'vue'
 import type { TreeChangeReason, TreeCollectionItem, TreeExpandedChangeReason, TreeNavigationIntent } from './useTree'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { ref, toRefs } from 'vue'
+import { ref } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { useTree } from './useTree'
@@ -122,8 +122,7 @@ defineSlots<{
 // `dir` resolution (ConfigProvider-aware) and the `RovingFocusGroup` wrapper
 // (arrow-key focus) stay in the shell; the composable owns both models
 // (`useControllableState`), the flattened items, typeahead and range selection.
-const { dir: propDir } = toRefs(props)
-const dir = useDirection(propDir)
+const dir = useDirection(() => props.dir)
 const rovingFocusGroupRef = ref<InstanceType<typeof RovingFocusGroup>>()
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)

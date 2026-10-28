@@ -3,7 +3,7 @@ import type { ColorSwatchPickerItemContext } from './ColorSwatchPickerItem.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Color } from '@/shared/color'
 import { computed, toValue } from 'vue'
-import { createPartSurface, useControllableState } from '@/shared'
+import { createPartSurface, getterRef, useControllableState } from '@/shared'
 import { colorToHex, getColorName, isEqualColor } from '@/shared/color'
 
 export type ColorSwatchPickerChangeReason = 'selection'
@@ -95,8 +95,9 @@ function toCssColor(value: ColorSwatchPickerValue): string {
  * @lifecycle pure
  */
 export function useColorSwatchPicker(props: UseColorSwatchPickerProps = {}): UseColorSwatchPickerReturn {
-  const multiple = computed(() => toValue(props.multiple) ?? false)
-  const disabled = computed(() => toValue(props.disabled) ?? false)
+  // Getter refs, not computeds: each is one prop read, tracked by the reader.
+  const multiple = getterRef(() => toValue(props.multiple) ?? false)
+  const disabled = getterRef(() => toValue(props.disabled) ?? false)
   const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<ColorSwatchPickerModelValue, ColorSwatchPickerChangeReason>({
     prop: props.modelValue,
     defaultValue: () => toValue(props.defaultValue) ?? (multiple.value ? [] : ''),
@@ -158,19 +159,22 @@ export function useColorSwatchPicker(props: UseColorSwatchPickerProps = {}): Use
  * @internal
  */
 export function getColorSwatchPickerItemSurface(value: MaybeRefOrGetter<ColorSwatchPickerValue>) {
-  const cssColor = computed(() => toCssColor(toValue(value)))
-  const colorLabel = computed(() => {
+  // One computed for both derived values (the name lookup is the costly part).
+  const color = computed(() => {
+    const css = toCssColor(toValue(value))
+    let label: string
     try {
-      return getColorName(cssColor.value)
+      label = getColorName(css)
     }
     catch {
-      return cssColor.value
+      label = css
     }
+    return { css, label }
   })
   return createPartSurface<ColorSwatchPickerItemState>(() => ({
-    'aria-label': colorLabel.value,
-    'style': { '--reka-color-swatch-picker-item-color': cssColor.value },
-  }), () => ({ color: cssColor.value }))
+    'aria-label': color.value.label,
+    'style': { '--reka-color-swatch-picker-item-color': color.value.css },
+  }), () => ({ color: color.value.css }))
 }
 
 /**
@@ -181,10 +185,13 @@ export function getColorSwatchPickerItemSwatchSurface(context: ColorSwatchPicker
   return createPartSurface<ColorSwatchPickerItemSwatchState>(() => ({ color: context.color.value }), () => ({}))
 }
 
+let itemIndicatorSurface: PartSurface<ColorSwatchPickerItemIndicatorState> | undefined
+
 /**
  * Selection and presence are supplied by ListboxItemIndicator.
  * @internal
  */
-export function getColorSwatchPickerItemIndicatorSurface() {
-  return createPartSurface<ColorSwatchPickerItemIndicatorState>(() => ({}), () => ({}))
+export function getColorSwatchPickerItemIndicatorSurface(): PartSurface<ColorSwatchPickerItemIndicatorState> {
+  // Stateless: one surface serves every indicator on the page.
+  return itemIndicatorSurface ??= createPartSurface<ColorSwatchPickerItemIndicatorState>(() => ({}), () => ({}))
 }

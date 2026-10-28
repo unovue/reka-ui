@@ -4,7 +4,7 @@ import type { NavigationMenuContext } from './NavigationMenuRoot.vue'
 import type { Direction, Orientation } from './utils'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
-import { refAutoReset, useDebounceFn, useResizeObserver } from '@vueuse/core'
+import { useDebounceFn, useResizeObserver } from '@vueuse/core'
 import { computed, mergeProps, nextTick, ref, toValue, watch, watchEffect } from 'vue'
 import {
   createPartSurface,
@@ -14,6 +14,7 @@ import {
   useArrowNavigation,
   useControllableState,
 } from '@/shared'
+import { autoResetRef } from '@/shared/timeout'
 import {
   EVENT_ROOT_CONTENT_DISMISS,
   focusFirst,
@@ -261,7 +262,7 @@ export function useNavigationMenu(props: UseNavigationMenuProps = {}): UseNaviga
     return changed
   }
 
-  const isDelaySkipped = refAutoReset(false, skipDelayDuration)
+  const isDelaySkipped = autoResetRef(false, skipDelayDuration)
   const skipNextClose = ref(false)
   const computedDelay = computed(() => {
     const isOpen = modelValue.value !== ''
@@ -668,7 +669,7 @@ export function useNavigationMenuTrigger(options: UseNavigationMenuTriggerOption
   const disabled = computed(() => toValue(options.disabled) ?? false)
   const triggerElement = options.triggerElement ?? ref<HTMLElement>()
 
-  const hasPointerMoveOpenedRef = refAutoReset(false, 300)
+  const hasPointerMoveOpenedRef = autoResetRef(false, 300)
   const wasClickCloseRef = ref(false)
 
   const open = computed(() => itemContext.value === menuContext.modelValue.value)

@@ -1,8 +1,8 @@
 import type { MaybeComputedElementRef } from '@vueuse/core'
-import type { Ref } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import { NumberFormatter, NumberParser } from '@internationalized/number'
 import { unrefElement, useEventListener } from '@vueuse/core'
-import { createEventHook, isClient, reactiveComputed } from '@vueuse/shared'
+import { createEventHook, isClient } from '@vueuse/shared'
 import { computed, onScopeDispose, ref } from 'vue'
 
 const HOLD_DELAY = 400
@@ -124,12 +124,41 @@ export function usePressedHold(options: { target?: MaybeComputedElementRef, disa
   }
 }
 
+/**
+ * The formatter for the current locale and options, rebuilt when either
+ * changes. One computed and one small object with prototype methods; vueuse
+ * `reactiveComputed` added a reactive proxy (and its handler state) on top and
+ * ran every call through it.
+ */
+class ReactiveNumberFormatter {
+  constructor(readonly current: ComputedRef<NumberFormatter>) {}
+  format(value: number): string {
+    return this.current.value.format(value)
+  }
+
+  resolvedOptions(): Intl.ResolvedNumberFormatOptions {
+    return this.current.value.resolvedOptions()
+  }
+}
+
+/** The parser counterpart of `ReactiveNumberFormatter`. */
+class ReactiveNumberParser {
+  constructor(readonly current: ComputedRef<NumberParser>) {}
+  parse(value: string): number {
+    return this.current.value.parse(value)
+  }
+
+  isValidPartialNumber(value: string, minValue?: number, maxValue?: number): boolean {
+    return this.current.value.isValidPartialNumber(value, minValue, maxValue)
+  }
+}
+
 export function useNumberFormatter(locale: Ref<string>, options: Ref<Intl.NumberFormatOptions | undefined> = ref({})) {
-  return reactiveComputed(() => new NumberFormatter(locale.value, options.value))
+  return new ReactiveNumberFormatter(computed(() => new NumberFormatter(locale.value, options.value)))
 }
 
 export function useNumberParser(locale: Ref<string>, options: Ref<Intl.NumberFormatOptions | undefined> = ref({})) {
-  return reactiveComputed(() => new NumberParser(locale.value, options.value))
+  return new ReactiveNumberParser(computed(() => new NumberParser(locale.value, options.value)))
 }
 
 export function handleDecimalOperation(operator: '-' | '+', value1: number, value2: number): number {

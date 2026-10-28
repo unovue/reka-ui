@@ -1,11 +1,40 @@
 import type { AnyFn } from '@vueuse/shared'
+import type { ComponentInternalInstance } from 'vue'
 import { camelize, getCurrentInstance, toHandlerKey } from 'vue'
+
+interface DeclaredEvents {
+  /** The `emits` option these were read from: a definition patched in place (HMR) gets a new one. */
+  source: unknown
+  names: string[]
+  /** The `onX` key each event is forwarded under. */
+  keys: string[]
+}
+
+/** Declared events per component definition, built once instead of per instance. */
+const declaredEvents = new WeakMap<object, DeclaredEvents>()
+
+function getDeclaredEvents(vm: ComponentInternalInstance | null): DeclaredEvents | undefined {
+  const type = vm?.type as { emits?: unknown } | undefined
+  if (!type)
+    return undefined
+  const source = type.emits
+  let events = declaredEvents.get(type)
+  if (!events || events.source !== source) {
+    const names = Array.isArray(source) ? source as string[] : Object.keys(source ?? {})
+    events = { source, names, keys: names.map(name => toHandlerKey(camelize(name))) }
+    declaredEvents.set(type, events)
+  }
+  return events
+}
 
 // Vue doesn't have emits forwarding, in order to bind the emits we have to convert events into `onXXX` handlers
 // issue: https://github.com/vuejs/core/issues/5917
 /**
  * The `useEmitAsProps` function is a TypeScript utility that converts emitted events into props for a
  * Vue component.
+ *
+ * Every declared event gets a handler, built once per instance (a bound
+ * `emit`, so the object is stable across renders).
  *
  * @template Name - The event name string union type.
  * @template Fn - The emit function type.
@@ -19,19 +48,19 @@ import { camelize, getCurrentInstance, toHandlerKey } from 'vue'
  */
 export function useEmitAsProps<Name extends string, Fn extends AnyFn = AnyFn>(emit: Emit<Name, Fn>) {
   const vm = getCurrentInstance()
+  const events = getDeclaredEvents(vm)
+  const result: Record<string, AnyFn> = {}
 
-  const events = vm?.type.emits as Name[]
-  const result: Record<string, any> = {}
-
-  if (!events?.length) {
+  if (!events?.names.length) {
     console.warn(
       `No emitted event found. Please check component: ${vm?.type.__name}`,
     )
+    return result as EmitAsProps<Fn>
   }
 
-  events?.forEach((ev) => {
-    result[toHandlerKey(camelize(ev))] = (...arg: any) => emit(ev, ...arg)
-  })
+  const { names, keys } = events
+  for (let i = 0; i < names.length; i++)
+    result[keys[i]] = (emit as AnyFn).bind(null, names[i])
 
   return result as EmitAsProps<Fn>
 }

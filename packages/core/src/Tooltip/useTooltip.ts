@@ -1,9 +1,9 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { TooltipContext, TooltipOpenChangeReason } from './TooltipRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
-import { useTimeoutFn } from '@vueuse/core'
 import { computed, ref, toValue, watch } from 'vue'
 import { createPartSurface, disclosureState, useControllableState } from '@/shared'
+import { createTimeout } from '@/shared/timeout'
 
 // =============================================================================
 // Headless composable for the Tooltip (overlay) family — issue #2723.
@@ -275,7 +275,7 @@ export interface UseTooltipReturn {
  *
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle setup — no lifecycle hooks, so it does run outside `setup()`, but
- * it creates a `watch` (the `data-delayed` reset) and a `useTimeoutFn` timer
+ * it creates a `watch` (the `data-delayed` reset) and a timer
  * that are only disposed when called inside a component or an `effectScope`.
  */
 export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
@@ -321,7 +321,8 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
   // The `pointermove` that armed the delay timer, handed to `update:open` when it fires.
   let delayedOpenEvent: PointerEvent | undefined
 
-  const { start: startTimer, stop: clearTimer } = useTimeoutFn(() => {
+  // One small timer object (no ref, no closures per instance beyond the callback).
+  const timer = createTimeout(() => {
     const event = delayedOpenEvent
     delayedOpenEvent = undefined
     // Flag before the write so `isDelayed` is right on the same tick `open` flips;
@@ -329,21 +330,21 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
     wasOpenDelayedRef.value = true
     if (!setState(true, 'trigger-hover', event))
       wasOpenDelayedRef.value = false
-  }, delayDuration, { immediate: false })
+  }, delayDuration)
 
   function handleOpen(reason?: TooltipOpenChangeReason | BaseChangeReason, event?: Event): boolean {
-    clearTimer()
+    timer.clear()
     wasOpenDelayedRef.value = false
     return setState(true, reason, event)
   }
   function handleClose(reason?: TooltipOpenChangeReason | BaseChangeReason, event?: Event): boolean {
     // Cancel a pending delayed open first; a cancelled close then simply stays open.
-    clearTimer()
+    timer.clear()
     return setState(false, reason, event)
   }
   function handleDelayedOpen(event?: PointerEvent) {
     delayedOpenEvent = event
-    startTimer()
+    timer.start()
   }
   function onTriggerEnter(event?: PointerEvent) {
     if (isOpenDelayed.value)
@@ -356,7 +357,7 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
     }
     else {
       // Clear the timer in case the pointer leaves the trigger before the tooltip is opened.
-      clearTimer()
+      timer.clear()
     }
   }
 

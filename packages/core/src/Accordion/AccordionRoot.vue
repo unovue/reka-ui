@@ -71,7 +71,6 @@ export const [injectAccordionRootContext, provideAccordionRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends (string | string[]), ExplicitType extends SingleOrMultipleType">
-import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useAccordion } from './useAccordion'
 
@@ -91,8 +90,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { dir, disabled, unmountOnHide } = toRefs(props)
-const direction = useDirection(dir)
+const direction = useDirection(() => props.dir)
 
 const { forwardRef, currentElement: parentElement, expose } = useForwardElement()
 defineExpose(expose)
@@ -104,10 +102,10 @@ const { context, modelValue } = useAccordion({
   type: () => props.type,
   collapsible: () => props.collapsible,
   dir: direction,
-  disabled,
+  disabled: () => props.disabled,
   orientation: () => props.orientation,
   parentElement,
-  unmountOnHide,
+  unmountOnHide: () => props.unmountOnHide,
 })
 
 provideAccordionRootContext(context)

@@ -44,7 +44,6 @@ export const [injectToggleGroupRootContext, provideToggleGroupRootContext]
 </script>
 
 <script setup lang="ts">
-import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { useToggleGroup } from './useToggleGroup'
@@ -65,8 +64,7 @@ defineSlots<{
 
 // `dir` resolution (ConfigProvider-aware) stays in the shell; the composable
 // owns the single/multiple model (`useControllableState`) and the emits.
-const { dir: propDir } = toRefs(props)
-const dir = useDirection(propDir)
+const dir = useDirection(() => props.dir)
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
