@@ -21,6 +21,12 @@ describe('given a default Collapsible', async () => {
     expect(await axe(wrapper.element)).toHaveNoViolations()
   })
 
+  it('should point aria-controls at the content before it is toggled', () => {
+    const contentId = trigger.attributes('aria-controls')
+    expect(contentId).toBeTruthy()
+    expect(wrapper.find(`[id="${contentId}"]`).exists()).toBe(true)
+  })
+
   it('should have hidden content', async () => {
     // console.log(content.element)
     expect(content.element).not.toBeNull()
