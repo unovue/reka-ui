@@ -140,6 +140,13 @@ describe('useDateFormatter: cached Temporal formatting', () => {
     expect(formatter.custom(plain, options)).toBe('Feb')
   })
 
+  it('tells an option set to undefined from an omitted one', () => {
+    const formatter = useDateFormatter('en-US', { month: 'long' })
+    expect(formatter.custom(plain, {})).toBe('February')
+    expect(formatter.custom(plain, { month: undefined, day: 'numeric' })).toBe('29')
+    expect(formatter.custom(plain, { day: 'numeric' })).toBe('February 29')
+  })
+
   it('reads mutated formatter options afresh', () => {
     const opts: DateFormatterOptions = { month: 'long' }
     const formatter = useDateFormatter('en-US', opts)

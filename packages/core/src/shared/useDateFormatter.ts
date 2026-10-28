@@ -44,18 +44,29 @@ function serializeOptions(options: DateFormatterOptions): string {
 }
 
 /**
- * The serialized options of an options object. A frozen object is memoised by
- * identity: the calendar adapters pass the same frozen constants on every
- * call, so their key is built once rather than per formatted cell. Any other
- * object may be mutated between calls, so it is serialized each time.
+ * The cache key of a call's options. Unlike `serializeOptions`, it keeps keys
+ * set to `undefined`: spread over the formatter's own options, `{ month:
+ * undefined }` clears their `month` where `{}` keeps it, so the two must not
+ * share a formatter. A frozen object is memoised by identity: the calendar
+ * adapters pass the same frozen constants on every call, so their key is built
+ * once rather than per formatted cell. Any other object may be mutated between
+ * calls, so it is keyed each time.
  */
+function serializeOptionKeys(options: DateFormatterOptions): string {
+  const values = options as Record<string, unknown>
+  return Object.keys(values)
+    .sort()
+    .map(name => values[name] === undefined ? `${name}=` : `${name}:${String(values[name])}`)
+    .join()
+}
+
 const optionKeys = new WeakMap<DateFormatterOptions, string>()
 function optionsKey(options: DateFormatterOptions): string {
   if (!Object.isFrozen(options))
-    return serializeOptions(options)
+    return serializeOptionKeys(options)
   let key = optionKeys.get(options)
   if (key === undefined) {
-    key = serializeOptions(options)
+    key = serializeOptionKeys(options)
     optionKeys.set(options, key)
   }
   return key
