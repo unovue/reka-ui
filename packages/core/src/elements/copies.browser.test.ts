@@ -1,5 +1,6 @@
 // Two copies of `reka-ui/elements` on one page: this source and the built dist.
-// Skipped without a build (`pnpm --filter reka-ui build`).
+// CI downloads the build job's dist; locally it is skipped without a build
+// (`pnpm --filter reka-ui build`).
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineRekaElements, rekaElementFamilies } from '.'
