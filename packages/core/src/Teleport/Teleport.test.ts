@@ -1,7 +1,7 @@
 import { renderToString } from '@vue/server-renderer'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createSSRApp, defineComponent, h, Teleport as NativeTeleport, nextTick, onMounted, ref, watch } from 'vue'
+import { createSSRApp, defineComponent, Fragment, h, Teleport as NativeTeleport, nextTick, onMounted, ref, watch } from 'vue'
 import { ConfigProvider } from '@/ConfigProvider'
 import Teleport from './Teleport.vue'
 
@@ -390,6 +390,66 @@ describe('given a Teleport created inside an already mounted parent', () => {
     expect(document.getElementById('late')).toBeNull()
     wrapper.unmount()
     host.remove()
+  })
+
+  describe('with a selector `to`', () => {
+    // The portal and its target appear under one `v-if` (a fragment, mounted in
+    // order), the target after the portal; or the target is there already.
+    function mountWithTarget(props: Record<string, unknown>, seen: Array<boolean>, targetBefore = false) {
+      const show = ref(false)
+      const content = ref<HTMLElement>()
+      const wrapper = mount(defineComponent({
+        setup() {
+          watch(show, () => seen.push(!!content.value?.isConnected), { flush: 'post' })
+          return () => h('div', [
+            targetBefore ? h('div', { id: 'later' }) : undefined,
+            show.value
+              ? h(Fragment, [
+                  h(Teleport, props, () => h('span', { ref: content, id: 'late' })),
+                  targetBefore ? undefined : h('div', { id: 'later' }),
+                ])
+              : undefined,
+          ])
+        },
+      }), { attachTo: document.body })
+      return { show, wrapper }
+    }
+
+    async function open(props: Record<string, unknown>, targetBefore = false) {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const seen: Array<boolean> = []
+      const { show, wrapper } = mountWithTarget(props, seen, targetBefore)
+      await nextTick()
+      show.value = true
+      await nextTick()
+      await nextTick()
+      const warnings = warn.mock.calls.flat().join(' ')
+      warn.mockRestore()
+      return { seen, warnings, wrapper }
+    }
+
+    it('waits for the mount when the target renders after it in the same update', async () => {
+      const { warnings, wrapper } = await open({ to: '#later' })
+      expect(document.getElementById('late')!.parentNode).toBe(document.getElementById('later'))
+      expect(warnings).not.toMatch(/Teleport/)
+      wrapper.unmount()
+    })
+
+    it('renders in the same flush when the target already exists', async () => {
+      const { seen, warnings, wrapper } = await open({ to: '#later' }, true)
+      expect(seen).toEqual([true])
+      expect(document.getElementById('late')!.parentNode).toBe(document.getElementById('later'))
+      expect(warnings).not.toMatch(/Teleport/)
+      wrapper.unmount()
+    })
+
+    // Vue resolves a deferred target, and mounts the content, after the update.
+    it('mounts into a target rendered after it with `defer`', async () => {
+      const { warnings, wrapper } = await open({ to: '#later', defer: true })
+      expect(document.getElementById('late')!.parentNode).toBe(document.getElementById('later'))
+      expect(warnings).not.toMatch(/Teleport/)
+      wrapper.unmount()
+    })
   })
 
   it('still hydrates an open portal without a mismatch, rendering its content after the mount', async () => {

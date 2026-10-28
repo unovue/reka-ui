@@ -138,6 +138,24 @@ if (props.forceMount || (isClient && !!instance?.root.isMounted && !instance.vno
     || props.disabled
     || (!!explicitTo && typeof explicitTo !== 'string')
     || (!!initialRootNode && !resolvesDeferredSelectorInShadowRoot)
+  // Created by an update: Vue resolves a selector `to` (without `defer`) in this
+  // render, and its target may be an element this same update renders after
+  // the portal. Render early only when the target is already there, otherwise
+  // wait for the mount as on the first render.
+  if (canRenderBeforeMount && !props.forceMount && !props.disabled && !props.defer && typeof explicitTo === 'string')
+    canRenderBeforeMount = hasTarget(explicitTo, initialRootNode)
+}
+
+function hasTarget(selector: string, root: RootNode | undefined) {
+  const resolved = resolveTeleportTarget(selector, root)
+  if (typeof resolved !== 'string')
+    return true
+  try {
+    return !!document.querySelector(resolved)
+  }
+  catch {
+    return false
+  }
 }
 
 // Vue's `Teleport` mounts into any parent node (it only calls `insertBefore`), so
