@@ -100,12 +100,16 @@ describe.runIf(major >= 19)(`React ${version}`, () => {
     const { host, root } = mount(h('reka-form-root', {
       'onform-submit': (event: RekaElementEvent) => values.push(event.detail.value),
     }, h('form', { noValidate: true }, h('button', { type: 'submit' }, 'Submit'))))
-    await vi.waitFor(() => expect(host.querySelector('reka-form-root')!.hasAttribute('data-reka-unmounted')).toBe(false))
-    await userEvent.click(host.querySelector('button')!)
-    await vi.waitFor(() => expect(values).toEqual([{}]))
-    expect(native).toEqual([false])
-    document.removeEventListener('submit', onNative)
-    root.unmount()
+    try {
+      await vi.waitFor(() => expect(host.querySelector('reka-form-root')!.hasAttribute('data-reka-unmounted')).toBe(false))
+      await userEvent.click(host.querySelector('button')!)
+      await vi.waitFor(() => expect(values).toEqual([{}]))
+      expect(native).toEqual([false])
+    }
+    finally {
+      document.removeEventListener('submit', onNative)
+      root.unmount()
+    }
   })
 })
 

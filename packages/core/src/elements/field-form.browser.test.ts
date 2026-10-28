@@ -132,6 +132,56 @@ describe('field elements', () => {
     }
   })
 
+  it('follow `form-submit` listeners through `once`, `signal` and `capture`', async () => {
+    const { submitted, stop } = nativeSubmissions()
+    try {
+      render(FORM)
+      const formRoot = query('reka-form-root')
+      const checkbox = query('reka-checkbox-root')
+      await vi.waitFor(() => expect(checkbox.getAttribute('role')).toBe('checkbox'))
+      await userEvent.click(checkbox)
+      const submit = async (expected: boolean[]) => {
+        await userEvent.click(query('button[type="submit"]'))
+        await vi.waitFor(() => expect(submitted).toEqual(expected))
+      }
+      const listener = vi.fn()
+
+      // Gone when its signal aborts; never added with an aborted one.
+      const controller = new AbortController()
+      formRoot.addEventListener('form-submit', listener, { signal: controller.signal })
+      controller.abort()
+      formRoot.addEventListener('form-submit', listener, { signal: controller.signal })
+      await submit([true])
+
+      // A `once` listener removed before it fires, then added again for good.
+      formRoot.addEventListener('form-submit', listener, { once: true })
+      formRoot.removeEventListener('form-submit', listener)
+      formRoot.addEventListener('form-submit', listener)
+      await submit([true, false])
+      await submit([true, false, false])
+      formRoot.removeEventListener('form-submit', listener)
+
+      // A `once` listener that adds itself again stays listened to.
+      const again = vi.fn(() => formRoot.addEventListener('form-submit', again, { once: true }))
+      formRoot.addEventListener('form-submit', again, { once: true })
+      await submit([true, false, false, false])
+      await submit([true, false, false, false, false])
+      formRoot.removeEventListener('form-submit', again)
+
+      // The same function as a capture and a bubble listener: two listeners.
+      formRoot.addEventListener('form-submit', listener, true)
+      formRoot.addEventListener('form-submit', listener)
+      formRoot.removeEventListener('form-submit', listener)
+      await submit([true, false, false, false, false, false])
+      formRoot.removeEventListener('form-submit', listener, { capture: true })
+      await submit([true, false, false, false, false, false, true])
+      expect(again).toHaveBeenCalledTimes(2)
+    }
+    finally {
+      stop()
+    }
+  })
+
   it('show server errors from the `errors` property', async () => {
     render(FORM.replace('<reka-field-error match="valueMissing">Accept the terms to continue.</reka-field-error>', '<reka-field-error>Not accepted.</reka-field-error>'))
     const formRoot = query<HTMLElement & { errors?: Record<string, string> }>('reka-form-root')

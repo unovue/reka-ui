@@ -123,8 +123,12 @@ export class RekaElement extends BaseElement {
   private readonly _listeners: Record<string, (...args: unknown[]) => void> = {}
   /** Listener keys (`onFormSubmit`) of `listenedEmits`, by their event type. */
   private readonly _gatedListeners = new Map<string, string>()
-  /** The DOM listeners of those event types, so the part's listener follows them. */
-  private readonly _domListeners = new Map<string, Set<unknown>>()
+  /**
+   * The DOM listeners of those event types, so the part's listener follows them.
+   * The DOM tells a listener apart by its function and `capture`; `done` drops the
+   * helpers that notice it go away by itself (`once`, `signal`).
+   */
+  private readonly _domListeners = new Map<string, { listener: unknown, capture: boolean, done: AbortController }[]>()
   private readonly _listened = shallowReactive<Record<string, boolean>>({})
   /**
    * Last value of each uncontrolled model (`update:modelValue`, `update:open`):
@@ -176,13 +180,23 @@ export class RekaElement extends BaseElement {
   override addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, event: HTMLElementEventMap[K]) => unknown, options?: boolean | AddEventListenerOptions): void
   override addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void
   override addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) {
+    const { capture, once, signal } = typeof options === 'object' ? options : { capture: options }
+    // The DOM ignores a listener added twice, and one whose signal already aborted.
+    if (!listener || !this._part?.meta.listenedEvents.has(type) || signal?.aborted || this._findListener(type, listener, !!capture) >= 0)
+      return super.addEventListener(type, listener, options)
+    const done = new AbortController()
+    const untrack = () => this._untrackListener(type, listener, !!capture)
+    // It goes away by itself: when its signal aborts, or before its one call (which
+    // may add it again). Registered first, this runs before it.
+    signal?.addEventListener('abort', untrack, { once: true, signal: done.signal })
+    if (once)
+      super.addEventListener(type, untrack, { capture, once: true, signal: done.signal })
     super.addEventListener(type, listener, options)
-    if (!listener || !this._part?.meta.listenedEvents.has(type))
-      return
-    this._trackListener(type, listener, true)
-    // A `once` listener goes away by itself.
-    if (typeof options === 'object' && options.once)
-      super.addEventListener(type, () => this._trackListener(type, listener, false), { once: true })
+    let entries = this._domListeners.get(type)
+    if (!entries)
+      this._domListeners.set(type, entries = [])
+    entries.push({ listener, capture: !!capture, done })
+    this._updateListened(type)
   }
 
   override removeEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: HTMLElement, event: HTMLElementEventMap[K]) => unknown, options?: boolean | EventListenerOptions): void
@@ -190,7 +204,7 @@ export class RekaElement extends BaseElement {
   override removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions) {
     super.removeEventListener(type, listener, options)
     if (listener && this._part?.meta.listenedEvents.has(type))
-      this._trackListener(type, listener, false)
+      this._untrackListener(type, listener, !!(typeof options === 'object' ? options.capture : options))
   }
 
   connectedCallback() {
@@ -471,15 +485,21 @@ export class RekaElement extends BaseElement {
     this._setUnmounted(false)
   }
 
-  private _trackListener(type: string, listener: unknown, add: boolean) {
-    let set = this._domListeners.get(type)
-    if (!set)
-      this._domListeners.set(type, set = new Set())
-    if (add)
-      set.add(listener)
-    else
-      set.delete(listener)
-    const listened = set.size > 0
+  private _findListener(type: string, listener: unknown, capture: boolean) {
+    return this._domListeners.get(type)?.findIndex(entry => entry.listener === listener && entry.capture === capture) ?? -1
+  }
+
+  private _untrackListener(type: string, listener: unknown, capture: boolean) {
+    const index = this._findListener(type, listener, capture)
+    if (index < 0)
+      return
+    const [entry] = this._domListeners.get(type)!.splice(index, 1)
+    entry.done.abort()
+    this._updateListened(type)
+  }
+
+  private _updateListened(type: string) {
+    const listened = !!this._domListeners.get(type)?.length
     if (this._listened[type] !== listened)
       this._listened[type] = listened
   }

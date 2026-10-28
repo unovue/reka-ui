@@ -54,8 +54,7 @@ describe('scroll area elements', () => {
 
     // Wheeling over the scrollbar scrolls the viewport.
     viewport.scrollTop = 0
-    await userEvent.hover(vertical)
-    vertical.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true }))
+    await userEvent.wheel(vertical, { delta: { y: 100 } })
     await vi.waitFor(() => expect(viewport.scrollTop).toBeGreaterThan(0))
   })
 
