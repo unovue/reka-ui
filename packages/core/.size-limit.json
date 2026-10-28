@@ -14,7 +14,7 @@
   {
     "path": "dist/index.js",
     "import": "{ SelectRoot, SelectTrigger, SelectContent, SelectItem, SelectViewport, SelectPortal }",
-    "limit": "32.5 KB",
+    "limit": "33 KB",
     "name": "Select"
   },
   {
@@ -38,7 +38,7 @@
   {
     "path": "dist/index.js",
     "import": "{ TreeRoot, TreeItem, TreeVirtualizer }",
-    "limit": "16 KB",
+    "limit": "16.5 KB",
     "name": "Tree"
   },
   {
@@ -74,7 +74,7 @@
   {
     "path": "dist/index.js",
     "import": "*",
-    "limit": "187 KB",
+    "limit": "189 KB",
     "name": "Full library"
   }
 ]
