@@ -1,0 +1,17 @@
+{
+  "name": "bench",
+  "type": "module",
+  "version": "2.11.0",
+  "private": true,
+  "description": "Browser benchmark: retained heap and mount time per component family, on a production build of reka-ui",
+  "scripts": {
+    "bench": "node scripts/bench.mjs",
+    "bench:full": "node scripts/bench.mjs --runs 10 --warmup 1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.9",
+    "playwright": "^1.63.0",
+    "vite": "^8.3.1",
+    "vue": "3.5.43"
+  }
+}

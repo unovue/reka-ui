@@ -24,6 +24,8 @@
     "test:browser": "pnpm --filter reka-ui test:browser",
     "test": "pnpm --filter reka-ui test",
     "test-update": "pnpm --filter reka-ui test-update",
+    "bench": "pnpm --filter bench bench",
+    "bench:full": "pnpm --filter bench bench:full",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "bumpp": "bumpp package.json packages/*/package.json docs/package.json",
