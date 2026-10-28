@@ -13,14 +13,18 @@ function closeDetails(details: ChangeEventDetails<any, any>) {
  * `beforeUpdate:<name>` / `update:<name>` (#2828). `cancel()` flips
  * `isCanceled`; `useControllableState` honours it only during the
  * `beforeUpdate` phase.
+ *
+ * `isCanceled` is a plain data property that `cancel()` sets, not a getter
+ * over a closure: V8 keeps an object literal's accessor pair in the literal's
+ * shared map, so a getter here kept one details object (its `event`, and
+ * through the event target a detached DOM tree) alive for the page's lifetime.
  */
 export function createChangeEventDetails<R extends string = string, E extends Event = Event>(
   reason: R | BaseChangeReason,
   event?: E,
   trigger?: Element,
 ): ChangeEventDetails<R, E> {
-  let canceled = false
-  const details: ChangeEventDetails<R, E> = {
+  const details: { -readonly [K in keyof ChangeEventDetails<R, E>]: ChangeEventDetails<R, E>[K] } = {
     reason,
     event,
     ...(trigger ? { trigger } : {}),
@@ -35,11 +39,9 @@ export function createChangeEventDetails<R extends string = string, E extends Ev
         }
         return
       }
-      canceled = true
+      details.isCanceled = true
     },
-    get isCanceled() {
-      return canceled
-    },
+    isCanceled: false,
   }
   return details
 }
