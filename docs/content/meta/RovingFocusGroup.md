@@ -72,7 +72,7 @@
   {
     'name': 'getItems',
     'description': '',
-    'type': '(includeDisabledItem?: boolean) =&gt; { ref: HTMLElement; value?: any; }[]'
+    'type': '(includeDisabledItem?: boolean | undefined) =&gt; { ref: HTMLElement; value?: any; }[]'
   }
 ]" />
 </llm-exclude>
@@ -103,6 +103,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `getItems` |  | `(includeDisabledItem?: boolean) => { ref: HTMLElement; value?: any; }[]` |
+| `getItems` |  | `(includeDisabledItem?: boolean \| undefined) => { ref: HTMLElement; value?: any; }[]` |
 
 </llm-only>

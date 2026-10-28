@@ -5,7 +5,7 @@
   {
     'name': 'activationMode',
     'description': '<p>The activation event of the editable field</p>\n',
-    'type': '\'dblclick\' | \'focus\' | \'none\'',
+    'type': '\'none\' | \'dblclick\' | \'focus\'',
     'required': false,
     'default': '\'focus\''
   },
@@ -108,7 +108,7 @@
   {
     'name': 'submitMode',
     'description': '<p>The submit event of the editable field</p>\n',
-    'type': '\'blur\' | \'none\' | \'enter\' | \'both\'',
+    'type': '\'none\' | \'blur\' | \'enter\' | \'both\'',
     'required': false,
     'default': '\'blur\''
   }
@@ -195,7 +195,7 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `activationMode` | The activation event of the editable field | `"dblclick" \| "focus" \| "none"` | No | `"focus"` |
+| `activationMode` | The activation event of the editable field | `"none" \| "dblclick" \| "focus"` | No | `"focus"` |
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `autoResize` | Whether the editable field should auto resize | `boolean` | No | `false` |
@@ -211,7 +211,7 @@
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | `false` |
 | `selectOnFocus` | Whether to select the text in the input when it is focused. | `boolean` | No | `false` |
 | `startWithEditMode` | Whether to start with the edit mode active | `boolean` | No | - |
-| `submitMode` | The submit event of the editable field | `"blur" \| "none" \| "enter" \| "both"` | No | `"blur"` |
+| `submitMode` | The submit event of the editable field | `"none" \| "blur" \| "enter" \| "both"` | No | `"blur"` |
 
 **Events**
 
