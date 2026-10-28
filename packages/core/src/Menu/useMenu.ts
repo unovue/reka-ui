@@ -420,13 +420,31 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
 
   const { handleTypeaheadSearch } = useTypeahead()
 
-  function onKeydownNavigation(event: KeyboardEvent) {
-    const el = useArrowNavigation(
+  /**
+   * The enabled items in order, from the collection's cached order instead of
+   * a selector query over the content on every key; `undefined` (query the
+   * content) when the collection has none.
+   */
+  function navigationItems(): HTMLElement[] | undefined {
+    const items = getItems()
+    if (!items?.length)
+      return undefined
+    // `getItems()` already leaves out the disabled items (`data-disabled=""`).
+    return items.map(item => item.ref)
+  }
+
+  function arrowNavigation(event: KeyboardEvent, current: HTMLElement, focus: boolean) {
+    const itemsArray = navigationItems()
+    return useArrowNavigation(
       event,
-      (highlightedElement.value || getActiveElement()) as HTMLElement,
-      contentElement.value,
-      { loop: loop(), arrowKeyOptions: 'vertical', dir: rootContext?.dir.value, focus: false, attributeName: '[data-reka-collection-item]:not([data-disabled])' },
+      current,
+      itemsArray ? undefined : contentElement.value,
+      { loop: loop(), arrowKeyOptions: 'vertical', dir: rootContext?.dir.value, focus, attributeName: '[data-reka-collection-item]:not([data-disabled])', itemsArray },
     )
+  }
+
+  function onKeydownNavigation(event: KeyboardEvent) {
+    const el = arrowNavigation(event, (highlightedElement.value || getActiveElement()) as HTMLElement, false)
     if (el) {
       highlightedElement.value = el
       el.scrollIntoView({ block: 'nearest' })
@@ -462,12 +480,7 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
     const isModifierKey = event.ctrlKey || event.altKey || event.metaKey
     const isCharacterKey = event.key.length === 1
 
-    const el = useArrowNavigation(
-      event,
-      getActiveElement() as HTMLElement,
-      contentElement.value,
-      { loop: loop(), arrowKeyOptions: 'vertical', dir: rootContext?.dir.value, focus: true, attributeName: '[data-reka-collection-item]:not([data-disabled])' },
-    )
+    const el = arrowNavigation(event, getActiveElement() as HTMLElement, true)
     if (el)
       return el?.focus()
 

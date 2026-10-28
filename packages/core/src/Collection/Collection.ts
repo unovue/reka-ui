@@ -26,23 +26,29 @@ const metaByEntry = new WeakMap<object, unknown>()
 /**
  * A registered item. `ref` is the element it resolved to when the order was
  * last built. `entry` is the plain `{ ref, value }` object the collection
- * hands out (events emit it), its `value` refreshed from the item whenever it
- * is handed out, so a changed value never needs a re-registration.
+ * hands out (events emit it); its `value` reads the item's current value, so
+ * a changed value never needs a re-registration and handing the entry out
+ * costs nothing per item.
  */
 class CollectionRecord {
   ref: HTMLElement = null!
-  readonly entry: CollectionEntry = { ref: null!, value: undefined }
+  readonly entry: CollectionEntry
   constructor(
     readonly element: ElementSourceLike,
-    readonly source: (() => unknown) | undefined,
-  ) {}
+    source: (() => unknown) | undefined,
+  ) {
+    this.entry = {
+      ref: null!,
+      get value() {
+        return source?.()
+      },
+    }
+  }
 
-  /** The entry, with its current element and value. */
+  /** The entry, with its current element. */
   read(): CollectionEntry {
-    const entry = this.entry
-    entry.ref = this.ref
-    entry.value = this.source?.()
-    return entry
+    this.entry.ref = this.ref
+    return this.entry
   }
 }
 
@@ -65,6 +71,15 @@ class CollectionContextImpl {
   root: ElementSourceLike | undefined = undefined
   /** Items in DOM order (elements resolved), or `null` when stale. */
   ordered: CollectionRecord[] | null = null
+  /**
+   * The `getItems()` / `getItems(true)` results for `ordered`, handed out as
+   * copies: a keyboard move reads the items without touching each element.
+   * Kept only while every item is under the root (so the observer sees its
+   * element and `data-disabled` changes).
+   */
+  enabledItems: CollectionEntry[] | null = null
+  allItems: CollectionEntry[] | null = null
+  cacheable = false
   byElement = new Map<Element, CollectionRecord>()
   observer: MutationObserver | null = null
   observed: Element | null = null
@@ -76,18 +91,27 @@ class CollectionContextImpl {
   readonly getItems = (includeDisabledItem = false): CollectionEntry[] => {
     // Tracked, so a computed reading the items re-runs when they change.
     void this.version.value
-    const ordered = this.validate()
+    let ordered = this.validate()
     if (!ordered)
       return []
-    const items: CollectionEntry[] = []
+    const cached = includeDisabledItem ? this.allItems : this.enabledItems
+    if (cached)
+      return cached.slice()
+    // Catches an item whose element was swapped without a child-list change
+    // under the root (an item rendered outside it).
     for (let i = 0; i < ordered.length; i++) {
-      const record = ordered[i]
-      // Reading each element keeps the reader tracking it, and catches an item
-      // whose element was swapped without a child-list change under the root.
-      if (record.element.value !== record.ref)
-        return filterEnabled(this.rebuild(this.observed!), includeDisabledItem)
-      if (includeDisabledItem || record.ref.dataset.disabled !== '')
-        items.push(record.read())
+      if (ordered[i].element.value !== ordered[i].ref) {
+        ordered = this.rebuild(this.observed!)
+        break
+      }
+    }
+    const items = filterEnabled(ordered, includeDisabledItem)
+    if (this.cacheable) {
+      if (includeDisabledItem)
+        this.allItems = items
+      else
+        this.enabledItems = items
+      return items.slice()
     }
     return items
   }
@@ -113,8 +137,14 @@ class CollectionContextImpl {
   }
 
   invalidate() {
-    this.ordered = null
+    this.stale()
     this.version.value++
+  }
+
+  stale() {
+    this.ordered = null
+    this.enabledItems = null
+    this.allItems = null
   }
 
   /** The cached DOM order, rebuilt when stale; `null` when no root is mounted. */
@@ -138,6 +168,8 @@ class CollectionContextImpl {
       }
     }
     const ordered: CollectionRecord[] = []
+    // Whether every item renders under the root with the attribute.
+    let allInTree = true
     if (byElement.size) {
       for (const node of root.querySelectorAll(`[${ITEM_DATA_ATTR}]`)) {
         const record = byElement.get(node)
@@ -147,6 +179,7 @@ class CollectionContextImpl {
       // Items outside the root's subtree (or rendered without the attribute)
       // come first, in registration order, as the previous index sort did.
       if (ordered.length !== byElement.size) {
+        allInTree = false
         const inTree = new Set(ordered)
         const outside: CollectionRecord[] = []
         for (const record of byElement.values()) {
@@ -157,7 +190,9 @@ class CollectionContextImpl {
       }
     }
     this.observe(root)
+    this.stale()
     this.ordered = ordered
+    this.cacheable = !!this.observer && allInTree
     return ordered
   }
 
@@ -166,10 +201,13 @@ class CollectionContextImpl {
       return
     if (this.observed !== root) {
       this.observer?.disconnect()
+      // A child-list change (reorder, v-if, a swapped item element) or a
+      // `data-disabled` change makes the order and the item lists stale, and
+      // notifies the readers that track the items.
       this.observer ??= new MutationObserver(() => {
-        this.ordered = null
+        this.invalidate()
       })
-      this.observer.observe(root, { childList: true, subtree: true })
+      this.observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-disabled'] })
       this.observed = root
     }
     else {

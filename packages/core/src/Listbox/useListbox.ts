@@ -513,7 +513,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   }
 
   function getCollectionItem() {
-    return getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
+    return getItems().map(i => i.ref).filter(i => i.getAttribute('data-disabled') !== '')
   }
 
   function changeHighlight(el: HTMLElement, scrollIntoView = true, focus?: boolean) {

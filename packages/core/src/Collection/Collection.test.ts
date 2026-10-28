@@ -250,6 +250,25 @@ describe('useCollection', () => {
     wrapper.unmount()
   })
 
+  it('getItems() sees a `data-disabled` change and hands out copies', async () => {
+    const { getCollection, items, wrapper } = createWrapper([
+      { value: 'a' },
+      { value: 'b' },
+    ])
+    await nextTick()
+    const { getItems } = getCollection()
+    const first = getItems()
+    first.reverse()
+    expect(getItems().map(i => i.value)).toEqual(['a', 'b'])
+
+    items[1].disabled = true
+    await nextTick()
+    expect(getItems().map(i => i.value)).toEqual(['a'])
+    expect(getItems(true).map(i => i.value)).toEqual(['a', 'b'])
+
+    wrapper.unmount()
+  })
+
   it('returns plain `{ ref, value }` items', async () => {
     const { getCollection, wrapper } = createWrapper([{ value: 'a' }])
     await nextTick()
