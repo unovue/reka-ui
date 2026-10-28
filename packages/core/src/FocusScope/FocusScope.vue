@@ -46,7 +46,7 @@ export interface FocusScopeProps extends PrimitiveProps {
 <script setup lang="ts">
 import { isClient } from '@vueuse/shared'
 import { nextTick, reactive, ref, watch, watchEffect } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { createFocusScopesStack } from './stack'
 import {
   AUTOFOCUS_ON_MOUNT,
@@ -340,13 +340,12 @@ function handleKeyDown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     ref="currentRef"
     tabindex="-1"
-    :as-child="asChild"
-    :as="as"
     @keydown="handleKeyDown"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

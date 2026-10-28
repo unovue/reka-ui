@@ -6,7 +6,7 @@ export interface PopoverCloseProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 import { getPopoverCloseSurface } from './usePopover'
 
@@ -25,13 +25,12 @@ const close = getPopoverCloseSurface(rootContext)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, props.asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="props.asChild"
     v-bind="close.attrs.value"
     :type="as === 'button' ? 'button' : undefined"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

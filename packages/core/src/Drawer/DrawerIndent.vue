@@ -6,12 +6,12 @@ export interface DrawerIndentProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectDrawerProviderContext } from './DrawerProvider.vue'
 import { DRAWER_CSS_VARS } from './utils'
 
-const props = withDefaults(defineProps<DrawerIndentProps>(), { as: 'div' })
+withDefaults(defineProps<DrawerIndentProps>(), { as: 'div' })
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const providerContext = injectDrawerProviderContext(null)
@@ -50,13 +50,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Primitive
-    v-bind="props"
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
     :data-active="providerContext?.active.value ? '' : undefined"
     :data-inactive="providerContext?.active.value === false ? '' : undefined"
     :style="{ [DRAWER_CSS_VARS.swipeProgress]: '0' }"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

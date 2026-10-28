@@ -9,12 +9,14 @@ export interface ContextMenuTriggerProps extends PrimitiveProps {
    */
   disabled?: boolean
 }
+
+const NO_ELEMENT = { value: undefined }
 </script>
 
 <script setup lang="ts">
 import { mergeProps, onMounted } from 'vue'
-import { MenuAnchor } from '@/Menu'
-import { Primitive } from '@/Primitive'
+import { usePopperAnchor } from '@/Popper/usePopperAnchor'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectContextMenuRootContext } from './ContextMenuRoot.vue'
 import { createContextMenuTriggerSurface } from './useContextMenu'
@@ -33,8 +35,10 @@ defineExpose(expose)
 const rootContext = injectContextMenuRootContext()
 
 // The right-click / long-press machine, the anchor reference and the
-// `data-*` state live in the composable; `MenuAnchor` stays the wrapper.
+// `data-*` state live in the composable. The anchor is the pointer
+// position (`reference`), not the trigger.
 const trigger = createContextMenuTriggerSurface(rootContext, { disabled: () => props.disabled })
+usePopperAnchor({ element: NO_ELEMENT, reference: () => trigger.reference.value })
 
 onMounted(() => {
   if (currentElement.value) {
@@ -44,17 +48,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <MenuAnchor
-    as="template"
-    :reference="trigger.reference.value"
-  />
-
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="mergeProps(trigger.attrs.value, $attrs)"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

@@ -12,7 +12,7 @@ export interface DialogDescriptionProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectDialogRootContext } from './DialogRoot.vue'
 import { getDialogDescriptionSurface } from './useDialog'
 
@@ -28,12 +28,11 @@ const description = getDialogDescriptionSurface(rootContext)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="{ ...description.attrs.value, id }"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

@@ -21,11 +21,17 @@ export interface ToastActionProps extends ToastCloseProps {
 </script>
 
 <script setup lang="ts">
-import { computed, useSlots } from 'vue'
-import { Primitive } from '@/Primitive'
+import { computed, mergeProps, useSlots } from 'vue'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
-import ToastAnnounceExclude from './ToastAnnounceExclude.vue'
 import { injectToastRootContext } from './ToastRootImpl.vue'
+
+defineOptions({
+  // `$attrs` are merged over the announce-exclude marks and under the part's
+  // own bindings: the order the former `<ToastAnnounceExclude as-child>`
+  // wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<ToastActionProps>(), {
   as: 'button',
@@ -54,19 +60,12 @@ function handleClick(event: MouseEvent) {
 </script>
 
 <template>
-  <ToastAnnounceExclude
+  <component
+    :is="renderAs(as, asChild)"
     v-if="isRendered && altText"
-    :alt-text="altText"
-    as-child
+    :ref="forwardRef"
+    v-bind="mergeProps({ 'data-reka-toast-announce-exclude': '', 'data-reka-toast-announce-alt': altText || undefined }, $attrs, { type: as === 'button' ? 'button' : undefined, onClick: handleClick })"
   >
-    <Primitive
-      :ref="forwardRef"
-      :as="as"
-      :as-child="asChild"
-      :type="as === 'button' ? 'button' : undefined"
-      @click="handleClick"
-    >
-      <slot>{{ actionProps?.label }}</slot>
-    </Primitive>
-  </ToastAnnounceExclude>
+    <slot>{{ actionProps?.label }}</slot>
+  </component>
 </template>

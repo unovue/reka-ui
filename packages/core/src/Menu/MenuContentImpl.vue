@@ -104,7 +104,7 @@ export interface MenuRootContentTypeProps
 <script setup lang="ts">
 import {
   computed,
-  ref,
+  mergeProps,
   toRefs,
   watch,
 } from 'vue'
@@ -114,9 +114,16 @@ import {
   PopperContent,
   PopperContentPropsDefaultValue,
 } from '@/Popper'
-import { RovingFocusGroup } from '@/RovingFocus'
+import { useRovingFocusGroup } from '@/RovingFocus/useRovingFocusGroup'
 import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
 import { useMenuContent } from './useMenu'
+
+defineOptions({
+  // `$attrs` fall through to `FocusScope` as before (bound last), except those
+  // that configured the former `<RovingFocusGroup as-child>` (see
+  // `consumerAttrs`).
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<MenuContentImplProps>(), {
   ...PopperContentPropsDefaultValue,
@@ -127,17 +134,16 @@ const rootContext = injectMenuRootContext()
 
 const { trapFocus, disableOutsidePointerEvents, loop } = toRefs(props)
 
-// Mount side-effects + the four component wrappers (FocusScope/DismissableLayer/
-// RovingFocusGroup/PopperContent) stay in the SFC; the keyboard/pointer/highlight
-// brain moves into useMenuContent(). `getItems` bridges the one seam the composable
-// can't reach — RovingFocusGroup's template-instance-ref.
+// Mount side-effects + the component wrappers (FocusScope/DismissableLayer/
+// PopperContent) stay in the SFC; the keyboard/pointer/highlight brain moves
+// into useMenuContent(). The roving focus group is a composable bound on the
+// content's element.
 // Base UI `MenuPositioner`: a modal root menu locks page scroll while open.
 const scrollLocked = useBodyScrollLock(!!disableOutsidePointerEvents.value)
 watch(disableOutsidePointerEvents, value => scrollLocked.value = !!value)
 const backdropCutout = injectMenuBackdropCutoutContext(null)
 const backdropCutoutElement = computed(() => backdropCutout?.value)
 
-const rovingFocusGroupRef = ref<InstanceType<typeof RovingFocusGroup>>()
 const { forwardRef, currentElement: contentElement, expose } = useForwardElement()
 defineExpose(expose)
 
@@ -148,18 +154,34 @@ const { content, contentContext, handleMountAutoFocus, currentItemId } = useMenu
   menuContext: menuContext!,
   rootContext,
   contentElement,
-  getItems: () => rovingFocusGroupRef.value?.getItems() ?? [],
+  getItems: () => roving.getItems(),
   loop,
   onOpenAutoFocus: event => emits('openAutoFocus', event),
 })
 
 provideMenuContentContext(contentContext)
+
+const roving = useRovingFocusGroup({
+  consumerAttrs: 'under',
+  element: contentElement,
+  orientation: () => 'vertical',
+  dir: () => rootContext.dir.value,
+  loop: () => loop.value,
+  currentTabStopId: currentItemId,
+  onEntryFocus: (event) => {
+    emits('entryFocus', event)
+    // only focus first item when using keyboard
+    if (!rootContext.isUsingKeyboardRef.value)
+      event.preventDefault()
+  },
+})
 </script>
 
 <template>
   <FocusScope
     as-child
     :trapped="trapFocus"
+    v-bind="roving.consumerAttrs($attrs)"
     @mount-auto-focus="handleMountAutoFocus"
     @unmount-auto-focus="emits('closeAutoFocus', $event)"
   >
@@ -173,42 +195,28 @@ provideMenuContentContext(contentContext)
       @interact-outside="emits('interactOutside', $event)"
       @dismiss="emits('dismiss', $event)"
     >
-      <RovingFocusGroup
-        ref="rovingFocusGroupRef"
-        v-model:current-tab-stop-id="currentItemId"
-        as-child
-        orientation="vertical"
-        :dir="rootContext.dir.value"
-        :loop="loop"
-        @entry-focus="(event) => {
-          emits('entryFocus', event)
-          // only focus first item when using keyboard
-          if (!rootContext.isUsingKeyboardRef.value) event.preventDefault();
-        }"
+      <PopperContent
+        :ref="forwardRef"
+        :as="as"
+        :as-child="asChild"
+        :side="side"
+        :side-offset="sideOffset"
+        :align="align"
+        :align-offset="alignOffset"
+        :avoid-collisions="avoidCollisions"
+        :collision-boundary="collisionBoundary"
+        :collision-padding="collisionPadding"
+        :arrow-padding="arrowPadding"
+        :prioritize-position="prioritizePosition"
+        :position-strategy="positionStrategy"
+        :update-position-strategy="updatePositionStrategy"
+        :sticky="sticky"
+        :hide-when-detached="hideWhenDetached"
+        :reference="reference"
+        v-bind="mergeProps(roving.attrs(), content.attrs.value)"
       >
-        <PopperContent
-          :ref="forwardRef"
-          :as="as"
-          :as-child="asChild"
-          :side="side"
-          :side-offset="sideOffset"
-          :align="align"
-          :align-offset="alignOffset"
-          :avoid-collisions="avoidCollisions"
-          :collision-boundary="collisionBoundary"
-          :collision-padding="collisionPadding"
-          :arrow-padding="arrowPadding"
-          :prioritize-position="prioritizePosition"
-          :position-strategy="positionStrategy"
-          :update-position-strategy="updatePositionStrategy"
-          :sticky="sticky"
-          :hide-when-detached="hideWhenDetached"
-          :reference="reference"
-          v-bind="content.attrs.value"
-        >
-          <slot />
-        </PopperContent>
-      </RovingFocusGroup>
+        <slot />
+      </PopperContent>
     </DismissableLayer>
   </FocusScope>
 </template>

@@ -52,8 +52,14 @@ export interface UseRovingFocusGroupOptions {
    * configure the group over the part's own options, as they did when they
    * fell through to the wrapper's props. Bind `roving.consumerAttrs($attrs)`,
    * which leaves them out, instead of `$attrs`.
+   *
+   * `true`: the attrs fell through to a wrapper that was the part's root, so
+   * they win over the part's own options. `'under'`: they reached the wrapper
+   * through an `as-child` chain (`Slot` merges them under the wrapper's own
+   * bindings), so they only fill in options the part leaves unset, and their
+   * listeners run before the part's.
    */
-  consumerAttrs?: boolean
+  consumerAttrs?: boolean | 'under'
 }
 
 /** `RovingFocusGroup`'s props and events, camelCase → kebab-case. */
@@ -309,39 +315,52 @@ export function useRovingFocusGroup(options: UseRovingFocusGroupOptions) {
 
 export type UseRovingFocusGroupReturn = ReturnType<typeof useRovingFocusGroup>
 
-/** `options`, with the consumer's group attrs over the part's own (see `consumerAttrs`). */
+/** `options`, with the consumer's group attrs merged in (see `consumerAttrs`). */
 function withConsumerAttrs(options: UseRovingFocusGroupOptions): UseRovingFocusGroupOptions {
   const { read, readBoolean, listener } = consumerGroupAttrs()
+  const under = options.consumerAttrs === 'under'
+  /** The consumer's value over the part's option, or (`under`) only for an option the part leaves unset. */
+  function pick<V>(attr: { value: unknown } | undefined, option: (() => V) | undefined): V | undefined {
+    if (attr && !(under && option))
+      return attr.value as V
+    return option?.()
+  }
   const owned = options.currentTabStopId ?? ref<string | null | undefined>(read('defaultCurrentTabStopId')?.value as string | undefined)
+  const controlledByConsumer = !(under && options.currentTabStopId)
+  const updateListener = () => listener('onUpdate:currentTabStopId') ?? listener('onUpdate:current-tab-stop-id')
   return {
     ...options,
-    orientation: () => (read('orientation') ? read('orientation')!.value as Orientation | undefined : options.orientation?.()),
-    dir: () => (read('dir') ? read('dir')!.value as Direction | undefined : options.dir?.()),
+    orientation: () => pick(read('orientation'), options.orientation),
+    dir: () => pick(read('dir'), options.dir),
     loop: () => {
       const loop = readBoolean('loop')
-      return loop !== undefined ? loop : options.loop?.()
+      return pick(loop === undefined ? undefined : { value: loop }, options.loop)
     },
     preventScrollOnEntryFocus: () => {
       const prevent = readBoolean('preventScrollOnEntryFocus')
-      return prevent !== undefined ? prevent : options.preventScrollOnEntryFocus?.()
+      return pick(prevent === undefined ? undefined : { value: prevent }, options.preventScrollOnEntryFocus)
     },
     // A `v-model:current-tab-stop-id` on the part controls the group, as it
-    // did the wrapper's; the part's own tab stop still follows.
+    // did the wrapper's (unless, `under`, the part binds its own); the
+    // consumer's update listener runs either way.
     currentTabStopId: computed({
       get: () => {
-        const controlled = read('currentTabStopId')
+        const controlled = controlledByConsumer ? read('currentTabStopId') : undefined
         return controlled && controlled.value !== undefined ? controlled.value as string | null : owned.value
       },
       set: (value) => {
         owned.value = value
-        callListener(listener('onUpdate:currentTabStopId') ?? listener('onUpdate:current-tab-stop-id'), value)
+        callListener(updateListener(), value)
       },
     }),
-    // The part's listener first, then the consumer's: the order the wrapper's
-    // merged listeners ran in.
+    // Merged listeners, in the order the wrapper ran them: a root's fallthrough
+    // after the part's own, an `as-child` chain's before.
     onEntryFocus: (event) => {
+      if (under)
+        callListener(listener('onEntryFocus'), event)
       options.onEntryFocus?.(event)
-      callListener(listener('onEntryFocus'), event)
+      if (!under)
+        callListener(listener('onEntryFocus'), event)
     },
   }
 }

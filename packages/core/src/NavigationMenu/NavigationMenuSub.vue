@@ -3,7 +3,7 @@ import type { NavigationMenuChangeReason } from './useNavigationMenu'
 import type { Orientation } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
-import { useCollection } from '@/Collection'
+import { useCollection, useCollectionSlot } from '@/Collection'
 
 export type NavigationMenuSubEmits = {
   /** Called before the value changes; `details.cancel()` keeps the current value. */
@@ -28,10 +28,17 @@ export interface NavigationMenuSubProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import type { Ref } from 'vue'
-import { Primitive } from '@/Primitive'
+import { mergeProps } from 'vue'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectNavigationMenuContext, provideNavigationMenuContext } from './NavigationMenuRoot.vue'
 import { useNavigationMenuSub } from './useNavigationMenu'
+
+defineOptions({
+  // `$attrs` are merged under the part's own bindings: the precedence the
+  // former `CollectionSlot` wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<NavigationMenuSubProps>(), {
   modelValue: undefined,
@@ -50,7 +57,8 @@ const menuContext = injectNavigationMenuContext()
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
-const { getItems, CollectionSlot } = useCollection({ key: 'NavigationMenu', isProvider: true })
+const { getItems } = useCollection({ key: 'NavigationMenu', isProvider: true })
+useCollectionSlot(currentElement, { key: 'NavigationMenu' })
 
 const { modelValue, root, context } = useNavigationMenuSub({
   parentContext: menuContext,
@@ -66,14 +74,11 @@ provideNavigationMenuContext(context)
 </script>
 
 <template>
-  <CollectionSlot>
-    <Primitive
-      v-bind="root.attrs.value"
-      :ref="forwardRef"
-      :as-child="props.asChild"
-      :as="as"
-    >
-      <slot :model-value="modelValue" />
-    </Primitive>
-  </CollectionSlot>
+  <component
+    :is="renderAs(as, props.asChild)"
+    v-bind="mergeProps($attrs, root.attrs.value)"
+    :ref="forwardRef"
+  >
+    <slot :model-value="modelValue" />
+  </component>
 </template>

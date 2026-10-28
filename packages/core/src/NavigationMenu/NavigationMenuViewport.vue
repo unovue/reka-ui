@@ -20,7 +20,7 @@ export interface NavigationMenuViewportProps extends PrimitiveProps {
 import type { Ref } from 'vue'
 import { mergeProps } from 'vue'
 import { Presence } from '@/Presence'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import { useNavigationMenuViewport } from './useNavigationMenu'
 
@@ -59,14 +59,13 @@ function onAfterLeave() {
     @after-leave="onAfterLeave"
     @complete="menuContext.notifyOpenComplete"
   >
-    <Primitive
+    <component
+      :is="renderAs(as, asChild)"
       v-bind="mergeProps($attrs, viewport.attrs.value)"
       :ref="forwardRef"
-      :as="as"
-      :as-child="asChild"
       :hidden="!(forceMount || present)"
     >
       <slot />
-    </Primitive>
+    </component>
   </Presence>
 </template>

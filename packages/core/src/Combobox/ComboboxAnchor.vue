@@ -4,27 +4,23 @@ export interface ComboboxAnchorProps extends PopperAnchorProps {}
 
 <script setup lang="ts">
 import type { PopperAnchorProps } from '@/Popper'
-import { PopperAnchor } from '@/Popper'
+import { usePopperAnchor } from '@/Popper/usePopperAnchor'
 import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 
-defineProps<ComboboxAnchorProps>()
+const props = defineProps<ComboboxAnchorProps>()
 
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
+usePopperAnchor({ element: currentElement, reference: () => props.reference })
 </script>
 
 <template>
-  <PopperAnchor
-    as-child
-    :reference="reference"
+  <component
+    :is="renderAs(as, asChild)"
+    :ref="forwardRef"
+    v-bind="$attrs"
   >
-    <component
-      :is="renderAs(as, asChild)"
-      :ref="forwardRef"
-      v-bind="$attrs"
-    >
-      <slot />
-    </component>
-  </PopperAnchor>
+    <slot />
+  </component>
 </template>

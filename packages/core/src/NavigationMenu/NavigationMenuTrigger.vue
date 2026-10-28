@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ComponentPublicInstance, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { useCollection } from '@/Collection'
+import { COLLECTION_ITEM_ATTRS, useCollectionItem } from '@/Collection/Collection'
 import { useForwardElement } from '@/shared'
 
 export interface NavigationMenuTriggerProps extends PrimitiveProps {
@@ -12,8 +12,8 @@ export interface NavigationMenuTriggerProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { unrefElement } from '@vueuse/core'
-import { onMounted, useAttrs } from 'vue'
-import { Primitive } from '@/Primitive'
+import { mergeProps, onMounted, useAttrs } from 'vue'
+import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
@@ -30,8 +30,8 @@ const props = withDefaults(defineProps<NavigationMenuTriggerProps>(), {
 const menuContext = injectNavigationMenuContext()
 const itemContext = injectNavigationMenuItemContext()
 
-const { CollectionItem } = useCollection({ key: 'NavigationMenu' })
 const { forwardRef, currentElement: triggerElement, expose } = useForwardElement()
+useCollectionItem(triggerElement, undefined, { key: 'NavigationMenu' })
 defineExpose(expose)
 
 const { open, trigger, onFocusProxyFocus } = useNavigationMenuTrigger({
@@ -62,16 +62,13 @@ function setFocusProxyRef(node: Element | ComponentPublicInstance | null) {
 </script>
 
 <template>
-  <CollectionItem>
-    <Primitive
-      v-bind="getTriggerAttrs()"
-      :ref="forwardRef"
-      :as-child="props.asChild"
-      :as="as"
-    >
-      <slot />
-    </Primitive>
-  </CollectionItem>
+  <component
+    :is="renderAs(as, props.asChild)"
+    v-bind="mergeProps(COLLECTION_ITEM_ATTRS, getTriggerAttrs())"
+    :ref="forwardRef"
+  >
+    <slot />
+  </component>
 
   <template v-if="open">
     <VisuallyHidden

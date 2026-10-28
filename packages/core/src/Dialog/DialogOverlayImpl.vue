@@ -6,7 +6,7 @@ export interface DialogOverlayImplProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { watch } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectDialogOverlayElementContext, injectDialogRootContext } from './DialogRoot.vue'
 import { getDialogOverlaySurface } from './useDialog'
@@ -39,13 +39,12 @@ const overlay = getDialogOverlaySurface(rootContext)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="overlay.attrs.value"
     @pointerdown.left.self.prevent
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

@@ -17,7 +17,7 @@ export interface DialogTriggerProps<Payload = unknown> extends PrimitiveProps {
 
 <script setup lang="ts" generic="Payload = unknown">
 import { computed, watch } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement, useId } from '@/shared'
 import { getPopupRootStore, usePopupHandleTrigger } from '@/shared/popupHandle'
 import { injectDialogRootContext } from './DialogRoot.vue'
@@ -80,13 +80,12 @@ if (rootContext) {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     :type="as === 'button' ? 'button' : undefined"
     v-bind="triggerAttrs"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

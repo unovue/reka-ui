@@ -17,14 +17,18 @@ export interface DropdownMenuTriggerProps<Payload = unknown> extends PrimitivePr
 </script>
 
 <script setup lang="ts" generic="Payload = unknown">
-import { computed, onBeforeUpdate, shallowRef, useAttrs, watch } from 'vue'
-import { MenuAnchor } from '@/Menu'
-import {
-  Primitive,
-} from '@/Primitive'
+import { computed, mergeProps, onBeforeUpdate, shallowRef, useAttrs, watch } from 'vue'
+import { usePopperAnchor } from '@/Popper/usePopperAnchor'
+import { renderAs } from '@/Primitive/renderAs'
 import { getPopupRootStore, usePopupHandleTrigger } from '@/shared/popupHandle'
 import { injectDropdownMenuRootContext } from './DropdownMenuRoot.vue'
 import { getDropdownMenuTriggerSurface } from './useDropdownMenu'
+
+defineOptions({
+  // `$attrs` are merged under the part's own bindings: the precedence the
+  // former `MenuAnchor` (as-child) wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<DropdownMenuTriggerProps<Payload>>(), {
   as: 'button',
@@ -94,21 +98,17 @@ if (rootContext) {
 // from the same builder `useDropdownMenu().trigger` uses.
 const trigger = rootContext ? getDropdownMenuTriggerSurface(rootContext, () => props.disabled) : getDetachedTrigger()
 const attrs = computed(() => detached.enabled.value ? getDetachedTrigger().attrs.value : trigger.attrs.value)
+
+// The menu's anchor, unless the trigger is detached.
+const anchor = usePopperAnchor({ consumerAttrs: true, element: triggerElement, enabled: () => !detached.enabled.value })
 </script>
 
 <template>
   <component
-    :is="detached.enabled.value ? Primitive : MenuAnchor"
-    as-child
+    :is="renderAs(as, props.asChild)"
+    :ref="forwardRef"
+    v-bind="mergeProps(anchor.consumerAttrs($attrs), { type: as === 'button' ? 'button' : undefined }, attrs)"
   >
-    <Primitive
-      :ref="forwardRef"
-      :type="as === 'button' ? 'button' : undefined"
-      :as-child="props.asChild"
-      :as="as"
-      v-bind="attrs"
-    >
-      <slot />
-    </Primitive>
+    <slot />
   </component>
 </template>

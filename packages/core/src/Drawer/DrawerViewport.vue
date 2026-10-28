@@ -6,7 +6,7 @@ export interface DrawerViewportProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { getDrawerViewportSurface } from './useDrawer'
@@ -42,12 +42,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(props.as, props.asChild)"
     :ref="forwardRef"
-    :as="props.as"
-    :as-child="props.asChild"
     v-bind="viewport.attrs.value"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

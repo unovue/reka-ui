@@ -12,7 +12,7 @@ export interface DialogTitleProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectDialogRootContext } from './DialogRoot.vue'
 import { getDialogTitleSurface } from './useDialog'
 
@@ -27,12 +27,11 @@ const title = getDialogTitleSurface(rootContext)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="{ ...title.attrs.value, id }"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

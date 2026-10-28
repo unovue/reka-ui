@@ -21,12 +21,18 @@ export interface PopoverTriggerProps<Payload = unknown> extends PrimitiveProps {
 </script>
 
 <script setup lang="ts" generic="Payload = unknown">
-import { computed, watch } from 'vue'
-import { PopperAnchor } from '@/Popper'
-import { Primitive } from '@/Primitive'
+import { computed, mergeProps, watch } from 'vue'
+import { usePopperAnchor } from '@/Popper/usePopperAnchor'
+import { renderAs } from '@/Primitive/renderAs'
 import { getPopupRootStore, usePopupHandleTrigger } from '@/shared/popupHandle'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 import { getPopoverOwnTriggerSlot, getPopoverTriggerSurface } from './usePopover'
+
+defineOptions({
+  // `$attrs` are merged under the part's own bindings: the precedence the
+  // former `<PopperAnchor as-child>` wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<PopoverTriggerProps<Payload>>(), {
   as: 'button',
@@ -70,12 +76,11 @@ function getDetachedTrigger() {
 }
 
 // id/aria/data-state + the toggling `onClick` all come from the shared surface
-// builder (single source with `usePopover()`); the PopperAnchor wrapper (skipped
+// builder (single source with `usePopover()`); the popper anchor (skipped
 // when a `PopoverAnchor` is present), the element registration and the
 // tag-dependent `type` stay in the SFC. Listener order is unchanged: `$attrs`
-// fall through the as-child wrapper and `Slot` merges them BEFORE the inner
-// element's own props, so a consumer `@click` still runs before the surface's
-// `onClick`.
+// merge BEFORE the element's own props, so a consumer `@click` still runs
+// before the surface's `onClick`.
 const trigger = rootContext ? getPopoverTriggerSurface(rootContext) : getDetachedTrigger()
 
 // Without a `handle`, the trigger renders its own id (its `id` prop, else the
@@ -86,6 +91,13 @@ const ownTriggerId = ownTriggerSlot ? usePartId(() => props.id, ownTriggerSlot, 
 const attrs = computed(() => detached.enabled.value
   ? getDetachedTrigger().attrs.value
   : ownTriggerId ? { ...trigger.attrs.value, id: ownTriggerId.value } : trigger.attrs.value)
+
+// The popper's anchor, unless a `PopoverAnchor` is (or the trigger is detached).
+const anchor = usePopperAnchor({
+  consumerAttrs: true,
+  element: triggerElement,
+  enabled: () => !detached.enabled.value && !rootContext?.hasCustomAnchor.value,
+})
 
 // Write this trigger's element into the Root's existing `triggerElement` ref
 // (never replace the ref: with a `handle` it is a writable computed that
@@ -102,17 +114,10 @@ if (rootContext) {
 
 <template>
   <component
-    :is="detached.enabled.value || rootContext?.hasCustomAnchor.value ? Primitive : PopperAnchor"
-    as-child
+    :is="renderAs(as, props.asChild)"
+    :ref="forwardRef"
+    v-bind="mergeProps(anchor.consumerAttrs($attrs), attrs, { type: as === 'button' ? 'button' : undefined })"
   >
-    <Primitive
-      :ref="forwardRef"
-      :as="as"
-      :as-child="props.asChild"
-      v-bind="attrs"
-      :type="as === 'button' ? 'button' : undefined"
-    >
-      <slot />
-    </Primitive>
+    <slot />
   </component>
 </template>

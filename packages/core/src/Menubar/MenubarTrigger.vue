@@ -11,7 +11,7 @@ export interface MenubarTriggerProps extends PrimitiveProps {
 <script setup lang="ts">
 import { mergeProps, onMounted } from 'vue'
 import { useCollectionItem } from '@/Collection'
-import { MenuAnchor } from '@/Menu'
+import { usePopperAnchor } from '@/Popper/usePopperAnchor'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { injectMenubarMenuContext } from './MenubarMenu.vue'
@@ -37,7 +37,7 @@ useCollectionItem(triggerElement, undefined, { key: 'Menubar' })
 
 // role/aria, `data-highlighted`/`data-state`/`data-disabled`, the `data-value`
 // selector and the pointer/keyboard handlers come from the composable;
-// MenuAnchor stays the wrapper.
+// the trigger is the menu's anchor.
 const trigger = createMenubarTriggerSurface(rootContext, menuContext, {
   disabled: () => props.disabled,
   triggerElement,
@@ -46,6 +46,7 @@ const trigger = createMenubarTriggerSurface(rootContext, menuContext, {
 onMounted(() => {
   menuContext.triggerElement = triggerElement
 })
+const anchor = usePopperAnchor({ consumerAttrs: true, element: triggerElement })
 
 // Arrow-key navigation (as a composable; the menubar handles the keys).
 const roving = useRovingFocusItem({
@@ -56,17 +57,11 @@ const roving = useRovingFocusItem({
 </script>
 
 <template>
-  <MenuAnchor
-    v-bind="mergeProps($attrs, roving.attrs())"
-    as-child
+  <component
+    :is="renderAs(as, asChild)"
+    :ref="forwardRef"
+    v-bind="mergeProps(anchor.consumerAttrs($attrs), roving.attrs(), { type: as === 'button' ? 'button' : undefined }, trigger.attrs.value)"
   >
-    <component
-      :is="renderAs(as, asChild)"
-      :ref="forwardRef"
-      :type="as === 'button' ? 'button' : undefined"
-      v-bind="trigger.attrs.value"
-    >
-      <slot />
-    </component>
-  </MenuAnchor>
+    <slot />
+  </component>
 </template>
