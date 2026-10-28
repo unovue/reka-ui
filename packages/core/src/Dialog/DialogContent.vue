@@ -24,6 +24,7 @@ export interface DialogContentProps extends Omit<DialogContentImplProps, 'trapFo
 import { computed } from 'vue'
 import { Presence } from '@/Presence'
 import { useEmitAsProps, useForwardElement, usePartId } from '@/shared'
+import { isPortalOpening } from '@/Teleport/portalGate'
 import DialogContentModal from './DialogContentModal.vue'
 import DialogContentNonModal from './DialogContentNonModal.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
@@ -60,6 +61,7 @@ const staysMounted = computed(
 <template>
   <Presence
     v-slot="{ present }"
+    :appear="isPortalOpening(rootContext)"
     :present="rootContext.open.value"
     :force-mount="staysMounted"
     @complete="rootContext.notifyOpenComplete"

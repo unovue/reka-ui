@@ -12,6 +12,7 @@ export interface SelectItemIndicatorProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { getCurrentInstance, shallowRef } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
 import { injectSelectItemContext } from './SelectItem.vue'
@@ -25,10 +26,27 @@ const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const itemContext = injectSelectItemContext()
 const { indicator, present } = useSelectItemIndicator(itemContext)
+
+// An indicator that is not shown mounts no `Presence` (Base UI's
+// `SelectItemIndicator` returns `null`). Once shown, it stays mounted until its
+// exit has finished, and one shown after this indicator mounted enters with
+// `data-starting-style`, as it did while `Presence` was always mounted.
+const instance = getCurrentInstance()!
+const lingering = shallowRef(false)
+function onPresenceComplete(present: boolean) {
+  if (!present)
+    lingering.value = false
+}
 </script>
 
 <template>
-  <Presence :present="forceMount || present">
+  <Presence
+    v-if="forceMount || present || lingering"
+    :present="forceMount || present"
+    :appear="instance.isMounted"
+    @vue:mounted="lingering = true"
+    @complete="onPresenceComplete"
+  >
     <Primitive
       :ref="forwardRef"
       v-bind="indicator.attrs.value"

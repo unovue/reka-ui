@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { MenuContext } from './MenuRoot.vue'
 import type { MenuOpenChangeReason } from './useMenu'
 import type { ChangeEventDetails } from '@/shared'
-import { createContext, useControllableState } from '@/shared'
+import { createContext, useControllableState, useId } from '@/shared'
 
 export interface MenuSubContext {
   contentId: string
@@ -76,7 +76,9 @@ provideMenuContext({
 
 provideMenuSubContext({
   triggerId: '',
-  contentId: '',
+  // Allocated here, not by the content: a closed submenu's portal mounts no
+  // content, and the trigger's `aria-controls` must name it on the first open.
+  contentId: useId(undefined, 'reka-menu-sub-content'),
   trigger,
   onTriggerChange: (element) => {
     trigger.value = element

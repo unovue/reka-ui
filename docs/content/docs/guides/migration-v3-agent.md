@@ -672,6 +672,22 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Verify.** Open and close each animated part: enter and exit transitions play, and the part leaves the DOM once they end. The type-check passes. jsdom unit tests and their snapshots are unchanged.
 
+### 26. Closed popups render no portal
+
+**What changed.**
+- The portal of a closed popup (`DialogPortal`, `AlertDialogPortal`, `DrawerPortal`, `PopoverPortal`, `HoverCardPortal`, `TooltipPortal`, `DropdownMenuPortal`, `ContextMenuPortal`, `MenubarPortal`, `ComboboxPortal`) renders nothing until the popup first opens: no Teleport anchors in `<body>` and no content or overlay component instance. It stays rendered from then on. This applies only when the portal holds nothing but its family's content and overlay parts; with `forceMount` on the portal or on one of those parts, with `unmountOnHide: false` (Dialog, Combobox), or with anything else inside (an element, a `<Transition>`, a custom component), the portal renders right away as before.
+- An unchecked or unselected `CheckboxIndicator`, `RadioGroupIndicator`, `SelectItemIndicator` and menu item indicator mounts no `Presence` until it is first shown.
+
+**How to find it.**
+- Template refs on `*Content` / `*Overlay` parts inside one of these portals that are read while the popup has never been opened.
+- Tests that count elements in `<body>` or look up content component instances (`findComponent(DialogContent)`) before the first open.
+
+**Rewrite rules.**
+- A template ref read before the first open: it is `undefined` until then. Read it in a `watch` on the ref, after opening, or add `force-mount` to the portal if the content must exist while closed.
+- A test that finds a content component instance before opening: open first, or assert that it does not exist.
+
+**Verify.** The type-check passes. Each popup opens with its enter animation, including the first time, and closes with its exit animation.
+
 ### 27. Shadow DOM
 
 Apart from the `forceMount` timing in the last bullet below, skip this section when the project never renders Reka UI inside a shadow root (no `attachShadow(`, no `defineCustomElement(`, no web-component or micro-frontend mounting).

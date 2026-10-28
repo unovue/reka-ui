@@ -1,6 +1,7 @@
+import { renderToString } from '@vue/server-renderer'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
-import { defineComponent, h, Teleport as NativeTeleport, nextTick, onMounted, ref } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createSSRApp, defineComponent, Fragment, h, Teleport as NativeTeleport, nextTick, onMounted, ref, watch } from 'vue'
 import { ConfigProvider } from '@/ConfigProvider'
 import Teleport from './Teleport.vue'
 
@@ -340,5 +341,132 @@ describe('given a force-mounted Teleport created inside a native Teleport', () =
     expect(body.seen).toEqual([])
     wrapper.unmount()
     host.remove()
+  })
+})
+
+// A family portal renders nothing while its popup is closed (`portalGate.ts`),
+// so its Teleport is created by a later update of an already mounted parent.
+describe('given a Teleport created inside an already mounted parent', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountToggle(attachTo: Element, seen: Array<boolean>) {
+    const show = ref(false)
+    const content = ref<HTMLElement>()
+    const wrapper = mount(defineComponent({
+      setup() {
+        watch(show, () => seen.push(!!content.value?.isConnected), { flush: 'post' })
+        return () => h('div', { id: 'app' }, show.value ? h(Teleport, () => h('span', { ref: content, id: 'late' })) : undefined)
+      },
+    }), { attachTo })
+    return { show, wrapper }
+  }
+
+  it('renders its content in the same flush, so post-flush watchers see it', async () => {
+    const seen: Array<boolean> = []
+    const { show, wrapper } = mountToggle(document.body, seen)
+    await nextTick()
+    show.value = true
+    await nextTick()
+    expect(seen).toEqual([true])
+    expect(document.getElementById('late')!.parentNode).toBe(document.body)
+    wrapper.unmount()
+  })
+
+  it('keeps the content in the shadow root it renders in', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const shadowRoot = host.attachShadow({ mode: 'open' })
+    const mountTarget = document.createElement('div')
+    shadowRoot.appendChild(mountTarget)
+    const seen: Array<boolean> = []
+    const { show, wrapper } = mountToggle(mountTarget, seen)
+    await nextTick()
+    show.value = true
+    await nextTick()
+    expect(seen).toEqual([true])
+    expect(shadowRoot.getElementById('late')!.parentNode).toBe(shadowRoot)
+    expect(document.getElementById('late')).toBeNull()
+    wrapper.unmount()
+    host.remove()
+  })
+
+  describe('with a selector `to`', () => {
+    // The portal and its target appear under one `v-if` (a fragment, mounted in
+    // order), the target after the portal; or the target is there already.
+    function mountWithTarget(props: Record<string, unknown>, seen: Array<boolean>, targetBefore = false) {
+      const show = ref(false)
+      const content = ref<HTMLElement>()
+      const wrapper = mount(defineComponent({
+        setup() {
+          watch(show, () => seen.push(!!content.value?.isConnected), { flush: 'post' })
+          return () => h('div', [
+            targetBefore ? h('div', { id: 'later' }) : undefined,
+            show.value
+              ? h(Fragment, [
+                  h(Teleport, props, () => h('span', { ref: content, id: 'late' })),
+                  targetBefore ? undefined : h('div', { id: 'later' }),
+                ])
+              : undefined,
+          ])
+        },
+      }), { attachTo: document.body })
+      return { show, wrapper }
+    }
+
+    async function open(props: Record<string, unknown>, targetBefore = false) {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const seen: Array<boolean> = []
+      const { show, wrapper } = mountWithTarget(props, seen, targetBefore)
+      await nextTick()
+      show.value = true
+      await nextTick()
+      await nextTick()
+      const warnings = warn.mock.calls.flat().join(' ')
+      warn.mockRestore()
+      return { seen, warnings, wrapper }
+    }
+
+    it('waits for the mount when the target renders after it in the same update', async () => {
+      const { warnings, wrapper } = await open({ to: '#later' })
+      expect(document.getElementById('late')!.parentNode).toBe(document.getElementById('later'))
+      expect(warnings).not.toMatch(/Teleport/)
+      wrapper.unmount()
+    })
+
+    it('renders in the same flush when the target already exists', async () => {
+      const { seen, warnings, wrapper } = await open({ to: '#later' }, true)
+      expect(seen).toEqual([true])
+      expect(document.getElementById('late')!.parentNode).toBe(document.getElementById('later'))
+      expect(warnings).not.toMatch(/Teleport/)
+      wrapper.unmount()
+    })
+
+    // Vue resolves a deferred target, and mounts the content, after the update.
+    it('mounts into a target rendered after it with `defer`', async () => {
+      const { warnings, wrapper } = await open({ to: '#later', defer: true })
+      expect(document.getElementById('late')!.parentNode).toBe(document.getElementById('later'))
+      expect(warnings).not.toMatch(/Teleport/)
+      wrapper.unmount()
+    })
+  })
+
+  it('still hydrates an open portal without a mismatch, rendering its content after the mount', async () => {
+    const render = () => h('div', { id: 'app' }, h(Teleport, () => h('span', { id: 'hydrated' }, 'content')))
+    const html = await renderToString(createSSRApp({ render }))
+    const container = document.createElement('div')
+    container.innerHTML = html
+    document.body.appendChild(container)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const app = createSSRApp({ render })
+    app.mount(container)
+    await nextTick()
+    expect(document.getElementById('hydrated')!.parentNode).toBe(document.body)
+    expect([...warn.mock.calls, ...error.mock.calls].flat().join(' ')).not.toMatch(/mismatch/i)
+    warn.mockRestore()
+    error.mockRestore()
+    app.unmount()
   })
 })
