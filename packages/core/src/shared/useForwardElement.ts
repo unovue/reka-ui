@@ -1,7 +1,7 @@
 import type { ComponentInternalInstance, ComponentPublicInstance, ComputedRef, Ref, ShallowRef } from 'vue'
 import type { MergeableRef } from './useMergedRefs'
-import { computed, getCurrentInstance, onScopeDispose, shallowRef, watch } from 'vue'
-import { resolveRefTarget, useMergedRefs } from './useMergedRefs'
+import { computed, getCurrentInstance, markRaw, onScopeDispose, proxyRefs, shallowRef, watch } from 'vue'
+import { isElement, resolveRefTarget, useMergedRefs } from './useMergedRefs'
 
 /**
  * The element-first ref/expose contract every reka part satisfies (#2808):
@@ -36,7 +36,7 @@ export interface UseForwardElementReturn<E extends Element = HTMLElement> {
   /** The resolved DOM element (text/comment-root aware, reactive through conforming children). */
   element: ComputedRef<E | null>
   /**
-   * Same computed as `element`, typed non-null for drop-in compatibility with
+   * Same ref as `element`, typed non-null for drop-in compatibility with
    * `useForwardExpose().currentElement`. It is `null` until mounted.
    */
   currentElement: ComputedRef<E>
@@ -94,29 +94,233 @@ function createDevExpose<T extends object>(exposed: T, instance: ComponentIntern
 export function createElementExpose<E extends Element = HTMLElement>(
   element: Readonly<Ref<E | null>>,
 ): ElementExpose<E> {
-  const instance = getCurrentInstance()
-  const exposed: ElementExpose<E> = {
-    element,
-    get $el() {
-      return element.value ?? instance?.vnode.el as Node | null
-    },
+  return exposeElementSource<E>({ element })
+}
+
+/** Anything with an `element` ref; `ElementSource` creates its ref on first read. */
+interface ElementRefSource<E extends Element> {
+  readonly element: Readonly<Ref<E | null>>
+}
+
+/**
+ * Readonly ref views: `ElementSource` is the `element` ref itself, and
+ * `ElRefView` is `$el`, which falls back to the placeholder node Vue rendered.
+ * Reading `.value` resolves the source's element and is tracked; Vue's
+ * expose proxy unwraps them like any ref.
+ *
+ * They are small classes rather than accessors on the expose object: an object
+ * with own accessors is a dictionary-mode object in V8 (and each accessor a
+ * closure), and the expose object exists once per rendered part. They also let
+ * the source create its ref on first read.
+ */
+class ElRefView<E extends Element> {
+  // Ref markers as prototype getters: no per-instance slots.
+  get __v_isRef(): true { return true }
+  get __v_isReadonly(): true { return true }
+  constructor(readonly source: ElementRefSource<E>, readonly instance: ComponentInternalInstance | null) {}
+  get value(): E | Node | null {
+    return this.source.element.value ?? this.instance?.vnode.el as Node | null
   }
+}
+
+function exposeElementSource<E extends Element>(
+  source: ElementRefSource<E>,
+  element: Readonly<Ref<E | null>> = source.element,
+  instance: ComponentInternalInstance | null = getCurrentInstance(),
+  linked = false,
+): ElementExpose<E> {
+  // Own data properties (the legacy `useForwardExpose` checks `Object.hasOwn(ref, '$el')`).
+  // A linked part's expose is only ever read by its owner, for `element`
+  // (see `linkToOwner`), so it skips the `$el` view and the dev proxy.
+  const exposed = {
+    element,
+    $el: linked ? element : new ElRefView(source, instance),
+  } as unknown as ElementExpose<E>
   // Uses process.env.NODE_ENV (not import.meta.env.DEV, which is neutered in dist).
   // eslint-disable-next-line node/prefer-global/process
-  if (process.env.NODE_ENV !== 'production' && instance)
+  if (process.env.NODE_ENV !== 'production' && instance && !linked)
     return createDevExpose(exposed, instance)
   return exposed
 }
 
 /**
+ * Holds a part's raw template-ref value, and is itself the readonly `element`
+ * ref over it. Its one reactive cell, the raw-value ref, is created on first
+ * read: most parts only bind `forwardRef` and expose `element`, which usually
+ * nothing reads. The ref starts from the raw value when it is created.
+ *
+ * A source bound directly on an element (the `Primitive` at the bottom of
+ * every chain) or on a linked child part resolves on read and allocates no
+ * computed: a few property reads, tracked by the reader. Only a source bound
+ * on another component, reached through Vue's proxies, caches its resolution.
+ */
+class ElementSource<E extends Element> implements ElementRefSource<E> {
+  // Ref markers as prototype getters: no per-instance slots.
+  get __v_isRef(): true { return true }
+  get __v_isReadonly(): true { return true }
+  raw: unknown = null
+  ref: ShallowRef<unknown> | undefined = undefined
+  resolved: ComputedRef<E | null> | undefined = undefined
+  /** The callback ref handed to the template (`forwardRef`); bound, so it captures no scope. */
+  forward: (el: unknown) => void = this.set.bind(this)
+  /**
+   * A child part bound with `forward` that linked itself here (see
+   * `linkToOwner`); `false` once the public `currentRef` was read, which must
+   * hold what Vue hands a template ref, so nothing links here any more.
+   */
+  linked: ComponentInternalInstance | null | false = null
+
+  /** The reactive raw-value cell (created on first read). */
+  get cell(): ShallowRef<unknown> {
+    return this.ref ??= shallowRef<unknown>(this.raw)
+  }
+
+  /**
+   * The public `currentRef`: the raw template-ref value as Vue delivers it
+   * (an element, or the child's expose/public proxy). A linked child is
+   * unlinked first and given the expose proxy Vue would have built.
+   */
+  get publicRef(): ShallowRef<unknown> {
+    const linked = this.linked
+    this.linked = false
+    if (linked) {
+      const proxy = createExposeProxy(linked)
+      if (this.raw !== null && this.raw === linked.exposed) {
+        this.raw = proxy
+        if (this.ref)
+          this.ref.value = proxy
+      }
+    }
+    return this.cell
+  }
+
+  /** The resolved element (tracked: see above). */
+  get value(): E | null {
+    if (this.resolved)
+      return this.resolved.value
+    const raw = this.cell.value
+    // Bound directly on an element (or detached): nothing to resolve or cache.
+    if (raw === null || isElement(raw))
+      return raw as E | null
+    // A linked child part (see `linkToOwner`): `raw` is its plain expose object,
+    // so resolving is a few property reads, tracked through the child's source.
+    if (raw instanceof Object && (raw as { element?: unknown }).element instanceof ElementSource)
+      return resolveRefTarget<E>(raw)
+    // Bound on any other component (through Vue's expose or public proxy):
+    // cache the walk through its `element` chain, which tracks the child's own
+    // refs, so a root swap inside the child still re-resolves here even though
+    // Vue never re-invokes our ref callback.
+    return (this.resolved = computed(() => resolveRefTarget<E>(this.cell.value))).value
+  }
+
+  get element(): Readonly<Ref<E | null>> {
+    return this as unknown as Readonly<Ref<E | null>>
+  }
+
+  set(el: unknown) {
+    const linked = this.linked
+    if (linked && el !== null && isPublicInstanceOf(el, linked)) {
+      // Vue hands us the linked child's plain public proxy (it has no expose
+      // proxy); hold its expose object instead, which `resolveRefTarget`
+      // reads `element` from, as it would through the expose proxy. A child
+      // exposing no `element` keeps the public proxy (and its `$el`).
+      const exposed = linked.exposed
+      if (exposed && 'element' in exposed)
+        el = exposed
+    }
+    else if (el === null && linked) {
+      // Detached: drop the link so an unmounted child is not retained.
+      this.linked = null
+    }
+    this.raw = el
+    if (this.ref)
+      this.ref.value = el
+  }
+}
+
+type LinkableInstance = ComponentInternalInstance & { exposeProxy: unknown }
+
+/**
+ * The expose proxy Vue builds for a component ref (`getComponentPublicInstance`,
+ * not exported): exposed refs unwrapped, `$`-prefixed public properties from
+ * the instance. Used when a linked child's public instance is asked for after
+ * all (see `ElementSource.publicRef`); it becomes the child's expose proxy, so
+ * every later template-ref update delivers the same object.
+ */
+function createExposeProxy(instance: ComponentInternalInstance): unknown {
+  const exposed = instance.exposed as Record<string, unknown> | null
+  if (!exposed)
+    return instance.proxy
+  // A linked part's expose skipped its `$el` view (see `exposeElementSource`).
+  if (exposed.element instanceof ElementSource && exposed.$el === exposed.element)
+    exposed.$el = new ElRefView(exposed.element, instance)
+  const publicInstance = instance.proxy as unknown as Record<string | symbol, unknown>
+  const isPublicKey = (key: string | symbol) => typeof key === 'string' && key[0] === '$' && key in publicInstance
+  return (instance as LinkableInstance).exposeProxy = new Proxy(proxyRefs(markRaw(exposed)), {
+    get(target, key) {
+      if (key in target)
+        return Reflect.get(target, key)
+      if (isPublicKey(key))
+        return publicInstance[key]
+    },
+    has(target, key) {
+      return key in target || isPublicKey(key)
+    },
+  })
+}
+
+/** Whether `el` is what Vue hands a template ref on `instance` (its expose or public proxy). */
+function isPublicInstanceOf(el: unknown, instance: ComponentInternalInstance) {
+  return el === (instance as LinkableInstance).exposeProxy || el === instance.proxy
+}
+
+/**
+ * Links a part to its owner when its template ref is exactly the owner's
+ * `forwardRef` (`<Child :ref="forwardRef">` inside another reka part).
+ *
+ * Vue builds an expose proxy (two `Proxy`s, a handler and two closures) the
+ * first time a component's public instance is requested, which a template ref
+ * on it always does. Parts nest several deep, so internal refs alone created
+ * one per part. A linked child pre-sets its expose proxy to its plain public
+ * proxy (which every component already has), and the owner, recognising that
+ * proxy, reads the child's expose object directly: same `element`, same
+ * tracking, no allocation.
+ *
+ * A ref merged from several owners (a cloned vnode) links when every entry is
+ * an owner's own `forwardRef`. Any other ref (a consumer's ref, alone or merged
+ * in, string or object refs) gets the regular expose proxy, so the public
+ * contract is unchanged.
+ */
+function linkToOwner(instance: ComponentInternalInstance | null): boolean {
+  const vnodeRef = instance?.vnode.ref
+  if (!instance || !vnodeRef)
+    return false
+  // A cloned vnode merges refs into an array (`Presence`, `Slot`): link only
+  // when every one is an owner's own `forwardRef`, i.e. no consumer ref.
+  const refs = Array.isArray(vnodeRef) ? vnodeRef : [vnodeRef]
+  const sources: ElementSource<Element>[] = []
+  for (const { i, r } of refs) {
+    const ownerSource = (i?.exposed as { element?: unknown } | null | undefined)?.element
+    if (!(ownerSource instanceof ElementSource) || ownerSource.forward !== r || ownerSource.linked === false)
+      return false
+    sources.push(ownerSource)
+  }
+  for (const source of sources)
+    source.linked = instance
+  ;(instance as LinkableInstance).exposeProxy = instance.proxy
+  return true
+}
+
+/**
  * Adds a part's documented methods/state to its element expose object, keeping
  * the dev-only prop-read warning (a `{ ...expose }` spread would drop it).
+ * Accessors are copied as accessors, so `{ get x() { … } }` stays lazy.
  *
  * @example
  * defineExpose(mergeExpose(expose, { focus }))
  */
 export function mergeExpose<T extends ElementExpose<any>, X extends object>(expose: T, extra: X): T & X {
-  return Object.assign(expose, extra)
+  return Object.defineProperties(expose, Object.getOwnPropertyDescriptors(extra)) as T & X
 }
 
 /**
@@ -141,30 +345,30 @@ export function mergeExpose<T extends ElementExpose<any>, X extends object>(expo
 export function useForwardElement<E extends Element = HTMLElement>(
   ...refs: MergeableRef<E>[]
 ): UseForwardElementReturn<E> {
-  // Store the RAW ref value and resolve lazily: reading a conforming child's
-  // exposed `element` inside the computed is tracked, so a root swap inside the
-  // child re-resolves here even though Vue never re-invokes our ref callback.
-  const currentRef = shallowRef<unknown>(null)
-  const element = computed(() => resolveRefTarget<E>(currentRef.value))
+  // Store the RAW ref value and resolve lazily (see `ElementSource`).
+  const source = new ElementSource<E>()
+  const instance = getCurrentInstance()
+  const linked = linkToOwner(instance)
 
   const merged = useMergedRefs<E>(...refs)
   if (merged) {
-    watch(element, merged, { flush: 'sync' })
+    watch(source as unknown as Readonly<Ref<E | null>>, merged, { flush: 'sync' })
     // On unmount the scope stops before the subtree's refs are nulled, so the
     // watcher never sees the detach: clear the extra refs (and run their
     // cleanups) here.
     onScopeDispose(() => merged(null))
   }
 
-  function forwardRef(el: Element | ComponentPublicInstance | null) {
-    currentRef.value = el
-  }
+  // The source is a readonly ref resolving on read (its raw-value ref is created on
+  // the first `.value`), so a part that destructures `currentElement` but never
+  // reads it pays nothing.
+  const element = source as unknown as ComputedRef<E | null>
 
   return {
-    forwardRef,
-    currentRef,
+    forwardRef: source.forward as (el: Element | ComponentPublicInstance | null) => void,
+    get currentRef() { return source.publicRef },
     element,
     currentElement: element as ComputedRef<E>,
-    expose: createElementExpose(element),
+    expose: exposeElementSource(source, element, instance, linked),
   }
 }

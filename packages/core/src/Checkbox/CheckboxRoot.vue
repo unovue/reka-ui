@@ -125,10 +125,15 @@ const { modelValue, checkedState: checkboxState, disabled, root, context } = use
 })
 
 // A programmatic/parent-driven change updates `filled`, but isn't dirtying.
-watch(checkboxState, (state) => {
-  if (participatesAsControl.value)
-    fieldContext?.reportControlState({ filled: state === true })
-})
+// Both contexts are injected once, so outside a Field (or inside a group) the
+// watcher could never report anything: skip it rather than queue a no-op job
+// on every change.
+if (fieldContext && !checkboxGroupContext) {
+  watch(checkboxState, (state) => {
+    if (participatesAsControl.value)
+      fieldContext?.reportControlState({ filled: state === true })
+  })
+}
 
 const isFormControl = useFormControl(currentElement)
 // The hidden form input is rendered as a sibling (not nested) of the interactive
@@ -218,7 +223,7 @@ provideCheckboxRootContext(context)
   </component>
 
   <VisuallyHiddenInput
-    v-if="isFormControl && resolvedName && !checkboxGroupContext"
+    v-if="!checkboxGroupContext && resolvedName && isFormControl"
     type="checkbox"
     :checked="!!checkboxState"
     :name="resolvedName"

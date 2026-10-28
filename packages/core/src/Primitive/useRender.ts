@@ -56,40 +56,75 @@ export interface UseRenderReturn<S extends PrimitiveState = PrimitiveState> {
 export function useRender<S extends PrimitiveState = PrimitiveState>(
   options: UseRenderOptions<S> = {},
 ): UseRenderReturn<S> {
-  const tag = computed<AsTag | Component>(() => {
-    const as = toValue(options.as)
-    if (toValue(options.asChild) || as === Slot || as === 'template')
-      return Slot
-    return as ?? options.defaultTagName ?? 'div'
-  })
-
-  const renderless = computed(() => tag.value === Slot)
+  const resolveTag = () => resolveRenderTag(toValue(options.as), toValue(options.asChild), options.defaultTagName)
 
   // Dev-only: `#render` slot takes precedence over `asChild`/`as="template"`.
   // Warn when both are provided so the ignored `asChild` isn't a silent surprise.
   // Uses process.env.NODE_ENV (not import.meta.env.DEV, which is neutered in dist).
   // eslint-disable-next-line node/prefer-global/process
-  if (process.env.NODE_ENV !== 'production') {
-    const instance = getCurrentInstance()
-    if (instance?.slots?.render && renderless.value) {
-      console.warn(
-        '[reka-ui] `useRender`: both a `#render` slot and `asChild`/`as="template"` were provided. '
-        + 'The `#render` slot takes precedence; `asChild` is ignored.',
-      )
-    }
+  if (process.env.NODE_ENV !== 'production')
+    warnRenderSlotWithAsChild(resolveTag() === Slot)
+
+  const forwarded = useForwardElement<HTMLElement>(options.ref)
+
+  // Every computed is created on first read: a part destructures only what it
+  // binds, so it does not pay for the rest (a computed is a few reactive
+  // objects, multiplied by every part on the page).
+  let tag: ComputedRef<AsTag | Component> | undefined
+  let renderless: ComputedRef<boolean> | undefined
+  let selfClosing: ComputedRef<boolean> | undefined
+  let state: ComputedRef<S | undefined> | undefined
+  let renderProps: ComputedRef<Record<string, any>> | undefined
+
+  return {
+    get tag() {
+      return tag ??= computed(resolveTag)
+    },
+    get renderProps() {
+      return renderProps ??= computed(() => mergeProps(
+        stateToDataAttrs(toValue(options.state), options.stateAttributesMapping),
+        toValue(options.props) ?? {},
+      ))
+    },
+    get renderless() {
+      return renderless ??= computed(() => resolveTag() === Slot)
+    },
+    get selfClosing() {
+      return selfClosing ??= computed(() => isSelfClosingTag(resolveTag()))
+    },
+    elementRef: forwarded.forwardRef,
+    get currentElement() {
+      return forwarded.element
+    },
+    get state() {
+      return state ??= computed(() => toValue(options.state))
+    },
+    expose: forwarded.expose,
   }
+}
 
-  const selfClosing = computed(() => {
-    const t = tag.value
-    return typeof t === 'string' && SELF_CLOSING_TAGS.includes(t)
-  })
+/** `as` / `asChild` → the rendered target; the `Slot` component when renderless. @internal */
+export function resolveRenderTag(
+  as: AsTag | Component | undefined,
+  asChild: boolean | undefined,
+  defaultTagName: AsTag = 'div',
+): AsTag | Component {
+  if (asChild || as === Slot || as === 'template')
+    return Slot
+  return as ?? defaultTagName
+}
 
-  const state = computed(() => toValue(options.state))
+/** 'area' | 'img' | 'input' render with no children. @internal */
+export function isSelfClosingTag(tag: AsTag | Component): boolean {
+  return typeof tag === 'string' && SELF_CLOSING_TAGS.includes(tag)
+}
 
-  const stateAttrs = computed(() => stateToDataAttrs(toValue(options.state), options.stateAttributesMapping))
-  const renderProps = computed<Record<string, any>>(() => mergeProps(stateAttrs.value, toValue(options.props) ?? {}))
-
-  const { forwardRef: elementRef, element: currentElement, expose } = useForwardElement<HTMLElement>(options.ref)
-
-  return { tag, renderProps, renderless, selfClosing, elementRef, currentElement, state, expose }
+/** Dev-only warning shared by `useRender` and `Primitive`. @internal */
+export function warnRenderSlotWithAsChild(renderless: boolean) {
+  if (renderless && getCurrentInstance()?.slots?.render) {
+    console.warn(
+      '[reka-ui] `useRender`: both a `#render` slot and `asChild`/`as="template"` were provided. '
+      + 'The `#render` slot takes precedence; `asChild` is ignored.',
+    )
+  }
 }

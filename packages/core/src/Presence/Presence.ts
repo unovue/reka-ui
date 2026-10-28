@@ -6,10 +6,9 @@ import {
   defineComponent,
   getCurrentInstance,
   h,
-  ref,
   toRefs,
 } from 'vue'
-import { renderSlotFragments } from '@/shared'
+import { getterRef, renderSlotFragments } from '@/shared'
 import { mergeExpose, useForwardElement } from '@/shared/useForwardElement'
 import { ENDING_STYLE_ATTR, STARTING_STYLE_ATTR, usePresence } from './usePresence'
 
@@ -71,16 +70,23 @@ export default defineComponent({
   setup(props, { slots, expose, emit }) {
     const { present, forceMount } = toRefs(props)
 
-    const node = ref<HTMLElement>()
+    // Element-first contract (#2808): a parent ref on `<Presence>` resolves the
+    // child's element reactively (follows the child's own root swaps and the
+    // unmount once presence ends).
+    const { forwardRef, currentElement, expose: elementExpose } = useForwardElement()
+    // The observed node, derived from the child's element (PopperContent
+    // renders a positioning wrapper: its animated node is the first child).
+    const node = getterRef(() => {
+      const el = currentElement.value
+      if (!el)
+        return undefined
+      return (el.hasAttribute('data-reka-popper-content-wrapper') ? el.firstElementChild : el) as HTMLElement | undefined
+    })
     // Mount composables once to prevent duplicated eventListener
     const { isPresent, transitionStatus } = usePresence(present, node, {
       appear: props.appear,
       onComplete: value => emit('complete', value),
     })
-    // Element-first contract (#2808): a parent ref on `<Presence>` resolves the
-    // child's element reactively (follows the child's own root swaps and the
-    // unmount once presence ends).
-    const { forwardRef, currentElement, expose: elementExpose } = useForwardElement()
     expose(mergeExpose(elementExpose, { present: isPresent }))
 
     let children = slots.default({ present: isPresent.value })
@@ -118,20 +124,9 @@ export default defineComponent({
         return h(slots.default({ present: isPresent.value })[0] as VNode, {
           ...(status === 'starting' && { [STARTING_STYLE_ATTR]: '' }),
           ...(status === 'ending' && { [ENDING_STYLE_ATTR]: '' }),
-          ref: (v) => {
-            forwardRef(v)
-            const el = currentElement.value
-            if (typeof el?.hasAttribute === 'undefined')
-              return el
-
-            // special case to handle animation for PopperContent
-            if (el?.hasAttribute('data-reka-popper-content-wrapper'))
-              node.value = el.firstElementChild as HTMLElement
-            else
-              node.value = el
-
-            return el
-          },
+          // The owner's own `forwardRef` (not a wrapping callback), so a reka
+          // part child links to it without an expose proxy (`useForwardElement`).
+          ref: forwardRef,
         })
       }
       else { return null }

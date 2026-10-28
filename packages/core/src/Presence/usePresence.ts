@@ -71,7 +71,7 @@ export function getRunningAnimations(node: Element): Animation[] {
  */
 export function usePresence(
   present: Ref<boolean>,
-  node: Ref<HTMLElement | undefined>,
+  node: Readonly<Ref<HTMLElement | undefined>>,
   options: UsePresenceOptions = {},
 ) {
   const { state, dispatch } = useStateMachine(present.value ? 'mounted' : 'unmounted', {

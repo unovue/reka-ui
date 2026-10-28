@@ -17,7 +17,7 @@ export type MergeableRef<T>
 /** What Vue hands a template ref: an element, a component's public/expose proxy, or `null`. */
 export type RefTarget = Element | ComponentPublicInstance | null | undefined
 
-function isElement(value: unknown): value is Element {
+export function isElement(value: unknown): value is Element {
   return typeof Element !== 'undefined' && value instanceof Element
 }
 

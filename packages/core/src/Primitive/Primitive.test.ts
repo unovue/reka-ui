@@ -278,3 +278,19 @@ describe('test Primitive functionalities', () => {
     expect(wrapper.find('div').exists()).toBe(false)
   })
 })
+
+describe('primitive attrs normalisation', () => {
+  it('keeps an imperatively set CSS property when a bound style string changes', async () => {
+    const color = ref('red')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(Primitive, { style: `color: ${color.value}` }, () => 'x'),
+    }), { attachTo: document.body })
+    const el = wrapper.element as HTMLElement
+    el.style.setProperty('--measured-height', '42px')
+    color.value = 'blue'
+    await nextTick()
+    expect(el.style.color).toBe('blue')
+    expect(el.style.getPropertyValue('--measured-height')).toBe('42px')
+    wrapper.unmount()
+  })
+})

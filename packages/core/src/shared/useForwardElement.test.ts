@@ -2,8 +2,9 @@ import type { Component, ComponentPublicInstance } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { unrefElement } from '@vueuse/core'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, Fragment, h, isRef, markRaw, nextTick, ref, watchPostEffect } from 'vue'
+import { computed, defineComponent, Fragment, getCurrentInstance, h, isRef, markRaw, nextTick, ref, watchPostEffect } from 'vue'
 import { DialogContent, DialogPortal, DialogRoot } from '../Dialog'
+import { Label } from '../Label'
 import { Primitive } from '../Primitive'
 import { SwitchRoot } from '../Switch'
 import { mergeExpose, useForwardElement } from './useForwardElement'
@@ -395,6 +396,116 @@ describe('useForwardElement — a part that renders no element', () => {
     await nextTick()
     text.value = 'c'
     await nextTick()
+    wrapper.unmount()
+  })
+})
+
+describe('useForwardElement — internal refs link parts without an expose proxy', () => {
+  /** A part whose root swaps between button and anchor; records its instance. */
+  function defineInner(asButton: { value: boolean }, instances: any[]) {
+    return defineComponent({
+      setup(_, { expose }) {
+        instances.push(getCurrentInstance())
+        const { forwardRef, expose: elementExpose } = useForwardElement()
+        expose(elementExpose)
+        return () => h(asButton.value ? 'button' : 'a', { ref: forwardRef, key: String(asButton.value) })
+      },
+    })
+  }
+
+  it('an owner\'s own `forwardRef` on a child part resolves the element with no expose proxy', async () => {
+    const asButton = ref(true)
+    const instances: any[] = []
+    const Inner = defineInner(asButton, instances)
+    const Outer = definePart(`<Inner :ref="forwardRef" />`, {}, { Inner })
+
+    const partRef = ref<any>()
+    mount(defineComponent(() => () => h(Outer, { ref: partRef })))
+    await flushPromises()
+
+    const [inner] = instances
+    // The linked child hands its owner its plain public proxy.
+    expect(inner.exposeProxy).toBe(inner.proxy)
+    const nodeName = computed(() => partRef.value?.element?.nodeName)
+    expect(nodeName.value).toBe('BUTTON')
+    expect(partRef.value.$el.nodeName).toBe('BUTTON')
+
+    asButton.value = false
+    await flushPromises()
+    expect(nodeName.value).toBe('A')
+  })
+
+  it('a consumer ref on a part still gets the element-first expose', async () => {
+    const instances: any[] = []
+    const Inner = defineInner(ref(true), instances)
+
+    const innerRef = ref<any>()
+    mount(defineComponent(() => () => h(Inner, { ref: innerRef })))
+    await flushPromises()
+
+    const [inner] = instances
+    expect(inner.exposeProxy).not.toBe(inner.proxy)
+    expect(Object.keys(innerRef.value)).toEqual(['element', '$el'])
+    expect(innerRef.value.element.nodeName).toBe('BUTTON')
+  })
+
+  it('a merged `asChild` ref (consumer + Slot) is not linked', async () => {
+    const instances: any[] = []
+    const Inner = defineInner(ref(true), instances)
+
+    const innerRef = ref<any>()
+    const outerRef = ref<any>()
+    mount(defineComponent(() => () => h(Primitive, { asChild: true, ref: outerRef }, () => h(Inner, { ref: innerRef }))))
+    await flushPromises()
+
+    const [inner] = instances
+    expect(inner.exposeProxy).not.toBe(inner.proxy)
+    expect(innerRef.value.element.nodeName).toBe('BUTTON')
+    expect(outerRef.value.element.nodeName).toBe('BUTTON')
+  })
+})
+
+describe('useForwardElement — public `currentRef` over a linked reka part', () => {
+  function makeWrapper(child: Component) {
+    let api!: ReturnType<typeof useForwardElement>
+    const Wrapper = defineComponent({
+      setup(_, { expose }) {
+        api = useForwardElement()
+        expose(api.expose)
+        return () => h(child, { ref: api.forwardRef }, () => 'x')
+      },
+    })
+    return { Wrapper, get api() { return api } }
+  }
+
+  for (const [name, child] of [['Primitive', Primitive], ['Label', Label]] as const) {
+    it(`${name}: currentRef holds the child's expose proxy (element-first, unwrapped)`, async () => {
+      const w = makeWrapper(child)
+      const wrapper = mount(w.Wrapper, { attachTo: document.body })
+      await nextTick()
+      const raw = w.api.currentRef.value as any
+      expect(w.api.element.value).toBeInstanceOf(HTMLElement)
+      expect(raw.$el).toBeInstanceOf(HTMLElement)
+      expect(raw.element).toBeInstanceOf(HTMLElement)
+      expect(unrefElement(w.api.currentRef as any)).toBeInstanceOf(HTMLElement)
+      wrapper.unmount()
+    })
+  }
+
+  it('currentRef read in setup: the child is never linked', async () => {
+    let api!: ReturnType<typeof useForwardElement>
+    const Wrapper = defineComponent({
+      setup(_, { expose }) {
+        api = useForwardElement()
+        const currentRef = api.currentRef
+        expose(api.expose)
+        return () => h(Primitive, { ref: api.forwardRef }, () => String(isRef(currentRef)))
+      },
+    })
+    const wrapper = mount(Wrapper, { attachTo: document.body })
+    await nextTick()
+    expect((api.currentRef.value as any).element).toBeInstanceOf(HTMLElement)
+    expect(api.element.value).toBe(wrapper.element)
     wrapper.unmount()
   })
 })

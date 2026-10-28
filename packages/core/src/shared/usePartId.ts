@@ -1,5 +1,6 @@
 import type { ComputedRef, MaybeRefOrGetter } from 'vue'
-import { computed, onScopeDispose, toValue, watch } from 'vue'
+import { getCurrentInstance, onBeforeUpdate, onScopeDispose, toValue, watch } from 'vue'
+import { getterRef } from './partSurface'
 
 const generatedIds = new WeakMap<object, Record<string, string>>()
 /** Per context and slot: the mounted parts' ids, in the order they claimed the slot. */
@@ -60,33 +61,54 @@ export function usePartId<K extends string>(
   key: K,
 ): ComputedRef<string> {
   const generated = getGeneratedId(context, key) ?? context[key]
-  const claims = getClaims(context, key)
-  const claim = { id: '' }
+  // Allocated on the first claim: most parts never get an `id` prop.
+  let claim: { id: string } | undefined
 
-  function sync() {
+  function sync(claims: Array<{ id: string }>) {
     const next = claims.at(-1)?.id ?? generated
     if (context[key] !== next)
       context[key] = next
   }
-  // Only a part that holds a claim touches the slot: an id-less part leaves
-  // whatever is there (another part's id, or one a composable caller set).
+
   function release() {
+    if (!claim)
+      return
+    const claims = getClaims(context, key)
     const index = claims.indexOf(claim)
     if (index === -1)
       return
     claims.splice(index, 1)
-    sync()
+    sync(claims)
   }
 
-  watch(() => toValue(id) || undefined, (next) => {
+  function update(next: string | undefined) {
     if (!next)
       return release()
+    claim ??= { id: '' }
     claim.id = next
+    const claims = getClaims(context, key)
     if (!claims.includes(claim))
       claims.push(claim)
-    sync()
-  }, { immediate: true })
+    sync(claims)
+  }
+
+  const read = () => toValue(id) || undefined
+  if (typeof id === 'function' && getCurrentInstance()) {
+    // A getter over the part's own props (every caller passes `() => props.id`):
+    // a new prop value always re-renders the part, so re-checking before each
+    // update matches a pre-flush watcher without one per part.
+    let last = read()
+    update(last)
+    onBeforeUpdate(() => {
+      const next = read()
+      if (next !== last)
+        update(last = next)
+    })
+  }
+  else {
+    watch(read, update, { immediate: true })
+  }
   onScopeDispose(release)
 
-  return computed(() => toValue(id) || generated)
+  return getterRef(() => toValue(id) || generated)
 }
