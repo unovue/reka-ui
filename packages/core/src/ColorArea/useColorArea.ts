@@ -3,7 +3,7 @@ import type { ColorAreaRootContext, ColorAreaRootProps } from './ColorAreaRoot.v
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Color, ColorChannel } from '@/shared/color'
 import { computed, nextTick, ref, toValue } from 'vue'
-import { createPartSurface, useControllableState } from '@/shared'
+import { createPartSurface, getterRef, stateToDataAttrs, useControllableState } from '@/shared'
 import { colorToHex, convertToSpace, getAreaBackgroundStyle, getChannelColorSpace, getChannelName, getChannelRange, getChannelValue, isEqualColor, normalizeColor, setChannelValues } from '@/shared/color'
 import { createChangeEndTracker } from '@/shared/color/changeEnd'
 import { convertValueToPercentage, linearScale } from './utils'
@@ -63,11 +63,12 @@ export interface UseColorAreaReturn {
  * @lifecycle pure
  */
 export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn {
-  const colorSpace = computed(() => toValue(props.colorSpace) ?? 'hsl')
-  const xChannel = computed(() => toValue(props.xChannel) ?? 'hue')
-  const yChannel = computed(() => toValue(props.yChannel) ?? 'saturation')
-  const disabled = computed(() => toValue(props.disabled) ?? false)
-  const dir = computed(() => toValue(props.dir) ?? 'ltr')
+  // Getter refs, not computeds: each is one prop read, tracked by the reader.
+  const colorSpace = getterRef(() => toValue(props.colorSpace) ?? 'hsl')
+  const xChannel = getterRef(() => toValue(props.xChannel) ?? 'hue')
+  const yChannel = getterRef(() => toValue(props.yChannel) ?? 'saturation')
+  const disabled = getterRef(() => toValue(props.disabled) ?? false)
+  const dir = getterRef(() => toValue(props.dir) ?? 'ltr')
 
   const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<string | Color, ColorAreaChangeReason>({
     prop: props.modelValue,
@@ -82,8 +83,7 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
   // A string model is parsed once per change; a Color is used as-is.
   const color = computed(() => normalizeColor(modelValue.value ?? '#000000'))
   // The space that holds both axes: the `colorSpace` prop unless an axis is outside it.
-  const workingSpace = computed(() => getChannelColorSpace([xChannel.value, yChannel.value], colorSpace.value))
-  const workingColor = computed(() => convertToSpace(color.value, workingSpace.value))
+  const workingColor = computed(() => convertToSpace(color.value, getChannelColorSpace([xChannel.value, yChannel.value], colorSpace.value)))
 
   // `changeEnd` reports an interaction only once the model holds its last color, so a
   // drag back to the start or an update a controlled parent rejected reports nothing.
@@ -174,6 +174,11 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
   }
 
   const root = createPartSurface<ColorAreaRootState>(() => ({ 'role': 'group', 'dir': dir.value, 'aria-disabled': disabled.value ? 'true' : undefined }), () => ({ disabled: disabled.value }))
+  // The thumb and input surfaces are built on first read: the Root SFC never
+  // reads them (the Thumb SFC builds its own from the context).
+  let thumb: PartSurface<ColorAreaThumbState> | undefined
+  let xInput: PartSurface<ColorAreaInputState> | undefined
+  let yInput: PartSurface<ColorAreaInputState> | undefined
   return {
     modelValue,
     color,
@@ -183,16 +188,22 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
     isControlled,
     root,
     context,
-    thumb: getColorAreaThumbSurface(context),
-    xInput: getColorAreaInputSurface(context, 'x'),
-    yInput: getColorAreaInputSurface(context, 'y'),
+    get thumb() {
+      return thumb ??= getColorAreaThumbSurface(context)
+    },
+    get xInput() {
+      return xInput ??= getColorAreaInputSurface(context, 'x')
+    },
+    get yInput() {
+      return yInput ??= getColorAreaInputSurface(context, 'y')
+    },
     createAreaSurface: (element: Ref<HTMLElement | undefined>) => createColorAreaAreaSurface(context, element),
     areaStyles,
     xValue,
     yValue,
     updateValues,
     commitValues,
-    thumbRef: computed(() => thumbRef.value),
+    thumbRef: getterRef(() => thumbRef.value),
     setThumbElement: (element) => { thumbRef.value = element ?? undefined },
     setInputElement: (axis, element) => { (axis === 'y' ? yInputRef : xInputRef).value = element ?? undefined },
   }
@@ -368,8 +379,18 @@ export function getColorAreaThumbSurface(rootContext: ColorAreaRootContext) {
   }), () => ({ disabled: rootContext.disabled.value }))
 }
 
+/** One thumb position per area, shared by the thumb and both inputs. */
+const thumbPositions = new WeakMap<ColorAreaRootContext, ComputedRef<{ left: string, top: string }>>()
+
 /** The thumb's `left` / `top` within the area, mirrored in RTL. */
 function getColorAreaThumbPosition(rootContext: ColorAreaRootContext) {
+  let position = thumbPositions.get(rootContext)
+  if (!position)
+    thumbPositions.set(rootContext, position = createThumbPosition(rootContext))
+  return position
+}
+
+function createThumbPosition(rootContext: ColorAreaRootContext) {
   return computed(() => {
     const x = convertValueToPercentage(rootContext.xValue.value, rootContext.xRange.value.min, rootContext.xRange.value.max)
     const y = convertValueToPercentage(rootContext.yValue.value, rootContext.yRange.value.min, rootContext.yRange.value.max)
@@ -403,6 +424,27 @@ const VISUALLY_HIDDEN_STYLE = {
 } as const
 
 /**
+ * An input's style inside the thumb: centered, so it never changes. A string,
+ * so an element bound with it unmerged (`ColorAreaThumb`, see
+ * `getColorAreaInputAttrs`) gets one `cssText` write at mount instead of
+ * thirteen style property writes per input.
+ */
+const INPUT_STYLE_IN_THUMB = 'position: absolute; border: 0px; width: 1px; height: 1px; padding: 0px; margin: -1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); clip-path: inset(50%); white-space: nowrap; word-wrap: normal; left: 50%; top: 50%;'
+
+/**
+ * The bindable attrs of an input surface. With the constant (string) thumb
+ * style it skips `mergeProps`, which would turn the string back into an
+ * object; otherwise it is `surface.attrs`.
+ * @internal
+ */
+export function getColorAreaInputAttrs(surface: PartSurface<ColorAreaInputState>): Record<string, any> {
+  const props = surface.props.value
+  if (typeof props.style !== 'string')
+    return surface.attrs.value
+  return { ...stateToDataAttrs(surface.state.value), ...props }
+}
+
+/**
  * Context-pure surface for one axis's visually hidden `input type="range"`.
  *
  * Each channel is a native range input with its own name, value and orientation, as in
@@ -415,14 +457,8 @@ const VISUALLY_HIDDEN_STYLE = {
 export function getColorAreaInputSurface(rootContext: ColorAreaRootContext, axis: ColorAreaAxis, anchor: MaybeRefOrGetter<ColorAreaInputAnchor> = 'thumb') {
   const position = getColorAreaThumbPosition(rootContext)
   const isX = axis === 'x'
-  const channel = computed(() => isX ? rootContext.xChannel.value : rootContext.yChannel.value)
-  const otherChannel = computed(() => isX ? rootContext.yChannel.value : rootContext.xChannel.value)
-  const range = computed(() => isX ? rootContext.xRange.value : rootContext.yRange.value)
-  const value = computed(() => isX ? rootContext.xValue.value : rootContext.yValue.value)
-  const otherValue = computed(() => isX ? rootContext.yValue.value : rootContext.xValue.value)
-  // Every channel steps by 1, and a browser snaps a range input's value to its step anyway:
-  // round it here so the value assistive technology reads is the same everywhere.
-  const inputValue = computed(() => Math.round(value.value))
+  // Plain reads of the context's (already cached) refs: no computed per input.
+  const inputValue = () => Math.round(isX ? rootContext.xValue.value : rootContext.yValue.value)
 
   function handleInput(event: Event) {
     const input = event.target as HTMLInputElement
@@ -435,31 +471,34 @@ export function getColorAreaInputSurface(rootContext: ColorAreaRootContext, axis
     )
     if (changed)
       rootContext.commitValues()
-    // Once a controlled parent has applied (or rejected) the update, show the model's
-    // value: a rejected update does not re-render, so the input would keep the new value.
     nextTick(() => {
-      input.value = String(inputValue.value)
+      input.value = String(inputValue())
     })
   }
+  function handleFocus() {
+    rootContext.focusedAxis.value = axis
+  }
 
-  return createPartSurface<ColorAreaInputState>(() => ({
-    'type': 'range',
-    'min': range.value.min,
-    'max': range.value.max,
-    'step': range.value.step,
-    'value': inputValue.value,
-    'disabled': rootContext.disabled.value,
-    'tabindex': rootContext.focusedAxis.value === axis ? 0 : -1,
-    'aria-label': getChannelName(channel.value),
-    'aria-roledescription': '2D slider',
-    'aria-orientation': isX ? 'horizontal' : 'vertical',
-    // The channel's own value, then the other channel for context.
-    'aria-valuetext': `${inputValue.value}, ${getChannelName(otherChannel.value)} ${Math.round(otherValue.value)}`,
-    'style': {
-      ...VISUALLY_HIDDEN_STYLE,
-      ...(toValue(anchor) === 'area' ? position.value : { left: '50%', top: '50%' }),
-    },
-    'onFocus': () => { rootContext.focusedAxis.value = axis },
-    'onInput': handleInput,
-  }), () => ({ disabled: rootContext.disabled.value }))
+  return createPartSurface<ColorAreaInputState>(() => {
+    const range = isX ? rootContext.xRange.value : rootContext.yRange.value
+    const value = inputValue()
+    const otherChannel = isX ? rootContext.yChannel.value : rootContext.xChannel.value
+    const otherValue = isX ? rootContext.yValue.value : rootContext.xValue.value
+    return {
+      'type': 'range',
+      'min': range.min,
+      'max': range.max,
+      'step': range.step,
+      'value': value,
+      'disabled': rootContext.disabled.value,
+      'tabindex': rootContext.focusedAxis.value === axis ? 0 : -1,
+      'aria-label': getChannelName(isX ? rootContext.xChannel.value : rootContext.yChannel.value),
+      'aria-roledescription': '2D slider',
+      'aria-orientation': isX ? 'horizontal' : 'vertical',
+      'aria-valuetext': `${value}, ${getChannelName(otherChannel)} ${Math.round(otherValue)}`,
+      'style': toValue(anchor) === 'area' ? { ...VISUALLY_HIDDEN_STYLE, ...position.value } : INPUT_STYLE_IN_THUMB,
+      'onFocus': handleFocus,
+      'onInput': handleInput,
+    }
+  }, () => ({ disabled: rootContext.disabled.value }))
 }

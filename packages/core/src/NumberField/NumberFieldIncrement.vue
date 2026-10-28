@@ -1,7 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { computed } from 'vue'
-import { useForwardElement } from '@/shared'
+import { getterRef, useForwardElement } from '@/shared'
 import { injectNumberFieldRootContext } from './NumberFieldRoot.vue'
 import { getNumberFieldButtonSurface, isNumberFieldButtonDisabled } from './useNumberField'
 import { usePressedHold } from './utils'
@@ -19,7 +18,8 @@ const props = withDefaults(defineProps<NumberFieldIncrementProps>(), {
 })
 
 const rootContext = injectNumberFieldRootContext()
-const isDisabled = computed(() => isNumberFieldButtonDisabled(rootContext, 'increase', props.disabled))
+// A getter ref over the root's cached state (the same derivation the surface reads).
+const isDisabled = getterRef(() => isNumberFieldButtonDisabled(rootContext, 'increase', props.disabled))
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)

@@ -342,3 +342,18 @@ describe('useNumberField — public export', () => {
     expect((Reka as Record<string, unknown>).getNumberFieldButtonSurface).toBeUndefined()
   })
 })
+
+describe('useNumberField lean surfaces', () => {
+  it('builds the button surfaces on first read, once', () => {
+    const field = useNumberField({ defaultValue: 5, max: 5 })
+    expect(field.incrementButton).toBe(field.incrementButton)
+    expect(field.decrementButton).toBe(field.decrementButton)
+    expect(field.incrementButton.attrs.value.disabled).toBe('')
+    expect(field.decrementButton.attrs.value.disabled).toBeUndefined()
+  })
+
+  it('formats `textValue` with the field formatter', () => {
+    const field = useNumberField({ defaultValue: 1234.5, locale: 'de-DE' })
+    expect(field.textValue.value).toBe('1.234,5')
+  })
+})

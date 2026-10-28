@@ -346,3 +346,12 @@ describe('useSlider — public export', () => {
     expect(typeof Reka.useSlider).toBe('function')
   })
 })
+
+describe('useSlider lean surfaces', () => {
+  it('builds `track` and `range` on first read, once', () => {
+    const slider = useSlider({ defaultValue: [20, 60] })
+    expect(slider.track).toBe(slider.track)
+    expect(slider.range).toBe(slider.range)
+    expect(slider.range.attrs.value.style).toMatchObject({ left: '20%', right: '40%' })
+  })
+})

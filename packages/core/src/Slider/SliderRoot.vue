@@ -71,7 +71,7 @@ export const [injectSliderRootContext, provideSliderRootContext]
 </script>
 
 <script setup lang="ts">
-import { computed, mergeProps, toRefs } from 'vue'
+import { computed, mergeProps } from 'vue'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import SliderHorizontal from './SliderHorizontal.vue'
 import SliderVertical from './SliderVertical.vue'
@@ -103,8 +103,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { dir: propDir } = toRefs(props)
-const dir = useDirection(propDir)
+const dir = useDirection(() => props.dir)
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const isFormControl = useFormControl(currentElement)
@@ -141,13 +140,10 @@ provideSliderOrientationContext(orientationGeometry)
 // - trailing (after `$attrs`): `aria-disabled`, `data-disabled` and `dir` were
 //   bound by SliderRoot after `v-bind="$attrs"`, so the component wins;
 // - the pointerdown bookkeeping is bound with `@pointerdown`, after a consumer's.
-const leadingAttrs = computed(() => {
-  const { onKeydown, style, 'data-orientation': dataOrientation } = root.attrs.value
-  return { onKeydown, style, 'data-orientation': dataOrientation }
-})
-const rootAttrs = computed(() => {
-  const { onKeydown: _onKeydown, onPointerdown: _onPointerdown, style: _style, 'data-orientation': _dataOrientation, ...attrs } = root.attrs.value
-  return attrs
+// One split of the root attrs (one computed, one attrs read) for all three.
+const split = computed(() => {
+  const { onKeydown, onPointerdown, style, 'data-orientation': dataOrientation, ...attrs } = root.attrs.value
+  return { leading: { onKeydown, style, 'data-orientation': dataOrientation }, attrs, onPointerdown }
 })
 </script>
 
@@ -155,13 +151,13 @@ const rootAttrs = computed(() => {
   <CollectionSlot>
     <component
       :is="orientation === 'horizontal' ? SliderHorizontal : SliderVertical"
-      v-bind="mergeProps(leadingAttrs, $attrs, rootAttrs)"
+      v-bind="mergeProps(split.leading, $attrs, split.attrs)"
       :ref="forwardRef"
       :as-child="asChild"
       :as="as"
       :min="min"
       :max="max"
-      @pointerdown="root.props.value.onPointerdown"
+      @pointerdown="split.onPointerdown"
       @slide-start="(value: number, event: PointerEvent) => startSlide(value, event)"
       @slide-move="(value: number, event: PointerEvent) => moveSlide(value, event)"
       @slide-end="endSlide()"

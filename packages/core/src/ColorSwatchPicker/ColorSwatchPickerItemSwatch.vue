@@ -5,16 +5,15 @@ export interface ColorSwatchPickerItemSwatchProps extends Omit<ColorSwatchProps,
 </script>
 
 <script setup lang="ts">
-import { mergeProps } from 'vue'
 import { ColorSwatch } from '@/ColorSwatch'
 import { useForwardElement } from '@/shared'
 import { injectColorSwatchPickerItemContext } from './ColorSwatchPickerItem.vue'
-import { getColorSwatchPickerItemSwatchSurface } from './useColorSwatchPicker'
 
 const props = defineProps<ColorSwatchPickerItemSwatchProps>()
 
+// The item's color, bound directly: the swatch surface (`getColorSwatchPickerItemSwatchSurface`)
+// is exactly `{ color }` with no state, so building one per swatch only cost allocations.
 const colorSwatchPickerItemContext = injectColorSwatchPickerItemContext()
-const part = getColorSwatchPickerItemSwatchSurface(colorSwatchPickerItemContext)
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
@@ -24,7 +23,8 @@ defineExpose(expose)
   <ColorSwatch
     v-slot="slotProps"
     :ref="forwardRef"
-    v-bind="mergeProps(props, part.attrs.value)"
+    v-bind="props"
+    :color="colorSwatchPickerItemContext.color.value"
   >
     <!-- Forwarded, so `asChild` has a child to render as. -->
     <slot v-bind="slotProps" />

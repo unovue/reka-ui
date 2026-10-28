@@ -4,7 +4,7 @@ import type { SliderOrientation } from './utils'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { DataOrientation, Direction } from '@/shared/types'
 import { computed, ref, toRaw, toValue } from 'vue'
-import { clamp, createPartSurface, useControllableState } from '@/shared'
+import { clamp, createPartSurface, fieldRef, getterRef, useControllableState } from '@/shared'
 import {
   ARROW_KEYS,
   BACK_KEYS,
@@ -71,17 +71,21 @@ export function getSliderRangeSurface(
   context: Pick<SliderRootContext, 'disabled' | 'orientation' | 'currentModelValue' | 'min' | 'max'>,
   orientation: Pick<SliderOrientation, 'startEdge' | 'endEdge'>,
 ): PartSurface<SliderRangeState> {
-  const percentages = computed(() => context.currentModelValue.value.map(value =>
-    convertValueToPercentage(value, context.min.value, context.max.value),
-  ))
-  const offsetStart = computed(() => context.currentModelValue.value.length > 1 ? Math.min(...percentages.value) : 0)
-  const offsetEnd = computed(() => 100 - Math.max(...percentages.value, 0))
+  // One computed for both offsets (they share the percentages).
+  const offsets = computed(() => {
+    const values = context.currentModelValue.value
+    const percentages = values.map(value => convertValueToPercentage(value, context.min.value, context.max.value))
+    return {
+      start: values.length > 1 ? Math.min(...percentages) : 0,
+      end: 100 - Math.max(...percentages, 0),
+    }
+  })
 
   return createPartSurface<SliderRangeState>(
     () => ({
       style: {
-        [orientation.startEdge.value]: `${offsetStart.value}%`,
-        [orientation.endEdge.value]: `${offsetEnd.value}%`,
+        [orientation.startEdge.value]: `${offsets.value.start}%`,
+        [orientation.endEdge.value]: `${offsets.value.end}%`,
       },
     }),
     () => partState(context),
@@ -109,43 +113,46 @@ export function getSliderThumbSurface(
   orientation: Pick<SliderOrientation, 'startEdge' | 'direction'>,
   options: SliderThumbSurfaceOptions,
 ): PartSurface<SliderThumbState> {
-  const index = computed(() => toValue(options.index))
-  const value = computed(() => context.modelValue?.value?.[index.value])
-  const percent = computed(() => value.value === undefined ? 0 : convertValueToPercentage(value.value, context.min.value ?? 0, context.max.value ?? 100))
-  const label = computed(() => getLabel(index.value, context.modelValue?.value?.length ?? 0))
-  const thumbInBoundsOffset = computed(() => {
-    const size = toValue(options.size)
-    if (context.thumbAlignment.value === 'overflow' || !size)
-      return 0
-    return getThumbInBoundsOffset(size, percent.value, orientation.direction.value)
-  })
-  const isMounted = computed(() => options.isMounted === undefined ? true : toValue(options.isMounted))
+  // Plain reads, evaluated with the surface (once per render): each is a few
+  // property reads, cheaper than a computed per value per thumb.
+  const getIndex = () => toValue(options.index)
+  function onFocus() {
+    context.valueIndexToChangeRef.value = getIndex()
+  }
 
   return createPartSurface<SliderThumbState>(
-    () => ({
-      'role': 'slider',
-      'tabindex': context.disabled.value ? undefined : 0,
-      'aria-label': toValue(options.ariaLabel) || label.value,
-      'aria-valuenow': value.value,
-      'aria-valuemin': context.min.value,
-      'aria-valuemax': context.max.value,
-      'aria-orientation': context.orientation.value,
-      'style': {
-        transform: 'var(--reka-slider-thumb-transform)',
-        position: 'absolute',
-        [orientation.startEdge.value]: `calc(${percent.value}% + ${thumbInBoundsOffset.value}px)`,
-        /**
-         * There will be no value on initial render while we work out the index so we hide thumbs
-         * without a value, otherwise SSR will render them in the wrong position before they
-         * snap into the correct position during hydration which would be visually jarring for
-         * slower connections.
-         */
-        display: !isMounted.value && value.value === undefined ? 'none' : undefined,
-      },
-      'onFocus': () => {
-        context.valueIndexToChangeRef.value = index.value
-      },
-    }),
+    () => {
+      const index = getIndex()
+      const value = context.modelValue?.value?.[index]
+      const percent = value === undefined ? 0 : convertValueToPercentage(value, context.min.value ?? 0, context.max.value ?? 100)
+      const size = toValue(options.size)
+      const thumbInBoundsOffset = context.thumbAlignment.value === 'overflow' || !size
+        ? 0
+        : getThumbInBoundsOffset(size, percent, orientation.direction.value)
+      const isMounted = options.isMounted === undefined ? true : toValue(options.isMounted)
+      return {
+        'role': 'slider',
+        'tabindex': context.disabled.value ? undefined : 0,
+        'aria-label': toValue(options.ariaLabel) || getLabel(index, context.modelValue?.value?.length ?? 0),
+        'aria-valuenow': value,
+        'aria-valuemin': context.min.value,
+        'aria-valuemax': context.max.value,
+        'aria-orientation': context.orientation.value,
+        'style': {
+          transform: 'var(--reka-slider-thumb-transform)',
+          position: 'absolute',
+          [orientation.startEdge.value]: `calc(${percent}% + ${thumbInBoundsOffset}px)`,
+          /**
+           * There will be no value on initial render while we work out the index so we hide thumbs
+           * without a value, otherwise SSR will render them in the wrong position before they
+           * snap into the correct position during hydration which would be visually jarring for
+           * slower connections.
+           */
+          display: !isMounted && value === undefined ? 'none' : undefined,
+        },
+        'onFocus': onFocus,
+      }
+    },
     () => partState(context),
   )
 }
@@ -236,15 +243,16 @@ export interface UseSliderReturn {
  * @lifecycle pure
  */
 export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
-  const min = computed(() => toValue(props.min) ?? 0)
-  const max = computed(() => toValue(props.max) ?? 100)
-  const step = computed(() => toValue(props.step) ?? 1)
-  const minStepsBetweenThumbs = computed(() => toValue(props.minStepsBetweenThumbs) ?? 0)
-  const orientation = computed<DataOrientation>(() => toValue(props.orientation) ?? 'horizontal')
-  const disabled = computed(() => toValue(props.disabled) ?? false)
-  const inverted = computed(() => toValue(props.inverted) ?? false)
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
-  const thumbAlignment = computed<ThumbAlignment>(() => toValue(props.thumbAlignment) ?? 'contain')
+  // Getter refs, not computeds: each is one prop read, tracked by the reader.
+  const min = getterRef(() => toValue(props.min) ?? 0)
+  const max = getterRef(() => toValue(props.max) ?? 100)
+  const step = getterRef(() => toValue(props.step) ?? 1)
+  const minStepsBetweenThumbs = getterRef(() => toValue(props.minStepsBetweenThumbs) ?? 0)
+  const orientation = getterRef<DataOrientation>(() => toValue(props.orientation) ?? 'horizontal')
+  const disabled = getterRef(() => toValue(props.disabled) ?? false)
+  const inverted = getterRef(() => toValue(props.inverted) ?? false)
+  const dir = getterRef<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const thumbAlignment = getterRef<ThumbAlignment>(() => toValue(props.thumbAlignment) ?? 'contain')
 
   const valueIndexToChangeRef = ref(0)
   const thumbElements = ref<HTMLElement[]>([]) as Ref<HTMLElement[]>
@@ -350,9 +358,10 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
 
   const orientationGeometry = computed(() => getSliderOrientationGeometry(orientation.value, dir.value, inverted.value))
   const orientationContext: SliderOrientation = {
-    startEdge: computed(() => orientationGeometry.value.startEdge),
-    endEdge: computed(() => orientationGeometry.value.endEdge),
-    direction: computed(() => orientationGeometry.value.direction),
+    // Fields of the one geometry computed, not a computed each.
+    startEdge: fieldRef(orientationGeometry, 'startEdge'),
+    endEdge: fieldRef(orientationGeometry, 'endEdge'),
+    direction: fieldRef(orientationGeometry, 'direction'),
     get size() {
       return orientationGeometry.value.size
     },
@@ -411,14 +420,18 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
         '--reka-slider-thumb-transform': getSliderThumbTransform(orientation.value, orientationGeometry.value.isSlidingFromStart, thumbAlignment.value),
       },
       'onKeydown': onKeydown,
-      // Records where a drag started, so `endSlide` can tell whether it changed anything.
-      'onPointerdown': () => {
-        if (!disabled.value)
-          valuesBeforeSlideStart = currentModelValue.value
-      },
+      'onPointerdown': onPointerdown,
     }),
     () => partState(context),
   )
+  // Records where a drag started, so `endSlide` can tell whether it changed anything.
+  function onPointerdown() {
+    if (!disabled.value)
+      valuesBeforeSlideStart = currentModelValue.value
+  }
+  // Built on first read: the Root SFC never reads them (Track and Range build their own).
+  let track: PartSurface<SliderTrackState> | undefined
+  let range: PartSurface<SliderRangeState> | undefined
 
   return {
     modelValue,
@@ -434,8 +447,12 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     endSlide,
     orientation: orientationContext,
     root,
-    track: getSliderTrackSurface(context),
-    range: getSliderRangeSurface(context, orientationContext),
+    get track() {
+      return track ??= getSliderTrackSurface(context)
+    },
+    get range() {
+      return range ??= getSliderRangeSurface(context, orientationContext)
+    },
     getThumbSurface: options => getSliderThumbSurface(context, orientationContext, options),
     context,
   }

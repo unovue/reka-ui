@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import * as RadioGroup from './index'
-import { useRadioGroup } from './useRadioGroup'
+import { getRadioGroupItemState, useRadioGroup } from './useRadioGroup'
 
 const { RadioGroupItem, RadioGroupRoot } = RadioGroup
 
@@ -419,5 +419,25 @@ describe('useRadioGroup — public export', () => {
     expect('getRadioGroupItemSurface' in RadioGroup).toBe(false)
     expect('getRadioGroupIndicatorSurface' in RadioGroup).toBe(false)
     expect('getRadioSurface' in RadioGroup).toBe(false)
+  })
+})
+
+describe('getRadioGroupItemState', () => {
+  it('is the state the item surface is built from, reactive to the group and the item', () => {
+    const disabled = ref(false)
+    const required = ref(false)
+    const r = useRadioGroup({ defaultValue: 'a', disabled, required })
+    const itemDisabled = ref<boolean | undefined>(undefined)
+    const state = getRadioGroupItemState(r.context, 'a', itemDisabled)
+    expect([state.checked.value, state.disabled.value, state.required.value]).toEqual([true, false, false])
+    expect(r.getItemSurface('a').state.value).toMatchObject({ state: 'checked', disabled: false })
+    r.context.changeModelValue('b')
+    expect(state.checked.value).toBe(false)
+    itemDisabled.value = true
+    expect(state.disabled.value).toBe(true)
+    itemDisabled.value = undefined
+    disabled.value = true
+    required.value = true
+    expect([state.disabled.value, state.required.value]).toEqual([true, true])
   })
 })

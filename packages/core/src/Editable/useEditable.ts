@@ -3,7 +3,7 @@ import type { ActivationMode, EditableRootContext, EditableState, SubmitMode } f
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toRaw, toValue, watch } from 'vue'
-import { createPartSurface, useControllableState } from '@/shared'
+import { createPartSurface, getterRef, useControllableState } from '@/shared'
 
 /**
  * Why the value changed; carried as `details.reason` on every change (#2828).
@@ -227,17 +227,18 @@ export function useEditable(props: UseEditableProps = {}): UseEditableReturn {
     onUpdate: props.onUpdate as ((value: string | null | undefined, details: ChangeEventDetails<EditableChangeReason>) => void) | undefined,
   })
 
-  const disabled = computed(() => toValue(props.disabled) ?? false)
-  const readonly = computed(() => toValue(props.readonly) ?? false)
-  const autoResize = computed(() => toValue(props.autoResize) ?? false)
-  const selectOnFocus = computed(() => toValue(props.selectOnFocus) ?? false)
-  const submitMode = computed<SubmitMode>(() => toValue(props.submitMode) ?? 'blur')
-  const activationMode = computed<ActivationMode>(() => toValue(props.activationMode) ?? 'focus')
-  const startWithEditMode = computed(() => toValue(props.startWithEditMode) ?? false)
-  const maxLength = computed(() => toValue(props.maxLength))
-  const id = computed(() => toValue(props.id))
-  const name = computed(() => toValue(props.name))
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  // Getter refs, not computeds: each is one prop read, tracked by the reader.
+  const disabled = getterRef(() => toValue(props.disabled) ?? false)
+  const readonly = getterRef(() => toValue(props.readonly) ?? false)
+  const autoResize = getterRef(() => toValue(props.autoResize) ?? false)
+  const selectOnFocus = getterRef(() => toValue(props.selectOnFocus) ?? false)
+  const submitMode = getterRef<SubmitMode>(() => toValue(props.submitMode) ?? 'blur')
+  const activationMode = getterRef<ActivationMode>(() => toValue(props.activationMode) ?? 'focus')
+  const startWithEditMode = getterRef(() => toValue(props.startWithEditMode) ?? false)
+  const maxLength = getterRef(() => toValue(props.maxLength))
+  const id = getterRef(() => toValue(props.id))
+  const name = getterRef(() => toValue(props.name))
+  const dir = getterRef<Direction>(() => toValue(props.dir) ?? 'ltr')
   const placeholder = computed(() => {
     const value = toValue(props.placeholder) ?? 'Enter text...'
     return typeof value === 'string' ? { edit: value, preview: value } : value
@@ -246,7 +247,7 @@ export function useEditable(props: UseEditableProps = {}): UseEditableReturn {
   const isEditing = ref(startWithEditMode.value)
   const inputValue = ref(modelValue.value) as Ref<string | null | undefined>
   const inputRef = ref<HTMLInputElement | undefined>()
-  const isEmpty = computed(() => modelValue.value === '')
+  const isEmpty = getterRef(() => modelValue.value === '')
 
   watch(() => modelValue.value, () => {
     inputValue.value = modelValue.value
@@ -346,6 +347,14 @@ export function useEditable(props: UseEditableProps = {}): UseEditableReturn {
   }
 
   const root = createPartSurface<Record<string, never>>(() => ({ dir: dir.value }), () => ({}))
+  // The part surfaces are built on first read: the Root SFC never reads them
+  // (each part SFC builds its own from the context).
+  let area: PartSurface<EditableAreaState> | undefined
+  let preview: PartSurface<EditablePreviewState> | undefined
+  let input: PartSurface<EditableInputState> | undefined
+  let editTrigger: PartSurface<EditableTriggerState> | undefined
+  let submitTrigger: PartSurface<EditableTriggerState> | undefined
+  let cancelTrigger: PartSurface<EditableTriggerState> | undefined
 
   return {
     modelValue,
@@ -360,12 +369,24 @@ export function useEditable(props: UseEditableProps = {}): UseEditableReturn {
     lastChangeDetails,
     isControlled,
     root,
-    area: getEditableAreaSurface(context),
-    preview: getEditablePreviewSurface(context),
-    input: getEditableInputSurface(context),
-    editTrigger: getEditableTriggerSurface(context, 'edit'),
-    submitTrigger: getEditableTriggerSurface(context, 'submit'),
-    cancelTrigger: getEditableTriggerSurface(context, 'cancel'),
+    get area() {
+      return area ??= getEditableAreaSurface(context)
+    },
+    get preview() {
+      return preview ??= getEditablePreviewSurface(context)
+    },
+    get input() {
+      return input ??= getEditableInputSurface(context)
+    },
+    get editTrigger() {
+      return editTrigger ??= getEditableTriggerSurface(context, 'edit')
+    },
+    get submitTrigger() {
+      return submitTrigger ??= getEditableTriggerSurface(context, 'submit')
+    },
+    get cancelTrigger() {
+      return cancelTrigger ??= getEditableTriggerSurface(context, 'cancel')
+    },
     context,
   }
 }

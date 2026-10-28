@@ -20,7 +20,7 @@ export type ColorSwatchPickerRootEmits = Omit<ListboxRootEmits, 'update:modelVal
 </script>
 
 <script setup lang="ts">
-import { computed, mergeProps } from 'vue'
+import { mergeProps } from 'vue'
 import { ListboxContent, ListboxRoot } from '@/Listbox'
 import { useColorSwatchPicker } from './useColorSwatchPicker'
 
@@ -46,10 +46,12 @@ const { listboxProps } = useColorSwatchPicker({
 
 // The model has one update channel so cancellation cannot be bypassed by forwarding.
 const forwardedProps = useForwardPropsEmits(props, emits)
-const forwarded = computed(() => {
+// Read at render time (not cached in a computed) so the forwarded listeners
+// follow the ones currently bound (see `useForwardPropsEmits`).
+function forwarded() {
   const { modelValue, defaultValue, 'onUpdate:modelValue': update, 'onBeforeUpdate:modelValue': beforeUpdate, ...rest } = forwardedProps.value
   return rest
-})
+}
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
@@ -58,7 +60,7 @@ defineExpose(expose)
 <template>
   <ListboxRoot
     :ref="forwardRef"
-    v-bind="mergeProps(forwarded, listboxProps)"
+    v-bind="mergeProps(forwarded(), listboxProps)"
     as-child
   >
     <ListboxContent
