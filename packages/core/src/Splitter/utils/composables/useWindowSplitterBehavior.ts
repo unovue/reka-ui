@@ -80,5 +80,9 @@ export function useWindowSplitterResizeHandlerBehavior({
     onCleanup(() => {
       handleElement.removeEventListener('keydown', onKeyDown)
     })
+  }, {
+    // After render: the handle is looked up by the attributes it renders, which a
+    // handle mounted after its group (a custom element) does not have during setup.
+    flush: 'post',
   })
 }

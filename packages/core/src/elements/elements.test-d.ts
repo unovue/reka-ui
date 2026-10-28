@@ -38,6 +38,16 @@ describe('element typings', () => {
     expectTypeOf<string | Color>().toExtend<NonNullable<HTMLElementTagNameMap['reka-color-field-root']['modelValue']>>()
   })
 
+  it('types the menu, toast and arrow tags', () => {
+    document.createElement('reka-dropdown-menu-item').addEventListener('select', (event) => {
+      expectTypeOf(event.detail.value).toEqualTypeOf<Event>()
+    })
+    document.createElement('reka-toast-provider').addEventListener('update-toasts', (event) => {
+      expectTypeOf(event.detail.value[0].id).toEqualTypeOf<string>()
+    })
+    expectTypeOf(document.createElement('reka-popover-arrow').rounded).toEqualTypeOf<boolean | undefined>()
+  })
+
   it('types JSX event props in kebab-case, and steers away from camelCase handlers', () => {
     type Switch = RekaIntrinsicElements<{ defaultValue?: string, title?: string }>['reka-switch-root']
     type OnUpdate = NonNullable<Switch['onupdate-model-value']>

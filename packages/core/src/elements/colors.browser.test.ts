@@ -52,6 +52,8 @@ describe('color field elements', () => {
 
     form.reset()
     await vi.waitFor(() => expect(input.value).toBe('#ff0000'))
+    // The reset's event carries a `Color`, as the part's own do, not the CSS string default.
+    expect(values).toEqual(['#00ff00', '#ff0000'])
   })
 
   it('takes a `Color` object as a property', async () => {

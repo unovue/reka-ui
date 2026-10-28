@@ -9,6 +9,8 @@ import { CalendarRoot } from '@/Calendar'
 import { CheckboxGroupRoot } from '@/Checkbox'
 import { DatePickerField } from '@/DatePicker'
 import { DialogRoot } from '@/Dialog'
+import { FieldError, FieldLabel } from '@/Field'
+import { FormRoot } from '@/Form'
 import { NumberFieldInput, NumberFieldRoot } from '@/NumberField'
 import { PopoverContent } from '@/Popover'
 import { SwitchRoot } from '@/Switch'
@@ -124,11 +126,9 @@ describe('attribute and event mapping', () => {
     expect(reviveFormState({ kind: 'numbers', attribute: 'model-value' }, serializeFormState({ kind: 'numbers' }, [20, 80]))).toEqual([20, 80])
   })
 
-  it('reads the part hints: input and svg targets, content kept inside, `asChild` and forms', () => {
-    const input = getPartMeta({ component: NumberFieldInput, target: 'input' })
-    expect(input.target).toBe('input')
-    expect(input.siblingsInside).toBe(false)
-    expect(getPartMeta({ component: CalendarRoot, siblingsInside: true }).siblingsInside).toBe(true)
+  it('reads the part hints of the date and numeric families: `asChild` and forms', () => {
+    expect(getPartMeta({ component: NumberFieldInput, target: 'input' }).inputTarget).toBe(true)
+    expect(getPartMeta({ component: CalendarRoot, siblings: 'inside' }).siblings).toBe('inside')
     // A wrapping part without its own `asChild` prop can still declare it passes it through.
     expect(getPartMeta({ component: DatePickerField }).hasAsChild).toBe(false)
     const field = getPartMeta({ component: DatePickerField, asChild: true, formAssociated: true })
@@ -143,6 +143,21 @@ describe('attribute and event mapping', () => {
     expect(dialog.byAttribute.get('modal')?.defaultTrue).toBe(true)
     expect(dialog.byAttribute.get('open')?.defaultTrue).toBeUndefined()
     expect(getPartMeta({ component: SwitchRoot }).byAttribute.get('disabled')?.defaultTrue).toBeUndefined()
+  })
+
+  it('leaves fixed props out of the element API, and gates listened emits', () => {
+    const label = getPartMeta({ component: FieldLabel, fixedProps: { nativeLabel: false, for: undefined } })
+    expect(label.observedAttributes).not.toContain('native-label')
+    expect(label.observedAttributes).not.toContain('for')
+    expect(label.properties).not.toContain('nativeLabel')
+    expect(label.fixedProps).toEqual({ nativeLabel: false, for: undefined })
+    const form = getPartMeta({ component: FormRoot, listenedEmits: ['formSubmit'] })
+    expect([...form.listenedEvents]).toEqual(['form-submit'])
+    expect(getPartMeta({ component: FieldError, attributes: { match: 'booleanish' } }).byAttribute.get('match')?.kind).toBe('booleanish')
+    // `siblings: true` is `'after'`.
+    expect(getPartMeta({ component: FormRoot, siblings: true }).siblings).toBe('after')
+    expect(getPartMeta({ component: FormRoot, siblings: 'inside' }).siblings).toBe('inside')
+    expect(getPartMeta({ component: FormRoot }).siblings).toBe(false)
   })
 
   it('names events in kebab-case, without colons', () => {
@@ -251,6 +266,114 @@ describe('accessibility (axe)', () => {
     expect(await axe(document.body)).toHaveNoViolations()
   })
 
+  it('display parts', async () => {
+    const container = render(`
+      <reka-aspect-ratio ratio="2"><span>Media</span></reka-aspect-ratio>
+      <reka-avatar-root><reka-avatar-fallback>CT</reka-avatar-fallback></reka-avatar-root>
+      <reka-separator></reka-separator>
+      <reka-progress-root model-value="40" aria-label="Upload"><reka-progress-indicator></reka-progress-indicator></reka-progress-root>
+      <button><reka-visually-hidden>Save</reka-visually-hidden></button>
+    `)
+    await mounted('reka-avatar-fallback')
+    await mounted('reka-progress-indicator')
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('radio and toggle groups, and a toolbar', async () => {
+    const container = render(`
+      <form>
+        <reka-radio-group-root aria-label="Density" name="density" default-value="a">
+          <reka-radio-group-item value="a" aria-label="Default"><reka-radio-group-indicator></reka-radio-group-indicator></reka-radio-group-item>
+          <reka-radio-group-item value="b" aria-label="Compact"><reka-radio-group-indicator></reka-radio-group-indicator></reka-radio-group-item>
+        </reka-radio-group-root>
+        <reka-toggle-group-root type="multiple" aria-label="Formatting" name="format">
+          <reka-toggle-group-item value="bold" aria-label="Bold">B</reka-toggle-group-item>
+          <reka-toggle-group-item value="italic" aria-label="Italic">I</reka-toggle-group-item>
+        </reka-toggle-group-root>
+      </form>
+      <reka-toolbar-root aria-label="Editing">
+        <reka-toolbar-toggle-group type="single" aria-label="Alignment">
+          <reka-toolbar-toggle-item value="left">Left</reka-toolbar-toggle-item>
+        </reka-toolbar-toggle-group>
+        <reka-toolbar-separator></reka-toolbar-separator>
+        <reka-toolbar-button>Share</reka-toolbar-button>
+      </reka-toolbar-root>
+    `)
+    await mounted('reka-radio-group-indicator')
+    await mounted('reka-toolbar-button')
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('pagination and stepper', async () => {
+    const container = render(`
+      <reka-pagination-root total="30" items-per-page="10">
+        <reka-pagination-list>
+          <reka-pagination-prev>Previous</reka-pagination-prev>
+          <reka-pagination-list-item value="1">1</reka-pagination-list-item>
+          <reka-pagination-list-item value="2">2</reka-pagination-list-item>
+          <reka-pagination-ellipsis>…</reka-pagination-ellipsis>
+          <reka-pagination-next>Next</reka-pagination-next>
+        </reka-pagination-list>
+      </reka-pagination-root>
+      <reka-stepper-root default-value="1">
+        <reka-stepper-item step="1">
+          <reka-stepper-trigger>
+            <reka-stepper-indicator>1</reka-stepper-indicator>
+            <reka-stepper-title>Address</reka-stepper-title>
+          </reka-stepper-trigger>
+          <reka-stepper-description>Where to ship</reka-stepper-description>
+          <reka-stepper-separator></reka-stepper-separator>
+        </reka-stepper-item>
+        <reka-stepper-item step="2">
+          <reka-stepper-trigger>
+            <reka-stepper-indicator>2</reka-stepper-indicator>
+            <reka-stepper-title>Payment</reka-stepper-title>
+          </reka-stepper-trigger>
+        </reka-stepper-item>
+      </reka-stepper-root>
+    `)
+    await mounted('reka-pagination-next')
+    await mounted('reka-stepper-separator')
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('scroll area and splitter', async () => {
+    const container = render(`
+      <reka-scroll-area-root type="always" style="height: 100px">
+        <reka-scroll-area-viewport><p>Content</p></reka-scroll-area-viewport>
+        <reka-scroll-area-scrollbar><reka-scroll-area-thumb></reka-scroll-area-thumb></reka-scroll-area-scrollbar>
+      </reka-scroll-area-root>
+      <reka-splitter-group direction="horizontal">
+        <reka-splitter-panel default-size="50">Left</reka-splitter-panel>
+        <reka-splitter-resize-handle aria-label="Resize"></reka-splitter-resize-handle>
+        <reka-splitter-panel default-size="50">Right</reka-splitter-panel>
+      </reka-splitter-group>
+    `)
+    await mounted('reka-scroll-area-viewport')
+    await mounted('reka-splitter-resize-handle')
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('a form with a field, in a config provider', async () => {
+    const container = render(`
+      <reka-config-provider dir="rtl">
+        <reka-form-root>
+          <form novalidate>
+            <reka-field-root name="terms" required>
+              <reka-field-label>Accept the terms</reka-field-label>
+              <reka-checkbox-root></reka-checkbox-root>
+              <reka-field-description>Required to continue.</reka-field-description>
+              <reka-field-error match>Accept the terms to continue.</reka-field-error>
+            </reka-field-root>
+          </form>
+        </reka-form-root>
+      </reka-config-provider>
+    `)
+    await mounted('reka-field-error')
+    await vi.waitFor(() => expect(query('reka-checkbox-root').getAttribute('aria-labelledby')).toBe(query('reka-field-label').id))
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
   it('an open popover', async () => {
     render(`
       <reka-popover-root default-open>
@@ -334,6 +457,211 @@ describe('accessibility (axe)', () => {
     cleanup()
     vi.unstubAllGlobals()
   })
+
+  it('an open alert dialog', async () => {
+    render(`
+      <reka-alert-dialog-root default-open>
+        <reka-alert-dialog-trigger>Delete</reka-alert-dialog-trigger>
+        <reka-alert-dialog-portal>
+          <reka-alert-dialog-overlay></reka-alert-dialog-overlay>
+          <reka-alert-dialog-content>
+            <reka-alert-dialog-title>Delete the file?</reka-alert-dialog-title>
+            <reka-alert-dialog-description>This cannot be undone.</reka-alert-dialog-description>
+            <reka-alert-dialog-cancel>Cancel</reka-alert-dialog-cancel>
+            <reka-alert-dialog-action>Delete</reka-alert-dialog-action>
+          </reka-alert-dialog-content>
+        </reka-alert-dialog-portal>
+      </reka-alert-dialog-root>
+    `)
+    await mounted('reka-alert-dialog-action')
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+
+  it('an open dropdown menu', async () => {
+    render(`
+      <reka-dropdown-menu-root default-open>
+        <reka-dropdown-menu-trigger>Options</reka-dropdown-menu-trigger>
+        <reka-dropdown-menu-portal>
+          <reka-dropdown-menu-content>
+            <reka-dropdown-menu-label>Edit</reka-dropdown-menu-label>
+            <reka-dropdown-menu-item>Undo</reka-dropdown-menu-item>
+            <reka-dropdown-menu-separator></reka-dropdown-menu-separator>
+            <reka-dropdown-menu-checkbox-item>Show hidden</reka-dropdown-menu-checkbox-item>
+            <reka-dropdown-menu-radio-group model-value="a">
+              <reka-dropdown-menu-radio-item value="a">A</reka-dropdown-menu-radio-item>
+            </reka-dropdown-menu-radio-group>
+          </reka-dropdown-menu-content>
+        </reka-dropdown-menu-portal>
+      </reka-dropdown-menu-root>
+    `)
+    await mounted('reka-dropdown-menu-radio-item')
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+
+  it('a menubar and a navigation menu', async () => {
+    const container = render(`
+      <reka-menubar-root>
+        <reka-menubar-menu value="file">
+          <reka-menubar-trigger>File</reka-menubar-trigger>
+          <reka-menubar-portal>
+            <reka-menubar-content><reka-menubar-item>New</reka-menubar-item></reka-menubar-content>
+          </reka-menubar-portal>
+        </reka-menubar-menu>
+      </reka-menubar-root>
+      <reka-navigation-menu-root>
+        <reka-navigation-menu-list>
+          <reka-navigation-menu-item value="learn">
+            <reka-navigation-menu-trigger>Learn</reka-navigation-menu-trigger>
+            <reka-navigation-menu-content><a href="#a">A</a></reka-navigation-menu-content>
+          </reka-navigation-menu-item>
+          <reka-navigation-menu-item>
+            <reka-navigation-menu-link href="#github">GitHub</reka-navigation-menu-link>
+          </reka-navigation-menu-item>
+        </reka-navigation-menu-list>
+      </reka-navigation-menu-root>
+    `)
+    await mounted('reka-menubar-trigger')
+    await mounted('reka-navigation-menu-link')
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('an open tooltip and hover card', async () => {
+    render(`
+      <reka-tooltip-provider>
+        <reka-tooltip-root default-open>
+          <reka-tooltip-trigger>Bold</reka-tooltip-trigger>
+          <reka-tooltip-portal><reka-tooltip-content>Make text bold</reka-tooltip-content></reka-tooltip-portal>
+        </reka-tooltip-root>
+      </reka-tooltip-provider>
+      <reka-hover-card-root default-open>
+        <reka-hover-card-trigger tabindex="0">Profile</reka-hover-card-trigger>
+        <reka-hover-card-portal><reka-hover-card-content>About me</reka-hover-card-content></reka-hover-card-portal>
+      </reka-hover-card-root>
+    `)
+    await mounted('reka-tooltip-content')
+    await mounted('reka-hover-card-content')
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+
+  it('a toast', async () => {
+    render(`
+      <reka-toast-provider>
+        <reka-toast-root duration="100000">
+          <reka-toast-title>Saved</reka-toast-title>
+          <reka-toast-description>Your file was saved.</reka-toast-description>
+          <reka-toast-close aria-label="Close">×</reka-toast-close>
+        </reka-toast-root>
+        <reka-toast-viewport></reka-toast-viewport>
+      </reka-toast-provider>
+    `)
+    await mounted('reka-toast-close')
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+
+  it('listbox', async () => {
+    const container = render(`
+      <reka-listbox-root default-value="b">
+        <reka-listbox-filter><input aria-label="Search"></reka-listbox-filter>
+        <reka-listbox-content aria-label="Letters">
+          <reka-listbox-group>
+            <reka-listbox-group-label>Letters</reka-listbox-group-label>
+            <reka-listbox-item value="a">A</reka-listbox-item>
+            <reka-listbox-item value="b">B<reka-listbox-item-indicator>✓</reka-listbox-item-indicator></reka-listbox-item>
+          </reka-listbox-group>
+        </reka-listbox-content>
+      </reka-listbox-root>
+    `)
+    await mounted('reka-listbox-item-indicator')
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('an open combobox and autocomplete', async () => {
+    render(`
+      <reka-combobox-root default-open>
+        <reka-combobox-anchor>
+          <reka-combobox-input><input aria-label="Fruit"></reka-combobox-input>
+          <reka-combobox-trigger aria-label="Show fruits">▾</reka-combobox-trigger>
+        </reka-combobox-anchor>
+        <reka-combobox-portal>
+          <reka-combobox-content>
+            <reka-combobox-viewport>
+              <reka-combobox-group>
+                <reka-combobox-label>Fruits</reka-combobox-label>
+                <reka-combobox-item value="apple">Apple</reka-combobox-item>
+              </reka-combobox-group>
+            </reka-combobox-viewport>
+          </reka-combobox-content>
+        </reka-combobox-portal>
+      </reka-combobox-root>
+      <reka-autocomplete-root>
+        <reka-autocomplete-input><input aria-label="City"></reka-autocomplete-input>
+      </reka-autocomplete-root>
+    `)
+    await mounted('reka-combobox-item')
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+
+  it('an open select', async () => {
+    render(`
+      <reka-select-root default-open default-value="a">
+        <reka-select-trigger aria-label="Letter"><reka-select-value placeholder="Pick"></reka-select-value></reka-select-trigger>
+        <reka-select-portal>
+          <reka-select-content position="popper">
+            <reka-select-viewport>
+              <reka-select-group>
+                <reka-select-label>Letters</reka-select-label>
+                <reka-select-item value="a"><reka-select-item-text>A</reka-select-item-text></reka-select-item>
+              </reka-select-group>
+            </reka-select-viewport>
+          </reka-select-content>
+        </reka-select-portal>
+      </reka-select-root>
+    `)
+    await mounted('reka-select-item')
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+
+  it('tree', async () => {
+    const container = render('')
+    const root = document.createElement('reka-tree-root') as HTMLElement & { items: unknown[], getKey: (item: { id: string }) => string }
+    root.setAttribute('aria-label', 'Files')
+    root.items = [{ id: 'a' }, { id: 'b' }]
+    root.getKey = item => item.id
+    for (const item of root.items) {
+      const el = document.createElement('reka-tree-item') as HTMLElement & { value: unknown }
+      el.value = item
+      el.setAttribute('level', '1')
+      el.textContent = (item as { id: string }).id
+      root.append(el)
+    }
+    container.append(root)
+    await mounted('reka-tree-item')
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('tags input, tag group and editable', async () => {
+    const container = render(`
+      <reka-tags-input-root>
+        <reka-tags-input-item value="vue"><reka-tags-input-item-text></reka-tags-input-item-text><reka-tags-input-item-delete aria-label="Remove">×</reka-tags-input-item-delete></reka-tags-input-item>
+        <reka-tags-input-input><input aria-label="Tags"></reka-tags-input-input>
+        <reka-tags-input-clear aria-label="Clear">×</reka-tags-input-clear>
+      </reka-tags-input-root>
+      <reka-tag-group-root aria-label="Frameworks" selection-mode="single">
+        <reka-tag-group-item value="vue" text-value="Vue"><span role="gridcell"><reka-tag-group-item-text>Vue</reka-tag-group-item-text><reka-tag-group-item-delete>×</reka-tag-group-item-delete></span></reka-tag-group-item>
+      </reka-tag-group-root>
+      <reka-editable-root default-value="Title">
+        <reka-editable-area>
+          <reka-editable-preview></reka-editable-preview>
+          <reka-editable-input><input aria-label="Title"></reka-editable-input>
+        </reka-editable-area>
+        <reka-editable-edit-trigger>Edit</reka-editable-edit-trigger>
+      </reka-editable-root>
+    `)
+    await mounted('reka-tags-input-item-text')
+    await mounted('reka-tag-group-item-text')
+    await mounted('reka-editable-preview')
+    expect(await axe(container)).toHaveNoViolations()
+  })
 })
 
 const PACKAGE_DIR = join(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -375,7 +703,7 @@ describe.skipIf(!hasDist)('built `reka-ui/elements` entry (dist)', () => {
     await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
     trigger.click()
     await vi.waitFor(() => expect(query('built-collapsible-content').getAttribute('data-state')).toBe('open'))
-  // Importing the whole built entry takes a few seconds under coverage.
+    // Importing the built entry loads every family's modules, slow under coverage.
   }, 30_000)
 
   it('loads only the supported families', () => {
@@ -390,6 +718,6 @@ describe.skipIf(!hasDist)('built `reka-ui/elements` entry (dist)', () => {
     walk(ELEMENTS_DIST)
     const loaded = Array.from(seen, file => relative(join(PACKAGE_DIR, 'dist'), file).replaceAll('\\', '/'))
     expect(loaded).toContain('elements/host.js')
-    expect(loaded.filter(file => /^(?:Select|Combobox|Menu|Tooltip)\//.test(file))).toEqual([])
+    expect(loaded.filter(file => /^ColorPicker\//.test(file))).toEqual([])
   })
 })

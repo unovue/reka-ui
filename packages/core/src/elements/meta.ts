@@ -1,6 +1,7 @@
 import type { Component } from 'vue'
 import type { HostSemantics } from './host'
 import { getTemporal } from '@/date/runtime'
+import { toEventType } from './events'
 import { hyphenate, semanticsForTag } from './host'
 
 /**
@@ -39,19 +40,38 @@ export interface RekaElementPartDefinition {
    */
   semantics?: string | HostSemantics
   /**
-   * Render the part onto the element's first `<input>` or `<svg>` descendant
-   * (appended when there is none) instead of onto the element itself: a custom
-   * element cannot take text input, and an SVG part needs an SVG element.
+   * The part renders elements next to itself that must be in the document, instead
+   * of staying detached (hidden form fields excepted):
+   * - `'after'` (or `true`): right after the element while rendered (a focus proxy);
+   * - `'inside'`: appended inside the element (`StepperRoot`'s live region).
    */
-  target?: 'input' | 'svg'
+  siblings?: boolean | 'after' | 'inside'
   /**
-   * Put the nodes the part renders next to itself (a visually hidden heading,
-   * focusable range inputs) inside the element, after its children, instead of
-   * leaving them out of the document. For parts whose siblings have to be in the
-   * document; never for form-associated parts, whose hidden fields submit through
-   * `ElementInternals`.
+   * Props the element always passes, and does not expose as attributes or
+   * properties: settings that only make sense for a native element the host can
+   * never be (`FieldLabel`'s `nativeLabel`).
    */
-  siblingsInside?: boolean
+  fixedProps?: Record<string, unknown>
+  /**
+   * Emits the part only gets a listener for while the element has a DOM listener
+   * for their event: parts that behave differently when someone listens
+   * (`FormRoot` prevents the native submission when `formSubmit` is listened to).
+   */
+  listenedEmits?: string[]
+  /**
+   * `'input'`: the part renders onto the element's `<input>` (or `<textarea>`)
+   * child instead of onto the element, which is created when there is none. A
+   * custom element cannot be a text field, so a part that renders an `<input>` in
+   * Vue (`ComboboxInput`, `TagsInputInput`, …) works like `asChild` over one.
+   */
+  target?: 'input'
+  /**
+   * The part's fallback slot content (`SelectValue`'s selected label), shown as the
+   * element's text while it has no children of its own. Called during the part's
+   * render with the slot props and the element's props, so it can `inject()` the
+   * part's context.
+   */
+  text?: (slotProps: Record<string, any>, props: Record<string, any>) => unknown
   /**
    * Pass `asChild` to a part that declares no props of its own: it falls through
    * to the component the part renders.
@@ -62,6 +82,12 @@ export interface RekaElementPartDefinition {
    * renders the hidden form field of a `name` given to its root.
    */
   formAssociated?: boolean
+  /**
+   * Converts a model value the element dispatches itself (the default after a form
+   * reset, a restored form state) to the type the part emits: the color parts emit
+   * `Color` objects, and their defaults may be CSS strings.
+   */
+  model?: (value: unknown) => unknown
 }
 
 export interface RekaElementFamily {
@@ -90,13 +116,20 @@ export interface PartMeta {
   emits: string[]
   hasAsChild: boolean
   semantics: HostSemantics | undefined
+  /** See {@link RekaElementPartDefinition.siblings}: `true` is `'after'`. */
+  siblings: false | 'after' | 'inside'
   /**
    * Parts with a `name` are form-associated: they submit through `ElementInternals`,
    * and `<label for>`, `<fieldset disabled>` and form reset reach them.
    */
   formAssociated: boolean
-  target?: 'input' | 'svg'
-  siblingsInside: boolean
+  /** The part renders onto an `<input>` child: see {@link RekaElementPartDefinition.target}. */
+  inputTarget: boolean
+  text: RekaElementPartDefinition['text']
+  model: RekaElementPartDefinition['model']
+  fixedProps: Record<string, unknown>
+  /** Event types (`form-submit`) of the emits only listened to while the element has a listener. */
+  listenedEvents: Set<string>
 }
 
 /** Props the element API does not expose: the host is always the rendered element. */
@@ -159,8 +192,9 @@ export function getPartMeta(definition: RekaElementPartDefinition): PartMeta {
     : rawProps
 
   const props: PropMeta[] = []
+  const fixedProps = definition.fixedProps ?? {}
   for (const [name, option] of Object.entries(propOptions)) {
-    if (HIDDEN_PROPS.has(name))
+    if (HIDDEN_PROPS.has(name) || name in fixedProps)
       continue
     const kind = definition.attributes?.[name] ?? inferKind(propTypes(option))
     const attribute = kind === 'property' ? null : hyphenate(name)
@@ -191,8 +225,12 @@ export function getPartMeta(definition: RekaElementPartDefinition): PartMeta {
     hasAsChild: 'asChild' in propOptions || !!definition.asChild,
     semantics,
     formAssociated: 'name' in propOptions || !!definition.formAssociated,
-    target: definition.target,
-    siblingsInside: !!definition.siblingsInside,
+    siblings: definition.siblings === true ? 'after' : definition.siblings || false,
+    fixedProps,
+    listenedEvents: new Set((definition.listenedEmits ?? []).map(toEventType)),
+    inputTarget: definition.target === 'input',
+    text: definition.text,
+    model: definition.model,
   }
 }
 

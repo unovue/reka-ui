@@ -58,6 +58,64 @@ describe.runIf(major >= 19)(`React ${version}`, () => {
     root.unmount()
   })
 
+  it('dropdown menu: `onselect` from an item, a controlled checkbox item', async () => {
+    const selected = vi.fn()
+    function App() {
+      const [bookmarks, setBookmarks] = useState(false)
+      const block = { display: 'block' }
+      const checkbox = h('reka-dropdown-menu-checkbox-item', {
+        'style': block,
+        'modelValue': bookmarks,
+        'onupdate-model-value': (event: RekaElementEvent<boolean>) => setBookmarks(event.detail.value),
+      }, bookmarks ? 'Hide bookmarks' : 'Show bookmarks')
+      const item = h('reka-dropdown-menu-item', { style: block, onselect: selected }, 'New tab')
+      const content = h('reka-dropdown-menu-content', { style: block }, item, checkbox)
+      return h('reka-dropdown-menu-root', null, h('reka-dropdown-menu-trigger', null, 'Options'), h('reka-dropdown-menu-portal', null, content))
+    }
+    const { host, root } = mount(h(App))
+    const trigger = host.querySelector('reka-dropdown-menu-trigger')!
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-haspopup')).toBe('menu'))
+
+    await userEvent.click(trigger)
+    const item = document.querySelector<HTMLElement>('reka-dropdown-menu-checkbox-item')!
+    await vi.waitFor(() => expect(item.getAttribute('role')).toBe('menuitemcheckbox'))
+    expect(item.getAttribute('aria-checked')).toBe('false')
+    await userEvent.click(item)
+    // Selecting closes the menu; React re-rendered the item with the new value.
+    await vi.waitFor(() => expect(item.textContent).toBe('Hide bookmarks'))
+    expect((item as HTMLElement & { modelValue?: boolean }).modelValue).toBe(true)
+
+    await userEvent.click(trigger)
+    await vi.waitFor(() => expect(item.getAttribute('aria-checked')).toBe('true'))
+    await userEvent.click(document.querySelector<HTMLElement>('reka-dropdown-menu-item')!)
+    expect(selected).toHaveBeenCalledOnce()
+    root.unmount()
+  })
+
+  it('controlled listbox of objects: `value` and `modelValue` as properties, compared with `by`', async () => {
+    const users = [{ id: 1, name: 'Ada' }, { id: 2, name: 'Grace' }]
+    const seen: unknown[] = []
+    function App() {
+      const [selected, setSelected] = useState<unknown>({ id: 2 })
+      return h('reka-listbox-root', {
+        'by': 'id',
+        'modelValue': selected,
+        'onupdate-model-value': (event: RekaElementEvent) => {
+          seen.push(event.detail.value)
+          setSelected(event.detail.value)
+        },
+      }, h('reka-listbox-content', { 'aria-label': 'Users' }, users.map(user => h('reka-listbox-item', { key: user.id, value: user }, user.name))))
+    }
+    const { host, root } = mount(h(App))
+    const items = [...host.querySelectorAll('reka-listbox-item')]
+    await vi.waitFor(() => expect(items[1].getAttribute('aria-selected')).toBe('true'))
+    await userEvent.click(items[0])
+    await vi.waitFor(() => expect(items[0].getAttribute('aria-selected')).toBe('true'))
+    expect(items[1].getAttribute('aria-selected')).toBe('false')
+    expect(seen).toEqual([users[0]])
+    root.unmount()
+  })
+
   it('does not call a camelCase `onUpdateModelValue` (the typings reject it)', async () => {
     const spy = vi.fn()
     const { host, root } = mount(h('reka-switch-root', { 'aria-label': 'x', 'style': STYLE, 'onUpdateModelValue': spy }))
@@ -89,6 +147,52 @@ describe.runIf(major >= 19)(`React ${version}`, () => {
     await vi.waitFor(() => expect(thumb.getAttribute('aria-valuenow')).toBe('31'))
     expect(seen).toEqual([[31]])
     root.unmount()
+  })
+
+  it('controlled toggle group: an array property in, `onupdate-model-value` out', async () => {
+    const seen: unknown[] = []
+    function App() {
+      const [value, setValue] = useState<string[]>(['bold'])
+      return h('reka-toggle-group-root', {
+        'type': 'multiple',
+        'aria-label': 'Formatting',
+        'modelValue': value,
+        'onupdate-model-value': (event: RekaElementEvent<string[]>) => {
+          seen.push(event.detail.value)
+          setValue(event.detail.value)
+        },
+      }, h('reka-toggle-group-item', { value: 'bold' }, 'B'), h('reka-toggle-group-item', { value: 'italic' }, 'I'))
+    }
+    const { host, root } = mount(h(App))
+    const [bold, italic] = host.querySelectorAll('reka-toggle-group-item')
+    await vi.waitFor(() => expect(bold.getAttribute('aria-pressed')).toBe('true'))
+    await userEvent.click(italic)
+    await vi.waitFor(() => expect(italic.getAttribute('aria-pressed')).toBe('true'))
+    expect(seen).toEqual([['bold', 'italic']])
+    root.unmount()
+  })
+
+  it('an `onform-submit` prop is a listener the form root sees, and prevents the native submission', async () => {
+    const values: unknown[] = []
+    const native: boolean[] = []
+    const onNative = (event: Event) => {
+      native.push(!event.defaultPrevented)
+      event.preventDefault()
+    }
+    document.addEventListener('submit', onNative)
+    const { host, root } = mount(h('reka-form-root', {
+      'onform-submit': (event: RekaElementEvent) => values.push(event.detail.value),
+    }, h('form', { noValidate: true }, h('button', { type: 'submit' }, 'Submit'))))
+    try {
+      await vi.waitFor(() => expect(host.querySelector('reka-form-root')!.hasAttribute('data-reka-unmounted')).toBe(false))
+      await userEvent.click(host.querySelector('button')!)
+      await vi.waitFor(() => expect(values).toEqual([{}]))
+      expect(native).toEqual([false])
+    }
+    finally {
+      document.removeEventListener('submit', onNative)
+      root.unmount()
+    }
   })
 })
 

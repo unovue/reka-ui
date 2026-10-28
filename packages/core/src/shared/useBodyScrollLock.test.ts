@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
 import { ConfigProvider } from '@/ConfigProvider'
 import { sleep } from '@/test'
-import { resetBodyScrollLock, SCROLL_LOCKED_ATTRIBUTE, useBodyScrollLock } from './useBodyScrollLock'
+import { heldScrollLockConfigs, resetBodyScrollLock, SCROLL_LOCKED_ATTRIBUTE, useBodyScrollLock } from './useBodyScrollLock'
 
 // `isIOS` is read when a lock is taken; a module-level flag (not `vi.hoisted`)
 // keeps the mock stable under the coverage run.
@@ -102,6 +102,29 @@ describe('useBodyScrollLock', () => {
     wrapper.unmount()
     await flush()
     expect(isLocked()).toBe(false)
+  })
+
+  it('should not hold on to a component after its lock is released', async () => {
+    const first = createWrapper(true)
+    const second = createWrapper(true)
+    await flush()
+    expect(heldScrollLockConfigs()).toBe(2)
+
+    // The first locker goes away while the second still holds the lock.
+    first.unmount()
+    await flush()
+    expect(isLocked()).toBe(true)
+    expect(heldScrollLockConfigs()).toBe(1)
+
+    second.unmount()
+    await flush()
+    expect(isLocked()).toBe(false)
+    expect(heldScrollLockConfigs()).toBe(0)
+
+    // Released before the lock was ever applied.
+    createWrapper(true).unmount()
+    await flush()
+    expect(heldScrollLockConfigs()).toBe(0)
   })
 
   it('should only unlock once every nested lock is released', async () => {
