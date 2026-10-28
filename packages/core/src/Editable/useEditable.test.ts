@@ -389,3 +389,11 @@ describe('useEditable — public export', () => {
     expect('getEditableInputSurface' in Reka).toBe(false)
   })
 })
+
+describe('useEditable lean surfaces', () => {
+  it('builds each part surface on first read, once', () => {
+    const editable = useEditable({ defaultValue: 'a' })
+    for (const key of ['area', 'preview', 'input', 'editTrigger', 'submitTrigger', 'cancelTrigger'] as const)
+      expect(editable[key]).toBe(editable[key])
+  })
+})

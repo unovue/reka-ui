@@ -78,7 +78,7 @@ export const [injectTagGroupRootContext, provideTagGroupRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { getCurrentInstance, onBeforeUnmount, onMounted, ref, toRefs } from 'vue'
+import { getCurrentInstance, onBeforeUnmount, onMounted, ref } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
@@ -99,8 +99,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { dir: propDir } = toRefs(props)
-const dir = useDirection(propDir)
+const dir = useDirection(() => props.dir)
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const instance = getCurrentInstance()

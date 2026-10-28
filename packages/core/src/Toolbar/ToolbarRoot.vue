@@ -23,7 +23,6 @@ export const [injectToolbarRootContext, provideToolbarRootContext]
 </script>
 
 <script setup lang="ts">
-import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { useToolbar } from './useToolbar'
@@ -33,8 +32,7 @@ const props = withDefaults(defineProps<ToolbarRootProps>(), {
 })
 // `dir` resolution (ConfigProvider-aware) stays in the shell, and so does the
 // `RovingFocusGroup` wrapper (arrow-key navigation).
-const { dir: propDir } = toRefs(props)
-const dir = useDirection(propDir)
+const dir = useDirection(() => props.dir)
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 

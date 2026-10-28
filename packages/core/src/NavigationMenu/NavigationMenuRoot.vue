@@ -103,7 +103,6 @@ export const [injectNavigationMenuContext, provideNavigationMenuContext]
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { handleRootDismissEvent, useNavigationMenu } from './useNavigationMenu'
 
@@ -133,8 +132,7 @@ const { getItems, CollectionSlot } = useCollection({ key: 'NavigationMenu', isPr
 
 // `useDirection` (ConfigProvider-aware) and `useId` (SSR-aware) stay in the
 // shell; the open-item model, hover intent and context live in the composable.
-const { dir: propDir } = toRefs(props)
-const dir = useDirection(propDir)
+const dir = useDirection(() => props.dir)
 
 const { modelValue, root, context } = useNavigationMenu({
   modelValue: () => props.modelValue,

@@ -1,6 +1,6 @@
 // Production build of the bench page against one build of reka-ui.
 //   lib:   a packages/core directory whose dist/ is built (this checkout, or the base worktree)
-//   label: output directory under dist/, also the URL prefix the runner serves it at
+//   label: output directory under `outRoot`, also the URL prefix the runner serves it at
 import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -42,7 +42,7 @@ function benchImports() {
   }
 }
 
-export async function buildPage({ lib, label, minify = true }) {
+export async function buildPage({ lib, label, outRoot, minify = true }) {
   await build({
     configFile: false,
     root: BENCH_ROOT,
@@ -65,7 +65,7 @@ export async function buildPage({ lib, label, minify = true }) {
       'process.env.NODE_ENV': '"production"',
     },
     build: {
-      outDir: resolve(BENCH_ROOT, 'dist', label),
+      outDir: resolve(outRoot, label),
       emptyOutDir: true,
       minify,
       sourcemap: false,

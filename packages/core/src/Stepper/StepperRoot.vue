@@ -4,7 +4,6 @@ import type { DataOrientation, Direction } from '../shared/types'
 import type { StepperChangeReason } from './useStepper'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { createContext, mergeExpose, useDirection, useForwardElement } from '@/shared'
 import { useStepper } from './useStepper'
@@ -95,8 +94,7 @@ defineSlots<{
 // `dir` resolution (ConfigProvider-aware) stays in the shell; the composable
 // owns the step model (`useControllableState`), the step navigation and the
 // next/previous-trigger watchers.
-const { dir: propDir } = toRefs(props)
-const dir = useDirection(propDir)
+const dir = useDirection(() => props.dir)
 
 const {
   modelValue,

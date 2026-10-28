@@ -274,3 +274,20 @@ describe('useColorArea', () => {
     expect(onChangeEnd).not.toHaveBeenCalled()
   })
 })
+
+describe('useColorArea lean surfaces', () => {
+  it('builds the thumb and input surfaces on first read, once', () => {
+    const area = useColorArea({ defaultValue: '#ff0000' })
+    expect(area.thumb).toBe(area.thumb)
+    expect(area.xInput).toBe(area.xInput)
+    expect(area.yInput).toBe(area.yInput)
+  })
+
+  it('keeps a centered input style that never changes, and follows the thumb when anchored to the area', () => {
+    const area = useColorArea({ defaultValue: '#ff0000' })
+    expect(area.xInput.attrs.value.style).toMatchObject({ left: '50%', top: '50%' })
+    expect(area.xInput.attrs.value.style).toEqual(area.yInput.attrs.value.style)
+    // Public composable output keeps the object form.
+    expect(area.xInput.props.value.style).toMatchObject({ position: 'absolute', left: '50%', top: '50%' })
+  })
+})

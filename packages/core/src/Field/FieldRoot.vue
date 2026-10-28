@@ -151,7 +151,7 @@ export const [injectFieldRootContext, provideFieldRootContext]
 
 <script setup lang="ts">
 import { isEqual } from 'ohash'
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRefs, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRef, watch } from 'vue'
 import { injectFormRootContext } from '@/Form/FormRoot.vue'
 import { Primitive } from '@/Primitive'
 import { createValidityState, useFieldValidation } from './useFieldValidation'
@@ -175,7 +175,11 @@ defineSlots<{
   }) => any
 }>()
 
-const { disabled, required, name } = toRefs(props)
+const disabled = toRef(props, 'disabled')
+
+const required = toRef(props, 'required')
+
+const name = toRef(props, 'name')
 
 const fieldId = ref(useId(undefined, 'reka-field'))
 const labelIdBase = useId(undefined, 'reka-field-label')

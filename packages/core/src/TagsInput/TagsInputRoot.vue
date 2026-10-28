@@ -85,7 +85,7 @@ export const [injectTagsInputRootContext, provideTagsInputRootContext]
 
 <script setup lang="ts" generic="T extends AcceptableInputValue = string">
 import { useFocusWithin } from '@vueuse/core'
-import { mergeProps, toRefs } from 'vue'
+import { mergeProps } from 'vue'
 import { useCollection, useCollectionSlot } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -112,8 +112,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { dir: propDir } = toRefs(props)
-const dir = useDirection(propDir)
+const dir = useDirection(() => props.dir)
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)

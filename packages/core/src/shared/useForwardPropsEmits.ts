@@ -39,7 +39,9 @@ export function useForwardPropsEmits<
   Fn extends AnyFn = AnyFn,
 >(props: MaybeRefOrGetter<T>, emit?: Emit<Name, Fn>) {
   const parsedProps = useForwardProps(props)
-  const emitsAsProps = emit ? useEmitAsProps(emit) : {}
+  if (!emit)
+    return parsedProps
+  const emitsAsProps = useEmitAsProps(emit)
 
   return computed(() => ({
     ...parsedProps.value,

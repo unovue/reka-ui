@@ -4,7 +4,7 @@ import type { CheckboxGroupChangeReason } from './useCheckboxGroup'
 import type { RovingFocusGroupProps } from '@/RovingFocus'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
-import { computed, toRefs } from 'vue'
+import { computed, toRef } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { createContext, useDirection, useFormControl } from '@/shared'
 
@@ -59,8 +59,13 @@ const props = withDefaults(defineProps<CheckboxGroupRootProps<T>>(), {
 })
 const emits = defineEmits<CheckboxGroupRootEmits<T>>()
 
-const { disabled, max, rovingFocus, dir: propDir } = toRefs(props)
-const dir = useDirection(propDir)
+const disabled = toRef(props, 'disabled')
+
+const max = toRef(props, 'max')
+
+const rovingFocus = toRef(props, 'rovingFocus')
+
+const dir = useDirection(() => props.dir)
 
 const { primitiveElement, currentElement, expose } = usePrimitiveElement()
 defineExpose(expose)

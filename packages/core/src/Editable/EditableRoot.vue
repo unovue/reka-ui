@@ -79,7 +79,7 @@ export const [injectEditableRootContext, provideEditableRootContext]
 </script>
 
 <script setup lang="ts">
-import { mergeProps, toRef } from 'vue'
+import { mergeProps } from 'vue'
 import { useFocusOutside, usePointerDownOutside } from '@/DismissableLayer'
 import { Primitive } from '@/Primitive'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -119,7 +119,7 @@ defineSlots<{
 }>()
 
 // `dir` resolution (ConfigProvider-aware) stays in the shell.
-const dir = useDirection(toRef(props, 'dir'))
+const dir = useDirection(() => props.dir)
 const { forwardRef, currentElement, expose } = useForwardElement()
 const isFormControl = useFormControl(currentElement)
 

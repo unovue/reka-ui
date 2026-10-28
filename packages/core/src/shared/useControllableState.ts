@@ -1,4 +1,4 @@
-import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { ComputedRef, MaybeRefOrGetter, Ref, ShallowRef } from 'vue'
 import type { BaseChangeReason, ChangeEventDetails } from './types'
 import { computed, isRef, ref, shallowRef, toRaw, toValue } from 'vue'
 
@@ -111,6 +111,89 @@ export interface UseControllableStateReturn<T, R extends string = string> {
 }
 
 /**
+ * One model's state: the uncontrolled store, the controlled latch and the last
+ * change details, in one object rather than four reactive cells (a ref, two
+ * computeds and a shallowRef, each with its own dep). It is also the
+ * `isControlled` ref itself.
+ *
+ * - `isControlled` reads the prop directly (tracked by the reader) until it
+ *   latches; it was a computed, but the read is a getter call and `state`,
+ *   the computed every consumer binds, already caches.
+ * - The uncontrolled store is created on first use, so a controlled model
+ *   (the parent owns `v-model`) never allocates one.
+ * - `lastChangeDetails` is a plain slot until something reads it; the first
+ *   read moves it into a `shallowRef` so later writes are tracked.
+ */
+class ControllableModel<T, R extends string> {
+  // Ref markers as prototype getters: no per-instance slots.
+  get __v_isRef(): true { return true }
+  get __v_isReadonly(): true { return true }
+  internal: Ref<T> | undefined = undefined
+  details: ChangeEventDetails<R> = getInitialDetails()
+  detailsRef: ShallowRef<ChangeEventDetails<R>> | undefined = undefined
+
+  constructor(
+    readonly prop: MaybeRefOrGetter<T | undefined>,
+    readonly refOwned: boolean,
+    public everDefined: boolean,
+    public initial: T | undefined,
+  ) {}
+
+  /** `isControlled`. */
+  get value(): boolean {
+    if (this.refOwned)
+      return true
+    // Controlled mode latches: once the prop has ever been defined the model
+    // stays controlled even if the parent later clears it to `undefined`.
+    // Without the latch a controlled Tabs cleared to `undefined` would fall
+    // back to the internal value (still holding `defaultValue`) and re-activate
+    // a stale tab. A plain field flipped on read rather than a `watch`: this
+    // composable is pure and callable outside a component scope, so a `watch`
+    // would never be stopped. Until it latches the read tracks `prop`.
+    if (!this.everDefined && toValue(this.prop) !== undefined)
+      this.everDefined = true
+    return this.everDefined
+  }
+
+  /** The uncontrolled value (deep, `useVModel` parity), created on first use. */
+  get store(): Ref<T> {
+    if (!this.internal) {
+      this.internal = ref(this.initial) as Ref<T>
+      this.initial = undefined
+    }
+    return this.internal
+  }
+
+  read(): T {
+    if (this.refOwned) {
+      const owned = (this.prop as Ref<T | undefined>).value
+      return owned === undefined ? this.store.value : owned
+    }
+    // Controlled: mirror the prop as-is — `undefined` reads `undefined`, never `defaultValue`.
+    return this.value ? toValue(this.prop) as T : this.store.value
+  }
+
+  setDetails(details: ChangeEventDetails<R>) {
+    if (this.detailsRef)
+      this.detailsRef.value = details
+    else
+      this.details = details
+  }
+}
+
+/** `lastChangeDetails`: a readonly ref view whose cell is created on first read. */
+class LastChangeDetailsRef<R extends string> {
+  get __v_isRef(): true { return true }
+  get __v_isReadonly(): true { return true }
+  constructor(readonly model: ControllableModel<any, R>) {}
+  get value(): ChangeEventDetails<R> {
+    const model = this.model
+    // shallowRef: details carry a native `event` and a `cancel` closure — never proxy them.
+    return (model.detailsRef ??= shallowRef(model.details)).value
+  }
+}
+
+/**
  * The one controlled/uncontrolled model every root composable owns (#2828) —
  * replaces vueuse `useVModel`. A change runs `onBeforeUpdate` + the cancellable
  * `beforeUpdate:<name>` emit, then (unless cancelled) writes the internal or
@@ -138,38 +221,11 @@ export function useControllableState<T, R extends string = string>(
   const initial = typeof options.defaultValue === 'function'
     ? (options.defaultValue as () => T)()
     : options.defaultValue as T
-  const internal = ref(initial) as Ref<T>
 
   // Ref-owned: a writable prop ref with no emit/onUpdate is the model's single store.
   const refOwned = isRef(prop) && !emit && !onUpdate
-
-  // Controlled mode latches: once the prop has ever been defined the model stays
-  // controlled even if the parent later clears it to `undefined`. Without the
-  // latch a controlled Tabs cleared to `undefined` would fall back to `internal`
-  // (still holding `defaultValue`) and re-activate a stale tab.
-  // The latch is a plain closure boolean mutated inside the computed rather than
-  // a `watch`: this composable is pure and callable outside a component scope,
-  // so a `watch` would never be stopped. A computed only re-evaluates when
-  // `prop` changes, so the flip is deterministic; the initial read seeds it.
-  let everDefined = !refOwned && toValue(prop) !== undefined
-  const isControlled = computed(() => {
-    if (refOwned)
-      return true
-    if (!everDefined && toValue(prop) !== undefined)
-      everDefined = true
-    return everDefined
-  })
-
-  const state = computed<T>(() => {
-    if (refOwned) {
-      const owned = (prop as Ref<T | undefined>).value
-      return owned === undefined ? internal.value : owned
-    }
-    // Controlled: mirror the prop as-is — `undefined` reads `undefined`, never `defaultValue`.
-    return isControlled.value ? toValue(prop) as T : internal.value
-  })
-  // shallowRef: details carry a native `event` and a `cancel` closure — never proxy them.
-  const lastChangeDetails = shallowRef(getInitialDetails()) as Ref<ChangeEventDetails<R>>
+  const model = new ControllableModel<T, R>(prop, refOwned, !refOwned && toValue(prop) !== undefined, initial)
+  const state = computed<T>(() => model.read())
 
   function setState(value: T, reason?: R | BaseChangeReason, event?: Event, options?: SetStateOptions): boolean {
     // Ref-owned with an `undefined` ref: `state` reads `defaultValue` through the
@@ -188,21 +244,26 @@ export function useControllableState<T, R extends string = string>(
     closeDetails(details)
 
     if (details.isCanceled) {
-      lastChangeDetails.value = details
+      model.setDetails(details)
       return false
     }
 
     if (refOwned)
       (prop as Ref<T | undefined>).value = value
-    else if (!isControlled.value)
-      internal.value = value
+    else if (!model.value)
+      model.store.value = value
 
     onUpdate?.(value, details)
     if (emit && name)
       emit(`update:${name}`, value, details)
-    lastChangeDetails.value = details
+    model.setDetails(details)
     return true
   }
 
-  return { state, setState, lastChangeDetails, isControlled }
+  return {
+    state,
+    setState,
+    lastChangeDetails: new LastChangeDetailsRef(model) as unknown as Readonly<Ref<ChangeEventDetails<R>>>,
+    isControlled: model as unknown as ComputedRef<boolean>,
+  }
 }

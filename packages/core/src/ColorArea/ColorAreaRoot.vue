@@ -71,7 +71,6 @@ export const [injectColorAreaRootContext, provideColorAreaRootContext]
 </script>
 
 <script setup lang="ts">
-import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useColorArea } from './useColorArea'
@@ -97,8 +96,7 @@ defineSlots<{
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const isFormControl = useFormControl(currentElement)
-const { dir: propDir } = toRefs(props)
-const dir = useDirection(propDir)
+const dir = useDirection(() => props.dir)
 
 const { root, context, areaStyles, xValue, yValue } = useColorArea({
   colorSpace: () => props.colorSpace,

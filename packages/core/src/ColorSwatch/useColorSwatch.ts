@@ -2,7 +2,7 @@ import type { ComputedRef, MaybeRefOrGetter } from 'vue'
 import type { PartSurface } from '@/shared'
 import type { Color } from '@/shared/color'
 import { computed, toValue } from 'vue'
-import { createPartSurface } from '@/shared'
+import { createPartSurface, fieldRef } from '@/shared'
 import { colorToString, getColorContrast, getColorName, normalizeColor } from '@/shared/color'
 
 export interface UseColorSwatchProps {
@@ -20,75 +20,90 @@ export interface UseColorSwatchReturn {
   readonly root: PartSurface<ColorSwatchState>
 }
 
+interface ColorSwatchInfo {
+  colorString: string
+  color: Readonly<Color> | null
+  alpha: number
+  isNoColor: boolean
+  label: string
+  colorContrast: string | undefined
+}
+
+function deriveColorSwatch(color: string | Color | undefined, customLabel: string | undefined): ColorSwatchInfo {
+  const colorString = !color ? '' : typeof color === 'string' ? color : colorToString(color, 'hex')
+
+  let colorObj: Readonly<Color> | null = null
+  if (color) {
+    try {
+      colorObj = normalizeColor(color)
+    }
+    catch {}
+  }
+
+  const alpha = colorObj?.alpha ?? 0
+
+  let label: string
+  if (customLabel) {
+    label = customLabel
+  }
+  // Match React Aria: transparent colors get "transparent" label
+  else if (!colorObj || colorObj.alpha === 0) {
+    label = 'transparent'
+  }
+  else {
+    try {
+      label = getColorName(colorString)
+    }
+    catch {
+      label = colorString || 'transparent'
+    }
+  }
+
+  let colorContrast: string | undefined
+  if (colorString) {
+    try {
+      colorContrast = getColorContrast(colorString)
+    }
+    catch {
+      if (import.meta.env.DEV) {
+        console.warn(`WARNING: Unable to resolve contrast color for "${colorString}".
+             Please check that the color provided is a valid hex color.`)
+      }
+    }
+  }
+
+  return { colorString, color: colorObj, alpha, isNoColor: !color || alpha <= 0, label, colorContrast }
+}
+
 /**
  * Headless color swatch styling and accessible description.
+ *
+ * Everything is derived in ONE computed (the swatch re-derives all of it on a
+ * color change anyway); each returned ref reads its field of that object.
  * @experimental
  * @lifecycle pure
  */
 export function useColorSwatch(props: UseColorSwatchProps = {}): UseColorSwatchReturn {
-  const color = computed(() => toValue(props.color))
-  const customLabel = computed(() => toValue(props.label))
-  const colorString = computed(() => {
-    if (!color.value)
-      return ''
-    if (typeof color.value === 'string') {
-      return color.value
+  const info = computed(() => deriveColorSwatch(toValue(props.color), toValue(props.label)))
+  const root = createPartSurface<ColorSwatchState>(() => {
+    const { label, colorString, alpha } = info.value
+    return {
+      'role': 'img',
+      'aria-label': label,
+      'aria-roledescription': 'color swatch',
+      'style': {
+        '--reka-color-swatch-color': colorString,
+        '--reka-color-swatch-alpha': String(alpha),
+      },
     }
-    return colorToString(color.value, 'hex')
-  })
-
-  const colorObj = computed(() => {
-    if (!color.value)
-      return null
-    try {
-      return normalizeColor(color.value)
-    }
-    catch {
-      return null
-    }
-  })
-
-  const alpha = computed(() => colorObj.value?.alpha ?? 0)
-  const isNoColor = computed(() => !color.value || alpha.value <= 0)
-
-  const label = computed(() => {
-    if (customLabel.value)
-      return customLabel.value
-
-    // Match React Aria: transparent colors get "transparent" label
-    if (!colorObj.value || colorObj.value.alpha === 0)
-      return 'transparent'
-
-    try {
-      return getColorName(colorString.value)
-    }
-    catch {
-      return colorString.value || 'transparent'
-    }
-  })
-
-  const colorContrast = computed(() => {
-    if (!colorString.value)
-      return undefined
-    try {
-      return getColorContrast(colorString.value)
-    }
-    catch {
-      if (import.meta.env.DEV) {
-        console.warn(`WARNING: Unable to resolve contrast color for "${colorString.value}".
-             Please check that the color provided is a valid hex color.`)
-      }
-      return undefined
-    }
-  })
-  const root = createPartSurface<ColorSwatchState>(() => ({
-    'role': 'img',
-    'aria-label': label.value,
-    'aria-roledescription': 'color swatch',
-    'style': {
-      '--reka-color-swatch-color': colorString.value,
-      '--reka-color-swatch-alpha': String(alpha.value),
-    },
-  }), () => ({ colorContrast: colorContrast.value, noColor: isNoColor.value }))
-  return { colorString, color: colorObj, alpha, isNoColor, label, colorContrast, root }
+  }, () => ({ colorContrast: info.value.colorContrast, noColor: info.value.isNoColor }))
+  return {
+    colorString: fieldRef(info, 'colorString'),
+    color: fieldRef(info, 'color'),
+    alpha: fieldRef(info, 'alpha'),
+    isNoColor: fieldRef(info, 'isNoColor'),
+    label: fieldRef(info, 'label'),
+    colorContrast: fieldRef(info, 'colorContrast'),
+    root,
+  }
 }

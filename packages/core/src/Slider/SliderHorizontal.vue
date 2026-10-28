@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Direction, SliderOrientationPrivateEmits, SliderOrientationPrivateProps } from './utils'
-import { computed, ref, toRefs } from 'vue'
+import { computed, ref, toRef } from 'vue'
 import { useForwardElement } from '@/shared'
 import SliderImpl from './SliderImpl.vue'
 import { injectSliderRootContext } from './SliderRoot.vue'
@@ -12,7 +12,9 @@ interface SliderHorizontalProps extends SliderOrientationPrivateProps {
 
 const props = defineProps<SliderHorizontalProps>()
 const emits = defineEmits<SliderOrientationPrivateEmits>()
-const { max, min, dir } = toRefs(props)
+const max = toRef(props, 'max')
+const min = toRef(props, 'min')
+const dir = toRef(props, 'dir')
 
 const { forwardRef, currentElement: sliderElement, expose } = useForwardElement()
 defineExpose(expose)

@@ -6,7 +6,7 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface, SelectionState 
 import type { AcceptableValue, DataOrientation, Direction } from '@/shared/types'
 import { isEqual } from 'ohash'
 import { computed, toValue } from 'vue'
-import { createPartSurface, selectionState, useControllableState } from '@/shared'
+import { createPartSurface, getterRef, selectionState, useControllableState } from '@/shared'
 import { handleSelect } from './utils'
 
 /**
@@ -66,13 +66,15 @@ export interface RadioGroupItemSurfaceOptions extends Pick<RadioSurfaceOptions, 
  * Pure: derives everything from its options, safe to call any number of times.
  */
 export function getRadioSurface(options: RadioSurfaceOptions): PartSurface<RadioGroupItemState> {
-  const checked = computed(() => toValue(options.checked) ?? false)
-  const disabled = computed(() => toValue(options.disabled) ?? false)
+  // Plain reads, not computeds: the options are already refs/getters the
+  // caller caches (the item's `checked` computed, the leaf's model).
+  const isChecked = () => toValue(options.checked) ?? false
+  const isDisabled = () => toValue(options.disabled) ?? false
 
   function onClick(event: MouseEvent) {
     // `@click.stop` — propagation is stopped BEFORE the disabled guard.
     event.stopPropagation()
-    if (disabled.value)
+    if (isDisabled())
       return
 
     handleSelect(event, toValue(options.value), (ev) => {
@@ -93,16 +95,52 @@ export function getRadioSurface(options: RadioSurfaceOptions): PartSurface<Radio
   return createPartSurface<RadioGroupItemState>(
     () => ({
       'role': 'radio',
-      'aria-checked': checked.value,
+      'aria-checked': isChecked(),
       // `''` (not `true`) — Radio.vue binds `:disabled="disabled ? '' : undefined"`.
-      'disabled': disabled.value ? '' : undefined,
+      'disabled': isDisabled() ? '' : undefined,
       'value': toValue(options.value),
       'required': toValue(options.required),
       'name': toValue(options.name),
       'onClick': onClick,
     }),
-    () => ({ state: selectionState(checked.value), disabled: disabled.value }),
+    () => ({ state: selectionState(isChecked()), disabled: isDisabled() }),
   )
+}
+
+/** `@keydown.enter.prevent` — no modifier guard today; do not add one. @internal */
+export function preventEnterKeydown(event: KeyboardEvent) {
+  if (event.key === 'Enter')
+    event.preventDefault()
+}
+
+/**
+ * An item's derived state, the input of its surface: the item SFC reads these
+ * refs directly instead of re-deriving them (or building a surface it never binds).
+ * @internal
+ */
+export interface RadioGroupItemDerivedState {
+  /** `isEqual(context.modelValue, value)`. */
+  checked: ComputedRef<boolean>
+  /** The item's or the group's `disabled`. */
+  disabled: ComputedRef<boolean>
+  /** The item's or the group's `required`. */
+  required: ComputedRef<boolean>
+}
+
+/** @internal */
+export function getRadioGroupItemState(
+  context: RadioGroupRootContext,
+  value: MaybeRefOrGetter<AcceptableValue | undefined>,
+  disabled?: MaybeRefOrGetter<boolean | undefined>,
+  required?: MaybeRefOrGetter<boolean | undefined>,
+): RadioGroupItemDerivedState {
+  return {
+    // Cached: `isEqual` hashes object values. The other two are cheap reads,
+    // so getter refs rather than computeds.
+    checked: computed(() => isEqual(context.modelValue?.value, toValue(value))),
+    disabled: getterRef(() => context.disabled.value || (toValue(disabled) ?? false)),
+    required: getterRef(() => context.required.value || (toValue(required) ?? false)),
+  }
 }
 
 /**
@@ -120,9 +158,7 @@ export function getRadioGroupItemSurface(
   required?: MaybeRefOrGetter<boolean | undefined>,
   options: RadioGroupItemSurfaceOptions = {},
 ): PartSurface<RadioGroupItemState> {
-  const checked = computed(() => isEqual(context.modelValue?.value, toValue(value)))
-  const isDisabled = computed(() => context.disabled.value || (toValue(disabled) ?? false))
-  const isRequired = computed(() => context.required.value || (toValue(required) ?? false))
+  const { checked, disabled: isDisabled, required: isRequired } = getRadioGroupItemState(context, value, disabled, required)
 
   const radio = getRadioSurface({
     checked,
@@ -138,11 +174,7 @@ export function getRadioGroupItemSurface(
   return createPartSurface<RadioGroupItemState>(
     () => ({
       ...radio.props.value,
-      // `@keydown.enter.prevent` — no modifier guard today; do not add one.
-      onKeydown: (event: KeyboardEvent) => {
-        if (event.key === 'Enter')
-          event.preventDefault()
-      },
+      onKeydown: preventEnterKeydown,
     }),
     radio.state,
   )

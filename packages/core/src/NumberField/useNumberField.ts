@@ -2,7 +2,7 @@ import type { ComputedRef, HTMLAttributes, MaybeRefOrGetter, Ref } from 'vue'
 import type { NumberFieldRootContext } from './NumberFieldRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import { computed, mergeProps, ref, shallowRef, toValue, watch } from 'vue'
-import { clamp, createPartSurface, getActiveElement, isNullish, snapValueToStep, useComposing, useControllableState } from '@/shared'
+import { clamp, createPartSurface, getActiveElement, getterRef, isNullish, snapValueToStep, useComposing, useControllableState } from '@/shared'
 import { handleDecimalOperation, useNumberFormatter, useNumberParser } from './utils'
 
 /**
@@ -108,19 +108,20 @@ export interface UseNumberFieldReturn {
  * @lifecycle pure
  */
 export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldReturn {
-  const disabled = computed(() => toValue(props.disabled) ?? false)
-  const readonly = computed(() => toValue(props.readonly) ?? false)
-  const disableWheelChange = computed(() => toValue(props.disableWheelChange) ?? false)
-  const invertWheelChange = computed(() => toValue(props.invertWheelChange) ?? false)
-  const min = computed(() => toValue(props.min))
-  const max = computed(() => toValue(props.max))
-  const step = computed(() => toValue(props.step) ?? 1)
-  const stepSnapping = computed(() => toValue(props.stepSnapping) ?? true)
-  const allowInvalid = computed(() => toValue(props.allowInvalid) ?? false)
-  const focusOnChange = computed(() => toValue(props.focusOnChange) ?? true)
-  const id = computed(() => toValue(props.id))
-  const locale = computed(() => toValue(props.locale) || 'en')
-  const formatOptions = computed(() => toValue(props.formatOptions))
+  // Getter refs, not computeds: each is one prop read, tracked by the reader.
+  const disabled = getterRef(() => toValue(props.disabled) ?? false)
+  const readonly = getterRef(() => toValue(props.readonly) ?? false)
+  const disableWheelChange = getterRef(() => toValue(props.disableWheelChange) ?? false)
+  const invertWheelChange = getterRef(() => toValue(props.invertWheelChange) ?? false)
+  const min = getterRef(() => toValue(props.min))
+  const max = getterRef(() => toValue(props.max))
+  const step = getterRef(() => toValue(props.step) ?? 1)
+  const stepSnapping = getterRef(() => toValue(props.stepSnapping) ?? true)
+  const allowInvalid = getterRef(() => toValue(props.allowInvalid) ?? false)
+  const focusOnChange = getterRef(() => toValue(props.focusOnChange) ?? true)
+  const id = getterRef(() => toValue(props.id))
+  const locale = getterRef(() => toValue(props.locale) || 'en')
+  const formatOptions = getterRef(() => toValue(props.formatOptions))
 
   const { state, setState, lastChangeDetails, isControlled } = useControllableState<number | undefined, NumberFieldChangeReason>({
     prop: props.modelValue as MaybeRefOrGetter<number | undefined>,
@@ -130,7 +131,7 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
     onBeforeUpdate: props.onBeforeUpdate,
     onUpdate: props.onUpdate,
   })
-  const modelValue = computed(() => state.value)
+  const modelValue = state
 
   function setModelValue(value: number | undefined, reason: Reason = 'imperative-action', event?: Event) {
     return setState(value, reason, event)
@@ -208,10 +209,8 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
 
     return hasDecimals ? 'decimal' : 'numeric'
   })
-  // Replace negative textValue formatted using currencySign: 'accounting'
-  // with a textValue that can be announced using a minus sign.
-  const textValueFormatter = useNumberFormatter(locale, formatOptions)
-  const textValue = computed(() => isNullish(modelValue.value) || isNaN(modelValue.value) ? '' : textValueFormatter.format(modelValue.value))
+  // The same locale and options as `numberFormatter`, so the same formatter.
+  const textValue = computed(() => isNullish(modelValue.value) || isNaN(modelValue.value) ? '' : numberFormatter.format(modelValue.value))
 
   function handleChangingValue(type: 'increase' | 'decrease', multiplier: number, reason: Reason, event?: Event) {
     if (focusOnChange.value)
@@ -329,6 +328,10 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
       buttonStateMapping,
     )
   }
+  // The button surfaces are built on first read: the Root SFC never reads them
+  // (the Increment / Decrement SFCs build their own).
+  let incrementButton: PartSurface<NumberFieldButtonState> | undefined
+  let decrementButton: PartSurface<NumberFieldButtonState> | undefined
 
   return {
     modelValue,
@@ -346,14 +349,18 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
     setInputElement: (el) => { inputEl.value = el ?? undefined },
     root,
     createInputSurface: () => createNumberFieldInputSurface(context),
-    incrementButton: withClick(
-      getNumberFieldButtonSurface(context, 'increase'),
-      event => handleIncrease(1, 'increment-press', event),
-    ),
-    decrementButton: withClick(
-      getNumberFieldButtonSurface(context, 'decrease'),
-      event => handleDecrease(1, 'decrement-press', event),
-    ),
+    get incrementButton() {
+      return incrementButton ??= withClick(
+        getNumberFieldButtonSurface(context, 'increase'),
+        event => handleIncrease(1, 'increment-press', event),
+      )
+    },
+    get decrementButton() {
+      return decrementButton ??= withClick(
+        getNumberFieldButtonSurface(context, 'decrease'),
+        event => handleDecrease(1, 'decrement-press', event),
+      )
+    },
     context,
   }
 }
@@ -519,19 +526,24 @@ export function getNumberFieldButtonSurface(
   direction: 'increase' | 'decrease',
   options: { disabled?: MaybeRefOrGetter<boolean | undefined>, pressed?: MaybeRefOrGetter<boolean | undefined> } = {},
 ): PartSurface<NumberFieldButtonState> {
-  const isDisabled = computed(() => isNumberFieldButtonDisabled(rootContext, direction, toValue(options.disabled)))
-  const isPressed = computed(() => toValue(options.pressed) ?? false)
+  // Plain reads of the root's cached state, not computeds.
+  const isDisabled = () => isNumberFieldButtonDisabled(rootContext, direction, toValue(options.disabled))
+  const isPressed = () => toValue(options.pressed) ?? false
   return createPartSurface<NumberFieldButtonState>(
     () => ({
       'tabindex': '-1',
       'aria-label': direction === 'increase' ? 'Increase' : 'Decrease',
-      'style': { userSelect: isPressed.value ? 'none' : undefined },
-      'disabled': isDisabled.value ? '' : undefined,
-      'onContextmenu': (event: Event) => event.preventDefault(),
+      'style': { userSelect: isPressed() ? 'none' : undefined },
+      'disabled': isDisabled() ? '' : undefined,
+      'onContextmenu': preventDefault,
     }),
-    () => ({ disabled: isDisabled.value, pressed: isPressed.value }),
+    () => ({ disabled: isDisabled(), pressed: isPressed() }),
     buttonStateMapping,
   )
+}
+
+function preventDefault(event: Event) {
+  event.preventDefault()
 }
 
 /** Root disabled/readonly, the part's own `disabled`, or no further step in that direction. @internal */

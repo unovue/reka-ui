@@ -19,11 +19,11 @@ export const [injectRadioGroupItemContext, provideRadiogroupItemContext]
 </script>
 
 <script setup lang="ts">
-import { computed, mergeProps } from 'vue'
+import { mergeProps } from 'vue'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import Radio from './Radio.vue'
 import { injectRadioGroupRootContext } from './RadioGroupRoot.vue'
-import { getRadioGroupItemSurface } from './useRadioGroup'
+import { getRadioGroupItemState, preventEnterKeydown } from './useRadioGroup'
 import { isArrowKeyPressed } from './utils'
 
 defineOptions({
@@ -54,14 +54,10 @@ defineExpose(expose)
 const rootContext = injectRadioGroupRootContext()
 
 // checked (`isEqual(modelValue, value)`) and the group-inherited disabled/required
-// come from the shared surface builder (single source with `useRadioGroup()`);
-// the leaf `Radio` binds the attrs from the same builder, so only the derived
-// state is read here and handed down as props.
-const surface = getRadioGroupItemSurface(rootContext, () => props.value, () => props.disabled, () => props.required, { name: () => props.name })
-
-const disabled = computed(() => surface.state.value.disabled)
-const required = computed<boolean>(() => surface.props.value.required)
-const checked = computed(() => surface.state.value.state === 'checked')
+// come from the state the shared surface builder derives from (single source with
+// `useRadioGroup()`); the leaf `Radio` binds the attrs from the same builder, so
+// only that state is read here and handed down as props.
+const { checked, disabled, required } = getRadioGroupItemState(rootContext, () => props.value, () => props.disabled, () => props.required)
 
 provideRadiogroupItemContext({ disabled, checked })
 
@@ -98,7 +94,7 @@ const roving = useRovingFocusItem({
     :disabled="disabled"
     @update:checked="(_checked, details) => rootContext.changeModelValue(value, 'item-press', details?.event)"
     @select="emits('select', $event)"
-    @keydown="surface.props.value.onKeydown"
+    @keydown="preventEnterKeydown"
     @focus="handleFocus"
   >
     <slot

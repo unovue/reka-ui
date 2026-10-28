@@ -24,7 +24,7 @@ export const [injectColorSwatchPickerItemContext, provideColorSwatchPickerItemCo
 </script>
 
 <script setup lang="ts">
-import { mergeProps, toRefs } from 'vue'
+import { mergeProps, toRef } from 'vue'
 import { ListboxItem } from '@/Listbox'
 import { getColorSwatchPickerItemSurface } from './useColorSwatchPicker'
 
@@ -39,7 +39,8 @@ defineSlots<{
   }) => any
 }>()
 
-const { value } = toRefs(props)
+// `toRef`, not `toRefs`: only `value` is needed as a ref (one ref, not one per prop).
+const value = toRef(props, 'value')
 
 const forwarded = useForwardPropsEmits(props, emits)
 

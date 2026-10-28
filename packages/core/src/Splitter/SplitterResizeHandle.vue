@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PointerHitAreaMargins } from './utils/registry'
 import type { PrimitiveProps } from '@/Primitive'
-import { toRefs } from 'vue'
+import { toRef } from 'vue'
 import { useNonce } from '@/shared/useNonce'
 
 export interface SplitterResizeHandleProps extends PrimitiveProps {
@@ -49,7 +49,7 @@ if (panelGroupContext === null) {
   )
 }
 
-const { nonce: propNonce } = toRefs(props)
+const propNonce = toRef(props, 'nonce')
 
 const { root } = useSplitterResizeHandle(panelGroupContext, {
   id: useId(props.id, 'reka-splitter-resize-handle'),

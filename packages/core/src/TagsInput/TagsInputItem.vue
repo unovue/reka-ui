@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { AcceptableInputValue } from './TagsInputRoot.vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { computed, mergeProps, toRefs } from 'vue'
+import { computed, mergeProps, toRef } from 'vue'
 import { createContext, useForwardElement } from '@/shared'
 import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 import { createTagsInputItemContext, getTagsInputItemSurface } from './useTagsInput'
@@ -40,7 +40,7 @@ defineOptions({
 })
 
 const props = defineProps<TagsInputItemProps>()
-const { value } = toRefs(props)
+const value = toRef(props, 'value')
 
 const context = injectTagsInputRootContext()
 const { forwardRef, currentElement, expose } = useForwardElement()

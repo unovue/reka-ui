@@ -47,7 +47,6 @@ export const [injectRadioGroupRootContext, provideRadioGroupRootContext]
 </script>
 
 <script setup lang="ts">
-import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -75,8 +74,7 @@ defineExpose(expose)
 
 // `dir` resolution (ConfigProvider-aware) stays in the shell; the composable
 // owns the controlled/uncontrolled model (`useControllableState`) and emits.
-const { dir: propDir } = toRefs(props)
-const dir = useDirection(propDir)
+const dir = useDirection(() => props.dir)
 const isFormControl = useFormControl(currentElement)
 
 const { modelValue, root, context } = useRadioGroup({

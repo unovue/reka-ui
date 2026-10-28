@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, isRef, ref, watchEffect } from 'vue'
 import { createChangeEventDetails, useControllableState } from './useControllableState'
 
 describe('createChangeEventDetails', () => {
@@ -291,5 +291,51 @@ describe('setState options (#2826)', () => {
     onBeforeUpdate.mockImplementationOnce((_value, details) => details.cancel())
     expect(setState(true, 'trigger-press', undefined, { force: true })).toBe(false)
     expect(onUpdate).toHaveBeenCalledTimes(1)
+  })
+
+  describe('one model object (lean)', () => {
+    it('`isControlled` and `lastChangeDetails` are readonly refs', () => {
+      const { isControlled, lastChangeDetails } = useControllableState<boolean>({ defaultValue: false })
+      expect(isRef(isControlled)).toBe(true)
+      expect(isRef(lastChangeDetails)).toBe(true)
+    })
+
+    it('`isControlled` is tracked by a computed until it latches', () => {
+      const prop = ref<boolean | undefined>(undefined)
+      const { isControlled, state } = useControllableState<boolean>({ prop, defaultValue: false, onUpdate: () => {} })
+      const label = computed(() => isControlled.value ? 'controlled' : 'uncontrolled')
+      expect(label.value).toBe('uncontrolled')
+      prop.value = true
+      expect(label.value).toBe('controlled')
+      expect(state.value).toBe(true)
+      prop.value = undefined
+      expect(label.value).toBe('controlled')
+      expect(state.value).toBeUndefined()
+    })
+
+    it('`lastChangeDetails` written before its first read still reads the latest details', () => {
+      const { setState, lastChangeDetails } = useControllableState<boolean>({ defaultValue: false })
+      setState(true, 'trigger-press')
+      expect(lastChangeDetails.value.reason).toBe('trigger-press')
+    })
+
+    it('`lastChangeDetails` is reactive once read', () => {
+      const { setState, lastChangeDetails } = useControllableState<boolean>({ defaultValue: false })
+      const reasons: string[] = []
+      const stop = watchEffect(() => {
+        reasons.push(lastChangeDetails.value.reason)
+      }, { flush: 'sync' })
+      setState(true, 'trigger-press')
+      setState(false, 'escape-key')
+      stop()
+      expect(reasons).toEqual(['none', 'trigger-press', 'escape-key'])
+    })
+
+    it('a controlled model that later goes uncontrolled-by-default reads `defaultValue` from the lazily created store', () => {
+      const { state, setState } = useControllableState<string[]>({ prop: () => undefined, defaultValue: () => ['a'], onUpdate: () => {} })
+      expect(state.value).toEqual(['a'])
+      expect(setState(['b'])).toBe(true)
+      expect(state.value).toEqual(['b'])
+    })
   })
 })
