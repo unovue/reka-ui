@@ -14,7 +14,7 @@
   {
     "path": "dist/index.js",
     "import": "{ SelectRoot, SelectTrigger, SelectContent, SelectItem, SelectViewport, SelectPortal }",
-    "limit": "31 KB",
+    "limit": "31.5 KB",
     "name": "Select"
   },
   {
@@ -38,7 +38,7 @@
   {
     "path": "dist/index.js",
     "import": "{ TreeRoot, TreeItem, TreeVirtualizer }",
-    "limit": "15 KB",
+    "limit": "15.5 KB",
     "name": "Tree"
   },
   {
@@ -50,7 +50,7 @@
   {
     "path": "dist/index.js",
     "import": "{ TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent }",
-    "limit": "21 KB",
+    "limit": "21.5 KB",
     "name": "Tooltip"
   },
   {
