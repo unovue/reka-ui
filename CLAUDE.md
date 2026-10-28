@@ -11,6 +11,7 @@ Vue 3 headless component library. pnpm monorepo. Node ≥ 22, pnpm 10.
 - Lint: `pnpm lint` (fix: `pnpm lint:fix`)
 - Build: `pnpm --filter reka-ui build` (vue-tsc + tsdown)
 - Regenerate API docs after changing public props/emits/slots: `pnpm docs:gen`
+- Browser benchmark (retained heap + mount time per family, production build): `pnpm bench`; against a ref: `pnpm bench --compare origin/v3 --only Dialog,Popover` (CI fails PRs into v3 on a heap regression)
 - Regenerate per-family subpath exports after adding/removing a family in `packages/core/src/index.ts`: `pnpm --filter reka-ui gen:exports`
 
 ## Layout
