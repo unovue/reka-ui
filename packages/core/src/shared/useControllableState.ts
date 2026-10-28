@@ -49,13 +49,15 @@ export function createChangeEventDetails<R extends string = string, E extends Ev
 let initialDetails: ChangeEventDetails<any> | undefined
 /**
  * The `{ reason: 'none' }` details every model starts with. Closed (its
- * `cancel()` is a no-op) and holding no event, so one shared object serves
- * every instance instead of one object and two closures each.
+ * `cancel()` is a no-op), frozen (`isCanceled` is a writable data property)
+ * and holding no event, so one shared object serves every instance instead of
+ * an object and a closure each.
  */
 function getInitialDetails(): ChangeEventDetails<any> {
   if (!initialDetails) {
     initialDetails = createChangeEventDetails('none')
     closeDetails(initialDetails)
+    Object.freeze(initialDetails)
   }
   return initialDetails
 }
@@ -166,7 +168,7 @@ export function useControllableState<T, R extends string = string>(
     // Controlled: mirror the prop as-is — `undefined` reads `undefined`, never `defaultValue`.
     return isControlled.value ? toValue(prop) as T : internal.value
   })
-  // shallowRef: details carry a native `event` and a closure-backed getter — never proxy them.
+  // shallowRef: details carry a native `event` and a `cancel` closure — never proxy them.
   const lastChangeDetails = shallowRef(getInitialDetails()) as Ref<ChangeEventDetails<R>>
 
   function setState(value: T, reason?: R | BaseChangeReason, event?: Event, options?: SetStateOptions): boolean {
