@@ -7,6 +7,7 @@ import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import { useKbd } from '@/shared'
 import { handleSubmit } from '@/test'
+import NumberFieldRoot from './NumberFieldRoot.vue'
 import NumberField from './story/_NumberField.vue'
 
 function setup(props?: NumberFieldRootProps) {
@@ -720,6 +721,43 @@ describe('numberField', () => {
       expect(input.value).toBe('7')
       await fireEvent.keyDown(input, { key: kbd.ENTER })
       expect(input.value).toBe('EUR 7.00')
+    })
+  })
+
+  describe('given an unparseable input value', () => {
+    it.each(['.', '-'])('should keep the current value when committing "%s"', async (text) => {
+      const { user, input, increment } = setup({ defaultValue: 5 })
+
+      await user.clear(input)
+      await user.type(input, `${text}{Enter}`)
+      expect(input.value).toBe('5')
+
+      await user.click(increment)
+      expect(input.value).toBe('6')
+    })
+
+    it('should not emit when controlled', async () => {
+      const wrapper = mount(NumberField, { props: { modelValue: 5 }, attachTo: document.body })
+      const input = wrapper.find('input').element
+
+      await userEvent.clear(input)
+      await userEvent.type(input, '.{Enter}')
+
+      expect(wrapper.findComponent(NumberFieldRoot).emitted('update:modelValue')).toBeUndefined()
+      expect(input.value).toBe('5')
+      wrapper.unmount()
+    })
+
+    it('should still emit undefined when the input is cleared', async () => {
+      const wrapper = mount(NumberField, { props: { modelValue: 5 }, attachTo: document.body })
+      const input = wrapper.find('input').element
+
+      await userEvent.clear(input)
+      await userEvent.type(input, '{Enter}')
+
+      expect(wrapper.findComponent(NumberFieldRoot).emitted('update:modelValue')).toEqual([[undefined]])
+      expect(input.value).toBe('')
+      wrapper.unmount()
     })
   })
 
