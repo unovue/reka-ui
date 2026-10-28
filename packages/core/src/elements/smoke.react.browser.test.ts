@@ -17,6 +17,8 @@ beforeAll(() => {
 afterEach(cleanup)
 
 const STYLE = { display: 'inline-block', width: 40, height: 20 }
+const SLIDER_STYLE = { display: 'flex', position: 'relative', width: 200, height: 20 } as const
+const THUMB_STYLE = { display: 'block', width: 10, height: 10 }
 const major = Number(version.split('.')[0])
 type SwitchElement = HTMLElement & { modelValue?: boolean | null }
 
@@ -66,6 +68,28 @@ describe.runIf(major >= 19)(`React ${version}`, () => {
     expect(spy).not.toHaveBeenCalled()
     root.unmount()
   })
+  it('controlled slider: an array property in, `onupdate-model-value` out', async () => {
+    const seen: unknown[] = []
+    function App() {
+      const [value, setValue] = useState([30])
+      return h('reka-slider-root', {
+        'style': SLIDER_STYLE,
+        'modelValue': value,
+        'onupdate-model-value': (event: RekaElementEvent<number[]>) => {
+          seen.push(event.detail.value)
+          setValue(event.detail.value)
+        },
+      }, h('reka-slider-thumb', { 'aria-label': 'Volume', 'style': THUMB_STYLE }))
+    }
+    const { host, root } = mount(h(App))
+    const thumb = host.querySelector<HTMLElement>('reka-slider-thumb')!
+    await vi.waitFor(() => expect(thumb.getAttribute('aria-valuenow')).toBe('30'))
+    thumb.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    await vi.waitFor(() => expect(thumb.getAttribute('aria-valuenow')).toBe('31'))
+    expect(seen).toEqual([[31]])
+    root.unmount()
+  })
 })
 
 describe.runIf(major === 18)(`React ${version}`, () => {
@@ -106,6 +130,32 @@ describe.runIf(major === 18)(`React ${version}`, () => {
     await vi.waitFor(() => expect(el.hasAttribute('data-disabled')).toBe(false))
     await userEvent.click(el)
     expect(el.getAttribute('aria-checked')).toBe('true')
+    root.unmount()
+  })
+  it('controlled slider through a ref: an array property in, `addEventListener` out', async () => {
+    const seen: unknown[] = []
+    function App() {
+      const [value, setValue] = useState([30])
+      const ref = useRef<HTMLElement & { modelValue?: number[] }>(null)
+      useEffect(() => {
+        const el = ref.current!
+        el.modelValue = value
+        const onUpdate = (event: Event) => {
+          seen.push((event as RekaElementEvent<number[]>).detail.value)
+          setValue((event as RekaElementEvent<number[]>).detail.value)
+        }
+        el.addEventListener('update-model-value', onUpdate)
+        return () => el.removeEventListener('update-model-value', onUpdate)
+      }, [value])
+      return h('reka-slider-root', { ref, style: SLIDER_STYLE }, h('reka-slider-thumb', { 'aria-label': 'Volume', 'style': THUMB_STYLE }))
+    }
+    const { host, root } = mount(h(App))
+    const thumb = host.querySelector<HTMLElement>('reka-slider-thumb')!
+    await vi.waitFor(() => expect(thumb.getAttribute('aria-valuenow')).toBe('30'))
+    thumb.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    await vi.waitFor(() => expect(thumb.getAttribute('aria-valuenow')).toBe('31'))
+    expect(seen).toEqual([[31]])
     root.unmount()
   })
 })

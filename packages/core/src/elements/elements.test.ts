@@ -5,8 +5,11 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { CalendarRoot } from '@/Calendar'
 import { CheckboxGroupRoot } from '@/Checkbox'
+import { DatePickerField } from '@/DatePicker'
 import { DialogRoot } from '@/Dialog'
+import { NumberFieldInput, NumberFieldRoot } from '@/NumberField'
 import { PopoverContent } from '@/Popover'
 import { SwitchRoot } from '@/Switch'
 import * as source from '.'
@@ -56,6 +59,53 @@ describe('attribute and event mapping', () => {
     expect(parseAttribute(sideOffset, '8')).toBe(8)
     expect(parseAttribute(sideOffset, 'x')).toBeUndefined()
     expect(parseAttribute({ kind: 'string', attribute: 'value' }, 'a')).toBe('a')
+  })
+
+  it('parses number lists and ISO 8601 dates, times and intervals into Temporal values', () => {
+    const numbers = { kind: 'numbers', attribute: 'default-value' } as const
+    expect(parseAttribute(numbers, '10 90')).toEqual([10, 90])
+    expect(parseAttribute(numbers, '10,90')).toEqual([10, 90])
+    expect(parseAttribute(numbers, '10 x')).toBeUndefined()
+
+    const date = { kind: 'date', attribute: 'default-value' } as const
+    expect(parseAttribute(date, '2026-10-14')).toBeInstanceOf(Temporal.PlainDate)
+    expect(parseAttribute(date, '2026-10-14T09:30')).toBeInstanceOf(Temporal.PlainDateTime)
+    const zoned = parseAttribute(date, '2026-10-14T09:30+02:00[Europe/Paris]') as Temporal.ZonedDateTime
+    expect(zoned).toBeInstanceOf(Temporal.ZonedDateTime)
+    expect(zoned.timeZoneId).toBe('Europe/Paris')
+    expect(parseAttribute(date, '')).toBeUndefined()
+
+    const time = { kind: 'time', attribute: 'default-value' } as const
+    expect(parseAttribute(time, '09:30')).toBeInstanceOf(Temporal.PlainTime)
+    expect(String(parseAttribute(time, '09:30'))).toBe('09:30:00')
+    expect(parseAttribute(time, '2026-10-14T09:30')).toBeInstanceOf(Temporal.PlainDateTime)
+
+    const range = parseAttribute({ kind: 'date-range', attribute: 'default-value' }, '2026-10-05/2026-10-07') as Record<string, unknown>
+    expect(Object.keys(range)).toEqual(['start', 'end'])
+    expect(String(range.start)).toBe('2026-10-05')
+    expect(String(range.end)).toBe('2026-10-07')
+    const times = parseAttribute({ kind: 'time-range', attribute: 'default-value' }, '09:00/17:30') as Record<string, unknown>
+    expect(String(times.end)).toBe('17:30:00')
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(parseAttribute(date, '2026-13-45')).toBeUndefined()
+    expect(parseAttribute({ kind: 'date-range', attribute: 'default-value' }, '2026-10-05')).toBeUndefined()
+    expect(warn).toHaveBeenCalledTimes(2)
+    warn.mockRestore()
+  })
+
+  it('reads the part hints: input and svg targets, content kept inside, `asChild` and forms', () => {
+    const input = getPartMeta({ component: NumberFieldInput, target: 'input' })
+    expect(input.target).toBe('input')
+    expect(input.siblingsInside).toBe(false)
+    expect(getPartMeta({ component: CalendarRoot, siblingsInside: true }).siblingsInside).toBe(true)
+    // A wrapping part without its own `asChild` prop can still declare it passes it through.
+    expect(getPartMeta({ component: DatePickerField }).hasAsChild).toBe(false)
+    const field = getPartMeta({ component: DatePickerField, asChild: true, formAssociated: true })
+    expect(field.hasAsChild).toBe(true)
+    expect(field.formAssociated).toBe(true)
+    // A `name` prop makes a part form-associated by itself.
+    expect(getPartMeta({ component: NumberFieldRoot }).formAssociated).toBe(true)
   })
 
   it('lets only props that default to `true` take `"false"`, never native attribute names', () => {
@@ -185,6 +235,67 @@ describe('accessibility (axe)', () => {
     await mounted('reka-popover-close')
     expect(await axe(document.body)).toHaveNoViolations()
   })
+
+  it('a calendar rendered from its slot props', async () => {
+    const container = render(`
+      <reka-calendar-root default-value="2026-10-14" locale="en-US">
+        <reka-calendar-header>
+          <reka-calendar-prev aria-label="Previous month">‹</reka-calendar-prev>
+          <reka-calendar-heading></reka-calendar-heading>
+          <reka-calendar-next aria-label="Next month">›</reka-calendar-next>
+        </reka-calendar-header>
+      </reka-calendar-root>
+    `)
+    const root = query<HTMLElement & { slotProps?: { grid: { value: unknown, rows: unknown[][] }[], weekDays: string[] } }>('reka-calendar-root')
+    await vi.waitFor(() => expect(root.slotProps).toBeDefined())
+    const { grid, weekDays } = root.slotProps!
+    root.insertAdjacentHTML('beforeend', grid.map(month => `
+      <reka-calendar-grid value="${month.value}">
+        <reka-calendar-grid-head><reka-calendar-grid-row>${weekDays.map(day => `<reka-calendar-head-cell>${day}</reka-calendar-head-cell>`).join('')}</reka-calendar-grid-row></reka-calendar-grid-head>
+        <reka-calendar-grid-body>${month.rows.map(row => `<reka-calendar-grid-row>${row.map(date => `<reka-calendar-cell value="${date}"><reka-calendar-cell-trigger value="${date}">${String(date).slice(8)}</reka-calendar-cell-trigger></reka-calendar-cell>`).join('')}</reka-calendar-grid-row>`).join('')}</reka-calendar-grid-body>
+      </reka-calendar-grid>`).join(''))
+    await vi.waitFor(() => expect(query('reka-calendar-cell-trigger[value="2026-10-14"]').hasAttribute('data-selected')).toBe(true))
+    // The grid is a `role="application"` table, as in the Vue component. There
+    // its rows are native `<tr>`s, whose implicit role axe does not check; an
+    // element's row role is explicit, and axe wants a table or grid around it.
+    expect(await axe(container, { rules: { 'aria-required-parent': { enabled: false } } })).toHaveNoViolations()
+  })
+
+  it('a date field', async () => {
+    const container = render(`<reka-date-field-root default-value="2026-10-14" locale="en-US" aria-label="Birthday"></reka-date-field-root>`)
+    const root = query<HTMLElement & { slotProps?: { segments: { part: string, value: string }[] } }>('reka-date-field-root')
+    await vi.waitFor(() => expect(root.slotProps).toBeDefined())
+    root.innerHTML = root.slotProps!.segments.map(segment => `<reka-date-field-input part="${segment.part}">${segment.value}</reka-date-field-input>`).join('')
+    await vi.waitFor(() => expect(query('[data-reka-date-field-segment="day"]').getAttribute('aria-valuenow')).toBe('14'))
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('numeric and color inputs', async () => {
+    const container = render(`
+      <form>
+        <reka-number-field-root name="n" default-value="2">
+          <reka-number-field-decrement aria-label="Less">−</reka-number-field-decrement>
+          <reka-number-field-input><input aria-label="Quantity"></reka-number-field-input>
+          <reka-number-field-increment aria-label="More">+</reka-number-field-increment>
+        </reka-number-field-root>
+        <reka-pin-input-root aria-label="Code">
+          <reka-pin-input-input index="0"><input aria-label="Digit 1"></reka-pin-input-input>
+          <reka-pin-input-input index="1"><input aria-label="Digit 2"></reka-pin-input-input>
+        </reka-pin-input-root>
+        <reka-slider-root default-value="50"><reka-slider-track><reka-slider-range></reka-slider-range></reka-slider-track><reka-slider-thumb aria-label="Volume"></reka-slider-thumb></reka-slider-root>
+        <reka-rating-root default-value="2" aria-label="Score">
+          <reka-rating-item item="1"><reka-rating-item-indicator step="1" aria-label="1 star">★</reka-rating-item-indicator></reka-rating-item>
+          <reka-rating-item item="2"><reka-rating-item-indicator step="2" aria-label="2 stars">★</reka-rating-item-indicator></reka-rating-item>
+        </reka-rating-root>
+        <reka-color-field-root default-value="#ff0000"><reka-color-field-input><input aria-label="Color"></reka-color-field-input></reka-color-field-root>
+        <reka-color-swatch color="#00ff00"></reka-color-swatch>
+      </form>
+    `)
+    await vi.waitFor(() => expect(query('reka-slider-thumb').getAttribute('aria-valuenow')).toBe('50'))
+    await vi.waitFor(() => expect(query('reka-color-field-input input').getAttribute('data-reka-owned')).not.toBeNull())
+    await vi.waitFor(() => expect(query('reka-rating-item-indicator').getAttribute('role')).toBe('radio'))
+    expect(await axe(container)).toHaveNoViolations()
+  })
 })
 
 const PACKAGE_DIR = join(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -240,6 +351,6 @@ describe.skipIf(!hasDist)('built `reka-ui/elements` entry (dist)', () => {
     walk(ELEMENTS_DIST)
     const loaded = Array.from(seen, file => relative(join(PACKAGE_DIR, 'dist'), file).replaceAll('\\', '/'))
     expect(loaded).toContain('elements/host.js')
-    expect(loaded.filter(file => /^(?:Select|Combobox|Calendar|Menu|Tooltip)\//.test(file))).toEqual([])
+    expect(loaded.filter(file => /^(?:Select|Combobox|Menu|Tooltip)\//.test(file))).toEqual([])
   })
 })

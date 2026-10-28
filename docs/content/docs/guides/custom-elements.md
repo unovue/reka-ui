@@ -109,12 +109,29 @@ The `reka-ui` package is published as ES modules that reference `process.env.NOD
 | Family | Register with | Tags |
 | --- | --- | --- |
 | Accordion | `accordionElements` | `reka-accordion-root`, `-item`, `-header`, `-trigger`, `-content` |
+| Calendar | `calendarElements` | `reka-calendar-root`, `-header`, `-heading`, `-prev`, `-next`, `-grid`, `-grid-head`, `-grid-body`, `-grid-row`, `-head-cell`, `-cell`, `-cell-trigger`, `-view`, `-view-trigger` |
 | Checkbox | `checkboxElements` | `reka-checkbox-root`, `-indicator`, `reka-checkbox-group-root` |
 | Collapsible | `collapsibleElements` | `reka-collapsible-root`, `-trigger`, `-content` |
+| Color area | `colorAreaElements` | `reka-color-area-root`, `-area`, `-thumb` |
+| Color field | `colorFieldElements` | `reka-color-field-root`, `-input` |
+| Color slider | `colorSliderElements` | `reka-color-slider-root`, `-track`, `-thumb` |
+| Color swatch | `colorSwatchElements` | `reka-color-swatch` |
+| Color swatch picker | `colorSwatchPickerElements` | `reka-color-swatch-picker-root`, `-item`, `-item-swatch`, `-item-indicator` |
+| Date field | `dateFieldElements` | `reka-date-field-root`, `-input` |
+| Date picker | `datePickerElements` | `reka-date-picker-root`, `-field`, `-input`, `-trigger`, `-anchor`, `-content`, `-arrow`, `-close`, `-calendar`, and the calendar parts (`-header`, `-heading`, `-prev`, `-next`, `-grid`, …, `-view-trigger`) |
+| Date range field | `dateRangeFieldElements` | `reka-date-range-field-root`, `-input` |
+| Date range picker | `dateRangePickerElements` | `reka-date-range-picker-root` and the same parts as the date picker |
 | Dialog | `dialogElements` | `reka-dialog-root`, `-trigger`, `-portal`, `-overlay`, `-content`, `-title`, `-description`, `-close` |
+| Number field | `numberFieldElements` | `reka-number-field-root`, `-input`, `-increment`, `-decrement` |
+| Pin input | `pinInputElements` | `reka-pin-input-root`, `-input` |
 | Popover | `popoverElements` | `reka-popover-root`, `-trigger`, `-anchor`, `-portal`, `-content`, `-close` |
+| Range calendar | `rangeCalendarElements` | `reka-range-calendar-root` and the same parts as the calendar |
+| Rating | `ratingElements` | `reka-rating-root`, `-item`, `-item-indicator` |
+| Slider | `sliderElements` | `reka-slider-root`, `-track`, `-range`, `-thumb` |
 | Switch | `switchElements` | `reka-switch-root`, `-thumb` |
 | Tabs | `tabsElements` | `reka-tabs-root`, `-list`, `-trigger`, `-content`, `-indicator` |
+| Time field | `timeFieldElements` | `reka-time-field-root`, `-input` |
+| Time range field | `timeRangeFieldElements` | `reka-time-range-field-root`, `-input` |
 | Toggle | `toggleElements` | `reka-toggle` |
 
 Props, events and data attributes are the ones documented on each component page, mapped as described below.
@@ -165,6 +182,10 @@ Every prop is available as a **property** in camelCase (`el.modelValue`, `el.def
 | `number` | Parsed with `Number()` | `<reka-popover-content side-offset="8">` |
 | `string` | As is | `<reka-tabs-root default-value="account">` |
 | `boolean \| 'indeterminate'` (Checkbox and Switch values) | A value, not a flag: `""` or `"true"`, `"false"`, `"indeterminate"` | `<reka-checkbox-root default-value="indeterminate">` |
+| `number[]` (Slider values) | Numbers separated by spaces or commas, one per thumb | `<reka-slider-root default-value="20 80">` |
+| Dates (`DateValue`) | An ISO 8601 string, see [dates and times](#dates-and-times) | `<reka-calendar-root default-value="2026-10-14">` |
+| Date and time ranges | Two ISO 8601 strings separated by `/` | `<reka-range-calendar-root default-value="2026-10-05/2026-10-07">` |
+| Colors (`string \| Color`) | Any CSS color string, parsed by the component | `<reka-color-field-root default-value="#ff0000">` |
 | Arrays, objects, elements, functions | None, property only | `accordion.modelValue = ['a', 'b']` |
 
 `disabled="false"` is disabled, as on any HTML element. `open`, `required` and every other native attribute name work the same way. To control a boolean as `false`, set the property:
@@ -179,7 +200,34 @@ collapsible.open = false // controlled and closed
 
 Elements do not reflect props back to attributes, with one exception: `disabled` reflects both ways, like a native control's. `el.disabled = true` sets the attribute, and `el.disabled` is `true` whenever the attribute is present. It is your setting only. Whether the part is actually disabled (by its own prop, a disabled root, or a `<fieldset disabled>`) shows in `data-disabled` and `aria-disabled`. Read other state from the `data-*` and ARIA attributes the part renders, or from events.
 
-`id`, `dir` and `hidden` are native `HTMLElement` properties, so they stay attribute-driven.
+`id`, `dir` and `hidden` are native `HTMLElement` properties, so they stay attribute-driven. So does `part` (the date field segment prop), which is also the [shadow parts](https://developer.mozilla.org/docs/Web/HTML/Global_attributes/part) attribute: set `part="day"` as an attribute.
+
+### Dates and times
+
+Date values are [Temporal](https://tc39.es/proposal-temporal/docs/) objects, as in the Vue components, so the page needs a global `Temporal` (native, or a polyfill loaded first). As properties, they take and give Temporal objects, and events carry them:
+
+```js
+calendar.modelValue = Temporal.PlainDate.from('2026-10-14')
+calendar.addEventListener('update-model-value', (event) => {
+  console.log(event.detail.value.toString()) // '2026-10-15'
+})
+```
+
+As attributes (`model-value`, `default-value`, `placeholder`, `default-placeholder`, `min-value`, `max-value`, and the `value` of grids and cells), they take an ISO 8601 string, parsed into the most specific type it describes:
+
+| Attribute value | Parsed with |
+| --- | --- |
+| `2026-10-14` | `Temporal.PlainDate.from()` |
+| `2026-10-14T09:30` | `Temporal.PlainDateTime.from()` |
+| `2026-10-14T09:30+02:00[Europe/Paris]` (with a time zone) | `Temporal.ZonedDateTime.from()` |
+| `09:30` (time fields only) | `Temporal.PlainTime.from()` |
+| `2026-10-05/2026-10-07` (range parts) | Each side as above, into `{ start, end }` |
+
+An invalid string is ignored, with a warning in development, and an empty one clears the value. Each Temporal type's `toString()` gives back a string in this format.
+
+### Colors
+
+Color props take a CSS color string as an attribute (`#ff0000`, `rgb(…)`, `hsl(…)`, a named color) and either a string or a `Color` object as a property. Events carry what the Vue component emits: `Color` objects for the color area, field and slider, and strings for the swatch picker.
 
 ## Events
 
@@ -240,6 +288,7 @@ reka-accordion-content[data-state='closed'] { … }
 
 - `as` and `asChild` are not available. The element replaces them.
 - Parts whose default element carries meaning get that meaning added. Button parts get `role="button"`, `tabindex="0"`, and activate on Enter and Space. Headings get `role="heading"` and `aria-level`. Lists get `role="list"` and `role="listitem"`.
+- Parts that have to be a native element render onto one inside them instead: the inputs of the number field, color field and pin input render onto the `<input>` you put inside the element (one is created if there is none), and the date picker arrow onto an `<svg>` (put your own `<path>` in it). The element stays a plain container, and the input gets the role, value and handlers. Give the input its `aria-label`. It is given back as it was when the part unmounts.
 - Custom elements are `display: inline` by default. Set `display` for parts that need a box (a switch, a dialog content).
 - Your own attributes, classes and styles are kept. Classes and styles merge with the part's. An attribute the part renders (`data-state`, `aria-expanded`, …) belongs to the part while it is rendered: if you change it meanwhile, the part's value stays, and yours is what remains when the part unmounts. The `role`, `tabindex` and `aria-level` added for native semantics (above) give way to yours.
 - Ids are yours. Parts that other parts point to (a collapsible or tab content, a dialog title, a trigger) and form controls render the `id` you set, and `aria-controls` / `aria-labelledby` follow it. Without one, the part generates an id while it is rendered.
@@ -259,19 +308,78 @@ This is the one place elements differ from the Vue components. In Vue, closed co
 
 ## Forms
 
-Parts with a `name` (Switch, Checkbox, Checkbox group, Toggle) are [form-associated](https://html.spec.whatwg.org/multipage/custom-elements.html#form-associated-custom-elements):
+Parts with a `name` (Switch, Checkbox, Checkbox group, Toggle, Number field, Pin input, Slider, Rating, the color area, field, slider and swatch picker, the date and time fields and their range versions, and the date pickers) are [form-associated](https://html.spec.whatwg.org/multipage/custom-elements.html#form-associated-custom-elements):
 
 - they submit their value with their form, wherever you move them;
 - `<label for>` labels them, `<fieldset disabled>` disables them, and resetting the form resets them;
 - they are validated with it: a `required` checkbox left unchecked makes the form invalid, and matches `:invalid`;
-- they submit the same names as the Vue components (a checkbox group named `toppings` submits `toppings[0]`, `toppings[1]`, …);
+- they submit the same names and values as the Vue components (a checkbox group named `toppings` submits `toppings[0]`, `toppings[1]`, …, a slider named `volume` submits `volume[0]`, a date field its ISO date, a color area its `x-name` and `y-name` channels);
+- in a date picker, the `-field` element submits the root's `name`;
 - nothing is added next to them: the hidden inputs the Vue components render are not in the document.
 
 Form participation needs `ElementInternals` (Safari 16.4 and later). Without it, the elements work but do not submit.
 
 ## Children instead of slots
 
-Child elements and text work like the default slot. Scoped slots (slot props) are not available. Read state from `data-*` attributes and events instead.
+Child elements and text work like the default slot. Elements cannot render scoped slots for you, but they give you their slot props: `el.slotProps` is a read-only snapshot of what the part passes to its default slot (`undefined` until it renders), and a `slot-props-change` event is dispatched after the part renders with new ones (it never bubbles). Most parts are fully usable from `data-*` attributes and events. A few build their content from slot props, and you render it from them:
+
+**Calendars.** The root's `grid` holds the months on display (`{ value, rows }`, `rows` being weeks of Temporal dates), and `weekDays` their headings. Render grid elements from them, giving each cell its date as an ISO `value`:
+
+```js
+const calendar = document.querySelector('reka-calendar-root')
+let rendered
+
+function renderGrid() {
+  const { grid, weekDays } = calendar.slotProps
+  // The slot props change on every arrow key (the focused date); the grid
+  // only when the page turns.
+  if (grid === rendered)
+    return
+  rendered = grid
+  calendar.querySelector('.months').innerHTML = grid.map(month => `
+    <reka-calendar-grid>
+      <reka-calendar-grid-head>
+        <reka-calendar-grid-row>${weekDays.map(day => `<reka-calendar-head-cell>${day}</reka-calendar-head-cell>`).join('')}</reka-calendar-grid-row>
+      </reka-calendar-grid-head>
+      <reka-calendar-grid-body>${month.rows.map(week => `
+        <reka-calendar-grid-row>${week.map(date => `
+          <reka-calendar-cell value="${date}">
+            <reka-calendar-cell-trigger value="${date}">${date.day}</reka-calendar-cell-trigger>
+          </reka-calendar-cell>`).join('')}
+        </reka-calendar-grid-row>`).join('')}
+      </reka-calendar-grid-body>
+    </reka-calendar-grid>`).join('')
+}
+
+calendar.addEventListener('slot-props-change', renderGrid)
+if (calendar.slotProps)
+  renderGrid()
+```
+
+Keyboard navigation moves focus into the new page once you have rendered it. In a date picker, the calendar is `<reka-date-picker-calendar>`, rendered when the content opens: render its grid the same way, then focus the selected cell (`[data-selected]`) yourself, since the content's initial focus runs before your grid exists.
+
+**Date and time fields.** The root's `segments` lists the segments to render, one input element per segment, with the segment's `part` (an attribute, see above) and its text. In range fields, `segments.start` and `segments.end` are rendered with `type="start"` and `type="end"`:
+
+```js
+const field = document.querySelector('reka-date-field-root')
+field.addEventListener('slot-props-change', () => {
+  const { segments } = field.slotProps
+  const inputs = field.querySelectorAll('reka-date-field-input')
+  if (inputs.length === segments.length && segments.every((s, i) => inputs[i].getAttribute('part') === s.part)) {
+    // Same segments: update their text, so the focused one keeps focus.
+    segments.forEach((s, i) => (inputs[i].textContent = s.value))
+    return
+  }
+  field.replaceChildren(...segments.map((s) => {
+    const input = document.createElement('reka-date-field-input')
+    input.setAttribute('part', s.part)
+    input.textContent = s.value
+    return input
+  }))
+})
+```
+
+Values in `slotProps` are the part's own (Temporal dates, colors): treat them as read-only.
 
 ## Context across elements
 
@@ -401,6 +509,10 @@ Bind props in camelCase (`:modelValue="checked"`, or `:modelValue.prop` to force
 ## Limitations
 
 - **Families.** Only the families listed above are available. The rest will follow, and `PopoverArrow` (which renders an SVG) is not included yet.
+- **Rendered content.** A part that renders its content from slot props in Vue (calendar grids, date field segments) needs you to render it from [`slotProps`](#children-instead-of-slots). Text a part renders as fallback content (the calendar heading's month name, the date picker arrow's path) is not rendered: an element's children are yours. The heading's text is in its own slot props: `heading.slotProps.headingValue`, updated with `slot-props-change` on the heading.
+- **Calendar grids and axe.** The grid is a `role="application"` table, as in Vue. An element's row and cell roles are explicit, so axe's `aria-required-parent` rule flags them, where it doesn't check the implicit roles of the Vue component's `<tr>` and `<td>`.
+- **Date fields and `<label for>`.** A label focuses the field element, not its first segment.
+- **Temporal.** Date families need a global `Temporal`, like the Vue components.
 - **SSR.** Server rendering and declarative shadow DOM are not supported. Elements render on the client after they are defined.
 - **Bundler required.** See the [quick start](#quick-start).
 - **Custom Elements Manifest.** Not generated yet.
