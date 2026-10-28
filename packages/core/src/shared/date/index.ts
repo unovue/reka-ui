@@ -1,4 +1,5 @@
-export { type CellKeydownOptions, type CellNavigationHost, createCellFocusNavigation } from './cellFocusNavigation'
+export * from './calendarCellIndex'
+export { type CellKeydownOptions, type CellNavigationHost, createCellFocusNavigation, getCellFocusNavigation } from './cellFocusNavigation'
 export {
   getDefaultDate,
   getDefaultTime,

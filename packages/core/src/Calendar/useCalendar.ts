@@ -6,8 +6,8 @@ import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, unref, watch } from 'vue'
 import { clampCalendarView, coarserUnit, compareDateValues, finerUnit, focusedDateValue, getUnitAdapter, isAfter, isBefore, isCoarserUnit, isSameDateSelection, toIsoString } from '@/date'
 import { assertTemporal } from '@/date/runtime'
-import { createPartSurface, useControllableState } from '@/shared'
-import { createCellFocusNavigation, getDefaultDate, useCalendarGrid } from '@/shared/date'
+import { createPartSurface, getterRef, useControllableState } from '@/shared'
+import { CELL_FOCUS_TARGET, CELL_SELECTED, CELL_TODAY, createCalendarCellIndex, getCalendarCellIndex, getCellFocusNavigation, getDefaultDate, readCalendarCellFlags, setCalendarCellIndex, useCalendarGrid } from '@/shared/date'
 
 /** Why the model, placeholder or view changed; carried as `details.reason` on every change (#2828). */
 export type CalendarChangeReason
@@ -226,32 +226,87 @@ export function getCalendarGridSurface(context: CalendarChromeContext): PartSurf
   )
 }
 
+/**
+ * The per-cell flags the root derives (selected, focus target, today) for a
+ * cell at `unit`. Read from the root's keyed index when it can answer, so a
+ * selection or focus change only re-runs the cells it changes; evaluated
+ * directly otherwise (a custom context, or a cell of another unit / calendar).
+ */
+function calendarCellFlags(context: CalendarRootContext, date: DateValue, unit: CalendarUnit, adapter: CalendarUnitAdapter): number {
+  const indexed = readCalendarCellFlags(getCalendarCellIndex(context), date, unit)
+  if (indexed !== undefined)
+    return indexed
+  let flags = 0
+  if (context.isDateSelected(date))
+    flags |= CELL_SELECTED
+  if (adapter.isCurrent(date))
+    flags |= CELL_TODAY
+  const target = calendarFocusTarget(context)
+  if (target && adapter.isSame(date, target))
+    flags |= CELL_FOCUS_TARGET
+  return flags
+}
+
+/**
+ * The date whose cell takes `tabindex="0"` (before the cell's own disabled /
+ * outside-view checks): the placeholder when it can take focus, else, with no
+ * usable selection, the first focusable cell.
+ */
+function calendarFocusTarget(context: CalendarRootContext): DateValue | undefined {
+  if (context.isPlaceholderFocusable.value)
+    return context.disabled.value ? undefined : context.placeholder.value
+  if (!context.hasSelectedDate.value || context.isSelectedDateDisabled.value)
+    return context.firstFocusableDate.value
+  return undefined
+}
+
 /** The `CalendarCell` (`role="gridcell"`) surface. */
 export function getCalendarCellSurface(
   context: CalendarRootContext,
   value: MaybeRefOrGetter<DateValue>,
   page?: MaybeRefOrGetter<DateValue | undefined>,
 ): PartSurface<CalendarCellState> {
-  const outsideView = computed(() => {
+  // No computed per cell: the render evaluates this once, and the selection
+  // comes from the root's keyed index, so only cells whose selection changed
+  // re-render.
+  function snapshot() {
+    const date = toValue(value)
+    const unit = context.view.value
+    const adapter = context.adapter.value
     const p = toValue(page)
-    return p ? !context.adapter.value.isInPage(toValue(value), p) : false
-  })
-  const disabled = computed(() => context.isDateDisabled(toValue(value)) || (context.disableDaysOutsideCurrentView.value && outsideView.value))
-  return createPartSurface<CalendarCellState>(
-    () => ({
+    const outsideView = p ? !adapter.isInPage(date, p) : false
+    const disabled = context.isDateDisabled(date) || (context.disableDaysOutsideCurrentView.value && outsideView)
+    // Only cells at the granularity carry selection; a coarser view is navigation.
+    const selected = unit === context.granularity.value && !!(calendarCellFlags(context, date, unit, adapter) & CELL_SELECTED)
+    const state: CalendarCellState = { disabled, view: unit }
+    const props = {
       'role': 'gridcell',
-      // Only cells at the granularity carry selection; a coarser view is navigation.
-      'aria-selected': context.view.value === context.granularity.value && context.isDateSelected(toValue(value)) ? true : undefined,
-      'aria-disabled': disabled.value || context.isDateUnavailable(toValue(value)) || undefined,
+      'aria-selected': selected ? true as const : undefined,
+      'aria-disabled': disabled || context.isDateUnavailable(date) || undefined,
+    }
+    return { state, props }
+  }
+  return {
+    props: getterRef(() => snapshot().props),
+    state: getterRef(() => snapshot().state),
+    attrs: getterRef(() => {
+      const { state, props } = snapshot()
+      return state.disabled
+        ? { 'data-disabled': '', 'data-view': state.view, ...props }
+        : { 'data-view': state.view, ...props }
     }),
-    () => ({ disabled: disabled.value, view: context.view.value }),
-  )
+  }
 }
 
 /**
  * The `CalendarCellTrigger` surface — the one keyboard/selection implementation
  * for every view (D8). Derived purely from `(context, value, page, unit)`, so
  * the SFC and a standalone `useCalendar()` consumer share it.
+ *
+ * One computed per cell holds everything the cell renders. The selection, the
+ * focus target and today come from the root's keyed index, so a press or an
+ * arrow key re-evaluates only the cells whose state changes. The keyboard loop
+ * is the root's (one per calendar) and the handlers are created once per cell.
  */
 export function getCalendarCellTriggerSurface(
   context: CalendarRootContext,
@@ -259,80 +314,95 @@ export function getCalendarCellTriggerSurface(
   page?: MaybeRefOrGetter<DateValue | undefined>,
   unit?: MaybeRefOrGetter<CalendarUnit | undefined>,
 ): CalendarCellTriggerSurface {
-  const cellUnit = computed(() => toValue(unit) ?? context.view.value)
-  const adapter = computed(() => getUnitAdapter(cellUnit.value))
-  const date = computed(() => toValue(value))
-
-  const cellValue = computed(() => {
+  const cell = computed(() => {
+    const cellUnit = toValue(unit) ?? context.view.value
+    const adapter = getUnitAdapter(cellUnit)
+    const date = toValue(value)
+    const p = toValue(page)
+    const outsideView = p ? !adapter.isInPage(date, p) : false
+    const unavailable = context.isDateUnavailable(date)
+    const disabled = context.isDateDisabled(date) || (context.disableDaysOutsideCurrentView.value && outsideView)
+    const flags = calendarCellFlags(context, date, cellUnit, adapter)
+    const focused = !outsideView && !disabled && !!(flags & CELL_FOCUS_TARGET)
     // Read the locale so a locale change re-renders the cell text.
     const locale = context.locale.value
-    return adapter.value.formatCell(context.formatter, date.value, locale)
-  })
-  const labelText = computed(() => {
-    void context.locale.value
-    return adapter.value.formatLabel(context.formatter, date.value)
-  })
-
-  const isOutsideView = computed(() => {
-    const p = toValue(page)
-    return p ? !adapter.value.isInPage(date.value, p) : false
-  })
-  const isOutsideVisibleView = computed(() => context.isOutsideVisibleView(date.value))
-  const isUnavailable = computed(() => context.isDateUnavailable(date.value))
-  const isDisabled = computed(() => context.isDateDisabled(date.value) || (context.disableDaysOutsideCurrentView.value && isOutsideView.value))
-  const isCurrent = computed(() => adapter.value.isCurrent(date.value))
-  // Cells of a view coarser than the granularity are navigation only.
-  const isSelected = computed(() => cellUnit.value === context.granularity.value && context.isDateSelected(date.value))
-
-  const isFocused = computed(() => {
-    if (isOutsideView.value || isDisabled.value)
-      return false
-    if (!context.disabled.value && context.isPlaceholderFocusable.value && adapter.value.isSame(date.value, context.placeholder.value))
-      return true
-    if ((!context.hasSelectedDate.value || context.isSelectedDateDisabled.value) && !context.isPlaceholderFocusable.value)
-      return !!context.firstFocusableDate.value && adapter.value.isSame(date.value, context.firstFocusableDate.value)
-    return false
+    const state: CalendarCellTriggerState = {
+      // Cells of a view coarser than the granularity are navigation only.
+      selected: cellUnit === context.granularity.value && !!(flags & CELL_SELECTED),
+      disabled,
+      unavailable,
+      today: !!(flags & CELL_TODAY),
+      outsideView,
+      outsideVisibleView: context.isOutsideVisibleView(date),
+      focused,
+      view: cellUnit,
+    }
+    return {
+      state,
+      adapter,
+      text: adapter.formatCell(context.formatter, date, locale),
+      label: adapter.formatLabel(context.formatter, date),
+      iso: toIsoString(date),
+      tabindex: focused ? 0 : outsideView || disabled ? undefined : -1,
+    }
   })
 
-  const navigation = createCellFocusNavigation(context, adapter, date)
-
-  function onKeydown(event: KeyboardEvent) {
-    navigation.handleKeydown(event, {
-      disabled: isDisabled.value,
-      onSelect: e => context.onDateChange(date.value, 'cell-keydown', e),
+  const navigation = getCellFocusNavigation(context)
+  const onClick = (event: MouseEvent) => {
+    if (cell.value.state.disabled)
+      return
+    context.onDateChange(toValue(value), 'cell-press', event)
+  }
+  const onKeydown = (event: KeyboardEvent) => {
+    const date = toValue(value)
+    navigation.handleKeydown(event, cell.value.adapter, date, {
+      disabled: cell.value.state.disabled,
+      onSelect: e => context.onDateChange(date, 'cell-keydown', e),
     })
   }
 
-  const surface = createPartSurface<CalendarCellTriggerState>(
-    () => ({
+  function props(c: typeof cell.value) {
+    return {
       'role': 'button',
-      'aria-label': labelText.value,
-      'aria-disabled': isDisabled.value || isUnavailable.value ? true : undefined,
+      'aria-label': c.label,
+      'aria-disabled': c.state.disabled || c.state.unavailable ? true as const : undefined,
       // Selectors (not semantic state): `data-value` drives keyboard focus queries,
       // the `data-reka-*` marker is what `handleCalendarInitialFocus` looks for.
-      'data-value': toIsoString(date.value),
+      'data-value': c.iso,
       'data-reka-calendar-cell-trigger': '',
-      'tabindex': isFocused.value ? 0 : isOutsideView.value || isDisabled.value ? undefined : -1,
-      'onClick': (event: MouseEvent) => {
-        if (isDisabled.value)
-          return
-        context.onDateChange(date.value, 'cell-press', event)
-      },
-      'onKeydown': onKeydown,
-    }),
-    () => ({
-      selected: isSelected.value,
-      disabled: isDisabled.value,
-      unavailable: isUnavailable.value,
-      today: isCurrent.value,
-      outsideView: isOutsideView.value,
-      outsideVisibleView: isOutsideVisibleView.value,
-      focused: isFocused.value,
-      view: cellUnit.value,
-    }),
-  )
+      'tabindex': c.tabindex,
+      onClick,
+      onKeydown,
+    }
+  }
 
-  return { ...surface, cellValue }
+  return {
+    props: getterRef(() => props(cell.value)),
+    state: getterRef(() => cell.value.state),
+    // `stateToDataAttrs(state)` then the props, written out: same attributes in the same order.
+    attrs: getterRef(() => {
+      const c = cell.value
+      const s = c.state
+      const attrs: Record<string, unknown> = {}
+      if (s.selected)
+        attrs['data-selected'] = ''
+      if (s.disabled)
+        attrs['data-disabled'] = ''
+      if (s.unavailable)
+        attrs['data-unavailable'] = ''
+      if (s.today)
+        attrs['data-today'] = ''
+      if (s.outsideView)
+        attrs['data-outside-view'] = ''
+      if (s.outsideVisibleView)
+        attrs['data-outside-visible-view'] = ''
+      if (s.focused)
+        attrs['data-focused'] = ''
+      attrs['data-view'] = s.view
+      return Object.assign(attrs, props(c))
+    }),
+    cellValue: getterRef(() => cell.value.text),
+  }
 }
 
 /**
@@ -596,6 +666,27 @@ export function useCalendar(props: UseCalendarProps): UseCalendarReturn {
     setView,
     drillUp,
   }
+
+  // The per-cell flags, derived once per change for the whole grid and read
+  // by key, so a selection or focus move re-renders only the cells it touches.
+  setCalendarCellIndex(context, createCalendarCellIndex({
+    view,
+    placeholder,
+    collect: (builder) => {
+      // Only cells at the granularity carry selection; a coarser view is navigation.
+      if (builder.unit === granularity.value) {
+        const current = modelValue.value
+        if (Array.isArray(current)) {
+          for (const date of current)
+            builder.addDate(date, CELL_SELECTED)
+        }
+        else {
+          builder.addDate(current, CELL_SELECTED)
+        }
+      }
+      builder.addDate(calendarFocusTarget(context), CELL_FOCUS_TARGET)
+    },
+  }))
 
   const root = createPartSurface<CalendarRootState>(
     () => ({

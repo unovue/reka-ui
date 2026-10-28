@@ -8,8 +8,25 @@ import { computed, ref, toValue, unref, watch } from 'vue'
 import { getCalendarGridSurface, getCalendarHeadingSurface, getCalendarNavSurface, getCalendarViewTriggerSurface } from '@/Calendar/useCalendar'
 import { clampCalendarView, coarserUnit, compareDateValues, finerUnit, getUnitAdapter, isAfter, isBefore, isCoarserUnit, toIsoString } from '@/date'
 import { assertTemporal } from '@/date/runtime'
-import { createChangeEventDetails, createPartSurface, useControllableState } from '@/shared'
-import { createCellFocusNavigation, getDefaultDate, useCalendarGrid } from '@/shared/date'
+import { createChangeEventDetails, createPartSurface, getterRef, useControllableState } from '@/shared'
+import {
+  CELL_FOCUS_TARGET,
+  CELL_HIGHLIGHTED,
+  CELL_HIGHLIGHTED_END,
+  CELL_HIGHLIGHTED_START,
+  CELL_IN_GRID,
+  CELL_SELECTED,
+  CELL_SELECTION_END,
+  CELL_SELECTION_START,
+  CELL_TODAY,
+  createCalendarCellIndex,
+  getCalendarCellIndex,
+  getCellFocusNavigation,
+  getDefaultDate,
+  readCalendarCellFlags,
+  setCalendarCellIndex,
+  useCalendarGrid,
+} from '@/shared/date'
 
 /** Why the model, placeholder or view changed; carried as `details.reason` on every change (#2828). */
 export type RangeCalendarChangeReason
@@ -152,31 +169,118 @@ function isSameOrBothEmpty(adapter: CalendarUnitAdapter, a: DateValue | undefine
   return adapter.isSame(a, b)
 }
 
+/**
+ * The date whose cell takes `tabindex="0"` (before the cell's own disabled /
+ * outside-view checks): the placeholder when it can take focus, else the
+ * selected end that can, else, with no usable selection, the first focusable cell.
+ */
+function rangeCalendarFocusTarget(context: RangeCalendarRootContext): DateValue | undefined {
+  if (context.disabled.value)
+    return undefined
+  if (context.isPlaceholderFocusable.value)
+    return context.placeholder.value
+  if (context.selectedFocusableDate.value)
+    return context.selectedFocusableDate.value
+  if (!context.hasSelectedDate.value || context.isSelectedDisabled.value)
+    return context.firstFocusableDate.value
+  return undefined
+}
+
+/** The range flags of `date`, evaluated directly (at the granularity). */
+function rangeFlagsOf(context: RangeCalendarRootContext, date: DateValue): number {
+  let flags = 0
+  if (context.isSelected(date))
+    flags |= CELL_SELECTED
+  if (context.isSelectionStart(date))
+    flags |= CELL_SELECTION_START
+  if (context.isSelectionEnd(date))
+    flags |= CELL_SELECTION_END
+  if (context.isHighlightedStart(date))
+    flags |= CELL_HIGHLIGHTED_START
+  if (context.isHighlightedEnd(date))
+    flags |= CELL_HIGHLIGHTED_END
+  const range = context.highlightedRange.value
+  if (range) {
+    const a = getUnitAdapter(context.granularity.value)
+    if (a.compare(date, range.start) >= 0 && a.compare(date, range.end) <= 0)
+      flags |= CELL_HIGHLIGHTED
+  }
+  return flags
+}
+
+/**
+ * The per-cell flags the root derives (range, focus target, today) for a cell
+ * at `unit`. Read from the root's keyed index when it can answer, so a press
+ * or a hover only re-runs the cells whose flags change; evaluated directly
+ * otherwise (a custom context, a cell of another unit / calendar, or a cell
+ * for a date outside the rendered grid).
+ */
+function rangeCalendarCellFlags(context: RangeCalendarRootContext, date: DateValue, unit: CalendarUnit, adapter: CalendarUnitAdapter): number {
+  const indexed = readCalendarCellFlags(getCalendarCellIndex(context), date, unit)
+  // Cells of a view coarser than the granularity are navigation only: no range flags.
+  const atGranularity = unit === context.granularity.value
+  if (indexed !== undefined && (!atGranularity || indexed & CELL_IN_GRID))
+    return indexed
+  let flags = indexed ?? 0
+  if (indexed === undefined) {
+    if (adapter.isCurrent(date))
+      flags |= CELL_TODAY
+    const target = rangeCalendarFocusTarget(context)
+    if (target && adapter.isSame(date, target))
+      flags |= CELL_FOCUS_TARGET
+  }
+  if (atGranularity)
+    flags |= rangeFlagsOf(context, date)
+  return flags
+}
+
 /** The `RangeCalendarCell` (`role="gridcell"`) surface. */
 export function getRangeCalendarCellSurface(
   context: RangeCalendarRootContext,
   value: MaybeRefOrGetter<DateValue>,
   page?: MaybeRefOrGetter<DateValue | undefined>,
 ): PartSurface<RangeCalendarCellState> {
-  const outsideView = computed(() => {
+  // No computed per cell: the render evaluates this once, and the selection
+  // comes from the root's keyed index, so only cells whose selection changed
+  // re-render.
+  function snapshot() {
+    const date = toValue(value)
+    const unit = context.view.value
+    const adapter = context.adapter.value
     const p = toValue(page)
-    return p ? !context.adapter.value.isInPage(toValue(value), p) : false
-  })
-  const disabled = computed(() => context.isDateDisabled(toValue(value)) || (context.disableDaysOutsideCurrentView.value && outsideView.value))
-  return createPartSurface<RangeCalendarCellState>(
-    () => ({
+    const outsideView = p ? !adapter.isInPage(date, p) : false
+    const disabled = context.isDateDisabled(date) || (context.disableDaysOutsideCurrentView.value && outsideView)
+    // Only cells at the granularity carry selection; a coarser view is navigation.
+    const selected = unit === context.granularity.value && !!(rangeCalendarCellFlags(context, date, unit, adapter) & CELL_SELECTED)
+    const state: RangeCalendarCellState = { disabled, view: unit }
+    const props = {
       'role': 'gridcell',
-      // Only cells at the granularity carry selection; a coarser view is navigation.
-      'aria-selected': context.view.value === context.granularity.value && context.isSelected(toValue(value)) ? true : undefined,
-      'aria-disabled': disabled.value || context.isDateUnavailable(toValue(value)) || undefined,
+      'aria-selected': selected ? true as const : undefined,
+      'aria-disabled': disabled || context.isDateUnavailable(date) || undefined,
+    }
+    return { state, props }
+  }
+  return {
+    props: getterRef(() => snapshot().props),
+    state: getterRef(() => snapshot().state),
+    attrs: getterRef(() => {
+      const { state, props } = snapshot()
+      return state.disabled
+        ? { 'data-disabled': '', 'data-view': state.view, ...props }
+        : { 'data-view': state.view, ...props }
     }),
-    () => ({ disabled: disabled.value, view: context.view.value }),
-  )
+  }
 }
 
 /**
  * The `RangeCalendarCellTrigger` surface: selection, highlight, focus tracking
  * and the shared keyboard loop, for every view.
+ *
+ * One computed per cell holds everything the cell renders. The range, the
+ * hovered range, the focus target and today come from the root's keyed index,
+ * so a press, a hover or an arrow key re-evaluates only the cells whose state
+ * changes. The keyboard loop is the root's (one per calendar) and the handlers
+ * are created once per cell.
  */
 export function getRangeCalendarCellTriggerSurface(
   context: RangeCalendarRootContext,
@@ -184,108 +288,121 @@ export function getRangeCalendarCellTriggerSurface(
   page?: MaybeRefOrGetter<DateValue | undefined>,
   unit?: MaybeRefOrGetter<CalendarUnit | undefined>,
 ): RangeCalendarCellTriggerSurface {
-  const cellUnit = computed(() => toValue(unit) ?? context.view.value)
-  const adapter = computed(() => getUnitAdapter(cellUnit.value))
-  const granularityAdapter = computed(() => getUnitAdapter(context.granularity.value))
-  const date = computed(() => toValue(value))
-  // Cells of a view coarser than the granularity are navigation only.
-  const atGranularity = computed(() => cellUnit.value === context.granularity.value)
-
-  const cellValue = computed(() => {
-    const locale = context.locale.value
-    return adapter.value.formatCell(context.formatter, date.value, locale)
-  })
-  const labelText = computed(() => {
-    void context.locale.value
-    return adapter.value.formatLabel(context.formatter, date.value)
-  })
-
-  const isOutsideView = computed(() => {
+  const cell = computed(() => {
+    const cellUnit = toValue(unit) ?? context.view.value
+    const adapter = getUnitAdapter(cellUnit)
+    const date = toValue(value)
     const p = toValue(page)
-    return p ? !adapter.value.isInPage(date.value, p) : false
+    const outsideView = p ? !adapter.isInPage(date, p) : false
+    const unavailable = context.isDateUnavailable(date)
+    const disabled = context.isDateDisabled(date) || (context.disableDaysOutsideCurrentView.value && outsideView)
+    // Cells of a view coarser than the granularity are navigation only (no range flags).
+    const flags = rangeCalendarCellFlags(context, date, cellUnit, adapter)
+    // An unavailable date inside a range only reads as part of it when
+    // non-contiguous ranges are allowed.
+    const showsRangeState = context.allowNonContiguousRanges.value || !unavailable
+    const focused = !outsideView && !disabled && !!(flags & CELL_FOCUS_TARGET)
+    const selected = !!(flags & CELL_SELECTED) && showsRangeState
+    // Read the locale so a locale change re-renders the cell text.
+    const locale = context.locale.value
+    const state: RangeCalendarCellTriggerState = {
+      selected,
+      highlighted: !!(flags & CELL_HIGHLIGHTED) && showsRangeState,
+      selectionStart: !!(flags & CELL_SELECTION_START),
+      selectionEnd: !!(flags & CELL_SELECTION_END),
+      highlightedStart: !!(flags & CELL_HIGHLIGHTED_START),
+      highlightedEnd: !!(flags & CELL_HIGHLIGHTED_END),
+      disabled,
+      unavailable,
+      today: !!(flags & CELL_TODAY),
+      outsideView,
+      outsideVisibleView: context.isOutsideVisibleView(date),
+      focused,
+      view: cellUnit,
+    }
+    return {
+      state,
+      adapter,
+      text: adapter.formatCell(context.formatter, date, locale),
+      label: adapter.formatLabel(context.formatter, date),
+      iso: toIsoString(date),
+      tabindex: focused ? 0 : outsideView || disabled ? undefined : -1,
+    }
   })
-  const isOutsideVisibleView = computed(() => context.isOutsideVisibleView(date.value))
-  const isUnavailable = computed(() => context.isDateUnavailable(date.value))
-  const isDisabled = computed(() => context.isDateDisabled(date.value) || (context.disableDaysOutsideCurrentView.value && isOutsideView.value))
-  const isCurrent = computed(() => adapter.value.isCurrent(date.value))
 
-  const isSelected = computed(() => atGranularity.value && context.isSelected(date.value))
-  const isSelectionStart = computed(() => atGranularity.value && context.isSelectionStart(date.value))
-  const isSelectionEnd = computed(() => atGranularity.value && context.isSelectionEnd(date.value))
-  const isHighlightStart = computed(() => atGranularity.value && context.isHighlightedStart(date.value))
-  const isHighlightEnd = computed(() => atGranularity.value && context.isHighlightedEnd(date.value))
-  const isHighlighted = computed(() => {
-    const range = context.highlightedRange.value
-    if (!atGranularity.value || !range)
-      return false
-    const a = granularityAdapter.value
-    return a.compare(date.value, range.start) >= 0 && a.compare(date.value, range.end) <= 0
-  })
-  // An unavailable date inside a range only reads as part of it when
-  // non-contiguous ranges are allowed.
-  const showsRangeState = computed(() => context.allowNonContiguousRanges.value || !isUnavailable.value)
-  const showSelected = computed(() => isSelected.value && showsRangeState.value)
-  const showHighlighted = computed(() => isHighlighted.value && showsRangeState.value)
-
-  const isFocused = computed(() => {
-    if (isOutsideView.value || isDisabled.value || context.disabled.value)
-      return false
-    if (context.isPlaceholderFocusable.value && adapter.value.isSame(date.value, context.placeholder.value))
-      return true
-    if (context.selectedFocusableDate.value && !context.isPlaceholderFocusable.value)
-      return adapter.value.isSame(date.value, context.selectedFocusableDate.value)
-    if ((!context.hasSelectedDate.value || context.isSelectedDisabled.value) && !context.isPlaceholderFocusable.value)
-      return !!context.firstFocusableDate.value && adapter.value.isSame(date.value, context.firstFocusableDate.value)
-    return false
-  })
-
-  const navigation = createCellFocusNavigation(context, adapter, date)
-
-  function trackFocus() {
-    if (isDisabled.value || isUnavailable.value)
+  const navigation = getCellFocusNavigation(context)
+  const onClick = (event: MouseEvent) => {
+    if (cell.value.state.disabled)
       return
-    context.setFocusedValue(date.value)
+    context.onDateChange(toValue(value), 'cell-press', event)
+  }
+  const trackFocus = () => {
+    const { state } = cell.value
+    if (state.disabled || state.unavailable)
+      return
+    context.setFocusedValue(toValue(value))
+  }
+  const onKeydown = (event: KeyboardEvent) => {
+    const date = toValue(value)
+    navigation.handleKeydown(event, cell.value.adapter, date, {
+      disabled: cell.value.state.disabled,
+      onSelect: e => context.onDateChange(date, 'cell-keydown', e),
+    })
   }
 
-  const surface = createPartSurface<RangeCalendarCellTriggerState>(
-    () => ({
+  function props(c: typeof cell.value) {
+    return {
       'role': 'button',
-      'aria-label': labelText.value,
-      'aria-pressed': showSelected.value ? true : undefined,
-      'aria-disabled': isDisabled.value || isUnavailable.value ? true : undefined,
-      'data-value': toIsoString(date.value),
+      'aria-label': c.label,
+      'aria-pressed': c.state.selected ? true as const : undefined,
+      'aria-disabled': c.state.disabled || c.state.unavailable ? true as const : undefined,
+      'data-value': c.iso,
       'data-reka-calendar-cell-trigger': '',
-      'tabindex': isFocused.value ? 0 : isOutsideView.value || isDisabled.value ? undefined : -1,
-      'onClick': (event: MouseEvent) => {
-        if (isDisabled.value)
-          return
-        context.onDateChange(date.value, 'cell-press', event)
-      },
+      'tabindex': c.tabindex,
+      onClick,
       'onFocusin': trackFocus,
       'onMouseenter': trackFocus,
-      'onKeydown': (event: KeyboardEvent) => navigation.handleKeydown(event, {
-        disabled: isDisabled.value,
-        onSelect: e => context.onDateChange(date.value, 'cell-keydown', e),
-      }),
-    }),
-    () => ({
-      selected: showSelected.value,
-      highlighted: showHighlighted.value,
-      selectionStart: isSelectionStart.value,
-      selectionEnd: isSelectionEnd.value,
-      highlightedStart: isHighlightStart.value,
-      highlightedEnd: isHighlightEnd.value,
-      disabled: isDisabled.value,
-      unavailable: isUnavailable.value,
-      today: isCurrent.value,
-      outsideView: isOutsideView.value,
-      outsideVisibleView: isOutsideVisibleView.value,
-      focused: isFocused.value,
-      view: cellUnit.value,
-    }),
-  )
+      onKeydown,
+    }
+  }
 
-  return { ...surface, cellValue }
+  return {
+    props: getterRef(() => props(cell.value)),
+    state: getterRef(() => cell.value.state),
+    // `stateToDataAttrs(state)` then the props, written out: same attributes in the same order.
+    attrs: getterRef(() => {
+      const c = cell.value
+      const s = c.state
+      const attrs: Record<string, unknown> = {}
+      if (s.selected)
+        attrs['data-selected'] = ''
+      if (s.highlighted)
+        attrs['data-highlighted'] = ''
+      if (s.selectionStart)
+        attrs['data-selection-start'] = ''
+      if (s.selectionEnd)
+        attrs['data-selection-end'] = ''
+      if (s.highlightedStart)
+        attrs['data-highlighted-start'] = ''
+      if (s.highlightedEnd)
+        attrs['data-highlighted-end'] = ''
+      if (s.disabled)
+        attrs['data-disabled'] = ''
+      if (s.unavailable)
+        attrs['data-unavailable'] = ''
+      if (s.today)
+        attrs['data-today'] = ''
+      if (s.outsideView)
+        attrs['data-outside-view'] = ''
+      if (s.outsideVisibleView)
+        attrs['data-outside-visible-view'] = ''
+      if (s.focused)
+        attrs['data-focused'] = ''
+      attrs['data-view'] = s.view
+      return Object.assign(attrs, props(c))
+    }),
+    cellValue: getterRef(() => cell.value.text),
+  }
 }
 
 /**
@@ -785,6 +902,39 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
     setView,
     drillUp,
   }
+
+  // The per-cell flags, derived once per change for the whole grid and read
+  // by key, so a press, a hover or a focus move re-renders only the cells
+  // whose flags change.
+  setCalendarCellIndex(context, createCalendarCellIndex({
+    view,
+    placeholder,
+    grid: gridApi.grid,
+    collect: (builder) => {
+      // Only cells at the granularity carry the range; a coarser view is navigation.
+      if (builder.unit === granularity.value) {
+        const a = granularityAdapter.value
+        const start = startValue.value
+        const end = endValue.value
+        const range = highlightedRange.value
+        for (const { date, key } of builder.cells) {
+          let flags = CELL_IN_GRID
+          if (start && end && a.compare(date, start) > 0 && a.compare(date, end) < 0)
+            flags |= CELL_SELECTED
+          if (range && a.compare(date, range.start) >= 0 && a.compare(date, range.end) <= 0)
+            flags |= CELL_HIGHLIGHTED
+          builder.add(key, flags)
+        }
+        builder.addDate(start, CELL_SELECTED | CELL_SELECTION_START)
+        builder.addDate(end, CELL_SELECTED | CELL_SELECTION_END)
+        if (range) {
+          builder.addDate(range.start, CELL_HIGHLIGHTED_START)
+          builder.addDate(range.end, CELL_HIGHLIGHTED_END)
+        }
+      }
+      builder.addDate(rangeCalendarFocusTarget(context), CELL_FOCUS_TARGET)
+    },
+  }))
 
   const root = createPartSurface<RangeCalendarRootState>(
     () => ({
