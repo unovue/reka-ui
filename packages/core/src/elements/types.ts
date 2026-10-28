@@ -23,6 +23,12 @@ import type {
   AlertDialogTriggerProps,
 } from '@/AlertDialog'
 import type {
+  AutocompleteInputEmits,
+  AutocompleteInputProps,
+  AutocompleteRootEmits,
+  AutocompleteRootProps,
+} from '@/Autocomplete'
+import type {
   CheckboxGroupRootEmits,
   CheckboxGroupRootProps,
   CheckboxIndicatorProps,
@@ -36,6 +42,27 @@ import type {
   CollapsibleRootProps,
   CollapsibleTriggerProps,
 } from '@/Collapsible'
+import type {
+  ComboboxAnchorProps,
+  ComboboxArrowProps,
+  ComboboxCancelProps,
+  ComboboxContentEmits,
+  ComboboxContentProps,
+  ComboboxEmptyProps,
+  ComboboxGroupProps,
+  ComboboxInputEmits,
+  ComboboxInputProps,
+  ComboboxItemEmits,
+  ComboboxItemIndicatorProps,
+  ComboboxItemProps,
+  ComboboxLabelProps,
+  ComboboxPortalProps,
+  ComboboxRootEmits,
+  ComboboxRootProps,
+  ComboboxSeparatorProps,
+  ComboboxTriggerProps,
+  ComboboxViewportProps,
+} from '@/Combobox'
 import type {
   ContextMenuArrowProps,
   ContextMenuCheckboxItemEmits,
@@ -97,6 +124,8 @@ import type {
   DropdownMenuCheckboxItemProps,
   DropdownMenuContentEmits,
   DropdownMenuContentProps,
+  DropdownMenuFilterEmits,
+  DropdownMenuFilterProps,
   DropdownMenuGroupProps,
   DropdownMenuItemEmits,
   DropdownMenuItemIndicatorProps,
@@ -118,6 +147,16 @@ import type {
   DropdownMenuTriggerProps,
 } from '@/DropdownMenu'
 import type {
+  EditableAreaProps,
+  EditableCancelTriggerProps,
+  EditableEditTriggerProps,
+  EditableInputProps,
+  EditablePreviewProps,
+  EditableRootEmits,
+  EditableRootProps,
+  EditableSubmitTriggerProps,
+} from '@/Editable'
+import type {
   HoverCardArrowProps,
   HoverCardContentProps,
   HoverCardPortalProps,
@@ -126,6 +165,18 @@ import type {
   HoverCardTriggerProps,
 } from '@/HoverCard'
 import type { HoverCardContentEmits } from '@/HoverCard/HoverCardContent.vue'
+import type {
+  ListboxContentProps,
+  ListboxFilterEmits,
+  ListboxFilterProps,
+  ListboxGroupLabelProps,
+  ListboxGroupProps,
+  ListboxItemEmits,
+  ListboxItemIndicatorProps,
+  ListboxItemProps,
+  ListboxRootEmits,
+  ListboxRootProps,
+} from '@/Listbox'
 import type {
   MenubarArrowProps,
   MenubarCheckboxItemEmits,
@@ -180,6 +231,27 @@ import type {
   PopoverRootProps,
   PopoverTriggerProps,
 } from '@/Popover'
+import type {
+  SelectArrowProps,
+  SelectContentEmits,
+  SelectContentProps,
+  SelectGroupProps,
+  SelectIconProps,
+  SelectItemEmits,
+  SelectItemIndicatorProps,
+  SelectItemProps,
+  SelectItemTextProps,
+  SelectLabelProps,
+  SelectPortalProps,
+  SelectRootEmits,
+  SelectRootProps,
+  SelectScrollDownButtonProps,
+  SelectScrollUpButtonProps,
+  SelectSeparatorProps,
+  SelectTriggerProps,
+  SelectValueProps,
+  SelectViewportProps,
+} from '@/Select'
 import type { SwitchRootEmits, SwitchRootProps, SwitchThumbProps } from '@/Switch'
 import type {
   TabsContentProps,
@@ -189,6 +261,22 @@ import type {
   TabsRootProps,
   TabsTriggerProps,
 } from '@/Tabs'
+import type {
+  TagGroupItemDeleteProps,
+  TagGroupItemProps,
+  TagGroupItemTextProps,
+  TagGroupRootEmits,
+  TagGroupRootProps,
+} from '@/TagGroup'
+import type {
+  TagsInputClearProps,
+  TagsInputInputProps,
+  TagsInputItemDeleteProps,
+  TagsInputItemProps,
+  TagsInputItemTextProps,
+  TagsInputRootEmits,
+  TagsInputRootProps,
+} from '@/TagsInput'
 import type {
   ToastActionProps,
   ToastArrowProps,
@@ -213,6 +301,12 @@ import type {
   TooltipRootProps,
   TooltipTriggerProps,
 } from '@/Tooltip'
+import type {
+  TreeItemEmits,
+  TreeItemProps,
+  TreeRootEmits,
+  TreeRootProps,
+} from '@/Tree'
 
 type Hyphenate<S extends string> = S extends `${infer Head}${infer Tail}`
   ? `${Head extends Lowercase<Head> ? Head : `-${Lowercase<Head>}`}${Hyphenate<Tail>}`
@@ -289,6 +383,20 @@ interface RekaElementParts {
   'reka-alert-dialog-description': Part<AlertDialogDescriptionProps>
   'reka-alert-dialog-cancel': Part<AlertDialogCancelProps>
   'reka-alert-dialog-action': Part<AlertDialogActionProps>
+  'reka-autocomplete-root': Part<AutocompleteRootProps, AutocompleteRootEmits>
+  'reka-autocomplete-input': Part<AutocompleteInputProps, AutocompleteInputEmits>
+  'reka-autocomplete-anchor': Part<ComboboxAnchorProps>
+  'reka-autocomplete-trigger': Part<ComboboxTriggerProps>
+  'reka-autocomplete-cancel': Part<ComboboxCancelProps>
+  'reka-autocomplete-portal': Part<ComboboxPortalProps>
+  'reka-autocomplete-content': Part<ComboboxContentProps, ComboboxContentEmits>
+  'reka-autocomplete-viewport': Part<ComboboxViewportProps>
+  'reka-autocomplete-empty': Part<ComboboxEmptyProps>
+  'reka-autocomplete-item': Part<ComboboxItemProps, ComboboxItemEmits>
+  'reka-autocomplete-item-indicator': Part<ComboboxItemIndicatorProps>
+  'reka-autocomplete-group': Part<ComboboxGroupProps>
+  'reka-autocomplete-label': Part<ComboboxLabelProps>
+  'reka-autocomplete-separator': Part<ComboboxSeparatorProps>
   'reka-checkbox-root': Part<CheckboxRootProps, CheckboxRootEmits>
   'reka-checkbox-indicator': Part<CheckboxIndicatorProps>
   'reka-checkbox-group-root': Part<CheckboxGroupRootProps, CheckboxGroupRootEmits>
@@ -311,6 +419,21 @@ interface RekaElementParts {
   'reka-context-menu-sub': Part<ContextMenuSubProps, ContextMenuSubEmits>
   'reka-context-menu-sub-trigger': Part<ContextMenuSubTriggerProps>
   'reka-context-menu-sub-content': Part<ContextMenuSubContentProps, ContextMenuSubContentEmits>
+  'reka-combobox-root': Part<ComboboxRootProps, ComboboxRootEmits>
+  'reka-combobox-input': Part<ComboboxInputProps, ComboboxInputEmits>
+  'reka-combobox-anchor': Part<ComboboxAnchorProps>
+  'reka-combobox-trigger': Part<ComboboxTriggerProps>
+  'reka-combobox-cancel': Part<ComboboxCancelProps>
+  'reka-combobox-portal': Part<ComboboxPortalProps>
+  'reka-combobox-content': Part<ComboboxContentProps, ComboboxContentEmits>
+  'reka-combobox-viewport': Part<ComboboxViewportProps>
+  'reka-combobox-empty': Part<ComboboxEmptyProps>
+  'reka-combobox-item': Part<ComboboxItemProps, ComboboxItemEmits>
+  'reka-combobox-item-indicator': Part<ComboboxItemIndicatorProps>
+  'reka-combobox-group': Part<ComboboxGroupProps>
+  'reka-combobox-label': Part<ComboboxLabelProps>
+  'reka-combobox-separator': Part<ComboboxSeparatorProps>
+  'reka-combobox-arrow': Part<ComboboxArrowProps>
   'reka-dialog-root': Part<DialogRootProps, DialogRootEmits>
   'reka-dialog-trigger': Part<DialogTriggerProps>
   'reka-dialog-portal': Part<DialogPortalProps>
@@ -338,6 +461,7 @@ interface RekaElementParts {
   'reka-dropdown-menu-trigger': Part<DropdownMenuTriggerProps>
   'reka-dropdown-menu-portal': Part<DropdownMenuPortalProps>
   'reka-dropdown-menu-content': Part<DropdownMenuContentProps, DropdownMenuContentEmits>
+  'reka-dropdown-menu-filter': Part<DropdownMenuFilterProps, DropdownMenuFilterEmits>
   'reka-dropdown-menu-arrow': Part<DropdownMenuArrowProps>
   'reka-dropdown-menu-item': Part<DropdownMenuItemProps, DropdownMenuItemEmits>
   'reka-dropdown-menu-group': Part<DropdownMenuGroupProps>
@@ -381,6 +505,20 @@ interface RekaElementParts {
   'reka-navigation-menu-link': Part<NavigationMenuLinkProps, NavigationMenuLinkEmits>
   'reka-navigation-menu-indicator': Part<NavigationMenuIndicatorProps>
   'reka-navigation-menu-viewport': Part<NavigationMenuViewportProps>
+  'reka-editable-root': Part<EditableRootProps, EditableRootEmits>
+  'reka-editable-area': Part<EditableAreaProps>
+  'reka-editable-input': Part<EditableInputProps>
+  'reka-editable-preview': Part<EditablePreviewProps>
+  'reka-editable-edit-trigger': Part<EditableEditTriggerProps>
+  'reka-editable-submit-trigger': Part<EditableSubmitTriggerProps>
+  'reka-editable-cancel-trigger': Part<EditableCancelTriggerProps>
+  'reka-listbox-root': Part<ListboxRootProps, ListboxRootEmits>
+  'reka-listbox-content': Part<ListboxContentProps>
+  'reka-listbox-filter': Part<ListboxFilterProps, ListboxFilterEmits>
+  'reka-listbox-item': Part<ListboxItemProps, ListboxItemEmits>
+  'reka-listbox-item-indicator': Part<ListboxItemIndicatorProps>
+  'reka-listbox-group': Part<ListboxGroupProps>
+  'reka-listbox-group-label': Part<ListboxGroupLabelProps>
   'reka-popover-root': Part<PopoverRootProps, PopoverRootEmits>
   'reka-popover-trigger': Part<PopoverTriggerProps>
   'reka-popover-anchor': Part<PopoverAnchorProps>
@@ -388,6 +526,22 @@ interface RekaElementParts {
   'reka-popover-content': Part<PopoverContentProps, PopoverContentEmits>
   'reka-popover-arrow': Part<PopoverArrowProps>
   'reka-popover-close': Part<PopoverCloseProps>
+  'reka-select-root': Part<SelectRootProps, SelectRootEmits>
+  'reka-select-trigger': Part<SelectTriggerProps>
+  'reka-select-value': Part<SelectValueProps>
+  'reka-select-icon': Part<SelectIconProps>
+  'reka-select-portal': Part<SelectPortalProps>
+  'reka-select-content': Part<SelectContentProps, SelectContentEmits>
+  'reka-select-viewport': Part<SelectViewportProps>
+  'reka-select-scroll-up-button': Part<SelectScrollUpButtonProps>
+  'reka-select-scroll-down-button': Part<SelectScrollDownButtonProps>
+  'reka-select-item': Part<SelectItemProps, SelectItemEmits>
+  'reka-select-item-text': Part<SelectItemTextProps>
+  'reka-select-item-indicator': Part<SelectItemIndicatorProps>
+  'reka-select-group': Part<SelectGroupProps>
+  'reka-select-label': Part<SelectLabelProps>
+  'reka-select-separator': Part<SelectSeparatorProps>
+  'reka-select-arrow': Part<SelectArrowProps>
   'reka-switch-root': Part<SwitchRootProps, SwitchRootEmits>
   'reka-switch-thumb': Part<SwitchThumbProps>
   'reka-tabs-root': Part<TabsRootProps, TabsRootEmits>
@@ -412,6 +566,18 @@ interface RekaElementParts {
   'reka-tooltip-portal': Part<TooltipPortalProps>
   'reka-tooltip-content': Part<TooltipContentProps, TooltipContentEmits>
   'reka-tooltip-arrow': Part<TooltipArrowProps>
+  'reka-tag-group-root': Part<TagGroupRootProps, TagGroupRootEmits>
+  'reka-tag-group-item': Part<TagGroupItemProps>
+  'reka-tag-group-item-text': Part<TagGroupItemTextProps>
+  'reka-tag-group-item-delete': Part<TagGroupItemDeleteProps>
+  'reka-tags-input-root': Part<TagsInputRootProps, TagsInputRootEmits>
+  'reka-tags-input-input': Part<TagsInputInputProps>
+  'reka-tags-input-item': Part<TagsInputItemProps>
+  'reka-tags-input-item-text': Part<TagsInputItemTextProps>
+  'reka-tags-input-item-delete': Part<TagsInputItemDeleteProps>
+  'reka-tags-input-clear': Part<TagsInputClearProps>
+  'reka-tree-root': Part<TreeRootProps, TreeRootEmits>
+  'reka-tree-item': Part<TreeItemProps<Record<string, any>>, TreeItemEmits<Record<string, any>>>
 }
 
 /**

@@ -35,6 +35,20 @@ export interface RekaElementPartDefinition {
    * staying detached.
    */
   siblings?: boolean
+  /**
+   * `'input'`: the part renders onto the element's `<input>` (or `<textarea>`)
+   * child instead of onto the element, which is created when there is none. A
+   * custom element cannot be a text field, so a part that renders an `<input>` in
+   * Vue (`ComboboxInput`, `TagsInputInput`, …) works like `asChild` over one.
+   */
+  target?: 'input'
+  /**
+   * The part's fallback slot content (`SelectValue`'s selected label), shown as the
+   * element's text while it has no children of its own. Called during the part's
+   * render with the slot props and the element's props, so it can `inject()` the
+   * part's context.
+   */
+  text?: (slotProps: Record<string, any>, props: Record<string, any>) => unknown
 }
 
 export interface RekaElementFamily {
@@ -70,6 +84,9 @@ export interface PartMeta {
    * and `<label for>`, `<fieldset disabled>` and form reset reach them.
    */
   formAssociated: boolean
+  /** The part renders onto an `<input>` child: see {@link RekaElementPartDefinition.target}. */
+  inputTarget: boolean
+  text: RekaElementPartDefinition['text']
 }
 
 /** Props the element API does not expose: the host is always the rendered element. */
@@ -165,6 +182,8 @@ export function getPartMeta(definition: RekaElementPartDefinition): PartMeta {
     semantics,
     formAssociated: 'name' in propOptions,
     siblings: !!definition.siblings,
+    inputTarget: definition.target === 'input',
+    text: definition.text,
   }
 }
 

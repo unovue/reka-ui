@@ -494,6 +494,53 @@ describe('menubar elements', () => {
   })
 })
 
+describe('dropdown menu filter', () => {
+  it('renders onto its `<input>`: reports the text, moves the highlight, selects with Enter and clears on Escape', async () => {
+    render(`${STYLES}
+      <reka-dropdown-menu-root>
+        <reka-dropdown-menu-trigger>Assign</reka-dropdown-menu-trigger>
+        <reka-dropdown-menu-portal>
+          <reka-dropdown-menu-content style="${CONTENT_STYLE}">
+            <reka-dropdown-menu-filter><input aria-label="Filter people" placeholder="Filter"></reka-dropdown-menu-filter>
+            <reka-dropdown-menu-item data-test="ada">Ada</reka-dropdown-menu-item>
+            <reka-dropdown-menu-item data-test="grace">Grace</reka-dropdown-menu-item>
+          </reka-dropdown-menu-content>
+        </reka-dropdown-menu-portal>
+      </reka-dropdown-menu-root>`)
+    const trigger = query('reka-dropdown-menu-trigger')
+    await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
+    const filter = query('reka-dropdown-menu-filter')
+    const input = filter.querySelector('input')!
+    const values: unknown[] = []
+    filter.addEventListener('update-model-value', event => values.push((event as CustomEvent).detail.value))
+    const selected = vi.fn()
+    query('[data-test=grace]').addEventListener('select', selected)
+
+    await userEvent.click(trigger)
+    const content = query('reka-dropdown-menu-content')
+    await vi.waitFor(() => expect(content.getAttribute('data-state')).toBe('open'))
+    // The part's role and ARIA go on the `<input>`; your attributes stay.
+    expect(input.getAttribute('placeholder')).toBe('Filter')
+    input.focus()
+    await userEvent.keyboard('gr')
+    await vi.waitFor(() => expect(values.at(-1)).toBe('gr'))
+    expect(input.value).toBe('gr')
+
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}')
+    await vi.waitFor(() => expect(input.getAttribute('aria-activedescendant')).toBe(query('[data-test=grace]').id))
+    expect(document.activeElement).toBe(input)
+
+    // Escape clears the text first, without closing the menu.
+    await userEvent.keyboard('{Escape}')
+    await vi.waitFor(() => expect(values.at(-1)).toBe(''))
+    expect(content.getAttribute('data-state')).toBe('open')
+
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}')
+    await vi.waitFor(() => expect(selected).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(content.hasAttribute('data-reka-unmounted')).toBe(true))
+  })
+})
+
 describe('dropdown menu inside a shadow root', () => {
   it('portals into the shadow root, navigates by keyboard, opens a submenu and closes on an outside click', async () => {
     const shadowRoot = render('<div id="app"></div>').querySelector('#app')!.attachShadow({ mode: 'open' })

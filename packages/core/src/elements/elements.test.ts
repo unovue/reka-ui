@@ -285,6 +285,111 @@ describe('accessibility (axe)', () => {
     await mounted('reka-toast-close')
     expect(await axe(document.body)).toHaveNoViolations()
   })
+
+  it('listbox', async () => {
+    const container = render(`
+      <reka-listbox-root default-value="b">
+        <reka-listbox-filter><input aria-label="Search"></reka-listbox-filter>
+        <reka-listbox-content aria-label="Letters">
+          <reka-listbox-group>
+            <reka-listbox-group-label>Letters</reka-listbox-group-label>
+            <reka-listbox-item value="a">A</reka-listbox-item>
+            <reka-listbox-item value="b">B<reka-listbox-item-indicator>✓</reka-listbox-item-indicator></reka-listbox-item>
+          </reka-listbox-group>
+        </reka-listbox-content>
+      </reka-listbox-root>
+    `)
+    await mounted('reka-listbox-item-indicator')
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('an open combobox and autocomplete', async () => {
+    render(`
+      <reka-combobox-root default-open>
+        <reka-combobox-anchor>
+          <reka-combobox-input><input aria-label="Fruit"></reka-combobox-input>
+          <reka-combobox-trigger aria-label="Show fruits">▾</reka-combobox-trigger>
+        </reka-combobox-anchor>
+        <reka-combobox-portal>
+          <reka-combobox-content>
+            <reka-combobox-viewport>
+              <reka-combobox-group>
+                <reka-combobox-label>Fruits</reka-combobox-label>
+                <reka-combobox-item value="apple">Apple</reka-combobox-item>
+              </reka-combobox-group>
+            </reka-combobox-viewport>
+          </reka-combobox-content>
+        </reka-combobox-portal>
+      </reka-combobox-root>
+      <reka-autocomplete-root>
+        <reka-autocomplete-input><input aria-label="City"></reka-autocomplete-input>
+      </reka-autocomplete-root>
+    `)
+    await mounted('reka-combobox-item')
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+
+  it('an open select', async () => {
+    render(`
+      <reka-select-root default-open default-value="a">
+        <reka-select-trigger aria-label="Letter"><reka-select-value placeholder="Pick"></reka-select-value></reka-select-trigger>
+        <reka-select-portal>
+          <reka-select-content position="popper">
+            <reka-select-viewport>
+              <reka-select-group>
+                <reka-select-label>Letters</reka-select-label>
+                <reka-select-item value="a"><reka-select-item-text>A</reka-select-item-text></reka-select-item>
+              </reka-select-group>
+            </reka-select-viewport>
+          </reka-select-content>
+        </reka-select-portal>
+      </reka-select-root>
+    `)
+    await mounted('reka-select-item')
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+
+  it('tree', async () => {
+    const container = render('')
+    const root = document.createElement('reka-tree-root') as HTMLElement & { items: unknown[], getKey: (item: { id: string }) => string }
+    root.setAttribute('aria-label', 'Files')
+    root.items = [{ id: 'a' }, { id: 'b' }]
+    root.getKey = item => item.id
+    for (const item of root.items) {
+      const el = document.createElement('reka-tree-item') as HTMLElement & { value: unknown }
+      el.value = item
+      el.setAttribute('level', '1')
+      el.textContent = (item as { id: string }).id
+      root.append(el)
+    }
+    container.append(root)
+    await mounted('reka-tree-item')
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('tags input, tag group and editable', async () => {
+    const container = render(`
+      <reka-tags-input-root>
+        <reka-tags-input-item value="vue"><reka-tags-input-item-text></reka-tags-input-item-text><reka-tags-input-item-delete aria-label="Remove">×</reka-tags-input-item-delete></reka-tags-input-item>
+        <reka-tags-input-input><input aria-label="Tags"></reka-tags-input-input>
+        <reka-tags-input-clear aria-label="Clear">×</reka-tags-input-clear>
+      </reka-tags-input-root>
+      <reka-tag-group-root aria-label="Frameworks" selection-mode="single">
+        <reka-tag-group-item value="vue" text-value="Vue"><span role="gridcell"><reka-tag-group-item-text>Vue</reka-tag-group-item-text><reka-tag-group-item-delete>×</reka-tag-group-item-delete></span></reka-tag-group-item>
+      </reka-tag-group-root>
+      <reka-editable-root default-value="Title">
+        <reka-editable-area>
+          <reka-editable-preview></reka-editable-preview>
+          <reka-editable-input><input aria-label="Title"></reka-editable-input>
+        </reka-editable-area>
+        <reka-editable-edit-trigger>Edit</reka-editable-edit-trigger>
+      </reka-editable-root>
+    `)
+    await mounted('reka-tags-input-item-text')
+    await mounted('reka-tag-group-item-text')
+    await mounted('reka-editable-preview')
+    expect(await axe(container)).toHaveNoViolations()
+  })
 })
 
 const PACKAGE_DIR = join(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -326,7 +431,7 @@ describe.skipIf(!hasDist)('built `reka-ui/elements` entry (dist)', () => {
     await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
     trigger.click()
     await vi.waitFor(() => expect(query('built-collapsible-content').getAttribute('data-state')).toBe('open'))
-  // Imports the whole built entry (every family): slow under coverage / a loaded runner.
+    // Importing the built entry loads every family's modules, slow under coverage.
   }, 30_000)
 
   it('loads only the supported families', () => {
@@ -341,6 +446,6 @@ describe.skipIf(!hasDist)('built `reka-ui/elements` entry (dist)', () => {
     walk(ELEMENTS_DIST)
     const loaded = Array.from(seen, file => relative(join(PACKAGE_DIR, 'dist'), file).replaceAll('\\', '/'))
     expect(loaded).toContain('elements/host.js')
-    expect(loaded.filter(file => /^(?:Select|Combobox|Calendar)\//.test(file))).toEqual([])
+    expect(loaded.filter(file => /^(?:Calendar|DatePicker)\//.test(file))).toEqual([])
   })
 })

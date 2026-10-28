@@ -1,5 +1,5 @@
 import type { DefineRekaElementsOptions } from './define'
-import type { AttributeKind, RekaElementFamily } from './meta'
+import type { AttributeKind, RekaElementFamily, RekaElementPartDefinition } from './meta'
 import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger } from '@/Accordion'
 import {
   AlertDialogAction,
@@ -12,8 +12,26 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/AlertDialog'
+import { AutocompleteInput, AutocompleteRoot } from '@/Autocomplete'
 import { CheckboxGroupRoot, CheckboxIndicator, CheckboxRoot } from '@/Checkbox'
 import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from '@/Collapsible'
+import {
+  ComboboxAnchor,
+  ComboboxArrow,
+  ComboboxCancel,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxGroup,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxItemIndicator,
+  ComboboxLabel,
+  ComboboxPortal,
+  ComboboxRoot,
+  ComboboxSeparator,
+  ComboboxTrigger,
+  ComboboxViewport,
+} from '@/Combobox'
 import {
   ContextMenuArrow,
   ContextMenuCheckboxItem,
@@ -32,7 +50,16 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '@/ContextMenu'
-import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from '@/Dialog'
+import {
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogOverlay,
+  DialogPortal,
+  DialogRoot,
+  DialogTitle,
+  DialogTrigger,
+} from '@/Dialog'
 import {
   DrawerBackdrop,
   DrawerClose,
@@ -54,6 +81,7 @@ import {
   DropdownMenuArrow,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuFilter,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuItemIndicator,
@@ -68,7 +96,26 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/DropdownMenu'
+import {
+  EditableArea,
+  EditableCancelTrigger,
+  EditableEditTrigger,
+  EditableInput,
+  EditablePreview,
+  EditableRoot,
+  EditableSubmitTrigger,
+  injectEditableRootContext,
+} from '@/Editable'
 import { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, HoverCardTrigger } from '@/HoverCard'
+import {
+  ListboxContent,
+  ListboxFilter,
+  ListboxGroup,
+  ListboxGroupLabel,
+  ListboxItem,
+  ListboxItemIndicator,
+  ListboxRoot,
+} from '@/Listbox'
 import {
   MenubarArrow,
   MenubarCheckboxItem,
@@ -100,8 +147,36 @@ import {
   NavigationMenuViewport,
 } from '@/NavigationMenu'
 import { PopoverAnchor, PopoverArrow, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '@/Popover'
+import {
+  SelectArrow,
+  SelectContent,
+  SelectGroup,
+  SelectIcon,
+  SelectItem,
+  SelectItemIndicator,
+  SelectItemText,
+  SelectLabel,
+  SelectPortal,
+  SelectRoot,
+  SelectScrollDownButton,
+  SelectScrollUpButton,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+  SelectViewport,
+} from '@/Select'
 import { SwitchRoot, SwitchThumb } from '@/Switch'
 import { TabsContent, TabsIndicator, TabsList, TabsRoot, TabsTrigger } from '@/Tabs'
+import { TagGroupItem, TagGroupItemDelete, TagGroupItemText, TagGroupRoot } from '@/TagGroup'
+import {
+  injectTagsInputItemContext,
+  TagsInputClear,
+  TagsInputInput,
+  TagsInputItem,
+  TagsInputItemDelete,
+  TagsInputItemText,
+  TagsInputRoot,
+} from '@/TagsInput'
 import {
   ToastAction,
   ToastArrow,
@@ -115,13 +190,14 @@ import {
 } from '@/Toast'
 import { Toggle } from '@/Toggle'
 import { TooltipArrow, TooltipContent, TooltipPortal, TooltipProvider, TooltipRoot, TooltipTrigger } from '@/Tooltip'
+import { TreeItem, TreeRoot } from '@/Tree'
 import { defineRekaElements } from './define'
 import { ToastProviderElement } from './toast'
 
 // Each family is a plain object, so a bundler drops the ones an app never imports.
 
 /** Positioned content: the reference and collision boundary are elements, not attributes. */
-const FLOATING: Record<string, AttributeKind> = { reference: 'property', collisionBoundary: 'property' }
+const POPPER_PROPERTIES: Record<string, AttributeKind> = { reference: 'property', collisionBoundary: 'property' }
 /** A menu checkbox item's value can be `'indeterminate'`. */
 const CHECKED_STATE: Record<string, AttributeKind> = { modelValue: 'booleanish' }
 
@@ -185,7 +261,7 @@ export const contextMenuElements: RekaElementFamily = {
     ContextMenuRoot,
     ContextMenuTrigger,
     ContextMenuPortal,
-    ContextMenuContent: { component: ContextMenuContent, attributes: FLOATING },
+    ContextMenuContent: { component: ContextMenuContent, attributes: POPPER_PROPERTIES },
     ContextMenuArrow,
     ContextMenuItem,
     ContextMenuGroup,
@@ -197,7 +273,7 @@ export const contextMenuElements: RekaElementFamily = {
     ContextMenuSeparator,
     ContextMenuSub,
     ContextMenuSubTrigger,
-    ContextMenuSubContent: { component: ContextMenuSubContent, attributes: FLOATING },
+    ContextMenuSubContent: { component: ContextMenuSubContent, attributes: POPPER_PROPERTIES },
   },
 }
 
@@ -243,7 +319,7 @@ export const drawerElements: RekaElementFamily = {
 }
 
 /**
- * `<reka-dropdown-menu-root>`, `-trigger`, `-portal`, `-content`, `-arrow`, `-item`, `-group`,
+ * `<reka-dropdown-menu-root>`, `-trigger`, `-portal`, `-content`, `-filter`, `-arrow`, `-item`, `-group`,
  * `-label`, `-checkbox-item`, `-radio-group`, `-radio-item`, `-item-indicator`, `-separator`,
  * `-sub`, `-sub-trigger`, `-sub-content`.
  */
@@ -253,7 +329,9 @@ export const dropdownMenuElements: RekaElementFamily = {
     DropdownMenuRoot,
     DropdownMenuTrigger,
     DropdownMenuPortal,
-    DropdownMenuContent: { component: DropdownMenuContent, attributes: FLOATING },
+    DropdownMenuContent: { component: DropdownMenuContent, attributes: POPPER_PROPERTIES },
+    // A text field: the part renders onto the element's `<input>` child.
+    DropdownMenuFilter: { component: DropdownMenuFilter, target: 'input' },
     DropdownMenuArrow,
     DropdownMenuItem,
     DropdownMenuGroup,
@@ -265,7 +343,7 @@ export const dropdownMenuElements: RekaElementFamily = {
     DropdownMenuSeparator,
     DropdownMenuSub,
     DropdownMenuSubTrigger,
-    DropdownMenuSubContent: { component: DropdownMenuSubContent, attributes: FLOATING },
+    DropdownMenuSubContent: { component: DropdownMenuSubContent, attributes: POPPER_PROPERTIES },
   },
 }
 
@@ -276,7 +354,7 @@ export const hoverCardElements: RekaElementFamily = {
     HoverCardRoot,
     HoverCardTrigger: { component: HoverCardTrigger, attributes: { reference: 'property' } },
     HoverCardPortal,
-    HoverCardContent: { component: HoverCardContent, attributes: FLOATING },
+    HoverCardContent: { component: HoverCardContent, attributes: POPPER_PROPERTIES },
     HoverCardArrow,
   },
 }
@@ -293,7 +371,7 @@ export const menubarElements: RekaElementFamily = {
     MenubarMenu,
     MenubarTrigger,
     MenubarPortal,
-    MenubarContent: { component: MenubarContent, attributes: FLOATING },
+    MenubarContent: { component: MenubarContent, attributes: POPPER_PROPERTIES },
     MenubarArrow,
     MenubarItem,
     MenubarGroup,
@@ -305,7 +383,7 @@ export const menubarElements: RekaElementFamily = {
     MenubarSeparator,
     MenubarSub,
     MenubarSubTrigger,
-    MenubarSubContent: { component: MenubarSubContent, attributes: FLOATING },
+    MenubarSubContent: { component: MenubarSubContent, attributes: POPPER_PROPERTIES },
   },
 }
 
@@ -338,7 +416,7 @@ export const popoverElements: RekaElementFamily = {
     PopoverTrigger,
     PopoverAnchor: { component: PopoverAnchor, attributes: { reference: 'property' } },
     PopoverPortal,
-    PopoverContent: { component: PopoverContent, attributes: FLOATING },
+    PopoverContent: { component: PopoverContent, attributes: POPPER_PROPERTIES },
     PopoverArrow,
     PopoverClose,
   },
@@ -411,25 +489,206 @@ export const tooltipElements: RekaElementFamily = {
   },
 }
 
+// Collections. Values can be of any type: an attribute sets a string, the
+// property any value (objects are compared with `by`). Functions (`filter`,
+// `displayValue`, `getKey`) and elements (`reference`) are properties only.
+
+/**
+ * `<reka-listbox-root>`, `-content`, `-filter`, `-item`, `-item-indicator`, `-group`,
+ * `-group-label`. Not `ListboxVirtualizer`: it renders its items from a scoped slot.
+ */
+export const listboxElements: RekaElementFamily = {
+  name: 'listbox',
+  parts: {
+    ListboxRoot: { component: ListboxRoot, attributes: { filter: 'property' } },
+    ListboxContent,
+    // A text field: the part renders onto the element's `<input>` child.
+    ListboxFilter: { component: ListboxFilter, target: 'input' },
+    ListboxItem,
+    ListboxItemIndicator,
+    ListboxGroup,
+    ListboxGroupLabel,
+  },
+}
+
+// (Families are written out in full: a call or a spread at module level would
+// keep every family in a bundle that imports one.)
+
+/** Shows its value while it has no children, like the Vue component's fallback. */
+const COMBOBOX_ITEM: RekaElementPartDefinition = { component: ComboboxItem, text: (_slotProps, props) => props.value }
+
+/**
+ * `<reka-combobox-root>`, `-input`, `-anchor`, `-trigger`, `-cancel`, `-portal`,
+ * `-content`, `-viewport`, `-empty`, `-item`, `-item-indicator`, `-group`, `-label`,
+ * `-separator`, `-arrow`. Not `ComboboxVirtualizer` (a scoped slot).
+ */
+export const comboboxElements: RekaElementFamily = {
+  name: 'combobox',
+  parts: {
+    ComboboxRoot: { component: ComboboxRoot, attributes: { filter: 'property' } },
+    ComboboxInput: { component: ComboboxInput, target: 'input' },
+    ComboboxAnchor: { component: ComboboxAnchor, attributes: POPPER_PROPERTIES },
+    ComboboxTrigger,
+    ComboboxCancel,
+    ComboboxPortal,
+    ComboboxContent: { component: ComboboxContent, attributes: POPPER_PROPERTIES },
+    ComboboxViewport,
+    ComboboxEmpty,
+    ComboboxItem: COMBOBOX_ITEM,
+    ComboboxItemIndicator,
+    ComboboxGroup,
+    ComboboxLabel,
+    ComboboxSeparator,
+    ComboboxArrow,
+  },
+}
+
+/**
+ * `<reka-autocomplete-root>`, `-input`, and the Combobox parts under the
+ * Autocomplete name (`-anchor`, `-content`, `-item`, …), as in Vue.
+ */
+export const autocompleteElements: RekaElementFamily = {
+  name: 'autocomplete',
+  parts: {
+    AutocompleteRoot: { component: AutocompleteRoot, attributes: { filter: 'property' } },
+    AutocompleteInput: { component: AutocompleteInput, target: 'input' },
+    AutocompleteAnchor: { component: ComboboxAnchor, attributes: POPPER_PROPERTIES },
+    AutocompleteTrigger: ComboboxTrigger,
+    AutocompleteCancel: ComboboxCancel,
+    AutocompletePortal: ComboboxPortal,
+    AutocompleteContent: { component: ComboboxContent, attributes: POPPER_PROPERTIES },
+    AutocompleteViewport: ComboboxViewport,
+    AutocompleteEmpty: ComboboxEmpty,
+    AutocompleteItem: COMBOBOX_ITEM,
+    AutocompleteItemIndicator: ComboboxItemIndicator,
+    AutocompleteGroup: ComboboxGroup,
+    AutocompleteLabel: ComboboxLabel,
+    AutocompleteSeparator: ComboboxSeparator,
+  },
+}
+
+/**
+ * `<reka-select-root>`, `-trigger`, `-value`, `-icon`, `-portal`, `-content`,
+ * `-viewport`, `-scroll-up-button`, `-scroll-down-button`, `-item`, `-item-text`,
+ * `-item-indicator`, `-group`, `-label`, `-separator`, `-arrow`. Not
+ * `SelectVirtualizer` (a scoped slot).
+ */
+export const selectElements: RekaElementFamily = {
+  name: 'select',
+  parts: {
+    SelectRoot,
+    SelectTrigger: { component: SelectTrigger, attributes: { reference: 'property' } },
+    SelectValue: {
+      component: SelectValue,
+      // The selected labels, or the placeholder.
+      text: ({ selectedLabels }, props) => selectedLabels?.length ? selectedLabels.join(', ') : props.placeholder,
+    },
+    SelectIcon,
+    SelectPortal,
+    SelectContent: { component: SelectContent, attributes: POPPER_PROPERTIES },
+    SelectViewport,
+    SelectScrollUpButton,
+    SelectScrollDownButton,
+    SelectItem,
+    SelectItemText,
+    SelectItemIndicator,
+    SelectGroup,
+    SelectLabel,
+    SelectSeparator,
+    SelectArrow,
+  },
+}
+
+/**
+ * `<reka-tree-root>`, `<reka-tree-item>`. In Vue the root hands its flattened items
+ * to a scoped slot; as elements you render the items (see the guide). Not
+ * `TreeVirtualizer` (a scoped slot).
+ */
+export const treeElements: RekaElementFamily = {
+  name: 'tree',
+  parts: {
+    // Items are objects.
+    TreeRoot: { component: TreeRoot, attributes: { modelValue: 'property', defaultValue: 'property' } },
+    TreeItem: { component: TreeItem, attributes: { value: 'property' } },
+  },
+}
+
+/** `<reka-tags-input-root>`, `-input`, `-item`, `-item-text`, `-item-delete`, `-clear`. */
+export const tagsInputElements: RekaElementFamily = {
+  name: 'tags-input',
+  parts: {
+    TagsInputRoot,
+    TagsInputInput: { component: TagsInputInput, target: 'input' },
+    TagsInputItem,
+    // Shows the tag's `displayValue` while it has no children.
+    TagsInputItemText: { component: TagsInputItemText, text: () => injectTagsInputItemContext().displayValue.value },
+    TagsInputItemDelete,
+    TagsInputClear,
+  },
+}
+
+/** `<reka-tag-group-root>`, `-item`, `-item-text`, `-item-delete`. */
+export const tagGroupElements: RekaElementFamily = {
+  name: 'tag-group',
+  parts: {
+    TagGroupRoot,
+    TagGroupItem,
+    TagGroupItemText,
+    TagGroupItemDelete,
+  },
+}
+
+/**
+ * `<reka-editable-root>`, `-area`, `-input`, `-preview`, `-edit-trigger`,
+ * `-submit-trigger`, `-cancel-trigger`.
+ */
+export const editableElements: RekaElementFamily = {
+  name: 'editable',
+  parts: {
+    EditableRoot,
+    EditableArea,
+    EditableInput: { component: EditableInput, target: 'input' },
+    EditablePreview: {
+      component: EditablePreview,
+      // The value, or the preview placeholder.
+      text: () => {
+        const context = injectEditableRootContext()
+        return context.modelValue.value || context.placeholder.value?.preview
+      },
+    },
+    EditableEditTrigger,
+    EditableSubmitTrigger,
+    EditableCancelTrigger,
+  },
+}
+
 /** Every family available as custom elements. Importing it bundles all of them. */
 export const rekaElementFamilies: readonly RekaElementFamily[] = [
   accordionElements,
   alertDialogElements,
+  autocompleteElements,
   checkboxElements,
   collapsibleElements,
+  comboboxElements,
   contextMenuElements,
   dialogElements,
   drawerElements,
   dropdownMenuElements,
+  editableElements,
   hoverCardElements,
+  listboxElements,
   menubarElements,
   navigationMenuElements,
   popoverElements,
+  selectElements,
   switchElements,
   tabsElements,
+  tagGroupElements,
+  tagsInputElements,
   toastElements,
   toggleElements,
   tooltipElements,
+  treeElements,
 ]
 
 /**
@@ -507,4 +766,36 @@ export function defineToggleElements(options?: DefineRekaElementsOptions) {
 
 export function defineTooltipElements(options?: DefineRekaElementsOptions) {
   return defineRekaElements([tooltipElements], options)
+}
+
+export function defineAutocompleteElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([autocompleteElements], options)
+}
+
+export function defineComboboxElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([comboboxElements], options)
+}
+
+export function defineEditableElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([editableElements], options)
+}
+
+export function defineListboxElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([listboxElements], options)
+}
+
+export function defineSelectElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([selectElements], options)
+}
+
+export function defineTagGroupElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([tagGroupElements], options)
+}
+
+export function defineTagsInputElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([tagsInputElements], options)
+}
+
+export function defineTreeElements(options?: DefineRekaElementsOptions) {
+  return defineRekaElements([treeElements], options)
 }
