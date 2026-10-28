@@ -1,4 +1,4 @@
-import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { ComputedRef, InjectionKey, MaybeRefOrGetter, Ref } from 'vue'
 import type { SelectEvent } from './ListboxItem.vue'
 import type { ListboxRootContext } from './ListboxRoot.vue'
 import type { BaseChangeReason, By, ChangeEventDetails, LabelRegistry, PartSurface, SelectionState } from '@/shared'
@@ -239,6 +239,14 @@ export interface ListboxContentSurfaceOptions {
    */
   tabindexOutsideRender?: boolean
 }
+
+/**
+ * Provided by a part that renders `ListboxContent` as-child and binds a
+ * consumer `tabindex` on the element itself (`ComboboxContent`): the element's
+ * explicit binding beat the content's in the slot merge, so while it returns
+ * `true` the content leaves the attribute alone. Internal.
+ */
+export const LISTBOX_CONTENT_TABINDEX_OVERRIDDEN: InjectionKey<(() => boolean) | null> = Symbol('ListboxContentTabindexOverridden')
 
 /** The content's roving `tabindex`: `'0'` while focusable with nothing highlighted, else `'-1'`. */
 export function getListboxContentTabindex(context: ListboxRootContext<any>) {

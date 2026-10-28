@@ -2,13 +2,13 @@
 import type { PrimitiveProps } from '..'
 import { refAutoReset } from '@vueuse/shared'
 import { injectListboxRootContext } from './ListboxRoot.vue'
-import { getListboxContentSurface, getListboxContentTabindex } from './useListbox'
+import { getListboxContentSurface, getListboxContentTabindex, LISTBOX_CONTENT_TABINDEX_OVERRIDDEN } from './useListbox'
 
 export interface ListboxContentProps extends PrimitiveProps { }
 </script>
 
 <script setup lang="ts">
-import { mergeProps, watchPostEffect } from 'vue'
+import { inject, mergeProps, provide, watchPostEffect } from 'vue'
 import { useCollectionSlot } from '@/Collection'
 import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
@@ -39,10 +39,15 @@ useCollectionSlot(currentElement)
 // here, outside the render, a flip touches one attribute instead of
 // re-rendering the content and, through its slot, every item. The render
 // keeps the setup value, for SSR and hydration.
+// A part that renders this as-child and binds its own `tabindex` keeps it:
+// that binding won the slot merge before.
 const tabindex = getListboxContentTabindex(rootContext)
+const tabindexOverridden = inject(LISTBOX_CONTENT_TABINDEX_OVERRIDDEN, null)
+provide(LISTBOX_CONTENT_TABINDEX_OVERRIDDEN, null)
 watchPostEffect(() => {
   const element = currentElement.value as Element | null | undefined
-  element?.setAttribute('tabindex', tabindex.value)
+  if (element && !tabindexOverridden?.())
+    element.setAttribute('tabindex', tabindex.value)
 })
 </script>
 

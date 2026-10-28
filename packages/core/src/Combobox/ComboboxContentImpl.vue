@@ -31,10 +31,11 @@ export const [injectComboboxContentContext, provideComboboxContentContext]
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
+import { computed, getCurrentInstance, nextTick, onMounted, onUnmounted, provide, ref, toRefs, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { ListboxContent } from '@/Listbox'
+import { LISTBOX_CONTENT_TABINDEX_OVERRIDDEN } from '@/Listbox/useListbox'
 import { PopperContent } from '@/Popper'
 import { Primitive } from '@/Primitive'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
@@ -47,6 +48,11 @@ const props = withDefaults(defineProps<ComboboxContentImplProps & { present?: bo
 const emits = defineEmits<ComboboxContentImplEmits>()
 
 const { position } = toRefs(props)
+// A consumer `tabindex` is bound on the element below, over the listbox
+// content's roving one: the content leaves it alone. (`$attrs` read through
+// the instance proxy tracks.)
+const instance = getCurrentInstance()!
+provide(LISTBOX_CONTENT_TABINDEX_OVERRIDDEN, () => 'tabindex' in instance.proxy!.$attrs)
 const rootContext = injectComboboxRootContext()
 const contentId = Symbol('ComboboxContent')
 
