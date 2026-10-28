@@ -551,6 +551,9 @@ export class HostBinding {
 
   /** @internal */
   onAttributeMutation(name: string) {
+    // A link host is a link (role, tab stop) only while it has an `href`.
+    if (name === 'href' && this.semantics?.link && this.active)
+      this.syncSemantics()
     const entry = this.owned.get(name)
     // Our own writes, and consumer writes already handled synchronously, leave the
     // part's value in place.

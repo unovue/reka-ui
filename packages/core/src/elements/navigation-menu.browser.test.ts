@@ -58,6 +58,14 @@ describe('navigation menu elements', () => {
     // A link part with an \`href\` stands in for an \`<a href>\`.
     expect(query('[data-test=github]').getAttribute('role')).toBe('link')
     expect(query('[data-test=github]').getAttribute('tabindex')).toBe('0')
+    // Only while it has one.
+    const link = query('[data-test=github]')
+    link.removeAttribute('href')
+    await vi.waitFor(() => expect(link.hasAttribute('role')).toBe(false))
+    expect(link.hasAttribute('tabindex')).toBe(false)
+    link.setAttribute('href', '#github')
+    await vi.waitFor(() => expect(link.getAttribute('role')).toBe('link'))
+    expect(link.getAttribute('tabindex')).toBe('0')
     // Contents are closed and not rendered.
     expect(query('reka-navigation-menu-content').hasAttribute('data-reka-unmounted')).toBe(true)
   })
