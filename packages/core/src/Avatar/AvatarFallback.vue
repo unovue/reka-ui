@@ -9,7 +9,7 @@ export interface AvatarFallbackProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectAvatarRootContext } from './AvatarRoot.vue'
 import { useAvatarFallback } from './useAvatar'
 
@@ -24,12 +24,11 @@ const { visible } = useAvatarFallback(injectAvatarRootContext(), { delayMs: () =
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     v-if="visible"
     :ref="forwardRef"
-    :as-child="asChild"
-    :as="as"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

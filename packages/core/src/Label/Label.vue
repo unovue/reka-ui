@@ -10,6 +10,7 @@ export interface LabelProps extends PrimitiveProps {
 <script setup lang="ts">
 import { mergeProps, useAttrs } from 'vue'
 import { useRender } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useLabel } from './useLabel'
 
 // Attrs are folded into `renderProps` below so they reach the element on both
@@ -25,7 +26,7 @@ const props = withDefaults(defineProps<LabelProps>(), {
 const attrs = useAttrs()
 const { root } = useLabel({ for: () => props.for })
 
-const { tag, renderProps, state, elementRef, expose } = useRender({
+const { renderProps, state, elementRef, expose } = useRender({
   defaultTagName: 'label',
   as: () => props.as,
   asChild: () => props.asChild,
@@ -44,7 +45,7 @@ defineExpose(expose)
     :forward-ref="elementRef"
   />
   <component
-    :is="tag"
+    :is="renderAs(as, asChild, 'label')"
     v-else
     v-bind="renderProps"
     :ref="elementRef"

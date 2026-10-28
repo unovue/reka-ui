@@ -1,17 +1,23 @@
-import { cloneVNode, Comment, defineComponent, mergeProps } from 'vue'
+import { cloneVNode, Comment, defineComponent, getCurrentInstance, mergeProps } from 'vue'
 import { renderSlotFragments } from '@/shared/renderSlotFragments'
 import { useForwardElement } from '@/shared/useForwardElement'
 
 export const Slot = defineComponent({
   name: 'PrimitiveSlot',
   inheritAttrs: false,
-  setup(_, { attrs, slots, expose }) {
+  // `setup()` only, as in `Primitive`: a setup-context parameter makes Vue
+  // allocate a context (with an attrs proxy and an `expose` closure) per
+  // instance. The instance holds the same attrs and slots objects.
+  setup() {
+    const instance = getCurrentInstance()!
+    const { attrs, slots } = instance
     // Track the element the attrs land on (the first non-comment child) through
     // a ref merged into the cloned child, so `Slot` satisfies the element-first
     // contract itself: a parent ref on `<Slot>` resolves `element` reactively,
     // following `v-if` swaps of the child without any `onUpdated` resync.
     const { forwardRef: setTarget, expose: elementExpose } = useForwardElement()
-    expose(elementExpose)
+    // What the setup context's `expose()` does.
+    instance.exposed = elementExpose
 
     return () => {
       if (!slots.default)

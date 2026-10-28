@@ -15,7 +15,7 @@ export const [injectAvatarRootContext, provideAvatarRootContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useAvatar } from './useAvatar'
 
 withDefaults(defineProps<AvatarRootProps>(), {
@@ -29,11 +29,10 @@ provideAvatarRootContext(useAvatar().context)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as-child="asChild"
-    :as="as"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

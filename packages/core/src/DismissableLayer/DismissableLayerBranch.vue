@@ -7,11 +7,12 @@ export interface DismissableLayerBranchProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
 import { useRender } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { registerBranch } from './layerStack'
 
 const props = defineProps<DismissableLayerBranchProps>()
 
-const { tag, currentElement, elementRef, expose } = useRender({
+const { currentElement, elementRef, expose } = useRender({
   as: () => props.as,
   asChild: () => props.asChild,
 })
@@ -28,7 +29,7 @@ onUnmounted(() => {
 
 <template>
   <component
-    :is="tag"
+    :is="renderAs(as, asChild)"
     :ref="elementRef"
   >
     <slot />

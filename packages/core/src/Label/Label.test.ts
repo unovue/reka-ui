@@ -131,4 +131,13 @@ describe('label attrs forwarding', () => {
     expect(spy.mock.calls.flat().some(arg => typeof arg === 'string' && arg.includes('Extraneous non-props attributes'))).toBe(false)
     spy.mockRestore()
   })
+
+  it('renders a <label>, not a component registered globally as `Label`', () => {
+    const GlobalLabel = defineComponent({ render: () => h('i', 'global') })
+    const wrapper = mount(Label, {
+      slots: { default: 'Name' },
+      global: { components: { Label: GlobalLabel } },
+    })
+    expect(wrapper.html()).toBe('<label>Name</label>')
+  })
 })
