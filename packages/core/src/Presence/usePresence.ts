@@ -13,6 +13,8 @@ export function usePresence(
   const prevPresentRef = ref(present)
   const initialState = present.value ? 'mounted' : 'unmounted'
   let timeoutId: number | undefined
+  let exitGeneration = 0
+  let waitingForAnimations = false
   const ownerWindow = node.value?.ownerDocument.defaultView ?? defaultWindow
 
   const { state, dispatch } = useStateMachine(initialState, {
@@ -41,8 +43,12 @@ export function usePresence(
   watch(
     present,
     async (currentPresent, prevPresent) => {
+      const generation = ++exitGeneration
+      waitingForAnimations = false
       const hasPresentChanged = prevPresent !== currentPresent
       await nextTick()
+      if (generation !== exitGeneration)
+        return
       if (hasPresentChanged) {
         const prevAnimationName = prevAnimationNameRef.value
         const currentAnimationName = getAnimationName(node.value)
@@ -52,6 +58,30 @@ export function usePresence(
           dispatchCustomEvent('enter')
           if (currentAnimationName === 'none')
             dispatchCustomEvent('after-enter')
+        }
+        else if (node.value?.getAnimations) {
+          const element = node.value
+          const animations = element.getAnimations().filter(animation =>
+            (animation.playState === 'running' || animation.pending)
+            && animation.effect?.getComputedTiming().endTime !== Infinity,
+          )
+
+          dispatchCustomEvent('leave')
+          if (animations.length) {
+            waitingForAnimations = true
+            dispatch('ANIMATION_OUT')
+            Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
+              if (generation !== exitGeneration || node.value !== element || present.value)
+                return
+              waitingForAnimations = false
+              dispatchCustomEvent('after-leave')
+              dispatch('ANIMATION_END')
+            })
+          }
+          else {
+            dispatch('UNMOUNT')
+            dispatchCustomEvent('after-leave')
+          }
         }
         else if (
           currentAnimationName === 'none' || currentAnimationName === 'undefined'
@@ -91,7 +121,7 @@ export function usePresence(
    * make sure we only trigger ANIMATION_END for the currently active animation.
    */
   const handleAnimationEnd = (event: AnimationEvent) => {
-    if (event.target !== node.value)
+    if (event.target !== node.value || waitingForAnimations)
       return
 
     const currentAnimationName = getAnimationName(node.value)
@@ -138,6 +168,8 @@ export function usePresence(
         newNode.addEventListener('animationend', handleAnimationEnd)
       }
       else {
+        exitGeneration++
+        waitingForAnimations = false
         // Transition to the unmounted state if the node is removed prematurely.
         // We avoid doing so during cleanup as the node may change but still exist.
         dispatch('ANIMATION_END')
@@ -159,6 +191,7 @@ export function usePresence(
   })
 
   onUnmounted(() => {
+    exitGeneration++
     watcher()
     stateWatcher()
     if (node.value) {
