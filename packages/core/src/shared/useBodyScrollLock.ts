@@ -259,12 +259,16 @@ class ScrollLocker {
   restore: (() => void) | null = null
   private lockTimer: ReturnType<typeof setTimeout> | undefined
   private unlockTimer: ReturnType<typeof setTimeout> | undefined
-  private config: () => ScrollBodyConfig = () => true
+  // One config getter per held share, oldest first. A released share's getter
+  // is dropped with it: the getter closes over its component, which would
+  // otherwise stay reachable after unmount.
+  private configs = new Set<() => ScrollBodyConfig>()
 
   acquire(config: () => ScrollBodyConfig) {
     this.lockCount += 1
+    const share = () => config()
+    this.configs.add(share)
     if (this.lockCount === 1 && this.restore === null) {
-      this.config = config
       clearTimeout(this.lockTimer)
       this.lockTimer = setTimeout(() => this.lock(), 0)
     }
@@ -273,8 +277,19 @@ class ScrollLocker {
       if (released)
         return
       released = true
+      this.configs.delete(share)
       this.release()
     }
+  }
+
+  /** Test-only: the number of config getters still held. */
+  get heldConfigs() {
+    return this.configs.size
+  }
+
+  private config(): ScrollBodyConfig {
+    const [first] = this.configs
+    return first ? first() : true
   }
 
   private release() {
@@ -339,6 +354,7 @@ class ScrollLocker {
     clearTimeout(this.lockTimer)
     clearTimeout(this.unlockTimer)
     this.lockCount = 0
+    this.configs.clear()
     this.restore?.()
     this.restore = null
   }
@@ -349,6 +365,11 @@ const SCROLL_LOCKER = new ScrollLocker()
 /** Test-only: release every scroll lock share and restore the page styles. */
 export function resetBodyScrollLock() {
   SCROLL_LOCKER.reset()
+}
+
+/** Test-only: the number of scroll lock config getters still held. */
+export function heldScrollLockConfigs() {
+  return SCROLL_LOCKER.heldConfigs
 }
 
 /**

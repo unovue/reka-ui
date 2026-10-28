@@ -55,6 +55,21 @@ watch(position, value => rootContext.onContentPositionChange(contentId, value), 
 // `id` (`<baseId>-content`), `data-state` and `data-empty`.
 const surface = getComboboxContentSurface(rootContext)
 
+// The popper memoizes its subtree (#2639) so a position update does not
+// re-render every item. A search change has to get through when the consumer
+// filters the items itself (`filter: null`), so the search term is a memo key
+// then. With the built-in filter each item follows its own filtered-out state:
+// re-rendering the whole subtree per keystroke would re-render every item (a
+// render-function parent forces its slotted children to update), so the search
+// is left out.
+const popperMemoDependencies = computed(() => {
+  if (position.value !== 'popper')
+    return undefined
+  if (rootContext.filter.value)
+    return []
+  return [rootContext.filterSearch.value, rootContext.filterState.value.count]
+})
+
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const scrollLocked = useBodyScrollLock(props.present && props.bodyLock)
@@ -68,9 +83,8 @@ const pickedProps = computed(() => {
     const { present: _, ...forwardedProps } = props
     return forwardedProps
   }
-  else {
-    return {}
-  }
+  // Inline, the content is a plain `Primitive`: it still takes `as` / `asChild`.
+  return { as: props.as, asChild: props.asChild }
 })
 
 const forwardedProps = useForwardProps(pickedProps)
@@ -170,9 +184,7 @@ const popperContentEvents = {
           :is="position === 'popper' ? PopperContent : Primitive"
           v-bind="{ ...$attrs, ...forwardedProps, ...surface.attrs.value }"
           :ref="forwardRef"
-          :memo-dependencies="position === 'popper'
-            ? [rootContext.filterSearch.value, rootContext.filterState.value.count]
-            : undefined"
+          :memo-dependencies="popperMemoDependencies"
           :style="{
             // flex layout so we can place the scroll buttons properly
             // When hideWhenEmpty is true, hide the content when no items match

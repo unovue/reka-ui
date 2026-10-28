@@ -40,7 +40,11 @@ export interface LabelRegistry<T> {
  * @lifecycle pure
  */
 export function createLabelRegistry<T>(by?: By<T>): LabelRegistry<T> {
-  const labelEntries = shallowRef<Array<{ value: T, label: string, disabled: boolean }>>([])
+  // Writes go to the raw array and only trigger the ref, so a registration
+  // never tracks the registry: an item registering from an effect would
+  // otherwise re-run on every other item's registration.
+  const list: Array<{ value: T, label: string, disabled: boolean }> = []
+  const labelEntries = shallowRef(list)
   const labelIndex = new Map<string, number>()
 
   function labelKey(value: T): string | undefined {
@@ -60,26 +64,25 @@ export function createLabelRegistry<T>(by?: By<T>): LabelRegistry<T> {
   function labelIndexOf(value: T, key = labelKey(value)) {
     if (key !== undefined)
       return labelIndex.get(key) ?? -1
-    return labelEntries.value.findIndex(i => compare(i.value, value, by))
+    return list.findIndex(i => compare(i.value, value, by))
   }
 
   return {
     register: (value, label, disabled = false) => {
       const key = labelKey(value)
       const index = labelIndexOf(value, key)
-      const entries = labelEntries.value
-      const current = entries[index]
+      const current = list[index]
       // Items re-register on every render; only an actual change is written.
       if (current && current.label === label && current.disabled === disabled)
         return
       const entry = { value, label, disabled }
       if (index === -1) {
         if (key !== undefined)
-          labelIndex.set(key, entries.length)
-        entries.push(entry)
+          labelIndex.set(key, list.length)
+        list.push(entry)
       }
       else {
-        entries[index] = entry
+        list[index] = entry
       }
       triggerRef(labelEntries)
     },

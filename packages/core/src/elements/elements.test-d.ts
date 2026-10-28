@@ -1,4 +1,6 @@
 import type { RekaElementEvent, RekaElementTagNameMap, RekaEventType, RekaIntrinsicElements, UseKebabCaseEventProp } from '.'
+import type { DateValue } from '@/date'
+import type { Color } from '@/shared/color'
 import { describe, expectTypeOf, it } from 'vitest'
 
 // The opt-in documented in the "Custom elements" guide.
@@ -23,6 +25,27 @@ describe('element typings', () => {
     })
     // @ts-expect-error `as` is not part of the element API
     expectTypeOf(el.as).toBeUnknown()
+  })
+
+  it('types Temporal, number-array and color values, and the read-only slot props', () => {
+    const calendar = document.createElement('reka-calendar-root')
+    expectTypeOf(calendar.minValue).toEqualTypeOf<DateValue | undefined>()
+    expectTypeOf(calendar.slotProps).toEqualTypeOf<Readonly<Record<string, unknown>> | undefined>()
+    calendar.addEventListener('update-model-value', (event) => {
+      expectTypeOf(event.detail.value).toExtend<DateValue | DateValue[] | undefined>()
+    })
+    expectTypeOf(document.createElement('reka-slider-root').defaultValue).toEqualTypeOf<number[] | undefined>()
+    expectTypeOf<string | Color>().toExtend<NonNullable<HTMLElementTagNameMap['reka-color-field-root']['modelValue']>>()
+  })
+
+  it('types the menu, toast and arrow tags', () => {
+    document.createElement('reka-dropdown-menu-item').addEventListener('select', (event) => {
+      expectTypeOf(event.detail.value).toEqualTypeOf<Event>()
+    })
+    document.createElement('reka-toast-provider').addEventListener('update-toasts', (event) => {
+      expectTypeOf(event.detail.value[0].id).toEqualTypeOf<string>()
+    })
+    expectTypeOf(document.createElement('reka-popover-arrow').rounded).toEqualTypeOf<boolean | undefined>()
   })
 
   it('types JSX event props in kebab-case, and steers away from camelCase handlers', () => {

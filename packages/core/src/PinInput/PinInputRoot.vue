@@ -126,6 +126,8 @@ providePinInputRootContext(context)
   <Primitive
     v-bind="mergeProps($attrs, root.attrs.value)"
     :ref="forwardRef"
+    :as="as"
+    :as-child="asChild"
   >
     <slot :model-value="modelValue" />
 

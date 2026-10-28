@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computed } from 'vue'
+import { computed, effect } from 'vue'
 import { createLabelRegistry } from './labelRegistry'
 
 describe('createLabelRegistry', () => {
@@ -17,5 +17,19 @@ describe('createLabelRegistry', () => {
     expect(label.value).toBeUndefined()
     labels.register('apple', 'Apple')
     expect(label.value).toBe('Apple')
+  })
+
+  it('does not track the registry while registering', () => {
+    const labels = createLabelRegistry<string>()
+    let runs = 0
+    // An item registering from an effect must not re-run on every other item's registration.
+    effect(() => {
+      runs++
+      labels.register('apple', 'Apple')
+    })
+    labels.register('banana', 'Banana')
+    labels.register('apple', 'Green apple')
+    expect(runs).toBe(1)
+    expect(labels.get('apple')).toBe('Green apple')
   })
 })

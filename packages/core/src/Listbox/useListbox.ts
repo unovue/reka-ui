@@ -129,8 +129,11 @@ export function getListboxItemSurface<T extends AcceptableValue = AcceptableValu
   options: ListboxItemSurfaceOptions<T> = {},
 ): PartSurface<ListboxItemState> {
   const isHighlighted = computed(() => {
-    const element = toValue(options.element)
-    return element != null && element === context.highlightedElement.value
+    // The highlight first: while nothing is highlighted the item does not track
+    // its own element, so the element refs set while a long list mounts do not
+    // notify every item's render.
+    const highlighted = context.highlightedElement.value
+    return highlighted != null && highlighted === toValue(options.element)
   })
   const isSelected = computed(() => valueComparator(context.modelValue.value, toValue(value), context.by))
   // `rootContext.disabled.value || props.disabled` as in ListboxItem.vue, normalised to a boolean.

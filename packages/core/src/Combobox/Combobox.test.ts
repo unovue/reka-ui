@@ -1167,6 +1167,70 @@ describe('comboboxContent with popper positioning', () => {
   })
 })
 
+describe.each(['popper', 'inline'] as const)('filtering a Combobox with %s content', (position) => {
+  // How often each option's slot content rendered.
+  const renders = new Map<string, number>()
+  const options = Array.from({ length: 30 }, (_, index) => `Option ${index}`)
+
+  const FilterCombobox = defineComponent({
+    setup() {
+      return () => h(ComboboxRoot<string>, null, {
+        default: () => [
+          h(ComboboxAnchor, null, {
+            default: () => [
+              h(ComboboxInput),
+              h(ComboboxTrigger, null, { default: () => 'Open' }),
+            ],
+          }),
+          h(ComboboxContent, { position }, {
+            default: () => h(ComboboxViewport, null, {
+              default: () => options.map(option => h(ComboboxItem, { key: option, value: option }, {
+                default: () => {
+                  renders.set(option, (renders.get(option) ?? 0) + 1)
+                  return option
+                },
+              })),
+            }),
+          }),
+        ],
+      })
+    },
+  })
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    renders.clear()
+  })
+
+  it('re-renders only the items whose visibility changed', async () => {
+    const wrapper = mount(FilterCombobox, { attachTo: document.body })
+    await wrapper.find('button').trigger('click')
+    await sleep(0)
+    await nextTick()
+    expect(wrapper.findAll('[role="option"]')).toHaveLength(30)
+
+    const input = wrapper.find('input')
+    // Every item keeps matching: none of them re-renders.
+    renders.clear()
+    for (const search of ['O', 'Op', 'Option', 'Option '])
+      await input.setValue(search)
+    await sleep(0)
+    await nextTick()
+    expect(wrapper.findAll('[role="option"]')).toHaveLength(30)
+    // The highlighted first item may update its highlight; nothing else renders.
+    expect([...renders.keys()].filter(option => option !== 'Option 0')).toEqual([])
+
+    // Narrowing hides most items; the ones that stay visible do not re-render.
+    renders.clear()
+    await input.setValue('Option 2')
+    await sleep(0)
+    await nextTick()
+    const visible = wrapper.findAll('[role="option"]').map(option => option.text())
+    expect(visible).toEqual(['Option 2', ...options.slice(20, 30)])
+    expect(visible.filter(option => option !== 'Option 2' && renders.has(option))).toEqual([])
+  })
+})
+
 describe('combobox highlight scrolling with popper positioning', () => {
   const PopperContentStub = defineComponent({
     name: 'PopperContent',
