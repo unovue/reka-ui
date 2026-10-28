@@ -162,8 +162,6 @@ export function useDateFormatter(initialLocale: string, opts: DateFormatterOptio
     locale.value = newLocale
   }
 
-  const optsKey = serializeOptions(opts)
-
   /**
    * `toFormatInput` + `getDateTimeFormat`, keyed without building the merged
    * options on a hit: what the calendar grids call once per cell.
@@ -179,7 +177,8 @@ export function useDateFormatter(initialLocale: string, opts: DateFormatterOptio
       : requested ?? date.calendarId
     const zoned = isZonedDateTime(date)
     const timeZone = zoned ? date.timeZoneId : 'UTC'
-    const key = `${locale.value}|${optsKey}|${optionsKey(options)}|${calendar}|${timeZone}`
+    // `opts` is keyed on every call too: the caller may mutate it after construction.
+    const key = `${locale.value}|${optionsKey(opts)}|${optionsKey(options)}|${calendar}|${timeZone}`
     let formatter = resolvedFormatterCache.get(key)
     if (!formatter) {
       formatter = getDateTimeFormat(locale.value, { ...opts, ...options, calendar, timeZone })

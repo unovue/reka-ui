@@ -123,8 +123,8 @@ describe('useDateFormatter: cached Temporal formatting', () => {
   it('follows a locale change on the same formatter', () => {
     const formatter = useDateFormatter('en-US')
     expect(formatter.fullMonth(plain)).toBe('February')
-    formatter.setLocale('de-DE')
-    expect(formatter.fullMonth(plain)).toBe('Februar')
+    formatter.setLocale('fr-FR')
+    expect(formatter.fullMonth(plain)).toBe('février')
   })
 
   it('honours an explicit calendar option over the value\'s calendar', () => {
@@ -138,5 +138,13 @@ describe('useDateFormatter: cached Temporal formatting', () => {
     expect(formatter.custom(plain, options)).toBe('February')
     options.month = 'short'
     expect(formatter.custom(plain, options)).toBe('Feb')
+  })
+
+  it('reads mutated formatter options afresh', () => {
+    const opts: DateFormatterOptions = { month: 'long' }
+    const formatter = useDateFormatter('en-US', opts)
+    expect(formatter.custom(plain, {})).toBe('February')
+    opts.month = 'short'
+    expect(formatter.custom(plain, {})).toBe('Feb')
   })
 })
