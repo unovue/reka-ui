@@ -215,6 +215,21 @@ describe('useDateField', () => {
     })
   })
 
+  it('gives each segment one listener for all its events, kept across renders', () => {
+    withScope(() => {
+      const api = useDateField({ defaultValue: jan20, locale: 'en-US' })
+      const day = api.createInputSurface('day')
+      const attrs = day.attrs.value
+      const listeners = ['onMousedown', 'onKeydown', 'onBeforeinput', 'onCompositionstart', 'onCompositionend', 'onFocusout', 'onFocusin'].map(name => attrs[name])
+      expect(typeof listeners[0]).toBe('function')
+      expect(new Set(listeners).size).toBe(1)
+      api.setModelValue(jan20.add({ days: 1 }))
+      expect(day.attrs.value.onKeydown).toBe(listeners[0])
+      expect(api.createInputSurface('month').attrs.value.onKeydown).not.toBe(listeners[0])
+      expect(api.createInputSurface('literal').attrs.value.onKeydown).toBeUndefined()
+    })
+  })
+
   it('renders on the server', async () => {
     const html = await renderToString(createSSRApp(createStandaloneField({ defaultValue: jan20, locale: 'en-US' })))
     expect(html).toContain('role="group"')
