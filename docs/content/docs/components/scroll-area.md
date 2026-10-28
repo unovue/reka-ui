@@ -67,6 +67,12 @@ The viewport area of the scroll area.
 
 <!-- @include: @/meta/ScrollAreaViewport.md -->
 
+### Virtualizer
+
+Virtualizes large collections within the viewport. Place `ScrollAreaVirtualizer` inside `ScrollAreaViewport` and render each item through its default slot.
+
+<!-- @include: @/meta/ScrollAreaVirtualizer.md -->
+
 ### Scrollbar
 
 The vertical scrollbar. Add a second `Scrollbar` with an `orientation` prop to enable horizontal scrolling.
@@ -110,6 +116,42 @@ The corner where both vertical and horizontal scrollbars meet.
 <!-- @include: @/meta/ScrollAreaCorner.md -->
 
 ## Examples
+
+### Virtualized list
+
+Use `ScrollAreaVirtualizer` for large collections. Only visible items and the configured overscan are mounted.
+
+```vue
+<script setup lang="ts">
+import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport, ScrollAreaVirtualizer } from 'reka-ui'
+
+const items = Array.from({ length: 10_000 }, (_, index) => `Item ${index + 1}`)
+</script>
+
+<template>
+  <ScrollAreaRoot class="h-80 overflow-hidden">
+    <ScrollAreaViewport class="h-full">
+      <ScrollAreaVirtualizer
+        v-slot="{ option }"
+        :options="items"
+        :estimate-size="32"
+      >
+        <div class="h-8">
+          {{ option }}
+        </div>
+      </ScrollAreaVirtualizer>
+    </ScrollAreaViewport>
+    <ScrollAreaScrollbar orientation="vertical">
+      <ScrollAreaThumb />
+    </ScrollAreaScrollbar>
+  </ScrollAreaRoot>
+</template>
+```
+
+To virtualize along the horizontal axis, set the `horizontal` prop and render `<ScrollAreaScrollbar orientation="horizontal">`. The viewport only scrolls on an axis that has a scrollbar.
+
+The underlying [TanStack Virtual](https://tanstack.com/virtual/latest/docs/api/virtualizer) instance is available as the `virtualizer` slot prop, and on the component's template ref, for example to call `virtualizerRef.value?.virtualizer.scrollToIndex(500)`.
+
 ### Custom Scroll
 Use the exposed `viewport` to modify / or set the scroll position outside default methods
 ```vue line=4,18
