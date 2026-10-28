@@ -88,9 +88,9 @@ const pageRoot = mkdtempSync(join(BENCH_ROOT, 'dist', 'run-'))
 //
 // The lock is a file holding "<pid> <random token>". It is published with link(), which is
 // atomic and fails if the lock exists, so a lock never exists without its owner recorded.
-// A lock whose pid is dead is reclaimed by one elected run: the first to create the
-// marker file named after that lock's token (O_EXCL). The lock itself is never moved, so a
-// live lock is never briefly absent. The elected run deletes it only while it still holds
+// A lock whose pid is dead is reclaimed by one elected run: the first to create the marker
+// file named after that lock's token (published the same way, holding the reclaimer's pid).
+// The lock itself is never moved, so a live lock is never briefly absent. The elected run deletes it only while it still holds
 // the dead owner's token; it can't have been replaced, because a lock is only ever
 // replaced after it is removed, and only the elected run removes a stale one.
 const HEAD_LOCK = join(BENCH_ROOT, 'dist', '.head-build.lock')
@@ -115,11 +115,13 @@ function isAlive(pid) {
     return e.code === 'EPERM'
   }
 }
-function tryLock() {
-  const tmp = `${HEAD_LOCK}.${process.pid}.tmp`
-  writeFileSync(tmp, myToken)
+// Create `file` holding `content`, or return false if it exists. The content is written to a
+// temp file first and published with link(), so `file` is never seen empty or partial.
+function publishExclusive(file, content) {
+  const tmp = `${file}.${process.pid}.tmp`
+  writeFileSync(tmp, content)
   try {
-    linkSync(tmp, HEAD_LOCK)
+    linkSync(tmp, file)
     return true
   }
   catch (e) {
@@ -133,12 +135,7 @@ function tryLock() {
 }
 function reclaimIfStale(token) {
   const marker = `${HEAD_LOCK}.reap-${token.replace(/\W+/g, '-')}`
-  try {
-    writeFileSync(marker, String(process.pid), { flag: 'wx' })
-  }
-  catch (e) {
-    if (e.code !== 'EEXIST')
-      throw e
+  if (!publishExclusive(marker, String(process.pid))) {
     // Another run is reclaiming this lock. If that run died mid-way, clear its marker.
     const reaper = Number(readLock(marker))
     if (reaper && !isAlive(reaper))
@@ -155,7 +152,7 @@ function reclaimIfStale(token) {
 }
 async function lockHeadBuild() {
   let waiting = false
-  while (!tryLock()) {
+  while (!publishExclusive(HEAD_LOCK, myToken)) {
     const token = readLock(HEAD_LOCK)
     if (token === null)
       continue
