@@ -4,6 +4,7 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface, SelectionState 
 import type { DataOrientation, Direction, StringOrNumber } from '@/shared/types'
 import { computed, ref, shallowRef, toValue } from 'vue'
 import { createPartSurface, selectionState, useControllableState } from '@/shared'
+import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
 import { makeContentId, makeTriggerId } from './utils'
 
 // `PartSurface` is the shared contract in `@/shared` and is already published via
@@ -42,64 +43,80 @@ export function getTabsTriggerSurface(
   value: MaybeRefOrGetter<StringOrNumber>,
   disabled?: MaybeRefOrGetter<boolean | undefined>,
 ): PartSurface<TabsTriggerState> {
-  const isSelected = computed(() => toValue(value) === context.modelValue.value)
-  const isDisabled = computed(() => toValue(disabled) ?? false)
-  const contentId = computed(() => context.contentIds.value.has(toValue(value)) ? getTabsContentId(context, toValue(value)) : undefined)
+  const isSelected = isTabSelected(context, value)
+  const isDisabled = () => toValue(disabled) ?? false
+
+  // Ported verbatim from TabsTrigger.vue's `@mousedown.left`: the `.left`
+  // modifier is the `button !== 0` guard; Ctrl+click is ignored (avoids the
+  // MacOS right-click), and a blocked click prevents focus so it can't
+  // accidentally activate. Handlers are created once, not on every render.
+  const onMousedown = (event: MouseEvent) => {
+    if (event.button !== 0)
+      return
+    // A consumer listener that prevented the event opts out of activation.
+    if (event.defaultPrevented)
+      return
+    if (isDisabled() || event.ctrlKey !== false) {
+      event.preventDefault()
+      return
+    }
+    // A `beforeUpdate` cancel of the press must also block the browser's
+    // follow-up focus, or automatic activation would re-attempt the change
+    // as `trigger-focus`. An already-selected trigger attempts nothing
+    // (`setState` returns `false` for an unchanged value), so it keeps focus.
+    const changed = context.changeModelValue(toValue(value), 'trigger-press', event)
+    if (!isSelected() && !changed)
+      event.preventDefault()
+  }
+  // `@keydown.enter.space` — no preventDefault today; keep it that way.
+  const onKeydown = (event: KeyboardEvent) => {
+    if (event.defaultPrevented)
+      return
+    if (event.key === 'Enter' || event.key === ' ')
+      context.changeModelValue(toValue(value), 'trigger-keydown', event)
+  }
+  // Automatic activation follows focus; manual mode needs a click/key.
+  const onFocus = (event?: FocusEvent) => {
+    const isAutomaticActivation = context.activationMode !== 'manual'
+    if (!isSelected() && !isDisabled() && isAutomaticActivation)
+      context.changeModelValue(toValue(value), 'trigger-focus', event)
+  }
 
   return createPartSurface<TabsTriggerState>(
+    () => {
+      const tab = toValue(value)
+      return {
+        'id': getTabsTriggerId(context, tab),
+        'role': 'tab',
+        'aria-selected': isSelected() ? 'true' : 'false',
+        'aria-controls': context.contentIds.value.has(tab) ? getTabsContentId(context, tab) : undefined,
+        'disabled': isDisabled(),
+        'onMousedown': onMousedown,
+        'onKeydown': onKeydown,
+        'onFocus': onFocus,
+      }
+    },
     () => ({
-      'id': getTabsTriggerId(context, toValue(value)),
-      'role': 'tab',
-      'aria-selected': isSelected.value ? 'true' : 'false',
-      'aria-controls': contentId.value,
-      'disabled': isDisabled.value,
-      // Ported verbatim from TabsTrigger.vue's `@mousedown.left`: the `.left`
-      // modifier is the `button !== 0` guard; Ctrl+click is ignored (avoids the
-      // MacOS right-click), and a blocked click prevents focus so it can't
-      // accidentally activate.
-      'onMousedown': (event: MouseEvent) => {
-        if (event.button !== 0)
-          return
-        // A consumer listener that prevented the event opts out of activation.
-        if (event.defaultPrevented)
-          return
-        if (isDisabled.value || event.ctrlKey !== false) {
-          event.preventDefault()
-          return
-        }
-        // A `beforeUpdate` cancel of the press must also block the browser's
-        // follow-up focus, or automatic activation would re-attempt the change
-        // as `trigger-focus`. An already-selected trigger attempts nothing
-        // (`setState` returns `false` for an unchanged value), so it keeps focus.
-        const changed = context.changeModelValue(toValue(value), 'trigger-press', event)
-        if (!isSelected.value && !changed)
-          event.preventDefault()
-      },
-      // `@keydown.enter.space` — no preventDefault today; keep it that way.
-      'onKeydown': (event: KeyboardEvent) => {
-        if (event.defaultPrevented)
-          return
-        if (event.key === 'Enter' || event.key === ' ')
-          context.changeModelValue(toValue(value), 'trigger-keydown', event)
-      },
-      // Automatic activation follows focus; manual mode needs a click/key.
-      'onFocus': (event?: FocusEvent) => {
-        const isAutomaticActivation = context.activationMode !== 'manual'
-        if (!isSelected.value && !isDisabled.value && isAutomaticActivation)
-          context.changeModelValue(toValue(value), 'trigger-focus', event)
-      },
-    }),
-    () => ({
-      state: selectionState(isSelected.value),
-      disabled: isDisabled.value,
+      state: selectionState(isSelected()),
+      disabled: isDisabled(),
       orientation: context.orientation.value,
     }),
   )
 }
 
+/**
+ * Tracked "is this tab the selected one": a keyed selector cell, so a tab
+ * change re-renders only the old and the new trigger and content.
+ */
+function isTabSelected(context: TabsRootContext, value: MaybeRefOrGetter<StringOrNumber>): () => boolean {
+  return context.selected
+    ? useSelectorKey(context.selected, () => toValue(value))
+    : () => toValue(value) === context.modelValue.value
+}
+
 /** The per-item content surface, derived purely from `(context, value)`. */
 export function getTabsContentSurface(context: TabsRootContext, value: MaybeRefOrGetter<StringOrNumber>): PartSurface<TabsContentState> {
-  const isSelected = computed(() => toValue(value) === context.modelValue.value)
+  const isSelected = isTabSelected(context, value)
   return createPartSurface<TabsContentState>(
     () => ({
       'id': getTabsContentId(context, toValue(value)),
@@ -108,7 +125,7 @@ export function getTabsContentSurface(context: TabsRootContext, value: MaybeRefO
       'tabindex': 0,
     }),
     () => ({
-      state: selectionState(isSelected.value),
+      state: selectionState(isSelected()),
       orientation: context.orientation.value,
     }),
   )
@@ -221,6 +238,7 @@ export function useTabs(props: UseTabsProps = {}): UseTabsReturn {
 
   const context: TabsRootContext = {
     modelValue,
+    selected: createKeyedSelector(() => modelValue.value),
     changeModelValue: selectTab,
     orientation: orientation as Ref<DataOrientation>,
     dir: dir as Ref<Direction>,

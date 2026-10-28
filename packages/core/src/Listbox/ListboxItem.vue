@@ -29,7 +29,8 @@ export const [injectListboxItemContext, provideListboxItemContext]
 
 <script setup lang="ts"  generic="T extends AcceptableValue = AcceptableValue">
 import { computed, mergeProps, onUnmounted, onUpdated, ref, watch, watchPostEffect } from 'vue'
-import { useCollection } from '@/Collection'
+import { useCollectionItem } from '@/Collection'
+import { getterRef } from '@/shared/partSurface'
 import { Primitive } from '..'
 import { injectListboxGroupContext } from './ListboxGroup.vue'
 import { injectListboxRootContext } from './ListboxRoot.vue'
@@ -51,23 +52,29 @@ defineSlots<{
 }>()
 
 const id = useId(undefined, 'reka-listbox-item')
-const { CollectionItem } = useCollection()
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
+// Registered with the collection from setup; no wrapper component.
+useCollectionItem(currentElement, () => props.value)
 const rootContext = injectListboxRootContext()
 
 // role/tabindex/aria-selected/disabled + the click/Space select protocol and
 // the hover highlight all come from the shared surface builder (single source
 // with `useListboxRoot()`); the collection registration, the SSR id and the
-// label registration stay in the SFC.
+// label registration stay in the SFC. The surface's state is read directly:
+// highlight and selection are keyed-selector cells, so only the items a change
+// flips re-render.
 const surface = getListboxItemSurface(rootContext, () => props.value, () => props.disabled, {
   element: currentElement,
   onSelect: event => emits('select', event as SelectEvent<T>),
 })
+const isSelected = getterRef(surface.isSelected)
 
-const isHighlighted = computed(() => surface.state.value.highlighted)
-const isSelected = computed(() => surface.state.value.state === 'checked')
-const disabled = computed(() => surface.state.value.disabled)
+/** `v-memo` keys: the rendered state, the focusable flag and the consumer attrs. */
+function memoKeys(attrs: Record<string, unknown>) {
+  const state = surface.state.value
+  return [state.highlighted, state.state, state.disabled, rootContext.focusable.value, ...Object.entries(attrs).flat()]
+}
 
 // Sticky: registered once mounted, never unregistered (#2824). Re-registered
 // whenever `value` / `textValue` / `disabled` change (the post effect) or the
@@ -106,7 +113,7 @@ function syncLabel() {
   label.value = text
   const value = props.value
   const key = registryKey(value)
-  const isDisabled = disabled.value
+  const isDisabled = (rootContext.disabled.value || props.disabled) ?? false
   if (key !== ALWAYS_REGISTER && registered && registered.value === value && Object.is(registered.key, key) && registered.text === text && registered.disabled === isDisabled)
     return
   registered = { value, key, text, disabled: isDisabled }
@@ -142,19 +149,17 @@ provideListboxItemContext({
 </script>
 
 <template>
-  <CollectionItem
-    v-if="!isFilteredOut"
-    :value="value"
-  >
+  <template v-if="!isFilteredOut">
     <Primitive
       :id="id"
       v-bind="mergeProps($attrs, surface.attrs.value)"
       :ref="forwardRef"
-      v-memo="[isHighlighted, isSelected, disabled, rootContext.focusable.value, ...Object.entries($attrs).flat()]"
+      v-memo="memoKeys($attrs)"
+      data-reka-collection-item=""
       :as="as"
       :as-child="asChild"
     >
       <slot :selected="isSelected" />
     </Primitive>
-  </CollectionItem>
+  </template>
 </template>

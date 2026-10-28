@@ -3,6 +3,7 @@ import type { Ref } from 'vue'
 import type { TagsInputChangeReason } from './useTagsInput'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import type { KeyedSelector } from '@/shared/createKeyedSelector'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { createContext, useDirection, useFormControl, useForwardElement } from '@/shared'
 
@@ -64,6 +65,8 @@ export interface TagsInputRootContext<T = AcceptableInputValue> {
   onClear: (reason?: Reason, event?: Event) => boolean
   onInputKeydown: (event: KeyboardEvent) => void
   selectedElement: Ref<HTMLElement | undefined>
+  /** `selectedElement` as a keyed selector: tags read their own cell. */
+  selected?: KeyedSelector<HTMLElement>
   isInvalidInput: Ref<boolean>
   addOnPaste: Ref<boolean>
   addOnTab: Ref<boolean>
@@ -82,11 +85,17 @@ export const [injectTagsInputRootContext, provideTagsInputRootContext]
 
 <script setup lang="ts" generic="T extends AcceptableInputValue = string">
 import { useFocusWithin } from '@vueuse/core'
-import { toRefs } from 'vue'
-import { useCollection } from '@/Collection'
+import { mergeProps, toRefs } from 'vue'
+import { useCollection, useCollectionSlot } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useTagsInput } from './useTagsInput'
+
+defineOptions({
+  // `$attrs` are merged under the root's own bindings: the precedence the
+  // former `CollectionSlot` wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<TagsInputRootProps<T>>(), {
   defaultValue: () => [],
@@ -111,7 +120,8 @@ defineExpose(expose)
 const { focused } = useFocusWithin(currentElement)
 const isFormControl = useFormControl(currentElement)
 
-const { getItems, CollectionSlot } = useCollection({ isProvider: true })
+const { getItems } = useCollection({ isProvider: true })
+useCollectionSlot(currentElement)
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
 // composable's `useControllableState` (`modelValue === undefined` → uncontrolled).
@@ -139,22 +149,20 @@ provideTagsInputRootContext(context as unknown as TagsInputRootContext)
 </script>
 
 <template>
-  <CollectionSlot>
-    <Primitive
-      :ref="forwardRef"
-      :as="as"
-      :as-child="asChild"
-      v-bind="root.attrs.value"
-    >
-      <slot :model-value="modelValue" />
+  <Primitive
+    v-bind="mergeProps($attrs, root.attrs.value)"
+    :ref="forwardRef"
+    :as="as"
+    :as-child="asChild"
+  >
+    <slot :model-value="modelValue" />
 
-      <VisuallyHiddenInput
-        v-if="isFormControl && name"
-        :name="name"
-        :value="modelValue"
-        :required="required"
-        :disabled="disabled"
-      />
-    </Primitive>
-  </CollectionSlot>
+    <VisuallyHiddenInput
+      v-if="isFormControl && name"
+      :name="name"
+      :value="modelValue"
+      :required="required"
+      :disabled="disabled"
+    />
+  </Primitive>
 </template>

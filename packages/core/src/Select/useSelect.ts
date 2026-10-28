@@ -5,7 +5,7 @@ import type { SelectRootContext } from './SelectRoot.vue'
 import type { ListboxNavigationIntent } from '@/Listbox/useListbox'
 import type { BaseChangeReason, By, ChangeEventDetails, DisclosureState, PartSurface, SelectionState } from '@/shared'
 import type { AcceptableValue, Direction } from '@/shared/types'
-import { computed, isRef, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, toValue, watch, watchEffect } from 'vue'
+import { computed, getCurrentScope, isRef, nextTick, onBeforeUnmount, onMounted, onScopeDispose, ref, shallowRef, toValue, watch, watchEffect } from 'vue'
 import { focusFirst } from '@/Menu/utils'
 import {
   containsComposed,
@@ -22,6 +22,8 @@ import {
   useTypeahead,
   valueComparator,
 } from '@/shared'
+import { getterRef } from '@/shared/partSurface'
+import { SelectionSelector } from '@/shared/selectionSelector'
 import { getNextMatch, wrapArray } from '@/shared/useTypeahead'
 import { OPEN_KEYS, SELECTION_KEYS, shouldShowPlaceholder } from './utils'
 
@@ -329,6 +331,7 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
     setModelValue,
     pressItem,
     isSelected,
+    selection: new SelectionSelector<T>(() => modelValue.value, props.by),
     open,
     onOpenChange,
     multiple,
@@ -896,12 +899,28 @@ export interface UseSelectItemReturn<T = AcceptableValue> {
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle pure
  */
+function focusItemOnPointerdown(event: PointerEvent) {
+  (event.currentTarget as HTMLElement).focus({ preventScroll: true })
+}
+
+function preventTouchend(event: TouchEvent) {
+  event.preventDefault()
+  event.stopPropagation()
+}
+
 export function useSelectItem<T extends AcceptableValue = AcceptableValue>(options: UseSelectItemOptions<T>): UseSelectItemReturn<T> {
   const { context } = options
   const contentContext = options.contentContext
   const getValue = () => toValue(options.value)
-  const disabled = computed(() => toValue(options.disabled) ?? false)
-  const isSelected = computed(() => valueComparator(context.modelValue.value, getValue(), context.by))
+  const disabled = getterRef(() => toValue(options.disabled) ?? false)
+  // A keyed selector cell: a selection change re-renders only the items it
+  // flips, and a multiple selection is a set lookup.
+  const selectionHold = context.selection?.createHold()
+  if (selectionHold && getCurrentScope())
+    onScopeDispose(() => selectionHold.release())
+  const isSelected = getterRef(() => context.selection
+    ? context.selection.isSelected(getValue(), selectionHold)
+    : valueComparator(context.modelValue.value, getValue(), context.by))
   const isFocused = ref(false)
   const textValue = ref(toValue(options.textValue) ?? '')
   const textId = options.textId ?? `${context.baseId}-item-text-${++selectItemCount}`
@@ -962,6 +981,15 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
       event.preventDefault()
   }
 
+  // Created once per item, not on every render.
+  const onFocus = () => {
+    isFocused.value = true
+  }
+  const onBlur = () => {
+    isFocused.value = false
+  }
+  const onPointerup = (event: PointerEvent) => handleSelectCustomEvent(event, 'item-press')
+
   const item = createPartSurface<SelectItemState>(
     () => ({
       'role': 'option',
@@ -969,20 +997,11 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
       'aria-selected': isSelected.value,
       'aria-disabled': disabled.value || undefined,
       'tabindex': disabled.value ? undefined : -1,
-      'onFocus': () => {
-        isFocused.value = true
-      },
-      'onBlur': () => {
-        isFocused.value = false
-      },
-      'onPointerup': (event: PointerEvent) => handleSelectCustomEvent(event, 'item-press'),
-      'onPointerdown': (event: PointerEvent) => {
-        (event.currentTarget as HTMLElement).focus({ preventScroll: true })
-      },
-      'onTouchend': (event: TouchEvent) => {
-        event.preventDefault()
-        event.stopPropagation()
-      },
+      'onFocus': onFocus,
+      'onBlur': onBlur,
+      'onPointerup': onPointerup,
+      'onPointerdown': focusItemOnPointerdown,
+      'onTouchend': preventTouchend,
       'onPointermove': onPointermove,
       'onPointerleave': onPointerleave,
       'onKeydown': onKeydown,

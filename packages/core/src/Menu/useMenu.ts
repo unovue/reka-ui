@@ -4,7 +4,8 @@ import type { MenuContext, MenuRootContext } from './MenuRoot.vue'
 import type { Direction, GraceIntent, Side } from './utils'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface, SetStateOptions } from '@/shared'
 import { computed, nextTick, onUnmounted, ref, toValue, watch } from 'vue'
-import { createPartSurface, disclosureState, getActiveElement, useArrowNavigation, useControllableState, useTypeahead } from '@/shared'
+import { createPartSurface, disclosureState, getActiveElement, getterRef, useArrowNavigation, useControllableState, useTypeahead } from '@/shared'
+import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
 import { useIsUsingKeyboard } from '@/shared/useIsUsingKeyboard'
 import { FIRST_LAST_KEYS, focusFirst, isMouseEvent, isPointerInGraceArea, ITEM_SELECT, LAST_KEYS, SELECTION_KEYS } from './utils'
 
@@ -180,8 +181,13 @@ export function createMenuItemSurface(
   const { currentElement } = options
   const isDisabled = computed(() => toValue(options.disabled) ?? false)
   const isFocused = ref(false)
-  const isHighlighted = computed(() =>
-    isFocused.value || (currentElement.value != null && contentContext.highlightedElement.value === currentElement.value))
+  // The content's highlight as a keyed selector (one cell per held element),
+  // so a highlight move re-renders only the old and the new item. A content
+  // context built without it compares against the shared ref, as before.
+  const isElementHighlighted = contentContext.highlight
+    ? useSelectorKey(contentContext.highlight, () => currentElement.value)
+    : () => currentElement.value != null && contentContext.highlightedElement.value === currentElement.value
+  const isHighlighted = getterRef(() => isFocused.value || isElementHighlighted())
 
   async function handlePointerMove(event: PointerEvent) {
     if (event.defaultPrevented || !isMouseEvent(event))
@@ -408,6 +414,7 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
   const lastPointerXRef = ref(0)
   const currentItemId = ref<string | null>(null)
   const highlightedElement = ref<HTMLElement>()
+  const highlight = createKeyedSelector<HTMLElement>(() => highlightedElement.value)
   const filterElement = ref<HTMLElement>()
   const activeSubmenuContext = ref<{ onOpenChange: MenuContext['onOpenChange'], trigger: Ref<HTMLElement | undefined> }>()
 
@@ -553,6 +560,7 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
     onTriggerLeave: event => isPointerMovingToSubmenu(event),
     searchRef,
     highlightedElement,
+    highlight,
     onKeydownNavigation,
     onKeydownEnter,
     filterElement,

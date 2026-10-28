@@ -2,6 +2,7 @@
 import type { ComputedRef, Ref, ShallowRef } from 'vue'
 import type { SelectChangeReason, SelectModelValue, SelectNavigationIntent, SelectOpenChangeReason, SelectTypeaheadItem } from './useSelect'
 import type { BaseChangeReason, By, ChangeEventDetails, LabelRegistry } from '@/shared'
+import type { SelectionSelector } from '@/shared/selectionSelector'
 import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
 import { useCollection } from '@/Collection'
 import { compare, createContext, isNullish, useDirection, useFormControl, useId } from '@/shared'
@@ -80,6 +81,8 @@ export interface SelectRootContext<T = AcceptableValue> {
    */
   pressItem: (value: T, reason?: 'item-press' | 'item-keydown', event?: Event) => boolean
   isSelected: (value: T) => boolean
+  /** The selection as a keyed selector: items read their own cell. */
+  selection?: SelectionSelector<T>
   open: ComputedRef<boolean>
   /** Returns `false` when unchanged or cancelled via `beforeUpdate:open`. */
   onOpenChange: (open: boolean, reason?: SelectOpenChangeReason | BaseChangeReason, event?: Event) => boolean

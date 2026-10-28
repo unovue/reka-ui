@@ -5,9 +5,10 @@ import type { FlattenedItem, TreeRootContext } from './TreeRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Direction } from '@/shared/types'
 import { createEventHook } from '@vueuse/core'
-import { computed, nextTick, ref, toRaw, toValue } from 'vue'
+import { computed, getCurrentScope, nextTick, ref, toRaw, toValue } from 'vue'
 import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
 import { createPartSurface, findValuesBetween, getActiveElement, handleAndDispatchCustomEvent, useControllableState, useTypeahead } from '@/shared'
+import { createKeyedSetSelector, useSelectorKey } from '@/shared/createKeyedSelector'
 import { flatten } from './utils'
 
 /**
@@ -61,15 +62,20 @@ export function getTreeItemStatus<T extends Record<string, any>>(
 ): TreeItemStatus {
   const hasChildren = computed(() => !!context.getChildren(toValue(value)))
 
-  const isExpanded = computed(() => {
-    const key = context.getKey(toValue(value))
-    return context.expanded.value.includes(key)
-  })
+  // Keyed selector cells (when the root made them): toggling or selecting one
+  // item re-evaluates only the items whose key entered or left the set, not
+  // an `includes` scan in every item.
+  const key = () => context.getKey(toValue(value))
+  const inExpanded = context.expandedSelector && getCurrentScope()
+    ? useSelectorKey(context.expandedSelector, key)
+    : () => context.expanded.value.includes(key())
+  const inSelected = context.selectedSelector && getCurrentScope()
+    ? useSelectorKey(context.selectedSelector, key)
+    : () => context.selectedKeys.value.includes(key())
 
-  const isSelected = computed(() => {
-    const key = context.getKey(toValue(value))
-    return context.selectedKeys.value.includes(key)
-  })
+  const isExpanded = computed(inExpanded)
+
+  const isSelected = computed(inSelected)
 
   const isIndeterminate = computed(() => {
     const model = context.modelValue.value
@@ -693,6 +699,12 @@ export function useTree<T extends Record<string, any> = Record<string, any>>(pro
     isVirtual,
     virtualKeydownHook: virtualKeydownHook as EventHook<KeyboardEvent>,
     handleMultipleReplace,
+  }
+  // Only inside a scope (each owns a watcher); outside one, items fall back
+  // to scanning the key arrays.
+  if (getCurrentScope()) {
+    context.expandedSelector = createKeyedSetSelector(() => new Set(expanded.value))
+    context.selectedSelector = createKeyedSetSelector(() => new Set(selectedKeys.value))
   }
 
   const root = createPartSurface<Record<string, never>>(
