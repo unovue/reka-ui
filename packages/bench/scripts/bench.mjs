@@ -9,7 +9,8 @@
 // Exits 1 when any family's retained heap per instance regresses beyond the threshold.
 /* eslint-disable no-console */
 import { execFileSync } from 'node:child_process'
-import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { randomBytes } from 'node:crypto'
+import { appendFileSync, existsSync, linkSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import process from 'node:process'
@@ -84,42 +85,90 @@ const pageRoot = mkdtempSync(join(BENCH_ROOT, 'dist', 'run-'))
 
 // Runs in this checkout share packages/core/dist: building it and bundling the head page from
 // it happen under a lock. Once bundled, the page no longer reads packages/core.
+//
+// The lock is a file holding "<pid> <random token>". It is published with link(), which is
+// atomic and fails if the lock exists, so a lock never exists without its owner recorded.
+// A lock whose pid is dead is reclaimed by renaming it to a name unique to the reclaimer:
+// only one run can win that rename, and the winner deletes it only if it still holds the
+// dead owner's token (otherwise it raced a fresh lock and puts it back).
 const HEAD_LOCK = join(BENCH_ROOT, 'dist', '.head-build.lock')
+const myToken = `${process.pid} ${randomBytes(6).toString('hex')}`
 let holdsLock = false
+function readLock(file) {
+  try {
+    return readFileSync(file, 'utf8')
+  }
+  catch (e) {
+    if (e.code === 'ENOENT')
+      return null
+    throw e
+  }
+}
+function isAlive(pid) {
+  try {
+    process.kill(pid, 0)
+    return true
+  }
+  catch (e) {
+    return e.code === 'EPERM'
+  }
+}
+function tryLock() {
+  const tmp = `${HEAD_LOCK}.${process.pid}.tmp`
+  writeFileSync(tmp, myToken)
+  try {
+    linkSync(tmp, HEAD_LOCK)
+    return true
+  }
+  catch (e) {
+    if (e.code !== 'EEXIST')
+      throw e
+    return false
+  }
+  finally {
+    rmSync(tmp, { force: true })
+  }
+}
+function reclaimIfStale(token) {
+  const reap = `${HEAD_LOCK}.reap.${process.pid}`
+  try {
+    renameSync(HEAD_LOCK, reap)
+  }
+  catch (e) {
+    if (e.code === 'ENOENT')
+      return // another run reclaimed or released it first
+    throw e
+  }
+  if (readLock(reap) !== token) {
+    // A fresh lock replaced the stale one before our rename: put it back.
+    try {
+      linkSync(reap, HEAD_LOCK)
+    }
+    catch {}
+  }
+  rmSync(reap, { force: true })
+}
 async function lockHeadBuild() {
   let waiting = false
-  while (true) {
-    try {
-      mkdirSync(HEAD_LOCK)
-      writeFileSync(join(HEAD_LOCK, 'pid'), String(process.pid))
-      holdsLock = true
-      return
-    }
-    catch (e) {
-      if (e.code !== 'EEXIST')
-        throw e
-    }
-    const pid = Number(readFileSync(join(HEAD_LOCK, 'pid'), { encoding: 'utf8', flag: 'a+' }))
-    let alive = true
-    try {
-      process.kill(pid, 0)
-    }
-    catch (e) {
-      alive = e.code === 'EPERM'
-    }
-    if (pid && !alive) {
-      rmSync(HEAD_LOCK, { recursive: true, force: true })
+  while (!tryLock()) {
+    const token = readLock(HEAD_LOCK)
+    if (token === null)
+      continue
+    const pid = Number(token.split(' ')[0])
+    if (!isAlive(pid)) {
+      reclaimIfStale(token)
       continue
     }
     if (!waiting)
-      log(`waiting for another bench run (pid ${pid || '?'}) to finish building packages/core`)
+      log(`waiting for another bench run (pid ${pid}) to finish building packages/core`)
     waiting = true
     await sleep(1000)
   }
+  holdsLock = true
 }
 function unlockHeadBuild() {
-  if (holdsLock)
-    rmSync(HEAD_LOCK, { recursive: true, force: true })
+  if (holdsLock && readLock(HEAD_LOCK) === myToken)
+    rmSync(HEAD_LOCK, { force: true })
   holdsLock = false
 }
 
