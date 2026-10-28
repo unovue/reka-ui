@@ -147,6 +147,8 @@ export function normalizeSelectItems<T>(items: SelectItems<T> | undefined): Sele
 export interface SelectItemsIndex<T> {
   list: SelectItemData<T>[]
   get: (value: T) => SelectItemData<T> | undefined
+  /** A record: its values are its (string) keys. */
+  record: boolean
 }
 
 function isPrimitiveKey(value: unknown): value is string | number | bigint | boolean {
@@ -181,6 +183,7 @@ export function createSelectItemsIndex<T>(items: SelectItems<T> | undefined, by:
   }
   return {
     list,
+    record: isRecord,
     get: (value) => {
       const key = keyOf(value)
       if (key !== undefined)
@@ -356,6 +359,7 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
   const itemsIndex = computed(() => createSelectItemsIndex(toValue(props.items), props.by))
   const items = computed(() => itemsIndex.value?.list)
   const getItemData = (value: T) => itemsIndex.value?.get(value)
+  const isRecordItems = () => !!itemsIndex.value?.record
 
   const isEmptyModelValue = computed(() => {
     const value = modelValue.value
@@ -452,6 +456,7 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
     displayValue,
     items,
     getItemData,
+    isRecordItems,
     closedItems,
     getNavigationIntent,
     virtualTypeaheadItems,
@@ -516,7 +521,8 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
   // The mounted items (the open content's, else the closed lean ones), their
   // labels from `items` where it lists them, plus the `items` options not
   // rendered; with nothing mounted (`displayValue`), the label registry.
-  function getTypeaheadItems(): SelectTypeaheadItem<T>[] {
+  // `dataOnly` marks an `items` option no rendered item backs.
+  function getTypeaheadItems(): (SelectTypeaheadItem<T> & { dataOnly?: boolean })[] {
     // A `SelectVirtualizer` knows every option, rendered or not.
     const virtualItems = context.virtualTypeaheadItems?.value
     if (virtualItems)
@@ -525,16 +531,27 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
     const data = context.items?.value
     if (data) {
       const listed = new Set<SelectItemData<T>>()
-      const merged = (rendered ?? []).map((item) => {
+      const merged: (SelectTypeaheadItem<T> & { dataOnly?: boolean })[] = (rendered ?? []).map((item) => {
         const entry = context.getItemData?.(item.value)
         if (!entry)
           return item
         listed.add(entry)
         return { value: item.value, textValue: entry.label, disabled: item.disabled || entry.disabled }
       })
+      // A selected value keeps its own type for the option it matches (a
+      // number for a record's string key).
+      const model = context.modelValue.value
+      const selected = new Map<SelectItemData<T>, T>()
+      for (const value of (Array.isArray(model) ? model : isNullish(model) ? [] : [model]) as T[]) {
+        const entry = context.getItemData?.(value)
+        if (entry)
+          selected.set(entry, value)
+      }
       for (const entry of data) {
-        if (!listed.has(entry))
-          merged.push({ value: entry.value, textValue: entry.label, disabled: entry.disabled })
+        if (!listed.has(entry)) {
+          const value = selected.has(entry) ? selected.get(entry)! : entry.value
+          merged.push({ value, textValue: entry.label, disabled: entry.disabled, dataOnly: true })
+        }
       }
       return merged
     }
@@ -546,23 +563,39 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
   function typeaheadSelect(event: KeyboardEvent) {
     if (context.multiple.value || context.open.value)
       return
-    // A closed Select renders its items only when something needs them: the
-    // first key renders them once, then matches.
     const closedItems = !options.getItems && context.closedItems
+    // A closed Select renders its items only when something needs them: a key
+    // before they rendered renders them, then matches.
     if (closedItems && !closedItems.ready()) {
       closedItems.whenReady(() => matchTypeahead(event))
+      return
+    }
+    // With `items` and no item rendered yet, the key matches `items` right
+    // away, unless only a rendered item can answer it: nothing matches (an
+    // option only a `SelectItem` has), or the match is a record's string key
+    // (the item's own value may be a number). Then render, and match again.
+    if (closedItems && context.items?.value && closedItems.canRender() && !closedItems.hasRendered()) {
+      const next = findTypeaheadMatch()
+      if (!next || (next.dataOnly && context.isRecordItems?.() && !context.isSelected(next.value)))
+        closedItems.renderThen(() => matchTypeahead(event))
+      else
+        context.setModelValue(next.value, 'typeahead', event)
       return
     }
     matchTypeahead(event)
   }
 
-  function matchTypeahead(event: KeyboardEvent) {
-    if (context.multiple.value || context.open.value)
-      return
+  function findTypeaheadMatch() {
     const items = getTypeaheadItems().filter(item => !item.disabled)
     const current = items.find(item => context.isSelected(item.value))
     const nextMatch = getNextMatch(items.map(item => item.textValue), search.value, current?.textValue)
-    const next = items.find(item => item.textValue === nextMatch)
+    return items.find(item => item.textValue === nextMatch)
+  }
+
+  function matchTypeahead(event: KeyboardEvent) {
+    if (context.multiple.value || context.open.value)
+      return
+    const next = findTypeaheadMatch()
     if (next)
       context.setModelValue(next.value, 'typeahead', event)
   }
@@ -694,16 +727,16 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
   }
 
   // A closed Select renders its items only when something needs them: focus
-  // readies them for the typeahead, before the first key.
+  // readies them for the typeahead in idle time (a key before that renders
+  // them on demand); a blur lets them go.
   function onFocus() {
     if (context.multiple.value || context.open.value || isDisabled.value)
       return
-    // With `items` the typeahead matches right away; the rendered items only
-    // add the options it does not list.
-    if (context.items?.value)
-      context.closedItems?.requestWhenIdle()
-    else
-      context.closedItems?.request()
+    context.closedItems?.requestWhenIdle('typeahead')
+  }
+
+  function onBlur() {
+    context.closedItems?.release('typeahead')
   }
 
   const trigger = createPartSurface<SelectTriggerState>(
@@ -717,6 +750,7 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
       'dir': context.dir.value,
       onClick,
       onFocus,
+      onBlur,
       'onPointerdown': onPointerdown,
       'onMousedown': onMousedown,
       'onPointerup': onPointerup,
@@ -1189,6 +1223,8 @@ export function useSelectItemLabel<T extends AcceptableValue = AcceptableValue>(
   value: () => T
   disabled: () => boolean | undefined
   textValue: () => string | undefined
+  /** The item element: places it in document order. */
+  element: () => Element | undefined
 }): { isSelected: Ref<boolean>, textValue: { readonly value: string }, itemContext: SelectItemContext<T> } {
   const { context, value } = options
   // The item text element, read live: the typeahead sees the current text.
@@ -1217,14 +1253,17 @@ export function useSelectItemLabel<T extends AcceptableValue = AcceptableValue>(
       textElement = node
     },
   }
-  // Registered with the closed items directly, in render order: no collection.
-  const unregister = context.closedItems?.addHarvested(() => ({
-    value: value(),
-    textValue: textValue.value,
-    disabled: !!options.disabled(),
-  }))
-  if (unregister)
-    onBeforeUnmount(unregister)
+  // Registered with the closed items directly once mounted (sorted into
+  // document order when read): no collection.
+  let unregister: (() => void) | undefined
+  onMounted(() => {
+    unregister = context.closedItems?.addHarvested(() => ({
+      value: value(),
+      textValue: textValue.value,
+      disabled: !!options.disabled(),
+    }), options.element)
+  })
+  onBeforeUnmount(() => unregister?.())
   return { isSelected, textValue, itemContext }
 }
 

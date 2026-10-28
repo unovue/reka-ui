@@ -84,6 +84,7 @@ const lean = contentContext.harvest
       value: () => props.value,
       disabled: () => props.disabled,
       textValue: () => props.textValue,
+      element: () => currentElement.value,
     })
   : undefined
 const full = lean

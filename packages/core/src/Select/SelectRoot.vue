@@ -113,6 +113,8 @@ export interface SelectRootContext<T = AcceptableValue> {
   items?: Ref<SelectItemData<T>[] | undefined>
   /** The `items` option of a value (matched with `by`; a record by the value's string form). */
   getItemData?: (value: T) => SelectItemData<T> | undefined
+  /** Whether `items` is a record (its values are its string keys). */
+  isRecordItems?: () => boolean
   /**
    * What the closed content renders of its items, and what the closed trigger's typeahead matches.
    * @internal
@@ -231,36 +233,22 @@ closedItems.liveItems = () => {
 
 // The hidden native `select` of a named Select in a form offers every option
 // to the browser's autofill: in idle time once the root is mounted in a form
-// with a name, the closed content renders its items once so their labels register.
-const hasIdleCallback = typeof requestIdleCallback === 'function' && typeof cancelIdleCallback === 'function'
-let idleHandle: ReturnType<typeof setTimeout> | number | undefined
-function cancelIdleRequest() {
-  if (idleHandle === undefined)
-    return
-  if (hasIdleCallback)
-    cancelIdleCallback(idleHandle as number)
+// with a name, the closed content renders its lean items, and keeps them while
+// the name and the form last.
+function syncFormRequest() {
+  if (isFormControl.value && resolvedName.value)
+    closedItems.requestWhenIdle('form')
   else
-    clearTimeout(idleHandle as ReturnType<typeof setTimeout>)
-  idleHandle = undefined
-}
-function scheduleIdleRequest() {
-  if (idleHandle !== undefined || !isFormControl.value || !resolvedName.value)
-    return
-  const request = () => {
-    idleHandle = undefined
-    closedItems.request()
-  }
-  idleHandle = hasIdleCallback ? requestIdleCallback(request, { timeout: 1000 }) : setTimeout(request, 50)
+    closedItems.release('form')
 }
 onMounted(() => {
   // Past the mount (and the hydration), a selected value without a label
   // renders the closed items now, so the trigger shows it before the first paint.
   closedItems.activate()
-  scheduleIdleRequest()
-  // A form or a name that arrives later (`closedItems.request` runs once).
-  watch([isFormControl, resolvedName], scheduleIdleRequest)
+  syncFormRequest()
+  watch([isFormControl, resolvedName], syncFormRequest)
 })
-onBeforeUnmount(cancelIdleRequest)
+onBeforeUnmount(() => closedItems.dispose())
 
 // The native `select` mirrors `items`, else the registered item texts, plus
 // every selected value (a value whose item never rendered shows its
@@ -276,7 +264,7 @@ const nativeOptions = computed(() => {
   // not list.
   const selectedData = new Set(data ? selectedValues.map(getItemData) : [])
   const options = (data ?? []).map(entry => ({ value: entry.value, label: entry.label, disabled: !!entry.disabled, selected: selectedData.has(entry) || isSelected(entry.value) }))
-  const registered = context.labels.entries().filter(entry => !data || !getItemData(entry.value))
+  const registered = orderByMountedItems(context.labels.entries().filter(entry => !data || !getItemData(entry.value)))
   for (const entry of registered)
     options.push({ value: entry.value, label: entry.label, disabled: entry.disabled, selected: isSelected(entry.value) })
   for (const selected of selectedValues) {
@@ -285,6 +273,36 @@ const nativeOptions = computed(() => {
   }
   return options
 })
+
+// The registered labels in the document order of the mounted lean items (a
+// prepended or re-sorted list), then the ones no mounted item has (sticky).
+function orderByMountedItems<E extends { value: AcceptableValue }>(entries: E[]): E[] {
+  const ordered = closedItems.getOrderedValues()
+  if (ordered.length < 2)
+    return entries
+  const byPrimitive = new Map<unknown, E>()
+  for (const entry of entries) {
+    if (entry.value === null || typeof entry.value !== 'object')
+      byPrimitive.set(entry.value, entry)
+  }
+  const placed = new Set<E>()
+  const result: E[] = []
+  for (const value of ordered) {
+    const entry = value === null || typeof value !== 'object'
+      ? byPrimitive.get(value)
+      : entries.find(candidate => compare(candidate.value, value, context.by))
+    if (entry && !placed.has(entry)) {
+      placed.add(entry)
+      result.push(entry)
+    }
+  }
+  for (const entry of entries) {
+    if (!placed.has(entry))
+      result.push(entry)
+  }
+  return result
+}
+
 // The native `select` is patched in place (each option's `selected` is bound),
 // never re-keyed: re-creating it on a model change would skip the `change`
 // event `BubbleSelect` dispatches for that change.

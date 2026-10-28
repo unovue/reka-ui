@@ -209,11 +209,14 @@ describe('typeahead on a closed Select', () => {
     expect(valueText()).toBe('Blueberry')
   })
 
-  it('readies the items on focus, before the first key, except for a multiple select', async () => {
+  it('readies the items in idle time after focus, not in the focus itself, except for a multiple select', async () => {
     const { itemTexts } = mountSelect({}, () => fruits)
     await flushPromises()
     trigger().focus()
     await flushPromises()
+    // The focus does not render them: that would hold up its paint.
+    expect(itemTexts).not.toHaveBeenCalled()
+    await idle()
     expect(itemTexts).toHaveBeenCalledTimes(fruits.length)
     expect(options()).toHaveLength(0)
 
@@ -221,8 +224,45 @@ describe('typeahead on a closed Select', () => {
     const multiple = mountSelect({ multiple: true }, () => fruits)
     await flushPromises()
     trigger().focus()
-    await flushPromises()
+    await idle()
     expect(multiple.itemTexts).not.toHaveBeenCalled()
+  })
+
+  it('a key right after focus renders the items on demand', async () => {
+    mountSelect({}, () => fruits)
+    await flushPromises()
+    trigger().focus()
+    await type('c')
+    expect(valueText()).toBe('Cherry')
+  })
+
+  it('releases the lean items on blur when nothing else needs them', async () => {
+    const { itemTexts } = mountSelect({}, () => fruits)
+    await flushPromises()
+    trigger().focus()
+    await idle()
+    expect(itemTexts).toHaveBeenCalledTimes(fruits.length)
+    trigger().blur()
+    await flushPromises()
+    // Unmounted: a later change renders nothing.
+    const renders = itemTexts.mock.calls.length
+    trigger().focus()
+    trigger().blur()
+    await idle()
+    expect(itemTexts).toHaveBeenCalledTimes(renders)
+  })
+
+  it('keeps the lean items after blur while a selected value needs its label', async () => {
+    const list = ref(fruits)
+    mountSelect({ defaultValue: 'Cherry' }, () => list.value)
+    await flushPromises()
+    trigger().focus()
+    await idle()
+    trigger().blur()
+    await flushPromises()
+    list.value = fruits.map(fruit => ({ ...fruit, text: `${fruit.text}!` }))
+    await flushPromises()
+    expect(valueText()).toBe('Cherry!')
   })
 
   it('matches textValue, skips disabled items and follows groups in document order', async () => {
