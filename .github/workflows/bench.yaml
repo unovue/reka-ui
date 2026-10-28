@@ -1,0 +1,60 @@
+name: Bench
+
+# Browser benchmark (packages/bench): builds the PR and its base, mounts every component
+# family in Chromium on a production build, and compares retained heap per instance.
+# Fails when a family's heap regresses (see packages/bench/scripts/report.mjs for the rule);
+# mount and update times are reported in the job summary but never gate.
+
+on:
+  pull_request:
+    branches:
+      - v3
+    paths:
+      - 'packages/core/**'
+      - 'packages/bench/**'
+      - pnpm-lock.yaml
+      - .github/workflows/bench.yaml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bench-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup (Install node & pnpm)
+        uses: ./.github/actions/setup
+
+      - name: Install Chromium
+        run: pnpm --filter bench exec playwright install --with-deps chromium
+
+      - name: Fetch the base commit
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: git fetch --no-tags --depth=1 origin "$BASE_SHA"
+
+      # Builds both the PR (merge commit) and its base, runs them interleaved,
+      # and writes the table to the job summary ($GITHUB_STEP_SUMMARY).
+      - name: Bench (base → PR)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: pnpm bench --compare "$BASE_SHA" --runs 3
+
+      - name: Upload results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: bench-results
+          path: packages/bench/dist/results.json
+          retention-days: 14
