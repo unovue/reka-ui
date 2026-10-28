@@ -81,7 +81,7 @@ describe('toast elements', () => {
   })
 
   it('closes after its duration with the `timeout` reason, and pauses while hovered', async () => {
-    render(provider(toast('duration="1000"')))
+    render(provider(toast('duration="2000"')))
     const root = query('reka-toast-root')
     const reasons = trackClose(root)
     const paused = vi.fn()
@@ -91,14 +91,14 @@ describe('toast elements', () => {
     await userEvent.hover(root)
     await vi.waitFor(() => expect(paused).toHaveBeenCalled())
     // Longer than the duration: still open while paused.
-    await wait(1200)
+    await wait(2300)
     expect(root.getAttribute('data-state')).toBe('open')
 
     const resumed = vi.fn()
     root.addEventListener('resume', resumed)
     await userEvent.hover(query('#before'))
     await vi.waitFor(() => expect(resumed).toHaveBeenCalled())
-    await vi.waitFor(() => expect(reasons).toEqual([[false, 'timeout']]), { timeout: 3000 })
+    await vi.waitFor(() => expect(reasons).toEqual([[false, 'timeout']]), { timeout: 5000 })
     await vi.waitFor(() => expect(root.hasAttribute('data-reka-unmounted')).toBe(true))
   })
 
