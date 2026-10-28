@@ -463,6 +463,41 @@ describe('calendar elements: calendars and pages', () => {
   })
 })
 
+describe('calendar elements: views', () => {
+  it('renders the month view from its view element\'s slot props', async () => {
+    render(`
+      <reka-calendar-root default-value="2026-10-14" default-view="month" max-view="year" locale="en-US">
+        <reka-calendar-view-trigger>Switch</reka-calendar-view-trigger>
+        <reka-calendar-view view="day"><div class="grids"></div></reka-calendar-view>
+        <reka-calendar-view view="month"><div class="months"></div></reka-calendar-view>
+      </reka-calendar-root>
+    `)
+    type View = HTMLElement & { slotProps?: { grid: CalendarGridData[], view: string } }
+    const dayView = query<View>('reka-calendar-view[view="day"]')
+    const monthView = query<View>('reka-calendar-view[view="month"]')
+    await vi.waitFor(() => expect(monthView.slotProps?.view).toBe('month'))
+    // Only the active view renders.
+    expect(dayView.slotProps).toBeUndefined()
+    const { grid } = monthView.slotProps!
+    monthView.querySelector('.months')!.innerHTML = grid.map(page => `
+      <reka-calendar-grid value="${page.value}"><reka-calendar-grid-body>${page.rows.map(row => `
+        <reka-calendar-grid-row>${row.map((date: DateValue) => `
+          <reka-calendar-cell value="${date}"><reka-calendar-cell-trigger value="${date}">${date.toLocaleString('en-US', { month: 'short' })}</reka-calendar-cell-trigger></reka-calendar-cell>`).join('')}
+        </reka-calendar-grid-row>`).join('')}
+      </reka-calendar-grid-body></reka-calendar-grid>`).join('')
+    const october = () => query('reka-calendar-view[view="month"] reka-calendar-cell-trigger[value="2026-10-01"]')
+    await vi.waitFor(() => expect(october().getAttribute('tabindex')).toBe('0'))
+    expect(october().getAttribute('aria-label')).toBe('October 2026')
+    expect(document.querySelectorAll('reka-calendar-view[view="month"] reka-calendar-cell-trigger')).toHaveLength(12)
+
+    // Picking a month drills down: the day view renders, the month view stops.
+    october().focus()
+    await userEvent.keyboard('{Enter}')
+    await vi.waitFor(() => expect(dayView.slotProps?.view).toBe('day'))
+    expect(monthView.slotProps).toBeUndefined()
+  })
+})
+
 describe('date field elements: state', () => {
   it('restores its form state as a Temporal value', async () => {
     const errors: unknown[] = []

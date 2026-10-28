@@ -356,7 +356,9 @@ if (calendar.slotProps)
   renderGrid()
 ```
 
-Keyboard navigation moves focus into the new page once you have rendered it. In a date picker, the calendar is `<reka-date-picker-calendar>`, rendered when the content opens: render its grid the same way, then focus the selected cell (`[data-selected]`) yourself, since the content's initial focus runs before your grid exists.
+Keyboard navigation moves focus into the new page once you have rendered it.
+
+This renders the day view. With `-view-trigger`, put each view in its own `<reka-calendar-view view="day">`, `view="month"` or `view="year"`, and render it from that element's `slotProps.grid` the same way. Only the active view renders, so the others have no slot props, and a view's `slot-props-change` tells you it became active. Month and year pages have no week days: skip the head row, and label each cell yourself (`date.toLocaleString(locale, { month: 'short' })`, `date.year`), since a cell trigger's default text is fallback content. In a date picker, the calendar is `<reka-date-picker-calendar>`, rendered when the content opens: render its grid the same way, then focus the selected cell (`[data-selected]`) yourself, since the content's initial focus runs before your grid exists.
 
 **Date and time fields.** The root's `segments` lists the segments to render, one input element per segment, with the segment's `part` (an attribute, see above) and its text. In range fields, `segments.start` and `segments.end` are rendered with `type="start"` and `type="end"`:
 
