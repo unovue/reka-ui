@@ -9,6 +9,7 @@ export interface CalendarCellProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { h, useSlots } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useForwardElement } from '@/shared'
 import { injectCalendarGridContext } from './CalendarGrid.vue'
@@ -24,15 +25,15 @@ const surface = getCalendarCellSurface(rootContext, () => props.value, () => gri
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
+const slots = useSlots()
+
+// The slot content goes straight into the element: no `<slot>` fragment, so
+// no empty anchor text nodes (this part renders once per calendar cell).
+function renderRoot() {
+  return h(Primitive, { ref: forwardRef, as: props.as, asChild: props.asChild, ...surface.attrs.value }, slots)
+}
 </script>
 
 <template>
-  <Primitive
-    :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
-    v-bind="surface.attrs.value"
-  >
-    <slot />
-  </Primitive>
+  <component :is="renderRoot()" />
 </template>

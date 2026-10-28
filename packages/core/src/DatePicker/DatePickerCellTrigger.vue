@@ -7,21 +7,23 @@ export interface DatePickerCellTriggerProps extends CalendarCellTriggerProps {}
 </script>
 
 <script setup lang="ts">
+import type { Slots } from 'vue'
+import { h } from 'vue'
 import { useForwardElement } from '@/shared'
 
 const props = defineProps<DatePickerCellTriggerProps>()
-defineSlots<CalendarCellTriggerSlot>()
+const slots = defineSlots<CalendarCellTriggerSlot>()
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
+
+// The slot content goes straight into the element: no `<slot>` fragment, so
+// no empty anchor text nodes (this part renders once per calendar cell).
+function renderRoot() {
+  return h(CalendarCellTrigger, { ref: forwardRef, ...props }, slots as Slots)
+}
 </script>
 
 <template>
-  <CalendarCellTrigger
-    :ref="forwardRef"
-    v-slot="slotProps"
-    v-bind="props"
-  >
-    <slot v-bind="slotProps" />
-  </CalendarCellTrigger>
+  <component :is="renderRoot()" />
 </template>

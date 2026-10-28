@@ -12,6 +12,7 @@ export interface TimeFieldInputProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { h, useSlots } from 'vue'
 import { useForwardElement } from '@/shared'
 
 const props = defineProps<TimeFieldInputProps>()
@@ -23,15 +24,15 @@ const input = createTimeFieldInputSurface(rootContext, () => props.part)
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
+const slots = useSlots()
+
+// The slot content goes straight into the element: no `<slot>` fragment, so
+// no empty anchor text nodes (this part renders once per segment).
+function renderRoot() {
+  return h(Primitive, { ref: forwardRef, as: props.as, asChild: props.asChild, ...input.attrs.value }, slots)
+}
 </script>
 
 <template>
-  <Primitive
-    :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
-    v-bind="input.attrs.value"
-  >
-    <slot />
-  </Primitive>
+  <component :is="renderRoot()" />
 </template>
