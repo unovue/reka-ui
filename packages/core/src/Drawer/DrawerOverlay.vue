@@ -14,6 +14,7 @@ export type DrawerOverlayProps = DrawerBackdropProps
 <script setup lang="ts">
 import { Presence } from '@/Presence'
 import { useForwardElement } from '@/shared'
+import { isPortalOpening } from '@/Teleport/portalGate'
 import DrawerOverlayImpl from './DrawerOverlayImpl.vue'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 
@@ -31,6 +32,7 @@ defineExpose(expose)
 <template>
   <Presence
     v-if="rootContext.modal.value && (!isNested || forceRender)"
+    :appear="isPortalOpening(rootContext)"
     :present="forceMount || rootContext.open.value"
   >
     <DrawerOverlayImpl

@@ -15,6 +15,7 @@ export interface HoverCardContentProps extends HoverCardContentImplProps {
 <script setup lang="ts">
 import { Presence } from '@/Presence'
 import { useForwardElement, useForwardPropsEmits } from '@/shared'
+import { isPortalOpening } from '@/Teleport/portalGate'
 import HoverCardContentImpl from './HoverCardContentImpl.vue'
 import { injectHoverCardRootContext } from './HoverCardRoot.vue'
 import { excludeTouch } from './utils'
@@ -36,6 +37,7 @@ function handlePointerEnter(event: PointerEvent) {
 
 <template>
   <Presence
+    :appear="isPortalOpening(rootContext)"
     :present="rootContext.open.value"
     :force-mount="forceMount"
     @complete="rootContext.notifyOpenComplete"

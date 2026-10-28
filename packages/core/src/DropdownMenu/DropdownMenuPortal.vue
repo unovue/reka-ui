@@ -1,17 +1,32 @@
 <script lang="ts">
 import type { MenuPortalProps } from '@/Menu'
+import DropdownMenuContent from './DropdownMenuContent.vue'
+import DropdownMenuSubContent from './DropdownMenuSubContent.vue'
 
 export interface DropdownMenuPortalProps extends MenuPortalProps {}
+
+// The parts that render nothing while the popup is closed (see `createPortalGate`).
+const gatedParts = [DropdownMenuContent, DropdownMenuSubContent]
 </script>
 
 <script setup lang="ts">
 import { MenuPortal } from '@/Menu'
+import { injectMenuContext } from '@/Menu/MenuRoot.vue'
+import { createPortalGate } from '@/Teleport/portalGate'
 
 const props = defineProps<DropdownMenuPortalProps>()
+
+// A closed popup renders no portal until it first opens (or its content is
+// force-mounted); afterwards the portal stays.
+const rootContext = injectMenuContext(null)
+const shouldRender = createPortalGate(rootContext, () => !!rootContext?.open.value, gatedParts)
 </script>
 
 <template>
-  <MenuPortal v-bind="props">
+  <MenuPortal
+    v-if="shouldRender(forceMount, $slots.default)"
+    v-bind="props"
+  >
     <slot />
   </MenuPortal>
 </template>
