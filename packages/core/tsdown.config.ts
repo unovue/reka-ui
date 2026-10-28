@@ -7,6 +7,8 @@ const families = getComponentFamilies()
 writeGeneratedEntries(families)
 const familyEntries = Object.fromEntries(families.map(family => [family.key, family.entry]))
 const familyKeys = new Set(Object.keys(familyEntries))
+/** Entries that only re-export, so their bare side-effect imports can go (see the plugin below). */
+const reExportEntries = new Set([...familyKeys, 'elements'])
 
 // Match `defineComponent(`, `createContext(`, `reactive(` at word boundaries,
 // skipping calls already preceded by a PURE annotation or prefixed with a
@@ -54,7 +56,7 @@ function stripFamilySideEffectImportsPlugin(): OutputPlugin {
   return {
     name: 'strip-family-side-effect-imports',
     renderChunk(code, chunk) {
-      if (!chunk.isEntry || !familyKeys.has(chunk.name) || DTS_FILE.test(chunk.fileName))
+      if (!chunk.isEntry || !reExportEntries.has(chunk.name) || DTS_FILE.test(chunk.fileName))
         return null
       const result = code.replace(SIDE_EFFECT_IMPORT, '')
       return result === code ? null : result
@@ -69,6 +71,8 @@ export default defineConfig({
     date: './src/date/index.ts',
     constant: './constant/index.ts',
     shared: './src/shared/index.ts',
+    // `reka-ui/elements`: custom elements, kept out of the root barrel (#3080)
+    elements: './src/elements/index.ts',
     ...familyEntries,
   },
   fromVite: true,

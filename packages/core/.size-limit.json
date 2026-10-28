@@ -54,6 +54,24 @@
     "name": "Tooltip"
   },
   {
+    "path": "dist/elements.js",
+    "import": "{ defineRekaElements, switchElements }",
+    "limit": "12 KB",
+    "name": "Elements: runtime + Switch"
+  },
+  {
+    "path": "dist/elements.js",
+    "import": "{ defineRekaElements, dialogElements }",
+    "limit": "22 KB",
+    "name": "Elements: Dialog"
+  },
+  {
+    "path": "dist/elements.js",
+    "import": "{ defineRekaElements, rekaElementFamilies }",
+    "limit": "45 KB",
+    "name": "Elements: all supported families"
+  },
+  {
     "path": "dist/index.js",
     "import": "*",
     "limit": "187 KB",

@@ -116,6 +116,14 @@ jobs:
       - name: Install Chromium
         run: pnpm --filter reka-ui exec playwright install --with-deps chromium
 
+      # The built `reka-ui/elements` entry, loaded next to the source as a second
+      # copy of the library (src/elements/copies.browser.test.ts).
+      - name: Download dist artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: reka-ui-dist
+          path: packages/core/dist
+
       - name: Test (browser)
         run: pnpm --filter reka-ui test:browser
 

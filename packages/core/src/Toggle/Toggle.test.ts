@@ -93,4 +93,23 @@ describe('given Toggle in a form', () => {
   it('should not nest the hidden input inside the interactive control', () => {
     expect(wrapper.find('button input').exists()).toBe(false)
   })
+
+  it('submits its value only while pressed', async () => {
+    const form = wrapper.find('form').element as HTMLFormElement
+    expect([...new FormData(form)]).toEqual([])
+    await wrapper.find('button').trigger('click')
+    expect([...new FormData(form)]).toEqual([['test', 'true']])
+    await wrapper.find('button').trigger('click')
+    expect([...new FormData(form)]).toEqual([])
+  })
+
+  it('does not submit while disabled, even when pressed', () => {
+    const disabled = mount({
+      components: { Toggle },
+      template: '<form><Toggle name="test" aria-label="Toggle italic" :default-value="true" disabled /></form>',
+    })
+    expect(disabled.find('[type="checkbox"]').element).toHaveProperty('checked', true)
+    expect([...new FormData(disabled.find('form').element)]).toEqual([])
+    disabled.unmount()
+  })
 })
