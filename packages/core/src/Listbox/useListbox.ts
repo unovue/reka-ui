@@ -5,9 +5,12 @@ import type { BaseChangeReason, By, ChangeEventDetails, LabelRegistry, PartSurfa
 import type { AcceptableValue, DataOrientation, Direction } from '@/shared/types'
 import { createEventHook } from '@vueuse/core'
 import { isClient, refAutoReset } from '@vueuse/shared'
-import { computed, isRef, nextTick, ref, shallowReactive, toValue, watch } from 'vue'
+import { computed, getCurrentScope, isRef, nextTick, onScopeDispose, ref, shallowReactive, toValue, watch } from 'vue'
 import { getFocusIntent } from '@/RovingFocus/utils'
 import { compare, createLabelRegistry, createPartSurface, findValuesBetween, handleAndDispatchCustomEvent, selectionState, useControllableState, useKbd, useListSelection, useTypeahead, valueComparator } from '@/shared'
+import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
+import { isDisabledItem } from '@/shared/isDisabledItem'
+import { SelectionSelector } from '@/shared/selectionSelector'
 
 /**
  * Why the selection changed; carried as `details.reason` on every change (#2828).
@@ -122,35 +125,46 @@ export interface ListboxItemSurfaceOptions<T = AcceptableValue> {
  * verbatim from `ListboxItem.vue`. The SFC (which injects the context) and a
  * standalone `useListboxRoot().getItemSurface()` share ONE derivation.
  */
+export interface ListboxItemSurface extends PartSurface<ListboxItemState> {
+  /** Tracked: whether the item is (part of) the selection. */
+  isSelected: () => boolean
+}
+
 export function getListboxItemSurface<T extends AcceptableValue = AcceptableValue>(
   context: ListboxRootContext<T>,
   value: MaybeRefOrGetter<T>,
   disabled?: MaybeRefOrGetter<boolean | undefined>,
   options: ListboxItemSurfaceOptions<T> = {},
-): PartSurface<ListboxItemState> {
-  const isHighlighted = computed(() => {
-    // The highlight first: while nothing is highlighted the item does not track
-    // its own element, so the element refs set while a long list mounts do not
-    // notify every item's render.
-    const highlighted = context.highlightedElement.value
-    return highlighted != null && highlighted === toValue(options.element)
-  })
-  const isSelected = computed(() => valueComparator(context.modelValue.value, toValue(value), context.by))
+): ListboxItemSurface {
+  // Highlight and selection read keyed selectors (one cell per held key), so a
+  // highlight move or a selection change re-renders only the items it flips,
+  // not every item of the list. A context built without them (a hand-made
+  // one) compares against the shared state, as before.
+  const isHighlighted = context.highlight
+    ? useSelectorKey(context.highlight, () => toValue(options.element))
+    : () => {
+        const highlighted = context.highlightedElement.value
+        return highlighted != null && highlighted === toValue(options.element)
+      }
+  const selectionHold = context.selection?.createHold()
+  if (selectionHold && getCurrentScope())
+    onScopeDispose(() => selectionHold.release())
+  function isSelected() {
+    return context.selection
+      ? context.selection.isSelected(toValue(value), selectionHold)
+      : valueComparator(context.modelValue.value, toValue(value), context.by)
+  }
   // `rootContext.disabled.value || props.disabled` as in ListboxItem.vue, normalised to a boolean.
-  const isDisabled = computed(() => (context.disabled.value || toValue(disabled)) ?? false)
-  // `rootContext.focusable.value ? isHighlighted ? '0' : '-1' : -1` — the string/number mix is intentional.
-  const tabindex = computed(() => {
-    if (!context.focusable.value)
-      return -1
-    return isHighlighted.value ? '0' : '-1'
-  })
+  function isDisabled() {
+    return (context.disabled.value || toValue(disabled)) ?? false
+  }
 
   function handleSelect(ev: SelectEvent<T>, reason: ListboxChangeReason) {
     options.onSelect?.(ev)
     if (ev?.defaultPrevented)
       return
 
-    if (!isDisabled.value && ev) {
+    if (!isDisabled() && ev) {
       context.onValueChange(toValue(value), reason, ev.detail.originalEvent)
       context.changeHighlight(toValue(options.element)!)
     }
@@ -161,40 +175,48 @@ export function getListboxItemSurface<T extends AcceptableValue = AcceptableValu
     handleAndDispatchCustomEvent<SelectEvent<T>, PointerEvent>(LISTBOX_SELECT, ev => handleSelect(ev, reason), eventDetail)
   }
 
-  return createPartSurface<ListboxItemState>(
+  // Created once per item, not on every render.
+  const onClick = (event: PointerEvent) => dispatchSelect(event, 'item-press')
+  // `@keydown.space.prevent`
+  const onKeydown = (event: KeyboardEvent) => {
+    if (event.key !== ' ')
+      return
+    event.preventDefault()
+    dispatchSelect(event, 'item-keydown')
+  }
+  const onPointermove = () => {
+    const element = toValue(options.element)
+    if (context.highlightedElement.value === element)
+      return
+
+    if (context.highlightOnHover.value)
+      context.changeHighlight(element!, false, false)
+  }
+
+  const surface = createPartSurface<ListboxItemState>(
     () => {
       const id = toValue(options.id)
       return {
         // Only when given: an `id: undefined` entry would clobber a consumer id under `mergeProps`.
         ...(id !== undefined && { id }),
         'role': 'option',
-        'tabindex': tabindex.value,
-        'aria-selected': isSelected.value,
-        'disabled': isDisabled.value ? '' : undefined,
-        'onClick': (event: PointerEvent) => dispatchSelect(event, 'item-press'),
-        // `@keydown.space.prevent`
-        'onKeydown': (event: KeyboardEvent) => {
-          if (event.key !== ' ')
-            return
-          event.preventDefault()
-          dispatchSelect(event, 'item-keydown')
-        },
-        'onPointermove': () => {
-          const element = toValue(options.element)
-          if (context.highlightedElement.value === element)
-            return
-
-          if (context.highlightOnHover.value)
-            context.changeHighlight(element!, false, false)
-        },
+        // `rootContext.focusable.value ? isHighlighted ? '0' : '-1' : -1` — the string/number mix is intentional.
+        'tabindex': context.focusable.value ? (isHighlighted() ? '0' : '-1') : -1,
+        'aria-selected': isSelected(),
+        'disabled': isDisabled() ? '' : undefined,
+        onClick,
+        onKeydown,
+        onPointermove,
       }
     },
     () => ({
-      state: selectionState(isSelected.value),
-      disabled: isDisabled.value,
-      highlighted: isHighlighted.value,
+      state: selectionState(isSelected()),
+      disabled: isDisabled(),
+      highlighted: isHighlighted(),
     }),
-  )
+  ) as ListboxItemSurface
+  surface.isSelected = isSelected
+  return surface
 }
 
 export interface ListboxContentSurfaceOptions {
@@ -452,6 +474,8 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   }
 
   const highlightedElement = ref<HTMLElement | null>(null)
+  const highlight = createKeyedSelector<HTMLElement>(() => highlightedElement.value)
+  const selectionSelector = new SelectionSelector<T>(() => modelValue.value, props.by)
   const previousElement = ref<HTMLElement | null>(null)
   const isVirtual = ref(false)
   const isComposing = ref(false)
@@ -490,7 +514,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   }
 
   function getCollectionItem() {
-    return getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
+    return getItems().map(i => i.ref).filter(i => !isDisabledItem(i))
   }
 
   function changeHighlight(el: HTMLElement, scrollIntoView = true, focus?: boolean) {
@@ -731,7 +755,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
       return
 
     if (event.shiftKey) {
-      const collection = getItems().filter(i => i.ref.dataset.disabled !== '')
+      const collection = getItems().filter(i => !isDisabledItem(i.ref))
       let lastValue = collection.find(i => i.ref === targetEl)?.value
 
       if (event.key === kbd.END)
@@ -879,6 +903,8 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     highlightOnHover: highlightOnHover as Ref<boolean>,
     loop: loop as Ref<boolean>,
     highlightedElement,
+    highlight,
+    selection: selectionSelector,
     isVirtual,
     virtualFocusHook,
     virtualKeydownHook,

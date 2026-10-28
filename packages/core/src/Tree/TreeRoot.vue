@@ -1,4 +1,5 @@
 <script lang="ts">
+import type { KeyedSelector } from '@/shared/createKeyedSelector'
 import type { Direction } from '@/shared/types'
 import { createContext, useDirection, useForwardElement } from '@/shared'
 
@@ -54,6 +55,10 @@ export interface TreeRootContext<T = Record<string, any>> {
   setModelValue: (value: T | T[] | undefined, reason?: TreeChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Read-only: call `onToggle` to expand or collapse an item. */
   expanded: Readonly<Ref<string[]>>
+  /** `expanded` as a keyed selector: items read their own cell. */
+  expandedSelector?: KeyedSelector<string>
+  /** `selectedKeys` as a keyed selector: items read their own cell. */
+  selectedSelector?: KeyedSelector<string>
   /** Returns `false` when the item has no children, or the change was cancelled. */
   onToggle: (val: T, reason?: TreeExpandedChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Writes the expanded keys in one change, e.g. an expand-all part. Returns `false` when unchanged or cancelled. */

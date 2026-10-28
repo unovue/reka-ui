@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
-import { useCollection } from '@/Collection'
+import { useCollectionItem } from '@/Collection'
 import { createContext, useForwardElement, useId } from '@/shared'
 
 export interface SelectItemContext<T = AcceptableValue> {
@@ -41,11 +41,17 @@ export interface SelectItemProps<T = AcceptableValue> extends PrimitiveProps {
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { onMounted } from 'vue'
+import { mergeProps, onMounted } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
 import { useSelectItem } from './useSelect'
+
+defineOptions({
+  // `$attrs` are merged under the item's own bindings: the precedence the
+  // former `CollectionItem` wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = defineProps<SelectItemProps>()
 
@@ -61,7 +67,6 @@ const rootContext = injectSelectRootContext()
 const contentContext = injectSelectContentContext()
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
-const { CollectionItem } = useCollection()
 
 if (props.value === '') {
   throw new Error(
@@ -79,6 +84,9 @@ const { item, isSelected, textValue, itemContext } = useSelectItem({
   onSelect: event => emits('select', event as SelectEvent<T>),
 })
 
+// Registered with the content's collection from setup; no wrapper component.
+useCollectionItem(currentElement, () => ({ textValue: textValue.value, value: props.value }))
+
 onMounted(() => {
   if (!currentElement.value)
     return
@@ -93,14 +101,13 @@ provideSelectItemContext(itemContext)
 </script>
 
 <template>
-  <CollectionItem :value="{ textValue, value }">
-    <Primitive
-      :ref="forwardRef"
-      v-bind="item.attrs.value"
-      :as="as"
-      :as-child="asChild"
-    >
-      <slot :selected="isSelected" />
-    </Primitive>
-  </CollectionItem>
+  <Primitive
+    :ref="forwardRef"
+    data-reka-collection-item=""
+    v-bind="mergeProps($attrs, item.attrs.value)"
+    :as="as"
+    :as-child="asChild"
+  >
+    <slot :selected="isSelected" />
+  </Primitive>
 </template>

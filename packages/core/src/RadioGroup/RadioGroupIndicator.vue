@@ -12,13 +12,14 @@ export interface RadioGroupIndicatorProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { getCurrentInstance, mergeProps, shallowRef } from 'vue'
+import { mergeProps } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
+import { useLingeringPresence } from '@/shared/useLingeringPresence'
 import { injectRadioGroupItemContext } from './RadioGroupItem.vue'
 import { getRadioGroupIndicatorSurface } from './useRadioGroup'
 
-withDefaults(defineProps<RadioGroupIndicatorProps>(), {
+const props = withDefaults(defineProps<RadioGroupIndicatorProps>(), {
   as: 'span',
 })
 
@@ -28,25 +29,18 @@ const itemContext = injectRadioGroupItemContext()
 // Same derivation as a standalone consumer — one source for `data-state` / `data-disabled`.
 const indicator = getRadioGroupIndicatorSurface(itemContext)
 
-// An indicator that is not shown mounts no `Presence` (Base UI's
-// `SelectItemIndicator` returns `null`). Once shown, it stays mounted until its
-// exit has finished, and one shown after this indicator mounted enters with
-// `data-starting-style`, as it did while `Presence` was always mounted.
-const instance = getCurrentInstance()!
-const lingering = shallowRef(false)
-function onPresenceComplete(present: boolean) {
-  if (!present)
-    lingering.value = false
-}
+// Mounts no `Presence` while not shown; see `useLingeringPresence`.
+const shown = () => props.forceMount || itemContext.checked.value
+const lingering = useLingeringPresence(shown)
 </script>
 
 <template>
   <Presence
-    v-if="forceMount || itemContext.checked.value || lingering"
-    :present="forceMount || itemContext.checked.value"
-    :appear="instance.isMounted"
-    @vue:mounted="lingering = true"
-    @complete="onPresenceComplete"
+    v-if="lingering.mounted()"
+    :present="shown()"
+    :appear="lingering.appear()"
+    @vue:mounted="lingering.onMounted"
+    @complete="lingering.onComplete"
   >
     <Primitive
       :ref="forwardRef"

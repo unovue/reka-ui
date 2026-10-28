@@ -4,6 +4,8 @@ import type { ComputedRef, Ref } from 'vue'
 import type { ListboxChangeReason, ListboxFilterFunction, ListboxFilterItem, ListboxHighlightScroll, ListboxLabelRegistry, ListboxNavigationIntent, ListboxVirtualKeydown } from './useListbox'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import type { KeyedSelector } from '@/shared/createKeyedSelector'
+import type { SelectionSelector } from '@/shared/selectionSelector'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
 import { usePrimitiveElement } from '@/Primitive'
 import { createContext, mergeExpose, useDirection, useFormControl } from '@/shared'
@@ -20,6 +22,10 @@ export type ListboxRootContext<T> = {
   highlightOnHover: Ref<boolean>
   loop: Ref<boolean>
   highlightedElement: Ref<HTMLElement | null>
+  /** `highlightedElement` as a keyed selector: items read their own cell. */
+  highlight?: KeyedSelector<HTMLElement>
+  /** The selection as a keyed selector: items read their own cell. */
+  selection?: SelectionSelector<T>
   isVirtual: Ref<boolean>
   virtualFocusHook: EventHook<{ event?: Event, scroll: boolean }>
   virtualKeydownHook: EventHook<ListboxVirtualKeydown>

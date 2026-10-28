@@ -24,7 +24,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import { mergeProps } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
-import { RovingFocusItem } from '@/RovingFocus'
+import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { mergeExpose, useForwardElement } from '@/shared'
 import { injectTreeRootContext } from './TreeRoot.vue'
 import { getTreeItemStatus, getTreeItemSurface } from './useTree'
@@ -75,7 +75,7 @@ function handleSelect() {
   rootContext.onSelect(props.value)
 }
 
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(mergeExpose(expose, {
   isExpanded,
   isSelected,
@@ -84,29 +84,31 @@ defineExpose(mergeExpose(expose, {
   handleToggle,
   handleSelect,
 }))
+
+// Arrow-key focus (as a composable; the tree handles the keys). The item's
+// value is what the tree's `getItems()` reports.
+const roving = useRovingFocusItem({
+  element: currentElement,
+  focusable: () => !isDisabled.value,
+  allowShiftKey: () => true,
+  value: () => props.value,
+})!
 </script>
 
 <template>
-  <RovingFocusItem
+  <Primitive
     :ref="forwardRef"
-    as-child
-    :value="value"
-    allow-shift-key
-    :focusable="!isDisabled"
+    :as="as"
+    :as-child="asChild"
+    v-bind="mergeProps(roving.attrs(), $attrs, surface.attrs.value)"
   >
-    <Primitive
-      :as="as"
-      :as-child="asChild"
-      v-bind="mergeProps($attrs, surface.attrs.value)"
-    >
-      <slot
-        :is-expanded="isExpanded"
-        :is-selected="isSelected"
-        :is-indeterminate="isIndeterminate"
-        :is-disabled="isDisabled"
-        :handle-select="handleSelect"
-        :handle-toggle="handleToggle"
-      />
-    </Primitive>
-  </RovingFocusItem>
+    <slot
+      :is-expanded="isExpanded"
+      :is-selected="isSelected"
+      :is-indeterminate="isIndeterminate"
+      :is-disabled="isDisabled"
+      :handle-select="handleSelect"
+      :handle-toggle="handleToggle"
+    />
+  </Primitive>
 </template>

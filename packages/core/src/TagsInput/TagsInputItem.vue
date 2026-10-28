@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { AcceptableInputValue } from './TagsInputRoot.vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { computed, toRef } from 'vue'
+import { computed, mergeProps, toRef } from 'vue'
 import { createContext, useForwardElement } from '@/shared'
 import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 import { createTagsInputItemContext, getTagsInputItemSurface } from './useTagsInput'
@@ -28,8 +28,16 @@ export const [injectTagsInputItemContext, provideTagsInputItemContext]
 </script>
 
 <script setup lang="ts">
-import { useCollection } from '@/Collection'
+import { useCollectionItem } from '@/Collection'
 import { Primitive } from '@/Primitive'
+import { useSelectorKey } from '@/shared/createKeyedSelector'
+import { getterRef } from '@/shared/partSurface'
+
+defineOptions({
+  // `$attrs` are merged under the item's own bindings: the precedence the
+  // former `CollectionItem` wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = defineProps<TagsInputItemProps>()
 const value = toRef(props, 'value')
@@ -37,9 +45,13 @@ const value = toRef(props, 'value')
 const context = injectTagsInputRootContext()
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
-const { CollectionItem } = useCollection()
+// Registered with the root's collection from setup; no wrapper component.
+useCollectionItem(currentElement, () => props.value)
 
-const isSelected = computed(() => context.selectedElement.value === currentElement.value)
+// A keyed selector cell: moving the selection re-renders only the old and the new tag.
+const isSelected = getterRef(context.selected
+  ? useSelectorKey(context.selected, () => currentElement.value)
+  : () => context.selectedElement.value === currentElement.value)
 
 const disabled = computed(() => props.disabled || context.disabled.value)
 
@@ -48,14 +60,13 @@ const item = getTagsInputItemSurface(itemContext)
 </script>
 
 <template>
-  <CollectionItem :value="value">
-    <Primitive
-      :ref="forwardRef"
-      :as="as"
-      :as-child="asChild"
-      v-bind="item.attrs.value"
-    >
-      <slot />
-    </Primitive>
-  </CollectionItem>
+  <Primitive
+    :ref="forwardRef"
+    data-reka-collection-item=""
+    :as="as"
+    :as-child="asChild"
+    v-bind="mergeProps($attrs, item.attrs.value)"
+  >
+    <slot />
+  </Primitive>
 </template>

@@ -14,19 +14,30 @@ export interface ListboxItemIndicatorProps extends PrimitiveProps {
 <script setup lang="ts">
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
+import { useLingeringPresence } from '@/shared/useLingeringPresence'
 import { injectListboxItemContext } from './ListboxItem.vue'
 
-withDefaults(defineProps<ListboxItemIndicatorProps>(), {
+const props = withDefaults(defineProps<ListboxItemIndicatorProps>(), {
   as: 'span',
 })
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const itemContext = injectListboxItemContext()
+
+// Mounts no `Presence` while not shown; see `useLingeringPresence`.
+const shown = () => props.forceMount || itemContext.isSelected.value
+const lingering = useLingeringPresence(shown)
 </script>
 
 <template>
-  <Presence :present="forceMount || itemContext.isSelected.value">
+  <Presence
+    v-if="lingering.mounted()"
+    :present="shown()"
+    :appear="lingering.appear()"
+    @vue:mounted="lingering.onMounted"
+    @complete="lingering.onComplete"
+  >
     <Primitive
       :ref="forwardRef"
       aria-hidden="true"

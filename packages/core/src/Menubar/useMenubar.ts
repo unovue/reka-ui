@@ -8,6 +8,7 @@ import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, watch } from 'vue'
 import { useMenuRoot } from '@/Menu/useMenu'
 import { createPartSurface, disclosureState, useControllableState } from '@/shared'
+import { isDisabledItem } from '@/shared/isDisabledItem'
 import { wrapArray } from '@/shared/useTypeahead'
 
 // =============================================================================
@@ -327,7 +328,7 @@ export function createMenubarTriggerSurface(
  * `undefined` at the end of a non-looping bar. Disabled triggers are skipped.
  */
 function getNextMenuValue(items: MenubarCollectionItem[], currentValue: string, reverse: boolean, loop: boolean) {
-  let candidateValues = items.filter(i => i.ref.dataset.disabled !== '').map(i => i.ref.dataset.value)
+  let candidateValues = items.filter(i => !isDisabledItem(i.ref)).map(i => i.ref.dataset.value)
   if (reverse)
     candidateValues.reverse()
 
@@ -415,7 +416,7 @@ export function createMenubarContentSurface(
     },
     onFocusOutside: (event) => {
       const target = event.target as HTMLElement
-      const isMenubarTrigger = options.getItems().filter(i => i.ref.dataset.disabled !== '').some(i => i.ref.contains(target))
+      const isMenubarTrigger = options.getItems().filter(i => !isDisabledItem(i.ref)).some(i => i.ref.contains(target))
       if (isMenubarTrigger)
         event.preventDefault()
     },

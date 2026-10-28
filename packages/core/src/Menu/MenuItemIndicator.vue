@@ -24,12 +24,13 @@ export const [injectMenuItemIndicatorContext, provideMenuItemIndicatorContext]
 </script>
 
 <script setup lang="ts">
-import { getCurrentInstance, ref, shallowRef } from 'vue'
+import { ref } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
+import { useLingeringPresence } from '@/shared/useLingeringPresence'
 import { isIndeterminate } from './utils'
 
-withDefaults(defineProps<MenuItemIndicatorProps>(), {
+const props = withDefaults(defineProps<MenuItemIndicatorProps>(), {
   as: 'span',
 })
 
@@ -40,26 +41,19 @@ const indicatorContext = injectMenuItemIndicatorContext({
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
-// An indicator that is not shown mounts no `Presence` (Base UI's
-// `SelectItemIndicator` returns `null`). Once shown, it stays mounted until its
-// exit has finished, and one shown after this indicator mounted enters with
-// `data-starting-style`, as it did while `Presence` was always mounted.
-const instance = getCurrentInstance()!
-const lingering = shallowRef(false)
-function onPresenceComplete(present: boolean) {
-  if (!present)
-    lingering.value = false
-}
+// Mounts no `Presence` while not shown; see `useLingeringPresence`.
+const shown = () => props.forceMount || isIndeterminate(indicatorContext.modelValue.value) || indicatorContext.modelValue.value === true
+const lingering = useLingeringPresence(shown)
 </script>
 
 <template>
   <Presence
-    v-if="forceMount || isIndeterminate(indicatorContext.modelValue.value) || indicatorContext.modelValue.value === true || lingering"
+    v-if="lingering.mounted()"
     :ref="forwardRef"
-    :present="forceMount || isIndeterminate(indicatorContext.modelValue.value) || indicatorContext.modelValue.value === true"
-    :appear="instance.isMounted"
-    @vue:mounted="lingering = true"
-    @complete="onPresenceComplete"
+    :present="shown()"
+    :appear="lingering.appear()"
+    @vue:mounted="lingering.onMounted"
+    @complete="lingering.onComplete"
   >
     <Primitive
       :as="as"

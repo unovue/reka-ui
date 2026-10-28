@@ -14,7 +14,7 @@ export interface MenuItemImplProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { mergeProps } from 'vue'
-import { useCollection } from '@/Collection'
+import { useCollectionItem } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { useForwardElement } from '@/shared'
 import { injectMenuContentContext } from './MenuContentImpl.vue'
@@ -29,11 +29,11 @@ const props = defineProps<MenuItemImplProps>()
 const contentContext = injectMenuContentContext()
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
-const { CollectionItem } = useCollection()
+// Registered with the content's collection from setup; no wrapper component.
+useCollectionItem(currentElement, () => ({ textValue: props.textValue }))
 
 // role/aria/data-* + the hover-highlight (pointermove/leave/focus/blur) come from
-// the shared item surface. The `<CollectionItem>` registration wrapper stays in
-// the SFC — it is vnode-bound provide/inject a composable can't absorb.
+// the shared item surface.
 const surface = createMenuItemSurface(contentContext, {
   disabled: () => props.disabled,
   currentElement,
@@ -41,14 +41,13 @@ const surface = createMenuItemSurface(contentContext, {
 </script>
 
 <template>
-  <CollectionItem :value="{ textValue }">
-    <Primitive
-      :ref="forwardRef"
-      :as="as"
-      :as-child="asChild"
-      v-bind="mergeProps(surface.attrs.value, $attrs)"
-    >
-      <slot />
-    </Primitive>
-  </CollectionItem>
+  <Primitive
+    :ref="forwardRef"
+    data-reka-collection-item=""
+    :as="as"
+    :as-child="asChild"
+    v-bind="mergeProps(surface.attrs.value, $attrs)"
+  >
+    <slot />
+  </Primitive>
 </template>

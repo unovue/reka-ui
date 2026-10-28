@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, reactive } from 'vue'
 import { useCollection } from './Collection'
 
@@ -189,6 +189,109 @@ describe('useCollection', () => {
     await nextTick()
     expect(getItem(element)).toBeUndefined()
 
+    wrapper.unmount()
+  })
+
+  it('getItems() follows a keyed v-for reorder', async () => {
+    const { getCollection, items, wrapper } = createWrapper([
+      { value: 'a' },
+      { value: 'b' },
+      { value: 'c' },
+    ])
+    await nextTick()
+    const { getItems } = getCollection()
+    expect(getItems().map(i => i.value)).toEqual(['a', 'b', 'c'])
+
+    // A keyed reorder moves the existing elements: no item (un)registers.
+    items.reverse()
+    await nextTick()
+    expect(getItems().map(i => i.value)).toEqual(['c', 'b', 'a'])
+
+    wrapper.unmount()
+  })
+
+  it('getItems() places an item inserted in the middle in DOM order', async () => {
+    const { getCollection, items, wrapper } = createWrapper([
+      { value: 'a' },
+      { value: 'c' },
+    ])
+    await nextTick()
+    const { getItems } = getCollection()
+    expect(getItems().map(i => i.value)).toEqual(['a', 'c'])
+
+    items.splice(1, 0, { value: 'b' })
+    await nextTick()
+    expect(getItems().map(i => i.value)).toEqual(['a', 'b', 'c'])
+
+    wrapper.unmount()
+  })
+
+  it('getItems() reuses the cached order until the collection changes', async () => {
+    const { getCollection, items, wrapper } = createWrapper([
+      { value: 'a' },
+      { value: 'b' },
+    ])
+    await nextTick()
+    const { getItems } = getCollection()
+    getItems()
+
+    const root = wrapper.get('[data-testid=collection-root]').element
+    const spy = vi.spyOn(root, 'querySelectorAll')
+    for (let i = 0; i < 5; i++)
+      expect(getItems().map(i => i.value)).toEqual(['a', 'b'])
+    expect(spy).not.toHaveBeenCalled()
+
+    items.push({ value: 'c' })
+    await nextTick()
+    expect(getItems().map(i => i.value)).toEqual(['a', 'b', 'c'])
+    expect(spy).toHaveBeenCalledTimes(1)
+
+    spy.mockRestore()
+    wrapper.unmount()
+  })
+
+  it('getItems() sees a `data-disabled` change and hands out copies', async () => {
+    const { getCollection, items, wrapper } = createWrapper([
+      { value: 'a' },
+      { value: 'b' },
+    ])
+    await nextTick()
+    const { getItems } = getCollection()
+    const first = getItems()
+    first.reverse()
+    expect(getItems().map(i => i.value)).toEqual(['a', 'b'])
+
+    items[1].disabled = true
+    await nextTick()
+    expect(getItems().map(i => i.value)).toEqual(['a'])
+    expect(getItems(true).map(i => i.value)).toEqual(['a', 'b'])
+
+    wrapper.unmount()
+  })
+
+  it('treats any `data-disabled` value as disabled, like `:not([data-disabled])`', async () => {
+    const { getCollection, wrapper } = createWrapper([
+      { value: 'a' },
+      { value: 'b' },
+      { value: 'c' },
+    ])
+    await nextTick()
+    document.querySelector('[data-testid=b]')!.setAttribute('data-disabled', 'true')
+    document.querySelector('[data-testid=c]')!.setAttribute('data-disabled', 'false')
+    await nextTick()
+    const { getItems, getItem } = getCollection()
+    expect(getItems().map(i => i.value)).toEqual(['a'])
+    expect(getItems(true).map(i => i.value)).toEqual(['a', 'b', 'c'])
+    expect(getItem(document.querySelector<HTMLElement>('[data-testid=b]')!)).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it('returns plain `{ ref, value }` items', async () => {
+    const { getCollection, wrapper } = createWrapper([{ value: 'a' }])
+    await nextTick()
+    const [item] = getCollection().getItems()
+    expect(Object.keys(item).sort()).toEqual(['ref', 'value'])
+    expect(Object.getPrototypeOf(item)).toBe(Object.prototype)
     wrapper.unmount()
   })
 

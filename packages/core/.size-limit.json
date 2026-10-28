@@ -14,13 +14,13 @@
   {
     "path": "dist/index.js",
     "import": "{ SelectRoot, SelectTrigger, SelectContent, SelectItem, SelectViewport, SelectPortal }",
-    "limit": "31 KB",
+    "limit": "33 KB",
     "name": "Select"
   },
   {
     "path": "dist/index.js",
     "import": "{ ComboboxRoot, ComboboxInput, ComboboxContent, ComboboxItem, ComboboxVirtualizer }",
-    "limit": "38 KB",
+    "limit": "39.5 KB",
     "name": "Combobox"
   },
   {
@@ -38,7 +38,7 @@
   {
     "path": "dist/index.js",
     "import": "{ TreeRoot, TreeItem, TreeVirtualizer }",
-    "limit": "15.5 KB",
+    "limit": "16.5 KB",
     "name": "Tree"
   },
   {
@@ -74,7 +74,7 @@
   {
     "path": "dist/index.js",
     "import": "*",
-    "limit": "187 KB",
+    "limit": "189 KB",
     "name": "Full library"
   }
 ]

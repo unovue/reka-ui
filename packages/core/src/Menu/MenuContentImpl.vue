@@ -12,6 +12,7 @@ import type {
 import type { FocusScopeProps } from '@/FocusScope'
 import type { PopperContentProps } from '@/Popper'
 import type { RovingFocusGroupEmits } from '@/RovingFocus'
+import type { KeyedSelector } from '@/shared/createKeyedSelector'
 
 import {
   createContext,
@@ -26,6 +27,8 @@ export interface MenuContentContext {
   onTriggerLeave: (event: PointerEvent) => boolean
   searchRef: Ref<string>
   highlightedElement: Ref<HTMLElement | undefined>
+  /** `highlightedElement` as a keyed selector: items read their own cell. */
+  highlight?: KeyedSelector<HTMLElement>
   onKeydownNavigation: (event: KeyboardEvent) => void
   onKeydownEnter: (event: KeyboardEvent) => void
   filterElement: Ref<HTMLElement | undefined>

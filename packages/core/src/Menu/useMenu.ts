@@ -4,7 +4,8 @@ import type { MenuContext, MenuRootContext } from './MenuRoot.vue'
 import type { Direction, GraceIntent, Side } from './utils'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface, SetStateOptions } from '@/shared'
 import { computed, nextTick, onUnmounted, ref, toValue, watch } from 'vue'
-import { createPartSurface, disclosureState, getActiveElement, useArrowNavigation, useControllableState, useTypeahead } from '@/shared'
+import { createPartSurface, disclosureState, getActiveElement, getterRef, useArrowNavigation, useControllableState, useTypeahead } from '@/shared'
+import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
 import { useIsUsingKeyboard } from '@/shared/useIsUsingKeyboard'
 import { FIRST_LAST_KEYS, focusFirst, isMouseEvent, isPointerInGraceArea, ITEM_SELECT, LAST_KEYS, SELECTION_KEYS } from './utils'
 
@@ -180,8 +181,13 @@ export function createMenuItemSurface(
   const { currentElement } = options
   const isDisabled = computed(() => toValue(options.disabled) ?? false)
   const isFocused = ref(false)
-  const isHighlighted = computed(() =>
-    isFocused.value || (currentElement.value != null && contentContext.highlightedElement.value === currentElement.value))
+  // The content's highlight as a keyed selector (one cell per held element),
+  // so a highlight move re-renders only the old and the new item. A content
+  // context built without it compares against the shared ref, as before.
+  const isElementHighlighted = contentContext.highlight
+    ? useSelectorKey(contentContext.highlight, () => currentElement.value)
+    : () => currentElement.value != null && contentContext.highlightedElement.value === currentElement.value
+  const isHighlighted = getterRef(() => isFocused.value || isElementHighlighted())
 
   async function handlePointerMove(event: PointerEvent) {
     if (event.defaultPrevented || !isMouseEvent(event))
@@ -408,18 +414,38 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
   const lastPointerXRef = ref(0)
   const currentItemId = ref<string | null>(null)
   const highlightedElement = ref<HTMLElement>()
+  const highlight = createKeyedSelector<HTMLElement>(() => highlightedElement.value)
   const filterElement = ref<HTMLElement>()
   const activeSubmenuContext = ref<{ onOpenChange: MenuContext['onOpenChange'], trigger: Ref<HTMLElement | undefined> }>()
 
   const { handleTypeaheadSearch } = useTypeahead()
 
-  function onKeydownNavigation(event: KeyboardEvent) {
-    const el = useArrowNavigation(
+  /**
+   * The enabled items in order, from the collection's cached order instead of
+   * a selector query over the content on every key; `undefined` (query the
+   * content) when the collection has none.
+   */
+  function navigationItems(): HTMLElement[] | undefined {
+    const items = getItems()
+    if (!items?.length)
+      return undefined
+    // `getItems()` already leaves out the disabled items (any `data-disabled`),
+    // the same rule as the fallback selector below.
+    return items.map(item => item.ref)
+  }
+
+  function arrowNavigation(event: KeyboardEvent, current: HTMLElement, focus: boolean) {
+    const itemsArray = navigationItems()
+    return useArrowNavigation(
       event,
-      (highlightedElement.value || getActiveElement()) as HTMLElement,
-      contentElement.value,
-      { loop: loop(), arrowKeyOptions: 'vertical', dir: rootContext?.dir.value, focus: false, attributeName: '[data-reka-collection-item]:not([data-disabled])' },
+      current,
+      itemsArray ? undefined : contentElement.value,
+      { loop: loop(), arrowKeyOptions: 'vertical', dir: rootContext?.dir.value, focus, attributeName: '[data-reka-collection-item]:not([data-disabled])', itemsArray },
     )
+  }
+
+  function onKeydownNavigation(event: KeyboardEvent) {
+    const el = arrowNavigation(event, (highlightedElement.value || getActiveElement()) as HTMLElement, false)
     if (el) {
       highlightedElement.value = el
       el.scrollIntoView({ block: 'nearest' })
@@ -455,12 +481,7 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
     const isModifierKey = event.ctrlKey || event.altKey || event.metaKey
     const isCharacterKey = event.key.length === 1
 
-    const el = useArrowNavigation(
-      event,
-      getActiveElement() as HTMLElement,
-      contentElement.value,
-      { loop: loop(), arrowKeyOptions: 'vertical', dir: rootContext?.dir.value, focus: true, attributeName: '[data-reka-collection-item]:not([data-disabled])' },
-    )
+    const el = arrowNavigation(event, getActiveElement() as HTMLElement, true)
     if (el)
       return el?.focus()
 
@@ -553,6 +574,7 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
     onTriggerLeave: event => isPointerMovingToSubmenu(event),
     searchRef,
     highlightedElement,
+    highlight,
     onKeydownNavigation,
     onKeydownEnter,
     filterElement,

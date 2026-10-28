@@ -5,7 +5,9 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface, SelectionState 
 import type { Direction } from '@/shared/types'
 import { isEqual } from 'ohash'
 import { computed, nextTick, ref, toValue } from 'vue'
-import { createPartSurface, selectionState, useArrowNavigation, useComposing, useControllableState } from '@/shared'
+import { createPartSurface, getterRef, selectionState, useArrowNavigation, useComposing, useControllableState } from '@/shared'
+import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
+import { isDisabledItem } from '@/shared/isDisabledItem'
 
 /**
  * Why the tags changed; carried as `details.reason` on every change (#2828).
@@ -162,6 +164,7 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
   const getItems = props.getItems ?? (() => [])
 
   const selectedElement = ref<HTMLElement>()
+  const selected = createKeyedSelector<HTMLElement>(() => selectedElement.value)
   const isInvalidInput = ref(false)
 
   function emitEvent(name: 'addTag' | 'removeTag' | 'invalid', value: T) {
@@ -225,7 +228,7 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
     if (event.isComposing)
       return
     const target = event.target as HTMLInputElement
-    const collection = getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
+    const collection = getItems().map(i => i.ref).filter(i => !isDisabledItem(i))
     if (!collection.length)
       return
     const lastTag = collection.at(-1)
@@ -302,6 +305,7 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
     onClear: clear,
     onInputKeydown,
     selectedElement,
+    selected,
     isInvalidInput,
     addOnPaste,
     addOnBlur,
@@ -334,10 +338,7 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
     clearButton: getTagsInputClearSurface(context),
     getItemSurfaces: (value, options = {}) => {
       const element = options.element
-      const isSelected = computed(() => {
-        const el = toValue(element)
-        return !!el && selectedElement.value === el
-      })
+      const isSelected = getterRef(useSelectorKey(selected, () => toValue(element)))
       const itemDisabled = computed(() => !!(toValue(options.disabled) || disabled.value))
       const itemContext = createTagsInputItemContext(context, {
         value: computed(() => toValue(value)),

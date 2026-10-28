@@ -4,10 +4,13 @@ import type { DataOrientation, Direction, StringOrNumber } from '../shared/types
 import type { TabsChangeReason } from './useTabs'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import type { KeyedSelector } from '@/shared/createKeyedSelector'
 import { createContext, useDirection, useForwardElement, useId } from '@/shared'
 
 export interface TabsRootContext {
   modelValue: ComputedRef<StringOrNumber | undefined>
+  /** `modelValue` as a keyed selector: triggers and contents read their own cell. */
+  selected?: KeyedSelector<StringOrNumber>
   /** Returns `false` when the value is unchanged or the change was cancelled. */
   changeModelValue: (value: StringOrNumber, reason?: TabsChangeReason | BaseChangeReason, event?: Event) => boolean
   orientation: Ref<DataOrientation>

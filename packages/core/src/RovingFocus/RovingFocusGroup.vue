@@ -46,10 +46,16 @@ interface RovingContext {
   dir: Ref<Direction>
   loop: Ref<boolean>
   currentTabStopId: Ref<string | null | undefined>
+  /** Keyed by tab stop id: whether the item is the current tab stop. */
+  tabStop: KeyedSelector<string>
   onItemFocus: (tabStopId: string) => void
   onItemShiftTab: () => void
   onFocusableItemAdd: () => void
   onFocusableItemRemove: () => void
+  /** The group's element: an item rendered outside it (teleported) listens itself. */
+  rootElement: { readonly value: unknown }
+  /** Arrow keys for an item outside the group's element (its keydown never reaches the group). */
+  onDetachedItemKeydown: (event: KeyboardEvent) => void
 }
 
 export const [injectRovingFocusGroupContext, provideRovingFocusGroupContext]
@@ -57,11 +63,21 @@ export const [injectRovingFocusGroupContext, provideRovingFocusGroupContext]
 </script>
 
 <script setup lang="ts">
+import type { RovingFocusItemMeta } from './useRovingFocusItem'
+import type { KeyedSelector } from '@/shared/createKeyedSelector'
 import { useVModel } from '@vueuse/core'
-import { ref, toRefs } from 'vue'
-import { useCollection } from '@/Collection'
+import { nextTick, ref, toRefs } from 'vue'
+import { getCollectionMeta, useCollection, useCollectionSlot } from '@/Collection'
 import { Primitive } from '@/Primitive'
-import { ENTRY_FOCUS, EVENT_OPTIONS, focusFirst } from './utils'
+import { createKeyedSelector } from '@/shared/createKeyedSelector'
+import { isDisabledItem } from '@/shared/isDisabledItem'
+import { ENTRY_FOCUS, EVENT_OPTIONS, focusFirst, getFocusIntent, wrapArray } from './utils'
+
+defineOptions({
+  // `$attrs` are bound first in the template, under the group's own
+  // bindings: the precedence the former CollectionSlot wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<RovingFocusGroupProps>(), {
   loop: false,
@@ -80,7 +96,76 @@ const isTabbingBackOut = ref(false)
 const isClickFocus = ref(false)
 const focusableItemsCount = ref(0)
 
-const { getItems, CollectionSlot } = useCollection({ isProvider: true })
+const { getItems, getItem } = useCollection({ isProvider: true })
+
+/** The roving item `node` is, or is inside (this group's items only). */
+function findItem(node: Element | null, root: Element) {
+  for (; node && node !== root; node = node.parentElement) {
+    const item = getItem(node as HTMLElement, true)
+    if (item)
+      return getCollectionMeta<RovingFocusItemMeta>(item)?.roving ? item : undefined
+  }
+  return undefined
+}
+
+/**
+ * Arrow-key navigation for every item, delegated here instead of a listener
+ * per item. Bubbling runs it after the item's own handlers (and anything
+ * between the item and the group), so an `asChild` item or a consumer can
+ * still claim a key with `preventDefault()`.
+ */
+function handleKeydown(event: KeyboardEvent) {
+  if (event.defaultPrevented)
+    return
+  const item = findItem(event.target as Element | null, event.currentTarget as Element)
+  if (item)
+    navigate(event, item)
+}
+
+/** An item outside the group's element (teleported) listens on itself. */
+function handleDetachedItemKeydown(event: KeyboardEvent) {
+  // Same element as the item's own handlers, so `stopPropagation()` there
+  // doesn't skip this listener: honour it like the delegated path does.
+  if (event.defaultPrevented || event.cancelBubble)
+    return
+  const item = getItem(event.currentTarget as HTMLElement, true)
+  if (item && getCollectionMeta<RovingFocusItemMeta>(item)?.roving)
+    navigate(event, item)
+}
+
+function navigate(event: KeyboardEvent, item: { ref: HTMLElement }) {
+  if (event.key === 'Tab' && event.shiftKey) {
+    isTabbingBackOut.value = true
+    return
+  }
+
+  if (event.target !== item.ref)
+    return
+
+  const focusIntent = getFocusIntent(event, orientation.value, dir.value)
+  if (focusIntent === undefined)
+    return
+  const allowShiftKey = getCollectionMeta<RovingFocusItemMeta>(item)!.allowShiftKey()
+  if (event.metaKey || event.ctrlKey || event.altKey || (allowShiftKey ? false : event.shiftKey))
+    return
+  event.preventDefault()
+  let candidateNodes = getItems().map(i => i.ref)
+
+  if (focusIntent === 'last') {
+    candidateNodes.reverse()
+  }
+  else if (focusIntent === 'prev' || focusIntent === 'next') {
+    if (focusIntent === 'prev')
+      candidateNodes.reverse()
+    const currentIndex = candidateNodes.indexOf(item.ref)
+
+    candidateNodes = loop.value
+      ? wrapArray(candidateNodes, currentIndex + 1)
+      : candidateNodes.slice(currentIndex + 1)
+  }
+
+  nextTick(() => focusFirst(candidateNodes))
+}
 
 function handleFocus(event: FocusEvent) {
   // We normally wouldn't need this check, because we already check
@@ -100,7 +185,7 @@ function handleFocus(event: FocusEvent) {
     emits('entryFocus', entryFocusEvent)
 
     if (!entryFocusEvent.defaultPrevented) {
-      const items = getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
+      const items = getItems().map(i => i.ref).filter(i => !isDisabledItem(i))
       const activeItem = items.find(item => item.getAttribute('data-active') === '')
       const highlightedItem = items.find(item => item.getAttribute('data-highlighted') === '')
       const currentItem = items.find(
@@ -122,16 +207,18 @@ function handleMouseUp() {
   }, 1)
 }
 
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(mergeExpose(expose, {
   getItems,
 }))
+useCollectionSlot(currentElement)
 
 provideRovingFocusGroupContext({
   loop,
   dir,
   orientation,
   currentTabStopId,
+  tabStop: createKeyedSelector(() => currentTabStopId.value),
   onItemFocus: (tabStopId) => {
     currentTabStopId.value = tabStopId
   },
@@ -141,6 +228,8 @@ provideRovingFocusGroupContext({
   onFocusableItemAdd: () => {
     focusableItemsCount.value++
   },
+  rootElement: currentElement,
+  onDetachedItemKeydown: handleDetachedItemKeydown,
   onFocusableItemRemove: () => {
     focusableItemsCount.value--
   },
@@ -148,22 +237,21 @@ provideRovingFocusGroupContext({
 </script>
 
 <template>
-  <CollectionSlot
+  <Primitive
+    v-bind="$attrs"
     :ref="forwardRef"
+    :tabindex="isTabbingBackOut || focusableItemsCount === 0 ? -1 : 0"
+    :data-orientation="orientation"
+    :as="as"
+    :as-child="asChild"
+    :dir="dir"
+    style="outline: none"
+    @mousedown="isClickFocus = true"
+    @mouseup="handleMouseUp"
+    @focus="handleFocus"
+    @blur="isTabbingBackOut = false"
+    @keydown="handleKeydown"
   >
-    <Primitive
-      :tabindex="isTabbingBackOut || focusableItemsCount === 0 ? -1 : 0"
-      :data-orientation="orientation"
-      :as="as"
-      :as-child="asChild"
-      :dir="dir"
-      style="outline: none"
-      @mousedown="isClickFocus = true"
-      @mouseup="handleMouseUp"
-      @focus="handleFocus"
-      @blur="isTabbingBackOut = false"
-    >
-      <slot />
-    </Primitive>
-  </CollectionSlot>
+    <slot />
+  </Primitive>
 </template>

@@ -31,6 +31,7 @@ import { cloneVNode, computed, Fragment, h, onUnmounted, useSlots, watch } from 
 import { useCollection } from '@/Collection'
 import { useListVirtualizer } from '@/Listbox/useListVirtualizer'
 import { compare, getActiveElement, useForwardElement, useId } from '@/shared'
+import { isDisabledItem } from '@/shared/isDisabledItem'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
 
@@ -151,7 +152,7 @@ const flatRows = computed(() => {
 })
 
 function enabledItems() {
-  return getItems().map(item => item.ref).filter(el => !el.hasAttribute('data-disabled'))
+  return getItems().map(item => item.ref).filter(el => !isDisabledItem(el))
 }
 
 /** Scrolls the option's row into the viewport, then focuses it (or the first enabled rendered item after it). */
@@ -159,7 +160,7 @@ function focusOption(optionIndex: number, fallback: 'first' | 'last' = 'first') 
   const rowIndex = list.scrollToOption(optionIndex, 'auto')
   requestAnimationFrame(() => {
     const row = parentEl.value?.querySelector<HTMLElement>(`[data-index="${rowIndex}"]`)
-    if (row && !row.hasAttribute('data-disabled')) {
+    if (row && !isDisabledItem(row)) {
       row.focus()
       return
     }

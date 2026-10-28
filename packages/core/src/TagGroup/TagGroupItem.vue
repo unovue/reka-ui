@@ -26,11 +26,17 @@ export const [injectTagGroupItemContext, provideTagGroupItemContext]
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { onBeforeUnmount } from 'vue'
+import { mergeProps, onBeforeUnmount } from 'vue'
 import { Primitive } from '@/Primitive'
-import { RovingFocusItem } from '@/RovingFocus'
+import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { injectTagGroupRootContext } from './TagGroupRoot.vue'
 import { createTagGroupItem } from './useTagGroup'
+
+defineOptions({
+  // `$attrs` are merged under the roving and part bindings: the precedence
+  // the former `RovingFocusItem` wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<TagGroupItemProps<T>>(), {
   as: 'div',
@@ -64,35 +70,36 @@ onBeforeUnmount(unregister)
 // `display: contents` keeps out of the layout. With `asChild` there is no
 // element to wrap the content in, so the consumer provides the `gridcell`.
 provideTagGroupItemContext(context)
+
+// Arrow-key navigation (as a composable; the group handles the keys).
+const roving = useRovingFocusItem({
+  element: currentElement,
+  tabStopId: () => context.id,
+  focusable: () => !disabled.value,
+})!
 </script>
 
 <template>
-  <RovingFocusItem
-    as-child
-    :tab-stop-id="context.id"
-    :focusable="!disabled"
+  <Primitive
+    :ref="forwardRef"
+    :as="as"
+    :as-child="asChild"
+    v-bind="mergeProps($attrs, roving.attrs(), row.attrs.value)"
   >
-    <Primitive
-      :ref="forwardRef"
-      :as="as"
-      :as-child="asChild"
-      v-bind="row.attrs.value"
+    <slot
+      v-if="asChild"
+      :selected="isSelected"
+      :disabled="disabled"
+    />
+    <div
+      v-else
+      role="gridcell"
+      style="display: contents"
     >
       <slot
-        v-if="asChild"
         :selected="isSelected"
         :disabled="disabled"
       />
-      <div
-        v-else
-        role="gridcell"
-        style="display: contents"
-      >
-        <slot
-          :selected="isSelected"
-          :disabled="disabled"
-        />
-      </div>
-    </Primitive>
-  </RovingFocusItem>
+    </div>
+  </Primitive>
 </template>

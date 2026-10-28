@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useCollection } from '@/Collection'
 import { useForwardElement } from '@/shared'
 
 export interface MenubarTriggerProps extends PrimitiveProps {
@@ -10,15 +9,22 @@ export interface MenubarTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { mergeProps, onMounted } from 'vue'
+import { useCollectionItem } from '@/Collection'
 import { MenuAnchor } from '@/Menu'
 import {
   Primitive,
 } from '@/Primitive'
-import { RovingFocusItem } from '@/RovingFocus'
+import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { injectMenubarMenuContext } from './MenubarMenu.vue'
 import { injectMenubarRootContext } from './MenubarRoot.vue'
 import { createMenubarTriggerSurface } from './useMenubar'
+
+defineOptions({
+  // `$attrs` are merged under the roving and part bindings: the precedence
+  // the former `RovingFocusItem` wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<MenubarTriggerProps>(), {
   as: 'button',
@@ -28,11 +34,12 @@ const menuContext = injectMenubarMenuContext()
 
 const { forwardRef, currentElement: triggerElement, expose } = useForwardElement()
 defineExpose(expose)
-const { CollectionItem } = useCollection({ key: 'Menubar' })
+// The menubar's trigger collection, registered from setup (no wrapper).
+useCollectionItem(triggerElement, undefined, { key: 'Menubar' })
 
 // role/aria, `data-highlighted`/`data-state`/`data-disabled`, the `data-value`
 // selector and the pointer/keyboard handlers come from the composable;
-// RovingFocusItem/CollectionItem/MenuAnchor stay the wrappers.
+// MenuAnchor stays the wrapper.
 const trigger = createMenubarTriggerSurface(rootContext, menuContext, {
   disabled: () => props.disabled,
   triggerElement,
@@ -41,26 +48,28 @@ const trigger = createMenubarTriggerSurface(rootContext, menuContext, {
 onMounted(() => {
   menuContext.triggerElement = triggerElement
 })
+
+// Arrow-key navigation (as a composable; the menubar handles the keys).
+const roving = useRovingFocusItem({
+  element: triggerElement,
+  tabStopId: () => menuContext.value,
+  focusable: () => !props.disabled,
+})!
 </script>
 
 <template>
-  <RovingFocusItem
+  <MenuAnchor
+    v-bind="mergeProps($attrs, roving.attrs())"
     as-child
-    :focusable="!disabled"
-    :tab-stop-id="menuContext.value"
   >
-    <CollectionItem>
-      <MenuAnchor as-child>
-        <Primitive
-          :ref="forwardRef"
-          :as="as"
-          :as-child="asChild"
-          :type="as === 'button' ? 'button' : undefined"
-          v-bind="trigger.attrs.value"
-        >
-          <slot />
-        </Primitive>
-      </MenuAnchor>
-    </CollectionItem>
-  </RovingFocusItem>
+    <Primitive
+      :ref="forwardRef"
+      :as="as"
+      :as-child="asChild"
+      :type="as === 'button' ? 'button' : undefined"
+      v-bind="trigger.attrs.value"
+    >
+      <slot />
+    </Primitive>
+  </MenuAnchor>
 </template>
