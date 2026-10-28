@@ -346,8 +346,8 @@ describe('useForwardElement — a part that renders no element', () => {
     const partRef = ref<any>()
     const label = ref('a')
     const wrapper = mount(defineComponent(() => () =>
-      h(DialogRoot, { open: false }, () => h(DialogPortal, { disabled: true }, () =>
-        h(Inner as any, { ref: partRef }, () => label.value)))), { attachTo: document.body })
+      // No portal: a closed popup's portal renders nothing until it first opens.
+      h(DialogRoot, { open: false }, () => h(Inner as any, { ref: partRef }, () => label.value))), { attachTo: document.body })
     return { wrapper, partRef, label }
   }
 

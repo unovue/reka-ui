@@ -12,7 +12,7 @@ export interface CheckboxIndicatorProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { mergeProps } from 'vue'
+import { getCurrentInstance, mergeProps, shallowRef } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
 import { injectCheckboxRootContext } from './CheckboxRoot.vue'
@@ -28,11 +28,26 @@ defineExpose(expose)
 const rootContext = injectCheckboxRootContext()
 // Same derivation as `useCheckbox().indicator` — one source for `data-state` / `data-disabled`.
 const indicator = getCheckboxIndicatorSurface(rootContext)
+
+// An indicator that is not shown mounts no `Presence` (Base UI's
+// `SelectItemIndicator` returns `null`). Once shown, it stays mounted until its
+// exit has finished, and one shown after this indicator mounted enters with
+// `data-starting-style`, as it did while `Presence` was always mounted.
+const instance = getCurrentInstance()!
+const lingering = shallowRef(false)
+function onPresenceComplete(present: boolean) {
+  if (!present)
+    lingering.value = false
+}
 </script>
 
 <template>
   <Presence
+    v-if="forceMount || isIndeterminate(rootContext.state.value) || rootContext.state.value === true || lingering"
     :present="forceMount || isIndeterminate(rootContext.state.value) || rootContext.state.value === true"
+    :appear="instance.isMounted"
+    @vue:mounted="lingering = true"
+    @complete="onPresenceComplete"
   >
     <Primitive
       :ref="forwardRef"

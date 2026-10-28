@@ -1,6 +1,7 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref, ShallowRef } from 'vue'
 import type { SetStateOptions } from './useControllableState'
 import { computed, markRaw, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, shallowReactive, shallowRef, toValue, watch } from 'vue'
+import { getterRef } from './partSurface'
 
 // =============================================================================
 // Detached triggers (#2826), modelled on Base UI's `createHandle()`
@@ -273,9 +274,113 @@ export interface CreatePopupRootStoreOptions<Payload> {
  * the open/switch/close requests. Pure (no lifecycle, no `document`); the Root
  * SFC attaches it with `usePopupHandleAttachment()`.
  *
+ * Most Roots never get a `handle`, so the store is lazy (Base UI only mounts
+ * the handle machinery when a handle exists, mui/base-ui#5394): until a handle
+ * is set (or a handle-only method is called) it holds no computeds and no
+ * refs, and its members read the values a store without a handle has.
+ *
  * @lifecycle pure
  */
 export function createPopupRootStore<Payload>(options: CreatePopupRootStoreOptions<Payload>): PopupRootStore<Payload> {
+  return new LazyPopupRootStore(options)
+}
+
+class LazyPopupRootStore<Payload> implements PopupRootStore<Payload> {
+  private full: PopupRootStore<Payload> | undefined
+  private handleRef: ComputedRef<PopupHandle<Payload> | undefined> | undefined
+  private activeTriggerIdRef: ComputedRef<string | null> | undefined
+  private activeTriggerElementRef: ComputedRef<HTMLElement | undefined> | undefined
+  private anchorRef: ComputedRef<HTMLElement | PopupHandleVirtualAnchor | undefined> | undefined
+  private payloadRef: ComputedRef<Payload | undefined> | undefined
+
+  constructor(private readonly options: CreatePopupRootStoreOptions<Payload>) {}
+
+  /** The full store, built once it is needed. */
+  private ensure(): PopupRootStore<Payload> {
+    return this.full ??= createFullPopupRootStore(this.options)
+  }
+
+  /**
+   * The full store if it exists or a handle is set (building it then), else
+   * `undefined`. Reading it while neither is the case tracks the `handle`
+   * option, so a reader re-runs once a handle is set.
+   */
+  private get active(): PopupRootStore<Payload> | undefined {
+    return this.full ?? (toValue(this.options.handle) ? this.ensure() : undefined)
+  }
+
+  get handle(): ComputedRef<PopupHandle<Payload> | undefined> {
+    return this.handleRef ??= getterRef(() => toValue(this.options.handle))
+  }
+
+  get open(): Readonly<Ref<boolean>> {
+    return this.options.open
+  }
+
+  get contentId(): string | undefined {
+    return toValue(this.options.contentId) ?? `${this.options.baseId}-content`
+  }
+
+  get fallbackTriggerId(): string {
+    return `${this.options.baseId}-trigger`
+  }
+
+  get activeTriggerId(): ComputedRef<string | null> {
+    return this.activeTriggerIdRef ??= getterRef(() => {
+      const active = this.active
+      if (active)
+        return active.activeTriggerId.value
+      const controlled = toValue(this.options.triggerId)
+      return controlled !== undefined ? controlled : (this.options.defaultTriggerId ?? null)
+    })
+  }
+
+  get activeTriggerElement(): ComputedRef<HTMLElement | undefined> {
+    return this.activeTriggerElementRef ??= getterRef(() => this.active?.activeTriggerElement.value)
+  }
+
+  get anchor(): ComputedRef<HTMLElement | PopupHandleVirtualAnchor | undefined> {
+    return this.anchorRef ??= getterRef(() => this.active?.anchor.value)
+  }
+
+  get payload(): ComputedRef<Payload | undefined> {
+    return this.payloadRef ??= getterRef(() => this.active?.payload.value)
+  }
+
+  isOpenedBy(triggerId: string): boolean {
+    return this.options.open.value && this.activeTriggerId.value === triggerId
+  }
+
+  containsTrigger(target: Node | null | undefined): boolean {
+    return this.active?.containsTrigger(target) ?? false
+  }
+
+  pressTrigger(triggerId: string, mode: 'toggle' | 'open', reason?: string, event?: Event): boolean {
+    return this.ensure().pressTrigger(triggerId, mode, reason, event)
+  }
+
+  openPopup(triggerId: string | null, reason?: string, event?: Event, payload?: { value: unknown }): boolean {
+    return this.ensure().openPopup(triggerId, reason, event, payload)
+  }
+
+  closePopup(reason?: string, event?: Event, trigger?: Element): boolean {
+    return this.options.setState(false, reason, event, trigger ? { trigger } : undefined)
+  }
+
+  onTriggerRemoved(trigger: PopupHandleTrigger<unknown>): void {
+    this.ensure().onTriggerRemoved(trigger)
+  }
+
+  onTriggerRenamed(from: string, to: string): void {
+    this.ensure().onTriggerRenamed(from, to)
+  }
+
+  reconcile(): void {
+    this.active?.reconcile()
+  }
+}
+
+function createFullPopupRootStore<Payload>(options: CreatePopupRootStoreOptions<Payload>): PopupRootStore<Payload> {
   const { open, setState } = options
   const handle = computed(() => toValue(options.handle))
   const internalTriggerId = shallowRef<string | null>(options.defaultTriggerId ?? null)
@@ -422,39 +527,47 @@ function useWhileActive(start: () => () => void): void {
  */
 export function usePopupHandleAttachment<Payload>(store: PopupRootStore<Payload>): void {
   useWhileActive(() => {
-    let detach: (() => void) | undefined
+    // Without a handle this is the only watcher: the rest starts once one is set.
+    let stopAttached: (() => void) | undefined
     const stopHandle = watch(store.handle, (handle) => {
-      detach?.()
-      detach = handle?.attach(store)
+      stopAttached?.()
+      stopAttached = handle ? attachStore(store, handle) : undefined
     }, { immediate: true })
-    const stopOpen = watch(store.open, () => store.reconcile())
-    // A controlled `triggerId` hands the popup to another trigger: show its payload.
-    const stopOwner = watch(store.activeTriggerId, id => id !== null && store.handle.value?.triggers.get(id)?.capture())
-
-    let stopWarn = () => {}
-    // eslint-disable-next-line node/prefer-global/process
-    if (process.env.NODE_ENV !== 'production') {
-      const unanchored = () => !!store.handle.value?.requireTrigger && store.open.value && !store.anchor.value
-      const warn = () => {
-        if (unanchored()) {
-          console.warn(
-            '[reka-ui] A popup with a `handle` is open without a trigger to anchor to. With several triggers, '
-            + 'name the one that owns it with `defaultTriggerId` (or `triggerId`), or open it with `handle.open(triggerId)`.',
-          )
-        }
-      }
-      nextTick(warn)
-      stopWarn = watch(unanchored, value => value && warn(), { flush: 'post' })
-    }
-
     return () => {
       stopHandle()
-      stopOpen()
-      stopOwner()
-      stopWarn()
-      detach?.()
+      stopAttached?.()
     }
   })
+}
+
+function attachStore<Payload>(store: PopupRootStore<Payload>, handle: PopupHandle<Payload>): () => void {
+  const detach = handle.attach(store)
+  const stopOpen = watch(store.open, () => store.reconcile())
+  // A controlled `triggerId` hands the popup to another trigger: show its payload.
+  const stopOwner = watch(store.activeTriggerId, id => id !== null && store.handle.value?.triggers.get(id)?.capture())
+
+  let stopWarn = () => {}
+  // eslint-disable-next-line node/prefer-global/process
+  if (process.env.NODE_ENV !== 'production') {
+    const unanchored = () => !!store.handle.value?.requireTrigger && store.open.value && !store.anchor.value
+    const warn = () => {
+      if (unanchored()) {
+        console.warn(
+          '[reka-ui] A popup with a `handle` is open without a trigger to anchor to. With several triggers, '
+          + 'name the one that owns it with `defaultTriggerId` (or `triggerId`), or open it with `handle.open(triggerId)`.',
+        )
+      }
+    }
+    nextTick(warn)
+    stopWarn = watch(unanchored, value => value && warn(), { flush: 'post' })
+  }
+
+  return () => {
+    stopOpen()
+    stopOwner()
+    stopWarn()
+    detach()
+  }
 }
 
 /** Root context object -> that Root's store (each family keys it by its own Root context). */
@@ -509,18 +622,14 @@ export interface UsePopupHandleTriggerReturn {
  * @lifecycle setup
  */
 export function usePopupHandleTrigger<Payload>(options: UsePopupHandleTriggerOptions<Payload>): UsePopupHandleTriggerReturn {
-  const rootStore = getPopupRootStore(options.rootContext)
-  const handle = computed(() => toValue(options.handle) ?? rootStore?.handle.value)
-  const store = computed(() => handle.value?.store ?? null)
-  const id = computed(() => toValue(options.attrId) || options.generatedId || rootStore?.fallbackTriggerId || '')
-  const open = computed(() => store.value?.isOpenedBy(id.value) ?? false)
+  const trigger = new PopupHandleTriggerState(options, getPopupRootStore(options.rootContext))
   // Only a trigger outside the Root keeps its payload live; see `PopupHandleTrigger.payload`.
   const live = !options.rootContext
 
   useWhileActive(() => {
     let unregister: (() => void) | undefined
     let stopPayload = () => {}
-    const stop = watch([handle, id], ([next, nextId], previous) => {
+    const stop = watch([() => trigger.getHandle(), () => trigger.getId()], ([next, nextId], previous) => {
       stopPayload()
       unregister?.()
       unregister = undefined
@@ -549,11 +658,58 @@ export function usePopupHandleTrigger<Payload>(options: UsePopupHandleTriggerOpt
     }
   })
 
-  return {
-    enabled: computed(() => !!handle.value),
-    id,
-    store,
-    open,
-    contentId: computed(() => open.value ? store.value?.contentId : undefined),
+  return trigger
+}
+
+/**
+ * A trigger's view of its handle. The getter refs are built on first read: a
+ * trigger without a handle only ever reads `enabled`.
+ */
+class PopupHandleTriggerState<Payload> implements UsePopupHandleTriggerReturn {
+  private enabledRef: ComputedRef<boolean> | undefined
+  private idRef: ComputedRef<string> | undefined
+  private storeRef: ComputedRef<PopupRootStore<any> | null> | undefined
+  private openRef: ComputedRef<boolean> | undefined
+  private contentIdRef: ComputedRef<string | undefined> | undefined
+
+  constructor(
+    private readonly options: UsePopupHandleTriggerOptions<Payload>,
+    private readonly rootStore: PopupRootStore<any> | undefined,
+  ) {}
+
+  getHandle(): PopupHandle<Payload> | undefined {
+    return toValue(this.options.handle) ?? this.rootStore?.handle.value
+  }
+
+  getId(): string {
+    return toValue(this.options.attrId) || this.options.generatedId || this.rootStore?.fallbackTriggerId || ''
+  }
+
+  private getStore(): PopupRootStore<any> | null {
+    return this.getHandle()?.store ?? null
+  }
+
+  private isOpen(): boolean {
+    return this.getStore()?.isOpenedBy(this.getId()) ?? false
+  }
+
+  get enabled(): ComputedRef<boolean> {
+    return this.enabledRef ??= getterRef(() => !!this.getHandle())
+  }
+
+  get id(): ComputedRef<string> {
+    return this.idRef ??= getterRef(() => this.getId())
+  }
+
+  get store(): ComputedRef<PopupRootStore<any> | null> {
+    return this.storeRef ??= getterRef(() => this.getStore())
+  }
+
+  get open(): ComputedRef<boolean> {
+    return this.openRef ??= getterRef(() => this.isOpen())
+  }
+
+  get contentId(): ComputedRef<string | undefined> {
+    return this.contentIdRef ??= getterRef(() => this.isOpen() ? this.getStore()?.contentId : undefined)
   }
 }

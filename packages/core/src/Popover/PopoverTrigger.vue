@@ -54,16 +54,20 @@ const detached = usePopupHandleTrigger<Payload>({
   element: triggerElement,
   payload: () => props.payload,
 })
-const detachedTrigger = getPopoverTriggerSurface({
-  get triggerId() {
-    return detached.id.value
-  },
-  get contentId() {
-    return detached.contentId.value!
-  },
-  open: detached.open,
-  onOpenToggle: (reason, event) => detached.store.value?.pressTrigger(detached.id.value, 'toggle', reason, event) ?? false,
-} as Parameters<typeof getPopoverTriggerSurface>[0])
+// The handle's view of the trigger surface, built only once a handle is used.
+let detachedTrigger: ReturnType<typeof getPopoverTriggerSurface> | undefined
+function getDetachedTrigger() {
+  return detachedTrigger ??= getPopoverTriggerSurface({
+    get triggerId() {
+      return detached.id.value
+    },
+    get contentId() {
+      return detached.contentId.value!
+    },
+    open: detached.open,
+    onOpenToggle: (reason, event) => detached.store.value?.pressTrigger(detached.id.value, 'toggle', reason, event) ?? false,
+  } as Parameters<typeof getPopoverTriggerSurface>[0])
+}
 
 // id/aria/data-state + the toggling `onClick` all come from the shared surface
 // builder (single source with `usePopover()`); the PopperAnchor wrapper (skipped
@@ -72,7 +76,7 @@ const detachedTrigger = getPopoverTriggerSurface({
 // fall through the as-child wrapper and `Slot` merges them BEFORE the inner
 // element's own props, so a consumer `@click` still runs before the surface's
 // `onClick`.
-const trigger = rootContext ? getPopoverTriggerSurface(rootContext) : detachedTrigger
+const trigger = rootContext ? getPopoverTriggerSurface(rootContext) : getDetachedTrigger()
 
 // Without a `handle`, the trigger renders its own id (its `id` prop, else the
 // Root's generated trigger id) and mirrors it into the Root, so the content's
@@ -80,7 +84,7 @@ const trigger = rootContext ? getPopoverTriggerSurface(rootContext) : detachedTr
 const ownTriggerSlot = rootContext ? getPopoverOwnTriggerSlot(rootContext) : undefined
 const ownTriggerId = ownTriggerSlot ? usePartId(() => props.id, ownTriggerSlot, 'triggerId') : undefined
 const attrs = computed(() => detached.enabled.value
-  ? detachedTrigger.attrs.value
+  ? getDetachedTrigger().attrs.value
   : ownTriggerId ? { ...trigger.attrs.value, id: ownTriggerId.value } : trigger.attrs.value)
 
 // Write this trigger's element into the Root's existing `triggerElement` ref

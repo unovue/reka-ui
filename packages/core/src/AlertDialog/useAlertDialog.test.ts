@@ -173,3 +173,15 @@ describe('useAlertDialog — public export', () => {
     expect('getAlertDialogContentSurface' in Reka).toBe(false)
   })
 })
+
+describe('useAlertDialog — lazy surfaces', () => {
+  it('keeps the dialog keys and overrides content with the alert surface', () => {
+    const d = useAlertDialog()
+    expect(d.content).toBe(d.content)
+    expect(d.content.attrs.value.role).toBe('alertdialog')
+    expect(d.action).not.toBe(d.cancel)
+    expect(typeof d.onOpenChange).toBe('function')
+    expect(d.context).toBeDefined()
+    expect(Object.keys(d)).toEqual(expect.arrayContaining(['trigger', 'overlay', 'content', 'action', 'cancel', 'open', 'context']))
+  })
+})

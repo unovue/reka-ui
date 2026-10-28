@@ -73,12 +73,16 @@ export function useAlertDialog<Payload = unknown>(props: UseAlertDialogProps<Pay
     modal: true,
     baseId: props.baseId ?? `reka-alert-dialog-${++alertDialogCount}`,
   })
-  return {
-    ...dialog,
-    content: getAlertDialogContentSurface(dialog.context),
-    action: getDialogCloseSurface(dialog.context),
-    cancel: getDialogCloseSurface(dialog.context),
-  }
+  // Spreading `dialog` would build every lazy part surface; keep them lazy.
+  let content: PartSurface<DialogContentState> | undefined
+  let action: PartSurface<Record<string, never>> | undefined
+  let cancel: PartSurface<Record<string, never>> | undefined
+  return Object.defineProperties({} as UseAlertDialogReturn<Payload>, {
+    ...Object.getOwnPropertyDescriptors(dialog),
+    content: { enumerable: true, configurable: true, get: () => content ??= getAlertDialogContentSurface(dialog.context) },
+    action: { enumerable: true, configurable: true, get: () => action ??= getDialogCloseSurface(dialog.context) },
+    cancel: { enumerable: true, configurable: true, get: () => cancel ??= getDialogCloseSurface(dialog.context) },
+  })
 }
 
 export interface AlertDialogContentContext {

@@ -101,8 +101,7 @@ function getInitialRootNode(): RootNode | undefined {
 // portal inside a shadow root keeps its content in that shadow root instead of
 // escaping to `document.body`. Confirmed on mount from the component's own DOM
 // anchor (the `v-if` placeholder, or the Teleport's start anchor).
-const initialRootNode = getInitialRootNode()
-const rootNode = shallowRef<RootNode | undefined>(initialRootNode)
+const rootNode = shallowRef<RootNode | undefined>()
 const isMounted = ref(false)
 onMounted(() => {
   rootNode.value = getRootNode(instance?.subTree.el as Node | null | undefined)
@@ -116,17 +115,48 @@ onMounted(() => {
 // unknown, so the content waits for the mount instead of mounting into `body`
 // and moving afterwards (root-scoped setup such as focus guards would stay
 // behind in the document).
-const explicitTo = props.to ?? configContext.teleportTo?.value
-// Vue resolves a deferred selector against the document. In a shadow root this
-// component looks it up instead (`resolveTeleportTarget`), so, like `defer`,
-// it waits until the rest of the tree is in the DOM.
-const resolvesDeferredSelectorInShadowRoot = !!props.defer
-  && typeof explicitTo === 'string'
-  && (initialRootNode as ShadowRoot | undefined)?.host !== undefined
-const canRenderBeforeMount = !isClient
-  || props.disabled
-  || (!!explicitTo && typeof explicitTo !== 'string')
-  || (!!initialRootNode && !resolvesDeferredSelectorInShadowRoot)
+// The same holds without `forceMount` for a portal created by an update of an
+// already mounted client app, e.g. a family portal that rendered nothing while
+// closed and opens now: the content renders in this flush, so post-flush code
+// (`watch(open, …, { flush: 'post' })`, `onUpdated`) sees it on the first open
+// as on every later one. A portal on the app's first render, while hydrating
+// (its vnode already has a node; the server rendered no content) or on the
+// server waits for the mount, so the initial root (an ancestor walk that grows
+// with the number of sibling portals) is never looked up for it.
+let canRenderBeforeMount = false
+if (props.forceMount || (isClient && !!instance?.root.isMounted && !instance.vnode.el)) {
+  const initialRootNode = getInitialRootNode()
+  rootNode.value = initialRootNode
+  const explicitTo = props.to ?? configContext.teleportTo?.value
+  // Vue resolves a deferred selector against the document. In a shadow root this
+  // component looks it up instead (`resolveTeleportTarget`), so, like `defer`,
+  // it waits until the rest of the tree is in the DOM.
+  const resolvesDeferredSelectorInShadowRoot = !!props.defer
+    && typeof explicitTo === 'string'
+    && (initialRootNode as ShadowRoot | undefined)?.host !== undefined
+  canRenderBeforeMount = !isClient
+    || props.disabled
+    || (!!explicitTo && typeof explicitTo !== 'string')
+    || (!!initialRootNode && !resolvesDeferredSelectorInShadowRoot)
+  // Created by an update: Vue resolves a selector `to` (without `defer`) in this
+  // render, and its target may be an element this same update renders after
+  // the portal. Render early only when the target is already there, otherwise
+  // wait for the mount as on the first render.
+  if (canRenderBeforeMount && !props.forceMount && !props.disabled && !props.defer && typeof explicitTo === 'string')
+    canRenderBeforeMount = hasTarget(explicitTo, initialRootNode)
+}
+
+function hasTarget(selector: string, root: RootNode | undefined) {
+  const resolved = resolveTeleportTarget(selector, root)
+  if (typeof resolved !== 'string')
+    return true
+  try {
+    return !!document.querySelector(resolved)
+  }
+  catch {
+    return false
+  }
+}
 
 // Vue's `Teleport` mounts into any parent node (it only calls `insertBefore`), so
 // a `ShadowRoot` target is fine; its prop type just doesn't name it. Read
@@ -139,7 +169,7 @@ const target = computed(() => {
 
 <template>
   <Teleport
-    v-if="isMounted || (forceMount && canRenderBeforeMount)"
+    v-if="isMounted || canRenderBeforeMount"
     :to="target"
     :disabled="disabled"
     :defer="defer"

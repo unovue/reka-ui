@@ -16,9 +16,9 @@ export interface PopoverContentProps extends PopoverContentImplProps {
 </script>
 
 <script setup lang="ts">
-import { reactiveOmit } from '@vueuse/shared'
 import { Presence } from '@/Presence'
 import { useForwardElement, useForwardPropsEmits, usePartId } from '@/shared'
+import { isPortalOpening } from '@/Teleport/portalGate'
 import PopoverContentModal from './PopoverContentModal.vue'
 import PopoverContentNonModal from './PopoverContentNonModal.vue'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
@@ -29,13 +29,15 @@ const emits = defineEmits<PopoverContentEmits>()
 const rootContext = injectPopoverRootContext()
 // Forwarded as the element's `id`; mirrored into the context for the trigger's `aria-controls`.
 const contentId = usePartId(() => props.id, rootContext, 'contentId')
-const forwarded = useForwardPropsEmits(reactiveOmit(props, 'id'), emits)
+// The template binds `id: contentId` after these, so the `id` prop never leaks through.
+const forwarded = useForwardPropsEmits(props, emits)
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 </script>
 
 <template>
   <Presence
+    :appear="isPortalOpening(rootContext)"
     :present="rootContext.open.value"
     :force-mount="forceMount"
     @complete="rootContext.notifyOpenComplete"

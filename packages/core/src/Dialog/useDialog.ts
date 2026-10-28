@@ -279,10 +279,18 @@ export function useDialog<Payload = unknown>(props: UseDialogProps<Payload> = {}
   setGeneratedIds(context, { contentId: contentId.value, titleId: titleId.value, descriptionId: descriptionId.value })
   setPopupRootStore(context, handleStore)
 
+  // The part surfaces are for standalone consumers (the part SFCs build their
+  // own from the context), so each is built on first read.
+  let trigger: PartSurface<DialogTriggerState> | undefined
+  let close: PartSurface<Record<string, never>> | undefined
+  let content: PartSurface<DialogContentState> | undefined
+  let overlay: PartSurface<DialogOverlayState> | undefined
+  let title: PartSurface<Record<string, never>> | undefined
+  let description: PartSurface<Record<string, never>> | undefined
   return {
     open,
-    payload: handleStore.payload,
-    activeTriggerId: handleStore.activeTriggerId,
+    get payload() { return handleStore.payload },
+    get activeTriggerId() { return handleStore.activeTriggerId },
     handleStore,
     modal,
     unmountOnHide,
@@ -291,12 +299,12 @@ export function useDialog<Payload = unknown>(props: UseDialogProps<Payload> = {}
     openModal,
     lastChangeDetails,
     isControlled,
-    trigger: getDialogTriggerSurface(context),
-    close: getDialogCloseSurface(context),
-    content: getDialogContentSurface(context),
-    overlay: getDialogOverlaySurface(context),
-    title: getDialogTitleSurface(context),
-    description: getDialogDescriptionSurface(context),
+    get trigger() { return trigger ??= getDialogTriggerSurface(context) },
+    get close() { return close ??= getDialogCloseSurface(context) },
+    get content() { return content ??= getDialogContentSurface(context) },
+    get overlay() { return overlay ??= getDialogOverlaySurface(context) },
+    get title() { return title ??= getDialogTitleSurface(context) },
+    get description() { return description ??= getDialogDescriptionSurface(context) },
     context,
   }
 }

@@ -15,6 +15,7 @@ export interface DialogOverlayProps extends DialogOverlayImplProps {
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Presence } from '@/Presence'
+import { isPortalOpening } from '@/Teleport/portalGate'
 import { injectDialogRootContext } from './DialogRoot.vue'
 
 const props = defineProps<DialogOverlayProps>()
@@ -35,6 +36,7 @@ const staysMounted = computed(
   <Presence
     v-if="rootContext?.modal.value"
     v-slot="{ present }"
+    :appear="isPortalOpening(rootContext)"
     :present="rootContext.open.value"
     :force-mount="staysMounted"
   >
