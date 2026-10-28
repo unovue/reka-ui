@@ -85,12 +85,20 @@ watch(() => props.value, (value, old) => {
   if (!compare(value, old, rootContext.by))
     label.value = undefined
 })
+// What this item last registered: a re-render that changes none of it (a
+// filter keystroke re-rendering a still-visible item) skips the registry.
+let registered: { value: T, text: string, disabled: boolean } | undefined
 function syncLabel() {
   const text = props.textValue ?? (isFilteredOut.value ? label.value : currentElement.value?.textContent ?? '')
   if (text === undefined)
     return
   label.value = text
-  rootContext.labels.register(props.value, text, disabled.value)
+  const value = props.value
+  const isDisabled = disabled.value
+  if (registered && registered.value === value && registered.text === text && registered.disabled === isDisabled)
+    return
+  registered = { value, text, disabled: isDisabled }
+  rootContext.labels.register(value, text, isDisabled)
 }
 
 // Filtering: the item stays mounted (so it keeps its registrations) but
