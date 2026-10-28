@@ -45,12 +45,24 @@ export interface SelectContentContext {
   onVirtualKeydown?: (event: KeyboardEvent, intent: string | null | undefined) => boolean
   /** Whether keyboard navigation loops (the content's `loop`). */
   loop?: () => boolean
+  /**
+   * Set while a closed content renders its items into a detached fragment only
+   * to read their labels (see `SelectClosedItems`): the items render lean, with
+   * no listeners, state or indicators, and unmount right after.
+   */
+  harvest?: boolean
 }
 
 export const SelectContentDefaultContextValue: SelectContentContext = {
   onViewportChange: () => {},
   itemTextRefCallback: () => {},
   itemRefCallback: () => {},
+}
+
+/** The content context of the closed content's detached items. */
+export const SelectContentHarvestContextValue: SelectContentContext = {
+  ...SelectContentDefaultContextValue,
+  harvest: true,
 }
 
 export type SelectContentImplEmits = {
@@ -94,7 +106,7 @@ export const [injectSelectContentContext, provideSelectContentContext]
 
 <script setup lang="ts">
 import { reactiveOmit, unrefElement } from '@vueuse/core'
-import { computed, mergeProps, ref, watch } from 'vue'
+import { computed, mergeProps, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import SelectItemAlignedPosition from './SelectItemAlignedPosition.vue'
@@ -174,6 +186,11 @@ const pickedProps = computed(() => {
 const forwardedProps = useForwardProps(pickedProps)
 
 provideSelectContentContext(contentContext)
+
+// The open items registered their labels; the closed content need not render
+// them, and the closed typeahead keeps them once they unmount.
+onMounted(() => rootContext.closedItems?.itemsMounted())
+onBeforeUnmount(() => rootContext.closedItems?.capture())
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)

@@ -64,6 +64,12 @@ function isOpen() {
   return trigger().getAttribute('aria-expanded') === 'true'
 }
 
+/** Waits for the idle-time render of a closed select's items (`setTimeout` in jsdom). */
+async function idle() {
+  await new Promise(resolve => setTimeout(resolve, 60))
+  await flushPromises()
+}
+
 /** A Select; `rootProps` (props and `on…` listeners) go on `SelectRoot`. */
 function mountSelect(rootProps: Record<string, unknown> = {}, opts: { values?: string[], disabled?: string[], form?: boolean } = {}) {
   const select = () => h(SelectRoot, rootProps, () => [
@@ -187,7 +193,8 @@ describe('change reasons', () => {
   it('reports autofill when the native select changes', async () => {
     const onUpdate = vi.fn()
     mountSelect({ 'name': 'fruit', 'onUpdate:modelValue': onUpdate }, { form: true })
-    await flushPromises()
+    // The native options of an empty select render in idle time.
+    await idle()
     const select = document.querySelector('select')!
     select.value = 'Cherry'
     select.dispatchEvent(new Event('input', { bubbles: true }))
@@ -594,7 +601,7 @@ describe('review fixes (#3072)', () => {
     expect(isOpen()).toBe(false)
   })
 
-  it('re-registers an item label when only its text or disabled state changes', async () => {
+  it('re-registers an item label when only its text or disabled state changes, on the next open', async () => {
     const label = ref('Cherry')
     const disabled = ref(true)
     mount(defineComponent({
@@ -609,14 +616,25 @@ describe('review fixes (#3072)', () => {
     const nativeCherry = () => Array.from(nativeSelect().options).find(option => option.value === 'Cherry')!
     expect(nativeCherry().disabled).toBe(true)
 
+    // A closed select keeps no items mounted: a change while closed is seen
+    // once they render again, on the next open.
     disabled.value = false
-    await flushPromises()
-    expect(nativeCherry().disabled).toBe(false)
-
     label.value = 'Cherry!'
     await flushPromises()
+    expect(nativeCherry().disabled).toBe(true)
+    expect(valueText()).toBe('Cherry')
+
+    await open()
+    expect(nativeCherry().disabled).toBe(false)
     expect(valueText()).toBe('Cherry!')
     expect(nativeCherry().textContent?.trim()).toBe('Cherry!')
+
+    // While open, the mounted item texts update live.
+    disabled.value = true
+    label.value = 'Cherry?'
+    await flushPromises()
+    expect(nativeCherry().disabled).toBe(true)
+    expect(valueText()).toBe('Cherry?')
   })
 
   describe('trigger press that does not open', () => {

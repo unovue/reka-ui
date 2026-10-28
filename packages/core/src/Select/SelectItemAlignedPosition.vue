@@ -19,7 +19,7 @@ export const [injectSelectItemAlignedPositionContext, provideSelectItemAlignedPo
 
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
 import { CONTENT_MARGIN } from './utils'
@@ -261,7 +261,8 @@ provideSelectItemAlignedPositionContext({
       zIndex: contentZIndex,
     }"
   >
-    <Primitive
+    <component
+      :is="renderAs(props.as, props.asChild)"
       :ref="forwardRef"
       :style="{
         // When we get the height of the content, it includes borders. If we were to set
@@ -270,9 +271,9 @@ provideSelectItemAlignedPositionContext({
         // We need to ensure the content doesn't get taller than the wrapper
         maxHeight: '100%',
       }"
-      v-bind="{ ...$attrs, ...props }"
+      v-bind="$attrs"
     >
       <slot />
-    </Primitive>
+    </component>
   </div>
 </template>

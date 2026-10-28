@@ -5,7 +5,7 @@ export interface SelectSeparatorProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 
 const props = defineProps<SelectSeparatorProps>()
@@ -15,11 +15,11 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(props.as, props.asChild)"
     :ref="forwardRef"
     aria-hidden="true"
-    v-bind="props"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

@@ -463,6 +463,8 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - Typing on a focused, closed `SelectTrigger` selects the next matching item (reason `typeahead`). In v2 it did nothing. `multiple` selects are unchanged.
 - In `popper` position, pressing the trigger of an open select closes it (reason `trigger-press`).
 - `SelectValue` keeps the text of a selected item after its `SelectItemText` unmounts.
+- A closed select keeps no items mounted. It renders them into a detached fragment only to read their texts (a selected value with no known text; the first focus or key on the closed trigger; idle time for a named select in a form), then unmounts them. Item changes made while closed show on the next open; closed typeahead matches the items as last rendered. `SelectPortal` renders nothing until the first open, so a template ref on `SelectContent` is `undefined` until then.
+- New `items` prop on `SelectRoot` (Base UI shape: `Record<value, label>`, `{ value, label, disabled? }[]`, or `{ label?, items }[]` groups). With it, labels, closed typeahead and native options come from the data and the closed content never renders.
 - The hidden native `<select>` marks selected options with `selected` and no longer receives `value`. A `multiple` select submits every selected value.
 - Content ids are `<root id>-content` (`reka-select-v-0-content`; v2 `reka-select-content-v-1`).
 - Root context (`injectSelectRootContext()`):
@@ -470,13 +472,14 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
   - `onValueChange(value, reason?, event?)` and `onOpenChange(open, reason?, event?)` return a boolean.
   - `optionsSet`, `onOptionAdd` and `onOptionRemove` are removed; use `labels.register` / `labels.get` / `labels.entries`.
   - New: `baseId`, `setModelValue`, `isSelected`, `pressItem`, `selectedLabels`, `displayValue`, `getNavigationIntent`.
-- New and additive: `displayValue` and `getNavigationIntent` on `SelectRoot`, `selectedLabels` on the `SelectValue` slot, and `useSelectRoot()` with the part composables.
+- New and additive: `items`, `displayValue` and `getNavigationIntent` on `SelectRoot`, `selectedLabels` on the `SelectValue` slot, and `useSelectRoot()` with the part composables.
 
 **How to find it.**
 - `injectSelectRootContext(` in custom parts; within them, assignments to `modelValue.value` or `open.value`, and `optionsSet`, `onOptionAdd`, `onOptionRemove`.
 - `reka-select-content` in selectors, snapshots and tests.
 - `@update:model-value` handlers on a `SelectRoot` with `multiple`, and `.push(` / `.splice(` on a select's `v-model` array.
 - Tests that assert `update:modelValue` was emitted after pressing the already-selected item.
+- Template refs on `SelectContent` read before the first open, and tests that query a closed select's items (`[role=option]`) in the DOM.
 
 **Rewrite rules.**
 - `rootContext.modelValue.value = x`: replace with `rootContext.setModelValue(x)`. `rootContext.open.value = x`: replace with `rootContext.onOpenChange(x)`.

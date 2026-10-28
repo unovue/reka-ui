@@ -13,9 +13,7 @@ export interface SelectViewportProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { onMounted, ref, toRefs } from 'vue'
-import {
-  Primitive,
-} from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectItemAlignedPositionContext } from './SelectItemAlignedPosition.vue'
 import { CONTENT_MARGIN } from './utils'
@@ -71,11 +69,12 @@ function handleScroll(event: WheelEvent) {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(props.as, props.asChild)"
     :ref="forwardRef"
     data-reka-select-viewport
     role="presentation"
-    v-bind="{ ...$attrs, ...props }"
+    v-bind="{ ...$attrs, nonce: props.nonce }"
     :style="{
       // we use position: 'relative' here on the `viewport` so that when we call
       // `selectedItem.offsetTop` in calculations, the offset is relative to the viewport
@@ -87,14 +86,14 @@ function handleScroll(event: WheelEvent) {
     @scroll="handleScroll"
   >
     <slot />
-  </Primitive>
-  <Primitive
-    as="style"
+  </component>
+  <component
+    :is="renderAs('style')"
     :nonce="nonce"
   >
     /* Hide scrollbars cross-browser and enable momentum scroll for touch
     devices */ [data-reka-select-viewport] { scrollbar-width:none; -ms-overflow-style: none;
     -webkit-overflow-scrolling: touch; }
     [data-reka-select-viewport]::-webkit-scrollbar { display: none; }
-  </Primitive>
+  </component>
 </template>

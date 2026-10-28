@@ -13,7 +13,7 @@ export const [injectSelectGroupContext, provideSelectGroupContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 
 const props = defineProps<SelectGroupProps>()
 
@@ -25,12 +25,12 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(props.as, props.asChild)"
     :ref="forwardRef"
     role="group"
-    v-bind="props"
     :aria-labelledby="id"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

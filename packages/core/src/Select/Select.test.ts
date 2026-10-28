@@ -411,13 +411,19 @@ describe('given SelectContent cleanup', () => {
 })
 
 describe('given Select in a form', async () => {
-  const wrapper = mount({
-    props: ['handleSubmit'],
-    components: { Select },
-    template: '<form @submit="handleSubmit"><Select name="test" value="true" /></form>',
-  }, {
-    props: { handleSubmit },
-    attachTo: document.body,
+  // Mounted when the suite runs, not when it is collected: the suites before
+  // it empty the body, and a closed select resolves its portal target on the
+  // first open.
+  let wrapper: VueWrapper
+  beforeAll(() => {
+    wrapper = mount({
+      props: ['handleSubmit'],
+      components: { Select },
+      template: '<form @submit="handleSubmit"><Select name="test" value="true" /></form>',
+    }, {
+      props: { handleSubmit },
+      attachTo: document.body,
+    })
   })
 
   it('should have hidden input field', async () => {

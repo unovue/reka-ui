@@ -17,6 +17,8 @@ export interface SelectItemContext<T = AcceptableValue> {
 export const [injectSelectItemContext, provideSelectItemContext]
   = createContext<SelectItemContext>('SelectItem')
 
+const DISABLED_ATTRS = Object.freeze({ 'data-disabled': '' })
+
 export type SelectEvent<T> = CustomEvent<{ originalEvent: PointerEvent | KeyboardEvent, value?: T }>
 
 export type SelectItemEmits<T = AcceptableValue> = {
@@ -42,10 +44,10 @@ export interface SelectItemProps<T = AcceptableValue> extends PrimitiveProps {
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { mergeProps, onMounted } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
-import { useSelectItem } from './useSelect'
+import { useSelectItem, useSelectItemLabel } from './useSelect'
 
 defineOptions({
   // `$attrs` are merged under the item's own bindings: the precedence the
@@ -74,40 +76,59 @@ if (props.value === '') {
   )
 }
 
-const { item, isSelected, textValue, itemContext } = useSelectItem({
-  context: rootContext,
-  contentContext,
-  value: () => props.value,
-  disabled: () => props.disabled,
-  textValue: props.textValue,
-  textId: useId(undefined, 'reka-select-item-text'),
-  onSelect: event => emits('select', event as SelectEvent<T>),
-})
+// A closed content's detached item only registers its label, then unmounts:
+// it renders lean (see `SelectClosedItems`).
+const lean = contentContext.harvest
+  ? useSelectItemLabel({
+      context: rootContext,
+      value: () => props.value,
+      disabled: () => props.disabled,
+      textValue: props.textValue,
+    })
+  : undefined
+const full = lean
+  ? undefined
+  : useSelectItem({
+      context: rootContext,
+      contentContext,
+      value: () => props.value,
+      disabled: () => props.disabled,
+      textValue: props.textValue,
+      textId: useId(undefined, 'reka-select-item-text'),
+      onSelect: event => emits('select', event as SelectEvent<T>),
+    })
+const { isSelected, textValue, itemContext } = (lean ?? full)!
+const item = full?.item
 
-// Registered with the content's collection from setup; no wrapper component.
-useCollectionItem(currentElement, () => ({ textValue: textValue.value, value: props.value }))
+// The detached item's attributes: the `data-disabled` the typeahead reads.
+function getLeanAttrs() {
+  return props.disabled ? DISABLED_ATTRS : undefined
+}
 
-onMounted(() => {
-  if (!currentElement.value)
-    return
-  contentContext.itemRefCallback(
-    currentElement.value,
-    props.value,
-    props.disabled,
-  )
-})
+if (!lean) {
+  // Registered with the content's collection from setup; no wrapper component.
+  useCollectionItem(currentElement, () => ({ textValue: textValue.value, value: props.value }))
+  onMounted(() => {
+    if (!currentElement.value)
+      return
+    contentContext.itemRefCallback(
+      currentElement.value,
+      props.value,
+      props.disabled,
+    )
+  })
+}
 
 provideSelectItemContext(itemContext)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
     data-reka-collection-item=""
-    v-bind="mergeProps($attrs, item.attrs.value)"
-    :as="as"
-    :as-child="asChild"
+    v-bind="item ? mergeProps($attrs, item.attrs.value) : getLeanAttrs()"
   >
     <slot :selected="isSelected" />
-  </Primitive>
+  </component>
 </template>

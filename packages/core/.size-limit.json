@@ -14,7 +14,7 @@
   {
     "path": "dist/index.js",
     "import": "{ SelectRoot, SelectTrigger, SelectContent, SelectItem, SelectViewport, SelectPortal }",
-    "limit": "33 KB",
+    "limit": "34 KB",
     "name": "Select"
   },
   {

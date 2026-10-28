@@ -1,4 +1,5 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { SelectTypeaheadItem } from './closedItems'
 import type { SelectContentContext } from './SelectContentImpl.vue'
 import type { SelectEvent, SelectItemContext } from './SelectItem.vue'
 import type { SelectRootContext } from './SelectRoot.vue'
@@ -25,6 +26,7 @@ import {
 import { getterRef } from '@/shared/partSurface'
 import { SelectionSelector } from '@/shared/selectionSelector'
 import { getNextMatch, wrapArray } from '@/shared/useTypeahead'
+import { SelectClosedItems } from './closedItems'
 import { OPEN_KEYS, SELECTION_KEYS, shouldShowPlaceholder } from './utils'
 
 // =============================================================================
@@ -102,11 +104,44 @@ export type SelectItemState = { state: SelectionState, disabled: boolean, highli
 /** Semantic state of an item indicator (`data-state`). */
 export type SelectItemIndicatorState = { state: SelectionState }
 
-/** An entry the closed trigger's typeahead can select. */
-export interface SelectTypeaheadItem<T = AcceptableValue> {
+export type { SelectTypeaheadItem }
+
+/** One option of the root's `items`. */
+export interface SelectItemData<T = AcceptableValue> {
   value: T
-  textValue: string
+  /** The text `SelectValue`, the closed trigger's typeahead and the hidden native `select` use. */
+  label: string
   disabled?: boolean
+}
+
+/** A group of options in the root's `items`; keys besides `items` (a `label`, say) are free. */
+export interface SelectItemGroupData<T = AcceptableValue> {
+  items: readonly SelectItemData<T>[]
+  [key: string]: unknown
+}
+
+/**
+ * The root's `items` (Base UI's `Select.Root items`): the options as data, so
+ * a closed Select renders none of them. A record maps each (string) value to
+ * its label; an array holds `{ value, label, disabled? }` options, or groups
+ * of them (`{ items }`).
+ */
+export type SelectItems<T = AcceptableValue> = Readonly<Record<string, string>> | readonly SelectItemData<T>[] | readonly SelectItemGroupData<T>[]
+
+function isItemGroup(item: unknown): item is SelectItemGroupData<any> {
+  return typeof item === 'object' && item !== null && Array.isArray((item as SelectItemGroupData).items)
+}
+
+/** The options of `items`, flat and in order. @internal */
+export function normalizeSelectItems<T>(items: SelectItems<T> | undefined): SelectItemData<T>[] | undefined {
+  if (!items)
+    return undefined
+  if (!Array.isArray(items))
+    return Object.keys(items).map(value => ({ value: value as T, label: (items as Record<string, string>)[value] }))
+  const list = items as readonly (SelectItemData<T> | SelectItemGroupData<T>)[]
+  return isItemGroup(list[0])
+    ? (list as readonly SelectItemGroupData<T>[]).flatMap(group => group.items)
+    : (list as SelectItemData<T>[]).slice()
 }
 
 const NAVIGATION_KEYS: Record<string, SelectNavigationIntent> = {
@@ -170,6 +205,13 @@ export interface UseSelectRootProps<T = AcceptableValue> {
    * re-pick them) until the content has been opened once.
    */
   displayValue?: ((value: T) => string) | Ref<((value: T) => string) | undefined>
+  /**
+   * The options as data (a record of value → label, or `{ value, label,
+   * disabled? }` options, optionally in `{ items }` groups). With it, the
+   * labels, the closed trigger's typeahead and the hidden native `<select>`
+   * come from it, and the closed content renders no items at all.
+   */
+  items?: MaybeRefOrGetter<SelectItems<T> | undefined>
   /**
    * Resolves what a keydown in the content means. Return `undefined` to fall
    * back to the default mapping (ArrowUp/ArrowDown/Home/End), `null` to opt
@@ -263,6 +305,17 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
 
   const labels = createLabelRegistry<T>(props.by)
   const displayValue = computed(() => isRef(props.displayValue) ? props.displayValue.value : props.displayValue)
+  const items = computed(() => normalizeSelectItems(toValue(props.items)))
+  // The labels of `items`, indexed like the sticky registry (matched with `by`).
+  const itemLabels = computed(() => {
+    const list = items.value
+    if (!list)
+      return undefined
+    const registry = createLabelRegistry<T>(props.by)
+    for (const item of list)
+      registry.register(item.value, item.label, !!item.disabled)
+    return registry
+  })
 
   const isEmptyModelValue = computed(() => {
     const value = modelValue.value
@@ -274,8 +327,19 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
   function resolveLabel(value: T) {
     const resolve = displayValue.value
     const resolved = resolve && !isNullish(value) ? resolve(value) : undefined
-    return resolved ?? labels.get(value)
+    return resolved ?? itemLabels.value?.get(value) ?? labels.get(value)
   }
+
+  const virtualTypeaheadItems = shallowRef<(() => SelectTypeaheadItem<T>[]) | undefined>(undefined)
+  const closedItems = new SelectClosedItems<T>(
+    () => !displayValue.value && !items.value,
+    () => {
+      const value = modelValue.value
+      const values = (Array.isArray(value) ? value : isNullish(value) ? [] : [value]) as T[]
+      return values.some(v => labels.get(v) === undefined)
+    },
+    virtualTypeaheadItems,
+  )
 
   const selectedLabels = computed(() => {
     const value = modelValue.value
@@ -344,8 +408,10 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
     labels,
     selectedLabels,
     displayValue,
+    items,
+    closedItems,
     getNavigationIntent,
-    virtualTypeaheadItems: shallowRef(undefined),
+    virtualTypeaheadItems,
     notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
 
@@ -375,8 +441,9 @@ export interface UseSelectTriggerOptions<T = AcceptableValue> {
   /** @defaultValue `false` */
   disabled?: MaybeRefOrGetter<boolean | undefined>
   /**
-   * The items the closed trigger's typeahead picks from, in order. The SFC
-   * hands the mounted items; defaults to the label registry.
+   * The items the closed trigger's typeahead picks from, in order. Defaults to
+   * the root's `items`, else its items as last rendered, else the label
+   * registry.
    */
   getItems?: () => SelectTypeaheadItem<T>[]
 }
@@ -403,21 +470,37 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
   const isDisabled = computed(() => context.disabled.value || toValue(options.disabled) || false)
   const { search, handleTypeaheadSearch, resetTypeahead } = useTypeahead(() => {})
 
-  // The mounted items, else the label registry: with `displayValue` the
-  // closed content renders nothing, so only items that rendered while open
-  // (and registered their text) can be typed to.
+  // `items`, else the items (mounted, or as last seen), else the label
+  // registry: with `displayValue` the closed content renders nothing, so only
+  // items that rendered while open (and registered their text) can be typed to.
   function getTypeaheadItems(): SelectTypeaheadItem<T>[] {
     // A `SelectVirtualizer` knows every option, rendered or not.
     const virtualItems = context.virtualTypeaheadItems?.value
     if (virtualItems)
       return virtualItems()
-    const items = options.getItems?.() ?? []
+    const data = context.items?.value
+    if (data)
+      return data.map(item => ({ value: item.value, textValue: item.label, disabled: item.disabled }))
+    const items = options.getItems?.() ?? context.closedItems?.getTypeaheadItems() ?? []
     if (items.length)
       return items
     return context.labels.entries().map(entry => ({ value: entry.value, textValue: entry.label, disabled: entry.disabled }))
   }
 
   function typeaheadSelect(event: KeyboardEvent) {
+    if (context.multiple.value || context.open.value)
+      return
+    // A closed Select renders its items only when something needs them: the
+    // first key renders them once, then matches.
+    const closedItems = !options.getItems && context.closedItems
+    if (closedItems && !closedItems.ready()) {
+      closedItems.whenReady(() => matchTypeahead(event))
+      return
+    }
+    matchTypeahead(event)
+  }
+
+  function matchTypeahead(event: KeyboardEvent) {
     if (context.multiple.value || context.open.value)
       return
     const items = getTypeaheadItems().filter(item => !item.disabled)
@@ -554,6 +637,13 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
     }
   }
 
+  // A closed Select renders its items only when something needs them: focus
+  // readies them for the typeahead, before the first key.
+  function onFocus() {
+    if (!context.multiple.value && !context.open.value && !isDisabled.value)
+      context.closedItems?.request()
+  }
+
   const trigger = createPartSurface<SelectTriggerState>(
     () => ({
       'role': 'combobox',
@@ -564,6 +654,7 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
       'disabled': isDisabled.value,
       'dir': context.dir.value,
       onClick,
+      onFocus,
       'onPointerdown': onPointerdown,
       'onMousedown': onMousedown,
       'onPointerup': onPointerup,
@@ -1022,6 +1113,58 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
   }
 
   return { item, isSelected, isFocused, textValue, itemContext }
+}
+
+/**
+ * A closed content's detached item, rendered only so its text registers its
+ * label (see `SelectClosedItems`): the item context its text needs, the
+ * typeahead text, and nothing else (no surface, focus state or handlers).
+ *
+ * @internal
+ */
+export function useSelectItemLabel<T extends AcceptableValue = AcceptableValue>(options: {
+  context: SelectRootContext<T>
+  value: () => T
+  disabled: () => boolean | undefined
+  textValue?: string
+}): { isSelected: Ref<boolean>, textValue: { value: string }, itemContext: SelectItemContext<T> } {
+  const { context, value } = options
+  // Read once, when the snapshot of the items is taken: no ref needed.
+  const textValue = { value: options.textValue ?? '' }
+  const isSelected = getterRef(() => context.isSelected(value()))
+  const itemContext: SelectItemContext<T> = {
+    get value() {
+      return value()
+    },
+    textId: '',
+    disabled: getterRef(() => options.disabled() ?? false),
+    isSelected,
+    onItemTextChange: (node) => {
+      textValue.value = ((textValue.value || node?.textContent) ?? '').trim()
+    },
+  }
+  // Registered with the closed items directly, in render order: no collection.
+  const unregister = context.closedItems?.addHarvested(() => ({
+    value: value(),
+    textValue: textValue.value,
+    disabled: !!options.disabled(),
+  }))
+  if (unregister)
+    onBeforeUnmount(unregister)
+  return { isSelected, textValue, itemContext }
+}
+
+/** Registers a detached item's text in the label registry once mounted (see `useSelectItemLabel`). @internal */
+export function useSelectItemTextLabel<T extends AcceptableValue = AcceptableValue>(context: SelectRootContext<T>, itemContext: SelectItemContext<T>, element: Ref<HTMLElement | null | undefined>): undefined {
+  onMounted(() => {
+    const el = element.value
+    if (!el)
+      return
+    itemContext.onItemTextChange(el)
+    const value = itemContext.value
+    context.labels.register(value, el.textContent ?? String(value ?? ''), itemContext.disabled.value)
+  })
+  return undefined
 }
 
 // -----------------------------------------------------------------------------
