@@ -1,6 +1,7 @@
 import type { Ref, UnwrapNestedRefs } from 'vue'
 import { ref } from 'vue'
 import { findValuesBetween } from './arrays'
+import { isDisabledItem } from './isDisabledItem'
 
 export function useSelectionBehavior<T>(
   modelValue: Ref<T | T[]>,
@@ -42,7 +43,7 @@ export function useSelectionBehavior<T>(
     if (!firstValue?.value || !props.multiple || !Array.isArray(modelValue.value))
       return
 
-    const collection = getItems().filter(i => i.ref.dataset.disabled !== '')
+    const collection = getItems().filter(i => !isDisabledItem(i.ref))
     const lastValue = collection.find(i => i.ref === currentElement)?.value
     if (!lastValue)
       return

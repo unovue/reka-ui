@@ -429,7 +429,8 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
     const items = getItems()
     if (!items?.length)
       return undefined
-    // `getItems()` already leaves out the disabled items (`data-disabled=""`).
+    // `getItems()` already leaves out the disabled items (any `data-disabled`),
+    // the same rule as the fallback selector below.
     return items.map(item => item.ref)
   }
 

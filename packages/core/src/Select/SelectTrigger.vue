@@ -15,6 +15,7 @@ import { injectFieldRootContext } from '@/Field'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
 import { useForwardElement } from '@/shared'
+import { isDisabledItem } from '@/shared/isDisabledItem'
 import { injectSelectRootContext } from './SelectRoot.vue'
 import { useSelectTrigger } from './useSelect'
 
@@ -32,7 +33,7 @@ function getTypeaheadItems(): SelectTypeaheadItem[] {
   return reactiveItems.value
     .slice()
     .sort((a, b) => a.ref.compareDocumentPosition(b.ref) & Node.DOCUMENT_POSITION_PRECEDING ? 1 : -1)
-    .map(item => ({ value: item.value.value, textValue: item.value.textValue, disabled: item.ref.dataset.disabled === '' }))
+    .map(item => ({ value: item.value.value, textValue: item.value.textValue, disabled: isDisabledItem(item.ref) }))
 }
 
 const { trigger } = useSelectTrigger({

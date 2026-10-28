@@ -70,6 +70,7 @@ import { nextTick, ref, toRefs } from 'vue'
 import { getCollectionMeta, useCollection, useCollectionSlot } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { createKeyedSelector } from '@/shared/createKeyedSelector'
+import { isDisabledItem } from '@/shared/isDisabledItem'
 import { ENTRY_FOCUS, EVENT_OPTIONS, focusFirst, getFocusIntent, wrapArray } from './utils'
 
 defineOptions({
@@ -184,7 +185,7 @@ function handleFocus(event: FocusEvent) {
     emits('entryFocus', entryFocusEvent)
 
     if (!entryFocusEvent.defaultPrevented) {
-      const items = getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
+      const items = getItems().map(i => i.ref).filter(i => !isDisabledItem(i))
       const activeItem = items.find(item => item.getAttribute('data-active') === '')
       const highlightedItem = items.find(item => item.getAttribute('data-highlighted') === '')
       const currentItem = items.find(

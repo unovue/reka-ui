@@ -269,6 +269,23 @@ describe('useCollection', () => {
     wrapper.unmount()
   })
 
+  it('treats any `data-disabled` value as disabled, like `:not([data-disabled])`', async () => {
+    const { getCollection, wrapper } = createWrapper([
+      { value: 'a' },
+      { value: 'b' },
+      { value: 'c' },
+    ])
+    await nextTick()
+    document.querySelector('[data-testid=b]')!.setAttribute('data-disabled', 'true')
+    document.querySelector('[data-testid=c]')!.setAttribute('data-disabled', 'false')
+    await nextTick()
+    const { getItems, getItem } = getCollection()
+    expect(getItems().map(i => i.value)).toEqual(['a'])
+    expect(getItems(true).map(i => i.value)).toEqual(['a', 'b', 'c'])
+    expect(getItem(document.querySelector<HTMLElement>('[data-testid=b]')!)).toBeUndefined()
+    wrapper.unmount()
+  })
+
   it('returns plain `{ ref, value }` items', async () => {
     const { getCollection, wrapper } = createWrapper([{ value: 'a' }])
     await nextTick()

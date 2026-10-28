@@ -9,6 +9,7 @@ import { computed, getCurrentScope, nextTick, ref, toRaw, toValue } from 'vue'
 import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
 import { createPartSurface, findValuesBetween, getActiveElement, handleAndDispatchCustomEvent, useControllableState, useTypeahead } from '@/shared'
 import { createKeyedSetSelector, useSelectorKey } from '@/shared/createKeyedSelector'
+import { isDisabledItem } from '@/shared/isDisabledItem'
 import { flatten } from './utils'
 
 /**
@@ -618,7 +619,7 @@ export function useTree<T extends Record<string, any> = Record<string, any>>(pro
     if (!anchor || !multiple.value || !Array.isArray(modelValue.value))
       return false
 
-    const collection = getCollection().filter(i => i.ref.dataset.disabled !== '')
+    const collection = getCollection().filter(i => !isDisabledItem(i.ref))
     const lastValue = collection.find(i => i.ref === currentElement)?.value
     if (!lastValue)
       return false

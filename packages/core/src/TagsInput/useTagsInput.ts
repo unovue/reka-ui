@@ -7,6 +7,7 @@ import { isEqual } from 'ohash'
 import { computed, nextTick, ref, toValue } from 'vue'
 import { createPartSurface, getterRef, selectionState, useArrowNavigation, useComposing, useControllableState } from '@/shared'
 import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
+import { isDisabledItem } from '@/shared/isDisabledItem'
 
 /**
  * Why the tags changed; carried as `details.reason` on every change (#2828).
@@ -227,7 +228,7 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
     if (event.isComposing)
       return
     const target = event.target as HTMLInputElement
-    const collection = getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
+    const collection = getItems().map(i => i.ref).filter(i => !isDisabledItem(i))
     if (!collection.length)
       return
     const lastTag = collection.at(-1)

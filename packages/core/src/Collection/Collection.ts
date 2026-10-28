@@ -1,6 +1,7 @@
 import type { Component, ComponentInternalInstance, ComputedRef, Ref } from 'vue'
 import { defineComponent, getCurrentInstance, h, onScopeDispose, onUpdated, provide, shallowRef } from 'vue'
 import { Slot } from '@/Primitive/Slot'
+import { isDisabledItem } from '@/shared/isDisabledItem'
 import { getterRef } from '@/shared/partSurface'
 import { useForwardElement } from '@/shared/useForwardElement'
 
@@ -121,7 +122,7 @@ class CollectionContextImpl {
     if (!this.validate())
       return undefined
     const item = this.byElement.get(element)
-    return item && (includeDisabledItem || item.ref.dataset.disabled !== '') ? item.read() : undefined
+    return item && (includeDisabledItem || !isDisabledItem(item.ref)) ? item.read() : undefined
   }
 
   register(record: CollectionRecord) {
@@ -245,7 +246,7 @@ class CollectionContextImpl {
 function filterEnabled(records: CollectionRecord[], includeDisabledItem: boolean): CollectionEntry[] {
   const items: CollectionEntry[] = []
   for (const record of records) {
-    if (includeDisabledItem || record.ref.dataset.disabled !== '')
+    if (includeDisabledItem || !isDisabledItem(record.ref))
       items.push(record.read())
   }
   return items
@@ -381,7 +382,7 @@ function getCollectionComponents(key: string) {
 }
 
 export interface UseCollectionReturn<ItemData = {}> {
-  /** The registered items in DOM order; disabled items (`data-disabled=""`) are left out unless asked for. */
+  /** The registered items in DOM order; disabled items (any `data-disabled`) are left out unless asked for. */
   getItems: (includeDisabledItem?: boolean) => CollectionEntry<ItemData>[]
   /** The registered item rendered as `element`. */
   getItem: (element: HTMLElement, includeDisabledItem?: boolean) => CollectionEntry<ItemData> | undefined

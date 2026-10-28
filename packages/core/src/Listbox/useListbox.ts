@@ -9,6 +9,7 @@ import { computed, getCurrentScope, isRef, nextTick, onScopeDispose, ref, shallo
 import { getFocusIntent } from '@/RovingFocus/utils'
 import { compare, createLabelRegistry, createPartSurface, findValuesBetween, handleAndDispatchCustomEvent, selectionState, useControllableState, useKbd, useListSelection, useTypeahead, valueComparator } from '@/shared'
 import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
+import { isDisabledItem } from '@/shared/isDisabledItem'
 import { SelectionSelector } from '@/shared/selectionSelector'
 
 /**
@@ -513,7 +514,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   }
 
   function getCollectionItem() {
-    return getItems().map(i => i.ref).filter(i => i.getAttribute('data-disabled') !== '')
+    return getItems().map(i => i.ref).filter(i => !isDisabledItem(i))
   }
 
   function changeHighlight(el: HTMLElement, scrollIntoView = true, focus?: boolean) {
@@ -754,7 +755,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
       return
 
     if (event.shiftKey) {
-      const collection = getItems().filter(i => i.ref.dataset.disabled !== '')
+      const collection = getItems().filter(i => !isDisabledItem(i.ref))
       let lastValue = collection.find(i => i.ref === targetEl)?.value
 
       if (event.key === kbd.END)

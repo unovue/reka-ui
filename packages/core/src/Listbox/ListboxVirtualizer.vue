@@ -27,6 +27,7 @@ import { refAutoReset } from '@vueuse/shared'
 import { onUnmounted, useSlots, watch, watchSyncEffect } from 'vue'
 import { useCollection } from '@/Collection'
 import { findValuesBetween, getActiveElement, useForwardElement, useId } from '@/shared'
+import { isDisabledItem } from '@/shared/isDisabledItem'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 import { useListVirtualizer } from './useListVirtualizer'
 import { compare, queryCheckedElement } from './utils'
@@ -133,7 +134,7 @@ rootContext.virtualFocusHook.on(({ event, scroll }) => {
     // mirroring the non-virtual path. `highlightFirstItem` is reserved for
     // user-driven PageUp/Home navigation, which focuses and scrolls.
     requestAnimationFrame(() => {
-      const item = getItems().find(i => i.ref.dataset.disabled !== '')?.ref
+      const item = getItems().find(i => !isDisabledItem(i.ref))?.ref
       if (item)
         rootContext.changeHighlight(item, false, false)
     })
@@ -159,7 +160,7 @@ function handleMultipleReplace(event: Event, intent: 'first' | 'last' | 'prev' |
   if (!rootContext.firstValue?.value || !rootContext.multiple.value || !Array.isArray(rootContext.modelValue.value))
     return
 
-  const collection = getItems().filter(i => i.ref.dataset.disabled !== '')
+  const collection = getItems().filter(i => !isDisabledItem(i.ref))
   const lastValue = collection.find(i => i.ref === rootContext.highlightedElement.value)?.value
   if (!lastValue)
     return
