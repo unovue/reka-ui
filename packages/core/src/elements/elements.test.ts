@@ -186,6 +186,106 @@ describe('accessibility (axe)', () => {
     expect(await axe(document.body)).toHaveNoViolations()
   })
 
+  it('an open alert dialog', async () => {
+    render(`
+      <reka-alert-dialog-root default-open>
+        <reka-alert-dialog-trigger>Delete</reka-alert-dialog-trigger>
+        <reka-alert-dialog-portal>
+          <reka-alert-dialog-overlay></reka-alert-dialog-overlay>
+          <reka-alert-dialog-content>
+            <reka-alert-dialog-title>Delete the file?</reka-alert-dialog-title>
+            <reka-alert-dialog-description>This cannot be undone.</reka-alert-dialog-description>
+            <reka-alert-dialog-cancel>Cancel</reka-alert-dialog-cancel>
+            <reka-alert-dialog-action>Delete</reka-alert-dialog-action>
+          </reka-alert-dialog-content>
+        </reka-alert-dialog-portal>
+      </reka-alert-dialog-root>
+    `)
+    await mounted('reka-alert-dialog-action')
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+
+  it('an open dropdown menu', async () => {
+    render(`
+      <reka-dropdown-menu-root default-open>
+        <reka-dropdown-menu-trigger>Options</reka-dropdown-menu-trigger>
+        <reka-dropdown-menu-portal>
+          <reka-dropdown-menu-content>
+            <reka-dropdown-menu-label>Edit</reka-dropdown-menu-label>
+            <reka-dropdown-menu-item>Undo</reka-dropdown-menu-item>
+            <reka-dropdown-menu-separator></reka-dropdown-menu-separator>
+            <reka-dropdown-menu-checkbox-item>Show hidden</reka-dropdown-menu-checkbox-item>
+            <reka-dropdown-menu-radio-group model-value="a">
+              <reka-dropdown-menu-radio-item value="a">A</reka-dropdown-menu-radio-item>
+            </reka-dropdown-menu-radio-group>
+          </reka-dropdown-menu-content>
+        </reka-dropdown-menu-portal>
+      </reka-dropdown-menu-root>
+    `)
+    await mounted('reka-dropdown-menu-radio-item')
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+
+  it('a menubar and a navigation menu', async () => {
+    const container = render(`
+      <reka-menubar-root>
+        <reka-menubar-menu value="file">
+          <reka-menubar-trigger>File</reka-menubar-trigger>
+          <reka-menubar-portal>
+            <reka-menubar-content><reka-menubar-item>New</reka-menubar-item></reka-menubar-content>
+          </reka-menubar-portal>
+        </reka-menubar-menu>
+      </reka-menubar-root>
+      <reka-navigation-menu-root>
+        <reka-navigation-menu-list>
+          <reka-navigation-menu-item value="learn">
+            <reka-navigation-menu-trigger>Learn</reka-navigation-menu-trigger>
+            <reka-navigation-menu-content><a href="#a">A</a></reka-navigation-menu-content>
+          </reka-navigation-menu-item>
+          <reka-navigation-menu-item>
+            <reka-navigation-menu-link href="#github">GitHub</reka-navigation-menu-link>
+          </reka-navigation-menu-item>
+        </reka-navigation-menu-list>
+      </reka-navigation-menu-root>
+    `)
+    await mounted('reka-menubar-trigger')
+    await mounted('reka-navigation-menu-link')
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('an open tooltip and hover card', async () => {
+    render(`
+      <reka-tooltip-provider>
+        <reka-tooltip-root default-open>
+          <reka-tooltip-trigger>Bold</reka-tooltip-trigger>
+          <reka-tooltip-portal><reka-tooltip-content>Make text bold</reka-tooltip-content></reka-tooltip-portal>
+        </reka-tooltip-root>
+      </reka-tooltip-provider>
+      <reka-hover-card-root default-open>
+        <reka-hover-card-trigger tabindex="0">Profile</reka-hover-card-trigger>
+        <reka-hover-card-portal><reka-hover-card-content>About me</reka-hover-card-content></reka-hover-card-portal>
+      </reka-hover-card-root>
+    `)
+    await mounted('reka-tooltip-content')
+    await mounted('reka-hover-card-content')
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+
+  it('a toast', async () => {
+    render(`
+      <reka-toast-provider>
+        <reka-toast-root duration="100000">
+          <reka-toast-title>Saved</reka-toast-title>
+          <reka-toast-description>Your file was saved.</reka-toast-description>
+          <reka-toast-close aria-label="Close">×</reka-toast-close>
+        </reka-toast-root>
+        <reka-toast-viewport></reka-toast-viewport>
+      </reka-toast-provider>
+    `)
+    await mounted('reka-toast-close')
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+
   it('listbox', async () => {
     const container = render(`
       <reka-listbox-root default-value="b">
@@ -346,6 +446,6 @@ describe.skipIf(!hasDist)('built `reka-ui/elements` entry (dist)', () => {
     walk(ELEMENTS_DIST)
     const loaded = Array.from(seen, file => relative(join(PACKAGE_DIR, 'dist'), file).replaceAll('\\', '/'))
     expect(loaded).toContain('elements/host.js')
-    expect(loaded.filter(file => /^(?:Calendar|DatePicker|DropdownMenu|NavigationMenu|Tooltip)\//.test(file))).toEqual([])
+    expect(loaded.filter(file => /^(?:Calendar|DatePicker)\//.test(file))).toEqual([])
   })
 })

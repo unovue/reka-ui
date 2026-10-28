@@ -90,6 +90,18 @@ describe('select elements', () => {
     expect(query('reka-select-value').textContent).toBe('Banana')
   })
 
+  it('renders `<reka-select-arrow>`\'s SVG inside it, in popper position', async () => {
+    const { trigger } = await mount(SELECT('', 'position="popper"').replace('</reka-select-viewport>', '</reka-select-viewport><reka-select-arrow width="20" height="10"></reka-select-arrow>'))
+    await open(trigger)
+    const arrow = query('reka-select-arrow')
+    await vi.waitFor(() => expect(arrow.querySelector('svg')).toBeInstanceOf(SVGSVGElement))
+    expect(arrow.querySelector('svg')!.getAttribute('width')).toBe('20')
+    // Below the trigger, pointing up at it from the content's top edge.
+    await vi.waitFor(() => expect(Math.round(arrow.querySelector('svg')!.getBoundingClientRect().bottom)).toBe(Math.round(query('reka-select-content').getBoundingClientRect().top)))
+    await userEvent.keyboard('{Escape}')
+    await vi.waitFor(() => expect(arrow.querySelector('svg')).toBeNull())
+  })
+
   it('shows the label of a default value before it was ever opened', async () => {
     const { value } = await mount(SELECT('default-value="cherry"'))
     await vi.waitFor(() => expect(value.textContent).toBe('Cherry'))

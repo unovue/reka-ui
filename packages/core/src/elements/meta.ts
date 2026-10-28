@@ -30,6 +30,12 @@ export interface RekaElementPartDefinition {
    */
   semantics?: string | HostSemantics
   /**
+   * The part renders elements next to itself that must be in the document (a
+   * focus proxy): they go right after the element while rendered, instead of
+   * staying detached.
+   */
+  siblings?: boolean
+  /**
    * `'input'`: the part renders onto the element's `<input>` (or `<textarea>`)
    * child instead of onto the element, which is created when there is none. A
    * custom element cannot be a text field, so a part that renders an `<input>` in
@@ -71,6 +77,8 @@ export interface PartMeta {
   emits: string[]
   hasAsChild: boolean
   semantics: HostSemantics | undefined
+  /** See {@link RekaElementPartDefinition.siblings}. */
+  siblings: boolean
   /**
    * Parts with a `name` are form-associated: they submit through `ElementInternals`,
    * and `<label for>`, `<fieldset disabled>` and form reset reach them.
@@ -173,6 +181,7 @@ export function getPartMeta(definition: RekaElementPartDefinition): PartMeta {
     hasAsChild: 'asChild' in propOptions,
     semantics,
     formAssociated: 'name' in propOptions,
+    siblings: !!definition.siblings,
     inputTarget: definition.target === 'input',
     text: definition.text,
   }

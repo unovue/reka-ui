@@ -101,3 +101,21 @@ describe('given MenubarTrigger with consumer event listeners', () => {
     expect(value.value).toBe('')
   })
 })
+
+describe('given MenubarRoot with `as` / `asChild`', () => {
+  it('renders the menubar as the given element', () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(MenubarRoot, { as: 'nav' }, () => h(MenubarMenu, { value: 'file' }, () => h(MenubarTrigger, () => 'File'))),
+    }), { attachTo: document.body })
+    expect(wrapper.find('[role=menubar]').element.tagName).toBe('NAV')
+    wrapper.unmount()
+  })
+
+  it('renders the menubar onto its child with `asChild`', () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(MenubarRoot, { asChild: true }, () => h('ul', { class: 'bar' }, h(MenubarMenu, { value: 'file' }, () => h(MenubarTrigger, () => 'File')))),
+    }), { attachTo: document.body })
+    expect(wrapper.find('ul.bar').attributes('role')).toBe('menubar')
+    wrapper.unmount()
+  })
+})

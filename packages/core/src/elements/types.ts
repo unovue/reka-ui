@@ -1,5 +1,6 @@
 import type { RekaElementEvent } from './events'
 import type { RekaElement } from './RekaElement'
+import type { ToastProviderElementEmits } from './toast'
 import type {
   AccordionContentProps,
   AccordionHeaderProps,
@@ -8,6 +9,19 @@ import type {
   AccordionRootProps,
   AccordionTriggerProps,
 } from '@/Accordion'
+import type {
+  AlertDialogActionProps,
+  AlertDialogCancelProps,
+  AlertDialogContentEmits,
+  AlertDialogContentProps,
+  AlertDialogDescriptionProps,
+  AlertDialogEmits,
+  AlertDialogOverlayProps,
+  AlertDialogPortalProps,
+  AlertDialogProps,
+  AlertDialogTitleProps,
+  AlertDialogTriggerProps,
+} from '@/AlertDialog'
 import type {
   AutocompleteInputEmits,
   AutocompleteInputProps,
@@ -30,6 +44,7 @@ import type {
 } from '@/Collapsible'
 import type {
   ComboboxAnchorProps,
+  ComboboxArrowProps,
   ComboboxCancelProps,
   ComboboxContentEmits,
   ComboboxContentProps,
@@ -49,6 +64,32 @@ import type {
   ComboboxViewportProps,
 } from '@/Combobox'
 import type {
+  ContextMenuArrowProps,
+  ContextMenuCheckboxItemEmits,
+  ContextMenuCheckboxItemProps,
+  ContextMenuContentEmits,
+  ContextMenuContentProps,
+  ContextMenuGroupProps,
+  ContextMenuItemEmits,
+  ContextMenuItemIndicatorProps,
+  ContextMenuItemProps,
+  ContextMenuLabelProps,
+  ContextMenuPortalProps,
+  ContextMenuRadioGroupEmits,
+  ContextMenuRadioGroupProps,
+  ContextMenuRadioItemEmits,
+  ContextMenuRadioItemProps,
+  ContextMenuRootEmits,
+  ContextMenuRootProps,
+  ContextMenuSeparatorProps,
+  ContextMenuSubContentEmits,
+  ContextMenuSubContentProps,
+  ContextMenuSubEmits,
+  ContextMenuSubProps,
+  ContextMenuSubTriggerProps,
+  ContextMenuTriggerProps,
+} from '@/ContextMenu'
+import type {
   DialogCloseProps,
   DialogContentEmits,
   DialogContentProps,
@@ -61,6 +102,51 @@ import type {
   DialogTriggerProps,
 } from '@/Dialog'
 import type {
+  DrawerBackdropProps,
+  DrawerCloseProps,
+  DrawerDescriptionProps,
+  DrawerGrabberProps,
+  DrawerIndentBackgroundProps,
+  DrawerIndentProps,
+  DrawerPopupEmits,
+  DrawerPopupProps,
+  DrawerPortalProps,
+  DrawerRootEmits,
+  DrawerRootProps,
+  DrawerSwipeAreaProps,
+  DrawerTitleProps,
+  DrawerTriggerProps,
+  DrawerViewportProps,
+} from '@/Drawer'
+import type {
+  DropdownMenuArrowProps,
+  DropdownMenuCheckboxItemEmits,
+  DropdownMenuCheckboxItemProps,
+  DropdownMenuContentEmits,
+  DropdownMenuContentProps,
+  DropdownMenuFilterEmits,
+  DropdownMenuFilterProps,
+  DropdownMenuGroupProps,
+  DropdownMenuItemEmits,
+  DropdownMenuItemIndicatorProps,
+  DropdownMenuItemProps,
+  DropdownMenuLabelProps,
+  DropdownMenuPortalProps,
+  DropdownMenuRadioGroupEmits,
+  DropdownMenuRadioGroupProps,
+  DropdownMenuRadioItemEmits,
+  DropdownMenuRadioItemProps,
+  DropdownMenuRootEmits,
+  DropdownMenuRootProps,
+  DropdownMenuSeparatorProps,
+  DropdownMenuSubContentEmits,
+  DropdownMenuSubContentProps,
+  DropdownMenuSubEmits,
+  DropdownMenuSubProps,
+  DropdownMenuSubTriggerProps,
+  DropdownMenuTriggerProps,
+} from '@/DropdownMenu'
+import type {
   EditableAreaProps,
   EditableCancelTriggerProps,
   EditableEditTriggerProps,
@@ -70,6 +156,15 @@ import type {
   EditableRootProps,
   EditableSubmitTriggerProps,
 } from '@/Editable'
+import type {
+  HoverCardArrowProps,
+  HoverCardContentProps,
+  HoverCardPortalProps,
+  HoverCardRootEmits,
+  HoverCardRootProps,
+  HoverCardTriggerProps,
+} from '@/HoverCard'
+import type { HoverCardContentEmits } from '@/HoverCard/HoverCardContent.vue'
 import type {
   ListboxContentProps,
   ListboxFilterEmits,
@@ -83,7 +178,51 @@ import type {
   ListboxRootProps,
 } from '@/Listbox'
 import type {
+  MenubarArrowProps,
+  MenubarCheckboxItemEmits,
+  MenubarCheckboxItemProps,
+  MenubarContentEmits,
+  MenubarContentProps,
+  MenubarGroupProps,
+  MenubarItemEmits,
+  MenubarItemIndicatorProps,
+  MenubarItemProps,
+  MenubarLabelProps,
+  MenubarMenuEmits,
+  MenubarMenuProps,
+  MenubarPortalProps,
+  MenubarRadioGroupEmits,
+  MenubarRadioGroupProps,
+  MenubarRadioItemEmits,
+  MenubarRadioItemProps,
+  MenubarRootEmits,
+  MenubarRootProps,
+  MenubarSeparatorProps,
+  MenubarSubContentEmits,
+  MenubarSubContentProps,
+  MenubarSubEmits,
+  MenubarSubProps,
+  MenubarSubTriggerProps,
+  MenubarTriggerProps,
+} from '@/Menubar'
+import type {
+  NavigationMenuContentEmits,
+  NavigationMenuContentProps,
+  NavigationMenuIndicatorProps,
+  NavigationMenuItemProps,
+  NavigationMenuLinkEmits,
+  NavigationMenuLinkProps,
+  NavigationMenuListProps,
+  NavigationMenuRootEmits,
+  NavigationMenuRootProps,
+  NavigationMenuSubEmits,
+  NavigationMenuSubProps,
+  NavigationMenuTriggerProps,
+  NavigationMenuViewportProps,
+} from '@/NavigationMenu'
+import type {
   PopoverAnchorProps,
+  PopoverArrowProps,
   PopoverCloseProps,
   PopoverContentEmits,
   PopoverContentProps,
@@ -93,6 +232,7 @@ import type {
   PopoverTriggerProps,
 } from '@/Popover'
 import type {
+  SelectArrowProps,
   SelectContentEmits,
   SelectContentProps,
   SelectGroupProps,
@@ -137,7 +277,30 @@ import type {
   TagsInputRootEmits,
   TagsInputRootProps,
 } from '@/TagsInput'
+import type {
+  ToastActionProps,
+  ToastArrowProps,
+  ToastCloseProps,
+  ToastDescriptionProps,
+  ToastPortalProps,
+  ToastPositionerProps,
+  ToastProviderProps,
+  ToastRootEmits,
+  ToastRootProps,
+  ToastTitleProps,
+  ToastViewportProps,
+} from '@/Toast'
 import type { ToggleEmits, ToggleProps } from '@/Toggle'
+import type {
+  TooltipArrowProps,
+  TooltipContentEmits,
+  TooltipContentProps,
+  TooltipPortalProps,
+  TooltipProviderProps,
+  TooltipRootEmits,
+  TooltipRootProps,
+  TooltipTriggerProps,
+} from '@/Tooltip'
 import type {
   TreeItemEmits,
   TreeItemProps,
@@ -211,6 +374,15 @@ interface RekaElementParts {
   'reka-accordion-header': Part<AccordionHeaderProps>
   'reka-accordion-trigger': Part<AccordionTriggerProps>
   'reka-accordion-content': Part<AccordionContentProps>
+  'reka-alert-dialog-root': Part<AlertDialogProps, AlertDialogEmits>
+  'reka-alert-dialog-trigger': Part<AlertDialogTriggerProps>
+  'reka-alert-dialog-portal': Part<AlertDialogPortalProps>
+  'reka-alert-dialog-overlay': Part<AlertDialogOverlayProps>
+  'reka-alert-dialog-content': Part<AlertDialogContentProps, AlertDialogContentEmits>
+  'reka-alert-dialog-title': Part<AlertDialogTitleProps>
+  'reka-alert-dialog-description': Part<AlertDialogDescriptionProps>
+  'reka-alert-dialog-cancel': Part<AlertDialogCancelProps>
+  'reka-alert-dialog-action': Part<AlertDialogActionProps>
   'reka-autocomplete-root': Part<AutocompleteRootProps, AutocompleteRootEmits>
   'reka-autocomplete-input': Part<AutocompleteInputProps, AutocompleteInputEmits>
   'reka-autocomplete-anchor': Part<ComboboxAnchorProps>
@@ -231,6 +403,22 @@ interface RekaElementParts {
   'reka-collapsible-root': Part<CollapsibleRootProps, CollapsibleRootEmits>
   'reka-collapsible-trigger': Part<CollapsibleTriggerProps>
   'reka-collapsible-content': Part<CollapsibleContentProps, CollapsibleContentEmits>
+  'reka-context-menu-root': Part<ContextMenuRootProps, ContextMenuRootEmits>
+  'reka-context-menu-trigger': Part<ContextMenuTriggerProps>
+  'reka-context-menu-portal': Part<ContextMenuPortalProps>
+  'reka-context-menu-content': Part<ContextMenuContentProps, ContextMenuContentEmits>
+  'reka-context-menu-arrow': Part<ContextMenuArrowProps>
+  'reka-context-menu-item': Part<ContextMenuItemProps, ContextMenuItemEmits>
+  'reka-context-menu-group': Part<ContextMenuGroupProps>
+  'reka-context-menu-label': Part<ContextMenuLabelProps>
+  'reka-context-menu-checkbox-item': Part<ContextMenuCheckboxItemProps, ContextMenuCheckboxItemEmits>
+  'reka-context-menu-radio-group': Part<ContextMenuRadioGroupProps, ContextMenuRadioGroupEmits>
+  'reka-context-menu-radio-item': Part<ContextMenuRadioItemProps, ContextMenuRadioItemEmits>
+  'reka-context-menu-item-indicator': Part<ContextMenuItemIndicatorProps>
+  'reka-context-menu-separator': Part<ContextMenuSeparatorProps>
+  'reka-context-menu-sub': Part<ContextMenuSubProps, ContextMenuSubEmits>
+  'reka-context-menu-sub-trigger': Part<ContextMenuSubTriggerProps>
+  'reka-context-menu-sub-content': Part<ContextMenuSubContentProps, ContextMenuSubContentEmits>
   'reka-combobox-root': Part<ComboboxRootProps, ComboboxRootEmits>
   'reka-combobox-input': Part<ComboboxInputProps, ComboboxInputEmits>
   'reka-combobox-anchor': Part<ComboboxAnchorProps>
@@ -245,6 +433,7 @@ interface RekaElementParts {
   'reka-combobox-group': Part<ComboboxGroupProps>
   'reka-combobox-label': Part<ComboboxLabelProps>
   'reka-combobox-separator': Part<ComboboxSeparatorProps>
+  'reka-combobox-arrow': Part<ComboboxArrowProps>
   'reka-dialog-root': Part<DialogRootProps, DialogRootEmits>
   'reka-dialog-trigger': Part<DialogTriggerProps>
   'reka-dialog-portal': Part<DialogPortalProps>
@@ -253,6 +442,69 @@ interface RekaElementParts {
   'reka-dialog-title': Part<DialogTitleProps>
   'reka-dialog-description': Part<DialogDescriptionProps>
   'reka-dialog-close': Part<DialogCloseProps>
+  'reka-drawer-root': Part<DrawerRootProps, DrawerRootEmits>
+  'reka-drawer-trigger': Part<DrawerTriggerProps>
+  'reka-drawer-portal': Part<DrawerPortalProps>
+  'reka-drawer-backdrop': Part<DrawerBackdropProps>
+  'reka-drawer-viewport': Part<DrawerViewportProps>
+  'reka-drawer-popup': Part<DrawerPopupProps, DrawerPopupEmits>
+  'reka-drawer-title': Part<DrawerTitleProps>
+  'reka-drawer-description': Part<DrawerDescriptionProps>
+  'reka-drawer-close': Part<DrawerCloseProps>
+  'reka-drawer-grabber': Part<DrawerGrabberProps>
+  'reka-drawer-swipe-area': Part<DrawerSwipeAreaProps>
+  'reka-drawer-provider': Part<object>
+  'reka-drawer-indent': Part<DrawerIndentProps>
+  'reka-drawer-indent-background': Part<DrawerIndentBackgroundProps>
+  'reka-drawer-virtual-keyboard-provider': Part<object>
+  'reka-dropdown-menu-root': Part<DropdownMenuRootProps, DropdownMenuRootEmits>
+  'reka-dropdown-menu-trigger': Part<DropdownMenuTriggerProps>
+  'reka-dropdown-menu-portal': Part<DropdownMenuPortalProps>
+  'reka-dropdown-menu-content': Part<DropdownMenuContentProps, DropdownMenuContentEmits>
+  'reka-dropdown-menu-filter': Part<DropdownMenuFilterProps, DropdownMenuFilterEmits>
+  'reka-dropdown-menu-arrow': Part<DropdownMenuArrowProps>
+  'reka-dropdown-menu-item': Part<DropdownMenuItemProps, DropdownMenuItemEmits>
+  'reka-dropdown-menu-group': Part<DropdownMenuGroupProps>
+  'reka-dropdown-menu-label': Part<DropdownMenuLabelProps>
+  'reka-dropdown-menu-checkbox-item': Part<DropdownMenuCheckboxItemProps, DropdownMenuCheckboxItemEmits>
+  'reka-dropdown-menu-radio-group': Part<DropdownMenuRadioGroupProps, DropdownMenuRadioGroupEmits>
+  'reka-dropdown-menu-radio-item': Part<DropdownMenuRadioItemProps, DropdownMenuRadioItemEmits>
+  'reka-dropdown-menu-item-indicator': Part<DropdownMenuItemIndicatorProps>
+  'reka-dropdown-menu-separator': Part<DropdownMenuSeparatorProps>
+  'reka-dropdown-menu-sub': Part<DropdownMenuSubProps, DropdownMenuSubEmits>
+  'reka-dropdown-menu-sub-trigger': Part<DropdownMenuSubTriggerProps>
+  'reka-dropdown-menu-sub-content': Part<DropdownMenuSubContentProps, DropdownMenuSubContentEmits>
+  'reka-hover-card-root': Part<HoverCardRootProps, HoverCardRootEmits>
+  'reka-hover-card-trigger': Part<HoverCardTriggerProps>
+  'reka-hover-card-portal': Part<HoverCardPortalProps>
+  'reka-hover-card-content': Part<HoverCardContentProps, HoverCardContentEmits>
+  'reka-hover-card-arrow': Part<HoverCardArrowProps>
+  'reka-menubar-root': Part<MenubarRootProps, MenubarRootEmits>
+  'reka-menubar-menu': Part<MenubarMenuProps, MenubarMenuEmits>
+  'reka-menubar-trigger': Part<MenubarTriggerProps>
+  'reka-menubar-portal': Part<MenubarPortalProps>
+  'reka-menubar-content': Part<MenubarContentProps, MenubarContentEmits>
+  'reka-menubar-arrow': Part<MenubarArrowProps>
+  'reka-menubar-item': Part<MenubarItemProps, MenubarItemEmits>
+  'reka-menubar-group': Part<MenubarGroupProps>
+  'reka-menubar-label': Part<MenubarLabelProps>
+  'reka-menubar-checkbox-item': Part<MenubarCheckboxItemProps, MenubarCheckboxItemEmits>
+  'reka-menubar-radio-group': Part<MenubarRadioGroupProps, MenubarRadioGroupEmits>
+  'reka-menubar-radio-item': Part<MenubarRadioItemProps, MenubarRadioItemEmits>
+  'reka-menubar-item-indicator': Part<MenubarItemIndicatorProps>
+  'reka-menubar-separator': Part<MenubarSeparatorProps>
+  'reka-menubar-sub': Part<MenubarSubProps, MenubarSubEmits>
+  'reka-menubar-sub-trigger': Part<MenubarSubTriggerProps>
+  'reka-menubar-sub-content': Part<MenubarSubContentProps, MenubarSubContentEmits>
+  'reka-navigation-menu-root': Part<NavigationMenuRootProps, NavigationMenuRootEmits>
+  'reka-navigation-menu-sub': Part<NavigationMenuSubProps, NavigationMenuSubEmits>
+  'reka-navigation-menu-list': Part<NavigationMenuListProps>
+  'reka-navigation-menu-item': Part<NavigationMenuItemProps>
+  'reka-navigation-menu-trigger': Part<NavigationMenuTriggerProps>
+  'reka-navigation-menu-content': Part<NavigationMenuContentProps, NavigationMenuContentEmits>
+  'reka-navigation-menu-link': Part<NavigationMenuLinkProps, NavigationMenuLinkEmits>
+  'reka-navigation-menu-indicator': Part<NavigationMenuIndicatorProps>
+  'reka-navigation-menu-viewport': Part<NavigationMenuViewportProps>
   'reka-editable-root': Part<EditableRootProps, EditableRootEmits>
   'reka-editable-area': Part<EditableAreaProps>
   'reka-editable-input': Part<EditableInputProps>
@@ -272,6 +524,7 @@ interface RekaElementParts {
   'reka-popover-anchor': Part<PopoverAnchorProps>
   'reka-popover-portal': Part<PopoverPortalProps>
   'reka-popover-content': Part<PopoverContentProps, PopoverContentEmits>
+  'reka-popover-arrow': Part<PopoverArrowProps>
   'reka-popover-close': Part<PopoverCloseProps>
   'reka-select-root': Part<SelectRootProps, SelectRootEmits>
   'reka-select-trigger': Part<SelectTriggerProps>
@@ -288,6 +541,7 @@ interface RekaElementParts {
   'reka-select-group': Part<SelectGroupProps>
   'reka-select-label': Part<SelectLabelProps>
   'reka-select-separator': Part<SelectSeparatorProps>
+  'reka-select-arrow': Part<SelectArrowProps>
   'reka-switch-root': Part<SwitchRootProps, SwitchRootEmits>
   'reka-switch-thumb': Part<SwitchThumbProps>
   'reka-tabs-root': Part<TabsRootProps, TabsRootEmits>
@@ -295,6 +549,23 @@ interface RekaElementParts {
   'reka-tabs-trigger': Part<TabsTriggerProps>
   'reka-tabs-content': Part<TabsContentProps>
   'reka-tabs-indicator': Part<TabsIndicatorProps>
+  'reka-toast-provider': Part<ToastProviderProps, ToastProviderElementEmits>
+  'reka-toast-viewport': Part<ToastViewportProps>
+  'reka-toast-root': Part<ToastRootProps, ToastRootEmits>
+  'reka-toast-title': Part<ToastTitleProps>
+  'reka-toast-description': Part<ToastDescriptionProps>
+  'reka-toast-action': Part<ToastActionProps>
+  'reka-toast-close': Part<ToastCloseProps>
+  'reka-toast-portal': Part<ToastPortalProps>
+  'reka-toast-positioner': Part<ToastPositionerProps>
+  'reka-toast-arrow': Part<ToastArrowProps>
+  'reka-toggle': Part<ToggleProps, ToggleEmits>
+  'reka-tooltip-provider': Part<TooltipProviderProps>
+  'reka-tooltip-root': Part<TooltipRootProps, TooltipRootEmits>
+  'reka-tooltip-trigger': Part<TooltipTriggerProps>
+  'reka-tooltip-portal': Part<TooltipPortalProps>
+  'reka-tooltip-content': Part<TooltipContentProps, TooltipContentEmits>
+  'reka-tooltip-arrow': Part<TooltipArrowProps>
   'reka-tag-group-root': Part<TagGroupRootProps, TagGroupRootEmits>
   'reka-tag-group-item': Part<TagGroupItemProps>
   'reka-tag-group-item-text': Part<TagGroupItemTextProps>
@@ -305,7 +576,6 @@ interface RekaElementParts {
   'reka-tags-input-item-text': Part<TagsInputItemTextProps>
   'reka-tags-input-item-delete': Part<TagsInputItemDeleteProps>
   'reka-tags-input-clear': Part<TagsInputClearProps>
-  'reka-toggle': Part<ToggleProps, ToggleEmits>
   'reka-tree-root': Part<TreeRootProps, TreeRootEmits>
   'reka-tree-item': Part<TreeItemProps<Record<string, any>>, TreeItemEmits<Record<string, any>>>
 }

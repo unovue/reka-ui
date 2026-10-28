@@ -72,6 +72,17 @@ describe('combobox elements', () => {
     expect(document.activeElement).toBe(input)
   })
 
+  it('renders `<reka-combobox-arrow>`\'s SVG inside it', async () => {
+    const { content } = await mount(COMBOBOX.replace('</reka-combobox-viewport>', '</reka-combobox-viewport><reka-combobox-arrow width="20" height="10"></reka-combobox-arrow>'))
+    await userEvent.click(query('reka-combobox-trigger'))
+    await vi.waitFor(() => expect(content.getAttribute('data-state')).toBe('open'))
+    const arrow = query('reka-combobox-arrow')
+    await vi.waitFor(() => expect(arrow.querySelector('svg')).toBeInstanceOf(SVGSVGElement))
+    expect(arrow.querySelector('svg')!.getAttribute('width')).toBe('20')
+    // Below the trigger, pointing up at it from the content's top edge.
+    await vi.waitFor(() => expect(Math.round(arrow.querySelector('svg')!.getBoundingClientRect().bottom)).toBe(Math.round(content.getBoundingClientRect().top)))
+  })
+
   it('filters while typing, highlights with the arrow keys and selects with Enter', async () => {
     const { input, content } = await mount()
     const root = query('reka-combobox-root')

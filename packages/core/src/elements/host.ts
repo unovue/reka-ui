@@ -19,6 +19,14 @@ export const HOST_PROP = '__rekaHost'
  */
 export const OWNED_ATTR = 'data-reka-owned'
 /**
+ * Marks the nodes a part's tree rendered into the host (an `inside` part, see
+ * {@link HostSemantics.inside}) or next to it (a `siblings` part), so a
+ * `cloneNode()` copy of a mounted element can drop them.
+ */
+export const RELOCATED_ATTR = 'data-reka-relocated'
+/** Data of the comment that ends a `siblings` part's nodes next to its host. */
+const SIBLINGS_END = 'reka-siblings-end'
+/**
  * Marks an element the binding created inside the consumer's tree (the `<input>`
  * of a `target: 'input'` part that had none): not the consumer's content.
  */
@@ -58,6 +66,19 @@ export interface HostSemantics {
   level?: number
   /** Button behaviour: focusable, activates with Enter / Space, inert while disabled. */
   button?: boolean
+  /**
+   * Link behaviour, while the host has an `href`: `role="link"`, focusable,
+   * activates with Enter, and a click the page does not prevent follows the
+   * `href` (and `target`), as an `<a href>` would.
+   */
+  link?: boolean
+  /**
+   * The part renders its own element inside the host instead of onto it. An SVG
+   * part (an arrow) needs a real `<svg>`, which a custom element cannot stand in
+   * for: the host holds it, and is positioned and styled as its box (`fill`,
+   * `color` and `stroke` inherit).
+   */
+  inside?: boolean
 }
 
 const TAG_SEMANTICS: Record<string, HostSemantics> = {
@@ -72,6 +93,8 @@ const TAG_SEMANTICS: Record<string, HostSemantics> = {
   ol: { role: 'list' },
   li: { role: 'listitem' },
   nav: { role: 'navigation' },
+  a: { link: true },
+  svg: { inside: true },
 }
 
 export function semanticsForTag(tag: unknown): HostSemantics | undefined {
@@ -89,6 +112,10 @@ export interface HostLifecycle {
 
 const bindings = new WeakMap<Node, HostBinding>()
 const containers = new WeakMap<Node, HostBinding>()
+/** Nodes a `siblings` part rendered next to its host, by binding. */
+const siblingOwners = new WeakMap<Node, HostBinding>()
+/** Nodes a live part rendered into (`inside`) or next to (`siblings`) its host. */
+const liveRelocated = new WeakSet<Node>()
 /** Bindings whose element currently sits away from its home position (teleported or wrapped). */
 const awayBindings = new Set<HostBinding>()
 
@@ -232,6 +259,11 @@ export class HostBinding {
   active = false
   /** The part renders as disabled. */
   partDisabled = false
+  /**
+   * Root-level elements the part renders next to itself go next to the host in
+   * the document, instead of staying detached (see `RekaElementPartDefinition.siblings`).
+   */
+  siblings = false
 
   private homeMarker: Comment | null = null
   private readonly owned = new Map<string, OwnedAttribute>()
@@ -240,6 +272,12 @@ export class HostBinding {
   /** The consumer's `style` attribute before the part first styled the host. */
   private styleAttribute: string | null | undefined
   private readonly events = new Map<string, unknown>()
+  /** Nodes the part's tree rendered into the host (an `inside` part). */
+  private readonly content = new Set<Node>()
+  /** Nodes the part's tree rendered next to the host (a `siblings` part). */
+  private readonly siblingNodes = new Set<Node>()
+  /** Marks where the host's siblings end, so they keep their order. */
+  private siblingEnd: Comment | null = null
   private spaceArmed = false
   private markerQueued = false
   private formQueued = false
@@ -287,6 +325,10 @@ export class HostBinding {
       el.addEventListener('click', this.onClickCapture, true)
       this.addKeyboardShims()
     }
+    if (semantics?.link) {
+      el.addEventListener('click', this.onLinkClick)
+      this.addKeyboardShims()
+    }
   }
 
   /**
@@ -294,6 +336,13 @@ export class HostBinding {
    * `cloneNode()`: a copy starts from the consumer's attributes only.
    */
   static cleanCopiedState(el: HTMLElement) {
+    // Copies of nodes a part rendered into or next to a host, anywhere in the copy
+    // (a toast's announcement sits where the toast was declared, not next to it).
+    for (const node of el.querySelectorAll(`[${RELOCATED_ATTR}]`)) {
+      if (!liveRelocated.has(node))
+        node.remove()
+    }
+    HostBinding.removeCopiedSiblings(el)
     const owned = el.getAttribute(OWNED_ATTR)
     if (owned === null)
       return
@@ -322,6 +371,11 @@ export class HostBinding {
       el.removeAttribute('class')
   }
 
+  /** The part renders its own element inside the host (see {@link HostSemantics.inside}). */
+  get inside() {
+    return !!this.semantics?.inside
+  }
+
   get away() {
     return this.homeMarker !== null
   }
@@ -342,10 +396,13 @@ export class HostBinding {
     observeAttributes(target)
   }
 
-  /** Whether the part's fallback text may go in the host: it has no children of the consumer's. */
+  /**
+   * Whether the part's fallback text may go in the host: it has no children of the
+   * consumer's (what the binding created or a part rendered into it does not count).
+   */
   canWriteText() {
     for (const child of this.host.childNodes) {
-      if (child !== this.textNode && !(child as Element).hasAttribute?.(CREATED_ATTR))
+      if (child !== this.textNode && !(child as Element).hasAttribute?.(CREATED_ATTR) && !(child as Element).hasAttribute?.(RELOCATED_ATTR))
         return false
     }
     return true
@@ -441,6 +498,10 @@ export class HostBinding {
       this.styles.add(child)
       return
     }
+    // Every root-level node (fragment anchors too, so Vue's own removal of a
+    // fragment walks only these), but form fields: they submit through internals.
+    if (this.siblings && !FORM_FIELD.test((child as Element).tagName ?? '') && this.insertSibling(child, anchor))
+      return
     // (An element with nothing in it, like the one holding a Teleport's anchors,
     // loses nothing by staying detached.)
     if (child.nodeType === Node.ELEMENT_NODE && !FORM_FIELD.test((child as Element).tagName) && !this.warned
@@ -452,9 +513,132 @@ export class HostBinding {
     this.scheduleFormSync()
   }
 
+  /**
+   * Puts a root-level node right after the host (and its earlier siblings).
+   * @internal
+   */
+  insertSibling(child: Node, anchor: Node | null): boolean {
+    const home = this.homeNode
+    const parent = home.parentNode
+    if (!parent)
+      return false
+    if (anchor && anchor.parentNode === parent && this.siblingNodes.has(anchor)) {
+      parent.insertBefore(child, anchor)
+    }
+    else {
+      const end = this.siblingEnd ??= this.host.ownerDocument.createComment(SIBLINGS_END)
+      if (end.parentNode !== parent)
+        parent.insertBefore(end, home.nextSibling)
+      parent.insertBefore(child, end)
+    }
+    if (child.nodeType === Node.ELEMENT_NODE)
+      this.write(() => (child as Element).setAttribute(RELOCATED_ATTR, ''))
+    this.siblingNodes.add(child)
+    siblingOwners.set(child, this)
+    liveRelocated.add(child)
+    return true
+  }
+
+  /**
+   * Drops the copies of a `siblings` part's nodes that follow a `cloneNode()` copy
+   * of its element: marked nodes up to the end marker that no live part owns.
+   */
+  private static removeCopiedSiblings(el: HTMLElement) {
+    const copies: Node[] = []
+    let node = el.nextSibling
+    while (node && !siblingOwners.has(node)) {
+      const isEnd = node.nodeType === Node.COMMENT_NODE && (node as Comment).data === SIBLINGS_END
+      // Marked elements, and the empty text nodes Vue anchors fragments with.
+      if (!isEnd && !(node as Element).hasAttribute?.(RELOCATED_ATTR) && !(node.nodeType === Node.TEXT_NODE && !node.textContent))
+        break
+      copies.push(node)
+      if (isEnd) {
+        for (const copy of copies)
+          copy.parentNode?.removeChild(copy)
+        return
+      }
+      node = node.nextSibling
+    }
+  }
+
+  /**
+   * Puts the nodes rendered next to the host back after it, in order: the page
+   * moved the element without remounting it (same parent part).
+   */
+  placeSiblings() {
+    const home = this.homeNode
+    const parent = home.parentNode
+    const end = this.siblingEnd
+    if (!parent || !end || !this.siblingNodes.size || this.isPlaced(home))
+      return
+    const nodes = [...this.siblingNodes].sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
+    let after = home
+    for (const node of [...nodes, end]) {
+      parent.insertBefore(node, after.nextSibling)
+      after = node
+    }
+  }
+
+  /** Whether the nodes next to the host directly follow it, up to the end marker. */
+  private isPlaced(home: Node): boolean {
+    let node = home.nextSibling
+    for (let count = 0; count < this.siblingNodes.size; count++) {
+      if (!node || !this.siblingNodes.has(node))
+        return false
+      node = node.nextSibling
+    }
+    return node === this.siblingEnd
+  }
+
+  /** The part's tree removed a node it rendered next to the host. */
+  static siblingRemoved(child: Node) {
+    siblingOwners.get(child)?.siblingNodes.delete(child)
+    siblingOwners.delete(child)
+    liveRelocated.delete(child)
+  }
+
+  /** A node of the part's tree rendered into the host (an `inside` part). */
+  insertContent(child: Node, anchor: Node | null) {
+    this.content.add(child)
+    liveRelocated.add(child)
+    if (child.nodeType === Node.ELEMENT_NODE)
+      this.write(() => (child as Element).setAttribute(RELOCATED_ATTR, ''))
+    this.host.insertBefore(child, anchor && anchor.parentNode === this.host ? anchor : null)
+  }
+
+  /** The part's tree removed a node it rendered into the host. */
+  contentRemoved(child: Node) {
+    this.content.delete(child)
+    liveRelocated.delete(child)
+  }
+
+  /**
+   * Takes out what the part's tree rendered into the host. Vue only detaches the
+   * root of an unmounted tree; the host stays in the document, so its rendered
+   * children have to go explicitly.
+   */
+  removeContent() {
+    for (const child of this.content) {
+      if (child.parentNode === this.host)
+        this.host.removeChild(child)
+      liveRelocated.delete(child)
+    }
+    this.content.clear()
+  }
+
   /** Removes everything the binding added to the document. */
   dispose() {
     this.strip()
+    this.removeContent()
+    // Vue removes a root fragment's nodes by walking the detached container, which
+    // does not reach the ones next to the host.
+    for (const child of this.siblingNodes) {
+      child.parentNode?.removeChild(child)
+      siblingOwners.delete(child)
+      liveRelocated.delete(child)
+    }
+    this.siblingNodes.clear()
+    this.siblingEnd?.remove()
     this.goHome()
     this.internals?.setFormValue(null)
     this.internals?.setValidity({})
@@ -492,7 +676,7 @@ export class HostBinding {
           this.events.set(key, next)
         // The keyboard shim has to see whether the part handled the key itself,
         // so it must stay the last listener on the host.
-        if (this.semantics?.button)
+        if (this.semantics?.button || this.semantics?.link)
           this.addKeyboardShims()
       }
       else if (key === 'disabled' && this.el === this.host) {
@@ -561,6 +745,9 @@ export class HostBinding {
 
   /** @internal */
   onAttributeMutation(name: string) {
+    // A link host is a link (role, tab stop) only while it has an `href`.
+    if (name === 'href' && this.semantics?.link && this.active)
+      this.syncSemantics()
     const entry = this.owned.get(name)
     // Our own writes, and consumer writes already handled synchronously, leave the
     // part's value in place.
@@ -793,6 +980,44 @@ export class HostBinding {
         this.shimAttribute('tabindex', disabled ? null : '0')
         this.shimAttribute('aria-disabled', disabled ? 'true' : null)
       }
+      if (semantics.link) {
+        // Like `<a>`: a link (and a tab stop) only with an `href`.
+        const href = this.el.hasAttribute('href')
+        this.shimAttribute('role', href ? 'link' : null)
+        this.shimAttribute('tabindex', href ? '0' : null)
+      }
+    })
+  }
+
+  /** The href a click on a link host follows, if any. */
+  private linkTarget(event: MouseEvent): string | null {
+    const href = this.el.getAttribute('href')
+    if (!this.active || href === null || event.button !== 0)
+      return null
+    // A real link the consumer put inside navigates by itself.
+    const inner = (event.target as Element | null)?.closest?.('a[href], area[href]')
+    if (inner && this.el.contains(inner))
+      return null
+    return href
+  }
+
+  /**
+   * Follows the `href` once the click has been dispatched: a listener anywhere
+   * (the part's own, the page's) may prevent it, as it would an `<a>`'s.
+   */
+  private onLinkClick = (event: MouseEvent) => {
+    const href = this.linkTarget(event)
+    if (href === null)
+      return
+    setTimeout(() => {
+      if (event.defaultPrevented)
+        return
+      const view = this.el.ownerDocument.defaultView
+      const target = this.el.getAttribute('target')
+      if (event.ctrlKey || event.metaKey || event.shiftKey || (target && target !== '_self'))
+        view?.open(href, target && target !== '_self' ? target : '_blank', 'noopener')
+      else
+        view?.location.assign(new URL(href, this.el.baseURI).href)
     })
   }
 
@@ -818,15 +1043,31 @@ export class HostBinding {
     this.el.addEventListener('keyup', this.onKeyup)
   }
 
-  // Native `<button>` activation: Enter clicks on keydown, Space on keyup.
+  // Native `<button>` activation: Enter clicks on keydown, Space on keyup. A link
+  // activates with Enter only.
   private onKeydown = (event: KeyboardEvent) => {
     if (!this.active || event.target !== this.el || event.defaultPrevented || this.isDisabled())
       return
+    if (this.semantics?.link && !this.el.hasAttribute('href'))
+      return
     if (event.key === 'Enter') {
       event.preventDefault()
-      this.el.click()
+      // A click with the key's modifiers, as a native control's: Ctrl/Meta+Enter on
+      // a link opens a new tab.
+      const { ctrlKey, metaKey, shiftKey, altKey } = event
+      this.el.dispatchEvent(new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        view: this.el.ownerDocument.defaultView,
+        detail: 0,
+        ctrlKey,
+        metaKey,
+        shiftKey,
+        altKey,
+      }))
     }
-    else if (event.key === ' ') {
+    else if (event.key === ' ' && this.semantics?.button) {
       // Stops the page from scrolling, like a native button.
       event.preventDefault()
       this.spaceArmed = true
@@ -885,6 +1126,12 @@ export function getRenderer(): Renderer<Element> {
     },
     insert(child, parent, anchor) {
       const binding = bindings.get(child)
+      // Rendered into an `inside` part's host (not a host teleported into another one).
+      const host = binding ? undefined : bindings.get(parent)
+      if (host?.inside) {
+        host.insertContent(child, anchor ?? null)
+        return
+      }
       if (binding) {
         // Its own root container is its home position.
         if (containers.get(parent) === binding)
@@ -893,6 +1140,11 @@ export function getRenderer(): Renderer<Element> {
           binding.moveTo(parent, anchor ?? null)
         return
       }
+      // Inserted before a node rendered next to a host (a fragment's end anchor,
+      // once in the document): it goes next to the host too, tracked.
+      const siblingOwner = anchor ? siblingOwners.get(anchor) : undefined
+      if (siblingOwner?.insertSibling(child, anchor!))
+        return
       const owner = containers.get(parent)
       if (owner)
         owner.insertRootNode(child, anchor ?? null)
@@ -902,6 +1154,7 @@ export function getRenderer(): Renderer<Element> {
     remove(child) {
       const binding = bindings.get(child)
       if (binding) {
+        binding.removeContent()
         binding.goHome()
         return
       }
@@ -914,6 +1167,8 @@ export function getRenderer(): Renderer<Element> {
       if (parent) {
         parent.removeChild(child)
         containers.get(parent)?.scheduleFormSync()
+        bindings.get(parent)?.contentRemoved(child)
+        HostBinding.siblingRemoved(child)
       }
     },
     parentNode(node) {
