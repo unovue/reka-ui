@@ -17,7 +17,7 @@ describe('given default Menubar', () => {
 
   beforeEach(() => {
     document.body.innerHTML = ''
-    wrapper = mount(Menubar, { attachTo: document.body })
+    wrapper = mount(Menubar, { attachTo: document.body, attrs: { onSelect: () => {} } })
   })
 
   it('should render all trigger button', () => {

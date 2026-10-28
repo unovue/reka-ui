@@ -62,7 +62,7 @@ export const [injectColorSliderRootContext, provideColorSliderRootContext]
 </script>
 
 <script setup lang="ts">
-import { mergeProps, toRefs } from 'vue'
+import { mergeProps } from 'vue'
 import { colorToString } from '@/shared/color'
 import { SliderRoot } from '@/Slider'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -84,8 +84,7 @@ const emits = defineEmits<ColorSliderRootEmits>()
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const isFormControl = useFormControl(currentElement)
-const { dir: propDir } = toRefs(props)
-const dir = useDirection(propDir)
+const dir = useDirection(() => props.dir)
 
 const { sliderProps, context, color, disabled } = useColorSlider({
   orientation: () => props.orientation,

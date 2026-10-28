@@ -4,6 +4,9 @@ import * as vue from 'vue'
 import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
 
 let count = 0
+/** The `inject` fallback, shared rather than allocated per call. */
+const NO_CONFIG = Object.freeze({ useId: undefined })
+
 /**
  * The `useId` function generates a unique identifier using a provided deterministic ID,
  * a configured `<ConfigProvider>` ID source, Vue's native `useId`, or a fallback counter.
@@ -17,7 +20,7 @@ export function useId(deterministicId?: string | null | undefined, prefix = 'rek
     return deterministicId
 
   let id: string
-  const configProviderContext = injectConfigProviderContext({ useId: undefined })
+  const configProviderContext = injectConfigProviderContext(NO_CONFIG as { useId: undefined })
 
   // Keep the app-provided ID source authoritative. Frameworks such as Nuxt can
   // prerender with a different Vue app ID prefix than the hydrating client, so

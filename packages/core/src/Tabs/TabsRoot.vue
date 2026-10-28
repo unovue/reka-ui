@@ -66,7 +66,6 @@ export const [injectTabsRootContext, provideTabsRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">
-import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useTabs } from './useTabs'
 
@@ -86,8 +85,7 @@ defineSlots<{
 
 // `dir` resolution (ConfigProvider-aware) stays in the shell; the composable
 // owns the controlled/uncontrolled model (`useControllableState`) and emits.
-const { dir: propDir } = toRefs(props)
-const dir = useDirection(propDir)
+const dir = useDirection(() => props.dir)
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 

@@ -26,12 +26,7 @@ export const [injectScrollAreaScrollbarContext, provideScrollAreaScrollbarContex
 </script>
 
 <script setup lang="ts">
-import {
-  computed,
-  onUnmounted,
-  toRefs,
-  watch,
-} from 'vue'
+import { computed, onUnmounted, toRef, watch } from 'vue'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import ScrollAreaScrollbarAuto from './ScrollAreaScrollbarAuto.vue'
 import ScrollAreaScrollbarGlimpse from './ScrollAreaScrollbarGlimpse.vue'
@@ -69,7 +64,13 @@ onUnmounted(() => {
   rootContext.onScrollbarYEnabledChange(false)
 })
 
-const { orientation, forceMount, asChild, as } = toRefs(props)
+const orientation = toRef(props, 'orientation')
+
+const forceMount = toRef(props, 'forceMount')
+
+const asChild = toRef(props, 'asChild')
+
+const as = toRef(props, 'as')
 provideScrollAreaScrollbarContext({
   orientation,
   forceMount,

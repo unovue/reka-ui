@@ -3,9 +3,9 @@ import type { PartState, StateAttributesMapping } from '../shared/stateToDataAtt
 import type { ElementExpose } from '../shared/useForwardElement'
 import type { MergeableRef } from '../shared/useMergedRefs'
 import type { AsTag } from './Primitive'
-import { computed, getCurrentInstance, mergeProps, toValue } from 'vue'
+import { computed, getCurrentInstance, toValue } from 'vue'
 // Direct relative import (not the `@/shared` barrel) to avoid a Primitive ↔ shared cycle.
-import { stateToDataAttrs } from '../shared/stateToDataAttrs'
+import { mergeStateAttrs } from '../shared/stateToDataAttrs'
 import { useForwardElement } from '../shared/useForwardElement'
 import { SELF_CLOSING_TAGS } from './Primitive'
 import { Slot } from './Slot'
@@ -81,9 +81,10 @@ export function useRender<S extends PrimitiveState = PrimitiveState>(
       return tag ??= computed(resolveTag)
     },
     get renderProps() {
-      return renderProps ??= computed(() => mergeProps(
-        stateToDataAttrs(toValue(options.state), options.stateAttributesMapping),
-        toValue(options.props) ?? {},
+      return renderProps ??= computed(() => mergeStateAttrs(
+        toValue(options.state),
+        options.stateAttributesMapping,
+        toValue(options.props),
       ))
     },
     get renderless() {

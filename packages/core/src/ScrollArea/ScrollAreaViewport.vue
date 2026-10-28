@@ -12,7 +12,7 @@ export interface ScrollAreaViewportProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { mergeProps, onMounted, ref, toRefs } from 'vue'
+import { mergeProps, onMounted, ref, toRef } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import { getScrollAreaContentSurface, getScrollAreaViewportSurface } from './useScrollArea'
@@ -23,7 +23,7 @@ defineOptions({
 
 const props = defineProps<ScrollAreaViewportProps>()
 
-const { nonce: propNonce } = toRefs(props)
+const propNonce = toRef(props, 'nonce')
 const nonce = useNonce(propNonce)
 
 const rootContext = injectScrollAreaRootContext()

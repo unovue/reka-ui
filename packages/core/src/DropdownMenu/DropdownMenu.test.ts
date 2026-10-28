@@ -70,7 +70,7 @@ describe('given default DropdownMenu', () => {
 
   beforeEach(() => {
     document.body.innerHTML = ''
-    wrapper = mount(DropdownMenu, { attachTo: document.body })
+    wrapper = mount(DropdownMenu, { attachTo: document.body, attrs: { onSelect: () => {} } })
   })
 
   it('should render trigger button', () => {

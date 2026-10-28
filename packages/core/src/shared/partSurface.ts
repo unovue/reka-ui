@@ -1,7 +1,6 @@
 import type { ComputedRef } from 'vue'
 import type { PartState, StateAttributesMapping } from './stateToDataAttrs'
-import { mergeProps } from 'vue'
-import { stateToDataAttrs } from './stateToDataAttrs'
+import { mergeStateAttrs } from './stateToDataAttrs'
 
 /**
  * A rendered part's headless surface, shared by every `useX()` composable
@@ -67,7 +66,8 @@ class SurfaceAttrsRef<S extends PartState> {
 
   get value(): Record<string, any> {
     // State attrs first, explicit props last — same precedence as `useRender`, so a mapping that emits `aria-*` never overrides a prop.
-    return mergeProps(stateToDataAttrs(read(this.state), this.mapping), read(this.props))
+    // One allocation: Vue's `mergeProps` runs only when a key needs normalising (see `mergeStateAttrs`).
+    return mergeStateAttrs(read(this.state), this.mapping, read(this.props))
   }
 }
 
@@ -93,4 +93,25 @@ class GetterRef<T> {
  */
 export function getterRef<T>(getter: () => T): ComputedRef<T> {
   return new GetterRef(getter) as unknown as ComputedRef<T>
+}
+
+/** A readonly ref over one key of another ref's object value; no closure. */
+class FieldRef<T extends object, K extends keyof T> {
+  // Ref markers as prototype getters: no per-instance slots.
+  get __v_isRef(): true { return true }
+  get __v_isReadonly(): true { return true }
+  constructor(readonly source: { readonly value: T }, readonly key: K) {}
+  get value(): T[K] {
+    return this.source.value[this.key]
+  }
+}
+
+/**
+ * A readonly ref reading `source.value[key]`: lets a composable keep its
+ * derived state in ONE computed object and still hand out a ref per field.
+ *
+ * @internal
+ */
+export function fieldRef<T extends object, K extends keyof T>(source: { readonly value: T }, key: K): ComputedRef<T[K]> {
+  return new FieldRef(source, key) as unknown as ComputedRef<T[K]>
 }

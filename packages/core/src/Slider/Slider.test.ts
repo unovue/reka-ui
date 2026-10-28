@@ -21,7 +21,7 @@ describe('given default Slider', () => {
   let wrapper: VueWrapper<InstanceType<typeof Slider>>
 
   beforeEach(() => {
-    wrapper = mount(Slider, { props: { disabled: false } })
+    wrapper = mount(Slider, { props: { disabled: false }, attrs: { onValueCommit: () => {} } })
   })
 
   it('should pass axe accessibility tests', async () => {

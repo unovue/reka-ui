@@ -1,9 +1,9 @@
-import { refAutoReset } from '@vueuse/shared'
 import { getActiveElement } from './getActiveElement'
+import { autoResetRef } from './timeout'
 
 export function useTypeahead(callback?: (search: string) => void) {
   // Reset `search` 1 second after it was last updated
-  const search = refAutoReset('', 1000)
+  const search = autoResetRef('', 1000)
 
   const handleTypeaheadSearch = (key: string, items: { ref: HTMLElement, value?: any }[]) => {
     search.value = search.value + key
