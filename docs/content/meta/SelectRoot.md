@@ -52,7 +52,7 @@
   },
   {
     'name': 'items',
-    'description': '<p>The options as data, as in Base UI\'s <code>Select.Root items</code>: a record of value → label, or an array of\n<code>{ value, label, disabled? }</code> (optionally in groups, <code>{ items: [...] }</code>). <code>SelectValue</code>, the closed trigger\'s\ntypeahead and the hidden native <code>select</code> then read it, so a closed Select renders none of its items, and the\nselected label also renders on the server. The <code>SelectItem</code>s still render the open list.</p>\n',
+    'description': '<p>The options as data, as in Base UI\'s <code>Select.Root items</code>: a record of value → label, or an array of\n<code>{ value, label, disabled? }</code> (optionally in groups, <code>{ items: [...] }</code>). <code>SelectValue</code>, the closed trigger\'s\ntypeahead and the hidden native <code>select</code> then read its labels, so a selected value needs no closed render and its\nlabel also renders on the server. The <code>SelectItem</code>s still render the open list; rendered items it does not list\nstill count.</p>\n',
     'type': 'SelectItems&lt;T&gt;',
     'required': false
   },
@@ -151,7 +151,7 @@
 | `disabled` | When `true`, prevents the user from interacting with Select | `boolean` | No | - |
 | `displayValue` | The text shown for a selected value. Wins over the text of its `SelectItemText`, so the value can be shown before the content ever rendered; with it set, the closed content is not rendered just to collect the item texts. The cost: until the content has been opened once, the hidden native `select` only holds the selected values (so browser autofill cannot pick another one) and the closed trigger's typeahead has no items to match. | `((value: T) => string)` | No | - |
 | `getNavigationIntent` | Resolves what a keydown in the content means for keyboard navigation. Return `undefined` to fall back to the default mapping (ArrowUp, ArrowDown, Home, End), `null` to opt the key out (for Enter and Space this also skips the selection), or `'select'` to select the focused item as Enter does. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null \| undefined)` | No | - |
-| `items` | The options as data, as in Base UI's `Select.Root items`: a record of value → label, or an array of `{ value, label, disabled? }` (optionally in groups, `{ items: [...] }`). `SelectValue`, the closed trigger's typeahead and the hidden native `select` then read it, so a closed Select renders none of its items, and the selected label also renders on the server. The `SelectItem`s still render the open list. | `SelectItems<T>` | No | - |
+| `items` | The options as data, as in Base UI's `Select.Root items`: a record of value → label, or an array of `{ value, label, disabled? }` (optionally in groups, `{ items: [...] }`). `SelectValue`, the closed trigger's typeahead and the hidden native `select` then read its labels, so a selected value needs no closed render and its label also renders on the server. The `SelectItem`s still render the open list; rendered items it does not list still count. | `SelectItems<T>` | No | - |
 | `modelValue` | The controlled value of the Select. Can be bind as `v-model`. | `T \| T[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |

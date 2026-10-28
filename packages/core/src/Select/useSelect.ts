@@ -9,6 +9,7 @@ import type { AcceptableValue, Direction } from '@/shared/types'
 import { computed, getCurrentScope, isRef, nextTick, onBeforeUnmount, onMounted, onScopeDispose, ref, shallowRef, toValue, watch, watchEffect } from 'vue'
 import { focusFirst } from '@/Menu/utils'
 import {
+  compare,
   containsComposed,
   createLabelRegistry,
   createPartSurface,
@@ -121,10 +122,10 @@ export interface SelectItemGroupData<T = AcceptableValue> {
 }
 
 /**
- * The root's `items` (Base UI's `Select.Root items`): the options as data, so
- * a closed Select renders none of them. A record maps each (string) value to
- * its label; an array holds `{ value, label, disabled? }` options, or groups
- * of them (`{ items }`).
+ * The root's `items` (Base UI's `Select.Root items`): the options as data. A
+ * record maps each value (a string key; a number value finds its key) to its
+ * label; an array holds `{ value, label, disabled? }` options, or groups of
+ * them (`{ items }`), mixed or not.
  */
 export type SelectItems<T = AcceptableValue> = Readonly<Record<string, string>> | readonly SelectItemData<T>[] | readonly SelectItemGroupData<T>[]
 
@@ -138,10 +139,55 @@ export function normalizeSelectItems<T>(items: SelectItems<T> | undefined): Sele
     return undefined
   if (!Array.isArray(items))
     return Object.keys(items).map(value => ({ value: value as T, label: (items as Record<string, string>)[value] }))
-  const list = items as readonly (SelectItemData<T> | SelectItemGroupData<T>)[]
-  return isItemGroup(list[0])
-    ? (list as readonly SelectItemGroupData<T>[]).flatMap(group => group.items)
-    : (list as SelectItemData<T>[]).slice()
+  return (items as readonly (SelectItemData<T> | SelectItemGroupData<T>)[])
+    .flatMap(entry => isItemGroup(entry) ? entry.items as readonly SelectItemData<T>[] : [entry])
+}
+
+/** `items`, flat, with a lookup by value. @internal */
+export interface SelectItemsIndex<T> {
+  list: SelectItemData<T>[]
+  get: (value: T) => SelectItemData<T> | undefined
+}
+
+function isPrimitiveKey(value: unknown): value is string | number | bigint | boolean {
+  const type = typeof value
+  return type === 'string' || type === 'number' || type === 'bigint' || type === 'boolean'
+}
+
+/**
+ * Indexes `items` for lookups matched with `by`. Plain data, no reactive
+ * writes: the caller's `computed` rebuilds it when `items` changes. A record
+ * matches a value by its string form, as Base UI reads `items[value]`.
+ * @internal
+ */
+export function createSelectItemsIndex<T>(items: SelectItems<T> | undefined, by: By<T> | undefined): SelectItemsIndex<T> | undefined {
+  const list = normalizeSelectItems(items)
+  if (!list)
+    return undefined
+  const isRecord = !Array.isArray(items)
+  const keyOf = (value: unknown): unknown => {
+    if (typeof by === 'function')
+      return undefined
+    if (isRecord)
+      return isPrimitiveKey(value) ? String(value) : undefined
+    const key = typeof by === 'string' && value !== null && typeof value === 'object' ? (value as Record<string, unknown>)[by] : value
+    return isPrimitiveKey(key) ? key : undefined
+  }
+  const index = new Map<unknown, SelectItemData<T>>()
+  for (const item of list) {
+    const key = keyOf(item.value)
+    if (key !== undefined && !index.has(key))
+      index.set(key, item)
+  }
+  return {
+    list,
+    get: (value) => {
+      const key = keyOf(value)
+      if (key !== undefined)
+        return index.get(key)
+      return list.find(item => compare(item.value, value, by))
+    },
+  }
 }
 
 const NAVIGATION_KEYS: Record<string, SelectNavigationIntent> = {
@@ -208,8 +254,8 @@ export interface UseSelectRootProps<T = AcceptableValue> {
   /**
    * The options as data (a record of value → label, or `{ value, label,
    * disabled? }` options, optionally in `{ items }` groups). With it, the
-   * labels, the closed trigger's typeahead and the hidden native `<select>`
-   * come from it, and the closed content renders no items at all.
+   * labels of the trigger, the closed trigger's typeahead and the hidden
+   * native `<select>` come from it; rendered items it does not list still count.
    */
   items?: MaybeRefOrGetter<SelectItems<T> | undefined>
   /**
@@ -305,17 +351,11 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
 
   const labels = createLabelRegistry<T>(props.by)
   const displayValue = computed(() => isRef(props.displayValue) ? props.displayValue.value : props.displayValue)
-  const items = computed(() => normalizeSelectItems(toValue(props.items)))
-  // The labels of `items`, indexed like the sticky registry (matched with `by`).
-  const itemLabels = computed(() => {
-    const list = items.value
-    if (!list)
-      return undefined
-    const registry = createLabelRegistry<T>(props.by)
-    for (const item of list)
-      registry.register(item.value, item.label, !!item.disabled)
-    return registry
-  })
+  // `items`, flat and indexed by value (matched with `by`): a plain lookup,
+  // rebuilt when `items` changes.
+  const itemsIndex = computed(() => createSelectItemsIndex(toValue(props.items), props.by))
+  const items = computed(() => itemsIndex.value?.list)
+  const getItemData = (value: T) => itemsIndex.value?.get(value)
 
   const isEmptyModelValue = computed(() => {
     const value = modelValue.value
@@ -327,17 +367,19 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
   function resolveLabel(value: T) {
     const resolve = displayValue.value
     const resolved = resolve && !isNullish(value) ? resolve(value) : undefined
-    return resolved ?? itemLabels.value?.get(value) ?? labels.get(value)
+    return resolved ?? getItemData(value)?.label ?? labels.get(value)
   }
 
   const virtualTypeaheadItems = shallowRef<(() => SelectTypeaheadItem<T>[]) | undefined>(undefined)
   const closedItems = new SelectClosedItems<T>(
-    () => !displayValue.value && !items.value,
+    () => !displayValue.value,
+    // A selection's text comes from `items` when it lists the value.
     () => {
       const value = modelValue.value
       const values = (Array.isArray(value) ? value : isNullish(value) ? [] : [value]) as T[]
-      return values.some(v => labels.get(v) === undefined)
+      return values.some(v => getItemData(v) === undefined)
     },
+    () => !!items.value,
     virtualTypeaheadItems,
   )
 
@@ -409,6 +451,7 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
     selectedLabels,
     displayValue,
     items,
+    getItemData,
     closedItems,
     getNavigationIntent,
     virtualTypeaheadItems,
@@ -442,7 +485,7 @@ export interface UseSelectTriggerOptions<T = AcceptableValue> {
   disabled?: MaybeRefOrGetter<boolean | undefined>
   /**
    * The items the closed trigger's typeahead picks from, in order. Defaults to
-   * the root's `items`, else its items as last rendered, else the label
+   * the mounted items (open, else the closed lean ones) with `items` labels, else the label
    * registry.
    */
   getItems?: () => SelectTypeaheadItem<T>[]
@@ -470,20 +513,33 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
   const isDisabled = computed(() => context.disabled.value || toValue(options.disabled) || false)
   const { search, handleTypeaheadSearch, resetTypeahead } = useTypeahead(() => {})
 
-  // `items`, else the items (mounted, or as last seen), else the label
-  // registry: with `displayValue` the closed content renders nothing, so only
-  // items that rendered while open (and registered their text) can be typed to.
+  // The mounted items (the open content's, else the closed lean ones), their
+  // labels from `items` where it lists them, plus the `items` options not
+  // rendered; with nothing mounted (`displayValue`), the label registry.
   function getTypeaheadItems(): SelectTypeaheadItem<T>[] {
     // A `SelectVirtualizer` knows every option, rendered or not.
     const virtualItems = context.virtualTypeaheadItems?.value
     if (virtualItems)
       return virtualItems()
+    const rendered = options.getItems?.() ?? context.closedItems?.getTypeaheadItems()
     const data = context.items?.value
-    if (data)
-      return data.map(item => ({ value: item.value, textValue: item.label, disabled: item.disabled }))
-    const items = options.getItems?.() ?? context.closedItems?.getTypeaheadItems() ?? []
-    if (items.length)
-      return items
+    if (data) {
+      const listed = new Set<SelectItemData<T>>()
+      const merged = (rendered ?? []).map((item) => {
+        const entry = context.getItemData?.(item.value)
+        if (!entry)
+          return item
+        listed.add(entry)
+        return { value: item.value, textValue: entry.label, disabled: item.disabled || entry.disabled }
+      })
+      for (const entry of data) {
+        if (!listed.has(entry))
+          merged.push({ value: entry.value, textValue: entry.label, disabled: entry.disabled })
+      }
+      return merged
+    }
+    if (rendered?.length)
+      return rendered
     return context.labels.entries().map(entry => ({ value: entry.value, textValue: entry.label, disabled: entry.disabled }))
   }
 
@@ -1126,12 +1182,24 @@ export function useSelectItemLabel<T extends AcceptableValue = AcceptableValue>(
   context: SelectRootContext<T>
   value: () => T
   disabled: () => boolean | undefined
-  textValue?: string
-}): { isSelected: Ref<boolean>, textValue: { value: string }, itemContext: SelectItemContext<T> } {
+  textValue: () => string | undefined
+}): { isSelected: Ref<boolean>, textValue: { readonly value: string }, itemContext: SelectItemContext<T> } {
   const { context, value } = options
-  // Read once, when the snapshot of the items is taken: no ref needed.
-  const textValue = { value: options.textValue ?? '' }
-  const isSelected = getterRef(() => context.isSelected(value()))
+  // The item text element, read live: the typeahead sees the current text.
+  let textElement: HTMLElement | undefined
+  const textValue = {
+    get value() {
+      return (options.textValue() || textElement?.textContent || '').trim()
+    },
+  }
+  // The keyed selector cell, as on a full item: a selection change re-renders
+  // only the lean items it flips, not all of them.
+  const selectionHold = context.selection?.createHold()
+  if (selectionHold && getCurrentScope())
+    onScopeDispose(() => selectionHold.release())
+  const isSelected = getterRef(() => context.selection
+    ? context.selection.isSelected(value(), selectionHold)
+    : context.isSelected(value()))
   const itemContext: SelectItemContext<T> = {
     get value() {
       return value()
@@ -1140,7 +1208,7 @@ export function useSelectItemLabel<T extends AcceptableValue = AcceptableValue>(
     disabled: getterRef(() => options.disabled() ?? false),
     isSelected,
     onItemTextChange: (node) => {
-      textValue.value = ((textValue.value || node?.textContent) ?? '').trim()
+      textElement = node
     },
   }
   // Registered with the closed items directly, in render order: no collection.
@@ -1154,16 +1222,32 @@ export function useSelectItemLabel<T extends AcceptableValue = AcceptableValue>(
   return { isSelected, textValue, itemContext }
 }
 
-/** Registers a detached item's text in the label registry once mounted (see `useSelectItemLabel`). @internal */
+/**
+ * A lean item's text (see `useSelectItemLabel`): registers its text in the
+ * label registry once mounted, and again whenever its text, value or
+ * `disabled` changes, as `useSelectItemText` does. One observer shared by
+ * every lean text (`SelectClosedItems.observeText`) catches text-only changes.
+ * @internal
+ */
 export function useSelectItemTextLabel<T extends AcceptableValue = AcceptableValue>(context: SelectRootContext<T>, itemContext: SelectItemContext<T>, element: Ref<HTMLElement | null | undefined>): undefined {
+  function register() {
+    const el = element.value
+    if (!el)
+      return
+    const value = itemContext.value
+    context.labels.register(value, el.textContent ?? String(value ?? ''), itemContext.disabled.value)
+  }
+  let stop: (() => void) | undefined
   onMounted(() => {
     const el = element.value
     if (!el)
       return
     itemContext.onItemTextChange(el)
-    const value = itemContext.value
-    context.labels.register(value, el.textContent ?? String(value ?? ''), itemContext.disabled.value)
+    register()
+    stop = context.closedItems?.observeText(el, register)
   })
+  onBeforeUnmount(() => stop?.())
+  watch([() => itemContext.value, () => itemContext.disabled.value], register, { flush: 'post' })
   return undefined
 }
 

@@ -86,7 +86,7 @@ function mountSelect(rootProps: Record<string, unknown> | (() => Record<string, 
 
 const fruits: Option[] = ['Apple', 'Banana', 'Blueberry', 'Cherry'].map(text => ({ value: text, text }))
 
-describe('a closed Select keeps no items mounted', () => {
+describe('a closed Select renders its items only when needed, lean', () => {
   it('renders no item, portal or content while closed and empty', async () => {
     const { itemTexts } = mountSelect({}, () => fruits)
     await flushPromises()
@@ -96,7 +96,7 @@ describe('a closed Select keeps no items mounted', () => {
     expect(document.body.childNodes).toHaveLength(1)
   })
 
-  it.each([true, false])('renders the items once for a selected value, then unmounts them (portal: %s)', async (portal) => {
+  it.each([true, false])('renders lean items out of the page for a selected value (portal: %s)', async (portal) => {
     const { itemTexts } = mountSelect({ defaultValue: 'Cherry' }, () => fruits, { portal })
     await flushPromises()
     expect(valueText()).toBe('Cherry')
@@ -107,22 +107,35 @@ describe('a closed Select keeps no items mounted', () => {
     expect(itemTexts).toHaveBeenCalledTimes(fruits.length)
   })
 
+  it('unmounts the lean items once nothing needs them', async () => {
+    const model = ref<string | undefined>('Cherry')
+    const { itemTexts } = mountSelect(() => ({ modelValue: model.value }), () => fruits)
+    await flushPromises()
+    expect(itemTexts).toHaveBeenCalledTimes(fruits.length)
+    model.value = undefined
+    await flushPromises()
+    const renders = itemTexts.mock.calls.length
+    model.value = undefined
+    await flushPromises()
+    expect(itemTexts).toHaveBeenCalledTimes(renders)
+    expect(valueText()).toBe('Pick a fruit')
+  })
+
   it('shows the label of a value whose item renders later', async () => {
     const list = ref<Option[]>([])
     const { itemTexts } = mountSelect({ defaultValue: 'Cherry' }, () => list.value)
     await flushPromises()
     expect(valueText()).toBe('Pick a fruit')
 
-    // The value has no label: the items stay mounted until one registers it.
     list.value = fruits
     await flushPromises()
     expect(valueText()).toBe('Cherry')
     expect(itemTexts).toHaveBeenCalledTimes(fruits.length)
 
-    // ...then unmount, and stay unmounted.
-    list.value = [...fruits, { value: 'Date', text: 'Date' }]
+    // The lean items stay live: a refetched list relabels the value.
+    list.value = fruits.map(fruit => ({ ...fruit, text: `${fruit.text}!` }))
     await flushPromises()
-    expect(itemTexts).toHaveBeenCalledTimes(fruits.length)
+    expect(valueText()).toBe('Cherry!')
   })
 
   it('renders the items again for a programmatic value it has no label for', async () => {
@@ -138,7 +151,7 @@ describe('a closed Select keeps no items mounted', () => {
     expect(itemTexts).toHaveBeenCalledTimes(3)
   })
 
-  it('keeps the selected label after an open and a close, and renders no closed items after it', async () => {
+  it('keeps the selected label after an open and a close', async () => {
     const { itemTexts } = mountSelect({}, () => fruits)
     await open()
     expect(options()).toHaveLength(fruits.length)
@@ -181,8 +194,8 @@ describe('a closed Select keeps no items mounted', () => {
   })
 })
 
-describe('typeahead on a closed Select that keeps no items mounted', () => {
-  it('renders the items on the first key, selects, and unmounts them', async () => {
+describe('typeahead on a closed Select', () => {
+  it('renders lean items on the first key, selects, and keeps them for the next keys', async () => {
     const onUpdate = vi.fn()
     const { itemTexts } = mountSelect({ 'onUpdate:modelValue': onUpdate }, () => fruits)
     await flushPromises()
@@ -190,12 +203,10 @@ describe('typeahead on a closed Select that keeps no items mounted', () => {
     await type('b')
     expect(onUpdate).toHaveBeenLastCalledWith('Banana', expect.objectContaining({ reason: 'typeahead' }))
     expect(valueText()).toBe('Banana')
-    expect(itemTexts).toHaveBeenCalledTimes(fruits.length)
     expect(options()).toHaveLength(0)
-    // The next keys match the items it kept.
+    // The next keys match the mounted lean items.
     await type('b')
     expect(valueText()).toBe('Blueberry')
-    expect(itemTexts).toHaveBeenCalledTimes(fruits.length)
   })
 
   it('readies the items on focus, before the first key, except for a multiple select', async () => {
@@ -237,7 +248,7 @@ describe('typeahead on a closed Select that keeps no items mounted', () => {
     expect(valueText()).toBe('Blueberry')
   })
 
-  it('matches the items as they were when the content last closed', async () => {
+  it('matches the current items after an open and a close', async () => {
     const list = ref(fruits)
     mountSelect({}, () => list.value)
     await open()
@@ -252,7 +263,7 @@ describe('typeahead on a closed Select that keeps no items mounted', () => {
 })
 
 describe('the hidden native select of a closed Select', () => {
-  it('holds every option once idle, with no items left mounted', async () => {
+  it('holds every option once idle, with no option in the page', async () => {
     const { itemTexts } = mountSelect({ name: 'fruit' }, () => fruits.map((fruit, index) => ({ ...fruit, disabled: index === 1 })), { form: true })
     await flushPromises()
     expect(itemTexts).not.toHaveBeenCalled()
@@ -297,10 +308,15 @@ describe('items', () => {
     ['an array', array, ['Apple', 'Banana', 'Blueberry', 'Cherry']],
     ['groups', grouped, ['Banana', 'Blueberry', 'Apple', 'Cherry']],
   ] as [string, SelectItems<string>, string[]][])('labels the value from %s and renders no closed items', async (_, items, native) => {
-    const { itemTexts } = mountSelect({ name: 'fruit', items, defaultValue: 'cherry' }, () => listOf(array), { form: true })
+    const { itemTexts } = mountSelect({ items, defaultValue: 'cherry' }, () => listOf(array))
     await idle()
     expect(valueText()).toBe('Cherry')
     expect(itemTexts).not.toHaveBeenCalled()
+
+    document.body.innerHTML = ''
+    mountSelect({ name: 'fruit', items, defaultValue: 'cherry' }, () => listOf(array), { form: true })
+    await idle()
+    expect(valueText()).toBe('Cherry')
     expect(nativeOptions().map(option => option.textContent?.trim())).toEqual(native)
     expect(new FormData(document.querySelector('form')!).get('fruit')).toBe('cherry')
   })

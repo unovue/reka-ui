@@ -76,14 +76,14 @@ if (props.value === '') {
   )
 }
 
-// A closed content's detached item only registers its label, then unmounts:
+// A closed content's detached item only keeps its value, text and `disabled` live:
 // it renders lean (see `SelectClosedItems`).
 const lean = contentContext.harvest
   ? useSelectItemLabel({
       context: rootContext,
       value: () => props.value,
       disabled: () => props.disabled,
-      textValue: props.textValue,
+      textValue: () => props.textValue,
     })
   : undefined
 const full = lean

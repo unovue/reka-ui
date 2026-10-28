@@ -48,7 +48,7 @@ export interface SelectContentContext {
   /**
    * Set while a closed content renders its items into a detached fragment only
    * to read their labels (see `SelectClosedItems`): the items render lean, with
-   * no listeners, state or indicators, and unmount right after.
+   * no listeners, selection state or indicators, and stay live while closed.
    */
   harvest?: boolean
 }
@@ -106,7 +106,7 @@ export const [injectSelectContentContext, provideSelectContentContext]
 
 <script setup lang="ts">
 import { reactiveOmit, unrefElement } from '@vueuse/core'
-import { computed, mergeProps, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, mergeProps, ref, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import SelectItemAlignedPosition from './SelectItemAlignedPosition.vue'
@@ -186,11 +186,6 @@ const pickedProps = computed(() => {
 const forwardedProps = useForwardProps(pickedProps)
 
 provideSelectContentContext(contentContext)
-
-// The open items registered their labels; the closed content need not render
-// them, and the closed typeahead keeps them once they unmount.
-onMounted(() => rootContext.closedItems?.itemsMounted())
-onBeforeUnmount(() => rootContext.closedItems?.capture())
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)

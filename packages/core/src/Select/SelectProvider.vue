@@ -16,10 +16,10 @@ const props = defineProps<{
 provideSelectRootContext(props.context)
 provideSelectContentContext(SelectContentHarvestContextValue)
 
-// The closed content's items, in their detached fragment: mounted, their
-// labels are registered; before they unmount, the closed typeahead keeps them.
-onMounted(() => props.context.closedItems?.itemsMounted())
-onBeforeUnmount(() => props.context.closedItems?.capture())
+// The closed content's lean items, in their detached fragment: while they are
+// mounted, the closed typeahead reads them.
+onMounted(() => props.context.closedItems?.setHarvestMounted(true))
+onBeforeUnmount(() => props.context.closedItems?.setHarvestMounted(false))
 </script>
 
 <template>

@@ -583,9 +583,9 @@ const value = ref('france')
 
 ### Showing the value before the content renders
 
-`SelectValue` shows the text of the selected item's `SelectItemText`. The texts are remembered once an item has rendered, also after it unmounts. A closed select keeps no items mounted: it renders them once, out of the page, when it needs their texts (a selected value it has no text for, the first focus or key on the closed trigger, or the hidden native `<select>` of a named select in a form), then unmounts them. Items changed while the select is closed are seen on the next open.
+`SelectValue` shows the text of the selected item's `SelectItemText`. The texts are remembered once an item has rendered, also after it unmounts. A closed select renders its items out of the page, in a lightweight form, only once something needs their texts: a selected value, the first focus or key on the closed trigger, or the hidden native `<select>` of a named select in a form. From then on they stay live, so a translated text, a refetched list or a `disabled` change shows while the select is closed.
 
-To skip that render, describe the options with `items` (see [Listing the items as data](#listing-the-items-as-data)), or pass `display-value` to the root to resolve the selected value's text yourself (object values, items loaded on open). With `display-value` and no `items`, until the content has been opened once the hidden native `<select>` only holds the selected values, so browser autofill cannot pick another one, and typing on the closed trigger has no items to match.
+To resolve a selected value without that render, describe the options with `items` (see [Listing the items as data](#listing-the-items-as-data)), or pass `display-value` to the root to resolve the selected value's text yourself (object values, items loaded on open). With `display-value` and no `items`, until the content has been opened once the hidden native `<select>` only holds the selected values, so browser autofill cannot pick another one, and typing on the closed trigger has no items to match.
 
 ```vue
 <template>
@@ -604,7 +604,7 @@ To skip that render, describe the options with `items` (see [Listing the items a
 
 ### Listing the items as data
 
-Pass the options to `items` as well as rendering them. The trigger, the typeahead on the closed trigger and the hidden native `<select>` then read the labels from `items`, and a closed select renders nothing for its items. It takes the same shapes as [Base UI](https://base-ui.com/react/components/select): a record of value to label, an array of `{ value, label, disabled? }`, or an array of groups `{ label?, items }`. An item's label is the text the trigger shows and the typeahead matches; it wins over the item's `SelectItemText`, and the items are still rendered by your template.
+Pass the options to `items` as well as rendering them. The trigger, the typeahead on the closed trigger and the hidden native `<select>` then read the labels from `items`, so a closed select needs no items rendered to show its value. Rendered items that `items` does not list still count for typeahead and the native `<select>`. It takes the same shapes as [Base UI](https://base-ui.com/react/components/select): a record of value to label, an array of `{ value, label, disabled? }`, or an array of groups `{ label?, items }`. An item's label is the text the trigger shows and the typeahead matches; it wins over the item's `SelectItemText`, and the items are still rendered by your template.
 
 ```vue
 <script setup lang="ts">

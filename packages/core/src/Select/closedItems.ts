@@ -9,63 +9,65 @@ export interface SelectTypeaheadItem<T = AcceptableValue> {
   disabled?: boolean
 }
 
-/** Nothing asked for the items yet. */
-const IDLE = 0
-/** Something needs the items: the closed content renders them once. */
-const REQUESTED = 1
-/** The items rendered once (closed or open); their labels are registered. */
-const DONE = 2
-
 /**
- * What a closed Select keeps of its items (Base UI's "a closed Select renders
- * no items").
+ * The items of a closed Select (Base UI's "a closed Select renders no items",
+ * without its "labels only through `items`").
  *
- * A closed `SelectContent` renders its items into a detached fragment only
- * while something needs them, so the item texts register in the sticky label
- * registry; once they did, the items unmount again. The items render when:
- * - a selected value has no label yet (the trigger must show it): right away,
- *   and again whenever the model gets a value the registry has not seen (a
- *   programmatic change, options that arrive after the mount);
- * - the closed trigger's typeahead needs them, on the first key typed;
- * - the hidden native `select` needs its options (the browser's autofill), in
- *   idle time after the mount.
+ * v2 kept every item of a closed Select mounted in full in a detached
+ * fragment, so `SelectValue` could show the selected text. Here the closed
+ * content renders its items into that fragment only once something needs
+ * them, and then in a lean form (see `SelectContentHarvestContextValue`):
+ * each item is its value, its `disabled`, and its text registered in the
+ * sticky label registry, with no listeners, selection or focus state, and no
+ * indicator. Once rendered they stay mounted while closed and stay live, as in
+ * v2: a translated text, a replaced or refetched list, or a `disabled` change
+ * reaches the trigger, the closed typeahead and the hidden native `select`.
  *
- * Nothing renders with `displayValue` or `items`, which resolve the labels
- * without the items.
+ * The closed items render when:
+ * - the Select has a selected value (the trigger shows its text) and no
+ *   `items` or `displayValue` resolves it;
+ * - the closed trigger's typeahead needs them, from the first focus (or key);
+ * - the hidden native `select` of a named Select in a form needs its options,
+ *   in idle time after the mount.
  *
- * The closed trigger's typeahead reads the items that are mounted, else the
- * ones seen the last time they were (on the harvest, or when the content last
- * closed), in document order, with `textValue` and `disabled`. A change to the
- * items while closed (added, removed, new text) is seen on the next open.
+ * Nothing renders with `displayValue`, which resolves the text without the
+ * items, nor on the server or during hydration.
  *
  * A class: one object per Select, its methods on the prototype.
  *
  * @internal
  */
 export class SelectClosedItems<T = AcceptableValue> {
-  private readonly state = shallowRef(IDLE)
+  /** Something asked for the items (typeahead, native options); sticky. */
+  private readonly requested = shallowRef(false)
   /** Client-only, past the root's mount: the server and the hydration render no items. */
   private readonly active = shallowRef(false)
-  private snapshot: SelectTypeaheadItem<T>[] | undefined = undefined
-  /** Whether the closed content renders its items. */
+  /** Whether the lean items are mounted (in the closed content's fragment). */
+  private harvestMounted = false
+  /** Whether the closed content renders its lean items. */
   readonly render: ComputedRef<boolean>
-  /** The mounted items in document order; set by the root SFC (its collection). */
+  /** The open content's mounted items in document order; set by the root SFC (its collection). */
   liveItems: (() => SelectTypeaheadItem<T>[]) | undefined = undefined
   /**
-   * The closed content's detached items, in render order: they skip the
-   * collection (no element bookkeeping, no sort) and register here instead.
+   * The lean items, in render order: they skip the collection (no element
+   * bookkeeping, no sort) and register here instead.
    */
   private readonly harvested: (() => SelectTypeaheadItem<T>)[] = []
+  /** Each lean item text's label sync, run on any text mutation (one observer for all). */
+  private readonly textSyncs = new Set<() => void>()
+  private observer: MutationObserver | undefined = undefined
 
   constructor(
-    /** Whether the labels need the items at all (no `displayValue`, no `items`). */
+    /** Whether the labels may come from the items at all (no `displayValue`). */
     private readonly needsItems: () => boolean,
-    /** Whether a selected value has no registered label. */
-    hasUnlabelledSelection: () => boolean,
+    /** Whether the trigger needs the items' texts for the selection (a value, no `items`). */
+    needsSelectionLabels: () => boolean,
+    /** Whether `items` lists the options: the typeahead needs not wait for the rendered ones. */
+    private readonly hasItemsData: () => boolean,
     /** The mounted `SelectVirtualizer`'s every-option typeahead source. */
     private readonly virtualItems: ShallowRef<(() => SelectTypeaheadItem<T>[]) | undefined> | undefined,
   ) {
-    this.render = computed(() => this.active.value && needsItems() && (this.state.value === REQUESTED || hasUnlabelledSelection()))
+    this.render = computed(() => this.active.value && needsItems() && (this.requested.value || needsSelectionLabels()))
   }
 
   /** The root mounted: the closed content may render its items from now on. */
@@ -73,18 +75,18 @@ export class SelectClosedItems<T = AcceptableValue> {
     this.active.value = true
   }
 
-  /** Asks the closed content to render its items once. */
+  /** Asks the closed content to render its items, from now on. */
   request(): void {
-    if (this.state.value === IDLE && this.needsItems())
-      this.state.value = REQUESTED
+    if (!this.requested.value && this.needsItems())
+      this.requested.value = true
   }
 
-  /** The items mounted (closed or open): their labels are registered. */
-  itemsMounted(): void {
-    this.state.value = DONE
+  /** The lean items mounted or unmounted (`SelectProvider`). */
+  setHarvestMounted(mounted: boolean): void {
+    this.harvestMounted = mounted
   }
 
-  /** A detached item mounts; returns its unregister. */
+  /** A lean item mounts; returns its unregister. */
   addHarvested(entry: () => SelectTypeaheadItem<T>): () => void {
     this.harvested.push(entry)
     return () => {
@@ -94,31 +96,35 @@ export class SelectClosedItems<T = AcceptableValue> {
     }
   }
 
-  /** Remembers the mounted items for the closed typeahead; call before they unmount. */
-  capture(): void {
-    const items = this.virtualItems?.value?.() ?? this.getMountedItems()
-    if (items)
-      this.snapshot = items
-  }
-
-  private getMountedItems(): SelectTypeaheadItem<T>[] | undefined {
-    const live = this.liveItems?.()
-    if (live?.length)
-      return live
-    if (this.harvested.length)
-      return this.harvested.map(entry => entry())
-    return live
+  /**
+   * A lean item text mounts: `sync` re-registers its label, and runs whenever
+   * any lean text changes (a translated text, a slot that re-renders on its
+   * own). One observer watches every lean text. Returns its unregister.
+   */
+  observeText(element: Node, sync: () => void): () => void {
+    this.textSyncs.add(sync)
+    if (typeof MutationObserver !== 'undefined') {
+      this.observer ??= new MutationObserver(() => this.textSyncs.forEach(run => run()))
+      this.observer.observe(element, { characterData: true, childList: true, subtree: true })
+    }
+    return () => {
+      this.textSyncs.delete(sync)
+      if (!this.textSyncs.size) {
+        this.observer?.disconnect()
+        this.observer = undefined
+      }
+    }
   }
 
   /** Whether the closed typeahead has the items to match (or never will). */
   ready(): boolean {
     // Inactive (the server, a headless `useSelectRoot` without the SFC), no items can render.
-    return !this.active.value || !this.needsItems() || this.state.value === DONE || !!this.harvested.length || !!this.liveItems?.().length
+    return !this.active.value || !this.needsItems() || this.hasItemsData() || this.harvestMounted || !!this.liveItems?.().length
   }
 
   /**
-   * Makes the items ready for the closed typeahead: renders them if they never
-   * did, then calls `callback` (right away when they are ready).
+   * Makes the items ready for the closed typeahead: renders them if they are
+   * not, then calls `callback` (right away when they are ready).
    */
   whenReady(callback: () => void): void {
     if (this.ready()) {
@@ -130,9 +136,16 @@ export class SelectClosedItems<T = AcceptableValue> {
     nextTick(callback)
   }
 
-  /** The mounted items, else the last ones seen; `undefined` before any. */
+  /** The mounted items (the open content's, else the lean ones); `undefined` when none are. */
   getTypeaheadItems(): SelectTypeaheadItem<T>[] | undefined {
-    const mounted = this.getMountedItems()
-    return mounted?.length ? mounted : this.snapshot
+    const virtual = this.virtualItems?.value
+    if (virtual)
+      return virtual()
+    const live = this.liveItems?.()
+    if (live?.length)
+      return live
+    if (this.harvestMounted)
+      return this.harvested.map(entry => entry())
+    return undefined
   }
 }

@@ -24,7 +24,7 @@ defineExpose(expose)
 <template>
   <component
     :is="renderAs(props.as, props.asChild)"
-    :id="groupContext.id"
+    :id="groupContext.id || undefined"
     :ref="forwardRef"
     :for="props.for"
   >

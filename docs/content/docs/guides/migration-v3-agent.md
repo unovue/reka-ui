@@ -463,8 +463,8 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - Typing on a focused, closed `SelectTrigger` selects the next matching item (reason `typeahead`). In v2 it did nothing. `multiple` selects are unchanged.
 - In `popper` position, pressing the trigger of an open select closes it (reason `trigger-press`).
 - `SelectValue` keeps the text of a selected item after its `SelectItemText` unmounts.
-- A closed select keeps no items mounted. It renders them into a detached fragment only to read their texts (a selected value with no known text; the first focus or key on the closed trigger; idle time for a named select in a form), then unmounts them. Item changes made while closed show on the next open; closed typeahead matches the items as last rendered. `SelectPortal` renders nothing until the first open, so a template ref on `SelectContent` is `undefined` until then.
-- New `items` prop on `SelectRoot` (Base UI shape: `Record<value, label>`, `{ value, label, disabled? }[]`, or `{ label?, items }[]` groups). With it, labels, closed typeahead and native options come from the data and the closed content never renders.
+- A closed select renders lightweight items (value, text, `disabled`) into a detached fragment only once needed (a selected value; the first focus or key on the closed trigger; idle time for a named select in a form); they then stay live as in v2. `SelectPortal` renders nothing until the first open, so a template ref on `SelectContent` is `undefined` until then.
+- New `items` prop on `SelectRoot` (Base UI shape: `Record<value, label>`, `{ value, label, disabled? }[]`, or `{ label?, items }[]` groups). With it, labels come from the data (no closed render for a selected value); rendered items it does not list still count for typeahead and native options.
 - The hidden native `<select>` marks selected options with `selected` and no longer receives `value`. A `multiple` select submits every selected value.
 - Content ids are `<root id>-content` (`reka-select-v-0-content`; v2 `reka-select-content-v-1`).
 - Root context (`injectSelectRootContext()`):

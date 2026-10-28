@@ -40,8 +40,9 @@ export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
   /**
    * The options as data, as in Base UI's `Select.Root items`: a record of value → label, or an array of
    * `{ value, label, disabled? }` (optionally in groups, `{ items: [...] }`). `SelectValue`, the closed trigger's
-   * typeahead and the hidden native `select` then read it, so a closed Select renders none of its items, and the
-   * selected label also renders on the server. The `SelectItem`s still render the open list.
+   * typeahead and the hidden native `select` then read its labels, so a selected value needs no closed render and its
+   * label also renders on the server. The `SelectItem`s still render the open list; rendered items it does not list
+   * still count.
    */
   items?: SelectItems<T>
   /**
@@ -110,6 +111,8 @@ export interface SelectRootContext<T = AcceptableValue> {
   displayValue: Ref<((value: T) => string) | undefined>
   /** The root's `items`, flat; `undefined` without. */
   items?: Ref<SelectItemData<T>[] | undefined>
+  /** The `items` option of a value (matched with `by`; a record by the value's string form). */
+  getItemData?: (value: T) => SelectItemData<T> | undefined
   /**
    * What the closed content renders of its items, and what the closed trigger's typeahead matches.
    * @internal
@@ -265,12 +268,19 @@ onBeforeUnmount(cancelIdleRequest)
 // option carries `selected`, which also makes a `multiple` select submit every
 // value.
 const nativeOptions = computed(() => {
-  const entries = context.items?.value ?? context.labels.entries()
-  const options = entries.map(entry => ({ value: entry.value, label: entry.label, disabled: !!entry.disabled, selected: isSelected(entry.value) }))
   const value = modelValue.value
   const selectedValues = (Array.isArray(value) ? value : isNullish(value) ? [] : [value]) as AcceptableValue[]
+  const data = context.items?.value
+  const getItemData = context.getItemData!
+  // `items` first (their labels win), then the texts of rendered items it does
+  // not list.
+  const selectedData = new Set(data ? selectedValues.map(getItemData) : [])
+  const options = (data ?? []).map(entry => ({ value: entry.value, label: entry.label, disabled: !!entry.disabled, selected: selectedData.has(entry) || isSelected(entry.value) }))
+  const registered = context.labels.entries().filter(entry => !data || !getItemData(entry.value))
+  for (const entry of registered)
+    options.push({ value: entry.value, label: entry.label, disabled: entry.disabled, selected: isSelected(entry.value) })
   for (const selected of selectedValues) {
-    if (!entries.some(entry => compare(entry.value, selected, context.by)))
+    if (!(data && getItemData(selected)) && !registered.some(entry => compare(entry.value, selected, context.by)))
       options.push({ value: selected, label: context.displayValue.value?.(selected) ?? '', disabled: false, selected: true })
   }
   return options

@@ -601,7 +601,7 @@ describe('review fixes (#3072)', () => {
     expect(isOpen()).toBe(false)
   })
 
-  it('re-registers an item label when only its text or disabled state changes, on the next open', async () => {
+  it('re-registers an item label when only its text or disabled state changes', async () => {
     const label = ref('Cherry')
     const disabled = ref(true)
     mount(defineComponent({
@@ -616,25 +616,14 @@ describe('review fixes (#3072)', () => {
     const nativeCherry = () => Array.from(nativeSelect().options).find(option => option.value === 'Cherry')!
     expect(nativeCherry().disabled).toBe(true)
 
-    // A closed select keeps no items mounted: a change while closed is seen
-    // once they render again, on the next open.
     disabled.value = false
+    await flushPromises()
+    expect(nativeCherry().disabled).toBe(false)
+
     label.value = 'Cherry!'
     await flushPromises()
-    expect(nativeCherry().disabled).toBe(true)
-    expect(valueText()).toBe('Cherry')
-
-    await open()
-    expect(nativeCherry().disabled).toBe(false)
     expect(valueText()).toBe('Cherry!')
     expect(nativeCherry().textContent?.trim()).toBe('Cherry!')
-
-    // While open, the mounted item texts update live.
-    disabled.value = true
-    label.value = 'Cherry?'
-    await flushPromises()
-    expect(nativeCherry().disabled).toBe(true)
-    expect(valueText()).toBe('Cherry?')
   })
 
   describe('trigger press that does not open', () => {
