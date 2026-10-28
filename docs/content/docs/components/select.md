@@ -779,6 +779,18 @@ import {
 }
 ```
 
+### Large lists
+
+When the data your `v-for` reads changes, Vue re-renders every item of that `v-for`, because each item's slot may read the new data. With hundreds of items, add `v-memo` to the `v-for` so an item re-renders only when its own values change:
+
+```vue
+<SelectItem v-for="item in items" :key="item.value" v-memo="[item.value, item.label]" :value="item.value">
+  {{ item.label }}
+</SelectItem>
+```
+
+`v-memo` must list every value the item's slot reads. A value it leaves out shows stale content when only that value changes. For very long lists, see the virtualization example above.
+
 ## Accessibility
 
 Adheres to the [ListBox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox).

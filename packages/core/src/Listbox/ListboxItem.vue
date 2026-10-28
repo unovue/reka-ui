@@ -74,8 +74,13 @@ const isSelected = getterRef(surface.isSelected)
 // when it must: when its state or attrs change, when something the slot reads
 // changes, or when its parent hands it a new slot function (which may close
 // over new data even when the state is the same, so a memo keyed on the state
-// would show stale content). A highlight move or a selection change still
-// re-renders only the items it flips: their state comes from keyed selectors.
+// would show stale content). The item's own state comes from keyed
+// selectors, so a highlight move or a selection change re-renders only the
+// items it flips, as long as no parent re-renders with them: the content keeps
+// its highlight-dependent `tabindex` out of its render for that reason. A
+// parent that does re-render (a `v-for` over data that changed, or a render
+// function reading the model) re-renders every item, as v2 did; a consumer
+// `v-memo` on that `v-for` keeps it to the items whose data changed.
 
 // Sticky: registered once mounted, never unregistered (#2824). Re-registered
 // whenever `value` / `textValue` / `disabled` change (the post effect) or the

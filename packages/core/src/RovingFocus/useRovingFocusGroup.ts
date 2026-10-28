@@ -52,8 +52,14 @@ export interface UseRovingFocusGroupOptions {
    * configure the group over the part's own options, as they did when they
    * fell through to the wrapper's props. Bind `roving.consumerAttrs($attrs)`,
    * which leaves them out, instead of `$attrs`.
+   *
+   * `true`: the attrs fell through to a wrapper that was the part's root, so
+   * they win over the part's own options, and their listeners run after the
+   * part's. `'under'`: they reached the wrapper through an `as-child` slot
+   * (under its bindings), so they only fill in options the part leaves
+   * unset, and their listeners run before the part's.
    */
-  consumerAttrs?: boolean
+  consumerAttrs?: boolean | 'under'
 }
 
 /** `RovingFocusGroup`'s props and events, camelCase → kebab-case. */
@@ -65,7 +71,9 @@ const GROUP_PROPS: Record<string, string> = {
   defaultCurrentTabStopId: 'default-current-tab-stop-id',
   preventScrollOnEntryFocus: 'prevent-scroll-on-entry-focus',
 }
-const GROUP_EVENTS = ['onEntryFocus', 'onUpdate:currentTabStopId', 'onUpdate:current-tab-stop-id']
+const ENTRY_FOCUS_KEYS = ['onEntryFocus']
+const UPDATE_KEYS = ['onUpdate:currentTabStopId', 'onUpdate:current-tab-stop-id']
+const GROUP_EVENTS = [...ENTRY_FOCUS_KEYS, ...UPDATE_KEYS].flatMap(key => [key, `${key}Once`])
 const GROUP_KEYS = new Set([...Object.keys(GROUP_PROPS), ...Object.values(GROUP_PROPS), ...GROUP_EVENTS])
 
 /** Calls a listener attr (a function, or an array of them as `mergeProps` makes). */
@@ -98,8 +106,22 @@ function consumerGroupAttrs() {
       return undefined
     return attr.value === '' || attr.value === GROUP_PROPS[key] ? true : attr.value as boolean | undefined
   }
-  const listener = (key: string) => instance.proxy!.$attrs[key]
-  return { read, readBoolean, listener }
+  // Once listeners (`@entry-focus.once`) run on the first emit only, as Vue
+  // runs them for a component's declared events.
+  const fired = new Set<string>()
+  /** Calls the consumer's listeners for an event (any spelling, `Once` included). */
+  const emit = (keys: string[], arg: unknown) => {
+    const attrs = instance.proxy!.$attrs
+    const key = keys.find(k => k in attrs)
+    if (key)
+      callListener(attrs[key], arg)
+    const onceKey = keys.map(k => `${k}Once`).find(k => k in attrs)
+    if (onceKey && !fired.has(onceKey)) {
+      fired.add(onceKey)
+      callListener(attrs[onceKey], arg)
+    }
+  }
+  return { read, readBoolean, emit }
 }
 
 const OUTLINE_NONE = Object.freeze({ outline: 'none' })
@@ -309,39 +331,65 @@ export function useRovingFocusGroup(options: UseRovingFocusGroupOptions) {
 
 export type UseRovingFocusGroupReturn = ReturnType<typeof useRovingFocusGroup>
 
-/** `options`, with the consumer's group attrs over the part's own (see `consumerAttrs`). */
+/** `options`, with the consumer's group attrs merged in (see `consumerAttrs`). */
 function withConsumerAttrs(options: UseRovingFocusGroupOptions): UseRovingFocusGroupOptions {
-  const { read, readBoolean, listener } = consumerGroupAttrs()
-  const owned = options.currentTabStopId ?? ref<string | null | undefined>(read('defaultCurrentTabStopId')?.value as string | undefined)
+  const { read, readBoolean, emit } = consumerGroupAttrs()
+  const under = options.consumerAttrs === 'under'
+  /** The consumer's value over the part's option, or (`under`) only for an option the part leaves unset. */
+  function pick<V>(attr: { value: unknown } | undefined, option: (() => V) | undefined): V | undefined {
+    if (attr && !(under && option))
+      return attr.value as V
+    return option?.()
+  }
+  // The wrapper's tab stop started from its `defaultCurrentTabStopId` while
+  // its `currentTabStopId` was unset, the part's own `v-model` included.
+  const defaultTabStop = read('defaultCurrentTabStopId')?.value as string | null | undefined
+  const owned = options.currentTabStopId ?? ref<string | null | undefined>()
+  let started = false
+  const controlledByConsumer = !(under && options.currentTabStopId)
+  const tabStop = computed({
+    get: () => {
+      const controlled = controlledByConsumer ? read('currentTabStopId') : undefined
+      if (controlled && controlled.value !== undefined)
+        return controlled.value as string | null
+      return owned.value === undefined && !started ? defaultTabStop : owned.value
+    },
+    set: (value) => {
+      // The wrapper's `v-model` emitted on a change only.
+      if (value === tabStop.value)
+        return
+      started = true
+      // Merged listeners, in the order the wrapper ran them: a root's
+      // fallthrough after the part's own, an `as-child` chain's before.
+      if (under)
+        emit(UPDATE_KEYS, value)
+      owned.value = value
+      if (!under)
+        emit(UPDATE_KEYS, value)
+    },
+  })
   return {
     ...options,
-    orientation: () => (read('orientation') ? read('orientation')!.value as Orientation | undefined : options.orientation?.()),
-    dir: () => (read('dir') ? read('dir')!.value as Direction | undefined : options.dir?.()),
+    orientation: () => pick(read('orientation'), options.orientation),
+    dir: () => pick(read('dir'), options.dir),
     loop: () => {
       const loop = readBoolean('loop')
-      return loop !== undefined ? loop : options.loop?.()
+      return pick(loop === undefined ? undefined : { value: loop }, options.loop)
     },
     preventScrollOnEntryFocus: () => {
       const prevent = readBoolean('preventScrollOnEntryFocus')
-      return prevent !== undefined ? prevent : options.preventScrollOnEntryFocus?.()
+      return pick(prevent === undefined ? undefined : { value: prevent }, options.preventScrollOnEntryFocus)
     },
     // A `v-model:current-tab-stop-id` on the part controls the group, as it
-    // did the wrapper's; the part's own tab stop still follows.
-    currentTabStopId: computed({
-      get: () => {
-        const controlled = read('currentTabStopId')
-        return controlled && controlled.value !== undefined ? controlled.value as string | null : owned.value
-      },
-      set: (value) => {
-        owned.value = value
-        callListener(listener('onUpdate:currentTabStopId') ?? listener('onUpdate:current-tab-stop-id'), value)
-      },
-    }),
-    // The part's listener first, then the consumer's: the order the wrapper's
-    // merged listeners ran in.
+    // did the wrapper's (unless, `under`, the part binds its own); the
+    // consumer's update listener runs either way.
+    currentTabStopId: tabStop,
     onEntryFocus: (event) => {
+      if (under)
+        emit(ENTRY_FOCUS_KEYS, event)
       options.onEntryFocus?.(event)
-      callListener(listener('onEntryFocus'), event)
+      if (!under)
+        emit(ENTRY_FOCUS_KEYS, event)
     },
   }
 }

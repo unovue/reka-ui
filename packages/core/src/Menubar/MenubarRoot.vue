@@ -90,9 +90,12 @@ const { modelValue, currentTabStopId, root, context } = useMenubar({
 
 provideMenubarRootContext(context)
 
-// Arrow-key navigation between the triggers.
+// Arrow-key navigation between the triggers. The former
+// `<RovingFocusGroup as-child>` sat under a `CollectionSlot`, whose slot
+// merged the consumer's attrs under the group's own bindings: Menubar's
+// orientation, dir, loop and tab stop win, and consumer listeners run first.
 const roving = useRovingFocusGroup({
-  consumerAttrs: true,
+  consumerAttrs: 'under',
   element: currentElement,
   orientation: () => 'horizontal',
   dir: () => dir.value,

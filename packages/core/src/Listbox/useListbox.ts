@@ -230,6 +230,23 @@ export interface ListboxContentSurfaceOptions {
    * does not run the keyboard entry highlight (the SFC's `refAutoReset(false, 10)`).
    */
   isClickFocus: Ref<boolean>
+  /**
+   * When `true`, the attrs carry the roving `tabindex` as it is at setup
+   * only (SSR and the first render), and the part applies the live value
+   * itself (`getListboxContentTabindex`). The tabindex flips whenever the
+   * highlight is set or cleared; bound in the render, every flip would
+   * re-render the content and, through its slot, every item.
+   */
+  tabindexOutsideRender?: boolean
+}
+
+/** The content's roving `tabindex`: `'0'` while focusable with nothing highlighted, else `'-1'`. */
+export function getListboxContentTabindex(context: ListboxRootContext<any>) {
+  return computed(() => {
+    if (!context.focusable.value)
+      return '-1'
+    return context.highlightedElement.value ? '-1' : '0'
+  })
 }
 
 /**
@@ -242,16 +259,13 @@ export function getListboxContentSurface<T extends AcceptableValue = AcceptableV
   context: ListboxRootContext<T>,
   options: ListboxContentSurfaceOptions,
 ): PartSurface<ListboxContentState> {
-  // `rootContext.focusable.value ? highlightedElement ? '-1' : '0' : '-1'`
-  const tabindex = computed(() => {
-    if (!context.focusable.value)
-      return '-1'
-    return context.highlightedElement.value ? '-1' : '0'
-  })
+  const tabindex = getListboxContentTabindex(context)
+  // Read at setup, which Vue does not track.
+  const initialTabindex = options.tabindexOutsideRender ? tabindex.value : undefined
   return createPartSurface<ListboxContentState>(
     () => ({
       'role': 'listbox',
-      'tabindex': tabindex.value,
+      'tabindex': options.tabindexOutsideRender ? initialTabindex : tabindex.value,
       'aria-orientation': context.orientation.value,
       'aria-multiselectable': !!context.multiple.value,
       // `@mousedown.left`

@@ -52,36 +52,57 @@ describe('listbox render counts', () => {
     wrapper.unmount()
   })
 
-  // The first model change also gives the list its first highlight, which
-  // flips the content's own `tabindex`: the content re-renders, and with it
-  // every item (each gets a new slot function). From then on, a selection
-  // change re-renders only the items it flips.
   it('re-renders only the items a single selection change flips', async () => {
     const { wrapper, model, reset, rerendered } = mountListbox({ modelValue: 'item-2' })
     await nextTick()
-    model.value = 'item-9'
-    await nextTick()
     reset()
 
-    model.value = 'item-4'
+    model.value = 'item-9'
     await nextTick()
-    expect(rerendered()).toEqual([4, 9])
+    expect(rerendered()).toEqual([2, 9])
     wrapper.unmount()
   })
 
   it('re-renders only the items a multiple selection change flips', async () => {
     const { wrapper, model, reset, rerendered } = mountListbox({ multiple: true, modelValue: ['item-1', 'item-4'] })
     await nextTick()
-    model.value = ['item-1', 'item-3']
-    await nextTick()
-    // Item 1, the first selected, takes the highlight on a model change.
-    expect(wrapper.find('[data-highlighted]').text()).toBe('Item 1')
     reset()
 
     model.value = ['item-1', 'item-5']
     await nextTick()
+    // Item 1, the first selected, also takes the highlight on a model change.
     expect(wrapper.find('[data-highlighted]').text()).toBe('Item 1')
-    expect(rerendered()).toEqual([3, 5])
+    expect(rerendered()).toEqual([1, 4, 5])
+    wrapper.unmount()
+  })
+
+  // The content's roving `tabindex` flips when the highlight is set or
+  // cleared; that must not re-render the content (and every item with it).
+  it('re-renders only the item a pointer leave or re-enter flips', async () => {
+    const { wrapper, reset, rerendered } = mountListbox({ highlightOnHover: true })
+    await new Promise(resolve => setTimeout(resolve))
+    const content = wrapper.find('[role=listbox]')
+    const items = wrapper.findAll('[role=option]')
+    // The first item takes the highlight on mount.
+    expect(items[0].attributes('data-highlighted')).toBe('')
+    reset()
+
+    await items[3].trigger('pointermove')
+    await nextTick()
+    expect(rerendered()).toEqual([0, 3])
+    expect(content.attributes('tabindex')).toBe('-1')
+    reset()
+
+    // The root clears the highlight on leave.
+    content.element.parentElement!.dispatchEvent(new PointerEvent('pointerleave'))
+    await nextTick()
+    expect(rerendered()).toEqual([3])
+    expect(content.attributes('tabindex')).toBe('0')
+    reset()
+
+    await items[7].trigger('pointermove')
+    await nextTick()
+    expect(rerendered()).toEqual([7])
     wrapper.unmount()
   })
 
