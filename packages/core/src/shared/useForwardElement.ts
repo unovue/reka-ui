@@ -1,6 +1,6 @@
 import type { ComponentInternalInstance, ComponentPublicInstance, ComputedRef, Ref, ShallowRef } from 'vue'
 import type { MergeableRef } from './useMergedRefs'
-import { computed, getCurrentInstance, onScopeDispose, shallowRef, watch } from 'vue'
+import { computed, getCurrentInstance, markRaw, onScopeDispose, proxyRefs, shallowRef, watch } from 'vue'
 import { isElement, resolveRefTarget, useMergedRefs } from './useMergedRefs'
 
 /**
@@ -92,11 +92,9 @@ function createDevExpose<T extends object>(exposed: T, instance: ComponentIntern
  * `setup` (it reads the current instance for the dev-only prop-read warning).
  */
 export function createElementExpose<E extends Element = HTMLElement>(
-  element: Readonly<Ref<E | null>> | (() => Readonly<Ref<E | null>>),
+  element: Readonly<Ref<E | null>>,
 ): ElementExpose<E> {
-  if (typeof element === 'function')
-    return exposeElementSource<E>({ get element() { return element() } })
-  return exposeElementSource<E>({ element }, element)
+  return exposeElementSource<E>({ element })
 }
 
 /** Anything with an `element` ref; `ElementSource` creates its ref on first read. */
@@ -165,18 +163,42 @@ class ElementSource<E extends Element> implements ElementRefSource<E> {
   resolved: ComputedRef<E | null> | undefined = undefined
   /** The callback ref handed to the template (`forwardRef`); bound, so it captures no scope. */
   forward: (el: unknown) => void = this.set.bind(this)
-  /** A child part bound with `forward` that linked itself here (see `linkToOwner`). */
-  linked: ComponentInternalInstance | null = null
+  /**
+   * A child part bound with `forward` that linked itself here (see
+   * `linkToOwner`); `false` once the public `currentRef` was read, which must
+   * hold what Vue hands a template ref, so nothing links here any more.
+   */
+  linked: ComponentInternalInstance | null | false = null
 
-  get currentRef(): ShallowRef<unknown> {
+  /** The reactive raw-value cell (created on first read). */
+  get cell(): ShallowRef<unknown> {
     return this.ref ??= shallowRef<unknown>(this.raw)
+  }
+
+  /**
+   * The public `currentRef`: the raw template-ref value as Vue delivers it
+   * (an element, or the child's expose/public proxy). A linked child is
+   * unlinked first and given the expose proxy Vue would have built.
+   */
+  get publicRef(): ShallowRef<unknown> {
+    const linked = this.linked
+    this.linked = false
+    if (linked) {
+      const proxy = createExposeProxy(linked)
+      if (this.raw !== null && this.raw === linked.exposed) {
+        this.raw = proxy
+        if (this.ref)
+          this.ref.value = proxy
+      }
+    }
+    return this.cell
   }
 
   /** The resolved element (tracked: see above). */
   get value(): E | null {
     if (this.resolved)
       return this.resolved.value
-    const raw = this.currentRef.value
+    const raw = this.cell.value
     // Bound directly on an element (or detached): nothing to resolve or cache.
     if (raw === null || isElement(raw))
       return raw as E | null
@@ -188,7 +210,7 @@ class ElementSource<E extends Element> implements ElementRefSource<E> {
     // cache the walk through its `element` chain, which tracks the child's own
     // refs, so a root swap inside the child still re-resolves here even though
     // Vue never re-invokes our ref callback.
-    return (this.resolved = computed(() => resolveRefTarget<E>(this.currentRef.value))).value
+    return (this.resolved = computed(() => resolveRefTarget<E>(this.cell.value))).value
   }
 
   get element(): Readonly<Ref<E | null>> {
@@ -206,7 +228,7 @@ class ElementSource<E extends Element> implements ElementRefSource<E> {
       if (exposed && 'element' in exposed)
         el = exposed
     }
-    else if (el === null) {
+    else if (el === null && linked) {
       // Detached: drop the link so an unmounted child is not retained.
       this.linked = null
     }
@@ -217,6 +239,35 @@ class ElementSource<E extends Element> implements ElementRefSource<E> {
 }
 
 type LinkableInstance = ComponentInternalInstance & { exposeProxy: unknown }
+
+/**
+ * The expose proxy Vue builds for a component ref (`getComponentPublicInstance`,
+ * not exported): exposed refs unwrapped, `$`-prefixed public properties from
+ * the instance. Used when a linked child's public instance is asked for after
+ * all (see `ElementSource.publicRef`); it becomes the child's expose proxy, so
+ * every later template-ref update delivers the same object.
+ */
+function createExposeProxy(instance: ComponentInternalInstance): unknown {
+  const exposed = instance.exposed as Record<string, unknown> | null
+  if (!exposed)
+    return instance.proxy
+  // A linked part's expose skipped its `$el` view (see `exposeElementSource`).
+  if (exposed.element instanceof ElementSource && exposed.$el === exposed.element)
+    exposed.$el = new ElRefView(exposed.element, instance)
+  const publicInstance = instance.proxy as unknown as Record<string | symbol, unknown>
+  const isPublicKey = (key: string | symbol) => typeof key === 'string' && key[0] === '$' && key in publicInstance
+  return (instance as LinkableInstance).exposeProxy = new Proxy(proxyRefs(markRaw(exposed)), {
+    get(target, key) {
+      if (key in target)
+        return Reflect.get(target, key)
+      if (isPublicKey(key))
+        return publicInstance[key]
+    },
+    has(target, key) {
+      return key in target || isPublicKey(key)
+    },
+  })
+}
 
 /** Whether `el` is what Vue hands a template ref on `instance` (its expose or public proxy). */
 function isPublicInstanceOf(el: unknown, instance: ComponentInternalInstance) {
@@ -250,7 +301,7 @@ function linkToOwner(instance: ComponentInternalInstance | null): boolean {
   const sources: ElementSource<Element>[] = []
   for (const { i, r } of refs) {
     const ownerSource = (i?.exposed as { element?: unknown } | null | undefined)?.element
-    if (!(ownerSource instanceof ElementSource) || ownerSource.forward !== r)
+    if (!(ownerSource instanceof ElementSource) || ownerSource.forward !== r || ownerSource.linked === false)
       return false
     sources.push(ownerSource)
   }
@@ -315,7 +366,7 @@ export function useForwardElement<E extends Element = HTMLElement>(
 
   return {
     forwardRef: source.forward as (el: Element | ComponentPublicInstance | null) => void,
-    get currentRef() { return source.currentRef },
+    get currentRef() { return source.publicRef },
     element,
     currentElement: element as ComputedRef<E>,
     expose: exposeElementSource(source, element, instance, linked),

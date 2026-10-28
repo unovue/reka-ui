@@ -4,6 +4,7 @@ import { unrefElement } from '@vueuse/core'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, Fragment, getCurrentInstance, h, isRef, markRaw, nextTick, ref, watchPostEffect } from 'vue'
 import { DialogContent, DialogPortal, DialogRoot } from '../Dialog'
+import { Label } from '../Label'
 import { Primitive } from '../Primitive'
 import { SwitchRoot } from '../Switch'
 import { mergeExpose, useForwardElement } from './useForwardElement'
@@ -461,5 +462,50 @@ describe('useForwardElement — internal refs link parts without an expose proxy
     expect(inner.exposeProxy).not.toBe(inner.proxy)
     expect(innerRef.value.element.nodeName).toBe('BUTTON')
     expect(outerRef.value.element.nodeName).toBe('BUTTON')
+  })
+})
+
+describe('useForwardElement — public `currentRef` over a linked reka part', () => {
+  function makeWrapper(child: Component) {
+    let api!: ReturnType<typeof useForwardElement>
+    const Wrapper = defineComponent({
+      setup(_, { expose }) {
+        api = useForwardElement()
+        expose(api.expose)
+        return () => h(child, { ref: api.forwardRef }, () => 'x')
+      },
+    })
+    return { Wrapper, get api() { return api } }
+  }
+
+  for (const [name, child] of [['Primitive', Primitive], ['Label', Label]] as const) {
+    it(`${name}: currentRef holds the child's expose proxy (element-first, unwrapped)`, async () => {
+      const w = makeWrapper(child)
+      const wrapper = mount(w.Wrapper, { attachTo: document.body })
+      await nextTick()
+      const raw = w.api.currentRef.value as any
+      expect(w.api.element.value).toBeInstanceOf(HTMLElement)
+      expect(raw.$el).toBeInstanceOf(HTMLElement)
+      expect(raw.element).toBeInstanceOf(HTMLElement)
+      expect(unrefElement(w.api.currentRef as any)).toBeInstanceOf(HTMLElement)
+      wrapper.unmount()
+    })
+  }
+
+  it('currentRef read in setup: the child is never linked', async () => {
+    let api!: ReturnType<typeof useForwardElement>
+    const Wrapper = defineComponent({
+      setup(_, { expose }) {
+        api = useForwardElement()
+        const currentRef = api.currentRef
+        expose(api.expose)
+        return () => h(Primitive, { ref: api.forwardRef }, () => String(isRef(currentRef)))
+      },
+    })
+    const wrapper = mount(Wrapper, { attachTo: document.body })
+    await nextTick()
+    expect((api.currentRef.value as any).element).toBeInstanceOf(HTMLElement)
+    expect(api.element.value).toBe(wrapper.element)
+    wrapper.unmount()
   })
 })

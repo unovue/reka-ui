@@ -42,6 +42,20 @@ export interface PrimitiveProps {
 // For self closing tags, don't provide default slots because of hydration issue
 export const SELF_CLOSING_TAGS = ['area', 'img', 'input']
 
+/**
+ * Whether `attrs` holds something `mergeProps` normalises: a string `style`
+ * (patched as an object, so inline properties set imperatively survive a
+ * change), a falsy `on*` handler or the `''` key, both of which it drops.
+ * Otherwise a plain copy renders the same and costs less.
+ */
+function needsMergeProps(attrs: Record<string, unknown>): boolean {
+  for (const key in attrs) {
+    if (key === 'style' ? typeof attrs.style === 'string' : key === '' || (key.startsWith('on') && !attrs[key]))
+      return true
+  }
+  return false
+}
+
 export const Primitive = defineComponent({
   name: 'Primitive',
   inheritAttrs: false,
@@ -95,9 +109,11 @@ export const Primitive = defineComponent({
       }
 
       const tag = resolveRenderTag(rawProps.as, rawProps.asChild)
+      const vnodeProps = needsMergeProps(attrs) ? mergeProps(attrs) : { ...attrs }
+      vnodeProps.ref = elementRef
       return h(
         tag,
-        { ...attrs, ref: elementRef },
+        vnodeProps,
         isSelfClosingTag(tag) ? undefined : { default: slots.default },
       )
     }
