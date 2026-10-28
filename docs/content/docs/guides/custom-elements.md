@@ -331,6 +331,7 @@ Parts with a `name` (Switch, Checkbox, Checkbox group, Toggle, RadioGroup and it
 - they submit their value with their form, wherever you move them, and with a form they are not inside through the `form` attribute (`form="checkout"`); their `form` property is the form, like a native control's;
 - `<label for>` labels them, `<fieldset disabled>` disables them, and resetting the form resets them, firing `update-model-value` (or the part's other model events) when the value changes, so what you render from it follows;
 - they are validated with it: a `required` checkbox left unchecked makes the form invalid, and matches `:invalid`;
+- `<reka-field-root>` is the exception: it submits nothing itself, and its own validation (`invalid`, custom validators) doesn't reach the form's `checkValidity()`. That runs through `<reka-form-root>` (see [Field and Form](#field-and-form)). The control inside the field is still validated natively;
 - they submit the same names as the Vue components (a checkbox group named `toppings` submits `toppings[0]`, `toppings[1]`, …, and so does a `multiple` listbox or combobox, or a tags input; object values submit their fields, `fruit[0][id]`);
 - a select submits through the native `<select>` the Vue component renders, so `required` and `autocomplete` behave the same, and a `multiple` select named `fruit` submits one `fruit` entry per selected value, like `<select multiple>`;
 - a radio group with nothing checked submits an empty value, as in Vue;
