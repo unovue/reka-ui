@@ -102,4 +102,14 @@ describe('given Toggle in a form', () => {
     await wrapper.find('button').trigger('click')
     expect([...new FormData(form)]).toEqual([])
   })
+
+  it('does not submit while disabled, even when pressed', () => {
+    const disabled = mount({
+      components: { Toggle },
+      template: '<form><Toggle name="test" aria-label="Toggle italic" :default-value="true" disabled /></form>',
+    })
+    expect(disabled.find('[type="checkbox"]').element).toHaveProperty('checked', true)
+    expect([...new FormData(disabled.find('form').element)]).toEqual([])
+    disabled.unmount()
+  })
 })
