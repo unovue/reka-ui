@@ -1,7 +1,7 @@
 import type { ComputedRef } from 'vue'
 import type { CalendarGridData, CalendarUnit } from '@/date'
 import type { DateValue } from '@/date/types'
-import { computed, ReactiveEffect, shallowReactive, shallowRef, toRaw, watch } from 'vue'
+import { computed, effect, shallowReactive, shallowRef, toRaw, watch } from 'vue'
 import { getLocalTimeZone, startOfMonth, startOfYear, toCalendar, today, toPlainDate } from '@/date/temporal'
 
 // =============================================================================
@@ -176,28 +176,37 @@ export function createCalendarCellIndex(options: CreateCalendarCellIndexOptions)
   const staleness = shallowRef(0)
   const index: CalendarCellIndex = { unit: options.view, calendarId, flags, refresh }
   const cells = options.grid ? useGridCellKeys(options.grid, index) : undefined
-  const derive = new ReactiveEffect(() => {
+  // `effect()` rather than `new ReactiveEffect()`: its signature is the same in
+  // Vue 3.4 and 3.5 (the constructor's is not). 3.4 honours `lazy`; 3.5 runs the
+  // effect once right away, which is the first derivation either way.
+  let latest: Map<string, number> | undefined
+  const derive = effect(() => {
     const builder = new CalendarCellFlagsBuilder(options.view.value, calendarId.value, cells)
     options.collect(builder)
     // `isCurrent`: today in the local zone, in the grid's calendar for months and years.
     builder.addDate(today(getLocalTimeZone()), CELL_TODAY)
-    return builder.flags
-  })
-  derive.scheduler = () => {
-    if (stale)
-      return
-    stale = true
-    staleness.value++
-  }
+    latest = builder.flags
+  }, Object.assign({
+    scheduler() {
+      if (stale)
+        return
+      stale = true
+      staleness.value++
+    },
+  }, { lazy: true }))
   function refresh() {
     if (!stale)
       return
     stale = false
     // `dirty` is false when only computeds it reads were notified and their values held.
-    if (derive.dirty)
-      flags.sync(derive.run())
+    if (derive.effect.dirty) {
+      derive()
+      flags.sync(latest!)
+    }
   }
-  flags.sync(derive.run())
+  if (!latest)
+    derive()
+  flags.sync(latest!)
   watch(staleness, refresh, { flush: 'pre' })
   return index
 }
