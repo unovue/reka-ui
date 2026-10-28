@@ -2,11 +2,12 @@
 import type { Ref } from 'vue'
 import type { Direction } from '../shared/types'
 import type { MenubarChangeReason } from './useMenubar'
+import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { useCollection } from '@/Collection'
 import { createContext, useDirection, useForwardElement } from '@/shared'
 
-export interface MenubarRootProps {
+export interface MenubarRootProps extends PrimitiveProps {
   /** The controlled value of the menu to open. Can be used as `v-model`. */
   modelValue?: string
   /** The value of the menu that should be open when initially rendered. Use when you do not need to control the value state. */
@@ -51,6 +52,7 @@ import { useMenubar } from './useMenubar'
 
 const props = withDefaults(defineProps<MenubarRootProps>(), {
   loop: false,
+  as: 'div',
 })
 const emit = defineEmits<MenubarRootEmits>()
 
@@ -94,6 +96,8 @@ provideMenubarRootContext(context)
       <Primitive
         :ref="forwardRef"
         v-bind="root.attrs.value"
+        :as="as"
+        :as-child="asChild"
       >
         <slot :model-value="modelValue" />
       </Primitive>

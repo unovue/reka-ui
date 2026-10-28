@@ -3,6 +3,19 @@
 <llm-exclude>
 <PropsTable :data="[
   {
+    'name': 'as',
+    'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
+    'type': 'AsTag | Component',
+    'required': false,
+    'default': '\'div\''
+  },
+  {
+    'name': 'asChild',
+    'description': '<p>Change the default rendered element for the one passed as a child, merging their props and behavior.</p>\n<p>Read our <a href=\'https://www.reka-ui.com/docs/guides/composition\'>Composition</a> guide for more details.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'defaultValue',
     'description': '<p>The value of the menu that should be open when initially rendered. Use when you do not need to control the value state.</p>\n',
     'type': 'string',
@@ -57,6 +70,8 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultValue` | The value of the menu that should be open when initially rendered. Use when you do not need to control the value state. | `string` | No | - |
 | `dir` | The reading direction of the combobox when applicable. If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `loop` | When `true`, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | `false` |
