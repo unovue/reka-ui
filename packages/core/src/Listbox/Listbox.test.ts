@@ -21,7 +21,7 @@ describe('given default Listbox', () => {
 
   beforeEach(() => {
     document.body.innerHTML = ''
-    wrapper = mount(Listbox, { attachTo: document.body, attrs: { onHighlight: () => {} } })
+    wrapper = mount(Listbox, { attachTo: document.body })
     content = wrapper.find('[role=listbox]')
     items = wrapper.findAll('[role=option]')
   })
@@ -706,7 +706,7 @@ describe('given horizontal Listbox', () => {
 
   beforeEach(() => {
     document.body.innerHTML = ''
-    wrapper = mount(Listbox, { attachTo: document.body, props: { orientation: 'horizontal' }, attrs: { onHighlight: () => {} } })
+    wrapper = mount(Listbox, { attachTo: document.body, props: { orientation: 'horizontal' } })
     content = wrapper.find('[role=listbox]')
     items = wrapper.findAll('[role=option]')
   })

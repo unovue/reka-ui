@@ -2,9 +2,8 @@ import type { AnyFn } from '@vueuse/shared'
 import type { ComputedRef, MaybeRefOrGetter } from 'vue'
 import type { Emit, EmitAsProps } from './useEmitAsProps'
 import type { WithOptionalBooleans } from './useForwardProps'
-import { getCurrentInstance } from 'vue'
-import { getterRef } from './partSurface'
-import { EmitForwarder } from './useEmitAsProps'
+import { computed } from 'vue'
+import { useEmitAsProps } from './useEmitAsProps'
 import { useForwardProps } from './useForwardProps'
 
 /**
@@ -42,13 +41,10 @@ export function useForwardPropsEmits<
   const parsedProps = useForwardProps(props)
   if (!emit)
     return parsedProps
-  const forwarder = new EmitForwarder(getCurrentInstance(), emit as AnyFn)
+  const emitsAsProps = useEmitAsProps(emit)
 
-  // A getter ref, read at render time: it forwards a handler only for the
-  // events that currently have a listener (see `EmitForwarder`), and with none
-  // it is the forwarded props object itself, no copy.
-  return getterRef(() => {
-    const handlers = forwarder.bound()
-    return handlers ? { ...parsedProps.value, ...handlers } : parsedProps.value
-  })
+  return computed(() => ({
+    ...parsedProps.value,
+    ...emitsAsProps,
+  }))
 }

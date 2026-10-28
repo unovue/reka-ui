@@ -19,18 +19,20 @@ export type WithOptionalBooleans<T> = {
 }
 
 /** The declared props that have a default, per component definition (built once, not per instance). */
-const defaultedKeys = new WeakMap<object, string[]>()
+const defaultedKeys = new WeakMap<object, { source: unknown, keys: string[] }>()
 
 function getDefaultedKeys(type: { props?: Record<string, unknown> } | undefined): string[] {
   if (!type)
     return []
-  let keys = defaultedKeys.get(type)
-  if (!keys) {
-    const props = type.props ?? {}
-    keys = Object.keys(props).filter(key => (props[key] as PropOptions | null)?.default !== undefined)
-    defaultedKeys.set(type, keys)
+  const source = type.props
+  let cached = defaultedKeys.get(type)
+  // Keyed on the `props` option too: HMR patches a definition in place with a new one.
+  if (!cached || cached.source !== source) {
+    const props = source ?? {}
+    cached = { source, keys: Object.keys(props).filter(key => (props[key] as PropOptions | null)?.default !== undefined) }
+    defaultedKeys.set(type, cached)
   }
-  return keys
+  return cached.keys
 }
 
 /**

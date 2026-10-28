@@ -1,10 +1,10 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h } from 'vue'
 import { useEmitAsProps } from './useEmitAsProps'
 import { useForwardPropsEmits } from './useForwardPropsEmits'
 
-/** A child that records the props it was handed, and emits on demand. */
+/** A child that emits on demand. */
 const Child = defineComponent({
   props: { label: String },
   emits: ['select', 'highlight', 'update:modelValue'],
@@ -25,7 +25,7 @@ function makeWrapper(helper: 'forwardPropsEmits' | 'emitAsProps') {
       return () => {
         const bound = forwarded ? forwarded.value : { ...props, ...emitsAsProps }
         seen.push(bound)
-        return h(Child, { ...bound, ref: 'child' })
+        return h(Child, bound)
       }
     },
   })
@@ -34,79 +34,63 @@ function makeWrapper(helper: 'forwardPropsEmits' | 'emitAsProps') {
 
 const handlerKeys = (props: Record<string, any>) => Object.keys(props).filter(key => key.startsWith('on')).sort()
 
-describe.each(['forwardPropsEmits', 'emitAsProps'] as const)('%s forwards only bound listeners', (helper) => {
-  it('forwards no handler for an event without a listener (update:* excepted)', () => {
+describe.each(['forwardPropsEmits', 'emitAsProps'] as const)('%s forwards every declared emit', (helper) => {
+  it('forwards a handler for each declared event, listener or not', () => {
     const { Wrapper, seen } = makeWrapper(helper)
     mount(Wrapper, { props: { label: 'a' } })
-    expect(handlerKeys(seen.at(-1)!)).toEqual(['onUpdate:modelValue'])
+    expect(handlerKeys(seen.at(-1)!)).toEqual(['onHighlight', 'onSelect', 'onUpdate:modelValue'])
   })
 
-  it('forwards a handler for each bound listener and it re-emits', async () => {
-    const onSelect = vi.fn()
-    const { Wrapper, seen } = makeWrapper(helper)
-    const wrapper = mount(Wrapper, { props: { label: 'a' }, attrs: { onSelect } })
-    expect(handlerKeys(seen.at(-1)!)).toEqual(['onSelect', 'onUpdate:modelValue'])
+  it('re-emits from the wrapper, so `emitted()` records an event nobody listens to', () => {
+    const { Wrapper } = makeWrapper(helper)
+    const wrapper = mount(Wrapper, { props: { label: 'a' } })
     ;(wrapper.findComponent(Child).vm as any).emit('select', 1)
-    expect(onSelect).toHaveBeenCalledWith(1)
+    expect(wrapper.emitted('select')).toEqual([[1]])
   })
 
-  it('counts a `.once` listener as bound', () => {
+  it('keeps the forwarded handlers stable across renders (no child patch on them)', async () => {
     const { Wrapper, seen } = makeWrapper(helper)
-    mount(Wrapper, { attrs: { onHighlightOnce: () => {} } })
-    expect(handlerKeys(seen.at(-1)!)).toContain('onHighlight')
-  })
-
-  it('keeps the forwarded handler stable across renders (no child patch on it)', async () => {
-    const { Wrapper, seen } = makeWrapper(helper)
-    const wrapper = mount(Wrapper, { props: { label: 'a' }, attrs: { onSelect: () => {} } })
-    const first = seen.at(-1)!.onSelect
+    const wrapper = mount(Wrapper, { props: { label: 'a' } })
+    const first = seen.at(-1)!
     await wrapper.setProps({ label: 'b' })
-    expect(seen.at(-1)!.onSelect).toBe(first)
+    const second = seen.at(-1)!
+    for (const key of handlerKeys(first))
+      expect(second[key]).toBe(first[key])
   })
 
-  it('picks up a listener bound after mount on the next render', async () => {
+  it('passes every argument through', () => {
     const onSelect = vi.fn()
-    const bind = ref(false)
-    const label = ref('a')
-    const { Wrapper, seen } = makeWrapper(helper)
-    const Parent = defineComponent(() => () => h(Wrapper, { label: label.value, ...(bind.value ? { onSelect } : {}) }))
-    const wrapper = mount(Parent)
-    expect(handlerKeys(seen.at(-1)!)).not.toContain('onSelect')
-    bind.value = true
-    label.value = 'b'
-    await nextTick()
-    expect(handlerKeys(seen.at(-1)!)).toContain('onSelect')
-    ;(wrapper.findComponent(Child).vm as any).emit('select', 2)
-    expect(onSelect).toHaveBeenCalledWith(2)
+    const { Wrapper } = makeWrapper(helper)
+    const wrapper = mount(Wrapper, { attrs: { onSelect } })
+    ;(wrapper.findComponent(Child).vm as any).emit('select', 1, 'two', { three: 3 })
+    expect(onSelect).toHaveBeenCalledWith(1, 'two', { three: 3 })
   })
 })
 
 describe('useEmitAsProps', () => {
-  it('still reads any declared handler by name', () => {
+  it('reads object-form `emits`', () => {
     const emit = vi.fn()
     let handlers: Record<string, any> = {}
     mount(defineComponent({
-      emits: ['select'],
+      emits: { 'select': null, 'update:modelValue': null },
       setup() {
         handlers = useEmitAsProps(emit as any)
         return () => null
       },
     }))
-    expect('onSelect' in handlers).toBe(true)
+    expect(Object.keys(handlers).sort()).toEqual(['onSelect', 'onUpdate:modelValue'])
     handlers.onSelect('x')
     expect(emit).toHaveBeenCalledWith('select', 'x')
-    expect(Object.keys(handlers)).toEqual([])
   })
 })
 
 describe('useForwardPropsEmits', () => {
-  it('without listeners returns the forwarded props object itself (no copy per read)', () => {
+  it('without emit returns the forwarded props object itself (no copy per read)', () => {
     let forwarded: { value: Record<string, any> } | undefined
     mount(defineComponent({
       props: { label: String },
-      emits: ['select'],
-      setup(props, { emit }) {
-        forwarded = useForwardPropsEmits(props, emit)
+      setup(props) {
+        forwarded = useForwardPropsEmits(props)
         return () => null
       },
     }), { props: { label: 'a' } })

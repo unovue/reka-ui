@@ -16,7 +16,7 @@ describe('given default PinInput', () => {
 
   beforeEach(() => {
     document.body.innerHTML = ''
-    wrapper = mount(PinInput, { attachTo: document.body, attrs: { onComplete: () => {} } })
+    wrapper = mount(PinInput, { attachTo: document.body })
     inputs = wrapper.find('div').findAll('input:not([aria-hidden])')
     inputs[0].element.focus()
   })
@@ -238,7 +238,7 @@ describe('give PinInput type=number', async () => {
 
   beforeEach(() => {
     document.body.innerHTML = ''
-    wrapper = mount(PinInput, { props: { type: 'number' }, attachTo: document.body, attrs: { onComplete: () => {} } })
+    wrapper = mount(PinInput, { props: { type: 'number' }, attachTo: document.body })
     inputs = wrapper.find('div').findAll('input:not([aria-hidden])')
     inputs[0].element.focus()
   })
@@ -392,7 +392,7 @@ describe('handle IME composition', () => {
 
   beforeEach(() => {
     document.body.innerHTML = ''
-    wrapper = mount(PinInput, { attachTo: document.body, attrs: { onComplete: () => {} } })
+    wrapper = mount(PinInput, { attachTo: document.body })
     inputs = wrapper.find('div').findAll('input:not([aria-hidden])')
     inputs[0].element.focus()
   })
@@ -431,7 +431,7 @@ describe('handle IME composition', () => {
 
   it('should reject non-numeric IME input in numeric mode', async () => {
     document.body.innerHTML = ''
-    wrapper = mount(PinInput, { attachTo: document.body, props: { type: 'number' }, attrs: { onComplete: () => {} } })
+    wrapper = mount(PinInput, { attachTo: document.body, props: { type: 'number' } })
     inputs = wrapper.find('div').findAll('input:not([aria-hidden])')
     inputs[0].element.focus()
 
@@ -457,7 +457,7 @@ describe('handle IME composition', () => {
 
   it('should distribute multi-digit numeric composition commit across slots', async () => {
     document.body.innerHTML = ''
-    wrapper = mount(PinInput, { attachTo: document.body, props: { type: 'number' }, attrs: { onComplete: () => {} } })
+    wrapper = mount(PinInput, { attachTo: document.body, props: { type: 'number' } })
     inputs = wrapper.find('div').findAll('input:not([aria-hidden])')
     inputs[0].element.focus()
 

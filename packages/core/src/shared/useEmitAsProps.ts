@@ -2,121 +2,29 @@ import type { AnyFn } from '@vueuse/shared'
 import type { ComponentInternalInstance } from 'vue'
 import { camelize, getCurrentInstance, toHandlerKey } from 'vue'
 
-/** `@vue/shared`'s `hyphenate` (not re-exported by `vue`). */
-function hyphenate(name: string): string {
-  return name.replace(/\B([A-Z])/g, '-$1').toLowerCase()
-}
-
-/** A declared event: its forwarded `onX` key and every `vnode.props` key Vue's `emit` would call for it. */
-interface DeclaredEvent {
-  name: string
-  key: string
-  /** `update:*` events are always forwarded: internal `v-model` plumbing relies on the listener existing. */
-  always: boolean
-  listenerKeys: string[]
+interface DeclaredEvents {
+  /** The `emits` option these were read from: a definition patched in place (HMR) gets a new one. */
+  source: unknown
+  names: string[]
+  /** The `onX` key each event is forwarded under. */
+  keys: string[]
 }
 
 /** Declared events per component definition, built once instead of per instance. */
-const declaredEvents = new WeakMap<object, DeclaredEvent[]>()
+const declaredEvents = new WeakMap<object, DeclaredEvents>()
 
-function getDeclaredEvents(vm: ComponentInternalInstance | null): DeclaredEvent[] {
+function getDeclaredEvents(vm: ComponentInternalInstance | null): DeclaredEvents | undefined {
   const type = vm?.type as { emits?: unknown } | undefined
   if (!type)
-    return []
+    return undefined
+  const source = type.emits
   let events = declaredEvents.get(type)
-  if (!events) {
-    const names = Array.isArray(type.emits) ? type.emits as string[] : Object.keys(type.emits ?? {})
-    events = names.map((name) => {
-      // The keys `emit` looks a listener up by (`toHandlerKey(event)`, its
-      // camelized form, the hyphenated form for `update:*`), each optionally `.once`.
-      const keys = new Set([toHandlerKey(name), toHandlerKey(camelize(name))])
-      if (name.startsWith('update:'))
-        keys.add(toHandlerKey(hyphenate(name)))
-      const listenerKeys = [...keys].flatMap(key => [key, `${key}Once`])
-      return { name, key: toHandlerKey(camelize(name)), always: name.startsWith('update:'), listenerKeys }
-    })
+  if (!events || events.source !== source) {
+    const names = Array.isArray(source) ? source as string[] : Object.keys(source ?? {})
+    events = { source, names, keys: names.map(name => toHandlerKey(camelize(name))) }
     declaredEvents.set(type, events)
   }
   return events
-}
-
-/**
- * Per-instance state behind `useEmitAsProps` / `useForwardPropsEmits`: one
- * forwarding handler per event, created the first time that event has a
- * listener, instead of a closure for every declared event up front.
- */
-export class EmitForwarder {
-  handlers: Record<string, AnyFn> | undefined = undefined
-  constructor(
-    readonly vm: ComponentInternalInstance | null,
-    readonly emit: AnyFn,
-    readonly events: DeclaredEvent[] = getDeclaredEvents(vm),
-  ) {}
-
-  /** The forwarding handler for `event` (stable per instance, so a child never patches on it). */
-  handler(event: DeclaredEvent): AnyFn {
-    const handlers = this.handlers ??= {}
-    return handlers[event.key] ??= (...args: any[]) => this.emit(event.name, ...args)
-  }
-
-  isBound(event: DeclaredEvent): boolean {
-    if (event.always)
-      return true
-    const props = this.vm?.vnode.props
-    if (!props)
-      return false
-    for (const key of event.listenerKeys) {
-      if (props[key])
-        return true
-    }
-    return false
-  }
-
-  /**
-   * The handlers for the events that currently have a listener, read from the
-   * instance's current vnode (so call it at render time). `undefined` when none.
-   */
-  bound(): Record<string, AnyFn> | undefined {
-    let out: Record<string, AnyFn> | undefined
-    for (const event of this.events) {
-      if (this.isBound(event))
-        (out ??= {})[event.key] = this.handler(event)
-    }
-    return out
-  }
-
-  lookup(key: string | symbol): DeclaredEvent | undefined {
-    if (typeof key !== 'string')
-      return undefined
-    for (const event of this.events) {
-      if (event.key === key)
-        return event
-    }
-    return undefined
-  }
-}
-
-/**
- * The `useEmitAsProps` object: it lists (and spreads) only the events that
- * have a listener when it is read, so a child is not handed a handler for
- * every declared event. Any declared `onX` still reads as its handler.
- */
-const emitAsPropsHandler: ProxyHandler<{ f: EmitForwarder }> = {
-  get(target, key) {
-    const event = target.f.lookup(key)
-    return event && target.f.handler(event)
-  },
-  has(target, key) {
-    return target.f.lookup(key) !== undefined
-  },
-  ownKeys(target) {
-    return Object.keys(target.f.bound() ?? {})
-  },
-  getOwnPropertyDescriptor(target, key) {
-    const event = target.f.lookup(key)
-    if (event && target.f.isBound(event))
-      return { value: target.f.handler(event), enumerable: true, configurable: true, writable: true }
-  },
 }
 
 // Vue doesn't have emits forwarding, in order to bind the emits we have to convert events into `onXXX` handlers
@@ -125,9 +33,8 @@ const emitAsPropsHandler: ProxyHandler<{ f: EmitForwarder }> = {
  * The `useEmitAsProps` function is a TypeScript utility that converts emitted events into props for a
  * Vue component.
  *
- * Only events the component currently has a listener for are listed (checked
- * on each read, e.g. each render's `v-bind`), plus every `update:*` event;
- * the handler of any declared event can still be read by name.
+ * Every declared event gets a handler, built once per instance (a bound
+ * `emit`, so the object is stable across renders).
  *
  * @template Name - The event name string union type.
  * @template Fn - The emit function type.
@@ -141,15 +48,21 @@ const emitAsPropsHandler: ProxyHandler<{ f: EmitForwarder }> = {
  */
 export function useEmitAsProps<Name extends string, Fn extends AnyFn = AnyFn>(emit: Emit<Name, Fn>) {
   const vm = getCurrentInstance()
-  const forwarder = new EmitForwarder(vm, emit as AnyFn)
+  const events = getDeclaredEvents(vm)
+  const result: Record<string, AnyFn> = {}
 
-  if (!forwarder.events.length) {
+  if (!events?.names.length) {
     console.warn(
       `No emitted event found. Please check component: ${vm?.type.__name}`,
     )
+    return result as EmitAsProps<Fn>
   }
 
-  return new Proxy({ f: forwarder }, emitAsPropsHandler) as unknown as EmitAsProps<Fn>
+  const { names, keys } = events
+  for (let i = 0; i < names.length; i++)
+    result[keys[i]] = (emit as AnyFn).bind(null, names[i])
+
+  return result as EmitAsProps<Fn>
 }
 
 export type EmitAsProps<T extends AnyFn> = Expand<Partial<MergeUnion<EmitUnion<OverloadUnion<T>>>>>
