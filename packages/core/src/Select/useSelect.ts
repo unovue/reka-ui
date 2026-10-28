@@ -696,7 +696,13 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
   // A closed Select renders its items only when something needs them: focus
   // readies them for the typeahead, before the first key.
   function onFocus() {
-    if (!context.multiple.value && !context.open.value && !isDisabled.value)
+    if (context.multiple.value || context.open.value || isDisabled.value)
+      return
+    // With `items` the typeahead matches right away; the rendered items only
+    // add the options it does not list.
+    if (context.items?.value)
+      context.closedItems?.requestWhenIdle()
+    else
       context.closedItems?.request()
   }
 

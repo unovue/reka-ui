@@ -81,6 +81,19 @@ export class SelectClosedItems<T = AcceptableValue> {
       this.requested.value = true
   }
 
+  /**
+   * `request`, but in idle time: with `items`, the typeahead already has the
+   * options, and the rendered ones only add those `items` does not list.
+   */
+  requestWhenIdle(): void {
+    if (this.requested.value)
+      return
+    if (typeof requestIdleCallback === 'function')
+      requestIdleCallback(() => this.request(), { timeout: 500 })
+    else
+      setTimeout(() => this.request(), 50)
+  }
+
   /** The lean items mounted or unmounted (`SelectProvider`). */
   setHarvestMounted(mounted: boolean): void {
     this.harvestMounted = mounted
