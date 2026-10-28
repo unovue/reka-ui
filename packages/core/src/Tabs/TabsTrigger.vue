@@ -17,42 +17,53 @@ export interface TabsTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { mergeProps } from 'vue'
 import { Primitive } from '@/Primitive'
-import { RovingFocusItem } from '@/RovingFocus'
+import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { injectTabsRootContext } from './TabsRoot.vue'
 import { getTabsTriggerSurface } from './useTabs'
 import { useTabsPartId } from './utils'
+
+defineOptions({
+  // `$attrs` are merged under the roving and trigger bindings: the precedence
+  // the former `RovingFocusItem` wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<TabsTriggerProps>(), {
   disabled: false,
   as: 'button',
 })
 
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectTabsRootContext()
 useTabsPartId(rootContext.customTriggerIds, () => props.value, () => props.id)
 
 // id/aria/data-state + the mousedown/keydown/focus handlers all come from the
-// shared surface builder (single source with `useTabs()`); the RovingFocusItem
-// wrapper (arrow-key nav) and the tag-dependent `type` stay in the SFC.
+// shared surface builder (single source with `useTabs()`); the roving item
+// (arrow-key nav, as a composable) and the tag-dependent `type` stay in the SFC.
 const surface = getTabsTriggerSurface(rootContext, () => props.value, () => props.disabled)
+
+const roving = useRovingFocusItem({
+  element: currentElement,
+  focusable: () => !props.disabled,
+  active: () => surface.state.value.state === 'checked',
+})!
+
+function renderAttrs(attrs: Record<string, unknown>) {
+  const own = surface.attrs.value
+  return mergeProps(attrs, roving.attrs(), { type: props.as === 'button' ? 'button' : undefined, ...own, id: props.id || own.id })
+}
 </script>
 
 <template>
-  <RovingFocusItem
-    as-child
-    :focusable="!disabled"
-    :active="surface.state.value.state === 'checked'"
+  <Primitive
+    :ref="forwardRef"
+    :as="as"
+    :as-child="asChild"
+    v-bind="renderAttrs($attrs)"
   >
-    <Primitive
-      :ref="forwardRef"
-      :as="as"
-      :as-child="asChild"
-      :type="as === 'button' ? 'button' : undefined"
-      v-bind="{ ...surface.attrs.value, id: props.id || surface.attrs.value.id }"
-    >
-      <slot />
-    </Primitive>
-  </RovingFocusItem>
+    <slot />
+  </Primitive>
 </template>

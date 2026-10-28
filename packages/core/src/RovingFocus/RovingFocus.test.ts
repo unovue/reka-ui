@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { RovingFocusGroup, RovingFocusItem } from '.'
 import Button from './story/_Button.vue'
@@ -165,6 +165,61 @@ describe('test RovingFocus with an `asChild` item whose element is replaced', ()
     await userEvent.keyboard('[ArrowRight]')
 
     expect(wrapper.get('[data-testid="second"]').element).toBe(document.activeElement)
+    wrapper.unmount()
+  })
+})
+
+describe('test RovingFocus delegated keyboard handling', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountGroup(itemProps: Record<string, unknown> = {}, count = 3) {
+    return mount(defineComponent({
+      setup: () => () => h(RovingFocusGroup, { 'data-testid': 'group' }, () =>
+        Array.from({ length: count }, (_, i) =>
+          h(RovingFocusItem, { 'as': 'button', 'data-testid': `item-${i}`, ...itemProps }, () => [
+            `Item ${i}`,
+            h('input', { 'data-testid': `input-${i}` }),
+          ]))),
+    }), { attachTo: document.body })
+  }
+
+  it('adds one keydown listener for the group, none per item', async () => {
+    const spy = vi.spyOn(HTMLElement.prototype, 'addEventListener')
+    const wrapper = mountGroup({}, 20)
+    const keydownTargets = spy.mock.contexts.filter((_, i) => spy.mock.calls[i][0] === 'keydown')
+    spy.mockRestore()
+    // (test-utils also records the root's events with a keydown listener there.)
+    const group = wrapper.get('[data-testid=group]').element
+    expect(keydownTargets.length).toBeGreaterThan(0)
+    expect(keydownTargets.every(target => target === group)).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('moves focus with the arrow keys from the item itself', async () => {
+    const wrapper = mountGroup()
+    wrapper.get<HTMLElement>('[data-testid=item-0]').element.focus()
+    await userEvent.keyboard('[ArrowRight]')
+    expect(document.activeElement).toBe(wrapper.get('[data-testid=item-1]').element)
+    wrapper.unmount()
+  })
+
+  it('ignores arrow keys from an element inside an item', async () => {
+    const wrapper = mountGroup()
+    const input = wrapper.get<HTMLElement>('[data-testid=input-0]').element
+    input.focus()
+    await userEvent.keyboard('[ArrowRight]')
+    expect(document.activeElement).toBe(input)
+    wrapper.unmount()
+  })
+
+  it('does not move focus when an item handler prevented the key', async () => {
+    const wrapper = mountGroup({ onKeydown: (event: KeyboardEvent) => event.preventDefault() })
+    const first = wrapper.get<HTMLElement>('[data-testid=item-0]').element
+    first.focus()
+    await userEvent.keyboard('[ArrowRight]')
+    expect(document.activeElement).toBe(first)
     wrapper.unmount()
   })
 })

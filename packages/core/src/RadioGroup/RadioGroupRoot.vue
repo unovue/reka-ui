@@ -52,6 +52,7 @@ import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useRadioGroup } from './useRadioGroup'
+import { useArrowKeyListeners } from './utils'
 
 const props = withDefaults(defineProps<RadioGroupRootProps>(), {
   disabled: false,
@@ -91,6 +92,10 @@ const { modelValue, root, context } = useRadioGroup({
 })
 
 provideRadioGroupRootContext(context)
+
+// The window arrow-key flag the items read on focus (one shared pair of
+// listeners, not one per item).
+useArrowKeyListeners()
 </script>
 
 <template>

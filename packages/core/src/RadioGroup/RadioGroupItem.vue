@@ -19,12 +19,12 @@ export const [injectRadioGroupItemContext, provideRadiogroupItemContext]
 </script>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
-import { computed, ref } from 'vue'
-import { RovingFocusItem } from '@/RovingFocus'
+import { computed, mergeProps } from 'vue'
+import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import Radio from './Radio.vue'
 import { injectRadioGroupRootContext } from './RadioGroupRoot.vue'
 import { getRadioGroupItemSurface } from './useRadioGroup'
+import { isArrowKeyPressed } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -65,17 +65,6 @@ const checked = computed(() => surface.state.value.state === 'checked')
 
 provideRadiogroupItemContext({ disabled, checked })
 
-const isArrowKeyPressed = ref(false)
-const ARROW_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
-
-useEventListener('keydown', (event) => {
-  if (ARROW_KEYS.includes(event.key))
-    isArrowKeyPressed.value = true
-})
-useEventListener('keyup', () => {
-  isArrowKeyPressed.value = false
-})
-
 function handleFocus() {
   setTimeout(() => {
     /**
@@ -83,7 +72,7 @@ function handleFocus() {
      * and we need to 'check' it in that case. We click it to 'check' it (instead
      * of updating `context.value`) so that the radio change event fires.
      */
-    if (isArrowKeyPressed.value)
+    if (isArrowKeyPressed())
       currentElement.value?.click()
   }, 0)
 }
@@ -91,32 +80,31 @@ function handleFocus() {
 // parent's scoped-style id is not auto-forwarded; pass it through manually so consumer
 // `<style scoped>` keeps working. (issue #2751)
 const scopeIdAttrs = useForwardScopeId()
+
+// Arrow-key navigation (as a composable; the group handles the keys).
+const roving = useRovingFocusItem({
+  element: currentElement,
+  focusable: () => !disabled.value,
+  active: () => checked.value,
+})!
 </script>
 
 <template>
-  <RovingFocusItem
+  <Radio
+    v-bind="mergeProps(roving.attrs(), { ...scopeIdAttrs, ...$attrs, ...props })"
+    :ref="forwardRef"
     :checked="checked"
+    :required="required"
     :disabled="disabled"
-    as-child
-    :focusable="!disabled"
-    :active="checked"
+    @update:checked="(_checked, details) => rootContext.changeModelValue(value, 'item-press', details?.event)"
+    @select="emits('select', $event)"
+    @keydown="surface.props.value.onKeydown"
+    @focus="handleFocus"
   >
-    <Radio
-      v-bind="{ ...scopeIdAttrs, ...$attrs, ...props }"
-      :ref="forwardRef"
+    <slot
       :checked="checked"
       :required="required"
       :disabled="disabled"
-      @update:checked="(_checked, details) => rootContext.changeModelValue(value, 'item-press', details?.event)"
-      @select="emits('select', $event)"
-      @keydown="surface.props.value.onKeydown"
-      @focus="handleFocus"
-    >
-      <slot
-        :checked="checked"
-        :required="required"
-        :disabled="disabled"
-      />
-    </Radio>
-  </RovingFocusItem>
+    />
+  </Radio>
 </template>

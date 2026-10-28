@@ -12,12 +12,17 @@ export interface ToggleGroupItemProps extends Omit<ToggleProps, 'name' | 'requir
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { Primitive } from '@/Primitive'
-import { RovingFocusItem } from '@/RovingFocus'
+import { computed, mergeProps } from 'vue'
+import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { Toggle } from '@/Toggle'
 import { injectToggleGroupRootContext } from './ToggleGroupRoot.vue'
 import { getToggleGroupItemSurface } from './useToggleGroup'
+
+defineOptions({
+  // `$attrs` are merged under the roving and toggle bindings: the precedence
+  // the former `RovingFocusItem` / `Primitive` wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<ToggleGroupItemProps>(), {
   as: 'button',
@@ -41,28 +46,32 @@ function onTogglePressed(_value: boolean, details: ToggleEmits['update:modelValu
   rootContext.changeModelValue(props.value, 'item-press', details.event)
 }
 
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 // `ToggleGroupItem` wraps the multi-root `Toggle`, so the parent's scoped-style id
 // is not auto-forwarded; pass it through manually so consumer `<style scoped>` works.
 const scopeIdAttrs = useForwardScopeId()
+
+// Arrow-key navigation (as a composable; the group handles the keys). A group
+// switching `rovingFocus` re-mounts its items, so this is decided once.
+const roving = rootContext.rovingFocus.value
+  ? useRovingFocusItem({
+      element: currentElement,
+      focusable: () => !disabled.value,
+      active: () => pressed.value,
+    })
+  : null
 </script>
 
 <template>
-  <component
-    :is="rootContext.rovingFocus.value ? RovingFocusItem : Primitive"
-    as-child
-    v-bind="rootContext.rovingFocus.value ? { focusable: !disabled, active: pressed } : {}"
+  <Toggle
+    v-bind="mergeProps($attrs, roving ? roving.attrs() : {}, { ...scopeIdAttrs, ...props })"
+    :ref="forwardRef"
+    v-slot="slotProps"
+    :disabled="disabled"
+    :model-value="pressed"
+    @update:model-value="onTogglePressed"
   >
-    <Toggle
-      v-bind="{ ...scopeIdAttrs, ...props }"
-      :ref="forwardRef"
-      v-slot="slotProps"
-      :disabled="disabled"
-      :model-value="pressed"
-      @update:model-value="onTogglePressed"
-    >
-      <slot v-bind="slotProps" />
-    </Toggle>
-  </component>
+    <slot v-bind="slotProps" />
+  </Toggle>
 </template>
