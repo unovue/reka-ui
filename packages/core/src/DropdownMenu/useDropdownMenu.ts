@@ -262,17 +262,21 @@ export function useDropdownMenu<Payload = unknown>(props: UseDropdownMenuProps<P
 
   setPopupRootStore(context, handleStore)
 
+  // The part surfaces are for standalone consumers (the part SFCs build their
+  // own from the context), so each is built on first read.
+  let trigger: PartSurface<DropdownMenuTriggerState> | undefined
+  let content: DropdownMenuContentSurface | undefined
   return {
     open,
-    payload: handleStore.payload,
-    activeTriggerId: handleStore.activeTriggerId,
+    get payload() { return handleStore.payload },
+    get activeTriggerId() { return handleStore.activeTriggerId },
     handleStore,
     onOpenChange,
     onOpenToggle,
     lastChangeDetails,
     isControlled,
-    trigger: getDropdownMenuTriggerSurface(context, props.disabled),
-    content: createDropdownMenuContentSurface(context),
+    get trigger() { return trigger ??= getDropdownMenuTriggerSurface(context, props.disabled) },
+    get content() { return content ??= createDropdownMenuContentSurface(context) },
     context,
     menuContext,
     menuRootContext,

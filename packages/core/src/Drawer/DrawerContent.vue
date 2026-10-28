@@ -29,6 +29,7 @@ export type DrawerContentProps = DrawerPopupProps
 import { computed, watch } from 'vue'
 import { Presence } from '@/Presence'
 import { useBodyScrollLock, useEmitAsProps, useForwardElement, useHideOthers, usePartId } from '@/shared'
+import { isPortalOpening } from '@/Teleport/portalGate'
 import DrawerContentImpl from './DrawerContentImpl.vue'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { useDrawerContentModality } from './useDrawer'
@@ -87,6 +88,7 @@ watch(() => isFullModal.value && rootContext.open.value, (locked) => {
 
 <template>
   <Presence
+    :appear="isPortalOpening(rootContext)"
     :present="rootContext.open.value"
     :force-mount="forceMount"
     @complete="rootContext.notifyOpenComplete"

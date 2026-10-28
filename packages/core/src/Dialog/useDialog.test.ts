@@ -269,3 +269,12 @@ describe('useDialog — public export', () => {
     expect('getDialogContentSurface' in Reka).toBe(false)
   })
 })
+
+describe('useDialog — part surfaces are built on first read', () => {
+  it('returns the same surface on every read and keeps every key enumerable', () => {
+    const d = useDialog()
+    expect(d.trigger).toBe(d.trigger)
+    expect(d.trigger.attrs.value['aria-haspopup']).toBe('dialog')
+    expect(Object.keys(d)).toEqual(expect.arrayContaining(['trigger', 'close', 'content', 'overlay', 'title', 'description', 'payload', 'activeTriggerId']))
+  })
+})
