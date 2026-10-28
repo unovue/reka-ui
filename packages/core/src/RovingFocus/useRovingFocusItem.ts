@@ -1,5 +1,5 @@
 import type { ElementSourceLike } from '@/Collection/Collection'
-import { getCurrentScope, onScopeDispose } from 'vue'
+import { getCurrentInstance, getCurrentScope, onBeforeUnmount, onMounted, onScopeDispose } from 'vue'
 import { COLLECTION_ITEM_ATTRS, useCollectionItem } from '@/Collection/Collection'
 import { SelectorHold } from '@/shared/createKeyedSelector'
 import { useId } from '@/shared/useId'
@@ -77,6 +77,23 @@ export function useRovingFocusItem(options: UseRovingFocusItemOptions) {
       tabStop.release()
       if (counted)
         context.onFocusableItemRemove()
+    })
+  }
+
+  // An item rendered outside the group's element (through a `Teleport`): its
+  // keydown never bubbles to the group's listener, so it listens itself.
+  if (getCurrentInstance()) {
+    let detached: Element | undefined
+    onMounted(() => {
+      const element = options.element.value as Element | null | undefined
+      const root = context.rootElement.value as Element | null | undefined
+      if (element && root && !root.contains(element)) {
+        detached = element
+        element.addEventListener('keydown', context.onDetachedItemKeydown as EventListener)
+      }
+    })
+    onBeforeUnmount(() => {
+      detached?.removeEventListener('keydown', context.onDetachedItemKeydown as EventListener)
     })
   }
 

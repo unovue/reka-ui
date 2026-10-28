@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick, ref, Teleport } from 'vue'
 import { RovingFocusGroup, RovingFocusItem } from '.'
 import Button from './story/_Button.vue'
 import ButtonGroup from './story/_ButtonGroup.vue'
@@ -221,5 +221,26 @@ describe('test RovingFocus delegated keyboard handling', () => {
     await userEvent.keyboard('[ArrowRight]')
     expect(document.activeElement).toBe(first)
     wrapper.unmount()
+  })
+
+  it('moves focus from an item teleported out of the group', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(RovingFocusGroup, { 'data-testid': 'group' }, () => [
+        h(RovingFocusItem, { 'as': 'button', 'data-testid': 'item-0' }, () => 'Item 0'),
+        h(Teleport, { to: target }, h(RovingFocusItem, { 'as': 'button', 'data-testid': 'item-1' }, () => 'Item 1')),
+        h(RovingFocusItem, { 'as': 'button', 'data-testid': 'item-2' }, () => 'Item 2'),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    const teleported = target.querySelector<HTMLElement>('[data-testid=item-1]')!
+    teleported.focus()
+    await userEvent.keyboard('[ArrowRight]')
+    // The teleported item comes first in the collection's order (outside the group).
+    expect(document.activeElement).not.toBe(teleported)
+    expect(wrapper.element.contains(document.activeElement)).toBe(true)
+    wrapper.unmount()
+    target.remove()
   })
 })

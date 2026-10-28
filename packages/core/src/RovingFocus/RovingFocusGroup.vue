@@ -52,6 +52,10 @@ interface RovingContext {
   onItemShiftTab: () => void
   onFocusableItemAdd: () => void
   onFocusableItemRemove: () => void
+  /** The group's element: an item rendered outside it (teleported) listens itself. */
+  rootElement: { readonly value: unknown }
+  /** Arrow keys for an item outside the group's element (its keydown never reaches the group). */
+  onDetachedItemKeydown: (event: KeyboardEvent) => void
 }
 
 export const [injectRovingFocusGroupContext, provideRovingFocusGroupContext]
@@ -113,9 +117,20 @@ function handleKeydown(event: KeyboardEvent) {
   if (event.defaultPrevented)
     return
   const item = findItem(event.target as Element | null, event.currentTarget as Element)
-  if (!item)
-    return
+  if (item)
+    navigate(event, item)
+}
 
+/** An item outside the group's element (teleported) listens on itself. */
+function handleDetachedItemKeydown(event: KeyboardEvent) {
+  if (event.defaultPrevented)
+    return
+  const item = getItem(event.currentTarget as HTMLElement, true)
+  if (item && getCollectionMeta<RovingFocusItemMeta>(item)?.roving)
+    navigate(event, item)
+}
+
+function navigate(event: KeyboardEvent, item: { ref: HTMLElement }) {
   if (event.key === 'Tab' && event.shiftKey) {
     isTabbingBackOut.value = true
     return
@@ -210,6 +225,8 @@ provideRovingFocusGroupContext({
   onFocusableItemAdd: () => {
     focusableItemsCount.value++
   },
+  rootElement: currentElement,
+  onDetachedItemKeydown: handleDetachedItemKeydown,
   onFocusableItemRemove: () => {
     focusableItemsCount.value--
   },
