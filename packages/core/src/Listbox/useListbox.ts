@@ -248,6 +248,11 @@ export interface ListboxContentSurfaceOptions {
  */
 export const LISTBOX_CONTENT_TABINDEX_OVERRIDDEN: InjectionKey<(() => boolean) | null> = Symbol('ListboxContentTabindexOverridden')
 
+/** Whether `props` bind a `tabindex` (either spelling: a render function may pass `tabIndex`). */
+export function bindsTabindex(props: Record<string, unknown> | null | undefined): boolean {
+  return !!props && ('tabindex' in props || 'tabIndex' in props)
+}
+
 /** The content's roving `tabindex`: `'0'` while focusable with nothing highlighted, else `'-1'`. */
 export function getListboxContentTabindex(context: ListboxRootContext<any>) {
   return computed(() => {

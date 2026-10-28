@@ -1,6 +1,23 @@
+import type { ComponentInternalInstance, VNodeProps } from 'vue'
 import { cloneVNode, Comment, defineComponent, getCurrentInstance, mergeProps } from 'vue'
 import { renderSlotFragments } from '@/shared/renderSlotFragments'
 import { useForwardElement } from '@/shared/useForwardElement'
+
+type ChildProps = (VNodeProps & Record<string, unknown>) | null
+
+// The props the slot child bound itself, before the merge, per `Slot`
+// instance and as of its last render.
+const childProps = new WeakMap<ComponentInternalInstance, ChildProps>()
+
+/**
+ * The props the child of an as-child part (a `Slot` instance) bound itself, as
+ * of the last render, or `undefined` when `instance` is not a `Slot`. A part
+ * that sets one of its attributes outside the render reads this to leave an
+ * attribute the child bound over its own (the child wins the merge).
+ */
+export function getSlotChildProps(instance: ComponentInternalInstance | null | undefined): ChildProps | undefined {
+  return instance ? childProps.get(instance) : undefined
+}
 
 export const Slot = defineComponent({
   name: 'PrimitiveSlot',
@@ -20,6 +37,7 @@ export const Slot = defineComponent({
     instance.exposed = elementExpose
 
     return () => {
+      childProps.set(instance, null)
       if (!slots.default)
         return null
 
@@ -29,6 +47,7 @@ export const Slot = defineComponent({
         return children
 
       const firstNonCommentChildren = children[firstNonCommentChildrenIndex]
+      childProps.set(instance, firstNonCommentChildren.props)
 
       // Remove props ref from being inferred
       delete firstNonCommentChildren.props?.ref

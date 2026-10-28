@@ -785,7 +785,7 @@ When the data your `v-for` reads changes, Vue re-renders every item of that `v-f
 
 ```vue
 <SelectItem v-for="item in items" :key="item.value" v-memo="[item.value, item.label]" :value="item.value">
-  {{ item.label }}
+  <SelectItemText>{{ item.label }}</SelectItemText>
 </SelectItem>
 ```
 

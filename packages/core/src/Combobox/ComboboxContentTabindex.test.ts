@@ -37,4 +37,13 @@ describe('comboboxContent tabindex', () => {
     expect(content.getAttribute('tabindex')).toBe('0')
     wrapper.unmount()
   })
+
+  it('keeps a camel-cased consumer tabIndex', async () => {
+    const wrapper = mountCombobox({ tabIndex: 0 })
+    await flush()
+    const content = document.querySelector('[role="listbox"]')!
+    expect(document.querySelector('[data-highlighted]')).not.toBeNull()
+    expect(content.getAttribute('tabindex')).toBe('0')
+    wrapper.unmount()
+  })
 })

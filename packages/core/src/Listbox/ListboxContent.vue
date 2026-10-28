@@ -2,15 +2,16 @@
 import type { PrimitiveProps } from '..'
 import { refAutoReset } from '@vueuse/shared'
 import { injectListboxRootContext } from './ListboxRoot.vue'
-import { getListboxContentSurface, getListboxContentTabindex, LISTBOX_CONTENT_TABINDEX_OVERRIDDEN } from './useListbox'
+import { bindsTabindex, getListboxContentSurface, getListboxContentTabindex, LISTBOX_CONTENT_TABINDEX_OVERRIDDEN } from './useListbox'
 
 export interface ListboxContentProps extends PrimitiveProps { }
 </script>
 
 <script setup lang="ts">
-import { inject, mergeProps, provide, watchPostEffect } from 'vue'
+import { getCurrentInstance, inject, mergeProps, provide, watchPostEffect } from 'vue'
 import { useCollectionSlot } from '@/Collection'
 import { renderAs } from '@/Primitive/renderAs'
+import { getSlotChildProps } from '@/Primitive/Slot'
 import { useForwardElement } from '@/shared'
 
 defineOptions({
@@ -39,16 +40,23 @@ useCollectionSlot(currentElement)
 // here, outside the render, a flip touches one attribute instead of
 // re-rendering the content and, through its slot, every item. The render
 // keeps the setup value, for SSR and hydration.
-// A part that renders this as-child and binds its own `tabindex` keeps it:
-// that binding won the slot merge before.
+// An as-child element that binds its own `tabindex` keeps it, as does a part
+// that renders this as-child and binds one on the element further down: those
+// bindings won the slot merge before.
+const instance = getCurrentInstance()!
 const tabindex = getListboxContentTabindex(rootContext)
 const tabindexOverridden = inject(LISTBOX_CONTENT_TABINDEX_OVERRIDDEN, null)
 provide(LISTBOX_CONTENT_TABINDEX_OVERRIDDEN, null)
-watchPostEffect(() => {
+function applyTabindex() {
   const element = currentElement.value as Element | null | undefined
-  if (element && !tabindexOverridden?.())
-    element.setAttribute('tabindex', tabindex.value)
-})
+  if (!element || tabindexOverridden?.() || bindsTabindex(getSlotChildProps(instance.subTree?.component)))
+    return
+  element.setAttribute('tabindex', tabindex.value)
+}
+watchPostEffect(applyTabindex)
+// A patch of the element (an as-child element re-renders with the `Slot`, not
+// with this part) puts the setup value back when the child drops its binding:
+// `@vue:updated` runs after every patch of it.
 </script>
 
 <template>
@@ -56,6 +64,7 @@ watchPostEffect(() => {
     :is="renderAs(as, asChild)"
     v-bind="mergeProps($attrs, surface.attrs.value)"
     :ref="forwardRef"
+    @vue:updated="applyTabindex"
   >
     <slot />
   </component>
