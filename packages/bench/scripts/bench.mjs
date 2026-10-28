@@ -33,6 +33,7 @@ const { values: opts } = parseArgs({
     'floor': { type: 'string', default: '0.2' },
     'keep-base': { type: 'boolean', default: false },
     'gate': { type: 'boolean', default: false },
+    'unlock': { type: 'boolean', default: false },
     'out': { type: 'string' },
     'summary': { type: 'string', default: process.env.GITHUB_STEP_SUMMARY },
     'help': { type: 'boolean', short: 'h' },
@@ -51,6 +52,8 @@ if (opts.help) {
   --floor KB        ... and only if heap grew by more than this many KB/inst (default 0.2)
   --keep-base       leave the base worktree in place after the run (its path is printed)
   --gate            wait while the machine's load average is above ncpu/2
+  --unlock          remove a head-build lock left by a killed run, then exit (only when no other
+                    bench run is in progress in this checkout)
   --out file        raw samples + summary JSON (default packages/bench/dist/results.json)
   --summary file    append the markdown report here (default $GITHUB_STEP_SUMMARY)`)
   process.exit(0)
@@ -79,26 +82,26 @@ const t0 = Date.now()
 
 let baseDir = null
 let baseSha = null
-// This run's page builds; dist/ is shared by every run in this checkout.
-mkdirSync(join(BENCH_ROOT, 'dist'), { recursive: true })
-const pageRoot = mkdtempSync(join(BENCH_ROOT, 'dist', 'run-'))
-
 // Runs in this checkout share packages/core/dist: building it and bundling the head page from
 // it happen under a lock. Once bundled, the page no longer reads packages/core.
 //
-// The lock is a file holding "<pid> <random token>". It is published with link(), which is
-// atomic and fails if the lock exists, so a lock never exists without its owner recorded.
-// A lock whose pid is dead is reclaimed by one elected run: the first to create the marker
-// file named after that lock's token (published the same way, holding the reclaimer's pid).
-// The lock itself is never moved, so a live lock is never briefly absent. The elected run deletes it only while it still holds
-// the dead owner's token; it can't have been replaced, because a lock is only ever
-// replaced after it is removed, and only the elected run removes a stale one.
+// The lock is a file holding "<pid> <random token>", created exclusively (written to a temp
+// file, then link()ed into place: atomic, fails if the lock exists, never seen half-written).
+// While its holder is alive, other runs wait. A lock whose holder died is never reclaimed
+// automatically; the run stops and says how to remove it (`pnpm bench --unlock`), which the
+// user does deliberately when no other bench is running.
+mkdirSync(join(BENCH_ROOT, 'dist'), { recursive: true })
 const HEAD_LOCK = join(BENCH_ROOT, 'dist', '.head-build.lock')
+if (opts.unlock) {
+  rmSync(HEAD_LOCK, { force: true })
+  log(`removed ${HEAD_LOCK}`)
+  process.exit(0)
+}
 const myToken = `${process.pid} ${randomBytes(6).toString('hex')}`
 let holdsLock = false
-function readLock(file) {
+function readLock() {
   try {
-    return readFileSync(file, 'utf8')
+    return readFileSync(HEAD_LOCK, 'utf8')
   }
   catch (e) {
     if (e.code === 'ENOENT')
@@ -115,13 +118,11 @@ function isAlive(pid) {
     return e.code === 'EPERM'
   }
 }
-// Create `file` holding `content`, or return false if it exists. The content is written to a
-// temp file first and published with link(), so `file` is never seen empty or partial.
-function publishExclusive(file, content) {
-  const tmp = `${file}.${process.pid}.tmp`
-  writeFileSync(tmp, content)
+function tryLock() {
+  const tmp = `${HEAD_LOCK}.${process.pid}.tmp`
+  writeFileSync(tmp, myToken)
   try {
-    linkSync(tmp, file)
+    linkSync(tmp, HEAD_LOCK)
     return true
   }
   catch (e) {
@@ -133,34 +134,19 @@ function publishExclusive(file, content) {
     rmSync(tmp, { force: true })
   }
 }
-function reclaimIfStale(token) {
-  const marker = `${HEAD_LOCK}.reap-${token.replace(/\W+/g, '-')}`
-  if (!publishExclusive(marker, String(process.pid))) {
-    // Another run is reclaiming this lock. If that run died mid-way, clear its marker.
-    const reaper = Number(readLock(marker))
-    if (reaper && !isAlive(reaper))
-      rmSync(marker, { force: true })
-    return
-  }
-  try {
-    if (readLock(HEAD_LOCK) === token)
-      rmSync(HEAD_LOCK, { force: true })
-  }
-  finally {
-    rmSync(marker, { force: true })
-  }
-}
 async function lockHeadBuild() {
   let waiting = false
-  while (!publishExclusive(HEAD_LOCK, myToken)) {
-    const token = readLock(HEAD_LOCK)
+  while (!tryLock()) {
+    const token = readLock()
     if (token === null)
-      continue
+      continue // released between our attempt and the read
     const pid = Number(token.split(' ')[0])
     if (!isAlive(pid)) {
-      reclaimIfStale(token)
-      await sleep(50)
-      continue
+      throw new Error([
+        `${HEAD_LOCK} is held by pid ${pid}, which is no longer running (a bench run was killed).`,
+        'If no other bench run is in progress in this checkout, remove it and retry:',
+        '  pnpm bench --unlock',
+      ].join('\n'))
     }
     if (!waiting)
       log(`waiting for another bench run (pid ${pid}) to finish building packages/core`)
@@ -170,10 +156,13 @@ async function lockHeadBuild() {
   holdsLock = true
 }
 function unlockHeadBuild() {
-  if (holdsLock && readLock(HEAD_LOCK) === myToken)
+  if (holdsLock && readLock() === myToken)
     rmSync(HEAD_LOCK, { force: true })
   holdsLock = false
 }
+
+// This run's page builds; dist/ is shared by every run in this checkout.
+const pageRoot = mkdtempSync(join(BENCH_ROOT, 'dist', 'run-'))
 
 let cleaned = false
 function cleanup() {

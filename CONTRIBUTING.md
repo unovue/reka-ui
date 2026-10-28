@@ -216,8 +216,11 @@ prints the head/base ratio for heap, mount and update time. Each run gets its ow
 worktree under `/tmp/rkb-*`, which is removed when the run ends, even on Ctrl-C.
 Concurrent runs against the same ref therefore don't collide. Add `--keep-base`
 to leave the worktree in place for inspection. Several runs can share one
-checkout: they take turns building `packages/core`. They do share the default
-`dist/results.json`, so give each run its own `--out` if you need every result. The first time, install the browser with
+checkout: they take turns building `packages/core` under a lock. If a killed run
+left that lock behind, the next run stops and tells you to remove it with
+`pnpm bench --unlock`; run that only when no other bench is running. Runs do
+share the default `dist/results.json`, so give each run its own `--out` if you
+need every result. The first time, install the browser with
 `pnpm --filter bench exec playwright install chromium`. Raw samples go to
 `packages/bench/dist/results.json`.
 
