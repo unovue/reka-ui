@@ -211,9 +211,7 @@ import {
   useFloating,
 } from '@floating-ui/vue'
 import { computed, ref, watchEffect, watchPostEffect } from 'vue'
-import {
-  Primitive,
-} from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectPopperRootContext } from './PopperRoot.vue'
 import {
   getSideAndAlignFromPlacement,
@@ -415,7 +413,8 @@ providePopperContentContext({
       }),
     }"
   >
-    <Primitive
+    <component
+      :is="renderAs(props.as, props.asChild)"
       v-if="props.memoDependencies"
       :ref="forwardRef"
       v-memo="[
@@ -428,8 +427,6 @@ providePopperContentContext({
         ...props.memoDependencies,
       ]"
       v-bind="$attrs"
-      :as-child="props.asChild"
-      :as="props.as"
       :data-side="placedSide"
       :data-align="placedAlign"
       :style="{
@@ -439,14 +436,13 @@ providePopperContentContext({
       }"
     >
       <slot />
-    </Primitive>
+    </component>
 
-    <Primitive
+    <component
+      :is="renderAs(props.as, props.asChild)"
       v-else
       :ref="forwardRef"
       v-bind="$attrs"
-      :as-child="props.asChild"
-      :as="props.as"
       :data-side="placedSide"
       :data-align="placedAlign"
       :dir="dir"
@@ -457,6 +453,6 @@ providePopperContentContext({
       }"
     >
       <slot />
-    </Primitive>
+    </component>
   </div>
 </template>

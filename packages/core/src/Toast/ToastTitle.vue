@@ -6,10 +6,10 @@ export interface ToastTitleProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectToastRootContext } from './ToastRootImpl.vue'
 
-const props = defineProps<ToastTitleProps>()
+defineProps<ToastTitleProps>()
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectToastRootContext(null)
@@ -19,11 +19,11 @@ const rootContext = injectToastRootContext(null)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     v-if="$slots.default || !rootContext?.toast.value || rootContext.toast.value.title"
     :ref="forwardRef"
-    v-bind="props"
   >
     <slot>{{ rootContext?.toast.value?.title }}</slot>
-  </Primitive>
+  </component>
 </template>

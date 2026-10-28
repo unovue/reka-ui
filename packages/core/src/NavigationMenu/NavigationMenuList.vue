@@ -7,9 +7,7 @@ export interface NavigationMenuListProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { mergeProps, onMounted } from 'vue'
-import {
-  Primitive,
-} from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import { getNavigationMenuListSurface } from './useNavigationMenu'
 
@@ -33,16 +31,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <Primitive
+  <div
     :ref="forwardRef"
     style="position: relative"
   >
-    <Primitive
+    <component
+      :is="renderAs(as, props.asChild)"
       v-bind="mergeProps(list.attrs.value, $attrs)"
-      :as-child="props.asChild"
-      :as="as"
     >
       <slot />
-    </Primitive>
-  </Primitive>
+    </component>
+  </div>
 </template>

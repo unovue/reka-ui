@@ -13,7 +13,7 @@ export interface NavigationMenuIndicatorProps extends PrimitiveProps {
 <script setup lang="ts">
 import { mergeProps } from 'vue'
 import { Presence } from '@/Presence'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import { useNavigationMenuIndicator } from './useNavigationMenu'
@@ -37,14 +37,13 @@ const { isVisible, indicator } = useNavigationMenuIndicator({ context: menuConte
     :to="menuContext.indicatorTrack.value"
   >
     <Presence :present="forceMount || isVisible">
-      <Primitive
+      <component
+        :is="renderAs(as, props.asChild)"
         v-bind="mergeProps(indicator.attrs.value, $attrs)"
         :ref="forwardRef"
-        :as-child="props.asChild"
-        :as="as"
       >
         <slot />
-      </Primitive>
+      </component>
     </Presence>
   </Teleport>
 </template>

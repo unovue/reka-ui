@@ -5,7 +5,7 @@ import type { ToastOpenChangeReason } from './useToast'
 import type { SwipeEvent } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason } from '@/shared'
-import { useCollection } from '@/Collection'
+import { COLLECTION_ITEM_ATTRS, useCollectionItem } from '@/Collection/Collection'
 import { createContext, getActiveElement, useForwardElement } from '@/shared'
 
 export type ToastRootImplEmits = {
@@ -70,7 +70,7 @@ export const [injectToastRootContext, provideToastRootContext]
 <script setup lang="ts">
 import { onKeyStroke, useResizeObserver } from '@vueuse/core'
 import { computed, mergeProps, onMounted, onUnmounted, reactive, shallowRef, toRef, watch, watchEffect } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import ToastAnnounce from './ToastAnnounce.vue'
 import { injectToastPositionerContext } from './ToastPositioner.vue'
 import { injectToastProviderContext } from './ToastProvider.vue'
@@ -89,8 +89,8 @@ const props = withDefaults(defineProps<ToastRootImplProps & ToastRootImplInterna
 const emits = defineEmits<ToastRootImplEmits>()
 
 const { forwardRef, currentElement, expose } = useForwardElement()
+useCollectionItem(currentElement)
 defineExpose(expose)
-const { CollectionItem } = useCollection()
 
 const providerContext = injectToastProviderContext()
 const duration = computed(
@@ -247,18 +247,15 @@ provideToastRootContext({ onClose: handleClose, toast: toRef(props, 'toast') })
     :to="providerContext.viewport.value ?? 'body'"
     :disabled="!!positionerContext"
   >
-    <CollectionItem>
-      <Primitive
-        v-bind="mergeProps($attrs, toastSurface.attrs.value, swipe.attrs.value, { tabindex: $attrs.tabindex ?? '0' })"
-        :ref="forwardRef"
-        :as="as"
-        :as-child="asChild"
-      >
-        <slot
-          :remaining="remainingTime"
-          :duration="duration"
-        />
-      </Primitive>
-    </CollectionItem>
+    <component
+      :is="renderAs(as, asChild)"
+      v-bind="mergeProps(COLLECTION_ITEM_ATTRS, $attrs, toastSurface.attrs.value, swipe.attrs.value, { tabindex: $attrs.tabindex ?? '0' })"
+      :ref="forwardRef"
+    >
+      <slot
+        :remaining="remainingTime"
+        :duration="duration"
+      />
+    </component>
   </Teleport>
 </template>

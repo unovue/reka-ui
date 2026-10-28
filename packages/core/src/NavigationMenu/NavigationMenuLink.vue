@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useCollection } from '@/Collection'
+import { COLLECTION_ITEM_ATTRS, useCollectionItem } from '@/Collection/Collection'
 import { useForwardElement } from '@/shared'
 
 export type NavigationMenuLinkEmits = {
@@ -18,8 +18,15 @@ export interface NavigationMenuLinkProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { getCurrentInstance, mergeProps } from 'vue'
+import { renderAs } from '@/Primitive/renderAs'
 import { useNavigationMenuLink } from './useNavigationMenu'
+
+defineOptions({
+  // `$attrs` are merged under the part's own bindings: the precedence the
+  // former `CollectionItem` wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<NavigationMenuLinkProps>(), {
   as: 'a',
@@ -27,8 +34,18 @@ const props = withDefaults(defineProps<NavigationMenuLinkProps>(), {
 
 const emits = defineEmits<NavigationMenuLinkEmits>()
 
-const { CollectionItem } = useCollection({ key: 'NavigationMenu' })
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
+// A consumer `value` attr was the `CollectionItem` wrapper's prop: the
+// collection item's value, not an attribute (read through the instance
+// proxy, which tracks `$attrs`).
+const instance = getCurrentInstance()!
+useCollectionItem(currentElement, () => instance.proxy!.$attrs.value, { key: 'NavigationMenu' })
+function elementAttrs(attrs: Record<string, unknown>) {
+  if (!('value' in attrs))
+    return attrs
+  const { value: _, ...rest } = attrs
+  return rest
+}
 defineExpose(expose)
 
 const { link } = useNavigationMenuLink({
@@ -38,13 +55,11 @@ const { link } = useNavigationMenuLink({
 </script>
 
 <template>
-  <CollectionItem :ref="forwardRef">
-    <Primitive
-      v-bind="link.attrs.value"
-      :as="as"
-      :as-child="props.asChild"
-    >
-      <slot />
-    </Primitive>
-  </CollectionItem>
+  <component
+    :is="renderAs(as, props.asChild)"
+    :ref="forwardRef"
+    v-bind="mergeProps(elementAttrs($attrs), COLLECTION_ITEM_ATTRS, link.attrs.value)"
+  >
+    <slot />
+  </component>
 </template>

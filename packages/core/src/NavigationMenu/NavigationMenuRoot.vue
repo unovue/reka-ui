@@ -5,7 +5,7 @@ import type { NavigationMenuChangeReason } from './useNavigationMenu'
 import type { Direction, Orientation } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { useCollection } from '@/Collection'
+import { useCollection, useCollectionSlot } from '@/Collection'
 import { createContext, useDirection, useForwardElement, useId } from '@/shared'
 import { EVENT_ROOT_CONTENT_DISMISS } from './utils'
 
@@ -103,8 +103,15 @@ export const [injectNavigationMenuContext, provideNavigationMenuContext]
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { Primitive } from '@/Primitive'
+import { mergeProps } from 'vue'
+import { renderAs } from '@/Primitive/renderAs'
 import { handleRootDismissEvent, useNavigationMenu } from './useNavigationMenu'
+
+defineOptions({
+  // `$attrs` are merged under the part's own bindings: the precedence the
+  // former `CollectionSlot` wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<NavigationMenuRootProps>(), {
   modelValue: undefined,
@@ -128,7 +135,8 @@ defineSlots<{
 const { forwardRef, currentElement: rootNavigationMenu, expose } = useForwardElement()
 defineExpose(expose)
 
-const { getItems, CollectionSlot } = useCollection({ key: 'NavigationMenu', isProvider: true })
+const { getItems } = useCollection({ key: 'NavigationMenu', isProvider: true })
+useCollectionSlot(rootNavigationMenu, { key: 'NavigationMenu' })
 
 // `useDirection` (ConfigProvider-aware) and `useId` (SSR-aware) stay in the
 // shell; the open-item model, hover intent and context live in the composable.
@@ -158,14 +166,11 @@ provideNavigationMenuContext(context)
 </script>
 
 <template>
-  <CollectionSlot>
-    <Primitive
-      v-bind="root.attrs.value"
-      :ref="forwardRef"
-      :as="as"
-      :as-child="asChild"
-    >
-      <slot :model-value="modelValue" />
-    </Primitive>
-  </CollectionSlot>
+  <component
+    :is="renderAs(as, asChild)"
+    v-bind="mergeProps($attrs, root.attrs.value)"
+    :ref="forwardRef"
+  >
+    <slot :model-value="modelValue" />
+  </component>
 </template>

@@ -16,14 +16,20 @@ export interface MenuSubTriggerProps extends MenuItemImplProps {
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 import { reactiveOmit } from '@vueuse/shared'
-import { nextTick, onUnmounted, ref, watch } from 'vue'
+import { mergeProps, nextTick, onUnmounted, ref, watch } from 'vue'
+import { usePopperAnchor } from '@/Popper/usePopperAnchor'
 import { disclosureState, useForwardElement, useId } from '@/shared'
-import MenuAnchor from './MenuAnchor.vue'
 import { injectMenuContentContext } from './MenuContentImpl.vue'
 import MenuItemImpl from './MenuItemImpl.vue'
 import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
 import { injectMenuSubContext } from './MenuSub.vue'
 import { isMouseEvent, SELECTION_KEYS, SUB_OPEN_KEYS } from './utils'
+
+defineOptions({
+  // `$attrs` are merged under the part's own bindings: the precedence the
+  // former `MenuAnchor` (as-child) wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<MenuSubTriggerProps>(), {
   graceDuration: 300,
@@ -144,47 +150,42 @@ async function handleKeyDown(event: KeyboardEvent) {
   }
 }
 
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
+const anchor = usePopperAnchor({ consumerAttrs: true, element: currentElement })
+
+function setTriggerRef(item: Element | ComponentPublicInstance | null) {
+  forwardRef(item)
+  if (item)
+    subContext?.onTriggerChange((item as ComponentPublicInstance).$el)
+}
 </script>
 
 <template>
-  <MenuAnchor
-    :ref="forwardRef"
-    as-child
+  <MenuItemImpl
+    v-bind="mergeProps(anchor.consumerAttrs($attrs), itemProps)"
+    :id="subContext.triggerId"
+    :ref="setTriggerRef"
+    aria-haspopup="menu"
+    :aria-expanded="menuContext.open.value"
+    :aria-controls="subContext.contentId"
+    :data-state="disclosureState(menuContext.open.value)"
+    @click="
+      async (event: MouseEvent) => {
+        if (props.disabled || event.defaultPrevented) return;
+        /**
+         * We manually focus because iOS Safari doesn't always focus on click (e.g. buttons)
+         * and we rely heavily on `onFocusOutside` for submenus to close when switching
+         * between separate submenus.
+         */
+        (event.currentTarget as HTMLElement)?.focus();
+        if (!menuContext.open.value) menuContext.onOpenChange(true, 'trigger-press', event);
+      }
+    "
+    @pointermove="handlePointerMove"
+    @pointerleave="handlePointerLeave"
+    @keydown="handleKeyDown"
   >
-    <MenuItemImpl
-      v-bind="itemProps"
-      :id="subContext.triggerId"
-      :ref="
-        (vnode: Element | ComponentPublicInstance | null) => {
-          if (!vnode) return undefined
-          // @ts-ignore
-          subContext?.onTriggerChange(vnode?.$el);
-          return undefined
-        }
-      "
-      aria-haspopup="menu"
-      :aria-expanded="menuContext.open.value"
-      :aria-controls="subContext.contentId"
-      :data-state="disclosureState(menuContext.open.value)"
-      @click="
-        async (event: MouseEvent) => {
-          if (props.disabled || event.defaultPrevented) return;
-          /**
-           * We manually focus because iOS Safari doesn't always focus on click (e.g. buttons)
-           * and we rely heavily on `onFocusOutside` for submenus to close when switching
-           * between separate submenus.
-           */
-          (event.currentTarget as HTMLElement)?.focus();
-          if (!menuContext.open.value) menuContext.onOpenChange(true, 'trigger-press', event);
-        }
-      "
-      @pointermove="handlePointerMove"
-      @pointerleave="handlePointerLeave"
-      @keydown="handleKeyDown"
-    >
-      <slot />
-    </MenuItemImpl>
-  </MenuAnchor>
+    <slot />
+  </MenuItemImpl>
 </template>
