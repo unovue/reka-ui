@@ -1,13 +1,13 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, ref } from 'vue'
+import { defineComponent, nextTick, ref, watch } from 'vue'
 import { AlertDialogContent, AlertDialogDescription, AlertDialogOverlay, AlertDialogPortal, AlertDialogRoot, AlertDialogTitle } from '@/AlertDialog'
 import { CheckboxIndicator, CheckboxRoot } from '@/Checkbox'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot } from '@/Combobox'
 import { ContextMenuContent, ContextMenuItem, ContextMenuPortal, ContextMenuRoot, ContextMenuTrigger } from '@/ContextMenu'
 import { DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from '@/Dialog'
 import { DrawerContent, DrawerOverlay, DrawerPortal, DrawerRoot, DrawerTitle } from '@/Drawer'
-import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
+import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/DropdownMenu'
 import { HoverCardContent, HoverCardPortal, HoverCardRoot, HoverCardTrigger } from '@/HoverCard'
 import { MenubarContent, MenubarItem, MenubarMenu, MenubarPortal, MenubarRoot, MenubarTrigger } from '@/Menubar'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '@/Popover'
@@ -56,6 +56,9 @@ const components = {
   DropdownMenuItem,
   DropdownMenuPortal,
   DropdownMenuRoot,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
   HoverCardContent,
   HoverCardPortal,
@@ -250,5 +253,104 @@ describe('the first open through a gated portal', () => {
     const indicator = document.querySelector('[data-testid="indicator"]')!
     expect(indicator.hasAttribute('data-starting-style')).toBe(false)
     wrapper.unmount()
+  })
+})
+
+describe('what the first open through a gated portal shows to the rest of the app', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  // `watch(open, …, { flush: 'post' })` is Vue's documented way to reach the DOM
+  // after an update: the content must be there on the first open too.
+  it.each(openable)('%s: a post-flush watcher on `open` sees the content on every open', async (family) => {
+    const open = ref(false)
+    const seen: Array<boolean> = []
+    const wrapper = mount(defineComponent({
+      components,
+      setup() {
+        watch(open, (value) => {
+          if (value)
+            seen.push(!!document.querySelector('[data-testid="content"]'))
+        }, { flush: 'post' })
+        return { open }
+      },
+      template: `<div>${families[family]}</div>`,
+    }), { attachTo: document.body })
+    await nextTick()
+    open.value = true
+    await nextTick()
+    open.value = false
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="content"]')).toBeNull())
+    open.value = true
+    await nextTick()
+    expect(seen).toEqual([true, true])
+    wrapper.unmount()
+  })
+
+  it.each([
+    ['Dialog', `<DialogRoot v-model:open="open"><DialogTrigger data-testid="trigger">t</DialogTrigger>
+      <DialogPortal><DialogContent id="custom"><DialogTitle>t</DialogTitle><DialogDescription>d</DialogDescription></DialogContent></DialogPortal></DialogRoot>`],
+    ['Popover', `<PopoverRoot v-model:open="open"><PopoverTrigger data-testid="trigger">t</PopoverTrigger>
+      <PopoverPortal><PopoverContent id="custom">c</PopoverContent></PopoverPortal></PopoverRoot>`],
+  ])('%s: the trigger\'s `aria-controls` names a custom content id on the first open', async (_, template) => {
+    const { wrapper, open } = mountTemplate(template)
+    await nextTick()
+    open.value = true
+    await nextTick()
+    await nextTick()
+    expect(document.getElementById('custom')).not.toBeNull()
+    expect(document.querySelector('[data-testid="trigger"]')!.getAttribute('aria-controls')).toBe('custom')
+    wrapper.unmount()
+  })
+
+  // The submenu's content id is allocated by `MenuSub`, not by its (gated) content.
+  describe('a submenu trigger\'s `aria-controls` on the first open', () => {
+    const template = `<DropdownMenuRoot default-open><DropdownMenuTrigger>t</DropdownMenuTrigger>
+      <DropdownMenuPortal><DropdownMenuContent><DropdownMenuItem>i</DropdownMenuItem>
+        <DropdownMenuSub v-model:open="open"><DropdownMenuSubTrigger data-testid="sub-trigger">More</DropdownMenuSubTrigger>
+          <DropdownMenuPortal><DropdownMenuSubContent data-testid="sub-content"><DropdownMenuItem>s</DropdownMenuItem></DropdownMenuSubContent></DropdownMenuPortal>
+        </DropdownMenuSub></DropdownMenuContent></DropdownMenuPortal></DropdownMenuRoot>`
+
+    async function expectControlsContent() {
+      const subContent = await vi.waitFor(() => {
+        const element = document.querySelector('[data-testid="sub-content"]')
+        expect(element).not.toBeNull()
+        return element!
+      })
+      const subTrigger = document.querySelector('[data-testid="sub-trigger"]')!
+      expect(subTrigger.getAttribute('aria-expanded')).toBe('true')
+      expect(subContent.id).toBeTruthy()
+      expect(subTrigger.getAttribute('aria-controls')).toBe(subContent.id)
+    }
+
+    it('when opened programmatically', async () => {
+      const { wrapper, open } = mountTemplate(template)
+      await nextTick()
+      open.value = true
+      await nextTick()
+      await nextTick()
+      await expectControlsContent()
+      wrapper.unmount()
+    })
+
+    it('when opened from the keyboard', async () => {
+      const { wrapper } = mountTemplate(template)
+      await nextTick()
+      const subTrigger = document.querySelector('[data-testid="sub-trigger"]') as HTMLElement
+      subTrigger.focus()
+      subTrigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+      await expectControlsContent()
+      wrapper.unmount()
+    })
+
+    it('when opened on hover', async () => {
+      const { wrapper } = mountTemplate(template)
+      await nextTick()
+      const subTrigger = document.querySelector('[data-testid="sub-trigger"]') as HTMLElement
+      subTrigger.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerType: 'mouse' }))
+      await expectControlsContent()
+      wrapper.unmount()
+    })
   })
 })

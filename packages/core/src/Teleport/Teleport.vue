@@ -115,11 +115,16 @@ onMounted(() => {
 // unknown, so the content waits for the mount instead of mounting into `body`
 // and moving afterwards (root-scoped setup such as focus guards would stay
 // behind in the document).
-// Without `forceMount` the content always waits for the mount, so the initial
-// root (an ancestor walk that grows with the number of sibling portals) is only
-// looked up for a force-mounted portal.
+// The same holds without `forceMount` for a portal created by an update of an
+// already mounted client app, e.g. a family portal that rendered nothing while
+// closed and opens now: the content renders in this flush, so post-flush code
+// (`watch(open, …, { flush: 'post' })`, `onUpdated`) sees it on the first open
+// as on every later one. A portal on the app's first render, while hydrating
+// (its vnode already has a node; the server rendered no content) or on the
+// server waits for the mount, so the initial root (an ancestor walk that grows
+// with the number of sibling portals) is never looked up for it.
 let canRenderBeforeMount = false
-if (props.forceMount) {
+if (props.forceMount || (isClient && !!instance?.root.isMounted && !instance.vnode.el)) {
   const initialRootNode = getInitialRootNode()
   rootNode.value = initialRootNode
   const explicitTo = props.to ?? configContext.teleportTo?.value
@@ -146,7 +151,7 @@ const target = computed(() => {
 
 <template>
   <Teleport
-    v-if="isMounted || (forceMount && canRenderBeforeMount)"
+    v-if="isMounted || canRenderBeforeMount"
     :to="target"
     :disabled="disabled"
     :defer="defer"
