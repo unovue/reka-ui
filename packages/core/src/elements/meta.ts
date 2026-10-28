@@ -200,6 +200,8 @@ const TIME_ZONE = /\[/
 const DATE_TIME = /\dT\d/i
 const HAS_DATE = /^[+-]?\d{4,6}-\d\d/
 const LIST_SEPARATOR = /[\s,]+/
+// A `/` inside `[Europe/Paris]` belongs to the time zone, not to the interval.
+const INTERVAL_SEPARATOR = /\/(?![^[]*\])/
 
 function parseTemporal(kind: 'date' | 'time', value: string): unknown {
   const temporal = getTemporal()
@@ -215,7 +217,7 @@ function parseTemporalAttribute(prop: Pick<PropMeta, 'kind' | 'attribute'>, valu
   try {
     if (prop.kind === 'date' || prop.kind === 'time')
       return parseTemporal(kind, value)
-    const [start, end, ...rest] = value.split('/')
+    const [start, end, ...rest] = value.split(INTERVAL_SEPARATOR)
     if (end === undefined || rest.length)
       throw new RangeError('not a `start/end` interval')
     return { start: parseTemporal(kind, start), end: parseTemporal(kind, end) }

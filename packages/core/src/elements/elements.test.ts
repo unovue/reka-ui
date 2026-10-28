@@ -86,6 +86,10 @@ describe('attribute and event mapping', () => {
     expect(String(range.end)).toBe('2026-10-07')
     const times = parseAttribute({ kind: 'time-range', attribute: 'default-value' }, '09:00/17:30') as Record<string, unknown>
     expect(String(times.end)).toBe('17:30:00')
+    // The `/` of a time zone name is not the interval's.
+    const zonedRange = parseAttribute({ kind: 'date-range', attribute: 'default-value' }, '2026-10-05T09:00+02:00[Europe/Paris]/2026-10-07T09:00+02:00[Europe/Paris]') as Record<string, Temporal.ZonedDateTime>
+    expect(zonedRange.start.timeZoneId).toBe('Europe/Paris')
+    expect(zonedRange.end.day).toBe(7)
 
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     expect(parseAttribute(date, '2026-13-45')).toBeUndefined()
