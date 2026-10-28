@@ -383,7 +383,7 @@ export class RekaElement extends BaseElement {
     // Either way it warns once instead of throwing.
     let failed = false
     app.config.errorHandler = (error) => {
-      if (!parent || isMissingInjection(error)) {
+      if (isMissingInjection(error)) {
         failed = true
         return
       }

@@ -30,7 +30,8 @@ export interface DefineRekaElementsOptions {
   events?: ElementEventOptions
 }
 
-const VALID_PREFIX = /^[a-z][\w.-]*$/
+// Custom element names allow no uppercase ASCII letters.
+const VALID_PREFIX = /^[a-z][a-z0-9._-]*$/
 const VERSION = /^(\d+)\.(\d+)/
 
 function warn(message: string) {
