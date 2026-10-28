@@ -41,6 +41,7 @@ const { activeTrigger, rootNavigationMenu, modelValue } = menuContext
 
 const size = ref<{ width: number, height: number }>()
 const position = ref<{ left: number, top: number }>()
+let rootSize: { target: Element, width: number, height: number } | undefined
 
 const open = computed(() => !!menuContext.modelValue.value)
 
@@ -63,14 +64,15 @@ watch([modelValue, open], () => {
 }, { immediate: true })
 
 function updatePosition() {
-  if (content.value && activeTrigger.value && rootNavigationMenu.value) {
+  if (content.value && activeTrigger.value && rootNavigationMenu.value
+    && rootSize?.target === rootNavigationMenu.value && rootSize.width && rootSize.height) {
     const bodyWidth = document.documentElement.offsetWidth
     const bodyHeight = document.documentElement.offsetHeight
     const rootRect = rootNavigationMenu.value.getBoundingClientRect()
-    // Rectangles include ancestor transforms, but offsets and the CSS
-    // variables consumed by the viewport are in local CSS pixels.
-    const scaleX = rootRect.width / (rootNavigationMenu.value.offsetWidth || rootRect.width) || 1
-    const scaleY = rootRect.height / (rootNavigationMenu.value.offsetHeight || rootRect.height) || 1
+    // Rectangles include transforms; ResizeObserver border boxes retain the
+    // fractional, untransformed layout size (unlike offsetWidth/offsetHeight).
+    const scaleX = rootRect.width / rootSize.width || 1
+    const scaleY = rootRect.height / rootSize.height || 1
     const rect = activeTrigger.value.getBoundingClientRect()
     const { offsetWidth, offsetHeight } = content.value
 
@@ -127,9 +129,29 @@ useResizeObserver(content, () => {
   }
 })
 
-useResizeObserver([globalThis.document?.body, rootNavigationMenu], () => {
+useResizeObserver([globalThis.document?.body, rootNavigationMenu], (entries) => {
+  const entry = entries.find(entry => entry.target === rootNavigationMenu.value)
+  if (entry) {
+    const borderBox = Array.isArray(entry.borderBoxSize) ? entry.borderBoxSize[0] : entry.borderBoxSize
+    const style = getComputedStyle(entry.target)
+    // ResizeObserver sizes use logical axes, whereas client rects use physical axes.
+    const vertical = style.writingMode.startsWith('vertical') || style.writingMode.startsWith('sideways')
+    // Older observers may omit borderBoxSize. Resolved CSS dimensions also
+    // retain fractions; include padding and borders for a content-box root.
+    const extraWidth = style.boxSizing === 'border-box'
+      ? 0
+      : Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight) + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth)
+    const extraHeight = style.boxSizing === 'border-box'
+      ? 0
+      : Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom) + Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth)
+    rootSize = {
+      target: entry.target,
+      width: borderBox ? (vertical ? borderBox.blockSize : borderBox.inlineSize) : Number.parseFloat(style.width) + extraWidth,
+      height: borderBox ? (vertical ? borderBox.inlineSize : borderBox.blockSize) : Number.parseFloat(style.height) + extraHeight,
+    }
+  }
   updatePosition()
-})
+}, { box: 'border-box' })
 </script>
 
 <template>
