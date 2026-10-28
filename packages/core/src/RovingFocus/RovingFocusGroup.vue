@@ -123,7 +123,9 @@ function handleKeydown(event: KeyboardEvent) {
 
 /** An item outside the group's element (teleported) listens on itself. */
 function handleDetachedItemKeydown(event: KeyboardEvent) {
-  if (event.defaultPrevented)
+  // Same element as the item's own handlers, so `stopPropagation()` there
+  // doesn't skip this listener: honour it like the delegated path does.
+  if (event.defaultPrevented || event.cancelBubble)
     return
   const item = getItem(event.currentTarget as HTMLElement, true)
   if (item && getCollectionMeta<RovingFocusItemMeta>(item)?.roving)

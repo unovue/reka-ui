@@ -1,5 +1,5 @@
 import type { ElementSourceLike } from '@/Collection/Collection'
-import { getCurrentInstance, getCurrentScope, onBeforeUnmount, onMounted, onScopeDispose } from 'vue'
+import { getCurrentInstance, getCurrentScope, onBeforeUnmount, onMounted, onScopeDispose, onUpdated } from 'vue'
 import { COLLECTION_ITEM_ATTRS, useCollectionItem } from '@/Collection/Collection'
 import { SelectorHold } from '@/shared/createKeyedSelector'
 import { useId } from '@/shared/useId'
@@ -84,16 +84,23 @@ export function useRovingFocusItem(options: UseRovingFocusItemOptions) {
   // keydown never bubbles to the group's listener, so it listens itself.
   if (getCurrentInstance()) {
     let detached: Element | undefined
-    onMounted(() => {
+    const listener = context.onDetachedItemKeydown as EventListener
+    // Re-synced after each render too: an `asChild` item can swap its element.
+    const syncDetached = () => {
       const element = options.element.value as Element | null | undefined
       const root = context.rootElement.value as Element | null | undefined
-      if (element && root && !root.contains(element)) {
-        detached = element
-        element.addEventListener('keydown', context.onDetachedItemKeydown as EventListener)
-      }
-    })
+      const next = element && root && !root.contains(element) ? element : undefined
+      if (next === detached)
+        return
+      detached?.removeEventListener('keydown', listener)
+      detached = next
+      detached?.addEventListener('keydown', listener)
+    }
+    onMounted(syncDetached)
+    onUpdated(syncDetached)
     onBeforeUnmount(() => {
-      detached?.removeEventListener('keydown', context.onDetachedItemKeydown as EventListener)
+      detached?.removeEventListener('keydown', listener)
+      detached = undefined
     })
   }
 

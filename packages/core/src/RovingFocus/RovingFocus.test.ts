@@ -243,4 +243,51 @@ describe('test RovingFocus delegated keyboard handling', () => {
     wrapper.unmount()
     target.remove()
   })
+
+  it('honours stopPropagation() on a teleported item', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(RovingFocusGroup, null, () => [
+        h(RovingFocusItem, { as: 'button' }, () => 'Item 0'),
+        h(Teleport, { to: target }, h(RovingFocusItem, {
+          'as': 'button',
+          'data-testid': 'item-1',
+          'onKeydown': (event: KeyboardEvent) => event.stopPropagation(),
+        }, () => 'Item 1')),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    const teleported = target.querySelector<HTMLElement>('[data-testid=item-1]')!
+    teleported.focus()
+    await userEvent.keyboard('[ArrowRight]')
+    expect(document.activeElement).toBe(teleported)
+    wrapper.unmount()
+    target.remove()
+  })
+
+  it('keeps arrow keys on a teleported item whose element is replaced', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const as = ref('button')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(RovingFocusGroup, null, () => [
+        h(RovingFocusItem, { as: 'button' }, () => 'Item 0'),
+        h(Teleport, { to: target }, h(RovingFocusItem, { 'as': as.value, 'tabindex': 0, 'data-testid': 'item-1' }, () => 'Item 1')),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    const before = target.querySelector<HTMLElement>('[data-testid=item-1]')!
+    as.value = 'div'
+    await nextTick()
+    await nextTick()
+    const after = target.querySelector<HTMLElement>('[data-testid=item-1]')!
+    expect(after).not.toBe(before)
+    after.focus()
+    await userEvent.keyboard('[ArrowRight]')
+    expect(document.activeElement).not.toBe(after)
+    expect(wrapper.element.contains(document.activeElement)).toBe(true)
+    wrapper.unmount()
+    target.remove()
+  })
 })
