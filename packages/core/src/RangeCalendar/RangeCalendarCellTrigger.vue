@@ -40,16 +40,17 @@ export interface RangeCalendarCellTriggerSlot {
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { h } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useForwardElement } from '@/shared'
+import { hasSlotContent } from '@/shared/renderOutlet'
 import { injectRangeCalendarGridContext } from './RangeCalendarGrid.vue'
 import { injectRangeCalendarRootContext } from './RangeCalendarRoot.vue'
 import { injectRangeCalendarViewContext } from './RangeCalendarView.vue'
 import { getRangeCalendarCellTriggerSurface } from './useRangeCalendar'
 
 const props = withDefaults(defineProps<RangeCalendarCellTriggerProps>(), { as: 'div' })
-defineSlots<RangeCalendarCellTriggerSlot>()
+const slots = defineSlots<RangeCalendarCellTriggerSlot>()
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
@@ -64,7 +65,7 @@ const surface = getRangeCalendarCellTriggerSurface(
   () => viewContext?.unit.value,
 )
 
-const slotProps = computed(() => {
+function slotProps() {
   const state = surface.state.value
   return {
     cellValue: surface.cellValue.value,
@@ -81,18 +82,25 @@ const slotProps = computed(() => {
     selectionEnd: state.selectionEnd,
     view: state.view,
   }
-})
+}
+
+// Rendered once per calendar cell, so the content goes straight into the
+// element: no `<slot>` fragment and its two empty anchor text nodes. The
+// fallback is the cell text, as one text node.
+function renderContent() {
+  if (slots.default) {
+    const content = slots.default(slotProps())
+    if (hasSlotContent(content))
+      return content
+  }
+  return surface.cellValue.value
+}
+
+function renderRoot() {
+  return h(Primitive, { ref: forwardRef, as: props.as, asChild: props.asChild, ...surface.attrs.value }, { default: renderContent })
+}
 </script>
 
 <template>
-  <Primitive
-    :ref="forwardRef"
-    :as="props.as"
-    :as-child="props.asChild"
-    v-bind="surface.attrs.value"
-  >
-    <slot v-bind="slotProps">
-      {{ surface.cellValue.value }}
-    </slot>
-  </Primitive>
+  <component :is="renderRoot()" />
 </template>

@@ -7,6 +7,8 @@ import { compareDateValues, toIsoString } from '@/date/temporal'
 import { focusPagination, focusWeekBoundary } from '@/shared/useCalendarKeyboardNavigation'
 import { useKbd } from '@/shared/useKbd'
 
+const kbd = useKbd()
+
 /** What the keyboard loop needs from a calendar root context (Calendar and RangeCalendar both satisfy it). */
 export interface CellNavigationHost {
   parentElement: Ref<HTMLElement | undefined>
@@ -52,17 +54,11 @@ const CELL_TRIGGER_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRi
  *
  * @lifecycle pure — DOM access happens only inside the handlers.
  */
-export function createCellFocusNavigation(
-  host: CellNavigationHost,
-  adapter: ComputedRef<CalendarUnitAdapter>,
-  date: ComputedRef<DateValue>,
-) {
-  const kbd = useKbd()
-
-  function isWithinBounds(candidate: DateValue) {
-    if (host.minValue.value && compareDateValues(adapter.value.endOf(candidate), host.minValue.value) < 0)
+export function createCellFocusNavigation(host: CellNavigationHost) {
+  function isWithinBounds(adapter: CalendarUnitAdapter, candidate: DateValue) {
+    if (host.minValue.value && compareDateValues(adapter.endOf(candidate), host.minValue.value) < 0)
       return false
-    if (host.maxValue.value && compareDateValues(adapter.value.startOf(candidate), host.maxValue.value) > 0)
+    if (host.maxValue.value && compareDateValues(adapter.startOf(candidate), host.maxValue.value) > 0)
       return false
     return true
   }
@@ -86,19 +82,19 @@ export function createCellFocusNavigation(
     return true
   }
 
-  function focusCell(candidate: DateValue, el: HTMLElement, event?: Event) {
+  function focusCell(adapter: CalendarUnitAdapter, candidate: DateValue, el: HTMLElement, event?: Event) {
     // Month and year cells are the first day of their period: keep the day (and
     // month) of the placeholder so a later drill-down lands on it, as a click does.
-    host.onPlaceholderChange(adapter.value.resolve(candidate, host.placeholder.value), 'focus-navigation', event)
+    host.onPlaceholderChange(adapter.resolve(candidate, host.placeholder.value), 'focus-navigation', event)
     el.focus()
   }
 
   /** Move focus by `add` units from `from`. */
-  function shiftFocus(from: DateValue, add: number, event?: Event, depth = 0) {
+  function shiftFocus(adapter: CalendarUnitAdapter, from: DateValue, add: number, event?: Event, depth = 0) {
     if (depth > 48)
       return
-    const candidate = adapter.value.add(from, add)
-    if (!isWithinBounds(candidate))
+    const candidate = adapter.add(from, add)
+    if (!isWithinBounds(adapter, candidate))
       return
 
     const el = queryCell(candidate)
@@ -106,28 +102,28 @@ export function createCellFocusNavigation(
       // Not rendered: the target is on another page.
       if (!flipPage(add > 0 ? 1 : -1))
         return
-      nextTick(() => shiftFocus(from, add, event, depth + 1))
+      nextTick(() => shiftFocus(adapter, from, add, event, depth + 1))
       return
     }
     if (el.hasAttribute('data-disabled')) {
-      shiftFocus(candidate, add, event, depth + 1)
+      shiftFocus(adapter, candidate, add, event, depth + 1)
       return
     }
-    focusCell(candidate, el, event)
+    focusCell(adapter, candidate, el, event)
   }
 
   /** PageUp / PageDown: the same cell one page away. */
-  function shiftFocusPage(direction: 1 | -1, event?: Event) {
-    const duration = adapter.value.pageDuration(host.layout.value)
-    const candidate = direction > 0 ? date.value.add(duration) : date.value.subtract(duration)
-    if (!isWithinBounds(candidate))
+  function shiftFocusPage(adapter: CalendarUnitAdapter, date: DateValue, direction: 1 | -1, event?: Event) {
+    const duration = adapter.pageDuration(host.layout.value)
+    const candidate = direction > 0 ? date.add(duration) : date.subtract(duration)
+    if (!isWithinBounds(adapter, candidate))
       return
     if (!flipPage(direction))
       return
     nextTick(() => {
       const el = queryCell(candidate)
       if (el && !el.hasAttribute('data-disabled')) {
-        focusCell(candidate, el, event)
+        focusCell(adapter, candidate, el, event)
         return
       }
       // The flip unmounted the focused cell and the target cannot take focus
@@ -147,9 +143,10 @@ export function createCellFocusNavigation(
    * focus never leaves the page; when nothing between the edge and the focused
    * cell can take focus, it stays put.
    */
-  function focusPageBoundary(boundary: 'start' | 'end', event?: Event) {
+  function focusPageBoundary(adapter: CalendarUnitAdapter, date: DateValue, boundary: 'start' | 'end', event?: Event) {
     const cells = Array.from(host.parentElement.value?.querySelectorAll<HTMLElement>('[data-reka-calendar-cell-trigger]:not([data-outside-view])') ?? [])
-    const current = cells.findIndex(el => el.getAttribute('data-value') === toIsoString(date.value))
+    const iso = toIsoString(date)
+    const current = cells.findIndex(el => el.getAttribute('data-value') === iso)
     if (current < 0)
       return
     // Cells on a month / year page are consecutive units, so a cell's offset in
@@ -157,22 +154,22 @@ export function createCellFocusNavigation(
     const step = boundary === 'start' ? 1 : -1
     for (let index = boundary === 'start' ? 0 : cells.length - 1; index !== current; index += step) {
       const el = cells[index]
-      const candidate = adapter.value.add(date.value, index - current)
-      if (el.hasAttribute('data-disabled') || !isWithinBounds(candidate))
+      const candidate = adapter.add(date, index - current)
+      if (el.hasAttribute('data-disabled') || !isWithinBounds(adapter, candidate))
         continue
-      focusCell(candidate, el, event)
+      focusCell(adapter, candidate, el, event)
       return
     }
   }
 
   /** Day view: Home / End / PageUp / PageDown, shared with v2 (`useCalendarKeyboardNavigation`). */
-  function handleDayShortcut(event: KeyboardEvent) {
+  function handleDayShortcut(date: DateValue, event: KeyboardEvent) {
     const parentElement = host.parentElement.value
     if (!parentElement)
       return
     const shared = {
       parentElement,
-      baseDate: date.value,
+      baseDate: date,
       minValue: host.minValue.value,
       maxValue: host.maxValue.value,
       onPlaceholderChange: (value: DateValue) => { host.onPlaceholderChange(value, 'focus-navigation', event) },
@@ -198,12 +195,13 @@ export function createCellFocusNavigation(
     })
   }
 
-  function handleKeydown(event: KeyboardEvent, options: CellKeydownOptions) {
+  /** The keydown of the cell for `date`, rendered at `adapter`'s unit. */
+  function handleKeydown(event: KeyboardEvent, adapter: CalendarUnitAdapter, date: DateValue, options: CellKeydownOptions) {
     if (!CELL_TRIGGER_KEYS.has(event.code))
       return
     if (options.disabled)
       return
-    const isDayView = adapter.value.unit === 'day'
+    const isDayView = adapter.unit === 'day'
     // Modifier combos on Enter/Space (e.g. Ctrl+Enter) are not handled by the cell —
     // let them bubble so parent listeners can react (e.g. submit a form).
     if ((event.code === kbd.ENTER || event.code === kbd.SPACE_CODE) && (event.ctrlKey || event.metaKey || event.altKey))
@@ -215,35 +213,35 @@ export function createCellFocusNavigation(
     const stride = host.rowLength.value
     switch (event.code) {
       case kbd.ARROW_RIGHT:
-        shiftFocus(date.value, sign, event)
+        shiftFocus(adapter, date, sign, event)
         break
       case kbd.ARROW_LEFT:
-        shiftFocus(date.value, -sign, event)
+        shiftFocus(adapter, date, -sign, event)
         break
       case kbd.ARROW_UP:
-        shiftFocus(date.value, -stride, event)
+        shiftFocus(adapter, date, -stride, event)
         break
       case kbd.ARROW_DOWN:
-        shiftFocus(date.value, stride, event)
+        shiftFocus(adapter, date, stride, event)
         break
       case kbd.HOME:
       case kbd.END:
         if (isDayView)
-          handleDayShortcut(event)
+          handleDayShortcut(date, event)
         else
-          focusPageBoundary(event.code === kbd.HOME ? 'start' : 'end', event)
+          focusPageBoundary(adapter, date, event.code === kbd.HOME ? 'start' : 'end', event)
         break
       case kbd.PAGE_UP:
         if (isDayView)
-          handleDayShortcut(event)
+          handleDayShortcut(date, event)
         else
-          shiftFocusPage(-1, event)
+          shiftFocusPage(adapter, date, -1, event)
         break
       case kbd.PAGE_DOWN:
         if (isDayView)
-          handleDayShortcut(event)
+          handleDayShortcut(date, event)
         else
-          shiftFocusPage(1, event)
+          shiftFocusPage(adapter, date, 1, event)
         break
       case kbd.ENTER:
       case kbd.SPACE_CODE:
@@ -252,4 +250,16 @@ export function createCellFocusNavigation(
   }
 
   return { handleKeydown, shiftFocus, shiftFocusPage }
+}
+
+const navigations = new WeakMap<CellNavigationHost, ReturnType<typeof createCellFocusNavigation>>()
+
+/** The keyboard loop of a calendar root, created once and shared by all its cells. @internal */
+export function getCellFocusNavigation(host: CellNavigationHost): ReturnType<typeof createCellFocusNavigation> {
+  let navigation = navigations.get(host)
+  if (!navigation) {
+    navigation = createCellFocusNavigation(host)
+    navigations.set(host, navigation)
+  }
+  return navigation
 }

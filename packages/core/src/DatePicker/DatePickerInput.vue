@@ -6,19 +6,22 @@ export interface DatePickerInputProps extends DateFieldInputProps {}
 </script>
 
 <script setup lang="ts">
+import { h, useSlots } from 'vue'
 import { useForwardElement } from '@/shared'
 
 const props = defineProps<DatePickerInputProps>()
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
+const slots = useSlots()
+
+// The slot content goes straight into the element: no `<slot>` fragment, so
+// no empty anchor text nodes (this part renders once per segment).
+function renderRoot() {
+  return h(DateFieldInput, { ref: forwardRef, ...props }, slots)
+}
 </script>
 
 <template>
-  <DateFieldInput
-    :ref="forwardRef"
-    v-bind="props"
-  >
-    <slot />
-  </DateFieldInput>
+  <component :is="renderRoot()" />
 </template>

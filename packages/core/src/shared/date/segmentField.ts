@@ -76,12 +76,8 @@ export interface CreateSegmentFieldSegmentSurfaceOptions {
  */
 export function createSegmentFieldSegmentSurface(options: CreateSegmentFieldSegmentSurfaceOptions): PartSurface<SegmentFieldSegmentState> {
   const { context, segmentValues, part } = options
-  const hasLeftFocus = ref(true)
-  const lastKeyZero = ref(false)
 
   const segment = useDateFieldSegment({
-    hasLeftFocus,
-    lastKeyZero,
     placeholder: context.placeholder,
     hourCycle: context.hourCycle,
     step: context.step,
@@ -98,37 +94,43 @@ export function createSegmentFieldSegmentSurface(options: CreateSegmentFieldSegm
 
   const snapOnFocusOut = options.snapOnFocusOut ?? true
 
+  // One listener for every event of the segment, created once (not per render).
+  const onEvent = (event: Event) => {
+    if (event.type === 'focusin') {
+      context.setFocusedElement(event.target as HTMLElement)
+      return
+    }
+    if (event.type === 'focusout') {
+      segment.hasLeftFocus = true
+      if (!snapOnFocusOut)
+        return
+    }
+    segment.handleEvent(event)
+  }
+  const handlers = {
+    onMousedown: onEvent,
+    onKeydown: onEvent,
+    onBeforeinput: onEvent,
+    onCompositionstart: onEvent,
+    onCompositionend: onEvent,
+    onFocusout: onEvent,
+    onFocusin: onEvent,
+  }
+
   return createPartSurface<SegmentFieldSegmentState>(
     () => {
       const currentPart = toValue(part)
       const disabled = context.disabled.value
       const readonly = context.readonly.value
       const invalid = context.isInvalid.value
-      const handlers = currentPart === 'literal'
-        ? {}
-        : {
-            onMousedown: segment.handleSegmentClick,
-            onKeydown: segment.handleSegmentKeydown,
-            onBeforeinput: segment.handleSegmentBeforeInput,
-            onCompositionstart: segment.handleSegmentCompositionStart,
-            onCompositionend: segment.handleSegmentCompositionEnd,
-            onFocusout: (event: FocusEvent) => {
-              hasLeftFocus.value = true
-              if (snapOnFocusOut)
-                segment.handleSegmentFocusOut(event)
-            },
-            onFocusin: (event: FocusEvent) => {
-              context.setFocusedElement(event.target as HTMLElement)
-            },
-          }
       return {
-        ...segment.attributes.value,
+        ...segment.attributes(),
         'contenteditable': disabled || readonly ? false : currentPart !== 'literal',
         ...options.selectors(),
         'aria-disabled': disabled ? true : undefined,
         'aria-readonly': readonly ? true : undefined,
         'aria-invalid': invalid ? true : undefined,
-        ...handlers,
+        ...(currentPart === 'literal' ? undefined : handlers),
       }
     },
     () => {

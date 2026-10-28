@@ -5,7 +5,7 @@
 import type { DateValue } from '@/date/types'
 import { ref } from 'vue'
 import { hasTime } from '@/date/comparators'
-import { isPlainDate, isPlainTime, isZonedDateTime, today } from '@/date/temporal'
+import { isPlainDate, isPlainDateTime, isPlainTime, isZonedDateTime, today } from '@/date/temporal'
 
 export interface DateFormatterOptions extends Intl.DateTimeFormatOptions {
   calendar?: string
@@ -36,6 +36,64 @@ export type Formatter = {
 
 const formatterCache = new Map<string, Intl.DateTimeFormat>()
 
+function serializeOptions(options: DateFormatterOptions): string {
+  return Object.entries(options)
+    .filter(([, value]) => value !== undefined)
+    .sort((a, b) => a[0] < b[0] ? -1 : 1)
+    .join()
+}
+
+/**
+ * The cache key of a call's options. Unlike `serializeOptions`, it keeps keys
+ * set to `undefined`: spread over the formatter's own options, `{ month:
+ * undefined }` clears their `month` where `{}` keeps it, so the two must not
+ * share a formatter. A frozen object is memoised by identity: the calendar
+ * adapters pass the same frozen constants on every call, so their key is built
+ * once rather than per formatted cell. Any other object may be mutated between
+ * calls, so it is keyed each time.
+ */
+function serializeOptionKeys(options: DateFormatterOptions): string {
+  const values = options as Record<string, unknown>
+  return Object.keys(values)
+    .sort()
+    .map(name => values[name] === undefined ? `${name}=` : `${name}:${String(values[name])}`)
+    .join()
+}
+
+const optionKeys = new WeakMap<DateFormatterOptions, string>()
+function optionsKey(options: DateFormatterOptions): string {
+  if (!Object.isFrozen(options))
+    return serializeOptionKeys(options)
+  let key = optionKeys.get(options)
+  if (key === undefined) {
+    key = serializeOptionKeys(options)
+    optionKeys.set(options, key)
+  }
+  return key
+}
+
+/**
+ * Formatters by `locale | formatter opts | call options | calendar | zone`.
+ * Two different splits of the same options may land on two keys; each still
+ * maps to the formatter of exactly those options.
+ */
+const resolvedFormatterCache = new Map<string, Intl.DateTimeFormat>()
+
+/**
+ * The UTC instant whose UTC wall clock shows the fields of a plain value: what
+ * `value.toPlainDateTime().toZonedDateTime('UTC').epochMilliseconds` gives,
+ * without the intermediate Temporal objects (sub-millisecond fields are
+ * dropped, as `epochMilliseconds` drops them).
+ */
+function plainToUtcDate(value: Temporal.PlainDate | Temporal.PlainDateTime): Date {
+  const iso = value.calendarId === 'iso8601' ? value : value.withCalendar('iso8601')
+  const out = new Date(0)
+  out.setUTCFullYear(iso.year, iso.month - 1, iso.day)
+  if (isPlainDateTime(iso))
+    out.setUTCHours(iso.hour, iso.minute, iso.second, iso.millisecond)
+  return out
+}
+
 let buggyHour12: boolean | undefined
 /**
  * Chrome (and ECMA-402 before the fix) resolves `hour12: false` to `h24`
@@ -61,10 +119,7 @@ function getDateTimeFormat(locale: string, options: DateFormatterOptions): Intl.
     delete options.hour12
   }
 
-  const key = locale + Object.entries(options)
-    .filter(([, value]) => value !== undefined)
-    .sort((a, b) => a[0] < b[0] ? -1 : 1)
-    .join()
+  const key = locale + serializeOptions(options)
   let formatter = formatterCache.get(key)
   if (!formatter) {
     formatter = new Intl.DateTimeFormat(locale, options)
@@ -118,9 +173,34 @@ export function useDateFormatter(initialLocale: string, opts: DateFormatterOptio
     locale.value = newLocale
   }
 
+  /**
+   * `toFormatInput` + `getDateTimeFormat`, keyed without building the merged
+   * options on a hit: what the calendar grids call once per cell.
+   */
+  function resolve(date: FormattableDate, options: DateFormatterOptions): [Date, Intl.DateTimeFormat] {
+    if (date instanceof Date || isPlainTime(date)) {
+      const [input, resolved] = toFormatInput(date, { ...opts, ...options })
+      return [input, getDateTimeFormat(locale.value, resolved)]
+    }
+    const requested = 'calendar' in options ? options.calendar : opts.calendar
+    const calendar = requested === 'iso8601' || (requested === undefined && date.calendarId === 'iso8601')
+      ? 'gregory'
+      : requested ?? date.calendarId
+    const zoned = isZonedDateTime(date)
+    const timeZone = zoned ? date.timeZoneId : 'UTC'
+    // `opts` is keyed on every call too: the caller may mutate it after construction.
+    const key = `${locale.value}|${optionsKey(opts)}|${optionsKey(options)}|${calendar}|${timeZone}`
+    let formatter = resolvedFormatterCache.get(key)
+    if (!formatter) {
+      formatter = getDateTimeFormat(locale.value, { ...opts, ...options, calendar, timeZone })
+      resolvedFormatterCache.set(key, formatter)
+    }
+    return [zoned ? new Date(date.epochMilliseconds) : plainToUtcDate(date), formatter]
+  }
+
   function format(date: FormattableDate, options: DateFormatterOptions) {
-    const [input, resolved] = toFormatInput(date, { ...opts, ...options })
-    return getDateTimeFormat(locale.value, resolved).format(input)
+    const [input, formatter] = resolve(date, options)
+    return formatter.format(input)
   }
 
   function custom(date: FormattableDate, options: DateFormatterOptions) {
@@ -160,9 +240,9 @@ export function useDateFormatter(initialLocale: string, opts: DateFormatterOptio
     return format(date, { year: 'numeric', ...options })
   }
 
-  function toParts(date: DateValue | Temporal.PlainTime, options?: DateFormatterOptions) {
-    const [input, resolved] = toFormatInput(date, { ...opts, ...options })
-    return getDateTimeFormat(locale.value, resolved).formatToParts(input)
+  function toParts(date: DateValue | Temporal.PlainTime, options: DateFormatterOptions = {}) {
+    const [input, formatter] = resolve(date, options)
+    return formatter.formatToParts(input)
   }
 
   function dayOfWeek(date: FormattableDate, length: DateFormatterOptions['weekday'] = 'narrow') {

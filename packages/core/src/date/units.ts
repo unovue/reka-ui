@@ -132,6 +132,24 @@ function withMonthAndDay(value: DateValue, reference: DateValue): DateValue {
   return monthStart.with({ day: Math.min(reference.day, monthStart.daysInMonth) })
 }
 
+// Cell text and label options: constant objects, so the formatter keys them once
+// (by identity) instead of serialising the options for every cell.
+const DAY_LABEL_OPTIONS: DateFormatterOptions = Object.freeze({ weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+const MONTH_CELL_OPTIONS: DateFormatterOptions = Object.freeze({ month: 'short' })
+const MONTH_LABEL_OPTIONS: DateFormatterOptions = Object.freeze({ month: 'long', year: 'numeric' })
+const YEAR_OPTIONS: DateFormatterOptions = Object.freeze({ year: 'numeric' })
+
+const numberFormats = new Map<string, Intl.NumberFormat>()
+/** `n.toLocaleString(locale)` through a cached `Intl.NumberFormat` (same output, no per-call formatter). */
+function getNumberFormat(locale: string): Intl.NumberFormat {
+  let format = numberFormats.get(locale)
+  if (!format) {
+    format = new Intl.NumberFormat(locale)
+    numberFormats.set(locale, format)
+  }
+  return format
+}
+
 const dayAdapter: CalendarUnitAdapter = {
   unit: 'day',
   isSame: isSameDay,
@@ -206,13 +224,8 @@ const dayAdapter: CalendarUnitAdapter = {
       result = endOfMonth(result)
     return result
   },
-  formatCell: (_formatter, d, locale) => d.day.toLocaleString(locale),
-  formatLabel: (formatter, d) => formatter.custom(d, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  }),
+  formatCell: (_formatter, d, locale) => getNumberFormat(locale).format(d.day),
+  formatLabel: (formatter, d) => formatter.custom(d, DAY_LABEL_OPTIONS),
   formatHeading: (formatter, grid, options) => {
     if (!grid.length)
       return ''
@@ -264,8 +277,8 @@ const monthAdapter: CalendarUnitAdapter = {
     const current = grid[0].value
     return endOfYear(fn ? fn(current, 'month') : current.subtract({ years: 1 }))
   },
-  formatCell: (formatter, d) => formatter.custom(d, { month: 'short' }),
-  formatLabel: (formatter, d) => formatter.custom(d, { month: 'long', year: 'numeric' }),
+  formatCell: (formatter, d) => formatter.custom(d, MONTH_CELL_OPTIONS),
+  formatLabel: (formatter, d) => formatter.custom(d, MONTH_LABEL_OPTIONS),
   formatHeading: (formatter, grid, options) => grid.length ? formatter.fullYear(grid[0].value, options) : '',
   defaultLabel: 'Month Picker',
 }
@@ -312,8 +325,8 @@ const yearAdapter: CalendarUnitAdapter = {
     const firstYearInView = grid[0].value
     return endOfYear(fn ? fn(firstYearInView, 'year') : firstYearInView.subtract({ years: 1 }))
   },
-  formatCell: (formatter, d) => formatter.custom(d, { year: 'numeric' }),
-  formatLabel: (formatter, d) => formatter.custom(d, { year: 'numeric' }),
+  formatCell: (formatter, d) => formatter.custom(d, YEAR_OPTIONS),
+  formatLabel: (formatter, d) => formatter.custom(d, YEAR_OPTIONS),
   formatHeading: (formatter, grid, options) => {
     const first = grid[0]?.cells[0]
     const last = grid.at(-1)?.cells.at(-1)

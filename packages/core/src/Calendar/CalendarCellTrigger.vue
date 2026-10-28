@@ -30,16 +30,17 @@ export interface CalendarCellTriggerSlot {
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { h } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useForwardElement } from '@/shared'
+import { hasSlotContent } from '@/shared/renderOutlet'
 import { injectCalendarGridContext } from './CalendarGrid.vue'
 import { injectCalendarRootContext } from './CalendarRoot.vue'
 import { injectCalendarViewContext } from './CalendarView.vue'
 import { getCalendarCellTriggerSurface } from './useCalendar'
 
 const props = withDefaults(defineProps<CalendarCellTriggerProps>(), { as: 'div' })
-defineSlots<CalendarCellTriggerSlot>()
+const slots = defineSlots<CalendarCellTriggerSlot>()
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
@@ -58,7 +59,7 @@ const surface = getCalendarCellTriggerSurface(
   () => viewContext?.unit.value,
 )
 
-const slotProps = computed(() => {
+function slotProps() {
   const state = surface.state.value
   return {
     cellValue: surface.cellValue.value,
@@ -70,18 +71,25 @@ const slotProps = computed(() => {
     unavailable: state.unavailable,
     view: state.view,
   }
-})
+}
+
+// Rendered once per calendar cell, so the content goes straight into the
+// element: no `<slot>` fragment and its two empty anchor text nodes. The
+// fallback is the cell text, as one text node.
+function renderContent() {
+  if (slots.default) {
+    const content = slots.default(slotProps())
+    if (hasSlotContent(content))
+      return content
+  }
+  return surface.cellValue.value
+}
+
+function renderRoot() {
+  return h(Primitive, { ref: forwardRef, as: props.as, asChild: props.asChild, ...surface.attrs.value }, { default: renderContent })
+}
 </script>
 
 <template>
-  <Primitive
-    :ref="forwardRef"
-    :as="props.as"
-    :as-child="props.asChild"
-    v-bind="surface.attrs.value"
-  >
-    <slot v-bind="slotProps">
-      {{ surface.cellValue.value }}
-    </slot>
-  </Primitive>
+  <component :is="renderRoot()" />
 </template>
