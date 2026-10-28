@@ -87,17 +87,29 @@ watch(() => props.value, (value, old) => {
 })
 // What this item last registered: a re-render that changes none of it (a
 // filter keystroke re-rendering a still-visible item) skips the registry.
-let registered: { value: T, text: string, disabled: boolean } | undefined
+// The skip compares the value's registry key, read here so the post effect
+// tracks it: an object mutated in place under `by: 'id'` changes its key and
+// must re-register. An object the registry keys by its whole content (no `by`,
+// or a function `by`) always registers, which reads (and tracks) its fields.
+const ALWAYS_REGISTER = Symbol('always')
+function registryKey(value: T): unknown {
+  if (value === null || typeof value !== 'object')
+    return value
+  const key = typeof rootContext.by === 'string' ? (value as Record<string, unknown>)[rootContext.by] : ALWAYS_REGISTER
+  return key !== null && typeof key === 'object' ? ALWAYS_REGISTER : key
+}
+let registered: { value: T, key: unknown, text: string, disabled: boolean } | undefined
 function syncLabel() {
   const text = props.textValue ?? (isFilteredOut.value ? label.value : currentElement.value?.textContent ?? '')
   if (text === undefined)
     return
   label.value = text
   const value = props.value
+  const key = registryKey(value)
   const isDisabled = disabled.value
-  if (registered && registered.value === value && registered.text === text && registered.disabled === isDisabled)
+  if (key !== ALWAYS_REGISTER && registered && registered.value === value && Object.is(registered.key, key) && registered.text === text && registered.disabled === isDisabled)
     return
-  registered = { value, text, disabled: isDisabled }
+  registered = { value, key, text, disabled: isDisabled }
   rootContext.labels.register(value, text, isDisabled)
 }
 
