@@ -3,7 +3,7 @@ import type { ColorAreaRootContext, ColorAreaRootProps } from './ColorAreaRoot.v
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Color, ColorChannel } from '@/shared/color'
 import { computed, nextTick, ref, toValue } from 'vue'
-import { createPartSurface, getterRef, stateToDataAttrs, useControllableState } from '@/shared'
+import { createPartSurface, getterRef, useControllableState } from '@/shared'
 import { colorToHex, convertToSpace, getAreaBackgroundStyle, getChannelColorSpace, getChannelName, getChannelRange, getChannelValue, isEqualColor, normalizeColor, setChannelValues } from '@/shared/color'
 import { createChangeEndTracker } from '@/shared/color/changeEnd'
 import { convertValueToPercentage, linearScale } from './utils'
@@ -423,26 +423,8 @@ const VISUALLY_HIDDEN_STYLE = {
   wordWrap: 'normal',
 } as const
 
-/**
- * An input's style inside the thumb: centered, so it never changes. A string,
- * so an element bound with it unmerged (`ColorAreaThumb`, see
- * `getColorAreaInputAttrs`) gets one `cssText` write at mount instead of
- * thirteen style property writes per input.
- */
-const INPUT_STYLE_IN_THUMB = 'position: absolute; border: 0px; width: 1px; height: 1px; padding: 0px; margin: -1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); clip-path: inset(50%); white-space: nowrap; word-wrap: normal; left: 50%; top: 50%;'
-
-/**
- * The bindable attrs of an input surface. With the constant (string) thumb
- * style it skips `mergeProps`, which would turn the string back into an
- * object; otherwise it is `surface.attrs`.
- * @internal
- */
-export function getColorAreaInputAttrs(surface: PartSurface<ColorAreaInputState>): Record<string, any> {
-  const props = surface.props.value
-  if (typeof props.style !== 'string')
-    return surface.attrs.value
-  return { ...stateToDataAttrs(surface.state.value), ...props }
-}
+/** An input's style inside the thumb: centered, so it never changes (one shared object). */
+const INPUT_STYLE_IN_THUMB = Object.freeze({ ...VISUALLY_HIDDEN_STYLE, left: '50%', top: '50%' })
 
 /**
  * Context-pure surface for one axis's visually hidden `input type="range"`.

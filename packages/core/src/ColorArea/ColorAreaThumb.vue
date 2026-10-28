@@ -8,7 +8,7 @@ export interface ColorAreaThumbProps extends PrimitiveProps {}
 import { onMounted } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { injectColorAreaRootContext } from './ColorAreaRoot.vue'
-import { getColorAreaInputAttrs, getColorAreaInputSurface, getColorAreaThumbSurface } from './useColorArea'
+import { getColorAreaInputSurface, getColorAreaThumbSurface } from './useColorArea'
 
 const props = withDefaults(defineProps<ColorAreaThumbProps>(), {
   as: 'span',
@@ -46,11 +46,11 @@ function setYInput(el: unknown) {
     <!-- One visually hidden range input per channel: they hold focus and expose each channel. -->
     <input
       :ref="setXInput"
-      v-bind="getColorAreaInputAttrs(xInput)"
+      v-bind="xInput.attrs.value"
     >
     <input
       :ref="setYInput"
-      v-bind="getColorAreaInputAttrs(yInput)"
+      v-bind="yInput.attrs.value"
     >
   </Primitive>
 </template>

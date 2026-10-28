@@ -287,5 +287,7 @@ describe('useColorArea lean surfaces', () => {
     const area = useColorArea({ defaultValue: '#ff0000' })
     expect(area.xInput.attrs.value.style).toMatchObject({ left: '50%', top: '50%' })
     expect(area.xInput.attrs.value.style).toEqual(area.yInput.attrs.value.style)
+    // Public composable output keeps the object form.
+    expect(area.xInput.props.value.style).toMatchObject({ position: 'absolute', left: '50%', top: '50%' })
   })
 })
