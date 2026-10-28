@@ -21,6 +21,7 @@ This is a pnpm monorepo. The pieces you are most likely to touch:
 |---|---|
 | `packages/core` | The published `reka-ui` package. All components and composables live in `src/`. |
 | `packages/plugins` | Build-tool integration (auto-import resolver, Nuxt module). |
+| `packages/bench` | Browser benchmark: per-family retained heap and mount time on a production build. |
 | `docs/` | The VitePress documentation site (its own workspace — install separately). |
 | `playground/` | Local sandboxes for trying things out. |
 | `.histoire/` | Histoire setup for the component stories. |
@@ -73,6 +74,7 @@ All commands run from the repo root.
 | Docs dev | `pnpm --filter reka-ui build && pnpm docs:install && pnpm docs:dev` |
 | Docs API regen | `pnpm docs:gen` (regenerates `docs/content/meta/*.md`) |
 | Bundle size | `pnpm --filter reka-ui size` |
+| Browser benchmark | `pnpm bench` (see [Benchmarks](#benchmarks)) |
 | Subpath exports regen | `pnpm --filter reka-ui gen:exports` (after adding or removing a family in `src/index.ts`) |
 
 > - `pnpm test` is **watch mode**. For a one-shot run (CI-style) use
@@ -183,6 +185,48 @@ a trigger/content ref, …):
   `userEvent` from `vitest/browser`, which sends trusted events. Run
   `pnpm test:browser`; the first time, install the browser with
   `pnpm --filter reka-ui exec playwright install chromium`.
+
+## Benchmarks
+
+`packages/bench` measures what each component family costs in a real browser. It
+builds a small Vite page in production mode against `packages/core/dist`, mounts
+N instances of a typical composition per family (`src/fixtures/<Family>.vue`, for
+example 500 closed Dialogs or 1000 Checkboxes), and drives it with Playwright
+Chromium. Every sample is a fresh page, and it measures:
+
+- **Retained heap per instance**: JS heap after mount minus before mount, each
+  after a forced GC, divided by N. It is deterministic; runs differ by well
+  under 1%.
+- **Mount time per instance**: `app.mount()` alone, and up to the next paint.
+- **Update time**: one representative action (open, toggle, select, arrow key)
+  on 10 instances, timed until the expected DOM state.
+- DOM nodes, components and event listeners per instance.
+
+```bash
+pnpm bench                                  # all families, this checkout, prints a table
+pnpm bench --only Dialog,Popover,Select     # a subset
+pnpm bench --compare origin/v3              # base → this checkout, interleaved
+pnpm bench:full --compare origin/v3         # 10 runs per build instead of 3
+pnpm bench --help                           # all options
+```
+
+`--compare <ref>` checks the ref out in a temporary git worktree, installs and
+builds it there, then measures both builds interleaved, family by family. It
+prints the head/base ratio for heap, mount and update time. Add `--keep-base` to
+reuse that worktree on the next run. The first time, install the browser with
+`pnpm --filter bench exec playwright install chromium`. Raw samples go to
+`packages/bench/dist/results.json`.
+
+**In CI**, the `Bench` workflow runs `pnpm bench --compare <base>` on every pull
+request into `v3` that touches `packages/core`, and writes the table to the job
+summary. The job fails when a family's retained heap per instance grows by more
+than 3% **and** by more than 0.2 KB per instance, with every PR sample above
+every base sample. Times are reported but never fail the job, because shared
+runners are too noisy for them.
+
+When you add a component family, add a fixture to `src/fixtures/` and an entry
+(instance count and update action) to `src/families.js`. If a fixture imports
+something the base build doesn't export, that family is reported as `new`.
 
 ## Documentation
 
