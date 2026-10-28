@@ -56,6 +56,70 @@ describe('given default Popover', () => {
   })
 })
 
+describe('given a Popover with a consumer id on the trigger (#3059)', () => {
+  it('renders the consumer id on the trigger and points content aria-labelledby at it', async () => {
+    const Harness = defineComponent({
+      render() {
+        return h(PopoverRoot, null, {
+          default: () => [
+            h(PopoverTrigger, { id: 'my-trigger' }, { default: () => 'open me' }),
+            h(PopoverPortal, null, {
+              default: () => [
+                h(PopoverContent, null, { default: () => h('div', 'hello') }),
+              ],
+            }),
+          ],
+        })
+      },
+    })
+    const wrapper = mount(Harness, { attachTo: document.body })
+    await flushPromises()
+
+    const trigger = wrapper.get('button')
+    expect(trigger.attributes('id')).toBe('my-trigger')
+
+    await trigger.trigger('click')
+    await flushPromises()
+
+    const content = document.querySelector('[role="dialog"]')!
+    expect(content.getAttribute('aria-labelledby')).toBe('my-trigger')
+    wrapper.unmount()
+  })
+})
+
+describe('given a Popover with an id only on the asChild trigger element', () => {
+  it('points content aria-labelledby at the id the trigger actually renders', async () => {
+    const Harness = defineComponent({
+      render() {
+        return h(PopoverRoot, null, {
+          default: () => [
+            h(PopoverTrigger, { asChild: true }, {
+              default: () => h('button', { id: 'child-trigger' }, 'open me'),
+            }),
+            h(PopoverPortal, null, {
+              default: () => [
+                h(PopoverContent, null, { default: () => h('div', 'hello') }),
+              ],
+            }),
+          ],
+        })
+      },
+    })
+    const wrapper = mount(Harness, { attachTo: document.body })
+    await flushPromises()
+
+    const trigger = wrapper.get('button')
+    expect(trigger.attributes('id')).toBe('child-trigger')
+
+    await trigger.trigger('click')
+    await flushPromises()
+
+    const content = document.querySelector('[role="dialog"]')!
+    expect(content.getAttribute('aria-labelledby')).toBe('child-trigger')
+    wrapper.unmount()
+  })
+})
+
 describe('given a Popover whose content has no tabbable children (#2803)', () => {
   it('should stay open when focus lands on the FocusScope container', async () => {
     const openLog: boolean[] = []
