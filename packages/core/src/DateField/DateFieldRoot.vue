@@ -233,18 +233,43 @@ watch(modelValue, (value) => {
     fieldContext?.reportControlState({ filled: !isNullish(value) })
 }, { flush: 'post' })
 
-function handleFocusin() {
+const handledFocusEvents = new WeakSet<Event>()
+
+function handleFocusin(event: FocusEvent) {
+  if (handledFocusEvents.has(event))
+    return
+  handledFocusEvents.add(event)
   if (!isFocusWithin.value)
     fieldContext?.handleControlFocus()
   isFocusWithin.value = true
 }
 
 function handleFocusout(event: FocusEvent) {
+  if (handledFocusEvents.has(event))
+    return
+  handledFocusEvents.add(event)
   if (parentElement.value?.contains(event.relatedTarget as Node | null))
     return
   isFocusWithin.value = false
   fieldContext?.handleControlBlur()
 }
+
+// The template listeners do the work: they run in order with a consumer's, and stay
+// on an element being removed for the `focusout` its removal fires. But Vue skips an
+// invoker attached in the millisecond of the event's first invoker, here a segment's,
+// which would leave `isFocusWithin` out of step with the document. These catch that,
+// attached as soon as the element exists, and skip an event the template already
+// handled: a consumer can move focus during it, and it mustn't undo what that did.
+watch(parentElement, (element, _, onCleanup) => {
+  if (!element)
+    return
+  element.addEventListener('focusin', handleFocusin)
+  element.addEventListener('focusout', handleFocusout)
+  onCleanup(() => {
+    element.removeEventListener('focusin', handleFocusin)
+    element.removeEventListener('focusout', handleFocusout)
+  })
+}, { flush: 'sync' })
 
 provideDateFieldRootContext(context)
 

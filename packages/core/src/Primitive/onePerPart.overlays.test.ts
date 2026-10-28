@@ -2,6 +2,7 @@ import type { VNodeChild } from 'vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
+import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot } from '@/Combobox'
 import { ContextMenuRoot, ContextMenuTrigger } from '@/ContextMenu'
 import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogRoot, DialogTitle, DialogTrigger } from '@/Dialog'
 import { DrawerClose, DrawerContent, DrawerDescription, DrawerRoot, DrawerTitle, DrawerTrigger } from '@/Drawer'
@@ -14,7 +15,7 @@ import { componentNames } from '@/test'
 import { ToastAction, ToastClose, ToastDescription, ToastProvider, ToastRoot, ToastTitle, ToastViewport } from '@/Toast'
 import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from '@/Tooltip'
 
-const WRAPPERS = new Set(['Primitive', 'PrimitiveSlot', 'PopperAnchor', 'MenuAnchor', 'RovingFocusGroup', 'RovingFocusItem', 'CollectionSlot', 'CollectionItem'])
+const WRAPPERS = new Set(['Primitive', 'PrimitiveSlot', 'PopperAnchor', 'MenuAnchor', 'RovingFocusGroup', 'RovingFocusItem', 'CollectionSlot', 'CollectionItem', 'FocusScope', 'DismissableLayer', 'ListboxContent'])
 
 const compositions: Record<string, () => VNodeChild> = {
   Dialog: () => h(DialogRoot, { defaultOpen: true }, () => [
@@ -58,6 +59,14 @@ const compositions: Record<string, () => VNodeChild> = {
     ]),
     h(NavigationMenuViewport),
   ]),
+  Combobox: () => h(ComboboxRoot, { defaultOpen: true }, () => [
+    h(ComboboxAnchor, () => h(ComboboxInput)),
+    h(ComboboxContent, () => h(ComboboxItem, { value: 'a' }, () => 'a')),
+  ]),
+  ComboboxPopper: () => h(ComboboxRoot, { defaultOpen: true }, () => [
+    h(ComboboxAnchor, () => h(ComboboxInput)),
+    h(ComboboxContent, { position: 'popper' }, () => h(ComboboxItem, { value: 'a' }, () => 'a')),
+  ]),
   Toast: () => h(ToastProvider, () => [
     h(ToastRoot, { defaultOpen: true }, () => [
       h(ToastTitle, () => 'T'),
@@ -69,16 +78,11 @@ const compositions: Record<string, () => VNodeChild> = {
   ]),
 }
 
-// The content parts keep their `<FocusScope as-child>` / `<DismissableLayer
-// as-child>` chain (each a `Slot` onto the next): those are public components
-// with their own state, left for a follow-up. Every other part renders its own
-// element: no `Primitive`, no `PopperAnchor` / `MenuAnchor`, no collection or
-// roving-focus wrapper.
-const LAYERS = new Set(['FocusScope', 'DismissableLayer'])
-
-/** Wrapper instances in the tree, but the `Slot` of a layer's `as-child`. */
+// Every part renders its own element: no `Primitive`, no `PopperAnchor` /
+// `MenuAnchor`, no collection or roving-focus wrapper, and no `FocusScope` /
+// `DismissableLayer` chain around an open content.
 function wrapperNames(names: string[]) {
-  return names.filter((name, i) => WRAPPERS.has(name) && !(name === 'PrimitiveSlot' && LAYERS.has(names[i - 1])))
+  return names.filter(name => WRAPPERS.has(name))
 }
 
 describe('one component per part: overlays', () => {
@@ -193,6 +197,51 @@ describe('one component per part: overlays', () => {
     expect(close.getAttribute('data-reka-toast-announce-alt')).toBe('Dismiss')
     expect(close.getAttribute('alttext')).toBeNull()
     expect(document.querySelector('.link')!.getAttribute('value')).toBeNull()
+    wrapper.unmount()
+  })
+
+  // A content's attrs fell through to its `<FocusScope as-child>` /
+  // `<DismissableLayer as-child>` wrappers: those named after their props and
+  // events still configure the focus scope and the layer (where the content
+  // left them unbound), and do not reach the element through them.
+  it('a content\'s attrs named after the layers\' props configure them', async () => {
+    const dismissed: string[] = []
+    let mountAutoFocus = 0
+    const wrapper = mount(defineComponent({
+      setup: () => () => [
+        h(PopoverRoot, { defaultOpen: true }, () => [
+          h(PopoverTrigger, () => 'Open'),
+          h(PopoverContent, {
+            class: 'popover',
+            trapped: '',
+            onMountAutoFocus: () => mountAutoFocus++,
+          }, () => 'Content'),
+        ]),
+        h(HoverCardRoot, { defaultOpen: true }, () => [
+          h(HoverCardTrigger, () => 'Hover'),
+          h(HoverCardContent, {
+            'class': 'card',
+            'disable-outside-pointer-events': '',
+            'onDismiss': (details: { reason: string }) => dismissed.push(details.reason),
+          }, () => 'Card'),
+        ]),
+      ],
+    }), { attachTo: document.body })
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 0))
+    // (The hover card binds `$attrs` on its element itself, as before.)
+    const popover = document.querySelector('.popover')!
+    for (const name of ['trapped', 'onmountautofocus'])
+      expect(popover.hasAttribute(name)).toBe(false)
+    expect(popover.getAttribute('data-dismissable-layer')).toBe('')
+    expect(popover.getAttribute('tabindex')).toBe('-1')
+    expect(document.querySelector('.card')!.getAttribute('data-dismissable-layer')).toBe('')
+    expect(mountAutoFocus).toBe(1)
+    // `disableOutsidePointerEvents` mounts the card's internal backdrop.
+    expect(document.querySelectorAll('[data-reka-internal-backdrop]').length).toBe(1)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await nextTick()
+    expect(dismissed).toEqual(['escape-key'])
     wrapper.unmount()
   })
 })

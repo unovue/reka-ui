@@ -1,5 +1,5 @@
 import type { ReferenceElement } from '@floating-ui/vue'
-import { getCurrentInstance, watchPostEffect } from 'vue'
+import { computed, getCurrentInstance, watchPostEffect } from 'vue'
 import { injectPopperRootContext } from './PopperRoot.vue'
 
 export interface UsePopperAnchorOptions {
@@ -32,10 +32,12 @@ export function usePopperAnchor(options: UsePopperAnchorOptions) {
   // A part that is only sometimes the anchor (a detached trigger) may render
   // outside any popper.
   const rootContext = options.enabled ? injectPopperRootContext(null) : injectPopperRootContext()
-  // Read through the instance proxy, which tracks `$attrs`.
+  // Read through the instance proxy, which tracks `$attrs`. A computed, so the
+  // effect below follows this value and not every attr change.
   const instance = options.consumerAttrs ? getCurrentInstance() : null
-  const reference = instance
-    ? () => (instance.proxy!.$attrs.reference as ReferenceElement | undefined) ?? options.reference?.()
+  const consumerReference = instance && computed(() => instance.proxy!.$attrs.reference as ReferenceElement | undefined)
+  const reference = consumerReference
+    ? () => consumerReference.value ?? options.reference?.()
     : options.reference
   watchPostEffect(() => {
     if (rootContext && (options.enabled?.() ?? true))

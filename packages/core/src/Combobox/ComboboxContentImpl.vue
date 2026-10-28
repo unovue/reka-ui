@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import type { DismissableLayerEmits, DismissableLayerProps } from '@/DismissableLayer'
+import type { DismissableLayerDismissDetails, DismissableLayerEmits, DismissableLayerProps, FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 
 import { createContext, getActiveElement, useFocusGuards, useForwardElement, useForwardProps, useHideOthers } from '@/shared'
@@ -31,14 +31,23 @@ export const [injectComboboxContentContext, provideComboboxContentContext]
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
-import { DismissableLayer } from '@/DismissableLayer'
-import { FocusScope } from '@/FocusScope'
-import { ListboxContent } from '@/Listbox'
+import type { WrapperSpec } from '@/shared/splitWrapperAttrs'
+import { refAutoReset } from '@vueuse/shared'
+import { computed, getCurrentInstance, mergeProps, nextTick, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
+import { useCollectionSlot } from '@/Collection'
+import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer } from '@/DismissableLayer/useDismissableLayer'
+import { FOCUS_SCOPE_WRAPPER, focusScopeOptions, useFocusScope } from '@/FocusScope/useFocusScope'
+import { injectListboxRootContext } from '@/Listbox/ListboxRoot.vue'
+import { getListboxContentSurface } from '@/Listbox/useListbox'
 import { PopperContent } from '@/Popper'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
+import { splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 import { getComboboxContentSurface } from './useCombobox'
+
+defineOptions({
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<ComboboxContentImplProps & { present?: boolean }>(), {
   position: 'inline',
@@ -83,8 +92,8 @@ const pickedProps = computed(() => {
     const { present: _, ...forwardedProps } = props
     return forwardedProps
   }
-  // Inline, the content is a plain `Primitive`: it still takes `as` / `asChild`.
-  return { as: props.as, asChild: props.asChild }
+  // Inline, the content renders its own element (`as` / `asChild`).
+  return {}
 })
 
 const forwardedProps = useForwardProps(pickedProps)
@@ -151,54 +160,77 @@ function isEventTargetWithinCombobox(target: EventTarget | null) {
 const popperContentEvents = {
   placed: () => rootContext.onContentPlaced(contentId),
 }
+
+// The content was `<ListboxContent as-child>` around `<FocusScope as-child>`
+// around `<DismissableLayer as-child>` around its element (or
+// `PopperContent`); they are composables on that element now. The listbox
+// content's surface and collection root. Its roving tabindex stays in the
+// render, where a consumer `tabindex` or an as-child element's binding wins, as
+// it did under `ListboxContent as-child`. It does not flip: the input keeps the
+// listbox unfocusable, so the value stays '-1' and a highlight change does not
+// re-render the content.
+const instance = getCurrentInstance()!
+const isClickFocus = refAutoReset(false, 10)
+const listboxRootContext = injectListboxRootContext()
+const listboxSurface = getListboxContentSurface(listboxRootContext, { isClickFocus })
+useCollectionSlot(currentElement)
+
+// Each `*Wrapper` is what that component received, merged as the template
+// merged it: the content's attrs fell through over the root
+// `ListboxContent`'s bindings, and each as-child slot merged what its
+// component rendered under the next one's bindings. So consumer attrs named
+// after their props and events still configure them, and never render.
+// (`$attrs` read through the instance proxy tracks.)
+const LISTBOX_CONTENT_WRAPPER: WrapperSpec = { props: { as: false, asChild: true }, emits: [] }
+const listboxContentWrapper = computed(() => splitWrapperAttrs(mergeProps({ asChild: true }, instance.proxy!.$attrs), LISTBOX_CONTENT_WRAPPER))
+const focusScopeWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeProps(listboxContentWrapper.value.rest, listboxSurface.attrs.value), {
+  asChild: true,
+  present: props.present,
+  onMountAutoFocus: (event: Event) => event.preventDefault(),
+  onUnmountAutoFocus: (event: Event) => event.preventDefault(),
+}), FOCUS_SCOPE_WRAPPER))
+const scope = useFocusScope(focusScopeOptions(currentElement, () => focusScopeWrapper.value))
+const layerWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeProps(scope.attrs(), focusScopeWrapper.value.rest), {
+  asChild: true,
+  present: props.present,
+  disableOutsidePointerEvents: props.disableOutsidePointerEvents,
+  backdropCutout: rootContext.parentElement.value,
+  onDismiss: ({ reason, event }: DismissableLayerDismissDetails) => rootContext.onOpenChange(false, reason, event),
+  onFocusOutside: (event: FocusOutsideEvent) => {
+    // if focusing inside the combobox (or a label tied to it), prevent dismiss
+    if (isEventTargetWithinCombobox(event.target))
+      event.preventDefault()
+    emits('focusOutside', event)
+  },
+  onInteractOutside: (event: PointerDownOutsideEvent | FocusOutsideEvent) => emits('interactOutside', event),
+  onEscapeKeyDown: (event: KeyboardEvent) => emits('escapeKeyDown', event),
+  onPointerDownOutside: (event: PointerDownOutsideEvent) => {
+    // if clicking inside the combobox (or a label tied to it), prevent dismiss
+    if (isEventTargetWithinCombobox(event.target))
+      event.preventDefault()
+    emits('pointerDownOutside', event)
+  },
+}), DISMISSABLE_LAYER_WRAPPER))
+const layer = useDismissableLayer(dismissableLayerOptions(currentElement, () => layerWrapper.value))
 </script>
 
 <template>
-  <ListboxContent as-child>
-    <FocusScope
-      as-child
-      :present="props.present"
-      @mount-auto-focus.prevent
-      @unmount-auto-focus.prevent
-    >
-      <DismissableLayer
-        as-child
-        :present="props.present"
-        :disable-outside-pointer-events="disableOutsidePointerEvents"
-        :backdrop-cutout="rootContext.parentElement.value"
-        @dismiss="({ reason, event }) => rootContext.onOpenChange(false, reason, event)"
-        @focus-outside="(ev) => {
-          // if focusing inside the combobox (or a label tied to it), prevent dismiss
-          if (isEventTargetWithinCombobox(ev.target)) ev.preventDefault()
-          emits('focusOutside', ev)
-        }"
-        @interact-outside="emits('interactOutside', $event)"
-        @escape-key-down="emits('escapeKeyDown', $event)"
-        @pointer-down-outside="(ev) => {
-          // if clicking inside the combobox (or a label tied to it), prevent dismiss
-          if (isEventTargetWithinCombobox(ev.target)) ev.preventDefault()
-          emits('pointerDownOutside', ev)
-        }"
-      >
-        <component
-          :is="position === 'popper' ? PopperContent : Primitive"
-          v-bind="{ ...$attrs, ...forwardedProps, ...surface.attrs.value }"
-          :ref="forwardRef"
-          :memo-dependencies="popperMemoDependencies"
-          :style="{
-            // flex layout so we can place the scroll buttons properly
-            // When hideWhenEmpty is true, hide the content when no items match
-            display: (props.hideWhenEmpty && surface.state.value.empty) ? 'none' : 'flex',
-            flexDirection: 'column',
-            // reset the outline by default as the content MAY get focused
-            outline: 'none',
-            ...(position === 'popper' ? popperStyle : {}),
-          }"
-          v-on="position === 'popper' ? popperContentEvents : {}"
-        >
-          <slot />
-        </component>
-      </DismissableLayer>
-    </FocusScope>
-  </ListboxContent>
+  <component
+    :is="position === 'popper' ? PopperContent : renderAs(as, asChild)"
+    v-bind="mergeProps(mergeProps(layer.attrs(), layerWrapper.rest), { ...$attrs, ...forwardedProps, ...surface.attrs.value })"
+    :ref="forwardRef"
+    :memo-dependencies="popperMemoDependencies"
+    :style="{
+      // flex layout so we can place the scroll buttons properly
+      // When hideWhenEmpty is true, hide the content when no items match
+      display: (props.hideWhenEmpty && surface.state.value.empty) ? 'none' : 'flex',
+      flexDirection: 'column',
+      // reset the outline by default as the content MAY get focused
+      outline: 'none',
+      ...(position === 'popper' ? popperStyle : {}),
+    }"
+    v-on="position === 'popper' ? popperContentEvents : {}"
+  >
+    <slot />
+  </component>
 </template>

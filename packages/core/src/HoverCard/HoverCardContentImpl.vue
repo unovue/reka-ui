@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { DismissableLayerDismissDetails, DismissableLayerEmits } from '@/DismissableLayer'
+import type { DismissableLayerDismissDetails, DismissableLayerEmits, FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 import { syncRef } from '@vueuse/shared'
 import { useAncestorScroll, useForwardElement, useGraceArea } from '@/shared'
@@ -9,13 +9,18 @@ export interface HoverCardContentImplProps extends PopperContentProps {}
 </script>
 
 <script setup lang="ts">
-import { mergeProps, nextTick, onMounted, onUnmounted, ref, watchEffect } from 'vue'
-import { DismissableLayer } from '@/DismissableLayer'
+import { computed, getCurrentInstance, mergeProps, nextTick, onMounted, onUnmounted, ref, watchEffect } from 'vue'
+import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer } from '@/DismissableLayer/useDismissableLayer'
 import { PopperContent } from '@/Popper'
+import { splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
 import { useForwardProps } from '..'
 import { injectHoverCardRootContext } from './HoverCardRoot.vue'
 import { getHoverCardContentSurface } from './useHoverCard'
 import { getTabbableNodes } from './utils'
+
+defineOptions({
+  inheritAttrs: false,
+})
 
 const props = defineProps<HoverCardContentImplProps>()
 const emits = defineEmits<HoverCardContentImplEmits>()
@@ -28,9 +33,9 @@ const { isPointerInTransit, onPointerExit } = useGraceArea(rootContext.triggerEl
 
 // `data-state` comes from the shared surface builder (single source with
 // `useHoverCard()`); the grace area, selection containment, tabbable
-// neutralisation, scroll dismissal, DismissableLayer (which hands the dismiss
-// reason + event to `onDismiss`), PopperContent and the `--reka-hover-card-*`
-// CSS variables stay in the SFC.
+// neutralisation, scroll dismissal, the dismissable layer (which hands the
+// dismiss reason + event to `onDismiss`), PopperContent and the
+// `--reka-hover-card-*` CSS variables stay in the SFC.
 const content = getHoverCardContentSurface(rootContext)
 
 syncRef(rootContext.isPointerInTransitRef, isPointerInTransit, { direction: 'rtl' })
@@ -69,6 +74,25 @@ function handleDismiss({ reason, event }: DismissableLayerDismissDetails) {
     return
   rootContext.onDismiss(reason, event)
 }
+
+// The content was `<DismissableLayer as-child>` around `PopperContent`; the
+// layer is a composable on its element now. `layerWrapper` is what the layer
+// received: its bindings with the content's attrs fallen through over them.
+// So consumer attrs named after its props and events still configure it,
+// and never render. (`$attrs` read through the instance proxy tracks.)
+const instance = getCurrentInstance()!
+const layerWrapper = computed(() => splitWrapperAttrs(mergeProps({
+  asChild: true,
+  disableOutsidePointerEvents: false,
+  onEscapeKeyDown: (event: KeyboardEvent) => emits('escapeKeyDown', event),
+  onPointerDownOutside: (event: PointerDownOutsideEvent) => emits('pointerDownOutside', event),
+  onFocusOutside: (event: FocusOutsideEvent) => {
+    event.preventDefault()
+    emits('focusOutside', event)
+  },
+  onDismiss: handleDismiss,
+}, instance.proxy!.$attrs), DISMISSABLE_LAYER_WRAPPER))
+const layer = useDismissableLayer(dismissableLayerOptions(contentElement, () => layerWrapper.value))
 
 const containSelection = ref(false)
 
@@ -121,38 +145,29 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <DismissableLayer
-    as-child
-    :disable-outside-pointer-events="false"
-    @escape-key-down="emits('escapeKeyDown', $event)"
-    @pointer-down-outside="emits('pointerDownOutside', $event)"
-    @focus-outside.prevent="emits('focusOutside', $event)"
-    @dismiss="handleDismiss"
+  <PopperContent
+    v-bind="mergeProps(mergeProps(layer.attrs(), layerWrapper.rest), mergeProps(forwarded, $attrs, content.attrs.value))"
+    :ref="forwardRef"
+    :style="{
+      'userSelect': containSelection ? 'text' : undefined,
+      // Safari requires prefix
+      'WebkitUserSelect': containSelection ? 'text' : undefined,
+      // re-namespace exposed content custom properties
+      '--reka-hover-card-content-transform-origin': 'var(--reka-popper-transform-origin)',
+      '--reka-hover-card-content-available-width': 'var(--reka-popper-available-width)',
+      '--reka-hover-card-content-available-height': 'var(--reka-popper-available-height)',
+      '--reka-hover-card-trigger-width': 'var(--reka-popper-anchor-width)',
+      '--reka-hover-card-trigger-height': 'var(--reka-popper-anchor-height)',
+    }"
+    @pointerdown="(event: PointerEvent) => {
+      // Contain selection to current layer
+      if ((event.currentTarget as HTMLElement).contains(event.target as HTMLElement)) {
+        containSelection = true
+      }
+      rootContext.hasSelectionRef.value = false;
+      rootContext.isPointerDownOnContentRef.value = true;
+    }"
   >
-    <PopperContent
-      v-bind="mergeProps(forwarded, $attrs, content.attrs.value)"
-      :ref="forwardRef"
-      :style="{
-        'userSelect': containSelection ? 'text' : undefined,
-        // Safari requires prefix
-        'WebkitUserSelect': containSelection ? 'text' : undefined,
-        // re-namespace exposed content custom properties
-        '--reka-hover-card-content-transform-origin': 'var(--reka-popper-transform-origin)',
-        '--reka-hover-card-content-available-width': 'var(--reka-popper-available-width)',
-        '--reka-hover-card-content-available-height': 'var(--reka-popper-available-height)',
-        '--reka-hover-card-trigger-width': 'var(--reka-popper-anchor-width)',
-        '--reka-hover-card-trigger-height': 'var(--reka-popper-anchor-height)',
-      }"
-      @pointerdown="(event: PointerEvent) => {
-        // Contain selection to current layer
-        if ((event.currentTarget as HTMLElement).contains(event.target as HTMLElement)) {
-          containSelection = true
-        }
-        rootContext.hasSelectionRef.value = false;
-        rootContext.isPointerDownOnContentRef.value = true;
-      }"
-    >
-      <slot />
-    </PopperContent>
-  </DismissableLayer>
+    <slot />
+  </PopperContent>
 </template>

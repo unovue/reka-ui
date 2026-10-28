@@ -8,6 +8,8 @@ import type {
   DismissableLayerDismissDetails,
   DismissableLayerEmits,
   DismissableLayerProps,
+  FocusOutsideEvent,
+  PointerDownOutsideEvent,
 } from '@/DismissableLayer'
 import type { FocusScopeProps } from '@/FocusScope'
 import type { PopperContentProps } from '@/Popper'
@@ -104,24 +106,27 @@ export interface MenuRootContentTypeProps
 <script setup lang="ts">
 import {
   computed,
+  getCurrentInstance,
   mergeProps,
   toRefs,
   watch,
 } from 'vue'
-import { DismissableLayer } from '@/DismissableLayer'
-import { FocusScope } from '@/FocusScope'
+import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer } from '@/DismissableLayer/useDismissableLayer'
+import { FOCUS_SCOPE_WRAPPER, focusScopeOptions, useFocusScope } from '@/FocusScope/useFocusScope'
 import {
   PopperContent,
   PopperContentPropsDefaultValue,
 } from '@/Popper'
 import { useRovingFocusGroup } from '@/RovingFocus/useRovingFocusGroup'
+import { splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
 import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
 import { useMenuContent } from './useMenu'
 
 defineOptions({
-  // `$attrs` fall through to `FocusScope` as before (bound last), except those
-  // that configured the former `<RovingFocusGroup as-child>` (see
-  // `consumerAttrs`).
+  // `$attrs` configure the focus scope and the dismissable layer as they did
+  // the former `FocusScope` / `DismissableLayer` wrappers (see
+  // `focusScopeWrapper`), except those that configured the former
+  // `<RovingFocusGroup as-child>` (see `consumerAttrs`).
   inheritAttrs: false,
 })
 
@@ -134,9 +139,9 @@ const rootContext = injectMenuRootContext()
 
 const { trapFocus, disableOutsidePointerEvents, loop } = toRefs(props)
 
-// Mount side-effects + the component wrappers (FocusScope/DismissableLayer/
-// PopperContent) stay in the SFC; the keyboard/pointer/highlight brain moves
-// into useMenuContent(). The roving focus group is a composable bound on the
+// Mount side-effects, the focus scope, the dismissable layer and PopperContent
+// stay in the SFC; the keyboard/pointer/highlight brain moves into
+// useMenuContent(). The roving focus group is a composable bound on the
 // content's element.
 // Base UI `MenuPositioner`: a modal root menu locks page scroll while open.
 const scrollLocked = useBodyScrollLock(!!disableOutsidePointerEvents.value)
@@ -175,49 +180,57 @@ const roving = useRovingFocusGroup({
       event.preventDefault()
   },
 })
+
+// The content was `<FocusScope as-child>` around `<DismissableLayer
+// as-child>` around `PopperContent`; both wrappers are composables on its
+// element now. Each `*Wrapper` is what that component received, merged as the
+// template merged it: the content's attrs were bound over the `FocusScope`'s
+// own props, and each as-child slot merged what its component rendered under
+// the next one's bindings. So consumer attrs named after their props and
+// events still configure them, and never render. (`$attrs` read through the
+// instance proxy tracks.)
+const instance = getCurrentInstance()!
+const focusScopeWrapper = computed(() => splitWrapperAttrs(mergeProps({
+  asChild: true,
+  trapped: trapFocus.value,
+  onMountAutoFocus: handleMountAutoFocus,
+  onUnmountAutoFocus: (event: Event) => emits('closeAutoFocus', event),
+}, roving.consumerAttrs(instance.proxy!.$attrs)), FOCUS_SCOPE_WRAPPER))
+const scope = useFocusScope(focusScopeOptions(contentElement, () => focusScopeWrapper.value))
+const layerWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeProps(scope.attrs(), focusScopeWrapper.value.rest), {
+  asChild: true,
+  disableOutsidePointerEvents: disableOutsidePointerEvents.value,
+  backdropCutout: backdropCutoutElement.value,
+  onEscapeKeyDown: (event: KeyboardEvent) => emits('escapeKeyDown', event),
+  onPointerDownOutside: (event: PointerDownOutsideEvent) => emits('pointerDownOutside', event),
+  onFocusOutside: (event: FocusOutsideEvent) => emits('focusOutside', event),
+  onInteractOutside: (event: PointerDownOutsideEvent | FocusOutsideEvent) => emits('interactOutside', event),
+  onDismiss: (details: DismissableLayerDismissDetails) => emits('dismiss', details),
+}), DISMISSABLE_LAYER_WRAPPER))
+const layer = useDismissableLayer(dismissableLayerOptions(contentElement, () => layerWrapper.value))
 </script>
 
 <template>
-  <FocusScope
-    as-child
-    v-bind="mergeProps({
-      trapped: trapFocus,
-      onMountAutoFocus: handleMountAutoFocus,
-      onUnmountAutoFocus: (event: Event) => emits('closeAutoFocus', event),
-    }, roving.consumerAttrs($attrs))"
+  <PopperContent
+    :ref="forwardRef"
+    :as="as"
+    :as-child="asChild"
+    :side="side"
+    :side-offset="sideOffset"
+    :align="align"
+    :align-offset="alignOffset"
+    :avoid-collisions="avoidCollisions"
+    :collision-boundary="collisionBoundary"
+    :collision-padding="collisionPadding"
+    :arrow-padding="arrowPadding"
+    :prioritize-position="prioritizePosition"
+    :position-strategy="positionStrategy"
+    :update-position-strategy="updatePositionStrategy"
+    :sticky="sticky"
+    :hide-when-detached="hideWhenDetached"
+    :reference="reference"
+    v-bind="mergeProps(layer.attrs(), layerWrapper.rest, roving.attrs(), content.attrs.value)"
   >
-    <DismissableLayer
-      as-child
-      :disable-outside-pointer-events="disableOutsidePointerEvents"
-      :backdrop-cutout="backdropCutoutElement"
-      @escape-key-down="emits('escapeKeyDown', $event)"
-      @pointer-down-outside="emits('pointerDownOutside', $event)"
-      @focus-outside="emits('focusOutside', $event)"
-      @interact-outside="emits('interactOutside', $event)"
-      @dismiss="emits('dismiss', $event)"
-    >
-      <PopperContent
-        :ref="forwardRef"
-        :as="as"
-        :as-child="asChild"
-        :side="side"
-        :side-offset="sideOffset"
-        :align="align"
-        :align-offset="alignOffset"
-        :avoid-collisions="avoidCollisions"
-        :collision-boundary="collisionBoundary"
-        :collision-padding="collisionPadding"
-        :arrow-padding="arrowPadding"
-        :prioritize-position="prioritizePosition"
-        :position-strategy="positionStrategy"
-        :update-position-strategy="updatePositionStrategy"
-        :sticky="sticky"
-        :hide-when-detached="hideWhenDetached"
-        :reference="reference"
-        v-bind="mergeProps(roving.attrs(), content.attrs.value)"
-      >
-        <slot />
-      </PopperContent>
-    </DismissableLayer>
-  </FocusScope>
+    <slot />
+  </PopperContent>
 </template>

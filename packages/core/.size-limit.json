@@ -62,19 +62,19 @@
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, dialogElements }",
-    "limit": "27 KB",
+    "limit": "27.1 KB",
     "name": "Elements: Dialog"
   },
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, rekaElementFamilies }",
-    "limit": "192 KB",
+    "limit": "192.6 KB",
     "name": "Elements: all supported families"
   },
   {
     "path": "dist/index.js",
     "import": "*",
-    "limit": "191.3 KB",
+    "limit": "192.2 KB",
     "name": "Full library"
   }
 ]

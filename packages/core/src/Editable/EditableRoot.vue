@@ -143,7 +143,7 @@ const { modelValue, isEditing, isEmpty, edit, cancel, submit, dismiss, root, con
 
 // Outside detection is DOM-bound (DismissableLayer utilities), so it stays in the shell.
 const pointerDownOutside = usePointerDownOutside(event => dismiss('outside-press', event), currentElement, isEditing)
-const focusOutside = useFocusOutside(event => dismiss('focus-outside', event), currentElement, isEditing)
+useFocusOutside(event => dismiss('focus-outside', event), currentElement, isEditing)
 
 // Zero-argument wrappers: a slot or template-ref caller binding `@click="submit"` reports `imperative-action`.
 function submitImperative() {
@@ -169,8 +169,6 @@ provideEditableRootContext(context)
     :as="as"
     :as-child="asChild"
     data-dismissable-layer
-    @focus.capture="focusOutside.onFocusCapture"
-    @blur.capture="focusOutside.onBlurCapture"
     @pointerdown.capture="pointerDownOutside.onPointerDownCapture"
   >
     <slot
