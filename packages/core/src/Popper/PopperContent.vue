@@ -194,6 +194,14 @@ export interface PopperContentContext {
   shouldHideArrow: Ref<boolean>
 }
 
+interface PopperContentInternalProps extends PopperContentProps {
+  /**
+   * Optional perpendicular-side fallback used by internal Popper consumers.
+   * Defaults to `none` to preserve existing placement behavior.
+   */
+  fallbackAxisSideDirection?: 'none' | 'start' | 'end'
+}
+
 export const [injectPopperContentContext, providePopperContentContext]
   = createContext<PopperContentContext>('PopperContent')
 </script>
@@ -225,8 +233,9 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<PopperContentProps>(), {
+const props = withDefaults(defineProps<PopperContentInternalProps>(), {
   ...PopperContentPropsDefaultValue,
+  fallbackAxisSideDirection: 'none',
 })
 const emits = defineEmits<{
   placed: [void]
@@ -272,6 +281,7 @@ const flipOptions = computed(() => {
   return {
     mainAxis: props.sideFlip,
     crossAxis: props.alignFlip,
+    fallbackAxisSideDirection: props.sideFlip ? props.fallbackAxisSideDirection : 'none',
   }
 })
 

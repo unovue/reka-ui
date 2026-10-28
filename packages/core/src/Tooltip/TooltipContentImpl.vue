@@ -76,7 +76,8 @@ const popperContentProps = computed(() => {
     arrowPadding: 0,
     sticky: 'partial',
     hideWhenDetached: false,
-  } satisfies TooltipContentImplProps)
+    fallbackAxisSideDirection: 'start' as const,
+  } satisfies TooltipContentImplProps & { fallbackAxisSideDirection: 'start' })
 })
 
 onMounted(() => {
