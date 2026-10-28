@@ -22,6 +22,19 @@
     'required': false
   }
 ]" />
+
+<SlotsTable :data="[
+  {
+    'name': 'color',
+    'description': '',
+    'type': 'string'
+  },
+  {
+    'name': 'alpha',
+    'description': '',
+    'type': 'number'
+  }
+]" />
 </llm-exclude>
 
 <llm-only>
@@ -33,5 +46,12 @@
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `label` | Optional accessible label for the color. If omitted, the color name will be derived from the color value. | `string` | No | - |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `color` |  | `string` |
+| `alpha` |  | `number` |
 
 </llm-only>

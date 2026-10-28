@@ -309,18 +309,6 @@ onMounted(() => {
     :as-child="asChild"
     v-bind="root.attrs.value"
   >
-    <div
-      style="border: 0px; clip: rect(0px, 0px, 0px, 0px); clip-path: inset(50%); height: 1px; margin: -1px; overflow: hidden; padding: 0px; position: absolute; white-space: nowrap; width: 1px;"
-    >
-      <div
-        :id="headingId"
-        role="heading"
-        aria-level="2"
-      >
-        {{ fullCalendarLabel }}
-      </div>
-    </div>
-
     <slot
       :date="placeholder"
       :grid="grid"
@@ -332,5 +320,17 @@ onMounted(() => {
       :view="view"
       :granularity="granularity"
     />
+    <!-- After the slot, as in `CalendarRoot`: with `asChild`, the root's attributes go to the first child. -->
+    <div
+      style="border: 0px; clip: rect(0px, 0px, 0px, 0px); clip-path: inset(50%); height: 1px; margin: -1px; overflow: hidden; padding: 0px; position: absolute; white-space: nowrap; width: 1px;"
+    >
+      <div
+        :id="headingId"
+        role="heading"
+        aria-level="2"
+      >
+        {{ fullCalendarLabel }}
+      </div>
+    </div>
   </Primitive>
 </template>

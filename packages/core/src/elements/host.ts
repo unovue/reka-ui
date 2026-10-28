@@ -61,6 +61,13 @@ const TAG_SEMANTICS: Record<string, HostSemantics> = {
   ol: { role: 'list' },
   li: { role: 'listitem' },
   nav: { role: 'navigation' },
+  // Tables (calendar grids): the part's own `role` (`application`, `gridcell`) wins.
+  table: { role: 'table' },
+  thead: { role: 'rowgroup' },
+  tbody: { role: 'rowgroup' },
+  tr: { role: 'row' },
+  th: { role: 'columnheader' },
+  td: { role: 'cell' },
 }
 
 export function semanticsForTag(tag: unknown): HostSemantics | undefined {
@@ -97,7 +104,7 @@ let attributeObserver: MutationObserver | undefined
 function observeAttributes(el: HTMLElement) {
   attributeObserver ??= new MutationObserver((records) => {
     for (const record of records)
-      bindings.get(record.target)?.onAttributeMutation(record.attributeName!)
+      bindings.get(record.target)?.onAttributeMutation(record.target, record.attributeName!)
   })
   attributeObserver.observe(el, { attributes: true })
 }
@@ -217,6 +224,14 @@ export class HostBinding {
   active = false
   /** The part renders as disabled. */
   partDisabled = false
+  /**
+   * The element the part renders onto: the host, or (for an `<input>` or `<svg>`
+   * part) a child of it. The host itself still moves, carries the unrendered state
+   * and is what other elements find as their parent.
+   */
+  target: HTMLElement | SVGElement
+  /** Root-level siblings of the part go inside the host instead of the detached container. */
+  siblingsInside = false
 
   private homeMarker: Comment | null = null
   private readonly owned = new Map<string, OwnedAttribute>()
@@ -237,6 +252,7 @@ export class HostBinding {
     private readonly internals?: ElementInternals,
   ) {
     bindings.set(el, this)
+    this.target = el
     this.container = el.ownerDocument.createElement('div')
     containers.set(this.container, this)
     observeAttributes(el)
@@ -284,6 +300,24 @@ export class HostBinding {
       el.removeAttribute('style')
     if (el.classList.length === 0)
       el.removeAttribute('class')
+  }
+
+  /**
+   * Renders the part onto `target` from the next mount on: a child of the host
+   * (an `<input>`, an `<svg>`). A copy of a mounted element's child starts from
+   * the consumer's attributes, like the host.
+   */
+  retarget(target: HTMLElement | SVGElement) {
+    if (this.active || target === this.target)
+      return
+    if (this.target !== this.el)
+      bindings.delete(this.target)
+    this.target = target
+    if (target !== this.el) {
+      HostBinding.cleanCopiedState(target as HTMLElement)
+      bindings.set(target, this)
+      observeAttributes(target as HTMLElement)
+    }
   }
 
   get away() {
@@ -335,6 +369,10 @@ export class HostBinding {
       this.homeMarker.parentNode?.insertBefore(child, this.homeMarker)
       return
     }
+    if (this.siblingsInside) {
+      this.el.insertBefore(child, anchor && anchor.parentNode === this.el ? anchor : null)
+      return
+    }
     if (child.nodeType === Node.ELEMENT_NODE && !FORM_FIELD.test((child as Element).tagName) && !this.warned) {
       this.warned = true
       warn(`<${this.el.localName}> renders a <${(child as Element).localName}> next to its part. A custom element has nowhere to put it, so it is not in the document.`)
@@ -368,7 +406,7 @@ export class HostBinding {
         this.patchStyle(prev, next)
       }
       else if (EVENT_KEY.test(key)) {
-        patchProp(this.el, key, prev, next, namespace, parentComponent)
+        patchProp(this.target, key, prev, next, namespace, parentComponent)
         if (next == null)
           this.events.delete(key)
         else
@@ -378,11 +416,16 @@ export class HostBinding {
         if (this.semantics?.button)
           this.addKeyboardShims()
       }
-      else if (key === 'disabled') {
+      else if (key === 'disabled' && this.target === this.el) {
         // Kept as state, not written: on a form-associated host the attribute would
         // disable the element by itself, and hide a `<fieldset disabled>` going
         // away. The host's `disabled` attribute stays the consumer's.
         this.partDisabled = toAttributeValue(key, next) !== null
+      }
+      else if ((key === 'value' || key === 'checked') && FORM_FIELD.test(this.target.tagName)) {
+        // A native field's live state is its DOM property, not its attribute (the
+        // attribute is the default value, which stays the consumer's).
+        patchProp(this.target, key, prev, next, namespace, parentComponent)
       }
       else if (!(key === 'type' && this.semantics?.button)) {
         // (`type="button"` only means something on a native `<button>`.)
@@ -436,39 +479,43 @@ export class HostBinding {
     }
     entry.original = value
     this.markerDirty()
-    if (this.el.getAttribute(name) !== entry.value)
-      this.write(() => this.el.setAttribute(name, entry.value))
+    if (this.target.getAttribute(name) !== entry.value)
+      this.write(() => this.target.setAttribute(name, entry.value))
   }
 
   /** @internal */
-  onAttributeMutation(name: string) {
+  onAttributeMutation(node: Node, name: string) {
+    // The host's own attributes, while the part renders onto a child of it.
+    if (node !== this.target)
+      return
     const entry = this.owned.get(name)
     // Our own writes, and consumer writes already handled synchronously, leave the
     // part's value in place.
-    if (!entry || this.el.getAttribute(name) === entry.value)
+    if (!entry || this.target.getAttribute(name) === entry.value)
       return
-    this.consumerWrote(name, this.el.getAttribute(name))
+    this.consumerWrote(name, this.target.getAttribute(name))
   }
 
   /** Undoes every change the part's tree (and the semantics shim) made to the host. */
   strip() {
+    const target = this.target
     this.write(() => {
       for (const [key, handler] of this.events)
-        patchProp(this.el, key, handler, null)
+        patchProp(target, key, handler, null)
       this.events.clear()
       for (const token of this.vueClasses)
-        this.el.classList.remove(token)
+        target.classList.remove(token)
       this.vueClasses.clear()
       for (const [property, [value, priority]] of this.styleOriginals)
         this.restoreStyle(property, value, priority)
       this.styleOriginals.clear()
-      if (this.styleAttribute === null && !this.el.style.length)
-        this.el.removeAttribute('style')
+      if (this.styleAttribute === null && !target.style.length)
+        target.removeAttribute('style')
       this.styleAttribute = undefined
       for (const name of [...this.owned.keys()])
         this.release(name)
       this.partDisabled = false
-      this.el.removeAttribute(OWNED_ATTR)
+      target.removeAttribute(OWNED_ATTR)
     })
   }
 
@@ -539,8 +586,9 @@ export class HostBinding {
         tokens.push(`;${property}`)
     }
     const marker = tokens.join(' ')
-    if (this.el.getAttribute(OWNED_ATTR) !== (marker || null))
-      this.write(() => marker ? this.el.setAttribute(OWNED_ATTR, marker) : this.el.removeAttribute(OWNED_ATTR))
+    const target = this.target
+    if (target.getAttribute(OWNED_ATTR) !== (marker || null))
+      this.write(() => marker ? target.setAttribute(OWNED_ATTR, marker) : target.removeAttribute(OWNED_ATTR))
   }
 
   private release(name: string) {
@@ -551,9 +599,9 @@ export class HostBinding {
     this.markerDirty()
     this.write(() => {
       if (entry.original === null)
-        this.el.removeAttribute(name)
+        this.target.removeAttribute(name)
       else
-        this.el.setAttribute(name, entry.original)
+        this.target.setAttribute(name, entry.original)
     })
   }
 
@@ -565,26 +613,27 @@ export class HostBinding {
       return
     }
     if (!entry) {
-      this.owned.set(name, { original: this.el.getAttribute(name), value, shim: false })
+      this.owned.set(name, { original: this.target.getAttribute(name), value, shim: false })
       this.markerDirty()
     }
     else {
       entry.value = value
       entry.shim = false
     }
-    if (this.el.getAttribute(name) !== value)
-      this.el.setAttribute(name, value)
+    if (this.target.getAttribute(name) !== value)
+      this.target.setAttribute(name, value)
   }
 
   private patchClass(prev: unknown, next: unknown) {
     const nextTokens = new Set(normalizeClass(next).split(WHITESPACE).filter(Boolean))
+    const classList = this.target.classList
     for (const token of normalizeClass(prev).split(WHITESPACE)) {
       if (token && !nextTokens.has(token) && this.vueClasses.delete(token))
-        this.el.classList.remove(token)
+        classList.remove(token)
     }
     for (const token of nextTokens) {
-      if (!this.el.classList.contains(token)) {
-        this.el.classList.add(token)
+      if (!classList.contains(token)) {
+        classList.add(token)
         this.vueClasses.add(token)
       }
     }
@@ -594,7 +643,7 @@ export class HostBinding {
   private patchStyle(prev: unknown, next: unknown) {
     const prevStyle = toStyleObject(prev)
     const nextStyle = toStyleObject(next)
-    const style = this.el.style
+    const style = this.target.style
     for (const key in prevStyle) {
       const value = nextStyle[key]
       if (value == null || value === '') {
@@ -612,7 +661,7 @@ export class HostBinding {
         continue
       const property = toCssProperty(key)
       if (this.styleAttribute === undefined)
-        this.styleAttribute = this.el.getAttribute('style')
+        this.styleAttribute = this.target.getAttribute('style')
       if (!this.styleOriginals.has(property))
         this.styleOriginals.set(property, [style.getPropertyValue(property), style.getPropertyPriority(property)])
       const text = String(value)
@@ -624,9 +673,9 @@ export class HostBinding {
 
   private restoreStyle(property: string, value: string, priority: string) {
     if (value)
-      this.el.style.setProperty(property, value, priority)
+      this.target.style.setProperty(property, value, priority)
     else
-      this.el.style.removeProperty(property)
+      this.target.style.removeProperty(property)
   }
 
   /** Sets (or, with `null`, gives back) an attribute the native element would have implied. */
@@ -746,7 +795,7 @@ export function getRenderer(): Renderer<Element> {
     },
     createElement(type, namespace, isCustomizedBuiltIn, vnodeProps) {
       if (type === HOST_TAG)
-        return (vnodeProps![HOST_PROP] as HostBinding).el
+        return (vnodeProps![HOST_PROP] as HostBinding).target
       return nodeOps.createElement(type, namespace, isCustomizedBuiltIn, vnodeProps)
     },
     insert(child, parent, anchor) {

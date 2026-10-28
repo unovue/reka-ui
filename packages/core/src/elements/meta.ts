@@ -1,5 +1,6 @@
 import type { Component } from 'vue'
 import type { HostSemantics } from './host'
+import { getTemporal } from '@/date/runtime'
 import { hyphenate, semanticsForTag } from './host'
 
 /**
@@ -14,11 +15,19 @@ import { hyphenate, semanticsForTag } from './host'
  *   `true`, `"false"` → `false`, any other string passes through
  *   (`model-value="indeterminate"` on a checkbox).
  * - `number`: `Number(value)`.
+ * - `numbers`: a list of numbers separated by spaces or commas (`"20 80"`), for
+ *   array props such as a slider's values.
  * - `string`: the attribute value.
+ * - `date`: an ISO 8601 string, parsed with the global `Temporal`: a date
+ *   (`2026-10-28`) is a `PlainDate`, a date and time (`2026-10-28T09:30`) a
+ *   `PlainDateTime`, and one with a time zone (`…[Europe/Paris]`) a `ZonedDateTime`.
+ * - `time`: like `date`, but a bare time (`09:30`) is a `PlainTime`.
+ * - `date-range` / `time-range`: an ISO 8601 interval, `start/end`
+ *   (`2026-10-01/2026-10-07`), parsed into `{ start, end }`.
  * - `property`: no attribute; the prop is only settable as a DOM property
  *   (objects, arrays, functions, elements).
  */
-export type AttributeKind = 'boolean' | 'booleanish' | 'number' | 'string' | 'property'
+export type AttributeKind = 'boolean' | 'booleanish' | 'number' | 'numbers' | 'string' | 'date' | 'time' | 'date-range' | 'time-range' | 'property'
 
 export interface RekaElementPartDefinition {
   component: Component
@@ -29,6 +38,30 @@ export interface RekaElementPartDefinition {
    * read from the component's `as` default (a part that delegates to another one).
    */
   semantics?: string | HostSemantics
+  /**
+   * Render the part onto the element's first `<input>` or `<svg>` descendant
+   * (appended when there is none) instead of onto the element itself: a custom
+   * element cannot take text input, and an SVG part needs an SVG element.
+   */
+  target?: 'input' | 'svg'
+  /**
+   * Put the nodes the part renders next to itself (a visually hidden heading,
+   * focusable range inputs) inside the element, after its children, instead of
+   * leaving them out of the document. For parts whose siblings have to be in the
+   * document; never for form-associated parts, whose hidden fields submit through
+   * `ElementInternals`.
+   */
+  siblingsInside?: boolean
+  /**
+   * Pass `asChild` to a part that declares no props of its own: it falls through
+   * to the component the part renders.
+   */
+  asChild?: boolean
+  /**
+   * Make the part form-associated although it has no `name` prop of its own: it
+   * renders the hidden form field of a `name` given to its root.
+   */
+  formAssociated?: boolean
 }
 
 export interface RekaElementFamily {
@@ -62,6 +95,8 @@ export interface PartMeta {
    * and `<label for>`, `<fieldset disabled>` and form reset reach them.
    */
   formAssociated: boolean
+  target?: 'input' | 'svg'
+  siblingsInside: boolean
 }
 
 /** Props the element API does not expose: the host is always the rendered element. */
@@ -153,9 +188,46 @@ export function getPartMeta(definition: RekaElementPartDefinition): PartMeta {
       .map(prop => prop.name)
       .filter(name => typeof HTMLElement === 'undefined' || !(name in HTMLElement.prototype)),
     emits,
-    hasAsChild: 'asChild' in propOptions,
+    hasAsChild: 'asChild' in propOptions || !!definition.asChild,
     semantics,
-    formAssociated: 'name' in propOptions,
+    formAssociated: 'name' in propOptions || !!definition.formAssociated,
+    target: definition.target,
+    siblingsInside: !!definition.siblingsInside,
+  }
+}
+
+const TIME_ZONE = /\[/
+const DATE_TIME = /\dT\d/i
+const HAS_DATE = /^[+-]?\d{4,6}-\d\d/
+const LIST_SEPARATOR = /[\s,]+/
+
+function parseTemporal(kind: 'date' | 'time', value: string): unknown {
+  const temporal = getTemporal()
+  if (TIME_ZONE.test(value))
+    return temporal.ZonedDateTime.from(value)
+  if (kind === 'time' && !HAS_DATE.test(value))
+    return temporal.PlainTime.from(value)
+  return DATE_TIME.test(value) ? temporal.PlainDateTime.from(value) : temporal.PlainDate.from(value)
+}
+
+function parseTemporalAttribute(prop: Pick<PropMeta, 'kind' | 'attribute'>, value: string): unknown {
+  const kind = prop.kind === 'date' || prop.kind === 'date-range' ? 'date' : 'time'
+  try {
+    if (prop.kind === 'date' || prop.kind === 'time')
+      return parseTemporal(kind, value)
+    const [start, end, ...rest] = value.split('/')
+    if (end === undefined || rest.length)
+      throw new RangeError('not a `start/end` interval')
+    return { start: parseTemporal(kind, start), end: parseTemporal(kind, end) }
+  }
+  catch (error) {
+    // A missing `Temporal` is the app's to fix: let its error through.
+    if (!(error instanceof RangeError || error instanceof TypeError))
+      throw error
+    // eslint-disable-next-line node/prefer-global/process
+    if (process.env.NODE_ENV !== 'production')
+      console.warn(`[reka-ui] ${prop.attribute}="${value}" is not a valid ISO 8601 ${prop.kind}: ignored.`)
+    return undefined
   }
 }
 
@@ -173,6 +245,15 @@ export function parseAttribute(prop: Pick<PropMeta, 'kind' | 'attribute' | 'defa
       const number = Number(value)
       return Number.isNaN(number) ? undefined : number
     }
+    case 'numbers': {
+      const numbers = value.split(LIST_SEPARATOR).filter(Boolean).map(Number)
+      return numbers.some(Number.isNaN) ? undefined : numbers
+    }
+    case 'date':
+    case 'time':
+    case 'date-range':
+    case 'time-range':
+      return value === '' ? undefined : parseTemporalAttribute(prop, value)
     default:
       return value
   }
