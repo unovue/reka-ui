@@ -149,9 +149,12 @@ export function getComboboxCancelSurface(context: ComboboxRootContext<any>): Par
 
 /** The content surface: the `id` the input and trigger point at, plus `data-state` and `data-empty`. */
 export function getComboboxContentSurface(context: ComboboxRootContext<any>): PartSurface<ComboboxContentState> {
+  // `filterState` is a new object on every keystroke: read it through a boolean
+  // so the state (and the content attrs built from it) only change with `empty`.
+  const empty = computed(() => context.filterState.value.count === 0)
   return createPartSurface<ComboboxContentState>(
     () => ({ id: context.contentId }),
-    () => ({ state: disclosureState(context.open.value), empty: context.filterState.value.count === 0 }),
+    () => ({ state: disclosureState(context.open.value), empty: empty.value }),
   )
 }
 
