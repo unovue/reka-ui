@@ -103,6 +103,17 @@ describe('given Toggle in a form', () => {
     expect([...new FormData(form)]).toEqual([])
   })
 
+  it('has the new state in the form data when its change event fires', async () => {
+    const form = wrapper.find('form').element as HTMLFormElement
+    const seen: [string, FormDataEntryValue][][] = []
+    const onChange = () => seen.push([...new FormData(form)])
+    form.addEventListener('change', onChange)
+    await wrapper.find('button').trigger('click')
+    await wrapper.find('button').trigger('click')
+    form.removeEventListener('change', onChange)
+    expect(seen).toEqual([[['test', 'true']], []])
+  })
+
   it('does not submit while disabled, even when pressed', () => {
     const disabled = mount({
       components: { Toggle },
