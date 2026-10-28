@@ -1,4 +1,4 @@
-// Playwright runner: serves dist/<label>/ and drives each family's page in Chromium.
+// Playwright runner: serves <root>/<label>/ and drives each family's page in Chromium.
 // Every sample is a fresh browser context (= a fresh renderer and heap). Labels are
 // interleaved within each family block, and the order alternates between runs, so slow
 // drift on the machine hits every label equally.
@@ -7,18 +7,17 @@ import { createServer } from 'node:http'
 import { cpus, loadavg } from 'node:os'
 import { extname, join, resolve } from 'node:path'
 import { chromium } from 'playwright'
-import { BENCH_ROOT } from './build.mjs'
 
-const DIST = resolve(BENCH_ROOT, 'dist')
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' }
 
-function serve() {
+function serve(root) {
+  const dir = resolve(root)
   const server = createServer((req, res) => {
     let p = decodeURIComponent(new URL(req.url, 'http://x').pathname)
     if (p.endsWith('/'))
       p += 'index.html'
-    const file = join(DIST, p)
-    if (!file.startsWith(DIST) || !existsSync(file)) {
+    const file = join(dir, p)
+    if (!file.startsWith(dir) || !existsSync(file)) {
       res.writeHead(404).end()
       return
     }
@@ -38,7 +37,8 @@ async function gate(log) {
 
 /**
  * @param {object} o
- * @param {string[]} o.labels    dist labels to compare (built with buildPage)
+ * @param {string} o.root         directory holding the page builds, one per label
+ * @param {string[]} o.labels    labels to compare (built with buildPage into root)
  * @param {string[]} o.families
  * @param {number} o.runs        measured samples per label and family
  * @param {number} o.warmup      discarded page-level samples per label and family
@@ -46,8 +46,8 @@ async function gate(log) {
  * @param {boolean} [o.gate]
  * @param {(msg: string) => void} o.log
  */
-export async function runBench({ labels, families, runs, warmup, concurrency = 1, gate: useGate = false, log }) {
-  const server = await serve()
+export async function runBench({ root, labels, families, runs, warmup, concurrency = 1, gate: useGate = false, log }) {
+  const server = await serve(root)
   const base = `http://127.0.0.1:${server.address().port}`
   const browser = await chromium.launch({
     headless: true,
