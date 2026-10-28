@@ -323,7 +323,7 @@ Form participation needs `ElementInternals` (Safari 16.4 and later). Without it,
 
 Child elements and text work like the default slot. Elements cannot render scoped slots for you, but they give you their slot props: `el.slotProps` is a read-only snapshot of what the part passes to its default slot (`undefined` until it renders), and a `slot-props-change` event is dispatched after the part renders with new ones (it never bubbles). Most parts are fully usable from `data-*` attributes and events. A few build their content from slot props, and you render it from them:
 
-**Calendars.** The root's `grid` holds the months on display (`{ value, rows }`, `rows` being weeks of Temporal dates), and `weekDays` their headings. Render grid elements from them, giving each cell its date as an ISO `value`:
+**Calendars.** The root's `grid` holds the months on display (`{ value, rows }`, `rows` being weeks of Temporal dates), and `weekDays` their headings. Render grid elements from them, giving each grid its month's `value` (it tells which days are outside that month) and each cell its date, as ISO strings:
 
 ```js
 const calendar = document.querySelector('reka-calendar-root')
@@ -337,7 +337,7 @@ function renderGrid() {
     return
   rendered = grid
   calendar.querySelector('.months').innerHTML = grid.map(month => `
-    <reka-calendar-grid>
+    <reka-calendar-grid value="${month.value}">
       <reka-calendar-grid-head>
         <reka-calendar-grid-row>${weekDays.map(day => `<reka-calendar-head-cell>${day}</reka-calendar-head-cell>`).join('')}</reka-calendar-grid-row>
       </reka-calendar-grid-head>
@@ -362,7 +362,8 @@ Keyboard navigation moves focus into the new page once you have rendered it. In 
 
 ```js
 const field = document.querySelector('reka-date-field-root')
-field.addEventListener('slot-props-change', () => {
+
+function renderSegments() {
   const { segments } = field.slotProps
   const inputs = field.querySelectorAll('reka-date-field-input')
   if (inputs.length === segments.length && segments.every((s, i) => inputs[i].getAttribute('part') === s.part)) {
@@ -376,7 +377,12 @@ field.addEventListener('slot-props-change', () => {
     input.textContent = s.value
     return input
   }))
-})
+}
+
+field.addEventListener('slot-props-change', renderSegments)
+// Already rendered (the elements were defined first): render it now too.
+if (field.slotProps)
+  renderSegments()
 ```
 
 Values in `slotProps` are the part's own (Temporal dates, colors): treat them as read-only.

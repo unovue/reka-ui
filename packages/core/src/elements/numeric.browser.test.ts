@@ -87,6 +87,25 @@ describe('number field elements', () => {
     await vi.waitFor(() => expect(input.hasAttribute('role')).toBe(false))
     expect(input.getAttribute('aria-label')).toBe('n')
     expect(input.className).toBe('mine')
+    // Its value too: the part set it as a property.
+    expect(input.value).toBe('')
+  })
+
+  it('gives back the input when the part is moved out of its root', async () => {
+    render(`
+      <reka-number-field-root default-value="5">
+        <reka-number-field-input><input aria-label="Quantity" value="initial"></reka-number-field-input>
+      </reka-number-field-root>
+      <div id="elsewhere"></div>
+    `)
+    const host = query('reka-number-field-input')
+    const input = query<HTMLInputElement>('reka-number-field-input input')
+    await vi.waitFor(() => expect(input.value).toBe('5'))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    query('#elsewhere').append(host)
+    await vi.waitFor(() => expect(input.hasAttribute('role')).toBe(false))
+    warn.mockRestore()
+    expect(input.value).toBe('initial')
   })
 })
 

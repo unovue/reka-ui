@@ -14,7 +14,7 @@ import {
 } from './context'
 import { dispatchElementEvent } from './events'
 import { getRenderer, HOST_PROP, HOST_TAG, HostBinding, hostsAwayFrom } from './host'
-import { parseAttribute } from './meta'
+import { parseAttribute, reviveFormState, serializeFormState } from './meta'
 import { ensureRootSetup, UNMOUNTED_ATTR } from './styles'
 
 export interface ResolvedElementOptions {
@@ -150,7 +150,7 @@ export class RekaElement extends BaseElement {
     this._binding = new HostBinding(this, part.meta.semantics, {
       onPartMounted: () => this._onPartMounted(),
       onPartUnmount: () => this._onPartUnmount(),
-      formState: () => 'modelValue' in this._carried ? JSON.stringify(this._carried.modelValue) : undefined,
+      formState: () => 'modelValue' in this._carried ? serializeFormState(this._modelProp, this._carried.modelValue) : undefined,
     }, internals)
     this._binding.siblingsInside = part.meta.siblingsInside
     for (const emit of part.meta.emits) {
@@ -180,12 +180,9 @@ export class RekaElement extends BaseElement {
       this._setUnmounted(false)
       this._upgradeProperties()
     }
-    // Moved by its own part (a `Teleport`, a wrapper): same parent, nothing to do.
-    // That includes being connected again while away from home, inside a wrapper
-    // the part inserts in turn (a teleported popper wrapper around the host, when
-    // one part is both the portal and the content): its parent is still the one
-    // above its home position.
-    if (this._binding.moving || this._binding.away)
+    // Moved by its own part (a `Teleport`, a wrapper around it): same parent,
+    // nothing to do.
+    if (this._binding.moving)
       return
     // Moved by the consumer: portals (here, or moved away from here) follow to the
     // new document or shadow root.
@@ -245,6 +242,11 @@ export class RekaElement extends BaseElement {
       this._setProp(prop.name, parseAttribute(prop, value))
   }
 
+  /** The `modelValue` prop, whose kind tells how its form state is written. */
+  private get _modelProp() {
+    return this._part.meta.props.find(prop => prop.name === 'modelValue')
+  }
+
   formResetCallback() {
     this._carried = {}
     this._remount()
@@ -254,7 +256,7 @@ export class RekaElement extends BaseElement {
     if (mode !== 'restore' || typeof state !== 'string')
       return
     try {
-      this._carried.modelValue = JSON.parse(state)
+      this._carried.modelValue = reviveFormState(this._modelProp, state)
     }
     catch {
       return
@@ -270,8 +272,8 @@ export class RekaElement extends BaseElement {
   /**
    * The props the part passes to its default slot, like a Vue scoped slot's (a
    * calendar's `grid` and `weekDays`, a date field's `segments`), or `undefined`
-   * while the part is not rendered. A `slot-props-change` event follows every
-   * change. Read-only: render children from it.
+   * while the part is not rendered. A `slot-props-change` event follows each new
+   * set (none when the part stops rendering). Read-only: render children from it.
    */
   get slotProps(): Readonly<Record<string, unknown>> | undefined {
     return this._slotProps
@@ -624,6 +626,9 @@ export class RekaElement extends BaseElement {
 
   private _onPartUnmount() {
     this._setUnmounted(true)
+    // Not rendered (closed by its `Presence`): no slot props until it renders again,
+    // which dispatches `slot-props-change` with the new ones.
+    this._slotProps = undefined
     const children = [...this._rekaChildren].filter(child => child._state === 'mounted')
     if (!children.length)
       return

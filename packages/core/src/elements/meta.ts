@@ -196,8 +196,11 @@ export function getPartMeta(definition: RekaElementPartDefinition): PartMeta {
   }
 }
 
-const TIME_ZONE = /\[/
-const DATE_TIME = /\dT\d/i
+// A time zone annotation (`[Europe/Paris]`, `[!+02:00]`), not a key-value one
+// such as the calendar's `[u-ca=japanese]`, which plain dates carry too.
+const TIME_ZONE = /\[[^\]=]+\]/
+// `T`, `t` or a space between the date and the time, as `Temporal` accepts.
+const DATE_TIME = /\d[T\s]\d/i
 const HAS_DATE = /^[+-]?\d{4,6}-\d\d/
 const LIST_SEPARATOR = /[\s,]+/
 // A `/` inside `[Europe/Paris]` belongs to the time zone, not to the interval.
@@ -231,6 +234,32 @@ function parseTemporalAttribute(prop: Pick<PropMeta, 'kind' | 'attribute'>, valu
       console.warn(`[reka-ui] ${prop.attribute}="${value}" is not a valid ISO 8601 ${prop.kind}: ignored.`)
     return undefined
   }
+}
+
+const TEMPORAL_KINDS = new Set<AttributeKind>(['date', 'time', 'date-range', 'time-range'])
+
+/**
+ * The form state (`ElementInternals.setFormValue(value, state)`) of a model
+ * value: JSON, with Temporal values as their ISO strings (`start/end` for ranges).
+ */
+export function serializeFormState(prop: Pick<PropMeta, 'kind'> | undefined, value: unknown): string {
+  if (!prop || !TEMPORAL_KINDS.has(prop.kind))
+    return JSON.stringify(value)
+  if (prop.kind === 'date-range' || prop.kind === 'time-range') {
+    const range = value as { start?: unknown, end?: unknown } | null | undefined
+    return JSON.stringify(range?.start && range.end ? `${range.start}/${range.end}` : null)
+  }
+  return JSON.stringify(value ? String(value) : null)
+}
+
+/** Reads back a `serializeFormState()` state. Throws on a state that is not JSON. */
+export function reviveFormState(prop: Pick<PropMeta, 'kind' | 'attribute' | 'defaultTrue'> | undefined, state: string): unknown {
+  const value = JSON.parse(state)
+  if (!prop || !TEMPORAL_KINDS.has(prop.kind))
+    return value
+  if (typeof value === 'string')
+    return parseAttribute(prop, value)
+  return prop.kind === 'date-range' || prop.kind === 'time-range' ? { start: undefined, end: undefined } : null
 }
 
 export function parseAttribute(prop: Pick<PropMeta, 'kind' | 'attribute' | 'defaultTrue'>, value: string | null): unknown {

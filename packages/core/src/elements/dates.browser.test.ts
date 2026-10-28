@@ -13,7 +13,7 @@ import {
   timeFieldElements,
   timeRangeFieldElements,
 } from '.'
-import { cleanup, query, render } from './elements.test.helpers'
+import { cleanup, query, render, settle } from './elements.test.helpers'
 
 beforeAll(() => {
   defineRekaElements([
@@ -437,5 +437,132 @@ describe('date range picker elements', () => {
     await vi.waitFor(() => expect(values.length).toBeGreaterThan(0))
     const last = values.at(-1) as { start: DateValue, end: DateValue }
     expect([iso(last.start), iso(last.end)]).toEqual(['2026-10-20', '2026-10-22'])
+  })
+})
+
+describe('calendar elements: calendars and pages', () => {
+  it('renders cells of another calendar system from the values their dates print', async () => {
+    const warn = vi.spyOn(console, 'warn')
+    render(`<reka-calendar-root locale="ja-JP-u-ca-japanese"><div class="grids"></div></reka-calendar-root>`)
+    const root = query<HTMLElement & { modelValue?: DateValue, slotProps?: Record<string, unknown> }>('reka-calendar-root')
+    root.modelValue = Temporal.PlainDate.from('2026-10-14').withCalendar('japanese')
+    renderGrids(root)
+    const trigger = () => query('reka-calendar-cell-trigger[value="2026-10-14[u-ca=japanese]"]')
+    await vi.waitFor(() => expect(trigger().hasAttribute('data-selected')).toBe(true))
+    expect(warn.mock.calls.filter(call => String(call[0]).includes('not a valid ISO 8601'))).toEqual([])
+    warn.mockRestore()
+  })
+
+  it('marks the days outside each month of a two-month page, with one tab stop', async () => {
+    render(`<reka-calendar-root default-value="2026-10-31" number-of-months="2" locale="en-US"><div class="grids"></div></reka-calendar-root>`)
+    renderGrids(query('reka-calendar-root'))
+    await vi.waitFor(() => expect(document.querySelectorAll('reka-calendar-grid')).toHaveLength(2))
+    await vi.waitFor(() => expect(cell('2026-09-27').hasAttribute('data-outside-view')).toBe(true))
+    // Oct 31 is in both pages (October's last week, November's first).
+    expect(document.querySelectorAll('reka-calendar-cell-trigger[tabindex="0"]')).toHaveLength(1)
+  })
+})
+
+describe('date field elements: state', () => {
+  it('restores its form state as a Temporal value', async () => {
+    const errors: unknown[] = []
+    const error = vi.spyOn(console, 'error').mockImplementation((...args) => errors.push(args))
+    render(`<form><reka-date-field-root name="d" default-value="2026-10-14" locale="en-US" aria-label="Date"></reka-date-field-root></form>`)
+    type Field = HTMLElement & { slotProps?: Record<string, any>, formStateRestoreCallback: (state: unknown, mode: string) => void }
+    const root = query<Field>('reka-date-field-root')
+    renderSegments(root)
+    const month = () => query('[data-reka-date-field-segment="month"]')
+    await vi.waitFor(() => expect(month().getAttribute('aria-valuenow')).toBe('10'))
+    await userEvent.click(month())
+    await userEvent.keyboard('{ArrowUp}')
+    // The state the browser hands back on a restore (history navigation, autofill).
+    const state = (root as unknown as { _binding: { lifecycle: { formState: () => string } } })._binding.lifecycle.formState()
+    expect(state).toBe('"2026-11-14"')
+    root.formStateRestoreCallback(state, 'restore')
+    await settle()
+    expect(errors).toEqual([])
+    error.mockRestore()
+    expect(root.slotProps!.modelValue).toBeInstanceOf(Temporal.PlainDate)
+    expect(String(root.slotProps!.modelValue)).toBe('2026-11-14')
+  })
+
+  it('renders a field that already rendered, with the guide\'s snippet', async () => {
+    render(`<reka-date-field-root default-value="2026-10-14" locale="en-US" aria-label="Date"></reka-date-field-root>`)
+    // --- the guide's snippet ---
+    const field = document.querySelector('reka-date-field-root') as HTMLElement & { slotProps?: Record<string, any> }
+
+    function renderFieldSegments() {
+      const { segments } = field.slotProps!
+      const inputs = field.querySelectorAll('reka-date-field-input')
+      if (inputs.length === segments.length && segments.every((s: any, i: number) => inputs[i].getAttribute('part') === s.part)) {
+        segments.forEach((s: any, i: number) => (inputs[i].textContent = s.value))
+        return
+      }
+      field.replaceChildren(...segments.map((s: any) => {
+        const input = document.createElement('reka-date-field-input')
+        input.setAttribute('part', s.part)
+        input.textContent = s.value
+        return input
+      }))
+    }
+
+    field.addEventListener('slot-props-change', renderFieldSegments)
+    if (field.slotProps)
+      renderFieldSegments()
+    // --- end ---
+    await vi.waitFor(() => expect(query('[data-reka-date-field-segment="day"]').getAttribute('aria-valuenow')).toBe('14'))
+  })
+})
+
+describe('date picker elements: reset and reopen', () => {
+  const PICKER = `
+    <form onsubmit="return false">
+      <reka-date-picker-root name="due" default-value="2026-10-14" locale="en-US">
+        <reka-date-picker-field aria-label="Due date">
+          <span class="segments"></span>
+          <reka-date-picker-trigger aria-label="Open calendar">T</reka-date-picker-trigger>
+        </reka-date-picker-field>
+        <reka-date-picker-content style="display: block; width: 300px">
+          <reka-date-picker-calendar><div class="grids"></div></reka-date-picker-calendar>
+        </reka-date-picker-content>
+      </reka-date-picker-root>
+    </form>`
+
+  it('resets with its form', async () => {
+    const container = render(PICKER)
+    const form = container.querySelector('form')!
+    const field = query<HTMLElement & { slotProps?: Record<string, any> }>('reka-date-picker-field')
+    const update = () => {
+      field.querySelector('.segments')!.innerHTML = field.slotProps!.segments
+        .map((s: any) => `<reka-date-picker-input part="${s.part}">${s.value}</reka-date-picker-input>`)
+        .join('')
+    }
+    field.addEventListener('slot-props-change', update)
+    if (field.slotProps)
+      update()
+    const day = () => query('[data-reka-date-field-segment="day"]')
+    await vi.waitFor(() => expect(day().getAttribute('aria-valuenow')).toBe('14'))
+    await userEvent.click(day())
+    await userEvent.keyboard('{ArrowUp}')
+    await vi.waitFor(() => expect(new FormData(form).get('due')).toBe('2026-10-15'))
+    form.reset()
+    await vi.waitFor(() => expect(day().getAttribute('aria-valuenow')).toBe('14'))
+    await vi.waitFor(() => expect(new FormData(form).get('due')).toBe('2026-10-14'))
+  })
+
+  it('has no slot props while closed, and renders its grid again when reopened', async () => {
+    render(PICKER)
+    const trigger = query('reka-date-picker-trigger')
+    const calendar = query<HTMLElement & { slotProps?: Record<string, unknown> }>('reka-date-picker-calendar')
+    renderGrids(calendar, 'date-picker')
+    const selected = () => document.querySelector('reka-date-picker-cell-trigger[value="2026-10-14"]')
+    await userEvent.click(trigger)
+    await vi.waitFor(() => expect(selected()?.getAttribute('data-selected')).toBe(''))
+    await userEvent.keyboard('{Escape}')
+    await vi.waitFor(() => expect(query('reka-date-picker-content').hasAttribute('data-reka-unmounted')).toBe(true))
+    expect(calendar.slotProps).toBeUndefined()
+    await userEvent.click(trigger)
+    await vi.waitFor(() => expect(selected()?.getAttribute('data-selected')).toBe(''))
+    expect(calendar.slotProps).toBeDefined()
   })
 })

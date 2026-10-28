@@ -15,7 +15,7 @@ import { SwitchRoot } from '@/Switch'
 import * as source from '.'
 import { defineRekaElements, rekaElementFamilies, toEventType } from '.'
 import { cleanup, query, render } from './elements.test.helpers'
-import { getPartMeta, parseAttribute } from './meta'
+import { getPartMeta, parseAttribute, reviveFormState, serializeFormState } from './meta'
 
 describe('attribute and event mapping', () => {
   it('derives attributes and properties from the runtime props', () => {
@@ -91,11 +91,37 @@ describe('attribute and event mapping', () => {
     expect(zonedRange.start.timeZoneId).toBe('Europe/Paris')
     expect(zonedRange.end.day).toBe(7)
 
+    // What `toString()` gives for other calendars: a calendar annotation is not a time zone.
+    const japanese = parseAttribute(date, '2026-10-14[u-ca=japanese]') as Temporal.PlainDate
+    expect(japanese).toBeInstanceOf(Temporal.PlainDate)
+    expect(japanese.calendarId).toBe('japanese')
+    expect(parseAttribute(date, String(Temporal.PlainDateTime.from('2026-10-14T09:30').withCalendar('hebrew')))).toBeInstanceOf(Temporal.PlainDateTime)
+    const persian = (day: string) => Temporal.PlainDate.from(day).withCalendar('persian')
+    const persianRange = parseAttribute({ kind: 'date-range', attribute: 'default-value' }, `${persian('2026-10-05')}/${persian('2026-10-07')}`) as Record<string, Temporal.PlainDate>
+    expect(persianRange.end.calendarId).toBe('persian')
+    // Temporal also takes a space between the date and the time.
+    expect(String(parseAttribute(date, '2026-10-14 09:30'))).toBe('2026-10-14T09:30:00')
+
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     expect(parseAttribute(date, '2026-13-45')).toBeUndefined()
     expect(parseAttribute({ kind: 'date-range', attribute: 'default-value' }, '2026-10-05')).toBeUndefined()
     expect(warn).toHaveBeenCalledTimes(2)
     warn.mockRestore()
+  })
+
+  it('writes Temporal model values to the form state as ISO strings, and reads them back', () => {
+    const date = { kind: 'date', attribute: 'model-value' } as const
+    const state = serializeFormState(date, Temporal.PlainDate.from('2026-11-14'))
+    expect(state).toBe('"2026-11-14"')
+    expect(reviveFormState(date, state)).toBeInstanceOf(Temporal.PlainDate)
+    expect(reviveFormState(date, serializeFormState(date, null))).toBeNull()
+    const range = { kind: 'date-range', attribute: 'model-value' } as const
+    const revived = reviveFormState(range, serializeFormState(range, { start: Temporal.PlainDate.from('2026-10-05'), end: Temporal.PlainDate.from('2026-10-07') })) as Record<string, unknown>
+    expect(String(revived.start)).toBe('2026-10-05')
+    expect(String(revived.end)).toBe('2026-10-07')
+    expect(reviveFormState(range, serializeFormState(range, { start: undefined, end: undefined }))).toEqual({ start: undefined, end: undefined })
+    // Other kinds: JSON as is.
+    expect(reviveFormState({ kind: 'numbers', attribute: 'model-value' }, serializeFormState({ kind: 'numbers' }, [20, 80]))).toEqual([20, 80])
   })
 
   it('reads the part hints: input and svg targets, content kept inside, `asChild` and forms', () => {

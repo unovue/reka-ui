@@ -239,6 +239,8 @@ export class HostBinding {
   private readonly styleOriginals = new Map<string, [string, string]>()
   /** The consumer's `style` attribute before the part first styled the host. */
   private styleAttribute: string | null | undefined
+  /** A native field's `value` / `checked` before the part first set it. */
+  private readonly fieldOriginals = new Map<'value' | 'checked', unknown>()
   private readonly events = new Map<string, unknown>()
   private spaceArmed = false
   private markerQueued = false
@@ -425,6 +427,8 @@ export class HostBinding {
       else if ((key === 'value' || key === 'checked') && FORM_FIELD.test(this.target.tagName)) {
         // A native field's live state is its DOM property, not its attribute (the
         // attribute is the default value, which stays the consumer's).
+        if (!this.fieldOriginals.has(key))
+          this.fieldOriginals.set(key, (this.target as HTMLInputElement)[key])
         patchProp(this.target, key, prev, next, namespace, parentComponent)
       }
       else if (!(key === 'type' && this.semantics?.button)) {
@@ -512,6 +516,9 @@ export class HostBinding {
       if (this.styleAttribute === null && !target.style.length)
         target.removeAttribute('style')
       this.styleAttribute = undefined
+      for (const [key, value] of this.fieldOriginals)
+        (target as unknown as Record<string, unknown>)[key] = value
+      this.fieldOriginals.clear()
       for (const name of [...this.owned.keys()])
         this.release(name)
       this.partDisabled = false
@@ -808,11 +815,23 @@ export function getRenderer(): Renderer<Element> {
           binding.moveTo(parent, anchor ?? null)
         return
       }
-      const owner = containers.get(parent)
-      if (owner)
-        owner.insertRootNode(child, anchor ?? null)
-      else
-        parent.insertBefore(child, anchor && anchor.parentNode === parent ? anchor : null)
+      // A wrapper the part rendered around a host that is away (a teleported popper
+      // wrapper, when one part is both the portal and the content): the host moves
+      // with it, by its own part, not by the consumer.
+      const carried = [...awayBindings].filter(away => child.contains(away.el))
+      for (const away of carried)
+        away.moving = true
+      try {
+        const owner = containers.get(parent)
+        if (owner)
+          owner.insertRootNode(child, anchor ?? null)
+        else
+          parent.insertBefore(child, anchor && anchor.parentNode === parent ? anchor : null)
+      }
+      finally {
+        for (const away of carried)
+          away.moving = false
+      }
     },
     remove(child) {
       const binding = bindings.get(child)
