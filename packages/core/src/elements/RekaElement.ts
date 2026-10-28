@@ -3,7 +3,7 @@ import type { ContextProviderEvent, ContextRequestEvent } from './context'
 import type { ElementEventOptions } from './events'
 import type { PartMeta } from './meta'
 import type { RootNode } from '@/shared/getRootNode'
-import { camelize, defineComponent, h, nextTick, queuePostFlushCb, shallowReactive, toHandlerKey } from 'vue'
+import { camelize, defineComponent, h, nextTick, queuePostFlushCb, shallowReactive, toDisplayString, toHandlerKey } from 'vue'
 import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
 import { containsComposed, getRootNode, resolveTeleportTarget } from '@/shared/getRootNode'
 import {
@@ -14,7 +14,7 @@ import {
   requestParent,
 } from './context'
 import { dispatchElementEvent, toEventType } from './events'
-import { getRenderer, HOST_PROP, HOST_TAG, HostBinding, hostsAwayFrom } from './host'
+import { CREATED_ATTR, getRenderer, HOST_PROP, HOST_TAG, HostBinding, hostsAwayFrom } from './host'
 import { parseAttribute } from './meta'
 import { ensureRootSetup, UNMOUNTED_ATTR } from './styles'
 
@@ -42,10 +42,29 @@ const REFLECTED_PROPS = new Set(['disabled'])
 /** Attributes an element adds while its part is not rendered. */
 const UNMOUNTED_STATE_ATTRS = ['inert', 'hidden']
 /**
- * Roots of parts that open over the page: an open overlay is not reopened by
- * moving it, like a remounted Vue component starts closed.
+ * Models of parts that open over the page, by part: an open overlay (a dialog, a
+ * menu, a navigation menu's item) is not reopened by moving it, like a remounted
+ * Vue component starts closed.
  */
-const OVERLAY_ROOTS = new Set(['AlertDialogRoot', 'DialogRoot', 'DrawerRoot', 'HoverCardRoot', 'PopoverRoot', 'TooltipRoot'])
+const OVERLAY_MODELS: Record<string, string> = {
+  AlertDialogRoot: 'open',
+  AutocompleteRoot: 'open',
+  ComboboxRoot: 'open',
+  ContextMenuRoot: 'open',
+  ContextMenuSub: 'open',
+  DialogRoot: 'open',
+  DrawerRoot: 'open',
+  DropdownMenuRoot: 'open',
+  DropdownMenuSub: 'open',
+  HoverCardRoot: 'open',
+  MenubarRoot: 'modelValue',
+  MenubarSub: 'open',
+  NavigationMenuRoot: 'modelValue',
+  NavigationMenuSub: 'modelValue',
+  PopoverRoot: 'open',
+  SelectRoot: 'open',
+  TooltipRoot: 'open',
+}
 const UPDATE_EMIT = /^update:(.+)$/
 
 const BaseElement = (typeof HTMLElement === 'undefined' ? class {} : HTMLElement) as typeof HTMLElement
@@ -61,6 +80,18 @@ function warn(message: string) {
 /** The uncontrolled-default prop of a model: `modelValue` → `defaultValue`, `open` → `defaultOpen`. */
 function defaultPropOf(model: string) {
   return model === 'modelValue' ? 'defaultValue' : `default${model[0].toUpperCase()}${model.slice(1)}`
+}
+
+/** Model values compared as data (a reset to an equal array is no change). */
+function sameValue(a: unknown, b: unknown) {
+  if (Object.is(a, b))
+    return true
+  try {
+    return JSON.stringify(a) === JSON.stringify(b)
+  }
+  catch {
+    return false
+  }
 }
 
 function isMissingInjection(error: unknown) {
@@ -125,8 +156,16 @@ export class RekaElement extends BaseElement {
 
   private readonly _part: ResolvedPart
   private readonly _props = shallowReactive<Record<string, unknown>>({})
-  /** State the element adds to the props: a disabled `<fieldset>` around it. */
-  private readonly _extra = shallowReactive<{ fieldsetDisabled: boolean, rootNode?: RootNode }>({ fieldsetDisabled: false })
+  /**
+   * State the element adds to the props: a disabled `<fieldset>` around it, its
+   * root node, and whether its fallback text has room (no children of the consumer's).
+   */
+  private readonly _extra = shallowReactive<{ fieldsetDisabled: boolean, rootNode?: RootNode, textFree: boolean }>({ fieldsetDisabled: false, textFree: true })
+  private readonly _internals: ElementInternals | undefined
+  /** Watches the element's children: see {@link _onChildrenChange}. */
+  private readonly _childObserver: MutationObserver | undefined
+  /** Whether the part was in a form when it mounted. */
+  private _mountedInForm = false
   private readonly _listeners: Record<string, (...args: unknown[]) => void> = {}
   /** Listener keys (`onFormSubmit`) of `listenedEmits`, by their event type. */
   private readonly _gatedListeners = new Map<string, string>()
@@ -157,11 +196,15 @@ export class RekaElement extends BaseElement {
       ? this.attachInternals()
       : undefined
     const internals = typeof attached?.setFormValue === 'function' ? attached : undefined
+    this._internals = internals
+    if ((part.meta.inputTarget || part.meta.text) && typeof MutationObserver !== 'undefined')
+      this._childObserver = new MutationObserver(this._onChildrenChange)
     this._binding = new HostBinding(this, part.meta.semantics, {
       onPartMounted: () => this._onPartMounted(),
       onPartUnmount: () => this._onPartUnmount(),
       formState: () => 'modelValue' in this._carried ? JSON.stringify(this._carried.modelValue) : undefined,
-    }, internals, part.meta.appendSiblings)
+    }, internals)
+    this._binding.siblings = part.meta.siblings
     for (const emit of part.meta.emits) {
       const key = toHandlerKey(camelize(emit))
       if (part.meta.listenedEvents.has(toEventType(emit)))
@@ -233,8 +276,10 @@ export class RekaElement extends BaseElement {
     for (const host of hostsAwayFrom(this))
       (host as RekaElement)._checkRootNode?.()
     if (this._state !== 'idle') {
-      // Moved by the consumer: remount if it now sits under another parent.
+      // Moved by the consumer: remount if it now sits under another parent, else
+      // bring along what the part renders next to the element.
       this._resolveParent()
+      this._binding.placeSiblings()
       return
     }
     if (!this._binding.active)
@@ -275,7 +320,8 @@ export class RekaElement extends BaseElement {
       return
     if (UNMOUNTED_STATE_ATTRS.includes(name))
       this._consumerStateWrite(name)
-    this._binding.consumerWrote(name, value)
+    if (this._binding.el === this)
+      this._binding.consumerWrote(name, value)
     if (this._reflecting)
       return
     const prop = this._part.meta.byAttribute.get(name)
@@ -284,20 +330,41 @@ export class RekaElement extends BaseElement {
   }
 
   formResetCallback() {
+    const before = this._carried
     this._carried = {}
     this._remount()
+    // A reset changes the value without the part emitting: tell the consumer, who
+    // may render from `update-model-value` (tags of a tags input).
+    for (const [model, value] of Object.entries(before))
+      this._emitModelChange(model, value, this._modelDefault(model))
   }
 
   formStateRestoreCallback(state: unknown, mode: 'restore' | 'autocomplete') {
     if (mode !== 'restore' || typeof state !== 'string')
       return
+    let value: unknown
     try {
-      this._carried.modelValue = JSON.parse(state)
+      value = JSON.parse(state)
     }
     catch {
       return
     }
+    const before = 'modelValue' in this._carried ? this._carried.modelValue : this._modelDefault('modelValue')
+    this._carried.modelValue = value
     this._remount()
+    this._emitModelChange('modelValue', before, value)
+  }
+
+  formAssociatedCallback() {
+    // The part checks whether it is in a form (to render its hidden fields) when it
+    // mounts: associated with one later (moved into it, `form="id"`), it remounts.
+    if (this._state === 'mounted' && this._inForm() !== this._mountedInForm)
+      this._remount()
+  }
+
+  /** The form the element is associated with, like a native control's `form`. */
+  get form(): HTMLFormElement | null {
+    return this._internals?.form ?? null
   }
 
   formDisabledCallback(disabled: boolean) {
@@ -331,6 +398,10 @@ export class RekaElement extends BaseElement {
     const model = modelOfDefault(name)
     if (model)
       delete this._carried[model]
+    // A part that could not set up without a context may now: a detached trigger
+    // given its `handle` after it was connected.
+    if (this._state === 'waiting' && this.isConnected && (!this._rekaParent || this._rekaParent._isReady()))
+      this._mount()
   }
 
   /**
@@ -388,6 +459,11 @@ export class RekaElement extends BaseElement {
   /** @internal */
   _mount() {
     this._checkRootNode()
+    if (this._part.meta.inputTarget)
+      this._binding.retarget(this._inputTarget())
+    this._extra.textFree = this._binding.canWriteText()
+    this._childObserver?.observe(this, { childList: true })
+    this._mountedInForm = this._inForm()
     const app = getRenderer().createApp(defineComponent({
       name: this._part.name,
       setup: () => () => this._render(),
@@ -405,7 +481,9 @@ export class RekaElement extends BaseElement {
     // Either way it warns once instead of throwing.
     let failed = false
     app.config.errorHandler = (error) => {
-      if (isMissingInjection(error)) {
+      // Once setup failed, the render that follows fails too (the context is
+      // undefined): one cause, reported once below.
+      if (failed || isMissingInjection(error)) {
         failed = true
         return
       }
@@ -420,8 +498,14 @@ export class RekaElement extends BaseElement {
     app.mount(this._binding.container)
     app.config.errorHandler = undefined
     app.config.warnHandler = undefined
-    if (!failed)
+    if (!failed) {
+      // The part rendered: shown now, not after its `mounted` hooks. Mounted inside
+      // its parent's flush, those run after the parent's own post-flush watchers,
+      // which may read this element (a toast reads its children's text).
+      if (this._binding.active)
+        this._setUnmounted(this._binding.offscreen)
       return
+    }
     this._unmountApp()
     this._state = 'waiting'
     if (this._warnedOrphan)
@@ -439,6 +523,7 @@ export class RekaElement extends BaseElement {
     if (!app)
       return
     this._app = null
+    this._childObserver?.disconnect()
     app.unmount()
     this._binding.dispose()
   }
@@ -481,16 +566,101 @@ export class RekaElement extends BaseElement {
     this._mount()
   }
 
+  private _inForm(): boolean {
+    return !!(this.form ?? this.closest('form'))
+  }
+
+  /** The value an uncontrolled model starts from: its default prop, as the component resolves it. */
+  private _modelDefault(model: string): unknown {
+    const name = defaultPropOf(model)
+    if (this._props[name] !== undefined)
+      return this._props[name]
+    const option = (this._part.component as { props?: Record<string, { type?: unknown, default?: unknown } | null> }).props?.[name]
+    const types = [option?.type].flat()
+    const value = typeof option?.default === 'function' && !types.includes(Function)
+      ? (option.default as (props: unknown) => unknown)({})
+      : option?.default
+    // A `multiple` collection without a default starts from an empty selection.
+    return value === undefined && model === 'modelValue' && this._props.multiple ? [] : value
+  }
+
+  /** Dispatches the model's update event for a change the part did not emit (a form reset). */
+  private _emitModelChange(model: string, previous: unknown, value: unknown) {
+    const emit = `update:${model}`
+    if (this._props[model] !== undefined || !this._part.meta.emits.includes(emit) || sameValue(previous, value))
+      return
+    dispatchElementEvent(this, emit, [value], this._part.options.events)
+  }
+
+  /**
+   * Children of a part rendered onto an `<input>` child, or with fallback text,
+   * changed: a replaced input gets the part (remount), and the fallback text
+   * follows whether the element has children of its own.
+   */
+  private _onChildrenChange = () => {
+    if (this._state !== 'mounted')
+      return
+    const { inputTarget, text } = this._part.meta
+    if (inputTarget && this.querySelector(':scope > input, :scope > textarea') !== this._binding.el) {
+      this._remount()
+      return
+    }
+    if (text) {
+      const free = this._binding.canWriteText()
+      if (!free)
+        this._binding.removeText()
+      if (free !== this._extra.textFree)
+        this._extra.textFree = free
+    }
+  }
+
   private _teardown() {
     const registry = getRegistry()
     this._unmountApp()
     this._binding.dispose()
+    this._removeCreatedInput()
     this._rekaParent?._rekaChildren.delete(this)
     this._rekaParent = null
     this._state = 'idle'
     registry.orphans.delete(this)
     registry.live.delete(this)
     this._setUnmounted(false)
+  }
+
+  /** Remembers an uncontrolled model's value for the next mount. */
+  private _track(emit: string, value: unknown) {
+    const model = UPDATE_EMIT.exec(emit)?.[1]
+    if (model && OVERLAY_MODELS[this._part.name] === model)
+      return
+    if (model && this._props[model] === undefined)
+      this._carried[model] = value
+  }
+
+  /** The consumer wrote `hidden` / `inert`: it is theirs, not the unrendered state's. */
+  private _consumerStateWrite(name: string) {
+    const current = this.getAttribute(UNMOUNTED_ATTR)
+    if (current === null || !current.split(' ').includes(name))
+      return
+    this.setAttribute(UNMOUNTED_ATTR, current.split(' ').filter(added => added !== name).join(' '))
+  }
+
+  /** `data-reka-unmounted`, plus `inert` and `hidden` unless the consumer set them. */
+  private _setUnmounted(on: boolean) {
+    const current = this.getAttribute(UNMOUNTED_ATTR)
+    if (on) {
+      if (current !== null)
+        return
+      const added = UNMOUNTED_STATE_ATTRS.filter(name => this._binding.setStateAttribute(name, true))
+      this.setAttribute(UNMOUNTED_ATTR, added.join(' '))
+      return
+    }
+    if (current === null)
+      return
+    for (const name of current.split(' ')) {
+      if (UNMOUNTED_STATE_ATTRS.includes(name))
+        this._binding.setStateAttribute(name, false)
+    }
+    this.removeAttribute(UNMOUNTED_ATTR)
   }
 
   private _findListener(type: string, listener: unknown, capture: boolean) {
@@ -530,42 +700,6 @@ export class RekaElement extends BaseElement {
     return props
   }
 
-  /** Remembers an uncontrolled model's value for the next mount. */
-  private _track(emit: string, value: unknown) {
-    const model = UPDATE_EMIT.exec(emit)?.[1]
-    if (model === 'open' && OVERLAY_ROOTS.has(this._part.name))
-      return
-    if (model && this._props[model] === undefined)
-      this._carried[model] = value
-  }
-
-  /** The consumer wrote `hidden` / `inert`: it is theirs, not the unrendered state's. */
-  private _consumerStateWrite(name: string) {
-    const current = this.getAttribute(UNMOUNTED_ATTR)
-    if (current === null || !current.split(' ').includes(name))
-      return
-    this.setAttribute(UNMOUNTED_ATTR, current.split(' ').filter(added => added !== name).join(' '))
-  }
-
-  /** `data-reka-unmounted`, plus `inert` and `hidden` unless the consumer set them. */
-  private _setUnmounted(on: boolean) {
-    const current = this.getAttribute(UNMOUNTED_ATTR)
-    if (on) {
-      if (current !== null)
-        return
-      const added = UNMOUNTED_STATE_ATTRS.filter(name => this._binding.setStateAttribute(name, true))
-      this.setAttribute(UNMOUNTED_ATTR, added.join(' '))
-      return
-    }
-    if (current === null)
-      return
-    for (const name of current.split(' ')) {
-      if (UNMOUNTED_STATE_ATTRS.includes(name))
-        this._binding.setStateAttribute(name, false)
-    }
-    this.removeAttribute(UNMOUNTED_ATTR)
-  }
-
   private _render(): VNode {
     const { component, meta } = this._part
     const props: Record<string, unknown> = { ...this._props, ...meta.fixedProps }
@@ -580,20 +714,40 @@ export class RekaElement extends BaseElement {
       // A `ConfigProvider` (element) above sets the default target, as in Vue.
       props.to = this._portalTarget(props.to ?? injectConfigProviderContext({}).teleportTo?.value)
     }
+    const host = (children?: VNode[] | string) => h(HOST_TAG, {
+      [HOST_PROP]: this._binding,
+      onVnodeMounted: () => this._binding.partMounted(),
+      onVnodeBeforeUnmount: () => this._binding.partUnmount(),
+    }, children)
+    // An SVG part renders its own `<svg>` (and default shape) inside the host.
+    if (meta.semantics?.inside)
+      return host([h(component, this._withListeners({ ...props }))])
     return h(
       component,
       this._withListeners({
         ...props,
         ...(meta.hasAsChild ? { asChild: true } : undefined),
       }),
-      {
-        default: () => h(HOST_TAG, {
-          [HOST_PROP]: this._binding,
-          onVnodeMounted: () => this._binding.partMounted(),
-          onVnodeBeforeUnmount: () => this._binding.partUnmount(),
-        }),
-      },
+      { default: (slotProps?: Record<string, unknown>) => host(meta.text && this._extra.textFree ? toDisplayString(meta.text(slotProps ?? {}, props)) : undefined) },
     )
+  }
+
+  /** The `<input>` a part with `target: 'input'` renders onto: the element's own, or a new one. */
+  private _inputTarget(): HTMLElement {
+    let input = this.querySelector<HTMLElement>(':scope > input, :scope > textarea')
+    if (!input) {
+      input = this.ownerDocument.createElement('input')
+      input.setAttribute(CREATED_ATTR, '')
+      this.append(input)
+    }
+    return input
+  }
+
+  /** Removes the `<input>` the element created (see {@link _inputTarget}): it was not the consumer's. */
+  private _removeCreatedInput() {
+    const input = this._binding.el
+    if (input !== this && input.hasAttribute(CREATED_ATTR) && input.parentNode === this)
+      input.remove()
   }
 
   /**
@@ -630,7 +784,9 @@ export class RekaElement extends BaseElement {
   }
 
   private _onPartMounted() {
-    this._setUnmounted(false)
+    // Rendered into a detached fragment (closed `SelectContent`): the elements
+    // inside render, but the element stays hidden.
+    this._setUnmounted(this._binding.offscreen)
     let mounted = false
     for (const child of this._rekaChildren) {
       if (child._state === 'waiting' && child._rekaParent === this && child.isConnected) {

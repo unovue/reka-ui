@@ -56,19 +56,19 @@
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, switchElements }",
-    "limit": "12 KB",
+    "limit": "15 KB",
     "name": "Elements: runtime + Switch"
   },
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, dialogElements }",
-    "limit": "23 KB",
+    "limit": "25 KB",
     "name": "Elements: Dialog"
   },
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, rekaElementFamilies }",
-    "limit": "70 KB",
+    "limit": "140 KB",
     "name": "Elements: all supported families"
   },
   {

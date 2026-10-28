@@ -178,6 +178,33 @@ describe('moves and reconnects', () => {
     await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
   })
 
+  it('does not reopen a menu, or a navigation menu\'s open item, that was open when moved', async () => {
+    render(`<div id="dest"></div>
+      <reka-dropdown-menu-root>
+        <reka-dropdown-menu-trigger>M</reka-dropdown-menu-trigger>
+        <reka-dropdown-menu-portal><reka-dropdown-menu-content><reka-dropdown-menu-item>A</reka-dropdown-menu-item></reka-dropdown-menu-content></reka-dropdown-menu-portal>
+      </reka-dropdown-menu-root>
+      <reka-navigation-menu-root delay-duration="0">
+        <reka-navigation-menu-list>
+          <reka-navigation-menu-item value="a">
+            <reka-navigation-menu-trigger>N</reka-navigation-menu-trigger>
+            <reka-navigation-menu-content>nav</reka-navigation-menu-content>
+          </reka-navigation-menu-item>
+        </reka-navigation-menu-list>
+      </reka-navigation-menu-root>`)
+    for (const [rootTag, triggerTag] of [['reka-dropdown-menu-root', 'reka-dropdown-menu-trigger'], ['reka-navigation-menu-root', 'reka-navigation-menu-trigger']]) {
+      const trigger = query(triggerTag)
+      await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
+      await userEvent.click(trigger)
+      await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('true'))
+      const root = query(rootTag)
+      root.remove()
+      await settle()
+      query('#dest').append(root)
+      await vi.waitFor(() => expect(trigger.getAttribute('aria-expanded')).toBe('false'))
+    }
+  })
+
   it('a popover open in a tab that is switched away is closed when the tab comes back', async () => {
     render(`
       <reka-tabs-root default-value="a">
@@ -414,6 +441,27 @@ describe('cloneNode', () => {
     // What the copy gives back is the consumer's, not the original's rendered state.
     expect(cc.hasAttribute('id')).toBe(false)
     expect(cc.getAttribute('data-state')).toBe('mine')
+  })
+})
+
+describe('an arrow (SVG rendered inside the element)', () => {
+  it('a copy of a rendered arrow keeps the consumer\'s children, not the rendered SVG', async () => {
+    render(`
+      <reka-popover-root default-open>
+        <reka-popover-trigger>P</reka-popover-trigger>
+        <reka-popover-portal>
+          <reka-popover-content>pop<reka-popover-arrow><span class="mine"></span></reka-popover-arrow></reka-popover-content>
+        </reka-popover-portal>
+      </reka-popover-root>`)
+    const arrow = query('reka-popover-arrow')
+    await vi.waitFor(() => expect(arrow.querySelector('svg')).not.toBeNull())
+    const copy = arrow.cloneNode(true) as HTMLElement
+    // Outside a popover: never rendered, so only what a fresh copy should hold.
+    document.body.append(copy)
+    await settle()
+    expect(copy.querySelector('svg')).toBeNull()
+    expect(copy.querySelector('.mine')).not.toBeNull()
+    copy.remove()
   })
 })
 

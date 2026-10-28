@@ -31,6 +31,13 @@ export interface RekaElementPartDefinition {
    */
   semantics?: string | HostSemantics
   /**
+   * The part renders elements next to itself that must be in the document, instead
+   * of staying detached (hidden form fields excepted):
+   * - `'after'` (or `true`): right after the element while rendered (a focus proxy);
+   * - `'inside'`: appended inside the element (`StepperRoot`'s live region).
+   */
+  siblings?: boolean | 'after' | 'inside'
+  /**
    * Props the element always passes, and does not expose as attributes or
    * properties: settings that only make sense for a native element the host can
    * never be (`FieldLabel`'s `nativeLabel`).
@@ -43,12 +50,19 @@ export interface RekaElementPartDefinition {
    */
   listenedEmits?: string[]
   /**
-   * `'append'`: root-level elements the part renders next to itself (other than
-   * hidden form fields) are appended inside the host instead of being left out of
-   * the document. For parts whose sibling matters, like `StepperRoot`'s live
-   * region.
+   * `'input'`: the part renders onto the element's `<input>` (or `<textarea>`)
+   * child instead of onto the element, which is created when there is none. A
+   * custom element cannot be a text field, so a part that renders an `<input>` in
+   * Vue (`ComboboxInput`, `TagsInputInput`, …) works like `asChild` over one.
    */
-  siblings?: 'append'
+  target?: 'input'
+  /**
+   * The part's fallback slot content (`SelectValue`'s selected label), shown as the
+   * element's text while it has no children of its own. Called during the part's
+   * render with the slot props and the element's props, so it can `inject()` the
+   * part's context.
+   */
+  text?: (slotProps: Record<string, any>, props: Record<string, any>) => unknown
 }
 
 export interface RekaElementFamily {
@@ -77,15 +91,19 @@ export interface PartMeta {
   emits: string[]
   hasAsChild: boolean
   semantics: HostSemantics | undefined
+  /** See {@link RekaElementPartDefinition.siblings}: `true` is `'after'`. */
+  siblings: false | 'after' | 'inside'
   /**
    * Parts with a `name` are form-associated: they submit through `ElementInternals`,
    * and `<label for>`, `<fieldset disabled>` and form reset reach them.
    */
   formAssociated: boolean
+  /** The part renders onto an `<input>` child: see {@link RekaElementPartDefinition.target}. */
+  inputTarget: boolean
+  text: RekaElementPartDefinition['text']
   fixedProps: Record<string, unknown>
   /** Event types (`form-submit`) of the emits only listened to while the element has a listener. */
   listenedEvents: Set<string>
-  appendSiblings: boolean
 }
 
 /** Props the element API does not expose: the host is always the rendered element. */
@@ -181,9 +199,11 @@ export function getPartMeta(definition: RekaElementPartDefinition): PartMeta {
     hasAsChild: 'asChild' in propOptions,
     semantics,
     formAssociated: 'name' in propOptions,
+    siblings: definition.siblings === true ? 'after' : definition.siblings || false,
     fixedProps,
     listenedEvents: new Set((definition.listenedEmits ?? []).map(toEventType)),
-    appendSiblings: definition.siblings === 'append',
+    inputTarget: definition.target === 'input',
+    text: definition.text,
   }
 }
 
