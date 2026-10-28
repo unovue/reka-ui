@@ -38,6 +38,22 @@ describe('parts rendered onto an `<input>` child', () => {
     expect(input.getAttribute('aria-label')).toBe('Search')
   })
 
+  it('give back the input\'s own DOM properties', async () => {
+    render(`
+      <reka-listbox-root>
+        <reka-listbox-filter><input id="search" aria-label="Search" disabled></reka-listbox-filter>
+        <reka-listbox-content aria-label="Items"><reka-listbox-item value="a">A</reka-listbox-item></reka-listbox-content>
+      </reka-listbox-root>
+    `)
+    const input = query<HTMLInputElement>('#search')
+    await vi.waitFor(() => expect(input.getAttribute('type')).toBe('text'))
+    expect(input.disabled).toBe(false)
+
+    query('reka-listbox-filter').remove()
+    await settle()
+    expect(input.disabled).toBe(true)
+  })
+
   it('create an input when they have none', async () => {
     render(`
       <reka-tags-input-root>

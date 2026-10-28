@@ -298,8 +298,8 @@ Parts with a `name` (Switch, Checkbox, Checkbox group, Toggle, and the roots of 
 - they submit their value with their form, wherever you move them;
 - `<label for>` labels them, `<fieldset disabled>` disables them, and resetting the form resets them;
 - they are validated with it: a `required` checkbox left unchecked makes the form invalid, and matches `:invalid`;
-- they submit the same names as the Vue components (a checkbox group named `toppings` submits `toppings[0]`, `toppings[1]`, …, and so does a `multiple` listbox, combobox or select, or a tags input; object values submit their fields, `fruit[0][id]`);
-- a select submits through the native `<select>` the Vue component renders, so `required` and `autocomplete` behave the same;
+- they submit the same names as the Vue components (a checkbox group named `toppings` submits `toppings[0]`, `toppings[1]`, …, and so does a `multiple` listbox or combobox, or a tags input; object values submit their fields, `fruit[0][id]`);
+- a select submits through the native `<select>` the Vue component renders, so `required` and `autocomplete` behave the same, and a `multiple` select named `fruit` submits one `fruit` entry per selected value, like `<select multiple>`;
 - nothing is added next to them: the hidden inputs the Vue components render are not in the document.
 
 Form participation needs `ElementInternals` (Safari 16.4 and later). Without it, the elements work but do not submit.

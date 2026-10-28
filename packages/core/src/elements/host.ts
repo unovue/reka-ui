@@ -245,7 +245,7 @@ export class HostBinding {
   offscreen = false
   /** The host's text is the part's fallback content, written by the binding. */
   private ownsText = false
-  /** DOM properties set on a native target (`value`, `disabled`), cleared when the part lets go. */
+  /** DOM properties set on a native target (`value`, `disabled`), with the values they had before: restored when the part lets go. */
   private readonly nativeProps = new Map<string, unknown>()
 
   constructor(
@@ -434,11 +434,10 @@ export class HostBinding {
     }
     if (this.el !== this.host && NATIVE_PROPS.has(key)) {
       // A native input's state is its DOM properties, set as Vue sets them.
+      // Keep the consumer's value from before the part's first write.
+      if (!this.nativeProps.has(key))
+        this.nativeProps.set(key, (this.el as unknown as Record<string, unknown>)[key])
       patchProp(this.el, key, prev, next, namespace, parentComponent)
-      if (next == null)
-        this.nativeProps.delete(key)
-      else
-        this.nativeProps.set(key, next)
       return
     }
     this.write(() => {
@@ -551,7 +550,7 @@ export class HostBinding {
       for (const name of [...this.owned.keys()])
         this.release(name)
       for (const [key, value] of this.nativeProps)
-        patchProp(this.el, key, value, null)
+        (this.el as unknown as Record<string, unknown>)[key] = value
       this.nativeProps.clear()
       if (this.ownsText) {
         this.ownsText = false

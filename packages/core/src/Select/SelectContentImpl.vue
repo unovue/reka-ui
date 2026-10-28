@@ -171,7 +171,7 @@ const pickedProps = computed(() => {
   return { as: props.as, asChild: props.asChild }
 })
 
-const forwardedProps = useForwardProps(pickedProps.value)
+const forwardedProps = useForwardProps(pickedProps)
 
 provideSelectContentContext(contentContext)
 
