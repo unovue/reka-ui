@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Color } from '@/shared/color'
+import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
 import { computed, ref } from 'vue'
 import { ColorSwatch } from '@/ColorSwatch'
 import { colorToString, normalizeColor } from '@/shared/color'
@@ -10,9 +10,9 @@ import {
 } from '../'
 
 const props = defineProps<{
-  defaultValue?: string
-  colorSpace?: 'rgb' | 'hsl' | 'hsb'
-  channels: Array<'hue' | 'saturation' | 'lightness' | 'brightness' | 'red' | 'green' | 'blue' | 'alpha'>
+  defaultValue?: string | Color
+  colorSpace?: ColorSpace
+  channels: ColorChannel[]
 }>()
 
 // Use a Color object as single source of truth to avoid hex round-trip drift.
@@ -28,6 +28,7 @@ const channelLabels: Record<string, string> = {
   saturation: 'S',
   lightness: 'L',
   brightness: 'B',
+  chroma: 'C',
   red: 'R',
   green: 'G',
   blue: 'B',

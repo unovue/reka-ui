@@ -58,6 +58,8 @@ import {
   colorToString,
   convertToHsb,
   convertToHsl,
+  convertToOklch,
+  convertToRgb,
   getAreaBackgroundStyle,
   getChannelRange,
   getChannelValue,
@@ -94,31 +96,76 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
 })
 
-// The actual color object for rendering
+/** Converts to the configured area space without a quantizing hex round-trip. */
+function toColorSpace(value: Color): Color {
+  switch (colorSpace.value) {
+    case 'rgb':
+      return convertToRgb(value)
+    case 'hsl':
+      return convertToHsl(value)
+    case 'hsb':
+      return convertToHsb(value)
+    case 'oklch':
+      return convertToOklch(value)
+  }
+}
+
+// Keep all axes precise internally while preserving the existing hex v-model API.
+const internalColor = ref(toColorSpace(normalizeColor(modelValue.value ?? '#000000')))
 const color = computed({
-  get: () => normalizeColor(modelValue.value ?? '#000000'),
+  get: () => internalColor.value,
   set: (newColor: Color) => {
-    const hexString = colorToString(newColor, 'hex')
-    modelValue.value = hexString
+    internalColor.value = newColor
+    modelValue.value = colorToString(newColor, 'hex')
     emits('update:color', newColor)
   },
+})
+
+watch(() => modelValue.value, (newValue) => {
+  if (newValue == null)
+    return
+  const parsed = normalizeColor(newValue)
+  if (typeof newValue !== 'string' || !newValue.startsWith('#') || colorToString(parsed, 'hex') !== colorToString(internalColor.value, 'hex'))
+    internalColor.value = toColorSpace(parsed)
+})
+watch(colorSpace, () => {
+  internalColor.value = toColorSpace(internalColor.value)
 })
 
 // Get channel ranges
 const xRange = computed(() => getChannelRange(xChannel.value))
 const yRange = computed(() => getChannelRange(yChannel.value))
 
-// Store exact channel values as refs to avoid floating-point drift
-// Initialize from the color value (rounded to nearest integer)
-const xValue = ref(Math.round(getChannelValue(color.value, xChannel.value)))
-const yValue = ref(Math.round(getChannelValue(color.value, yChannel.value)))
+/**
+ * Preserves native OKLCH coordinates so editing one axis cannot quantize the other.
+ * Other color spaces retain legacy rounding: three decimals for chroma, integers otherwise.
+ * @param value - The channel coordinate to store or compare during synchronization.
+ * @param channel - The channel whose legacy rounding precision applies.
+ * @returns The exact OKLCH coordinate or the rounded legacy-space coordinate.
+ */
+function normalizeChannelValue(value: number, channel: ColorChannel): number {
+  if (colorSpace.value === 'oklch')
+    return value
+  return channel === 'chroma' ? Number(value.toFixed(3)) : Math.round(value)
+}
+
+// Store exact channel values as refs to avoid floating-point drift.
+const xValue = ref(normalizeChannelValue(getChannelValue(color.value, xChannel.value), xChannel.value))
+const yValue = ref(normalizeChannelValue(getChannelValue(color.value, yChannel.value), yChannel.value))
+
+watch([xChannel, yChannel], () => {
+  xValue.value = normalizeChannelValue(getChannelValue(color.value, xChannel.value), xChannel.value)
+  yValue.value = normalizeChannelValue(getChannelValue(color.value, yChannel.value), yChannel.value)
+})
 
 // Store the hue separately to preserve it when saturation is 0 (grayscale)
 const hueValue = ref(colorSpace.value === 'hsl'
   ? convertToHsl(color.value).h
   : colorSpace.value === 'hsb'
     ? convertToHsb(color.value).h
-    : 0)
+    : colorSpace.value === 'oklch'
+      ? convertToOklch(color.value).h
+      : 0)
 
 // Track when we're in the middle of an update to prevent circular sync
 let isUpdating = false
@@ -129,15 +176,13 @@ watch(() => color.value, (newColor) => {
   if (isUpdating)
     return
 
-  const newX = Math.round(getChannelValue(newColor, xChannel.value))
-  const newY = Math.round(getChannelValue(newColor, yChannel.value))
+  const newX = normalizeChannelValue(getChannelValue(newColor, xChannel.value), xChannel.value)
+  const newY = normalizeChannelValue(getChannelValue(newColor, yChannel.value), yChannel.value)
 
-  // Only update if the rounded value meaningfully changed.
-  // During drag, xValue/yValue store exact floats (e.g. 80.45).
-  // External updates (e.g. hue slider) should not snap these to integers.
-  if (Math.round(xValue.value) !== newX)
+  // OKLCH state stays exact; legacy spaces retain their rounded external sync.
+  if (normalizeChannelValue(xValue.value, xChannel.value) !== newX)
     xValue.value = newX
-  if (Math.round(yValue.value) !== newY)
+  if (normalizeChannelValue(yValue.value, yChannel.value) !== newY)
     yValue.value = newY
 
   // Update hue if saturation is not 0 (to preserve hue for grayscale colors)
@@ -151,6 +196,11 @@ watch(() => color.value, (newColor) => {
     if (hsb.s > 0)
       hueValue.value = hsb.h
   }
+  else if (colorSpace.value === 'oklch') {
+    const oklch = convertToOklch(newColor)
+    if (oklch.c > 0.000004)
+      hueValue.value = oklch.h
+  }
 }, { immediate: true })
 
 // Background styles for the color area
@@ -158,17 +208,22 @@ watch(() => color.value, (newColor) => {
 const areaStyles = computed(() => {
   // Create a color with the preserved hue for background computation
   let bgColor = color.value
-  if (colorSpace.value === 'hsl' || colorSpace.value === 'hsb') {
-    if (colorSpace.value === 'hsl') {
-      bgColor = { space: 'hsl', h: hueValue.value, s: 100, l: 50, alpha: 1 }
-    }
-    else {
-      bgColor = { space: 'hsb', h: hueValue.value, s: 100, b: 100, alpha: 1 }
-    }
+  if (colorSpace.value === 'hsl') {
+    bgColor = { space: 'hsl', h: hueValue.value, s: 100, l: 50, alpha: 1 }
+  }
+  else if (colorSpace.value === 'hsb') {
+    bgColor = { space: 'hsb', h: hueValue.value, s: 100, b: 100, alpha: 1 }
+  }
+  else if (colorSpace.value === 'oklch') {
+    bgColor = convertToOklch(bgColor)
   }
   return getAreaBackgroundStyle(bgColor, xChannel.value, yChannel.value, colorSpace.value)
 })
 
+/**
+ * Applies both axes in channel units without rounding, preserving non-axis hue.
+ * Values are clamped to UI bounds; OKLCH uses its current native hue.
+ */
 function updateValues(x: number, y: number) {
   const clampedX = Math.max(xRange.value.min, Math.min(xRange.value.max, x))
   const clampedY = Math.max(yRange.value.min, Math.min(yRange.value.max, y))
@@ -188,8 +243,8 @@ function updateValues(x: number, y: number) {
 
   // Preserve hue only when it is NOT directly controlled by an axis
   const usesHueAxis = xChannel.value === 'hue' || yChannel.value === 'hue'
-  if (!usesHueAxis && (colorSpace.value === 'hsl' || colorSpace.value === 'hsb')) {
-    channels.push({ channel: 'hue', value: hueValue.value })
+  if (!usesHueAxis && (colorSpace.value === 'hsl' || colorSpace.value === 'hsb' || colorSpace.value === 'oklch')) {
+    channels.push({ channel: 'hue', value: color.value.space === 'oklch' ? color.value.h : hueValue.value })
   }
 
   color.value = setChannelValues(color.value, channels)

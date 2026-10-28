@@ -1,4 +1,4 @@
-import type { Color, HSBColor, HSLColor, RGBColor } from './types'
+import type { Color, HSBColor, HSLColor, OKLCHColor, RGBColor } from './types'
 
 const HEX3_RE = /^[0-9A-F]{3}$/i
 const HEX6_RE = /^[0-9A-F]{6}$/i
@@ -6,10 +6,16 @@ const HEX8_RE = /^[0-9A-F]{8}$/i
 const RGB_RE = /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)/
 const HSL_RE = /hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*(?:,\s*([\d.]+)\s*)?\)/
 const HSB_RE = /hsb[av]?\(\s*([\d.]+)\s*,\s*([\d.]+)%?\s*,\s*([\d.]+)%?\s*(?:,\s*([\d.]+)\s*)?\)/
+const NUMBER_PATTERN = '[+-]?(?:\\d*\\.\\d+|\\d+)(?:e[+-]?\\d+)?'
+const OKLCH_RE = new RegExp(
+  `^oklch\\(\\s*(${NUMBER_PATTERN}|none)(%)?\\s+(${NUMBER_PATTERN}|none)(%)?\\s+(${NUMBER_PATTERN}|none)(deg|grad|rad|turn)?\\s*(?:/\\s*(${NUMBER_PATTERN}|none)(%)?\\s*)?\\)$`,
+  'i',
+)
 
 /**
  * Parses a color string into a Color object.
- * Supports hex (#rrggbb, #rgb), rgb(), hsl(), and hsb()/hsv() formats.
+ * Supports hex (#rgb, #rrggbb, #rrggbbaa), rgb(), hsl(), hsb(), and oklch().
+ * Trims whitespace, ignores case and throws when the selected parser rejects the input.
  */
 export function parseColor(value: string): Color {
   const trimmed = value.trim().toLowerCase()
@@ -32,6 +38,11 @@ export function parseColor(value: string): Color {
   // hsb() or hsv() format
   if (trimmed.startsWith('hsb') || trimmed.startsWith('hsv')) {
     return parseHsb(trimmed)
+  }
+
+  // oklch() format
+  if (trimmed.startsWith('oklch')) {
+    return parseOklch(trimmed)
   }
 
   throw new Error(`Unable to parse color: ${value}`)
@@ -119,6 +130,57 @@ function parseHsb(hsb: string): HSBColor {
     s: parseFloat(match[2]),
     b: parseFloat(match[3]),
     alpha: match[4] ? parseFloat(match[4]) : 1,
+  }
+}
+
+/**
+ * Parses space-separated OKLCH coordinates and optional slash alpha; bare `none` means 0.
+ * Returns clamped 0–100 lightness and 0–1 alpha, nonnegative chroma and wrapped degree hue.
+ * Chroma percentages use 100% = 0.4; positive out-of-gamut chroma is retained.
+ * Throws for malformed syntax, units on `none`, or non-finite coordinates.
+ */
+function parseOklch(value: string): OKLCHColor {
+  const match = value.match(OKLCH_RE)
+  if (!match)
+    throw new Error(`Invalid OKLCH color: ${value}`)
+
+  /** Resolves a lowercase `none` coordinate to 0, otherwise parses its numeric value. */
+  const coordinate = (value: string) => value === 'none' ? 0 : Number(value)
+  if ((match[1] === 'none' && match[2]) || (match[3] === 'none' && match[4])
+    || (match[5] === 'none' && match[6]) || (match[7] === 'none' && match[8])) {
+    throw new Error(`Invalid OKLCH color: ${value}`)
+  }
+
+  const lightness = coordinate(match[1]) * (match[2] ? 1 : 100)
+  const chroma = coordinate(match[3]) * (match[4] ? 0.004 : 1)
+  const alpha = match[7] ? coordinate(match[7]) / (match[8] ? 100 : 1) : 1
+  const parsedHue = toDegrees(coordinate(match[5]), match[6])
+  if ([lightness, chroma, alpha, parsedHue].some(value => !Number.isFinite(value))) {
+    throw new Error(`Invalid OKLCH color: ${value}`)
+  }
+  const hue = parsedHue >= 0 && parsedHue < 360
+    ? parsedHue
+    : ((parsedHue % 360) + 360) % 360
+  return {
+    space: 'oklch',
+    l: Math.max(0, Math.min(100, lightness)),
+    c: Math.max(0, chroma),
+    h: hue,
+    alpha: Math.max(0, Math.min(1, alpha)),
+  }
+}
+
+/** Converts grad, rad or turn angles to degrees; absent or unrecognized units pass through. */
+function toDegrees(value: number, unit?: string): number {
+  switch (unit) {
+    case 'grad':
+      return value * 0.9
+    case 'rad':
+      return value * 180 / Math.PI
+    case 'turn':
+      return value * 360
+    default:
+      return value
   }
 }
 

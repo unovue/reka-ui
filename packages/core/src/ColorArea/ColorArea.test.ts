@@ -75,6 +75,28 @@ describe('colorArea accessibility', () => {
   })
 })
 
+describe('colorArea OKLCH channels', () => {
+  it('preserves and increments fractional chroma values', async () => {
+    const wrapper = mount(ColorArea, {
+      props: {
+        defaultValue: { space: 'oklch', l: 60, c: 0.2, h: 240, alpha: 1 },
+        colorSpace: 'oklch',
+        xChannel: 'chroma',
+        yChannel: 'lightness',
+      },
+    })
+    const thumb = wrapper.find('[role="slider"]')
+    expect(thumb.attributes('aria-label')).toBe('Chroma, Lightness')
+    expect(thumb.attributes('aria-valuenow')).toBe('0.2')
+    expect(thumb.attributes('aria-valuemax')).toBe('0.4')
+    expect(thumb.attributes('aria-valuetext')).toBe('Chroma 0.2, Lightness 60')
+
+    await keydown(wrapper, 'ArrowRight')
+    expect(thumb.attributes('aria-valuenow')).toBe('0.201')
+    expect(thumb.attributes('aria-valuetext')).toBe('Chroma 0.201, Lightness 60')
+  })
+})
+
 // ─── Pointer interaction ─────────────────────────────────────────────────────
 
 describe('colorArea pointer interaction', () => {

@@ -1,4 +1,4 @@
-export type ColorSpace = 'rgb' | 'hsl' | 'hsb'
+export type ColorSpace = 'rgb' | 'hsl' | 'hsb' | 'oklch'
 
 export interface RGBColor {
   space: 'rgb'
@@ -24,12 +24,25 @@ export interface HSBColor {
   alpha: number
 }
 
-export type Color = RGBColor | HSLColor | HSBColor
+/**
+ * OKLCH color. Lightness uses the same 0–100 presentation range as HSL,
+ * while chroma follows CSS Color 4's 0–0.4 reference range.
+ */
+export interface OKLCHColor {
+  space: 'oklch'
+  l: number
+  c: number
+  h: number
+  alpha: number
+}
+
+export type Color = RGBColor | HSLColor | HSBColor | OKLCHColor
 
 export type RGBChannel = 'red' | 'green' | 'blue' | 'alpha'
 export type HSLChannel = 'hue' | 'saturation' | 'lightness' | 'alpha'
 export type HSBChannel = 'hue' | 'saturation' | 'brightness' | 'alpha'
-export type ColorChannel = RGBChannel | HSLChannel | HSBChannel
+export type OKLCHChannel = 'lightness' | 'chroma' | 'hue' | 'alpha'
+export type ColorChannel = RGBChannel | HSLChannel | HSBChannel | OKLCHChannel
 
 export interface ChannelRange {
   min: number
@@ -37,4 +50,4 @@ export interface ChannelRange {
   step: number
 }
 
-export type ColorFormat = 'hex' | 'rgb' | 'hsl' | 'hsb'
+export type ColorFormat = 'hex' | 'rgb' | 'hsl' | 'hsb' | 'oklch'

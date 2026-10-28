@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
 import { ref } from 'vue'
 import {
   ColorSliderRoot,
@@ -7,9 +8,9 @@ import {
 } from '../'
 
 const props = defineProps<{
-  defaultValue?: string
-  channel?: 'hue' | 'saturation' | 'lightness' | 'brightness' | 'red' | 'green' | 'blue' | 'alpha'
-  colorSpace?: 'rgb' | 'hsl' | 'hsb'
+  defaultValue?: string | Color
+  channel?: ColorChannel
+  colorSpace?: ColorSpace
   orientation?: 'horizontal' | 'vertical'
   disabled?: boolean
   inverted?: boolean
