@@ -15,12 +15,13 @@ function median(a) {
 export function summarize(raw) {
   const out = {}
   for (const r of raw.runs) {
-    const o = ((out[r.family] ??= {})[r.label] ??= { ok: 0, errors: [], missing: null, v: Object.fromEntries(KEYS.map(k => [k, []])) })
+    const o = ((out[r.family] ??= {})[r.label] ??= { ok: 0, failed: 0, errors: [], missing: null, v: Object.fromEntries(KEYS.map(k => [k, []])) })
     if (r.missing) {
       o.missing = r.missing
       continue
     }
     if (r.error || !r.metrics) {
+      o.failed++
       o.errors.push(r.error ?? 'no metrics')
       continue
     }
@@ -68,7 +69,8 @@ export function compare(summary, { base = 'base', head = 'head', threshold, floo
     row.mountSyncRatio = ratio('mountSyncUs')
     row.mountRatio = ratio('mountUs')
     row.updRatio = ratio('updMs')
-    if (!h?.ok)
+    // Any failed head sample (a thrown error or a timed-out end state) makes the family an error.
+    if (!h?.ok || h.failed)
       row.verdict = h?.missing ? 'missing' : 'error'
     else if (!b?.ok)
       row.verdict = 'new'
@@ -78,7 +80,7 @@ export function compare(summary, { base = 'base', head = 'head', threshold, floo
       row.verdict = 'improved'
     else
       row.verdict = 'same'
-    row.fail = row.verdict === 'regressed' || (row.verdict === 'error' && !!b?.ok)
+    row.fail = row.verdict === 'regressed' || (row.verdict === 'error' && !!b?.ok && !b.failed)
     rows.push(row)
   }
   return rows

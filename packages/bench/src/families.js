@@ -114,13 +114,14 @@ export const FAMILIES = {
   Label: { n: 1000 },
   Listbox: { n: 300, act: i => press($$('[role="option"]', i)[2]) },
   Menubar: { n: 200, ...overlay(i => press($('.trg', i)), '[role="menu"]') },
+  // Scoped to this instance's trigger: content from a previous instance may still be closing.
   NavigationMenu: {
     n: 200,
     act: i => press($('.trg', i)),
-    done: i => !!$('.nm-content', i) || !!$('.nm-content'),
-    reset: async () => {
-      await escape()
-      await raf()
+    done: i => $('.trg', i).getAttribute('aria-expanded') === 'true',
+    reset: async (i) => {
+      press($('.trg', i))
+      await waitFor(() => $('.trg', i).getAttribute('aria-expanded') === 'false', 'NavigationMenu closed')
     },
   },
   NumberField: { n: 500, act: i => press($('.inc', i)) },

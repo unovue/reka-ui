@@ -125,6 +125,9 @@ let rows
 if (baseDir) {
   rows = compare(summary, { threshold, floor })
   failed = rows.filter(r => r.fail)
+  // A gate that compared nothing must not pass (e.g. every page failed on both builds).
+  if (!rows.some(r => r.base?.ok && r.head?.ok))
+    failed.push({ family: 'all families', verdict: 'nothing comparable' })
   const counts = Object.entries(Object.groupBy(rows, r => r.verdict)).map(([k, v]) => `${v.length} ${k}`).join(', ')
   md = [
     `## Bench: ${opts.compare} (${baseSha.slice(0, 7)}) → HEAD (${headSha.slice(0, 7)})`,
@@ -157,5 +160,5 @@ if (baseDir && !opts['keep-base']) {
   log('removed base worktree')
 }
 
-const headFailed = !baseDir && Object.values(summary).some(s => !s.head?.ok)
+const headFailed = !baseDir && Object.values(summary).some(s => !s.head?.ok || s.head.failed)
 process.exit(failed.length || headFailed ? 1 : 0)
