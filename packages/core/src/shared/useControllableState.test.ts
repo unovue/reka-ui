@@ -15,6 +15,24 @@ describe('createChangeEventDetails', () => {
     details.cancel()
     expect(details.isCanceled).toBe(true)
   })
+  it('keeps its shape, with `isCanceled` as a plain data property (no getter closure)', () => {
+    const event = new Event('click')
+    const trigger = document.createElement('button')
+    const details = createChangeEventDetails('trigger-press', event, trigger)
+    expect(Object.keys(details)).toEqual(['reason', 'event', 'trigger', 'cancel', 'isCanceled'])
+    expect({ ...details }).toEqual({ reason: 'trigger-press', event, trigger, cancel: expect.any(Function), isCanceled: false })
+    // An accessor on the literal would be kept in V8's shared map and retain one
+    // details object (and its event's detached DOM) for the page's lifetime.
+    const descriptor = Object.getOwnPropertyDescriptor(details, 'isCanceled')!
+    expect(descriptor.get).toBeUndefined()
+    expect(descriptor.enumerable).toBe(true)
+    // `cancel` works detached from the object, and only flips this details.
+    const other = createChangeEventDetails('none')
+    const { cancel } = details
+    cancel()
+    expect(details.isCanceled).toBe(true)
+    expect(other.isCanceled).toBe(false)
+  })
 })
 
 describe('useControllableState', () => {
