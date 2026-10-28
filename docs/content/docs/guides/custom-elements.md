@@ -109,13 +109,21 @@ The `reka-ui` package is published as ES modules that reference `process.env.NOD
 | Family | Register with | Tags |
 | --- | --- | --- |
 | Accordion | `accordionElements` | `reka-accordion-root`, `-item`, `-header`, `-trigger`, `-content` |
+| Autocomplete | `autocompleteElements` | `reka-autocomplete-root`, `-input`, `-anchor`, `-trigger`, `-cancel`, `-portal`, `-content`, `-viewport`, `-empty`, `-item`, `-item-indicator`, `-group`, `-label`, `-separator` |
 | Checkbox | `checkboxElements` | `reka-checkbox-root`, `-indicator`, `reka-checkbox-group-root` |
 | Collapsible | `collapsibleElements` | `reka-collapsible-root`, `-trigger`, `-content` |
+| Combobox | `comboboxElements` | `reka-combobox-root`, `-input`, `-anchor`, `-trigger`, `-cancel`, `-portal`, `-content`, `-viewport`, `-empty`, `-item`, `-item-indicator`, `-group`, `-label`, `-separator` |
 | Dialog | `dialogElements` | `reka-dialog-root`, `-trigger`, `-portal`, `-overlay`, `-content`, `-title`, `-description`, `-close` |
+| Editable | `editableElements` | `reka-editable-root`, `-area`, `-input`, `-preview`, `-edit-trigger`, `-submit-trigger`, `-cancel-trigger` |
+| Listbox | `listboxElements` | `reka-listbox-root`, `-content`, `-filter`, `-item`, `-item-indicator`, `-group`, `-group-label` |
 | Popover | `popoverElements` | `reka-popover-root`, `-trigger`, `-anchor`, `-portal`, `-content`, `-close` |
+| Select | `selectElements` | `reka-select-root`, `-trigger`, `-value`, `-icon`, `-portal`, `-content`, `-viewport`, `-scroll-up-button`, `-scroll-down-button`, `-item`, `-item-text`, `-item-indicator`, `-group`, `-label`, `-separator` |
 | Switch | `switchElements` | `reka-switch-root`, `-thumb` |
 | Tabs | `tabsElements` | `reka-tabs-root`, `-list`, `-trigger`, `-content`, `-indicator` |
+| TagGroup | `tagGroupElements` | `reka-tag-group-root`, `-item`, `-item-text`, `-item-delete` |
+| TagsInput | `tagsInputElements` | `reka-tags-input-root`, `-input`, `-item`, `-item-text`, `-item-delete`, `-clear` |
 | Toggle | `toggleElements` | `reka-toggle` |
+| Tree | `treeElements` | `reka-tree-root`, `-item` |
 
 Props, events and data attributes are the ones documented on each component page, mapped as described below.
 
@@ -180,6 +188,32 @@ collapsible.open = false // controlled and closed
 Elements do not reflect props back to attributes, with one exception: `disabled` reflects both ways, like a native control's. `el.disabled = true` sets the attribute, and `el.disabled` is `true` whenever the attribute is present. It is your setting only. Whether the part is actually disabled (by its own prop, a disabled root, or a `<fieldset disabled>`) shows in `data-disabled` and `aria-disabled`. Read other state from the `data-*` and ARIA attributes the part renders, or from events.
 
 `id`, `dir` and `hidden` are native `HTMLElement` properties, so they stay attribute-driven.
+
+### Values of any type
+
+Collections (Listbox, Combobox, Select, Tree, TagGroup, …) take values of any type, as in Vue. An attribute gives a string (`<reka-listbox-item value="apple">`). Set the property for anything else: an object, a number, an array of selected values with `multiple`.
+
+```js
+const root = document.querySelector('reka-listbox-root')
+const [ada, grace] = root.querySelectorAll('reka-listbox-item')
+ada.value = { id: 1, name: 'Ada' }
+grace.value = { id: 2, name: 'Grace' }
+
+// Compared with `by` (a field name, or a function set as a property).
+root.setAttribute('by', 'id')
+root.modelValue = { id: 2 } // Grace is selected
+```
+
+Functions are properties only: `filter`, `displayValue`, `getKey`, `convertValue`, `getNavigationIntent`, and the like.
+
+A few props are read once, when the part sets up: `by` (Listbox, Combobox, Select) and `displayValue` (Combobox). Required props (`getKey` on a tree root, `value` on items) are needed from the start too. Set them before the element is connected, as Vue passes props on creation: create the element, set its properties, then insert it. Properties set before the tags are defined are kept, so `defineRekaElements()` after setting them also works. An element connected without a required prop logs Vue's "Missing required prop" warning.
+
+```js
+const tree = document.createElement('reka-tree-root')
+tree.items = files
+tree.getKey = file => file.path
+document.querySelector('#files').append(tree)
+```
 
 ## Events
 
@@ -259,19 +293,87 @@ This is the one place elements differ from the Vue components. In Vue, closed co
 
 ## Forms
 
-Parts with a `name` (Switch, Checkbox, Checkbox group, Toggle) are [form-associated](https://html.spec.whatwg.org/multipage/custom-elements.html#form-associated-custom-elements):
+Parts with a `name` (Switch, Checkbox, Checkbox group, Toggle, and the roots of Listbox, Combobox, Autocomplete, Select, TagsInput and Editable) are [form-associated](https://html.spec.whatwg.org/multipage/custom-elements.html#form-associated-custom-elements):
 
 - they submit their value with their form, wherever you move them;
 - `<label for>` labels them, `<fieldset disabled>` disables them, and resetting the form resets them;
 - they are validated with it: a `required` checkbox left unchecked makes the form invalid, and matches `:invalid`;
-- they submit the same names as the Vue components (a checkbox group named `toppings` submits `toppings[0]`, `toppings[1]`, …);
+- they submit the same names as the Vue components (a checkbox group named `toppings` submits `toppings[0]`, `toppings[1]`, …, and so does a `multiple` listbox, combobox or select, or a tags input; object values submit their fields, `fruit[0][id]`);
+- a select submits through the native `<select>` the Vue component renders, so `required` and `autocomplete` behave the same;
 - nothing is added next to them: the hidden inputs the Vue components render are not in the document.
 
 Form participation needs `ElementInternals` (Safari 16.4 and later). Without it, the elements work but do not submit.
 
+## Text fields
+
+A custom element can't be a text field. Parts that render an `<input>` in Vue (`ComboboxInput`, `AutocompleteInput`, `ListboxFilter`, `TagsInputInput`, `EditableInput`) render onto the `<input>` (or `<textarea>`) you put inside them, like `asChild` over it. Without one, the element creates an `<input>`.
+
+```html
+<reka-combobox-input>
+  <input id="fruit" placeholder="Pick a fruit" autocomplete="off">
+</reka-combobox-input>
+```
+
+- The `<input>` gets the role, ARIA, value and listeners. Put your own attributes on it (`id` for `<label for>`, `placeholder`, `class`), and style it rather than the element.
+- The element keeps the part's props (`disabled`, `model-value`, `auto-focus`) and fires its events (`update-model-value`).
+- Removed, the element gives the input back as it was.
+
 ## Children instead of slots
 
 Child elements and text work like the default slot. Scoped slots (slot props) are not available. Read state from `data-*` attributes and events instead.
+
+Some parts show text of their own when you give them no children, as the Vue components' slot fallbacks do: `<reka-select-value>` shows the selected labels or its `placeholder`, `<reka-editable-preview>` the value or its placeholder, `<reka-tags-input-item-text>` the tag's `displayValue`, and an empty `<reka-combobox-item>` its value. Give them children and yours are kept instead.
+
+Where a Vue template renders from slot props, render from events instead:
+
+| Vue slot prop | As elements |
+| --- | --- |
+| `TreeRoot`'s `flattenItems` | Render a `<reka-tree-item>` per visible item: set `value` (the item) and `level`, and render the children of the keys in `update-expanded`. See below. |
+| `TagsInputRoot`'s `modelValue` | Render a `<reka-tags-input-item value="…">` per tag from `update-model-value`. |
+| `ListboxItem` / `ComboboxItem`'s `selected`, `SelectItem`'s `selected` | `[data-state='checked']` / `aria-selected` on the item, or an `*-item-indicator`. |
+| `TreeItem`'s `isExpanded`, `isSelected` | `[data-expanded]`, `[data-selected]`, `aria-expanded`. |
+| `SelectValue`'s `selectedLabel` | The element's own text, or `update-model-value`. |
+| `EditableRoot`'s `isEditing`, `modelValue` | `update:state` → `update-state`, `update-model-value`, and `[data-placeholder-shown]` on the preview. |
+
+A tree renders its visible items from `items` and the expanded keys. Keep the existing elements where they are, so focus stays on them:
+
+```js
+const tree = document.createElement('reka-tree-root')
+tree.items = files
+tree.getKey = file => file.path
+document.querySelector('#files').append(tree)
+
+function render(expanded) {
+  const visible = (items, level) => items.flatMap(item => [
+    { item, level },
+    ...(item.children && expanded.includes(item.path) ? visible(item.children, level + 1) : []),
+  ])
+  const existing = new Map(Array.from(tree.children, el => [el.value.path, el]))
+  let previous = null
+  for (const { item, level } of visible(tree.items, 1)) {
+    let el = existing.get(item.path)
+    existing.delete(item.path)
+    if (!el) {
+      el = document.createElement('reka-tree-item')
+      el.value = item
+      el.setAttribute('level', level)
+      el.textContent = item.name
+      tree.insertBefore(el, previous ? previous.nextSibling : tree.firstChild)
+    }
+    previous = el
+  }
+  existing.forEach(el => el.remove())
+}
+
+tree.addEventListener('update-expanded', event => render(event.detail.value))
+render([])
+```
+
+In a framework, render the same list from its state (React's `useState`, Svelte's `$state`) instead.
+
+### Collections follow the DOM
+
+Items register with their collection in DOM order: insert, remove or reorder `<reka-listbox-item>`s (or any other items) and keyboard navigation, typeahead and Home/End follow the new order. A filtered-out item is unrendered like closed content (hidden, `data-reka-unmounted`), and its group hides when none of its items match.
 
 ## Context across elements
 
@@ -359,7 +461,7 @@ useEffect(() => {
 
 In React 18, `disabled={false}` becomes `disabled="false"`, which is disabled. Leave the prop out instead: `disabled={isDisabled || undefined}`.
 
-Server-rendered elements hydrate without mismatches: nothing is added next to them. Portals are the exception: a defined `<reka-dialog-portal>` or `<reka-popover-portal>` moves to `<body>` as soon as it connects, before React has hydrated the spot it was rendered in. When the server-rendered tree contains portals, define those families after hydration, for example in an effect:
+Server-rendered elements hydrate without mismatches: nothing is added next to them. Portals are the exception: a defined `<reka-dialog-portal>`, `<reka-popover-portal>`, `<reka-select-portal>` or `<reka-combobox-portal>` moves to `<body>` as soon as it connects, before React has hydrated the spot it was rendered in. When the server-rendered tree contains portals, define those families after hydration, for example in an effect:
 
 ```tsx
 useEffect(() => {
@@ -400,7 +502,10 @@ Bind props in camelCase (`:modelValue="checked"`, or `:modelValue.prop` to force
 
 ## Limitations
 
-- **Families.** Only the families listed above are available. The rest will follow, and `PopoverArrow` (which renders an SVG) is not included yet.
+- **Families.** Only the families listed above are available. The rest will follow. The arrows (`PopoverArrow`, `ComboboxArrow`, `SelectArrow`), which render an SVG, are not included yet.
+- **Virtualizers.** `ListboxVirtualizer`, `ComboboxVirtualizer`, `SelectVirtualizer` and `TreeVirtualizer` render each visible row from a scoped slot (`option`, `virtualItem`), which elements don't have, and they position the rows they create. Render the rows yourself, with your own virtualization, or use the Vue components.
+- **Tag groups.** Delete and Backspace on a tag, and its delete button, always dispatch `remove`: the element can't tell whether you listen to it, where the Vue component only makes tags removable with a `@remove` listener. Remove the tags from the DOM in your listener. Rows need a `gridcell` child for a valid grid, which the Vue component adds: wrap a tag's content in `<span role="gridcell">`.
+- **Props read once.** See [values of any type](#values-of-any-type): set `by`, `displayValue` and required props before the element is connected.
 - **SSR.** Server rendering and declarative shadow DOM are not supported. Elements render on the client after they are defined.
 - **Bundler required.** See the [quick start](#quick-start).
 - **Custom Elements Manifest.** Not generated yet.

@@ -3,7 +3,7 @@ import type { ContextProviderEvent, ContextRequestEvent } from './context'
 import type { ElementEventOptions } from './events'
 import type { PartMeta } from './meta'
 import type { RootNode } from '@/shared/getRootNode'
-import { camelize, defineComponent, h, nextTick, queuePostFlushCb, shallowReactive, toHandlerKey } from 'vue'
+import { camelize, defineComponent, h, nextTick, queuePostFlushCb, shallowReactive, toDisplayString, toHandlerKey } from 'vue'
 import { containsComposed, getRootNode, resolveTeleportTarget } from '@/shared/getRootNode'
 import {
   getRegistry,
@@ -224,7 +224,8 @@ export class RekaElement extends BaseElement {
       return
     if (UNMOUNTED_STATE_ATTRS.includes(name))
       this._consumerStateWrite(name)
-    this._binding.consumerWrote(name, value)
+    if (this._binding.el === this)
+      this._binding.consumerWrote(name, value)
     if (this._reflecting)
       return
     const prop = this._part.meta.byAttribute.get(name)
@@ -337,6 +338,8 @@ export class RekaElement extends BaseElement {
   /** @internal */
   _mount() {
     this._checkRootNode()
+    if (this._part.meta.inputTarget)
+      this._binding.retarget(this._inputTarget())
     const app = getRenderer().createApp(defineComponent({
       name: this._part.name,
       setup: () => () => this._render(),
@@ -498,13 +501,23 @@ export class RekaElement extends BaseElement {
         ...(meta.hasAsChild ? { asChild: true } : undefined),
       },
       {
-        default: () => h(HOST_TAG, {
+        default: (slotProps?: Record<string, unknown>) => h(HOST_TAG, {
           [HOST_PROP]: this._binding,
           onVnodeMounted: () => this._binding.partMounted(),
           onVnodeBeforeUnmount: () => this._binding.partUnmount(),
-        }),
+        }, meta.text && this._binding.canWriteText() ? toDisplayString(meta.text(slotProps ?? {}, props)) : undefined),
       },
     )
+  }
+
+  /** The `<input>` a part with `target: 'input'` renders onto: the element's own, or a new one. */
+  private _inputTarget(): HTMLElement {
+    let input = this.querySelector<HTMLElement>(':scope > input, :scope > textarea')
+    if (!input) {
+      input = this.ownerDocument.createElement('input')
+      this.append(input)
+    }
+    return input
   }
 
   /**
@@ -541,7 +554,9 @@ export class RekaElement extends BaseElement {
   }
 
   private _onPartMounted() {
-    this._setUnmounted(false)
+    // Rendered into a detached fragment (closed `SelectContent`): the elements
+    // inside render, but the element stays hidden.
+    this._setUnmounted(this._binding.offscreen)
     let mounted = false
     for (const child of this._rekaChildren) {
       if (child._state === 'waiting' && child._rekaParent === this && child.isConnected) {

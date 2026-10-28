@@ -26,6 +26,8 @@ const STYLE_PROPERTY = /:([\s\S]+)/
 const IMPORTANT = /\s*!important$/
 const EVENT_KEY = /^on[^a-z]/
 const FORM_FIELD = /^(?:INPUT|SELECT|TEXTAREA)$/
+/** Props of a native `<input>` target that are DOM state, not attributes. */
+const NATIVE_PROPS = new Set(['value', 'disabled', 'checked', 'indeterminate'])
 
 export function hyphenate(value: string): string {
   return value.replace(HYPHENATE, '-$1').toLowerCase()
@@ -96,8 +98,12 @@ let attributeObserver: MutationObserver | undefined
 /** Consumer writes to attributes the part owns but the element does not observe (`id`, `role`, …). */
 function observeAttributes(el: HTMLElement) {
   attributeObserver ??= new MutationObserver((records) => {
-    for (const record of records)
-      bindings.get(record.target)?.onAttributeMutation(record.attributeName!)
+    for (const record of records) {
+      const binding = bindings.get(record.target)
+      // (The host of a part rendered onto its `<input>` child owns nothing itself.)
+      if (binding?.el === record.target)
+        binding.onAttributeMutation(record.attributeName!)
+    }
   })
   attributeObserver.observe(el, { attributes: true })
 }
@@ -230,12 +236,27 @@ export class HostBinding {
   private formQueued = false
   private warned = false
 
+  /**
+   * The element the part renders onto: the host itself, or the native `<input>`
+   * child of a part that renders an input (see {@link retarget}).
+   */
+  el: HTMLElement
+  /** The host was teleported into a detached `DocumentFragment`: it stays home, unrendered. */
+  offscreen = false
+  /** The host's text is the part's fallback content, written by the binding. */
+  private ownsText = false
+  /** DOM properties set on a native target (`value`, `disabled`), cleared when the part lets go. */
+  private readonly nativeProps = new Map<string, unknown>()
+
   constructor(
-    readonly el: HTMLElement,
+    /** The custom element. */
+    readonly host: HTMLElement,
     private readonly semantics: HostSemantics | undefined,
     readonly lifecycle: HostLifecycle,
     private readonly internals?: ElementInternals,
   ) {
+    const el = host
+    this.el = el
     bindings.set(el, this)
     this.container = el.ownerDocument.createElement('div')
     containers.set(this.container, this)
@@ -290,6 +311,37 @@ export class HostBinding {
     return this.homeMarker !== null
   }
 
+  /**
+   * Renders the part onto `target`, a native `<input>` inside the host, instead of
+   * onto the host. Its DOM properties (`value`, `disabled`) are set as Vue sets
+   * them on an input; its attributes are owned like the host's.
+   */
+  retarget(target: HTMLElement) {
+    if (target === this.el)
+      return
+    if (this.el !== this.host)
+      bindings.delete(this.el)
+    HostBinding.cleanCopiedState(target)
+    this.el = target
+    bindings.set(target, this)
+    observeAttributes(target)
+  }
+
+  /** Whether the part's fallback text may go in the host: it has no children of the consumer's. */
+  canWriteText() {
+    return this.ownsText || !this.host.hasChildNodes()
+  }
+
+  /** The part's fallback text, written as the host's text while the host has none of its own. */
+  setText(text: string) {
+    if (!this.canWriteText())
+      return
+    this.ownsText = text !== ''
+    this.write(() => {
+      this.host.textContent = text
+    })
+  }
+
   /** Where the host sits in the consumer's tree: itself, or its marker while moved away. */
   get homeNode(): Node {
     return this.homeMarker ?? this.el
@@ -297,6 +349,7 @@ export class HostBinding {
 
   /** Puts the host back at its home position. */
   goHome() {
+    this.offscreen = false
     const marker = this.homeMarker
     if (!marker)
       return
@@ -315,6 +368,14 @@ export class HostBinding {
   }
 
   moveTo(parent: Node, anchor: Node | null) {
+    // A Teleport into a detached fragment (`SelectContent` renders its closed items
+    // there so they register their labels). Moved there, the host would disconnect
+    // and its elements could not render: it stays home, unrendered, and the
+    // elements inside render as they would in the fragment.
+    if (parent.nodeType === Node.DOCUMENT_FRAGMENT_NODE && !(parent as ShadowRoot).host && !parent.isConnected) {
+      this.offscreen = true
+      return
+    }
     this.moving = true
     try {
       if (!this.homeMarker) {
@@ -335,7 +396,18 @@ export class HostBinding {
       this.homeMarker.parentNode?.insertBefore(child, this.homeMarker)
       return
     }
-    if (child.nodeType === Node.ELEMENT_NODE && !FORM_FIELD.test((child as Element).tagName) && !this.warned) {
+    // A part's own `<style>` (a viewport's scrollbar rules) applies from the host's
+    // shadow root, or the document's head.
+    if ((child as Element).tagName === 'STYLE') {
+      const root = this.host.getRootNode() as Document | ShadowRoot
+      const parent = (root as ShadowRoot).host ? root : this.host.ownerDocument.head
+      parent.insertBefore(child, null)
+      return
+    }
+    // (An element with nothing in it, like the one holding a Teleport's anchors,
+    // loses nothing by staying detached.)
+    if (child.nodeType === Node.ELEMENT_NODE && !FORM_FIELD.test((child as Element).tagName) && !this.warned
+      && ((child as Element).childElementCount || child.textContent)) {
       this.warned = true
       warn(`<${this.el.localName}> renders a <${(child as Element).localName}> next to its part. A custom element has nowhere to put it, so it is not in the document.`)
     }
@@ -358,6 +430,15 @@ export class HostBinding {
         this.active = true
         this.provides = (parentComponent as (ComponentInternalInstance & { provides?: Record<string | symbol, unknown> }) | null | undefined)?.provides ?? null
       }
+      return
+    }
+    if (this.el !== this.host && NATIVE_PROPS.has(key)) {
+      // A native input's state is its DOM properties, set as Vue sets them.
+      patchProp(this.el, key, prev, next, namespace, parentComponent)
+      if (next == null)
+        this.nativeProps.delete(key)
+      else
+        this.nativeProps.set(key, next)
       return
     }
     this.write(() => {
@@ -401,6 +482,8 @@ export class HostBinding {
 
   partUnmount() {
     this.active = false
+    // (Never moved into the fragment, the host is not removed from it either.)
+    this.offscreen = false
     this.strip()
     this.lifecycle.onPartUnmount()
   }
@@ -411,12 +494,12 @@ export class HostBinding {
    */
   setStateAttribute(name: string, on: boolean): boolean {
     if (on) {
-      if (this.el.hasAttribute(name))
+      if (this.host.hasAttribute(name))
         return false
-      this.write(() => this.el.setAttribute(name, ''))
+      this.write(() => this.host.setAttribute(name, ''))
       return true
     }
-    this.write(() => this.el.removeAttribute(name))
+    this.write(() => this.host.removeAttribute(name))
     return false
   }
 
@@ -467,6 +550,13 @@ export class HostBinding {
       this.styleAttribute = undefined
       for (const name of [...this.owned.keys()])
         this.release(name)
+      for (const [key, value] of this.nativeProps)
+        patchProp(this.el, key, value, null)
+      this.nativeProps.clear()
+      if (this.ownsText) {
+        this.ownsText = false
+        this.host.textContent = ''
+      }
       this.partDisabled = false
       this.el.removeAttribute(OWNED_ATTR)
     })
@@ -743,6 +833,14 @@ export function getRenderer(): Renderer<Element> {
       // A hidden form field next to the part: its value is the element's form value.
       if (el.parentNode)
         containers.get(el.parentNode)?.scheduleFormSync()
+    },
+    setElementText(el, text) {
+      // The part's fallback text (`SelectValue`): see `RekaElementPartDefinition.text`.
+      const binding = bindings.get(el)
+      if (binding?.host === el)
+        binding.setText(text)
+      else
+        nodeOps.setElementText(el, text)
     },
     createElement(type, namespace, isCustomizedBuiltIn, vnodeProps) {
       if (type === HOST_TAG)
