@@ -1,4 +1,3 @@
-import type { DateValue } from '@/date'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
