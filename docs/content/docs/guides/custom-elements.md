@@ -359,7 +359,13 @@ useEffect(() => {
 
 In React 18, `disabled={false}` becomes `disabled="false"`, which is disabled. Leave the prop out instead: `disabled={isDisabled || undefined}`.
 
-Server-rendered elements hydrate without mismatches: nothing is added next to them.
+Server-rendered elements hydrate without mismatches: nothing is added next to them. Portals are the exception: a defined `<reka-dialog-portal>` or `<reka-popover-portal>` moves to `<body>` as soon as it connects, before React has hydrated the spot it was rendered in. When the server-rendered tree contains portals, define those families after hydration, for example in an effect:
+
+```tsx
+useEffect(() => {
+  defineDialogElements()
+}, [])
+```
 
 ## Svelte
 
@@ -390,7 +396,7 @@ vue({
 })
 ```
 
-Bind props in camelCase (`:modelValue="checked"`) or with `.prop` (`:model-value.prop="checked"`). Vue sets a camelCase binding as the element's property, but a kebab-case one as an attribute, which turns the value into a string.
+Bind props in camelCase (`:modelValue="checked"`, or `:modelValue.prop` to force a property). Vue sets a camelCase binding as the element's property, but a kebab-case one as an attribute, which turns the value into a string. `.prop` does not camelize: `:model-value.prop` sets a property named `model-value`, so add `.camel` (`:model-value.camel.prop`).
 
 ## Limitations
 

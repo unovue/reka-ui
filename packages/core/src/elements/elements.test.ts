@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { mount } from '@vue/test-utils'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { CheckboxGroupRoot } from '@/Checkbox'
@@ -68,6 +69,29 @@ describe('attribute and event mapping', () => {
     expect(toEventType('update:modelValue')).toBe('update-model-value')
     expect(toEventType('beforeUpdate:open')).toBe('before-update-open')
     expect(toEventType('escapeKeyDown')).toBe('escape-key-down')
+  })
+})
+
+// The bindings the guide documents for rendering the elements from Vue templates.
+describe('bound from a Vue template', () => {
+  beforeAll(() => {
+    defineRekaElements([source.switchElements], { prefix: 'vuet' })
+  })
+
+  it.each([
+    [':modelValue', true],
+    [':model-value.camel.prop', true],
+    [':modelValue.prop', true],
+    // Without `.camel`, `.prop` sets a `model-value` property, not `modelValue`.
+    [':model-value.prop', false],
+  ])('`%s` sets the `modelValue` property: %s', (binding, sets) => {
+    const wrapper = mount({ template: `<vuet-switch-root ${binding}="true" />` }, {
+      attachTo: document.body,
+      global: { config: { compilerOptions: { isCustomElement: (tag: string) => tag.startsWith('vuet-') } } },
+    })
+    const el = wrapper.element as HTMLElement & { modelValue?: unknown }
+    expect(el.modelValue === true).toBe(sets)
+    wrapper.unmount()
   })
 })
 

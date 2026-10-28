@@ -8,7 +8,7 @@ import { createRoot, hydrateRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server.browser'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
-import { defineRekaElements, rekaElementFamilies } from '.'
+import { defineRekaElements, dialogElements, rekaElementFamilies } from '.'
 import { cleanup, render, settle } from './elements.test.helpers'
 
 beforeAll(() => {
@@ -125,6 +125,35 @@ describe(`React ${version} hydration`, () => {
     await settle()
     expect(errors).toEqual([])
     expect(host.querySelector('reka-switch-root')).toBe(el)
+    root.unmount()
+  })
+
+  // A portal moves its element out of the server-rendered tree as soon as it is
+  // defined, so the guide says to define overlay families after hydration.
+  function DialogApp({ prefix }: { prefix: string }) {
+    return h('div', null, h(`${prefix}-dialog-root`, null, h(`${prefix}-dialog-portal`, null, h(`${prefix}-dialog-content`, { 'aria-describedby': '' }, h(`${prefix}-dialog-title`, null, 'Title')))), h('span', null, 'after'))
+  }
+
+  it('hydrates a dialog with a portal when its elements are defined after hydration', async () => {
+    const errors: unknown[] = []
+    const host = render(renderToString(h(DialogApp, { prefix: 'hyd' })))
+    const root = hydrateRoot(host, h(DialogApp, { prefix: 'hyd' }), { onRecoverableError: error => errors.push(String(error)) })
+    await settle()
+    await settle()
+    defineRekaElements([dialogElements], { prefix: 'hyd' })
+    await vi.waitFor(() => expect(document.querySelector('hyd-dialog-portal')!.parentElement).toBe(document.body))
+    expect(errors).toEqual([])
+    root.unmount()
+  })
+
+  it('reports a mismatch when the portal moved before hydration (what the guide warns about)', async () => {
+    const errors: unknown[] = []
+    const host = render(renderToString(h(DialogApp, { prefix: 'reka' })))
+    await vi.waitFor(() => expect(document.querySelector('reka-dialog-portal')!.parentElement).toBe(document.body))
+    const root = hydrateRoot(host, h(DialogApp, { prefix: 'reka' }), { onRecoverableError: error => errors.push(String(error)) })
+    await settle()
+    await settle()
+    expect(errors.length).toBeGreaterThan(0)
     root.unmount()
   })
 })

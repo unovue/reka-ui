@@ -1,6 +1,7 @@
 import type { RekaElementEvent } from '.'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
+import { defineComponent } from 'vue'
 import {
   collapsibleElements,
   defineRekaElements,
@@ -39,6 +40,27 @@ describe('registration', () => {
 
   it('rejects an invalid prefix', () => {
     expect(() => defineRekaElements([toggleElements], { prefix: 'Bad Prefix' })).toThrow(/invalid tag prefix/)
+    // Custom element names allow no uppercase letters: rejected up front, not by `customElements.define`.
+    expect(() => defineRekaElements([toggleElements], { prefix: 'acmeUI' })).toThrow(/invalid tag prefix/)
+    expect(() => defineRekaElements([toggleElements], { prefix: 'acme_ui' })).not.toThrow()
+  })
+
+  it('logs a part\'s own setup error instead of treating it as a missing parent', async () => {
+    const broken = defineComponent({
+      name: 'BrokenRoot',
+      setup() {
+        throw new Error('broken setup')
+      },
+    })
+    defineRekaElements([{ name: 'broken', parts: { BrokenRoot: broken } }], { prefix: 'err' })
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    render('<err-broken-root></err-broken-root>')
+    await settle()
+    expect(error).toHaveBeenCalledWith(expect.objectContaining({ message: 'broken setup' }))
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('cannot render outside'))
+    error.mockRestore()
+    warn.mockRestore()
   })
 
   it('rebinds to ancestors defined later, so registration order does not matter', async () => {
