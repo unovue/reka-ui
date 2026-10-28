@@ -1,10 +1,10 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { Ref, WritableComputedRef } from 'vue'
 import type { CollapsibleChangeReason } from './useCollapsible'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import { computed, toRefs } from 'vue'
-import { createContext, mergeExpose, useForwardElement } from '@/shared'
+import { createContext, mergeExpose, setGeneratedIds, useForwardElement, useId } from '@/shared'
 
 export interface CollapsibleRootProps extends PrimitiveProps {
   /** The open state of the collapsible when it is initially rendered. <br> Use when you do not need to control its open state. */
@@ -71,17 +71,24 @@ const { open, setOpen, root, context } = useCollapsible({
   baseId: '',
 })
 
-// Preserve the existing Content-shell id allocation order for SSR.
-context.contentId = ''
+// Allocated here rather than in CollapsibleContent: the trigger renders first and
+// reads it for `aria-controls`, so a content-allocated id re-rendered every
+// trigger right after mount (and SSR serialized it empty).
+context.contentId = useId(undefined, 'reka-collapsible-content')
+setGeneratedIds(context, { contentId: context.contentId })
 provideCollapsibleRootContext(context)
 
 // Writable like the previous `useVModel` ref: assigning requests a change through the model.
+// Created on first read: a ref that never reads `open` costs no computed.
+let exposedOpen: WritableComputedRef<boolean> | undefined
 const { forwardRef, expose } = useForwardElement()
 defineExpose(mergeExpose(expose, {
-  open: computed({
-    get: () => open.value,
-    set: value => setOpen(value, 'imperative-action'),
-  }),
+  get open() {
+    return exposedOpen ??= computed({
+      get: () => open.value,
+      set: value => setOpen(value, 'imperative-action'),
+    })
+  },
 }))
 </script>
 

@@ -69,15 +69,23 @@ const surface = getAccordionItemState(rootContext, () => props.value, {
 })
 const { open, disabled, unmountOnHide } = surface
 
-const dataDisabled = computed(() => (disabled.value ? '' : undefined))
-const dataState = computed<DisclosureState>(() => surface.state.value.state)
+// The derived context refs are created on first read (perf): the item's own
+// parts read none of them, so an item rendered with the default parts never
+// pays for them.
+let dataDisabled: ComputedRef<'' | undefined> | undefined
+let dataState: ComputedRef<DisclosureState> | undefined
+let currentElement: ComputedRef<HTMLElement | undefined> | undefined
+let value: ComputedRef<string> | undefined
+const getDataDisabled = () => (dataDisabled ??= computed(() => (disabled.value ? '' : undefined)))
 
 const { forwardRef, expose } = useForwardElement()
-defineExpose(mergeExpose(expose, { open, dataDisabled }))
+defineExpose(mergeExpose(expose, {
+  open,
+  get dataDisabled() { return getDataDisabled() },
+}))
 
 // `AccordionTrigger` feeds its element here; it drives keyboard navigation.
 const currentRef = shallowRef<HTMLElement | null>()
-const currentElement = computed(() => currentRef.value ?? undefined)
 
 // Allocated here rather than in AccordionTrigger: content may render before its
 // trigger, and SSR serializes `aria-labelledby` once, without a second pass.
@@ -85,14 +93,14 @@ const currentElement = computed(() => currentRef.value ?? undefined)
 const triggerId = ref(useId(undefined, 'reka-accordion-trigger'))
 const itemContext: AccordionItemContext = {
   open,
-  dataState,
+  get dataState() { return dataState ??= computed(() => surface.state.value.state) },
   disabled,
-  dataDisabled,
+  get dataDisabled() { return getDataDisabled() },
   get triggerId() { return triggerId.value },
   set triggerId(value) { triggerId.value = value },
   currentRef,
-  currentElement,
-  value: computed(() => props.value),
+  get currentElement() { return currentElement ??= computed(() => currentRef.value ?? undefined) },
+  get value() { return value ??= computed(() => props.value) },
 }
 setGeneratedIds(itemContext, { triggerId: triggerId.value })
 provideAccordionItemContext(itemContext)

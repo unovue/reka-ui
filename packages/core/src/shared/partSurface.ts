@@ -1,6 +1,6 @@
 import type { ComputedRef } from 'vue'
 import type { PartState, StateAttributesMapping } from './stateToDataAttrs'
-import { computed, mergeProps } from 'vue'
+import { mergeProps } from 'vue'
 import { stateToDataAttrs } from './stateToDataAttrs'
 
 /**
@@ -25,16 +25,51 @@ export interface PartSurface<S extends PartState = PartState> {
  * Builds a `PartSurface` from a `props` and a `state` source (computed or
  * getter), deriving `attrs` through the shared `stateToDataAttrs`.
  *
- * @internal — family composables call this; it is not part of the package root.
+ * Getter sources become readonly getter refs (`toRef(getter)`), not computeds:
+ * every rendered part binds its surface, so a computed here (an effect, a dep
+ * and a link per source, three per surface) was multiplied by every part on
+ * the page. A getter ref is one small object; its dependencies are tracked by
+ * whoever reads `.value` (the render), which re-runs on the same changes a
+ * computed would have. Each read evaluates the getter, as a computed returning
+ * a fresh object already did on every change.
+ *
+ * @internal
  */
 export function createPartSurface<S extends PartState>(
   props: ComputedRef<Record<string, any>> | (() => Record<string, any>),
   state: ComputedRef<S> | (() => S),
   mapping?: StateAttributesMapping<S>,
 ): PartSurface<S> {
-  const propsRef = typeof props === 'function' ? computed(props) : props
-  const stateRef = typeof state === 'function' ? computed(state) : state
-  // State attrs first, explicit props last — same precedence as `useRender`, so a mapping that emits `aria-*` never overrides a prop.
-  const attrs = computed(() => mergeProps(stateToDataAttrs(stateRef.value, mapping), propsRef.value))
-  return { props: propsRef, state: stateRef, attrs }
+  const readProps = typeof props === 'function' ? props : () => props.value
+  const readState = typeof state === 'function' ? state : () => state.value
+  return {
+    props: typeof props === 'function' ? getterRef(props) : props,
+    state: typeof state === 'function' ? getterRef(state) : state,
+    // State attrs first, explicit props last — same precedence as `useRender`, so a mapping that emits `aria-*` never overrides a prop.
+    attrs: getterRef(() => mergeProps(stateToDataAttrs(readState(), mapping), readProps())),
+  }
+}
+
+/**
+ * Vue's `toRef(getter)` without the `_value` slot: the last value is not kept
+ * alive between reads (a surface's `attrs` object would otherwise be retained
+ * twice, here and in the rendered vnode).
+ */
+class GetterRef<T> {
+  // Ref markers as prototype getters: no per-instance slots.
+  get __v_isRef(): true { return true }
+  get __v_isReadonly(): true { return true }
+  constructor(readonly getter: () => T) {}
+  get value(): T {
+    return this.getter()
+  }
+}
+
+/**
+ * A readonly ref over a getter, typed as the `ComputedRef` the surface contract names.
+ *
+ * @internal
+ */
+export function getterRef<T>(getter: () => T): ComputedRef<T> {
+  return new GetterRef(getter) as unknown as ComputedRef<T>
 }

@@ -92,15 +92,49 @@ function createDevExpose<T extends object>(exposed: T, instance: ComponentIntern
  * `setup` (it reads the current instance for the dev-only prop-read warning).
  */
 export function createElementExpose<E extends Element = HTMLElement>(
-  element: Readonly<Ref<E | null>>,
+  element: Readonly<Ref<E | null>> | (() => Readonly<Ref<E | null>>),
+): ElementExpose<E> {
+  if (typeof element === 'function')
+    return exposeElementSource<E>({ get element() { return element() } })
+  return exposeElementSource<E>({ element }, element)
+}
+
+/** Anything with an `element` ref; `ElementSource` creates its ref on first read. */
+interface ElementRefSource<E extends Element> {
+  readonly element: Readonly<Ref<E | null>>
+}
+
+/**
+ * Readonly ref views: `ElementSource` is the `element` ref itself, and
+ * `ElRefView` is `$el`, which falls back to the placeholder node Vue rendered.
+ * Reading `.value` reads the source's computed, so it is tracked like the
+ * computed itself; Vue's expose proxy unwraps them like any ref.
+ *
+ * They are small classes rather than accessors on the expose object: an object
+ * with own accessors is a dictionary-mode object in V8 (and each accessor a
+ * closure), and the expose object exists once per rendered part. They also let
+ * the source create its computed on first read.
+ */
+class ElRefView<E extends Element> {
+  // Ref markers as prototype getters: no per-instance slots.
+  get __v_isRef(): true { return true }
+  get __v_isReadonly(): true { return true }
+  constructor(readonly source: ElementRefSource<E>, readonly instance: ComponentInternalInstance | null) {}
+  get value(): E | Node | null {
+    return this.source.element.value ?? this.instance?.vnode.el as Node | null
+  }
+}
+
+function exposeElementSource<E extends Element>(
+  source: ElementRefSource<E>,
+  element: Readonly<Ref<E | null>> = source.element,
 ): ElementExpose<E> {
   const instance = getCurrentInstance()
-  const exposed: ElementExpose<E> = {
+  // Own data properties (the legacy `useForwardExpose` checks `Object.hasOwn(ref, '$el')`).
+  const exposed = {
     element,
-    get $el() {
-      return element.value ?? instance?.vnode.el as Node | null
-    },
-  }
+    $el: new ElRefView(source, instance),
+  } as unknown as ElementExpose<E>
   // Uses process.env.NODE_ENV (not import.meta.env.DEV, which is neutered in dist).
   // eslint-disable-next-line node/prefer-global/process
   if (process.env.NODE_ENV !== 'production' && instance)
@@ -109,14 +143,57 @@ export function createElementExpose<E extends Element = HTMLElement>(
 }
 
 /**
+ * Holds a part's raw template-ref value, and is itself the readonly `element`
+ * ref over it. The reactive cells are created on first read: most parts only
+ * bind `forwardRef` and expose `element`, which usually nothing reads, so they
+ * never allocate a ref + computed. The ref starts from the raw value when it is
+ * created.
+ */
+class ElementSource<E extends Element> implements ElementRefSource<E> {
+  // Ref markers as prototype getters: no per-instance slots.
+  get __v_isRef(): true { return true }
+  get __v_isReadonly(): true { return true }
+  raw: unknown = null
+  ref: ShallowRef<unknown> | undefined = undefined
+  resolved: ComputedRef<E | null> | undefined = undefined
+
+  get currentRef(): ShallowRef<unknown> {
+    return this.ref ??= shallowRef<unknown>(this.raw)
+  }
+
+  /** The resolved element: the value of the computed below. */
+  get value(): E | null {
+    return this.resolve().value
+  }
+
+  get element(): Readonly<Ref<E | null>> {
+    return this as unknown as Readonly<Ref<E | null>>
+  }
+
+  resolve(): ComputedRef<E | null> {
+    // Reading a conforming child's exposed `element` inside the computed is
+    // tracked, so a root swap inside the child re-resolves here even though Vue
+    // never re-invokes our ref callback.
+    return this.resolved ??= computed(() => resolveRefTarget<E>(this.currentRef.value))
+  }
+
+  set(el: unknown) {
+    this.raw = el
+    if (this.ref)
+      this.ref.value = el
+  }
+}
+
+/**
  * Adds a part's documented methods/state to its element expose object, keeping
  * the dev-only prop-read warning (a `{ ...expose }` spread would drop it).
+ * Accessors are copied as accessors, so `{ get x() { … } }` stays lazy.
  *
  * @example
  * defineExpose(mergeExpose(expose, { focus }))
  */
 export function mergeExpose<T extends ElementExpose<any>, X extends object>(expose: T, extra: X): T & X {
-  return Object.assign(expose, extra)
+  return Object.defineProperties(expose, Object.getOwnPropertyDescriptors(extra)) as T & X
 }
 
 /**
@@ -141,30 +218,27 @@ export function mergeExpose<T extends ElementExpose<any>, X extends object>(expo
 export function useForwardElement<E extends Element = HTMLElement>(
   ...refs: MergeableRef<E>[]
 ): UseForwardElementReturn<E> {
-  // Store the RAW ref value and resolve lazily: reading a conforming child's
-  // exposed `element` inside the computed is tracked, so a root swap inside the
-  // child re-resolves here even though Vue never re-invokes our ref callback.
-  const currentRef = shallowRef<unknown>(null)
-  const element = computed(() => resolveRefTarget<E>(currentRef.value))
+  // Store the RAW ref value and resolve lazily (see `ElementSource`).
+  const source = new ElementSource<E>()
 
   const merged = useMergedRefs<E>(...refs)
   if (merged) {
-    watch(element, merged, { flush: 'sync' })
+    watch(source.resolve(), merged, { flush: 'sync' })
     // On unmount the scope stops before the subtree's refs are nulled, so the
     // watcher never sees the detach: clear the extra refs (and run their
     // cleanups) here.
     onScopeDispose(() => merged(null))
   }
 
-  function forwardRef(el: Element | ComponentPublicInstance | null) {
-    currentRef.value = el
-  }
+  // The source is a readonly ref over its computed (created on its first `.value`),
+  // so a part that destructures `currentElement` but never reads it pays nothing.
+  const element = source as unknown as ComputedRef<E | null>
 
   return {
-    forwardRef,
-    currentRef,
+    forwardRef: (el: Element | ComponentPublicInstance | null) => source.set(el),
+    get currentRef() { return source.currentRef },
     element,
     currentElement: element as ComputedRef<E>,
-    expose: createElementExpose(element),
+    expose: exposeElementSource(source, element),
   }
 }

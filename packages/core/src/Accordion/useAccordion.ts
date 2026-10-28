@@ -3,8 +3,8 @@ import type { AccordionRootContext, AccordionRootProps } from './AccordionRoot.v
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import type { DataOrientation, Direction, SingleOrMultipleType } from '@/shared/types'
 import { computed, ref, toValue } from 'vue'
-import { getCollapsibleTriggerSurface } from '@/Collapsible/useCollapsible'
-import { createPartSurface, disclosureState, useArrowNavigation, useControllableState } from '@/shared'
+import { getCollapsibleTriggerProps } from '@/Collapsible/useCollapsible'
+import { createPartSurface, disclosureState, getterRef, useArrowNavigation, useControllableState } from '@/shared'
 
 /** Why the expanded value changed; carried as `details.reason` on every change. */
 export type AccordionChangeReason = 'trigger-press' | 'content-found'
@@ -159,11 +159,13 @@ function contentIdAttr(itemContext: AccordionItemSurfaceContext, key: 'id' | 'ar
   return contentId === undefined ? {} : { [key]: contentId }
 }
 
+// A getter, not a computed: `createPartSurface` only wraps it in a computed when
+// a consumer reads `surface.state` on its own.
 function getAccordionPartState(
   rootContext: AccordionRootContext<AccordionRootProps>,
-  itemContext: AccordionItemSurfaceContext,
-): ComputedRef<AccordionPartState> {
-  return itemContext.state ?? computed(() => ({
+  itemContext: Pick<AccordionItemSurfaceContext, 'open' | 'disabled' | 'state'>,
+): ComputedRef<AccordionPartState> | (() => AccordionPartState) {
+  return itemContext.state ?? (() => ({
     state: disclosureState(itemContext.open.value),
     disabled: itemContext.disabled.value,
     orientation: rootContext.orientation ?? 'vertical',
@@ -182,14 +184,14 @@ export function getAccordionTriggerSurface(
     rootContext.changeModelValue(itemContext.value.value, 'trigger-press', event)
   }
 
-  const disclosureTrigger = getCollapsibleTriggerSurface({
+  const disclosureTriggerProps = getCollapsibleTriggerProps({
     open: itemContext.open,
     disabled: itemContext.disabled,
     onOpenToggle: changeItem,
   })
   return createPartSurface(
     () => ({
-      ...disclosureTrigger.props.value,
+      ...disclosureTriggerProps(),
       'id': toValue(itemContext.triggerId),
       ...contentIdAttr(itemContext, 'aria-controls'),
       'aria-disabled': itemContext.disabled.value || undefined,
@@ -213,11 +215,8 @@ export function getAccordionItemState(
     ? toValue(value) === rootContext.modelValue.value
     : Array.isArray(rootContext.modelValue.value) && rootContext.modelValue.value.includes(toValue(value)))
   const disabled = computed(() => rootContext.disabled.value || (toValue(options.disabled) ?? false))
-  const state = computed<AccordionPartState>(() => ({
-    state: disclosureState(open.value),
-    disabled: disabled.value,
-    orientation: rootContext.orientation ?? 'vertical',
-  }))
+  // Shared by `item` and the descendant surfaces of a standalone item.
+  const state = getterRef(getAccordionPartState(rootContext, { open, disabled }) as () => AccordionPartState)
 
   function handleKeydown(event: KeyboardEvent) {
     const target = event.target as HTMLElement

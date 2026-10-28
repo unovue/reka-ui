@@ -44,22 +44,40 @@ export interface UseCollapsibleReturn {
   context: CollapsibleRootContext
 }
 
+// A getter, not a computed: `createPartSurface` only wraps it in a computed when
+// a consumer reads `surface.state` on its own.
 function getCollapsiblePartState(context: Pick<CollapsibleRootContext, 'open' | 'disabled'>) {
-  return computed<CollapsiblePartState>(() => ({
+  return (): CollapsiblePartState => ({
     state: disclosureState(context.open.value),
     disabled: context.disabled?.value ?? false,
-  }))
+  })
 }
 
-export function getCollapsibleTriggerSurface(
-  context: Pick<CollapsibleRootContext, 'open' | 'disabled' | 'onOpenToggle'> & { contentId?: string },
-): PartSurface<CollapsiblePartState> {
-  return createPartSurface(() => ({
+/** `hidden` of closed content: `''`, or `'until-found'` when it stays mounted. */
+export function getCollapsibleContentHidden(present: boolean, unmountOnHide: boolean): '' | 'until-found' | undefined {
+  return present ? undefined : unmountOnHide ? '' : 'until-found'
+}
+
+type CollapsibleTriggerContext = Pick<CollapsibleRootContext, 'open' | 'disabled' | 'onOpenToggle'> & { contentId?: string }
+
+/**
+ * The trigger's props as a plain getter, for surfaces that extend them (Accordion)
+ * without paying for a computed of their own.
+ *
+ * @internal
+ */
+export function getCollapsibleTriggerProps(context: CollapsibleTriggerContext): () => Record<string, any> {
+  const onClick = (event: MouseEvent) => context.onOpenToggle(event)
+  return () => ({
     ...(context.contentId === undefined ? {} : { 'aria-controls': context.contentId }),
     'aria-expanded': context.open.value,
     'disabled': context.disabled?.value,
-    'onClick': (event: MouseEvent) => context.onOpenToggle(event),
-  }), getCollapsiblePartState(context))
+    onClick,
+  })
+}
+
+export function getCollapsibleTriggerSurface(context: CollapsibleTriggerContext): PartSurface<CollapsiblePartState> {
+  return createPartSurface(getCollapsibleTriggerProps(context), getCollapsiblePartState(context))
 }
 
 /** Presence and dimensions are supplied by the rendering shell when available. */
@@ -73,9 +91,7 @@ export function getCollapsibleContentSurface(
 ): PartSurface<CollapsiblePartState> {
   return createPartSurface(() => ({
     id: context.contentId,
-    hidden: (toValue(options.present) ?? context.open.value)
-      ? undefined
-      : context.unmountOnHide.value ? '' : 'until-found',
+    hidden: getCollapsibleContentHidden(toValue(options.present) ?? context.open.value, context.unmountOnHide.value),
     style: {
       '--reka-collapsible-content-height': `${toValue(options.height) ?? 0}px`,
       '--reka-collapsible-content-width': `${toValue(options.width) ?? 0}px`,

@@ -1,6 +1,9 @@
 import type { Component, PropType } from 'vue'
-import { defineComponent, h } from 'vue'
-import { useRender } from './useRender'
+import { defineComponent, getCurrentInstance, h, mergeProps, toRaw } from 'vue'
+// Direct relative import (not the `@/shared` barrel) to avoid a Primitive ↔ shared cycle.
+import { useForwardElement } from '../shared/useForwardElement'
+import { Slot } from './Slot'
+import { isSelfClosingTag, resolveRenderTag, warnRenderSlotWithAsChild } from './useRender'
 
 export type AsTag
   = | 'a'
@@ -53,18 +56,27 @@ export const Primitive = defineComponent({
     },
   },
   setup(props, { attrs, slots, expose }) {
-    // Compat shim over useRender. Primitive satisfies the element-first contract
-    // (#2808): a parent `:ref` receives `{ element, $el }`, both the same
-    // reactive ref, so wrapping parts resolve the rendered element — including
-    // across `asChild` child swaps (the `Slot` tracks its child) — with no
-    // `instance.exposed` mutation and no `onUpdated` resync.
-    const { tag, renderProps, selfClosing, state, elementRef, expose: elementExpose } = useRender({
-      defaultTagName: 'div',
-      as: () => props.as,
-      asChild: () => props.asChild,
-      props: attrs,
-    })
+    // Same output as `useRender({ as, asChild, props: attrs })`, resolved in the
+    // render function instead of through computeds: Primitive wraps nearly every
+    // part, so its per-instance reactive cost is multiplied by every part on the
+    // page. It satisfies the element-first contract (#2808): a parent `:ref`
+    // receives `{ element, $el }`, both the same reactive ref, so wrapping parts
+    // resolve the rendered element — including across `asChild` child swaps (the
+    // `Slot` tracks its child) — with no `instance.exposed` mutation and no
+    // `onUpdated` resync. The element ref itself is created on first read.
+    const { forwardRef: elementRef, expose: elementExpose } = useForwardElement<HTMLElement>()
     expose(elementExpose)
+    // Render reads the raw props and attrs (`props` is reactive and `attrs` a
+    // tracking proxy): new props/attrs only ever arrive with a parent patch,
+    // which re-renders this component anyway, so tracking them would add a
+    // dep + link per key per Primitive for nothing (and spreading the raw attrs
+    // object is much cheaper than spreading the proxy).
+    const rawProps = toRaw(props)
+    const rawAttrs = getCurrentInstance()?.attrs ?? attrs
+
+    // eslint-disable-next-line node/prefer-global/process
+    if (process.env.NODE_ENV !== 'production')
+      warnRenderSlotWithAsChild(resolveRenderTag(props.as, props.asChild) === Slot)
 
     return () => {
       // Honor the opt-in `#render` contract (parity with parts built on
@@ -72,16 +84,17 @@ export const Primitive = defineComponent({
       // itself, so `#render` takes precedence over the default/`asChild` render.
       if (slots.render) {
         return slots.render({
-          props: renderProps.value,
-          state: state.value,
+          props: mergeProps(attrs),
+          state: undefined,
           forwardRef: elementRef,
         })
       }
 
+      const tag = resolveRenderTag(rawProps.as, rawProps.asChild)
       return h(
-        tag.value,
-        { ...renderProps.value, ref: elementRef },
-        selfClosing.value ? undefined : { default: slots.default },
+        tag,
+        { ...rawAttrs, ref: elementRef },
+        isSelfClosingTag(tag) ? undefined : { default: slots.default },
       )
     }
   },

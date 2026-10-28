@@ -29,7 +29,7 @@ import {
 } from '@/Primitive'
 import { getGeneratedId, setGeneratedIds, useForwardElement, useId, usePartId } from '@/shared'
 import { injectCollapsibleRootContext } from './CollapsibleRoot.vue'
-import { getCollapsibleContentSurface } from './useCollapsible'
+import { getCollapsibleContentHidden, getCollapsibleContentSurface } from './useCollapsible'
 
 defineOptions({
   inheritAttrs: false,
@@ -60,9 +60,10 @@ defineExpose(expose)
 const width = ref(0)
 const height = ref(0)
 const surface = getCollapsibleContentSurface(rootContext, {
-  // `forceMount` keeps the content shown; Presence still tracks the open state
-  // so `update:openComplete` is reported either way.
-  present: () => props.forceMount || (presentRef.value?.present ?? rootContext.open.value),
+  // `hidden` is bound in the template from Presence's `present` slot prop: a
+  // surface reading `presentRef` would re-render every content once its
+  // Presence mounts and fills the ref.
+  present: true,
   width,
   height,
 })
@@ -181,7 +182,12 @@ useEventListener(currentElement, 'beforematch', (ev) => {
     @complete="rootContext.notifyOpenComplete"
   >
     <Primitive
-      v-bind="mergeProps($attrs, surface.attrs.value, { id: contentId })"
+      v-bind="mergeProps($attrs, surface.attrs.value, {
+        id: contentId,
+        // `forceMount` keeps the content shown; Presence still tracks the open state
+        // so `update:openComplete` is reported either way.
+        hidden: getCollapsibleContentHidden(forceMount || present, rootContext.unmountOnHide.value),
+      })"
       :ref="forwardRef"
       :as-child="props.asChild"
       :as="as"
