@@ -112,7 +112,8 @@ export class SelectClosedItems<T = AcceptableValue> {
 
   /** Whether the closed typeahead has the items to match (or never will). */
   ready(): boolean {
-    return !this.needsItems() || this.state.value === DONE || !!this.harvested.length || !!this.liveItems?.().length
+    // Inactive (the server, a headless `useSelectRoot` without the SFC), no items can render.
+    return !this.active.value || !this.needsItems() || this.state.value === DONE || !!this.harvested.length || !!this.liveItems?.().length
   }
 
   /**

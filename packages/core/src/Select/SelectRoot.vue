@@ -227,28 +227,37 @@ closedItems.liveItems = () => {
 }
 
 // The hidden native `select` of a named Select in a form offers every option
-// to the browser's autofill: in idle time after the mount, the closed content
-// renders its items once so their labels register.
+// to the browser's autofill: in idle time once the root is mounted in a form
+// with a name, the closed content renders its items once so their labels register.
+const hasIdleCallback = typeof requestIdleCallback === 'function' && typeof cancelIdleCallback === 'function'
 let idleHandle: ReturnType<typeof setTimeout> | number | undefined
-onMounted(() => {
-  // Past the mount (and the hydration), a selected value without a label
-  // renders the closed items now, so the trigger shows it before the first paint.
-  closedItems.activate()
-  if (!isFormControl.value || !resolvedName.value)
+function cancelIdleRequest() {
+  if (idleHandle === undefined)
+    return
+  if (hasIdleCallback)
+    cancelIdleCallback(idleHandle as number)
+  else
+    clearTimeout(idleHandle as ReturnType<typeof setTimeout>)
+  idleHandle = undefined
+}
+function scheduleIdleRequest() {
+  if (idleHandle !== undefined || !isFormControl.value || !resolvedName.value)
     return
   const request = () => {
     idleHandle = undefined
     closedItems.request()
   }
-  idleHandle = typeof requestIdleCallback === 'function' ? requestIdleCallback(request, { timeout: 1000 }) : setTimeout(request, 50)
+  idleHandle = hasIdleCallback ? requestIdleCallback(request, { timeout: 1000 }) : setTimeout(request, 50)
+}
+onMounted(() => {
+  // Past the mount (and the hydration), a selected value without a label
+  // renders the closed items now, so the trigger shows it before the first paint.
+  closedItems.activate()
+  scheduleIdleRequest()
+  // A form or a name that arrives later (`closedItems.request` runs once).
+  watch([isFormControl, resolvedName], scheduleIdleRequest)
 })
-onBeforeUnmount(() => {
-  if (idleHandle === undefined)
-    return
-  if (typeof cancelIdleCallback === 'function')
-    cancelIdleCallback(idleHandle as number)
-  clearTimeout(idleHandle as ReturnType<typeof setTimeout>)
-})
+onBeforeUnmount(cancelIdleRequest)
 
 // The native `select` mirrors `items`, else the registered item texts, plus
 // every selected value (a value whose item never rendered shows its

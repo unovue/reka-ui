@@ -267,6 +267,18 @@ describe('the hidden native select of a closed Select', () => {
     expect(itemTexts).toHaveBeenCalledTimes(fruits.length)
   })
 
+  it('fills in once the select gets a name after the mount', async () => {
+    const name = ref<string>()
+    const { itemTexts } = mountSelect(() => ({ name: name.value }), () => fruits, { form: true })
+    await idle()
+    expect(itemTexts).not.toHaveBeenCalled()
+    name.value = 'fruit'
+    await flushPromises()
+    await idle()
+    expect(nativeOptions().map(option => option.textContent?.trim())).toEqual(['Apple', 'Banana', 'Blueberry', 'Cherry'])
+    expect(options()).toHaveLength(0)
+  })
+
   it('submits the selected value', async () => {
     mountSelect({ name: 'fruit', defaultValue: 'Cherry' }, () => fruits, { form: true })
     await flushPromises()
