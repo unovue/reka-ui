@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { CheckboxIndicator, CheckboxRoot } from '@/Checkbox'
+import { ListboxContent, ListboxItem, ListboxItemIndicator, ListboxRoot } from '@/Listbox'
 import { RadioGroupIndicator, RadioGroupItem, RadioGroupRoot } from '@/RadioGroup'
 import { Presence } from '.'
 
@@ -83,6 +84,23 @@ describe('item indicators', () => {
     const wrapper = mount(defineComponent(() => () =>
       h(RadioGroupRoot, { modelValue: 'b' }, () => ['a', 'b', 'c'].map(value =>
         h(RadioGroupItem, { value }, () => h(RadioGroupIndicator))))))
+    expect(wrapper.findAllComponents(Presence)).toHaveLength(1)
+    wrapper.unmount()
+  })
+
+  it('only the selected listbox item mounts a Presence, until its exit', async () => {
+    const model = ref('b')
+    const wrapper = mount(defineComponent(() => () =>
+      h(ListboxRoot, { 'modelValue': model.value, 'onUpdate:modelValue': (v: any) => model.value = v }, () =>
+        h(ListboxContent, null, () => ['a', 'b', 'c'].map(value =>
+          h(ListboxItem, { value }, () => h(ListboxItemIndicator, { 'data-testid': `indicator-${value}` })))))))
+    await nextTick()
+    expect(wrapper.findAllComponents(Presence)).toHaveLength(1)
+    expect(wrapper.find('[data-testid="indicator-b"]').exists()).toBe(true)
+
+    model.value = 'c'
+    await vi.waitFor(() => expect(wrapper.find('[data-testid="indicator-b"]').exists()).toBe(false))
+    expect(wrapper.find('[data-testid="indicator-c"]').exists()).toBe(true)
     expect(wrapper.findAllComponents(Presence)).toHaveLength(1)
     wrapper.unmount()
   })
