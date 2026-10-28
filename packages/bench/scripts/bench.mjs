@@ -9,10 +9,11 @@
 // Exits 1 when any family's retained heap per instance regresses beyond the threshold.
 /* eslint-disable no-console */
 import { execFileSync } from 'node:child_process'
-import { appendFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import process from 'node:process'
+import { setTimeout as sleep } from 'node:timers/promises'
 import { parseArgs } from 'node:util'
 import { FAMILIES } from '../src/families.js'
 import { BENCH_ROOT, buildPage } from './build.mjs'
@@ -75,25 +76,59 @@ const threshold = Number(opts.threshold)
 const floor = Number(opts.floor)
 const t0 = Date.now()
 
-// --- library builds (build-only: tsdown without the vue-tsc type-check) ---
-if (!opts['no-build']) {
-  log('building packages/core')
-  sh('pnpm', ['--filter', 'reka-ui', 'build-only'], REPO)
-}
-if (!existsSync(join(CORE, 'dist/index.js')))
-  throw new Error('packages/core/dist is missing; drop --no-build or run `pnpm --filter reka-ui build` first')
-
 let baseDir = null
 let baseSha = null
 // This run's page builds; dist/ is shared by every run in this checkout.
 mkdirSync(join(BENCH_ROOT, 'dist'), { recursive: true })
 const pageRoot = mkdtempSync(join(BENCH_ROOT, 'dist', 'run-'))
 
+// Runs in this checkout share packages/core/dist: building it and bundling the head page from
+// it happen under a lock. Once bundled, the page no longer reads packages/core.
+const HEAD_LOCK = join(BENCH_ROOT, 'dist', '.head-build.lock')
+let holdsLock = false
+async function lockHeadBuild() {
+  let waiting = false
+  while (true) {
+    try {
+      mkdirSync(HEAD_LOCK)
+      writeFileSync(join(HEAD_LOCK, 'pid'), String(process.pid))
+      holdsLock = true
+      return
+    }
+    catch (e) {
+      if (e.code !== 'EEXIST')
+        throw e
+    }
+    const pid = Number(readFileSync(join(HEAD_LOCK, 'pid'), { encoding: 'utf8', flag: 'a+' }))
+    let alive = true
+    try {
+      process.kill(pid, 0)
+    }
+    catch (e) {
+      alive = e.code === 'EPERM'
+    }
+    if (pid && !alive) {
+      rmSync(HEAD_LOCK, { recursive: true, force: true })
+      continue
+    }
+    if (!waiting)
+      log(`waiting for another bench run (pid ${pid || '?'}) to finish building packages/core`)
+    waiting = true
+    await sleep(1000)
+  }
+}
+function unlockHeadBuild() {
+  if (holdsLock)
+    rmSync(HEAD_LOCK, { recursive: true, force: true })
+  holdsLock = false
+}
+
 let cleaned = false
 function cleanup() {
   if (cleaned)
     return
   cleaned = true
+  unlockHeadBuild()
   rmSync(pageRoot, { recursive: true, force: true })
   if (!baseDir)
     return
@@ -135,15 +170,24 @@ if (opts.compare) {
   sh('pnpm', ['--filter', 'reka-ui', 'build-only'], baseDir)
 }
 
-// --- bench page builds ---
+// --- this checkout: library (build-only: tsdown without the vue-tsc type-check) + page ---
+await lockHeadBuild()
+if (!opts['no-build']) {
+  log('building packages/core')
+  sh('pnpm', ['--filter', 'reka-ui', 'build-only'], REPO)
+}
+if (!existsSync(join(CORE, 'dist/index.js')))
+  throw new Error('packages/core/dist is missing; drop --no-build or run `pnpm --filter reka-ui build` first')
+log('building bench page against this checkout')
+await buildPage({ lib: CORE, label: 'head', outRoot: pageRoot })
+unlockHeadBuild()
+
 const labels = []
 if (baseDir) {
   log('building bench page against base')
   await buildPage({ lib: join(baseDir, 'packages/core'), label: 'base', outRoot: pageRoot })
   labels.push('base')
 }
-log('building bench page against this checkout')
-await buildPage({ lib: CORE, label: 'head', outRoot: pageRoot })
 labels.push('head')
 const tBuilt = Date.now()
 
@@ -189,7 +233,10 @@ else {
 console.log(`\n${md}\n`)
 const out = opts.out ?? join(BENCH_ROOT, 'dist/results.json')
 mkdirSync(resolve(out, '..'), { recursive: true })
-writeFileSync(out, JSON.stringify({ base: baseSha, head: headSha, threshold, floor, summary, rows, raw }, null, 1))
+// Write then rename: concurrent runs sharing the default path never leave a half-written file
+// (the last one to finish wins; pass --out to keep each run's results).
+writeFileSync(`${out}.${process.pid}`, JSON.stringify({ base: baseSha, head: headSha, threshold, floor, summary, rows, raw }, null, 1))
+renameSync(`${out}.${process.pid}`, out)
 log(`results: ${out}`)
 if (opts.summary)
   appendFileSync(opts.summary, `${md}\n`)
