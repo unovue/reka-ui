@@ -120,17 +120,24 @@ export interface CreateCalendarCellIndexOptions {
   placeholder: { readonly value: DateValue }
   /** The rendered pages, when `collect` needs to walk the cells (`builder.cells`). */
   grid?: { readonly value: CalendarGridData[] }
-  /** Adds the family's flags (selection, focus target, range). Runs synchronously on every change it reads. */
+  /** Adds the family's flags (selection, focus target, range). Runs once per flush in which something it reads changed. */
   collect: (builder: CalendarCellFlagsBuilder) => void
 }
 
 /**
- * The root side of the keyed cell state: recomputes the flags whenever what
- * `collect` reads changes (synchronously, so a headless consumer reading a cell
- * surface right after `select()` sees the new state), and publishes them
- * through a `KeyedFlags` map.
+ * The root side of the keyed cell state: recomputes the flags when what
+ * `collect` reads changed, and publishes them through a `KeyedFlags` map.
  *
- * @lifecycle setup — installs one sync watcher.
+ * The recompute is a pre-flush watcher, not a sync one: a press updates the
+ * model, the range ends, the placeholder and the focused date one after the
+ * other, and a sync recompute would publish every intermediate state (a
+ * half-updated range flips a dozen cells and back), re-rendering cells whose
+ * final state never changed. Pre-flush jobs run before any component renders,
+ * so every render (and the DOM after `nextTick()`) sees the settled flags; a
+ * read of a cell surface in the same tick as a model change sees the previous
+ * ones, as the DOM does.
+ *
+ * @lifecycle setup — installs one pre-flush watcher.
  * @internal
  */
 export function createCalendarCellIndex(options: CreateCalendarCellIndexOptions): CalendarCellIndex {
@@ -144,7 +151,7 @@ export function createCalendarCellIndex(options: CreateCalendarCellIndexOptions)
     // `isCurrent`: today in the local zone, in the grid's calendar for months and years.
     builder.addDate(today(getLocalTimeZone()), CELL_TODAY)
     return builder.flags
-  }, next => index.flags.sync(next), { flush: 'sync', immediate: true })
+  }, next => index.flags.sync(next), { flush: 'pre', immediate: true })
   return index
 }
 
