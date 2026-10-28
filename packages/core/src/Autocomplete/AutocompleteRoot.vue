@@ -242,6 +242,7 @@ provideComboboxRootContext({
   openOnFocus,
   openOnClick,
   resetModelValueOnClear: ref(true),
+  getClearValue: () => null,
   unmountOnHide: ref(true),
 })
 
