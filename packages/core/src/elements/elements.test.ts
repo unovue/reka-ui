@@ -194,6 +194,11 @@ describe('accessibility (axe)', () => {
   beforeAll(() => {
     defineRekaElements(rekaElementFamilies)
   })
+  // Restores the `ResizeObserver` stub of the numeric inputs test, even when it
+  // fails. Registered first: after-each hooks run in reverse, so after `cleanup`.
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
   afterEach(cleanup)
 
   async function mounted(selector: string) {
@@ -454,8 +459,6 @@ describe('accessibility (axe)', () => {
     await vi.waitFor(() => expect(query('reka-color-field-input input').getAttribute('data-reka-owned')).not.toBeNull())
     await vi.waitFor(() => expect(query('reka-rating-item-indicator').getAttribute('role')).toBe('radio'))
     expect(await axe(container)).toHaveNoViolations()
-    cleanup()
-    vi.unstubAllGlobals()
   })
 
   it('an open alert dialog', async () => {
