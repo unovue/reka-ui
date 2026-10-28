@@ -5,11 +5,17 @@ export interface SeparatorProps extends BaseSeparatorProps {}
 </script>
 
 <script setup lang="ts">
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
-import BaseSeparator from '@/shared/component/BaseSeparator.vue'
+import { useSeparator } from './useSeparator'
 
 const props = withDefaults(defineProps<SeparatorProps>(), {
   orientation: 'horizontal',
+})
+
+const { root } = useSeparator({
+  orientation: () => props.orientation,
+  decorative: () => props.decorative,
 })
 
 const { forwardRef, expose } = useForwardElement()
@@ -17,10 +23,11 @@ defineExpose(expose)
 </script>
 
 <template>
-  <BaseSeparator
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="props"
+    v-bind="root.attrs.value"
   >
     <slot />
-  </BaseSeparator>
+  </component>
 </template>

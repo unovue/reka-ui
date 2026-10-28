@@ -50,7 +50,7 @@
   {
     "path": "dist/index.js",
     "import": "{ TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent }",
-    "limit": "21 KB",
+    "limit": "21.5 KB",
     "name": "Tooltip"
   },
   {

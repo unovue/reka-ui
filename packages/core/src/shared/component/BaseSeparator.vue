@@ -18,7 +18,7 @@ export interface BaseSeparatorProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useSeparator } from '@/Separator/useSeparator'
 import { useForwardElement } from '@/shared'
 
@@ -36,12 +36,11 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="root.attrs.value"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

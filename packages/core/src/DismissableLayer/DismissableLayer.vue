@@ -71,6 +71,7 @@ import type { StackLayer } from './layerStack'
 import {
   useRender,
 } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { containsComposed } from '@/shared'
 import { blockPositioningWrapper, mountInternalBackdrop } from './internalBackdrop'
 import {
@@ -109,7 +110,7 @@ const emits = defineEmits<DismissableLayerPrivateEmits>()
 
 // Render via `useRender` (no `Primitive` wrapper instance). `elementRef` is the
 // forwarded callback ref; `layerElement` the resolved root element.
-const { tag, currentElement: layerElement, elementRef, expose } = useRender({
+const { currentElement: layerElement, elementRef, expose } = useRender({
   as: () => props.as,
   asChild: () => props.asChild,
 })
@@ -220,7 +221,7 @@ watch(
 
 <template>
   <component
-    :is="tag"
+    :is="renderAs(as, asChild)"
     :ref="elementRef"
     data-dismissable-layer
     :style="{

@@ -3,7 +3,9 @@ import { findByAltText, findByText, queryByText, waitForElementToBeRemoved } fro
 import { mount } from '@vue/test-utils'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
+import { componentNames } from '@/test'
+import { AvatarFallback, AvatarImage, AvatarRoot } from '.'
 import Avatar from './story/_Avatar.vue'
 
 const FALLBACK = 'CT'
@@ -97,5 +99,28 @@ describe('given an Avatar with fallback and delayed render', () => {
     expect(wrapper.text()).not.toContain(FALLBACK)
     const fallback = await findByText(wrapper.element as HTMLElement, FALLBACK)
     expect(wrapper.element).toContain(fallback)
+  })
+})
+
+describe('one component per part', () => {
+  it('renders each part as its own element, with no Primitive', () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(AvatarRoot, () => [
+        h(AvatarImage, { src: 'data:,', alt: '' }, () => 'ignored'),
+        h(AvatarFallback, () => 'CT'),
+      ]),
+    }))
+    expect(componentNames(wrapper.vm.$)).toEqual(['Anonymous', 'AvatarRoot', 'AvatarImage', 'AvatarFallback'])
+    const img = wrapper.find('img')
+    expect(img.exists()).toBe(true)
+    // `img` renders no children even though the part passes its slot.
+    expect(img.element.childNodes.length).toBe(0)
+  })
+
+  it('renders AvatarImage children when it is not an img', () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(AvatarRoot, () => h(AvatarImage, { src: 'data:,', as: 'div' }, () => 'inner')),
+    }))
+    expect(wrapper.find('div div').text()).toBe('inner')
   })
 })

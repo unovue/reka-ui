@@ -19,7 +19,7 @@ export interface AvatarImageProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import type { ImgHTMLAttributes } from 'vue'
-import { Primitive } from '../Primitive'
+import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
 import { injectAvatarRootContext } from './AvatarRoot.vue'
 import { useAvatarImage } from './useAvatar'
 
@@ -38,13 +38,17 @@ const { visible, root } = useAvatarImage(injectAvatarRootContext(), {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAsEmpty(as, asChild)"
     v-show="visible"
     :ref="forwardRef"
-    :as-child="asChild"
-    :as="as"
     v-bind="root.attrs.value"
   >
-    <slot />
-  </Primitive>
+    <template
+      v-if="rendersChildren(as, asChild)"
+      #default
+    >
+      <slot />
+    </template>
+  </component>
 </template>
