@@ -1,6 +1,7 @@
-import { mount } from '@vue/test-utils'
+import type { Component } from 'vue'
+import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, onMounted, ref } from 'vue'
+import { defineAsyncComponent, defineComponent, h, nextTick, onMounted, ref } from 'vue'
 import { Presence } from '.'
 
 const CONTENT = 'Content'
@@ -180,5 +181,53 @@ describe('given a Presence with an animated descendant', () => {
       wrapper?.unmount()
       getComputedStyleSpy.mockRestore()
     }
+  })
+})
+
+describe('given a Presence with an async child', () => {
+  async function openWithAsyncChild(template: string) {
+    let resolveChild!: (component: Component) => void
+    const AsyncChild = defineAsyncComponent(() => new Promise<Component>((resolve) => {
+      resolveChild = resolve
+    }))
+    const onEnter = vi.fn()
+    const onAfterEnter = vi.fn()
+    const open = ref(false)
+
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(Presence, { present: open.value }, () => h(AsyncChild, { onEnter, onAfterEnter })),
+    }))
+
+    open.value = true
+    await flushPromises()
+    resolveChild(defineComponent({ template }))
+    await flushPromises()
+
+    return { wrapper, onEnter, onAfterEnter }
+  }
+
+  it('should dispatch enter events once the child element mounts', async () => {
+    const { wrapper, onEnter, onAfterEnter } = await openWithAsyncChild(`<div>${CONTENT}</div>`)
+
+    expect(wrapper.html()).toContain(CONTENT)
+    expect(onEnter).toHaveBeenCalledOnce()
+    expect(onAfterEnter).toHaveBeenCalledOnce()
+
+    wrapper.unmount()
+  })
+
+  it('should wait for the enter animation before dispatching after-enter', async () => {
+    const { wrapper, onEnter, onAfterEnter } = await openWithAsyncChild(`<div style="animation-name: fadeIn">${CONTENT}</div>`)
+
+    expect(onEnter).toHaveBeenCalledOnce()
+    expect(onAfterEnter).not.toHaveBeenCalled()
+
+    const animationEnd = new Event('animationend')
+    Object.defineProperty(animationEnd, 'animationName', { value: 'fadeIn' })
+    wrapper.find('div').element.dispatchEvent(animationEnd)
+
+    expect(onAfterEnter).toHaveBeenCalledOnce()
+
+    wrapper.unmount()
   })
 })
