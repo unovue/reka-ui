@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { DataOrientation, Direction } from '../shared/types'
 import type { PrimitiveProps } from '@/Primitive'
-import { useVModel } from '@vueuse/core'
+import { useMutationObserver, useVModel } from '@vueuse/core'
 import { computed, nextTick, ref, toRefs, watch, watchPostEffect } from 'vue'
 import { Primitive } from '@/Primitive'
 import { createContext, useDirection, useForwardExpose } from '@/shared'
@@ -101,22 +101,18 @@ const isFirstStep = computed(() => modelValue.value === 1)
 const isLastStep = computed(() => modelValue.value === totalStepperItemsArray.value.length)
 
 const totalSteps = computed(() => totalStepperItems.value.size)
-const activeStep = ref(0)
+const announcement = ref('')
 
-function updateActiveStep() {
+function updateAnnouncement() {
   const orderedItems = [...totalStepperItems.value]
     .sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
-  activeStep.value = orderedItems.findIndex(item => stepperItemValues.get(item)?.() === modelValue.value) + 1
+  const step = orderedItems.findIndex(item => stepperItemValues.get(item)?.() === modelValue.value) + 1
+  announcement.value = step && props.announce !== false
+    ? props.announce?.(step, orderedItems.length) ?? `Step ${step} of ${orderedItems.length}`
+    : ''
 }
 
-watchPostEffect(updateActiveStep)
-
-const announcement = computed(() => {
-  if (!activeStep.value || props.announce === false)
-    return ''
-  return props.announce?.(activeStep.value, totalSteps.value)
-    ?? `Step ${activeStep.value} of ${totalSteps.value}`
-})
+watchPostEffect(updateAnnouncement)
 
 function goToStep(step: number) {
   if (step > totalSteps.value)
@@ -196,18 +192,20 @@ defineExpose({
   hasPrev,
 })
 
-useForwardExpose()
+const { forwardRef, currentElement } = useForwardExpose()
+// Keyed moves inside nested components do not update the root or registration set.
+useMutationObserver(currentElement, updateAnnouncement, { childList: true, subtree: true })
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     role="group"
     aria-label="progress"
     :as="as"
     :as-child="asChild"
     :data-linear="linear ? '' : undefined"
     :data-orientation="orientation"
-    @vue:updated="updateActiveStep"
   >
     <slot
       :model-value="modelValue"

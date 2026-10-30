@@ -1,22 +1,28 @@
 import type { StepperRootProps } from './StepperRoot.vue'
-import { render } from '@testing-library/vue'
+import { render, waitFor } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { StepperDescription, StepperItem, StepperRoot, StepperTitle, StepperTrigger } from '.'
 
-function setup(values = [0, 1, 2], props: StepperRootProps = {}) {
+function setup(values = [0, 1, 2], props: StepperRootProps = {}, options: { nested?: boolean, asChild?: boolean } = {}) {
   const steps = ref(values)
   const current = ref(values[0])
   const rootProps = ref(props)
+  const triggerTag = ref('button')
+  const renderSteps = () => steps.value.map(step => h(StepperItem, { key: step, step }, () => [
+    h(StepperTrigger, options.asChild ? { asChild: true } : { as: triggerTag.value }, () =>
+      options.asChild
+        ? h(triggerTag.value, null, [h(StepperTitle, () => `Step ${step}`)])
+        : h(StepperTitle, () => `Step ${step}`)),
+    h(StepperDescription, () => `Description ${step}`),
+  ]))
+  const NestedSteps = defineComponent({ setup: () => renderSteps })
   const view = render(defineComponent({
     setup: () => () => h(StepperRoot, { modelValue: current.value, linear: false, ...rootProps.value }, () =>
-      steps.value.map(step => h(StepperItem, { key: step, step }, () => [
-        h(StepperTrigger, () => h(StepperTitle, () => `Step ${step}`)),
-        h(StepperDescription, () => `Description ${step}`),
-      ]))),
+      options.nested ? h(NestedSteps) : renderSteps()),
   }))
-  return { ...view, steps, current, rootProps }
+  return { ...view, steps, current, rootProps, triggerTag }
 }
 
 describe('stepper announcements', () => {
@@ -38,8 +44,7 @@ describe('stepper announcements', () => {
     await nextTick()
     expect(getByRole('status')).toHaveTextContent('Step 3 of 4')
     steps.value = [60, 40, 20, 10]
-    await nextTick()
-    expect(getByRole('status')).toHaveTextContent('Step 2 of 4')
+    await waitFor(() => expect(getByRole('status')).toHaveTextContent('Step 2 of 4'))
     steps.value = [60, 20, 10]
     await nextTick()
     expect(getByRole('status')).toBeEmptyDOMElement()
@@ -60,6 +65,25 @@ describe('stepper announcements', () => {
     rootProps.value = { announce: (step, total) => `Étape ${step} sur ${total}` }
     await nextTick()
     expect(getByRole('status')).toHaveTextContent('Étape 2 sur 3')
+  })
+
+  it('updates the position when a nested component reorders its steps', async () => {
+    const { getByRole, current, steps } = setup([10, 20, 30], {}, { nested: true })
+    current.value = 20
+    await nextTick()
+    expect(getByRole('status')).toHaveTextContent('Step 2 of 3')
+    steps.value = [30, 10, 20]
+    await waitFor(() => expect(getByRole('status')).toHaveTextContent('Step 3 of 3'))
+  })
+
+  it.each([false, true])('keeps the order correct after replacing trigger elements (asChild: %s)', async (asChild) => {
+    const { getByRole, current, steps, triggerTag } = setup([10, 20, 30], {}, { asChild })
+    current.value = 20
+    await nextTick()
+    triggerTag.value = 'a'
+    await nextTick()
+    steps.value = [30, 10, 20]
+    await waitFor(() => expect(getByRole('status')).toHaveTextContent('Step 3 of 3'))
   })
 
   it('allows consumers to disable the built-in live region', async () => {

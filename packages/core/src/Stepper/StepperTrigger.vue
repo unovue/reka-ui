@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, watchPostEffect } from 'vue'
 import { getActiveElement, useArrowNavigation, useForwardExpose, useKbd } from '@/shared'
 
 export interface StepperTriggerProps extends PrimitiveProps {
@@ -66,22 +66,16 @@ function handleKeyDown(event: KeyboardEvent) {
 
 const { forwardRef, currentElement } = useForwardExpose()
 
-let registeredElement: HTMLElement | null = null
-
-onMounted(() => {
-  registeredElement = currentElement.value
-  if (registeredElement) {
-    rootContext.stepperItemValues.set(registeredElement, () => itemContext.step.value)
-    rootContext.totalStepperItems.value.add(registeredElement)
-  }
-})
-
-onUnmounted(() => {
-  if (registeredElement) {
-    rootContext.stepperItemValues.delete(registeredElement)
-    rootContext.totalStepperItems.value.delete(registeredElement)
-    registeredElement = null
-  }
+watchPostEffect((cleanup) => {
+  const element = currentElement.value
+  if (!element)
+    return
+  rootContext.stepperItemValues.set(element, () => itemContext.step.value)
+  rootContext.totalStepperItems.value.add(element)
+  cleanup(() => {
+    rootContext.stepperItemValues.delete(element)
+    rootContext.totalStepperItems.value.delete(element)
+  })
 })
 </script>
 
