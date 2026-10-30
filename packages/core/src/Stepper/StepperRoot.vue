@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { DataOrientation, Direction } from '../shared/types'
 import type { PrimitiveProps } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
-import { computed, nextTick, ref, toRefs, watch } from 'vue'
+import { computed, nextTick, ref, toRefs, watch, watchPostEffect } from 'vue'
 import { Primitive } from '@/Primitive'
 import { createContext, useDirection, useForwardExpose } from '@/shared'
 
@@ -14,6 +14,7 @@ export interface StepperRootContext {
   dir: Ref<Direction>
   linear: Ref<boolean>
   totalStepperItems: Ref<Set<HTMLElement>>
+  stepperItemValues: Map<HTMLElement, () => number>
 }
 
 export interface StepperRootProps extends PrimitiveProps {
@@ -35,6 +36,8 @@ export interface StepperRootProps extends PrimitiveProps {
   modelValue?: number
   /** Whether or not the steps must be completed in order. */
   linear?: boolean
+  /** Customize the live announcement using the active step's one-based position and total. Set to `false` to disable the built-in live region. */
+  announce?: ((step: number, total: number) => string) | false
 }
 export type StepperRootEmits = {
   /** Event handler called when the value changes */
@@ -50,6 +53,7 @@ const props = withDefaults(defineProps<StepperRootProps>(), {
   orientation: 'horizontal',
   linear: true,
   defaultValue: 1,
+  announce: undefined,
 })
 const emits = defineEmits<StepperRootEmits>()
 
@@ -84,6 +88,7 @@ const { dir: propDir, orientation: propOrientation, linear } = toRefs(props)
 const dir = useDirection(propDir)
 
 const totalStepperItems = ref<Set<HTMLElement>>(new Set())
+const stepperItemValues = new Map<HTMLElement, () => number>()
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue,
@@ -96,6 +101,22 @@ const isFirstStep = computed(() => modelValue.value === 1)
 const isLastStep = computed(() => modelValue.value === totalStepperItemsArray.value.length)
 
 const totalSteps = computed(() => totalStepperItems.value.size)
+const activeStep = ref(0)
+
+function updateActiveStep() {
+  const orderedItems = [...totalStepperItems.value]
+    .sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
+  activeStep.value = orderedItems.findIndex(item => stepperItemValues.get(item)?.() === modelValue.value) + 1
+}
+
+watchPostEffect(updateActiveStep)
+
+const announcement = computed(() => {
+  if (!activeStep.value || props.announce === false)
+    return ''
+  return props.announce?.(activeStep.value, totalSteps.value)
+    ?? `Step ${activeStep.value} of ${totalSteps.value}`
+})
 
 function goToStep(step: number) {
   if (step > totalSteps.value)
@@ -158,6 +179,7 @@ provideStepperRootContext({
   dir,
   linear,
   totalStepperItems,
+  stepperItemValues,
 })
 
 defineExpose({
@@ -185,6 +207,7 @@ useForwardExpose()
     :as-child="asChild"
     :data-linear="linear ? '' : undefined"
     :data-orientation="orientation"
+    @vue:updated="updateActiveStep"
   >
     <slot
       :model-value="modelValue"
@@ -201,6 +224,7 @@ useForwardExpose()
     />
 
     <div
+      v-if="announce !== false"
       aria-live="polite"
       aria-atomic="true"
       role="status"
@@ -212,7 +236,7 @@ useForwardExpose()
         margin: 0,
       }"
     >
-      Step {{ modelValue }} of {{ totalStepperItems.size }}
+      {{ announcement }}
     </div>
   </Primitive>
 </template>

@@ -70,12 +70,15 @@ let registeredElement: HTMLElement | null = null
 
 onMounted(() => {
   registeredElement = currentElement.value
-  if (registeredElement)
+  if (registeredElement) {
+    rootContext.stepperItemValues.set(registeredElement, () => itemContext.step.value)
     rootContext.totalStepperItems.value.add(registeredElement)
+  }
 })
 
 onUnmounted(() => {
   if (registeredElement) {
+    rootContext.stepperItemValues.delete(registeredElement)
     rootContext.totalStepperItems.value.delete(registeredElement)
     registeredElement = null
   }
