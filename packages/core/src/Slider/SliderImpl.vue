@@ -14,6 +14,7 @@ export interface SliderImplProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectSliderRootContext } from './SliderRoot.vue'
 import { ARROW_KEYS, PAGE_KEYS } from './utils'
@@ -23,6 +24,15 @@ const props = withDefaults(defineProps<SliderImplProps>(), {
 })
 const emits = defineEmits<SliderImplEmits>()
 const rootContext = injectSliderRootContext()
+
+// The browser can release capture before `pointerup` arrives, so either one ends the slide, once.
+const isSliding = ref(false)
+function endSlide(event: PointerEvent) {
+  if (!isSliding.value)
+    return
+  isSliding.value = false
+  emits('slideEnd', event)
+}
 </script>
 
 <template>
@@ -49,6 +59,7 @@ const rootContext = injectSliderRootContext()
     @pointerdown="(event: PointerEvent) => {
       const target = event.target as HTMLElement;
       target.setPointerCapture(event.pointerId);
+      isSliding = true;
       // Prevent browser focus behaviour because we focus a thumb manually when values change.
       event.preventDefault();
       // Touch devices have a delay before focusing so won't focus if touch immediately moves
@@ -68,9 +79,10 @@ const rootContext = injectSliderRootContext()
       const target = event.target as HTMLElement;
       if (target.hasPointerCapture(event.pointerId)) {
         target.releasePointerCapture(event.pointerId);
-        emits('slideEnd', event)
+        endSlide(event)
       }
     }"
+    @lostpointercapture="endSlide"
   >
     <slot />
   </Primitive>

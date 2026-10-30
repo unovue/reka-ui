@@ -321,6 +321,18 @@ describe('given default Slider', () => {
           expect(wrapper.emitted('valueCommit')?.[0].length).toBe(1)
         })
       })
+
+      describe('after the browser releases capture before pointerup', () => {
+        beforeEach(async () => {
+          vi.mocked(window.HTMLElement.prototype.hasPointerCapture).mockReturnValueOnce(false)
+          await fireEvent(sliderImpl.element, new Event('lostpointercapture'))
+          await fireEvent.pointerUp(sliderImpl.element, { pointerId: 1 })
+        })
+
+        it('should emit valueCommit on wrapper once', async () => {
+          expect(wrapper.emitted('valueCommit')).toHaveLength(1)
+        })
+      })
     })
   })
 
