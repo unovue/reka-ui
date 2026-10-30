@@ -218,6 +218,18 @@ const stepper = useTemplateRef('stepper')
 
 ## Accessibility
 
+### Step announcements
+
+The live region announces the active step's one-based position among the rendered steps, independently of its `step` value. Use `announce` to translate or replace the message:
+
+```vue
+<StepperRoot :announce="(step, total) => `Étape ${step} sur ${total}`">
+  <!-- Stepper items -->
+</StepperRoot>
+```
+
+Set `:announce="false"` when your application provides its own live announcement. No message is announced when the active value does not match a rendered step.
+
 ### Keyboard Interactions
 
 <KeyboardTable

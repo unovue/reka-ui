@@ -11,3 +11,5 @@ Januar = "Januar"
 ba = "ba"
 # "CAF" is a case-insensitive prefix fixture (matching "Café") in useFilter.test.ts
 caf = "caf"
+# French step-announcement examples ("step ... of ...").
+sur = "sur"
