@@ -43,10 +43,13 @@ function make(list: () => O[], model = ref<string | undefined>(undefined)) {
 }
 
 async function warm() {
-  // focus readies the closed items (harvest) on the PR; on base they are always mounted.
+  // A key that matches nothing mounts the closed items; a focus alone does not.
   trigger().focus()
   await fireEvent.focus(trigger())
+  trigger().dispatchEvent(new KeyboardEvent('keydown', { key: '~', bubbles: true, cancelable: true }))
   await settle()
+  // The typeahead search resets after 1 s.
+  await new Promise(resolve => setTimeout(resolve, 1050))
 }
 
 async function openClose() {

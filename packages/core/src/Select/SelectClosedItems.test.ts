@@ -209,39 +209,98 @@ describe('typeahead on a closed Select', () => {
     expect(valueText()).toBe('Blueberry')
   })
 
-  it('readies the items in idle time after focus, not in the focus itself, except for a multiple select', async () => {
+  it.each([
+    ['no items', {}],
+    ['`items`', { items: fruits.map(fruit => ({ value: fruit.value, label: fruit.text })) }],
+  ])('a focus renders nothing, also in idle time (%s)', async (_, props) => {
+    const { itemTexts } = mountSelect(props, () => fruits)
+    await flushPromises()
+    trigger().focus()
+    await flushPromises()
+    await idle()
+    expect(itemTexts).not.toHaveBeenCalled()
+  })
+
+  it('a non-printable key renders nothing', async () => {
     const { itemTexts } = mountSelect({}, () => fruits)
     await flushPromises()
     trigger().focus()
-    await flushPromises()
-    // The focus does not render them: that would hold up its paint.
+    await type('Tab')
+    await type('Shift')
+    await idle()
     expect(itemTexts).not.toHaveBeenCalled()
-    await idle()
-    expect(itemTexts).toHaveBeenCalledTimes(fruits.length)
-    expect(options()).toHaveLength(0)
-
-    document.body.innerHTML = ''
-    const multiple = mountSelect({ multiple: true }, () => fruits)
-    await flushPromises()
-    trigger().focus()
-    await idle()
-    expect(multiple.itemTexts).not.toHaveBeenCalled()
   })
 
-  it('a key right after focus renders the items on demand', async () => {
-    mountSelect({}, () => fruits)
+  it('the first key renders the items once and matches, and later keys render nothing more', async () => {
+    const { itemTexts } = mountSelect({}, () => fruits)
     await flushPromises()
     trigger().focus()
     await type('c')
     expect(valueText()).toBe('Cherry')
+    // The model change re-renders this render-function harness's slot too.
+    const renders = itemTexts.mock.calls.length
+    await type('h')
+    expect(valueText()).toBe('Cherry')
+    expect(itemTexts).toHaveBeenCalledTimes(renders)
   })
 
-  it('releases the lean items on blur when nothing else needs them', async () => {
+  it('keys in the same tick as the focus match their whole search', async () => {
+    mountSelect({}, () => fruits)
+    await flushPromises()
+    trigger().focus()
+    trigger().dispatchEvent(new KeyboardEvent('keydown', { key: 'b', bubbles: true, cancelable: true }))
+    trigger().dispatchEvent(new KeyboardEvent('keydown', { key: 'l', bubbles: true, cancelable: true }))
+    await flushPromises()
+    expect(valueText()).toBe('Blueberry')
+  })
+
+  it('items changed between the focus and the first key are the ones matched', async () => {
+    const list = ref(fruits)
+    mountSelect({}, () => list.value)
+    await flushPromises()
+    trigger().focus()
+    await flushPromises()
+    list.value = [{ value: 'Date', text: 'Date' }, ...fruits]
+    await flushPromises()
+    await type('d')
+    expect(valueText()).toBe('Date')
+  })
+
+  it('a key on a disabled trigger renders nothing and selects nothing', async () => {
+    const { itemTexts } = mountSelect({ disabled: true }, () => fruits)
+    await flushPromises()
+    await type('c')
+    await idle()
+    expect(itemTexts).not.toHaveBeenCalled()
+    expect(valueText()).toBe('Pick a fruit')
+  })
+
+  it('a multiple select renders nothing on a key', async () => {
+    const { itemTexts } = mountSelect({ multiple: true }, () => fruits)
+    await flushPromises()
+    trigger().focus()
+    await type('c')
+    await idle()
+    expect(itemTexts).not.toHaveBeenCalled()
+  })
+
+  it('with `items`, a key that `items` answers renders nothing', async () => {
+    const { itemTexts } = mountSelect({ items: fruits.map(fruit => ({ value: fruit.value, label: fruit.text })) }, () => fruits)
+    await flushPromises()
+    trigger().focus()
+    await type('c')
+    await idle()
+    expect(valueText()).toBe('Cherry')
+    expect(itemTexts).not.toHaveBeenCalled()
+  })
+
+  it('releases the lean items on blur when nothing else needs them, and a later key renders them again', async () => {
     const list = ref(fruits)
     const { itemTexts } = mountSelect({}, () => list.value)
     await flushPromises()
     trigger().focus()
-    await idle()
+    // Matches nothing: no value holds the items, only the key.
+    await type('z')
     expect(itemTexts).toHaveBeenCalledTimes(fruits.length)
 
     // While mounted, a changed list renders again.
@@ -257,19 +316,27 @@ describe('typeahead on a closed Select', () => {
     await idle()
     expect(itemTexts).toHaveBeenCalledTimes(fruits.length * 2)
 
-    // A later focus renders them again, with the current list.
+    // A new focus alone does not bring them back; its first key does, with the current list.
     trigger().focus()
     await idle()
-    expect(itemTexts).toHaveBeenCalledTimes(fruits.length * 3)
+    expect(itemTexts).toHaveBeenCalledTimes(fruits.length * 2)
+    await new Promise(resolve => setTimeout(resolve, 1100)) // the typeahead search resets
+    await type('c')
+    expect(itemTexts.mock.calls.length).toBeGreaterThan(fruits.length * 2)
+    expect(valueText()).toBe('Cherry')
   })
 
-  it('a blur before the idle render cancels it', async () => {
-    const { itemTexts } = mountSelect({}, () => fruits)
+  it('a value the key selected keeps the lean items after blur, for its live label', async () => {
+    const list = ref(fruits)
+    mountSelect({}, () => list.value)
     await flushPromises()
     trigger().focus()
+    await type('c')
     trigger().blur()
-    await idle()
-    expect(itemTexts).not.toHaveBeenCalled()
+    await flushPromises()
+    list.value = fruits.map(fruit => ({ ...fruit, text: `${fruit.text}!` }))
+    await flushPromises()
+    expect(valueText()).toBe('Cherry!')
   })
 
   it('keeps the lean items after blur while a form needs its native options', async () => {
@@ -278,7 +345,7 @@ describe('typeahead on a closed Select', () => {
     await flushPromises()
     await idle()
     trigger().focus()
-    await idle()
+    await type('c')
     trigger().blur()
     await flushPromises()
     const renders = itemTexts.mock.calls.length
@@ -288,10 +355,9 @@ describe('typeahead on a closed Select', () => {
     expect(nativeOptions().map(option => option.textContent)).toEqual(['Apple!', 'Banana!', 'Blueberry!', 'Cherry!'])
   })
 
-  it('an unmount drops the pending idle render', async () => {
-    const { wrapper, itemTexts } = mountSelect({}, () => fruits)
+  it('an unmount drops the pending idle render of a form', async () => {
+    const { wrapper, itemTexts } = mountSelect({ name: 'fruit' }, () => fruits, { form: true })
     await flushPromises()
-    trigger().focus()
     wrapper.unmount()
     await idle()
     expect(itemTexts).not.toHaveBeenCalled()

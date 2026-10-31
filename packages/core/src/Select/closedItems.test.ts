@@ -18,7 +18,7 @@ describe('selectClosedItems idle requests', () => {
   }
 
   function create() {
-    const closed = new SelectClosedItems(() => true, () => false, () => false, undefined)
+    const closed = new SelectClosedItems(() => true, () => false, undefined)
     closed.activate()
     return closed
   }
@@ -35,52 +35,49 @@ describe('selectClosedItems idle requests', () => {
     vi.unstubAllGlobals()
   })
 
-  it('shares one callback between repeated calls and reasons', () => {
+  it('shares one callback between repeated calls', () => {
     const closed = create()
-    closed.requestWhenIdle('typeahead')
-    closed.requestWhenIdle('typeahead')
-    closed.requestWhenIdle('form')
+    closed.requestFormWhenIdle()
+    closed.requestFormWhenIdle()
     expect(requestIdle).toHaveBeenCalledTimes(1)
     expect(closed.render.value).toBe(false)
 
     runIdle()
     expect(closed.render.value).toBe(true)
-    // Both reasons landed: releasing one keeps the items for the other.
-    closed.release('typeahead')
-    expect(closed.render.value).toBe(true)
     closed.release('form')
     expect(closed.render.value).toBe(false)
   })
 
-  it('does not schedule for a reason that already holds the items', () => {
+  it('does not schedule while the form already holds the items', () => {
     const closed = create()
-    closed.request('typeahead')
-    closed.requestWhenIdle('typeahead')
-    expect(requestIdle).not.toHaveBeenCalled()
+    closed.requestFormWhenIdle()
+    runIdle()
+    closed.requestFormWhenIdle()
+    expect(requestIdle).toHaveBeenCalledTimes(1)
   })
 
-  it('cancels the callback once no reason waits for it', () => {
+  it('a typeahead release keeps the pending form callback, and the form\'s items', () => {
     const closed = create()
-    closed.requestWhenIdle('typeahead')
-    closed.requestWhenIdle('form')
+    closed.requestFormWhenIdle()
     closed.release('typeahead')
     expect(cancelIdle).not.toHaveBeenCalled()
+    runIdle()
+    closed.renderThen(() => {})
+    closed.release('typeahead')
+    expect(closed.render.value).toBe(true)
+  })
+
+  it('a form release cancels the callback', () => {
+    const closed = create()
+    closed.requestFormWhenIdle()
     closed.release('form')
     expect(cancelIdle).toHaveBeenCalledTimes(1)
     expect(callbacks.size).toBe(0)
   })
 
-  it('cancels the callback when a sync request takes the only waiting reason', () => {
-    const closed = create()
-    closed.requestWhenIdle('typeahead')
-    closed.request('typeahead')
-    expect(cancelIdle).toHaveBeenCalledTimes(1)
-    expect(closed.render.value).toBe(true)
-  })
-
   it('dispose cancels the callback, and nothing renders afterwards', () => {
     const closed = create()
-    closed.requestWhenIdle('typeahead')
+    closed.requestFormWhenIdle()
     closed.dispose()
     expect(cancelIdle).toHaveBeenCalledTimes(1)
     runIdle()

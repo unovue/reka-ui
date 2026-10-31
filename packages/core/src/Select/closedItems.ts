@@ -11,7 +11,7 @@ export interface SelectTypeaheadItem<T = AcceptableValue> {
 
 /**
  * Why the closed lean items are wanted besides the selection's label:
- * - `'typeahead'`: the trigger has focus (or got a key), until it blurs;
+ * - `'typeahead'`: a key on the closed trigger, until it blurs;
  * - `'form'`: a named Select in a form fills its hidden native `select`.
  */
 export type SelectClosedItemsReason = 'typeahead' | 'form'
@@ -46,8 +46,9 @@ function byDocumentPosition<T>(a: HarvestedItem<T>, b: HarvestedItem<T>): number
  *
  * The closed items are mounted while:
  * - a selected value has no label from `items` (the trigger shows its text);
- * - the trigger has focus, for the closed typeahead (rendered in idle time
- *   after the focus, or right away on a key), until it blurs;
+ * - a printable key on the closed trigger needs them for the typeahead, until
+ *   the trigger blurs (a focus alone renders nothing: tabbing through a form
+ *   must not pay for a render it does not use);
  * - a named Select in a form fills its hidden native `select` (idle time
  *   after the mount).
  * Once none holds, they unmount; the labels stay in the registry.
@@ -62,9 +63,8 @@ function byDocumentPosition<T>(a: HarvestedItem<T>, b: HarvestedItem<T>): number
 export class SelectClosedItems<T = AcceptableValue> {
   /** The reasons the items are wanted, besides the selection's label. */
   private readonly reasons = shallowRef(new Set<SelectClosedItemsReason>())
-  /** Reasons waiting for idle time, and the pending idle callback. */
-  private readonly pendingReasons = new Set<SelectClosedItemsReason>()
-  private idleHandle: number | ReturnType<typeof setTimeout> | undefined = undefined
+  /** Cancels the pending idle callback of `requestFormWhenIdle`. */
+  private cancelIdle: (() => void) | undefined = undefined
   /** Client-only, past the root's mount: the server and the hydration render no items. */
   private readonly active = shallowRef(false)
   /** Whether the lean items are mounted (in the closed content's fragment). */
@@ -91,8 +91,6 @@ export class SelectClosedItems<T = AcceptableValue> {
     private readonly needsItems: () => boolean,
     /** Whether the trigger needs the items' texts for the selection (a value `items` does not label). */
     needsSelectionLabels: () => boolean,
-    /** Whether `items` lists the options: the typeahead need not wait for the rendered ones. */
-    private readonly hasItemsData: () => boolean,
     /** The mounted `SelectVirtualizer`'s every-option typeahead source. */
     private readonly virtualItems: ShallowRef<(() => SelectTypeaheadItem<T>[]) | undefined> | undefined,
   ) {
@@ -106,15 +104,11 @@ export class SelectClosedItems<T = AcceptableValue> {
 
   /** The root unmounts: drops a pending idle render. */
   dispose(): void {
-    this.pendingReasons.clear()
-    this.cancelIdle()
+    this.cancelIdle?.()
   }
 
   /** Renders the closed items now, for `reason`. */
-  request(reason: SelectClosedItemsReason = 'typeahead'): void {
-    this.pendingReasons.delete(reason)
-    if (!this.pendingReasons.size)
-      this.cancelIdle()
+  private request(reason: SelectClosedItemsReason): void {
     if (this.reasons.value.has(reason) || !this.needsItems())
       return
     this.reasons.value.add(reason)
@@ -122,44 +116,34 @@ export class SelectClosedItems<T = AcceptableValue> {
   }
 
   /**
-   * `request`, in idle time: the render of many items is one long task, kept
-   * off the interaction that asked for it (a focus, the mount). Repeated calls
-   * share one callback.
+   * Renders the closed items for the native `select`, in idle time: the render
+   * of many items is one long task, kept off the mount. Repeated calls share
+   * one callback.
    */
-  requestWhenIdle(reason: SelectClosedItemsReason): void {
-    if (this.reasons.value.has(reason) || this.pendingReasons.has(reason) || !this.needsItems())
-      return
-    this.pendingReasons.add(reason)
-    if (this.idleHandle !== undefined)
+  requestFormWhenIdle(): void {
+    if (this.reasons.value.has('form') || this.cancelIdle || !this.needsItems())
       return
     const run = () => {
-      this.idleHandle = undefined
-      const reasons = [...this.pendingReasons]
-      this.pendingReasons.clear()
-      reasons.forEach(pending => this.request(pending))
+      this.cancelIdle = undefined
+      this.request('form')
     }
-    this.idleHandle = typeof requestIdleCallback === 'function' && typeof cancelIdleCallback === 'function'
-      ? requestIdleCallback(run, { timeout: 500 })
-      : setTimeout(run, 50)
+    const idle = typeof requestIdleCallback === 'function' && typeof cancelIdleCallback === 'function'
+    const handle = idle ? requestIdleCallback(run, { timeout: 500 }) : setTimeout(run, 50)
+    this.cancelIdle = () => {
+      if (idle)
+        cancelIdleCallback(handle as number)
+      else
+        clearTimeout(handle)
+      this.cancelIdle = undefined
+    }
   }
 
   /** `reason` no longer needs the items (the trigger blurred, the form is gone). */
   release(reason: SelectClosedItemsReason): void {
-    this.pendingReasons.delete(reason)
-    if (!this.pendingReasons.size)
-      this.cancelIdle()
+    if (reason === 'form')
+      this.cancelIdle?.()
     if (this.reasons.value.delete(reason))
       triggerRef(this.reasons)
-  }
-
-  private cancelIdle(): void {
-    if (this.idleHandle === undefined)
-      return
-    if (typeof requestIdleCallback === 'function' && typeof cancelIdleCallback === 'function')
-      cancelIdleCallback(this.idleHandle as number)
-    else
-      clearTimeout(this.idleHandle as ReturnType<typeof setTimeout>)
-    this.idleHandle = undefined
   }
 
   /** The lean items mounted or unmounted (`SelectProvider`). */
@@ -235,24 +219,6 @@ export class SelectClosedItems<T = AcceptableValue> {
   /** Whether the closed items can be rendered at all (client, past the mount, no `displayValue`). */
   canRender(): boolean {
     return this.active.value && this.needsItems()
-  }
-
-  /** Whether the closed typeahead has the items to match (or never will). */
-  ready(): boolean {
-    // Inactive (the server, a headless `useSelectRoot` without the SFC), no items can render.
-    return !this.canRender() || this.hasItemsData() || this.hasRendered()
-  }
-
-  /**
-   * Makes the items ready for the closed typeahead: renders them if they are
-   * not, then calls `callback` (right away when they are ready).
-   */
-  whenReady(callback: () => void): void {
-    if (this.ready()) {
-      callback()
-      return
-    }
-    this.renderThen(callback)
   }
 
   /** Renders the closed items now (for the typeahead), then calls `callback`. */

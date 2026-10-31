@@ -1,6 +1,6 @@
 // Regression (#3111 re-review): the closed lean items stay live, in document order.
 // Re-review 894b52ef, focus 1: the closed lean items, once mounted, must stay live.
-// Each case first gets the lean items mounted (a value, or a trigger focus), then mutates.
+// Each case first gets the lean items mounted (a value, or a key on the trigger), then mutates.
 // Checks SelectValue, the hidden native <select>, and the closed trigger typeahead.
 import { fireEvent } from '@testing-library/vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
@@ -25,10 +25,11 @@ async function settle() {
 const valueText = () => document.querySelector('[data-testid=value]')!.textContent
 const trigger = () => document.querySelector('[role=combobox]') as HTMLElement
 const nativeOpts = () => Array.from(document.querySelector('select')?.options ?? []).filter(o => !o.hasAttribute('data-nullable')).map(o => `${o.value}:${o.textContent?.trim()}${o.disabled ? '(d)' : ''}`)
-async function focusTrigger() {
+/** Mounts the lean items as a user does: a focus alone renders nothing, a key does (this one matches nothing). */
+async function mountLeanItems() {
   trigger().focus()
   await fireEvent.focus(trigger())
-  await settle()
+  await key('~')
 }
 async function key(k: string) {
   trigger().dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }))
@@ -69,12 +70,12 @@ describe('lean items stay live', { timeout: 20000 }, () => {
     expect(model.value).toBe('a')
   })
 
-  it('i18n single, no value: focus harvest, then locale switch, typeahead uses new text', async () => {
+  it('i18n single, no value: mounted by a key, then locale switch, typeahead uses new text', async () => {
     const locale = ref<'en' | 'fr'>('en')
     const model = ref<string | undefined>(undefined)
     make({ list: () => (['a', 'b', 'c'] as const).map(v => ({ value: v, text: t[locale.value][v] })), model })
     await settle()
-    await focusTrigger()
+    await mountLeanItems()
     locale.value = 'fr'
     await settle()
     await key('p')
@@ -105,12 +106,12 @@ describe('lean items stay live', { timeout: 20000 }, () => {
     expect(nativeOpts()).toEqual(['a:Pomme', 'b:Banane'])
   })
 
-  it('async options arriving after the first focus harvest: typeahead reaches them', async () => {
+  it('async options arriving after the first key rendered an empty list: typeahead reaches them', async () => {
     const list = ref<Opt[]>([])
     const model = ref<string | undefined>(undefined)
     make({ list: () => list.value, model })
     await settle()
-    await focusTrigger() // harvests an empty list
+    await mountLeanItems() // renders an empty list
     list.value = [{ value: 'a', text: 'Apple' }, { value: 'b', text: 'Banana' }]
     await settle()
     await key('b')
@@ -123,7 +124,7 @@ describe('lean items stay live', { timeout: 20000 }, () => {
     const model = ref<string | undefined>(undefined)
     make({ list: () => list.value, model })
     await settle()
-    await focusTrigger()
+    await mountLeanItems()
     // a refetch adds "Bill" at the top
     list.value = [{ value: 'bill', text: 'Bill' }, { value: 'bob', text: 'Bob' }]
     await settle()
@@ -146,7 +147,7 @@ describe('lean items stay live', { timeout: 20000 }, () => {
     const model = ref<string | undefined>(undefined)
     make({ list: () => list.value, model })
     await settle()
-    await focusTrigger()
+    await mountLeanItems()
     list.value = [{ value: 'bill', text: 'Bill' }, { value: 'bob', text: 'Bob' }]
     await settle()
     await key('b')
@@ -158,7 +159,7 @@ describe('lean items stay live', { timeout: 20000 }, () => {
     const model = ref<string | undefined>('a')
     make({ list: () => [{ value: 'a', text: 'Apple' }, { value: 'b', text: 'Banana', disabled: dis.value }], model, name: 'f' })
     await settle()
-    await focusTrigger()
+    await mountLeanItems()
     expect(nativeOpts()).toEqual(['a:Apple', 'b:Banana(d)'])
     await key('b')
     expect(model.value).toBe('a')
@@ -231,7 +232,7 @@ describe('lean items stay live', { timeout: 20000 }, () => {
     const model = ref<string | undefined>(undefined)
     make({ list: () => [{ value: 'a', text: 'Apple', textValue: 'Aardvark' }, { value: 'b', text: 'Banana', textValue: tv.value }], model })
     await settle()
-    await focusTrigger()
+    await mountLeanItems()
     await key('z')
     expect(model.value).toBe('b')
     tv.value = 'Yak'

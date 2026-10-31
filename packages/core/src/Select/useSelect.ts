@@ -383,7 +383,6 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
       const values = (Array.isArray(value) ? value : isNullish(value) ? [] : [value]) as T[]
       return values.some(v => getItemData(v) === undefined)
     },
-    () => !!items.value,
     virtualTypeaheadItems,
   )
 
@@ -564,18 +563,13 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
     if (context.multiple.value || context.open.value)
       return
     const closedItems = !options.getItems && context.closedItems
-    // A closed Select renders its items only when something needs them: a key
-    // before they rendered renders them, then matches.
-    if (closedItems && !closedItems.ready()) {
-      closedItems.whenReady(() => matchTypeahead(event))
-      return
-    }
-    // With `items` and no item rendered yet, the key matches `items` right
-    // away, unless only a rendered item can answer it: nothing matches (an
-    // option only a `SelectItem` has), or the match is a record's string key
-    // (the item's own value may be a number). Then render, and match again.
-    if (closedItems && context.items?.value && closedItems.canRender() && !closedItems.hasRendered()) {
-      const next = findTypeaheadMatch()
+    // A closed Select renders its items only when something needs them: the
+    // first key without them renders them, then matches. A focus does not.
+    // With `items`, the key matches `items` right away, unless only a rendered
+    // item can answer it: nothing matches (an option only a `SelectItem` has),
+    // or the match is a record's string key (the item's own value may be a number).
+    if (closedItems && closedItems.canRender() && !closedItems.hasRendered()) {
+      const next = context.items?.value && findTypeaheadMatch()
       if (!next || (next.dataOnly && context.isRecordItems?.() && !context.isSelected(next.value)))
         closedItems.renderThen(() => matchTypeahead(event))
       else
@@ -726,15 +720,7 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
     }
   }
 
-  // A closed Select renders its items only when something needs them: focus
-  // readies them for the typeahead in idle time (a key before that renders
-  // them on demand); a blur lets them go.
-  function onFocus() {
-    if (context.multiple.value || context.open.value || isDisabled.value)
-      return
-    context.closedItems?.requestWhenIdle('typeahead')
-  }
-
+  // The items a key rendered for the typeahead last until the trigger blurs.
   function onBlur() {
     context.closedItems?.release('typeahead')
   }
@@ -749,7 +735,6 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
       'disabled': isDisabled.value,
       'dir': context.dir.value,
       onClick,
-      onFocus,
       onBlur,
       'onPointerdown': onPointerdown,
       'onMousedown': onMousedown,

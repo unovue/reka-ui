@@ -237,7 +237,7 @@ closedItems.liveItems = () => {
 // the name and the form last.
 function syncFormRequest() {
   if (isFormControl.value && resolvedName.value)
-    closedItems.requestWhenIdle('form')
+    closedItems.requestFormWhenIdle()
   else
     closedItems.release('form')
 }

@@ -1,8 +1,7 @@
 // Regression (#3111 re-review): `items` first keys and record values.
 // Re-review 894b52ef: `items` prop (PR-only API, base has no `items`; run on PR).
-// (a) 894b52ef claims "a first key that matches nothing renders the items and retries", but the commit only adds a
-//     test, and that test passes only because its harness is a named Select in a <form> (the idle native-options
-//     render already mounted the lean items). Without a form/name, or with focus + an immediate key, it misses.
+// (a) A first key that matches nothing in `items` renders the items and retries. The control below passes through
+//     the idle native-options render of a named Select in a <form>; the others have no form, so only the retry can pass.
 // (b) record `items` with number values: the typeahead / native select must keep the number type.
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -54,7 +53,7 @@ describe('items: first key that misses', { timeout: 15000 }, () => {
     expect(model.value).toBe('c')
   })
 
-  it('no form: focus, then an immediate key (before idle)', async () => {
+  it('no form: focus, then a key', async () => {
     const model = make({ items: { a: 'Apple' } }, [{ value: 'a', text: 'Apple' }, { value: 'c', text: 'Cherry' }])
     await settle()
     trigger().focus()

@@ -39,6 +39,18 @@ async function mountSel(attrs = '') {
 const itemText = (v: string) => document.querySelector(`reka-select-item[value="${v}"] reka-select-item-text`) as HTMLElement
 
 describe('elements select while closed', () => {
+  it('without a form, a focus renders no lean items and the first key still matches', async () => {
+    render(SELECT().replace('<form>', '<div>').replace('</form>', '</div>').replace('name="fruit"', ''))
+    const trigger = query('reka-select-trigger')
+    await vi.waitFor(() => expect(trigger.getAttribute('role')).toBe('combobox'))
+    trigger.focus()
+    await sleep(700) // past any idle time
+    const value = query('reka-select-value')
+    expect(value.textContent).toBe('Pick')
+    await userEvent.keyboard('c')
+    await vi.waitFor(() => expect(value.textContent).toBe('Cherry'))
+  })
+
   it('a selected item\'s text changed while closed shows in reka-select-value', async () => {
     const { value } = await mountSel('default-value="cherry"')
     await vi.waitFor(() => expect(value.textContent).toBe('Cherry'))
