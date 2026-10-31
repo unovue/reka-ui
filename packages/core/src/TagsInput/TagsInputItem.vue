@@ -29,7 +29,7 @@ export const [injectTagsInputItemContext, provideTagsInputItemContext]
 
 <script setup lang="ts">
 import { useCollectionItem } from '@/Collection'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useSelectorKey } from '@/shared/createKeyedSelector'
 import { getterRef } from '@/shared/partSurface'
 
@@ -60,13 +60,12 @@ const item = getTagsInputItemSurface(itemContext)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
     data-reka-collection-item=""
-    :as="as"
-    :as-child="asChild"
     v-bind="mergeProps($attrs, item.attrs.value)"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

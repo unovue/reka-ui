@@ -9,7 +9,7 @@ export interface TagsInputItemDeleteProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 
 withDefaults(defineProps<TagsInputItemDeleteProps>(), {
   as: 'button',
@@ -23,13 +23,12 @@ const itemDelete = getTagsInputItemDeleteSurface(context, itemContext)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     :type="as === 'button' ? 'button' : undefined"
     v-bind="itemDelete.attrs.value"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

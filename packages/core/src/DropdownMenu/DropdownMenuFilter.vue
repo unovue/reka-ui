@@ -5,7 +5,9 @@ import { computed, onMounted, onUnmounted, ref, watch, watchSyncEffect } from 'v
 import { injectMenuContentContext } from '@/Menu/MenuContentImpl.vue'
 import { injectMenuRootContext } from '@/Menu/MenuRoot.vue'
 import { injectMenuSubContext } from '@/Menu/MenuSub.vue'
-import { Primitive, usePrimitiveElement } from '@/Primitive'
+import {
+  usePrimitiveElement,
+} from '@/Primitive'
 import { useComposing } from '@/shared'
 
 export interface DropdownMenuFilterProps extends PrimitiveProps {
@@ -23,6 +25,8 @@ export type DropdownMenuFilterEmits = {
 </script>
 
 <script setup lang="ts">
+import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
+
 const props = withDefaults(defineProps<DropdownMenuFilterProps>(), {
   as: 'input',
 })
@@ -118,10 +122,9 @@ function handleKeyDown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAsEmpty(as, asChild)"
     ref="primitiveElement"
-    :as="as"
-    :as-child="asChild"
     :value="modelValue"
     :disabled="disabled ? '' : undefined"
     :data-disabled="disabled ? '' : undefined"
@@ -135,6 +138,11 @@ function handleKeyDown(event: KeyboardEvent) {
     @compositionupdate="handleCompositionUpdate"
     @compositionend="handleCompositionEnd"
   >
-    <slot :model-value="modelValue" />
-  </Primitive>
+    <template
+      v-if="rendersChildren(as, asChild)"
+      #default
+    >
+      <slot :model-value="modelValue" />
+    </template>
+  </component>
 </template>

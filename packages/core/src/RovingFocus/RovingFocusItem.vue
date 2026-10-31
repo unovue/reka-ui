@@ -19,7 +19,7 @@ export interface RovingFocusItemProps extends PrimitiveProps {
 import { getCurrentInstance, mergeProps } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useForwardElement } from '@/shared'
-import { injectRovingFocusGroupContext } from './RovingFocusGroup.vue'
+import { injectRovingFocusGroupContext } from './useRovingFocusGroup'
 import { useRovingFocusItem } from './useRovingFocusItem'
 
 defineOptions({

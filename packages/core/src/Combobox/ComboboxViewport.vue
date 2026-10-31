@@ -14,7 +14,7 @@ export interface ComboboxViewportProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 
 const props = defineProps<ComboboxViewportProps>()
 const { forwardRef, expose } = useForwardElement()
@@ -27,8 +27,9 @@ const rootContext = injectComboboxRootContext()
 </script>
 
 <template>
-  <Primitive
-    v-bind="{ ...$attrs, ...props }"
+  <component
+    :is="renderAs(as, asChild)"
+    v-bind="{ ...$attrs, nonce: props.nonce }"
     :ref="forwardRef"
     data-reka-combobox-viewport
     role="presentation"
@@ -42,14 +43,14 @@ const rootContext = injectComboboxRootContext()
     }"
   >
     <slot />
-  </Primitive>
-  <Primitive
-    as="style"
+  </component>
+  <component
+    :is="renderAs('style')"
     :nonce="nonce"
   >
     /* Hide scrollbars cross-browser and enable momentum scroll for touch
     devices */ [data-reka-combobox-viewport] { scrollbar-width:none; -ms-overflow-style: none;
     -webkit-overflow-scrolling: touch; }
     [data-reka-combobox-viewport]::-webkit-scrollbar { display: none; }
-  </Primitive>
+  </component>
 </template>

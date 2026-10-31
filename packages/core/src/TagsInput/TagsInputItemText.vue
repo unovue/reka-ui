@@ -8,7 +8,7 @@ export interface TagsInputItemTextProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 
 withDefaults(defineProps<TagsInputItemTextProps>(), {
   as: 'span',
@@ -23,12 +23,11 @@ const text = getTagsInputItemTextSurface(itemContext)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="text.attrs.value"
   >
     <slot>{{ itemContext.displayValue.value }}</slot>
-  </Primitive>
+  </component>
 </template>

@@ -5,7 +5,7 @@ export interface ComboboxAnchorProps extends PopperAnchorProps {}
 <script setup lang="ts">
 import type { PopperAnchorProps } from '@/Popper'
 import { PopperAnchor } from '@/Popper'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 
 defineProps<ComboboxAnchorProps>()
@@ -19,13 +19,12 @@ defineExpose(expose)
     as-child
     :reference="reference"
   >
-    <Primitive
+    <component
+      :is="renderAs(as, asChild)"
       :ref="forwardRef"
-      :as-child="asChild"
-      :as="as"
       v-bind="$attrs"
     >
       <slot />
-    </Primitive>
+    </component>
   </PopperAnchor>
 </template>

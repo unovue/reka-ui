@@ -83,6 +83,8 @@ async function hoverClose() {
   await escape()
 }
 
+let listboxLongActs = 0
+
 export const FAMILIES = {
   Accordion: { n: 300, act: i => press($('button', i)) },
   AlertDialog: { n: 500, ...overlay(i => press($('.trg', i)), '[role="alertdialog"]') },
@@ -113,6 +115,20 @@ export const FAMILIES = {
   HoverCard: { n: 500, ...overlay(hoverOpen, '.hc-content', hoverClose) },
   Label: { n: 1000 },
   Listbox: { n: 300, act: i => press($$('[role="option"]', i)[2]) },
+  // A selection, then the pointer leaving the list: each flips the content's
+  // roving tabindex, which must not re-render all 1,000 items (#3112).
+  ListboxLong: {
+    n: 2,
+    act: async (i) => {
+      const option = $$('[role="option"]', i)[100 + (listboxLongActs++ % 800)]
+      hover(option, 'pointermove')
+      press(option)
+      // Its own tick: in the same one, the highlight set and cleared would
+      // leave the tabindex unchanged.
+      await nextTick()
+      hover($('[role="listbox"]', i).parentElement, 'pointerleave')
+    },
+  },
   Menubar: { n: 200, ...overlay(i => press($('.trg', i)), '[role="menu"]') },
   // Scoped to this instance's trigger: content from a previous instance may still be closing.
   NavigationMenu: {

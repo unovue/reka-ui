@@ -44,9 +44,15 @@ export const [injectToggleGroupRootContext, provideToggleGroupRootContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { Slot } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { useToggleGroup } from './useToggleGroup'
+
+// A group switching `rovingFocus` swaps the template's wrapper, which re-mounts
+// the items (they decide once whether they rove), so the group stays a
+// wrapper here. Without roving focus `Slot` only passes `dir` and the consumer
+// attrs down, as `Primitive as-child` did.
 
 const props = withDefaults(defineProps<ToggleGroupRootProps>(), {
   loop: true,
@@ -86,16 +92,12 @@ provideToggleGroupRootContext(context)
 
 <template>
   <component
-    :is="rovingFocus ? RovingFocusGroup : Primitive"
-    as-child
-    :orientation="rovingFocus ? orientation : undefined"
-    :dir="dir"
-    :loop="rovingFocus ? loop : undefined"
+    :is="rovingFocus ? RovingFocusGroup : Slot"
+    v-bind="rovingFocus ? { asChild: true, orientation, dir, loop } : { dir }"
   >
-    <Primitive
+    <component
+      :is="renderAs(as, asChild)"
       :ref="forwardRef"
-      :as-child="asChild"
-      :as="as"
       v-bind="root.attrs.value"
     >
       <slot :model-value="modelValue" />
@@ -106,6 +108,6 @@ provideToggleGroupRootContext(context)
         :required="required"
         :value="modelValue"
       />
-    </Primitive>
+    </component>
   </component>
 </template>

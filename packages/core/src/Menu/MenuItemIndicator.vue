@@ -26,7 +26,7 @@ export const [injectMenuItemIndicatorContext, provideMenuItemIndicatorContext]
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Presence } from '@/Presence'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useLingeringPresence } from '@/shared/useLingeringPresence'
 import { isIndeterminate } from './utils'
 
@@ -55,12 +55,11 @@ const lingering = useLingeringPresence(shown)
     @vue:mounted="lingering.onMounted"
     @complete="lingering.onComplete"
   >
-    <Primitive
-      :as="as"
-      :as-child="asChild"
+    <component
+      :is="renderAs(as, asChild)"
       :data-state="selectionState(indicatorContext.modelValue.value)"
     >
       <slot />
-    </Primitive>
+    </component>
   </Presence>
 </template>

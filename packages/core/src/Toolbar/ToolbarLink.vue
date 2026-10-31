@@ -7,7 +7,7 @@ export interface ToolbarLinkProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { mergeProps } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { getToolbarLinkSurface } from './useToolbar'
 
@@ -26,12 +26,11 @@ const roving = useRovingFocusItem({ element: currentElement })!
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="mergeProps($attrs, roving.attrs(), surface.attrs.value)"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

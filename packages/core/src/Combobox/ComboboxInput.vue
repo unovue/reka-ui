@@ -18,7 +18,7 @@ export interface ComboboxInputProps extends ListboxFilterProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 import { createComboboxInputSurface, getComboboxInputText } from './useCombobox'
 
@@ -117,12 +117,16 @@ watch(rootContext.filterState, (_newValue, oldValue) => {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAsEmpty(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="surface.attrs.value"
   >
-    <slot :model-value="modelValue" />
-  </Primitive>
+    <template
+      v-if="rendersChildren(as, asChild)"
+      #default
+    >
+      <slot :model-value="modelValue" />
+    </template>
+  </component>
 </template>

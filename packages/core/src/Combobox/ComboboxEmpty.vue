@@ -5,11 +5,11 @@ export interface ComboboxEmptyProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
-const props = defineProps<ComboboxEmptyProps>()
+defineProps<ComboboxEmptyProps>()
 const rootContext = injectComboboxRootContext()
 
 const { forwardRef, expose } = useForwardElement()
@@ -17,11 +17,11 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     v-if="rootContext.filterState.value.count === 0"
     :ref="forwardRef"
-    v-bind="props"
   >
     <slot>No options</slot>
-  </Primitive>
+  </component>
 </template>

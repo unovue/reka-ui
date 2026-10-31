@@ -2,9 +2,10 @@
 import type { PrimitiveProps } from '..'
 import { useVModel } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watch, watchSyncEffect } from 'vue'
-import { usePrimitiveElement } from '@/Primitive'
+import {
+  usePrimitiveElement,
+} from '@/Primitive'
 import { useComposing } from '@/shared'
-import { Primitive } from '..'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 
 export interface ListboxFilterProps extends PrimitiveProps {
@@ -22,6 +23,8 @@ export type ListboxFilterEmits = {
 </script>
 
 <script setup lang="ts">
+import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
+
 const props = withDefaults(defineProps<ListboxFilterProps>(), {
   as: 'input',
 })
@@ -121,10 +124,9 @@ function handleKeydownEnter(event: KeyboardEvent) {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAsEmpty(as, asChild)"
     ref="primitiveElement"
-    :as="as"
-    :as-child="asChild"
     :value="modelValue"
     :disabled="disabled ? '' : undefined"
     :data-disabled="disabled ? '' : undefined"
@@ -138,6 +140,11 @@ function handleKeydownEnter(event: KeyboardEvent) {
     @compositionupdate="handleCompositionUpdate"
     @compositionend="handleCompositionEnd"
   >
-    <slot :model-value="modelValue" />
-  </Primitive>
+    <template
+      v-if="rendersChildren(as, asChild)"
+      #default
+    >
+      <slot :model-value="modelValue" />
+    </template>
+  </component>
 </template>

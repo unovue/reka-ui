@@ -87,7 +87,7 @@ export const [injectTagsInputRootContext, provideTagsInputRootContext]
 import { useFocusWithin } from '@vueuse/core'
 import { mergeProps } from 'vue'
 import { useCollection, useCollectionSlot } from '@/Collection'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useTagsInput } from './useTagsInput'
 
@@ -148,11 +148,10 @@ provideTagsInputRootContext(context as unknown as TagsInputRootContext)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     v-bind="mergeProps($attrs, root.attrs.value)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
   >
     <slot :model-value="modelValue" />
 
@@ -163,5 +162,5 @@ provideTagsInputRootContext(context as unknown as TagsInputRootContext)
       :required="required"
       :disabled="disabled"
     />
-  </Primitive>
+  </component>
 </template>

@@ -14,10 +14,10 @@ export const [injectListboxGroupContext, provideListboxGroupContext]
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 
-const props = defineProps<ListboxGroupProps>()
+defineProps<ListboxGroupProps>()
 
 const id = useId(undefined, 'reka-listbox-group')
 provideListboxGroupContext({ id })
@@ -31,13 +31,13 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
     role="group"
-    v-bind="props"
     :aria-labelledby="id"
     :hidden="isFilteredOut || undefined"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

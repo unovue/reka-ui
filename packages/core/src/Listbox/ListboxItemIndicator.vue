@@ -13,7 +13,7 @@ export interface ListboxItemIndicatorProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { Presence } from '@/Presence'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useLingeringPresence } from '@/shared/useLingeringPresence'
 import { injectListboxItemContext } from './ListboxItem.vue'
 
@@ -38,14 +38,13 @@ const lingering = useLingeringPresence(shown)
     @vue:mounted="lingering.onMounted"
     @complete="lingering.onComplete"
   >
-    <Primitive
+    <component
+      :is="renderAs(as, asChild)"
       :ref="forwardRef"
       aria-hidden="true"
       :data-state="selectionState(itemContext.isSelected.value)"
-      :as="as"
-      :as-child="asChild"
     >
       <slot />
-    </Primitive>
+    </component>
   </Presence>
 </template>
