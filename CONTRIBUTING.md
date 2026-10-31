@@ -226,10 +226,15 @@ need every result. The first time, install the browser with
 
 **In CI**, the `Bench` workflow runs `pnpm bench --compare <base>` on every pull
 request into `v3` that touches `packages/core`, and writes the table to the job
-summary. The job fails when a family's retained heap per instance grows by more
-than 3% **and** by more than 0.2 KB per instance, with every PR sample above
-every base sample. Times are reported but never fail the job, because shared
-runners are too noisy for them.
+summary. The job fails when either of these holds for a family, with every PR
+sample above every base sample:
+
+- its retained heap per instance grows by more than 3% **and** by more than
+  0.2 KB per instance;
+- its update time is more than 2x base **and** more than 5 ms slower.
+
+Mount times are reported but never fail the job, because shared runners are too
+noisy for them. Smaller update-time changes don't fail it for the same reason.
 
 When you add a component family, add a fixture to `src/fixtures/` and an entry
 (instance count and update action) to `src/families.js`. If a fixture imports

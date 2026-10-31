@@ -83,7 +83,22 @@ async function hoverClose() {
   await escape()
 }
 
-let listboxLongActs = 0
+// A selection, then the pointer leaving the list, on an item further along each
+// time: both flip the highlight, and neither may re-render more than today's
+// numbers for these 1,000-item lists (#3112).
+function longListAct() {
+  let acts = 0
+  return async (i) => {
+    const option = $$('[role="option"]', i)[100 + (acts++ % 800)]
+    hover(option, 'pointermove')
+    press(option)
+    // Its own tick: in the same one, the highlight set and cleared would
+    // leave the tabindex unchanged.
+    await nextTick()
+    hover($('[role="listbox"]', i), 'pointerleave')
+    hover($('[role="listbox"]', i).parentElement, 'pointerleave')
+  }
+}
 
 export const FAMILIES = {
   Accordion: { n: 300, act: i => press($('button', i)) },
@@ -101,6 +116,7 @@ export const FAMILIES = {
   ColorSwatch: { n: 1000 },
   ColorSwatchPicker: { n: 200, act: i => press($$('[role="option"], [role="radio"]', i)[1]) },
   Combobox: { n: 300, ...overlay(i => press($('.trg', i)), '[role="listbox"]') },
+  ComboboxLong: { n: 2, act: longListAct() },
   ContextMenu: { n: 500, ...overlay(i => contextmenu($('.trg', i)), '[role="menu"]') },
   DateField: { n: 200, act: i => focusKey($('[data-reka-date-field-segment="day"], [data-reka-date-field-segment]:not([data-reka-date-field-segment="literal"])', i), 'ArrowUp') },
   DatePicker: { n: 150, ...overlay(i => press($('.trg', i)), '[role="dialog"]') },
@@ -115,20 +131,8 @@ export const FAMILIES = {
   HoverCard: { n: 500, ...overlay(hoverOpen, '.hc-content', hoverClose) },
   Label: { n: 1000 },
   Listbox: { n: 300, act: i => press($$('[role="option"]', i)[2]) },
-  // A selection, then the pointer leaving the list: each flips the content's
-  // roving tabindex, which must not re-render all 1,000 items (#3112).
-  ListboxLong: {
-    n: 2,
-    act: async (i) => {
-      const option = $$('[role="option"]', i)[100 + (listboxLongActs++ % 800)]
-      hover(option, 'pointermove')
-      press(option)
-      // Its own tick: in the same one, the highlight set and cleared would
-      // leave the tabindex unchanged.
-      await nextTick()
-      hover($('[role="listbox"]', i).parentElement, 'pointerleave')
-    },
-  },
+  ListboxLong: { n: 2, act: longListAct() },
+  ListboxLongAsChild: { n: 2, act: longListAct() },
   Menubar: { n: 200, ...overlay(i => press($('.trg', i)), '[role="menu"]') },
   // Scoped to this instance's trigger: content from a previous instance may still be closing.
   NavigationMenu: {
