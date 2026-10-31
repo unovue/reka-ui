@@ -131,8 +131,8 @@ export const FAMILIES = {
   HoverCard: { n: 500, ...overlay(hoverOpen, '.hc-content', hoverClose) },
   Label: { n: 1000 },
   Listbox: { n: 300, act: i => press($$('[role="option"]', i)[2]) },
-  ListboxLong: { n: 2, act: longListAct() },
-  ListboxLongAsChild: { n: 2, act: longListAct() },
+  ListboxLong: { n: 2, act: longListAct(), done: i => !$('[data-highlighted]', i) },
+  ListboxLongAsChild: { n: 2, act: longListAct(), done: i => !$('[data-highlighted]', i) },
   Menubar: { n: 200, ...overlay(i => press($('.trg', i)), '[role="menu"]') },
   // Scoped to this instance's trigger: content from a previous instance may still be closing.
   NavigationMenu: {
