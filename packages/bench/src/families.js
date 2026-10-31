@@ -160,6 +160,11 @@ export const FAMILIES = {
   ScrollArea: { n: 300 },
   Select: { n: 500, ...overlay(i => press($('.trg', i)), '[role="listbox"]') },
   SelectLarge: { n: 10, ...overlay(i => press($('.trg', i)), '[role="listbox"]') },
+  SelectFormObjects: {
+    n: 3,
+    act: i => focusKey($('.trg', i), 'o'),
+    done: i => $('.trg', i).textContent.includes('Option'),
+  },
   Separator: { n: 1000 },
   Slider: { n: 500, act: i => key($('[role="slider"]', i), 'ArrowRight') },
   Splitter: { n: 300, act: i => key($('[role="separator"]', i), 'ArrowRight') },

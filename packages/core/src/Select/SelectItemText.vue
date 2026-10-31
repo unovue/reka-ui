@@ -28,8 +28,8 @@ const itemContext = injectSelectItemContext()
 const { forwardRef, currentElement: itemTextElement, expose } = useForwardElement()
 defineExpose(expose)
 
-// Registers the text in the root's sticky label registry on mount and update;
-// a closed content's detached item text registers it once, on mount.
+// Registers the text in the root's sticky label registry on mount and update,
+// for a closed content's detached item text as well (see `useSelectItemTextLabel`).
 const itemText = contentContext.harvest
   ? useSelectItemTextLabel(rootContext, itemContext, itemTextElement)
   : useSelectItemText({

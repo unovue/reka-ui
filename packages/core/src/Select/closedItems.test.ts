@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { shallowRef } from 'vue'
 import { SelectClosedItems } from './closedItems'
 
-describe('selectClosedItems idle requests', () => {
+describe('selectClosedItems', () => {
   const callbacks = new Map<number, () => void>()
   let nextHandle = 0
   const requestIdle = vi.fn((callback: () => void) => {
@@ -17,10 +18,12 @@ describe('selectClosedItems idle requests', () => {
     pending.forEach(callback => callback())
   }
 
-  function create() {
-    const closed = new SelectClosedItems(() => true, () => false, undefined)
+  function create({ items = true, form = true } = {}) {
+    const needsForm = shallowRef(form)
+    const closed = new SelectClosedItems(() => true, () => false, () => items, undefined)
+    closed.needsForm = () => needsForm.value
     closed.activate()
-    return closed
+    return { closed, needsForm }
   }
 
   beforeEach(() => {
@@ -35,52 +38,66 @@ describe('selectClosedItems idle requests', () => {
     vi.unstubAllGlobals()
   })
 
-  it('shares one callback between repeated calls', () => {
-    const closed = create()
-    closed.requestFormWhenIdle()
-    closed.requestFormWhenIdle()
+  it('renders for a form from the start without `items`, whose options need the render', () => {
+    expect(create({ items: false }).closed.render.value).toBe(true)
+  })
+
+  it('renders for a form in idle time with `items`, in one callback', () => {
+    const { closed } = create()
+    closed.renderFormWhenIdle()
+    closed.renderFormWhenIdle()
     expect(requestIdle).toHaveBeenCalledTimes(1)
     expect(closed.render.value).toBe(false)
-
     runIdle()
     expect(closed.render.value).toBe(true)
-    closed.release('form')
-    expect(closed.render.value).toBe(false)
   })
 
-  it('does not schedule while the form already holds the items', () => {
-    const closed = create()
-    closed.requestFormWhenIdle()
+  it('does not schedule again past the idle time', () => {
+    const { closed } = create()
+    closed.renderFormWhenIdle()
     runIdle()
-    closed.requestFormWhenIdle()
+    closed.renderFormWhenIdle()
     expect(requestIdle).toHaveBeenCalledTimes(1)
   })
 
-  it('a typeahead release keeps the pending form callback, and the form\'s items', () => {
-    const closed = create()
-    closed.requestFormWhenIdle()
-    closed.release('typeahead')
-    expect(cancelIdle).not.toHaveBeenCalled()
+  it('stops rendering for a form that is gone', () => {
+    const { closed, needsForm } = create()
+    closed.renderFormWhenIdle()
     runIdle()
+    needsForm.value = false
+    expect(closed.render.value).toBe(false)
+  })
+
+  it('the typeahead release keeps the form\'s items', () => {
+    const { closed } = create({ items: false })
     closed.renderThen(() => {})
-    closed.release('typeahead')
+    closed.releaseTypeahead()
     expect(closed.render.value).toBe(true)
   })
 
-  it('a form release cancels the callback', () => {
-    const closed = create()
-    closed.requestFormWhenIdle()
-    closed.release('form')
-    expect(cancelIdle).toHaveBeenCalledTimes(1)
-    expect(callbacks.size).toBe(0)
+  it('the typeahead holds the items until released', () => {
+    const { closed } = create({ form: false })
+    closed.renderThen(() => {})
+    expect(closed.render.value).toBe(true)
+    closed.releaseTypeahead()
+    expect(closed.render.value).toBe(false)
   })
 
   it('dispose cancels the callback, and nothing renders afterwards', () => {
-    const closed = create()
-    closed.requestFormWhenIdle()
+    const { closed } = create()
+    closed.renderFormWhenIdle()
     closed.dispose()
     expect(cancelIdle).toHaveBeenCalledTimes(1)
     runIdle()
     expect(closed.render.value).toBe(false)
+  })
+
+  it('can render nothing before the root is active', () => {
+    const closed = new SelectClosedItems(() => true, () => true, () => false, undefined)
+    expect(closed.canRender()).toBe(false)
+    expect(closed.render.value).toBe(false)
+    closed.activate()
+    expect(closed.canRender()).toBe(true)
+    expect(closed.render.value).toBe(true)
   })
 })

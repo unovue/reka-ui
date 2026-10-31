@@ -329,6 +329,23 @@ describe('typeahead on the closed trigger', () => {
     expect(valueText()).toBe('Blueberry')
   })
 
+  it('matches synchronously on the composables alone, where no closed items can render', async () => {
+    const onUpdate = vi.fn()
+    let api!: UseSelectRootReturn<string>
+    mount(defineComponent({
+      setup() {
+        api = useSelectRoot<string>({ baseId: 'fruit', onUpdate })
+        const { trigger: surface } = useSelectTrigger({ context: api.context })
+        return () => h('button', { ...surface.attrs.value, 'type': 'button', 'aria-label': 'Fruit' })
+      },
+    }), { attachTo: document.body })
+    await nextTick()
+    api.context.labels.register('Banana', 'Banana')
+    trigger().dispatchEvent(new KeyboardEvent('keydown', { key: 'b', bubbles: true, cancelable: true }))
+    // No tick: nothing waits for a render that cannot happen.
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+  })
+
   it('does nothing in a multiple select', async () => {
     const onUpdate = vi.fn()
     mountSelect({ 'multiple': true, 'onUpdate:modelValue': onUpdate })

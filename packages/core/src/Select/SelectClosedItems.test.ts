@@ -355,14 +355,6 @@ describe('typeahead on a closed Select', () => {
     expect(nativeOptions().map(option => option.textContent)).toEqual(['Apple!', 'Banana!', 'Blueberry!', 'Cherry!'])
   })
 
-  it('an unmount drops the pending idle render of a form', async () => {
-    const { wrapper, itemTexts } = mountSelect({ name: 'fruit' }, () => fruits, { form: true })
-    await flushPromises()
-    wrapper.unmount()
-    await idle()
-    expect(itemTexts).not.toHaveBeenCalled()
-  })
-
   it('keeps the lean items after blur while a selected value needs its label', async () => {
     const list = ref(fruits)
     mountSelect({ defaultValue: 'Cherry' }, () => list.value)
@@ -414,11 +406,9 @@ describe('typeahead on a closed Select', () => {
 })
 
 describe('the hidden native select of a closed Select', () => {
-  it('holds every option once idle, with no option in the page', async () => {
+  it('holds every option from the mount, with no option in the page', async () => {
     const { itemTexts } = mountSelect({ name: 'fruit' }, () => fruits.map((fruit, index) => ({ ...fruit, disabled: index === 1 })), { form: true })
     await flushPromises()
-    expect(itemTexts).not.toHaveBeenCalled()
-    await idle()
     expect(nativeOptions().map(option => [option.value, option.textContent?.trim(), option.disabled])).toEqual([
       ['Apple', 'Apple', false],
       ['Banana', 'Banana', true],

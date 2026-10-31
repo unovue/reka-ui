@@ -1,6 +1,6 @@
 import type { ComputedRef, ShallowRef } from 'vue'
 import type { AcceptableValue } from '@/shared/types'
-import { computed, nextTick, shallowRef, triggerRef } from 'vue'
+import { computed, nextTick, shallowRef } from 'vue'
 
 /** An entry the closed trigger's typeahead can select. */
 export interface SelectTypeaheadItem<T = AcceptableValue> {
@@ -8,13 +8,6 @@ export interface SelectTypeaheadItem<T = AcceptableValue> {
   textValue: string
   disabled?: boolean
 }
-
-/**
- * Why the closed lean items are wanted besides the selection's label:
- * - `'typeahead'`: a key on the closed trigger, until it blurs;
- * - `'form'`: a named Select in a form fills its hidden native `select`.
- */
-export type SelectClosedItemsReason = 'typeahead' | 'form'
 
 interface HarvestedItem<T> {
   entry: () => SelectTypeaheadItem<T>
@@ -49,8 +42,9 @@ function byDocumentPosition<T>(a: HarvestedItem<T>, b: HarvestedItem<T>): number
  * - a printable key on the closed trigger needs them for the typeahead, until
  *   the trigger blurs (a focus alone renders nothing: tabbing through a form
  *   must not pay for a render it does not use);
- * - a named Select in a form fills its hidden native `select` (idle time
- *   after the mount).
+ * - a named Select in a form fills its hidden native `select`, which must hold
+ *   its options whenever the browser's autofill arrives: from the mount, or in
+ *   idle time with `items`, whose options are there without the render.
  * Once none holds, they unmount; the labels stay in the registry.
  *
  * Nothing renders with `displayValue`, which resolves the text without the
@@ -61,9 +55,11 @@ function byDocumentPosition<T>(a: HarvestedItem<T>, b: HarvestedItem<T>): number
  * @internal
  */
 export class SelectClosedItems<T = AcceptableValue> {
-  /** The reasons the items are wanted, besides the selection's label. */
-  private readonly reasons = shallowRef(new Set<SelectClosedItemsReason>())
-  /** Cancels the pending idle callback of `requestFormWhenIdle`. */
+  /** A key on the closed trigger wants the items, until it blurs. */
+  private readonly typeaheadWants = shallowRef(false)
+  /** Past the idle time a named Select with `items` waits for. */
+  private readonly formIdlePassed = shallowRef(false)
+  /** Cancels the pending idle callback of `renderFormWhenIdle`. */
   private cancelIdle: (() => void) | undefined = undefined
   /** Client-only, past the root's mount: the server and the hydration render no items. */
   private readonly active = shallowRef(false)
@@ -73,28 +69,36 @@ export class SelectClosedItems<T = AcceptableValue> {
   readonly render: ComputedRef<boolean>
   /** The open content's mounted items in document order; set by the root SFC (its collection). */
   liveItems: (() => SelectTypeaheadItem<T>[]) | undefined = undefined
+  /** Whether a named Select in a form has a hidden native `select`; set by the root SFC. */
+  needsForm: (() => boolean) | undefined = undefined
   /** The lean items, sorted into document order when read (see `version`). */
   private readonly harvested: HarvestedItem<T>[] = []
-  private sortedAt = -1
   /**
-   * Bumped whenever the lean items are added, removed or moved: the native
-   * `select` options read it to follow the document order.
+   * Bumped whenever the lean items are added, removed or moved, at any depth:
+   * the native `select` options read it to follow the document order.
    */
   readonly version = shallowRef(0)
   /** Each lean item text's label sync, run on any text mutation (one observer for all). */
   private readonly textSyncs = new Set<() => void>()
   private observer: MutationObserver | undefined = undefined
-  private observedParents = new WeakSet<Node>()
+  /** The lowest common ancestor of the lean items, and what the one observer watches. */
+  private observedRoot: Node | undefined = undefined
 
   constructor(
     /** Whether the labels may come from the items at all (no `displayValue`). */
     private readonly needsItems: () => boolean,
     /** Whether the trigger needs the items' texts for the selection (a value `items` does not label). */
     needsSelectionLabels: () => boolean,
+    /** Whether `items` lists the options: the native `select` has them without the render. */
+    hasItemsData: () => boolean,
     /** The mounted `SelectVirtualizer`'s every-option typeahead source. */
     private readonly virtualItems: ShallowRef<(() => SelectTypeaheadItem<T>[]) | undefined> | undefined,
   ) {
-    this.render = computed(() => this.active.value && needsItems() && (this.reasons.value.size > 0 || needsSelectionLabels()))
+    this.render = computed(() => this.active.value && needsItems() && (
+      this.typeaheadWants.value
+      || needsSelectionLabels()
+      || (!!this.needsForm?.() && (!hasItemsData() || this.formIdlePassed.value))
+    ))
   }
 
   /** The root mounted: the closed content may render its items from now on. */
@@ -107,25 +111,18 @@ export class SelectClosedItems<T = AcceptableValue> {
     this.cancelIdle?.()
   }
 
-  /** Renders the closed items now, for `reason`. */
-  private request(reason: SelectClosedItemsReason): void {
-    if (this.reasons.value.has(reason) || !this.needsItems())
-      return
-    this.reasons.value.add(reason)
-    triggerRef(this.reasons)
-  }
-
   /**
-   * Renders the closed items for the native `select`, in idle time: the render
-   * of many items is one long task, kept off the mount. Repeated calls share
-   * one callback.
+   * With `items`, a named Select's rendered items only refine its native
+   * options (a typed value, a `disabled`, an option `items` does not list): the
+   * render of many items is one long task, kept off the mount. Repeated calls
+   * share one callback.
    */
-  requestFormWhenIdle(): void {
-    if (this.reasons.value.has('form') || this.cancelIdle || !this.needsItems())
+  renderFormWhenIdle(): void {
+    if (this.formIdlePassed.value || this.cancelIdle)
       return
     const run = () => {
       this.cancelIdle = undefined
-      this.request('form')
+      this.formIdlePassed.value = true
     }
     const idle = typeof requestIdleCallback === 'function' && typeof cancelIdleCallback === 'function'
     const handle = idle ? requestIdleCallback(run, { timeout: 500 }) : setTimeout(run, 50)
@@ -138,12 +135,9 @@ export class SelectClosedItems<T = AcceptableValue> {
     }
   }
 
-  /** `reason` no longer needs the items (the trigger blurred, the form is gone). */
-  release(reason: SelectClosedItemsReason): void {
-    if (reason === 'form')
-      this.cancelIdle?.()
-    if (this.reasons.value.delete(reason))
-      triggerRef(this.reasons)
+  /** The trigger blurred: the typeahead no longer needs the items. */
+  releaseTypeahead(): void {
+    this.typeaheadWants.value = false
   }
 
   /** The lean items mounted or unmounted (`SelectProvider`). */
@@ -157,17 +151,12 @@ export class SelectClosedItems<T = AcceptableValue> {
 
   /**
    * A lean item mounts: `entry` reads its value, text and `disabled`, and
-   * `element` places it in document order. Its parent is watched for moves (a
-   * re-sorted or prepended list). Returns its unregister.
+   * `element` places it in document order. Returns its unregister.
    */
   addHarvested(entry: () => SelectTypeaheadItem<T>, element: () => Element | undefined): () => void {
     const item: HarvestedItem<T> = { entry, element }
     this.harvested.push(item)
-    const parent = element()?.parentNode
-    if (parent && !this.observedParents.has(parent)) {
-      this.observedParents.add(parent)
-      this.getObserver()?.observe(parent, { childList: true })
-    }
+    this.observe(element())
     this.bump()
     return () => {
       const index = this.harvested.indexOf(item)
@@ -178,33 +167,45 @@ export class SelectClosedItems<T = AcceptableValue> {
     }
   }
 
+  /**
+   * Widens the one observer to a node: it watches the lowest common ancestor of
+   * the lean items and their texts, with its whole subtree, so a text change or
+   * a move at any depth (a re-sorted list, groups, per-option wrappers) reaches it.
+   */
+  private observe(node: Node | undefined): void {
+    if (!node?.parentNode || typeof MutationObserver === 'undefined')
+      return
+    let root = this.observedRoot ?? node.parentNode
+    while (!root.contains(node) && root.parentNode)
+      root = root.parentNode
+    if (root === this.observedRoot)
+      return
+    this.observedRoot = root
+    this.observer ??= new MutationObserver((records) => {
+      if (records.some(record => record.type === 'childList'))
+        this.bump()
+      this.textSyncs.forEach(run => run())
+    })
+    this.observer.observe(root, { characterData: true, childList: true, subtree: true })
+  }
+
   /** Nothing lean is mounted any more: drop the observer (and what it watched). */
   private disconnectWhenIdle(): void {
     if (this.textSyncs.size || this.harvested.length || !this.observer)
       return
     this.observer.disconnect()
     this.observer = undefined
-    this.observedParents = new WeakSet()
-  }
-
-  private getObserver(): MutationObserver | undefined {
-    if (typeof MutationObserver === 'undefined')
-      return undefined
-    return this.observer ??= new MutationObserver((records) => {
-      if (records.some(record => record.type === 'childList'))
-        this.bump()
-      this.textSyncs.forEach(run => run())
-    })
+    this.observedRoot = undefined
   }
 
   /**
    * A lean item text mounts: `sync` re-registers its label, and runs whenever
    * any lean text changes (a translated text, a slot that re-renders on its
-   * own). One observer watches every lean text. Returns its unregister.
+   * own). Returns its unregister.
    */
   observeText(element: Node, sync: () => void): () => void {
     this.textSyncs.add(sync)
-    this.getObserver()?.observe(element, { characterData: true, childList: true, subtree: true })
+    this.observe(element)
     return () => {
       this.textSyncs.delete(sync)
       this.disconnectWhenIdle()
@@ -223,18 +224,14 @@ export class SelectClosedItems<T = AcceptableValue> {
 
   /** Renders the closed items now (for the typeahead), then calls `callback`. */
   renderThen(callback: () => void): void {
-    this.request('typeahead')
+    this.typeaheadWants.value = true
     // The items mount in this flush; `nextTick` resolves once it is done.
     nextTick(callback)
   }
 
-  /** The lean items in document order. */
+  /** The lean items in document order (n - 1 comparisons when already sorted). */
   private getHarvested(): HarvestedItem<T>[] {
-    if (this.sortedAt !== this.version.value) {
-      this.harvested.sort(byDocumentPosition)
-      this.sortedAt = this.version.value
-    }
-    return this.harvested
+    return this.harvested.sort(byDocumentPosition)
   }
 
   /** The mounted items (the open content's, else the lean ones), in document order; `undefined` when none are. */

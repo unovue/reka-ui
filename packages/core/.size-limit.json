@@ -14,7 +14,7 @@
   {
     "path": "dist/index.js",
     "import": "{ SelectRoot, SelectTrigger, SelectContent, SelectItem, SelectViewport, SelectPortal }",
-    "limit": "34.7 KB",
+    "limit": "34.8 KB",
     "name": "Select"
   },
   {
@@ -68,13 +68,13 @@
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, rekaElementFamilies }",
-    "limit": "191.1 KB",
+    "limit": "191.3 KB",
     "name": "Elements: all supported families"
   },
   {
     "path": "dist/index.js",
     "import": "*",
-    "limit": "190.6 KB",
+    "limit": "190.8 KB",
     "name": "Full library"
   }
 ]

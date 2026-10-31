@@ -6,7 +6,7 @@ import type { BaseChangeReason, By, ChangeEventDetails, LabelRegistry } from '@/
 import type { SelectionSelector } from '@/shared/selectionSelector'
 import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
 import { useCollection } from '@/Collection'
-import { compare, createContext, isNullish, useDirection, useFormControl, useId } from '@/shared'
+import { createContext, isNullish, useDirection, useFormControl, useId } from '@/shared'
 import { isDisabledItem } from '@/shared/isDisabledItem'
 
 export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
@@ -115,6 +115,7 @@ export interface SelectRootContext<T = AcceptableValue> {
   getItemData?: (value: T) => SelectItemData<T> | undefined
   /** Whether `items` is a record (its values are its string keys). */
   isRecordItems?: () => boolean
+  getItemRegistration?: (data: SelectItemData<T>) => { value: T, disabled: boolean } | undefined
   /**
    * What the closed content renders of its items, and what the closed trigger's typeahead matches.
    * @internal
@@ -232,23 +233,41 @@ closedItems.liveItems = () => {
 }
 
 // The hidden native `select` of a named Select in a form offers every option
-// to the browser's autofill: in idle time once the root is mounted in a form
-// with a name, the closed content renders its lean items, and keeps them while
-// the name and the form last.
-function syncFormRequest() {
-  if (isFormControl.value && resolvedName.value)
-    closedItems.requestFormWhenIdle()
-  else
-    closedItems.release('form')
-}
+// to the browser's autofill, which can arrive at any time. `items` has them
+// from the start, so its render waits for idle time; otherwise the closed
+// content renders its lean items from the mount, while the name and form last.
+closedItems.needsForm = () => isFormControl.value && !!resolvedName.value
 onMounted(() => {
   // Past the mount (and the hydration), a selected value without a label
   // renders the closed items now, so the trigger shows it before the first paint.
   closedItems.activate()
-  syncFormRequest()
-  watch([isFormControl, resolvedName], syncFormRequest)
+  watch(() => closedItems.needsForm!() && !!context.items?.value, (defer) => {
+    if (defer)
+      closedItems.renderFormWhenIdle()
+    else
+      closedItems.dispose()
+  }, { immediate: true })
 })
 onBeforeUnmount(() => closedItems.dispose())
+
+// The registered labels `items` does not list, in the document order of the
+// mounted lean items (a prepended or re-sorted list), then the ones no mounted
+// item has (sticky). Its own computed: a model change cannot change the order.
+const registeredOptions = computed(() => {
+  const labels = context.labels
+  const placed = new Set<unknown>()
+  const ordered = []
+  for (const value of closedItems.getOrderedValues()) {
+    const entry = labels.entry(value)
+    if (entry && !placed.has(entry)) {
+      placed.add(entry)
+      ordered.push(entry)
+    }
+  }
+  const data = context.items?.value
+  return [...ordered, ...labels.entries().filter(entry => !placed.has(entry))]
+    .filter(entry => !data || !context.getItemData!(entry.value))
+})
 
 // The native `select` mirrors `items`, else the registered item texts, plus
 // every selected value (a value whose item never rendered shows its
@@ -261,47 +280,21 @@ const nativeOptions = computed(() => {
   const data = context.items?.value
   const getItemData = context.getItemData!
   // `items` first (their labels win), then the texts of rendered items it does
-  // not list.
+  // not list. A rendered item refines its option: its typed value and `disabled`.
   const selectedData = new Set(data ? selectedValues.map(getItemData) : [])
-  const options = (data ?? []).map(entry => ({ value: entry.value, label: entry.label, disabled: !!entry.disabled, selected: selectedData.has(entry) || isSelected(entry.value) }))
-  const registered = orderByMountedItems(context.labels.entries().filter(entry => !data || !getItemData(entry.value)))
-  for (const entry of registered)
+  const options = (data ?? []).map((entry) => {
+    const registration = context.getItemRegistration!(entry)
+    const optionValue = registration ? registration.value : entry.value
+    return { value: optionValue, label: entry.label, disabled: !!entry.disabled || !!registration?.disabled, selected: selectedData.has(entry) || isSelected(optionValue) }
+  })
+  for (const entry of registeredOptions.value)
     options.push({ value: entry.value, label: entry.label, disabled: entry.disabled, selected: isSelected(entry.value) })
   for (const selected of selectedValues) {
-    if (!(data && getItemData(selected)) && !registered.some(entry => compare(entry.value, selected, context.by)))
+    if (!(data && getItemData(selected)) && !context.labels.entry(selected))
       options.push({ value: selected, label: context.displayValue.value?.(selected) ?? '', disabled: false, selected: true })
   }
   return options
 })
-
-// The registered labels in the document order of the mounted lean items (a
-// prepended or re-sorted list), then the ones no mounted item has (sticky).
-function orderByMountedItems<E extends { value: AcceptableValue }>(entries: E[]): E[] {
-  const ordered = closedItems.getOrderedValues()
-  if (ordered.length < 2)
-    return entries
-  const byPrimitive = new Map<unknown, E>()
-  for (const entry of entries) {
-    if (entry.value === null || typeof entry.value !== 'object')
-      byPrimitive.set(entry.value, entry)
-  }
-  const placed = new Set<E>()
-  const result: E[] = []
-  for (const value of ordered) {
-    const entry = value === null || typeof value !== 'object'
-      ? byPrimitive.get(value)
-      : entries.find(candidate => compare(candidate.value, value, context.by))
-    if (entry && !placed.has(entry)) {
-      placed.add(entry)
-      result.push(entry)
-    }
-  }
-  for (const entry of entries) {
-    if (!placed.has(entry))
-      result.push(entry)
-  }
-  return result
-}
 
 // The native `select` is patched in place (each option's `selected` is bound),
 // never re-keyed: re-creating it on a model change would skip the `change`

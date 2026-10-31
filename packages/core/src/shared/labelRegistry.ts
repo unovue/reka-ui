@@ -13,6 +13,8 @@ import { compare } from './compare'
 export interface LabelRegistry<T> {
   register: (value: T, label: string, disabled?: boolean) => void
   get: (value: T) => string | undefined
+  /** The entry of `value`, by the same lookup as `get`. */
+  entry: (value: T) => { value: T, label: string, disabled: boolean } | undefined
   entries: () => Array<{ value: T, label: string, disabled: boolean }>
 }
 
@@ -92,6 +94,10 @@ export function createLabelRegistry<T>(by?: By<T>): LabelRegistry<T> {
       const entries = labelEntries.value
       const index = labelIndexOf(value)
       return index === -1 ? undefined : entries[index].label
+    },
+    entry: (value) => {
+      const entries = labelEntries.value
+      return entries[labelIndexOf(value)]
     },
     entries: () => [...labelEntries.value],
   }

@@ -359,6 +359,20 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
   const itemsIndex = computed(() => createSelectItemsIndex(toValue(props.items), props.by))
   const items = computed(() => itemsIndex.value?.list)
   const getItemData = (value: T) => itemsIndex.value?.get(value)
+  // What the rendered `SelectItem` of each `items` entry registered: its typed
+  // value (a number for a record's string key) and its `disabled`.
+  const itemRegistrations = computed(() => {
+    const registrations = new Map<SelectItemData<T>, { value: T, disabled: boolean }>()
+    if (itemsIndex.value) {
+      for (const entry of labels.entries()) {
+        const data = getItemData(entry.value)
+        if (data)
+          registrations.set(data, entry)
+      }
+    }
+    return registrations
+  })
+  const getItemRegistration = (data: SelectItemData<T>) => itemRegistrations.value.get(data)
   const isRecordItems = () => !!itemsIndex.value?.record
 
   const isEmptyModelValue = computed(() => {
@@ -381,8 +395,10 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
     () => {
       const value = modelValue.value
       const values = (Array.isArray(value) ? value : isNullish(value) ? [] : [value]) as T[]
-      return values.some(v => getItemData(v) === undefined)
+      // An empty string clears the selection: it has no label to show.
+      return values.some(v => v !== ('' as T) && getItemData(v) === undefined)
     },
+    () => !!items.value,
     virtualTypeaheadItems,
   )
 
@@ -455,6 +471,7 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
     displayValue,
     items,
     getItemData,
+    getItemRegistration,
     isRecordItems,
     closedItems,
     getNavigationIntent,
@@ -548,8 +565,10 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
       }
       for (const entry of data) {
         if (!listed.has(entry)) {
-          const value = selected.has(entry) ? selected.get(entry)! : entry.value
-          merged.push({ value, textValue: entry.label, disabled: entry.disabled, dataOnly: true })
+          // An item rendered earlier (sticky) knows its typed value and `disabled`.
+          const registration = context.getItemRegistration?.(entry)
+          const value = registration ? registration.value : selected.has(entry) ? selected.get(entry)! : entry.value
+          merged.push({ value, textValue: entry.label, disabled: entry.disabled || registration?.disabled, dataOnly: !registration })
         }
       }
       return merged
@@ -566,32 +585,53 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
     // A closed Select renders its items only when something needs them: the
     // first key without them renders them, then matches. A focus does not.
     // With `items`, the key matches `items` right away, unless only a rendered
-    // item can answer it: nothing matches (an option only a `SelectItem` has),
-    // or the match is a record's string key (the item's own value may be a number).
+    // item can answer it: nothing matches or the cycle wraps (an option only a
+    // `SelectItem` has), or the match is a record's string key (the item's own
+    // value may be a number).
     if (closedItems && closedItems.canRender() && !closedItems.hasRendered()) {
       const next = context.items?.value && findTypeaheadMatch()
-      if (!next || (next.dataOnly && context.isRecordItems?.() && !context.isSelected(next.value)))
-        closedItems.renderThen(() => matchTypeahead(event))
-      else
+      if (!next || next.wrapped || (next.dataOnly && context.isRecordItems?.() && !context.isSelected(next.value))) {
+        closedItems.renderThen(() => {
+          if (!matchTypeahead(event))
+            matchWhenItemsRegister(closedItems, event)
+        })
+      }
+      else {
         context.setModelValue(next.value, 'typeahead', event)
+      }
       return
     }
     matchTypeahead(event)
+  }
+
+  // Items that need more than the render's flush (an async wrapper) register
+  // later: the search matches them until it resets.
+  let stopMatching: (() => void) | undefined
+  function matchWhenItemsRegister(closedItems: SelectClosedItems<T>, event: KeyboardEvent) {
+    stopMatching?.()
+    stopMatching = watch([closedItems.version, search], () => {
+      if (!search.value || context.open.value || matchTypeahead(event)) {
+        stopMatching?.()
+        stopMatching = undefined
+      }
+    }, { flush: 'post' })
   }
 
   function findTypeaheadMatch() {
     const items = getTypeaheadItems().filter(item => !item.disabled)
     const current = items.find(item => context.isSelected(item.value))
     const nextMatch = getNextMatch(items.map(item => item.textValue), search.value, current?.textValue)
-    return items.find(item => item.textValue === nextMatch)
+    const next = items.find(item => item.textValue === nextMatch)
+    return next && { ...next, wrapped: !!current && items.indexOf(next) < items.indexOf(current) }
   }
 
   function matchTypeahead(event: KeyboardEvent) {
     if (context.multiple.value || context.open.value)
-      return
+      return true
     const next = findTypeaheadMatch()
     if (next)
       context.setModelValue(next.value, 'typeahead', event)
+    return !!next
   }
 
   function handleOpen(reason: SelectOpenChangeReason, event: Event) {
@@ -720,9 +760,11 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
     }
   }
 
-  // The items a key rendered for the typeahead last until the trigger blurs.
-  function onBlur() {
-    context.closedItems?.release('typeahead')
+  // The items a key rendered for the typeahead last until focus leaves the
+  // trigger (`focusout`: with `as-child`, focus may be on a descendant).
+  function onFocusout(event: FocusEvent) {
+    if (!(event.currentTarget as Element).contains(event.relatedTarget as Node | null))
+      context.closedItems?.releaseTypeahead()
   }
 
   const trigger = createPartSurface<SelectTriggerState>(
@@ -735,7 +777,7 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
       'disabled': isDisabled.value,
       'dir': context.dir.value,
       onClick,
-      onBlur,
+      onFocusout,
       'onPointerdown': onPointerdown,
       'onMousedown': onMousedown,
       'onPointerup': onPointerup,
