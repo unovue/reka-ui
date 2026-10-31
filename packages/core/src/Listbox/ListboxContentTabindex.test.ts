@@ -88,6 +88,72 @@ describe('listboxContent tabindex', () => {
     })
   })
 
+  // A render function can pass camel-cased `tabIndex`. It is a DOM prop, set when
+  // it changes, and the roving value goes back over it at the next flip.
+  describe('a camel-cased `tabIndex` on the content', () => {
+    const bound = ref<number | undefined>()
+    const camel = () => bound.value === undefined ? {} : { tabIndex: bound.value }
+
+    it('from mount: the roving value wins', async () => {
+      bound.value = 5
+      const wrapper = await mountListbox(camel)
+      expect(tabindex()).toBe('-1')
+      await leave()
+      expect(tabindex()).toBe('0')
+      wrapper.unmount()
+    })
+
+    it('added while highlighted: shows until the next flip', async () => {
+      bound.value = undefined
+      const wrapper = await mountListbox(camel)
+      await hover()
+      bound.value = 5
+      await settle()
+      expect(tabindex()).toBe('5')
+      await leave()
+      expect(tabindex()).toBe('0')
+      await hover()
+      expect(tabindex()).toBe('-1')
+      wrapper.unmount()
+    })
+
+    it('added with no highlight: shows until the next flip', async () => {
+      bound.value = undefined
+      const wrapper = await mountListbox(camel)
+      await leave()
+      bound.value = 5
+      await settle()
+      expect(tabindex()).toBe('5')
+      await hover()
+      expect(tabindex()).toBe('-1')
+      wrapper.unmount()
+    })
+
+    it('changed later: shows until the next flip', async () => {
+      bound.value = 5
+      const wrapper = await mountListbox(camel)
+      await hover()
+      bound.value = 6
+      await settle()
+      expect(tabindex()).toBe('6')
+      await leave()
+      expect(tabindex()).toBe('0')
+      wrapper.unmount()
+    })
+
+    it('removed: the attribute is gone until the next flip', async () => {
+      bound.value = 5
+      const wrapper = await mountListbox(camel)
+      await hover()
+      bound.value = undefined
+      await settle()
+      expect(tabindex()).toBeNull()
+      await leave()
+      expect(tabindex()).toBe('0')
+      wrapper.unmount()
+    })
+  })
+
   describe('keeps a tabindex bound below it', () => {
     it.each<[string, () => Record<string, unknown>, () => VNodeChild, string]>([
       ['-1 on the as-child element', () => ({ asChild: true }), () => h('section', { tabindex: '-1' }, items()), '-1'],

@@ -6,7 +6,9 @@
 // builds it there, then measures both builds interleaved and compares them per family.
 // Every run gets its own base worktree and page output directory, so concurrent runs
 // (several agents or checkouts comparing against the same ref) never share one.
-// Exits 1 when any family's retained heap per instance regresses beyond the threshold.
+// Exits 1 when any family's retained heap per instance regresses beyond the threshold, or
+// when its update time is over 2x base, more than 5 ms slower, and every head sample is
+// above every base sample.
 /* eslint-disable no-console */
 import { execFileSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'

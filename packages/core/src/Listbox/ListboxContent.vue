@@ -34,12 +34,14 @@ const isClickFocus = refAutoReset(false, 10)
 // see may bind a `tabindex` over this one, at any depth, and a consumer
 // `tabindex` is its own case: the value stays in the render for those. That
 // includes `ComboboxContent`, where the value does not flip: its input keeps
-// the listbox unfocusable, so the tabindex stays '-1'.
+// the listbox unfocusable, so the tabindex stays '-1'. A camel-cased `tabIndex`
+// stays out of the check: it is a DOM prop, set only when it changes, and moving
+// to the render path would patch the roving value straight over it.
 const instance = getCurrentInstance()!
 const tabindexOutsideRender = computed(() => {
   // (`$attrs` read through the instance proxy tracks.)
   const attrs = instance.proxy!.$attrs
-  return rendersOwnElement(props.as, props.asChild) && !('tabindex' in attrs || 'tabIndex' in attrs)
+  return rendersOwnElement(props.as, props.asChild) && !('tabindex' in attrs)
 })
 
 // role/tabindex/aria/data-orientation and the mousedown/focus/keydown handlers
