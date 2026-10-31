@@ -6,19 +6,19 @@ export interface ComboboxSeparatorProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 
-const props = defineProps<ComboboxSeparatorProps>()
+defineProps<ComboboxSeparatorProps>()
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="props"
     aria-hidden="true"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

@@ -30,8 +30,8 @@ export const [injectListboxItemContext, provideListboxItemContext]
 <script setup lang="ts"  generic="T extends AcceptableValue = AcceptableValue">
 import { computed, mergeProps, onUnmounted, onUpdated, ref, watch, watchPostEffect } from 'vue'
 import { useCollectionItem } from '@/Collection'
+import { renderAs } from '@/Primitive/renderAs'
 import { getterRef } from '@/shared/partSurface'
-import { Primitive } from '..'
 import { injectListboxGroupContext } from './ListboxGroup.vue'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 import { getListboxItemSurface } from './useListbox'
@@ -70,11 +70,17 @@ const surface = getListboxItemSurface(rootContext, () => props.value, () => prop
 })
 const isSelected = getterRef(surface.isSelected)
 
-/** `v-memo` keys: the rendered state, the focusable flag, the element props and the consumer attrs. */
-function memoKeys(attrs: Record<string, unknown>) {
-  const state = surface.state.value
-  return [state.highlighted, state.state, state.disabled, rootContext.focusable.value, props.as, props.asChild, ...Object.entries(attrs).flat()]
-}
+// No `v-memo`: the item renders its slot itself, and Vue re-renders it exactly
+// when it must: when its state or attrs change, when something the slot reads
+// changes, or when its parent hands it a new slot function (which may close
+// over new data even when the state is the same, so a memo keyed on the state
+// would show stale content). The item's own state comes from keyed
+// selectors, so a highlight move or a selection change re-renders only the
+// items it flips, as long as no parent re-renders with them: the content keeps
+// its highlight-dependent `tabindex` out of its render for that reason. A
+// parent that does re-render (a `v-for` over data that changed, or a render
+// function reading the model) re-renders every item, as v2 did; a consumer
+// `v-memo` on that `v-for` keeps it to the items whose data changed.
 
 // Sticky: registered once mounted, never unregistered (#2824). Re-registered
 // whenever `value` / `textValue` / `disabled` change (the post effect) or the
@@ -150,16 +156,14 @@ provideListboxItemContext({
 
 <template>
   <template v-if="!isFilteredOut">
-    <Primitive
+    <component
+      :is="renderAs(as, asChild)"
       :id="id"
       v-bind="mergeProps($attrs, surface.attrs.value)"
       :ref="forwardRef"
-      v-memo="memoKeys($attrs)"
       data-reka-collection-item=""
-      :as="as"
-      :as-child="asChild"
     >
       <slot :selected="isSelected" />
-    </Primitive>
+    </component>
   </template>
 </template>

@@ -4,7 +4,7 @@ import type { Direction } from '../shared/types'
 import type { MenubarChangeReason } from './useMenubar'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { useCollection } from '@/Collection'
+import { useCollection, useCollectionSlot } from '@/Collection'
 import { createContext, useDirection, useForwardElement } from '@/shared'
 
 export interface MenubarRootProps extends PrimitiveProps {
@@ -45,10 +45,16 @@ export const [injectMenubarRootContext, provideMenubarRootContext]
 </script>
 
 <script setup lang="ts">
-import { toRefs } from 'vue'
-import { Primitive } from '@/Primitive'
-import { RovingFocusGroup } from '@/RovingFocus'
+import { mergeProps, toRefs } from 'vue'
+import { renderAs } from '@/Primitive/renderAs'
+import { useRovingFocusGroup } from '@/RovingFocus/useRovingFocusGroup'
 import { useMenubar } from './useMenubar'
+
+defineOptions({
+  // `$attrs` are merged under the roving and root bindings: the precedence
+  // the former `CollectionSlot` / `<RovingFocusGroup as-child>` wrappers gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<MenubarRootProps>(), {
   loop: false,
@@ -63,9 +69,10 @@ defineSlots<{
   }) => any
 }>()
 
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
-const { CollectionSlot } = useCollection({ key: 'Menubar', isProvider: true })
+useCollection({ key: 'Menubar', isProvider: true })
+useCollectionSlot(currentElement, { key: 'Menubar' })
 
 // The composable owns the open-menu model: every open, close and switch goes
 // through one `setState`, so `beforeUpdate:modelValue` can cancel it.
@@ -82,25 +89,27 @@ const { modelValue, currentTabStopId, root, context } = useMenubar({
 })
 
 provideMenubarRootContext(context)
+
+// Arrow-key navigation between the triggers. The former
+// `<RovingFocusGroup as-child>` sat under a `CollectionSlot`, whose slot
+// merged the consumer's attrs under the group's own bindings: Menubar's
+// orientation, dir, loop and tab stop win, and consumer listeners run first.
+const roving = useRovingFocusGroup({
+  consumerAttrs: 'under',
+  element: currentElement,
+  orientation: () => 'horizontal',
+  dir: () => dir.value,
+  loop: () => loop.value,
+  currentTabStopId,
+})
 </script>
 
 <template>
-  <CollectionSlot>
-    <RovingFocusGroup
-      v-model:current-tab-stop-id="currentTabStopId"
-      orientation="horizontal"
-      :loop="loop"
-      :dir="dir"
-      as-child
-    >
-      <Primitive
-        :ref="forwardRef"
-        v-bind="root.attrs.value"
-        :as="as"
-        :as-child="asChild"
-      >
-        <slot :model-value="modelValue" />
-      </Primitive>
-    </RovingFocusGroup>
-  </CollectionSlot>
+  <component
+    :is="renderAs(as, asChild)"
+    :ref="forwardRef"
+    v-bind="mergeProps(roving.consumerAttrs($attrs), roving.attrs(), root.attrs.value)"
+  >
+    <slot :model-value="modelValue" />
+  </component>
 </template>

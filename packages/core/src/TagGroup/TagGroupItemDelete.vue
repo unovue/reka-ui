@@ -9,7 +9,7 @@ export interface TagGroupItemDeleteProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectTagGroupItemContext } from './TagGroupItem.vue'
 import { getTagGroupItemDeleteSurface } from './useTagGroup'
 
@@ -30,14 +30,13 @@ const button = getTagGroupItemDeleteSurface(itemContext, {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(props.as, props.asChild)"
     :ref="forwardRef"
-    :as="props.as"
-    :as-child="props.asChild"
     :type="props.as === 'button' ? 'button' : undefined"
     v-bind="button.attrs.value"
     :disabled="props.as === 'button' ? button.state.value.disabled : undefined"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

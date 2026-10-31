@@ -3,7 +3,7 @@ import { getCurrentInstance, getCurrentScope, onBeforeUnmount, onMounted, onScop
 import { COLLECTION_ITEM_ATTRS, useCollectionItem } from '@/Collection/Collection'
 import { SelectorHold } from '@/shared/createKeyedSelector'
 import { useId } from '@/shared/useId'
-import { injectRovingFocusGroupContext } from './RovingFocusGroup.vue'
+import { injectRovingFocusGroupContext } from './useRovingFocusGroup'
 
 export interface UseRovingFocusItemOptions {
   /** The item's element (its `useForwardElement().currentElement`). */

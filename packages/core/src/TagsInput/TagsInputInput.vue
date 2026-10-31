@@ -14,7 +14,7 @@ export interface TagsInputInputProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
 import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 import { createTagsInputInputSurface } from './useTagsInput'
 
@@ -50,12 +50,16 @@ onMounted(() => {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAsEmpty(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="input.attrs.value"
   >
-    <slot />
-  </Primitive>
+    <template
+      v-if="rendersChildren(as, asChild)"
+      #default
+    >
+      <slot />
+    </template>
+  </component>
 </template>

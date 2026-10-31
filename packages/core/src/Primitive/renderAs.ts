@@ -76,6 +76,19 @@ export function renderAs(
 }
 
 /**
+ * Whether `as` / `asChild` make the part render its element itself: a tag name,
+ * not `Slot` (`asChild`, `as="template"`) or a component, either of which can
+ * bind attributes over the part's own further down, out of the part's sight.
+ * @internal
+ */
+export function rendersOwnElement(
+  as: AsTag | Component | undefined,
+  asChild?: boolean,
+): boolean {
+  return typeof resolveRenderTag(as, asChild) === 'string'
+}
+
+/**
  * `renderAs` for a part whose template passes no children, or gates them with
  * `rendersChildren` (a part that defaults to `input` or `img`):
  *

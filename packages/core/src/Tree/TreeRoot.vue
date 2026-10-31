@@ -100,14 +100,20 @@ export const [injectTreeRootContext, provideTreeRootContext] = createContext<Tre
 
 <script setup lang="ts" generic="T extends Record<string, any>, U extends Record<string, any>, M extends boolean = false">
 import type { EventHook } from '@vueuse/core'
-import type { ComponentPublicInstance, Ref } from 'vue'
+import type { Ref } from 'vue'
 import type { TreeChangeReason, TreeCollectionItem, TreeExpandedChangeReason, TreeNavigationIntent } from './useTree'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { ref } from 'vue'
-import { Primitive } from '@/Primitive'
-import { RovingFocusGroup } from '@/RovingFocus'
+import { mergeProps } from 'vue'
+import { renderAs } from '@/Primitive/renderAs'
+import { useRovingFocusGroup } from '@/RovingFocus/useRovingFocusGroup'
 import { useTree } from './useTree'
+
+defineOptions({
+  // `$attrs` are merged under the roving and root bindings: the precedence
+  // the former `<RovingFocusGroup as-child>` wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<TreeRootProps<T, U, M>>(), {
   as: 'ul',
@@ -124,17 +130,12 @@ defineSlots<{
   }) => any
 }>()
 
-// `dir` resolution (ConfigProvider-aware) and the `RovingFocusGroup` wrapper
-// (arrow-key focus) stay in the shell; the composable owns both models
+// `dir` resolution (ConfigProvider-aware) and the roving group (arrow-key
+// focus) stay in the shell; the composable owns both models
 // (`useControllableState`), the flattened items, typeahead and range selection.
 const dir = useDirection(() => props.dir)
-const rovingFocusGroupRef = ref<InstanceType<typeof RovingFocusGroup>>()
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
-function setRovingFocusGroupRef(el: Element | ComponentPublicInstance | null) {
-  rovingFocusGroupRef.value = (el ?? undefined) as InstanceType<typeof RovingFocusGroup> | undefined
-  forwardRef(el)
-}
 
 const { modelValue, expanded, flattenItems, root, context } = useTree<T>({
   items: () => props.items,
@@ -151,33 +152,32 @@ const { modelValue, expanded, flattenItems, root, context } = useTree<T>({
   propagateSelect: () => props.propagateSelect,
   bubbleSelect: () => props.bubbleSelect,
   loop: () => props.loop,
-  getItems: () => rovingFocusGroupRef.value?.getItems() ?? [],
+  getItems: () => roving.getItems(),
   emit: emits,
 })
 
 provideTreeRootContext(context)
 
 const isVirtual = context.isVirtual
+const roving = useRovingFocusGroup({
+  consumerAttrs: true,
+  element: currentElement,
+  orientation: () => 'vertical',
+  dir: () => dir.value,
+  loop: () => props.loop && !isVirtual.value,
+})
 </script>
 
 <template>
-  <RovingFocusGroup
-    :ref="setRovingFocusGroupRef"
-    as-child
-    orientation="vertical"
-    :dir="dir"
-    :loop="loop && !isVirtual"
+  <component
+    :is="renderAs(as, asChild)"
+    :ref="forwardRef"
+    v-bind="mergeProps(roving.consumerAttrs($attrs), roving.attrs(), root.attrs.value)"
   >
-    <Primitive
-      :as="as"
-      :as-child="asChild"
-      v-bind="root.attrs.value"
-    >
-      <slot
-        :flatten-items="flattenItems"
-        :model-value="modelValue as M extends true ? U[] : U"
-        :expanded="expanded"
-      />
-    </Primitive>
-  </RovingFocusGroup>
+    <slot
+      :flatten-items="flattenItems"
+      :model-value="modelValue as M extends true ? U[] : U"
+      :expanded="expanded"
+    />
+  </component>
 </template>

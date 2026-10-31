@@ -9,7 +9,7 @@ export interface ToolbarButtonProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { mergeProps } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { getToolbarButtonSurface } from './useToolbar'
 
@@ -32,12 +32,11 @@ function renderAttrs(attrs: Record<string, unknown>) {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="renderAttrs($attrs)"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

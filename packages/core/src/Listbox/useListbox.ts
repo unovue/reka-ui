@@ -140,12 +140,17 @@ export function getListboxItemSurface<T extends AcceptableValue = AcceptableValu
   // highlight move or a selection change re-renders only the items it flips,
   // not every item of the list. A context built without them (a hand-made
   // one) compares against the shared state, as before.
-  const isHighlighted = context.highlight
+  const readHighlighted = context.highlight
     ? useSelectorKey(context.highlight, () => toValue(options.element))
     : () => {
         const highlighted = context.highlightedElement.value
         return highlighted != null && highlighted === toValue(options.element)
       }
+  // Cached: the read tracks the item's element, which is set after the item
+  // renders (on mount, or when a filtered-out item comes back). Only a change
+  // of the result re-renders the item, not the element ref itself.
+  const highlightedRef = computed(readHighlighted)
+  const isHighlighted = () => highlightedRef.value
   const selectionHold = context.selection?.createHold()
   if (selectionHold && getCurrentScope())
     onScopeDispose(() => selectionHold.release())
@@ -225,6 +230,27 @@ export interface ListboxContentSurfaceOptions {
    * does not run the keyboard entry highlight (the SFC's `refAutoReset(false, 10)`).
    */
   isClickFocus: Ref<boolean>
+  /**
+   * While `true`, the attrs carry the roving `tabindex` as it was at setup
+   * (SSR and the first render), and the part applies the live value itself
+   * (`getListboxContentTabindex`). The tabindex flips whenever the highlight is
+   * set or cleared; bound in the render, every flip would re-render the content
+   * and, through its slot, every item.
+   *
+   * Only for a part that renders the element itself and has no consumer
+   * `tabindex`. Otherwise something the part cannot see may bind over it, so
+   * the value stays in the render.
+   */
+  tabindexOutsideRender?: MaybeRefOrGetter<boolean>
+}
+
+/** The content's roving `tabindex`: `'0'` while focusable with nothing highlighted, else `'-1'`. */
+export function getListboxContentTabindex(context: ListboxRootContext<any>) {
+  return computed(() => {
+    if (!context.focusable.value)
+      return '-1'
+    return context.highlightedElement.value ? '-1' : '0'
+  })
 }
 
 /**
@@ -237,16 +263,13 @@ export function getListboxContentSurface<T extends AcceptableValue = AcceptableV
   context: ListboxRootContext<T>,
   options: ListboxContentSurfaceOptions,
 ): PartSurface<ListboxContentState> {
-  // `rootContext.focusable.value ? highlightedElement ? '-1' : '0' : '-1'`
-  const tabindex = computed(() => {
-    if (!context.focusable.value)
-      return '-1'
-    return context.highlightedElement.value ? '-1' : '0'
-  })
+  const tabindex = getListboxContentTabindex(context)
+  // Read at setup, which Vue does not track.
+  const initialTabindex = options.tabindexOutsideRender === undefined ? undefined : tabindex.value
   return createPartSurface<ListboxContentState>(
     () => ({
       'role': 'listbox',
-      'tabindex': tabindex.value,
+      'tabindex': toValue(options.tabindexOutsideRender) ? initialTabindex : tabindex.value,
       'aria-orientation': context.orientation.value,
       'aria-multiselectable': !!context.multiple.value,
       // `@mousedown.left`

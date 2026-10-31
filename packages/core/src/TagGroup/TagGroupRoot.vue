@@ -78,11 +78,17 @@ export const [injectTagGroupRootContext, provideTagGroupRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { getCurrentInstance, onBeforeUnmount, onMounted, ref } from 'vue'
+import { getCurrentInstance, mergeProps, onBeforeUnmount, onMounted, ref } from 'vue'
 import { injectFieldRootContext } from '@/Field'
-import { Primitive } from '@/Primitive'
-import { RovingFocusGroup } from '@/RovingFocus'
+import { renderAs } from '@/Primitive/renderAs'
+import { useRovingFocusGroup } from '@/RovingFocus/useRovingFocusGroup'
 import { useTagGroup } from './useTagGroup'
+
+defineOptions({
+  // `$attrs` are merged under the roving and root bindings: the precedence
+  // the former `<RovingFocusGroup as-child>` wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<TagGroupRootProps<T>>(), {
   selectionMode: 'none',
@@ -145,28 +151,26 @@ onMounted(() => {
 })
 onBeforeUnmount(() => unregisterControl?.())
 
-// RovingFocusGroup owns the tab stop; the tags read it to make their delete button tabbable.
-const currentTabStopId = context.currentTabStopId
-
 provideTagGroupRootContext(context as unknown as TagGroupRootContext)
+
+// The roving group owns the tab stop; the tags read it to make their delete button tabbable.
+const roving = useRovingFocusGroup({
+  consumerAttrs: true,
+  element: currentElement,
+  dir: () => dir.value,
+  loop: () => props.loop,
+  currentTabStopId: context.currentTabStopId,
+})
 </script>
 
 <template>
-  <RovingFocusGroup
-    v-model:current-tab-stop-id="currentTabStopId"
-    as-child
-    :dir="dir"
-    :loop="loop"
+  <component
+    :is="renderAs(as, asChild)"
+    :ref="forwardRef"
+    v-bind="mergeProps(roving.consumerAttrs($attrs), roving.attrs(), root.attrs.value)"
+    :aria-labelledby="mergeIds($attrs['aria-labelledby'], fieldContext?.labelId.value)"
+    :aria-describedby="mergeIds($attrs['aria-describedby'], fieldContext?.describedBy.value)"
   >
-    <Primitive
-      :ref="forwardRef"
-      :as="as"
-      :as-child="asChild"
-      v-bind="root.attrs.value"
-      :aria-labelledby="mergeIds($attrs['aria-labelledby'], fieldContext?.labelId.value)"
-      :aria-describedby="mergeIds($attrs['aria-describedby'], fieldContext?.describedBy.value)"
-    >
-      <slot :model-value="modelValue" />
-    </Primitive>
-  </RovingFocusGroup>
+    <slot :model-value="modelValue" />
+  </component>
 </template>

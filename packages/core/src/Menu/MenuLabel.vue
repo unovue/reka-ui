@@ -6,10 +6,10 @@ export interface MenuLabelProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 
-const props = withDefaults(defineProps<MenuLabelProps>(), {
+withDefaults(defineProps<MenuLabelProps>(), {
   as: 'div',
 })
 
@@ -20,11 +20,11 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
-    v-bind="props"
+  <component
+    :is="renderAs(as, asChild)"
     :id="groupContext.id || undefined"
     :ref="forwardRef"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

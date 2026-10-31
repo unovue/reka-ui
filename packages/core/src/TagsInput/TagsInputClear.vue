@@ -8,7 +8,7 @@ export interface TagsInputClearProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 
 withDefaults(defineProps<TagsInputClearProps>(), {
   as: 'button',
@@ -21,13 +21,12 @@ const clear = getTagsInputClearSurface(context)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     :type="as === 'button' ? 'button' : undefined"
     v-bind="clear.attrs.value"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

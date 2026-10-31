@@ -1,6 +1,12 @@
 // Medians per family and label, base → head ratios, verdicts, and the markdown table.
 import { FAMILIES } from '../src/families.js'
 
+/**
+ * The update-time gate is coarse on purpose: all three must hold, so noise on a
+ * shared runner cannot fail it, but an update that re-renders a whole list can.
+ */
+export const UPDATE_GATE = { ratio: 2, floorMs: 5 }
+
 const KEYS = ['heapPerInstKB', 'mountSyncUs', 'mountUs', 'updSyncMs', 'updMs', 'nodesPerInst', 'componentsPerInst', 'listenersPerInst', 'n']
 
 function median(a) {
@@ -37,6 +43,9 @@ export function summarize(raw) {
       o.heapMin = h.length ? Math.min(...h) : null
       o.heapMax = h.length ? Math.max(...h) : null
       o.heapSpread = h.length > 1 && o.med.heapPerInstKB ? (o.heapMax - o.heapMin) / o.med.heapPerInstKB : 0
+      const u = o.v.updMs.filter(Number.isFinite)
+      o.updMin = u.length ? Math.min(...u) : null
+      o.updMax = u.length ? Math.max(...u) : null
       o.errors = [...new Set(o.errors)]
       delete o.v
     }
@@ -50,7 +59,9 @@ export function summarize(raw) {
  * the floor keeps tiny families (a few KB/inst) from failing on a single extra object.
  * It must also be clear of the noise: every head sample above every base sample. A few
  * families with live timers (Toast) vary by ~1% between runs, more on a loaded machine.
- * Mount and update times are reported, never gated: shared CI runners are too noisy.
+ * Mount times are reported, never gated: shared CI runners are too noisy. Update time
+ * is gated only when it clears the noise by far (`UPDATE_GATE`): head/base over the ratio,
+ * head − base over the floor, and every head sample above every base sample.
  */
 export function compare(summary, { base = 'base', head = 'head', threshold, floor }) {
   const rows = []
@@ -76,11 +87,13 @@ export function compare(summary, { base = 'base', head = 'head', threshold, floo
       row.verdict = 'new'
     else if (row.heapRatio > 1 + threshold && row.heapDeltaKB > floor && h.heapMin > b.heapMax)
       row.verdict = 'regressed'
+    else if (row.updRatio > UPDATE_GATE.ratio && h.med.updMs - b.med.updMs > UPDATE_GATE.floorMs && h.updMin > b.updMax)
+      row.verdict = 'slower update'
     else if (row.heapRatio < 1 - threshold && -row.heapDeltaKB > floor && h.heapMax < b.heapMin)
       row.verdict = 'improved'
     else
       row.verdict = 'same'
-    row.fail = row.verdict === 'regressed' || (row.verdict === 'error' && !!b?.ok && !b.failed)
+    row.fail = row.verdict === 'regressed' || row.verdict === 'slower update' || (row.verdict === 'error' && !!b?.ok && !b.failed)
     rows.push(row)
   }
   return rows
@@ -88,7 +101,7 @@ export function compare(summary, { base = 'base', head = 'head', threshold, floo
 
 const f = (x, d = 1) => (x == null ? '–' : x.toFixed(d))
 const r2 = x => (x == null ? '–' : x.toFixed(2))
-const VERDICT = { regressed: '**regressed**', improved: 'improved', same: '', new: 'new (not in base)', missing: '**missing export**', error: '**error**' }
+const VERDICT = { 'regressed': '**regressed**', 'slower update': '**slower update**', 'improved': 'improved', 'same': '', 'new': 'new (not in base)', 'missing': '**missing export**', 'error': '**error**' }
 
 export function compareTable(rows, { base = 'base', head = 'head' } = {}) {
   const lines = [

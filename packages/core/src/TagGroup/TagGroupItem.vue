@@ -27,7 +27,7 @@ export const [injectTagGroupItemContext, provideTagGroupItemContext]
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { mergeProps, onBeforeUnmount } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { injectTagGroupRootContext } from './TagGroupRoot.vue'
 import { createTagGroupItem } from './useTagGroup'
@@ -80,10 +80,9 @@ const roving = useRovingFocusItem({
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="mergeProps($attrs, roving.attrs(), row.attrs.value)"
   >
     <slot
@@ -101,5 +100,5 @@ const roving = useRovingFocusItem({
         :disabled="disabled"
       />
     </div>
-  </Primitive>
+  </component>
 </template>
