@@ -89,6 +89,7 @@ provideCheckboxGroupRootContext({
       :name="name ?? ''"
       :value="modelValue"
       :required="required"
+      :disabled="disabled"
     />
   </component>
 </template>
