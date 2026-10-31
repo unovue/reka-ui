@@ -16,6 +16,7 @@ import type {
   ComboboxViewportProps,
   ComboboxVirtualizerProps,
 } from '@/Combobox'
+import type { AcceptableValue } from '@/shared/types'
 
 export {
   default as AutocompleteInput,
@@ -46,9 +47,9 @@ export { ComboboxTrigger as AutocompleteTrigger } from '@/Combobox'
 export { ComboboxViewport as AutocompleteViewport } from '@/Combobox'
 export { ComboboxVirtualizer as AutocompleteVirtualizer } from '@/Combobox'
 
-// Prop and emit types are declared as aliases, not renamed re-exports. The
-// bundled dist/index.d.ts keeps a renamed re-export (`X as AutocompleteX`),
-// which Vue's compiler-sfc cannot resolve in defineProps (vuejs/core#15649).
+// Prop and emit types are declared as aliases, not renamed re-exports: Vue's
+// compiler-sfc cannot resolve a renamed re-export in defineProps
+// (https://github.com/vuejs/core/pull/15649).
 export type AutocompleteAnchorProps = ComboboxAnchorProps
 export type AutocompleteArrowProps = ComboboxArrowProps
 export type AutocompleteCancelProps = ComboboxCancelProps
@@ -56,12 +57,12 @@ export type AutocompleteContentEmits = ComboboxContentEmits
 export type AutocompleteContentProps = ComboboxContentProps
 export type AutocompleteEmptyProps = ComboboxEmptyProps
 export type AutocompleteGroupProps = ComboboxGroupProps
-export type AutocompleteItemEmits = ComboboxItemEmits
+export type AutocompleteItemEmits<T = AcceptableValue> = ComboboxItemEmits<T>
 export type AutocompleteItemIndicatorProps = ComboboxItemIndicatorProps
-export type AutocompleteItemProps = ComboboxItemProps
+export type AutocompleteItemProps<T = AcceptableValue> = ComboboxItemProps<T>
 export type AutocompleteLabelProps = ComboboxLabelProps
 export type AutocompletePortalProps = ComboboxPortalProps
 export type AutocompleteSeparatorProps = ComboboxSeparatorProps
 export type AutocompleteTriggerProps = ComboboxTriggerProps
 export type AutocompleteViewportProps = ComboboxViewportProps
-export type AutocompleteVirtualizerProps = ComboboxVirtualizerProps
+export type AutocompleteVirtualizerProps<T extends AcceptableValue = AcceptableValue> = ComboboxVirtualizerProps<T>

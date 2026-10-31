@@ -12,8 +12,8 @@ export {
 } from './DrawerContent.vue'
 // Base UI alias: Drawer.Popup === DrawerContent
 export { default as DrawerPopup } from './DrawerContent.vue'
-// Type aliases, not renamed re-exports: the bundled dist/index.d.ts keeps a
-// renamed re-export, which Vue's compiler-sfc cannot resolve (vuejs/core#15649).
+// Type aliases, not renamed re-exports: Vue's compiler-sfc cannot resolve a
+// renamed re-export in defineProps (https://github.com/vuejs/core/pull/15649).
 export type DrawerPopupEmits = DrawerContentEmits
 export type DrawerPopupProps = DrawerContentProps
 export {
