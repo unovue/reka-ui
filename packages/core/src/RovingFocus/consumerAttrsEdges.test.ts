@@ -101,4 +101,70 @@ describe('roving consumer attrs: edge cases', () => {
     expect(values.length).toBe(1)
     w.unmount()
   })
+
+  // RovingFocusGroup's listeners ran through Vue's `emit`: one failing reaches
+  // the app's errorHandler and stops neither the other listeners nor the group.
+  describe.each([
+    ['throws', () => {
+      throw new Error('boom')
+    }],
+    ['rejects', () => Promise.reject(new Error('boom'))],
+  ] as const)('a listener that %s', (_, fail) => {
+    const options = (errors: string[]) => ({
+      attachTo: document.body,
+      global: { config: { errorHandler: (error: unknown) => errors.push((error as Error).message) } },
+    })
+    const settled = async () => {
+      await nextTick()
+      await nextTick()
+    }
+
+    it('toolbarRoot @entry-focus: focus still enters the group, `.once` still runs', async () => {
+      const errors: string[] = []
+      let once = 0
+      const w = mount(defineComponent({
+        setup: () => () => h(ToolbarRoot, { id: 'tb', onEntryFocus: fail, onEntryFocusOnce: () => { once++ } }, () => ['a', 'b'].map(v => h(ToolbarButton, { id: v }, () => v))),
+      }), options(errors))
+      await nextTick()
+      document.getElementById('tb')!.focus()
+      await settled()
+      expect(document.activeElement).toBe(document.getElementById('a'))
+      expect(once).toBe(1)
+      expect(errors).toEqual(['boom'])
+      w.unmount()
+    })
+
+    it('tabsList @update:current-tab-stop-id: `.once` still runs', async () => {
+      const errors: string[] = []
+      let once = 0
+      const w = mount(defineComponent({
+        setup: () => () => h(TabsRoot, { defaultValue: 'a' }, () => [
+          h(TabsList, { 'onUpdate:currentTabStopId': fail, 'onUpdate:currentTabStopIdOnce': () => { once++ } }, () => ['a', 'b'].map(v => h(TabsTrigger, { value: v }, () => v))),
+          h(TabsContent, { value: 'a' }, () => 'A'),
+        ]),
+      }), options(errors))
+      await nextTick()
+      document.querySelector<HTMLElement>('[role=tab]')!.focus()
+      await settled()
+      expect(once).toBe(1)
+      expect(errors).toEqual(['boom'])
+      w.unmount()
+    })
+
+    // MenubarRoot's consumer listeners run before the group's own work.
+    it('menubarRoot @update:current-tab-stop-id: the tab stop still moves', async () => {
+      const errors: string[] = []
+      const w = mount(defineComponent({
+        setup: () => () => h(MenubarRoot, { 'onUpdate:currentTabStopId': fail }, () => ['a', 'b', 'c'].map(v =>
+          h(MenubarMenu, { value: v }, () => [h(MenubarTrigger, null, () => v), h(MenubarContent, null, () => h(MenubarItem, null, () => `${v}1`))]))),
+      }), options(errors))
+      await nextTick()
+      const triggers = [...document.querySelectorAll<HTMLElement>('[role=menuitem]')]
+      triggers[2].focus()
+      await settled()
+      expect(triggers[2].getAttribute('tabindex')).toBe('0')
+      expect(errors).toEqual(['boom'])
+      w.unmount()
+    })
+  })
 })
