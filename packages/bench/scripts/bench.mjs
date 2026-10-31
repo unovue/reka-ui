@@ -18,7 +18,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { parseArgs } from 'node:util'
 import { FAMILIES } from '../src/families.js'
 import { BENCH_ROOT, buildPage } from './build.mjs'
-import { compare, compareTable, singleTable, summarize } from './report.mjs'
+import { compare, compareTable, singleTable, summarize, UPDATE_GATE } from './report.mjs'
 import { runBench } from './run.mjs'
 
 const { values: opts } = parseArgs({
@@ -257,10 +257,10 @@ if (baseDir) {
     `## Bench: ${opts.compare} (${baseSha.slice(0, 7)}) → HEAD (${headSha.slice(0, 7)})`,
     '',
     failed.length
-      ? `**${failed.length} famil${failed.length === 1 ? 'y' : 'ies'} failed:** ${failed.map(r => `${r.family} (${r.verdict}${r.heapRatio ? `, heap ×${r.heapRatio.toFixed(3)}` : ''})`).join(', ')}`
-      : `No heap regressions. ${counts}.`,
+      ? `**${failed.length} famil${failed.length === 1 ? 'y' : 'ies'} failed:** ${failed.map(r => `${r.family} (${r.verdict}${r.verdict === 'slower update' ? `, update ×${r.updRatio.toFixed(2)}` : r.heapRatio ? `, heap ×${r.heapRatio.toFixed(3)}` : ''})`).join(', ')}`
+      : `No regressions. ${counts}.`,
     '',
-    `Gate: retained heap per instance, head/base > ${1 + threshold} **and** +${floor} KB/inst or more. Mount and update times are informational (noisy on shared runners). Ratios are head/base.`,
+    `Gate: retained heap per instance, head/base > ${1 + threshold} **and** +${floor} KB/inst or more. Update time, head/base > ${UPDATE_GATE.ratio} **and** +${UPDATE_GATE.floorMs} ms or more **and** every head sample above every base sample. Mount times are informational (noisy on shared runners). Ratios are head/base.`,
     '',
     compareTable(rows),
     '',
