@@ -687,7 +687,7 @@ When the data your `v-for` reads changes, Vue re-renders every item of that `v-f
 </ComboboxItem>
 ```
 
-`v-memo` must list every value the item's slot reads. A value it leaves out shows stale content when only that value changes. For very long lists, see the virtualization example above.
+`v-memo` must list every value the item's props and slot read, such as `:disabled`. A value it leaves out goes stale when only that value changes. The selected and highlighted states don't need listing: the item tracks those itself. For very long lists, see the virtualization example above.
 
 ## Accessibility
 

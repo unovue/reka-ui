@@ -15,8 +15,10 @@ function mountListbox(options: { multiple?: boolean, modelValue?: unknown, highl
   const model = ref<any>(options.modelValue)
   // A compiled template, as an app writes it: a model change re-renders the
   // root, not the items (their slots are passed down unchanged). A render
-  // function that reads the model re-creates every item's slot instead, and
-  // a new slot function always re-renders its item.
+  // function parent that reads the model re-creates every item's slot instead,
+  // and a new slot function always re-renders its item. That is accepted, and
+  // not pinned here: v2 does the same and correctness needs it, because the new
+  // slot may read the new model.
   const wrapper = mount(defineComponent({
     components: { ListboxRoot, ListboxContent, ListboxItem },
     setup: () => ({ model, options, count: COUNT, track: (i: number) => { renders[i]++ } }),

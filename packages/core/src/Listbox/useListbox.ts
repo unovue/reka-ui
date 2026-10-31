@@ -1,4 +1,4 @@
-import type { ComputedRef, InjectionKey, MaybeRefOrGetter, Ref } from 'vue'
+import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { SelectEvent } from './ListboxItem.vue'
 import type { ListboxRootContext } from './ListboxRoot.vue'
 import type { BaseChangeReason, By, ChangeEventDetails, LabelRegistry, PartSurface, SelectionState } from '@/shared'
@@ -231,26 +231,17 @@ export interface ListboxContentSurfaceOptions {
    */
   isClickFocus: Ref<boolean>
   /**
-   * When `true`, the attrs carry the roving `tabindex` as it is at setup
-   * only (SSR and the first render), and the part applies the live value
-   * itself (`getListboxContentTabindex`). The tabindex flips whenever the
-   * highlight is set or cleared; bound in the render, every flip would
-   * re-render the content and, through its slot, every item.
+   * While `true`, the attrs carry the roving `tabindex` as it was at setup
+   * (SSR and the first render), and the part applies the live value itself
+   * (`getListboxContentTabindex`). The tabindex flips whenever the highlight is
+   * set or cleared; bound in the render, every flip would re-render the content
+   * and, through its slot, every item.
+   *
+   * Only for a part that renders the element itself and has no consumer
+   * `tabindex`. Otherwise something the part cannot see may bind over it, so
+   * the value stays in the render.
    */
-  tabindexOutsideRender?: boolean
-}
-
-/**
- * Provided by a part that renders `ListboxContent` as-child and binds a
- * consumer `tabindex` on the element itself (`ComboboxContent`): the element's
- * explicit binding beat the content's in the slot merge, so while it returns
- * `true` the content leaves the attribute alone. Internal.
- */
-export const LISTBOX_CONTENT_TABINDEX_OVERRIDDEN: InjectionKey<(() => boolean) | null> = Symbol('ListboxContentTabindexOverridden')
-
-/** Whether `props` bind a `tabindex` (either spelling: a render function may pass `tabIndex`). */
-export function bindsTabindex(props: Record<string, unknown> | null | undefined): boolean {
-  return !!props && ('tabindex' in props || 'tabIndex' in props)
+  tabindexOutsideRender?: MaybeRefOrGetter<boolean>
 }
 
 /** The content's roving `tabindex`: `'0'` while focusable with nothing highlighted, else `'-1'`. */
@@ -274,11 +265,11 @@ export function getListboxContentSurface<T extends AcceptableValue = AcceptableV
 ): PartSurface<ListboxContentState> {
   const tabindex = getListboxContentTabindex(context)
   // Read at setup, which Vue does not track.
-  const initialTabindex = options.tabindexOutsideRender ? tabindex.value : undefined
+  const initialTabindex = options.tabindexOutsideRender === undefined ? undefined : tabindex.value
   return createPartSurface<ListboxContentState>(
     () => ({
       'role': 'listbox',
-      'tabindex': options.tabindexOutsideRender ? initialTabindex : tabindex.value,
+      'tabindex': toValue(options.tabindexOutsideRender) ? initialTabindex : tabindex.value,
       'aria-orientation': context.orientation.value,
       'aria-multiselectable': !!context.multiple.value,
       // `@mousedown.left`
