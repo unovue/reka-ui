@@ -6,7 +6,8 @@ export interface ColorAreaThumbProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { usePrimitiveElement } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectColorAreaRootContext } from './ColorAreaRoot.vue'
 import { getColorAreaInputSurface, getColorAreaThumbSurface } from './useColorArea'
 
@@ -36,10 +37,9 @@ function setYInput(el: unknown) {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     ref="primitiveElement"
-    :as-child="asChild"
-    :as="as"
     v-bind="thumb.attrs.value"
   >
     <slot />
@@ -52,5 +52,5 @@ function setYInput(el: unknown) {
       :ref="setYInput"
       v-bind="yInput.attrs.value"
     >
-  </Primitive>
+  </component>
 </template>

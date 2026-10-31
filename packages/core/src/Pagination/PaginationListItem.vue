@@ -9,7 +9,7 @@ export interface PaginationListItemProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectPaginationRootContext } from './PaginationRoot.vue'
 import { getPaginationListItemSurface } from './usePagination'
 
@@ -24,14 +24,13 @@ const surface = getPaginationListItemSurface(rootContext, () => props.value)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     :type="as === 'button' ? 'button' : undefined"
     :value="value"
     v-bind="surface.attrs.value"
   >
     <slot>{{ value }}</slot>
-  </Primitive>
+  </component>
 </template>

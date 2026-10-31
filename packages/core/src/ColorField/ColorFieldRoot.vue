@@ -72,7 +72,7 @@ export const [injectColorFieldRootContext, provideColorFieldRootContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { colorToString } from '@/shared/color'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useColorField } from './useColorField'
@@ -109,10 +109,9 @@ provideColorFieldRootContext(context)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="root.attrs.value"
   >
     <slot />
@@ -125,5 +124,5 @@ provideColorFieldRootContext(context)
       :disabled="disabled"
       :required="required"
     />
-  </Primitive>
+  </component>
 </template>

@@ -5,7 +5,7 @@ export interface ColorFieldInputProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectColorFieldRootContext } from './ColorFieldRoot.vue'
 import { createColorFieldInputSurface } from './useColorField'
@@ -21,12 +21,16 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAsEmpty(as, asChild)"
     :ref="forwardRef"
-    :as-child="asChild"
-    :as="as"
     v-bind="input.attrs.value"
   >
-    <slot />
-  </Primitive>
+    <template
+      v-if="rendersChildren(as, asChild)"
+      #default
+    >
+      <slot />
+    </template>
+  </component>
 </template>

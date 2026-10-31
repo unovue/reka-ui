@@ -92,7 +92,8 @@ export const [injectDateRangeFieldRootContext, provideDateRangeFieldRootContext]
 
 <script setup lang="ts">
 import { computed, mergeProps, toRefs } from 'vue'
-import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { usePrimitiveElement } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { toRangeFormValue } from '@/shared/date'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useDateRangeField } from './useDateRangeField'
@@ -158,11 +159,10 @@ defineExpose(mergeExpose(expose, {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     v-bind="mergeProps($attrs, root.attrs.value)"
     ref="primitiveElement"
-    :as="as"
-    :as-child="asChild"
   >
     <slot
       :model-value="modelValue"
@@ -182,5 +182,5 @@ defineExpose(mergeExpose(expose, {
       :required="required"
       @focus="focusFirstSegment"
     />
-  </Primitive>
+  </component>
 </template>

@@ -105,7 +105,7 @@ export interface SliderThumbSurfaceOptions {
 
 /**
  * Thumb surface derived from `(context, orientation, index)` — shared by
- * `useSlider().getThumbSurface` and `SliderThumbImpl.vue`. Pure: computed-only.
+ * `useSlider().getThumbSurface` and `SliderThumb.vue`. Pure: computed-only.
  * @internal
  */
 export function getSliderThumbSurface(
@@ -228,9 +228,9 @@ export interface UseSliderReturn {
 /**
  * Headless Slider logic. The `.vue` shells compose this. A standalone consumer
  * gets the model, keyboard stepping, aria and positioning; mapping a pointer
- * position to a value needs the slider's layout, so it stays in the
- * `SliderHorizontal` / `SliderVertical` shells — a standalone consumer computes
- * the value itself and calls `startSlide` / `moveSlide` / `endSlide`.
+ * position to a value needs the slider's layout, so it stays in
+ * `useSliderPointer` — a standalone consumer computes the value itself and calls
+ * `startSlide` / `moveSlide` / `endSlide`.
  *
  * Event order matches v2: a keyboard step emits `valueCommit` before
  * `update:modelValue` (ColorSlider relies on it). A cancelled step emits
@@ -368,8 +368,7 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
   }
 
   function onKeydown(event: KeyboardEvent) {
-    // Ported from SliderImpl + SliderHorizontal/SliderVertical: the key's default
-    // is prevented even while disabled.
+    // The key's default is prevented even while disabled.
     const reason = 'keyboard'
     if (event.key === 'Home') {
       if (!disabled.value)

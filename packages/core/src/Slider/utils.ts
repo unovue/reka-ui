@@ -1,17 +1,6 @@
 import type { ComputedRef } from 'vue'
 import { clamp, createContext } from '@/shared'
 
-export interface SliderOrientationPrivateProps {
-  min: number
-  max: number
-}
-
-export type SliderOrientationPrivateEmits = {
-  slideEnd: [event: PointerEvent]
-  slideStart: [value: number, event: PointerEvent]
-  slideMove: [value: number, event: PointerEvent]
-}
-
 export function getNextSortedValues(prevValues: number[] = [], nextValue: number, atIndex: number) {
   const nextValues = [...prevValues]
   nextValues[atIndex] = nextValue
@@ -150,10 +139,9 @@ export interface SliderOrientationGeometry {
 }
 
 /**
- * The orientation geometry shared by `SliderHorizontal` / `SliderVertical` and
- * `useSlider()` — one derivation for the edges, the step direction and the
- * back keys. `dir` is read the way `SliderHorizontal` always read it: an unset
- * `dir` counts as neither `ltr` nor `rtl`.
+ * The orientation geometry `useSlider()` derives: one derivation for the edges,
+ * the step direction and the back keys. An unset `dir` counts as neither `ltr`
+ * nor `rtl`.
  */
 export function getSliderOrientationGeometry(orientation: 'horizontal' | 'vertical', dir: Direction | undefined, inverted: boolean): SliderOrientationGeometry {
   if (orientation === 'horizontal') {
@@ -186,4 +174,4 @@ export function getSliderThumbTransform(orientation: 'horizontal' | 'vertical', 
 }
 
 export const [injectSliderOrientationContext, provideSliderOrientationContext]
-  = createContext<SliderOrientation>(['SliderVertical', 'SliderHorizontal'])
+  = createContext<SliderOrientation>('SliderRoot')

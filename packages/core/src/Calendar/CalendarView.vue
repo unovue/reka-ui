@@ -20,7 +20,7 @@ export const [injectCalendarViewContext, provideCalendarViewContext]
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectCalendarRootContext } from './CalendarRoot.vue'
 
 const props = withDefaults(defineProps<CalendarViewProps>(), { as: 'div' })
@@ -46,11 +46,10 @@ const isActive = computed(() => rootContext.view.value === props.view)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     v-if="isActive"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     :data-view="view"
   >
     <slot
@@ -58,5 +57,5 @@ const isActive = computed(() => rootContext.view.value === props.view)
       :week-days="rootContext.weekDays.value"
       :view="view"
     />
-  </Primitive>
+  </component>
 </template>

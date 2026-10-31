@@ -6,7 +6,7 @@ export interface PaginationEllipsisProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { getPaginationEllipsisSurface } from './usePagination'
 
 defineProps<PaginationEllipsisProps>()
@@ -16,12 +16,11 @@ const surface = getPaginationEllipsisSurface()
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="surface.attrs.value"
   >
     <slot>&#8230;</slot>
-  </Primitive>
+  </component>
 </template>

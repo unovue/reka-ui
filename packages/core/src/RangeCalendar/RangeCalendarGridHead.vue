@@ -5,7 +5,7 @@ export interface RangeCalendarGridHeadProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 
 const props = withDefaults(defineProps<RangeCalendarGridHeadProps>(), { as: 'thead' })
@@ -15,11 +15,11 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="props"
     aria-hidden="true"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

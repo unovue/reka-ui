@@ -49,7 +49,7 @@ export const [injectPaginationRootContext, providePaginationRootContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { usePagination } from './usePagination'
 
 const props = withDefaults(defineProps<PaginationRootProps>(), {
@@ -89,14 +89,13 @@ providePaginationRootContext(context)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
   >
     <slot
       :page="page"
       :page-count="pageCount"
     />
-  </Primitive>
+  </component>
 </template>

@@ -6,7 +6,7 @@ export interface CalendarHeadingProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectCalendarRootContext } from './CalendarRoot.vue'
 import { getCalendarHeadingSurface } from './useCalendar'
@@ -30,10 +30,9 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="props.as"
-    :as-child="props.asChild"
     v-bind="surface.attrs.value"
   >
     <slot
@@ -42,5 +41,5 @@ defineExpose(expose)
     >
       {{ rootContext.headingValue.value }}
     </slot>
-  </Primitive>
+  </component>
 </template>

@@ -3,6 +3,7 @@ import type { DateRangeType } from '@/DateRangeField/DateRangeFieldRoot.vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { SegmentPart } from '@/shared/date'
 import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectTimeRangeFieldRootContext } from './TimeRangeFieldRoot.vue'
 import { createTimeRangeFieldInputSurface } from './useTimeRangeField'
 
@@ -15,6 +16,7 @@ export interface TimeRangeFieldInputProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import type { Component } from 'vue'
 import { h, useSlots } from 'vue'
 import { useForwardElement } from '@/shared'
 
@@ -32,7 +34,10 @@ const slots = useSlots()
 // The slot content goes straight into the element: no `<slot>` fragment, so
 // no empty anchor text nodes (this part renders once per segment).
 function renderRoot() {
-  return h(Primitive, { ref: forwardRef, as: props.as, asChild: props.asChild, ...input.attrs.value }, slots)
+  // `Primitive` only for a consumer's `#render`, which it honours; `slots` hold it.
+  return slots.render
+    ? h(Primitive, { ref: forwardRef, as: props.as, asChild: props.asChild, ...input.attrs.value }, slots)
+    : h(renderAs(props.as, props.asChild) as Component, { ref: forwardRef, ...input.attrs.value }, slots)
 }
 </script>
 

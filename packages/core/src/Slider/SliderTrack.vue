@@ -6,7 +6,7 @@ export interface SliderTrackProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectSliderRootContext } from './SliderRoot.vue'
 import { getSliderTrackSurface } from './useSlider'
 
@@ -21,12 +21,11 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as-child="asChild"
-    :as="as"
     v-bind="track.attrs.value"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

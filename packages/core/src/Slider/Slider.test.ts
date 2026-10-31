@@ -1,5 +1,4 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import type SliderImpl from './SliderImpl.vue'
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -288,9 +287,9 @@ describe('given default Slider', () => {
   })
 
   describe('after pointerdown event on slider-impl', () => {
-    let sliderImpl: VueWrapper<InstanceType<typeof SliderImpl>>
+    let sliderImpl: DOMWrapper<HTMLElement>
     beforeEach(async () => {
-      sliderImpl = wrapper.findComponent('[data-slider-impl]') as any
+      sliderImpl = wrapper.find('[data-slider-impl]')
       await fireEvent.pointerDown(sliderImpl.element, { clientX: 10, pointerId: 1 })
     })
 

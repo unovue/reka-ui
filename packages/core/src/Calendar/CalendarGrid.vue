@@ -23,7 +23,7 @@ export const [injectCalendarGridContext, provideCalendarGridContext]
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectCalendarRootContext } from './CalendarRoot.vue'
 import { getCalendarGridSurface } from './useCalendar'
 
@@ -39,12 +39,11 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="surface.attrs.value"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

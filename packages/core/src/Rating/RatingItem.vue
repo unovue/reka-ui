@@ -2,7 +2,7 @@
 import type { ComputedRef } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { computed } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { createContext, useForwardElement } from '@/shared'
 import { injectRatingRootContext } from './RatingRoot.vue'
 import { getRatingItemSteps } from './useRating'
@@ -39,11 +39,10 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
   >
     <slot :steps="steps" />
-  </Primitive>
+  </component>
 </template>
