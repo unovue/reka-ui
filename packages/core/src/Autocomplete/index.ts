@@ -1,3 +1,22 @@
+import type {
+  ComboboxAnchorProps,
+  ComboboxArrowProps,
+  ComboboxCancelProps,
+  ComboboxContentEmits,
+  ComboboxContentProps,
+  ComboboxEmptyProps,
+  ComboboxGroupProps,
+  ComboboxItemEmits,
+  ComboboxItemIndicatorProps,
+  ComboboxItemProps,
+  ComboboxLabelProps,
+  ComboboxPortalProps,
+  ComboboxSeparatorProps,
+  ComboboxTriggerProps,
+  ComboboxViewportProps,
+  ComboboxVirtualizerProps,
+} from '@/Combobox'
+
 export {
   default as AutocompleteInput,
   type AutocompleteInputEmits,
@@ -12,61 +31,37 @@ export {
 
 // Re-export Combobox sub-components as Autocomplete equivalents.
 // These components inject ComboboxRootContext which AutocompleteRoot provides.
-export {
-  ComboboxAnchor as AutocompleteAnchor,
-  type ComboboxAnchorProps as AutocompleteAnchorProps,
-} from '@/Combobox'
-export {
-  ComboboxArrow as AutocompleteArrow,
-  type ComboboxArrowProps as AutocompleteArrowProps,
-} from '@/Combobox'
-export {
-  ComboboxCancel as AutocompleteCancel,
-  type ComboboxCancelProps as AutocompleteCancelProps,
-} from '@/Combobox'
-export {
-  ComboboxContent as AutocompleteContent,
-  type ComboboxContentEmits as AutocompleteContentEmits,
-  type ComboboxContentProps as AutocompleteContentProps,
-} from '@/Combobox'
-export {
-  ComboboxEmpty as AutocompleteEmpty,
-  type ComboboxEmptyProps as AutocompleteEmptyProps,
-} from '@/Combobox'
-export {
-  ComboboxGroup as AutocompleteGroup,
-  type ComboboxGroupProps as AutocompleteGroupProps,
-} from '@/Combobox'
-export {
-  ComboboxItem as AutocompleteItem,
-  type ComboboxItemEmits as AutocompleteItemEmits,
-  type ComboboxItemProps as AutocompleteItemProps,
-} from '@/Combobox'
-export {
-  ComboboxItemIndicator as AutocompleteItemIndicator,
-  type ComboboxItemIndicatorProps as AutocompleteItemIndicatorProps,
-} from '@/Combobox'
-export {
-  ComboboxLabel as AutocompleteLabel,
-  type ComboboxLabelProps as AutocompleteLabelProps,
-} from '@/Combobox'
-export {
-  ComboboxPortal as AutocompletePortal,
-  type ComboboxPortalProps as AutocompletePortalProps,
-} from '@/Combobox'
-export {
-  ComboboxSeparator as AutocompleteSeparator,
-  type ComboboxSeparatorProps as AutocompleteSeparatorProps,
-} from '@/Combobox'
-export {
-  ComboboxTrigger as AutocompleteTrigger,
-  type ComboboxTriggerProps as AutocompleteTriggerProps,
-} from '@/Combobox'
-export {
-  ComboboxViewport as AutocompleteViewport,
-  type ComboboxViewportProps as AutocompleteViewportProps,
-} from '@/Combobox'
-export {
-  ComboboxVirtualizer as AutocompleteVirtualizer,
-  type ComboboxVirtualizerProps as AutocompleteVirtualizerProps,
-} from '@/Combobox'
+export { ComboboxAnchor as AutocompleteAnchor } from '@/Combobox'
+export { ComboboxArrow as AutocompleteArrow } from '@/Combobox'
+export { ComboboxCancel as AutocompleteCancel } from '@/Combobox'
+export { ComboboxContent as AutocompleteContent } from '@/Combobox'
+export { ComboboxEmpty as AutocompleteEmpty } from '@/Combobox'
+export { ComboboxGroup as AutocompleteGroup } from '@/Combobox'
+export { ComboboxItem as AutocompleteItem } from '@/Combobox'
+export { ComboboxItemIndicator as AutocompleteItemIndicator } from '@/Combobox'
+export { ComboboxLabel as AutocompleteLabel } from '@/Combobox'
+export { ComboboxPortal as AutocompletePortal } from '@/Combobox'
+export { ComboboxSeparator as AutocompleteSeparator } from '@/Combobox'
+export { ComboboxTrigger as AutocompleteTrigger } from '@/Combobox'
+export { ComboboxViewport as AutocompleteViewport } from '@/Combobox'
+export { ComboboxVirtualizer as AutocompleteVirtualizer } from '@/Combobox'
+
+// Prop and emit types are declared as aliases, not renamed re-exports. The
+// bundled dist/index.d.ts keeps a renamed re-export (`X as AutocompleteX`),
+// which Vue's compiler-sfc cannot resolve in defineProps (vuejs/core#15649).
+export type AutocompleteAnchorProps = ComboboxAnchorProps
+export type AutocompleteArrowProps = ComboboxArrowProps
+export type AutocompleteCancelProps = ComboboxCancelProps
+export type AutocompleteContentEmits = ComboboxContentEmits
+export type AutocompleteContentProps = ComboboxContentProps
+export type AutocompleteEmptyProps = ComboboxEmptyProps
+export type AutocompleteGroupProps = ComboboxGroupProps
+export type AutocompleteItemEmits = ComboboxItemEmits
+export type AutocompleteItemIndicatorProps = ComboboxItemIndicatorProps
+export type AutocompleteItemProps = ComboboxItemProps
+export type AutocompleteLabelProps = ComboboxLabelProps
+export type AutocompletePortalProps = ComboboxPortalProps
+export type AutocompleteSeparatorProps = ComboboxSeparatorProps
+export type AutocompleteTriggerProps = ComboboxTriggerProps
+export type AutocompleteViewportProps = ComboboxViewportProps
+export type AutocompleteVirtualizerProps = ComboboxVirtualizerProps
