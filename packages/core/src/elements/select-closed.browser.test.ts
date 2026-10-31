@@ -34,7 +34,7 @@ async function mountSel(attrs = '') {
   const trigger = query('reka-select-trigger')
   await vi.waitFor(() => expect(trigger.getAttribute('role')).toBe('combobox'))
   await sleep(1200) // past the idle harvest
-  return { trigger, value: query('reka-select-value'), root: query('reka-select-root') as HTMLElement & { modelValue: string } }
+  return { trigger, value: query('reka-select-value') }
 }
 const itemText = (v: string) => document.querySelector(`reka-select-item[value="${v}"] reka-select-item-text`) as HTMLElement
 
@@ -47,14 +47,38 @@ describe('elements select while closed', () => {
     expect(value.textContent).toBe('Cerise')
   })
 
+  // The root's `modelValue` property stays undefined on an uncontrolled root, so these read the visible value.
+  it('closed typeahead reaches an enabled item', async () => {
+    const { trigger, value } = await mountSel()
+    trigger.focus()
+    await sleep(100)
+    await userEvent.keyboard('b')
+    await vi.waitFor(() => expect(value.textContent).toBe('Banana'))
+  })
+
   it('an item disabled while closed is skipped by closed typeahead', async () => {
-    const { trigger, root } = await mountSel()
+    const { trigger, value } = await mountSel()
     trigger.focus()
     await sleep(100)
     document.querySelector('reka-select-item[value="banana"]')!.setAttribute('disabled', '')
     await sleep(100)
     await userEvent.keyboard('b')
     await sleep(300)
-    expect(root.modelValue ?? null).toBeNull()
+    expect(value.textContent).toBe('Pick')
+  })
+
+  it('items reordered in the light DOM while closed: typeahead follows document order', async () => {
+    const { trigger, value } = await mountSel()
+    trigger.focus()
+    await sleep(300)
+    const blueberry = document.createElement('reka-select-item')
+    blueberry.setAttribute('value', 'blueberry')
+    blueberry.innerHTML = '<reka-select-item-text>Blueberry</reka-select-item-text>'
+    document.querySelector('reka-select-viewport')!.append(blueberry)
+    await sleep(300)
+    document.querySelector('reka-select-viewport')!.prepend(blueberry)
+    await sleep(300)
+    await userEvent.keyboard('b')
+    await vi.waitFor(() => expect(value.textContent).toBe('Blueberry'))
   })
 })

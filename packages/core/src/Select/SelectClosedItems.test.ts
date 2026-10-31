@@ -237,19 +237,64 @@ describe('typeahead on a closed Select', () => {
   })
 
   it('releases the lean items on blur when nothing else needs them', async () => {
-    const { itemTexts } = mountSelect({}, () => fruits)
+    const list = ref(fruits)
+    const { itemTexts } = mountSelect({}, () => list.value)
     await flushPromises()
     trigger().focus()
     await idle()
     expect(itemTexts).toHaveBeenCalledTimes(fruits.length)
+
+    // While mounted, a changed list renders again.
+    list.value = fruits.map(fruit => ({ ...fruit, text: `${fruit.text}!` }))
+    await flushPromises()
+    expect(itemTexts).toHaveBeenCalledTimes(fruits.length * 2)
+
+    // Unmounted on blur: the next change renders nothing.
     trigger().blur()
     await flushPromises()
-    // Unmounted: a later change renders nothing.
-    const renders = itemTexts.mock.calls.length
+    list.value = fruits
+    await flushPromises()
+    await idle()
+    expect(itemTexts).toHaveBeenCalledTimes(fruits.length * 2)
+
+    // A later focus renders them again, with the current list.
+    trigger().focus()
+    await idle()
+    expect(itemTexts).toHaveBeenCalledTimes(fruits.length * 3)
+  })
+
+  it('a blur before the idle render cancels it', async () => {
+    const { itemTexts } = mountSelect({}, () => fruits)
+    await flushPromises()
     trigger().focus()
     trigger().blur()
     await idle()
-    expect(itemTexts).toHaveBeenCalledTimes(renders)
+    expect(itemTexts).not.toHaveBeenCalled()
+  })
+
+  it('keeps the lean items after blur while a form needs its native options', async () => {
+    const list = ref(fruits)
+    const { itemTexts } = mountSelect({ name: 'fruit' }, () => list.value, { form: true })
+    await flushPromises()
+    await idle()
+    trigger().focus()
+    await idle()
+    trigger().blur()
+    await flushPromises()
+    const renders = itemTexts.mock.calls.length
+    list.value = fruits.map(fruit => ({ ...fruit, text: `${fruit.text}!` }))
+    await flushPromises()
+    expect(itemTexts.mock.calls.length).toBeGreaterThan(renders)
+    expect(nativeOptions().map(option => option.textContent)).toEqual(['Apple!', 'Banana!', 'Blueberry!', 'Cherry!'])
+  })
+
+  it('an unmount drops the pending idle render', async () => {
+    const { wrapper, itemTexts } = mountSelect({}, () => fruits)
+    await flushPromises()
+    trigger().focus()
+    wrapper.unmount()
+    await idle()
+    expect(itemTexts).not.toHaveBeenCalled()
   })
 
   it('keeps the lean items after blur while a selected value needs its label', async () => {
