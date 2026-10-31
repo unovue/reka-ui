@@ -14,6 +14,8 @@ interface HarvestedItem<T> {
   element: () => Element | undefined
 }
 
+const WATCH_SUBTREE: MutationObserverInit = { characterData: true, childList: true, subtree: true }
+
 /** Document order of two mounted elements (they share the fragment, or the document). */
 function byDocumentPosition<T>(a: HarvestedItem<T>, b: HarvestedItem<T>): number {
   const ea = a.element()
@@ -73,16 +75,20 @@ export class SelectClosedItems<T = AcceptableValue> {
   needsForm: (() => boolean) | undefined = undefined
   /** The lean items, sorted into document order when read (see `version`). */
   private readonly harvested: HarvestedItem<T>[] = []
+  /** The lean items' elements: what a mutation must touch to change the order. */
+  private readonly itemElements = new WeakSet<Node>()
   /**
    * Bumped whenever the lean items are added, removed or moved, at any depth:
    * the native `select` options read it to follow the document order.
    */
   readonly version = shallowRef(0)
-  /** Each lean item text's label sync, run on any text mutation (one observer for all). */
-  private readonly textSyncs = new Set<() => void>()
+  /** Each lean item text's element and label sync, run when a mutation touches that text. */
+  private readonly textSyncs = new Map<Node, () => void>()
   private observer: MutationObserver | undefined = undefined
-  /** The lowest common ancestor of the lean items, and what the one observer watches. */
-  private observedRoot: Node | undefined = undefined
+  /** The lowest common ancestor of the lean items of each tree they are in, by the tree's root. */
+  private readonly anchors = new Map<Node, Node>()
+  /** The nodes the observer watches with their whole subtree. */
+  private readonly watched = new Set<Node>()
 
   constructor(
     /** Whether the labels may come from the items at all (no `displayValue`). */
@@ -151,42 +157,111 @@ export class SelectClosedItems<T = AcceptableValue> {
 
   /**
    * A lean item mounts: `entry` reads its value, text and `disabled`, and
-   * `element` places it in document order. Returns its unregister.
+   * `element` places it in document order. `update` follows a new element (a
+   * dynamic `as`), `remove` unregisters it.
    */
-  addHarvested(entry: () => SelectTypeaheadItem<T>, element: () => Element | undefined): () => void {
+  addHarvested(entry: () => SelectTypeaheadItem<T>, element: () => Element | undefined): { update: () => void, remove: () => void } {
     const item: HarvestedItem<T> = { entry, element }
+    let known = element()
     this.harvested.push(item)
-    this.observe(element())
+    if (known)
+      this.itemElements.add(known)
+    this.observe(known)
     this.bump()
-    return () => {
-      const index = this.harvested.indexOf(item)
-      if (index !== -1)
-        this.harvested.splice(index, 1)
-      this.bump()
-      this.disconnectWhenIdle()
+    return {
+      update: () => {
+        const current = element()
+        if (current === known)
+          return
+        if (known)
+          this.itemElements.delete(known)
+        if (current)
+          this.itemElements.add(current)
+        known = current
+        this.observe(current)
+        this.bump()
+      },
+      remove: () => {
+        const index = this.harvested.indexOf(item)
+        if (index !== -1)
+          this.harvested.splice(index, 1)
+        if (known)
+          this.itemElements.delete(known)
+        this.bump()
+        this.disconnectWhenIdle()
+      },
     }
   }
 
   /**
-   * Widens the one observer to a node: it watches the lowest common ancestor of
-   * the lean items and their texts, with its whole subtree, so a text change or
-   * a move at any depth (a re-sorted list, groups, per-option wrappers) reaches it.
+   * Whether a mutation touched a lean item or a node holding one. The cost
+   * follows what changed, not the number of items.
+   */
+  private holdsItem(nodes: NodeList): boolean {
+    return Array.from(nodes).some(node => node.nodeType === Node.ELEMENT_NODE && (
+      this.itemElements.has(node)
+      || Array.from((node as Element).querySelectorAll('*')).some(element => this.itemElements.has(element))
+    ))
+  }
+
+  /**
+   * A consumer's own nodes can change next to the lean items (a badge, a live
+   * counter): only a record that adds, removes or moves a lean item changes
+   * the order, and only the texts a record touches re-register.
+   */
+  private onMutations(records: MutationRecord[]): void {
+    let moved = false
+    const syncs = new Set<() => void>()
+    for (const record of records) {
+      moved ||= record.type === 'childList' && (this.holdsItem(record.addedNodes) || this.holdsItem(record.removedNodes))
+      for (let node: Node | null = record.target; node; node = node.parentNode) {
+        const sync = this.textSyncs.get(node)
+        if (sync) {
+          syncs.add(sync)
+          break
+        }
+      }
+    }
+    if (moved)
+      this.bump()
+    syncs.forEach(run => run())
+  }
+
+  /**
+   * Widens the one observer to a node: in each tree the lean items are in (the
+   * detached fragment; a shadow root, the page or a KeepAlive's storage when
+   * something moved them there), it watches their lowest common ancestor with
+   * its whole subtree, so a text change or a move at any depth reaches it. It
+   * never watches the whole page or shadow root: when that is the common
+   * ancestor, it watches the node and its parent's direct children instead.
    */
   private observe(node: Node | undefined): void {
-    if (!node?.parentNode || typeof MutationObserver === 'undefined')
+    const parent = node?.parentNode
+    if (!node || !parent || typeof MutationObserver === 'undefined')
       return
-    let root = this.observedRoot ?? node.parentNode
-    while (!root.contains(node) && root.parentNode)
-      root = root.parentNode
-    if (root === this.observedRoot)
+    this.observer ??= new MutationObserver(records => this.onMutations(records))
+    const tree = node.getRootNode()
+    const known = this.anchors.get(tree)
+    let anchor: Node = known?.getRootNode() === tree ? known : parent
+    while (!anchor.contains(parent))
+      anchor = anchor.parentNode!
+    const doc = node.ownerDocument!
+    const inPage = tree === doc || !!(tree as ShadowRoot).host
+    if ((inPage && anchor === tree) || anchor === doc.documentElement || anchor === doc.body) {
+      this.watch(node)
+      if (!this.watched.has(parent))
+        this.observer.observe(parent, { childList: true })
       return
-    this.observedRoot = root
-    this.observer ??= new MutationObserver((records) => {
-      if (records.some(record => record.type === 'childList'))
-        this.bump()
-      this.textSyncs.forEach(run => run())
-    })
-    this.observer.observe(root, { characterData: true, childList: true, subtree: true })
+    }
+    this.anchors.set(tree, anchor)
+    this.watch(anchor)
+  }
+
+  private watch(node: Node): void {
+    if (!this.watched.has(node)) {
+      this.watched.add(node)
+      this.observer!.observe(node, WATCH_SUBTREE)
+    }
   }
 
   /** Nothing lean is mounted any more: drop the observer (and what it watched). */
@@ -195,19 +270,20 @@ export class SelectClosedItems<T = AcceptableValue> {
       return
     this.observer.disconnect()
     this.observer = undefined
-    this.observedRoot = undefined
+    this.anchors.clear()
+    this.watched.clear()
   }
 
   /**
-   * A lean item text mounts: `sync` re-registers its label, and runs whenever
-   * any lean text changes (a translated text, a slot that re-renders on its
-   * own). Returns its unregister.
+   * A lean item text mounts: `sync` re-registers its label, and runs when a
+   * mutation touches this text (a translated text, a slot that re-renders on
+   * its own). Returns its unregister.
    */
   observeText(element: Node, sync: () => void): () => void {
-    this.textSyncs.add(sync)
+    this.textSyncs.set(element, sync)
     this.observe(element)
     return () => {
-      this.textSyncs.delete(sync)
+      this.textSyncs.delete(element)
       this.disconnectWhenIdle()
     }
   }

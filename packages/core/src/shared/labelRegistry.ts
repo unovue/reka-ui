@@ -1,5 +1,5 @@
 import type { By } from './compare'
-import { serialize } from 'ohash'
+import { isEqual, serialize } from 'ohash'
 import { shallowRef, triggerRef } from 'vue'
 import { compare } from './compare'
 
@@ -75,8 +75,18 @@ export function createLabelRegistry<T>(by?: By<T>): LabelRegistry<T> {
       const index = labelIndexOf(value, key)
       const current = list[index]
       // Items re-register on every render; only an actual change is written.
-      if (current && current.label === label && current.disabled === disabled)
+      if (current && current.label === label && current.disabled === disabled) {
+        if (current.value !== value) {
+          // The last value wins: under `by`, a refetched object can have the
+          // same identity and new fields. An equal copy (an inline `:value`
+          // re-created by every render) is no change, so it triggers nothing.
+          const changed = !isEqual(current.value, value)
+          current.value = value
+          if (changed)
+            triggerRef(labelEntries)
+        }
         return
+      }
       const entry = { value, label, disabled }
       if (index === -1) {
         if (key !== undefined)

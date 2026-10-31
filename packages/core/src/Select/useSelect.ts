@@ -6,7 +6,7 @@ import type { SelectRootContext } from './SelectRoot.vue'
 import type { ListboxNavigationIntent } from '@/Listbox/useListbox'
 import type { BaseChangeReason, By, ChangeEventDetails, DisclosureState, PartSurface, SelectionState } from '@/shared'
 import type { AcceptableValue, Direction } from '@/shared/types'
-import { computed, getCurrentScope, isRef, nextTick, onBeforeUnmount, onMounted, onScopeDispose, ref, shallowRef, toValue, watch, watchEffect } from 'vue'
+import { computed, getCurrentScope, isRef, nextTick, onBeforeUnmount, onMounted, onScopeDispose, onUpdated, ref, shallowRef, toValue, watch, watchEffect } from 'vue'
 import { focusFirst } from '@/Menu/utils'
 import {
   compare,
@@ -359,15 +359,17 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
   const itemsIndex = computed(() => createSelectItemsIndex(toValue(props.items), props.by))
   const items = computed(() => itemsIndex.value?.list)
   const getItemData = (value: T) => itemsIndex.value?.get(value)
-  // What the rendered `SelectItem` of each `items` entry registered: its typed
-  // value (a number for a record's string key) and its `disabled`.
+  // What the rendered `SelectItem` of each `items` entry registered: its
+  // `disabled`, and its typed value for a record, whose keys are strings. An
+  // array lists the value itself, which stays current after a refetch.
   const itemRegistrations = computed(() => {
     const registrations = new Map<SelectItemData<T>, { value: T, disabled: boolean }>()
-    if (itemsIndex.value) {
+    const index = itemsIndex.value
+    if (index) {
       for (const entry of labels.entries()) {
         const data = getItemData(entry.value)
         if (data)
-          registrations.set(data, entry)
+          registrations.set(data, { value: index.record ? entry.value : data.value, disabled: entry.disabled })
       }
     }
     return registrations
@@ -537,8 +539,9 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
   // The mounted items (the open content's, else the closed lean ones), their
   // labels from `items` where it lists them, plus the `items` options not
   // rendered; with nothing mounted (`displayValue`), the label registry.
-  // `dataOnly` marks an `items` option no rendered item backs.
-  function getTypeaheadItems(): (SelectTypeaheadItem<T> & { dataOnly?: boolean })[] {
+  // `dataOnly` marks an `items` option no rendered item backs; `remembered`, an
+  // option disabled only by what its `SelectItem` registered before it unmounted.
+  function getTypeaheadItems(): (SelectTypeaheadItem<T> & { dataOnly?: boolean, remembered?: boolean })[] {
     // A `SelectVirtualizer` knows every option, rendered or not.
     const virtualItems = context.virtualTypeaheadItems?.value
     if (virtualItems)
@@ -547,7 +550,7 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
     const data = context.items?.value
     if (data) {
       const listed = new Set<SelectItemData<T>>()
-      const merged: (SelectTypeaheadItem<T> & { dataOnly?: boolean })[] = (rendered ?? []).map((item) => {
+      const merged: (SelectTypeaheadItem<T> & { dataOnly?: boolean, remembered?: boolean })[] = (rendered ?? []).map((item) => {
         const entry = context.getItemData?.(item.value)
         if (!entry)
           return item
@@ -565,10 +568,12 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
       }
       for (const entry of data) {
         if (!listed.has(entry)) {
-          // An item rendered earlier (sticky) knows its typed value and `disabled`.
+          // An item rendered earlier (sticky) knows its typed value and its last
+          // `disabled`. While items are rendered, one that is not has no `disabled`.
           const registration = context.getItemRegistration?.(entry)
           const value = registration ? registration.value : selected.has(entry) ? selected.get(entry)! : entry.value
-          merged.push({ value, textValue: entry.label, disabled: entry.disabled || registration?.disabled, dataOnly: !registration })
+          const remembered = !rendered && !entry.disabled && !!registration?.disabled
+          merged.push({ value, textValue: entry.label, disabled: entry.disabled || remembered, dataOnly: !registration, remembered })
         }
       }
       return merged
@@ -585,18 +590,18 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
     // A closed Select renders its items only when something needs them: the
     // first key without them renders them, then matches. A focus does not.
     // With `items`, the key matches `items` right away, unless only a rendered
-    // item can answer it: nothing matches or the cycle wraps (an option only a
-    // `SelectItem` has), or the match is a record's string key (the item's own
-    // value may be a number).
+    // item can answer it (see `findTypeaheadMatch`), or the match is a record's
+    // string key (the item's own value may be a number).
     if (closedItems && closedItems.canRender() && !closedItems.hasRendered()) {
-      const next = context.items?.value && findTypeaheadMatch()
-      if (!next || next.wrapped || (next.dataOnly && context.isRecordItems?.() && !context.isSelected(next.value))) {
+      const found = context.items?.value && findTypeaheadMatch()
+      const next = found && found.next
+      if (!found || found.unsure || (next && next.dataOnly && context.isRecordItems?.() && !context.isSelected(next.value))) {
         closedItems.renderThen(() => {
           if (!matchTypeahead(event))
             matchWhenItemsRegister(closedItems, event)
         })
       }
-      else {
+      else if (next) {
         context.setModelValue(next.value, 'typeahead', event)
       }
       return
@@ -617,18 +622,38 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
     }, { flush: 'post' })
   }
 
+  // The next match, and whether only the rendered items can settle it:
+  // - nothing matches: an option only a `SelectItem` has may;
+  // - a repeated key's cycle wraps to its first match: the same, after the last
+  //   one it knows. `items` may well list them all, but only the render can
+  //   tell, so such a key renders once per focus. A jump back to another letter,
+  //   or a longer search the selection still matches, renders nothing;
+  // - the match depends on a `disabled` remembered from an unmounted item, which
+  //   its template may have changed since.
   function findTypeaheadMatch() {
-    const items = getTypeaheadItems().filter(item => !item.disabled)
+    const term = search.value
+    const all = getTypeaheadItems()
+    const items = all.filter(item => !item.disabled)
     const current = items.find(item => context.isSelected(item.value))
-    const nextMatch = getNextMatch(items.map(item => item.textValue), search.value, current?.textValue)
-    const next = items.find(item => item.textValue === nextMatch)
-    return next && { ...next, wrapped: !!current && items.indexOf(next) < items.indexOf(current) }
+    const match = (list: typeof all) => {
+      const nextMatch = getNextMatch(list.map(item => item.textValue), term, current?.textValue)
+      return list.find(item => item.textValue === nextMatch)
+    }
+    const next = match(items)
+    const singleKey = Array.from(term).every(char => char === term[0])
+    const prefix = (singleKey ? term[0] ?? '' : term).toLowerCase()
+    const inCycle = !!current && current.textValue.toLowerCase().startsWith(prefix)
+    const unsure = next
+      ? (inCycle && singleKey && items.indexOf(next) < items.indexOf(current!))
+      || (all.some(item => item.remembered) && match(all.filter(item => !item.disabled || item.remembered)) !== next)
+      : singleKey || !inCycle
+    return { next, unsure }
   }
 
   function matchTypeahead(event: KeyboardEvent) {
     if (context.multiple.value || context.open.value)
       return true
-    const next = findTypeaheadMatch()
+    const { next } = findTypeaheadMatch()
     if (next)
       context.setModelValue(next.value, 'typeahead', event)
     return !!next
@@ -1282,15 +1307,16 @@ export function useSelectItemLabel<T extends AcceptableValue = AcceptableValue>(
   }
   // Registered with the closed items directly once mounted (sorted into
   // document order when read): no collection.
-  let unregister: (() => void) | undefined
+  let harvested: ReturnType<SelectClosedItems<T>['addHarvested']> | undefined
   onMounted(() => {
-    unregister = context.closedItems?.addHarvested(() => ({
+    harvested = context.closedItems?.addHarvested(() => ({
       value: value(),
       textValue: textValue.value,
       disabled: !!options.disabled(),
     }), options.element)
   })
-  onBeforeUnmount(() => unregister?.())
+  onUpdated(() => harvested?.update())
+  onBeforeUnmount(() => harvested?.remove())
   return { isSelected, textValue, itemContext }
 }
 
@@ -1298,7 +1324,8 @@ export function useSelectItemLabel<T extends AcceptableValue = AcceptableValue>(
  * A lean item's text (see `useSelectItemLabel`): registers its text in the
  * label registry once mounted, and again whenever its text, value or
  * `disabled` changes, as `useSelectItemText` does. One observer shared by
- * every lean text (`SelectClosedItems.observeText`) catches text-only changes.
+ * every lean text (`SelectClosedItems.observeText`) catches text-only changes,
+ * and follows a new text element (a dynamic `as`).
  * @internal
  */
 export function useSelectItemTextLabel<T extends AcceptableValue = AcceptableValue>(context: SelectRootContext<T>, itemContext: SelectItemContext<T>, element: Ref<HTMLElement | null | undefined>): undefined {
@@ -1310,16 +1337,27 @@ export function useSelectItemTextLabel<T extends AcceptableValue = AcceptableVal
     context.labels.register(value, el.textContent ?? String(value ?? ''), itemContext.disabled.value)
   }
   let stop: (() => void) | undefined
-  onMounted(() => {
-    const el = element.value
-    if (!el)
+  let bound: HTMLElement | null | undefined
+  function bind(el: HTMLElement | null | undefined) {
+    if (el === bound)
       return
-    itemContext.onItemTextChange(el)
+    stop?.()
+    stop = undefined
+    bound = el
+    if (el) {
+      itemContext.onItemTextChange(el)
+      stop = context.closedItems?.observeText(el, register)
+    }
+  }
+  onMounted(() => {
+    bind(element.value)
     register()
-    stop = context.closedItems?.observeText(el, register)
   })
   onBeforeUnmount(() => stop?.())
-  watch([() => itemContext.value, () => itemContext.disabled.value], register, { flush: 'post' })
+  watch([() => itemContext.value, () => itemContext.disabled.value, element], ([,, el]) => {
+    bind(el)
+    register()
+  }, { flush: 'post' })
   return undefined
 }
 
