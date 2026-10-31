@@ -252,7 +252,7 @@ describe('a part\'s root-level `<style>`', () => {
 })
 
 describe('a Teleport into a detached fragment', () => {
-  it('keeps the closed select content in place and hidden, with its items rendered', async () => {
+  it('keeps the closed select content in place and hidden, its items rendered only for their labels', async () => {
     render(`
       <reka-select-root>
         <reka-select-trigger aria-label="Letter"><reka-select-value placeholder="Pick"></reka-select-value></reka-select-trigger>
@@ -263,12 +263,16 @@ describe('a Teleport into a detached fragment', () => {
     `)
     const content = query('reka-select-content')
     const item = query('reka-select-item')
-    await vi.waitFor(() => expect(item.getAttribute('role')).toBe('option'))
+    await vi.waitFor(() => expect(query('reka-select-value').textContent).toBe('Pick'))
+    // A closed select keeps no items mounted.
+    expect(item.getAttribute('role')).toBeNull()
     expect(content.isConnected).toBe(true)
     expect(content.hasAttribute('data-reka-unmounted')).toBe(true)
     expect(content.getBoundingClientRect().height).toBe(0)
-    // Setting the value shows its label, registered by the closed items.
+    // Setting the value renders the closed items once, out of the page, to register its label.
     ;(query('reka-select-root') as HTMLElement & { modelValue: string }).modelValue = 'b'
     await vi.waitFor(() => expect(query('reka-select-value').textContent).toBe('Bee'))
+    expect(content.isConnected).toBe(true)
+    expect(content.getBoundingClientRect().height).toBe(0)
   })
 })

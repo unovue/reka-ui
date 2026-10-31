@@ -13,11 +13,15 @@ export const [injectSelectGroupContext, provideSelectGroupContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
+import { injectSelectContentContext, SelectContentDefaultContextValue } from './SelectContentImpl.vue'
 
 const props = defineProps<SelectGroupProps>()
 
-const id = useId(undefined, 'reka-select-group')
+// A closed content's lean items render no group semantics: they are only
+// there for their labels (and, in a custom element, stay in the page).
+const harvest = !!injectSelectContentContext(SelectContentDefaultContextValue).harvest
+const id = harvest ? '' : useId(undefined, 'reka-select-group')
 provideSelectGroupContext({ id })
 
 const { forwardRef, expose } = useForwardElement()
@@ -25,12 +29,12 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(props.as, props.asChild)"
     :ref="forwardRef"
-    role="group"
-    v-bind="props"
-    :aria-labelledby="id"
+    :role="harvest ? undefined : 'group'"
+    :aria-labelledby="id || undefined"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

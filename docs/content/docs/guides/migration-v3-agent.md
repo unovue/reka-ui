@@ -463,20 +463,23 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - Typing on a focused, closed `SelectTrigger` selects the next matching item (reason `typeahead`). In v2 it did nothing. `multiple` selects are unchanged.
 - In `popper` position, pressing the trigger of an open select closes it (reason `trigger-press`).
 - `SelectValue` keeps the text of a selected item after its `SelectItemText` unmounts.
-- The hidden native `<select>` marks selected options with `selected` and no longer receives `value`. A `multiple` select submits every selected value.
+- A closed select renders lightweight items (value, text, `disabled`) into a detached fragment only while needed (a selected value with no `items` label; a typed character on the closed trigger, until focus leaves it; a named select in a form, in idle time with `items`). Focus alone renders nothing. While rendered they stay live as in v2; when nothing needs them they unmount, and the texts stay remembered. `SelectPortal` renders nothing until the first open, so a template ref on `SelectContent` is `undefined` until then.
+- New `items` prop on `SelectRoot` (Base UI shape: `Record<value, label>`, `{ value, label, disabled? }[]`, or `{ label?, items }[]` groups). With it, labels come from the data (no closed render for a selected value); rendered items it does not list still count for typeahead and native options. `items[].disabled` is the source of truth until the items have rendered: a `disabled` only on a `SelectItem` is unknown before that, so a first typed character can select that option and its native option stays enabled. Set it in `items` as well.
+- The hidden native `<select>` marks selected options with `selected` and no longer receives `value`. A `multiple` select submits every selected value. Autofill passes the option's own value (objects included). With a record in `items`, an autofill before the items have rendered passes the string key; use the array shape for non-string values.
 - Content ids are `<root id>-content` (`reka-select-v-0-content`; v2 `reka-select-content-v-1`).
 - Root context (`injectSelectRootContext()`):
   - `modelValue` and `open` are read-only `ComputedRef`s.
   - `onValueChange(value, reason?, event?)` and `onOpenChange(open, reason?, event?)` return a boolean.
   - `optionsSet`, `onOptionAdd` and `onOptionRemove` are removed; use `labels.register` / `labels.get` / `labels.entries`.
   - New: `baseId`, `setModelValue`, `isSelected`, `pressItem`, `selectedLabels`, `displayValue`, `getNavigationIntent`.
-- New and additive: `displayValue` and `getNavigationIntent` on `SelectRoot`, `selectedLabels` on the `SelectValue` slot, and `useSelectRoot()` with the part composables.
+- New and additive: `items`, `displayValue` and `getNavigationIntent` on `SelectRoot`, `selectedLabels` on the `SelectValue` slot, and `useSelectRoot()` with the part composables.
 
 **How to find it.**
 - `injectSelectRootContext(` in custom parts; within them, assignments to `modelValue.value` or `open.value`, and `optionsSet`, `onOptionAdd`, `onOptionRemove`.
 - `reka-select-content` in selectors, snapshots and tests.
 - `@update:model-value` handlers on a `SelectRoot` with `multiple`, and `.push(` / `.splice(` on a select's `v-model` array.
 - Tests that assert `update:modelValue` was emitted after pressing the already-selected item.
+- Template refs on `SelectContent` read before the first open, and tests that query a closed select's items (`[role=option]`) in the DOM.
 
 **Rewrite rules.**
 - `rootContext.modelValue.value = x`: replace with `rootContext.setModelValue(x)`. `rootContext.open.value = x`: replace with `rootContext.onOpenChange(x)`.

@@ -64,6 +64,12 @@ function isOpen() {
   return trigger().getAttribute('aria-expanded') === 'true'
 }
 
+/** Waits for the idle-time render of a closed select's items (`setTimeout` in jsdom). */
+async function idle() {
+  await new Promise(resolve => setTimeout(resolve, 60))
+  await flushPromises()
+}
+
 /** A Select; `rootProps` (props and `on…` listeners) go on `SelectRoot`. */
 function mountSelect(rootProps: Record<string, unknown> = {}, opts: { values?: string[], disabled?: string[], form?: boolean } = {}) {
   const select = () => h(SelectRoot, rootProps, () => [
@@ -187,7 +193,8 @@ describe('change reasons', () => {
   it('reports autofill when the native select changes', async () => {
     const onUpdate = vi.fn()
     mountSelect({ 'name': 'fruit', 'onUpdate:modelValue': onUpdate }, { form: true })
-    await flushPromises()
+    // The native options of an empty select render in idle time.
+    await idle()
     const select = document.querySelector('select')!
     select.value = 'Cherry'
     select.dispatchEvent(new Event('input', { bubbles: true }))
@@ -320,6 +327,23 @@ describe('typeahead on the closed trigger', () => {
     await flushPromises()
     await keydownOn(trigger(), 'b')
     expect(valueText()).toBe('Blueberry')
+  })
+
+  it('matches synchronously on the composables alone, where no closed items can render', async () => {
+    const onUpdate = vi.fn()
+    let api!: UseSelectRootReturn<string>
+    mount(defineComponent({
+      setup() {
+        api = useSelectRoot<string>({ baseId: 'fruit', onUpdate })
+        const { trigger: surface } = useSelectTrigger({ context: api.context })
+        return () => h('button', { ...surface.attrs.value, 'type': 'button', 'aria-label': 'Fruit' })
+      },
+    }), { attachTo: document.body })
+    await nextTick()
+    api.context.labels.register('Banana', 'Banana')
+    trigger().dispatchEvent(new KeyboardEvent('keydown', { key: 'b', bubbles: true, cancelable: true }))
+    // No tick: nothing waits for a render that cannot happen.
+    expect(onUpdate).toHaveBeenCalledTimes(1)
   })
 
   it('does nothing in a multiple select', async () => {

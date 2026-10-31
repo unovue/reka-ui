@@ -45,12 +45,24 @@ export interface SelectContentContext {
   onVirtualKeydown?: (event: KeyboardEvent, intent: string | null | undefined) => boolean
   /** Whether keyboard navigation loops (the content's `loop`). */
   loop?: () => boolean
+  /**
+   * Set while a closed content renders its items into a detached fragment only
+   * to read their labels (see `SelectClosedItems`): the items render lean, with
+   * no listeners, selection state or indicators, and stay live while closed.
+   */
+  harvest?: boolean
 }
 
 export const SelectContentDefaultContextValue: SelectContentContext = {
   onViewportChange: () => {},
   itemTextRefCallback: () => {},
   itemRefCallback: () => {},
+}
+
+/** The content context of the closed content's detached items. */
+export const SelectContentHarvestContextValue: SelectContentContext = {
+  ...SelectContentDefaultContextValue,
+  harvest: true,
 }
 
 export type SelectContentImplEmits = {

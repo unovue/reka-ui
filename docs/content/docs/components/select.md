@@ -583,7 +583,9 @@ const value = ref('france')
 
 ### Showing the value before the content renders
 
-`SelectValue` shows the text of the selected item's `SelectItemText`. The texts are remembered once an item has rendered, also after it unmounts. To show the value of a select whose items have never rendered (object values, items loaded on open), pass `display-value` to the root. With it set, the closed content is not rendered just to collect the item texts. The cost: until the content has been opened once, the hidden native `<select>` only holds the selected values, so browser autofill cannot pick another one, and typing on the closed trigger has no items to match.
+`SelectValue` shows the text of the selected item's `SelectItemText`. The texts are remembered once an item has rendered, also after it unmounts. A closed select renders its items out of the page, in a lightweight form, only while something needs their texts: a selected value, a typed character on the closed trigger, or the hidden native `<select>` of a named select in a form, which holds its options from the mount so autofill can reach them. Focusing the trigger renders nothing, so tabbing through a form costs no render. While rendered they stay live, in document order, so a translated text, a refetched list or a `disabled` change shows while the select is closed. When focus leaves the trigger and nothing else needs them, they unmount again.
+
+To resolve a selected value without that render, describe the options with `items` (see [Listing the items as data](#listing-the-items-as-data)), or pass `display-value` to the root to resolve the selected value's text yourself (object values, items loaded on open). With `display-value` and no `items`, until the content has been opened once the hidden native `<select>` only holds the selected values, so browser autofill cannot pick another one, and typing on the closed trigger has no items to match.
 
 ```vue
 <template>
@@ -599,6 +601,53 @@ const value = ref('france')
   </SelectRoot>
 </template>
 ```
+
+### Listing the items as data
+
+Pass the options to `items` as well as rendering them. The trigger, the typeahead on the closed trigger and the hidden native `<select>` then read the labels from `items`, so a closed select needs no items rendered to show its value. It takes the same shapes as [Base UI](https://base-ui.com/react/components/select): a record of value to label, an array of `{ value, label, disabled? }`, or an array of groups `{ label?, items }`. An item's label is the text the trigger shows and the typeahead matches; it wins over the item's `SelectItemText`, and the items are still rendered by your template.
+
+A typed character tries `items` first and renders nothing when that answers it, as when it jumps to another letter. It renders the items, until focus leaves the trigger, in three cases: nothing in `items` matches, repeating a key wraps past its last match, or the match depends on a remembered `disabled` (below). The first two keep an option only a `SelectItem` has reachable. Only the render can rule such an option out, so a wrap renders even when `items` lists every option. With a `name` in a form, the items render in idle time, for the native `<select>`.
+
+`disabled` in `items` is the source of truth until the items have rendered once. A `disabled` on the `SelectItem` lives in your template, so it can't be known without the render `items` avoids: a first typed character can select that option, and its native option stays enabled until then. To be safe from the first key, set `disabled` in `items` as well.
+
+Once an item has rendered, its own `disabled` counts, and follows your template while it stays rendered. After it unmounts, its last `disabled` is remembered:
+- A typed character whose match depends on it renders the items to check, so an option re-enabled while closed is found. If the template no longer renders that option, only `disabled` in `items` counts.
+- The native option keeps the remembered value until the item renders again.
+- With `display-value`, which never renders closed items, the typeahead uses the remembered value too.
+
+```vue
+<script setup lang="ts">
+const fruits = [
+  { value: 'apple', label: 'Apple' },
+  { value: 'banana', label: 'Banana' },
+  { value: 'grapes', label: 'Grapes', disabled: true },
+]
+</script>
+
+<template>
+  <SelectRoot :items="fruits">
+    <SelectTrigger>
+      <SelectValue placeholder="Pick a fruit" />
+    </SelectTrigger>
+    <SelectPortal>
+      <SelectContent>
+        <SelectViewport>
+          <SelectItem
+            v-for="fruit in fruits"
+            :key="fruit.value"
+            :value="fruit.value"
+            :disabled="fruit.disabled"
+          >
+            <SelectItemText>{{ fruit.label }}</SelectItemText>
+          </SelectItem>
+        </SelectViewport>
+      </SelectContent>
+    </SelectPortal>
+  </SelectRoot>
+</template>
+```
+
+Object values work with `by`: `{ value: user, label: user.name }`. A record's keys are strings: a number value finds its label by its string form, and the typeahead and the native `<select>` write the matching `SelectItem`'s own value once it has rendered. An option only the record lists, or an autofill that arrives before the idle render, writes its string key. Use the array shape for values that are not strings.
 
 ### Selecting multiple values
 
