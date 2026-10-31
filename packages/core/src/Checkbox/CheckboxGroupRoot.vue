@@ -82,9 +82,11 @@ provideCheckboxGroupRootContext({
   >
     <slot />
 
+    <!-- Without a `name`, render the field only while the required group is empty,
+         so the checked values never become unnamed form fields. -->
     <VisuallyHiddenInput
-      v-if="isFormControl && name"
-      :name="name"
+      v-if="isFormControl && (name || (required && !modelValue?.length))"
+      :name="name ?? ''"
       :value="modelValue"
       :required="required"
     />
