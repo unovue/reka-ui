@@ -1,5 +1,5 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
-import type { SelectTypeaheadItem } from './closedItems'
+import type { HarvestedItem, SelectTypeaheadItem } from './closedItems'
 import type { SelectContentContext } from './SelectContentImpl.vue'
 import type { SelectEvent, SelectItemContext } from './SelectItem.vue'
 import type { SelectRootContext } from './SelectRoot.vue'
@@ -1307,7 +1307,7 @@ export function useSelectItemLabel<T extends AcceptableValue = AcceptableValue>(
   }
   // Registered with the closed items directly once mounted (sorted into
   // document order when read): no collection.
-  let harvested: ReturnType<SelectClosedItems<T>['addHarvested']> | undefined
+  let harvested: HarvestedItem<T> | undefined
   onMounted(() => {
     harvested = context.closedItems?.addHarvested(() => ({
       value: value(),
@@ -1315,8 +1315,8 @@ export function useSelectItemLabel<T extends AcceptableValue = AcceptableValue>(
       disabled: !!options.disabled(),
     }), options.element)
   })
-  onUpdated(() => harvested?.update())
-  onBeforeUnmount(() => harvested?.remove())
+  onUpdated(() => harvested && context.closedItems?.updateHarvested(harvested))
+  onBeforeUnmount(() => harvested && context.closedItems?.removeHarvested(harvested))
   return { isSelected, textValue, itemContext }
 }
 

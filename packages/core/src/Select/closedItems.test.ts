@@ -188,12 +188,12 @@ describe('selectClosedItems', () => {
       list.appendChild(element)
       const harvested = closed.addHarvested(() => ({ value: 'a', textValue: 'a' }), () => element)
       const version = closed.version.value
-      harvested.update()
+      closed.updateHarvested(harvested)
       expect(closed.version.value).toBe(version)
       const replacement = document.createElement('section')
       element.replaceWith(replacement)
       element = replacement
-      harvested.update()
+      closed.updateHarvested(harvested)
       expect(closed.version.value).toBe(version + 1)
       await flush()
       const moved = closed.version.value

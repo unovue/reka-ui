@@ -9,9 +9,11 @@ export interface SelectTypeaheadItem<T = AcceptableValue> {
   disabled?: boolean
 }
 
-interface HarvestedItem<T> {
+export interface HarvestedItem<T> {
   entry: () => SelectTypeaheadItem<T>
   element: () => Element | undefined
+  /** The element registered in `itemElements`. */
+  known: Element | undefined
 }
 
 const WATCH_SUBTREE: MutationObserverInit = { characterData: true, childList: true, subtree: true }
@@ -157,40 +159,42 @@ export class SelectClosedItems<T = AcceptableValue> {
 
   /**
    * A lean item mounts: `entry` reads its value, text and `disabled`, and
-   * `element` places it in document order. `update` follows a new element (a
-   * dynamic `as`), `remove` unregisters it.
+   * `element` places it in document order.
    */
-  addHarvested(entry: () => SelectTypeaheadItem<T>, element: () => Element | undefined): { update: () => void, remove: () => void } {
-    const item: HarvestedItem<T> = { entry, element }
-    let known = element()
+  addHarvested(entry: () => SelectTypeaheadItem<T>, element: () => Element | undefined): HarvestedItem<T> {
+    const known = element()
+    const item: HarvestedItem<T> = { entry, element, known }
     this.harvested.push(item)
     if (known)
       this.itemElements.add(known)
     this.observe(known)
     this.bump()
-    return {
-      update: () => {
-        const current = element()
-        if (current === known)
-          return
-        if (known)
-          this.itemElements.delete(known)
-        if (current)
-          this.itemElements.add(current)
-        known = current
-        this.observe(current)
-        this.bump()
-      },
-      remove: () => {
-        const index = this.harvested.indexOf(item)
-        if (index !== -1)
-          this.harvested.splice(index, 1)
-        if (known)
-          this.itemElements.delete(known)
-        this.bump()
-        this.disconnectWhenIdle()
-      },
-    }
+    return item
+  }
+
+  /** A lean item updated: follows its new element, if any (a dynamic `as`). */
+  updateHarvested(item: HarvestedItem<T>): void {
+    const current = item.element()
+    if (current === item.known)
+      return
+    if (item.known)
+      this.itemElements.delete(item.known)
+    if (current)
+      this.itemElements.add(current)
+    item.known = current
+    this.observe(current)
+    this.bump()
+  }
+
+  /** A lean item unmounts. */
+  removeHarvested(item: HarvestedItem<T>): void {
+    const index = this.harvested.indexOf(item)
+    if (index !== -1)
+      this.harvested.splice(index, 1)
+    if (item.known)
+      this.itemElements.delete(item.known)
+    this.bump()
+    this.disconnectWhenIdle()
   }
 
   /**
