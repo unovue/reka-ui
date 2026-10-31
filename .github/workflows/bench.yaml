@@ -1,9 +1,10 @@
 name: Bench
 
 # Browser benchmark (packages/bench): builds the PR and its base, mounts every component
-# family in Chromium on a production build, and compares retained heap per instance.
-# Fails when a family's heap regresses (see packages/bench/scripts/report.mjs for the rule);
-# mount and update times are reported in the job summary but never gate.
+# family in Chromium on a production build, and compares retained heap per instance and
+# update time. Fails when a family's heap regresses, or when its update time is over 2x
+# base, more than 5 ms slower, and every PR sample is above every base sample (see
+# packages/bench/scripts/report.mjs). Mount times are reported in the job summary but never gate.
 
 on:
   pull_request:
