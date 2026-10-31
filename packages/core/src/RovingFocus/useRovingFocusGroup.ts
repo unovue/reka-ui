@@ -5,6 +5,7 @@ import type { ElementSourceLike } from '@/Collection/Collection'
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
 import { computed, getCurrentInstance, nextTick, ref } from 'vue'
 import { getCollectionMeta, useCollection, useCollectionSlot } from '@/Collection'
+import { callListeners } from '@/shared/callListeners'
 import { createContext } from '@/shared/createContext'
 import { createKeyedSelector } from '@/shared/createKeyedSelector'
 import { isDisabledItem } from '@/shared/isDisabledItem'
@@ -76,14 +77,6 @@ const UPDATE_KEYS = ['onUpdate:currentTabStopId', 'onUpdate:current-tab-stop-id'
 const GROUP_EVENTS = [...ENTRY_FOCUS_KEYS, ...UPDATE_KEYS].flatMap(key => [key, `${key}Once`])
 const GROUP_KEYS = new Set([...Object.keys(GROUP_PROPS), ...Object.values(GROUP_PROPS), ...GROUP_EVENTS])
 
-/** Calls a listener attr (a function, or an array of them as `mergeProps` makes). */
-function callListener(listener: unknown, arg: unknown) {
-  if (Array.isArray(listener))
-    listener.forEach(fn => typeof fn === 'function' && fn(arg))
-  else if (typeof listener === 'function')
-    listener(arg)
-}
-
 /**
  * Reads the consumer attrs that name a group prop, as Vue would have resolved
  * them for `RovingFocusGroup`: either spelling, and a boolean prop set by its
@@ -114,11 +107,11 @@ function consumerGroupAttrs() {
     const attrs = instance.proxy!.$attrs
     const key = keys.find(k => k in attrs)
     if (key)
-      callListener(attrs[key], arg)
+      callListeners(attrs[key], instance, [arg])
     const onceKey = keys.map(k => `${k}Once`).find(k => k in attrs)
     if (onceKey && !fired.has(onceKey)) {
       fired.add(onceKey)
-      callListener(attrs[onceKey], arg)
+      callListeners(attrs[onceKey], instance, [arg])
     }
   }
   return { read, readBoolean, emit }
