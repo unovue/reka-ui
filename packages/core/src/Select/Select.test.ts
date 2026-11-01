@@ -29,6 +29,27 @@ describe('given default Select', () => {
     valueBox = wrapper.find('[aria-label="Customise options"]')
   })
 
+  it('disables options when the select becomes disabled while open', async () => {
+    wrapper.unmount()
+    wrapper = mount(Select, { attachTo: document.body, props: { disabled: false } })
+    await fireEvent.pointerDown(wrapper.find('button').element, { button: 0, ctrlKey: false })
+    await nextTick()
+    const option = wrapper.findAll('[role=option]')[1]
+
+    await wrapper.setProps({ disabled: true })
+    await nextTick()
+    expect(option.attributes('aria-disabled')).toBe('true')
+    await option.trigger('pointerup')
+    await option.trigger('keydown', { key: 'Enter' })
+    await nextTick()
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+
+    await wrapper.setProps({ disabled: false })
+    await option.trigger('pointerup')
+    await nextTick()
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['Banana'])
+  })
+
   it('should pass axe accessibility tests', async () => {
     expect(await axe(wrapper.element)).toHaveNoViolations()
   })
