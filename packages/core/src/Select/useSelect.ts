@@ -1327,25 +1327,39 @@ export function useSelectItemLabel<T extends AcceptableValue = AcceptableValue>(
  * label registry once mounted, and again whenever its text, value or
  * `disabled` changes, as `useSelectItemText` does. One observer shared by
  * every lean text (`SelectClosedItems.observeText`) catches text-only changes
- * and a new text element (a dynamic `as`).
+ * and a replaced text element (a dynamic `as`). An as-child text can have no
+ * element at all (a `v-if`, an async child), which no mutation can tie to this
+ * text: only from then on does it watch its element.
  * @internal
  */
 export function useSelectItemTextLabel<T extends AcceptableValue = AcceptableValue>(context: SelectRootContext<T>, itemContext: SelectItemContext<T>, element: Ref<HTMLElement | null | undefined>): undefined {
+  /** The element the shared observer holds this text under. */
+  let observed: HTMLElement | null | undefined
+  let following = false
   function register() {
     const el = element.value
     if (el) {
+      if (el !== observed) {
+        context.closedItems?.observeText(el, register, observed)
+        observed = el
+      }
       itemContext.onItemTextChange(el)
       const value = itemContext.value
       context.labels.register(value, el.textContent ?? String(value ?? ''), itemContext.disabled.value)
     }
+    else if (!following) {
+      // This can run from the observer, outside setup. Nothing has to stop it:
+      // it reads only this text's own element, and goes with it.
+      following = true
+      watch(element, (arrived) => {
+        if (arrived)
+          register()
+      }, { flush: 'post' })
+    }
     return el
   }
-  onMounted(() => {
-    const el = register()
-    if (el)
-      context.closedItems?.observeText(el, register)
-  })
-  onBeforeUnmount(() => context.closedItems?.unobserveText(element.value))
+  onMounted(register)
+  onBeforeUnmount(() => context.closedItems?.unobserveText(observed))
   watch([() => itemContext.value, () => itemContext.disabled.value], register, { flush: 'post' })
   return undefined
 }

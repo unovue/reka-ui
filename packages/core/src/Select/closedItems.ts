@@ -35,7 +35,7 @@ function byDocumentPosition<T>(a: HarvestedItem<T>, b: HarvestedItem<T>): number
  * them, and then in a lean form (see `SelectContentHarvestContextValue`):
  * each item is its value, its `disabled`, and its text registered in the
  * sticky label registry, with no listeners, focus state or indicator. While
- * mounted they stay live, as in v2: a translated text, a replaced, refetched
+ * mounted they stay live: a translated text, a replaced, refetched
  * or re-sorted list, or a `disabled` change reaches the trigger, the closed
  * typeahead and the hidden native `select`.
  *
@@ -235,16 +235,10 @@ export class SelectClosedItems<T = AcceptableValue> {
         this.tracked.add(element)
       this.observe(element)
     }
-    for (const [node, sync] of [...this.textSyncs]) {
+    for (const sync of [...this.textSyncs.values()]) {
       const element = sync()
-      if (!element)
-        continue
-      if (element !== node) {
-        this.textSyncs.delete(node)
-        this.textSyncs.set(element, sync)
-      }
-      this.tracked.add(element)
-      this.observe(element)
+      if (element)
+        this.observe(element)
     }
   }
 
@@ -296,11 +290,16 @@ export class SelectClosedItems<T = AcceptableValue> {
   }
 
   /**
-   * A lean item text mounts: `sync` re-registers its label and returns its
-   * current element, and runs when a mutation touches this text (a translated
-   * text, a slot that re-renders on its own).
+   * A lean item text has an element, a first one or one replacing `previous`:
+   * `sync` re-registers its label and returns its current element, and runs when
+   * a mutation touches this text (a translated text, a slot that re-renders on
+   * its own). A new element comes back through here from `sync`.
    */
-  observeText(element: Node, sync: () => Node | null | undefined): void {
+  observeText(element: Node, sync: () => Node | null | undefined, previous?: Node | null): void {
+    if (previous) {
+      this.textSyncs.delete(previous)
+      this.tracked.delete(previous)
+    }
     this.textSyncs.set(element, sync)
     this.tracked.add(element)
     this.observe(element)

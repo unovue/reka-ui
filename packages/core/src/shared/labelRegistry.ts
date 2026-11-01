@@ -27,7 +27,7 @@ function isShallowCopy(a: unknown, b: unknown): boolean {
   if (!isPlainObject(a) || !isPlainObject(b))
     return false
   const keys = Object.keys(a)
-  return keys.length === Object.keys(b).length && keys.every(key => a[key] === b[key])
+  return keys.length === Object.keys(b).length && keys.every(key => Object.hasOwn(b, key) && a[key] === b[key])
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

@@ -113,6 +113,20 @@ describe('createLabelRegistry', () => {
     expect(runs).toBe(2)
   })
 
+  it('a value with another key holding `undefined` is not a copy', () => {
+    const labels = createLabelRegistry<Record<string, unknown>>('id')
+    labels.register({ id: 1, a: undefined }, 'One')
+    let runs = 0
+    const entries = computed(() => {
+      runs++
+      return labels.entries()
+    })
+    void entries.value
+    labels.register({ id: 1, b: undefined }, 'One')
+    void entries.value
+    expect(runs).toBe(2)
+  })
+
   it('re-runs a lookup that missed once the value registers', () => {
     const labels = createLabelRegistry<string>()
     const label = computed(() => labels.get('apple'))

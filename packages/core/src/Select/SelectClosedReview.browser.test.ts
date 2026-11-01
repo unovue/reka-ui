@@ -2,7 +2,7 @@
 // remembered `disabled`, and items outside the fragment. Real Chromium.
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
-import { createApp, defineComponent, h, KeepAlive, nextTick, onMounted, onUnmounted, ref, shallowRef, Teleport } from 'vue'
+import { createApp, defineAsyncComponent, defineComponent, h, KeepAlive, nextTick, onMounted, onUnmounted, ref, shallowRef, Teleport } from 'vue'
 import { SelectContent, SelectItem, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '.'
 
 let app: ReturnType<typeof createApp> | undefined
@@ -546,5 +546,110 @@ describe('values with a field that can\'t be serialized, under `by`', () => {
     autofill(1)
     await wait()
     expect(log.at(-1)).toEqual(latest[1])
+  })
+})
+
+describe('an as-child text with no element for a while', () => {
+  const asChildItem = (content: () => unknown) => h(SelectItem, { key: 'a', value: 'a' }, () => h(SelectItemText, { asChild: true }, content as any))
+  const named = () => ({ name: 'n', modelValue: 'a' })
+
+  /** The observers created while `run` runs, and how many are live once the Select unmounts. */
+  async function liveAfterUnmount(run: () => Promise<void>) {
+    const Real = globalThis.MutationObserver
+    const created: { live: boolean }[] = []
+    globalThis.MutationObserver = class extends Real {
+      state = { live: false }
+      constructor(callback: MutationCallback) {
+        super(callback)
+        created.push(this.state)
+      }
+
+      override observe(target: Node, options?: MutationObserverInit) {
+        this.state.live = true
+        super.observe(target, options)
+      }
+
+      override disconnect() {
+        this.state.live = false
+        super.disconnect()
+      }
+    }
+    try {
+      await run()
+      app!.unmount()
+      app = undefined
+      await wait()
+      return created.filter(state => state.live).length
+    }
+    finally {
+      globalThis.MutationObserver = Real
+    }
+  }
+
+  it('absent at the mount, then there: its label registers and stays live', async () => {
+    const show = ref(false)
+    const text = ref('A1')
+    mountSelect(() => [asChildItem(() => show.value ? h('span', text.value) : null), item('B')], named, { form: true })
+    await wait()
+    expect(value()).toBe('Pick')
+    show.value = true
+    await wait()
+    expect(value()).toBe('A1')
+    expect(optionTexts()).toContain('A1')
+    text.value = 'A2'
+    await wait()
+    expect(value()).toBe('A2')
+  })
+
+  it('around an async component: its label registers once it resolves', async () => {
+    const Lazy = defineAsyncComponent({ loader: () => new Promise<any>(resolve => setTimeout(() => resolve(defineComponent({ setup: () => () => h('span', 'Loaded') })), 60)) })
+    mountSelect(() => [asChildItem(() => h(Lazy)), item('B')], named, { form: true })
+    await wait(200)
+    expect(value()).toBe('Loaded')
+    expect(optionTexts()).toContain('Loaded')
+  })
+
+  it('gone, then back with a new text, then changed: each one reaches the trigger', async () => {
+    const show = ref(true)
+    const text = ref('A1')
+    mountSelect(() => [asChildItem(() => show.value ? h('span', text.value) : null), item('B')], named, { form: true })
+    await wait()
+    show.value = false
+    await wait()
+    expect(value()).toBe('A1')
+    text.value = 'A2'
+    show.value = true
+    await wait()
+    expect(value()).toBe('A2')
+    text.value = 'A3'
+    await wait()
+    expect(value()).toBe('A3')
+  })
+
+  it('gone when the Select unmounts: no observer stays live', async () => {
+    const show = ref(true)
+    expect(await liveAfterUnmount(async () => {
+      mountSelect(() => [asChildItem(() => show.value ? h('span', 'A1') : null)], named, { form: true })
+      await wait()
+      show.value = false
+      await wait()
+    })).toBe(0)
+  })
+
+  it('still absent when the Select unmounts: no observer stays live', async () => {
+    expect(await liveAfterUnmount(async () => {
+      mountSelect(() => [asChildItem(() => null)], named, { form: true })
+      await wait()
+    })).toBe(0)
+  })
+
+  it('a text with its element from the mount doesn\'t read it beyond the observer: replaced and unmounted in one go', async () => {
+    const tag = ref('span')
+    expect(await liveAfterUnmount(async () => {
+      mountSelect(() => [h(SelectItem, { key: 'a', value: 'a' }, () => h(SelectItemText, { as: tag.value }, () => 'A1'))], named, { form: true })
+      await wait()
+      tag.value = 'b'
+      await nextTick()
+    })).toBe(0)
   })
 })

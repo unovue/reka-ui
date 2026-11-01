@@ -209,15 +209,19 @@ describe('selectClosedItems', () => {
       document.createDocumentFragment().appendChild(list)
       let text: HTMLElement = document.createElement('span')
       list.appendChild(text)
-      const sync = vi.fn(() => text)
-      closed.observeText(text, sync)
-      await flush()
       const replacement = document.createElement('em')
       replacement.textContent = 'old'
+      const sync = vi.fn((): HTMLElement => {
+        closed.observeText(replacement, sync, text)
+        text = replacement
+        return text
+      })
+      closed.observeText(text, sync)
+      await flush()
       text.replaceWith(replacement)
-      text = replacement
       await flush()
       sync.mockClear()
+      sync.mockImplementation(() => replacement)
       replacement.firstChild!.nodeValue = 'new'
       await flush()
       expect(sync).toHaveBeenCalledTimes(1)
@@ -293,6 +297,39 @@ describe('selectClosedItems', () => {
       closed.removeHarvested(item)
       const version = closed.version.value
       element.remove()
+      await flush()
+      expect(closed.version.value).toBe(version)
+    })
+
+    it('a replaced text no longer holds the observer: it disconnects with the new element gone', async () => {
+      const { closed } = create({ form: false })
+      const list = document.createElement('div')
+      document.createDocumentFragment().appendChild(list)
+      const old = document.createElement('span')
+      const replacement = document.createElement('em')
+      list.append(old, replacement)
+      const sync = vi.fn(() => replacement)
+      closed.observeText(old, sync)
+      closed.observeText(replacement, sync, old)
+      const disconnect = vi.spyOn(MutationObserver.prototype, 'disconnect')
+      closed.unobserveText(replacement)
+      expect(disconnect).toHaveBeenCalledTimes(1)
+      disconnect.mockRestore()
+    })
+
+    it('a replaced text stops being tracked', async () => {
+      const { closed } = create({ form: false })
+      const list = document.createElement('div')
+      document.createDocumentFragment().appendChild(list)
+      const old = document.createElement('span')
+      const replacement = document.createElement('em')
+      list.append(old, replacement)
+      const sync = vi.fn(() => replacement)
+      closed.observeText(old, sync)
+      closed.observeText(replacement, sync, old)
+      await flush()
+      const version = closed.version.value
+      old.remove()
       await flush()
       expect(closed.version.value).toBe(version)
     })
