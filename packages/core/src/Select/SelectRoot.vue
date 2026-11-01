@@ -1,11 +1,13 @@
 <script lang="ts">
 import type { ComputedRef, Ref, ShallowRef } from 'vue'
-import type { SelectChangeReason, SelectModelValue, SelectNavigationIntent, SelectOpenChangeReason, SelectTypeaheadItem } from './useSelect'
+import type { SelectClosedItems } from './closedItems'
+import type { SelectChangeReason, SelectItemData, SelectItems, SelectModelValue, SelectNavigationIntent, SelectOpenChangeReason, SelectTypeaheadItem } from './useSelect'
 import type { BaseChangeReason, By, ChangeEventDetails, LabelRegistry } from '@/shared'
 import type { SelectionSelector } from '@/shared/selectionSelector'
 import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
 import { useCollection } from '@/Collection'
-import { compare, createContext, isNullish, useDirection, useFormControl, useId } from '@/shared'
+import { createContext, isNullish, useDirection, useFormControl, useId } from '@/shared'
+import { isDisabledItem } from '@/shared/isDisabledItem'
 
 export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
   /** The controlled open state of the Select. Can be bind as `v-model:open`. */
@@ -35,6 +37,14 @@ export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
    * autofill cannot pick another one) and the closed trigger's typeahead has no items to match.
    */
   displayValue?: (value: T) => string
+  /**
+   * The options as data, as in Base UI's `Select.Root items`: a record of value → label, or an array of
+   * `{ value, label, disabled? }` (optionally in groups, `{ items: [...] }`). `SelectValue`, the closed trigger's
+   * typeahead and the hidden native `select` then read its labels, so a selected value needs no closed render and its
+   * label also renders on the server. The `SelectItem`s still render the open list; rendered items it does not list
+   * still count.
+   */
+  items?: SelectItems<T>
   /**
    * Resolves what a keydown in the content means for keyboard navigation. Return `undefined` to fall back to the
    * default mapping (ArrowUp, ArrowDown, Home, End), `null` to opt the key out (for Enter and Space this also skips the
@@ -99,6 +109,18 @@ export interface SelectRootContext<T = AcceptableValue> {
   selectedLabels: ComputedRef<string[]>
   /** The root's `displayValue` resolver, if any. */
   displayValue: Ref<((value: T) => string) | undefined>
+  /** The root's `items`, flat; `undefined` without. */
+  items?: Ref<SelectItemData<T>[] | undefined>
+  /** The `items` option of a value (matched with `by`; a record by the value's string form). */
+  getItemData?: (value: T) => SelectItemData<T> | undefined
+  /** Whether `items` is a record (its values are its string keys). */
+  isRecordItems?: () => boolean
+  getItemRegistration?: (data: SelectItemData<T>) => { value: T, disabled: boolean } | undefined
+  /**
+   * What the closed content renders of its items, and what the closed trigger's typeahead matches.
+   * @internal
+   */
+  closedItems?: SelectClosedItems<T>
   /** The root's `getNavigationIntent` over the default mapping. */
   getNavigationIntent: (event: KeyboardEvent) => SelectNavigationIntent | null | undefined
   /**
@@ -116,7 +138,7 @@ export const [injectSelectRootContext, provideSelectRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false">
-import { computed, toRef, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, toRef, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { PopperRoot } from '@/Popper'
 import BubbleSelect from './BubbleSelect.vue'
@@ -158,7 +180,9 @@ const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
 const required = computed(() => (fieldContext ? (props.required || fieldContext.required.value) : props.required))
 const disabled = computed(() => Boolean(props.disabled || fieldContext?.disabled.value))
 
-useCollection({ isProvider: true })
+// Every item registers here: the open content's and the closed ones the
+// content renders while it needs their labels.
+const { reactiveItems } = useCollection<{ value: { value: AcceptableValue, textValue: string } }>({ isProvider: true })
 const dir = useDirection(toRef(() => props.dir))
 
 const select = useSelectRoot<AcceptableValue>({
@@ -173,6 +197,7 @@ const select = useSelectRoot<AcceptableValue>({
   dir,
   baseId: useId(undefined, 'reka-select'),
   displayValue: toRef(() => props.displayValue as ((value: AcceptableValue) => string) | undefined),
+  items: () => props.items as SelectItems<AcceptableValue> | undefined,
   getNavigationIntent: event => props.getNavigationIntent?.(event),
   emit: emits,
   // User-driven selection (as opposed to a programmatic/parent-driven
@@ -195,21 +220,82 @@ watch(modelValue, () => {
 
 const isFormControl = useFormControl(context.triggerElement)
 
-// The native `select` mirrors the registered item texts plus every selected
-// value (a value whose item never rendered shows its `displayValue`), so it
-// does not depend on which items are mounted. Each option carries `selected`,
-// which also makes a `multiple` select submit every value.
+// The mounted items, in document order, for the closed trigger's typeahead.
+const closedItems = context.closedItems!
+closedItems.liveItems = () => {
+  const items = reactiveItems.value
+  if (!items.length)
+    return []
+  return items
+    .slice()
+    .sort((a, b) => a.ref.compareDocumentPosition(b.ref) & Node.DOCUMENT_POSITION_PRECEDING ? 1 : -1)
+    .map(item => ({ value: item.value.value, textValue: item.value.textValue, disabled: isDisabledItem(item.ref) }))
+}
+
+// The hidden native `select` of a named Select in a form offers every option
+// to the browser's autofill, which can arrive at any time. `items` has them
+// from the start, so its render waits for idle time; otherwise the closed
+// content renders its lean items from the mount, while the name and form last.
+closedItems.needsForm = () => isFormControl.value && !!resolvedName.value
+onMounted(() => {
+  // Past the mount (and the hydration), a selected value without a label
+  // renders the closed items now, so the trigger shows it before the first paint.
+  closedItems.activate()
+  watch(() => closedItems.needsForm!() && !!context.items?.value, (defer) => {
+    if (defer)
+      closedItems.renderFormWhenIdle()
+    else
+      closedItems.dispose()
+  }, { immediate: true })
+})
+onBeforeUnmount(() => closedItems.dispose())
+
+// The registered labels `items` does not list, in the document order of the
+// mounted lean items (a prepended or re-sorted list), then the ones no mounted
+// item has (sticky). Its own computed: a model change cannot change the order.
+const registeredOptions = computed(() => {
+  const labels = context.labels
+  const placed = new Set<unknown>()
+  const ordered = []
+  for (const value of closedItems.getOrderedValues()) {
+    const entry = labels.entry(value)
+    if (entry && !placed.has(entry)) {
+      placed.add(entry)
+      ordered.push(entry)
+    }
+  }
+  const data = context.items?.value
+  return [...ordered, ...labels.entries().filter(entry => !placed.has(entry))]
+    .filter(entry => !data || !context.getItemData!(entry.value))
+})
+
+// The native `select` mirrors `items`, else the registered item texts, plus
+// every selected value (a value whose item never rendered shows its
+// `displayValue`), so it does not depend on which items are mounted. Each
+// option carries `selected`, which also makes a `multiple` select submit every
+// value.
 const nativeOptions = computed(() => {
-  const entries = context.labels.entries()
-  const options = entries.map(entry => ({ value: entry.value, label: entry.label, disabled: entry.disabled, selected: isSelected(entry.value) }))
   const value = modelValue.value
   const selectedValues = (Array.isArray(value) ? value : isNullish(value) ? [] : [value]) as AcceptableValue[]
+  const data = context.items?.value
+  const getItemData = context.getItemData!
+  // `items` first (their labels win), then the texts of rendered items it does
+  // not list. A rendered item refines its option: its typed value and `disabled`.
+  const selectedData = new Set(data ? selectedValues.map(getItemData) : [])
+  const options = (data ?? []).map((entry) => {
+    const registration = context.getItemRegistration!(entry)
+    const optionValue = registration ? registration.value : entry.value
+    return { value: optionValue, label: entry.label, disabled: !!entry.disabled || !!registration?.disabled, selected: selectedData.has(entry) || isSelected(optionValue) }
+  })
+  for (const entry of registeredOptions.value)
+    options.push({ value: entry.value, label: entry.label, disabled: entry.disabled, selected: isSelected(entry.value) })
   for (const selected of selectedValues) {
-    if (!entries.some(entry => compare(entry.value, selected, context.by)))
+    if (!(data && getItemData(selected)) && !context.labels.entry(selected))
       options.push({ value: selected, label: context.displayValue.value?.(selected) ?? '', disabled: false, selected: true })
   }
   return options
 })
+
 // The native `select` is patched in place (each option's `selected` is bound),
 // never re-keyed: re-creating it on a model change would skip the `change`
 // event `BubbleSelect` dispatches for that change.

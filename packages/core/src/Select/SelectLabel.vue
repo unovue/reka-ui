@@ -7,7 +7,7 @@ export interface SelectLabelProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectSelectGroupContext } from './SelectGroup.vue'
 
@@ -22,11 +22,12 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
-    v-bind="props"
-    :id="groupContext.id"
+  <component
+    :is="renderAs(props.as, props.asChild)"
+    :id="groupContext.id || undefined"
     :ref="forwardRef"
+    :for="props.for"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

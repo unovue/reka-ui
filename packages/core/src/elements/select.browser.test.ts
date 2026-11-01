@@ -107,6 +107,26 @@ describe('select elements', () => {
     await vi.waitFor(() => expect(value.textContent).toBe('Cherry'))
   })
 
+  it('selects by typing on the closed trigger, though a closed select keeps no items rendered', async () => {
+    const { trigger, value } = await mount()
+    expect(query('reka-select-content').hasAttribute('data-reka-unmounted')).toBe(true)
+    trigger.focus()
+    await userEvent.keyboard('c')
+    await vi.waitFor(() => expect(value.textContent).toBe('Cherry'))
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('takes its labels from an `items` property', async () => {
+    const template = document.createElement('template')
+    template.innerHTML = SELECT('default-value="cherry"')
+    const root = template.content.querySelector('reka-select-root') as HTMLElement & { items: unknown }
+    root.items = { apple: 'Apple', banana: 'Banana', blueberry: 'Blueberry', cherry: 'Cherry (from items)' }
+    render('').append(template.content)
+    await vi.waitFor(() => expect(query('reka-select-value').textContent).toBe('Cherry (from items)'))
+    root.items = { cherry: 'Cherry!' }
+    await vi.waitFor(() => expect(query('reka-select-value').textContent).toBe('Cherry!'))
+  })
+
   it('keeps children you give `<reka-select-value>` instead of its text', async () => {
     render(SELECT().replace('<reka-select-value placeholder="Pick a fruit"></reka-select-value>', '<reka-select-value placeholder="Pick a fruit"><b>Custom</b></reka-select-value>'))
     const value = query('reka-select-value')

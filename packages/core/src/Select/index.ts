@@ -79,7 +79,10 @@ export {
 export {
   type SelectChangeReason,
   type SelectContentState,
+  type SelectItemData,
+  type SelectItemGroupData,
   type SelectItemIndicatorState,
+  type SelectItems,
   type SelectItemState,
   type SelectModelValue,
   type SelectNavigationIntent,

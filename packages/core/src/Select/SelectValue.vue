@@ -9,7 +9,7 @@ export interface SelectValueProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { watch } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectSelectRootContext } from './SelectRoot.vue'
 import { useSelectValue } from './useSelect'
@@ -35,10 +35,9 @@ const { value, selectedLabels, text } = useSelectValue({
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="value.attrs.value"
   >
     <slot
@@ -48,5 +47,5 @@ const { value, selectedLabels, text } = useSelectValue({
     >
       {{ text }}
     </slot>
-  </Primitive>
+  </component>
 </template>

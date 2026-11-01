@@ -13,7 +13,25 @@ import { compare } from './compare'
 export interface LabelRegistry<T> {
   register: (value: T, label: string, disabled?: boolean) => void
   get: (value: T) => string | undefined
+  /** The entry of `value`, by the same lookup as `get`. */
+  entry: (value: T) => { value: T, label: string, disabled: boolean } | undefined
   entries: () => Array<{ value: T, label: string, disabled: boolean }>
+}
+
+/**
+ * Whether two values are plain objects with the same fields. Items re-register
+ * on every render, so this never looks deeper: a field may hold anything (a
+ * `Blob`, an element), or be large.
+ */
+function isShallowCopy(a: unknown, b: unknown): boolean {
+  if (!isPlainObject(a) || !isPlainObject(b))
+    return false
+  const keys = Object.keys(a)
+  return keys.length === Object.keys(b).length && keys.every(key => Object.hasOwn(b, key) && a[key] === b[key])
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && Object.getPrototypeOf(value) === Object.prototype
 }
 
 /**
@@ -73,8 +91,18 @@ export function createLabelRegistry<T>(by?: By<T>): LabelRegistry<T> {
       const index = labelIndexOf(value, key)
       const current = list[index]
       // Items re-register on every render; only an actual change is written.
-      if (current && current.label === label && current.disabled === disabled)
+      if (current && current.label === label && current.disabled === disabled) {
+        if (current.value !== value) {
+          // The last value wins: under `by`, a refetched object can have the
+          // same identity and new fields. A copy with the same fields (an inline
+          // `:value` re-created by every render) is no change, so it triggers nothing.
+          const changed = !isShallowCopy(current.value, value)
+          current.value = value
+          if (changed)
+            triggerRef(labelEntries)
+        }
         return
+      }
       const entry = { value, label, disabled }
       if (index === -1) {
         if (key !== undefined)
@@ -92,6 +120,10 @@ export function createLabelRegistry<T>(by?: By<T>): LabelRegistry<T> {
       const entries = labelEntries.value
       const index = labelIndexOf(value)
       return index === -1 ? undefined : entries[index].label
+    },
+    entry: (value) => {
+      const entries = labelEntries.value
+      return entries[labelIndexOf(value)]
     },
     entries: () => [...labelEntries.value],
   }

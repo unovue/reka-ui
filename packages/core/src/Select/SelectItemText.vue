@@ -8,10 +8,10 @@ export interface SelectItemTextProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { mergeProps } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectItemContext } from './SelectItem.vue'
-import { useSelectItemText } from './useSelect'
+import { useSelectItemText, useSelectItemTextLabel } from './useSelect'
 
 defineOptions({
   inheritAttrs: false,
@@ -28,20 +28,24 @@ const itemContext = injectSelectItemContext()
 const { forwardRef, currentElement: itemTextElement, expose } = useForwardElement()
 defineExpose(expose)
 
-// Registers the text in the root's sticky label registry on mount and update.
-const { itemText } = useSelectItemText({
-  context: rootContext,
-  itemContext,
-  contentContext,
-  element: itemTextElement,
-})
+// Registers the text in the root's sticky label registry on mount and update,
+// for a closed content's detached item text as well (see `useSelectItemTextLabel`).
+const itemText = contentContext.harvest
+  ? useSelectItemTextLabel(rootContext, itemContext, itemTextElement)
+  : useSelectItemText({
+    context: rootContext,
+    itemContext,
+    contentContext,
+    element: itemTextElement,
+  }).itemText
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(props.as, props.asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps(itemText.attrs.value, props, $attrs)"
+    v-bind="itemText ? mergeProps(itemText.attrs.value, $attrs) : $attrs"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

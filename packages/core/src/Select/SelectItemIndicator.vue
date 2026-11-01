@@ -13,8 +13,9 @@ export interface SelectItemIndicatorProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { Presence } from '@/Presence'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useLingeringPresence } from '@/shared/useLingeringPresence'
+import { injectSelectContentContext, SelectContentDefaultContextValue } from './SelectContentImpl.vue'
 import { injectSelectItemContext } from './SelectItem.vue'
 import { useSelectItemIndicator } from './useSelect'
 
@@ -25,28 +26,31 @@ const props = withDefaults(defineProps<SelectItemIndicatorProps>(), {
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const itemContext = injectSelectItemContext()
-const { indicator, present } = useSelectItemIndicator(itemContext)
+// A closed content's detached item renders no indicator.
+const harvest = !!injectSelectContentContext(SelectContentDefaultContextValue).harvest
+const { indicator, present } = harvest
+  ? { indicator: undefined, present: undefined }
+  : useSelectItemIndicator(itemContext)
 
 // Mounts no `Presence` while not shown; see `useLingeringPresence`.
-const shown = () => props.forceMount || present.value
-const lingering = useLingeringPresence(shown)
+const shown = () => props.forceMount || !!present?.value
+const lingering = harvest ? undefined : useLingeringPresence(shown)
 </script>
 
 <template>
   <Presence
-    v-if="lingering.mounted()"
+    v-if="lingering?.mounted()"
     :present="shown()"
-    :appear="lingering.appear()"
-    @vue:mounted="lingering.onMounted"
-    @complete="lingering.onComplete"
+    :appear="lingering!.appear()"
+    @vue:mounted="lingering!.onMounted"
+    @complete="lingering!.onComplete"
   >
-    <Primitive
+    <component
+      :is="renderAs(as, asChild)"
       :ref="forwardRef"
-      v-bind="indicator.attrs.value"
-      :as="as"
-      :as-child="asChild"
+      v-bind="indicator!.attrs.value"
     >
       <slot />
-    </Primitive>
+    </component>
   </Presence>
 </template>

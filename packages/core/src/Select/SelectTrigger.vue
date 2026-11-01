@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { PopperAnchorProps } from '@/Popper'
-import { useCollection } from '@/Collection'
 
 export interface SelectTriggerProps extends PopperAnchorProps {
   disabled?: boolean
@@ -8,16 +7,19 @@ export interface SelectTriggerProps extends PopperAnchorProps {
 </script>
 
 <script setup lang="ts">
-import type { SelectTypeaheadItem } from './useSelect'
-import type { AcceptableValue } from '@/shared/types'
-import { mergeProps, onBeforeUnmount, onMounted, useAttrs } from 'vue'
+import { mergeProps, onBeforeUnmount, onMounted, useAttrs, watchPostEffect } from 'vue'
 import { injectFieldRootContext } from '@/Field'
-import { PopperAnchor } from '@/Popper'
-import { Primitive } from '@/Primitive'
+import { injectPopperRootContext } from '@/Popper/PopperRoot.vue'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
-import { isDisabledItem } from '@/shared/isDisabledItem'
 import { injectSelectRootContext } from './SelectRoot.vue'
 import { useSelectTrigger } from './useSelect'
+
+defineOptions({
+  // Consumer attrs merge under the trigger's own bindings (their listeners run
+  // first), the order the former `PopperAnchor` / `asChild` layering gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<SelectTriggerProps>(), {
   as: 'button',
@@ -26,24 +28,19 @@ const rootContext = injectSelectRootContext()
 const { forwardRef, currentElement: triggerElement, expose } = useForwardElement()
 defineExpose(expose)
 
-// The mounted items (the closed content renders them into a fragment), in
-// document order, for the closed trigger's typeahead.
-const { reactiveItems } = useCollection<{ value: { value: AcceptableValue, textValue: string } }>()
-function getTypeaheadItems(): SelectTypeaheadItem[] {
-  return reactiveItems.value
-    .slice()
-    .sort((a, b) => a.ref.compareDocumentPosition(b.ref) & Node.DOCUMENT_POSITION_PRECEDING ? 1 : -1)
-    .map(item => ({ value: item.value.value, textValue: item.value.textValue, disabled: isDisabledItem(item.ref) }))
-}
-
 const { trigger } = useSelectTrigger({
   context: rootContext,
   disabled: () => props.disabled,
-  getItems: getTypeaheadItems,
 })
 
 onMounted(() => {
   rootContext.onTriggerChange(triggerElement.value)
+})
+
+// The positioning anchor: what `PopperAnchor` did, without its components.
+const popperRootContext = injectPopperRootContext()
+watchPostEffect(() => {
+  popperRootContext.onAnchorChange(props.reference ?? triggerElement.value)
 })
 
 // Optional Field participation — the trigger is the combobox's focusable
@@ -93,18 +90,11 @@ onBeforeUnmount(() => unregisterControl?.())
 </script>
 
 <template>
-  <PopperAnchor
-    as-child
-    :reference="reference"
+  <component
+    :is="renderAs(as, asChild)"
+    v-bind="mergeProps($attrs, getFieldAttrs(), trigger.attrs.value, { onFocus: handleFieldFocus, onBlur: handleFieldBlur, type: as === 'button' ? 'button' : undefined })"
+    :ref="forwardRef"
   >
-    <Primitive
-      v-bind="mergeProps(getFieldAttrs(), trigger.attrs.value, { onFocus: handleFieldFocus, onBlur: handleFieldBlur })"
-      :ref="forwardRef"
-      :type="as === 'button' ? 'button' : undefined"
-      :as-child="asChild"
-      :as="as"
-    >
-      <slot />
-    </Primitive>
-  </PopperAnchor>
+    <slot />
+  </component>
 </template>
