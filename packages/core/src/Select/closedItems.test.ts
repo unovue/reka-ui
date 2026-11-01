@@ -20,7 +20,7 @@ describe('selectClosedItems', () => {
 
   function create({ items = true, form = true } = {}) {
     const needsForm = shallowRef(form)
-    const closed = new SelectClosedItems(() => true, () => false, () => items, undefined)
+    const closed = new SelectClosedItems(() => true, () => false, () => items)
     closed.needsForm = () => needsForm.value
     closed.activate()
     return { closed, needsForm }
@@ -106,7 +106,7 @@ describe('selectClosedItems', () => {
         text.textContent = name
         element.appendChild(text)
         list.appendChild(element)
-        const sync = vi.fn()
+        const sync = vi.fn(() => text)
         syncs.set(name, sync)
         closed.observeText(text, sync)
         closed.addHarvested(() => ({ value: name, textValue: name }), () => element)
@@ -119,6 +119,7 @@ describe('selectClosedItems', () => {
     it('unrelated churn: no version bump, no compare, no text sync', async () => {
       const { closed, list, items, syncs } = createList()
       await flush()
+      syncs.forEach(sync => sync.mockClear())
       const version = closed.version.value
       const compare = vi.spyOn(Node.prototype, 'compareDocumentPosition')
       const badge = document.createElement('b')
@@ -172,6 +173,7 @@ describe('selectClosedItems', () => {
     it('a text change syncs only that text', async () => {
       const { items, syncs } = createList()
       await flush()
+      syncs.forEach(sync => sync.mockClear())
       items[1].text.firstChild!.nodeValue = 'changed'
       await flush()
       expect(called(syncs)).toEqual(['b'])
@@ -180,36 +182,136 @@ describe('selectClosedItems', () => {
       expect(called(syncs)).toEqual(['b', 'c'])
     })
 
-    it('update follows an item\'s new element', async () => {
+    it('follows an item\'s new element, with no hook on the item', async () => {
       const { closed } = create({ form: false })
       const list = document.createElement('div')
       document.createDocumentFragment().appendChild(list)
       let element: HTMLElement = document.createElement('div')
       list.appendChild(element)
-      const harvested = closed.addHarvested(() => ({ value: 'a', textValue: 'a' }), () => element)
-      const version = closed.version.value
-      closed.updateHarvested(harvested)
-      expect(closed.version.value).toBe(version)
+      closed.addHarvested(() => ({ value: 'a', textValue: 'a' }), () => element)
+      await flush()
       const replacement = document.createElement('section')
       element.replaceWith(replacement)
       element = replacement
-      closed.updateHarvested(harvested)
-      expect(closed.version.value).toBe(version + 1)
       await flush()
-      const moved = closed.version.value
+      const version = closed.version.value
       list.prepend(document.createElement('p'))
       await flush()
-      expect(closed.version.value).toBe(moved)
-      const parent = document.createElement('div')
-      list.appendChild(parent)
-      parent.appendChild(replacement)
+      expect(closed.version.value).toBe(version)
+      list.prepend(replacement)
       await flush()
-      expect(closed.version.value).toBeGreaterThan(moved)
+      expect(closed.version.value).toBeGreaterThan(version)
+    })
+
+    it('follows a text\'s new element', async () => {
+      const { closed } = create({ form: false })
+      const list = document.createElement('div')
+      document.createDocumentFragment().appendChild(list)
+      let text: HTMLElement = document.createElement('span')
+      list.appendChild(text)
+      const sync = vi.fn(() => text)
+      closed.observeText(text, sync)
+      await flush()
+      const replacement = document.createElement('em')
+      replacement.textContent = 'old'
+      text.replaceWith(replacement)
+      text = replacement
+      await flush()
+      sync.mockClear()
+      replacement.firstChild!.nodeValue = 'new'
+      await flush()
+      expect(sync).toHaveBeenCalledTimes(1)
+    })
+
+    it('a move out of the watched tree: text there is watched, and every text syncs on the move', async () => {
+      const { list, items, syncs } = createList()
+      const outside = document.createDocumentFragment()
+      const box = document.createElement('section')
+      outside.appendChild(box)
+      await flush()
+      syncs.forEach(sync => sync.mockClear())
+      box.appendChild(items[0].element)
+      await flush()
+      expect(called(syncs)).toEqual(['a', 'b', 'c'])
+      syncs.forEach(sync => sync.mockClear())
+      items[0].text.firstChild!.nodeValue = 'changed'
+      await flush()
+      expect(called(syncs)).toEqual(['a'])
+      expect(list.contains(items[0].element)).toBe(false)
+    })
+
+    it('an item alone, moved out of the watched tree: a later move there is seen', async () => {
+      const { closed } = create({ form: false })
+      const list = document.createElement('div')
+      document.createDocumentFragment().appendChild(list)
+      const element = document.createElement('div')
+      list.appendChild(element)
+      closed.addHarvested(() => ({ value: 'a', textValue: 'a' }), () => element)
+      const box = document.createElement('section')
+      document.createDocumentFragment().appendChild(box)
+      box.appendChild(document.createElement('p'))
+      await flush()
+      box.appendChild(element)
+      await flush()
+      const version = closed.version.value
+      box.prepend(element)
+      await flush()
+      expect(closed.version.value).toBeGreaterThan(version)
+    })
+
+    it('a text alone, moved out of the watched tree: a later change there syncs', async () => {
+      const { closed } = create({ form: false })
+      const list = document.createElement('div')
+      document.createDocumentFragment().appendChild(list)
+      const text = document.createElement('span')
+      text.textContent = 'old'
+      list.appendChild(text)
+      const sync = vi.fn(() => text)
+      closed.observeText(text, sync)
+      const box = document.createElement('section')
+      document.createDocumentFragment().appendChild(box)
+      await flush()
+      box.appendChild(text)
+      await flush()
+      sync.mockClear()
+      text.firstChild!.nodeValue = 'new'
+      await flush()
+      expect(sync).toHaveBeenCalledTimes(1)
+    })
+
+    it('a removed item stops being tracked', async () => {
+      const { closed } = create({ form: false })
+      const list = document.createElement('div')
+      document.createDocumentFragment().appendChild(list)
+      const element = document.createElement('div')
+      list.appendChild(element)
+      const other = document.createElement('div')
+      list.appendChild(other)
+      const item = closed.addHarvested(() => ({ value: 'a', textValue: 'a' }), () => element)
+      closed.addHarvested(() => ({ value: 'b', textValue: 'b' }), () => other)
+      await flush()
+      closed.removeHarvested(item)
+      const version = closed.version.value
+      element.remove()
+      await flush()
+      expect(closed.version.value).toBe(version)
+    })
+
+    it('a removed text stops being tracked', async () => {
+      const { closed, items, syncs } = createList()
+      closed.unobserveText(items[1].text)
+      await flush()
+      syncs.forEach(sync => sync.mockClear())
+      const version = closed.version.value
+      items[1].text.remove()
+      await flush()
+      expect(closed.version.value).toBe(version)
+      expect(called(syncs)).toEqual([])
     })
   })
 
   it('can render nothing before the root is active', () => {
-    const closed = new SelectClosedItems(() => true, () => true, () => false, undefined)
+    const closed = new SelectClosedItems(() => true, () => true, () => false)
     expect(closed.canRender()).toBe(false)
     expect(closed.render.value).toBe(false)
     closed.activate()

@@ -6,7 +6,7 @@ import type { SelectRootContext } from './SelectRoot.vue'
 import type { ListboxNavigationIntent } from '@/Listbox/useListbox'
 import type { BaseChangeReason, By, ChangeEventDetails, DisclosureState, PartSurface, SelectionState } from '@/shared'
 import type { AcceptableValue, Direction } from '@/shared/types'
-import { computed, getCurrentScope, isRef, nextTick, onBeforeUnmount, onMounted, onScopeDispose, onUpdated, ref, shallowRef, toValue, watch, watchEffect } from 'vue'
+import { computed, getCurrentScope, isRef, nextTick, onBeforeUnmount, onMounted, onScopeDispose, ref, shallowRef, toValue, watch, watchEffect } from 'vue'
 import { focusFirst } from '@/Menu/utils'
 import {
   compare,
@@ -401,7 +401,6 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
       return values.some(v => v !== ('' as T) && getItemData(v) === undefined)
     },
     () => !!items.value,
-    virtualTypeaheadItems,
   )
 
   const selectedLabels = computed(() => {
@@ -788,8 +787,12 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
   // The items a key rendered for the typeahead last until focus leaves the
   // trigger (`focusout`: with `as-child`, focus may be on a descendant).
   function onFocusout(event: FocusEvent) {
-    if (!(event.currentTarget as Element).contains(event.relatedTarget as Node | null))
+    if (!(event.currentTarget as Element).contains(event.relatedTarget as Node | null)) {
+      // A search still armed for late items ends here: they are about to unmount.
+      stopMatching?.()
+      stopMatching = undefined
       context.closedItems?.releaseTypeahead()
+    }
   }
 
   const trigger = createPartSurface<SelectTriggerState>(
@@ -1315,7 +1318,6 @@ export function useSelectItemLabel<T extends AcceptableValue = AcceptableValue>(
       disabled: !!options.disabled(),
     }), options.element)
   })
-  onUpdated(() => harvested && context.closedItems?.updateHarvested(harvested))
   onBeforeUnmount(() => harvested && context.closedItems?.removeHarvested(harvested))
   return { isSelected, textValue, itemContext }
 }
@@ -1324,40 +1326,27 @@ export function useSelectItemLabel<T extends AcceptableValue = AcceptableValue>(
  * A lean item's text (see `useSelectItemLabel`): registers its text in the
  * label registry once mounted, and again whenever its text, value or
  * `disabled` changes, as `useSelectItemText` does. One observer shared by
- * every lean text (`SelectClosedItems.observeText`) catches text-only changes,
- * and follows a new text element (a dynamic `as`).
+ * every lean text (`SelectClosedItems.observeText`) catches text-only changes
+ * and a new text element (a dynamic `as`).
  * @internal
  */
 export function useSelectItemTextLabel<T extends AcceptableValue = AcceptableValue>(context: SelectRootContext<T>, itemContext: SelectItemContext<T>, element: Ref<HTMLElement | null | undefined>): undefined {
   function register() {
     const el = element.value
-    if (!el)
-      return
-    const value = itemContext.value
-    context.labels.register(value, el.textContent ?? String(value ?? ''), itemContext.disabled.value)
-  }
-  let stop: (() => void) | undefined
-  let bound: HTMLElement | null | undefined
-  function bind(el: HTMLElement | null | undefined) {
-    if (el === bound)
-      return
-    stop?.()
-    stop = undefined
-    bound = el
     if (el) {
       itemContext.onItemTextChange(el)
-      stop = context.closedItems?.observeText(el, register)
+      const value = itemContext.value
+      context.labels.register(value, el.textContent ?? String(value ?? ''), itemContext.disabled.value)
     }
+    return el
   }
   onMounted(() => {
-    bind(element.value)
-    register()
+    const el = register()
+    if (el)
+      context.closedItems?.observeText(el, register)
   })
-  onBeforeUnmount(() => stop?.())
-  watch([() => itemContext.value, () => itemContext.disabled.value, element], ([,, el]) => {
-    bind(el)
-    register()
-  }, { flush: 'post' })
+  onBeforeUnmount(() => context.closedItems?.unobserveText(element.value))
+  watch([() => itemContext.value, () => itemContext.disabled.value], register, { flush: 'post' })
   return undefined
 }
 

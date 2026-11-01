@@ -414,7 +414,7 @@ describe('a new element for an item or its text', () => {
   it('a dynamic `as` on an item text: its later text changes arrive', async () => {
     const tag = ref('span')
     const text = shallowRef<HTMLElement>()
-    mountSelect(() => h(SelectItem, { value: 'a' }, () => h(SelectItemText, { as: tag.value, ref: (el: any) => {
+    const { log } = mountSelect(() => h(SelectItem, { value: 'a' }, () => h(SelectItemText, { as: tag.value, ref: (el: any) => {
       text.value = el?.$el
     } } as any, () => 'Old')), () => ({ name: 'n' }), { form: true })
     await wait()
@@ -423,5 +423,128 @@ describe('a new element for an item or its text', () => {
     text.value!.textContent = 'New'
     await wait()
     expect(optionTexts()).toEqual(['New'])
+    trigger().focus()
+    await userEvent.keyboard('n')
+    await wait()
+    expect(log).toEqual(['a'])
+  })
+})
+
+describe('a move out of the watched tree', () => {
+  /** Text that re-renders on its own: its item's and text's parents don't update. */
+  const selfUpdating = (text: { value: string }) => defineComponent({ setup: () => () => h('b', text.value) })
+
+  it('a KeepAlive branch, selected and not the first item: its text stays live while deactivated and after', async () => {
+    const branch = ref('s')
+    const text = ref('Self')
+    const Self = selfUpdating(text)
+    const S = defineComponent({ name: 'S', setup: () => () => h('div', h(SelectItem, { value: 's' }, () => h(SelectItemText, () => h(Self)))) })
+    const Y = defineComponent({ name: 'Y', setup: () => () => h('div', h(SelectItem, { value: 'y' }, () => h(SelectItemText, () => 'Yak'))) })
+    const model = ref<unknown>('s')
+    mountSelect(() => [item('First'), h(KeepAlive, () => h(branch.value === 's' ? S : Y)), item('Last')], () => ({ 'name': 'n', 'modelValue': model.value, 'onUpdate:modelValue': (v: unknown) => {
+      model.value = v
+    } }), { form: true })
+    await wait()
+    branch.value = 'y'
+    await wait()
+    text.value = 'Changed'
+    await wait()
+    expect(value()).toBe('Changed')
+    branch.value = 's'
+    await wait()
+    expect(value()).toBe('Changed')
+    expect(optionTexts()).toContain('Changed')
+    text.value = 'Again'
+    await wait()
+    expect(value()).toBe('Again')
+  })
+
+  it('`Teleport` `disabled` toggled while closed: self-updating text follows', async () => {
+    const box = document.createElement('div')
+    document.body.append(box)
+    const disabled = ref(true)
+    const text = ref('A')
+    const Self = selfUpdating(text)
+    mountSelect(() => [item('First'), item('Second'), h(Teleport, { to: box, disabled: disabled.value }, [h(SelectItem, { key: 'a', value: 'a' }, () => h(SelectItemText, () => h(Self)))])], () => ({ name: 'n' }), { form: true })
+    await wait()
+    disabled.value = false
+    await wait()
+    text.value = 'Az'
+    await wait()
+    expect(optionTexts()).toContain('Az')
+    box.remove()
+  })
+
+  it('a wrapper moved to the page by hand: self-updating text follows', async () => {
+    const box = document.createElement('div')
+    document.body.append(box)
+    const text = ref('A')
+    const Self = selfUpdating(text)
+    let wrapper: HTMLElement | undefined
+    mountSelect(() => [item('First'), item('Second'), h('div', { key: 'w', ref: (el: any) => {
+      if (el)
+        wrapper = el
+    } }, h(SelectItem, { value: 'a' }, () => h(SelectItemText, () => h(Self))))], () => ({ name: 'n' }), { form: true })
+    await wait()
+    box.appendChild(wrapper!)
+    await wait()
+    text.value = 'Az'
+    await wait()
+    expect(optionTexts()).toContain('Az')
+    box.remove()
+  })
+})
+
+describe('a search armed for late items', () => {
+  const SEARCH_RESET = 1100
+
+  it('focus leaving ends it: a sticky option no longer in the template is not selected', async () => {
+    const list = ref(['Apple', 'Zebra'])
+    const { log } = mountSelect(() => list.value.map(text => item(text)))
+    await nextTick()
+    trigger().focus()
+    await userEvent.keyboard('q')
+    await wait()
+    document.getElementById('after')!.focus()
+    await wait(SEARCH_RESET)
+    list.value = ['Apple', 'Yak']
+    await wait()
+    trigger().focus()
+    await userEvent.keyboard('z')
+    await wait()
+    expect(log).toEqual([])
+    document.getElementById('after')!.focus()
+    await wait(200)
+    expect(log).toEqual([])
+    expect(value()).toBe('Pick')
+  })
+
+  it('a key and a blur in the same task: nothing matches once the items are released', async () => {
+    const { log } = mountSelect(() => ['Apple', 'Zebra'].map(text => item(text)))
+    await nextTick()
+    await openAndClose()
+    trigger().focus()
+    trigger().dispatchEvent(new KeyboardEvent('keydown', { key: 'z', bubbles: true }))
+    document.getElementById('after')!.focus()
+    await wait(200)
+    expect(log).toEqual([])
+  })
+})
+
+describe('values with a field that can\'t be serialized, under `by`', () => {
+  it('a refetch raises nothing, and a named Select writes the latest object', async () => {
+    const make = () => [1, 2].map(id => ({ id, name: `N${id}`, blob: new Blob(['x']) }))
+    const list = shallowRef(make())
+    const errors: unknown[] = []
+    const { log } = mountSelect(() => list.value.map(o => item(o.name, o)), () => ({ by: 'id', name: 'n' }), { form: true })
+    app!.config.errorHandler = error => errors.push(error)
+    await wait()
+    const latest = make()
+    list.value = latest
+    await wait()
+    expect(errors).toEqual([])
+    autofill(1)
+    await wait()
+    expect(log.at(-1)).toEqual(latest[1])
   })
 })

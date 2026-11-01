@@ -606,14 +606,21 @@ To resolve a selected value without that render, describe the options with `item
 
 Pass the options to `items` as well as rendering them. The trigger, the typeahead on the closed trigger and the hidden native `<select>` then read the labels from `items`, so a closed select needs no items rendered to show its value. It takes the same shapes as [Base UI](https://base-ui.com/react/components/select): a record of value to label, an array of `{ value, label, disabled? }`, or an array of groups `{ label?, items }`. An item's label is the text the trigger shows and the typeahead matches; it wins over the item's `SelectItemText`, and the items are still rendered by your template.
 
-A typed character tries `items` first and renders nothing when that answers it, as when it jumps to another letter. It renders the items, until focus leaves the trigger, in three cases: nothing in `items` matches, repeating a key wraps past its last match, or the match depends on a remembered `disabled` (below). The first two keep an option only a `SelectItem` has reachable. Only the render can rule such an option out, so a wrap renders even when `items` lists every option. With a `name` in a form, the items render in idle time, for the native `<select>`.
+A typed character tries `items` first and renders nothing when that answers it, as when it jumps to another letter. It renders the items, until focus leaves the trigger, when:
+- nothing in `items` matches, or repeating a key wraps past its last match. This keeps an option only a `SelectItem` has reachable. Only the render can rule such an option out, so a wrap renders even when `items` lists every option;
+- the match is in a record and no item has rendered for it, because the item's own value may not be a string;
+- the match depends on a remembered `disabled` (below).
 
-`disabled` in `items` is the source of truth until the items have rendered once. A `disabled` on the `SelectItem` lives in your template, so it can't be known without the render `items` avoids: a first typed character can select that option, and its native option stays enabled until then. To be safe from the first key, set `disabled` in `items` as well.
+With a `name` in a form, the items render in idle time, for the native `<select>`.
+
+While the items aren't rendered, `disabled` comes only from `items`. A `disabled` set only on a `SelectItem` lives in your template, so it can't be known without the render `items` avoids: any typed character that `items` answers can select that option, not only the first one, and its native option stays enabled until the items render. Set `disabled` in `items` as well if your template sets it.
 
 Once an item has rendered, its own `disabled` counts, and follows your template while it stays rendered. After it unmounts, its last `disabled` is remembered:
 - A typed character whose match depends on it renders the items to check, so an option re-enabled while closed is found. If the template no longer renders that option, only `disabled` in `items` counts.
 - The native option keeps the remembered value until the item renders again.
 - With `display-value`, which never renders closed items, the typeahead uses the remembered value too.
+
+When `items` lists only some of your options, or in a different order from your template, the order of the typeahead can change once the items render. Before the render a key cycles through `items` in its own order. After it, rendered items come first in template order, followed by options only `items` lists. So a key can select a listed option ahead of one only a `SelectItem` has, and a cycle can change order midway. List every option, in template order, to avoid this.
 
 ```vue
 <script setup lang="ts">
@@ -647,7 +654,7 @@ const fruits = [
 </template>
 ```
 
-Object values work with `by`: `{ value: user, label: user.name }`. A record's keys are strings: a number value finds its label by its string form, and the typeahead and the native `<select>` write the matching `SelectItem`'s own value once it has rendered. An option only the record lists, or an autofill that arrives before the idle render, writes its string key. Use the array shape for values that are not strings.
+Object values work with `by`: `{ value: user, label: user.name }`. A record's keys are strings: a number value finds its label by its string form, and the typeahead and the native `<select>` write the matching `SelectItem`'s own value once it has rendered. An option only the record lists, or an autofill that arrives before the idle render, writes its string key. While unrendered, a record's typed value is the one last registered, so a template that changes `1` to `'1'` meanwhile still writes `1`. Use the array shape for values that are not strings.
 
 ### Selecting multiple values
 

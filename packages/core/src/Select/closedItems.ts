@@ -1,4 +1,4 @@
-import type { ComputedRef, ShallowRef } from 'vue'
+import type { ComputedRef } from 'vue'
 import type { AcceptableValue } from '@/shared/types'
 import { computed, nextTick, shallowRef } from 'vue'
 
@@ -12,8 +12,6 @@ export interface SelectTypeaheadItem<T = AcceptableValue> {
 export interface HarvestedItem<T> {
   entry: () => SelectTypeaheadItem<T>
   element: () => Element | undefined
-  /** The element registered in `itemElements`. */
-  known: Element | undefined
 }
 
 const WATCH_SUBTREE: MutationObserverInit = { characterData: true, childList: true, subtree: true }
@@ -77,15 +75,18 @@ export class SelectClosedItems<T = AcceptableValue> {
   needsForm: (() => boolean) | undefined = undefined
   /** The lean items, sorted into document order when read (see `version`). */
   private readonly harvested: HarvestedItem<T>[] = []
-  /** The lean items' elements: what a mutation must touch to change the order. */
-  private readonly itemElements = new WeakSet<Node>()
+  /** The lean items' and their texts' elements: what a mutation must touch to matter. */
+  private readonly tracked = new WeakSet<Node>()
   /**
    * Bumped whenever the lean items are added, removed or moved, at any depth:
    * the native `select` options read it to follow the document order.
    */
   readonly version = shallowRef(0)
-  /** Each lean item text's element and label sync, run when a mutation touches that text. */
-  private readonly textSyncs = new Map<Node, () => void>()
+  /**
+   * Each lean item text's element and label sync, run when a mutation touches
+   * that text. The sync returns the text's current element.
+   */
+  private readonly textSyncs = new Map<Node, () => Node | null | undefined>()
   private observer: MutationObserver | undefined = undefined
   /** The lowest common ancestor of the lean items of each tree they are in, by the tree's root. */
   private readonly anchors = new Map<Node, Node>()
@@ -99,8 +100,6 @@ export class SelectClosedItems<T = AcceptableValue> {
     needsSelectionLabels: () => boolean,
     /** Whether `items` lists the options: the native `select` has them without the render. */
     hasItemsData: () => boolean,
-    /** The mounted `SelectVirtualizer`'s every-option typeahead source. */
-    private readonly virtualItems: ShallowRef<(() => SelectTypeaheadItem<T>[]) | undefined> | undefined,
   ) {
     this.render = computed(() => this.active.value && needsItems() && (
       this.typeaheadWants.value
@@ -162,28 +161,14 @@ export class SelectClosedItems<T = AcceptableValue> {
    * `element` places it in document order.
    */
   addHarvested(entry: () => SelectTypeaheadItem<T>, element: () => Element | undefined): HarvestedItem<T> {
-    const known = element()
-    const item: HarvestedItem<T> = { entry, element, known }
+    const item: HarvestedItem<T> = { entry, element }
+    const current = element()
     this.harvested.push(item)
-    if (known)
-      this.itemElements.add(known)
-    this.observe(known)
-    this.bump()
-    return item
-  }
-
-  /** A lean item updated: follows its new element, if any (a dynamic `as`). */
-  updateHarvested(item: HarvestedItem<T>): void {
-    const current = item.element()
-    if (current === item.known)
-      return
-    if (item.known)
-      this.itemElements.delete(item.known)
     if (current)
-      this.itemElements.add(current)
-    item.known = current
+      this.tracked.add(current)
     this.observe(current)
     this.bump()
+    return item
   }
 
   /** A lean item unmounts. */
@@ -191,33 +176,34 @@ export class SelectClosedItems<T = AcceptableValue> {
     const index = this.harvested.indexOf(item)
     if (index !== -1)
       this.harvested.splice(index, 1)
-    if (item.known)
-      this.itemElements.delete(item.known)
+    const current = item.element()
+    if (current)
+      this.tracked.delete(current)
     this.bump()
     this.disconnectWhenIdle()
   }
 
   /**
-   * Whether a mutation touched a lean item or a node holding one. The cost
-   * follows what changed, not the number of items.
+   * Whether a mutation touched a lean item or text, or a node holding one. The
+   * cost follows what changed, not the number of items.
    */
-  private holdsItem(nodes: NodeList): boolean {
+  private touchesTracked(nodes: NodeList): boolean {
     return Array.from(nodes).some(node => node.nodeType === Node.ELEMENT_NODE && (
-      this.itemElements.has(node)
-      || Array.from((node as Element).querySelectorAll('*')).some(element => this.itemElements.has(element))
+      this.tracked.has(node)
+      || Array.from((node as Element).querySelectorAll('*')).some(element => this.tracked.has(element))
     ))
   }
 
   /**
    * A consumer's own nodes can change next to the lean items (a badge, a live
-   * counter): only a record that adds, removes or moves a lean item changes
-   * the order, and only the texts a record touches re-register.
+   * counter): only a record that adds, removes or moves a lean item or text
+   * changes anything, and otherwise only the texts a record touches re-register.
    */
   private onMutations(records: MutationRecord[]): void {
     let moved = false
-    const syncs = new Set<() => void>()
+    const syncs = new Set<() => unknown>()
     for (const record of records) {
-      moved ||= record.type === 'childList' && (this.holdsItem(record.addedNodes) || this.holdsItem(record.removedNodes))
+      moved ||= record.type === 'childList' && (this.touchesTracked(record.addedNodes) || this.touchesTracked(record.removedNodes))
       for (let node: Node | null = record.target; node; node = node.parentNode) {
         const sync = this.textSyncs.get(node)
         if (sync) {
@@ -226,9 +212,40 @@ export class SelectClosedItems<T = AcceptableValue> {
         }
       }
     }
-    if (moved)
+    if (moved) {
+      this.refresh()
       this.bump()
-    syncs.forEach(run => run())
+    }
+    else {
+      syncs.forEach(run => run())
+    }
+  }
+
+  /**
+   * Something lean moved or was replaced: where it went may be out of the
+   * watched tree (a KeepAlive's storage, a toggled Teleport, a wrapper moved by
+   * hand), and its element may be new (a dynamic `as`). Reads every element
+   * again and watches it where it is now, and re-registers every text, which
+   * may have changed while nothing was watching it.
+   */
+  private refresh(): void {
+    for (const item of this.harvested) {
+      const element = item.element()
+      if (element)
+        this.tracked.add(element)
+      this.observe(element)
+    }
+    for (const [node, sync] of [...this.textSyncs]) {
+      const element = sync()
+      if (!element)
+        continue
+      if (element !== node) {
+        this.textSyncs.delete(node)
+        this.textSyncs.set(element, sync)
+      }
+      this.tracked.add(element)
+      this.observe(element)
+    }
   }
 
   /**
@@ -279,17 +296,23 @@ export class SelectClosedItems<T = AcceptableValue> {
   }
 
   /**
-   * A lean item text mounts: `sync` re-registers its label, and runs when a
-   * mutation touches this text (a translated text, a slot that re-renders on
-   * its own). Returns its unregister.
+   * A lean item text mounts: `sync` re-registers its label and returns its
+   * current element, and runs when a mutation touches this text (a translated
+   * text, a slot that re-renders on its own).
    */
-  observeText(element: Node, sync: () => void): () => void {
+  observeText(element: Node, sync: () => Node | null | undefined): void {
     this.textSyncs.set(element, sync)
+    this.tracked.add(element)
     this.observe(element)
-    return () => {
+  }
+
+  /** A lean item text unmounts. */
+  unobserveText(element: Node | null | undefined): void {
+    if (element) {
       this.textSyncs.delete(element)
-      this.disconnectWhenIdle()
+      this.tracked.delete(element)
     }
+    this.disconnectWhenIdle()
   }
 
   /** Whether any items are mounted (the open content's, or the lean ones). */
@@ -305,8 +328,12 @@ export class SelectClosedItems<T = AcceptableValue> {
   /** Renders the closed items now (for the typeahead), then calls `callback`. */
   renderThen(callback: () => void): void {
     this.typeaheadWants.value = true
-    // The items mount in this flush; `nextTick` resolves once it is done.
-    nextTick(callback)
+    // The items mount in this flush; `nextTick` resolves once it is done. Focus
+    // can leave first, which unmounts them: nothing is left to match.
+    nextTick(() => {
+      if (this.typeaheadWants.value)
+        callback()
+    })
   }
 
   /** The lean items in document order (n - 1 comparisons when already sorted). */
@@ -316,9 +343,6 @@ export class SelectClosedItems<T = AcceptableValue> {
 
   /** The mounted items (the open content's, else the lean ones), in document order; `undefined` when none are. */
   getTypeaheadItems(): SelectTypeaheadItem<T>[] | undefined {
-    const virtual = this.virtualItems?.value
-    if (virtual)
-      return virtual()
     const live = this.liveItems?.()
     if (live?.length)
       return live
