@@ -183,6 +183,12 @@ function recalculateIntersectingHandles({
   registeredResizeHandlers.forEach((data) => {
     const { element: dragHandleElement, hitAreaMargins } = data
 
+    // A handle in another document (an iframe or a popup window) lays out in another viewport,
+    // so the pointer's coordinates say nothing about it, and the stacking order of the two
+    // documents cannot be compared
+    if (targetElement !== null && dragHandleElement.ownerDocument !== targetElement.ownerDocument)
+      return
+
     const dragHandleRect = dragHandleElement.getBoundingClientRect()
     const { bottom, left, right, top } = dragHandleRect
 
