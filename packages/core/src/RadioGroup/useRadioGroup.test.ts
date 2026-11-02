@@ -441,3 +441,11 @@ describe('getRadioGroupItemState', () => {
     expect([state.disabled.value, state.required.value]).toEqual([true, true])
   })
 })
+
+describe('useRadioGroup — values ohash cannot serialize', () => {
+  it('checks an item holding an equal Temporal value, and only that item', () => {
+    const r = useRadioGroup({ defaultValue: Temporal.PlainDate.from('2024-01-15') as any })
+    expect(r.getItemSurface(Temporal.PlainDate.from('2024-01-15') as any).state.value.state).toBe('checked')
+    expect(r.getItemSurface(Temporal.PlainDate.from('2024-01-16') as any).state.value.state).toBe('unchecked')
+  })
+})

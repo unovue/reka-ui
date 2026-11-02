@@ -74,3 +74,22 @@ describe('selectionSelector', () => {
     scope.stop()
   })
 })
+
+describe('selectionSelector with values ohash cannot serialize', () => {
+  it('selects Temporal values by value and a Blob by identity', () => {
+    const date = () => Temporal.PlainDate.from('2024-01-15')
+    const blob = new Blob(['x'])
+    const scope = effectScope()
+    scope.run(() => {
+      const model = shallowRef<unknown>(date())
+      const selector = new SelectionSelector<unknown>(() => model.value)
+      expect(selector.isSelected(date())).toBe(true)
+      expect(selector.isSelected(date().add({ days: 1 }))).toBe(false)
+      expect(selector.isSelected(date().toPlainDateTime('00:00'))).toBe(false)
+      model.value = [blob]
+      expect(selector.isSelected(blob)).toBe(true)
+      expect(selector.isSelected(new Blob(['x']))).toBe(false)
+    })
+    scope.stop()
+  })
+})

@@ -150,10 +150,10 @@ export const [injectFieldRootContext, provideFieldRootContext]
 </script>
 
 <script setup lang="ts">
-import { isEqual } from 'ohash'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRef, watch } from 'vue'
 import { injectFormRootContext } from '@/Form/FormRoot.vue'
 import { renderAs } from '@/Primitive/renderAs'
+import { isEqual } from '@/shared/compare'
 import { createValidityState, useFieldValidation } from './useFieldValidation'
 
 const props = withDefaults(defineProps<FieldRootProps>(), {

@@ -149,3 +149,16 @@ describe('createLabelRegistry', () => {
     expect(labels.get('apple')).toBe('Green apple')
   })
 })
+
+describe('createLabelRegistry with values ohash cannot serialize', () => {
+  it('indexes Temporal values by value and a File by identity', () => {
+    const labels = createLabelRegistry<unknown>()
+    const file = new File([], 'a')
+    labels.register(Temporal.PlainDate.from('2024-01-15'), 'Date')
+    labels.register(file, 'File')
+    expect(labels.get(Temporal.PlainDate.from('2024-01-15'))).toBe('Date')
+    expect(labels.get(Temporal.PlainDate.from('2024-01-16'))).toBeUndefined()
+    expect(labels.get(file)).toBe('File')
+    expect(labels.get(new File([], 'a'))).toBeUndefined()
+  })
+})

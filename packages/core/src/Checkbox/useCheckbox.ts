@@ -5,9 +5,9 @@ import type { CheckboxGroupChangeReason } from './useCheckboxGroup'
 import type { CheckedState } from './utils'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface, TriSelectionState, UseControllableStateOptions } from '@/shared'
 import type { AcceptableValue } from '@/shared/types'
-import { isEqual } from 'ohash'
 import { computed, toValue } from 'vue'
 import { createPartSurface, isNullish, isValueEqualOrExist, selectionState, useControllableState } from '@/shared'
+import { isEqual } from '@/shared/compare'
 import { isIndeterminate, toggleArrayValue } from './utils'
 
 /** Why the checkbox value changed; carried as `details.reason` on every change (#2828). */

@@ -422,3 +422,16 @@ describe('useTagsInput — public export', () => {
     expect((Reka as Record<string, unknown>).createTagsInputInputSurface).toBeUndefined()
   })
 })
+
+describe('useTagsInput — values ohash cannot serialize', () => {
+  it('adds and removes Temporal tags', () => {
+    const t = useTagsInput<any>({
+      defaultValue: [Temporal.PlainDate.from('2024-01-15')],
+      convertValue: (text: string) => Temporal.PlainDate.from(text),
+    })
+    expect(t.addTags(['2024-01-16'])).toBe(true)
+    expect(t.modelValue.value.map(String)).toEqual(['2024-01-15', '2024-01-16'])
+    expect(t.removeTag(0)).toBe(true)
+    expect(t.modelValue.value.map(String)).toEqual(['2024-01-16'])
+  })
+})

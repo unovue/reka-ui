@@ -265,3 +265,21 @@ describe('useToggleGroup — public export', () => {
     expect('getToggleGroupItemSurface' in Reka).toBe(false)
   })
 })
+
+describe('useToggleGroup — values ohash cannot serialize', () => {
+  it('single: pressing the Temporal value that is on turns it off', () => {
+    const g = useToggleGroup({ type: 'single', defaultValue: Temporal.PlainDate.from('2024-01-15') as any })
+    g.changeModelValue(Temporal.PlainDate.from('2024-01-16') as any)
+    expect(String(g.modelValue.value)).toBe('2024-01-16')
+    g.changeModelValue(Temporal.PlainDate.from('2024-01-16') as any)
+    expect(g.modelValue.value).toBeUndefined()
+  })
+  it('multiple: adds and removes Temporal values and a File', () => {
+    const g = useToggleGroup({ type: 'multiple' })
+    const file = new File([], 'a') as any
+    g.changeModelValue(Temporal.PlainTime.from('10:30') as any)
+    g.changeModelValue(file)
+    g.changeModelValue(Temporal.PlainTime.from('10:30') as any)
+    expect(g.modelValue.value).toEqual([file])
+  })
+})

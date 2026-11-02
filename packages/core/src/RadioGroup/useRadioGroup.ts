@@ -4,9 +4,9 @@ import type { RadioGroupRootContext } from './RadioGroupRoot.vue'
 import type { SelectEvent } from './utils'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface, SelectionState } from '@/shared'
 import type { AcceptableValue, DataOrientation, Direction } from '@/shared/types'
-import { isEqual } from 'ohash'
 import { computed, toValue } from 'vue'
 import { createPartSurface, getterRef, selectionState, useControllableState } from '@/shared'
+import { isEqual } from '@/shared/compare'
 import { handleSelect } from './utils'
 
 /**

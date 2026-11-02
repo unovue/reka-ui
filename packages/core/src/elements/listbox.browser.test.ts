@@ -87,6 +87,25 @@ describe('listbox elements', () => {
     await vi.waitFor(() => expect(items()[1].getAttribute('aria-selected')).toBe('false'))
   })
 
+  it.each([
+    ['File', new File(['a'], 'a'), new File(['b'], 'b')],
+    ['Temporal', Temporal.PlainDate.from('2024-01-01'), Temporal.PlainDate.from('2024-01-02')],
+  ])('reports a form reset between two %s values', async (_, first, second) => {
+    const container = render(`<form>${LISTBOX}</form>`)
+    const root = query('reka-listbox-root') as any
+    root.defaultValue = first
+    ;(items()[0] as any).value = first
+    ;(items()[1] as any).value = second
+    await mounted()
+    const changes: unknown[] = []
+    root.addEventListener('update-model-value', (event: CustomEvent) => changes.push(event.detail.value))
+    await userEvent.click(items()[1])
+    await vi.waitFor(() => expect(changes).toHaveLength(1))
+    container.querySelector('form')!.reset()
+    await vi.waitFor(() => expect(changes).toHaveLength(2))
+    expect(changes[1]).toBe(first)
+  })
+
   it('selects several values with `multiple`, and submits each of them', async () => {
     const container = render(`<form>${LISTBOX.replace('<reka-listbox-root', '<reka-listbox-root multiple')}</form>`)
     await mounted()

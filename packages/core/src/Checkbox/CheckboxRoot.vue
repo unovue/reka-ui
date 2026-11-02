@@ -49,11 +49,11 @@ export const [injectCheckboxRootContext, provideCheckboxRootContext]
 </script>
 
 <script setup lang="ts" generic="T = boolean">
-import { isEqual } from 'ohash'
 import { computed, mergeProps, onBeforeUnmount, onMounted, useAttrs, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
+import { isEqual } from '@/shared/compare'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useCheckbox } from './useCheckbox'
 

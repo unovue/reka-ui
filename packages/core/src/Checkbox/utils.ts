@@ -1,5 +1,5 @@
-import { isEqual } from 'ohash'
 import { isValueEqualOrExist } from '@/shared'
+import { isEqual } from '@/shared/compare'
 
 export type CheckedState = boolean | 'indeterminate'
 

@@ -138,3 +138,17 @@ describe('useCheckboxGroup — public export', () => {
     expect(typeof Reka.useCheckboxGroup).toBe('function')
   })
 })
+
+describe('useCheckboxGroup — values ohash cannot serialize', () => {
+  it('toggleValue() adds and removes a Temporal value and a File', () => {
+    const g = useCheckboxGroup<any>()
+    const file = new File([], 'a')
+    g.toggleValue(Temporal.PlainDate.from('2024-01-15'))
+    g.toggleValue(file)
+    expect(g.modelValue.value).toHaveLength(2)
+    g.toggleValue(Temporal.PlainDate.from('2024-01-15'))
+    expect(g.modelValue.value).toEqual([file])
+    g.toggleValue(file)
+    expect(g.modelValue.value).toEqual([])
+  })
+})
