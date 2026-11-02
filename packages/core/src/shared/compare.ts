@@ -44,7 +44,8 @@ export function serializeValue(value: unknown, seen?: Map<unknown, string | unde
           .map(entry => serializeValue(entry, seen))
         const form = tag === 'Array'
           ? `[${entries}]`
-          : `${tag === 'Object' ? (value as object).constructor?.name ?? '' : tag}{${entries.sort()}}`
+          // `#`: a class can be named `Map`, and must not read as the built-in.
+          : `${tag === 'Object' ? `#${(value as object).constructor?.name}` : tag}{${entries.sort()}}`
         seen.set(value, form)
         return form
       }

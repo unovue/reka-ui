@@ -162,6 +162,19 @@ describe('isEqual on values ohash cannot serialize', () => {
     expect(isEqual(new A(date), new B(date))).toBe(false)
   })
 
+  it('tells a class named Map or Set holding a Temporal value from the built-in', () => {
+    const date = Temporal.PlainDate.from('2024-01-15')
+    const Named = {
+      Map: class Map { key = date },
+      Set: class Set { 0 = date },
+    }
+    const map = new globalThis.Map([['key', date]])
+    expect(isEqual(new Named.Map(), map)).toBe(false)
+    expect(isEqual(map, new Named.Map())).toBe(false)
+    expect(isEqual(new Named.Set(), new globalThis.Set([['0', date]]))).toBe(false)
+    expect(isEqual(new Named.Map(), new Named.Map())).toBe(true)
+  })
+
   it('compares a Blob or File by identity, alone or nested', () => {
     const file = new File(['x'], 'a.txt', { lastModified: 1 })
     const same = new File(['x'], 'a.txt', { lastModified: 1 })

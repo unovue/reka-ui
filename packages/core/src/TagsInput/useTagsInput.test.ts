@@ -442,7 +442,8 @@ describe('tagsInputRoot — values ohash cannot serialize', () => {
     ['File', new File([], 'a'), new File([], 'b')],
   ])('renders and deletes %s tags', async (_, first, second) => {
     const errors: unknown[] = []
-    const wrapper = mount(defineComponent(() => () => h(TagsInputRoot as any, { defaultValue: [first, second], displayValue: String }, {
+    const label = (value: any) => value.name ?? String(value)
+    const wrapper = mount(defineComponent(() => () => h(TagsInputRoot as any, { defaultValue: [first, second], displayValue: label }, {
       default: ({ modelValue }: { modelValue: unknown[] }) => [
         ...modelValue.map((value, index) => h(TagsInputItem as any, { value, 'key': index, 'data-tag': '' }, () => [h(TagsInputItemText), h(TagsInputItemDelete, { 'data-delete': index })])),
         h(TagsInputInput),
@@ -451,7 +452,7 @@ describe('tagsInputRoot — values ohash cannot serialize', () => {
     expect(wrapper.findAll('[data-tag]')).toHaveLength(2)
     await wrapper.find('[data-delete="0"]').trigger('click')
     await nextTick()
-    expect(wrapper.findAll('[data-tag]')).toHaveLength(1)
+    expect(wrapper.findAll('[data-tag]').map(tag => tag.text())).toEqual([label(second)])
     expect(errors).toEqual([])
     wrapper.unmount()
   })
