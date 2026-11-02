@@ -19,9 +19,9 @@ const MAX_FORM_LENGTH = 32_000_000
  *
  * A walked object is serialized once however many paths reach it, so a graph
  * with shared nodes stays linear. Its form can still double per level, so one
- * over `MAX_FORM_LENGTH` uses its identity instead and its parents stay short:
- * two equal values that large compare as different, never a throw or a large
- * allocation. The limit clears 100,000 six-field rows (about 19M characters).
+ * whose entries total over `MAX_FORM_LENGTH` uses its identity instead and its
+ * parents stay short: two equal values that large compare as different, never a
+ * throw. The limit clears 100,000 six-field rows (about 19M characters).
  *
  * @internal
  */
@@ -44,12 +44,13 @@ export function serializeValue(value: unknown, seen?: Map<unknown, string | unde
         seen.set(value, undefined)
         const entries = (tag === 'Object' ? Object.entries(value as object) : [...value as Iterable<unknown>])
           .map(entry => serializeValue(entry, seen))
-        // Measured before joining, so a form over the limit is never built.
+        // Entries only, before joining: separators and brackets can take a form
+        // past the limit by about one character per entry.
         if (entries.reduce((length, entry) => length + entry.length, 0) <= MAX_FORM_LENGTH) {
           const form = tag === 'Array'
             ? `[${entries}]`
-            // `#`: a class can be named `Map`, and must not read as the built-in.
-            : `${tag === 'Object' ? `#${(value as object).constructor?.name}` : tag}{${entries.sort()}}`
+            // `#`: a class can be named `Map` or `Object`, and must not read as the built-in or a plain object.
+            : `${tag === 'Object' && Object.getPrototypeOf(value) !== Object.prototype ? `#${(value as object).constructor?.name}` : tag}{${entries.sort()}}`
           seen.set(value, form)
           return form
         }
