@@ -11,15 +11,17 @@ export function useWindowSplitterResizeHandlerBehavior({
   handleId,
   resizeHandler,
   panelGroupElement,
+  element,
 }: {
   disabled: Ref<boolean>
   handleId: string
   resizeHandler: Ref<ResizeHandler | null>
   panelGroupElement: Ref<ParentNode | null>
+  element: Ref<HTMLElement | null>
 }): void {
   watchEffect((onCleanup) => {
     const _panelGroupElement = panelGroupElement.value
-    if (disabled.value || resizeHandler.value === null || _panelGroupElement === null)
+    if (disabled.value || resizeHandler.value === null || _panelGroupElement === null || element.value === null)
       return
 
     const handleElement = getResizeHandleElement(handleId, _panelGroupElement)

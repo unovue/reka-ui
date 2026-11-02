@@ -142,6 +142,7 @@ useWindowSplitterResizeHandlerBehavior({
   resizeHandler,
   handleId: resizeHandleId,
   panelGroupElement,
+  element: currentElement,
 })
 </script>
 

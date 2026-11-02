@@ -2,8 +2,64 @@ import type { VueWrapper } from '@vue/test-utils'
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from '.'
+
+// Regression test for https://github.com/unovue/reka-ui/issues/3126
+// A handle mounted into a group that is already in the page (e.g. with v-if)
+// runs its keyboard-behavior effect during setup, before its element is in the
+// DOM. The DOM lookup finds nothing and, because none of the effect's
+// dependencies change afterwards, it never re-runs, so the keydown listener is
+// never attached and arrow keys are ignored.
+describe('resize handle keyboard behavior after remount (issue #3126)', () => {
+  let wrapper: VueWrapper
+
+  afterEach(() => {
+    wrapper.unmount()
+    document.body.innerHTML = ''
+  })
+
+  it('should respond to arrow keys on a handle mounted after the group', async () => {
+    const shown = ref(true)
+
+    const TestComponent = defineComponent({
+      components: { SplitterGroup, SplitterPanel, SplitterResizeHandle },
+      setup() {
+        return { shown }
+      },
+      template: `
+        <SplitterGroup direction="horizontal">
+          <template v-if="shown">
+            <SplitterPanel id="side" :order="1" :default-size="30" />
+            <SplitterResizeHandle id="handle" />
+          </template>
+          <SplitterPanel id="main" :order="2" />
+        </SplitterGroup>
+      `,
+    })
+
+    wrapper = mount(TestComponent, { attachTo: document.body })
+    await nextTick()
+
+    // Remount the panel and handle (unmount, then mount again) while the group
+    // itself stays in the page.
+    shown.value = false
+    await nextTick()
+    shown.value = true
+    await nextTick()
+
+    const handle = wrapper.find('#handle')
+    const event = new KeyboardEvent('keydown', {
+      key: 'ArrowRight',
+      bubbles: true,
+      cancelable: true,
+    })
+    handle.element.dispatchEvent(event)
+
+    // The attached keydown handler calls preventDefault() for arrow keys.
+    expect(event.defaultPrevented).toBe(true)
+  })
+})
 
 // Regression test for https://github.com/unovue/reka-ui/issues/2893
 // Once the pointer enters an iframe the parent document stops receiving
