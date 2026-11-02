@@ -258,22 +258,61 @@ describe('isEqual on values ohash cannot serialize', () => {
     expect(isEqual([shared, shared], [{ date }, { date }])).toBe(true)
   })
 
-  it('compares a value over the form limit by identity, and keeps its parents short', () => {
-    const dag = (depth: number) => {
-      let value: unknown = [Temporal.PlainDate.from('2024-01-15')]
+  describe('past the budget of one call', () => {
+    const dag = (depth: number, day = 15) => {
+      let value: unknown = [Temporal.PlainDate.from({ year: 2024, month: 1, day })]
       for (let i = 0; i < depth; i++)
         value = [value, value]
       return value
     }
-    // Depth 20 reads about 37M characters, depth 19 about 18M.
-    expect(isEqual(dag(19), dag(19))).toBe(true)
-    expect(isEqual(dag(20), dag(20))).toBe(false)
-    const value = dag(20)
-    expect(isEqual([value], [value])).toBe(true)
-    expect(serializeValue(dag(23)).length).toBeLessThan(1000)
+
+    it('compares the whole value by identity', () => {
+      // Depth 19 spends about 37M characters, depth 20 about 73M.
+      expect(isEqual(dag(19), dag(19))).toBe(true)
+      expect(isEqual(dag(20), dag(20))).toBe(false)
+      const value = dag(20)
+      expect(isEqual(value, value)).toBe(true)
+      expect(isEqual([value], [value])).toBe(false)
+      expect(serializeValue(dag(23)).length).toBeLessThan(100)
+    })
+
+    it('counts every form of the call, not one at a time', () => {
+      const chain = (wrappers: number) => {
+        let value: unknown = { pad: 'x'.repeat(30_000_000), date: Temporal.PlainDate.from('2024-01-15') }
+        for (let i = 0; i < wrappers; i++)
+          value = [value, 0]
+        return value
+      }
+      // No single form passes 31M characters, but each wrapper is a new copy of them.
+      expect(isEqual(chain(1), chain(1))).toBe(true)
+      expect(isEqual(chain(2), chain(2))).toBe(false)
+      expect(serializeValue(chain(1000)).length).toBeLessThan(100)
+    })
+
+    it('gives a value the same form whatever another call walked', () => {
+      const large = dag(20)
+      const small = dag(2)
+      const forms = [serializeValue(large), serializeValue(small)]
+      serializeValue(dag(21))
+      expect([serializeValue(large), serializeValue(small)]).toEqual(forms)
+    })
+
+    it('reaches the same outcome whatever the order of siblings', () => {
+      const compareOrders = (x: unknown, y: unknown) => [
+        isEqual({ x, y }, { x, y }),
+        isEqual({ x, y }, { y, x }),
+        isEqual(new Set([x, y]), new Set([x, y])),
+        isEqual(new Set([x, y]), new Set([y, x])),
+      ]
+      expect(compareOrders(dag(17, 15), dag(17, 16))).toEqual([true, true, true, true])
+      // Together they pass the budget, though each fits.
+      expect(compareOrders(dag(19, 15), dag(19, 16))).toEqual([false, false, false, false])
+      // One fits and the other doesn't: never by value up to the budget, then by identity.
+      expect(compareOrders(dag(18, 15), dag(20, 16))).toEqual([false, false, false, false])
+    })
   })
 
-  it('compares flat data under the form limit by value', () => {
+  it('compares flat data under the budget by value', () => {
     const dates = () => Array.from({ length: 100_000 }, () => Temporal.PlainDate.from('2024-01-15'))
     expect(isEqual(dates(), dates())).toBe(true)
   }, 60_000)

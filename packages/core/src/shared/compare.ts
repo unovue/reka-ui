@@ -3,7 +3,13 @@ import { serialize } from 'ohash'
 const opaqueIds = /* @__PURE__ */ new WeakMap<object, number>()
 let opaqueCount = 0
 const WALKED_TAG = /^(?:Array|Object|Map|Set)$/
-const MAX_FORM_LENGTH = 32_000_000
+const WALK_BUDGET = 64_000_000
+
+/** One top-level walk: the form of each finished object (`undefined` while it's being walked), and the characters used. */
+interface Walk {
+  forms: Map<unknown, string | undefined>
+  spent: number
+}
 
 /**
  * ohash `serialize` that never throws. ohash gives up on a value it has no form
@@ -15,22 +21,22 @@ const MAX_FORM_LENGTH = 32_000_000
  * - anything else (including a link back into a cycle holding one): its
  *   identity, as its contents can't be read synchronously.
  *
- * Everything ohash can serialize keeps its ohash form.
+ * Everything ohash can serialize keeps its ohash form, which is not limited.
  *
  * A walked object is serialized once however many paths reach it, so a graph
- * with shared nodes stays linear. Its form can still double per level, so one
- * whose entries total over `MAX_FORM_LENGTH` uses its identity instead and its
- * parents stay short: two equal values that large compare as different, never a
- * throw. The limit clears 100,000 six-field rows (about 19M characters).
+ * with shared nodes stays linear. Forms can still grow quickly and each is a new
+ * string, so one call spends at most `WALK_BUDGET` characters. Past that the whole
+ * value uses its identity, never part of it: the outcome depends on the total, not
+ * on the order of siblings, and two equal values that large compare as different.
+ * The budget clears 100,000 six-field rows.
  *
  * @internal
  */
-// `seen` holds the walked objects of this call: the form of a finished one, `undefined` while it's being walked.
-export function serializeValue(value: unknown, seen?: Map<unknown, string | undefined>): string {
-  const known = seen?.get(value)
+export function serializeValue(value: unknown, walk?: Walk): string {
+  const known = walk?.forms.get(value)
   if (known)
     return known
-  if (!seen?.has(value)) {
+  if (!walk || (walk.spent <= WALK_BUDGET && !walk.forms.has(value))) {
     try {
       return serialize(value)
     }
@@ -40,24 +46,27 @@ export function serializeValue(value: unknown, seen?: Map<unknown, string | unde
       if (tag.startsWith('Temporal.'))
         return `${tag}(${String(value)})`
       if (WALKED_TAG.test(tag)) {
-        seen ??= new Map()
-        seen.set(value, undefined)
+        const current = walk ?? { forms: new Map(), spent: 0 }
+        current.forms.set(value, undefined)
         const entries = (tag === 'Object' ? Object.entries(value as object) : [...value as Iterable<unknown>])
-          .map(entry => serializeValue(entry, seen))
-        // Entries only, before joining: separators and brackets can take a form
-        // past the limit by about one character per entry.
-        if (entries.reduce((length, entry) => length + entry.length, 0) <= MAX_FORM_LENGTH) {
+          .map((entry) => {
+            const form = serializeValue(entry, current)
+            current.spent += form.length
+            return form
+          })
+        if (current.spent <= WALK_BUDGET) {
           const form = tag === 'Array'
             ? `[${entries}]`
             // `#`: a class can be named `Map` or `Object`, and must not read as the built-in or a plain object.
             : `${tag === 'Object' && Object.getPrototypeOf(value) !== Object.prototype ? `#${(value as object).constructor?.name}` : tag}{${entries.sort()}}`
-          seen.set(value, form)
+          current.forms.set(value, form)
           return form
         }
       }
     }
     catch {}
   }
+  // A primitive reaching this once the budget is spent throws, ending its parent's walk.
   let id = opaqueIds.get(value as object)
   if (id === undefined)
     opaqueIds.set(value as object, id = ++opaqueCount)
