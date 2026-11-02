@@ -16,6 +16,7 @@ export function useWindowSplitterPanelGroupBehavior({
   layout,
   panelDataArray,
   panelGroupElement,
+  resizeHandleRegistration,
   setLayout,
   getPanelDataWithPercentConstraints,
 }: {
@@ -26,10 +27,15 @@ export function useWindowSplitterPanelGroupBehavior({
   layout: Ref<number[]>
   panelDataArray: PanelData[]
   panelGroupElement: Ref<ParentNode | null>
+  resizeHandleRegistration: Ref<number>
   setLayout: (sizes: number[]) => void
   getPanelDataWithPercentConstraints: (groupSizeOverride?: number | null) => PanelData[] | null
 }): void {
   watchEffect((onCleanup) => {
+    // Re-run when a resize handle mounts or unmounts on its own, so a handle
+    // added after the group (e.g. via v-if) still gets its aria-* attributes.
+    void resizeHandleRegistration.value
+
     const _panelGroupElement = panelGroupElement.value
     if (!_panelGroupElement)
       return
@@ -86,6 +92,10 @@ export function useWindowSplitterPanelGroupBehavior({
   })
 
   watchEffect((onCleanup) => {
+    // Re-run when a resize handle mounts or unmounts on its own, so Enter to
+    // collapse works on a handle added after the group (e.g. via v-if).
+    void resizeHandleRegistration.value
+
     const _panelGroupElement = panelGroupElement.value
     if (!_panelGroupElement)
       return

@@ -19,16 +19,17 @@ describe('resize handle keyboard behavior after remount (issue #3126)', () => {
     document.body.innerHTML = ''
   })
 
-  it('should respond to arrow keys on a handle mounted after the group', async () => {
+  it('should resize on arrow keys on a handle mounted after the group', async () => {
     const shown = ref(true)
+    const layout = ref<number[]>([])
 
     const TestComponent = defineComponent({
       components: { SplitterGroup, SplitterPanel, SplitterResizeHandle },
       setup() {
-        return { shown }
+        return { shown, onLayout: (val: number[]) => { layout.value = val } }
       },
       template: `
-        <SplitterGroup direction="horizontal">
+        <SplitterGroup direction="horizontal" @layout="onLayout">
           <template v-if="shown">
             <SplitterPanel id="side" :order="1" :default-size="30" />
             <SplitterResizeHandle id="handle" />
@@ -49,15 +50,77 @@ describe('resize handle keyboard behavior after remount (issue #3126)', () => {
     await nextTick()
 
     const handle = wrapper.find('#handle')
+    const before = handle.attributes('aria-valuenow')
+
     const event = new KeyboardEvent('keydown', {
       key: 'ArrowRight',
       bubbles: true,
       cancelable: true,
     })
     handle.element.dispatchEvent(event)
+    await nextTick()
 
-    // The attached keydown handler calls preventDefault() for arrow keys.
+    // The attached keydown handler calls preventDefault() for arrow keys...
     expect(event.defaultPrevented).toBe(true)
+    // ...and actually resizes, so the layout changes and aria-valuenow follows.
+    expect(layout.value).not.toEqual([])
+    expect(handle.attributes('aria-valuenow')).not.toBe(before)
+  })
+
+  it('should collapse on Enter on a handle mounted alone after the group', async () => {
+    const shown = ref(true)
+    const layout = ref<number[]>([])
+
+    const TestComponent = defineComponent({
+      components: { SplitterGroup, SplitterPanel, SplitterResizeHandle },
+      setup() {
+        return { shown, onLayout: (val: number[]) => { layout.value = val } }
+      },
+      // Only the handle is behind v-if; the panels stay mounted, so this
+      // exercises the group-level effects re-running when a handle mounts alone.
+      template: `
+        <SplitterGroup direction="horizontal" @layout="onLayout">
+          <SplitterPanel id="side" :order="1" :default-size="30" collapsible :min-size="10" />
+          <SplitterResizeHandle v-if="shown" id="handle" />
+          <SplitterPanel id="main" :order="2" />
+        </SplitterGroup>
+      `,
+    })
+
+    wrapper = mount(TestComponent, { attachTo: document.body })
+    await nextTick()
+
+    // Remount the handle alone while the group and its panels stay in the page.
+    shown.value = false
+    await nextTick()
+    shown.value = true
+    await nextTick()
+
+    const handle = wrapper.find('#handle')
+    // The group-level effect must have re-run and wired up aria on the new
+    // handle element (it has no aria-controls until that effect runs).
+    expect(handle.attributes('aria-controls')).toBe('side')
+
+    const arrow = new KeyboardEvent('keydown', {
+      key: 'ArrowRight',
+      bubbles: true,
+      cancelable: true,
+    })
+    handle.element.dispatchEvent(arrow)
+    await nextTick()
+    expect(arrow.defaultPrevented).toBe(true)
+
+    const enter = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      bubbles: true,
+      cancelable: true,
+    })
+    handle.element.dispatchEvent(enter)
+    await nextTick()
+
+    // Enter collapses the collapsible panel, which emits a new layout.
+    expect(enter.defaultPrevented).toBe(true)
+    expect(layout.value).not.toEqual([])
   })
 })
 

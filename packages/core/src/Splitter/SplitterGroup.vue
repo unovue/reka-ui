@@ -53,6 +53,7 @@ export type PanelGroupContext = {
   reevaluatePanelConstraints: (panelData: PanelData, prevConstraints: PanelConstraints) => void
   registerPanel: (panelData: PanelData) => void
   registerResizeHandle: (dragHandleId: string) => ResizeHandler
+  registerResizeHandleElement: () => () => void
   resizePanel: (panelData: PanelData, size: number) => void
   startDragging: (dragHandleId: string, event: ResizeEvent) => void
   stopDragging: () => void
@@ -126,6 +127,16 @@ const layout = ref<number[]>([])
 const panelIdToLastNotifiedSizeMapRef = ref<Record<string, number>>({})
 const panelSizeBeforeCollapseRef = ref<Map<string, number>>(new Map())
 const prevDeltaRef = ref<number>(0)
+// Bumped whenever a resize handle mounts or unmounts, so the group-level
+// keyboard/aria effects re-run for a handle added after the group (e.g. v-if).
+const resizeHandleRegistration = ref(0)
+
+function registerResizeHandleElement() {
+  resizeHandleRegistration.value++
+  return function unregisterResizeHandleElement() {
+    resizeHandleRegistration.value++
+  }
+}
 
 const committedValuesRef = computed(() => ({
   autoSaveId: props.autoSaveId,
@@ -213,6 +224,7 @@ useWindowSplitterPanelGroupBehavior({
   groupId,
   layout,
   panelDataArray: eagerValuesRef.value.panelDataArray,
+  resizeHandleRegistration,
   setLayout,
   panelGroupElement: panelGroupElementRef,
   getPanelDataWithPercentConstraints,
@@ -884,6 +896,7 @@ providePanelGroupContext({
   reevaluatePanelConstraints,
   registerPanel,
   registerResizeHandle,
+  registerResizeHandleElement,
   resizePanel,
   startDragging,
   stopDragging,
