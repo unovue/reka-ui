@@ -173,8 +173,8 @@ importers:
         specifier: ^15.0.2
         version: 15.0.3
       markdown-it-anchor:
-        specifier: ^9.2.0
-        version: 9.2.0(@types/markdown-it@14.1.2)(markdown-it@15.0.3)
+        specifier: ^10.0.0
+        version: 10.0.0(@types/markdown-it@14.1.2)(markdown-it@15.0.3)
       minisearch:
         specifier: ^6.3.0
         version: 6.3.0
@@ -4963,14 +4963,14 @@ packages:
   mark.js@8.11.1:
     resolution: {integrity: sha512-1I+1qpDt4idfgLQG+BNWmrqku+7/2bi5nLf4YwF8y8zXvmfiTBY3PV3ZibfrjBueCByROpuBjLLFCajqkgYoLQ==}
 
-  markdown-it-anchor@8.6.7:
-    resolution: {integrity: sha512-FlCHFwNnutLgVTflOYHPW2pPcl2AACqVzExlkGQNsi4CJgqOHN7YTgDd4LuhgN1BFO3TS0vLAruV1Td6dwWPJA==}
+  markdown-it-anchor@10.0.0:
+    resolution: {integrity: sha512-Q8g7Z6OBdH3eXF0lujFqukIxUvgCDZcjzCrJxmD6QiEzU1HWR9fVN+Bf6gxmM+0yrPFs+jUw8gNjLmUQqt6Eew==}
     peerDependencies:
       '@types/markdown-it': '*'
       markdown-it: '*'
 
-  markdown-it-anchor@9.2.0:
-    resolution: {integrity: sha512-sa2ErMQ6kKOA4l31gLGYliFQrMKkqSO0ZJgGhDHKijPf0pNFM9vghjAh3gn26pS4JDRs7Iwa9S36gxm3vgZTzg==}
+  markdown-it-anchor@8.6.7:
+    resolution: {integrity: sha512-FlCHFwNnutLgVTflOYHPW2pPcl2AACqVzExlkGQNsi4CJgqOHN7YTgDd4LuhgN1BFO3TS0vLAruV1Td6dwWPJA==}
     peerDependencies:
       '@types/markdown-it': '*'
       markdown-it: '*'
@@ -12227,15 +12227,15 @@ snapshots:
 
   mark.js@8.11.1: {}
 
+  markdown-it-anchor@10.0.0(@types/markdown-it@14.1.2)(markdown-it@15.0.3):
+    dependencies:
+      '@types/markdown-it': 14.1.2
+      markdown-it: 15.0.3
+
   markdown-it-anchor@8.6.7(@types/markdown-it@12.2.3)(markdown-it@12.3.2):
     dependencies:
       '@types/markdown-it': 12.2.3
       markdown-it: 12.3.2
-
-  markdown-it-anchor@9.2.0(@types/markdown-it@14.1.2)(markdown-it@15.0.3):
-    dependencies:
-      '@types/markdown-it': 14.1.2
-      markdown-it: 15.0.3
 
   markdown-it-attrs@4.1.6(markdown-it@12.3.2):
     dependencies:
