@@ -16,7 +16,7 @@ interface SelectItemContext<T = AcceptableValue> {
 export const [injectSelectItemContext, provideSelectItemContext]
   = createContext<SelectItemContext>('SelectItem')
 
-export type SelectEvent<T> = CustomEvent<{ originalEvent: PointerEvent | KeyboardEvent, value?: T }>
+export type SelectEvent<T> = CustomEvent<{ originalEvent: PointerEvent | MouseEvent | KeyboardEvent, value?: T }>
 
 export type SelectItemEmits<T = AcceptableValue> = {
   /** Event handler called when the selecting item. <br> It can be prevented by calling `event.preventDefault`. */
@@ -75,7 +75,7 @@ const textId = useId(undefined, 'reka-select-item-text')
 
 const SELECT_SELECT = 'select.select'
 
-async function handleSelectCustomEvent(ev: PointerEvent | KeyboardEvent) {
+async function handleSelectCustomEvent(ev: MouseEvent | KeyboardEvent) {
   if (ev.defaultPrevented)
     return
 
@@ -96,14 +96,43 @@ async function handleSelect(ev: SelectEvent<T>) {
   }
 }
 
+// Touch and pen select on `click`: iOS Safari fires `pointerup` on whatever item ends up
+// under the finger once a scroll through the list stops, while a `click` never follows a scroll.
+// A mouse keeps selecting on `pointerup` so it can press the trigger, move down the list and
+// release over an item. `click` has no pointer type, so the last pointer event decides.
+function isTouchPointer(pointerType: string) {
+  return pointerType === 'touch' || pointerType === 'pen'
+}
+
+// `true` until a mouse is seen, so a click without pointer events (assistive tech) still selects.
+let selectsOnClick = true
+
+function handlePointerDown(event: PointerEvent) {
+  selectsOnClick = isTouchPointer(event.pointerType)
+  if (!selectsOnClick)
+    (event.currentTarget as HTMLElement).focus({ preventScroll: true })
+}
+
+function handlePointerUp(event: PointerEvent) {
+  if (!isTouchPointer(event.pointerType))
+    handleSelectCustomEvent(event)
+}
+
+function handleClick(event: MouseEvent) {
+  if (selectsOnClick)
+    handleSelectCustomEvent(event)
+}
+
 async function handlePointerMove(event: PointerEvent) {
   await nextTick()
   if (event.defaultPrevented)
     return
+  // Remember the pointer type when sliding over to this item from another one
+  selectsOnClick = isTouchPointer(event.pointerType)
   if (disabled.value) {
     contentContext.onItemLeave?.()
   }
-  else {
+  else if (!selectsOnClick) {
     // even though safari doesn't support this option, it's acceptable
     // as it only means it might scroll a few pixels when using the pointer.
     (event.currentTarget as HTMLElement | null)?.focus({ preventScroll: true })
@@ -175,11 +204,9 @@ provideSelectItemContext({
       :as-child="asChild"
       @focus="isFocused = true"
       @blur="isFocused = false"
-      @pointerup="handleSelectCustomEvent"
-      @pointerdown="(event: PointerEvent) => {
-        (event.currentTarget as HTMLElement).focus({ preventScroll: true })
-      }"
-      @touchend.prevent.stop
+      @click="handleClick"
+      @pointerup="handlePointerUp"
+      @pointerdown="handlePointerDown"
       @pointermove="handlePointerMove"
       @pointerleave="handlePointerLeave"
       @keydown="handleKeyDown"

@@ -181,6 +181,46 @@ describe('given default Select', () => {
         })
       })
     })
+
+    describe('touch interop', () => {
+      it('should not select the item a touch scroll ends on', async () => {
+        const selection = wrapper.findAll('[role=option]')[1]
+        await fireEvent.pointerDown(selection.element, { pointerType: 'touch' })
+        // iOS Safari fires pointerup on the item under the finger when the scroll stops, but no click follows
+        await fireEvent.pointerUp(selection.element, { pointerType: 'touch' })
+        await nextTick()
+
+        expect(valueBox.html()).not.toContain('Banana')
+        expect(wrapper.find('[role=group]').exists()).toBeTruthy()
+      })
+
+      it('should select on the click that follows a tap', async () => {
+        const selection = wrapper.findAll('[role=option]')[1]
+        await fireEvent.pointerDown(selection.element, { pointerType: 'touch' })
+        await fireEvent.pointerUp(selection.element, { pointerType: 'touch' })
+        await fireEvent.click(selection.element)
+        await nextTick()
+
+        expect(valueBox.html()).toContain('Banana')
+        expect(wrapper.find('[role=group]').exists()).toBeFalsy()
+      })
+
+      it('should select on a click without pointer events', async () => {
+        const selection = wrapper.findAll('[role=option]')[1]
+        await fireEvent.click(selection.element)
+        await nextTick()
+
+        expect(valueBox.html()).toContain('Banana')
+      })
+
+      it('should not highlight items a finger scrolls across', async () => {
+        const selection = wrapper.findAll('[role=option]')[1]
+        await fireEvent.pointerMove(selection.element, { pointerType: 'touch' })
+        await nextTick()
+
+        expect(selection.attributes('data-highlighted')).toBeUndefined()
+      })
+    })
   })
 })
 
