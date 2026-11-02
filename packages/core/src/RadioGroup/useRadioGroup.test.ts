@@ -449,3 +449,23 @@ describe('useRadioGroup — values ohash cannot serialize', () => {
     expect(r.getItemSurface(Temporal.PlainDate.from('2024-01-16') as any).state.value.state).toBe('unchecked')
   })
 })
+
+describe('radioGroupRoot — values ohash cannot serialize', () => {
+  it.each([
+    ['Temporal', Temporal.PlainDate.from('2024-01-15'), Temporal.PlainDate.from('2024-01-16')],
+    ['File', new File([], 'a'), new File([], 'b')],
+  ])('renders and selects %s values', async (_, first, second) => {
+    const errors: unknown[] = []
+    const wrapper = mount(defineComponent(() => () => h(RadioGroupRoot as any, { defaultValue: first }, () => [
+      h(RadioGroupItem as any, { 'value': first, 'data-item': 'first' }),
+      h(RadioGroupItem as any, { 'value': second, 'data-item': 'second' }),
+    ])), { attachTo: document.body, global: { config: { errorHandler: error => errors.push(error) } } })
+    const states = () => wrapper.findAll('[data-item]').map(item => item.attributes('data-state'))
+    expect(states()).toEqual(['checked', 'unchecked'])
+    await wrapper.find('[data-item="second"]').trigger('click')
+    await nextTick()
+    expect(states()).toEqual(['unchecked', 'checked'])
+    expect(errors).toEqual([])
+    wrapper.unmount()
+  })
+})

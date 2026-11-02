@@ -211,7 +211,7 @@ function shouldValidateOnChange() {
 }
 
 const control = shallowRef<FieldControlRegistration>()
-const initialValue = ref<unknown>(null)
+const initialValue = shallowRef<unknown>(null)
 let initialValueCaptured = false
 
 const {

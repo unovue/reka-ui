@@ -11,34 +11,46 @@ const WALKED_TAG = /^(?:Array|Object|Map|Set)$/
  *   Unlike `.equals` this works for every Temporal type, across types and
  *   against non-Temporal values;
  * - an array, plain or class object, `Map` or `Set` holding one: a walk of its entries;
- * - anything else (including a cycle holding one, or 99 levels of nesting): its
+ * - anything else (including a link back into a cycle holding one): its
  *   identity, as its contents can't be read synchronously.
  *
  * Everything ohash can serialize keeps its ohash form.
  *
+ * A walked object is serialized once however many paths reach it, so a graph
+ * with shared nodes stays linear. Its form can still double per level: one
+ * past the JS string length limit falls back to identity, so two equal graphs
+ * that large compare as different. That is a false negative, never a throw.
+ *
  * @internal
  */
-export function serializeValue(value: unknown, parents = new Set<unknown>()): string {
-  try {
-    return serialize(value)
-  }
-  catch {}
-  try {
-    const tag = Object.prototype.toString.call(value).slice(8, -1)
-    if (tag.startsWith('Temporal.'))
-      return `${tag}(${String(value)})`
-    // Bounded: every level retries `serialize`, so an absurdly deep value would otherwise hang.
-    if (WALKED_TAG.test(tag) && !parents.has(value) && parents.size < 99) {
-      parents.add(value)
-      const entries = (tag === 'Object' ? Object.entries(value as object) : [...value as Iterable<unknown>])
-        .map(entry => serializeValue(entry, parents))
-      parents.delete(value)
-      return tag === 'Array'
-        ? `[${entries}]`
-        : `${tag === 'Object' ? (value as object).constructor?.name ?? '' : tag}{${entries.sort()}}`
+// `seen` holds the walked objects of this call: the form of a finished one, `undefined` while it's being walked.
+export function serializeValue(value: unknown, seen?: Map<unknown, string | undefined>): string {
+  const known = seen?.get(value)
+  if (known)
+    return known
+  if (!seen?.has(value)) {
+    try {
+      return serialize(value)
     }
+    catch {}
+    try {
+      const tag = Object.prototype.toString.call(value).slice(8, -1)
+      if (tag.startsWith('Temporal.'))
+        return `${tag}(${String(value)})`
+      if (WALKED_TAG.test(tag)) {
+        seen ??= new Map()
+        seen.set(value, undefined)
+        const entries = (tag === 'Object' ? Object.entries(value as object) : [...value as Iterable<unknown>])
+          .map(entry => serializeValue(entry, seen))
+        const form = tag === 'Array'
+          ? `[${entries}]`
+          : `${tag === 'Object' ? (value as object).constructor?.name ?? '' : tag}{${entries.sort()}}`
+        seen.set(value, form)
+        return form
+      }
+    }
+    catch {}
   }
-  catch {}
   let id = opaqueIds.get(value as object)
   if (id === undefined)
     opaqueIds.set(value as object, id = ++opaqueCount)

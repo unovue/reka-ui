@@ -1201,6 +1201,27 @@ describe('fieldRoot dirty/filled with values ohash cannot serialize', () => {
     expect(errors).toEqual([])
   })
 
+  const cyclic: Record<string, unknown> = { date: d(1) }
+  cyclic.self = cyclic
+  let deep: unknown = d(1)
+  for (let i = 0; i < 120; i++)
+    deep = [deep]
+
+  it.each([
+    ['a cycle', cyclic],
+    ['a deeply nested array', deep],
+    ['an object holding a WeakMap', { map: new WeakMap() }],
+  ])('stays clean when the control reports %s unchanged', async (_, value) => {
+    const wrapper = mount(defineComponent({
+      components: { FieldRoot, BaselineProbe },
+      setup: () => ({ value }),
+      template: `<FieldRoot data-testid="f"><BaselineProbe :initial="value" /></FieldRoot>`,
+    }))
+    ;(wrapper.findComponent(BaselineProbe).vm as any).report(value)
+    await nextTick()
+    expect(wrapper.find('[data-testid="f"]').attributes('data-dirty')).toBeUndefined()
+  })
+
   it.each([[null], [undefined], ['']])('treats %s as the empty baseline of a Temporal edit', async (empty) => {
     const wrapper = mount(defineComponent({
       components: { FieldRoot, BaselineProbe },
@@ -1221,6 +1242,27 @@ describe('fieldRoot dirty/filled with values ohash cannot serialize', () => {
     report(undefined)
     await nextTick()
     expect(root.attributes('data-dirty')).toBeUndefined()
+  })
+
+  it.each([
+    ['Temporal', d(1)],
+    ['File', file],
+  ])('a Checkbox with a %s trueValue reports its press', async (_, trueValue) => {
+    const errors: unknown[] = []
+    const wrapper = mount(defineComponent({
+      components: { FieldRoot, CheckboxRoot },
+      setup: () => ({ trueValue }),
+      template: `<FieldRoot data-testid="f"><CheckboxRoot :true-value="trueValue" :false-value="null" :default-value="null" /></FieldRoot>`,
+    }), { attachTo: document.body, global: { config: { errorHandler: error => errors.push(error) } } })
+    const root = wrapper.find('[data-testid="f"]')
+
+    await wrapper.find('[role="checkbox"]').trigger('click')
+    await nextTick()
+    expect(errors).toEqual([])
+    expect(wrapper.find('[role="checkbox"]').attributes('data-state')).toBe('checked')
+    expect(root.attributes('data-dirty')).toBe('')
+    expect(root.attributes('data-filled')).toBe('')
+    wrapper.unmount()
   })
 
   it('a Temporal edit still sets filled and reaches the validator', async () => {

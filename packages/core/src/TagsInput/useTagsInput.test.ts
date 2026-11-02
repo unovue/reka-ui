@@ -435,3 +435,24 @@ describe('useTagsInput — values ohash cannot serialize', () => {
     expect(t.modelValue.value.map(String)).toEqual(['2024-01-16'])
   })
 })
+
+describe('tagsInputRoot — values ohash cannot serialize', () => {
+  it.each([
+    ['Temporal', Temporal.PlainDate.from('2024-01-15'), Temporal.PlainDate.from('2024-01-16')],
+    ['File', new File([], 'a'), new File([], 'b')],
+  ])('renders and deletes %s tags', async (_, first, second) => {
+    const errors: unknown[] = []
+    const wrapper = mount(defineComponent(() => () => h(TagsInputRoot as any, { defaultValue: [first, second], displayValue: String }, {
+      default: ({ modelValue }: { modelValue: unknown[] }) => [
+        ...modelValue.map((value, index) => h(TagsInputItem as any, { value, 'key': index, 'data-tag': '' }, () => [h(TagsInputItemText), h(TagsInputItemDelete, { 'data-delete': index })])),
+        h(TagsInputInput),
+      ],
+    })), { attachTo: document.body, global: { config: { errorHandler: error => errors.push(error) } } })
+    expect(wrapper.findAll('[data-tag]')).toHaveLength(2)
+    await wrapper.find('[data-delete="0"]').trigger('click')
+    await nextTick()
+    expect(wrapper.findAll('[data-tag]')).toHaveLength(1)
+    expect(errors).toEqual([])
+    wrapper.unmount()
+  })
+})

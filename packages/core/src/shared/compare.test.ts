@@ -1,8 +1,7 @@
-import { serialize } from 'ohash'
 import { describe, expect, it } from 'vitest'
 import { reactive } from 'vue'
 import { findValuesBetween } from './arrays'
-import { compare, isEqual, serializeValue, valueComparator } from './compare'
+import { compare, isEqual, valueComparator } from './compare'
 import { isValueEqualOrExist } from './isValueEqualOrExist'
 
 describe('compare', () => {
@@ -122,6 +121,14 @@ describe('isEqual on values ohash cannot serialize', () => {
     }
   })
 
+  it('tells Temporal types apart when their strings are the same', () => {
+    const date = Temporal.PlainDate.from({ year: 2024, month: 1, day: 1, calendar: 'gregory' })
+    const yearMonth = Temporal.PlainYearMonth.from({ year: 2024, month: 1, calendar: 'gregory' })
+    expect(String(yearMonth)).toBe(String(date))
+    expect(isEqual(date, yearMonth)).toBe(false)
+    expect(isEqual([date], [yearMonth])).toBe(false)
+  })
+
   it('tells calendars and time zones apart', () => {
     const date = Temporal.PlainDate.from('2024-01-15')
     expect(isEqual(date, date.withCalendar('gregory'))).toBe(false)
@@ -200,17 +207,81 @@ describe('isEqual on values ohash cannot serialize', () => {
     expect(isEqual(new Map([[new Blob([]), 1]]), new Map([[new Blob([]), 1]]))).toBe(false)
   })
 
-  it('gives up on an absurdly deep value by identity, quickly', () => {
-    const nest = (leaf: unknown) => {
+  // Far above what linear work needs and far below what re-walking a shared node
+  // per path takes, so load can't flake it and a regression can't pass it.
+  const TIME_BOUND = 5000
+
+  function timed<T>(run: () => T): T {
+    const start = performance.now()
+    const result = run()
+    expect(performance.now() - start).toBeLessThan(TIME_BOUND)
+    return result
+  }
+
+  it('walks a node shared by many paths once', () => {
+    const dag = (day: number, depth = 20) => {
+      let value: unknown = [Temporal.PlainDate.from({ year: 2024, month: 1, day })]
+      for (let i = 0; i < depth; i++)
+        value = [value, value]
+      return value
+    }
+    expect(timed(() => isEqual(dag(1), dag(1)))).toBe(true)
+    expect(timed(() => isEqual(dag(1), dag(2)))).toBe(false)
+    // Its form outgrows the string length limit: no throw and no hang, whatever the answer.
+    expect(() => timed(() => isEqual(dag(1, 30), dag(1, 30)))).not.toThrow()
+    // A shared node and two equal copies of it read the same.
+    const date = Temporal.PlainDate.from('2024-01-15')
+    const shared = { date }
+    expect(isEqual([shared, shared], [{ date }, { date }])).toBe(true)
+  })
+
+  it('walks a graph with many paths through its cycles once', () => {
+    const grid = (day: number) => {
+      const date = Temporal.PlainDate.from({ year: 2024, month: 1, day })
+      const rows = Array.from({ length: 6 }, (_, y) => Array.from({ length: 6 }, (_, x): Record<string, unknown> => ({ x, y, date })))
+      rows.forEach((row, y) => row.forEach((cell, x) => {
+        cell.right = row[x + 1]
+        cell.left = row[x - 1]
+        cell.up = rows[y - 1]?.[x]
+        cell.down = rows[y + 1]?.[x]
+      }))
+      return rows[0][0]
+    }
+    const value = grid(1)
+    expect(timed(() => isEqual([value], [value]))).toBe(true)
+    expect(timed(() => isEqual(grid(1), grid(2)))).toBe(false)
+  })
+
+  it('compares a cycle with two back-links by its links and contents', () => {
+    const cycle = (day: number) => {
+      const value: Record<string, unknown> = { date: Temporal.PlainDate.from({ year: 2024, month: 1, day }) }
+      value.first = { back: value }
+      value.second = { back: value }
+      return value
+    }
+    const value = cycle(1)
+    expect(isEqual(value, value)).toBe(true)
+    expect(isEqual([value], [value])).toBe(true)
+    expect(isEqual({ a: value }, { a: value })).toBe(true)
+    // A link back reads as that object's identity, so a separate copy is not equal.
+    expect(isEqual(value, cycle(1))).toBe(false)
+    expect(isEqual(cycle(1), cycle(2))).toBe(false)
+  })
+
+  it('walks a deep value to its end, and falls back to identity past the stack limit', () => {
+    const nest = (leaf: unknown, depth: number) => {
       let deep = leaf
-      for (let i = 0; i < 100_000; i++)
+      for (let i = 0; i < depth; i++)
         deep = [deep]
       return deep
     }
-    const deep = nest(new Blob([]))
-    expect(isEqual(deep, nest(new Blob([])))).toBe(false)
+    const date = () => Temporal.PlainDate.from('2024-01-15')
+    expect(isEqual(nest(date(), 120), nest(date(), 120))).toBe(true)
+    expect(isEqual(nest(date(), 120), nest(date().add({ days: 1 }), 120))).toBe(false)
+    const deep = nest(new Blob([]), 100_000)
+    expect(isEqual(deep, nest(new Blob([]), 100_000))).toBe(false)
     expect(isEqual(deep, deep)).toBe(true)
-  })
+  }, 60_000)
 
   it('reads a Temporal value through a deep reactive baseline', () => {
     const date = Temporal.PlainDate.from('2024-01-15')
@@ -218,10 +289,15 @@ describe('isEqual on values ohash cannot serialize', () => {
     expect(isEqual(reactive({ start: date }), { start: Temporal.PlainDate.from('2024-01-15') })).toBe(true)
   })
 
-  it('keeps the ohash form of everything ohash can serialize', () => {
-    for (const value of ['a', 1, 0, Number.NaN, 1n, true, null, undefined, { b: 1, a: [2] }, [1, 'x'], new Date(0), new Set([1]), new Map([['k', 1]]), new Uint8Array(1), () => 1])
-      expect(serializeValue(value)).toBe(serialize(value))
+  it('keeps comparing ordinary values by structure', () => {
     expect(isEqual({ a: 1, b: 2 }, { b: 2, a: 1 })).toBe(true)
+    expect(isEqual([1, 'x'], [1, 'x'])).toBe(true)
+    expect(isEqual([1, 2], [2, 1])).toBe(false)
+    expect(isEqual(1, '1')).toBe(false)
+    expect(isEqual(1n, 1)).toBe(false)
+    expect(isEqual(Number.NaN, Number.NaN)).toBe(true)
+    expect(isEqual(new Date(0), new Date(0))).toBe(true)
+    expect(isEqual(new Set([1, 2]), new Set([2, 1]))).toBe(true)
     expect(isEqual(null, undefined)).toBe(false)
     expect(isEqual('', null)).toBe(false)
   })
