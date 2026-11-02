@@ -148,6 +148,12 @@ function isIframeElement(target: EventTarget | null): boolean {
   return target !== null && 'tagName' in target && target.tagName === 'IFRAME'
 }
 
+function isElement(target: EventTarget | null): target is Element {
+  // Any element, SVG included: an icon above a handle covers it as much as a DIV does.
+  // Avoid `instanceof` for the same reason as `isIframeElement`.
+  return target !== null && 'nodeType' in target && target.nodeType === Node.ELEMENT_NODE
+}
+
 function handlePointerUp(event: ResizeEvent) {
   const { target } = event
   const { x, y } = getResizeEventCoordinates(event)
@@ -176,9 +182,7 @@ function recalculateIntersectingHandles({
 }) {
   intersectingHandles.splice(0)
 
-  let targetElement: HTMLElement | null = null
-  if (target instanceof HTMLElement)
-    targetElement = target
+  const targetElement = isElement(target) ? target : null
 
   registeredResizeHandlers.forEach((data) => {
     const { element: dragHandleElement, hitAreaMargins } = data
@@ -219,7 +223,7 @@ function recalculateIntersectingHandles({
         // It's not enough to compare only the target
         // The target might be a small element inside of a larger container
         // (For example, a SPAN or a DIV inside of a larger modal dialog)
-        let currentElement: HTMLElement | null = targetElement
+        let currentElement: Element | null = targetElement
         let didIntersect = false
         while (currentElement) {
           if (currentElement.contains(dragHandleElement)) {

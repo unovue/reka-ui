@@ -6,10 +6,10 @@ import { assert } from './assert'
 /**
  * Determine which of two nodes appears in front of the other —
  * if `a` is in front, returns 1, otherwise returns -1
- * @param {HTMLElement} a
- * @param {HTMLElement} b
+ * @param {Element} a
+ * @param {Element} b
  */
-export function compare(a: HTMLElement, b: HTMLElement): number {
+export function compare(a: Element, b: Element): number {
   if (a === b)
     throw new Error('Cannot compare node with itself')
 
@@ -22,8 +22,8 @@ export function compare(a: HTMLElement, b: HTMLElement): number {
 
   // remove shared ancestors
   while (ancestors.a.at(-1) === ancestors.b.at(-1)) {
-    a = ancestors.a.pop() as HTMLElement
-    b = ancestors.b.pop() as HTMLElement
+    a = ancestors.a.pop() as Element
+    b = ancestors.b.pop() as Element
 
     common_ancestor = a
   }
@@ -59,14 +59,14 @@ export function compare(a: HTMLElement, b: HTMLElement): number {
 const props
   = /\b(?:position|zIndex|opacity|transform|webkitTransform|mixBlendMode|filter|webkitFilter|isolation)\b/
 
-/** @param {HTMLElement} node */
-function isFlexItem(node: HTMLElement) {
+/** @param {Element} node */
+function isFlexItem(node: Element) {
   const display = getComputedStyle(getParent(node)).display
   return display === 'flex' || display === 'inline-flex'
 }
 
-/** @param {HTMLElement} node */
-function createsStackingContext(node: HTMLElement) {
+/** @param {Element} node */
+function createsStackingContext(node: Element) {
   const style = getComputedStyle(node)
 
   // https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Positioning/Understanding_z_index/The_stacking_context
@@ -106,8 +106,8 @@ function createsStackingContext(node: HTMLElement) {
   return false
 }
 
-/** @param {HTMLElement[]} nodes */
-function findStackingContext(nodes: HTMLElement[]) {
+/** @param {Element[]} nodes */
+function findStackingContext(nodes: Element[]) {
   let i = nodes.length
 
   while (i--) {
@@ -120,13 +120,13 @@ function findStackingContext(nodes: HTMLElement[]) {
   return null
 }
 
-/** @param {HTMLElement} node */
-function getZIndex(node: HTMLElement | null) {
+/** @param {Element} node */
+function getZIndex(node: Element | null) {
   return (node && Number(getComputedStyle(node).zIndex)) || 0
 }
 
-/** @param {HTMLElement} node */
-function getAncestors(node: HTMLElement) {
+/** @param {Element} node */
+function getAncestors(node: Element) {
   const ancestors = []
 
   while (node) {
@@ -137,8 +137,8 @@ function getAncestors(node: HTMLElement) {
   return ancestors // [ node, ... <body>, <html>, document ]
 }
 
-/** @param {HTMLElement} node */
-function getParent(node: HTMLElement) {
+/** @param {Element} node */
+function getParent(node: Element) {
   // @ts-expect-error host should exist
   return (node.parentNode instanceof DocumentFragment && node.parentNode?.host) || node.parentNode
 }
