@@ -76,7 +76,7 @@ const textId = useId(undefined, 'reka-select-item-text')
 const SELECT_SELECT = 'select.select'
 
 async function handleSelectCustomEvent(ev: MouseEvent | KeyboardEvent) {
-  if (ev.defaultPrevented)
+  if (ev.defaultPrevented || disabled.value)
     return
 
   const eventDetail = { originalEvent: ev, value: props.value as T }
