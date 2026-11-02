@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { reactive } from 'vue'
 import { findValuesBetween } from './arrays'
-import { compare, isEqual, valueComparator } from './compare'
+import { compare, isEqual, serializeValue, valueComparator } from './compare'
 import { isValueEqualOrExist } from './isValueEqualOrExist'
 
 describe('compare', () => {
@@ -232,7 +232,7 @@ describe('isEqual on values ohash cannot serialize', () => {
   }
 
   it('walks a node shared by many paths once', () => {
-    const dag = (day: number, depth = 20) => {
+    const dag = (day: number, depth = 19) => {
       let value: unknown = [Temporal.PlainDate.from({ year: 2024, month: 1, day })]
       for (let i = 0; i < depth; i++)
         value = [value, value]
@@ -240,13 +240,32 @@ describe('isEqual on values ohash cannot serialize', () => {
     }
     expect(timed(() => isEqual(dag(1), dag(1)))).toBe(true)
     expect(timed(() => isEqual(dag(1), dag(2)))).toBe(false)
-    // Its form outgrows the string length limit: no throw and no hang, whatever the answer.
-    expect(() => timed(() => isEqual(dag(1, 30), dag(1, 30)))).not.toThrow()
+    expect(timed(() => isEqual(dag(1, 30), dag(1, 30)))).toBe(false)
     // A shared node and two equal copies of it read the same.
     const date = Temporal.PlainDate.from('2024-01-15')
     const shared = { date }
     expect(isEqual([shared, shared], [{ date }, { date }])).toBe(true)
   })
+
+  it('compares a value over the form limit by identity, and keeps its parents short', () => {
+    const dag = (depth: number) => {
+      let value: unknown = [Temporal.PlainDate.from('2024-01-15')]
+      for (let i = 0; i < depth; i++)
+        value = [value, value]
+      return value
+    }
+    // Depth 20 reads about 37M characters, depth 19 about 18M.
+    expect(isEqual(dag(19), dag(19))).toBe(true)
+    expect(isEqual(dag(20), dag(20))).toBe(false)
+    const value = dag(20)
+    expect(isEqual([value], [value])).toBe(true)
+    expect(serializeValue(dag(23)).length).toBeLessThan(1000)
+  })
+
+  it('compares flat data under the form limit by value', () => {
+    const dates = () => Array.from({ length: 100_000 }, () => Temporal.PlainDate.from('2024-01-15'))
+    expect(isEqual(dates(), dates())).toBe(true)
+  }, 60_000)
 
   it('walks a graph with many paths through its cycles once', () => {
     const grid = (day: number) => {

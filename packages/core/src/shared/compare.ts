@@ -3,6 +3,7 @@ import { serialize } from 'ohash'
 const opaqueIds = /* @__PURE__ */ new WeakMap<object, number>()
 let opaqueCount = 0
 const WALKED_TAG = /^(?:Array|Object|Map|Set)$/
+const MAX_FORM_LENGTH = 32_000_000
 
 /**
  * ohash `serialize` that never throws. ohash gives up on a value it has no form
@@ -17,9 +18,10 @@ const WALKED_TAG = /^(?:Array|Object|Map|Set)$/
  * Everything ohash can serialize keeps its ohash form.
  *
  * A walked object is serialized once however many paths reach it, so a graph
- * with shared nodes stays linear. Its form can still double per level: one
- * past the JS string length limit falls back to identity, so two equal graphs
- * that large compare as different. That is a false negative, never a throw.
+ * with shared nodes stays linear. Its form can still double per level, so one
+ * over `MAX_FORM_LENGTH` uses its identity instead and its parents stay short:
+ * two equal values that large compare as different, never a throw or a large
+ * allocation. The limit clears 100,000 six-field rows (about 19M characters).
  *
  * @internal
  */
@@ -42,12 +44,15 @@ export function serializeValue(value: unknown, seen?: Map<unknown, string | unde
         seen.set(value, undefined)
         const entries = (tag === 'Object' ? Object.entries(value as object) : [...value as Iterable<unknown>])
           .map(entry => serializeValue(entry, seen))
-        const form = tag === 'Array'
-          ? `[${entries}]`
-          // `#`: a class can be named `Map`, and must not read as the built-in.
-          : `${tag === 'Object' ? `#${(value as object).constructor?.name}` : tag}{${entries.sort()}}`
-        seen.set(value, form)
-        return form
+        // Measured before joining, so a form over the limit is never built.
+        if (entries.reduce((length, entry) => length + entry.length, 0) <= MAX_FORM_LENGTH) {
+          const form = tag === 'Array'
+            ? `[${entries}]`
+            // `#`: a class can be named `Map`, and must not read as the built-in.
+            : `${tag === 'Object' ? `#${(value as object).constructor?.name}` : tag}{${entries.sort()}}`
+          seen.set(value, form)
+          return form
+        }
       }
     }
     catch {}
