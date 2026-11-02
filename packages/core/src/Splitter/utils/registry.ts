@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 import type { Direction, ResizeEvent } from './types'
+import { isElement } from '@/shared'
 import { getResizeEventCoordinates } from './events'
 import { intersects } from './rects'
 import { compare } from './stackingOrder'
@@ -148,12 +149,6 @@ function isIframeElement(target: EventTarget | null): boolean {
   return target !== null && 'tagName' in target && target.tagName === 'IFRAME'
 }
 
-function isElement(target: EventTarget | null): target is Element {
-  // Any element, SVG included: an icon above a handle covers it as much as a DIV does.
-  // Avoid `instanceof` for the same reason as `isIframeElement`.
-  return target !== null && 'nodeType' in target && target.nodeType === Node.ELEMENT_NODE
-}
-
 function handlePointerUp(event: ResizeEvent) {
   const { target } = event
   const { x, y } = getResizeEventCoordinates(event)
@@ -182,6 +177,7 @@ function recalculateIntersectingHandles({
 }) {
   intersectingHandles.splice(0)
 
+  // Any element, SVG included: an icon above a handle covers it as much as a DIV does
   const targetElement = isElement(target) ? target : null
 
   registeredResizeHandlers.forEach((data) => {
