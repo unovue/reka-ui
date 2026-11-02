@@ -1,6 +1,5 @@
 import type { By } from './compare'
-import { isEqual } from 'ohash'
-import { compare } from './compare'
+import { compare, isEqual } from './compare'
 import { isNullish } from './nullish'
 
 /**

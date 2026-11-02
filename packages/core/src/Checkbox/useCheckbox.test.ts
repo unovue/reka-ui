@@ -301,3 +301,15 @@ describe('useCheckbox — public export', () => {
     expect('getCheckboxIndicatorSurface' in Reka).toBe(false)
   })
 })
+
+describe('useCheckbox — values ohash cannot serialize', () => {
+  it('checks against a Temporal or File trueValue', () => {
+    const c = useCheckbox<any>({ trueValue: Temporal.PlainDate.from('2024-01-15'), falseValue: null, modelValue: () => Temporal.PlainDate.from('2024-01-15') })
+    expect(c.checked.value).toBe(true)
+    const file = new File([], 'a')
+    const d = useCheckbox<any>({ trueValue: file, falseValue: null, defaultValue: null })
+    expect(d.checked.value).toBe(false)
+    d.toggle()
+    expect(d.checked.value).toBe(true)
+  })
+})

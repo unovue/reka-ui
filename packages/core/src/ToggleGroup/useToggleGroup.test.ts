@@ -1,7 +1,8 @@
 import { fireEvent, render } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import * as Reka from '../index'
 import { useToggleGroup } from './useToggleGroup'
 
@@ -263,5 +264,46 @@ describe('useToggleGroup — public export', () => {
   it('is exported from the package barrel; the surface builder is internal', () => {
     expect(typeof Reka.useToggleGroup).toBe('function')
     expect('getToggleGroupItemSurface' in Reka).toBe(false)
+  })
+})
+
+describe('useToggleGroup — values ohash cannot serialize', () => {
+  it('single: pressing the Temporal value that is on turns it off', () => {
+    const g = useToggleGroup({ type: 'single', defaultValue: Temporal.PlainDate.from('2024-01-15') as any })
+    g.changeModelValue(Temporal.PlainDate.from('2024-01-16') as any)
+    expect(String(g.modelValue.value)).toBe('2024-01-16')
+    g.changeModelValue(Temporal.PlainDate.from('2024-01-16') as any)
+    expect(g.modelValue.value).toBeUndefined()
+  })
+  it('multiple: adds and removes Temporal values and a File', () => {
+    const g = useToggleGroup({ type: 'multiple' })
+    const file = new File([], 'a') as any
+    g.changeModelValue(Temporal.PlainTime.from('10:30') as any)
+    g.changeModelValue(file)
+    g.changeModelValue(Temporal.PlainTime.from('10:30') as any)
+    expect(g.modelValue.value).toEqual([file])
+  })
+})
+
+describe('toggleGroupRoot — values ohash cannot serialize', () => {
+  it.each([
+    ['Temporal', Temporal.PlainDate.from('2024-01-15'), Temporal.PlainDate.from('2024-01-16')],
+    ['File', new File([], 'a'), new File([], 'b')],
+  ])('renders and toggles %s values', async (_, first, second) => {
+    const errors: unknown[] = []
+    const wrapper = mount(defineComponent(() => () => h(Reka.ToggleGroupRoot as any, { type: 'multiple', defaultValue: [first] }, () => [
+      h(Reka.ToggleGroupItem as any, { 'value': first, 'data-item': 'first' }),
+      h(Reka.ToggleGroupItem as any, { 'value': second, 'data-item': 'second' }),
+    ])), { attachTo: document.body, global: { config: { errorHandler: error => errors.push(error) } } })
+    const states = () => wrapper.findAll('[data-item]').map(item => item.attributes('data-state'))
+    expect(states()).toEqual(['checked', 'unchecked'])
+    await wrapper.find('[data-item="second"]').trigger('click')
+    await nextTick()
+    expect(states()).toEqual(['checked', 'checked'])
+    await wrapper.find('[data-item="first"]').trigger('click')
+    await nextTick()
+    expect(states()).toEqual(['unchecked', 'checked'])
+    expect(errors).toEqual([])
+    wrapper.unmount()
   })
 })

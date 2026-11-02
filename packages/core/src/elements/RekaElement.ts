@@ -84,12 +84,22 @@ function defaultPropOf(model: string) {
   return model === 'modelValue' ? 'defaultValue' : `default${model[0].toUpperCase()}${model.slice(1)}`
 }
 
-/** Model values compared as data (a reset to an equal array is no change). */
+/**
+ * Model values compared as data (a reset to an equal array is no change). What
+ * JSON can't represent (a `File` and a `Map` are both `{}`) only equals itself.
+ * JSON rather than `isEqual`, which would pull ohash into every element's runtime.
+ */
 function sameValue(a: unknown, b: unknown) {
   if (Object.is(a, b))
     return true
+  const asData = (_: string, value: unknown) => {
+    const tag = Object.prototype.toString.call(value)
+    if (value && typeof value === 'object' && tag !== '[object Object]' && tag !== '[object Array]')
+      throw new TypeError(tag)
+    return value
+  }
   try {
-    return JSON.stringify(a) === JSON.stringify(b)
+    return JSON.stringify(a, asData) === JSON.stringify(b, asData)
   }
   catch {
     return false

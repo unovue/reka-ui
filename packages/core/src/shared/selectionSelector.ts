@@ -1,8 +1,7 @@
 import type { ShallowRef } from 'vue'
 import type { By } from './compare'
-import { serialize } from 'ohash'
 import { shallowRef } from 'vue'
-import { valueComparator } from './compare'
+import { serializeValue, valueComparator } from './compare'
 import { KeyedSelectorImpl, lazySelector, SelectorHold } from './createKeyedSelector'
 
 /**
@@ -11,7 +10,7 @@ import { KeyedSelectorImpl, lazySelector, SelectorHold } from './createKeyedSele
  * - `null` for `undefined`, which `compare` never matches;
  * - a string for every value `compare` resolves without a custom function:
  *   strings by `===`, an object under a key `by` by its primitive `value[by]`,
- *   anything else (no `by`) by its `serialize` form, which is what `isEqual`
+ *   anything else (no `by`) by its `serializeValue` form, which is what `isEqual`
  *   compares;
  * - `undefined` when no key is exact (a function `by`, a missing,
  *   non-primitive or `NaN` `value[by]`, a non-object under a key `by`):
@@ -37,7 +36,7 @@ export function compareKey<T>(value: T, by?: By<T>): string | null | undefined {
       return `k:${type}:${String(key)}`
     return undefined
   }
-  return `h:${serialize(value)}`
+  return `h:${serializeValue(value)}`
 }
 
 /**

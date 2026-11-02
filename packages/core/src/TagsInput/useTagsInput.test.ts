@@ -422,3 +422,38 @@ describe('useTagsInput — public export', () => {
     expect((Reka as Record<string, unknown>).createTagsInputInputSurface).toBeUndefined()
   })
 })
+
+describe('useTagsInput — values ohash cannot serialize', () => {
+  it('adds and removes Temporal tags', () => {
+    const t = useTagsInput<any>({
+      defaultValue: [Temporal.PlainDate.from('2024-01-15')],
+      convertValue: (text: string) => Temporal.PlainDate.from(text),
+    })
+    expect(t.addTags(['2024-01-16'])).toBe(true)
+    expect(t.modelValue.value.map(String)).toEqual(['2024-01-15', '2024-01-16'])
+    expect(t.removeTag(0)).toBe(true)
+    expect(t.modelValue.value.map(String)).toEqual(['2024-01-16'])
+  })
+})
+
+describe('tagsInputRoot — values ohash cannot serialize', () => {
+  it.each([
+    ['Temporal', Temporal.PlainDate.from('2024-01-15'), Temporal.PlainDate.from('2024-01-16')],
+    ['File', new File([], 'a'), new File([], 'b')],
+  ])('renders and deletes %s tags', async (_, first, second) => {
+    const errors: unknown[] = []
+    const label = (value: any) => value.name ?? String(value)
+    const wrapper = mount(defineComponent(() => () => h(TagsInputRoot as any, { defaultValue: [first, second], displayValue: label }, {
+      default: ({ modelValue }: { modelValue: unknown[] }) => [
+        ...modelValue.map((value, index) => h(TagsInputItem as any, { value, 'key': index, 'data-tag': '' }, () => [h(TagsInputItemText), h(TagsInputItemDelete, { 'data-delete': index })])),
+        h(TagsInputInput),
+      ],
+    })), { attachTo: document.body, global: { config: { errorHandler: error => errors.push(error) } } })
+    expect(wrapper.findAll('[data-tag]')).toHaveLength(2)
+    await wrapper.find('[data-delete="0"]').trigger('click')
+    await nextTick()
+    expect(wrapper.findAll('[data-tag]').map(tag => tag.text())).toEqual([label(second)])
+    expect(errors).toEqual([])
+    wrapper.unmount()
+  })
+})

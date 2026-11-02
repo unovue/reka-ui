@@ -2,9 +2,9 @@ import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { ToggleGroupRootContext } from './ToggleGroupRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface, SelectionState } from '@/shared'
 import type { AcceptableValue, DataOrientation, Direction, SingleOrMultipleType } from '@/shared/types'
-import { isEqual } from 'ohash'
 import { computed, toValue } from 'vue'
 import { createPartSurface, isValueEqualOrExist, selectionState, useControllableState } from '@/shared'
+import { isEqual } from '@/shared/compare'
 
 /** Why the value changed; carried as `details.reason` on every change (#2828). */
 export type ToggleGroupChangeReason = 'item-press'

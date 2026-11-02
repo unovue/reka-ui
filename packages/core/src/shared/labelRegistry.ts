@@ -1,7 +1,6 @@
 import type { By } from './compare'
-import { serialize } from 'ohash'
 import { shallowRef, triggerRef } from 'vue'
-import { compare } from './compare'
+import { compare, serializeValue } from './compare'
 
 /**
  * The sticky label registry (#2824): items register the text they render so a
@@ -41,7 +40,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * in a Map, so a registration is O(1) rather than a scan:
  * - a primitive value (or a primitive `value[by]` under a key `by`) by its
  *   tagged string form;
- * - an object value with no `by` by its ohash `serialize` form, which is
+ * - an object value with no `by` by its `serializeValue` form, which is
  *   exactly what the default `isEqual` comparison compares (no digest: the
  *   crypto code would only grow every listbox bundle). The trade-off is
  *   memory: the key is the whole serialized object, so a large object value
@@ -75,7 +74,7 @@ export function createLabelRegistry<T>(by?: By<T>): LabelRegistry<T> {
       // Tagged so a plain `'1'`, a `1` and a `{ id: 1 }` under `by: 'id'` never collide.
       return `${keyed ? 'k' : 'v'}:${type}:${String(key)}`
     if (by === undefined && type === 'object')
-      return `h:${serialize(key)}`
+      return `h:${serializeValue(key)}`
     return undefined
   }
 

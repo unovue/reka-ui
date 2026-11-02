@@ -1,4 +1,4 @@
-import { isEqual } from 'ohash'
+import { isEqual } from './compare'
 
 /**
  * The function `areEqual` compares two arrays and returns true if they are equal in length and have
