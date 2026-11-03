@@ -2,7 +2,7 @@ import type { RenderResult } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, onMounted, ref, useTemplateRef } from 'vue'
+import { defineComponent, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { getActiveElement } from '@/shared'
 import { FocusScope } from '.'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '../Combobox'
@@ -504,5 +504,53 @@ describe('given a trapped FocusScope rendered in an iframe', () => {
     await new Promise(resolve => setTimeout(resolve, 0))
     expect(frameDocument.activeElement).toBe(two)
     outer.unmount()
+  })
+})
+
+describe('given a FocusScope that unmounts before its mount effect settles, inside a Dialog', () => {
+  it('leaves the Dialog\'s focus trap working', async () => {
+    const dialog = render(defineComponent({
+      components: { DialogRoot, DialogContent, DialogTitle },
+      template: `
+        <div>
+          <button data-testid="outside">outside</button>
+          <DialogRoot :open="true">
+            <DialogContent>
+              <DialogTitle>Title</DialogTitle>
+              <input data-testid="dialog-input" />
+            </DialogContent>
+          </DialogRoot>
+        </div>`,
+    }))
+    await new Promise(resolve => setTimeout(resolve, 0))
+    const input = document.querySelector<HTMLInputElement>('[data-testid="dialog-input"]')!
+    input.focus()
+
+    // The scope's mount effect sees its element in the next flush and adds itself to
+    // the stack after a `nextTick`. A post-flush callback queued from another one runs
+    // after that effect, still within the flush, and unmounts the scope first.
+    const queueUnmount = ref(false)
+    const unmountInner = ref(false)
+    let inner: RenderResult | undefined
+    const stops = [
+      watch(queueUnmount, () => {
+        unmountInner.value = true
+      }, { flush: 'post' }),
+      watch(unmountInner, () => inner?.unmount(), { flush: 'post' }),
+    ]
+    inner = render(defineComponent({
+      components: { FocusScope },
+      template: `<FocusScope><button>inner</button></FocusScope>`,
+    }))
+    queueUnmount.value = true
+    await nextTick()
+    stops.forEach(stop => stop())
+    await new Promise(resolve => setTimeout(resolve, 10))
+
+    input.focus()
+    document.querySelector<HTMLButtonElement>('[data-testid="outside"]')!.focus()
+    await nextTick()
+    expect(input).toHaveFocus()
+    dialog.unmount()
   })
 })

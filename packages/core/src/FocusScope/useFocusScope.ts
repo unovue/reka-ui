@@ -1,6 +1,6 @@
 import type { SplitWrapperAttrs, WrapperSpec } from '@/shared/splitWrapperAttrs'
 import { isClient } from '@vueuse/shared'
-import { computed, nextTick, reactive, ref, shallowRef, watch, watchEffect } from 'vue'
+import { computed, getCurrentScope, nextTick, reactive, ref, shallowRef, watch, watchEffect } from 'vue'
 import { containsComposed, getActiveElement, getEventTarget, getOwnerDocument, getRootNode } from '@/shared'
 import { createWrapperEmit } from '@/shared/splitWrapperAttrs'
 import { createFocusScopesStack } from './stack'
@@ -204,11 +204,15 @@ export function useFocusScope(options: UseFocusScopeOptions) {
     }
   }
 
+  const scope = getCurrentScope()
   watchEffect(async (cleanupFn) => {
     const container = element.value
 
     await nextTick()
-    if (!container)
+    // Bail when the scope unmounted, or moved to another element, during the
+    // `await`: a cleanup registered now would never run, leaving the scope on
+    // the stack and the trap under it paused.
+    if (!container || scope?.active === false || element.value !== container)
       return
     // A scope that mounts hidden (`present: false`, e.g. a closed Dialog with
     // `unmountOnHide: false`) must stay out of the scope stack: adding it would
