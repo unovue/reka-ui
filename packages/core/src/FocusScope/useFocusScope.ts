@@ -83,13 +83,21 @@ export function useFocusScope(options: UseFocusScopeOptions) {
     const root = getRootNode(container)
     const ownerDocument = getOwnerDocument(container)
 
+    // Focus back to the last element focused inside, or to the container when
+    // that element is no longer in it (an as-child part re-rendered its element,
+    // e.g. a keyed child, under the open scope).
+    function recall() {
+      const last = lastFocusedElementRef.value
+      focus(last && container && !containsComposed(container, last) ? container : last, { select: true })
+    }
+
     function handleFocusIn(event: FocusEvent) {
       if (focusScope.paused || !container)
         return
       const target = event.target as HTMLElement | null
       if (containsComposed(container, target))
         lastFocusedElementRef.value = target
-      else focus(lastFocusedElementRef.value, { select: true })
+      else recall()
     }
 
     function handleFocusOut(event: FocusEvent) {
@@ -113,7 +121,7 @@ export function useFocusScope(options: UseFocusScopeOptions) {
       // If the focus has moved to an actual legitimate element (`relatedTarget !== null`)
       // that is outside the container, we move focus to the last valid focused element inside.
       if (!containsComposed(container, relatedTarget))
-        focus(lastFocusedElementRef.value, { select: true })
+        recall()
     }
 
     // When the focused element gets removed from the DOM, browsers move focus
@@ -166,7 +174,7 @@ export function useFocusScope(options: UseFocusScopeOptions) {
         return
       const target = getEventTarget<HTMLElement>(event)
       if (!containsComposed(container, target))
-        focus(lastFocusedElementRef.value, { select: true })
+        recall()
     }
 
     root.addEventListener('focusin', handleFocusIn as EventListener)
