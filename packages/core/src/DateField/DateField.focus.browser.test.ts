@@ -110,10 +110,11 @@ describe('a DateField\'s focus state', () => {
   })
 
   // The removal's `focusout` reaches the listener on the element going away, so that
-  // listener has to outlast the element.
+  // listener has to outlast the element. Without one, the Field still stops reporting
+  // focus when the control unregisters, but only a real blur marks it touched.
   describe('when the element goes away with focus inside', () => {
     function expectBlurredIfTheBrowserSaysSo(fires: boolean) {
-      expect(focused()).toBe(!fires)
+      expect(focused()).toBe(false)
       expect(touched()).toBe(fires)
     }
 
@@ -223,10 +224,9 @@ describe('a DateField\'s focus state', () => {
       modelValue.value = Temporal.PlainDate.from('2024-02-20')
       await settle()
       expect(el('field')!.hasAttribute('data-dirty')).toBe(false)
-      if (fires) {
+      expect(focused()).toBe(false)
+      if (fires)
         expect(errors).toEqual([])
-        expect(focused()).toBe(false)
-      }
     })
   })
 

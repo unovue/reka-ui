@@ -166,10 +166,15 @@ function getFieldAriaAttrs() {
   }
 }
 
+// Only for a checkbox that reports focus without registering (one in a
+// `CheckboxGroupRoot`): a registered control's focus is cleared on unregister.
+let hasFocus = false
 function handleFocus() {
+  hasFocus = true
   fieldContext?.handleControlFocus()
 }
 function handleBlur() {
+  hasFocus = false
   if (participatesAsControl.value)
     fieldContext?.handleControlBlur()
   else
@@ -189,7 +194,12 @@ onMounted(() => {
     isFilled: value => value === true,
   })
 })
-onBeforeUnmount(() => unregisterControl?.())
+onBeforeUnmount(() => {
+  unregisterControl?.()
+  // Not every browser fires `blur` for a removed element.
+  if (hasFocus && !participatesAsControl.value)
+    fieldContext?.reportControlState({ focused: false })
+})
 
 provideCheckboxRootContext(context)
 
