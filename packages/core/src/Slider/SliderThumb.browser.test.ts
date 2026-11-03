@@ -40,3 +40,51 @@ describe('sliderThumb: a camel `ariaLabel`', () => {
     expect(label()).toBe('after-kebab')
   })
 })
+
+describe('sliderThumb: removing a consumer label', () => {
+  // The generated label: none for a single thumb, "Minimum" for the first of two.
+  const generated = (thumbs: number) => thumbs === 2 ? 'Minimum' : null
+
+  it.each([1, 2])('restores the generated label when a camel `ariaLabel` is removed, with %i thumbs', async (thumbs) => {
+    const { attrs, label } = mountThumbs(thumbs)
+    await nextTick()
+    attrs.value = { ariaLabel: 'camel' }
+    await nextTick()
+    expect(label()).toBe('camel')
+    attrs.value = {}
+    await nextTick()
+    expect(label()).toBe(generated(thumbs))
+  })
+
+  it.each([1, 2])('restores the generated label when a kebab `aria-label` is removed, with %i thumbs', async (thumbs) => {
+    const { attrs, label } = mountThumbs(thumbs)
+    await nextTick()
+    attrs.value = { 'aria-label': 'kebab' }
+    await nextTick()
+    expect(label()).toBe('kebab')
+    attrs.value = {}
+    await nextTick()
+    expect(label()).toBe(generated(thumbs))
+  })
+
+  it.each([1, 2])('falls back to a kebab `aria-label` when a camel one is removed, with %i thumbs', async (thumbs) => {
+    const { attrs, label } = mountThumbs(thumbs)
+    await nextTick()
+    attrs.value = { ariaLabel: 'camel' }
+    await nextTick()
+    attrs.value = { 'aria-label': 'kebab' }
+    await nextTick()
+    expect(label()).toBe('kebab')
+  })
+
+  it.each([1, 2])('lets a kebab `aria-label` win over a camel one, with %i thumbs', async (thumbs) => {
+    const { attrs, label } = mountThumbs(thumbs)
+    await nextTick()
+    attrs.value = { 'ariaLabel': 'camel', 'aria-label': 'kebab' }
+    await nextTick()
+    expect(label()).toBe('kebab')
+    attrs.value = { ariaLabel: 'camel' }
+    await nextTick()
+    expect(label()).toBe('camel')
+  })
+})

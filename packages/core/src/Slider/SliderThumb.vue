@@ -59,20 +59,21 @@ onUnmounted(() => {
 })
 
 function elementAttrs(consumerAttrs: Record<string, unknown>) {
+  // A camel `ariaLabel` is folded into the one `aria-label` rather than bound as
+  // the DOM property, which writes the same attribute: removing it would leave
+  // `aria-label=""` behind, as Vue clears the property but not the attribute.
   const { index: _, ariaLabel, ...rest } = consumerAttrs
   return mergeProps(
     COLLECTION_ITEM_ATTRS,
     rest,
     thumb.attrs.value,
-    { 'aria-label': consumerAttrs['aria-label'] || thumb.props.value['aria-label'] },
-    // Last: the property sets the same attribute, and a fallthrough attr came after the thumb's.
-    ariaLabel === undefined ? {} : { ariaLabel },
+    { 'aria-label': consumerAttrs['aria-label'] || ariaLabel || thumb.props.value['aria-label'] },
   )
 }
 // Template binding keeps the v2 order: consumer attributes first, so the thumb's
 // own attributes win and a consumer `@focus` runs before the thumb's; a consumer
-// `aria-label` wins over the generated one. `$attrs` is read in the template
-// (not a computed) so attribute changes re-render.
+// `aria-label` (then `ariaLabel`) wins over the generated one. `$attrs` is read in
+// the template (not a computed) so attribute changes re-render.
 </script>
 
 <template>
