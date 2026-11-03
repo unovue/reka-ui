@@ -91,6 +91,21 @@ describe('given an open Select whose items change', () => {
       }
     })
 
+    it(`leaves the fallback item when the user navigated back to it, ${position}`, async () => {
+      const items = mountSelect(position, 'Lemon')
+      await open()
+      items.value = ['Apple', 'Banana']
+      await expect.poll(focused).toBe('Apple')
+      await userEvent.keyboard('{ArrowDown}')
+      await expect.poll(focused).toBe('Banana')
+      await userEvent.keyboard('{ArrowUp}')
+      await expect.poll(focused).toBe('Apple')
+      items.value = fruits
+      await expect.poll(() => document.querySelectorAll('[role=option]').length).toBe(5)
+      await wait(100)
+      expect(focused()).toBe('Apple')
+    })
+
     it(`focuses an item again when the list is replaced, or emptied and refilled, ${position}`, async () => {
       const items = mountSelect(position, 'Cherry', false, fruits)
       await open()

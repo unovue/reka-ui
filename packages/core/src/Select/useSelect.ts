@@ -953,10 +953,27 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
       nextTick(() => isOpenSettled.value = !!contentElement.value)
   }, { flush: 'post' })
 
+  // Any focus move inside the content that the content did not make itself
+  // (keyboard navigation, hover, a click) is the user's: forget the fallback,
+  // even when it lands on that same item again.
+  let isAutoFocusing = false
+  watch(contentElement, (element, _, onCleanup) => {
+    if (!element)
+      return
+    const onFocusIn = () => {
+      if (!isAutoFocusing)
+        autoFocused = null
+    }
+    element.addEventListener('focusin', onFocusIn)
+    onCleanup(() => element.removeEventListener('focusin', onFocusIn))
+  })
+
   function focusItem() {
+    isAutoFocusing = true
     // Through the context: `SelectVirtualizer` replaces it to reach a selected
     // item whose row is not rendered.
     contentContext.focusSelectedItem?.()
+    isAutoFocusing = false
     autoFocused = getActiveElement()
   }
 
