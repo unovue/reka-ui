@@ -14,7 +14,7 @@
   {
     "path": "dist/index.js",
     "import": "{ SelectRoot, SelectTrigger, SelectContent, SelectItem, SelectViewport, SelectPortal }",
-    "limit": "35.8 KB",
+    "limit": "35.9 KB",
     "name": "Select"
   },
   {
@@ -62,7 +62,7 @@
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, dialogElements }",
-    "limit": "27.1 KB",
+    "limit": "27.2 KB",
     "name": "Elements: Dialog"
   },
   {
@@ -74,7 +74,7 @@
   {
     "path": "dist/index.js",
     "import": "*",
-    "limit": "192.3 KB",
+    "limit": "192.1 KB",
     "name": "Full library"
   }
 ]
