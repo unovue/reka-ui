@@ -465,3 +465,44 @@ describe('given a trapped FocusScope inside a shadow root', () => {
     expect(getActiveElement()).toBe(shadowRoot.querySelector('form'))
   })
 })
+
+describe('given a trapped FocusScope rendered in an iframe', () => {
+  let iframe: HTMLIFrameElement
+
+  afterEach(() => {
+    iframe.remove()
+  })
+
+  it('reads the iframe\'s focus, not the top document\'s, when a removal leaves its last focused element stale', async () => {
+    iframe = document.body.appendChild(document.createElement('iframe'))
+    const frameDocument = iframe.contentDocument!
+    const target = frameDocument.body.appendChild(frameDocument.createElement('div'))
+    render(defineComponent({
+      components: { FocusScope },
+      template: `
+        <FocusScope as-child trapped>
+          <form data-testid="frame-scope"><input name="one" /><input name="two" /></form>
+        </FocusScope>`,
+    }), { container: target })
+    await nextTick()
+    await nextTick()
+    const one = frameDocument.querySelector<HTMLInputElement>('input[name="one"]')!
+    const two = frameDocument.querySelector<HTMLInputElement>('input[name="two"]')!
+    one.focus()
+
+    // Another scope pauses the trap, so its last focused element goes stale.
+    const outer = render(defineComponent({
+      components: { FocusScope },
+      template: `<FocusScope><button>outer</button></FocusScope>`,
+    }))
+    await nextTick()
+    await nextTick()
+    two.focus()
+    expect(frameDocument.activeElement).toBe(two)
+
+    one.remove()
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(frameDocument.activeElement).toBe(two)
+    outer.unmount()
+  })
+})

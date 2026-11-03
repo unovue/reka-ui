@@ -147,7 +147,7 @@ export function useFocusScope(options: UseFocusScopeOptions) {
       // window — e.g. a view swapped in by the popper's `select` handler focusing its own
       // input on mount — would be robbed of focus.
       // -- related: https://github.com/unovue/reka-ui/issues/2886
-      const activeElement = getActiveElement()
+      const activeElement = getActiveElement(container)
       if (activeElement && containsComposed(container, activeElement))
         return
 
@@ -199,7 +199,7 @@ export function useFocusScope(options: UseFocusScopeOptions) {
 
     if (!mountEvent.defaultPrevented) {
       focusFirst(getTabbableCandidates(container), { select: true })
-      if (getActiveElement() === previouslyFocusedElement)
+      if (getActiveElement(container) === previouslyFocusedElement)
         focus(container)
     }
   }
@@ -216,7 +216,7 @@ export function useFocusScope(options: UseFocusScopeOptions) {
     // watcher below adds/removes it as it becomes visible.
     if (present() !== false)
       focusScopesStack.add(focusScope)
-    const previouslyFocusedElement = getActiveElement() as HTMLElement | null
+    const previouslyFocusedElement = getActiveElement(container) as HTMLElement | null
     const hasFocusedCandidate = containsComposed(container, previouslyFocusedElement)
 
     // When force-mounted while closed (e.g. Dialog `unmountOnHide: false`), the
@@ -282,7 +282,7 @@ export function useFocusScope(options: UseFocusScopeOptions) {
     if (!container)
       return
 
-    const previouslyFocusedElement = getActiveElement() as HTMLElement | null
+    const previouslyFocusedElement = getActiveElement(container) as HTMLElement | null
     if (!containsComposed(container, previouslyFocusedElement))
       dispatchMountAutoFocus(container, previouslyFocusedElement)
   })
@@ -295,10 +295,10 @@ export function useFocusScope(options: UseFocusScopeOptions) {
 
     const isTabKey
       = event.key === 'Tab' && !event.altKey && !event.ctrlKey && !event.metaKey
-    const focusedElement = getActiveElement() as HTMLElement | null
+    const container = event.currentTarget as HTMLElement
+    const focusedElement = getActiveElement(container) as HTMLElement | null
 
     if (isTabKey && focusedElement) {
-      const container = event.currentTarget as HTMLElement
       const [first, last] = getTabbableEdges(container)
       const hasTabbableElementsInside = first && last
 
