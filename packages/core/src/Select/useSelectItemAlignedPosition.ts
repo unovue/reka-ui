@@ -226,6 +226,9 @@ export function useSelectItemAlignedPosition(options: UseSelectItemAlignedPositi
   watch(contentWrapperElement, async (wrapper) => {
     if (!wrapper)
       return
+    // A new wrapper (`position` switched back to item-aligned) starts over.
+    shouldExpandOnScrollRef.value = false
+    shouldRepositionRef.value = true
     await nextTick()
     position()
     if (contentElement.value)

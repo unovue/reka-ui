@@ -178,7 +178,7 @@ const { content: surface, contentContext, isPositioned } = useSelectContent({
   context: rootContext,
   contentElement: content as unknown as Ref<HTMLElement | undefined>,
   getItems,
-  position: props.position,
+  position: () => props.position,
   loop: () => props.loop,
 })
 
@@ -206,6 +206,13 @@ const focusScopeWrapper = computed(() => splitWrapperAttrs(mergeProps(instance.p
   present: present.value,
   onMountAutoFocus: (event: Event) => event.preventDefault(),
   onUnmountAutoFocus: (event: Event) => {
+    // A `position` change swaps the element under the open content: the scope
+    // leaves the old one, focus stays with the content (the new mode focuses
+    // the selected item once positioned) and nothing closed.
+    if (content.value && content.value !== event.target) {
+      event.preventDefault()
+      return
+    }
     emits('closeAutoFocus', event)
     if (event.defaultPrevented)
       return

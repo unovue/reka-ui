@@ -249,7 +249,10 @@ export function useFocusScope(options: UseFocusScopeOptions) {
         // we need to remove the listener after we `dispatchEvent`
         container.removeEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)
 
-        focusScopesStack.remove(focusScope)
+        // Not when the scope moved to another element (its part re-rendered
+        // one): it joined the stack again there.
+        if (!element.value || element.value === container)
+          focusScopesStack.remove(focusScope)
         container.removeAttribute('data-focus-scope-unmounting')
       }, 0)
     })

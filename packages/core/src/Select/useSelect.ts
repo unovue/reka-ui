@@ -881,8 +881,12 @@ export interface UseSelectContentOptions<T = AcceptableValue> {
   contentElement: Ref<HTMLElement | undefined>
   /** The rendered items in DOM order (the SFC injects `useCollection().getItems`). */
   getItems: () => Array<{ ref: HTMLElement, value?: any }>
-  /** @defaultValue `'item-aligned'` */
-  position?: 'item-aligned' | 'popper'
+  /**
+   * Changing it while open re-renders the items in the other mode: the
+   * selected item is tracked afresh and focused once the content is positioned.
+   * @defaultValue `'item-aligned'`
+   */
+  position?: MaybeRefOrGetter<'item-aligned' | 'popper' | undefined>
   /** When `true`, keyboard navigation loops from the last item to the first, and vice versa. @defaultValue `false` */
   loop?: MaybeRefOrGetter<boolean | undefined>
 }
@@ -927,10 +931,26 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
       focusFirst([selectedItem.value, contentElement.value])
   }
 
-  watch(isPositioned, () => {
+  const position = () => toValue(options.position) ?? 'item-aligned'
+
+  watch(isPositioned, (positioned) => {
+    if (!positioned)
+      return
     // Through the context: `SelectVirtualizer` replaces it to reach a selected
     // item whose row is not rendered.
     contentContext.focusSelectedItem?.()
+  })
+
+  // A `position` change renders the items again in the other mode, under a new
+  // content element. Before that render, forget the old items, so the new ones
+  // register as on an open, and focus the selected one once the new mode has
+  // positioned the content.
+  watch(position, () => {
+    firstValidItemFound = false
+    firstSelectedItemInArrayFound = false
+    selectedItem.value = undefined
+    selectedItemText.value = undefined
+    isPositioned.value = false
   })
 
   // prevent selecting items on `pointerup` in some cases after opening from `pointerdown`
@@ -1085,7 +1105,9 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
         selectedItemText.value = node
     },
     focusSelectedItem,
-    position: options.position ?? 'item-aligned',
+    get position() {
+      return position()
+    },
     isPositioned,
     searchRef: search,
     loop: () => !!toValue(options.loop),
