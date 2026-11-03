@@ -83,12 +83,12 @@ export function useFocusScope(options: UseFocusScopeOptions) {
     const root = getRootNode(container)
     const ownerDocument = getOwnerDocument(container)
 
-    // Focus back to the last element focused inside, or to the container when
-    // that element is no longer in it (an as-child part re-rendered its element,
-    // e.g. a keyed child, under the open scope).
+    // Focus back to the last element focused inside, or, when that element is
+    // no longer in it (the part re-rendered its element under the open scope),
+    // to the first tabbable one, else the container.
     function recall() {
       const last = lastFocusedElementRef.value
-      focus(last && container && !containsComposed(container, last) ? container : last, { select: true })
+      focus(last && container && !containsComposed(container, last) ? getTabbableCandidates(container)[0] ?? container : last, { select: true })
     }
 
     function handleFocusIn(event: FocusEvent) {
@@ -212,19 +212,30 @@ export function useFocusScope(options: UseFocusScopeOptions) {
     }
   }
 
+  // Where focus returns when the scope unmounts. A part that re-renders its
+  // element while the scope is open (an `as` change, a keyed as-child child)
+  // swaps the scope's element: the scope stays mounted and in the stack, keeps
+  // this, and fires neither auto-focus event for the old element.
+  let restoreFocusTo: HTMLElement | null = null
+  let isSwap = false
+
   watchEffect(async (cleanupFn) => {
     const container = element.value
 
     await nextTick()
     if (!container)
       return
+    const swapped = isSwap
+    isSwap = false
     // A scope that mounts hidden (`present: false`, e.g. a closed Dialog with
     // `unmountOnHide: false`) must stay out of the scope stack: adding it would
     // pause the currently active scope and break its focus trap. The `present`
     // watcher below adds/removes it as it becomes visible.
-    if (present() !== false)
+    if (!swapped && present() !== false)
       focusScopesStack.add(focusScope)
     const previouslyFocusedElement = getActiveElement() as HTMLElement | null
+    if (!swapped)
+      restoreFocusTo = previouslyFocusedElement
     const hasFocusedCandidate = containsComposed(container, previouslyFocusedElement)
 
     // When force-mounted while closed (e.g. Dialog `unmountOnHide: false`), the
@@ -235,10 +246,18 @@ export function useFocusScope(options: UseFocusScopeOptions) {
     // NOTE: `present()` must stay read *after* the `await` above so this
     // effect does not track it — re-running on `present` changes would dispatch
     // the unmount auto-focus cleanup below on every close.
-    if (!hasFocusedCandidate && present() !== false)
+    // After a swap, only focus lost with the old element moves into the new one
+    // (not focus in a nested layer).
+    const isFocusLost = !previouslyFocusedElement || previouslyFocusedElement === getOwnerDocument(container).body
+    if (!hasFocusedCandidate && present() !== false && (!swapped || isFocusLost))
       dispatchMountAutoFocus(container, previouslyFocusedElement)
 
     cleanupFn(() => {
+      if (element.value && element.value !== container) {
+        isSwap = true
+        return
+      }
+      const previouslyFocusedElement = restoreFocusTo
       const unmountEvent = new CustomEvent(AUTOFOCUS_ON_UNMOUNT, EVENT_OPTIONS)
       const unmountEventHandler = (ev: Event) => {
         options.onUnmountAutoFocus?.(ev)
@@ -257,10 +276,7 @@ export function useFocusScope(options: UseFocusScopeOptions) {
         // we need to remove the listener after we `dispatchEvent`
         container.removeEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)
 
-        // Not when the scope moved to another element (its part re-rendered
-        // one): it joined the stack again there.
-        if (!element.value || element.value === container)
-          focusScopesStack.remove(focusScope)
+        focusScopesStack.remove(focusScope)
         container.removeAttribute('data-focus-scope-unmounting')
       }, 0)
     })

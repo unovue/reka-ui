@@ -206,13 +206,6 @@ const focusScopeWrapper = computed(() => splitWrapperAttrs(mergeProps(instance.p
   present: present.value,
   onMountAutoFocus: (event: Event) => event.preventDefault(),
   onUnmountAutoFocus: (event: Event) => {
-    // A `position` change swaps the element under the open content: the scope
-    // leaves the old one, focus stays with the content (the new mode focuses
-    // the selected item once positioned) and nothing closed.
-    if (content.value && content.value !== event.target) {
-      event.preventDefault()
-      return
-    }
     emits('closeAutoFocus', event)
     if (event.defaultPrevented)
       return
