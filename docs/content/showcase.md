@@ -85,6 +85,11 @@ projects:
     url: https://zeal.tools/
     image: /showcase/zeal.png
 
+  - title: Knovum
+    description: Local-first AI knowledge workspace on an infinite 2D canvas with on-device models and JSON Canvas.
+    url: https://github.com/madebyzan/knovum
+    image: https://raw.githubusercontent.com/madebyzan/knovum/main/docs/assets/readme/social-preview.jpg
+
 starters:
   - title: shadcn-docs
     description: A Nuxt content docs theme built with `shadcn-vue`
