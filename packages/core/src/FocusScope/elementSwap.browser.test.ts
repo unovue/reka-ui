@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { DialogContent, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from '@/Dialog'
@@ -57,42 +57,64 @@ describe('given a trapped focus scope whose as-child element is swapped while op
 })
 
 // The content's element is replaced while the scope stays mounted (its `as`
-// changed). That is not an unmount: focus does not go back to the trigger and
-// no close auto-focus runs; the focus the swap lost lands on the first
-// tabbable in the new element, not on the element itself.
+// changed). That is neither an open nor a close: no auto-focus event fires (so
+// a consumer that prevents the open auto-focus cannot leave focus on the body
+// inside the open trap), focus does not go back to the trigger, and the focus
+// the swap lost lands on the first tabbable in the new element. A later real
+// close fires `closeAutoFocus` once.
 describe('given a trapped focus scope whose element changes while open', () => {
   for (const kind of ['dialog', 'popover'] as const) {
-    it(`focuses the first tabbable in the new element, ${kind}`, async () => {
-      const as = ref('div')
-      const onCloseAutoFocus = vi.fn()
-      const focusTrace: string[] = []
-      const onFocusIn = (event: FocusEvent) => focusTrace.push((event.target as HTMLElement).dataset.testid ?? '')
-      const content = () => [h('button', { 'data-testid': 'first' }, 'First'), h('button', { 'data-testid': 'second' }, 'Second')]
-      const wrapper = mount(defineComponent({
-        setup: () => () => kind === 'dialog'
-          ? h(DialogRoot, { defaultOpen: true }, () => [
-              h(DialogTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
-              h(DialogPortal, () => h(DialogContent, { 'data-testid': 'content', 'as': as.value, 'aria-describedby': undefined, onCloseAutoFocus }, () => [h(DialogTitle, () => 'Title'), ...content()])),
-            ])
-          : h(PopoverRoot, { defaultOpen: true }, () => [
-              h(PopoverTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
-              h(PopoverPortal, () => h(PopoverContent, { 'data-testid': 'content', 'as': as.value, 'trapFocus': true, onCloseAutoFocus }, content)),
-            ]),
-      }), { attachTo: document.body })
-      unmount = () => wrapper.unmount()
-      await expect.poll(() => document.activeElement?.getAttribute('data-testid')).toBe('first')
-      $('second')!.focus()
-      await wait(50)
+    for (const prevent of [false, true]) {
+      it(`moves the lost focus to the first tabbable without auto-focus events, ${kind}${prevent ? ', open auto-focus prevented' : ''}`, async () => {
+        const as = ref('div')
+        const open = ref(true)
+        const events: string[] = []
+        const listeners = {
+          'onOpenAutoFocus': (event: Event) => {
+            events.push('open')
+            if (prevent)
+              event.preventDefault()
+          },
+          'onCloseAutoFocus': () => events.push('close'),
+          'onUpdate:open': (value: boolean) => (open.value = value),
+        }
+        const focusTrace: string[] = []
+        const onFocusIn = (event: FocusEvent) => focusTrace.push((event.target as HTMLElement).dataset.testid ?? '')
+        const content = () => [h('button', { 'data-testid': 'first' }, 'First'), h('button', { 'data-testid': 'second' }, 'Second')]
+        const wrapper = mount(defineComponent({
+          setup: () => () => kind === 'dialog'
+            ? h(DialogRoot, { 'open': open.value, 'onUpdate:open': listeners['onUpdate:open'] }, () => [
+                h(DialogTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
+                h(DialogPortal, () => h(DialogContent, { 'data-testid': 'content', 'as': as.value, 'aria-describedby': undefined, 'onOpenAutoFocus': listeners.onOpenAutoFocus, 'onCloseAutoFocus': listeners.onCloseAutoFocus }, () => [h(DialogTitle, () => 'Title'), ...content()])),
+              ])
+            : h(PopoverRoot, { 'open': open.value, 'onUpdate:open': listeners['onUpdate:open'] }, () => [
+                h(PopoverTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
+                h(PopoverPortal, () => h(PopoverContent, { 'data-testid': 'content', 'as': as.value, 'trapFocus': true, 'onOpenAutoFocus': listeners.onOpenAutoFocus, 'onCloseAutoFocus': listeners.onCloseAutoFocus }, content)),
+              ]),
+        }), { attachTo: document.body })
+        unmount = () => wrapper.unmount()
+        await expect.poll(() => !!$('content')).toBe(true)
+        await wait(50)
+        expect(events).toEqual(['open'])
+        $('second')!.focus()
+        await wait(50)
 
-      document.addEventListener('focusin', onFocusIn, true)
-      as.value = 'section'
-      await expect.poll(() => $('content')?.tagName).toBe('SECTION')
-      await expect.poll(() => document.activeElement?.getAttribute('data-testid')).toBe('first')
-      await wait(50)
-      document.removeEventListener('focusin', onFocusIn, true)
-      expect(document.activeElement?.getAttribute('data-testid')).toBe('first')
-      expect(focusTrace).not.toContain('trigger')
-      expect(onCloseAutoFocus).not.toHaveBeenCalled()
-    })
+        document.addEventListener('focusin', onFocusIn, true)
+        as.value = 'section'
+        await expect.poll(() => $('content')?.tagName).toBe('SECTION')
+        await expect.poll(() => document.activeElement?.getAttribute('data-testid')).toBe('first')
+        await wait(50)
+        document.removeEventListener('focusin', onFocusIn, true)
+        expect(document.activeElement?.getAttribute('data-testid')).toBe('first')
+        expect(focusTrace).not.toContain('trigger')
+        expect(events).toEqual(['open'])
+
+        await userEvent.keyboard('{Escape}')
+        await expect.poll(() => $('content')).toBeNull()
+        await wait(50)
+        expect(events).toEqual(['open', 'close'])
+        expect(document.activeElement?.getAttribute('data-testid')).toBe('trigger')
+      })
+    }
   }
 })

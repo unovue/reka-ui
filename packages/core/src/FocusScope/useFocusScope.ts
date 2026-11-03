@@ -246,11 +246,18 @@ export function useFocusScope(options: UseFocusScopeOptions) {
     // NOTE: `present()` must stay read *after* the `await` above so this
     // effect does not track it — re-running on `present` changes would dispatch
     // the unmount auto-focus cleanup below on every close.
-    // After a swap, only focus lost with the old element moves into the new one
-    // (not focus in a nested layer).
-    const isFocusLost = !previouslyFocusedElement || previouslyFocusedElement === getOwnerDocument(container).body
-    if (!hasFocusedCandidate && present() !== false && (!swapped || isFocusLost))
+    if (swapped) {
+      // A swap is neither an open nor a close: no auto-focus event, so no
+      // consumer can prevent it. Only focus lost with the old element (not
+      // focus in a nested layer) moves into the new one: its first tabbable,
+      // else the container.
+      const isFocusLost = !previouslyFocusedElement || previouslyFocusedElement === getOwnerDocument(container).body
+      if (isFocusLost && present() !== false)
+        focus(getTabbableCandidates(container)[0] ?? container, { select: true })
+    }
+    else if (!hasFocusedCandidate && present() !== false) {
       dispatchMountAutoFocus(container, previouslyFocusedElement)
+    }
 
     cleanupFn(() => {
       if (element.value && element.value !== container) {
