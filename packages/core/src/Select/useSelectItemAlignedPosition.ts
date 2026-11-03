@@ -2,7 +2,7 @@ import type { Ref } from 'vue'
 import type { SelectContentContext } from './SelectContentImpl.vue'
 import type { SelectRootContext } from './SelectRoot.vue'
 import { useResizeObserver } from '@vueuse/core'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { clamp, createContext } from '@/shared'
 import { CONTENT_MARGIN } from './utils'
 
@@ -41,6 +41,11 @@ export function useSelectItemAlignedPosition(options: UseSelectItemAlignedPositi
   const { rootContext, contentContext, contentElement, getItems } = options
 
   const shouldExpandOnScrollRef = ref(false)
+  // The frame that turns "expand on scroll" on after a placement: cancelled
+  // when a new placement or wrapper starts over, so an earlier one cannot turn
+  // it on during the next placement's initial scroll.
+  let expandOnScrollFrame = 0
+  onScopeDispose(() => cancelAnimationFrame(expandOnScrollFrame))
   const shouldRepositionRef = ref(true)
 
   const contentWrapperElement = ref<HTMLElement>()
@@ -170,6 +175,8 @@ export function useSelectItemAlignedPosition(options: UseSelectItemAlignedPositi
 
       if (willAlignWithoutTopOverflow) {
         const isLastItem = selectedItem.value === items.at(-1)
+        // A placement on the same wrapper may have anchored it at the top.
+        contentWrapperElement.value.style.top = ''
         contentWrapperElement.value.style.bottom = `${0}px`
         const viewportOffsetBottom
           = contentElement.value.clientHeight
@@ -188,6 +195,7 @@ export function useSelectItemAlignedPosition(options: UseSelectItemAlignedPositi
       }
       else {
         const isFirstItem = selectedItem.value === items[0]
+        contentWrapperElement.value.style.bottom = ''
         contentWrapperElement.value.style.top = `${0}px`
         const clampedTopEdgeToTriggerMiddle = Math.max(
           topEdgeToTriggerMiddle,
@@ -214,7 +222,8 @@ export function useSelectItemAlignedPosition(options: UseSelectItemAlignedPositi
 
       // we don't want the initial scroll position adjustment to trigger "expand on scroll"
       // so we explicitly turn it on only after they've registered.
-      requestAnimationFrame(() => (shouldExpandOnScrollRef.value = true))
+      cancelAnimationFrame(expandOnScrollFrame)
+      expandOnScrollFrame = requestAnimationFrame(() => (shouldExpandOnScrollRef.value = true))
     }
   }
 
@@ -227,6 +236,7 @@ export function useSelectItemAlignedPosition(options: UseSelectItemAlignedPositi
     if (!wrapper)
       return
     // A new wrapper (`position` switched back to item-aligned) starts over.
+    cancelAnimationFrame(expandOnScrollFrame)
     shouldExpandOnScrollRef.value = false
     shouldRepositionRef.value = true
     await nextTick()

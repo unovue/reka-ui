@@ -128,3 +128,36 @@ describe('given an open Select whose items change', () => {
     })
   }
 })
+
+// The wrapper is placed again on the same element (a trigger resize here): a
+// placement anchored at the bottom after one anchored at the top drops the
+// earlier `top`, which would otherwise win over `bottom`.
+describe('given an item-aligned Select placed again from the other edge', () => {
+  it('keeps the selected item over the trigger', async () => {
+    const top = ref(10)
+    const width = ref(160)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(SelectRoot, { defaultValue: 'Lemon' }, () => [
+        h(SelectTrigger, { 'data-testid': 'trigger', 'style': `position: fixed; left: 100px; top: ${top.value}px; width: ${width.value}px; height: 32px` }, () => h(SelectValue)),
+        h(SelectPortal, () => h(SelectContent, { position: 'item-aligned', style: 'background: white' }, () =>
+          h(SelectViewport, () => fruits.map(value => h(SelectItem, { value, style: 'height: 24px' }, () => h(SelectItemText, () => value)))))),
+      ]),
+    }), { attachTo: document.body })
+    unmount = () => wrapper.unmount()
+    const offset = () => {
+      const trigger = document.querySelector<HTMLElement>('[data-testid=trigger]')!.getBoundingClientRect()
+      const item = [...document.querySelectorAll<HTMLElement>('[role=option]')].find(option => option.textContent === 'Lemon')!.getBoundingClientRect()
+      return Math.abs(item.top + item.height / 2 - (trigger.top + trigger.height / 2))
+    }
+    await userEvent.click(document.querySelector<HTMLElement>('[data-testid=trigger]')!)
+    await expect.poll(focused).toBe('Lemon')
+    await wait(100)
+    // Near the top of the viewport, Lemon (last) cannot sit over the trigger
+    // with the content anchored at the bottom: it is anchored at the top.
+    // Moved down and resized, it is placed again, anchored at the bottom.
+    top.value = 400
+    width.value = 180
+    await wait(200)
+    expect(offset()).toBeLessThan(4)
+  })
+})
