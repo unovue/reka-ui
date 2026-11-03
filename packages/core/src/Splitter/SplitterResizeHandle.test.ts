@@ -118,9 +118,10 @@ describe('resize handle keyboard behavior after remount (issue #3126)', () => {
     handle.element.dispatchEvent(enter)
     await nextTick()
 
-    // Enter collapses the collapsible panel, which emits a new layout.
+    // Enter collapses the collapsible panel to its collapsed size (0 by default).
     expect(enter.defaultPrevented).toBe(true)
-    expect(layout.value).not.toEqual([])
+    expect(layout.value[0]).toBe(0)
+    expect(handle.attributes('aria-valuenow')).toBe('0')
   })
 })
 
