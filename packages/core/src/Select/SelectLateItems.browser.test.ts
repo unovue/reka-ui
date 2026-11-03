@@ -16,14 +16,14 @@ afterEach(() => {
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 const focused = () => document.activeElement?.textContent
 
-function mountSelect(position: 'item-aligned' | 'popper', defaultValue?: string, withInput = false) {
-  const items = ref<string[]>([])
+function mountSelect(position: 'item-aligned' | 'popper', defaultValue?: string, withInput = false, initial: string[] = [], disabled = ref(false)) {
+  const items = ref<string[]>(initial)
   const wrapper = mount(defineComponent({
     setup: () => () => h(SelectRoot, { defaultValue }, () => [
       h(SelectTrigger, { 'data-testid': 'trigger', 'style': 'width: 160px; height: 32px; margin: 200px 100px' }, () => h(SelectValue, { placeholder: 'Pick' })),
       h(SelectPortal, () => h(SelectContent, { position, style: 'background: white' }, () => [
         withInput ? h('input', { 'data-testid': 'search', 'aria-label': 'Search' }) : null,
-        h(SelectViewport, () => items.value.map(value => h(SelectItem, { value, style: 'height: 24px' }, () => h(SelectItemText, () => value)))),
+        h(SelectViewport, () => items.value.map(value => h(SelectItem, { key: value, value, disabled: disabled.value, style: 'height: 24px' }, () => h(SelectItemText, () => value)))),
       ])),
     ]),
   }), { attachTo: document.body })
@@ -60,6 +60,56 @@ describe('given a Select whose items arrive after it opened', () => {
       await expect.poll(() => document.querySelectorAll('[role=option]').length).toBe(5)
       await wait(100)
       expect(document.activeElement?.getAttribute('data-testid')).toBe('search')
+    })
+  }
+})
+
+async function open() {
+  await userEvent.click(document.querySelector<HTMLElement>('[data-testid=trigger]')!)
+  await expect.poll(() => !!document.querySelector('[role=listbox]')).toBe(true)
+  await wait(100)
+}
+
+// While open, focus that was lost (on the body or the content itself) goes to
+// the selected item, else the first enabled one, as soon as one is available;
+// a focus the content itself put on a fallback item moves to the selected item
+// once it arrives.
+describe('given an open Select whose items change', () => {
+  for (const position of ['item-aligned', 'popper'] as const) {
+    it(`moves focus to the selected item when it arrives in a later batch, ${position}`, async () => {
+      const items = mountSelect(position, 'Lemon')
+      await open()
+      items.value = ['Apple', 'Banana']
+      await expect.poll(focused).toBe('Apple')
+      items.value = fruits
+      await expect.poll(focused).toBe('Lemon')
+      if (position === 'item-aligned') {
+        // Placed against the selected item: it sits over the trigger.
+        const trigger = document.querySelector<HTMLElement>('[data-testid=trigger]')!.getBoundingClientRect()
+        const item = document.activeElement!.getBoundingClientRect()
+        expect(Math.abs(item.top + item.height / 2 - (trigger.top + trigger.height / 2))).toBeLessThan(16)
+      }
+    })
+
+    it(`focuses an item again when the list is replaced, or emptied and refilled, ${position}`, async () => {
+      const items = mountSelect(position, 'Cherry', false, fruits)
+      await open()
+      await expect.poll(focused).toBe('Cherry')
+      items.value = ['Kiwi', 'Mango']
+      await expect.poll(focused).toBe('Kiwi')
+      items.value = []
+      await nextTick()
+      items.value = fruits
+      await expect.poll(focused).toBe('Cherry')
+    })
+
+    it(`focuses the first item once the disabled items are enabled, ${position}`, async () => {
+      const disabled = ref(true)
+      const items = mountSelect(position, undefined, false, fruits, disabled)
+      await open()
+      expect(items.value).toHaveLength(5)
+      disabled.value = false
+      await expect.poll(focused).toBe('Apple')
     })
   }
 })

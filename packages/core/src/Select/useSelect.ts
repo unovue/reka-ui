@@ -933,44 +933,75 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
 
   const position = () => toValue(options.position) ?? 'item-aligned'
 
-  // Items that register once the content is already open (they arrive late,
-  // e.g. loaded on open) are focused as on an open, once there are some and the
-  // content is positioned, but not over a focus the user already moved inside
-  // the content. `isOpenSettled` turns true a tick after the content element
-  // renders, past the mount of the items it opened with.
-  let isOpenSettled = false
-  let hasLateItems = false
+  // While open, focus stays on an item. The content focuses the selected (or
+  // first) item once positioned. When focus is lost afterwards (the focused
+  // item was removed or the list replaced, items arrived only after the content
+  // opened, every item was disabled) and a valid item becomes available, it
+  // focuses the selected one, else the first: when focus is on the body, the
+  // trigger or the content itself, never over an item or other element the user
+  // focused. When the selected item arrives while focus is still on the first
+  // item the content fell back to, focus moves to it, and an item-aligned
+  // content is placed against it.
+  const isOpenSettled = ref(false)
+  let autoFocused: Element | null = null
+  let isWaitingForPosition = false
   watch(contentElement, (element) => {
-    isOpenSettled = hasLateItems = false
+    isOpenSettled.value = false
+    autoFocused = null
+    // A tick after the content renders, past the mount of the items it opened with.
     if (element)
-      nextTick(() => isOpenSettled = !!contentElement.value)
+      nextTick(() => isOpenSettled.value = !!contentElement.value)
   }, { flush: 'post' })
 
-  function focusLateItem() {
-    const active = getActiveElement()
-    const element = contentElement.value
-    if (!element || (active && active !== element && containsComposed(element, active)))
-      return
+  function focusItem() {
+    // Through the context: `SelectVirtualizer` replaces it to reach a selected
+    // item whose row is not rendered.
     contentContext.focusSelectedItem?.()
+    autoFocused = getActiveElement()
   }
 
-  watch(selectedItem, (item, prev) => {
-    if (!item || prev || !isOpenSettled || !context.open.value)
+  const isSelectedElement = (element: Element) => element.getAttribute('aria-selected') === 'true'
+
+  function refocus() {
+    const element = contentElement.value
+    // A virtualizer renders a window of the items and keeps the focus in it itself.
+    if (!element || !context.open.value || contentContext.onVirtualKeydown)
       return
-    hasLateItems = true
-    // Positioned already (popper): focus once the rest have registered.
+    const active = getActiveElement()
+    const isLost = !active || active === element || active === active.ownerDocument.body || active === context.triggerElement.value
+    const items = getItems().map(item => item.ref)
+    const target = items.find(isSelectedElement) ?? items[0]
+    if (!target || target === active)
+      return
+    const isOnFallback = !!active && active === autoFocused && !isSelectedElement(active) && isSelectedElement(target)
+    if (!isLost && !isOnFallback)
+      return
+    if (target !== selectedItem.value) {
+      selectedItem.value = target
+      const textId = target.getAttribute('aria-labelledby')
+      selectedItemText.value = (textId && (target.getRootNode() as Document | ShadowRoot).getElementById?.(textId)) || undefined
+    }
+    if (!isPositioned.value || isOnFallback)
+      contentContext.reposition?.()
     if (isPositioned.value)
-      nextTick(focusLateItem)
-  }, { flush: 'sync' })
+      focusItem()
+    else
+      isWaitingForPosition = true
+  }
+
+  watch(() => isOpenSettled.value && context.open.value ? getItems() : undefined, (items) => {
+    if (items)
+      refocus()
+  }, { flush: 'post' })
 
   watch(isPositioned, (positioned) => {
     if (!positioned)
       return
-    if (hasLateItems)
-      return focusLateItem()
-    // Through the context: `SelectVirtualizer` replaces it to reach a selected
-    // item whose row is not rendered.
-    contentContext.focusSelectedItem?.()
+    if (isWaitingForPosition) {
+      isWaitingForPosition = false
+      return refocus()
+    }
+    focusItem()
   })
 
   // A `position` change renders the items again in the other mode, under a new
@@ -983,6 +1014,7 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
     selectedItem.value = undefined
     selectedItemText.value = undefined
     isPositioned.value = false
+    isWaitingForPosition = false
   })
 
   // prevent selecting items on `pointerup` in some cases after opening from `pointerdown`

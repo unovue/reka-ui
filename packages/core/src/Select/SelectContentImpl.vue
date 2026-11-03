@@ -40,6 +40,11 @@ export interface SelectContentContext {
    * Returns `true` when it handled the key.
    */
   onVirtualKeydown?: (event: KeyboardEvent, intent: string | null | undefined) => boolean
+  /**
+   * Set by the item-aligned position: places the content against the
+   * selected item again (after it changed while open).
+   */
+  reposition?: () => void
   /** Whether keyboard navigation loops (the content's `loop`). */
   loop?: () => boolean
   /**
