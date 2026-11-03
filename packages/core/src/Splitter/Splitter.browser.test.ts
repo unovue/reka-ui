@@ -56,3 +56,36 @@ describe('given a Splitter with a layer stacked above its resize handle, in a re
     expect(globalCursor()).not.toBe('ew-resize')
   })
 })
+
+describe('given a Splitter in a shadow root inside an iframe, in a real browser', () => {
+  it('takes the pointer over its resize handle', async () => {
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'width: 400px; height: 200px; border: 0;'
+    document.body.appendChild(iframe)
+    const frameDocument = iframe.contentDocument!
+    const host = frameDocument.createElement('div')
+    frameDocument.body.appendChild(host)
+    const container = frameDocument.createElement('div')
+    host.attachShadow({ mode: 'open' }).appendChild(container)
+
+    mount(() => h(SplitterGroup, { direction: 'horizontal', style: 'height: 200px;' }, () => [
+      h(SplitterPanel, { defaultSize: 50 }, () => 'Left'),
+      h(SplitterResizeHandle, { 'data-testid': 'handle', 'style': 'width: 4px;' }),
+      h(SplitterPanel, { defaultSize: 50 }, () => 'Right'),
+    ]), { attachTo: container })
+
+    // userEvent can't reach into an iframe, so dispatch the move from inside the shadow root.
+    // The registry sees the event retargeted to the host, and comparing the host's stacking order
+    // with the handle's must walk out of a shadow root that belongs to the iframe's realm.
+    const handle = container.querySelector<HTMLElement>('[data-testid="handle"]')!
+    const { left, top } = handle.getBoundingClientRect()
+    handle.dispatchEvent(new frameDocument.defaultView!.MouseEvent('mousemove', {
+      bubbles: true,
+      composed: true,
+      clientX: left + 1,
+      clientY: top + 10,
+    }))
+
+    await expect.poll(() => handle.getAttribute('data-state')).toBe('hover')
+  })
+})

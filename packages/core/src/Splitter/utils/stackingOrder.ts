@@ -139,6 +139,8 @@ function getAncestors(node: Element) {
 
 /** @param {Element} node */
 function getParent(node: Element) {
+  // Check nodeType rather than `instanceof DocumentFragment`: a shadow root in an iframe or a
+  // popup window belongs to another realm
   // @ts-expect-error host should exist
-  return (node.parentNode instanceof DocumentFragment && node.parentNode?.host) || node.parentNode
+  return (node.parentNode?.nodeType === Node.DOCUMENT_FRAGMENT_NODE && node.parentNode.host) || node.parentNode
 }
