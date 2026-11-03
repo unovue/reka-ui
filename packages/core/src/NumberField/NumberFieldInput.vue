@@ -9,7 +9,7 @@ export interface NumberFieldInputProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
 import { createNumberFieldInputSurface } from './useNumberField'
 
 withDefaults(defineProps<NumberFieldInputProps>(), {
@@ -28,12 +28,16 @@ onMounted(() => {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAsEmpty(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="input.attrs.value"
   >
-    <slot />
-  </Primitive>
+    <template
+      v-if="rendersChildren(as, asChild)"
+      #default
+    >
+      <slot />
+    </template>
+  </component>
 </template>

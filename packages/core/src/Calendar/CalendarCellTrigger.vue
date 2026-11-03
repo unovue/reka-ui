@@ -30,8 +30,9 @@ export interface CalendarCellTriggerSlot {
 </script>
 
 <script setup lang="ts">
+import type { Component } from 'vue'
 import { h } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { hasSlotContent } from '@/shared/renderOutlet'
 import { injectCalendarGridContext } from './CalendarGrid.vue'
@@ -86,7 +87,7 @@ function renderContent() {
 }
 
 function renderRoot() {
-  return h(Primitive, { ref: forwardRef, as: props.as, asChild: props.asChild, ...surface.attrs.value }, { default: renderContent })
+  return h(renderAs(props.as, props.asChild) as Component, { ref: forwardRef, ...surface.attrs.value }, { default: renderContent })
 }
 </script>
 

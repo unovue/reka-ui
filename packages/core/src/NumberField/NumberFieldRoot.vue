@@ -78,7 +78,7 @@ export const [injectNumberFieldRootContext, provideNumberFieldRootContext] = cre
 
 <script setup lang="ts">
 import { mergeProps, toRef } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useNumberField } from './useNumberField'
 
@@ -127,11 +127,10 @@ provideNumberFieldRootContext(context)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     v-bind="mergeProps($attrs, root.attrs.value)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
   >
     <slot
       :model-value="modelValue"
@@ -148,5 +147,5 @@ provideNumberFieldRootContext(context)
       :readonly="readonly"
       :required="required"
     />
-  </Primitive>
+  </component>
 </template>

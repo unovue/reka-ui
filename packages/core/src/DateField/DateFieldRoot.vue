@@ -89,7 +89,8 @@ export const [injectDateFieldRootContext, provideDateFieldRootContext]
 <script setup lang="ts">
 import { computed, mergeProps, onBeforeUnmount, onMounted, ref, toRefs, useAttrs, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field'
-import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { usePrimitiveElement } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useDateField } from './useDateField'
 
@@ -286,11 +287,10 @@ defineExpose(mergeExpose(expose, {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     v-bind="getRootAttrs()"
     ref="primitiveElement"
-    :as="as"
-    :as-child="asChild"
     @focusin="handleFocusin"
     @focusout="handleFocusout"
   >
@@ -316,5 +316,5 @@ defineExpose(mergeExpose(expose, {
       :min="inputMinValue"
       @focus="focusFirstSegment"
     />
-  </Primitive>
+  </component>
 </template>

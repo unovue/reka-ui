@@ -17,7 +17,7 @@ export interface CalendarViewTriggerSlot {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectCalendarRootContext } from './CalendarRoot.vue'
 import { getCalendarViewTriggerSurface } from './useCalendar'
@@ -32,10 +32,9 @@ const surface = getCalendarViewTriggerSurface(rootContext)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="props.as"
-    :as-child="props.asChild"
     :type="props.as === 'button' ? 'button' : undefined"
     v-bind="surface.attrs.value"
   >
@@ -46,5 +45,5 @@ const surface = getCalendarViewTriggerSurface(rootContext)
     >
       {{ rootContext.headingValue.value }}
     </slot>
-  </Primitive>
+  </component>
 </template>

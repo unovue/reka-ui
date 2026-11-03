@@ -153,7 +153,8 @@ export const [injectCalendarRootContext, provideCalendarRootContext]
 
 <script setup lang="ts">
 import { computed, onMounted, toRefs } from 'vue'
-import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { usePrimitiveElement } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useCalendar } from './useCalendar'
 
 const props = withDefaults(defineProps<CalendarRootProps>(), {
@@ -262,10 +263,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     ref="primitiveElement"
-    :as="as"
-    :as-child="asChild"
     v-bind="root.attrs.value"
   >
     <slot
@@ -290,5 +290,5 @@ onMounted(() => {
         {{ fullCalendarLabel }}
       </div>
     </div>
-  </Primitive>
+  </component>
 </template>

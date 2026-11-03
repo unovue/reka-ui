@@ -24,7 +24,7 @@ export const [injectRangeCalendarGridContext, provideRangeCalendarGridContext]
 <script setup lang="ts">
 import { computed } from 'vue'
 import { getCalendarGridSurface } from '@/Calendar/useCalendar'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectRangeCalendarRootContext } from './RangeCalendarRoot.vue'
 
 const props = withDefaults(defineProps<RangeCalendarGridProps>(), { as: 'table' })
@@ -39,13 +39,12 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="surface.attrs.value"
     @mouseleave="rootContext.setFocusedValue(undefined)"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

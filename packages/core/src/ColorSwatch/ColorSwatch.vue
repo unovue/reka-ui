@@ -16,7 +16,7 @@ export interface ColorSwatchProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { useColorSwatch } from './useColorSwatch'
 
@@ -32,15 +32,14 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as-child="asChild"
-    :as="as"
     v-bind="root.attrs.value"
   >
     <slot
       :color="colorString"
       :alpha="alpha"
     />
-  </Primitive>
+  </component>
 </template>

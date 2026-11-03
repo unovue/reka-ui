@@ -18,7 +18,7 @@ export interface RangeCalendarNextSlot {
 <script setup lang="ts">
 import { computed } from 'vue'
 import { getCalendarNavSurface } from '@/Calendar/useCalendar'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectRangeCalendarRootContext } from './RangeCalendarRoot.vue'
 
@@ -33,15 +33,14 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="props.as"
-    :as-child="props.asChild"
     :type="props.as === 'button' ? 'button' : undefined"
     v-bind="surface.attrs.value"
   >
     <slot :disabled="surface.state.value.disabled">
       Next page
     </slot>
-  </Primitive>
+  </component>
 </template>

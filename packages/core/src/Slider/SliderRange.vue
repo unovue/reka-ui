@@ -6,7 +6,7 @@ export interface SliderRangeProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectSliderRootContext } from './SliderRoot.vue'
 import { getSliderRangeSurface } from './useSlider'
 import { injectSliderOrientationContext } from './utils'
@@ -22,12 +22,11 @@ defineExpose(expose)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as-child="asChild"
-    :as="as"
     v-bind="range.attrs.value"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

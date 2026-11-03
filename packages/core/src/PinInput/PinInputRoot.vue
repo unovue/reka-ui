@@ -78,7 +78,7 @@ export const [injectPinInputRootContext, providePinInputRootContext]
 
 <script setup lang="ts" generic="Type extends PinInputType">
 import { mergeProps } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { usePinInput } from './usePinInput'
 
 defineOptions({
@@ -122,11 +122,10 @@ providePinInputRootContext(context)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     v-bind="mergeProps($attrs, root.attrs.value)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
   >
     <slot :model-value="modelValue" />
 
@@ -142,5 +141,5 @@ providePinInputRootContext(context)
       :required="required"
       @focus="Array.from(context.inputElements!.value)?.[0]?.focus()"
     />
-  </Primitive>
+  </component>
 </template>

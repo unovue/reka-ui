@@ -6,7 +6,7 @@ export interface PaginationListProps extends PrimitiveProps { }
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectPaginationRootContext } from './PaginationRoot.vue'
 import { getPaginationItems } from './usePagination'
 
@@ -29,10 +29,10 @@ const transformedRange = getPaginationItems(rootContext)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="props"
   >
     <slot :items="transformedRange" />
-  </Primitive>
+  </component>
 </template>

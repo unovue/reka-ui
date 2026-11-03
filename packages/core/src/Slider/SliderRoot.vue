@@ -4,7 +4,7 @@ import type { DataOrientation, Direction, FormFieldProps } from '../shared/types
 import type { SliderChangeReason } from './useSlider'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
-import { useCollection } from '@/Collection'
+import { useCollection, useCollectionSlot } from '@/Collection'
 import { createContext, useDirection, useFormControl, useForwardElement } from '@/shared'
 
 type ThumbAlignment = 'contain' | 'overflow'
@@ -71,11 +71,12 @@ export const [injectSliderRootContext, provideSliderRootContext]
 </script>
 
 <script setup lang="ts">
-import { computed, mergeProps } from 'vue'
+import { computed, getCurrentInstance, mergeProps, useAttrs, watch } from 'vue'
+import { renderAs } from '@/Primitive/renderAs'
+import { createWrapperEmit, splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
-import SliderHorizontal from './SliderHorizontal.vue'
-import SliderVertical from './SliderVertical.vue'
 import { useSlider } from './useSlider'
+import { useSliderPointer } from './useSliderPointer'
 import { provideSliderOrientationContext } from './utils'
 
 defineOptions({
@@ -108,7 +109,8 @@ const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const isFormControl = useFormControl(currentElement)
 
-const { CollectionSlot } = useCollection({ isProvider: true })
+useCollection({ isProvider: true })
+useCollectionSlot(currentElement)
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` / `valueCommit` emits
 // live in the composable (`modelValue === undefined` → uncontrolled).
@@ -130,49 +132,83 @@ const { modelValue, root, orientation: orientationGeometry, startSlide, moveSlid
 provideSliderRootContext(context)
 provideSliderOrientationContext(orientationGeometry)
 
+// A consumer's `@slide-start` / `@slide-move` / `@slide-end` still hears the
+// slide events, before the slider's own, and never reaches the element.
+const attrs = useAttrs()
+// Held for the emit recreated in a watcher, where there's no current instance.
+const instance = getCurrentInstance()
+const SLIDE_EVENTS = { props: {}, emits: ['slideStart', 'slideMove', 'slideEnd'] }
+const ownSlideListeners = { onSlideStart: startSlide, onSlideMove: moveSlide, onSlideEnd: () => endSlide() }
+function createSlideEmit() {
+  return createWrapperEmit(() => {
+    const split = splitWrapperAttrs(attrs, SLIDE_EVENTS)
+    return { ...split, listeners: mergeProps(split.listeners, ownSlideListeners) }
+  }, instance)
+}
+let emitSlide = createSlideEmit()
+
+const pointer = useSliderPointer({
+  element: () => currentElement.value,
+  context,
+  orientation: orientationGeometry,
+  emit: (key, ...args) => emitSlide(key, ...args),
+})
+
+// Switching orientation remounts the element (see `:key`), which starts a new
+// drag and lets a `.once` listener run again.
+watch(() => props.orientation, () => {
+  pointer.reset()
+  emitSlide = createSlideEmit()
+})
+
 // Precedence is part of the v2 contract. `mergeProps` chains same-named
 // listeners in argument order and lets later plain attributes win, so:
 // - leading (before `$attrs`): the slider's own keydown handler runs before a
 //   consumer `@keydown`; the orientation's `style`
-//   (`--reka-slider-thumb-transform`) and `data-orientation` were set by
-//   SliderHorizontal / SliderVertical in v2, under the root's fall-through
-//   attributes, so a consumer `style` / `data-orientation` still wins;
-// - trailing (after `$attrs`): `aria-disabled`, `data-disabled` and `dir` were
-//   bound by SliderRoot after `v-bind="$attrs"`, so the component wins;
-// - the pointerdown bookkeeping is bound with `@pointerdown`, after a consumer's.
-// One split of the root attrs (one computed, one attrs read) for all three.
+//   (`--reka-slider-thumb-transform`) and `data-orientation` sit under the root's
+//   fall-through attributes, so a consumer `style` / `data-orientation` still wins;
+// - trailing (after `$attrs`): `aria-disabled`, `data-disabled` and `dir` are
+//   bound after them, so the component wins;
+// - the pointer handlers run first, and the pointerdown bookkeeping after a consumer's.
+// One split of the root attrs (one computed, one attrs read) for all of it.
 const split = computed(() => {
   const { onKeydown, onPointerdown, style, 'data-orientation': dataOrientation, ...attrs } = root.attrs.value
   return { leading: { onKeydown, style, 'data-orientation': dataOrientation }, attrs, onPointerdown }
 })
+const ownElementAttrs = { 'data-slider-impl': '', ...pointer.handlers }
+
+// `$attrs` is read in the template so attribute changes re-render. The first
+// attributes keep their place on the element: horizontal renders `dir` early.
+function elementProps(consumerAttrs: Record<string, unknown>) {
+  const { leading, attrs: rootAttrs, onPointerdown } = split.value
+  return mergeProps(
+    ownElementAttrs,
+    props.orientation === 'horizontal' ? { 'dir': rootAttrs.dir as string, 'data-orientation': 'horizontal' } : { 'data-orientation': 'vertical' },
+    leading,
+    splitWrapperAttrs(consumerAttrs, SLIDE_EVENTS).rest,
+    rootAttrs,
+    { onPointerdown },
+  )
+}
 </script>
 
 <template>
-  <CollectionSlot>
-    <component
-      :is="orientation === 'horizontal' ? SliderHorizontal : SliderVertical"
-      v-bind="mergeProps(split.leading, $attrs, split.attrs)"
-      :ref="forwardRef"
-      :as-child="asChild"
-      :as="as"
-      :min="min"
-      :max="max"
-      @pointerdown="split.onPointerdown"
-      @slide-start="(value: number, event: PointerEvent) => startSlide(value, event)"
-      @slide-move="(value: number, event: PointerEvent) => moveSlide(value, event)"
-      @slide-end="endSlide()"
-    >
-      <slot :model-value="modelValue ?? null" />
+  <component
+    :is="renderAs(as, asChild)"
+    :key="orientation === 'horizontal' ? 'horizontal' : 'vertical'"
+    :ref="forwardRef"
+    v-bind="elementProps($attrs)"
+  >
+    <slot :model-value="modelValue ?? null" />
 
-      <VisuallyHiddenInput
-        v-if="isFormControl && name"
-        type="number"
-        :value="modelValue"
-        :name="name"
-        :required="required"
-        :disabled="disabled"
-        :step="step"
-      />
-    </component>
-  </CollectionSlot>
+    <VisuallyHiddenInput
+      v-if="isFormControl && name"
+      type="number"
+      :value="modelValue"
+      :name="name"
+      :required="required"
+      :disabled="disabled"
+      :step="step"
+    />
+  </component>
 </template>

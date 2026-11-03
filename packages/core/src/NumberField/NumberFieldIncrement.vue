@@ -11,7 +11,7 @@ export interface NumberFieldIncrementProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 
 const props = withDefaults(defineProps<NumberFieldIncrementProps>(), {
   as: 'button',
@@ -33,13 +33,12 @@ onTrigger((event) => {
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     :type="as === 'button' ? 'button' : undefined"
     v-bind="button.attrs.value"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

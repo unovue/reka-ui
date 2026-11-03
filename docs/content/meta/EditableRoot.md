@@ -5,7 +5,7 @@
   {
     'name': 'activationMode',
     'description': '<p>The activation event of the editable field</p>\n',
-    'type': '\'none\' | \'dblclick\' | \'focus\'',
+    'type': '\'none\' | \'focus\' | \'dblclick\'',
     'required': false,
     'default': '\'focus\''
   },
@@ -195,7 +195,7 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `activationMode` | The activation event of the editable field | `"none" \| "dblclick" \| "focus"` | No | `"focus"` |
+| `activationMode` | The activation event of the editable field | `"none" \| "focus" \| "dblclick"` | No | `"focus"` |
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `autoResize` | Whether the editable field should auto resize | `boolean` | No | `false` |

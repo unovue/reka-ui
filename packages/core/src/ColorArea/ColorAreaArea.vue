@@ -5,7 +5,8 @@ export interface ColorAreaAreaProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { usePrimitiveElement } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectColorAreaRootContext } from './ColorAreaRoot.vue'
 import { createColorAreaAreaSurface } from './useColorArea'
 
@@ -20,12 +21,11 @@ const area = createColorAreaAreaSurface(rootContext, areaElement)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     ref="primitiveElement"
-    :as-child="asChild"
-    :as="as"
     v-bind="area.attrs.value"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

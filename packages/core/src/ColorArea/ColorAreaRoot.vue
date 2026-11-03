@@ -71,7 +71,7 @@ export const [injectColorAreaRootContext, provideColorAreaRootContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useColorArea } from './useColorArea'
 
@@ -113,10 +113,9 @@ provideColorAreaRootContext(context)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="root.attrs.value"
   >
     <slot :style="areaStyles" />
@@ -135,5 +134,5 @@ provideColorAreaRootContext(context)
       :name="yName"
       :disabled="disabled"
     />
-  </Primitive>
+  </component>
 </template>
