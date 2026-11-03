@@ -14,30 +14,22 @@ export interface PopperAnchorProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { watchPostEffect } from 'vue'
-import {
-  Primitive,
-} from '@/Primitive'
-import { injectPopperRootContext } from './PopperRoot.vue'
+import { renderAs } from '@/Primitive/renderAs'
+import { usePopperAnchor } from './usePopperAnchor'
 
 const props = defineProps<PopperAnchorProps>()
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
-const rootContext = injectPopperRootContext()
-
-watchPostEffect(() => {
-  rootContext.onAnchorChange(props.reference ?? currentElement.value)
-})
+usePopperAnchor({ element: currentElement, reference: () => props.reference })
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

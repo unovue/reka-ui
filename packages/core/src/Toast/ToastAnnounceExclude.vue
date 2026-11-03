@@ -7,18 +7,17 @@ export interface ToastAnnounceExcludeProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 
 defineProps<ToastAnnounceExcludeProps>()
 </script>
 
 <template>
-  <Primitive
-    :as="as"
-    :as-child="asChild"
+  <component
+    :is="renderAs(as, asChild)"
     data-reka-toast-announce-exclude=""
     :data-reka-toast-announce-alt="altText || undefined"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

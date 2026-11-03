@@ -10,12 +10,12 @@ const COMPONENT_EVENT_HANDLER = 6
  * Calls a consumer's listener attr (a function, or the array of them
  * `mergeProps` makes) as Vue's `emit` does: each one on its own, so one that
  * throws or rejects doesn't stop the rest, with the error going to
- * `app.config.errorHandler`. Anything that stands in for a component's `emit`
- * calls listeners through this.
+ * `app.config.errorHandler`, and nothing at all once `instance` has unmounted.
+ * Anything that stands in for a component's `emit` calls listeners through this.
  *
  * @internal
  */
 export function callListeners(listener: unknown, instance: ComponentInternalInstance | null, args: unknown[]) {
-  if (listener)
+  if (listener && !instance?.isUnmounted)
     callWithAsyncErrorHandling(listener as (...args: unknown[]) => unknown, instance, COMPONENT_EVENT_HANDLER, args)
 }

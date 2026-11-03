@@ -2,7 +2,7 @@ import type { MaybeRefOrGetter, Ref } from 'vue'
 import type { OutsideSubscriber } from './layerStack'
 import { isClient } from '@vueuse/shared'
 import { nextTick, toValue, watchEffect } from 'vue'
-import { containsComposed, handleAndDispatchCustomEvent } from '@/shared'
+import { containsComposed, getActiveElement, handleAndDispatchCustomEvent } from '@/shared'
 import { attachDocument, layerElements, registerOutsideSubscriber } from './layerStack'
 
 export type PointerDownOutsideEvent = CustomEvent<{
@@ -122,7 +122,6 @@ export function usePointerDownOutside(
   const subscriber: OutsideSubscriber = {
     armed: false, // set true a macrotask after registration by the manager
     isPointerInside: false,
-    isFocusInside: false,
     // Ported from the previous `handlePointerDown` body, branch-for-branch.
     handlePointerDown: (event, ctx) => {
       // Arming guard MUST be first — before any flag write. During the arming
@@ -201,8 +200,17 @@ export function usePointerDownOutside(
 }
 
 /**
+ * Whether focus is inside `element`. It takes both: the active element can't see into
+ * a closed shadow root, so a layer rendered in one reads as outside, and `:focus-within`
+ * follows the flat tree through those, but doesn't match while an iframe inside
+ * `element` holds focus, where the active element is that iframe.
+ */
+function isFocusWithin(element: HTMLElement) {
+  return containsComposed(element, getActiveElement(element)) || element.matches(':focus-within')
+}
+
+/**
  * Listens for when focus happens outside a DOM subtree.
- * Returns props to pass to the root (node) of the subtree we want to check.
  */
 export function useFocusOutside(
   onFocusOutside?: (event: FocusOutsideEvent) => void,
@@ -214,7 +222,6 @@ export function useFocusOutside(
     // so a focus subscriber is always "armed" and must never gate on it.
     armed: true,
     isPointerInside: false,
-    isFocusInside: false,
     // Ported from the previous `handleFocus` body. Keeps the double `nextTick`
     // so focus-driven DOM updates settle before the gate reads. Uses the
     // composed `ctx.target` (captured synchronously by the manager) but a FRESH
@@ -230,7 +237,11 @@ export function useFocusOutside(
       if (!element.value || !target || isLayerExist(element.value, target))
         return
 
-      if (!subscriber.isFocusInside) {
+      // Focus may have come back inside during the ticks above (a focus trap's
+      // recall). Read it from the document: a flag kept by focus and blur capture
+      // listeners on the element goes stale, because Vue skips an invoker attached
+      // in the millisecond of the event's first invoker.
+      if (!isFocusWithin(element.value)) {
         const eventDetail = { originalEvent: event }
         handleAndDispatchCustomEvent(
           FOCUS_OUTSIDE,
@@ -248,19 +259,4 @@ export function useFocusOutside(
     cleanupFn(registerOutsideSubscriber(subscriber))
   })
   useOwnerDocumentListeners(element, enabled)
-
-  return {
-    onFocusCapture: () => {
-      if (!toValue(enabled))
-        return
-
-      subscriber.isFocusInside = true
-    },
-    onBlurCapture: () => {
-      if (!toValue(enabled))
-        return
-
-      subscriber.isFocusInside = false
-    },
-  }
 }

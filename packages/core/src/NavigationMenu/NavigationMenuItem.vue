@@ -30,7 +30,7 @@ export const [injectNavigationMenuItemContext, provideNavigationMenuItemContext]
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import { useNavigationMenuItem } from './useNavigationMenu'
 
@@ -54,12 +54,11 @@ provideNavigationMenuItemContext(itemContext)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     v-bind="item.attrs.value"
     :ref="forwardRef"
-    :as-child="asChild"
-    :as="as"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

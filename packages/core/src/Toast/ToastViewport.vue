@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ComponentPublicInstance, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { useCollection } from '@/Collection'
+import { useCollection, useCollectionSlot } from '@/Collection'
 import { useForwardElement } from '@/shared'
 
 export interface ToastViewportProps extends PrimitiveProps {
@@ -24,7 +24,7 @@ export interface ToastViewportProps extends PrimitiveProps {
 import { unrefElement } from '@vueuse/core'
 import { mergeProps, ref } from 'vue'
 import { DismissableLayerBranch } from '@/DismissableLayer'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import FocusProxy from './FocusProxy.vue'
 import { injectToastProviderContext } from './ToastProvider.vue'
 import { useToastViewport } from './useToast'
@@ -40,8 +40,9 @@ const props = withDefaults(defineProps<ToastViewportProps>(), {
 })
 
 const { forwardRef, currentElement, expose } = useForwardElement()
+useCollectionSlot(currentElement)
 defineExpose(expose)
-const { CollectionSlot, getItems } = useCollection()
+const { getItems } = useCollection()
 const providerContext = injectToastProviderContext()
 const headFocusProxyRef = ref<HTMLElement>()
 const tailFocusProxyRef = ref<HTMLElement>()
@@ -71,16 +72,13 @@ const { hasToasts, region, viewport, onHeadProxyFocus, onTailProxyFocus } = useT
       }"
       @focus-from-outside-viewport="onHeadProxyFocus"
     />
-    <CollectionSlot>
-      <Primitive
-        v-bind="mergeProps(viewport.attrs.value, $attrs)"
-        :ref="forwardRef"
-        :as="as"
-        :as-child="asChild"
-      >
-        <slot />
-      </Primitive>
-    </CollectionSlot>
+    <component
+      :is="renderAs(as, asChild)"
+      v-bind="mergeProps(viewport.attrs.value, $attrs)"
+      :ref="forwardRef"
+    >
+      <slot />
+    </component>
     <FocusProxy
       v-if="hasToasts"
       :ref="(node: Element | ComponentPublicInstance | null) => {

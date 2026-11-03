@@ -8,7 +8,7 @@ function stackLayer(over: Partial<StackLayer> = {}): StackLayer {
   return { element: () => document.body, isPresent: () => true, disableOutsidePointerEvents: () => false, ...over }
 }
 function subscriber(over = {}) {
-  return { armed: true, isPointerInside: false, isFocusInside: false, ...over }
+  return { armed: true, isPointerInside: false, ...over }
 }
 
 describe('layerStack', () => {

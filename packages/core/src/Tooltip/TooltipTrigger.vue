@@ -9,13 +9,17 @@ export interface TooltipTriggerProps extends PopperAnchorProps {}
 
 <script setup lang="ts">
 import type { PopperAnchorProps } from '@/Popper'
-import { watch } from 'vue'
-import { PopperAnchor } from '@/Popper'
-import {
-  Primitive,
-} from '@/Primitive'
+import { mergeProps, watch } from 'vue'
+import { usePopperAnchor } from '@/Popper/usePopperAnchor'
+import { renderAs } from '@/Primitive/renderAs'
 import { injectTooltipRootContext } from './TooltipRoot.vue'
 import { createTooltipTriggerSurface } from './useTooltip'
+
+defineOptions({
+  // `$attrs` are merged under the part's own bindings: the precedence the
+  // former `<PopperAnchor as-child>` wrapper gave them.
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<TooltipTriggerProps>(), {
   as: 'button',
@@ -30,10 +34,11 @@ defineExpose(expose)
 // (single source with `useTooltip()`; called ONCE — it owns this instance's
 // pointer state). The content id is populated by the composable, so nothing is
 // back-filled onto the context here any more. Listener order is unchanged:
-// `$attrs` fall through the as-child `PopperAnchor` and `Slot` merges them
-// BEFORE the inner element's own props, so a consumer `@click` still runs
-// before the surface's `onClick`.
+// `$attrs` merge BEFORE the element's own props, so a consumer `@click`
+// still runs before the surface's `onClick`.
 const trigger = createTooltipTriggerSurface(rootContext)
+
+usePopperAnchor({ element: triggerElement, reference: () => props.reference })
 
 watch(triggerElement, (el) => {
   rootContext.onTriggerChange(el)
@@ -41,17 +46,11 @@ watch(triggerElement, (el) => {
 </script>
 
 <template>
-  <PopperAnchor
-    as-child
-    :reference="reference ?? triggerElement"
+  <component
+    :is="renderAs(as, asChild)"
+    :ref="forwardRef"
+    v-bind="mergeProps($attrs, trigger.attrs.value)"
   >
-    <Primitive
-      :ref="forwardRef"
-      :as="as"
-      :as-child="props.asChild"
-      v-bind="trigger.attrs.value"
-    >
-      <slot />
-    </Primitive>
-  </PopperAnchor>
+    <slot />
+  </component>
 </template>

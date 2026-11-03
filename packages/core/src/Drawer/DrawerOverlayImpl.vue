@@ -6,7 +6,7 @@ export interface DrawerOverlayImplProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { watch } from 'vue'
-import { Primitive } from '@/Primitive'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { getDrawerOverlaySurface } from './useDrawer'
@@ -38,10 +38,9 @@ const overlay = getDrawerOverlaySurface(rootContext)
 </script>
 
 <template>
-  <Primitive
+  <component
+    :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    :as="as"
-    :as-child="asChild"
     v-bind="overlay.attrs.value"
     :style="{
       userSelect: 'none',
@@ -50,5 +49,5 @@ const overlay = getDrawerOverlaySurface(rootContext)
     }"
   >
     <slot />
-  </Primitive>
+  </component>
 </template>

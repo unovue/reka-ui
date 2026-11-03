@@ -48,7 +48,6 @@ export interface OutsideSubscriber {
    */
   armed: boolean
   isPointerInside: boolean
-  isFocusInside: boolean
   handlePointerDown?: (event: PointerEvent, ctx: DispatchContext) => void
   handleFocus?: (event: FocusEvent, ctx: DispatchContext) => void
 }

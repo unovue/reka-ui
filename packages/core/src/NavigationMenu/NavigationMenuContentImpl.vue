@@ -12,9 +12,12 @@ export interface NavigationMenuContentImplProps extends DismissableLayerProps {}
 
 <script setup lang="ts">
 import type { Ref } from 'vue'
-import { useAttrs } from 'vue'
-import { DismissableLayer } from '@/DismissableLayer'
+import type { PrimitiveProps } from '@/Primitive'
+import { computed, getCurrentInstance, mergeProps } from 'vue'
+import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer } from '@/DismissableLayer/useDismissableLayer'
+import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
+import { splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import { mergeConsumerListenersFirst, useNavigationMenuContent } from './useNavigationMenu'
@@ -47,24 +50,28 @@ const {
   emit: emits,
 })
 
-// Consumer `@pointerenter` / `@pointerleave` / `@keydown` run before the
-// content's own (as on the trigger and in v2). `useAttrs()` is not reactive,
-// so this is read during render.
-const attrs = useAttrs()
-function getContentAttrs() {
-  return mergeConsumerListenersFirst(attrs, { ...content.attrs.value, ...props })
-}
+// The content was a `<DismissableLayer>` that rendered its element; the layer
+// is a composable on that element now. `layerWrapper` is what the layer
+// received, so consumer attrs named after its props and events still
+// configure it, and never render. Consumer `@pointerenter` / `@pointerleave` /
+// `@keydown` run before the content's own (as on the trigger and in v2).
+// (`$attrs` read through the instance proxy tracks.)
+const instance = getCurrentInstance()!
+const layerWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeConsumerListenersFirst(instance.proxy!.$attrs, { ...content.attrs.value, ...props }), {
+  onEscapeKeyDown,
+  onPointerDownOutside,
+  onFocusOutside,
+  onDismiss,
+}), DISMISSABLE_LAYER_WRAPPER))
+const layer = useDismissableLayer(dismissableLayerOptions(currentElement as Ref<HTMLElement | undefined>, () => layerWrapper.value))
 </script>
 
 <template>
-  <DismissableLayer
-    v-bind="getContentAttrs()"
+  <component
+    :is="renderAs(layerWrapper.props.as as PrimitiveProps['as'], layerWrapper.props.asChild as boolean | undefined)"
     :ref="forwardRef"
-    @escape-key-down="onEscapeKeyDown"
-    @pointer-down-outside="onPointerDownOutside"
-    @focus-outside="onFocusOutside"
-    @dismiss="onDismiss"
+    v-bind="mergeProps(layer.attrs(), layerWrapper.rest)"
   >
     <slot />
-  </DismissableLayer>
+  </component>
 </template>

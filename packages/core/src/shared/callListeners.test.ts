@@ -42,6 +42,23 @@ describe('callListeners', () => {
     expect(errors[0].info).toContain('component event handler')
   })
 
+  it('calls nothing after the instance has unmounted, as Vue\'s `emit` does', () => {
+    const listener = vi.fn()
+    let instance: ReturnType<typeof getCurrentInstance> = null
+    const app = createApp(defineComponent({
+      setup() {
+        instance = getCurrentInstance()
+        return () => h('div')
+      },
+    }))
+    app.mount(document.createElement('div'))
+    callListeners(listener, instance, [])
+    expect(listener).toHaveBeenCalledOnce()
+    app.unmount()
+    callListeners(listener, instance, [])
+    expect(listener).toHaveBeenCalledOnce()
+  })
+
   it('reports a listener\'s rejection to the app', async () => {
     const boom = new Error('boom')
     const errors = run(() => Promise.reject(boom))

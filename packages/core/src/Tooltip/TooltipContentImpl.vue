@@ -42,22 +42,36 @@ export interface TooltipContentImplProps
 </script>
 
 <script setup lang="ts">
-import type { DismissableLayerDismissDetails } from '@/DismissableLayer'
+import type { DismissableLayerDismissDetails, FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import { useEventListener } from '@vueuse/core'
-import { computed, mergeProps, onMounted } from 'vue'
-import { DismissableLayer } from '@/DismissableLayer'
+import { computed, getCurrentInstance, mergeProps, onMounted } from 'vue'
+import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer } from '@/DismissableLayer/useDismissableLayer'
 import { PopperContent } from '@/Popper'
+import { splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectTooltipRootContext } from './TooltipRoot.vue'
 import { getTooltipContentSurface, getTooltipLabelSurface } from './useTooltip'
 import { TOOLTIP_OPEN } from './utils'
+
+defineOptions({
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<TooltipContentImplProps>(), {
   avoidCollisions: undefined,
   asChild: undefined,
   hideWhenDetached: undefined,
 })
+
 const emits = defineEmits<TooltipContentImplEmits>()
+
+const CONTENT_STYLE = {
+  '--reka-tooltip-content-transform-origin': 'var(--reka-popper-transform-origin)',
+  '--reka-tooltip-content-available-width': 'var(--reka-popper-available-width)',
+  '--reka-tooltip-content-available-height': 'var(--reka-popper-available-height)',
+  '--reka-tooltip-trigger-width': 'var(--reka-popper-anchor-width)',
+  '--reka-tooltip-trigger-height': 'var(--reka-popper-anchor-height)',
+}
 
 const rootContext = injectTooltipRootContext()
 const providerContext = injectTooltipProviderContext()
@@ -99,44 +113,44 @@ onMounted(() => {
   useEventListener(document, TOOLTIP_OPEN, () => rootContext.onClose())
 })
 
-// `focusOutside` is prevented in the template, so the layer only dismisses for
+// `focusOutside` is prevented below, so the layer only dismisses for
 // `escape-key` / `outside-press`; the guard keeps `TooltipOpenChangeReason` honest.
 function handleDismiss({ reason, event }: DismissableLayerDismissDetails) {
   if (reason === 'focus-outside')
     return
   rootContext.onClose(reason, event)
 }
+
+// The content was `<DismissableLayer as-child>` around `PopperContent`; the
+// layer is a composable on its element now. `layerWrapper` is what the layer
+// received: its bindings with the content's attrs fallen through over them.
+// So consumer attrs named after its props and events still configure it,
+// and never render. (`$attrs` read through the instance proxy tracks.)
+const instance = getCurrentInstance()!
+const layerWrapper = computed(() => splitWrapperAttrs(mergeProps({
+  asChild: true,
+  disableOutsidePointerEvents: false,
+  onEscapeKeyDown: (event: KeyboardEvent) => emits('escapeKeyDown', event),
+  onPointerDownOutside: (event: PointerDownOutsideEvent) => {
+    if (rootContext.disableClosingTrigger.value && rootContext.trigger.value?.contains(event.target as HTMLElement))
+      event.preventDefault()
+
+    emits('pointerDownOutside', event)
+  },
+  onFocusOutside: (event: FocusOutsideEvent) => event.preventDefault(),
+  onDismiss: handleDismiss,
+}, instance.proxy!.$attrs), DISMISSABLE_LAYER_WRAPPER))
+const layer = useDismissableLayer(dismissableLayerOptions(currentElement, () => layerWrapper.value))
 </script>
 
 <template>
-  <DismissableLayer
-    as-child
-    :disable-outside-pointer-events="false"
-    @escape-key-down="emits('escapeKeyDown', $event)"
-    @pointer-down-outside="(event) => {
-      if (rootContext.disableClosingTrigger.value && rootContext.trigger.value?.contains(event.target as HTMLElement))
-        event.preventDefault()
-
-      emits('pointerDownOutside', event)
-    }"
-    @focus-outside.prevent
-    @dismiss="handleDismiss"
+  <PopperContent
+    :ref="forwardRef"
+    v-bind="mergeProps(mergeProps(layer.attrs(), layerWrapper.rest), mergeProps(content.attrs.value, { ...$attrs, ...popperContentProps }, { style: CONTENT_STYLE }))"
   >
-    <PopperContent
-      :ref="forwardRef"
-      v-bind="mergeProps(content.attrs.value, { ...$attrs, ...popperContentProps })"
-      :style="{
-        '--reka-tooltip-content-transform-origin': 'var(--reka-popper-transform-origin)',
-        '--reka-tooltip-content-available-width': 'var(--reka-popper-available-width)',
-        '--reka-tooltip-content-available-height': 'var(--reka-popper-available-height)',
-        '--reka-tooltip-trigger-width': 'var(--reka-popper-anchor-width)',
-        '--reka-tooltip-trigger-height': 'var(--reka-popper-anchor-height)',
-      }"
-    >
-      <slot />
-      <VisuallyHidden v-bind="label.attrs.value">
-        {{ ariaLabel }}
-      </VisuallyHidden>
-    </PopperContent>
-  </DismissableLayer>
+    <slot />
+    <VisuallyHidden v-bind="label.attrs.value">
+      {{ ariaLabel }}
+    </VisuallyHidden>
+  </PopperContent>
 </template>
