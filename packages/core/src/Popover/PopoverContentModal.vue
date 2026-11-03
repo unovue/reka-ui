@@ -33,15 +33,11 @@ useHideOthers(computed(() => rootContext.open.value ? currentElement.value : und
     :backdrop-cutout="rootContext.triggerElement.value"
     @close-auto-focus.prevent="
       (event) => {
-        emits('closeAutoFocus', event);
-
         if (!isRightClickOutsideRef) rootContext.triggerElement.value?.focus();
       }
     "
     @pointer-down-outside="
       (event) => {
-        emits('pointerDownOutside', event);
-
         const originalEvent = event.detail.originalEvent;
         const ctrlLeftClick
           = originalEvent.button === 0 && originalEvent.ctrlKey === true;

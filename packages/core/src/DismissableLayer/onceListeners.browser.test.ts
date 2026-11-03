@@ -10,14 +10,16 @@ import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from '@/
 // `.once` on the layers' events across a real outside press, including parts
 // that don't declare them (Tooltip's `@interact-outside.once`). The expected
 // logs, how often each listener runs included, are what the `<FocusScope
-// as-child>` / `<DismissableLayer as-child>` chain gave.
+// as-child>` / `<DismissableLayer as-child>` chain gave, except Popover's
+// `interactOutside`: its content part forwarded the event and emitted it again,
+// so the consumer listener ran twice.
 
 const wait = (ms = 60) => new Promise(resolve => setTimeout(resolve, ms))
 
 const cases: [string, (attrs: Record<string, unknown>) => VNodeChild, string[]][] = [
   ['Tooltip', attrs => h(TooltipProvider, () => h(TooltipRoot, { defaultOpen: true }, () => [h(TooltipTrigger, () => 'T'), h(TooltipContent, attrs, () => 'tip')])), ['pointer', 'pointerOnce', 'interact', 'interactOnce', 'dismiss', 'dismissOnce']],
   ['HoverCard', attrs => h(HoverCardRoot, { defaultOpen: true }, () => [h(HoverCardTrigger, () => 'T'), h(HoverCardContent, attrs, () => 'card')]), ['pointer', 'pointerOnce', 'dismiss', 'dismissOnce']],
-  ['Popover', attrs => h(PopoverRoot, { defaultOpen: true }, () => [h(PopoverTrigger, () => 'T'), h(PopoverContent, attrs, () => h('input'))]), ['mount', 'mountOnce', 'pointer', 'pointerOnce', 'interact', 'interactOnce', 'interact', 'dismiss', 'dismissOnce', 'unmount', 'unmountOnce']],
+  ['Popover', attrs => h(PopoverRoot, { defaultOpen: true }, () => [h(PopoverTrigger, () => 'T'), h(PopoverContent, attrs, () => h('input'))]), ['mount', 'mountOnce', 'pointer', 'pointerOnce', 'interact', 'interactOnce', 'dismiss', 'dismissOnce', 'unmount', 'unmountOnce']],
   ['Dialog', attrs => h(DialogRoot, { defaultOpen: true, modal: false }, () => h(DialogContent, { ...attrs, 'aria-describedby': undefined }, () => [h(DialogTitle, () => 'T'), h('input')])), ['mount', 'mountOnce', 'pointer', 'pointerOnce', 'interact', 'interactOnce', 'dismiss', 'dismiss', 'dismissOnce', 'unmount', 'unmountOnce']],
 ]
 
