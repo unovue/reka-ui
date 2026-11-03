@@ -8,8 +8,8 @@ export interface SelectScrollDownButtonProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { ref, watch, watchEffect } from 'vue'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
-import { injectSelectItemAlignedPositionContext } from './SelectItemAlignedPosition.vue'
 import SelectScrollButtonImpl from './SelectScrollButtonImpl.vue'
+import { injectSelectItemAlignedPositionContext } from './useSelectItemAlignedPosition'
 import { getScrollStep } from './utils'
 
 defineProps<SelectScrollDownButtonProps>()

@@ -15,7 +15,7 @@ export interface SelectViewportProps extends PrimitiveProps {
 import { onMounted, ref, toRefs } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
-import { injectSelectItemAlignedPositionContext } from './SelectItemAlignedPosition.vue'
+import { injectSelectItemAlignedPositionContext } from './useSelectItemAlignedPosition'
 import { CONTENT_MARGIN } from './utils'
 
 const props = defineProps<SelectViewportProps>()
