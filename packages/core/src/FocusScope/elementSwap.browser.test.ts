@@ -118,3 +118,50 @@ describe('given a trapped focus scope whose element changes while open', () => {
     }
   }
 })
+
+// Swapped and closed in the same tick: the swap kept the scope (in the stack,
+// no close auto-focus) for the new element's run, which never comes. The
+// close still runs once, from the element the swap left, and releases the
+// stack so a trap opened later works.
+describe('given a trapped focus scope swapped and closed in the same tick', () => {
+  for (const kind of ['dialog', 'popover'] as const) {
+    it(`closes once and leaves no scope behind, ${kind}`, async () => {
+      const as = ref('div')
+      const open = ref(true)
+      const events: string[] = []
+      const props = (extra: Record<string, unknown>) => ({ 'data-testid': 'content', 'as': as.value, 'onOpenAutoFocus': () => events.push('open'), 'onCloseAutoFocus': () => events.push('close'), ...extra })
+      const content = () => [h('button', { 'data-testid': 'first' }, 'First')]
+      const wrapper = mount(defineComponent({
+        setup: () => () => [
+          h('button', { 'data-testid': 'outside' }, 'Outside'),
+          kind === 'dialog'
+            ? h(DialogRoot, { 'open': open.value, 'onUpdate:open': (value: boolean) => (open.value = value) }, () => [
+                h(DialogTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
+                h(DialogPortal, () => h(DialogContent, props({ 'aria-describedby': undefined }), () => [h(DialogTitle, () => 'Title'), ...content()])),
+              ])
+            : h(PopoverRoot, { 'open': open.value, 'onUpdate:open': (value: boolean) => (open.value = value) }, () => [
+                h(PopoverTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
+                h(PopoverPortal, () => h(PopoverContent, props({ trapFocus: true }), content)),
+              ]),
+        ],
+      }), { attachTo: document.body })
+      unmount = () => wrapper.unmount()
+      await expect.poll(() => document.activeElement?.getAttribute('data-testid')).toBe('first')
+      $('trigger')!.focus()
+      $('first')!.focus()
+
+      as.value = 'section'
+      await nextTick()
+      open.value = false
+      await expect.poll(() => $('content')).toBeNull()
+      await wait(100)
+      expect(events).toEqual(['open', 'close'])
+      expect(document.activeElement?.getAttribute('data-testid')).toBe('trigger')
+
+      // Nothing left paused or trapping: focus moves outside freely.
+      $('outside')!.focus()
+      await wait(50)
+      expect(document.activeElement?.getAttribute('data-testid')).toBe('outside')
+    })
+  }
+})
