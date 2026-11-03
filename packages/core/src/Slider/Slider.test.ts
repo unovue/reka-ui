@@ -1,10 +1,10 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import type SliderImpl from './SliderImpl.vue'
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { handleSubmit } from '@/test'
+import SliderImpl from './SliderImpl.vue'
 import Slider from './story/_Slider.vue'
 
 describe('given default Slider', () => {
@@ -322,15 +322,60 @@ describe('given default Slider', () => {
         })
       })
 
-      describe('after the browser releases capture before pointerup', () => {
+      describe('after pointerup and then lostpointercapture', () => {
         beforeEach(async () => {
-          vi.mocked(window.HTMLElement.prototype.hasPointerCapture).mockReturnValueOnce(false)
-          await fireEvent(sliderImpl.element, new Event('lostpointercapture'))
+          await fireEvent.pointerUp(sliderImpl.element, { pointerId: 1 })
+          await fireEvent.lostPointerCapture(sliderImpl.element, { pointerId: 1 })
+        })
+
+        it('should emit valueCommit on wrapper once', async () => {
+          expect(wrapper.emitted('valueCommit')).toHaveLength(1)
+        })
+      })
+
+      describe('after lostpointercapture and then pointerup', () => {
+        beforeEach(async () => {
+          await fireEvent.lostPointerCapture(sliderImpl.element, { pointerId: 1 })
           await fireEvent.pointerUp(sliderImpl.element, { pointerId: 1 })
         })
 
         it('should emit valueCommit on wrapper once', async () => {
           expect(wrapper.emitted('valueCommit')).toHaveLength(1)
+        })
+      })
+
+      describe('after pointerup once capture is gone, with no lostpointercapture on the slider', () => {
+        beforeEach(async () => {
+          vi.mocked(window.HTMLElement.prototype.hasPointerCapture).mockReturnValueOnce(false)
+          await fireEvent.pointerUp(sliderImpl.element, { pointerId: 1 })
+        })
+
+        it('should emit valueCommit on wrapper', async () => {
+          expect(wrapper.emitted('valueCommit')).toHaveLength(1)
+        })
+      })
+
+      describe('after pointercancel', () => {
+        beforeEach(async () => {
+          await fireEvent.pointerCancel(sliderImpl.element, { pointerId: 1 })
+          await fireEvent.lostPointerCapture(sliderImpl.element, { pointerId: 1 })
+        })
+
+        it('should emit valueCommit on wrapper', async () => {
+          expect(wrapper.emitted('valueCommit')).toHaveLength(1)
+        })
+      })
+
+      describe('after a second pointer slides and both lift', () => {
+        beforeEach(async () => {
+          await fireEvent.pointerDown(sliderImpl.element, { clientX: 50, pointerId: 2 })
+          await fireEvent.pointerUp(sliderImpl.element, { pointerId: 1 })
+          await fireEvent.pointerMove(sliderImpl.element, { clientX: 90, pointerId: 2 })
+          await fireEvent.pointerUp(sliderImpl.element, { pointerId: 2 })
+        })
+
+        it('should end the slide for each pointer', async () => {
+          expect(wrapper.findComponent(SliderImpl).emitted('slideEnd')).toHaveLength(2)
         })
       })
     })

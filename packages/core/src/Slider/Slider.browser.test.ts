@@ -28,13 +28,15 @@ function mountSlider() {
   return { root, thumbs, commits }
 }
 
-// Chrome can fire `lostpointercapture` before `pointerup`; releasing capture from a
-// capture-phase `pointerup` listener reproduces that order.
+// Chrome can release capture before `pointerup`, which then lands wherever the pointer is.
+// Releasing capture and stopping `pointerup` before it reaches the slider reproduces a release
+// off the slider, so only `lostpointercapture` can end the slide.
 function loseCaptureBeforePointerUp() {
   const release = (event: PointerEvent) => {
     const target = event.target as HTMLElement
     if (target.hasPointerCapture(event.pointerId))
       target.releasePointerCapture(event.pointerId)
+    event.stopPropagation()
   }
   window.addEventListener('pointerup', release, true)
   return () => window.removeEventListener('pointerup', release, true)
@@ -44,6 +46,14 @@ describe('given a range Slider, in a real browser', () => {
   let restore = () => {}
 
   afterEach(() => restore())
+
+  it('commits a plain drag once', async () => {
+    const { root, thumbs, commits } = mountSlider()
+
+    await userEvent.dragAndDrop(thumbs[1]!, root, { targetPosition: { x: 100, y: 10 }, steps: 10 })
+
+    expect(commits).toHaveLength(1)
+  })
 
   it('commits a drag whose thumb loses pointer capture before pointerup', async () => {
     const { root, thumbs, commits } = mountSlider()
