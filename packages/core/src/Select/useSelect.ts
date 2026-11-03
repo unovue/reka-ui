@@ -933,9 +933,41 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
 
   const position = () => toValue(options.position) ?? 'item-aligned'
 
+  // Items that register once the content is already open (they arrive late,
+  // e.g. loaded on open) are focused as on an open, once there are some and the
+  // content is positioned, but not over a focus the user already moved inside
+  // the content. `isOpenSettled` turns true a tick after the content element
+  // renders, past the mount of the items it opened with.
+  let isOpenSettled = false
+  let hasLateItems = false
+  watch(contentElement, (element) => {
+    isOpenSettled = hasLateItems = false
+    if (element)
+      nextTick(() => isOpenSettled = !!contentElement.value)
+  }, { flush: 'post' })
+
+  function focusLateItem() {
+    const active = getActiveElement()
+    const element = contentElement.value
+    if (!element || (active && active !== element && containsComposed(element, active)))
+      return
+    contentContext.focusSelectedItem?.()
+  }
+
+  watch(selectedItem, (item, prev) => {
+    if (!item || prev || !isOpenSettled || !context.open.value)
+      return
+    hasLateItems = true
+    // Positioned already (popper): focus once the rest have registered.
+    if (isPositioned.value)
+      nextTick(focusLateItem)
+  }, { flush: 'sync' })
+
   watch(isPositioned, (positioned) => {
     if (!positioned)
       return
+    if (hasLateItems)
+      return focusLateItem()
     // Through the context: `SelectVirtualizer` replaces it to reach a selected
     // item whose row is not rendered.
     contentContext.focusSelectedItem?.()

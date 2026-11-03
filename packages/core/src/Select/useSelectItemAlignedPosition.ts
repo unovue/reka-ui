@@ -42,6 +42,8 @@ export function useSelectItemAlignedPosition(options: UseSelectItemAlignedPositi
 
   const shouldExpandOnScrollRef = ref(false)
   const shouldRepositionRef = ref(true)
+  // Whether the wrapper's first positioning ran (it needs the selected item).
+  let hasTriedPosition = false
 
   const contentWrapperElement = ref<HTMLElement>()
 
@@ -229,11 +231,22 @@ export function useSelectItemAlignedPosition(options: UseSelectItemAlignedPositi
     // A new wrapper (`position` switched back to item-aligned) starts over.
     shouldExpandOnScrollRef.value = false
     shouldRepositionRef.value = true
+    hasTriedPosition = false
     await nextTick()
     position()
+    hasTriedPosition = true
     if (contentElement.value)
       contentZIndex.value = window.getComputedStyle(contentElement.value).zIndex
   }, { flush: 'post' })
+
+  // Positioning needs the selected item: when the items register only after
+  // the content opened, position once they have.
+  watch([() => selectedItem?.value, () => selectedItemText?.value], async () => {
+    if (!hasTriedPosition || contentContext.isPositioned?.value)
+      return
+    await nextTick()
+    position()
+  })
 
   // When the viewport becomes scrollable at the top, the scroll up button will mount.
   // Because it is part of the normal flow, it will push down the viewport, thus throwing our
