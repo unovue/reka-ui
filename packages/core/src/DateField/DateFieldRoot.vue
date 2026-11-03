@@ -269,6 +269,12 @@ watch(parentElement, (element, _, onCleanup) => {
   onCleanup(() => {
     element.removeEventListener('focusin', handleFocusin)
     element.removeEventListener('focusout', handleFocusout)
+    // The element is going away (an `as` or as-child change, or unmount), and not every
+    // browser fires `focusout` for a removed element, so focus can't still be inside it.
+    if (isFocusWithin.value) {
+      isFocusWithin.value = false
+      fieldContext?.reportControlState({ focused: false })
+    }
   })
 }, { flush: 'sync' })
 

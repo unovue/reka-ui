@@ -1,10 +1,13 @@
+import type { VNodeChild } from 'vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
+import { CheckboxGroupRoot, CheckboxRoot } from '@/Checkbox'
 import { DateFieldInput, DateFieldRoot } from '@/DateField'
 import { FormRoot } from '@/Form'
-import { FieldRoot } from '.'
+import { SelectRoot, SelectTrigger } from '@/Select'
+import { FieldControl, FieldRoot } from '.'
 
 function renderDateField(defaultValue: unknown) {
   const errors: string[] = []
@@ -99,5 +102,47 @@ describe('a DateField inside a Field, edited in a real browser', () => {
     await userEvent.keyboard('{ArrowDown}{ArrowDown}')
     await expect.poll(() => t.dirty()).toBe(false)
     expect(t.errors).toEqual([])
+  })
+})
+
+// Not every browser fires `blur`/`focusout` for an element that's removed while
+// focused, so the Field can't rely on one to stop reporting focus.
+describe('a Field whose focused control is removed', () => {
+  let wrapper: ReturnType<typeof mount> | undefined
+  afterEach(() => {
+    wrapper?.unmount()
+    wrapper = undefined
+  })
+
+  const controls: [string, () => VNodeChild][] = [
+    ['a FieldControl', () => h(FieldControl, { 'data-testid': 'control' })],
+    ['a Checkbox', () => h(CheckboxRoot, { 'data-testid': 'control' })],
+    ['a Checkbox in a CheckboxGroup', () => h(CheckboxGroupRoot, null, () => [
+      h(CheckboxRoot, { 'value': 'a', 'data-testid': 'control' }),
+      h(CheckboxRoot, { value: 'b' }),
+    ])],
+    ['a Select trigger', () => h(SelectRoot, null, () => h(SelectTrigger, { 'data-testid': 'control' }, () => 'Pick'))],
+    ['a DateField', () => h(DateFieldRoot as any, { granularity: 'day' }, {
+      default: ({ segments }: any) => segments.map((s: any) => s.part === 'literal'
+        ? h('span', s.value)
+        : h(DateFieldInput, { 'part': s.part, 'key': s.part, 'data-testid': s.part === 'month' ? 'control' : undefined }, () => s.value)),
+    })],
+  ]
+
+  it.each(controls)('stops reporting focus when %s goes away', async (_, control) => {
+    const show = ref(true)
+    wrapper = mount(defineComponent(() => () =>
+      h(FieldRoot, { 'data-testid': 'field' }, () => show.value ? control() : null)), { attachTo: document.body })
+    const field = () => document.querySelector('[data-testid="field"]')!
+
+    document.querySelector<HTMLElement>('[data-testid="control"]')!.focus()
+    await expect.poll(() => field().hasAttribute('data-focused')).toBe(true)
+
+    show.value = false
+    await nextTick()
+    await expect.poll(() => field().hasAttribute('data-focused')).toBe(false)
+    // and stays that way
+    await new Promise(resolve => setTimeout(resolve, 50))
+    expect(field().hasAttribute('data-focused')).toBe(false)
   })
 })

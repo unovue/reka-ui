@@ -1,6 +1,6 @@
 import type { SplitWrapperAttrs, WrapperSpec } from '@/shared/splitWrapperAttrs'
 import { isClient } from '@vueuse/shared'
-import { computed, nextTick, reactive, ref, shallowRef, watch, watchEffect } from 'vue'
+import { computed, getCurrentScope, nextTick, reactive, ref, shallowRef, watch, watchEffect } from 'vue'
 import { containsComposed, getActiveElement, getEventTarget, getOwnerDocument, getRootNode } from '@/shared'
 import { createWrapperEmit } from '@/shared/splitWrapperAttrs'
 import { createFocusScopesStack } from './stack'
@@ -155,7 +155,7 @@ export function useFocusScope(options: UseFocusScopeOptions) {
       // window — e.g. a view swapped in by the popper's `select` handler focusing its own
       // input on mount — would be robbed of focus.
       // -- related: https://github.com/unovue/reka-ui/issues/2886
-      const activeElement = getActiveElement()
+      const activeElement = getActiveElement(container)
       if (activeElement && containsComposed(container, activeElement))
         return
 
@@ -207,7 +207,7 @@ export function useFocusScope(options: UseFocusScopeOptions) {
 
     if (!mountEvent.defaultPrevented) {
       focusFirst(getTabbableCandidates(container), { select: true })
-      if (getActiveElement() === previouslyFocusedElement)
+      if (getActiveElement(container) === previouslyFocusedElement)
         focus(container)
     }
   }
@@ -217,23 +217,61 @@ export function useFocusScope(options: UseFocusScopeOptions) {
   // swaps the scope's element: the scope stays mounted and in the stack, keeps
   // this, and fires neither auto-focus event for the old element.
   let restoreFocusTo: HTMLElement | null = null
-  let isSwap = false
+  // The element a swap left, until the run on the new element takes over.
+  let swappedFrom: HTMLElement | null = null
+  const scope = getCurrentScope()
+
+  // Unmount: the unmount auto-focus, focus back, out of the stack.
+  function teardown(container: HTMLElement) {
+    const previouslyFocusedElement = restoreFocusTo
+    const unmountEvent = new CustomEvent(AUTOFOCUS_ON_UNMOUNT, EVENT_OPTIONS)
+    const unmountEventHandler = (ev: Event) => {
+      options.onUnmountAutoFocus?.(ev)
+    }
+    container.addEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)
+    container.dispatchEvent(unmountEvent)
+
+    // Signal that blur events fired below are system-initiated (focus trap
+    // cleanup), not user-initiated. Consumers can use this to skip validation.
+    container.setAttribute('data-focus-scope-unmounting', '')
+
+    setTimeout(() => {
+      if (!unmountEvent.defaultPrevented)
+        focus(previouslyFocusedElement ?? getOwnerDocument(container).body, { select: true })
+
+      // we need to remove the listener after we `dispatchEvent`
+      container.removeEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)
+
+      focusScopesStack.remove(focusScope)
+      container.removeAttribute('data-focus-scope-unmounting')
+    }, 0)
+  }
 
   watchEffect(async (cleanupFn) => {
     const container = element.value
 
     await nextTick()
-    if (!container)
+    // Bail when the scope unmounted, or moved to another element, during the
+    // `await`: a cleanup registered now would never run, leaving the scope on
+    // the stack and the trap under it paused.
+    if (!container || scope?.active === false || element.value !== container) {
+      // A swap's new element that unmounted before this run: the scope is gone,
+      // and the swap kept it in the stack; tear it down from the element it left.
+      if (swappedFrom && (scope?.active === false || !element.value)) {
+        teardown(swappedFrom)
+        swappedFrom = null
+      }
       return
-    const swapped = isSwap
-    isSwap = false
+    }
+    const swapped = !!swappedFrom
+    swappedFrom = null
     // A scope that mounts hidden (`present: false`, e.g. a closed Dialog with
     // `unmountOnHide: false`) must stay out of the scope stack: adding it would
     // pause the currently active scope and break its focus trap. The `present`
     // watcher below adds/removes it as it becomes visible.
     if (!swapped && present() !== false)
       focusScopesStack.add(focusScope)
-    const previouslyFocusedElement = getActiveElement() as HTMLElement | null
+    const previouslyFocusedElement = getActiveElement(container) as HTMLElement | null
     if (!swapped)
       restoreFocusTo = previouslyFocusedElement
     const hasFocusedCandidate = containsComposed(container, previouslyFocusedElement)
@@ -260,32 +298,13 @@ export function useFocusScope(options: UseFocusScopeOptions) {
     }
 
     cleanupFn(() => {
-      if (element.value && element.value !== container) {
-        isSwap = true
+      // The element changed while the scope stays mounted (not an unmount: the
+      // scope's effect scope is still active).
+      if (scope?.active !== false && element.value && element.value !== container) {
+        swappedFrom = container
         return
       }
-      const previouslyFocusedElement = restoreFocusTo
-      const unmountEvent = new CustomEvent(AUTOFOCUS_ON_UNMOUNT, EVENT_OPTIONS)
-      const unmountEventHandler = (ev: Event) => {
-        options.onUnmountAutoFocus?.(ev)
-      }
-      container.addEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)
-      container.dispatchEvent(unmountEvent)
-
-      // Signal that blur events fired below are system-initiated (focus trap
-      // cleanup), not user-initiated. Consumers can use this to skip validation.
-      container.setAttribute('data-focus-scope-unmounting', '')
-
-      setTimeout(() => {
-        if (!unmountEvent.defaultPrevented)
-          focus(previouslyFocusedElement ?? getOwnerDocument(container).body, { select: true })
-
-        // we need to remove the listener after we `dispatchEvent`
-        container.removeEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)
-
-        focusScopesStack.remove(focusScope)
-        container.removeAttribute('data-focus-scope-unmounting')
-      }, 0)
+      teardown(container)
     })
   })
 
@@ -316,7 +335,7 @@ export function useFocusScope(options: UseFocusScopeOptions) {
     if (!container)
       return
 
-    const previouslyFocusedElement = getActiveElement() as HTMLElement | null
+    const previouslyFocusedElement = getActiveElement(container) as HTMLElement | null
     if (!containsComposed(container, previouslyFocusedElement))
       dispatchMountAutoFocus(container, previouslyFocusedElement)
   })
@@ -329,10 +348,10 @@ export function useFocusScope(options: UseFocusScopeOptions) {
 
     const isTabKey
       = event.key === 'Tab' && !event.altKey && !event.ctrlKey && !event.metaKey
-    const focusedElement = getActiveElement() as HTMLElement | null
+    const container = event.currentTarget as HTMLElement
+    const focusedElement = getActiveElement(container) as HTMLElement | null
 
     if (isTabKey && focusedElement) {
-      const container = event.currentTarget as HTMLElement
       const [first, last] = getTabbableEdges(container)
       const hasTabbableElementsInside = first && last
 

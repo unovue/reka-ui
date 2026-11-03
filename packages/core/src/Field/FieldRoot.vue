@@ -411,8 +411,12 @@ function registerControl(registration: FieldControlRegistration) {
   // A control mounted with a value (e.g. `<input value="…">`) is filled from the start.
   filled.value = isFilled(current)
   return () => {
-    if (control.value === registration)
-      control.value = undefined
+    if (control.value !== registration)
+      return
+    control.value = undefined
+    // A control that goes away can't hold focus, but not every browser fires
+    // `blur`/`focusout` for a removed element, so don't wait for one.
+    focused.value = false
   }
 }
 
