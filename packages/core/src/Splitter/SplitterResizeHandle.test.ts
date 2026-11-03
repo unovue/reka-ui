@@ -225,3 +225,46 @@ describe('resize handle hover state next to an iframe (issue #2893)', () => {
     expect(handle.attributes('data-state')).toBe('hover')
   })
 })
+
+// One registry serves every document, so the handles of a splitter in an iframe and of one in
+// the page are hit-tested together, although each reports its rect in its own viewport.
+describe('resize handles in two documents', () => {
+  const wrappers: VueWrapper[] = []
+
+  afterEach(() => {
+    wrappers.splice(0).forEach(wrapper => wrapper.unmount())
+    document.body.innerHTML = ''
+  })
+
+  function mountSplitter(container: HTMLElement) {
+    const TestComponent = defineComponent({
+      components: { SplitterGroup, SplitterPanel, SplitterResizeHandle },
+      template: `
+        <SplitterGroup direction="horizontal">
+          <SplitterPanel class="panel" />
+          <SplitterResizeHandle class="handle" />
+          <SplitterPanel />
+        </SplitterGroup>
+      `,
+    })
+    const wrapper = mount(TestComponent, { attachTo: container })
+    wrappers.push(wrapper)
+    return wrapper
+  }
+
+  it('should leave a handle in another document out of hit testing', async () => {
+    const page = mountSplitter(document.body)
+    const iframe = document.createElement('iframe')
+    document.body.appendChild(iframe)
+    const framed = mountSplitter(iframe.contentDocument!.body)
+    await nextTick()
+
+    // jsdom reports a zero rect for every element, so (0, 0) falls within both handles' hit
+    // areas; only the handle in the event's document may react. Comparing the stacking order
+    // with the page's handle used to throw, so the iframe's own handle never took the pointer.
+    await fireEvent.mouseMove(framed.find('.panel').element, { clientX: 0, clientY: 0 })
+
+    expect(framed.find('.handle').attributes('data-state')).toBe('hover')
+    expect(page.find('.handle').attributes('data-state')).toBe('inactive')
+  })
+})

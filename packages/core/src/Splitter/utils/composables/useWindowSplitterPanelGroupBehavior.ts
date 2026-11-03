@@ -17,7 +17,7 @@ export function useWindowSplitterPanelGroupBehavior({
   panelDataArray,
   panelGroupElement,
   resizeHandleRegistration,
-  setLayout,
+  commitLayout,
   getPanelDataWithPercentConstraints,
 }: {
   eagerValuesRef: Ref<{
@@ -28,7 +28,7 @@ export function useWindowSplitterPanelGroupBehavior({
   panelDataArray: PanelData[]
   panelGroupElement: Ref<ParentNode | null>
   resizeHandleRegistration: Ref<number>
-  setLayout: (sizes: number[]) => void
+  commitLayout: (sizes: number[]) => void
   getPanelDataWithPercentConstraints: (groupSizeOverride?: number | null) => PanelData[] | null
 }): void {
   watchEffect((onCleanup) => {
@@ -167,7 +167,7 @@ export function useWindowSplitterPanelGroupBehavior({
                   trigger: 'keyboard',
                 })
                 if (layout.value !== nextLayout)
-                  setLayout(nextLayout)
+                  commitLayout(nextLayout)
               }
             }
             break
