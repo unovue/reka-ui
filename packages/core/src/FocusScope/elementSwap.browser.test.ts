@@ -165,3 +165,55 @@ describe('given a trapped focus scope swapped and closed in the same tick', () =
     })
   }
 })
+
+// The first tabbable candidate can be hidden by CSS (`getTabbableCandidates`
+// does not check): focus goes to the first one that takes it.
+describe('given a trapped focus scope whose first tabbable is hidden', () => {
+  it('moves the focus a swap lost to the first focusable tabbable', async () => {
+    const as = ref('div')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(DialogRoot, { defaultOpen: true }, () => h(DialogPortal, () => h(DialogContent, { 'data-testid': 'content', 'as': as.value, 'aria-describedby': undefined }, () => [
+        h(DialogTitle, () => 'Title'),
+        h('button', { 'data-testid': 'hidden', 'style': 'display: none' }, 'Hidden'),
+        h('button', { 'data-testid': 'first' }, 'First'),
+      ]))),
+    }), { attachTo: document.body })
+    unmount = () => wrapper.unmount()
+    await expect.poll(() => document.activeElement?.getAttribute('data-testid')).toBe('first')
+    as.value = 'section'
+    await expect.poll(() => $('content')?.tagName).toBe('SECTION')
+    await wait(50)
+    expect(document.activeElement?.getAttribute('data-testid')).toBe('first')
+  })
+
+  it('recalls focus to the first focusable tabbable when the last focused element left', async () => {
+    const which = ref<'a' | 'b'>('a')
+    const wrapper = mount(defineComponent({
+      setup: () => () => [
+        h('button', { 'data-testid': 'outside' }, 'Outside'),
+        h(DialogRoot, { defaultOpen: true }, () => h(DialogContent, { 'asChild': true, 'aria-describedby': undefined }, () =>
+          h(which.value === 'a' ? 'div' : 'section', { 'key': which.value, 'data-testid': 'dialog', 'style': 'position: fixed; z-index: 10; inset: 40px; background: white' }, [
+            h(DialogTitle, () => 'Title'),
+            h('button', { 'data-testid': 'hidden', 'style': 'display: none' }, 'Hidden'),
+            h('button', { 'data-testid': 'first' }, 'First'),
+            h(PopoverRoot, () => [
+              h(PopoverTrigger, { 'data-testid': 'popover-trigger' }, () => 'Popover'),
+              h(PopoverPortal, () => h(PopoverContent, { 'data-testid': 'popover', 'trapFocus': true, 'style': 'z-index: 20; background: white' }, () => h('button', 'In popover'))),
+            ]),
+          ]))),
+      ],
+    }), { attachTo: document.body })
+    unmount = () => wrapper.unmount()
+    await expect.poll(inDialog).toBe(true)
+    await userEvent.click($('popover-trigger')!)
+    await expect.poll(() => !!$('popover')).toBe(true)
+    which.value = 'b'
+    await nextTick()
+    await expect.poll(() => $('dialog')?.tagName).toBe('SECTION')
+    await expect.poll(() => $('popover')).toBeNull()
+    await wait(50)
+
+    $('outside')!.focus()
+    await expect.poll(() => document.activeElement?.getAttribute('data-testid')).toBe('first')
+  })
+})

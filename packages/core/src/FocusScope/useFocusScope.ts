@@ -37,6 +37,13 @@ export interface UseFocusScopeOptions {
  * @internal
  * @lifecycle setup
  */
+// The first tabbable candidate that takes focus (one can be hidden by CSS:
+// `getTabbableCandidates` does not check), else the container.
+function focusFirstTabbable(container: HTMLElement) {
+  if (!focusFirst(getTabbableCandidates(container), { select: true }))
+    focus(container, { select: true })
+}
+
 export function useFocusScope(options: UseFocusScopeOptions) {
   const loop = () => !!options.loop?.()
   // A computed, because a part's getter reads what its wrapper received, an
@@ -88,7 +95,10 @@ export function useFocusScope(options: UseFocusScopeOptions) {
     // to the first tabbable one, else the container.
     function recall() {
       const last = lastFocusedElementRef.value
-      focus(last && container && !containsComposed(container, last) ? getTabbableCandidates(container)[0] ?? container : last, { select: true })
+      if (last && container && !containsComposed(container, last))
+        focusFirstTabbable(container)
+      else
+        focus(last, { select: true })
     }
 
     function handleFocusIn(event: FocusEvent) {
@@ -291,7 +301,7 @@ export function useFocusScope(options: UseFocusScopeOptions) {
       // else the container.
       const isFocusLost = !previouslyFocusedElement || previouslyFocusedElement === getOwnerDocument(container).body
       if (isFocusLost && present() !== false)
-        focus(getTabbableCandidates(container)[0] ?? container, { select: true })
+        focusFirstTabbable(container)
     }
     else if (!hasFocusedCandidate && present() !== false) {
       dispatchMountAutoFocus(container, previouslyFocusedElement)
