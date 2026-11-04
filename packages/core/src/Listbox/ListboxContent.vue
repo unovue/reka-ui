@@ -8,7 +8,7 @@ export interface ListboxContentProps extends PrimitiveProps { }
 </script>
 
 <script setup lang="ts">
-import { computed, getCurrentInstance, mergeProps, onBeforeUnmount, onMounted, watchPostEffect } from 'vue'
+import { computed, getCurrentInstance, mergeProps, onBeforeUnmount, watch, watchPostEffect } from 'vue'
 import { useCollectionSlot } from '@/Collection'
 import { renderAs, rendersOwnElement } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
@@ -57,9 +57,11 @@ useCollectionSlot(currentElement)
 // wiring, and is what the field focuses.
 const fieldContext = injectListboxFieldContext(null)
 if (fieldContext) {
-  onMounted(() => {
-    fieldContext.contentElement.value = currentElement.value as HTMLElement
-  })
+  // Followed, not read once: an `as` / as-child change swaps the element.
+  watch(currentElement, (element) => {
+    if (element)
+      fieldContext.contentElement.value = element as HTMLElement
+  }, { immediate: true })
   onBeforeUnmount(() => {
     if (fieldContext.contentElement.value === currentElement.value)
       fieldContext.contentElement.value = undefined

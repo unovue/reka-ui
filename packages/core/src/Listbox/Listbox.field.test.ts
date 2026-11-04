@@ -3,6 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { FieldLabel, FieldRoot } from '@/Field'
+import { FormRoot } from '@/Form'
 import { describeFieldControlContract } from '@/test/fieldControlContract'
 import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot } from '.'
 
@@ -63,6 +64,29 @@ describe('given a Field-wrapped Listbox', () => {
     await nextTick()
     expect(field().attributes('data-touched')).toBe('')
     expect(field().attributes('data-focused')).toBeUndefined()
+    wrapper.unmount()
+  })
+})
+
+describe('given a Field-wrapped Listbox whose content element changes', () => {
+  it('focuses into the current content element on an invalid submit', async () => {
+    const as = ref('div')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FormRoot, null, () => [
+        h(FieldRoot, { name: 'fruit', required: true }, () => h(ListboxRoot, null, () =>
+          h(ListboxContent, { as: as.value }, () => fruits.map(fruit => h(ListboxItem, { value: fruit }, () => fruit))))),
+        h('button', { type: 'submit' }, 'Submit'),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    as.value = 'section'
+    await flushPromises()
+    await wrapper.find('button[type="submit"]').trigger('submit')
+    await flushPromises()
+    const content = wrapper.find('[role="listbox"]').element
+    expect(content.tagName).toBe('SECTION')
+    // Focusing the listbox moves focus on to its first item.
+    expect(content.contains(document.activeElement)).toBe(true)
     wrapper.unmount()
   })
 })

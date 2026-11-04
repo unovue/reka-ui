@@ -13,7 +13,7 @@ export interface TagsInputInputProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { mergeProps, onBeforeUnmount, onMounted } from 'vue'
+import { mergeProps, onBeforeUnmount, onMounted, watch } from 'vue'
 import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
 import { injectTagsInputFieldContext, injectTagsInputRootContext } from './TagsInputRoot.vue'
 import { createTagsInputInputSurface } from './useTagsInput'
@@ -45,8 +45,6 @@ onMounted(() => {
 
   if (!inputEl)
     return
-  if (fieldContext)
-    fieldContext.inputElement.value = inputEl as HTMLInputElement
 
   setTimeout(() => {
     // make sure all DOM was flush then only capture the focus
@@ -56,6 +54,12 @@ onMounted(() => {
 })
 
 if (fieldContext) {
+  // Followed, not read once: an as-child change swaps the element.
+  watch(currentElement, (element) => {
+    const inputEl = element?.nodeName === 'INPUT' ? element : element?.querySelector('input')
+    if (inputEl)
+      fieldContext.inputElement.value = inputEl as HTMLInputElement
+  }, { immediate: true })
   onBeforeUnmount(() => {
     fieldContext.inputElement.value = undefined
   })

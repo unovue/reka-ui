@@ -3,6 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { FieldLabel, FieldRoot } from '@/Field'
+import { FormRoot } from '@/Form'
 import { describeFieldControlContract } from '@/test/fieldControlContract'
 import { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot } from '.'
 
@@ -115,6 +116,28 @@ describe('given a controlled TagsInput that adds a tag on blur', () => {
     expect(model.value).toEqual(['Kiwi'])
     expect(validate).toHaveBeenLastCalledWith(['Kiwi'], expect.anything())
     expect(wrapper.find('[data-testid="field"]').attributes('data-invalid')).toBeUndefined()
+    wrapper.unmount()
+  })
+})
+
+describe('given a Field-wrapped TagsInput whose as-child input changes', () => {
+  it('points the field at the current input', async () => {
+    const first = ref(true)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FormRoot, null, () => [
+        h(FieldRoot, { name: 'tags', required: true }, () => h(TagsInputRoot, null, () =>
+          h(TagsInputInput, { asChild: true }, () => first.value
+            ? h('input', { 'key': 'first', 'data-testid': 'first' })
+            : h('input', { 'key': 'second', 'data-testid': 'second' })))),
+        h('button', { type: 'submit' }, 'Submit'),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    first.value = false
+    await flushPromises()
+    await wrapper.find('button[type="submit"]').trigger('submit')
+    await flushPromises()
+    expect(document.activeElement).toBe(wrapper.find('[data-testid="second"]').element)
     wrapper.unmount()
   })
 })
