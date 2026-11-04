@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { ComputedRef, CSSProperties, Ref } from 'vue'
 import type { ColorAreaAxis, ColorAreaChangeReason } from './useColorArea'
+import type { FieldControlBinding } from '@/Field/useFieldControl'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
@@ -68,9 +69,20 @@ export interface ColorAreaRootContext {
 
 export const [injectColorAreaRootContext, provideColorAreaRootContext]
   = createContext<ColorAreaRootContext>('ColorAreaRoot')
+
+/**
+ * A color area's participation in an ancestor `FieldRoot` (`null` outside
+ * one): the root owns the color and the registration, the thumb's inputs
+ * carry the field's id and aria wiring.
+ * @internal
+ */
+export const [injectColorAreaFieldContext, provideColorAreaFieldContext]
+  = createContext<FieldControlBinding | null>('ColorAreaRoot', 'ColorAreaFieldContext')
 </script>
 
 <script setup lang="ts">
+import { mergeProps, watch } from 'vue'
+import { useFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useColorArea } from './useColorArea'
@@ -98,25 +110,53 @@ defineExpose(expose)
 const isFormControl = useFormControl(currentElement)
 const dir = useDirection(() => props.dir)
 
-const { root, context, areaStyles, xValue, yValue } = useColorArea({
+// Optional Field participation: `null` outside a `FieldRoot`, so every
+// binding below is inert without a Field.
+const field = useFieldControl({
+  // The x input renders its own `id`, else the field's.
+  id: () => context.xInputRef.value?.id || undefined,
+  element: () => context.xInputRef.value ?? context.thumbRef.value,
+  // The model: a `Color`.
+  getValue: () => color.value,
+  required: () => props.required,
+})
+
+const { root, context, areaStyles, xValue, yValue, color } = useColorArea({
   colorSpace: () => props.colorSpace,
   xChannel: () => props.xChannel,
   yChannel: () => props.yChannel,
-  disabled: () => props.disabled,
+  disabled: () => field ? field.disabled(props.disabled) : props.disabled,
   modelValue: () => props.modelValue,
   defaultValue: () => props.defaultValue,
   dir: () => dir.value,
   emit: emits,
+  // A drag or keyboard step is user input for the Field; a programmatic or
+  // parent-driven change is reported by the watcher below.
+  onUpdate: field ? value => field.input(value) : undefined,
 })
 
 provideColorAreaRootContext(context)
+provideColorAreaFieldContext(field)
+
+if (field)
+  watch(color, value => field.sync(value))
+
+// The Field's state attributes go first so the area's own `data-*` win. The
+// field is focused while focus is on either axis, and blurred once it leaves.
+const fieldAttrs = field && {
+  onFocusin: field.onFocus,
+  onFocusout: (event: FocusEvent) => {
+    if (!currentElement.value?.contains(event.relatedTarget as Node | null))
+      field.onBlur()
+  },
+}
 </script>
 
 <template>
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="root.attrs.value"
+    v-bind="field ? mergeProps(field.dataAttributes(), root.attrs.value, fieldAttrs!) : root.attrs.value"
   >
     <slot :style="areaStyles" />
 
@@ -125,14 +165,14 @@ provideColorAreaRootContext(context)
       type="text"
       :value="xValue"
       :name="xName"
-      :disabled="disabled"
+      :disabled="context.disabled.value"
     />
     <VisuallyHiddenInput
       v-if="isFormControl && yName"
       type="text"
       :value="yValue"
       :name="yName"
-      :disabled="disabled"
+      :disabled="context.disabled.value"
     />
   </component>
 </template>
