@@ -694,6 +694,40 @@ With `multiple`, an item press toggles its value and the content stays open. `v-
 </template>
 ```
 
+### Loading options on open
+
+Fetch the options the first time the content opens, from `update:open`. The selected value usually arrives earlier, with the page, so describe how to label it without the options: an object value with `by` and `display-value` shows its own name in the trigger, and matches the fetched object with the same `id` once the options render.
+
+<ComponentPreview name="SelectRemote" />
+
+### In a form
+
+Inside a [`FieldRoot`](field), the select takes the field's `name`, `required` and `disabled`, gets labelled by `FieldLabel`, and is missing (`valueMissing`) while nothing is selected. Inside a [`FormRoot`](form), its value is part of the values passed to `formSubmit`. See [Forms and validation](/docs/guides/forms).
+
+```vue
+<template>
+  <FormRoot @form-submit="(values) => save(values.country)">
+    <FieldRoot name="country" required>
+      <FieldLabel>Country</FieldLabel>
+      <SelectRoot>
+        <SelectTrigger>
+          <SelectValue placeholder="Select a country" />
+        </SelectTrigger>
+        <!-- ... -->
+      </SelectRoot>
+      <FieldError match="valueMissing">
+        Select your country.
+      </FieldError>
+    </FieldRoot>
+    <button type="submit">
+      Save
+    </button>
+  </FormRoot>
+</template>
+```
+
+Without a Field, give the root a `name` (and `required` if needed): inside any `form` it renders a hidden native `<select>`, so the browser submits the value and autofill can fill it.
+
 ### Virtualized
 
 For a long list (thousands of options), render the items through a `SelectVirtualizer` inside the `SelectViewport`: only the visible window of options is mounted. Each option is the `value` of the `SelectItem` it renders, and `text-content` gives its text for typeahead (needed for object options; a string option is its own text). The virtualizer also renders the selected options while the content is closed, so their `SelectItemText` shows in `SelectValue` even when the selected item was never scrolled into view, and the keyboard (arrows, Home/End, typeahead) reaches options outside the rendered window. For object options, set a key `by` (`by="id"`): a function `by` compares values one by one, which gets slow with thousands of options.
