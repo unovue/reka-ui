@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { computed } from 'vue'
-import { injectEditableRootContext } from './EditableRoot.vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
+import { injectEditableFieldControl, injectEditableRootContext } from './EditableRoot.vue'
 
 export interface EditablePreviewProps extends PrimitiveProps {}
 </script>
@@ -19,8 +19,20 @@ const preview = getEditablePreviewSurface(context)
 
 const placeholder = computed(() => context.placeholder.value?.preview)
 
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
+
+// Inside a `FieldRoot`, the preview is what the field focuses while previewing.
+const fieldControl = injectEditableFieldControl(null)
+if (fieldControl) {
+  watch(currentElement, (element) => {
+    fieldControl.preview.value = element as HTMLElement | undefined
+  }, { immediate: true })
+  onBeforeUnmount(() => {
+    if (fieldControl.preview.value === currentElement.value)
+      fieldControl.preview.value = undefined
+  })
+}
 </script>
 
 <template>
