@@ -14,12 +14,17 @@ export interface AutocompleteInputProps extends ListboxFilterProps {}
 </script>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from 'vue'
+import { mergeProps, onMounted, onUnmounted, watch } from 'vue'
 import { injectComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
 import { createComboboxInputSurface } from '@/Combobox/useCombobox'
+import { getComboboxInputFieldAttrs, injectComboboxFieldContext } from '@/Combobox/useComboboxField'
 import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
 import { useControllableState, useForwardElement } from '@/shared'
 import { injectAutocompleteRootContext } from './AutocompleteRoot.vue'
+
+// `$attrs` are merged in the render (as the fall-through did) so the Field's
+// aria ids can be merged with the consumer's.
+defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(defineProps<AutocompleteInputProps>(), {
   as: 'input',
@@ -35,6 +40,7 @@ defineSlots<{
 
 const rootContext = injectComboboxRootContext()
 const autocompleteContext = injectAutocompleteRootContext()
+const fieldContext = injectComboboxFieldContext(null)
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
@@ -111,7 +117,7 @@ watch(rootContext.filterState, (_newValue, oldValue) => {
   <component
     :is="renderAsEmpty(as, asChild)"
     :ref="forwardRef"
-    v-bind="surface.attrs.value"
+    v-bind="fieldContext ? getComboboxInputFieldAttrs(fieldContext, surface.attrs.value, $attrs) : mergeProps(surface.attrs.value, $attrs)"
   >
     <template
       v-if="rendersChildren(as, asChild)"

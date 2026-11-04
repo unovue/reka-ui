@@ -13,7 +13,7 @@ import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement, useSize } from '@/shared'
 import { injectSliderRootContext } from './SliderRoot.vue'
 import { getSliderThumbSurface } from './useSlider'
-import { injectSliderOrientationContext } from './utils'
+import { injectSliderFieldContext, injectSliderOrientationContext } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -30,6 +30,8 @@ const { getItems } = useCollection()
 const { forwardRef, currentElement: thumbElement, expose } = useForwardElement()
 defineExpose(expose)
 useCollectionItem(thumbElement)
+
+const field = injectSliderFieldContext(null)
 
 const position = computed(() => thumbElement.value ? getItems(true).findIndex(i => i.ref === thumbElement.value) : -1)
 
@@ -63,12 +65,31 @@ function elementAttrs(consumerAttrs: Record<string, unknown>) {
   // the DOM property, which writes the same attribute: removing it would leave
   // `aria-label=""` behind, as Vue clears the property but not the attribute.
   const { index: _, ariaLabel, ...rest } = consumerAttrs
-  return mergeProps(
+  const label = consumerAttrs['aria-label'] || ariaLabel || thumb.props.value['aria-label']
+  const attrs = mergeProps(
     COLLECTION_ITEM_ATTRS,
     rest,
     thumb.attrs.value,
-    { 'aria-label': consumerAttrs['aria-label'] || ariaLabel || thumb.props.value['aria-label'] },
+    { 'aria-label': label },
   )
+  return field ? mergeProps(attrs, fieldAttrs(consumerAttrs, label as string | undefined)) : attrs
+}
+
+// Inside a Field: the first thumb takes the field's id (others derive theirs
+// from it), unless the consumer set one. Every thumb is labelled and
+// described by the field; a thumb with an `aria-label` of its own ("Minimum",
+// a color channel) also references itself, so its name is the field's label
+// followed by its own.
+function fieldAttrs(consumerAttrs: Record<string, unknown>, label: string | undefined) {
+  // A thumb's place is only known once mounted (`-1` on the server and the
+  // first render), so a thumb of a range slider has no derived id until then.
+  const index = consumerIndex.value ?? ((rootContext.modelValue?.value?.length ?? 0) > 1 ? position.value : 0)
+  const fieldId = field!.context.fieldId.value
+  const id = (consumerAttrs.id as string | undefined) ?? (index === 0 ? fieldId : index > 0 ? `${fieldId}-${index}` : undefined)
+  const aria = field!.ariaAttrs(consumerAttrs, rootContext.disabled.value)
+  if (label && id && field!.context.labelId.value)
+    aria['aria-labelledby'] = `${aria['aria-labelledby']} ${id}`
+  return { id, ...aria }
 }
 // Template binding keeps the v2 order: consumer attributes first, so the thumb's
 // own attributes win and a consumer `@focus` runs before the thumb's; a consumer

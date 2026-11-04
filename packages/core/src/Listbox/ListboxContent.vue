@@ -1,14 +1,14 @@
 <script lang="ts">
 import type { PrimitiveProps } from '..'
 import { refAutoReset } from '@vueuse/shared'
-import { injectListboxRootContext } from './ListboxRoot.vue'
+import { injectListboxFieldContext, injectListboxRootContext } from './ListboxRoot.vue'
 import { getListboxContentSurface, getListboxContentTabindex } from './useListbox'
 
 export interface ListboxContentProps extends PrimitiveProps { }
 </script>
 
 <script setup lang="ts">
-import { computed, getCurrentInstance, mergeProps, watchPostEffect } from 'vue'
+import { computed, getCurrentInstance, mergeProps, onBeforeUnmount, onMounted, watchPostEffect } from 'vue'
 import { useCollectionSlot } from '@/Collection'
 import { renderAs, rendersOwnElement } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
@@ -53,6 +53,28 @@ const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 useCollectionSlot(currentElement)
 
+// Inside a Field, the listbox element carries the field's id, label and aria
+// wiring, and is what the field focuses.
+const fieldContext = injectListboxFieldContext(null)
+if (fieldContext) {
+  onMounted(() => {
+    fieldContext.contentElement.value = currentElement.value as HTMLElement
+  })
+  onBeforeUnmount(() => {
+    if (fieldContext.contentElement.value === currentElement.value)
+      fieldContext.contentElement.value = undefined
+  })
+}
+// The Field's state attributes go first so the listbox's own `data-*` win;
+// its aria ids are merged with the consumer's, and its id yields to theirs.
+function fieldAttrs(attrs: Record<string, unknown>) {
+  const { field } = fieldContext!
+  return mergeProps(field.dataAttributes(), attrs, surface.attrs.value, {
+    id: (attrs.id as string | undefined) ?? field.context.fieldId.value,
+    ...field.ariaAttrs(attrs, rootContext.disabled.value),
+  })
+}
+
 const tabindex = getListboxContentTabindex(rootContext)
 watchPostEffect(() => {
   const value = tabindex.value
@@ -64,7 +86,7 @@ watchPostEffect(() => {
 <template>
   <component
     :is="renderAs(as, asChild)"
-    v-bind="mergeProps($attrs, surface.attrs.value)"
+    v-bind="fieldContext ? fieldAttrs($attrs) : mergeProps($attrs, surface.attrs.value)"
     :ref="forwardRef"
   >
     <slot />
