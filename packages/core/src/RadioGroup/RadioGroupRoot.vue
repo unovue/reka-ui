@@ -47,7 +47,8 @@ export const [injectRadioGroupRootContext, provideRadioGroupRootContext]
 </script>
 
 <script setup lang="ts">
-import { mergeProps } from 'vue'
+import { mergeProps, useAttrs, watch } from 'vue'
+import { useFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusGroup } from '@/RovingFocus/useRovingFocusGroup'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -83,20 +84,56 @@ defineExpose(expose)
 // owns the controlled/uncontrolled model (`useControllableState`) and emits.
 const dir = useDirection(() => props.dir)
 const isFormControl = useFormControl(currentElement)
+const attrs = useAttrs()
 
-const { modelValue, root, context } = useRadioGroup({
+// The radio a Field focuses (an invalid submit, a non-native label's click):
+// the checked one, else the first enabled one.
+function getFocusTarget() {
+  const radios = Array.from(currentElement.value?.querySelectorAll<HTMLElement>('[role="radio"]') ?? [])
+    .filter(radio => !radio.hasAttribute('disabled') && !radio.hasAttribute('data-disabled'))
+  return radios.find(radio => radio.getAttribute('aria-checked') === 'true') ?? radios[0]
+}
+
+// Optional Field participation: `null` outside a `FieldRoot`, so every
+// binding below is inert without a Field. The group is the field's control:
+// it takes the field's id and aria wiring, and the radios inside don't.
+const field = useFieldControl({
+  id: () => attrs.id as string | undefined,
+  element: getFocusTarget,
+  getValue: () => modelValue.value,
+  required: () => props.required,
+  // A radio's value can be `''`, which still counts as a choice.
+  isFilled: value => value !== undefined && value !== null,
+})
+// Getters rather than computeds: cheap, and free for a standalone group.
+const resolvedName = () => field ? field.name(props.name) : props.name
+const resolvedRequired = () => field ? field.required(props.required) : props.required
+
+const { modelValue, disabled, root, context } = useRadioGroup({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   emit: emits,
-  disabled: () => props.disabled,
-  required: () => props.required,
+  // A radio press is user input for the Field; a programmatic or
+  // parent-driven change is reported through the `modelValue` watcher below.
+  onUpdate: value => field?.input(value),
+  disabled: () => field ? field.disabled(props.disabled) : props.disabled,
+  required: resolvedRequired,
   orientation: () => props.orientation,
   loop: () => props.loop,
   dir,
-  name: () => props.name,
+  name: resolvedName,
 })
 
 provideRadioGroupRootContext(context)
+
+if (field)
+  watch(modelValue, value => field.sync(value))
+
+// Touched once focus leaves the whole group, not on every radio-to-radio move.
+function onFocusout(event: FocusEvent) {
+  if (!currentElement.value?.contains(event.relatedTarget as Node | null))
+    field?.onBlur()
+}
 
 // Arrow-key navigation between the radios.
 const roving = useRovingFocusGroup({
@@ -110,22 +147,36 @@ const roving = useRovingFocusGroup({
 // The window arrow-key flag the items read on focus (one shared pair of
 // listeners, not one per item).
 useArrowKeyListeners()
+
+// `$attrs` isn't reactive, so the Field's wiring is read during render. Its
+// state attributes go first so the group's own (e.g. `data-disabled`) win;
+// its aria ids are merged with the consumer's.
+function renderAttrs(attrs: Record<string, unknown>) {
+  const own = mergeProps(roving.consumerAttrs(attrs), roving.attrs(), root.attrs.value)
+  if (!field)
+    return own
+  return mergeProps(
+    field.dataAttributes(),
+    own,
+    { id: field.id(), ...field.ariaAttrs(attrs, disabled.value), onFocusin: field.onFocus, onFocusout },
+  )
+}
 </script>
 
 <template>
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps(roving.consumerAttrs($attrs), roving.attrs(), root.attrs.value)"
+    v-bind="renderAttrs($attrs)"
   >
     <slot :model-value="modelValue" />
 
     <VisuallyHiddenInput
-      v-if="isFormControl && name"
-      :required="required"
+      v-if="isFormControl && resolvedName()"
+      :required="resolvedRequired()"
       :disabled="disabled"
       :value="modelValue"
-      :name="name"
+      :name="resolvedName()!"
     />
   </component>
 </template>
