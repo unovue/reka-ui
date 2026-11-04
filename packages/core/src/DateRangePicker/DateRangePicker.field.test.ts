@@ -89,4 +89,36 @@ describe('given a Field-wrapped DateRangePicker', () => {
     expect(Object.keys(values)).toEqual(['stay'])
     expect(`${values.stay.start} - ${values.stay.end}`).toBe('2024-01-15 - 2024-01-18')
   })
+
+  it('stays untouched while focus moves into the calendar, and is touched once it leaves both', async () => {
+    const validate = vi.fn()
+    const user = userEvent.setup()
+    const { getByTestId, container } = render(Harness, { props: { fieldProps: { validate, validationMode: 'onBlur' } } })
+    await nextTick()
+    const field = getByTestId('field')
+    await user.click(container.querySelector('[data-segment="start-month"]')!)
+    await user.click(getByTestId('trigger'))
+    await flushPromises()
+    expect(document.querySelector('[role="dialog"]')!.contains(document.activeElement)).toBe(true)
+    expect(field.getAttribute('data-focused')).toBe('')
+    expect(field.getAttribute('data-touched')).toBeNull()
+
+    await user.click(getByTestId('day-2024-01-15'))
+    await user.click(getByTestId('day-2024-01-18'))
+    await flushPromises()
+    expect(field.getAttribute('data-touched')).toBeNull()
+    expect(validate).not.toHaveBeenCalled()
+
+    // Escape closes the calendar and returns focus to the trigger.
+    await user.keyboard('{Escape}')
+    await flushPromises()
+    expect(document.activeElement).toBe(getByTestId('trigger'))
+    expect(field.getAttribute('data-touched')).toBeNull()
+
+    await user.click(document.body)
+    await flushPromises()
+    expect(field.getAttribute('data-focused')).toBeNull()
+    expect(field.getAttribute('data-touched')).toBe('')
+    expect(validate).toHaveBeenCalledTimes(1)
+  })
 })

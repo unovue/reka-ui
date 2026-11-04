@@ -6,7 +6,7 @@ import type { CalendarUnit, DateValue, Matcher, WeekDayFormat, WeekStartsOn } fr
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { DateRange, DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { createContext, getActiveElement, useDirection, useId, useLocale } from '@/shared'
+import { createContext, getActiveElement, getElementByIdFrom, useDirection, useId, useLocale } from '@/shared'
 
 export type DateRangePickerRootContext = {
   id: Ref<string | undefined>
@@ -128,6 +128,7 @@ export const [injectDateRangePickerRootContext, provideDateRangePickerRootContex
 <script setup lang="ts">
 import { computed, toRefs, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field/FieldRoot.vue'
+import { provideFieldFocusExtension } from '@/Field/useFieldFocusWithin'
 import { providePopoverRootContext } from '@/Popover/PopoverRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { isEqual } from '@/shared/compare'
@@ -252,6 +253,16 @@ if (fieldContext) {
       return
     fieldContext.handleControlInput({ value })
   }, { flush: 'post' })
+
+  // The trigger and the (portaled) calendar are part of the field's control:
+  // focus moving into them from the segments doesn't touch the field.
+  provideFieldFocusExtension({
+    elements: () => {
+      const fieldElement = (context.dateFieldRef.value as { $el?: Node } | undefined)?.$el
+      return [popover.context.triggerElement.value, getElementByIdFrom(fieldElement, popover.context.contentId)]
+    },
+    open: () => popover.context.open.value,
+  })
 }
 
 providePopoverRootContext(popover.context)

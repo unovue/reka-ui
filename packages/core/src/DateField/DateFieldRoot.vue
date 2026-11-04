@@ -89,6 +89,7 @@ export const [injectDateFieldRootContext, provideDateFieldRootContext]
 <script setup lang="ts">
 import { computed, mergeProps, onBeforeUnmount, onMounted, ref, toRefs, useAttrs, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field'
+import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHidden } from '@/VisuallyHidden'
@@ -223,61 +224,21 @@ onMounted(() => {
 })
 onBeforeUnmount(() => unregisterControl?.())
 
-const isFocusWithin = ref(false)
+// Touched once focus leaves the whole group (and a composing picker's
+// trigger and calendar), not when it moves between segments.
+const focusWithin = useFieldFocusWithin(fieldContext
+  ? { onFocus: () => fieldContext.handleControlFocus(), onBlur: () => fieldContext.handleControlBlur(), context: fieldContext }
+  : null, parentElement)
 
 // A value change while focus is inside the segments is the user editing it;
 // anything else is programmatic, which updates `filled` but isn't dirtying.
 // Flushed after render so the hidden input's validity reflects the new value.
 watch(modelValue, (value) => {
-  if (isFocusWithin.value)
+  if (focusWithin?.isFocusWithin())
     fieldContext?.handleControlInput({ value })
   else
     fieldContext?.reportControlState({ filled: !isNullish(value) })
 }, { flush: 'post' })
-
-const handledFocusEvents = new WeakSet<Event>()
-
-function handleFocusin(event: FocusEvent) {
-  if (handledFocusEvents.has(event))
-    return
-  handledFocusEvents.add(event)
-  if (!isFocusWithin.value)
-    fieldContext?.handleControlFocus()
-  isFocusWithin.value = true
-}
-
-function handleFocusout(event: FocusEvent) {
-  if (handledFocusEvents.has(event))
-    return
-  handledFocusEvents.add(event)
-  if (parentElement.value?.contains(event.relatedTarget as Node | null))
-    return
-  isFocusWithin.value = false
-  fieldContext?.handleControlBlur()
-}
-
-// The template listeners do the work: they run in order with a consumer's, and stay
-// on an element being removed for the `focusout` its removal fires. But Vue skips an
-// invoker attached in the millisecond of the event's first invoker, here a segment's,
-// which would leave `isFocusWithin` out of step with the document. These catch that,
-// attached as soon as the element exists, and skip an event the template already
-// handled: a consumer can move focus during it, and it mustn't undo what that did.
-watch(parentElement, (element, _, onCleanup) => {
-  if (!element)
-    return
-  element.addEventListener('focusin', handleFocusin)
-  element.addEventListener('focusout', handleFocusout)
-  onCleanup(() => {
-    element.removeEventListener('focusin', handleFocusin)
-    element.removeEventListener('focusout', handleFocusout)
-    // The element is going away (an `as` or as-child change, or unmount), and not every
-    // browser fires `focusout` for a removed element, so focus can't still be inside it.
-    if (isFocusWithin.value) {
-      isFocusWithin.value = false
-      fieldContext?.reportControlState({ focused: false })
-    }
-  })
-}, { flush: 'sync' })
 
 provideDateFieldRootContext(context)
 
@@ -292,8 +253,8 @@ defineExpose(mergeExpose(expose, {
     :is="renderAs(as, asChild)"
     v-bind="getRootAttrs()"
     ref="primitiveElement"
-    @focusin="handleFocusin"
-    @focusout="handleFocusout"
+    @focusin="focusWithin?.onFocusin"
+    @focusout="focusWithin?.onFocusout"
   >
     <slot
       :model-value="modelValue"

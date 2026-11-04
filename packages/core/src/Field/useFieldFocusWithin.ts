@@ -1,9 +1,11 @@
-import type { Ref } from 'vue'
+import type { InjectionKey, Ref } from 'vue'
+import type { FieldRootContext } from './FieldRoot.vue'
 import type { FieldControlBinding } from './useFieldControl'
-import { watch } from 'vue'
+import { inject, nextTick, provide, watch } from 'vue'
+import { getActiveElement } from '@/shared'
 
 export interface FieldFocusWithin {
-  /** Whether focus is currently inside the control's element. */
+  /** Whether focus is currently inside the control's own element (not an extension). */
   isFocusWithin: () => boolean
   /** Bind as the element's `@focusin`. */
   onFocusin: (event: FocusEvent) => void
@@ -11,11 +13,42 @@ export interface FieldFocusWithin {
   onFocusout: (event: FocusEvent) => void
 }
 
+/** What `useFieldFocusWithin` reports to: a control's field binding, or an adapter with the same calls. */
+export type FieldFocusTarget = Pick<FieldControlBinding, 'onFocus' | 'onBlur'> & {
+  context: Pick<FieldRootContext, 'reportControlState'>
+}
+
+/**
+ * Elements outside a control's own element that focus can move into without
+ * leaving the control, provided by a component composing it (e.g. a picker's
+ * trigger and portaled popover content around its date field).
+ * @internal
+ */
+export interface FieldFocusExtension {
+  /** The extension's elements, those that are mounted. */
+  elements: () => Array<HTMLElement | null | undefined>
+  /** Whether the extension is open. When it closes with focus inside, where focus went is re-checked. */
+  open: () => boolean
+}
+
+const FIELD_FOCUS_EXTENSION: InjectionKey<FieldFocusExtension> = Symbol('FieldFocusExtension')
+
+/**
+ * Makes `extension`'s elements count as inside the field control a descendant
+ * tracks with `useFieldFocusWithin`.
+ * @internal
+ */
+export function provideFieldFocusExtension(extension: FieldFocusExtension) {
+  provide(FIELD_FOCUS_EXTENSION, extension)
+}
+
 /**
  * Group-level focus reporting for a Field control made of several focusable
  * parts (segments, slots, a preview and an input): the field is focused while
  * focus is anywhere inside `element`, and touched (blurred) only once focus
- * leaves it. Moving between parts reports nothing.
+ * leaves it. Moving between parts reports nothing. Focus that moves into a
+ * provided `FieldFocusExtension` (see `provideFieldFocusExtension`) is
+ * followed there, and the field is blurred once it leaves both.
  *
  * Bind `onFocusin`/`onFocusout` on the element in the template, so they run in
  * order with a consumer's listeners and stay attached for the `focusout` an
@@ -26,30 +59,103 @@ export interface FieldFocusWithin {
  *
  * Returns `null` without a binding (outside a Field), creating nothing.
  */
-export function useFieldFocusWithin(field: FieldControlBinding | null, element: Ref<HTMLElement | undefined>): FieldFocusWithin | null {
+export function useFieldFocusWithin(field: FieldFocusTarget | null, element: Ref<HTMLElement | undefined>): FieldFocusWithin | null {
   if (!field)
     return null
 
-  let focusWithin = false
+  const extension = inject(FIELD_FOCUS_EXTENSION, null)
+  // Where focus is: outside the control, in its element, or in an extension.
+  let focus: 'out' | 'element' | 'extension' = 'out'
+  let followed: HTMLElement | undefined
   const handledEvents = new WeakSet<Event>()
+
+  function extensionElementOf(node: Node | null) {
+    if (!extension || !node)
+      return undefined
+    return extension.elements().find(el => el?.contains(node)) ?? undefined
+  }
+
+  function stopFollowing() {
+    followed?.removeEventListener('focusout', onExtensionFocusout)
+    followed = undefined
+  }
+
+  // Follows focus into an extension element, to decide again when it leaves.
+  function follow(el: HTMLElement) {
+    if (followed === el)
+      return
+    stopFollowing()
+    followed = el
+    el.addEventListener('focusout', onExtensionFocusout)
+  }
+
+  // Not skipped when focus is already out: an element being removed fires its
+  // `focusout` after the cleanup below has reset the state, and that's a blur.
+  function leave() {
+    stopFollowing()
+    focus = 'out'
+    field!.onBlur()
+  }
+
+  function moveTo(next: Node | null) {
+    if (element.value?.contains(next)) {
+      // The element's `focusin` takes it from here.
+      stopFollowing()
+      return
+    }
+    const target = extensionElementOf(next)
+    if (target) {
+      focus = 'extension'
+      follow(target)
+      return
+    }
+    leave()
+  }
 
   function onFocusin(event: FocusEvent) {
     if (handledEvents.has(event))
       return
     handledEvents.add(event)
-    if (!focusWithin)
+    if (focus === 'out')
       field!.onFocus()
-    focusWithin = true
+    focus = 'element'
+    stopFollowing()
   }
 
   function onFocusout(event: FocusEvent) {
     if (handledEvents.has(event))
       return
     handledEvents.add(event)
-    if (element.value?.contains(event.relatedTarget as Node | null))
+    moveTo(event.relatedTarget as Node | null)
+  }
+
+  function onExtensionFocusout(event: FocusEvent) {
+    const next = event.relatedTarget as Node | null
+    if (followed?.contains(next))
       return
-    focusWithin = false
-    field!.onBlur()
+    moveTo(next)
+  }
+
+  if (extension) {
+    // An extension holding focus can close (an Escape, a pick that closes the
+    // popover), and not every browser fires `focusout` for a removed element.
+    watch(extension.open, (open) => {
+      if (open || focus !== 'extension')
+        return
+      nextTick(() => {
+        if (focus !== 'extension')
+          return
+        const active = getActiveElement(element.value)
+        if (followed?.isConnected && followed.contains(active))
+          return
+        if (element.value?.contains(active)) {
+          focus = 'element'
+          stopFollowing()
+          return
+        }
+        moveTo(active)
+      })
+    })
   }
 
   watch(element, (el, _, onCleanup) => {
@@ -60,17 +166,18 @@ export function useFieldFocusWithin(field: FieldControlBinding | null, element: 
     onCleanup(() => {
       el.removeEventListener('focusin', onFocusin)
       el.removeEventListener('focusout', onFocusout)
+      stopFollowing()
       // The element is going away (an `as` or as-child change, or unmount), and not every
       // browser fires `focusout` for a removed element, so focus can't still be inside it.
-      if (focusWithin) {
-        focusWithin = false
+      if (focus !== 'out') {
+        focus = 'out'
         field!.context.reportControlState({ focused: false })
       }
     })
   }, { flush: 'sync', immediate: true })
 
   return {
-    isFocusWithin: () => focusWithin,
+    isFocusWithin: () => focus === 'element',
     onFocusin,
     onFocusout,
   }

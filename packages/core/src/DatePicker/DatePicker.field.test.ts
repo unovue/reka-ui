@@ -99,4 +99,55 @@ describe('given a Field-wrapped DatePicker', () => {
     expect(Object.keys(values)).toEqual(['date'])
     expect(String(values.date)).toBe('2024-01-15')
   })
+
+  it('stays untouched while focus moves into the calendar, and is touched once it leaves both', async () => {
+    const user = userEvent.setup()
+    const validate = vi.fn()
+    const { getByTestId, container } = render(Harness, { props: { fieldProps: { validate, validationMode: 'onBlur' } } })
+    await nextTick()
+    const field = getByTestId('field')
+    await user.click(container.querySelector('[data-segment="month"]')!)
+    await user.click(getByTestId('trigger'))
+    await flushPromises()
+    const content = document.querySelector('[role="dialog"]')!
+    expect(content.contains(document.activeElement)).toBe(true)
+    expect(field.getAttribute('data-focused')).toBe('')
+    expect(field.getAttribute('data-touched')).toBeNull()
+    expect(validate).not.toHaveBeenCalled()
+
+    // Back to the segments, then into the calendar again: still one focus.
+    await user.click(container.querySelector('[data-segment="day"]')!)
+    await flushPromises()
+    expect(field.getAttribute('data-touched')).toBeNull()
+
+    await user.click(getByTestId('trigger'))
+    await flushPromises()
+    await user.click(getByTestId('day-2024-01-15'))
+    await flushPromises()
+    expect(field.getAttribute('data-touched')).toBeNull()
+    expect(validate).not.toHaveBeenCalled()
+
+    await user.click(document.body)
+    await flushPromises()
+    expect(field.getAttribute('data-focused')).toBeNull()
+    expect(field.getAttribute('data-touched')).toBe('')
+    expect(validate).toHaveBeenCalledTimes(1)
+  })
+
+  it('is touched when focus leaves the open calendar for outside the picker', async () => {
+    const user = userEvent.setup()
+    const { getByTestId } = render(Harness)
+    await nextTick()
+    const field = getByTestId('field')
+    await user.click(getByTestId('trigger'))
+    await flushPromises()
+    const content = document.querySelector('[role="dialog"]')!
+    expect(content.contains(document.activeElement)).toBe(true)
+    expect(field.getAttribute('data-touched')).toBeNull()
+
+    await user.click(document.body)
+    await flushPromises()
+    expect(field.getAttribute('data-focused')).toBeNull()
+    expect(field.getAttribute('data-touched')).toBe('')
+  })
 })
