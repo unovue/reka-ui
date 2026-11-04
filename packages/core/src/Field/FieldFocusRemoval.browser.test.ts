@@ -1,7 +1,7 @@
 import type { Component } from 'vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { userEvent } from 'vitest/browser'
+import { server, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { CheckboxGroupRoot, CheckboxRoot } from '@/Checkbox'
 import { RadioGroupItem, RadioGroupRoot } from '@/RadioGroup'
@@ -10,7 +10,9 @@ import { FieldRoot } from '.'
 
 // Chromium fires `focusout` for a focused element removed from the document,
 // so a group's own `focusout` handling already blurs the field when its
-// focused item unmounts. jsdom doesn't, which is why this runs in a browser.
+// focused item unmounts. Firefox and WebKit fire nothing, and the field's
+// removal observer clears focus instead. jsdom does neither faithfully, which
+// is why this runs in a browser.
 const groups: Array<[string, Component, Component, Record<string, unknown>]> = [
   ['RadioGroup', RadioGroupRoot, RadioGroupItem, {}],
   ['ToggleGroup', ToggleGroupRoot, ToggleGroupItem, { type: 'single' }],
@@ -49,9 +51,9 @@ describe.each(groups)('a Field-wrapped %s whose focused item is removed', (_, Ro
     await nextTick()
     expect(item.isConnected).toBe(false)
     expect(document.activeElement).toBe(document.body)
-    // The browser reported the removal.
-    expect(focusouts).toContain(item)
-    expect(field().hasAttribute('data-focused')).toBe(false)
+    if (server.browser === 'chromium')
+      expect(focusouts).toContain(item)
+    await expect.poll(() => field().hasAttribute('data-focused')).toBe(false)
     expect(field().hasAttribute('data-touched')).toBe(true)
   })
 })

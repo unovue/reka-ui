@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, ref } from 'vue'
+import { hoverForMousePointerId } from '@/test/browser'
 import { ToastAction, ToastClose, ToastDescription, ToastProvider, ToastRoot, ToastTitle, ToastViewport } from '.'
 
 function mountToast() {
@@ -68,12 +69,14 @@ function mountSwipeToast(onBeforeUpdate?: (value: boolean, details: Details) => 
   return { updates, toast: () => document.querySelector<HTMLElement>('[data-testid="toast"]') }
 }
 
-// Real `PointerEvent`s with pointer capture: jsdom has neither.
-function swipe(target: HTMLElement, dx: number) {
+// Real `PointerEvent`s with pointer capture: jsdom has neither. The swipe captures
+// the pointer, so the events carry the real mouse's id.
+async function swipe(target: HTMLElement, dx: number) {
+  const pointerId = await hoverForMousePointerId(target)
   const rect = target.getBoundingClientRect()
   const x = rect.left + 10
   const y = rect.top + 10
-  const init = { bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0 }
+  const init = { bubbles: true, cancelable: true, pointerId, pointerType: 'mouse', isPrimary: true, button: 0 }
   target.dispatchEvent(new PointerEvent('pointerdown', { ...init, clientX: x, clientY: y }))
   target.dispatchEvent(new PointerEvent('pointermove', { ...init, clientX: x + 5, clientY: y }))
   target.dispatchEvent(new PointerEvent('pointermove', { ...init, clientX: x + dx, clientY: y }))
@@ -120,7 +123,7 @@ describe('given a swipeable Toast, in a real browser', () => {
     const { updates, toast } = mountSwipeToast()
     await expect.poll(() => toast()).toBeTruthy()
 
-    const during = swipe(toast()!, 80)
+    const during = await swipe(toast()!, 80)
     expect(during).toEqual({ moveX: '80px', state: 'move' })
     expect(toast()!.getAttribute('data-swipe')).toBe('end')
     expect(toast()!.style.getPropertyValue('--reka-toast-swipe-end-x')).toBe('80px')
@@ -132,7 +135,7 @@ describe('given a swipeable Toast, in a real browser', () => {
     const { updates, toast } = mountSwipeToast()
     await expect.poll(() => toast()).toBeTruthy()
 
-    swipe(toast()!, 30)
+    await swipe(toast()!, 30)
     expect(toast()!.getAttribute('data-swipe')).toBe('cancel')
     expect(updates).toHaveLength(0)
   })
@@ -141,7 +144,7 @@ describe('given a swipeable Toast, in a real browser', () => {
     const { updates, toast } = mountSwipeToast((_, details) => details.cancel())
     await expect.poll(() => toast()).toBeTruthy()
 
-    swipe(toast()!, 80)
+    await swipe(toast()!, 80)
     expect(toast()!.getAttribute('data-swipe')).toBe('cancel')
     expect(toast()!.style.getPropertyValue('--reka-toast-swipe-end-x')).toBe('')
     expect(toast()!.getAttribute('data-state')).toBe('open')

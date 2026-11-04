@@ -128,7 +128,8 @@ describe('popover elements', () => {
     await vi.waitFor(() => expect(document.activeElement).toBe(query('#width')))
     await vi.waitFor(() => {
       const triggerRect = trigger.getBoundingClientRect()
-      expect(Math.round(content.getBoundingClientRect().top - triggerRect.bottom)).toBe(8)
+      // Snapped to a whole device pixel: within half a pixel of the offset.
+      expect(Math.abs(content.getBoundingClientRect().top - triggerRect.bottom - 8)).toBeLessThanOrEqual(0.5)
     })
     expect(trigger.getAttribute('aria-controls')).toBe(content.id)
   })

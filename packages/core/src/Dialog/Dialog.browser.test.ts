@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
+import { isMacWebKit } from '@/test/browser'
 import { DialogClose, DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from '.'
 
 function mountDialog() {
@@ -34,7 +35,8 @@ function mountDialog() {
 }
 
 describe('given a modal Dialog, in a real browser', () => {
-  it('traps Tab focus, closes on Escape and returns focus to the trigger', async () => {
+  // Tabs to a button or link: see `isMacWebKit`.
+  it.skipIf(isMacWebKit)('traps Tab focus, closes on Escape and returns focus to the trigger', async () => {
     const { get } = mountDialog()
 
     await userEvent.click(get('trigger')!)

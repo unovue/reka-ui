@@ -11,10 +11,17 @@ afterEach(cleanup)
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 const CONTENT_STYLE = 'display: block; padding: 4px 8px; background: white; border: 1px solid'
 
+// The content opens above its trigger. The trigger leaves it room with a margin
+// to spare: font metrics differ by engine (Firefox's content is a fraction of a
+// pixel taller), and a content that just fails to fit flips below the trigger.
+// The pointer leaves a trigger for `#away`, below it: away from the content.
+// `userEvent.hover` jumps there in one move, so the exit point it reports is
+// `#away` itself, and a point beside the trigger can land inside the grace area
+// towards the content or not, by a fraction of a pixel that differs by engine.
 function tooltip(name: string) {
   return `
     <reka-tooltip-root>
-      <reka-tooltip-trigger data-test="${name}" style="display: inline-block; margin: 40px">${name}</reka-tooltip-trigger>
+      <reka-tooltip-trigger data-test="${name}" style="display: inline-block; margin: 80px 40px 40px">${name}</reka-tooltip-trigger>
       <reka-tooltip-portal>
         <reka-tooltip-content data-test="${name}-content" side-offset="6" style="${CONTENT_STYLE}">
           ${name} tooltip
@@ -24,12 +31,16 @@ function tooltip(name: string) {
     </reka-tooltip-root>`
 }
 
+// The delays leave room for `userEvent.hover` round trips, which can take a few
+// hundred milliseconds in a loaded Firefox: `delay-duration` for a hover and a
+// 100ms wait inside it, `skip-delay-duration` for two hovers, trigger to trigger.
 const TOOLTIPS = `
   <button id="outside">Outside</button>
-  <reka-tooltip-provider delay-duration="200" skip-delay-duration="300">
+  <reka-tooltip-provider delay-duration="500" skip-delay-duration="1000">
     ${tooltip('bold')}
     ${tooltip('italic')}
   </reka-tooltip-provider>
+  <div id="away" style="height: 40px"></div>
 `
 
 describe('tooltip elements', () => {
@@ -61,7 +72,7 @@ describe('tooltip elements', () => {
       expect(Math.round(trigger.getBoundingClientRect().top - content.getBoundingClientRect().bottom)).toBe(6 + 5)
     })
 
-    await userEvent.hover(query('#outside'))
+    await userEvent.hover(query('#away'))
     await vi.waitFor(() => expect(content.hasAttribute('data-reka-unmounted')).toBe(true))
     expect(opens).toEqual([true, false])
     expect(trigger.hasAttribute('aria-describedby')).toBe(false)
@@ -77,16 +88,16 @@ describe('tooltip elements', () => {
     await userEvent.hover(bold)
     await vi.waitFor(() => expect(query('[data-test=bold-content]').hasAttribute('data-delayed')).toBe(true))
     // Leaving, then hovering the next trigger within `skip-delay-duration`: no delay.
-    await userEvent.hover(query('#outside'))
+    await userEvent.hover(query('#away'))
     await userEvent.hover(italic)
     await vi.waitFor(() => expect(italicContent.getAttribute('data-state')).toBe('open'))
     expect(italicContent.hasAttribute('data-delayed')).toBe(false)
     await vi.waitFor(() => expect(query('[data-test=bold-content]').hasAttribute('data-reka-unmounted')).toBe(true))
 
     // Away for longer than `skip-delay-duration`: the delay applies again.
-    await userEvent.hover(query('#outside'))
+    await userEvent.hover(query('#away'))
     await vi.waitFor(() => expect(italicContent.hasAttribute('data-reka-unmounted')).toBe(true))
-    await wait(400)
+    await wait(1100)
     await userEvent.hover(bold)
     await wait(100)
     expect(query('[data-test=bold-content]').hasAttribute('data-reka-unmounted')).toBe(true)

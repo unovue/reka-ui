@@ -1,5 +1,6 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
+import { isMacWebKit } from '@/test/browser'
 import { checkboxElements, defineRekaElements, switchElements, toggleElements } from '.'
 import { cleanup, query, render } from './elements.test.helpers'
 
@@ -34,7 +35,8 @@ describe('switch elements', () => {
     expect(el.getAttribute('aria-checked')).toBe('false')
   })
 
-  it('cannot be focused or toggled while disabled', async () => {
+  // Tabs to a button or link: see `isMacWebKit`.
+  it.skipIf(isMacWebKit)('cannot be focused or toggled while disabled', async () => {
     render(`
       <button id="before">Before</button>
       <reka-switch-root aria-label="Wi-Fi" disabled ${BOX}></reka-switch-root>

@@ -86,8 +86,10 @@ describe('dropdown menu elements', () => {
     expect(query('reka-dropdown-menu-group').getAttribute('role')).toBe('group')
     expect(query('[data-test=more]').getAttribute('aria-haspopup')).toBe('menu')
     await vi.waitFor(() => {
-      // `side-offset`, plus the arrow's height (5).
-      expect(Math.round(content.getBoundingClientRect().top - trigger.getBoundingClientRect().bottom)).toBe(9)
+      // `side-offset`, plus the arrow's height (5). Floating UI snaps the content to a
+      // whole device pixel, so a trigger ending mid-pixel (WebKit on Linux) leaves up
+      // to half a pixel either way.
+      expect(Math.abs(content.getBoundingClientRect().top - trigger.getBoundingClientRect().bottom - 9)).toBeLessThanOrEqual(0.5)
     })
   })
 

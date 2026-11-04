@@ -683,6 +683,7 @@
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:browser": "vitest run --config vitest.browser.config.ts",
+    "test:browser:all": "BROWSER_ENGINES=chromium,firefox,webkit vitest run --config vitest.browser.config.ts",
     "test-update": "vitest -u",
     "bench": "vitest bench --run",
     "pub:release": "npm publish --access public --provenance",

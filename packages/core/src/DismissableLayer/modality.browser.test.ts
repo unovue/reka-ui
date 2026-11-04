@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cdp, userEvent } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import { defineComponent, h, ref } from 'vue'
 import { DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from '@/Dialog'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
@@ -19,7 +19,7 @@ function center(el: Element) {
 
 /** A real (trusted) mouse wheel over the given point. */
 async function wheel(x: number, y: number, deltaY: number) {
-  await cdp().send('Input.dispatchMouseEvent', { type: 'mouseWheel', x, y, deltaX: 0, deltaY })
+  await commands.wheelAt(x, y, deltaY)
   // Let the compositor apply the scroll
   await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
 }

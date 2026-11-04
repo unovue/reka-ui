@@ -31,6 +31,9 @@ describe('given a HoverCard inside a shadow root, in a real browser', () => {
   it('closes when a scroll container inside the shadow root scrolls the trigger', async () => {
     const { get } = mountHoverCard()
 
+    // The previous test leaves the pointer where this trigger mounts, and
+    // WebKit fires no pointerenter for a hover that doesn't move it.
+    await userEvent.hover(get('outside')!)
     await userEvent.hover(get('trigger')!)
     await expect.poll(() => get('content')).not.toBeNull()
     get('scroller')!.scrollTop = 30

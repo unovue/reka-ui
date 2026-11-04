@@ -4,6 +4,7 @@ import { defineComponent, h, ref } from 'vue'
 import { RadioGroupItem, RadioGroupRoot } from '@/RadioGroup'
 import { mountInShadowRoot } from '@/shared/test/shadowDom'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '@/Tabs'
+import { isMacWebKit } from '@/test/browser'
 
 // Roving focus (Tabs, RadioGroup, Toolbar, …) moves focus by comparing the
 // active element before and after `focus()`; that comparison must read the
@@ -40,7 +41,8 @@ describe('given roving focus inside a shadow root, in a real browser', () => {
     expect(get('tab-one')!.getAttribute('aria-controls')).toBe(get('panel-one')!.id)
   })
 
-  it('moves and checks RadioGroup items with the arrow keys', async () => {
+  // Tabs to a button or link: see `isMacWebKit`.
+  it.skipIf(isMacWebKit)('moves and checks RadioGroup items with the arrow keys', async () => {
     const value = ref('a')
     const { get, activeElement } = mountInShadowRoot(defineComponent({
       setup: () => () => h('div', [

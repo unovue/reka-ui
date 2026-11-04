@@ -3,6 +3,7 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { mountInShadowRoot } from '@/shared/test/shadowDom'
+import { isMacWebKit } from '@/test/browser'
 import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from '.'
 
 function mountDialog() {
@@ -51,7 +52,8 @@ describe('given a modal Dialog inside a shadow root, in a real browser', () => {
     warn.mockRestore()
   })
 
-  it('traps Tab focus, closes on Escape and returns focus to the trigger', async () => {
+  // Tabs to a button or link: see `isMacWebKit`.
+  it.skipIf(isMacWebKit)('traps Tab focus, closes on Escape and returns focus to the trigger', async () => {
     const { get, activeElement } = mountDialog()
 
     await userEvent.click(get('trigger')!)

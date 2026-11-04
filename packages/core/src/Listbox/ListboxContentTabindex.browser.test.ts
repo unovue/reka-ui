@@ -4,6 +4,7 @@ import { userEvent } from 'vitest/browser'
 import { createApp, defineComponent, h, nextTick, ref } from 'vue'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot } from '@/Combobox'
 import { ListboxContent, ListboxItem, ListboxRoot } from '@/Listbox'
+import { isMacWebKit } from '@/test/browser'
 
 // Native focus order through a listbox whose tabindex the consumer or the
 // as-child element owns. jsdom has no Tab order to check this against.
@@ -57,7 +58,8 @@ describe('listbox focus order', () => {
     expect(await tabFromBefore()).toBe('item-b')
   })
 
-  it('tab skips, then enters, an as-child element that drops tabindex="-1"', async () => {
+  // Tabs to a button or link: see `isMacWebKit`.
+  it.skipIf(isMacWebKit)('tab skips, then enters, an as-child element that drops tabindex="-1"', async () => {
     const bound = ref<string | undefined>('-1')
     await mountBetweenButtons(() => h(ListboxRoot, { highlightOnHover: true }, () =>
       h(ListboxContent, { asChild: true }, () => h('section', bound.value === undefined ? {} : { tabindex: bound.value }, items()))))
@@ -71,7 +73,8 @@ describe('listbox focus order', () => {
     expect(await tabFromBefore()).toBe('item-b')
   })
 
-  it('tab skips a tabindex="-1" bound below the as-child slot child', async () => {
+  // Tabs to a button or link: see `isMacWebKit`.
+  it.skipIf(isMacWebKit)('tab skips a tabindex="-1" bound below the as-child slot child', async () => {
     const Nested = defineComponent({
       inheritAttrs: false,
       setup: (_, { attrs, slots }) => () => h('section', { ...attrs, tabindex: '-1' }, slots.default?.()),

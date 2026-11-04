@@ -5,7 +5,7 @@ Vue 3 headless component library. pnpm monorepo. Node ≥ 22, pnpm 10.
 ## Commands (from repo root)
 - Install: `pnpm i`
 - Test (one-shot): `pnpm --filter reka-ui exec vitest run [path]`  (`pnpm test` = watch mode — avoid in automation)
-- Browser tests (real Chromium, `*.browser.test.ts`): `pnpm test:browser` (first run: `pnpm --filter reka-ui exec playwright install chromium`)
+- Browser tests (real Chromium, `*.browser.test.ts`): `pnpm test:browser` (first run: `pnpm --filter reka-ui exec playwright install chromium`); all engines (CI runs each): `pnpm test:browser:all` or `BROWSER_ENGINES=chromium,firefox,webkit pnpm test:browser` (install with `pnpm --filter reka-ui exec playwright install firefox webkit`)
 - Coverage: `pnpm --filter reka-ui test:coverage`
 - Type-check: `pnpm --filter reka-ui type-check`
 - Lint: `pnpm lint` (fix: `pnpm lint:fix`)

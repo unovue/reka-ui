@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { createApp, defineAsyncComponent, defineComponent, h, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { isMacWebKit } from '@/test/browser'
 import { SelectContent, SelectGroup, SelectItem, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '.'
 
 let app: ReturnType<typeof createApp> | undefined
@@ -50,7 +51,8 @@ function mountSelect(content: () => unknown, root: () => Record<string, unknown>
 }
 
 describe('release', () => {
-  it('a real blur unmounts the lean items a key rendered, and a focus alone does not bring them back', async () => {
+  // Tabs to a button or link: see `isMacWebKit`.
+  it.skipIf(isMacWebKit)('a real blur unmounts the lean items a key rendered, and a focus alone does not bring them back', async () => {
     mountSelect(() => ['Apple', 'Banana'].map(text => item(text)))
     await nextTick()
     trigger().focus()
@@ -171,29 +173,44 @@ describe('the native select of a named form', () => {
     expect(optionTexts()).toEqual(['Apple', 'Banana'])
   })
 
+  /**
+   * Holds the idle render, handing out `handle`: through `requestIdleCallback`,
+   * or the `setTimeout` fallback where an engine lacks it (WebKit).
+   */
+  function holdIdleRender(handle: number) {
+    if (typeof window.requestIdleCallback === 'function') {
+      const request = vi.spyOn(window, 'requestIdleCallback').mockImplementation(() => handle)
+      const cancel = vi.spyOn(window, 'cancelIdleCallback')
+      return { scheduled: () => request.mock.calls.filter(call => call[1]?.timeout === 500).length, cancel }
+    }
+    const { setTimeout } = window
+    const request = vi.spyOn(window, 'setTimeout').mockImplementation(((handler: TimerHandler, timeout?: number, ...args: unknown[]) =>
+      timeout === 50 ? handle : setTimeout(handler, timeout, ...args)) as typeof window.setTimeout)
+    const cancel = vi.spyOn(window, 'clearTimeout')
+    return { scheduled: () => request.mock.calls.filter(call => call[1] === 50).length, cancel }
+  }
+
   it('with `items`, cancels the idle render on unmount', async () => {
-    const request = vi.spyOn(window, 'requestIdleCallback').mockImplementation(() => 4242)
-    const cancel = vi.spyOn(window, 'cancelIdleCallback')
+    const idle = holdIdleRender(4242)
     mountSelect(() => [item('Apple')], () => ({ name: 'fruit', items: { Apple: 'Apple' } }), { form: true })
     await nextTick()
-    expect(request.mock.calls.filter(call => call[1]?.timeout === 500)).toHaveLength(1)
+    expect(idle.scheduled()).toBe(1)
     app!.unmount()
     app = undefined
-    expect(cancel).toHaveBeenCalledWith(4242)
+    expect(idle.cancel).toHaveBeenCalledWith(4242)
   })
 
   it('with `items`, cancels the idle render when the name goes, and schedules it when it returns', async () => {
-    const request = vi.spyOn(window, 'requestIdleCallback').mockImplementation(() => 7)
-    const cancel = vi.spyOn(window, 'cancelIdleCallback')
+    const idle = holdIdleRender(7)
     const name = ref<string | undefined>('fruit')
     mountSelect(() => [item('Apple')], () => ({ name: name.value, items: { Apple: 'Apple' } }), { form: true })
     await nextTick()
     name.value = undefined
     await wait(10)
-    expect(cancel).toHaveBeenCalledWith(7)
+    expect(idle.cancel).toHaveBeenCalledWith(7)
     name.value = 'other'
     await wait(10)
-    expect(request.mock.calls.filter(call => call[1]?.timeout === 500)).toHaveLength(2)
+    expect(idle.scheduled()).toBe(2)
   })
 })
 

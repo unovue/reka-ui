@@ -105,6 +105,17 @@ jobs:
   test-browser:
     needs: build
     runs-on: ubuntu-latest
+    name: test-browser (${{ matrix.browser }})
+
+    # One job per engine, in parallel: Firefox and WebKit differ from Chromium in
+    # ways it can't show (focus events for a removed element, key defaults, layout).
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+
+    env:
+      BROWSER_ENGINES: ${{ matrix.browser }}
 
     steps:
       - name: Checkout repository
@@ -113,8 +124,8 @@ jobs:
       - name: Setup (Install node & pnpm)
         uses: ./.github/actions/setup
 
-      - name: Install Chromium
-        run: pnpm --filter reka-ui exec playwright install --with-deps chromium
+      - name: Install ${{ matrix.browser }}
+        run: pnpm --filter reka-ui exec playwright install --with-deps ${{ matrix.browser }}
 
       # The built `reka-ui/elements` entry, loaded next to the source as a second
       # copy of the library (src/elements/copies.browser.test.ts).

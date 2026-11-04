@@ -22,6 +22,7 @@
     "prepare": "pnpm simple-git-hooks",
     "test:run": "pnpm --filter reka-ui test:run",
     "test:browser": "pnpm --filter reka-ui test:browser",
+    "test:browser:all": "pnpm --filter reka-ui test:browser:all",
     "test": "pnpm --filter reka-ui test",
     "test-update": "pnpm --filter reka-ui test-update",
     "bench": "pnpm --filter bench bench",
