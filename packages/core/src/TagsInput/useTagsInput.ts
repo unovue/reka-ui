@@ -497,7 +497,7 @@ export function createTagsInputInputSurface(
     addTypedText(target, 'blur', event)
   }
 
-  async function handleCustomKeydown(event: KeyboardEvent, reason: TagsInputChangeReason, { preventImplicitSubmit = false } = {}) {
+  async function handleCustomKeydown(event: KeyboardEvent, reason: TagsInputChangeReason) {
     if (isComposing.value)
       return
 
@@ -513,9 +513,11 @@ export function createTagsInputInputSurface(
     }
 
     const target = event.target as HTMLInputElement
-    // A form submits implicitly as soon as the `Enter` keydown dispatch finishes,
-    // so it has to be cancelled synchronously. An empty draft keeps submitting the form.
-    if (preventImplicitSubmit && target.value && !isPreventedByOthers)
+    // The key's default action has to be cancelled synchronously: a form submits
+    // implicitly on `Enter` as soon as the keydown dispatch finishes, and Firefox
+    // moves focus on `Tab` before a microtask can cancel it. An empty draft keeps
+    // the default (submitting the form, moving focus).
+    if (target.value && !isPreventedByOthers)
       nativePreventDefault()
 
     await nextTick()
@@ -526,10 +528,6 @@ export function createTagsInputInputSurface(
       return
 
     addTypedText(target, reason, event)
-
-    // Keep focus in the input after `Tab` adds a tag. A browser still honours this
-    // from a microtask of the keydown dispatch; `Enter` was already cancelled above.
-    nativePreventDefault()
   }
 
   function handleInput(event: InputEvent) {
@@ -560,7 +558,7 @@ export function createTagsInputInputSurface(
     const key = event.key?.toLowerCase()
     let pending: Promise<void> | undefined
     if (key === 'enter')
-      pending = handleCustomKeydown(event, 'enter-key', { preventImplicitSubmit: true })
+      pending = handleCustomKeydown(event, 'enter-key')
     if (key === 'tab' && context.addOnTab.value)
       pending = handleCustomKeydown(event, 'tab-key')
     // `isComposing` stays true until the tick after `compositionend`, so arrow/backspace
