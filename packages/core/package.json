@@ -29,6 +29,7 @@
     "unstyled"
   ],
   "sideEffects": false,
+  "customElements": "dist/custom-elements.json",
   "exports": {
     ".": {
       "import": "./dist/index.js"
@@ -51,6 +52,7 @@
     "./elements/react": {
       "types": "./dist/elements/react.d.ts"
     },
+    "./custom-elements.json": "./dist/custom-elements.json",
     "./namespaced": {
       "import": "./dist/namespaced/index.mjs"
     },
@@ -675,7 +677,7 @@
   ],
   "scripts": {
     "build": "pnpm type-check && pnpm build-only",
-    "build-only": "tsdown && tsx scripts/postbuild.ts",
+    "build-only": "tsdown && tsx scripts/postbuild.ts && tsx scripts/elements-manifest.ts",
     "watch": "tsdown --watch",
     "gen:exports": "tsx scripts/sync-exports.ts",
     "type-check": "vue-tsc -p tsconfig.check.json --noEmit",
