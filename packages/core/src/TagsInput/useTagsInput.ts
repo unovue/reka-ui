@@ -65,7 +65,7 @@ export interface UseTagsInputProps<T extends AcceptableInputValue = string> {
   convertValue?: (value: string) => T
   /** @defaultValue `value.toString()` */
   displayValue?: (value: T) => string
-  /** Whether focus is inside the root (the SFC hands `useFocusWithin`); drives `data-focused`. */
+  /** Whether focus is inside the root (the SFC hands `useFocusWithin` from `@/shared`); drives `data-focused`. */
   focused?: MaybeRefOrGetter<boolean | undefined>
   /**
    * The rendered tags in DOM order (the SFC injects `useCollection({ isProvider: true }).getItems`)

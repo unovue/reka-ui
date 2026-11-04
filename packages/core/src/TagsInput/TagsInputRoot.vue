@@ -5,7 +5,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { createContext, useDirection, useFormControl, useForwardElement } from '@/shared'
+import { createContext, useDirection, useFocusWithin, useFormControl, useForwardElement } from '@/shared'
 
 export type AcceptableInputValue = string | number | bigint | Record<string, any>
 
@@ -84,7 +84,6 @@ export const [injectTagsInputRootContext, provideTagsInputRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableInputValue = string">
-import { useFocusWithin } from '@vueuse/core'
 import { mergeProps } from 'vue'
 import { useCollection, useCollectionSlot } from '@/Collection'
 import { renderAs } from '@/Primitive/renderAs'
