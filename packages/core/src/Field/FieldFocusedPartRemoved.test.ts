@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import { CheckboxGroupRoot, CheckboxRoot } from '@/Checkbox'
 import { ColorAreaArea, ColorAreaRoot, ColorAreaThumb } from '@/ColorArea'
@@ -37,10 +37,11 @@ const cases: Array<[string, (shown: Ref<string[]>) => ReturnType<typeof h>]> = [
 ]
 
 describe.each(cases)('a Field-wrapped %s whose focused part is removed', (_, render) => {
-  it('is no longer focused while the control stays mounted', async () => {
+  it('leaves the field (unfocused, touched, validated on blur) while the control stays mounted', async () => {
     const shown = ref([...items])
+    const validate = vi.fn(() => null)
     const wrapper = mount(defineComponent(() => () =>
-      h(FieldRoot, { 'name': 'field', 'data-testid': 'field' }, () => render(shown))), { attachTo: document.body })
+      h(FieldRoot, { 'name': 'field', 'data-testid': 'field', validate, 'validationMode': 'onBlur' }, () => render(shown))), { attachTo: document.body })
     await flushPromises()
     const field = () => wrapper.find('[data-testid="field"]')
     const part = document.querySelector<HTMLElement>('[data-part="b"]')!
@@ -54,6 +55,8 @@ describe.each(cases)('a Field-wrapped %s whose focused part is removed', (_, ren
     await flushPromises()
     expect(focusable.isConnected).toBe(false)
     expect(field().attributes('data-focused')).toBeUndefined()
+    expect(field().attributes('data-touched')).toBe('')
+    expect(validate).toHaveBeenCalledTimes(1)
     wrapper.unmount()
   })
 })

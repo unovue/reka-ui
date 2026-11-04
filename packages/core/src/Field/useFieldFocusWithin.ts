@@ -82,17 +82,15 @@ export function useFieldFocusWithin(field: FieldFocusTarget | null, element: Ref
 
   // A focused part can be removed while the element stays (an item, a thumb),
   // and not every browser fires `focusout` for a removed element: while focus
-  // is inside, a removal that takes focus with it leaves the field.
+  // is inside, a removal that takes focus with it leaves the field, as the
+  // `focusout` Chromium fires would (touched, and on-blur validation).
   let observer: MutationObserver | undefined
   function watchRemovals() {
     if (observer || !element.value || typeof MutationObserver === 'undefined')
       return
     observer = new MutationObserver(() => {
-      if (focus === 'element' && !element.value?.contains(getActiveElement(element.value))) {
-        unwatchRemovals()
-        focus = 'out'
-        field!.context.reportControlState({ focused: false })
-      }
+      if (focus === 'element' && !element.value?.contains(getActiveElement(element.value)))
+        leave()
     })
     observer.observe(element.value, { childList: true, subtree: true })
   }
