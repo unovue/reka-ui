@@ -127,7 +127,7 @@ export const [injectDateRangePickerRootContext, provideDateRangePickerRootContex
 
 <script setup lang="ts">
 import { computed, toRefs, watch } from 'vue'
-import { injectFieldRootContext } from '@/Field/FieldRoot.vue'
+import { injectFieldForControl } from '@/Field/useFieldControl'
 import { provideFieldFocusExtension } from '@/Field/useFieldFocusWithin'
 import { providePopoverRootContext } from '@/Popover/PopoverRoot.vue'
 import { PopperRoot } from '@/Popper'
@@ -185,7 +185,8 @@ const locale = useLocale(propLocale)
 // control and reports edits made in its segments. A pick in the calendar
 // changes its value while focus is outside it, which it reads as
 // programmatic; the picker reports that one as the user's input.
-const fieldContext = injectFieldRootContext(null)
+// Not claimed: the composed field claims it (`null` when another control owns it).
+const fieldContext = injectFieldForControl()
 let pendingInput: { value: unknown } | undefined
 
 const { context, popover, modelValue, open } = useDateRangePicker({

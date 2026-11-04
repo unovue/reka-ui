@@ -88,7 +88,7 @@ export const [injectDateFieldRootContext, provideDateFieldRootContext]
 
 <script setup lang="ts">
 import { computed, mergeProps, onBeforeUnmount, onMounted, ref, toRefs, useAttrs, watch } from 'vue'
-import { injectFieldRootContext } from '@/Field'
+import { claimFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
@@ -123,12 +123,12 @@ const { dir: propDir, locale: propLocale } = toRefs(props)
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
 
-// Optional Field participation: `injectFieldRootContext(null)` returns
-// `null` (instead of throwing) outside a `FieldRoot`, so every Field binding
-// is inert — and byte-for-byte identical to before — when there is no Field.
+// Optional Field participation: `null` outside a `FieldRoot` (and inside
+// another control of the field, which owns it), so every Field binding is
+// inert — and byte-for-byte identical to before — when there is no Field.
 // Field's `name` takes precedence over the local prop; `required`/`disabled`
 // apply when set on either.
-const fieldContext = injectFieldRootContext(null)
+const fieldContext = claimFieldControl()
 const disabled = computed(() => Boolean(props.disabled || fieldContext?.disabled.value))
 const resolvedName = computed(() => fieldContext?.name.value ?? props.name)
 const resolvedRequired = computed(() => (fieldContext ? (props.required || fieldContext.required.value) : props.required))

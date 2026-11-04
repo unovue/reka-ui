@@ -62,6 +62,40 @@ function mergeIds(consumerValue: unknown, fieldValue: string | undefined) {
 }
 
 /**
+ * The ancestor `FieldRoot` a control may bind to: `null` outside a Field, and
+ * inside another control of the same field (which owns it). Doesn't claim the
+ * field; see `claimFieldControl`.
+ * @internal
+ */
+export function injectFieldForControl(): FieldRootContext | null {
+  const context = injectFieldRootContext(null)
+  return context && inject(FIELD_CONTROL_OWNER, null) !== context ? context : null
+}
+
+/**
+ * Marks this component as `context`'s control for its descendants, so a
+ * control composed inside it (e.g. a Checkbox in a Combobox item) leaves the
+ * field alone. Does nothing for `null`.
+ * @internal
+ */
+export function provideFieldControlOwner(context: FieldRootContext | null) {
+  if (context)
+    provide(FIELD_CONTROL_OWNER, context)
+}
+
+/**
+ * The ancestor `FieldRoot` this component is the control of (see
+ * `injectFieldForControl`), claimed for its descendants. For a control that
+ * binds to the field itself rather than through `useFieldControl`.
+ * @internal
+ */
+export function claimFieldControl(): FieldRootContext | null {
+  const context = injectFieldForControl()
+  provideFieldControlOwner(context)
+  return context
+}
+
+/**
  * Optional participation of a Reka control in an ancestor `FieldRoot`.
  * Returns `null` outside a Field, creating no reactive state, so a standalone
  * control pays nothing for it. Also `null` inside another control of the
@@ -69,10 +103,9 @@ function mergeIds(consumerValue: unknown, fieldValue: string | undefined) {
  * control owns the field.
  */
 export function useFieldControl(options: UseFieldControlOptions): FieldControlBinding | null {
-  const context = injectFieldRootContext(null)
-  if (!context || inject(FIELD_CONTROL_OWNER, null) === context)
+  const context = claimFieldControl()
+  if (!context)
     return null
-  provide(FIELD_CONTROL_OWNER, context)
 
   const { id: ownId, participates = () => true, ...registration } = options
   const isFilled = (value: unknown) => registration.isFilled

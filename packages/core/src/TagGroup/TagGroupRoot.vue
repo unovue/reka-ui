@@ -79,7 +79,7 @@ export const [injectTagGroupRootContext, provideTagGroupRootContext]
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { getCurrentInstance, mergeProps, onBeforeUnmount, onMounted, ref } from 'vue'
-import { injectFieldRootContext } from '@/Field'
+import { claimFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusGroup } from '@/RovingFocus/useRovingFocusGroup'
 import { useTagGroup } from './useTagGroup'
@@ -110,9 +110,10 @@ const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const instance = getCurrentInstance()
 
-// Optional Field participation: `injectFieldRootContext(null)` returns `null`
-// outside a `FieldRoot`, so every binding below is inert without a Field.
-const fieldContext = injectFieldRootContext(null)
+// Optional Field participation: `null` outside a `FieldRoot` (and inside
+// another control of the field, which owns it), so every binding below is
+// inert without a Field.
+const fieldContext = claimFieldControl()
 
 // Tags register during their setup, which happens while this component
 // renders, so the group reads "empty" only once mounted.
