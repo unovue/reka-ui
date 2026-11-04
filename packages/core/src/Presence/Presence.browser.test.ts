@@ -95,9 +95,17 @@ describe('presence with a CSS transition', () => {
     const exit = box()!.getAnimations()
     expect(exit.length).toBe(1)
     expect(box()!.getAttribute('data-present')).toBe('true')
+    // Settled while the node is still mounted. Read when it settles, not after the
+    // unmount: Firefox and WebKit reset a removed node's finished transition to
+    // `idle`, where Chromium keeps it `finished`. A transition cut short by an early
+    // unmount would be cancelled instead.
+    const exitSettled = exit[0].finished.then(
+      () => ({ outcome: 'finished', mounted: box() !== null }),
+      () => ({ outcome: 'cancelled', mounted: box() !== null }),
+    )
 
     await vi.waitFor(() => expect(box()).toBeNull())
-    expect(exit[0].playState).toBe('finished')
+    expect(await exitSettled).toEqual({ outcome: 'finished', mounted: true })
     expect(onComplete).toHaveBeenCalledTimes(1)
     expect(onComplete).toHaveBeenCalledWith(false)
     expect(events).toEqual(['leave', 'after-leave'])
