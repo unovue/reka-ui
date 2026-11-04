@@ -6,6 +6,7 @@ import { computed, nextTick, ref, toValue } from 'vue'
 import { createPartSurface, getterRef, useControllableState } from '@/shared'
 import { colorToHex, convertToSpace, getAreaBackgroundStyle, getChannelColorSpace, getChannelName, getChannelRange, getChannelValue, isEqualColor, normalizeColor, setChannelValues } from '@/shared/color'
 import { createChangeEndTracker } from '@/shared/color/changeEnd'
+import { resolveDirection } from '@/shared/useDirection'
 import { convertValueToPercentage, linearScale } from './utils'
 
 type Inputs = Pick<ColorAreaRootProps, 'colorSpace' | 'xChannel' | 'yChannel' | 'disabled' | 'modelValue' | 'defaultValue' | 'dir'>
@@ -68,7 +69,7 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
   const xChannel = getterRef(() => toValue(props.xChannel) ?? 'hue')
   const yChannel = getterRef(() => toValue(props.yChannel) ?? 'saturation')
   const disabled = getterRef(() => toValue(props.disabled) ?? false)
-  const dir = getterRef(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
 
   const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<string | Color, ColorAreaChangeReason>({
     prop: props.modelValue,

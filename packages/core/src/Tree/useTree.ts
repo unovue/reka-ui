@@ -10,6 +10,7 @@ import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
 import { createPartSurface, findValuesBetween, getActiveElement, handleAndDispatchCustomEvent, useControllableState, useTypeahead } from '@/shared'
 import { createKeyedSetSelector, useSelectorKey } from '@/shared/createKeyedSelector'
 import { isDisabledItem } from '@/shared/isDisabledItem'
+import { resolveDirection } from '@/shared/useDirection'
 import { flatten } from './utils'
 
 /**
@@ -338,7 +339,7 @@ export interface UseTreeProps<T extends Record<string, any> = Record<string, any
   selectionBehavior?: MaybeRefOrGetter<'toggle' | 'replace' | undefined>
   /** @defaultValue `false` */
   disabled?: MaybeRefOrGetter<boolean | undefined>
-  /** Resolved reading direction (the SFC hands its `useDirection` ref). @defaultValue `'ltr'` */
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** Selecting a parent selects its descendants (requires `multiple`). @defaultValue `false` */
   propagateSelect?: MaybeRefOrGetter<boolean | undefined>
@@ -419,7 +420,7 @@ export function useTree<T extends Record<string, any> = Record<string, any>>(pro
   const multiple = computed(() => toValue(props.multiple) ?? false)
   const selectionBehavior = computed(() => toValue(props.selectionBehavior) ?? 'toggle')
   const disabled = computed(() => toValue(props.disabled) ?? false)
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const propagateSelect = computed(() => toValue(props.propagateSelect) ?? false)
   const bubbleSelect = computed(() => toValue(props.bubbleSelect) ?? false)
   const loop = computed(() => toValue(props.loop) ?? false)

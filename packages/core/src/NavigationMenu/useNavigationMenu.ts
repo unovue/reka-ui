@@ -15,6 +15,7 @@ import {
   useControllableState,
 } from '@/shared'
 import { autoResetRef } from '@/shared/timeout'
+import { resolveDirection } from '@/shared/useDirection'
 import {
   EVENT_ROOT_CONTENT_DISMISS,
   focusFirst,
@@ -156,7 +157,7 @@ export interface UseNavigationMenuProps extends ModelCallbacks {
   modelValue?: MaybeRefOrGetter<string | undefined>
   /** The item open on first render when uncontrolled. @defaultValue `''` */
   defaultValue?: string
-  /** Reading direction. @defaultValue `'ltr'` */
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** Orientation of the menu. Read once. @defaultValue `'horizontal'` */
   orientation?: Orientation
@@ -240,7 +241,7 @@ export function useNavigationMenu(props: UseNavigationMenuProps = {}): UseNaviga
   })
   const previousValue = ref('')
 
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const delayDuration = computed(() => toValue(props.delayDuration) ?? 200)
   const skipDelayDuration = computed(() => toValue(props.skipDelayDuration) ?? 300)
   const disableClickTrigger = computed(() => toValue(props.disableClickTrigger) ?? false)

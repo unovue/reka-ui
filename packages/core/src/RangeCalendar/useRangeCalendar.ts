@@ -27,6 +27,7 @@ import {
   setCalendarCellIndex,
   useCalendarGrid,
 } from '@/shared/date'
+import { resolveDirection } from '@/shared/useDirection'
 
 /** Why the model, placeholder or view changed; carried as `details.reason` on every change (#2828). */
 export type RangeCalendarChangeReason
@@ -83,6 +84,7 @@ export interface UseRangeCalendarProps {
   initialFocus?: MaybeRefOrGetter<boolean | undefined>
   disableDaysOutsideCurrentView?: MaybeRefOrGetter<boolean | undefined>
   locale: MaybeRefOrGetter<string>
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   weekStartsOn: MaybeRefOrGetter<WeekStartsOn>
   weekdayFormat?: MaybeRefOrGetter<WeekDayFormat | undefined>
@@ -426,7 +428,7 @@ export function getRangeCalendarCellTriggerSurface(
 export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendarReturn {
   assertTemporal()
   const locale = computed(() => toValue(props.locale))
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const readonly = computed(() => toValue(props.readonly) ?? false)
   const initialFocus = computed(() => toValue(props.initialFocus) ?? false)

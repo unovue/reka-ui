@@ -24,6 +24,7 @@ import {
   useSegmentFieldNavigation,
   watchSegmentFieldLocale,
 } from '@/shared/date'
+import { resolveDirection } from '@/shared/useDirection'
 import { dateTimeToTimeValue, timeValueToDateTime } from '@/TimeField/useTimeField'
 
 /**
@@ -54,6 +55,7 @@ export interface UseTimeRangeFieldProps {
   placeholder?: MaybeRefOrGetter<TimeValue | undefined>
   defaultPlaceholder?: TimeValue
   locale?: MaybeRefOrGetter<string | undefined>
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** Read once, when the field is created. */
   hourCycle?: HourCycle
@@ -128,7 +130,7 @@ export function createTimeRangeFieldInputSurface(
 export function useTimeRangeField(props: UseTimeRangeFieldProps = {}): UseTimeRangeFieldReturn {
   assertTemporal()
   const locale = computed(() => toValue(props.locale) ?? 'en')
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const readonly = computed(() => toValue(props.readonly) ?? false)
   const stepSnapping = computed(() => toValue(props.stepSnapping) ?? false)

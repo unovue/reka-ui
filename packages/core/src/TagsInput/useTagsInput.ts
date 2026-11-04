@@ -8,6 +8,7 @@ import { createPartSurface, getterRef, selectionState, useArrowNavigation, useCo
 import { isEqual } from '@/shared/compare'
 import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
 import { isDisabledItem } from '@/shared/isDisabledItem'
+import { resolveDirection } from '@/shared/useDirection'
 
 /**
  * Why the tags changed; carried as `details.reason` on every change (#2828).
@@ -56,7 +57,7 @@ export interface UseTagsInputProps<T extends AcceptableInputValue = string> {
   disabled?: MaybeRefOrGetter<boolean | undefined>
   /** @defaultValue `','` */
   delimiter?: MaybeRefOrGetter<string | RegExp | undefined>
-  /** @defaultValue `'ltr'` */
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** Maximum number of tags; `0` is unlimited. @defaultValue `0` */
   max?: MaybeRefOrGetter<number | undefined>
@@ -154,7 +155,7 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
 
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const delimiter = computed(() => toValue(props.delimiter) ?? ',')
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const max = computed(() => toValue(props.max) ?? 0)
   const addOnPaste = computed(() => toValue(props.addOnPaste) ?? false)
   const addOnTab = computed(() => toValue(props.addOnTab) ?? false)

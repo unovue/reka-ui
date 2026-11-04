@@ -5,6 +5,7 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { DataOrientation, Direction } from '@/shared/types'
 import { computed, nextTick, ref, toValue, watch } from 'vue'
 import { createPartSurface, getActiveElement, useArrowNavigation, useControllableState, useKbd } from '@/shared'
+import { resolveDirection } from '@/shared/useDirection'
 
 /**
  * Why the step changed; carried as `details.reason` on every change (#2828).
@@ -190,7 +191,7 @@ export interface UseStepperProps {
   defaultValue?: number
   /** @defaultValue `'horizontal'` */
   orientation?: MaybeRefOrGetter<DataOrientation | undefined>
-  /** Resolved reading direction (the SFC hands its `useDirection` ref). @defaultValue `'ltr'` */
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** Whether the steps must be completed in order. @defaultValue `true` */
   linear?: MaybeRefOrGetter<boolean | undefined>
@@ -262,7 +263,7 @@ export interface UseStepperReturn {
 export function useStepper(props: UseStepperProps = {}): UseStepperReturn {
   const baseId = props.baseId ?? `reka-stepper-${++stepperCount}`
   const orientation = computed<DataOrientation>(() => toValue(props.orientation) ?? 'horizontal')
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const linear = computed(() => toValue(props.linear) ?? true)
 
   const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<number | undefined, StepperChangeReason>({

@@ -6,6 +6,7 @@ import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface
 import { computed, nextTick, onUnmounted, ref, toValue, watch } from 'vue'
 import { createPartSurface, disclosureState, getActiveElement, getterRef, useArrowNavigation, useControllableState, useTypeahead } from '@/shared'
 import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
+import { resolveDirection } from '@/shared/useDirection'
 import { useIsUsingKeyboard } from '@/shared/useIsUsingKeyboard'
 import { FIRST_LAST_KEYS, focusFirst, isMouseEvent, isPointerInGraceArea, ITEM_SELECT, LAST_KEYS, SELECTION_KEYS } from './utils'
 
@@ -57,7 +58,7 @@ export interface UseMenuRootProps {
   open?: MaybeRefOrGetter<boolean | undefined>
   /** Initial open state when uncontrolled. @defaultValue `false` */
   defaultOpen?: boolean
-  /** Resolved reading direction (the SFC hands its `useDirection` ref). @defaultValue `'ltr'` */
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** @defaultValue `true` */
   modal?: MaybeRefOrGetter<boolean | undefined>
@@ -109,7 +110,7 @@ export function useMenuRoot(props: UseMenuRootProps = {}): UseMenuRootReturn {
     onBeforeUpdate: props.onBeforeUpdate,
     onUpdate: props.onUpdate,
   })
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const modal = computed<boolean>(() => toValue(props.modal) ?? true)
   const content = ref<HTMLElement>()
   const isUsingKeyboardRef = useIsUsingKeyboard()

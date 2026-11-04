@@ -4,6 +4,7 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { Direction } from '@/shared/types'
 import { computed, nextTick, ref, shallowRef, toValue, watch } from 'vue'
 import { createPartSurface, getActiveElement, useArrowNavigation, useComposing, useControllableState } from '@/shared'
+import { resolveDirection } from '@/shared/useDirection'
 
 /**
  * Why the value changed; carried as `details.reason` on every change (#2828).
@@ -71,7 +72,7 @@ export interface UsePinInputProps {
   otp?: MaybeRefOrGetter<boolean | undefined>
   /** @defaultValue `''` */
   placeholder?: MaybeRefOrGetter<string | undefined>
-  /** @defaultValue `'ltr'` */
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   disabled?: MaybeRefOrGetter<boolean | undefined>
   /** Component `emit`; receives `beforeUpdate:modelValue`, `update:modelValue` and `complete`. */
@@ -147,7 +148,7 @@ export function usePinInput(props: UsePinInputProps = {}): UsePinInputReturn {
   const mask = computed(() => toValue(props.mask) ?? false)
   const otp = computed(() => toValue(props.otp) ?? false)
   const placeholder = computed(() => toValue(props.placeholder) ?? '')
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const disabled = computed(() => toValue(props.disabled) ?? false)
 
   const inputElements = ref<Set<HTMLInputElement>>(new Set())
