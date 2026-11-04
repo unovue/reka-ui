@@ -151,3 +151,59 @@ describe('given a Field-wrapped DatePicker', () => {
     expect(field.getAttribute('data-touched')).toBe('')
   })
 })
+
+describe('given a Field-wrapped DatePicker whose trigger is outside the date field', () => {
+  const SiblingTrigger = defineComponent({
+    components: { FieldRoot, DatePickerRoot, DatePickerField, DatePickerInput, DatePickerTrigger, DatePickerContent, DatePickerCalendar, DatePickerGrid, DatePickerGridBody, DatePickerGridRow, DatePickerCell, DatePickerCellTrigger },
+    props: { fieldProps: Object },
+    setup: () => ({ placeholder: Temporal.PlainDate.from('2024-01-10') }),
+    template: `
+      <div>
+        <FieldRoot name="date" data-testid="field" v-bind="fieldProps">
+          <DatePickerRoot :default-placeholder="placeholder" locale="en-US" close-on-select>
+            <DatePickerField v-slot="{ segments }">
+              <DatePickerInput v-for="item in segments" :key="item.part" :part="item.part" :data-segment="item.part">{{ item.value }}</DatePickerInput>
+            </DatePickerField>
+            <DatePickerTrigger data-testid="trigger">Open</DatePickerTrigger>
+            <DatePickerContent>
+              <DatePickerCalendar v-slot="{ grid }">
+                <DatePickerGrid v-for="month in grid" :key="month.value.toString()" :value="month.value">
+                  <DatePickerGridBody>
+                    <DatePickerGridRow v-for="(week, index) in month.rows" :key="index">
+                      <DatePickerCell v-for="day in week" :key="day.toString()" :value="day">
+                        <DatePickerCellTrigger :value="day" :data-testid="'day-' + day.toString()" />
+                      </DatePickerCell>
+                    </DatePickerGridRow>
+                  </DatePickerGridBody>
+                </DatePickerGrid>
+              </DatePickerCalendar>
+            </DatePickerContent>
+          </DatePickerRoot>
+        </FieldRoot>
+        <button data-testid="outside">Outside</button>
+      </div>
+    `,
+  })
+
+  it('is focused from the trigger, and touched once focus leaves the trigger and calendar', async () => {
+    const user = userEvent.setup()
+    const validate = vi.fn()
+    const { getByTestId } = render(SiblingTrigger, { props: { fieldProps: { validate, validationMode: 'onBlur' } } })
+    await nextTick()
+    const field = getByTestId('field')
+    await user.click(getByTestId('trigger'))
+    await flushPromises()
+    expect(field.getAttribute('data-focused')).toBe('')
+    await user.click(getByTestId('day-2024-01-15'))
+    await flushPromises()
+    expect(field.getAttribute('data-touched')).toBeNull()
+    expect(validate).not.toHaveBeenCalled()
+
+    await user.click(getByTestId('outside'))
+    await flushPromises()
+    expect(field.getAttribute('data-focused')).toBeNull()
+    expect(field.getAttribute('data-touched')).toBe('')
+    expect(validate).toHaveBeenCalledTimes(1)
+    expect(String(validate.mock.calls[0][0])).toBe('2024-01-15')
+  })
+})

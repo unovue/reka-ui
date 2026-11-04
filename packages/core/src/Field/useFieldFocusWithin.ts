@@ -46,9 +46,10 @@ export function provideFieldFocusExtension(extension: FieldFocusExtension) {
  * Group-level focus reporting for a Field control made of several focusable
  * parts (segments, slots, a preview and an input): the field is focused while
  * focus is anywhere inside `element`, and touched (blurred) only once focus
- * leaves it. Moving between parts reports nothing. Focus that moves into a
- * provided `FieldFocusExtension` (see `provideFieldFocusExtension`) is
- * followed there, and the field is blurred once it leaves both.
+ * leaves it. Moving between parts reports nothing. A provided
+ * `FieldFocusExtension` (see `provideFieldFocusExtension`) counts as part of
+ * the control: focus moving into it, or entering it directly, is followed
+ * there, and the field is blurred once focus leaves both.
  *
  * Bind `onFocusin`/`onFocusout` on the element in the template, so they run in
  * order with a consumer's listeners and stay attached for the `focusout` an
@@ -133,6 +134,22 @@ export function useFieldFocusWithin(field: FieldFocusTarget | null, element: Ref
     moveTo(event.relatedTarget as Node | null)
   }
 
+  // Focus can also enter an extension element without passing through the
+  // element (a trigger outside a picker's segments): that focuses the field too.
+  function onDocumentFocusin(event: FocusEvent) {
+    if (focus !== 'out')
+      return
+    const target = (event.composedPath()[0] ?? event.target) as Node | null
+    if (element.value?.contains(target))
+      return
+    const extensionElement = extensionElementOf(target)
+    if (!extensionElement)
+      return
+    field!.onFocus()
+    focus = 'extension'
+    follow(extensionElement)
+  }
+
   function onExtensionFocusout(event: FocusEvent) {
     const next = event.relatedTarget as Node | null
     if (followed?.contains(next))
@@ -167,9 +184,13 @@ export function useFieldFocusWithin(field: FieldFocusTarget | null, element: Ref
       return
     el.addEventListener('focusin', onFocusin)
     el.addEventListener('focusout', onFocusout)
+    const doc = el.ownerDocument
+    if (extension)
+      doc.addEventListener('focusin', onDocumentFocusin, true)
     onCleanup(() => {
       el.removeEventListener('focusin', onFocusin)
       el.removeEventListener('focusout', onFocusout)
+      doc.removeEventListener('focusin', onDocumentFocusin, true)
       stopFollowing()
       // The element is going away (an `as` or as-child change, or unmount), and not every
       // browser fires `focusout` for a removed element, so focus can't still be inside it.
