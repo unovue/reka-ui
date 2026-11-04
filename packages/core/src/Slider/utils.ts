@@ -1,4 +1,5 @@
 import type { ComputedRef } from 'vue'
+import type { FieldControlBinding } from '@/Field/useFieldControl'
 import { clamp, createContext } from '@/shared'
 
 export function getNextSortedValues(prevValues: number[] = [], nextValue: number, atIndex: number) {
@@ -175,3 +176,13 @@ export function getSliderThumbTransform(orientation: 'horizontal' | 'vertical', 
 
 export const [injectSliderOrientationContext, provideSliderOrientationContext]
   = createContext<SliderOrientation>('SliderRoot')
+
+/**
+ * A slider's participation in an ancestor `FieldRoot` (`null` outside one).
+ * `SliderRoot` creates it, unless a wrapping control that owns the value
+ * (`ColorSliderRoot`) provides its own: the root then renders the field's
+ * state and focus, and the thumbs its id and aria wiring, for that control.
+ * @internal
+ */
+export const [injectSliderFieldContext, provideSliderFieldContext]
+  = createContext<FieldControlBinding | null>('SliderRoot', 'SliderFieldContext')
