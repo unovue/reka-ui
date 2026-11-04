@@ -37,6 +37,13 @@ export interface UseFocusScopeOptions {
  * @internal
  * @lifecycle setup
  */
+// The first tabbable candidate that takes focus (one can be hidden by CSS:
+// `getTabbableCandidates` does not check), else the container.
+function focusFirstTabbable(container: HTMLElement) {
+  if (!focusFirst(getTabbableCandidates(container), { select: true }))
+    focus(container, { select: true })
+}
+
 export function useFocusScope(options: UseFocusScopeOptions) {
   const loop = () => !!options.loop?.()
   // A computed, because a part's getter reads what its wrapper received, an
@@ -83,13 +90,24 @@ export function useFocusScope(options: UseFocusScopeOptions) {
     const root = getRootNode(container)
     const ownerDocument = getOwnerDocument(container)
 
+    // Focus back to the last element focused inside, or, when that element is
+    // no longer in it (the part re-rendered its element under the open scope),
+    // to the first tabbable one, else the container.
+    function recall() {
+      const last = lastFocusedElementRef.value
+      if (last && container && !containsComposed(container, last))
+        focusFirstTabbable(container)
+      else
+        focus(last, { select: true })
+    }
+
     function handleFocusIn(event: FocusEvent) {
       if (focusScope.paused || !container)
         return
       const target = event.target as HTMLElement | null
       if (containsComposed(container, target))
         lastFocusedElementRef.value = target
-      else focus(lastFocusedElementRef.value, { select: true })
+      else recall()
     }
 
     function handleFocusOut(event: FocusEvent) {
@@ -113,7 +131,7 @@ export function useFocusScope(options: UseFocusScopeOptions) {
       // If the focus has moved to an actual legitimate element (`relatedTarget !== null`)
       // that is outside the container, we move focus to the last valid focused element inside.
       if (!containsComposed(container, relatedTarget))
-        focus(lastFocusedElementRef.value, { select: true })
+        recall()
     }
 
     // When the focused element gets removed from the DOM, browsers move focus
@@ -166,7 +184,7 @@ export function useFocusScope(options: UseFocusScopeOptions) {
         return
       const target = getEventTarget<HTMLElement>(event)
       if (!containsComposed(container, target))
-        focus(lastFocusedElementRef.value, { select: true })
+        recall()
     }
 
     root.addEventListener('focusin', handleFocusIn as EventListener)
@@ -204,7 +222,41 @@ export function useFocusScope(options: UseFocusScopeOptions) {
     }
   }
 
+  // Where focus returns when the scope unmounts. A part that re-renders its
+  // element while the scope is open (an `as` change, a keyed as-child child)
+  // swaps the scope's element: the scope stays mounted and in the stack, keeps
+  // this, and fires neither auto-focus event for the old element.
+  let restoreFocusTo: HTMLElement | null = null
+  // The element a swap left, until the run on the new element takes over.
+  let swappedFrom: HTMLElement | null = null
   const scope = getCurrentScope()
+
+  // Unmount: the unmount auto-focus, focus back, out of the stack.
+  function teardown(container: HTMLElement) {
+    const previouslyFocusedElement = restoreFocusTo
+    const unmountEvent = new CustomEvent(AUTOFOCUS_ON_UNMOUNT, EVENT_OPTIONS)
+    const unmountEventHandler = (ev: Event) => {
+      options.onUnmountAutoFocus?.(ev)
+    }
+    container.addEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)
+    container.dispatchEvent(unmountEvent)
+
+    // Signal that blur events fired below are system-initiated (focus trap
+    // cleanup), not user-initiated. Consumers can use this to skip validation.
+    container.setAttribute('data-focus-scope-unmounting', '')
+
+    setTimeout(() => {
+      if (!unmountEvent.defaultPrevented)
+        focus(previouslyFocusedElement ?? getOwnerDocument(container).body, { select: true })
+
+      // we need to remove the listener after we `dispatchEvent`
+      container.removeEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)
+
+      focusScopesStack.remove(focusScope)
+      container.removeAttribute('data-focus-scope-unmounting')
+    }, 0)
+  }
+
   watchEffect(async (cleanupFn) => {
     const container = element.value
 
@@ -212,15 +264,26 @@ export function useFocusScope(options: UseFocusScopeOptions) {
     // Bail when the scope unmounted, or moved to another element, during the
     // `await`: a cleanup registered now would never run, leaving the scope on
     // the stack and the trap under it paused.
-    if (!container || scope?.active === false || element.value !== container)
+    if (!container || scope?.active === false || element.value !== container) {
+      // A swap's new element that unmounted before this run: the scope is gone,
+      // and the swap kept it in the stack; tear it down from the element it left.
+      if (swappedFrom && (scope?.active === false || !element.value)) {
+        teardown(swappedFrom)
+        swappedFrom = null
+      }
       return
+    }
+    const swapped = !!swappedFrom
+    swappedFrom = null
     // A scope that mounts hidden (`present: false`, e.g. a closed Dialog with
     // `unmountOnHide: false`) must stay out of the scope stack: adding it would
     // pause the currently active scope and break its focus trap. The `present`
     // watcher below adds/removes it as it becomes visible.
-    if (present() !== false)
+    if (!swapped && present() !== false)
       focusScopesStack.add(focusScope)
     const previouslyFocusedElement = getActiveElement(container) as HTMLElement | null
+    if (!swapped)
+      restoreFocusTo = previouslyFocusedElement
     const hasFocusedCandidate = containsComposed(container, previouslyFocusedElement)
 
     // When force-mounted while closed (e.g. Dialog `unmountOnHide: false`), the
@@ -231,31 +294,27 @@ export function useFocusScope(options: UseFocusScopeOptions) {
     // NOTE: `present()` must stay read *after* the `await` above so this
     // effect does not track it — re-running on `present` changes would dispatch
     // the unmount auto-focus cleanup below on every close.
-    if (!hasFocusedCandidate && present() !== false)
+    if (swapped) {
+      // A swap is neither an open nor a close: no auto-focus event, so no
+      // consumer can prevent it. Only focus lost with the old element (not
+      // focus in a nested layer) moves into the new one: its first tabbable,
+      // else the container.
+      const isFocusLost = !previouslyFocusedElement || previouslyFocusedElement === getOwnerDocument(container).body
+      if (isFocusLost && present() !== false)
+        focusFirstTabbable(container)
+    }
+    else if (!hasFocusedCandidate && present() !== false) {
       dispatchMountAutoFocus(container, previouslyFocusedElement)
+    }
 
     cleanupFn(() => {
-      const unmountEvent = new CustomEvent(AUTOFOCUS_ON_UNMOUNT, EVENT_OPTIONS)
-      const unmountEventHandler = (ev: Event) => {
-        options.onUnmountAutoFocus?.(ev)
+      // The element changed while the scope stays mounted (not an unmount: the
+      // scope's effect scope is still active).
+      if (scope?.active !== false && element.value && element.value !== container) {
+        swappedFrom = container
+        return
       }
-      container.addEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)
-      container.dispatchEvent(unmountEvent)
-
-      // Signal that blur events fired below are system-initiated (focus trap
-      // cleanup), not user-initiated. Consumers can use this to skip validation.
-      container.setAttribute('data-focus-scope-unmounting', '')
-
-      setTimeout(() => {
-        if (!unmountEvent.defaultPrevented)
-          focus(previouslyFocusedElement ?? getOwnerDocument(container).body, { select: true })
-
-        // we need to remove the listener after we `dispatchEvent`
-        container.removeEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)
-
-        focusScopesStack.remove(focusScope)
-        container.removeAttribute('data-focus-scope-unmounting')
-      }, 0)
+      teardown(container)
     })
   })
 

@@ -881,8 +881,12 @@ export interface UseSelectContentOptions<T = AcceptableValue> {
   contentElement: Ref<HTMLElement | undefined>
   /** The rendered items in DOM order (the SFC injects `useCollection().getItems`). */
   getItems: () => Array<{ ref: HTMLElement, value?: any }>
-  /** @defaultValue `'item-aligned'` */
-  position?: 'item-aligned' | 'popper'
+  /**
+   * Changing it while open re-renders the items in the other mode: the
+   * selected item is tracked afresh and focused once the content is positioned.
+   * @defaultValue `'item-aligned'`
+   */
+  position?: MaybeRefOrGetter<'item-aligned' | 'popper' | undefined>
   /** When `true`, keyboard navigation loops from the last item to the first, and vice versa. @defaultValue `false` */
   loop?: MaybeRefOrGetter<boolean | undefined>
 }
@@ -927,10 +931,107 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
       focusFirst([selectedItem.value, contentElement.value])
   }
 
-  watch(isPositioned, () => {
+  const position = () => toValue(options.position) ?? 'item-aligned'
+
+  // While open, focus stays on an item. The content focuses the selected (or
+  // first) item once positioned. When focus is lost afterwards (the focused
+  // item was removed or the list replaced, items arrived only after the content
+  // opened, every item was disabled) and a valid item becomes available, it
+  // focuses the selected one, else the first: when focus is on the body, the
+  // trigger or the content itself, never over an item or other element the user
+  // focused. When the selected item arrives while focus is still on the first
+  // item the content fell back to, focus moves to it, and an item-aligned
+  // content is placed against it.
+  const isOpenSettled = ref(false)
+  let autoFocused: Element | null = null
+  let isWaitingForPosition = false
+  watch(contentElement, (element) => {
+    isOpenSettled.value = false
+    autoFocused = null
+    // A tick after the content renders, past the mount of the items it opened with.
+    if (element)
+      nextTick(() => isOpenSettled.value = !!contentElement.value)
+  }, { flush: 'post' })
+
+  // Any focus move inside the content that the content did not make itself
+  // (keyboard navigation, hover, a click) is the user's: forget the fallback,
+  // even when it lands on that same item again.
+  let isAutoFocusing = false
+  watch(contentElement, (element, _, onCleanup) => {
+    if (!element)
+      return
+    const onFocusIn = () => {
+      if (!isAutoFocusing)
+        autoFocused = null
+    }
+    element.addEventListener('focusin', onFocusIn)
+    onCleanup(() => element.removeEventListener('focusin', onFocusIn))
+  })
+
+  function focusItem() {
+    isAutoFocusing = true
     // Through the context: `SelectVirtualizer` replaces it to reach a selected
     // item whose row is not rendered.
     contentContext.focusSelectedItem?.()
+    isAutoFocusing = false
+    autoFocused = getActiveElement()
+  }
+
+  const isSelectedElement = (element: Element) => element.getAttribute('aria-selected') === 'true'
+
+  function refocus() {
+    const element = contentElement.value
+    // A virtualizer renders a window of the items and keeps the focus in it itself.
+    if (!element || !context.open.value || contentContext.onVirtualKeydown)
+      return
+    const active = getActiveElement()
+    const isLost = !active || active === element || active === active.ownerDocument.body || active === context.triggerElement.value
+    const items = getItems().map(item => item.ref)
+    const target = items.find(isSelectedElement) ?? items[0]
+    if (!target || target === active)
+      return
+    const isOnFallback = !!active && active === autoFocused && !isSelectedElement(active) && isSelectedElement(target)
+    if (!isLost && !isOnFallback)
+      return
+    if (target !== selectedItem.value) {
+      selectedItem.value = target
+      const textId = target.getAttribute('aria-labelledby')
+      selectedItemText.value = (textId && (target.getRootNode() as Document | ShadowRoot).getElementById?.(textId)) || undefined
+    }
+    if (!isPositioned.value || isOnFallback)
+      contentContext.reposition?.()
+    if (isPositioned.value)
+      focusItem()
+    else
+      isWaitingForPosition = true
+  }
+
+  watch(() => isOpenSettled.value && context.open.value ? getItems() : undefined, (items) => {
+    if (items)
+      refocus()
+  }, { flush: 'post' })
+
+  watch(isPositioned, (positioned) => {
+    if (!positioned)
+      return
+    if (isWaitingForPosition) {
+      isWaitingForPosition = false
+      return refocus()
+    }
+    focusItem()
+  })
+
+  // A `position` change renders the items again in the other mode, under a new
+  // content element. Before that render, forget the old items, so the new ones
+  // register as on an open, and focus the selected one once the new mode has
+  // positioned the content.
+  watch(position, () => {
+    firstValidItemFound = false
+    firstSelectedItemInArrayFound = false
+    selectedItem.value = undefined
+    selectedItemText.value = undefined
+    isPositioned.value = false
+    isWaitingForPosition = false
   })
 
   // prevent selecting items on `pointerup` in some cases after opening from `pointerdown`
@@ -1085,7 +1186,9 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
         selectedItemText.value = node
     },
     focusSelectedItem,
-    position: options.position ?? 'item-aligned',
+    get position() {
+      return position()
+    },
     isPositioned,
     searchRef: search,
     loop: () => !!toValue(options.loop),

@@ -11,11 +11,12 @@ import { HoverCardContent, HoverCardRoot, HoverCardTrigger } from '@/HoverCard'
 import { MenubarContent, MenubarItem, MenubarMenu, MenubarRoot, MenubarTrigger } from '@/Menubar'
 import { NavigationMenuContent, NavigationMenuIndicator, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuRoot, NavigationMenuTrigger, NavigationMenuViewport } from '@/NavigationMenu'
 import { PopoverAnchor, PopoverClose, PopoverContent, PopoverRoot, PopoverTrigger } from '@/Popover'
+import { SelectContent, SelectItem, SelectItemText, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '@/Select'
 import { componentNames } from '@/test'
 import { ToastAction, ToastClose, ToastDescription, ToastProvider, ToastRoot, ToastTitle, ToastViewport } from '@/Toast'
 import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from '@/Tooltip'
 
-const WRAPPERS = new Set(['Primitive', 'PrimitiveSlot', 'PopperAnchor', 'MenuAnchor', 'RovingFocusGroup', 'RovingFocusItem', 'CollectionSlot', 'CollectionItem', 'FocusScope', 'DismissableLayer', 'ListboxContent'])
+const WRAPPERS = new Set(['Primitive', 'PrimitiveSlot', 'PopperAnchor', 'MenuAnchor', 'RovingFocusGroup', 'RovingFocusItem', 'CollectionSlot', 'CollectionItem', 'FocusScope', 'DismissableLayer', 'ListboxContent', 'SelectPopperPosition', 'SelectItemAlignedPosition'])
 
 const compositions: Record<string, () => VNodeChild> = {
   Dialog: () => h(DialogRoot, { defaultOpen: true }, () => [
@@ -67,6 +68,10 @@ const compositions: Record<string, () => VNodeChild> = {
     h(ComboboxAnchor, () => h(ComboboxInput)),
     h(ComboboxContent, { position: 'popper' }, () => h(ComboboxItem, { value: 'a' }, () => 'a')),
   ]),
+  ...Object.fromEntries((['item-aligned', 'popper'] as const).map(position => [`Select ${position}`, () => h(SelectRoot, { defaultOpen: true }, () => [
+    h(SelectTrigger, () => h(SelectValue)),
+    h(SelectContent, { position }, () => h(SelectViewport, () => h(SelectItem, { value: 'a' }, () => h(SelectItemText, () => 'A')))),
+  ])])),
   Toast: () => h(ToastProvider, () => [
     h(ToastRoot, { defaultOpen: true }, () => [
       h(ToastTitle, () => 'T'),
@@ -242,6 +247,40 @@ describe('one component per part: overlays', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await nextTick()
     expect(dismissed).toEqual(['escape-key'])
+    wrapper.unmount()
+  })
+
+  // The select content bound its attrs on its `FocusScope` chain and again on
+  // its positioning part, so a consumer listener ran twice and attrs named
+  // after the layers' props rendered. They are bound once now: they still
+  // configure the layers, and only the rest render.
+  it.each(['item-aligned', 'popper'] as const)('a %s select content binds its attrs once', async (position) => {
+    const keydowns: string[] = []
+    let mountAutoFocus = 0
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(SelectRoot, { defaultOpen: true }, () => [
+        h(SelectTrigger, () => h(SelectValue)),
+        h(SelectContent, {
+          position,
+          'class': 'content',
+          'data-test': 'kept',
+          'trapped': '',
+          'onKeydown': (event: KeyboardEvent) => keydowns.push(event.key),
+          'onMountAutoFocus': () => mountAutoFocus++,
+        }, () => h(SelectViewport, () => h(SelectItem, { value: 'a' }, () => h(SelectItemText, () => 'A')))),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 0))
+    const content = document.querySelector('.content')!
+    expect(content.getAttribute('role')).toBe('listbox')
+    expect(content.getAttribute('data-test')).toBe('kept')
+    expect(content.getAttribute('data-dismissable-layer')).toBe('')
+    for (const name of ['trapped', 'onmountautofocus'])
+      expect(content.hasAttribute(name)).toBe(false)
+    expect(mountAutoFocus).toBe(1)
+    content.dispatchEvent(new KeyboardEvent('keydown', { key: 'x', bubbles: true }))
+    expect(keydowns).toEqual(['x'])
     wrapper.unmount()
   })
 })

@@ -27,8 +27,6 @@ defineExpose(expose)
     :disable-outside-pointer-events="false"
     @close-auto-focus="
       (event) => {
-        emits('closeAutoFocus', event);
-
         if (!event.defaultPrevented) {
           if (!hasInteractedOutsideRef) rootContext.triggerElement.value?.focus();
           // Always prevent auto focus because we either focus manually or want user agent focus
@@ -41,8 +39,6 @@ defineExpose(expose)
     "
     @interact-outside="
       async (event) => {
-        emits('interactOutside', event);
-
         if (!event.defaultPrevented) {
           hasInteractedOutsideRef = true;
           if (event.detail.originalEvent.type === 'pointerdown') {

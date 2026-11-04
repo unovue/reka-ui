@@ -18,7 +18,8 @@ import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from '@/
 // them, except in `DialogKeepMounted`, where only the first open's run. `escapeKeyDown`
 // is declared by a part that stays mounted, so its `.once` runs once in all. The
 // expected logs are what the `<FocusScope as-child>` / `<DismissableLayer as-child>`
-// chain gave; this test passes on it.
+// chain gave; this test passes on it, except Popover's `closeAutoFocus`, which
+// its content part forwarded and emitted again, so it ran twice per close.
 
 type Family = (open: { value: boolean }, attrs: Record<string, unknown>) => Component
 const families: Record<string, [Family, string[]]> = {
@@ -33,7 +34,7 @@ const families: Record<string, [Family, string[]]> = {
   }), ['open', 'mount', 'mountOnce', '--esc', 'esc', 'escOnce', 'dismiss', 'dismiss', 'dismissOnce', 'close', 'unmount', 'unmountOnce', 'open', 'mount', 'mountOnce', '--esc', 'esc', 'dismiss', 'dismiss', 'dismissOnce', 'close', 'unmount', 'unmountOnce']],
   Popover: [(open, attrs) => defineComponent({
     setup: () => () => h(PopoverRoot, { 'open': open.value, 'onUpdate:open': (v: boolean) => (open.value = v) }, () => [h(PopoverTrigger, () => 'T'), h(PopoverContent, attrs, () => h('button', 'in'))]),
-  }), ['open', 'mount', 'mountOnce', '--esc', 'esc', 'escOnce', 'dismiss', 'dismissOnce', 'close', 'close', 'unmount', 'unmountOnce', 'open', 'mount', 'mountOnce', '--esc', 'esc', 'dismiss', 'dismissOnce', 'close', 'close', 'unmount', 'unmountOnce']],
+  }), ['open', 'mount', 'mountOnce', '--esc', 'esc', 'escOnce', 'dismiss', 'dismissOnce', 'close', 'unmount', 'unmountOnce', 'open', 'mount', 'mountOnce', '--esc', 'esc', 'dismiss', 'dismissOnce', 'close', 'unmount', 'unmountOnce']],
   DropdownMenu: [(open, attrs) => defineComponent({
     setup: () => () => h(DropdownMenuRoot, { 'open': open.value, 'onUpdate:open': (v: boolean) => (open.value = v) }, () => [h(DropdownMenuTrigger, () => 'T'), h(DropdownMenuContent, attrs, () => h(DropdownMenuItem, () => 'A'))]),
   }), ['open', 'mount', 'mountOnce', '--esc', 'esc', 'escOnce', 'dismiss', 'dismissOnce', 'close', 'unmount', 'unmountOnce', 'open', 'mount', 'mountOnce', '--esc', 'esc', 'dismiss', 'dismissOnce', 'close', 'unmount', 'unmountOnce']],

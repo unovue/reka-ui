@@ -1,12 +1,9 @@
 <script lang="ts">
-import type {
-  ComponentPublicInstance,
-  Ref,
-} from 'vue'
-import type { DismissableLayerDismissDetails, DismissableLayerDismissReason, DismissableLayerProps, PointerDownOutsideEvent } from '@/DismissableLayer'
+import type { Ref } from 'vue'
+import type { DismissableLayerDismissDetails, DismissableLayerDismissReason, DismissableLayerProps, FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 import type { AcceptableValue } from '@/shared/types'
-import { useCollection } from '@/Collection'
+import { useCollection, useCollectionSlot } from '@/Collection'
 import {
   createContext,
   useFocusGuards,
@@ -43,6 +40,11 @@ export interface SelectContentContext {
    * Returns `true` when it handled the key.
    */
   onVirtualKeydown?: (event: KeyboardEvent, intent: string | null | undefined) => boolean
+  /**
+   * Set by the item-aligned position: places the content against the
+   * selected item again (after it changed while open).
+   */
+  reposition?: () => void
   /** Whether keyboard navigation loops (the content's `loop`). */
   loop?: () => boolean
   /**
@@ -105,14 +107,22 @@ export const [injectSelectContentContext, provideSelectContentContext]
 </script>
 
 <script setup lang="ts">
-import { reactiveOmit, unrefElement } from '@vueuse/core'
-import { computed, mergeProps, ref, watch } from 'vue'
-import { DismissableLayer } from '@/DismissableLayer'
-import { FocusScope } from '@/FocusScope'
-import SelectItemAlignedPosition from './SelectItemAlignedPosition.vue'
-import SelectPopperPosition from './SelectPopperPosition.vue'
+import type { WrapperSpec } from '@/shared/splitWrapperAttrs'
+import { reactiveOmit } from '@vueuse/core'
+import { computed, getCurrentInstance, mergeProps, watch } from 'vue'
+import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer } from '@/DismissableLayer/useDismissableLayer'
+import { FOCUS_SCOPE_WRAPPER, focusScopeOptions, useFocusScope } from '@/FocusScope/useFocusScope'
+import { PopperContent } from '@/Popper'
+import { renderAs } from '@/Primitive/renderAs'
+import { createWrapperEmit, splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
 import { injectSelectRootContext } from './SelectRoot.vue'
 import { useSelectContent } from './useSelect'
+import { useSelectItemAlignedPosition } from './useSelectItemAlignedPosition'
+import { CONTENT_MARGIN } from './utils'
+
+defineOptions({
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<SelectContentImplProps>(), {
   align: 'start',
@@ -134,10 +144,13 @@ const present = computed(() => rootContext.open.value)
 // backdrop under the content.
 const scrollLocked = useBodyScrollLock(present.value && props.bodyLock)
 watch([present, () => props.bodyLock], ([isPresent, bodyLock]) => scrollLocked.value = isPresent && bodyLock)
-const { CollectionSlot, getItems } = useCollection()
+const { getItems } = useCollection()
 
-const content = ref<HTMLElement>()
-// Scope focus guards to the content's root (shadow-safe); set up after `content`.
+// The `role="listbox"` element (inside the popper's positioning wrapper).
+const { forwardRef, currentElement: content, expose } = useForwardElement()
+defineExpose(expose)
+useCollectionSlot(content)
+// Scope focus guards to the content's root (shadow-safe).
 useFocusGuards(content)
 useHideOthers(computed(() => present.value ? content.value : undefined))
 
@@ -168,78 +181,123 @@ function handlePointerDownOutside(event: PointerDownOutsideEvent) {
 // item-aligned positioning, and the pointer-release guard after opening.
 const { content: surface, contentContext, isPositioned } = useSelectContent({
   context: rootContext,
-  contentElement: content,
+  contentElement: content as unknown as Ref<HTMLElement | undefined>,
   getItems,
-  position: props.position,
+  position: () => props.position,
   loop: () => props.loop,
 })
 
-// `loop` drives keyboard navigation here and is not a positioning prop
-const positionProps = reactiveOmit(props, 'loop')
-const pickedProps = computed(() => {
-  if (props.position === 'popper')
-    return positionProps
-  // Item-aligned, the content is a plain `Primitive`: it still takes `as` / `asChild`.
-  return { as: props.as, asChild: props.asChild }
-})
-
-const forwardedProps = useForwardProps(pickedProps)
-
 provideSelectContentContext(contentContext)
 
-const { forwardRef, expose } = useForwardElement()
-defineExpose(expose)
+// `loop` drives keyboard navigation here and is not a positioning prop.
+// Item-aligned, the content renders its own element (`as` / `asChild`).
+const positionProps = reactiveOmit(props, 'loop')
+const forwardedProps = useForwardProps(computed(() => props.position === 'popper' ? positionProps : {}))
+
+// The content was `<CollectionSlot>` around `<FocusScope as-child>` around
+// `<DismissableLayer as-child>` around `SelectPopperPosition` (a
+// `PopperContent`) or `SelectItemAlignedPosition` (a wrapper and the
+// element); they are composables and the content's own render now. Each
+// `*Wrapper` is what that component received, merged as the template merged
+// it: the content's attrs reached the root `FocusScope` under its bindings,
+// and each as-child slot merged what its component rendered under the next
+// one's bindings. So consumer attrs named after their props and events still
+// configure them and never render. (`$attrs` read through the instance proxy
+// tracks.) The attrs are bound once: the content also bound them on the
+// positioning part, so a consumer listener on the content ran twice.
+const instance = getCurrentInstance()!
+const focusScopeWrapper = computed(() => splitWrapperAttrs(mergeProps(instance.proxy!.$attrs, {
+  asChild: true,
+  present: present.value,
+  onMountAutoFocus: (event: Event) => event.preventDefault(),
+  onUnmountAutoFocus: (event: Event) => {
+    emits('closeAutoFocus', event)
+    if (event.defaultPrevented)
+      return
+    rootContext.triggerElement.value?.focus({ preventScroll: true })
+    event.preventDefault()
+  },
+}), FOCUS_SCOPE_WRAPPER))
+const scope = useFocusScope(focusScopeOptions(content, () => focusScopeWrapper.value))
+const layerWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeProps(scope.attrs(), focusScopeWrapper.value.rest), {
+  asChild: true,
+  present: present.value,
+  disableOutsidePointerEvents: props.disableOutsidePointerEvents,
+  backdropCutout: backdropCutout.value,
+  onFocusOutside: (event: FocusOutsideEvent) => event.preventDefault(),
+  onDismiss: handleDismiss,
+  onEscapeKeyDown: (event: KeyboardEvent) => emits('escapeKeyDown', event),
+  onPointerDownOutside: handlePointerDownOutside,
+}), DISMISSABLE_LAYER_WRAPPER))
+const layer = useDismissableLayer(dismissableLayerOptions(content, () => layerWrapper.value))
+
+// What the positioning part received.
+const positionAttrs = computed(() => mergeProps(layer.attrs(), layerWrapper.value.rest, forwardedProps.value, surface.attrs.value))
+
+// Popper: `SelectPopperPosition`'s defaults and CSS variables.
+const popperStyle = {
+  // Ensure border-box for floating-ui calculations
+  'boxSizing': 'border-box',
+  '--reka-select-content-transform-origin':
+    'var(--reka-popper-transform-origin)',
+  '--reka-select-content-available-width':
+    'var(--reka-popper-available-width)',
+  '--reka-select-content-available-height':
+    'var(--reka-popper-available-height)',
+  '--reka-select-trigger-width': 'var(--reka-popper-anchor-width)',
+  '--reka-select-trigger-height': 'var(--reka-popper-anchor-height)',
+}
+
+// Item-aligned: a consumer's `placed` listener was `SelectItemAlignedPosition`'s.
+const ITEM_ALIGNED_WRAPPER: WrapperSpec = { props: {}, emits: ['placed'] }
+const itemAlignedWrapper = computed(() => splitWrapperAttrs(positionAttrs.value, ITEM_ALIGNED_WRAPPER))
+const emitItemAligned = createWrapperEmit(() => itemAlignedWrapper.value)
+const itemAligned = useSelectItemAlignedPosition({
+  rootContext,
+  contentContext,
+  contentElement: content,
+  getItems,
+  enabled: () => props.position !== 'popper',
+  onPlaced: () => {
+    emitItemAligned('onPlaced')
+    isPositioned.value = true
+  },
+})
+const itemAlignedWrapperElement = itemAligned.wrapper
+const itemAlignedStyle = {
+  // When we get the height of the content, it includes borders. If we were to set
+  // the height without having `boxSizing: 'border-box'` it would be too big.
+  boxSizing: 'border-box',
+  // We need to ensure the content doesn't get taller than the wrapper
+  maxHeight: '100%',
+}
 </script>
 
 <template>
-  <CollectionSlot :ref="forwardRef">
-    <FocusScope
-      as-child
-      :present="present"
-      @mount-auto-focus.prevent
-      @unmount-auto-focus="
-        (event) => {
-          emits('closeAutoFocus', event);
-          if (event.defaultPrevented) return;
-          rootContext.triggerElement.value?.focus({ preventScroll: true });
-          event.preventDefault();
-        }
-      "
+  <PopperContent
+    v-if="position === 'popper'"
+    :ref="forwardRef"
+    v-bind="mergeProps({ collisionPadding: CONTENT_MARGIN, style: popperStyle }, positionAttrs)"
+    @placed="isPositioned = true"
+  >
+    <slot />
+  </PopperContent>
+  <div
+    v-else
+    ref="itemAlignedWrapperElement"
+    :style="{
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'fixed',
+      zIndex: itemAligned.zIndex.value,
+    }"
+  >
+    <component
+      :is="renderAs(as, asChild)"
+      :ref="forwardRef"
+      v-bind="mergeProps({ style: itemAlignedStyle }, itemAlignedWrapper.rest)"
     >
-      <DismissableLayer
-        as-child
-        :present="present"
-        :disable-outside-pointer-events="disableOutsidePointerEvents"
-        :backdrop-cutout="backdropCutout"
-        @focus-outside.prevent
-        @dismiss="handleDismiss"
-        @escape-key-down="emits('escapeKeyDown', $event)"
-        @pointer-down-outside="handlePointerDownOutside"
-      >
-        <component
-          :is="
-            position === 'popper'
-              ? SelectPopperPosition
-              : SelectItemAlignedPosition
-          "
-          v-bind="mergeProps({ ...$attrs, ...forwardedProps }, surface.attrs.value)"
-          :ref="
-            (vnode: Element | ComponentPublicInstance | null) => {
-              if (!vnode) return undefined
-              const el = unrefElement(vnode as ComponentPublicInstance) as HTMLElement | undefined
-              // special case for PopperContent
-              if (el?.hasAttribute('data-reka-popper-content-wrapper'))
-                content = el.firstElementChild as HTMLElement
-              else
-                content = el
-              return undefined
-            }
-          "
-          @placed="isPositioned = true"
-        >
-          <slot />
-        </component>
-      </DismissableLayer>
-    </FocusScope>
-  </CollectionSlot>
+      <slot />
+    </component>
+  </div>
 </template>
