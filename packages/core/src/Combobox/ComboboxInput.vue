@@ -2,7 +2,7 @@
 import type { ComboboxInputChangeReason, ComboboxOpenChangeReason } from './useCombobox'
 import type { ListboxFilterProps } from '@/Listbox'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { mergeProps, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useControllableState, useForwardElement } from '@/shared'
 
 export type ComboboxInputEmits = {
@@ -21,6 +21,11 @@ export interface ComboboxInputProps extends ListboxFilterProps {
 import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 import { createComboboxInputSurface, getComboboxInputText } from './useCombobox'
+import { getComboboxInputFieldAttrs, injectComboboxFieldContext } from './useComboboxField'
+
+// `$attrs` are merged in the render (as the fall-through did) so the Field's
+// aria ids can be merged with the consumer's.
+defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(defineProps<ComboboxInputProps>(), {
   as: 'input',
@@ -35,6 +40,7 @@ defineSlots<{
 }>()
 
 const rootContext = injectComboboxRootContext()
+const fieldContext = injectComboboxFieldContext(null)
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
@@ -120,7 +126,7 @@ watch(rootContext.filterState, (_newValue, oldValue) => {
   <component
     :is="renderAsEmpty(as, asChild)"
     :ref="forwardRef"
-    v-bind="surface.attrs.value"
+    v-bind="fieldContext ? getComboboxInputFieldAttrs(fieldContext, surface.attrs.value, $attrs) : mergeProps(surface.attrs.value, $attrs)"
   >
     <template
       v-if="rendersChildren(as, asChild)"
