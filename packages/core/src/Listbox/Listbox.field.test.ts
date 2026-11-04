@@ -2,7 +2,7 @@ import type { VueWrapper } from '@vue/test-utils'
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
-import { FieldLabel, FieldRoot } from '@/Field'
+import { FieldControl, FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
 import { describeFieldControlContract } from '@/test/fieldControlContract'
 import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot } from '.'
@@ -87,6 +87,36 @@ describe('given a Field-wrapped Listbox whose content element changes', () => {
     expect(content.tagName).toBe('SECTION')
     // Focusing the listbox moves focus on to its first item.
     expect(content.contains(document.activeElement)).toBe(true)
+    wrapper.unmount()
+  })
+})
+
+describe('given a required Field-wrapped Listbox whose content element is removed while ListboxContent stays mounted', () => {
+  it.each([
+    ['before', true],
+    ['after', false],
+  ])('moves an invalid submit\'s focus to another invalid field (%s it)', async (_, listboxFirst) => {
+    const showList = ref(true)
+    const listboxField = () => h(FieldRoot, { name: 'fruit', required: true }, () => h(ListboxRoot, null, () =>
+      h(ListboxContent, { asChild: true }, () => showList.value
+        ? h('div', { 'data-testid': 'list' }, fruits.map(fruit => h(ListboxItem, { value: fruit }, () => fruit)))
+        : null)))
+    const inputField = () => h(FieldRoot, { name: 'name', required: true }, () => h(FieldControl, { 'data-testid': 'name' }))
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FormRoot, null, () => [
+        ...(listboxFirst ? [listboxField(), inputField()] : [inputField(), listboxField()]),
+        h('button', { type: 'submit' }, 'Submit'),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="list"]').exists()).toBe(true)
+    showList.value = false
+    await flushPromises()
+    expect(wrapper.find('[data-testid="list"]').exists()).toBe(false)
+
+    await wrapper.find('button[type="submit"]').trigger('submit')
+    await flushPromises()
+    expect(document.activeElement).toBe(wrapper.find('[data-testid="name"]').element)
     wrapper.unmount()
   })
 })
