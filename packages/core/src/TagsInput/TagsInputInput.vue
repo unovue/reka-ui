@@ -13,16 +13,21 @@ export interface TagsInputInputProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { mergeProps, onBeforeUnmount, onMounted } from 'vue'
 import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
-import { injectTagsInputRootContext } from './TagsInputRoot.vue'
+import { injectTagsInputFieldContext, injectTagsInputRootContext } from './TagsInputRoot.vue'
 import { createTagsInputInputSurface } from './useTagsInput'
+
+// `$attrs` are merged in the render (as the fall-through did) so the Field's
+// aria ids can be merged with the consumer's.
+defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(defineProps<TagsInputInputProps>(), {
   as: 'input',
 })
 
 const context = injectTagsInputRootContext()
+const fieldContext = injectTagsInputFieldContext(null)
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
@@ -40,6 +45,8 @@ onMounted(() => {
 
   if (!inputEl)
     return
+  if (fieldContext)
+    fieldContext.inputElement.value = inputEl as HTMLInputElement
 
   setTimeout(() => {
     // make sure all DOM was flush then only capture the focus
@@ -47,13 +54,26 @@ onMounted(() => {
       inputEl?.focus()
   }, 1)
 })
+
+if (fieldContext) {
+  onBeforeUnmount(() => {
+    fieldContext.inputElement.value = undefined
+  })
+}
+
+// The Field's state attributes go first so the input's own `data-*` win; its
+// aria ids are merged with the consumer's.
+function fieldAttrs(attrs: Record<string, unknown>) {
+  const { field } = fieldContext!
+  return mergeProps(field.dataAttributes(), input.attrs.value, attrs, { ...field.ariaAttrs(attrs, context.disabled.value) })
+}
 </script>
 
 <template>
   <component
     :is="renderAsEmpty(as, asChild)"
     :ref="forwardRef"
-    v-bind="input.attrs.value"
+    v-bind="fieldContext ? fieldAttrs($attrs) : mergeProps(input.attrs.value, $attrs)"
   >
     <template
       v-if="rendersChildren(as, asChild)"
