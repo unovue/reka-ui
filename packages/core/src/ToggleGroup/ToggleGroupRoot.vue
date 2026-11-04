@@ -44,6 +44,8 @@ export const [injectToggleGroupRootContext, provideToggleGroupRootContext]
 </script>
 
 <script setup lang="ts">
+import { mergeProps, useAttrs, watch } from 'vue'
+import { useFieldControl } from '@/Field/useFieldControl'
 import { Slot } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { RovingFocusGroup } from '@/RovingFocus'
@@ -74,12 +76,41 @@ const dir = useDirection(() => props.dir)
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
+const attrs = useAttrs()
+
+// The item a Field focuses (an invalid submit, a non-native label's click):
+// the first pressed one, else the first enabled one.
+function getFocusTarget() {
+  const items = Array.from(currentElement.value?.querySelectorAll<HTMLElement>('[aria-pressed]') ?? [])
+    .filter(item => !item.hasAttribute('disabled') && !item.hasAttribute('data-disabled'))
+  return items.find(item => item.getAttribute('aria-pressed') === 'true') ?? items[0]
+}
+
+// Optional Field participation: `null` outside a `FieldRoot`, so every
+// binding below is inert without a Field. The group is the field's control:
+// it takes the field's id and aria wiring, and its items don't.
+const field = useFieldControl({
+  id: () => attrs.id as string | undefined,
+  element: getFocusTarget,
+  getValue: () => modelValue.value,
+  required: () => props.required,
+  // An item's value can be `''`, which still counts as pressed.
+  isFilled: value => Array.isArray(value) ? value.length > 0 : value !== undefined && value !== null,
+})
+// Getters rather than computeds: cheap, and free for a standalone group.
+const resolvedName = () => field ? field.name(props.name) : props.name
+const resolvedRequired = () => field ? field.required(props.required) : props.required
+const resolvedDisabled = () => field ? field.disabled(props.disabled) : props.disabled
+
 const { modelValue, root, context } = useToggleGroup({
   type: () => props.type,
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   emit: emits,
-  disabled: () => props.disabled,
+  // An item press is user input for the Field; a programmatic or
+  // parent-driven change is reported through the `modelValue` watcher below.
+  onUpdate: value => field?.input(value),
+  disabled: resolvedDisabled,
   orientation: props.orientation,
   dir,
   loop: () => props.loop,
@@ -88,6 +119,33 @@ const { modelValue, root, context } = useToggleGroup({
 const isFormControl = useFormControl(currentElement)
 
 provideToggleGroupRootContext(context)
+
+if (field)
+  watch(modelValue, value => field.sync(value))
+
+// Touched once focus leaves the whole group, not on every item-to-item move.
+function onFocusout(event: FocusEvent) {
+  if (!currentElement.value?.contains(event.relatedTarget as Node | null))
+    field?.onBlur()
+}
+
+// The consumer's `$attrs` fall through to the wrapper, under these bindings,
+// so they're only read here for the Field's wiring: its aria ids are merged
+// with the consumer's, and its state attributes yield to the consumer's.
+function renderAttrs(attrs: Record<string, unknown>) {
+  if (!field)
+    return root.attrs.value
+  const data: Record<string, unknown> = { ...field.dataAttributes() }
+  for (const key of Object.keys(data)) {
+    if (key in attrs)
+      delete data[key]
+  }
+  return mergeProps(
+    data,
+    root.attrs.value,
+    { id: field.id(), ...field.ariaAttrs(attrs, resolvedDisabled()), onFocusin: field.onFocus, onFocusout },
+  )
+}
 </script>
 
 <template>
@@ -98,14 +156,14 @@ provideToggleGroupRootContext(context)
     <component
       :is="renderAs(as, asChild)"
       :ref="forwardRef"
-      v-bind="root.attrs.value"
+      v-bind="renderAttrs($attrs)"
     >
       <slot :model-value="modelValue" />
 
       <VisuallyHiddenInput
-        v-if="isFormControl && name"
-        :name="name"
-        :required="required"
+        v-if="isFormControl && resolvedName()"
+        :name="resolvedName()!"
+        :required="resolvedRequired()"
         :value="modelValue"
       />
     </component>
