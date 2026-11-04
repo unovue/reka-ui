@@ -45,7 +45,10 @@ export default defineConfig({
       enabled: true,
       headless: true,
       provider: playwright(),
-      instances: (engines as Engine[]).map(browser => ({ browser })),
+      // Firefox focuses one frame at a time, so test files running side by side
+      // take focus from each other: a window `blur` pauses a toast, and focus
+      // can't move into an iframe. Its files run one after another.
+      instances: (engines as Engine[]).map(browser => browser === 'firefox' ? { browser, fileParallelism: false } : { browser }),
       screenshotFailures: false,
       commands: { wheelAt },
     },
