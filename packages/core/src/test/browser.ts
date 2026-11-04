@@ -14,7 +14,7 @@ export const isMacWebKit = server.browser === 'webkit' && server.platform === 'd
  * `NotFoundError` for an id no active pointer has, and the mouse's id differs by
  * engine (1 in Chromium and WebKit, 0 in Firefox). Browser tests only.
  */
-export async function hoverForMousePointerId(el: Element): Promise<number> {
+export async function hoverForMousePointerId(el: HTMLElement): Promise<number> {
   let pointerId: number | undefined
   const read = (event: PointerEvent) => {
     if (event.isTrusted && event.pointerType === 'mouse')
