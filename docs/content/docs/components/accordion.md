@@ -423,6 +423,8 @@ Adheres to the [Accordion WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/a
       description: 'When focus is on an <code>AccordionTrigger</code>, moves focus to the last <code>AccordionTrigger</code>.',
     }]" />
 
+In a right-to-left layout (`dir="rtl"` on `AccordionRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), `ArrowLeft` moves to the next trigger and `ArrowRight` to the previous one, in a horizontal accordion. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
+
 ## Headless composable
 
 `useAccordion` holds the open items (`modelValue`, `changeModelValue(value)`) for `type` `single` or `multiple`, and `getItemSurface(value)` returns the state and the `header`, `trigger` and `content` [part surfaces](/docs/guides/composables#part-surfaces) of one item. Arrow-key navigation between the triggers and the content's mount and size animation stay in the components. The composable is experimental; see [Headless composables](/docs/guides/composables).

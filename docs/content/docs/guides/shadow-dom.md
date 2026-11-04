@@ -27,6 +27,67 @@ shadowRoot.append(mountPoint)
 createApp(App).mount(mountPoint)
 ```
 
+## In a Vue custom element
+
+Vue's [`defineCustomElement`](https://vuejs.org/guide/extras/web-components.html#building-custom-elements-with-vue) renders a component into the shadow root of a custom element, and a `.ce.vue` single-file component puts its `<style>` blocks into that shadow root. Use Reka UI components inside it as in any other component:
+
+```vue
+<!-- SettingsWidget.ce.vue -->
+<script setup lang="ts">
+import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger, SwitchRoot, SwitchThumb } from 'reka-ui'
+</script>
+
+<template>
+  <PopoverRoot>
+    <PopoverTrigger class="trigger">
+      Settings
+    </PopoverTrigger>
+    <PopoverPortal>
+      <PopoverContent class="content" :side-offset="4">
+        <label for="notifications">Notifications</label>
+        <SwitchRoot id="notifications" class="switch">
+          <SwitchThumb class="thumb" />
+        </SwitchRoot>
+      </PopoverContent>
+    </PopoverPortal>
+  </PopoverRoot>
+</template>
+
+<style>
+.content {
+  padding: 12px;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
+}
+.switch {
+  width: 42px;
+  height: 24px;
+  border-radius: 9999px;
+  background: #ccc;
+}
+.switch[data-state='checked'] {
+  background: #111;
+}
+</style>
+```
+
+```ts
+// main.ts
+import { defineCustomElement } from 'vue'
+import SettingsWidget from './SettingsWidget.ce.vue'
+
+customElements.define('settings-widget', defineCustomElement(SettingsWidget))
+```
+
+```html
+<settings-widget></settings-widget>
+```
+
+The popover content is teleported into the element's shadow root, next to the `<style>` the component brought, so it is styled, and the trigger's `aria-controls` resolves to it.
+
+To use Reka UI parts as custom elements themselves (`<reka-dialog-root>`, …), from plain HTML or another framework, see [Custom elements](./custom-elements).
+
 ## Portals
 
 Portalled content (`DialogPortal`, `PopoverPortal`, `SelectPortal`, `TooltipPortal`, …) is teleported into the shadow root the portal is rendered in, rather than into `document.body`. It stays in the same tree as its trigger, so:
@@ -60,9 +121,18 @@ A custom element built with `defineCustomElement` runs a Vue app per element, so
 
 An explicit `to="body"` still teleports to the document body. Content moved out of the shadow root this way keeps working, but the styles of the shadow root no longer apply to it, and assistive technology cannot follow `aria-*` id references between the two trees.
 
+## Labels
+
+A `<label for>` names the control with that `id` in its own tree only, so keep the label in the same shadow root as the control. [Checkbox](../components/checkbox), [Switch](../components/switch) and [Radio Group](../components/radio-group) items also copy the text of their `<label for>` into `aria-label`; they look the label up in the control's own root, the shadow root or the document.
+
 ## Styling
 
-Document stylesheets do not apply inside a shadow root. Add your component styles to the shadow root itself, for example with a `<style>` element appended to it or with `shadowRoot.adoptedStyleSheets`. Reka UI does not inject component styles; the only stylesheet it adds is the global drag cursor of [Splitter](../components/splitter), which goes into the document and reaches shadow content through the inherited `cursor` property.
+Document stylesheets do not apply inside a shadow root. Add your component styles to the shadow root itself, for example with a `<style>` element appended to it, with `shadowRoot.adoptedStyleSheets`, or with the `<style>` of a `.ce.vue` component.
+
+Reka UI does not ship component styles. It adds two kinds of styles of its own:
+
+- `ScrollAreaViewport`, `SelectViewport` and `ComboboxViewport` render a small `<style>` element next to the viewport that hides the native scrollbar. It is rendered in the same tree as the viewport, so it applies inside a shadow root too. It takes the `nonce` prop of the viewport, or of `ConfigProvider`.
+- While a [Splitter](../components/splitter) handle is dragged, a global cursor style goes into the document (as an adopted stylesheet where supported). It reaches shadow content through the inherited `cursor` property.
 
 ## Limitations
 

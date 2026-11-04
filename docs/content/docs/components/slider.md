@@ -319,6 +319,8 @@ Adheres to the [Slider WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/
   ]"
 />
 
+In a right-to-left layout (`dir="rtl"` on `SliderRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), a horizontal slider fills from the right edge: `ArrowLeft` increases the value and `ArrowRight` decreases it. With `inverted` as well, it fills from the left and the keys work as in a left-to-right layout. `ArrowUp` and `ArrowDown` don't change. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
+
 #### Inverted sliders
 
 When the slider is <Code>inverted</Code>, some controls are inverted as well, depending on the <Code>orientation</Code>.

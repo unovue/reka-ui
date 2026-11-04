@@ -162,6 +162,8 @@ Pastes the contents of the clipboard into the pin input. If the number of charac
   ]"
 />
 
+In a right-to-left layout (`dir="rtl"` on `PinInputRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), `ArrowLeft` moves to the next input and `ArrowRight` to the previous one. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
+
 ## Headless composable
 
 `usePinInput` holds the value as an array of characters (`modelValue`, `updateModelValueAt(index, value)`), `isCompleted` and `onComplete`, `registerInput()` for each input, and the `root` [part surface](/docs/guides/composables#part-surfaces) with `createInputSurface(index)` for each cell, which handles typing, paste, Backspace and the arrow keys. It installs a watcher for `onComplete`, so call it inside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

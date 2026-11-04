@@ -815,6 +815,8 @@ Uses [roving tabindex](https://www.w3.org/WAI/ARIA/apg/patterns/kbd_roving_tabin
   ]"
 />
 
+In a right-to-left layout (`dir="rtl"` on `ContextMenuRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), `ArrowLeft` opens a submenu and `ArrowRight` closes it, and submenus open on the left. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
+
 ## Headless composable
 
 `useContextMenu` holds the open state (`open`, `onOpenChange()`) and the `trigger` and `content` [part surfaces](/docs/guides/composables#part-surfaces), including the touch long press (`pressOpenDelay`, 700ms by default). The menu itself (items, submenus, typeahead, positioning at the pointer) stays in the components. The composable is experimental; see [Headless composables](/docs/guides/composables).
