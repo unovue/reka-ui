@@ -191,9 +191,15 @@ providePinInputRootContext(context)
 const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
 
 // A slot mounting or unmounting changes `filled` too (e.g. an empty last
-// input removed): the inputs register with both the slots and this set.
-if (field)
-  watch([model, () => context.inputElements!.value.size], ([value]) => field.sync(value), { deep: true })
+// input removed): the inputs register with both the slots and this set. So
+// does a mounted input's `index` changing: the slot then reads another entry.
+if (field) {
+  watch([
+    model,
+    () => context.inputElements!.value.size,
+    () => Array.from(fieldSlots!.values(), index => index()).join(),
+  ], ([value]) => field.sync(value), { deep: true })
+}
 
 // `$attrs` isn't reactive, so the Field's wiring is read during render. Its
 // state attributes go first and the root's own win; its aria ids are merged

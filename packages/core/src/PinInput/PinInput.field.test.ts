@@ -203,6 +203,32 @@ describe('given a Field-wrapped PinInput whose slots change', () => {
   })
 })
 
+describe('given a Field-wrapped PinInput whose input changes its index while mounted', () => {
+  it('refreshes filled for the entry the input now reads', async () => {
+    // Model `['1', '', '3']`: the second input reads the empty entry until it moves to the third.
+    const second = ref(1)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { 'name': 'code', 'data-testid': 'field' }, () =>
+        h(PinInputRoot, { defaultValue: ['1', '', '3'] }, () => [
+          h(PinInputInput, { key: 'first', index: 0 }),
+          h(PinInputInput, { key: 'second', index: second.value }),
+        ])),
+    }), { attachTo: document.body })
+    await flushPromises()
+    const field = () => wrapper.find('[data-testid="field"]')
+    expect(field().attributes('data-filled')).toBeUndefined()
+
+    second.value = 2
+    await flushPromises()
+    expect(field().attributes('data-filled')).toBe('')
+
+    second.value = 1
+    await flushPromises()
+    expect(field().attributes('data-filled')).toBeUndefined()
+    wrapper.unmount()
+  })
+})
+
 describe('given a Field-wrapped PinInput with a nested PinInput', () => {
   it('counts only its own inputs toward filled', async () => {
     const wrapper = mount(defineComponent({
