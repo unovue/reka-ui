@@ -5,6 +5,7 @@ import { createApp, defineComponent, h, ref, watch } from 'vue'
 import { DialogContent, DialogRoot, DialogTitle } from '@/Dialog'
 import { HoverCardContent, HoverCardRoot, HoverCardTrigger } from '@/HoverCard'
 import { PopoverContent, PopoverRoot, PopoverTrigger } from '@/Popover'
+import { isMacWebKit } from '@/test/browser'
 import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from '@/Tooltip'
 
 // `.once` on the layers' events across a real outside press, including parts
@@ -160,7 +161,9 @@ describe('content parts: removed by a listener during an outside press', () => {
     })
 
     // The removed content stays silent. A dialog stays open, with the new content;
-    // a popover's new content takes the moved focus as outside and closes itself.
+    // a popover's new content takes the focus the click moved outside as a focus
+    // outside, and closes itself. A click doesn't focus a button in macOS WebKit
+    // (see `isMacWebKit`), so the popover stays open there.
     it.each(parts)('%s with `:key`: the removed content doesn\'t dismiss', async (name, root, Content) => {
       const open = ref(true)
       const key = ref(0)
@@ -178,13 +181,16 @@ describe('content parts: removed by a listener during an outside press', () => {
       await expect.poll(layer).not.toBeNull()
       await wait()
       const before = layer()
-      await userEvent.click(document.querySelector('[data-t="out"]')!, { force: true })
+      const out = document.querySelector<HTMLElement>('[data-t="out"]')!
+      await userEvent.click(out, { force: true })
+      const focusedOut = document.activeElement === out
+      expect(focusedOut).toBe(name === 'Popover' && !isMacWebKit)
       await expect.poll(() => key.value).toBeGreaterThan(0)
       await wait(200)
       expect(dismissed).not.toContain(0)
       expect(layer()).not.toBe(before)
-      expect(open.value).toBe(name === 'Dialog')
-      expect(layer() !== null).toBe(name === 'Dialog')
+      expect(open.value).toBe(!focusedOut)
+      expect(layer() !== null).toBe(!focusedOut)
     })
   })
 })
