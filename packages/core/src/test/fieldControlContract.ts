@@ -168,6 +168,23 @@ export function describeFieldControlContract(spec: FieldControlContractSpec) {
       })
     }
 
+    if (spec.parts) {
+      it('only marks the field filled when the parent changes the value while focus is inside', async () => {
+        const { wrapper, model } = mountInField()
+        await nextTick()
+        const field = () => wrapper.find('[data-testid="field"]')
+        spec.parts!(wrapper)[0].focus()
+        await nextTick()
+        expect(field().attributes('data-focused')).toBe('')
+
+        model.value = spec.filledValue
+        await flushPromises()
+        expect(field().attributes('data-filled')).toBe('')
+        expect(field().attributes('data-dirty')).toBeUndefined()
+        wrapper.unmount()
+      })
+    }
+
     it('marks the field dirty on user input, but only filled on a programmatic change', async () => {
       const { wrapper, model } = mountInField()
       await nextTick()

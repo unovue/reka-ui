@@ -88,10 +88,12 @@ export const [injectDateFieldRootContext, provideDateFieldRootContext]
 
 <script setup lang="ts">
 import { computed, mergeProps, onBeforeUnmount, onMounted, ref, toRefs, useAttrs, watch } from 'vue'
+import { createPendingFieldInput } from '@/Field/pendingFieldInput'
 import { claimFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
+import { isEqual } from '@/shared/compare'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useDateField } from './useDateField'
 
@@ -137,6 +139,10 @@ const { primitiveElement, currentElement: parentElement, expose } = usePrimitive
 
 // Controlled/uncontrolled + the `beforeUpdate:` / `update:` emits for the value
 // and the placeholder live in the composable's `useControllableState`.
+// The control's own segment edits, so a parent's change while focus is in
+// the segments (e.g. a reset) isn't mistaken for the user's. Only in a Field.
+const pendingInput = fieldContext ? createPendingFieldInput<unknown>() : undefined
+
 const {
   root,
   context,
@@ -166,6 +172,7 @@ const {
   isDateUnavailable: computed(() => props.isDateUnavailable),
   parentElement,
   emit: emits,
+  onUpdate: pendingInput ? value => pendingInput.set(value) : undefined,
 })
 
 const inputType = computed(() => getInputType(granularity.value))
@@ -234,7 +241,8 @@ const focusWithin = useFieldFocusWithin(fieldContext
 // anything else is programmatic, which updates `filled` but isn't dirtying.
 // Flushed after render so the hidden input's validity reflects the new value.
 watch(modelValue, (value) => {
-  if (focusWithin?.isFocusWithin())
+  const pending = pendingInput?.take()
+  if (pending && isEqual(pending.value, value) && focusWithin?.isFocusWithin())
     fieldContext?.handleControlInput({ value })
   else
     fieldContext?.reportControlState({ filled: !isNullish(value) })

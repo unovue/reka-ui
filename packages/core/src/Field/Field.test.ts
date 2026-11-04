@@ -400,6 +400,31 @@ describe('given pilot controls participating in a Field', () => {
   })
 })
 
+describe('given a Field-wrapped DateField whose parent changes the value while focus is inside', () => {
+  it('marks the field filled, not dirty', async () => {
+    const wrapper = mount({
+      components: { ...components, DateFieldRoot, DateFieldInput },
+      data: () => ({ value: null as unknown }),
+      template: `
+        <FieldRoot name="dob" data-testid="field">
+          <DateFieldRoot v-model="value" granularity="day" v-slot="{ segments }">
+            <DateFieldInput v-for="item in segments" :key="item.part" :part="item.part" :data-segment="item.part">{{ item.value }}</DateFieldInput>
+          </DateFieldRoot>
+        </FieldRoot>
+      `,
+    }, { attachTo: document.body })
+    await nextTick()
+    ;(wrapper.find('[data-segment="month"]').element as HTMLElement).focus()
+    await nextTick()
+    expect(wrapper.find('[data-testid="field"]').attributes('data-focused')).toBe('')
+    ;(wrapper.vm as unknown as { value: unknown }).value = Temporal.PlainDate.from('2024-01-15')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="field"]').attributes('data-filled')).toBe('')
+    expect(wrapper.find('[data-testid="field"]').attributes('data-dirty')).toBeUndefined()
+    wrapper.unmount()
+  })
+})
+
 describe('given a pilot control with its own name inside a named Field', () => {
   const controls = {
     Checkbox: '<CheckboxRoot name="control-name" :model-value="true" />',

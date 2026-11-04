@@ -90,10 +90,12 @@ export const [injectTimeFieldRootContext, provideTimeFieldRootContext]
 <script setup lang="ts">
 import { computed, mergeProps, ref, toRefs, useAttrs, watch } from 'vue'
 import { toIsoString } from '@/date'
+import { createPendingFieldInput } from '@/Field/pendingFieldInput'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
+import { isEqual } from '@/shared/compare'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useTimeField } from './useTimeField'
 
@@ -151,6 +153,10 @@ const resolvedRequired = () => field ? field.required(props.required) : props.re
 
 // Controlled/uncontrolled + the `beforeUpdate:` / `update:` emits for the value
 // and the placeholder live in the composable's `useControllableState`.
+// The control's own segment edits, so a parent's change while focus is in
+// the segments (e.g. a reset) isn't mistaken for the user's. Only in a Field.
+const pendingInput = field ? createPendingFieldInput<unknown>() : undefined
+
 const { root, context, modelValue, segments, isInvalid, segmentElements, setFocusedElement, focusFirstSegment } = useTimeField({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
@@ -170,6 +176,7 @@ const { root, context, modelValue, segments, isInvalid, segmentElements, setFocu
   isTimeUnavailable: computed(() => props.isTimeUnavailable),
   parentElement,
   emit: emits,
+  onUpdate: pendingInput ? value => pendingInput.set(value) : undefined,
 })
 
 // Touched once focus leaves the whole group, not on every segment change.
@@ -180,7 +187,8 @@ const focusWithin = useFieldFocusWithin(field, parentElement)
 // Flushed after render so the hidden input's validity reflects the new value.
 if (field) {
   watch(modelValue, (value) => {
-    if (focusWithin!.isFocusWithin())
+    const pending = pendingInput!.take()
+    if (pending && isEqual(pending.value, value) && focusWithin!.isFocusWithin())
       field.input(value)
     else
       field.sync(value)
