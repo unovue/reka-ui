@@ -166,15 +166,22 @@ function getFieldAriaAttrs() {
   }
 }
 
+// A group that is this Field's control reports focus for its checkboxes,
+// marking the field touched once focus leaves the whole group.
+const groupReportsFocus = Boolean(fieldContext) && checkboxGroupContext?.field === fieldContext
+
 // Only for a checkbox that reports focus without registering (one in a
 // `CheckboxGroupRoot`): a registered control's focus is cleared on unregister.
 let hasFocus = false
 function handleFocus() {
   hasFocus = true
-  fieldContext?.handleControlFocus()
+  if (!groupReportsFocus)
+    fieldContext?.handleControlFocus()
 }
 function handleBlur() {
   hasFocus = false
+  if (groupReportsFocus)
+    return
   if (participatesAsControl.value)
     fieldContext?.handleControlBlur()
   else
