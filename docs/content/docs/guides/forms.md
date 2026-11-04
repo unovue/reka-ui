@@ -44,14 +44,31 @@ A `FieldError` without `match` shows whatever message is current: a server error
 
 ## Reka UI controls inside a field
 
-These controls detect a surrounding `FieldRoot` and act as its control, in place of `FieldControl`. They take the field's `name`, `id`, `disabled` and `required`, get labelled by `FieldLabel`, report focus, dirty and filled state, and render the field's `data-valid` / `data-invalid` / `data-dirty` / `data-touched` / `data-filled` / `data-focused` attributes:
+Every Reka UI form control detects a surrounding `FieldRoot` and acts as its control, in place of `FieldControl`. It takes the field's `name`, `id`, `disabled` and `required`, gets labelled and described by `FieldLabel` and `FieldDescription`, reports focus, touched, dirty and filled state, and renders the field's `data-valid` / `data-invalid` / `data-dirty` / `data-touched` / `data-filled` / `data-focused` attributes. Its value reaches your `validate` function and `FormRoot`'s `formSubmit`, and when a submission is blocked, focus moves to the first invalid control.
 
 | Control | Empty when (`valueMissing` with `required`) | Value passed to `validate` and `formSubmit` |
 |---|---|---|
-| [Checkbox](../components/checkbox) (outside a `CheckboxGroupRoot`) | not checked | `true`, `false` or `'indeterminate'` |
+| [Checkbox](../components/checkbox) | not checked | `true`, `false` or `'indeterminate'` |
+| [Checkbox Group](../components/checkbox#group-root) | nothing checked | the array of checked values |
+| [Switch](../components/switch) | off | `true` or `false` |
+| [Toggle](../components/toggle) | not pressed | `true` or `false` |
+| [Toggle Group](../components/toggle-group) | nothing pressed | the model value (an array with `type="multiple"`) |
+| [Radio Group](../components/radio-group) | nothing selected | the model value |
 | [Select](../components/select) | nothing selected | the model value (an array with `multiple`) |
-| [Date Field](../components/date-field), and the field inside a [Date Picker](../components/date-picker) | no complete date | the Temporal value |
+| [Combobox](../components/combobox) | nothing selected | the selected value(s), not the typed text |
+| [Autocomplete](../components/autocomplete) | no text | the input text |
+| [Listbox](../components/listbox) | nothing selected | the model value (an array with `multiple`) |
 | [Tag Group](../components/tag-group) | nothing selected | the selection |
+| [Tags Input](../components/tags-input) | no tags | the array of tags |
+| [Number Field](../components/number-field) | no number | the number, or `null` |
+| [Pin Input](../components/pin-input) | any input empty | the model array |
+| [Editable](../components/editable) | no submitted text | the submitted text, not the draft |
+| [Date Field](../components/date-field) and [Date Picker](../components/date-picker) | no complete date | the Temporal value |
+| [Date Range Field](../components/date-range-field) and [Date Range Picker](../components/date-range-picker) | either end missing | `{ start, end }` |
+| [Time Field](../components/time-field) | no complete time | the Temporal value |
+| [Time Range Field](../components/time-range-field) | either end missing | `{ start, end }` |
+| [Slider](../components/slider) | never | the array of thumb values |
+| [Color Field](../components/color-field), [Color Slider](../components/color-slider) and [Color Area](../components/color-area) | never | the `Color` |
 
 ```vue
 <template>
@@ -67,53 +84,42 @@ These controls detect a surrounding `FieldRoot` and act as its control, in place
 </template>
 ```
 
-For a button control such as `SelectTrigger`, a native `label` forwards clicks to it. To render the label as another element, set `:native-label="false"` on `FieldLabel`: clicking it then focuses the control.
+A few controls are made of several parts:
 
-### Other controls
+- **Groups** (Radio Group, Checkbox Group, Toggle Group): the group is the field's control. `FieldLabel` labels the group, not an item, and an invalid submission focuses the checked item, or the first enabled one. The field is touched once focus leaves the group, not when it moves between items.
+- **Controls with a popup** (Select, Combobox, Autocomplete, Date Picker): moving focus into the popup doesn't count as leaving the field.
+- **Segmented fields** (Date, Time and their range variants, Pin Input): the label points at the control's hidden input, which forwards focus to the first segment.
+- **Composed controls**, such as a Tags Input used as a Combobox's input: the outermost control owns the field.
 
-Switch, Radio Group, Combobox, Number Field, Slider, Pin Input, Tags Input and the other form controls don't register with a `FieldRoot` yet. In a form, give them a `name`: inside a `form` element they render a hidden native input, so the browser submits their value. Label them with [Label](../components/label) (or `aria-labelledby`) and read their value from your own `v-model`:
+For a button control such as `SelectTrigger`, `SwitchRoot` or `Toggle`, a native `label` forwards clicks to it. To render the label as another element, set `:native-label="false"` on `FieldLabel`: clicking it then focuses the control.
 
 ```vue
-<script setup>
-import { FormRoot, Label, RadioGroupItem, RadioGroupRoot, SwitchRoot, SwitchThumb } from 'reka-ui'
-import { ref } from 'vue'
-
-const newsletter = ref(false)
-const frequency = ref('weekly')
-
-function onSubmit(event) {
-  event.preventDefault()
-  const data = new FormData(event.currentTarget)
-  // data.get('newsletter') === 'on' when checked, data.get('frequency') === 'weekly'
-}
-</script>
-
 <template>
-  <FormRoot @submit="onSubmit">
-    <Label for="newsletter">Newsletter</Label>
-    <SwitchRoot id="newsletter" v-model="newsletter" name="newsletter">
-      <SwitchThumb />
-    </SwitchRoot>
+  <FormRoot @form-submit="save">
+    <FieldRoot name="newsletter">
+      <FieldLabel>Newsletter</FieldLabel>
+      <SwitchRoot>
+        <SwitchThumb />
+      </SwitchRoot>
+    </FieldRoot>
 
-    <Label id="frequency-label">Frequency</Label>
-    <RadioGroupRoot v-model="frequency" name="frequency" aria-labelledby="frequency-label">
-      <RadioGroupItem value="daily" aria-label="Daily" />
-      <RadioGroupItem value="weekly" aria-label="Weekly" />
-    </RadioGroupRoot>
+    <FieldRoot name="frequency" required>
+      <FieldLabel :native-label="false">
+        Frequency
+      </FieldLabel>
+      <RadioGroupRoot>
+        <RadioGroupItem value="daily" aria-label="Daily" />
+        <RadioGroupItem value="weekly" aria-label="Weekly" />
+      </RadioGroupRoot>
+      <FieldError match="valueMissing">
+        Choose how often we should write.
+      </FieldError>
+    </FieldRoot>
   </FormRoot>
 </template>
 ```
 
-To show a validation error for such a control, wrap it in a `FieldRoot`, compute the error yourself and pass `:invalid` (here `submitted` is a flag you set in your submit handler). The `FieldError` then shows your message, and an invalid field also blocks the `FormRoot` submission. Focus doesn't move to such a control when the submission is blocked, because it doesn't register a control element with the field, and `submit` doesn't fire for a blocked submission:
-
-```vue
-<template>
-  <FieldRoot :invalid="submitted && !frequency">
-    <!-- the RadioGroupRoot -->
-    <FieldError>Choose how often we should write.</FieldError>
-  </FieldRoot>
-</template>
-```
+After choosing Weekly, `save` receives `{ newsletter: false, frequency: 'weekly' }`; submitting with no frequency chosen shows the error and focuses the first radio.
 
 ## Custom validation
 

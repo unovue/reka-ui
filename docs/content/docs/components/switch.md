@@ -129,7 +129,7 @@ The `reason` of the details tells a click (`'trigger-press'`) from the Enter key
 
 ### In a form
 
-With a `name`, a switch inside a `form` renders a hidden native checkbox, so the browser submits its `value` (`'on'` by default) while it's on and nothing while it's off, like a native checkbox. A switch doesn't register with a [`FieldRoot`](field) yet: label it with a `label` whose `for` matches its `id`, as above. See [Forms and validation](/docs/guides/forms#other-controls).
+With a `name`, a switch inside a `form` renders a hidden native checkbox, so the browser submits its `value` (`'on'` by default) while it's on and nothing while it's off, like a native checkbox. Inside a [`FieldRoot`](field), the switch takes the field's `name`, `id`, `required` and `disabled`, and `FieldLabel` labels it; a required switch must be on. Outside a field, label it with a `label` whose `for` matches its `id`, as above. See [Forms and validation](/docs/guides/forms#reka-ui-controls-inside-a-field).
 
 ```vue
 <template>
