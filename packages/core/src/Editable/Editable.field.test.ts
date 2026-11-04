@@ -139,3 +139,24 @@ describe('given a Field-wrapped Editable whose parent rejects a change', () => {
     wrapper.unmount()
   })
 })
+
+describe('given a Field-wrapped Editable that is previewing', () => {
+  it('labels and describes the preview the label focuses, and passes axe', async () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { name: 'title', invalid: true }, () => [
+        h(FieldLabel, () => 'Title'),
+        render({}),
+        h(FieldError, { 'match': true, 'data-testid': 'error' }, () => 'Required'),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    const element = preview(wrapper)
+    const error = wrapper.find('[data-testid="error"]')
+    expect(error.attributes('id')).toBeTruthy()
+    expect(element.attributes('aria-labelledby')).toBe(wrapper.find('label').attributes('id'))
+    expect(element.attributes('aria-describedby')).toContain(error.attributes('id'))
+    expect(element.attributes('aria-invalid')).toBe('true')
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+    wrapper.unmount()
+  })
+})
