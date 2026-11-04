@@ -5,6 +5,7 @@ import type { Direction, DragState, ResizeEvent } from './utils/types'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import { computed, nextTick, ref, toValue, watch, watchEffect } from 'vue'
 import { areEqual, createPartSurface, useControllableState } from '@/shared'
+import { injectDirectionFallback } from '@/shared/useDirection'
 import { assert } from './utils/assert'
 import { calculateDeltaPercentage, calculateUnsafeDefaultLayout } from './utils/calculate'
 import { callPanelCallbacks } from './utils/callPanelCallbacks'
@@ -81,7 +82,7 @@ export interface UseSplitterProps {
   keyboardResizeBy?: MaybeRefOrGetter<number | null | undefined>
   /** Storage for `autoSaveId`; defaults to `localStorage`. */
   storage?: MaybeRefOrGetter<PanelGroupStorage | undefined>
-  /** Reading direction; RTL flips horizontal keyboard and pointer deltas. */
+  /** Reading direction; RTL flips horizontal keyboard and pointer deltas. Falls back to `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<'ltr' | 'rtl' | undefined>
   /** The group element. */
   element: Readonly<Ref<HTMLElement | null | undefined>>
@@ -140,6 +141,8 @@ function layoutsFuzzyEqual(a: number[] | undefined, b: number[] | undefined) {
 export function useSplitter(props: UseSplitterProps): UseSplitterReturn {
   const groupId = props.id ?? `reka-splitter-group-${++count}`
   const direction = computed(() => toValue(props.direction))
+  // Read only when a handle resizes: no direction ref per group.
+  const dirFallback = injectDirectionFallback(props.dir)
   const panelGroupElementRef = props.element as Ref<HTMLElement | null>
 
   const dragState = ref<DragState | null>(null)
@@ -581,7 +584,7 @@ export function useSplitter(props: UseSplitterProps): UseSplitterReturn {
 
       // Support RTL layouts
       const isHorizontal = direction === 'horizontal'
-      if (toValue(props.dir) === 'rtl' && isHorizontal)
+      if ((toValue(props.dir) || dirFallback?.value) === 'rtl' && isHorizontal)
         delta = -delta
 
       const panelConstraints = getPanelConstraintsInPercent()

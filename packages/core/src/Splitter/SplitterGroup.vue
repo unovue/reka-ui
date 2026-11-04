@@ -5,6 +5,7 @@ import type { SplitterLayoutChangeReason } from './useSplitter'
 import type { Direction, DragState, ResizeEvent, ResizeHandler } from './utils/types'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
+import type { Direction as ReadingDirection } from '@/shared/types'
 import { createContext, useDirection, useForwardElement, useId } from '@/shared'
 
 export interface SplitterGroupProps extends PrimitiveProps {
@@ -16,6 +17,8 @@ export interface SplitterGroupProps extends PrimitiveProps {
   direction: Direction
   /** Step size when arrow key was pressed. */
   keyboardResizeBy?: number | null
+  /** The reading direction of the splitter group when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
+  dir?: ReadingDirection
   /** Custom storage API; defaults to localStorage */
   storage?: PanelGroupStorage
   /**
@@ -85,7 +88,7 @@ defineSlots<{
   }) => any
 }>()
 
-const dir = useDirection()
+const dir = useDirection(() => props.dir)
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 

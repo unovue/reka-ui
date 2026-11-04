@@ -23,6 +23,12 @@
     'default': 'null'
   },
   {
+    'name': 'dir',
+    'description': '<p>The reading direction of the splitter group when applicable. &lt;br&gt; If omitted, inherits globally from <code>ConfigProvider</code> or assumes LTR (left-to-right) reading mode.</p>\n',
+    'type': '\'ltr\' | \'rtl\'',
+    'required': false
+  },
+  {
     'name': 'direction',
     'description': '<p>The group orientation of splitter.</p>\n',
     'type': '\'vertical\' | \'horizontal\'',
@@ -92,6 +98,7 @@
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `autoSaveId` | Unique id used to auto-save group arrangement via `localStorage`. Ignored while `layout` is controlled. | `string \| null` | No | `null` |
+| `dir` | The reading direction of the splitter group when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `direction` | The group orientation of splitter. | `"vertical" \| "horizontal"` | Yes | - |
 | `id` | Group id; falls back to `useId` when not provided. | `string \| null` | No | - |
 | `keyboardResizeBy` | Step size when arrow key was pressed. | `number \| null` | No | `10` |
