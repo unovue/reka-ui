@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { FieldError, FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
 import { describeFieldControlContract } from '@/test/fieldControlContract'
@@ -152,6 +152,30 @@ describe('given a required Field-wrapped PinInput with an empty slot', () => {
     await wrapper.find('button[type="submit"]').trigger('submit')
     await flushPromises()
     expect(onFormSubmit).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+})
+
+describe('given a Field-wrapped PinInput whose as-child input is replaced while PinInputInput stays mounted', () => {
+  it('focuses the replacement, not the detached input', async () => {
+    const swapped = ref(false)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { name: 'code' }, () => [
+        h(FieldLabel, { 'nativeLabel': false, 'as': 'div', 'data-testid': 'label' }, () => 'Code'),
+        h(PinInputRoot, null, () => [
+          h(PinInputInput, { index: 0, asChild: true }, () => h('input', { 'key': swapped.value ? 'b' : 'a', 'data-testid': swapped.value ? 'b' : 'a' })),
+          h(PinInputInput, { index: 1 }),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    const original = wrapper.find('[data-testid="a"]').element
+    swapped.value = true
+    await flushPromises()
+    expect(original.isConnected).toBe(false)
+
+    await wrapper.find('[data-testid="label"]').trigger('click')
+    expect(document.activeElement).toBe(wrapper.find('[data-testid="b"]').element)
     wrapper.unmount()
   })
 })
