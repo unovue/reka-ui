@@ -142,9 +142,9 @@ describe('given a TagsInput composed into a Field-wrapped Combobox', () => {
       setup: () => () => h(FormRoot, { onFormSubmit }, () => [
         h(FieldRoot, { name: 'fruits' }, () => [
           h(FieldLabel, () => 'Fruits'),
-          h(ComboboxRoot, { 'modelValue': model.value, 'onUpdate:modelValue': (value: string[]) => { model.value = value }, 'multiple': true }, () => [
+          h(ComboboxRoot, { 'modelValue': model.value, 'onUpdate:modelValue': (value: unknown) => { model.value = value as string[] }, 'multiple': true }, () => [
             h(ComboboxAnchor, () => [
-              h(TagsInputRoot, { 'modelValue': model.value, 'onUpdate:modelValue': (value: string[]) => { model.value = value } }, () =>
+              h(TagsInputRoot, { 'modelValue': model.value, 'onUpdate:modelValue': (value: unknown) => { model.value = value as string[] } }, () =>
                 h(ComboboxInput, { asChild: true }, () => h(TagsInputInput, { 'data-testid': 'input' }))),
               h(ComboboxTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
             ]),
