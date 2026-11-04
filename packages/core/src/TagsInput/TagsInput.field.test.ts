@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { flushPromises, mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { FieldLabel, FieldRoot } from '@/Field'
 import { describeFieldControlContract } from '@/test/fieldControlContract'
@@ -90,6 +90,31 @@ describe('given a Field-wrapped TagsInput', () => {
     await nextTick()
     expect(input(wrapper).id).toBe('own')
     expect(wrapper.find('label').attributes('for')).toBe('own')
+    wrapper.unmount()
+  })
+})
+
+describe('given a controlled TagsInput that adds a tag on blur', () => {
+  it('validates on blur with the tag the blur added', async () => {
+    const model = ref<string[]>([])
+    const validate = vi.fn((value: unknown) => (value as string[]).length > 0 ? null : 'Add a tag')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('div', [
+        h(FieldRoot, { 'name': 'tags', 'data-testid': 'field', validate, 'validationMode': 'onBlur' }, () => [
+          h(FieldLabel, () => 'Tags'),
+          renderTagsInput({ 'addOnBlur': true, 'modelValue': model.value, 'onUpdate:modelValue': (value: string[]) => { model.value = value } }),
+        ]),
+        h('button', { 'data-testid': 'outside' }, 'Outside'),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    input(wrapper).focus()
+    await wrapper.find('[data-testid="input"]').setValue('Kiwi')
+    ;(wrapper.find('[data-testid="outside"]').element as HTMLElement).focus()
+    await flushPromises()
+    expect(model.value).toEqual(['Kiwi'])
+    expect(validate).toHaveBeenLastCalledWith(['Kiwi'], expect.anything())
+    expect(wrapper.find('[data-testid="field"]').attributes('data-invalid')).toBeUndefined()
     wrapper.unmount()
   })
 })
