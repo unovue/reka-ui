@@ -19,6 +19,7 @@ for (const type of ['single', 'multiple'] as const) {
       h(ToggleGroupItem, { 'value': 'b', 'aria-label': 'B' }),
     ]),
     control: wrapper => wrapper.find('[role="group"]').element as HTMLElement,
+    disabledParts: wrapper => wrapper.findAll('button').map(item => item.element),
     // Nothing is pressed, so the first enabled item.
     focusTarget: wrapper => item(wrapper, 'A').element as HTMLElement,
     interact: wrapper => item(wrapper, 'B').trigger('click'),

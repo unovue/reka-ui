@@ -272,6 +272,7 @@ export function getListboxContentSurface<T extends AcceptableValue = AcceptableV
       'tabindex': toValue(options.tabindexOutsideRender) ? initialTabindex : tabindex.value,
       'aria-orientation': context.orientation.value,
       'aria-multiselectable': !!context.multiple.value,
+      'aria-disabled': context.disabled.value || undefined,
       // `@mousedown.left`
       'onMousedown': (event: MouseEvent) => {
         if (event.button !== 0)

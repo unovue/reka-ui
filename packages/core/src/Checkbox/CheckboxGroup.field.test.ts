@@ -18,6 +18,7 @@ describeFieldControlContract({
   ]),
   // The group element (a standalone group has no role to select it by).
   control: wrapper => wrapper.find('[role="checkbox"]').element.parentElement!,
+  disabledParts: wrapper => wrapper.findAll('[role="checkbox"]').map(item => item.element as HTMLElement),
   // Nothing is checked, so the first enabled checkbox.
   focusTarget: wrapper => checkbox(wrapper, 'A').element as HTMLElement,
   interact: wrapper => checkbox(wrapper, 'B').trigger('click'),

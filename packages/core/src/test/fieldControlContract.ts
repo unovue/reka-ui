@@ -56,6 +56,12 @@ export interface FieldControlContractSpec {
    * untouched while focus moves between them, and is touched once it leaves.
    */
   parts?: (wrapper: VueWrapper) => HTMLElement[]
+  /**
+   * The interactive parts a disabled field must disable, for a control that
+   * disables its parts rather than itself (e.g. a group's items). Defaults to
+   * `control`.
+   */
+  disabledParts?: (wrapper: VueWrapper) => HTMLElement[]
   /** Skips the `name` precedence checks, for a control without a `name` prop. */
   noName?: boolean
 }
@@ -183,11 +189,13 @@ export function describeFieldControlContract(spec: FieldControlContractSpec) {
     it('is disabled by a disabled field', async () => {
       const { wrapper } = mountInField({ fieldProps: { disabled: true } })
       await nextTick()
-      const control = spec.control(wrapper)
-      const disabled = control.hasAttribute('disabled')
-        || control.getAttribute('aria-disabled') === 'true'
-        || control.hasAttribute('data-disabled')
-      expect(disabled).toBe(true)
+      const parts = spec.disabledParts?.(wrapper) ?? [spec.control(wrapper)]
+      expect(parts.length).toBeGreaterThan(0)
+      // Natively disabled, or `aria-disabled`. Not `data-disabled`: the field's
+      // own state attributes are merged onto the control, so that would pass
+      // for a control that ignores the field.
+      for (const part of parts)
+        expect(part.matches(':disabled') || part.getAttribute('aria-disabled') === 'true', part.outerHTML).toBe(true)
       wrapper.unmount()
     })
 

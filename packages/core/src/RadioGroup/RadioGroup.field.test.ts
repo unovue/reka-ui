@@ -17,6 +17,7 @@ describeFieldControlContract({
     h(RadioGroupItem, { 'value': 'b', 'aria-label': 'B' }),
   ]),
   control: wrapper => wrapper.find('[role="radiogroup"]').element as HTMLElement,
+  disabledParts: wrapper => wrapper.findAll('[role="radio"]').map(item => item.element as HTMLElement),
   // Nothing is checked, so the first enabled radio.
   focusTarget: wrapper => radio(wrapper, 'a').element as HTMLElement,
   interact: wrapper => radio(wrapper, 'b').trigger('click'),

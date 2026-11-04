@@ -26,6 +26,7 @@ describeFieldControlContract({
   name: 'PinInput',
   render,
   control: wrapper => inputs(wrapper)[0].parentElement!,
+  disabledParts: inputs,
   focusTarget: wrapper => inputs(wrapper)[0],
   idOnControl: false,
   labelTarget: wrapper => wrapper.find('input[aria-hidden="true"]').element as HTMLElement,
