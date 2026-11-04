@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { FieldValidateFn, FieldValidationMode, FieldValidityState } from './useFieldValidation'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, mergeExpose, useForwardElement, useId } from '@/shared'
+import { mergeExpose, useForwardElement, useId } from '@/shared'
 
 export interface FieldRootProps extends PrimitiveProps {
   /**
@@ -145,8 +145,7 @@ export interface FieldRootContext {
   resetField: () => void
 }
 
-export const [injectFieldRootContext, provideFieldRootContext]
-  = createContext<FieldRootContext>('FieldRoot')
+export { injectFieldRootContext, provideFieldRootContext } from './fieldRootContext'
 </script>
 
 <script setup lang="ts">
@@ -154,6 +153,7 @@ import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRef, watch } f
 import { injectFormRootContext } from '@/Form/FormRoot.vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { isEqual } from '@/shared/compare'
+import { provideFieldRootContext } from './fieldRootContext'
 import { createValidityState, useFieldValidation } from './useFieldValidation'
 
 const props = withDefaults(defineProps<FieldRootProps>(), {

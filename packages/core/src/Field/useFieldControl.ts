@@ -1,7 +1,7 @@
 import type { InjectionKey } from 'vue'
 import type { FieldControlRegistration, FieldDataAttributes, FieldRootContext } from './FieldRoot.vue'
 import { inject, onBeforeUnmount, onMounted, provide } from 'vue'
-import { injectFieldRootContext } from './FieldRoot.vue'
+import { injectFieldRootContext } from './fieldRootContext'
 
 export interface UseFieldControlOptions extends Omit<FieldControlRegistration, 'id'> {
   /** The control's own `id` prop. The field's generated id is used when it's unset. */

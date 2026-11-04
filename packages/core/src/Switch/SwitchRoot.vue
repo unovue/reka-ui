@@ -47,7 +47,6 @@ export const [injectSwitchRootContext, provideSwitchRootContext]
 import { computed, mergeProps, watch } from 'vue'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
-import { isEqual } from '@/shared/compare'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useSwitch } from './useSwitch'
 
@@ -106,7 +105,7 @@ const { modelValue, checked, disabled, root, context } = useSwitch<T>({
   emit,
   // A press is user input for the Field; a programmatic or parent-driven
   // change is reported through the `checked` watcher below.
-  onUpdate: value => field?.input(isEqual(value, props.trueValue)),
+  onUpdate: value => field?.input(value === props.trueValue),
   disabled: () => field ? field.disabled(props.disabled) : props.disabled,
   required: resolvedRequired,
   value: () => props.value,
