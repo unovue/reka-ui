@@ -231,3 +231,7 @@ const delimiter = /[ ,;\t\n\r]+/
     },
   ]"
 />
+
+## Headless composable
+
+`useTagsInput` holds the tags (`modelValue`, `addTags()`, `removeTag()`, `clear()`), validation (`max`, `duplicate`, `isInvalidInput`, `onInvalid`), the delimiters and paste behaviour, and the `root`, `input` and `clearButton` [part surfaces](/docs/guides/composables#part-surfaces) with `getItemSurfaces(value)` for each tag. It is pure, so it can be called outside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

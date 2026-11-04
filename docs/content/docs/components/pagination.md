@@ -234,3 +234,7 @@ const currentPage = ref(1)
 ## Real-world examples
 
 - [Data Table](/examples/data-table): Compose Checkbox, DropdownMenu, ContextMenu, ScrollArea and Pagination into a sortable, selectable table.
+
+## Headless composable
+
+`usePagination` computes the page model and the list to render: `page`, `pageCount`, `items` (pages and ellipses for `siblingCount` and `showEdges`), `setPage()`, and the `first`, `prev`, `next`, `last` and `ellipsis` [part surfaces](/docs/guides/composables#part-surfaces) with `getListItemSurface(page)`. It is pure, so it can be called outside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

@@ -426,3 +426,7 @@ This example showcases usage of the CalendarWeek component used to display the n
     }
   ]"
 />
+
+## Headless composable
+
+`useCalendar` holds the value, the placeholder (the month shown) and the view (`modelValue`, `placeholder`, `view`, `select()`, `setPlaceholder()`, `setView()`, `drillUp()`, `nextPage()`, `prevPage()`), builds the `grid` and `weekDays`, applies `minValue`, `maxValue`, `isDateDisabled` and `isDateUnavailable`, and returns the `root`, `heading`, `viewTrigger`, `prev` and `next` [part surfaces](/docs/guides/composables#part-surfaces) with `getGridSurface()`, `getCellSurface()` and `getCellTriggerSurface()`. It registers watchers, so call it inside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

@@ -424,3 +424,7 @@ Adheres to the [Tree WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/pa
     },
   ]"
 />
+
+## Headless composable
+
+`useTree` flattens the `items` into `flattenItems` (with `getKey`, `getChildren`, the expanded keys), and holds the selection and expansion models (`modelValue`, `expanded`, `select()`, `toggle()`, `setExpanded()`, `propagateSelect`, `bubbleSelect`), with `getItemSurface()` and `getItemStatus()` for each item. Expansion changes have their own `onBeforeUpdateExpanded` / `onUpdateExpanded` and `lastExpandedChangeDetails`. It is pure, so it can be called outside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

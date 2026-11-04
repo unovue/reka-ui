@@ -240,3 +240,7 @@ Adheres to the [Spinbutton WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/
     },
   ]"
 />
+
+## Headless composable
+
+`useNumberField` holds the value and its formatted text (`modelValue`, `textValue`), `increment()` / `decrement()` / `setModelValue()`, `applyInputValue()` to parse what the user typed, and the `root`, `incrementButton` and `decrementButton` [part surfaces](/docs/guides/composables#part-surfaces) with `createInputSurface()` for the input (`role="spinbutton"`, `aria-valuenow`, arrow keys, wheel and Page Up / Down). It takes the same options as `NumberFieldRoot`, `formatOptions` and `locale` included. It is pure, so it can be called outside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

@@ -414,3 +414,7 @@ Adheres to the [Listbox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg
     }
   ]"
 />
+
+## Headless composable
+
+`useListboxRoot` holds the selection (`modelValue`, `select()`, `isSelected()`, `by`, `multiple`, `selectionBehavior`), the highlight (`highlightedElement`, `highlightItem()`, `highlightFirstItem()`, `changeHighlight()`), the built-in filter (`filterSearch`, `setFilterSearch()`) and the `root` and `content` [part surfaces](/docs/guides/composables#part-surfaces) with `getItemSurface()` for each option. It registers watchers, so call it inside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

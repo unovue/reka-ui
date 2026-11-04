@@ -821,3 +821,7 @@ const props = defineProps<ComboboxItemProps>()
   </ComboboxItem>
 </template>
 ```
+
+## Headless composable
+
+`useComboboxRoot` builds on the Listbox model: it adds the open state (`open`, `onOpenChange()`), the search term and its filtering (`filter`, `ignoreFilter`, `filterSearch`), the reset rules (`resetSearchTermOnBlur`, `resetSearchTermOnSelect`, `resetModelValueOnClear`), and the `root`, `listbox`, `trigger`, `cancel` and `content` [part surfaces](/docs/guides/composables#part-surfaces) with `createInputSurface()` for the input. Positioning, the portal and dismissal stay in the components. It registers watchers, so call it inside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

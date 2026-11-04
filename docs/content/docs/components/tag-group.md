@@ -224,3 +224,7 @@ Adheres to the [Grid WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/pa
     },
   ]"
 />
+
+## Headless composable
+
+`useTagGroup` holds the selection (`selectedValues`, `isSelected()`, `toggleSelection()`, `setSelection()`) for the `selectionMode`, removal (`allowsRemoving`, `onRemove`), and the `root` [part surface](/docs/guides/composables#part-surfaces) with `createItem({ value, … })` and `getItemDeleteSurface()` for each tag. It is pure, so it can be called outside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

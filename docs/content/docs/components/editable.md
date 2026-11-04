@@ -192,3 +192,7 @@ In this case, we want to submit only when user click on `EditableSubmitTrigger`,
     }
   ]"
 />
+
+## Headless composable
+
+`useEditable` holds the value and the edit state (`modelValue`, `inputValue`, `isEditing`, `edit()`, `submit()`, `cancel()`), `onSubmit` and `onStateChange`, and the `root`, `area`, `preview`, `input`, `editTrigger`, `submitTrigger` and `cancelTrigger` [part surfaces](/docs/guides/composables#part-surfaces). It registers watchers, so call it inside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

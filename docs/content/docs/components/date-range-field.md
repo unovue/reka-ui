@@ -155,3 +155,7 @@ Contains the date field segments
     }
   ]"
 />
+
+## Headless composable
+
+`useDateRangeField` is the range counterpart of [`useDateField`](date-field#headless-composable): it holds `startValue` and `endValue`, `setRangeValue()`, the segments of both dates and `createInputSurface(part, type)` for each one. It registers watchers and collects the segment elements on mount, so call it inside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

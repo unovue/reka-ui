@@ -395,3 +395,7 @@ Because of [a limitation](https://github.com/unovue/reka-ui/blob/v3/packages/cor
 ```
 
 We recommend using pointer events instead (eg. `@pointerdown`, `@pointerup`). Regardless of the above limitation, these events are better suited for cross-platform/device handling as they are fired for all pointer input types (mouse, touch, pen, etc.).
+
+## Headless composable
+
+`useSlider` holds the values (`modelValue`, and `currentModelValue` while dragging), the pointer lifecycle (`startSlide()`, `moveSlide()`, `endSlide()`), `onValueCommit`, and the `root`, `track` and `range` [part surfaces](/docs/guides/composables#part-surfaces) with `getThumbSurface(index)` for each thumb (`role="slider"`, `aria-valuenow`, `aria-valuemin`, `aria-valuemax`, keyboard steps). It takes the same options as `SliderRoot` (`min`, `max`, `step`, `minStepsBetweenThumbs`, `orientation`, `dir`, `inverted`, `thumbAlignment`). It is pure, so it can be called outside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).
