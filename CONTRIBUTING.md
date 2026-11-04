@@ -68,7 +68,8 @@ All commands run from the repo root.
 | Tests (watch) | `pnpm test` |
 | Tests (one-shot) | `pnpm --filter reka-ui exec vitest run [path]` |
 | Test coverage | `pnpm --filter reka-ui test:coverage` |
-| Browser tests | `pnpm test:browser` |
+| Browser tests (Chromium) | `pnpm test:browser` |
+| Browser tests (Chromium, Firefox, WebKit) | `pnpm test:browser:all` |
 | Lint / auto-fix | `pnpm lint` / `pnpm lint:fix` |
 | Stories | `pnpm story:dev` |
 | Docs dev | `pnpm --filter reka-ui build && pnpm docs:install && pnpm docs:dev` |
@@ -179,12 +180,23 @@ a trigger/content ref, …):
 - New components and composables should ship with colocated tests, including an
   axe check for anything that renders.
 - **Browser tests** (`<Name>.browser.test.ts`, also colocated) run in headless
-  Chromium through Vitest browser mode and Playwright. Use them for behaviour
+  browsers through Vitest browser mode and Playwright. Use them for behaviour
   jsdom cannot represent: native focus order (`Tab`), form submission, the
   default action of a key press, and layout or positioning. Drive them with
   `userEvent` from `vitest/browser`, which sends trusted events. Run
-  `pnpm test:browser`; the first time, install the browser with
-  `pnpm --filter reka-ui exec playwright install chromium`.
+  `pnpm test:browser` (Chromium only, the quick loop); the first time, install
+  the browser with `pnpm --filter reka-ui exec playwright install chromium`.
+  CI runs them in Chromium, Firefox and WebKit, which differ in ways Chromium
+  can't show (for example, only Chromium fires `blur`/`focusout` for a focused
+  element that's removed). Run all three with `pnpm test:browser:all` after
+  `pnpm --filter reka-ui exec playwright install firefox webkit`, or pick engines
+  with `BROWSER_ENGINES=firefox pnpm test:browser`. Firefox runs the files one
+  at a time (it focuses one frame at a time), so it's the slowest. WebKit on
+  macOS keeps Safari's defaults (Tab skips buttons and links, a click doesn't
+  focus a button), so the few tests that need those are skipped there through
+  `isMacWebKit` (`src/test/browser.ts`); CI's Linux WebKit runs them. A test
+  that can't hold in one engine is skipped there with the engine limitation
+  cited, not weakened.
 
 ## Benchmarks
 
