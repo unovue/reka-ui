@@ -2,6 +2,7 @@ import type { RekaElementEvent } from '.'
 import type { ToastObject } from '@/Toast'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
+import { hoverForMousePointerId } from '@/test/browser'
 import { createToastManager } from '@/Toast'
 import { defineRekaElements, toastElements } from '.'
 import { cleanup, query, render, settle } from './elements.test.helpers'
@@ -46,12 +47,16 @@ function trackClose(root: HTMLElement): Reasons {
   return reasons
 }
 
-/** A mouse drag on `el` by `dx` pixels (synthetic events: the gesture reads coordinates only). */
+/**
+ * A mouse drag on `el` by `dx` pixels (synthetic events: the gesture reads
+ * coordinates only). It captures the pointer, so they carry the real mouse's id.
+ */
 async function drag(el: HTMLElement, dx: number) {
+  const pointerId = await hoverForMousePointerId(el)
   const box = el.getBoundingClientRect()
   const y = box.top + box.height / 2
   const x = box.left + 10
-  const init = { bubbles: true, cancelable: true, composed: true, pointerId: 1, pointerType: 'mouse', isPrimary: true, clientY: y }
+  const init = { bubbles: true, cancelable: true, composed: true, pointerId, pointerType: 'mouse', isPrimary: true, clientY: y }
   el.dispatchEvent(new PointerEvent('pointerdown', { ...init, clientX: x, button: 0, buttons: 1 }))
   for (let step = 1; step <= 5; step++) {
     await new Promise(resolve => requestAnimationFrame(resolve))
