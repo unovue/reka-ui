@@ -1,6 +1,6 @@
 import type { Component } from 'vue'
 import { mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { CheckboxGroupRoot, CheckboxRoot } from '@/Checkbox'
@@ -19,20 +19,25 @@ const groups: Array<[string, Component, Component, Record<string, unknown>]> = [
 
 describe.each(groups)('a Field-wrapped %s whose focused item is removed', (_, Root, Item, rootProps) => {
   let wrapper: ReturnType<typeof mount> | undefined
+  const focusouts: Array<EventTarget | null> = []
+  const recordFocusout = (event: FocusEvent) => focusouts.push(event.target)
+  beforeEach(() => {
+    focusouts.length = 0
+    document.addEventListener('focusout', recordFocusout, true)
+  })
   afterEach(() => {
+    document.removeEventListener('focusout', recordFocusout, true)
     wrapper?.unmount()
     wrapper = undefined
   })
 
   it('is no longer focused, and is touched, while the group stays mounted', async () => {
     const items = ref(['a', 'b', 'c'])
-    const focusouts: Array<EventTarget | null> = []
     wrapper = mount(defineComponent(() => () =>
       h(FieldRoot, { 'name': 'choice', 'data-testid': 'field' }, () =>
         h(Root, rootProps, () => items.value.map(value =>
           h(Item, { 'key': value, value, 'data-testid': `item-${value}` }, () => value))))), { attachTo: document.body })
     const field = () => document.querySelector('[data-testid="field"]')!
-    document.addEventListener('focusout', event => focusouts.push(event.target), true)
 
     const item = document.querySelector<HTMLElement>('[data-testid="item-b"]')!
     await userEvent.click(item)
