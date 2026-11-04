@@ -348,12 +348,11 @@ describe('items outside the fragment', () => {
     await wait()
     tab.value = 'b'
     await wait()
+    // Polled: under load WebKit can take longer than a fixed wait to get there.
     text.value = 'U'
-    await wait()
-    expect(optionTexts()).toContain('XU')
+    await expect.poll(optionTexts).toContain('XU')
     list.value = ['Y', 'X']
-    await wait()
-    expect(optionTexts().indexOf('YU')).toBeLessThan(optionTexts().indexOf('XU'))
+    await expect.poll(() => optionTexts().filter(text => text.endsWith('U'))).toEqual(['YU', 'XU'])
   })
 
   it('a first option teleported into the page: the observer watches its box, and page mutations do not fire it', async () => {
