@@ -343,6 +343,12 @@ import { PopoverAnchor, PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot
 </template>
 ```
 
+### Editing in place
+
+A popover often holds a small form. Bind `v-model:open` so the form can close it after saving, and read the `reason` in the details of `update:open` to tell how it closed: `'close-press'` (a `PopoverClose`), `'escape-key'`, `'outside-press'`, `'focus-outside'` or `'trigger-press'`. Here only Save keeps the draft; every other way out discards it. Closing by setting `open` yourself emits nothing, as with any controlled prop.
+
+<ComponentPreview name="PopoverQuickEdit" />
+
 ### Detached triggers
 
 A `PopoverTrigger` does not have to be inside its `PopoverRoot`. Create a handle with `createPopoverHandle()` and pass it to the `handle` prop of the root and of any number of triggers. The triggers can live anywhere in the app, including other components and portals. Here each user in a list opens the same popover with their own data, and a separate button opens it from code for one of the triggers.
@@ -491,3 +497,7 @@ const forwarded = useForwardPropsEmits(props, emits)
   </PopoverPortal>
 </template>
 ```
+
+## Headless composable
+
+`usePopover` holds the open state (`open`, `onOpenChange(value, reason?)`, `onOpenToggle()`), the ids, the detached-trigger state of a `handle`, and the `trigger`, `close` and `content` [part surfaces](/docs/guides/composables#part-surfaces). Mounting and exit animations ([Presence](/docs/utilities/presence)), focus trapping ([FocusScope](/docs/utilities/focus-scope)), dismissal on Escape and outside interaction, positioning against the trigger and the portal are not part of it: compose them yourself, or use the components. It is pure; pass a stable `baseId` when rendering on the server. The composable is experimental; see [Headless composables](/docs/guides/composables).
