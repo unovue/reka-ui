@@ -39,6 +39,23 @@ export interface FieldControlContractSpec {
   idOnControl?: boolean
   /** Skips the `required` checks, for a control that can't be empty. */
   noRequired?: boolean
+  /**
+   * With `idOnControl: false`, the element `FieldLabel`'s `for` must point at
+   * (e.g. a hidden native input that forwards focus into the control).
+   */
+  labelTarget?: (wrapper: VueWrapper) => HTMLElement
+  /**
+   * Maps a collected value before it's compared with `interactedValue`. Needed
+   * for values `toEqual` can't tell apart (e.g. Temporal objects, which have
+   * no enumerable own properties).
+   */
+  serialize?: (value: unknown) => unknown
+  /**
+   * The focusable parts of a control made of several (segments, slots), at
+   * least two. When given, the contract checks the field stays focused and
+   * untouched while focus moves between them, and is touched once it leaves.
+   */
+  parts?: (wrapper: VueWrapper) => HTMLElement[]
 }
 
 export function describeFieldControlContract(spec: FieldControlContractSpec) {
@@ -70,6 +87,9 @@ export function describeFieldControlContract(spec: FieldControlContractSpec) {
       const label = wrapper.find('label').element
       if (spec.idOnControl !== false)
         expect(label.getAttribute('for')).toBe(control.id)
+      else if (spec.labelTarget)
+        expect(label.getAttribute('for')).toBe(spec.labelTarget(wrapper).id)
+      expect(label.getAttribute('for')).toBeTruthy()
       expect(control.getAttribute('aria-labelledby')).toContain(label.id)
       const description = wrapper.findAll('p').at(-1)!.element
       expect(control.getAttribute('aria-describedby')).toContain(description.id)
@@ -84,9 +104,36 @@ export function describeFieldControlContract(spec: FieldControlContractSpec) {
       await flushPromises()
       await wrapper.find('button[type="submit"]').trigger('submit')
       expect(onFormSubmit).toHaveBeenCalledTimes(1)
-      expect(onFormSubmit.mock.calls[0][0]).toEqual({ field: spec.interactedValue })
+      const serialize = spec.serialize ?? ((value: unknown) => value)
+      const values = onFormSubmit.mock.calls[0][0] as Record<string, unknown>
+      expect(Object.keys(values)).toEqual(['field'])
+      expect(serialize(values.field)).toEqual(serialize(spec.interactedValue))
       wrapper.unmount()
     })
+
+    if (spec.parts) {
+      it('is touched only once focus leaves the whole control', async () => {
+        const { wrapper } = mountInField()
+        await nextTick()
+        const field = () => wrapper.find('[data-testid="field"]')
+        const parts = spec.parts!(wrapper)
+        expect(parts.length).toBeGreaterThan(1)
+
+        parts[0].focus()
+        await nextTick()
+        expect(field().attributes('data-focused')).toBe('')
+        parts[1].focus()
+        await nextTick()
+        expect(field().attributes('data-focused')).toBe('')
+        expect(field().attributes('data-touched')).toBeUndefined()
+
+        parts[1].blur()
+        await nextTick()
+        expect(field().attributes('data-focused')).toBeUndefined()
+        expect(field().attributes('data-touched')).toBe('')
+        wrapper.unmount()
+      })
+    }
 
     it('marks the field dirty on user input, but only filled on a programmatic change', async () => {
       const { wrapper, model } = mountInField()
