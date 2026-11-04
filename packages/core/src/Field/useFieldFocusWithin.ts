@@ -57,13 +57,17 @@ export function provideFieldFocusExtension(extension: FieldFocusExtension) {
  * event's first invoker (here a part's), which would leave the state out of
  * step with the document. Each event is handled once.
  *
+ * `extension` is for a control that owns its own popup (e.g. a Select's
+ * trigger and its content); it defaults to the one a composing component
+ * provides.
+ *
  * Returns `null` without a binding (outside a Field), creating nothing.
  */
-export function useFieldFocusWithin(field: FieldFocusTarget | null, element: Ref<HTMLElement | undefined>): FieldFocusWithin | null {
+export function useFieldFocusWithin(field: FieldFocusTarget | null, element: Ref<HTMLElement | undefined>, ownExtension?: FieldFocusExtension): FieldFocusWithin | null {
   if (!field)
     return null
 
-  const extension = inject(FIELD_FOCUS_EXTENSION, null)
+  const extension = ownExtension ?? inject(FIELD_FOCUS_EXTENSION, null)
   // Where focus is: outside the control, in its element, or in an extension.
   let focus: 'out' | 'element' | 'extension' = 'out'
   let followed: HTMLElement | undefined

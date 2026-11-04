@@ -9,9 +9,10 @@ export interface SelectTriggerProps extends PopperAnchorProps {
 <script setup lang="ts">
 import { mergeProps, onBeforeUnmount, onMounted, useAttrs, watchPostEffect } from 'vue'
 import { injectFieldRootContext } from '@/Field'
+import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { injectPopperRootContext } from '@/Popper/PopperRoot.vue'
 import { renderAs } from '@/Primitive/renderAs'
-import { useForwardElement } from '@/shared'
+import { getElementByIdFrom, useForwardElement } from '@/shared'
 import { injectSelectRootContext } from './SelectRoot.vue'
 import { useSelectTrigger } from './useSelect'
 
@@ -70,12 +71,19 @@ function getFieldAttrs() {
   }
 }
 
-function handleFieldFocus() {
-  fieldContext?.handleControlFocus()
-}
-function handleFieldBlur() {
-  fieldContext?.handleControlBlur()
-}
+// Focus moving from the trigger into the (portaled) content keeps the field
+// focused, so opening the popup doesn't touch it; it's touched once focus
+// leaves both, as in Base UI.
+const focusWithin = useFieldFocusWithin(
+  fieldContext
+    ? { onFocus: () => fieldContext.handleControlFocus(), onBlur: () => fieldContext.handleControlBlur(), context: fieldContext }
+    : null,
+  triggerElement,
+  {
+    elements: () => [getElementByIdFrom(triggerElement.value, rootContext.contentId)],
+    open: () => rootContext.open.value,
+  },
+)
 
 let unregisterControl: (() => void) | undefined
 onMounted(() => {
@@ -92,7 +100,7 @@ onBeforeUnmount(() => unregisterControl?.())
 <template>
   <component
     :is="renderAs(as, asChild)"
-    v-bind="mergeProps($attrs, getFieldAttrs(), trigger.attrs.value, { onFocus: handleFieldFocus, onBlur: handleFieldBlur, type: as === 'button' ? 'button' : undefined })"
+    v-bind="mergeProps($attrs, getFieldAttrs(), trigger.attrs.value, { onFocusin: focusWithin?.onFocusin, onFocusout: focusWithin?.onFocusout, type: as === 'button' ? 'button' : undefined })"
     :ref="forwardRef"
   >
     <slot />

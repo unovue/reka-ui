@@ -517,11 +517,105 @@ describe('given a Field-wrapped Select', () => {
 
     await selectFirstOption(wrapper)
 
-    const trigger = wrapper.find('[role="combobox"]')
-    await trigger.trigger('blur')
+    const trigger = wrapper.find('[role="combobox"]').element as HTMLElement
+    trigger.focus()
+    trigger.blur()
+    await nextTick()
 
     expect(validate).toHaveBeenCalledWith('apple', expect.anything())
 
+    wrapper.unmount()
+  })
+
+  it('stays untouched while focus is in its popup, and is touched once focus leaves both', async () => {
+    const validate = vi.fn(() => null)
+    const wrapper = mount({
+      components: selectComponents,
+      props: ['validate'],
+      template: `
+        <FieldRoot name="fruit" :validate="validate" validation-mode="onBlur" data-testid="field">
+          <SelectRoot>
+            <SelectTrigger>Choose a fruit</SelectTrigger>
+            <SelectPortal>
+              <SelectContent>
+                <SelectViewport>
+                  <SelectItem value="apple">Apple</SelectItem>
+                  <SelectItem value="banana">Banana</SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </SelectPortal>
+          </SelectRoot>
+          <button data-testid="outside">Outside</button>
+        </FieldRoot>
+      `,
+    }, { props: { validate }, attachTo: document.body })
+    const field = () => wrapper.find('[data-testid="field"]')
+    const trigger = wrapper.find('[role="combobox"]').element as HTMLElement
+
+    trigger.focus()
+    await nextTick()
+    expect(field().attributes('data-focused')).toBe('')
+
+    await fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false })
+    await flushPromises()
+    const options = Array.from(document.querySelectorAll('[role="option"]')) as HTMLElement[]
+    options[0].focus()
+    options[1].focus()
+    await nextTick()
+    expect(field().attributes('data-focused')).toBe('')
+    expect(field().attributes('data-touched')).toBeUndefined()
+    expect(validate).not.toHaveBeenCalled()
+
+    // Picking closes the popup and returns focus to the trigger.
+    await fireEvent.pointerUp(options[1])
+    await fireEvent.pointerUp(options[1])
+    await flushPromises()
+    trigger.focus()
+    await nextTick()
+    expect(field().attributes('data-touched')).toBeUndefined()
+    expect(validate).not.toHaveBeenCalled()
+
+    ;(wrapper.find('[data-testid="outside"]').element as HTMLElement).focus()
+    await nextTick()
+    expect(field().attributes('data-focused')).toBeUndefined()
+    expect(field().attributes('data-touched')).toBe('')
+    expect(validate).toHaveBeenCalledTimes(1)
+    expect(validate).toHaveBeenCalledWith('banana', expect.anything())
+    wrapper.unmount()
+  })
+
+  it('is touched when focus leaves its open popup for outside the select', async () => {
+    const wrapper = mount({
+      components: selectComponents,
+      template: `
+        <FieldRoot name="fruit" data-testid="field">
+          <SelectRoot>
+            <SelectTrigger>Choose a fruit</SelectTrigger>
+            <SelectPortal>
+              <SelectContent position="popper">
+                <SelectViewport>
+                  <SelectItem value="apple">Apple</SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </SelectPortal>
+          </SelectRoot>
+          <button data-testid="outside">Outside</button>
+        </FieldRoot>
+      `,
+    }, { attachTo: document.body })
+    const field = () => wrapper.find('[data-testid="field"]')
+    const trigger = wrapper.find('[role="combobox"]').element as HTMLElement
+    trigger.focus()
+    await fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false })
+    await flushPromises()
+    ;(document.querySelector('[role="option"]') as HTMLElement).focus()
+    await nextTick()
+    expect(field().attributes('data-touched')).toBeUndefined()
+
+    ;(wrapper.find('[data-testid="outside"]').element as HTMLElement).focus()
+    await flushPromises()
+    expect(field().attributes('data-focused')).toBeUndefined()
+    expect(field().attributes('data-touched')).toBe('')
     wrapper.unmount()
   })
 
