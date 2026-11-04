@@ -146,3 +146,58 @@ describe('a Field whose focused control is removed', () => {
     expect(field().hasAttribute('data-focused')).toBe(false)
   })
 })
+
+// The control stays, and only its focused part goes. Chromium fires `blur` and
+// `focusout` for a removed element; Firefox and WebKit fire neither, so a control
+// that waits for `focusout` stays focused there.
+describe('a Field whose control stays while its focused part is removed', () => {
+  let wrapper: ReturnType<typeof mount> | undefined
+  afterEach(() => {
+    wrapper?.unmount()
+    wrapper = undefined
+  })
+
+  const field = () => document.querySelector('[data-testid="field"]')!
+  const focused = () => field().hasAttribute('data-focused')
+  const part = (name: string) => document.querySelector<HTMLElement>(`[data-testid="${name}"]`)!
+
+  async function removeFocusedPart(name: string, remove: () => void, remaining: string) {
+    part(name).focus()
+    await expect.poll(focused).toBe(true)
+
+    remove()
+    await nextTick()
+    expect(document.querySelector(`[data-testid="${name}"]`)).toBeNull()
+    await expect.poll(focused).toBe(false)
+    // and stays that way
+    await new Promise(resolve => setTimeout(resolve, 50))
+    expect(focused()).toBe(false)
+
+    // The control still reports focus on the parts that are left.
+    part(remaining).focus()
+    await expect.poll(focused).toBe(true)
+  }
+
+  it('a Checkbox removed from a CheckboxGroup', async () => {
+    const show = ref(true)
+    wrapper = mount(defineComponent(() => () => h(FieldRoot, { 'data-testid': 'field' }, () =>
+      h(CheckboxGroupRoot, null, () => [
+        show.value ? h(CheckboxRoot, { 'value': 'a', 'data-testid': 'a' }) : null,
+        h(CheckboxRoot, { 'value': 'b', 'data-testid': 'b' }),
+      ]))), { attachTo: document.body })
+
+    await removeFocusedPart('a', () => (show.value = false), 'b')
+  })
+
+  it('a DateField segment removed by a coarser granularity', async () => {
+    const granularity = ref<'minute' | 'day'>('minute')
+    wrapper = mount(defineComponent(() => () => h(FieldRoot, { 'data-testid': 'field' }, () =>
+      h(DateFieldRoot as any, { granularity: granularity.value, defaultValue: Temporal.PlainDateTime.from('2024-01-15T10:30') }, {
+        default: ({ segments }: any) => segments.map((s: any) => s.part === 'literal'
+          ? h('span', s.value)
+          : h(DateFieldInput, { 'part': s.part, 'key': s.part, 'data-testid': s.part }, () => s.value)),
+      }))), { attachTo: document.body })
+
+    await removeFocusedPart('minute', () => (granularity.value = 'day'), 'day')
+  })
+})

@@ -14,8 +14,8 @@ export interface DateFieldInputProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import type { Component } from 'vue'
-import { h, useSlots } from 'vue'
-import { useForwardElement } from '@/shared'
+import { h, onBeforeUnmount, useSlots } from 'vue'
+import { containsComposed, getActiveElement, useForwardElement } from '@/shared'
 
 const props = defineProps<DateFieldInputProps>()
 
@@ -24,8 +24,14 @@ const rootContext = injectDateFieldRootContext()
 // Once per segment: the surface holds this segment's typing state.
 const input = createDateFieldInputSurface(rootContext, () => props.part)
 
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
+
+onBeforeUnmount(() => {
+  const element = currentElement.value
+  if (element && containsComposed(element, getActiveElement(element)))
+    rootContext.onFocusedSegmentRemove?.()
+})
 const slots = useSlots()
 
 // The slot content goes straight into the element: no `<slot>` fragment, so

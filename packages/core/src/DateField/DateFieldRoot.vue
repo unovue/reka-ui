@@ -6,7 +6,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails, DateStep, Formatter } from '@/shared'
 import type { Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { createContext, isNullish, mergeExpose, useDirection, useLocale } from '@/shared'
+import { containsComposed, createContext, getActiveElement, isNullish, mergeExpose, useDirection, useLocale } from '@/shared'
 import { getInputType, normalizeInputValue } from '@/shared/date'
 
 export type DateFieldRootContext = {
@@ -28,6 +28,8 @@ export type DateFieldRootContext = {
   elements: Ref<Set<HTMLElement>>
   focusNext: () => void
   setFocusedElement: (el: HTMLElement) => void
+  /** A segment holding focus is about to go away (it fires no `focusout` in Firefox and WebKit). */
+  onFocusedSegmentRemove?: () => void
   /** Request a value change. Returns `false` when unchanged or cancelled. */
   setModelValue: (value: DateValue | undefined, reason?: DateFieldChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Request a placeholder change. Returns `false` when unchanged or cancelled. */
@@ -87,7 +89,7 @@ export const [injectDateFieldRootContext, provideDateFieldRootContext]
 </script>
 
 <script setup lang="ts">
-import { computed, mergeProps, onBeforeUnmount, onMounted, ref, toRefs, useAttrs, watch } from 'vue'
+import { computed, mergeProps, nextTick, onBeforeUnmount, onMounted, ref, toRefs, useAttrs, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
@@ -277,6 +279,19 @@ watch(parentElement, (element, _, onCleanup) => {
     }
   })
 }, { flush: 'sync' })
+
+// A segment removed while focused (a coarser `granularity`, a consumer's `v-if`) leaves
+// the root in place. Chromium fires `focusout` for it, but Firefox and WebKit fire
+// nothing, so read focus from the document once the removal is done.
+context.onFocusedSegmentRemove = () => {
+  nextTick(() => {
+    const element = parentElement.value
+    if (!isFocusWithin.value || !element || containsComposed(element, getActiveElement(element)))
+      return
+    isFocusWithin.value = false
+    fieldContext?.handleControlBlur()
+  })
+}
 
 provideDateFieldRootContext(context)
 
