@@ -39,7 +39,7 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
   inputElement: Ref<HTMLInputElement | undefined>
   onInputElementChange: (el: HTMLInputElement | undefined) => void
   triggerElement: Ref<HTMLElement | undefined>
-  onTriggerElementChange: (el: HTMLElement) => void
+  onTriggerElementChange: (el: HTMLElement | undefined) => void
   parentElement: Ref<HTMLElement | undefined>
   resetSearchTermOnSelect: Ref<boolean>
   /** Called with the close reason when the popup closes and the input text should be reset. */
