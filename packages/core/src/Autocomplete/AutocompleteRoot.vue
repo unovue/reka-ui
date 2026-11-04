@@ -112,10 +112,12 @@ export const [injectAutocompleteRootContext, provideAutocompleteRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = string">
-import { mergeProps, toRef } from 'vue'
+import { mergeProps, toRef, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { provideComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
 import { useComboboxRoot } from '@/Combobox/useCombobox'
+import { provideComboboxField } from '@/Combobox/useComboboxField'
+import { useFieldControl } from '@/Field/useFieldControl'
 import { provideListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { renderAs } from '@/Primitive/renderAs'
@@ -146,6 +148,26 @@ const { forwardRef, currentElement, expose } = useForwardElement()
 const dir = useDirection(toRef(() => props.dir))
 const isFormControl = useFormControl(currentElement)
 
+// Optional Field participation: `null` outside a `FieldRoot`, so every
+// binding below is inert without a Field. The root owns the value; the input
+// (Base UI parity) carries the field's id, label and aria wiring.
+const field = useFieldControl({
+  // Getters read bindings that are retained anyway, not the composable's
+  // return object: capturing it in a closure would keep it alive per instance.
+  // The input renders its own `id`, else the field's.
+  id: () => context.inputElement.value?.id || undefined,
+  // A removed input can linger in the context: report none then, so an
+  // invalid submit moves focus to the next field.
+  element: () => context.inputElement.value?.isConnected ? context.inputElement.value : undefined,
+  // The input text.
+  getValue: () => modelValue.value,
+  required: () => props.required,
+})
+// Getters rather than computeds: cheap, and free for a standalone autocomplete.
+const resolvedName = () => field ? field.name(props.name) : props.name
+const resolvedRequired = () => field ? field.required(props.required) : props.required
+const resolvedDisabled = () => field ? field.disabled(props.disabled) : props.disabled
+
 // The Combobox root over a single string model: the value is the input text,
 // a selected item writes its (display) value, a clear writes `''`.
 // Typed over every item value, as the Listbox and Combobox contexts it provides
@@ -157,7 +179,7 @@ const combobox = useComboboxRoot<AcceptableValue>({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue ?? '',
   dir,
-  disabled: () => props.disabled,
+  disabled: resolvedDisabled,
   highlightOnHover: () => props.highlightOnHover,
   loop: () => props.loop,
   getNavigationIntent: event => props.getNavigationIntent?.(event),
@@ -188,11 +210,17 @@ const combobox = useComboboxRoot<AcceptableValue>({
     }
     return (emits as (event: string, ...args: unknown[]) => void)(event, ...args)
   },
+  // Typing and a selection are user input for the Field; a programmatic or
+  // parent-driven change is reported by the watcher below.
+  onUpdate: field ? value => field.input(value) : undefined,
   onHighlight: payload => emits('highlight', payload as { ref: HTMLElement, value: T } | undefined),
   onOpenComplete: value => emits('update:openComplete', value),
 })
 const { root, context, open, highlightedElement, highlightItem, highlightFirstItem, highlightSelected, filterState } = combobox
 const modelValue = combobox.modelValue as ComputedRef<string>
+
+if (field)
+  watch(modelValue, value => field.sync(value))
 
 defineExpose(mergeExpose(expose, {
   /** The filtering result: `{ search, active, count }`. */
@@ -205,6 +233,7 @@ defineExpose(mergeExpose(expose, {
 
 provideListboxRootContext(context)
 provideComboboxRootContext(context)
+provideComboboxField(field, context)
 provideAutocompleteRootContext({
   modelValue,
   onModelValueChange: (value, reason, event) => combobox.setModelValue(value, reason, event),
@@ -224,11 +253,11 @@ provideAutocompleteRootContext({
       />
 
       <VisuallyHiddenInput
-        v-if="isFormControl && name"
-        :name="name"
+        v-if="isFormControl && resolvedName()"
+        :name="resolvedName()!"
         :value="modelValue"
-        :disabled="disabled"
-        :required="required"
+        :disabled="resolvedDisabled()"
+        :required="resolvedRequired()"
       />
     </component>
   </PopperRoot>

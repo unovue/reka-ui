@@ -50,7 +50,7 @@ export const [injectCheckboxRootContext, provideCheckboxRootContext]
 
 <script setup lang="ts" generic="T = boolean">
 import { computed, mergeProps, onBeforeUnmount, onMounted, useAttrs, watch } from 'vue'
-import { injectFieldRootContext } from '@/Field'
+import { claimFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { isEqual } from '@/shared/compare'
@@ -84,16 +84,17 @@ defineExpose(expose)
 
 const checkboxGroupContext = injectCheckboxGroupRootContext(null)
 
-// Optional Field participation: `injectFieldRootContext(null)` returns
-// `null` (instead of throwing) outside a `FieldRoot`, so every binding below
-// is inert when there is no Field.
-const fieldContext = injectFieldRootContext(null)
+// Optional Field participation: `null` outside a `FieldRoot`, so every binding
+// below is inert when there is no Field. Also `null` inside another control of
+// the field (e.g. in a Combobox item), which owns it. In a group that is the
+// field's control, the checkbox reads the field but doesn't act as its control.
+const fieldContext = claimFieldControl() ?? checkboxGroupContext?.field ?? null
 
 // Checkboxes inside a `CheckboxGroupRoot` share one Field, so none of them
 // takes the field's id (it would be duplicated) or acts as its control.
 const participatesAsControl = computed(() => Boolean(fieldContext) && !checkboxGroupContext)
 const resolvedId = computed(() => props.id ?? (participatesAsControl.value ? fieldContext?.fieldId.value : undefined))
-const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
+const resolvedName = computed(() => fieldContext?.name.value ?? props.name)
 // `required` is a plain (non-optional-default) `Boolean` prop, so Vue casts
 // it to `false` rather than `undefined` when omitted — `props.required` can
 // never actually be `undefined`. Only fall back to the Field's `required`
@@ -166,15 +167,22 @@ function getFieldAriaAttrs() {
   }
 }
 
+// A group that is this Field's control reports focus for its checkboxes,
+// marking the field touched once focus leaves the whole group.
+const groupReportsFocus = Boolean(fieldContext) && checkboxGroupContext?.field === fieldContext
+
 // Only for a checkbox that reports focus without registering (one in a
 // `CheckboxGroupRoot`): a registered control's focus is cleared on unregister.
 let hasFocus = false
 function handleFocus() {
   hasFocus = true
-  fieldContext?.handleControlFocus()
+  if (!groupReportsFocus)
+    fieldContext?.handleControlFocus()
 }
 function handleBlur() {
   hasFocus = false
+  if (groupReportsFocus)
+    return
   if (participatesAsControl.value)
     fieldContext?.handleControlBlur()
   else

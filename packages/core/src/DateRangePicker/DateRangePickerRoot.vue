@@ -6,7 +6,7 @@ import type { CalendarUnit, DateValue, Matcher, WeekDayFormat, WeekStartsOn } fr
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { DateRange, DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { createContext, useDirection, useId, useLocale } from '@/shared'
+import { createContext, getActiveElement, getElementByIdFrom, useDirection, useId, useLocale } from '@/shared'
 
 export type DateRangePickerRootContext = {
   id: Ref<string | undefined>
@@ -126,9 +126,13 @@ export const [injectDateRangePickerRootContext, provideDateRangePickerRootContex
 </script>
 
 <script setup lang="ts">
-import { computed, toRefs } from 'vue'
+import { computed, toRefs, watch } from 'vue'
+import { createPendingFieldInput } from '@/Field/pendingFieldInput'
+import { injectFieldForControl } from '@/Field/useFieldControl'
+import { provideFieldFocusExtension } from '@/Field/useFieldFocusWithin'
 import { providePopoverRootContext } from '@/Popover/PopoverRoot.vue'
 import { PopperRoot } from '@/Popper'
+import { isEqual } from '@/shared/compare'
 import { useDateRangePicker } from './useDateRangePicker'
 
 defineOptions({
@@ -178,6 +182,14 @@ const locale = useLocale(propLocale)
 // The range, placeholder, start value, open (through the composed
 // `usePopover`) and view models with their `beforeUpdate:` / `update:` emits
 // live in the composable. The root provides the Popover context itself.
+// Inside a `FieldRoot`, the composed `DateRangeFieldRoot` is the field's
+// control and reports edits made in its segments. A pick in the calendar
+// changes its value while focus is outside it, which it reads as
+// programmatic; the picker reports that one as the user's input.
+// Not claimed: the composed field claims it (`null` when another control owns it).
+const fieldContext = injectFieldForControl()
+const pendingInput = createPendingFieldInput<unknown>()
+
 const { context, popover, modelValue, open } = useDateRangePicker({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
@@ -222,7 +234,35 @@ const { context, popover, modelValue, open } = useDateRangePicker({
   baseId: useId(undefined, 'reka-popover'),
   emit: emits,
   onOpenComplete: value => emits('update:openComplete', value),
+  onUpdate: fieldContext
+    ? value => pendingInput.set(value)
+    : undefined,
 })
+
+if (fieldContext) {
+  // After render, as the field's own watcher, so its state is current.
+  watch(() => context.modelValue.value, (value) => {
+    const pending = pendingInput.take()
+    // A parent-driven change: the field reports it as programmatic.
+    if (!pending || !isEqual(pending.value, value))
+      return
+    // An edit in the segments: the field reports it itself.
+    const fieldElement = (context.dateFieldRef.value as { $el?: Node } | undefined)?.$el
+    if (fieldElement?.contains(getActiveElement()))
+      return
+    fieldContext.handleControlInput({ value })
+  }, { flush: 'post' })
+
+  // The trigger and the (portaled) calendar are part of the field's control:
+  // focus moving into them from the segments doesn't touch the field.
+  provideFieldFocusExtension({
+    elements: () => {
+      const fieldElement = (context.dateFieldRef.value as { $el?: Node } | undefined)?.$el
+      return [popover.context.triggerElement.value, getElementByIdFrom(fieldElement, popover.context.contentId)]
+    },
+    open: () => popover.context.open.value,
+  })
+}
 
 providePopoverRootContext(popover.context)
 provideDateRangePickerRootContext(context)

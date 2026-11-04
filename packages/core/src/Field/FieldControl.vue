@@ -25,6 +25,7 @@ import { computed, onBeforeUnmount, onMounted, useAttrs, watch } from 'vue'
 import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
 import { createChangeEventDetails, useForwardElement } from '@/shared'
 import { injectFieldRootContext } from './FieldRoot.vue'
+import { provideFieldControlOwner } from './useFieldControl'
 
 defineOptions({
   inheritAttrs: false,
@@ -38,6 +39,11 @@ const props = withDefaults(defineProps<FieldControlProps>(), {
 const emits = defineEmits<FieldControlEmits>()
 
 const fieldContext = injectFieldRootContext()
+// The field's control: a Reka control composed inside it (as its child) leaves
+// the field alone. A void element (the default `input`) has no children, so
+// it skips the per-instance `provide`.
+if (rendersChildren(props.as, props.asChild))
+  provideFieldControlOwner(fieldContext)
 const attrs = useAttrs()
 
 const { forwardRef, currentElement, expose } = useForwardElement()

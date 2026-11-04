@@ -90,9 +90,13 @@ export const [injectTimeRangeFieldRootContext, provideTimeRangeFieldRootContext]
 </script>
 
 <script setup lang="ts">
-import { computed, mergeProps, toRefs } from 'vue'
+import { computed, mergeProps, toRefs, useAttrs, watch } from 'vue'
+import { createPendingFieldInput } from '@/Field/pendingFieldInput'
+import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
+import { isEqual } from '@/shared/compare'
 import { toRangeFormValue } from '@/shared/date'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useTimeRangeField } from './useTimeRangeField'
@@ -127,9 +131,34 @@ const dir = useDirection(propDir)
 
 const { primitiveElement, currentElement: parentElement, expose } = usePrimitiveElement()
 
+// Optional Field participation, as in `DateFieldRoot`: `null` outside a
+// `FieldRoot`, so every binding below is inert without a Field. The hidden
+// input takes the field's id, so `FieldLabel`'s `for` lands on it and its
+// focus handler moves focus into the first segment; the group carries the
+// label/description wiring. The field's value is the range object, and a
+// required range needs both ends: the hidden input can't express that, so
+// `valueMissing` comes from `isFilled` instead of its `ValidityState`.
+const field = useFieldControl({
+  id: () => props.id,
+  // The first segment (the group isn't itself focusable), so `FormRoot` can
+  // move focus into the field on an invalid submit.
+  element: () => Array.from(segmentElements.value)[0],
+  getValue: () => modelValue.value,
+  required: () => props.required,
+  isFilled: value => Boolean((value as { start?: unknown, end?: unknown } | undefined)?.start && (value as { end?: unknown }).end),
+})
+const disabled = () => field ? field.disabled(props.disabled) : props.disabled
+const resolvedId = () => field ? field.id() : props.id
+const resolvedName = () => field ? field.name(props.name) : props.name
+const resolvedRequired = () => field ? field.required(props.required) : props.required
+
 // Controlled/uncontrolled + the `beforeUpdate:` / `update:` emits for the range
 // and the placeholder live in the composable's `useControllableState`.
-const { root, context, modelValue, segments, isInvalid, setFocusedElement, focusFirstSegment } = useTimeRangeField({
+// The control's own segment edits, so a parent's change while focus is in
+// the segments (e.g. a reset) isn't mistaken for the user's. Only in a Field.
+const pendingInput = field ? createPendingFieldInput<unknown>() : undefined
+
+const { root, context, modelValue, segments, isInvalid, segmentElements, setFocusedElement, focusFirstSegment } = useTimeRangeField({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   placeholder: () => props.placeholder,
@@ -143,12 +172,46 @@ const { root, context, modelValue, segments, isInvalid, setFocusedElement, focus
   hideTimeZone: () => props.hideTimeZone,
   minValue: () => props.minValue,
   maxValue: () => props.maxValue,
-  disabled: () => props.disabled,
+  disabled,
   readonly: () => props.readonly,
   isTimeUnavailable: computed(() => props.isTimeUnavailable),
   parentElement,
   emit: emits,
+  onUpdate: pendingInput ? value => pendingInput.set(value) : undefined,
 })
+
+// Touched once focus leaves the whole group, not when it moves between the ends.
+const focusWithin = useFieldFocusWithin(field, parentElement)
+
+// A change while focus is inside the segments is the user editing the range;
+// anything else is programmatic, which updates `filled` but isn't dirtying.
+if (field) {
+  watch(modelValue, (value) => {
+    const pending = pendingInput!.take()
+    if (pending && isEqual(pending.value, value) && focusWithin!.isFocusWithin())
+      field.input(value)
+    else
+      field.sync(value)
+  }, { flush: 'post' })
+}
+
+// `$attrs` isn't reactive, so the Field's wiring is read during render. Its
+// state attributes go first and the group's own (e.g. `data-invalid`) win; its
+// aria ids are merged with the consumer's, and a consumer `aria-invalid` wins.
+const attrs = useAttrs()
+function getRootAttrs() {
+  if (!field)
+    return mergeProps(attrs, root.attrs.value)
+  return mergeProps(
+    field.dataAttributes(),
+    attrs,
+    { ...field.ariaAttrs(attrs, disabled()) },
+    root.attrs.value,
+    // The Field's own invalid state also marks the group.
+    { 'data-invalid': isInvalid.value || field.context.invalid.value ? '' : undefined },
+    { onFocusin: focusWithin!.onFocusin, onFocusout: focusWithin!.onFocusout },
+  )
+}
 
 provideTimeRangeFieldRootContext(context)
 
@@ -161,7 +224,7 @@ defineExpose(mergeExpose(expose, {
 <template>
   <component
     :is="renderAs(as, asChild)"
-    v-bind="mergeProps($attrs, root.attrs.value)"
+    v-bind="getRootAttrs()"
     ref="primitiveElement"
   >
     <slot
@@ -171,15 +234,15 @@ defineExpose(mergeExpose(expose, {
     />
 
     <VisuallyHidden
-      :id="id"
+      :id="resolvedId()"
       as="input"
       feature="focusable"
       aria-hidden="true"
       tabindex="-1"
       :value="toRangeFormValue(modelValue)"
-      :name="name"
-      :disabled="disabled"
-      :required="required"
+      :name="resolvedName()"
+      :disabled="disabled()"
+      :required="resolvedRequired()"
       @focus="focusFirstSegment"
     />
   </component>

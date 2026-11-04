@@ -13,16 +13,21 @@ export interface TagsInputInputProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { mergeProps, onBeforeUnmount, onMounted, watch } from 'vue'
 import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
-import { injectTagsInputRootContext } from './TagsInputRoot.vue'
+import { injectTagsInputFieldContext, injectTagsInputRootContext } from './TagsInputRoot.vue'
 import { createTagsInputInputSurface } from './useTagsInput'
+
+// `$attrs` are merged in the render (as the fall-through did) so the Field's
+// aria ids can be merged with the consumer's.
+defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(defineProps<TagsInputInputProps>(), {
   as: 'input',
 })
 
 const context = injectTagsInputRootContext()
+const fieldContext = injectTagsInputFieldContext(null)
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
@@ -47,13 +52,32 @@ onMounted(() => {
       inputEl?.focus()
   }, 1)
 })
+
+if (fieldContext) {
+  // Followed, not read once: an as-child change swaps the element.
+  watch(currentElement, (element) => {
+    const inputEl = element?.nodeName === 'INPUT' ? element : element?.querySelector('input')
+    if (inputEl)
+      fieldContext.inputElement.value = inputEl as HTMLInputElement
+  }, { immediate: true })
+  onBeforeUnmount(() => {
+    fieldContext.inputElement.value = undefined
+  })
+}
+
+// The Field's state attributes fill in what the input leaves unset; its
+// aria ids are merged with the consumer's.
+function fieldAttrs(attrs: Record<string, unknown>) {
+  const { field } = fieldContext!
+  return field.fillDataAttributes(mergeProps(input.attrs.value, attrs, { ...field.ariaAttrs(attrs, context.disabled.value) }))
+}
 </script>
 
 <template>
   <component
     :is="renderAsEmpty(as, asChild)"
     :ref="forwardRef"
-    v-bind="input.attrs.value"
+    v-bind="fieldContext ? fieldAttrs($attrs) : mergeProps(input.attrs.value, $attrs)"
   >
     <template
       v-if="rendersChildren(as, asChild)"

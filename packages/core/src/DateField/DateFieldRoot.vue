@@ -6,7 +6,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails, DateStep, Formatter } from '@/shared'
 import type { Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { containsComposed, createContext, getActiveElement, isNullish, mergeExpose, useDirection, useLocale } from '@/shared'
+import { createContext, isNullish, mergeExpose, useDirection, useLocale } from '@/shared'
 import { getInputType, normalizeInputValue } from '@/shared/date'
 
 export type DateFieldRootContext = {
@@ -28,8 +28,6 @@ export type DateFieldRootContext = {
   elements: Ref<Set<HTMLElement>>
   focusNext: () => void
   setFocusedElement: (el: HTMLElement) => void
-  /** A segment holding focus is about to go away (it fires no `focusout` in Firefox and WebKit). */
-  onFocusedSegmentRemove?: () => void
   /** Request a value change. Returns `false` when unchanged or cancelled. */
   setModelValue: (value: DateValue | undefined, reason?: DateFieldChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Request a placeholder change. Returns `false` when unchanged or cancelled. */
@@ -89,10 +87,13 @@ export const [injectDateFieldRootContext, provideDateFieldRootContext]
 </script>
 
 <script setup lang="ts">
-import { computed, mergeProps, nextTick, onBeforeUnmount, onMounted, ref, toRefs, useAttrs, watch } from 'vue'
-import { injectFieldRootContext } from '@/Field'
+import { computed, mergeProps, onBeforeUnmount, onMounted, ref, toRefs, useAttrs, watch } from 'vue'
+import { createPendingFieldInput } from '@/Field/pendingFieldInput'
+import { claimFieldControl } from '@/Field/useFieldControl'
+import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
+import { isEqual } from '@/shared/compare'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useDateField } from './useDateField'
 
@@ -124,19 +125,24 @@ const { dir: propDir, locale: propLocale } = toRefs(props)
 const locale = useLocale(propLocale)
 const dir = useDirection(propDir)
 
-// Optional Field participation: `injectFieldRootContext(null)` returns
-// `null` (instead of throwing) outside a `FieldRoot`, so every Field binding
-// is inert — and byte-for-byte identical to before — when there is no Field.
-// Field's `name`/`required`/`disabled` act as fallbacks for the local props.
-const fieldContext = injectFieldRootContext(null)
+// Optional Field participation: `null` outside a `FieldRoot` (and inside
+// another control of the field, which owns it), so every Field binding is
+// inert — and byte-for-byte identical to before — when there is no Field.
+// Field's `name` takes precedence over the local prop; `required`/`disabled`
+// apply when set on either.
+const fieldContext = claimFieldControl()
 const disabled = computed(() => Boolean(props.disabled || fieldContext?.disabled.value))
-const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
+const resolvedName = computed(() => fieldContext?.name.value ?? props.name)
 const resolvedRequired = computed(() => (fieldContext ? (props.required || fieldContext.required.value) : props.required))
 
 const { primitiveElement, currentElement: parentElement, expose } = usePrimitiveElement()
 
 // Controlled/uncontrolled + the `beforeUpdate:` / `update:` emits for the value
 // and the placeholder live in the composable's `useControllableState`.
+// The control's own segment edits, so a parent's change while focus is in
+// the segments (e.g. a reset) isn't mistaken for the user's. Only in a Field.
+const pendingInput = fieldContext ? createPendingFieldInput<unknown>() : undefined
+
 const {
   root,
   context,
@@ -166,6 +172,7 @@ const {
   isDateUnavailable: computed(() => props.isDateUnavailable),
   parentElement,
   emit: emits,
+  onUpdate: pendingInput ? value => pendingInput.set(value) : undefined,
 })
 
 const inputType = computed(() => getInputType(granularity.value))
@@ -224,74 +231,22 @@ onMounted(() => {
 })
 onBeforeUnmount(() => unregisterControl?.())
 
-const isFocusWithin = ref(false)
+// Touched once focus leaves the whole group (and a composing picker's
+// trigger and calendar), not when it moves between segments.
+const focusWithin = useFieldFocusWithin(fieldContext
+  ? { onFocus: () => fieldContext.handleControlFocus(), onBlur: () => fieldContext.handleControlBlur(), context: fieldContext }
+  : null, parentElement)
 
 // A value change while focus is inside the segments is the user editing it;
 // anything else is programmatic, which updates `filled` but isn't dirtying.
 // Flushed after render so the hidden input's validity reflects the new value.
 watch(modelValue, (value) => {
-  if (isFocusWithin.value)
+  const pending = pendingInput?.take()
+  if (pending && isEqual(pending.value, value) && focusWithin?.isFocusWithin())
     fieldContext?.handleControlInput({ value })
   else
     fieldContext?.reportControlState({ filled: !isNullish(value) })
 }, { flush: 'post' })
-
-const handledFocusEvents = new WeakSet<Event>()
-
-function handleFocusin(event: FocusEvent) {
-  if (handledFocusEvents.has(event))
-    return
-  handledFocusEvents.add(event)
-  if (!isFocusWithin.value)
-    fieldContext?.handleControlFocus()
-  isFocusWithin.value = true
-}
-
-function handleFocusout(event: FocusEvent) {
-  if (handledFocusEvents.has(event))
-    return
-  handledFocusEvents.add(event)
-  if (parentElement.value?.contains(event.relatedTarget as Node | null))
-    return
-  isFocusWithin.value = false
-  fieldContext?.handleControlBlur()
-}
-
-// The template listeners do the work: they run in order with a consumer's, and stay
-// on an element being removed for the `focusout` its removal fires. But Vue skips an
-// invoker attached in the millisecond of the event's first invoker, here a segment's,
-// which would leave `isFocusWithin` out of step with the document. These catch that,
-// attached as soon as the element exists, and skip an event the template already
-// handled: a consumer can move focus during it, and it mustn't undo what that did.
-watch(parentElement, (element, _, onCleanup) => {
-  if (!element)
-    return
-  element.addEventListener('focusin', handleFocusin)
-  element.addEventListener('focusout', handleFocusout)
-  onCleanup(() => {
-    element.removeEventListener('focusin', handleFocusin)
-    element.removeEventListener('focusout', handleFocusout)
-    // The element is going away (an `as` or as-child change, or unmount), and not every
-    // browser fires `focusout` for a removed element, so focus can't still be inside it.
-    if (isFocusWithin.value) {
-      isFocusWithin.value = false
-      fieldContext?.reportControlState({ focused: false })
-    }
-  })
-}, { flush: 'sync' })
-
-// A segment removed while focused (a coarser `granularity`, a consumer's `v-if`) leaves
-// the root in place. Chromium fires `focusout` for it, but Firefox and WebKit fire
-// nothing, so read focus from the document once the removal is done.
-context.onFocusedSegmentRemove = () => {
-  nextTick(() => {
-    const element = parentElement.value
-    if (!isFocusWithin.value || !element || containsComposed(element, getActiveElement(element)))
-      return
-    isFocusWithin.value = false
-    fieldContext?.handleControlBlur()
-  })
-}
 
 provideDateFieldRootContext(context)
 
@@ -306,8 +261,8 @@ defineExpose(mergeExpose(expose, {
     :is="renderAs(as, asChild)"
     v-bind="getRootAttrs()"
     ref="primitiveElement"
-    @focusin="handleFocusin"
-    @focusout="handleFocusout"
+    @focusin="focusWithin?.onFocusin"
+    @focusout="focusWithin?.onFocusout"
   >
     <slot
       :model-value="modelValue"

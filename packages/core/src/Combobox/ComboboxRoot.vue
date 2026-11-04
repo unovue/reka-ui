@@ -165,13 +165,15 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false">
-import { mergeProps, toRef } from 'vue'
+import { mergeProps, toRef, watch } from 'vue'
 import { useCollection } from '@/Collection'
+import { useFieldControl } from '@/Field/useFieldControl'
 import { provideListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useComboboxRoot } from './useCombobox'
+import { provideComboboxField } from './useComboboxField'
 
 defineOptions({ inheritAttrs: false })
 
@@ -201,12 +203,29 @@ const { forwardRef, currentElement, expose } = useForwardElement()
 const dir = useDirection(toRef(() => props.dir))
 const isFormControl = useFormControl(currentElement)
 
+// Optional Field participation: `null` outside a `FieldRoot`, so every
+// binding below is inert without a Field. The root owns the value; the input
+// (Base UI parity) carries the field's id, label and aria wiring.
+const field = useFieldControl({
+  // Getters read bindings that are retained anyway, not the composable's
+  // return object: capturing it in a closure would keep it alive per instance.
+  // The input renders its own `id`, else the field's.
+  id: () => context.inputElement.value?.id || undefined,
+  // A removed input can linger in the context: fall back to the trigger then.
+  element: () => (context.inputElement.value?.isConnected ? context.inputElement.value : undefined) ?? context.triggerElement.value,
+  // The selected value(s), not the typed text.
+  getValue: () => modelValue.value,
+  required: () => props.required,
+})
+// Getters rather than computeds: cheap, and free for a standalone combobox.
+const resolvedDisabled = field ? () => field.disabled(props.disabled) : () => props.disabled
+
 const combobox = useComboboxRoot<AcceptableValue>({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   multiple: () => props.multiple,
   dir,
-  disabled: () => props.disabled,
+  disabled: resolvedDisabled,
   highlightOnHover: () => props.highlightOnHover,
   loop: () => props.loop,
   by: props.by as By<AcceptableValue> | undefined,
@@ -227,11 +246,17 @@ const combobox = useComboboxRoot<AcceptableValue>({
   getItem,
   element: currentElement,
   emit: emits,
+  // A selection is user input for the Field (typing alone isn't); a
+  // programmatic or parent-driven change is reported by the watcher below.
+  onUpdate: field ? value => field.input(value) : undefined,
   onHighlight: payload => emits('highlight', payload as { ref: HTMLElement, value: T } | undefined),
   onOpenComplete: value => emits('update:openComplete', value),
 })
 const { root, context, open, highlightedElement, highlightItem, highlightFirstItem, highlightSelected, filterState } = combobox
 const modelValue = combobox.modelValue as unknown as Ref<ComboboxModelValue<T, M>>
+
+if (field)
+  watch(modelValue, value => field.sync(value))
 
 defineExpose(mergeExpose(expose, {
   /** The filtering result: `{ search, active, count }`. */
@@ -244,6 +269,7 @@ defineExpose(mergeExpose(expose, {
 
 provideListboxRootContext(context)
 provideComboboxRootContext(context)
+provideComboboxField(field, context)
 </script>
 
 <template>
@@ -259,11 +285,11 @@ provideComboboxRootContext(context)
       />
 
       <VisuallyHiddenInput
-        v-if="isFormControl && name"
-        :name="name"
+        v-if="isFormControl && (field ? field.name(name) : name)"
+        :name="(field ? field.name(name) : name)!"
         :value="modelValue"
-        :disabled="disabled"
-        :required="required"
+        :disabled="resolvedDisabled()"
+        :required="field ? field.required(required) : required"
       />
     </component>
   </PopperRoot>

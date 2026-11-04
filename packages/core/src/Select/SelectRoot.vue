@@ -2,6 +2,7 @@
 import type { ComputedRef, Ref, ShallowRef } from 'vue'
 import type { SelectClosedItems } from './closedItems'
 import type { SelectChangeReason, SelectItemData, SelectItems, SelectModelValue, SelectNavigationIntent, SelectOpenChangeReason, SelectTypeaheadItem } from './useSelect'
+import type { FieldRootContext } from '@/Field'
 import type { BaseChangeReason, By, ChangeEventDetails, LabelRegistry } from '@/shared'
 import type { SelectionSelector } from '@/shared/selectionSelector'
 import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
@@ -135,11 +136,19 @@ export interface SelectRootContext<T = AcceptableValue> {
 
 export const [injectSelectRootContext, provideSelectRootContext]
   = createContext<SelectRootContext<AcceptableValue>>('SelectRoot')
+
+/**
+ * The Field the Select is the control of, for its trigger: `null` outside a
+ * Field and inside another control of it.
+ * @internal
+ */
+export const [injectSelectFieldContext, provideSelectFieldContext]
+  = createContext<FieldRootContext | null>('SelectRoot', 'SelectFieldContext')
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false">
 import { computed, onBeforeUnmount, onMounted, toRef, watch } from 'vue'
-import { injectFieldRootContext } from '@/Field'
+import { claimFieldControl } from '@/Field/useFieldControl'
 import { PopperRoot } from '@/Popper'
 import BubbleSelect from './BubbleSelect.vue'
 import { useSelectRoot } from './useSelect'
@@ -164,15 +173,16 @@ defineSlots<{
   }) => any
 }>()
 
-// Optional Field participation: `injectFieldRootContext(null)` returns
-// `null` (instead of throwing) outside a `FieldRoot`, so every binding below
-// is inert — and byte-for-byte identical to before — when there is no Field.
+// Optional Field participation: `null` outside a `FieldRoot` (and inside
+// another control of the field, which owns it), so every binding below is
+// inert — and byte-for-byte identical to before — when there is no Field.
 // `SelectTrigger` (the focusable element) registers the Select as the
-// field's control and owns the id/aria wiring. Field's `name`/`required`/
-// `disabled` act as fallbacks for the local props (local props always win).
-const fieldContext = injectFieldRootContext(null)
+// field's control and owns the id/aria wiring. Field's `name` takes
+// precedence over the local prop; `required`/`disabled` apply when set on either.
+const fieldContext = claimFieldControl()
+provideSelectFieldContext(fieldContext)
 
-const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
+const resolvedName = computed(() => fieldContext?.name.value ?? props.name)
 // `required` is a plain (non-optional-default) `Boolean` prop, so Vue casts
 // it to `false` rather than `undefined` when omitted — `props.required` can
 // never actually be `undefined`. Only fall back to the Field's `required`

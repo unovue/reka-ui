@@ -132,7 +132,7 @@ Without `orientation`, all four arrow keys move between the items. Set `orientat
 
 ### In a form
 
-With a `name`, each item inside a `form` renders a hidden native radio, so the browser submits the selected `value`. A radio group doesn't register with a [`FieldRoot`](field) yet: label it with `aria-labelledby` (or `aria-label`), and see [Forms and validation](/docs/guides/forms#other-controls) for showing an error.
+With a `name`, each item inside a `form` renders a hidden native radio, so the browser submits the selected `value`. Inside a [`FieldRoot`](field), the group takes the field's `name`, `required` and `disabled`, `FieldLabel` labels it, and an invalid submission focuses the selected item (or the first enabled one). Outside a field, label it with `aria-labelledby` (or `aria-label`). See [Forms and validation](/docs/guides/forms#reka-ui-controls-inside-a-field).
 
 ```vue
 <template>

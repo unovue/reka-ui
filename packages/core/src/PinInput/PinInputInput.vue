@@ -2,7 +2,7 @@
 import type { PrimitiveProps } from '@/Primitive'
 import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
-import { injectPinInputRootContext } from './PinInputRoot.vue'
+import { injectPinInputFieldSlots, injectPinInputRootContext } from './PinInputRoot.vue'
 import { createPinInputInputSurface } from './usePinInput'
 
 export interface PinInputInputProps extends PrimitiveProps {
@@ -36,10 +36,14 @@ const input = createPinInputInputSurface(context, {
 watch(input.currentValue, input.updatePlaceholder)
 
 // Registration lifecycle stays in the shell (it needs the mounted element).
+// Inside a Field, the slot this input fills (read live: `index` can change).
+const fieldSlots = injectPinInputFieldSlots(null)
 onMounted(() => {
+  fieldSlots?.set(currentElement.value, () => props.index)
   context.onInputElementChange(currentElement.value)
 })
 onUnmounted(() => {
+  fieldSlots?.delete(currentElement.value)
   context.inputElements?.value.delete(currentElement.value)
 })
 </script>

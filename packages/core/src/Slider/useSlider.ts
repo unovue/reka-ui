@@ -133,6 +133,7 @@ export function getSliderThumbSurface(
       return {
         'role': 'slider',
         'tabindex': context.disabled.value ? undefined : 0,
+        'aria-disabled': context.disabled.value || undefined,
         'aria-label': toValue(options.ariaLabel) || getLabel(index, context.modelValue?.value?.length ?? 0),
         'aria-valuenow': value,
         'aria-valuemin': context.min.value,

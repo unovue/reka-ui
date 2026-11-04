@@ -62,9 +62,11 @@ export const [injectColorSliderRootContext, provideColorSliderRootContext]
 </script>
 
 <script setup lang="ts">
-import { mergeProps } from 'vue'
+import { mergeProps, watch } from 'vue'
+import { useFieldControl } from '@/Field/useFieldControl'
 import { colorToString } from '@/shared/color'
 import { SliderRoot } from '@/Slider'
+import { provideSliderFieldContext } from '@/Slider/utils'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useColorSlider } from './useColorSlider'
 
@@ -86,10 +88,27 @@ defineExpose(expose)
 const isFormControl = useFormControl(currentElement)
 const dir = useDirection(() => props.dir)
 
+// Optional Field participation: `null` outside a `FieldRoot`, so every
+// binding below is inert without a Field. The color slider owns the value
+// and registers it; the inner `SliderRoot` and `SliderThumb` render the
+// field's state, focus, id and aria wiring through the binding handed down.
+const thumbElement = () => (currentElement.value as HTMLElement | undefined)?.querySelector<HTMLElement>('[role="slider"]') ?? undefined
+const field = useFieldControl({
+  // The thumb renders its own `id`, else the field's.
+  id: () => thumbElement()?.id || undefined,
+  element: thumbElement,
+  // The model: a `Color`.
+  getValue: () => color.value,
+  required: () => props.required,
+})
+// Getters rather than computeds: cheap, and free for a standalone slider.
+const resolvedName = () => field ? field.name(props.name) : props.name
+const resolvedRequired = () => field ? field.required(props.required) : props.required
+
 const { sliderProps, context, color, disabled } = useColorSlider({
   orientation: () => props.orientation,
   dir: () => dir.value,
-  disabled: () => props.disabled,
+  disabled: () => field ? field.disabled(props.disabled) : props.disabled,
   inverted: () => props.inverted,
   channel: () => props.channel,
   colorSpace: () => props.colorSpace,
@@ -97,9 +116,16 @@ const { sliderProps, context, color, disabled } = useColorSlider({
   modelValue: () => props.modelValue,
   defaultValue: () => props.defaultValue,
   emit: emits,
+  // A drag or keyboard step is user input for the Field; a programmatic or
+  // parent-driven change is reported by the watcher below.
+  onUpdate: field ? value => field.input(value) : undefined,
 })
 
 provideColorSliderRootContext(context)
+if (field) {
+  provideSliderFieldContext(field)
+  watch(color, value => field.sync(value))
+}
 </script>
 
 <template>
@@ -113,12 +139,12 @@ provideColorSliderRootContext(context)
     <slot />
 
     <VisuallyHiddenInput
-      v-if="isFormControl && name"
+      v-if="isFormControl && resolvedName()"
       type="text"
       :value="colorToString(color, 'hex')"
-      :name="name"
+      :name="resolvedName()!"
       :disabled="disabled"
-      :required="required"
+      :required="resolvedRequired()"
     />
   </SliderRoot>
 </template>

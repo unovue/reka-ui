@@ -44,7 +44,8 @@ export const [injectSwitchRootContext, provideSwitchRootContext]
 </script>
 
 <script setup lang="ts" generic="T = boolean">
-import { computed, mergeProps } from 'vue'
+import { computed, mergeProps, watch } from 'vue'
+import { useFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useSwitch } from './useSwitch'
@@ -75,25 +76,47 @@ const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const scopeIdAttrs = useForwardScopeId()
 const isFormControl = useFormControl(currentElement)
+
+// Optional Field participation: `null` outside a `FieldRoot`, so every
+// binding below is inert without a Field.
+const field = useFieldControl({
+  id: () => props.id,
+  element: () => currentElement.value as HTMLElement | undefined,
+  getValue: () => checked.value,
+  required: () => props.required,
+  // A required switch must be on.
+  isFilled: value => value === true,
+})
+// Getters rather than computeds: cheap, and free for a standalone switch.
+const resolvedId = () => field ? field.id() : props.id
+const resolvedName = () => field ? field.name(props.name) : props.name
+const resolvedRequired = () => field ? field.required(props.required) : props.required
+
 // DOM-bound: resolves the associated `[for]` label text through the element's
 // root (shadow-safe, #2792). Stays in the shell (needs `currentElement`,
 // SSR-guarded) — not in the composable.
-const ariaLabel = computed(() => props.id && currentElement.value ? (getRootNode(currentElement.value).querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText : undefined)
+const ariaLabel = computed(() => resolvedId() && currentElement.value ? (getRootNode(currentElement.value).querySelector(`[for="${resolvedId()}"]`) as HTMLLabelElement)?.innerText : undefined)
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
 // composable's `useControllableState` (`modelValue === undefined` → uncontrolled).
-const { modelValue, checked, root, context } = useSwitch<T>({
+const { modelValue, checked, disabled, root, context } = useSwitch<T>({
   modelValue: () => props.modelValue as T | undefined,
   defaultValue: props.defaultValue,
   emit,
-  disabled: () => props.disabled,
-  required: () => props.required,
+  // A press is user input for the Field; a programmatic or parent-driven
+  // change is reported through the `checked` watcher below.
+  onUpdate: value => field?.input(value === props.trueValue),
+  disabled: () => field ? field.disabled(props.disabled) : props.disabled,
+  required: resolvedRequired,
   value: () => props.value,
   trueValue: () => props.trueValue as T,
   falseValue: () => props.falseValue as T,
 })
 
 provideSwitchRootContext(context)
+
+if (field)
+  watch(checked, value => field.sync(value))
 
 // Listener order is part of the v2 contract: `v-bind="$attrs"` sat AFTER the
 // component's `role` / `aria-*` / `data-*` bindings (a consumer attribute wins)
@@ -104,16 +127,30 @@ const rootAttrs = computed(() => {
   const { onClick: _onClick, onKeydown: _onKeydown, ...attrs } = root.attrs.value
   return attrs
 })
+
+// `$attrs` isn't reactive, so the Field's wiring is read during render. Its
+// state attributes fill in what the switch leaves unset; its aria ids are
+// merged with the consumer's.
+function renderAttrs(attrs: Record<string, unknown>) {
+  if (!field)
+    return mergeProps(rootAttrs.value, scopeIdAttrs, attrs)
+  return field.fillDataAttributes(mergeProps(
+    rootAttrs.value,
+    scopeIdAttrs,
+    attrs,
+    { ...field.ariaAttrs(attrs, disabled.value), onFocus: field.onFocus, onBlur: field.onBlur },
+  ))
+}
 </script>
 
 <template>
   <component
     :is="renderAs(as, asChild)"
-    :id="id"
+    :id="resolvedId()"
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
     :aria-label="$attrs['aria-label'] || ariaLabel"
-    v-bind="mergeProps(rootAttrs, scopeIdAttrs, $attrs)"
+    v-bind="renderAttrs($attrs)"
     @click="root.props.value.onClick"
     @keydown="root.props.value.onKeydown"
   >
@@ -124,11 +161,11 @@ const rootAttrs = computed(() => {
   </component>
 
   <VisuallyHiddenInput
-    v-if="isFormControl && name"
+    v-if="isFormControl && resolvedName()"
     type="checkbox"
-    :name="name"
+    :name="resolvedName()!"
     :disabled="disabled"
-    :required="required"
+    :required="resolvedRequired()"
     :value="value"
     :checked="checked"
     v-bind="scopeIdAttrs"
