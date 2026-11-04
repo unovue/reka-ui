@@ -1,9 +1,10 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import type SliderImpl from './SliderImpl.vue'
 import { fireEvent } from '@testing-library/vue'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, h, ref, Suspense, Transition } from 'vue'
 import { handleSubmit } from '@/test'
 import Slider from './story/_Slider.vue'
 
@@ -433,5 +434,48 @@ describe('given slider in a form', async () => {
       expect(handleSubmit).toHaveBeenCalledTimes(1)
       expect(handleSubmit.mock.results[0].value).toStrictEqual({ 'slider[0]': '51' })
     })
+  })
+})
+
+// Inside a Suspense, an out-in transition defers the leaving branch's `isUnmounted` until the leave
+// ends, while its template refs are already null. Its DOM listeners still fire and emit meanwhile:
+// this is how Nuxt's `<NuxtPage>` leaves a route.
+describe('given slider on a page that leaves through an out-in transition', () => {
+  it.each(['horizontal', 'vertical'] as const)('should ignore pointer input while the page leaves (%s)', async (orientation) => {
+    const errors: unknown[] = []
+    const page = ref<'slider' | 'next'>('slider')
+    let finishLeave = () => {}
+    const NextPage = defineComponent({
+      async setup() {
+        await Promise.resolve()
+        return () => h('div')
+      },
+    })
+    const Pages = defineComponent(() => () => h(
+      Transition,
+      { mode: 'out-in', css: false, onLeave: (_el: Element, done: () => void) => { finishLeave = done } },
+      () => h(Suspense, null, {
+        default: () => page.value === 'slider'
+          ? h(Slider, { key: 'slider', orientation })
+          : h(NextPage, { key: 'next' }),
+      }),
+    ))
+    const wrapper = mount(Pages, {
+      attachTo: document.body,
+      global: { stubs: { transition: false }, config: { errorHandler: error => errors.push(error) } },
+    })
+    await flushPromises()
+    const sliderImpl = wrapper.find('[data-slider-impl]').element
+    const thumb = wrapper.find('[role="slider"]').element
+
+    page.value = 'next'
+    await flushPromises()
+    expect(thumb.isConnected).toBe(true)
+    await fireEvent.pointerDown(sliderImpl, { clientX: 10, clientY: 10, pointerId: 1 })
+    await fireEvent.pointerMove(thumb, { clientX: 50, clientY: 50, pointerId: 1 })
+
+    expect(errors).toEqual([])
+    finishLeave()
+    wrapper.unmount()
   })
 })

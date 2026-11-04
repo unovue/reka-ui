@@ -64,10 +64,12 @@ provideSliderOrientationContext({
         !isSlidingFromBottom && rootContext.thumbAlignment.value === 'overflow' ? 'translateY(-50%)' : 'translateY(50%)',
     }"
     @slide-start="(event) => {
+      if (!sliderElement) return;
       const value = getValueFromPointerEvent(event, true);
       emits('slideStart', value)
     }"
     @slide-move="(event) => {
+      if (!sliderElement) return;
       const value = getValueFromPointerEvent(event);
       emits('slideMove', value)
     }"

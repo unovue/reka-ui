@@ -68,10 +68,12 @@ provideSliderOrientationContext({
         !isSlidingFromLeft && rootContext.thumbAlignment.value === 'overflow' ? 'translateX(50%)' : 'translateX(-50%)',
     }"
     @slide-start="(event) => {
+      if (!sliderElement) return;
       const value = getValueFromPointerEvent(event, true);
       emits('slideStart', value)
     }"
     @slide-move="(event) => {
+      if (!sliderElement) return;
       const value = getValueFromPointerEvent(event);
       emits('slideMove', value)
     }"
