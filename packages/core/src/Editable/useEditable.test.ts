@@ -243,14 +243,14 @@ describe('useEditable — reasons', () => {
     expect(c.modelValue.value).toBe('')
   })
 
-  it('submit called with a native event (e.g. `@click="submit"`) reports "imperative-action"', () => {
+  it('submit called with a native event (e.g. `@click="submit"`) reports "submit-press"', () => {
     const onUpdate = vi.fn()
     const e = scoped({ onUpdate })
     e.edit()
     type(e, 'x')
     const click = new MouseEvent('click')
     e.context.submit(click as any)
-    expect(onUpdate.mock.calls[0][1]).toMatchObject({ reason: 'imperative-action', event: click })
+    expect(onUpdate.mock.calls[0][1]).toMatchObject({ reason: 'submit-press', event: click })
   })
 })
 

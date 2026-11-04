@@ -124,8 +124,8 @@ defineSlots<{
     modelValue: typeof modelValue.value
     /** Whether the editable field is empty */
     isEmpty: boolean
-    /** Function to submit the value of the editable */
-    submit: () => void
+    /** Function to submit the value of the editable. Bound as a listener (`@click="submit"`), the change reports `'submit-press'`. */
+    submit: (event?: Event) => void
     /** Function to cancel the value of the editable */
     cancel: () => void
     /** Function to set the editable in edit mode */
@@ -227,9 +227,14 @@ function getRootAttrs(attrs: Record<string, unknown>) {
 const pointerDownOutside = usePointerDownOutside(event => dismiss('outside-press', event), currentElement, isEditing)
 useFocusOutside(event => dismiss('focus-outside', event), currentElement, isEditing)
 
-// Zero-argument wrappers: a slot or template-ref caller binding `@click="submit"` reports `imperative-action`.
-function submitImperative() {
-  submit()
+// Takes only an event, never a reason: called bare (a template ref) it reports
+// `'imperative-action'`; bound as a listener (`@click="submit"` in the slot) it
+// receives the user's event and reports `'submit-press'`.
+function submitImperative(event?: Event) {
+  if (event instanceof Event)
+    submit('submit-press', event)
+  else
+    submit()
 }
 
 defineExpose(mergeExpose(expose, {
