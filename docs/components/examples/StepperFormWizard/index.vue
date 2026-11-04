@@ -106,7 +106,7 @@ const fieldClass = 'h-9 w-full rounded-lg border border-muted bg-background px-3
               :step="item.step"
               :disabled="!canReach(item.step)"
             >
-              <StepperTrigger class="z-10 inline-flex size-8 shrink-0 items-center justify-center rounded-full border-2 border-muted bg-card text-xs font-semibold text-muted-foreground group-data-[state=active]:border-primary group-data-[state=active]:text-primary group-data-[state=completed]:border-primary group-data-[state=completed]:bg-primary group-data-[state=completed]:text-primary-foreground group-data-[disabled]:cursor-not-allowed group-data-[disabled]:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary/40">
+              <StepperTrigger class="z-10 inline-flex size-8 shrink-0 items-center justify-center rounded-full border-2 border-muted bg-card text-xs font-semibold text-muted-foreground group-data-[state=current]:border-primary group-data-[state=current]:text-primary group-data-[state=completed]:border-primary group-data-[state=completed]:bg-primary group-data-[state=completed]:text-primary-foreground group-data-[disabled]:cursor-not-allowed group-data-[disabled]:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary/40">
                 <StepperIndicator>
                   <Icon
                     v-if="state === 'completed'"
@@ -124,7 +124,7 @@ const fieldClass = 'h-9 w-full rounded-lg border border-muted bg-background px-3
                 class="absolute left-[calc(50%+1.25rem)] right-[calc(-50%+1.25rem)] top-4 h-0.5 rounded-full bg-muted group-data-[state=completed]:bg-primary"
               />
 
-              <StepperTitle class="text-xs text-muted-foreground group-data-[state=active]:font-semibold group-data-[state=active]:text-foreground">
+              <StepperTitle class="text-xs text-muted-foreground group-data-[state=current]:font-semibold group-data-[state=current]:text-foreground">
                 {{ item.title }}
               </StepperTitle>
             </StepperItem>

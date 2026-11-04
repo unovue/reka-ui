@@ -15,7 +15,7 @@ const radioStateSingle = ref('default')
     <div class="flex items-center">
       <RadioGroupItem
         id="r1"
-        class="bg-white w-[1.125rem] h-[1.125rem] rounded-full border data-[active=true]:border-stone-700 data-[active=true]:bg-stone-700 dark:data-[active=true]:bg-white shadow-sm focus:shadow-[0_0_0_2px] focus:shadow-stone-700 outline-none cursor-default"
+        class="bg-white w-[1.125rem] h-[1.125rem] rounded-full border data-[state=checked]:border-stone-700 data-[state=checked]:bg-stone-700 dark:data-[state=checked]:bg-white shadow-sm focus:shadow-[0_0_0_2px] focus:shadow-stone-700 outline-none cursor-default"
         value="default"
       >
         <RadioGroupIndicator
@@ -32,7 +32,7 @@ const radioStateSingle = ref('default')
     <div class="flex items-center">
       <RadioGroupItem
         id="r2"
-        class="bg-white w-[1.125rem] h-[1.125rem] rounded-full border data-[active=true]:border-stone-700 data-[active=true]:bg-stone-700 dark:data-[active=true]:bg-white shadow-sm focus:shadow-[0_0_0_2px] focus:shadow-stone-700 outline-none cursor-default"
+        class="bg-white w-[1.125rem] h-[1.125rem] rounded-full border data-[state=checked]:border-stone-700 data-[state=checked]:bg-stone-700 dark:data-[state=checked]:bg-white shadow-sm focus:shadow-[0_0_0_2px] focus:shadow-stone-700 outline-none cursor-default"
         value="comfortable"
       >
         <RadioGroupIndicator
@@ -49,7 +49,7 @@ const radioStateSingle = ref('default')
     <div class="flex items-center">
       <RadioGroupItem
         id="r3"
-        class="bg-white w-[1.125rem] h-[1.125rem] rounded-full border data-[active=true]:border-stone-700 data-[active=true]:bg-stone-700 dark:data-[active=true]:bg-white shadow-sm focus:shadow-[0_0_0_2px] focus:shadow-stone-700 outline-none cursor-default"
+        class="bg-white w-[1.125rem] h-[1.125rem] rounded-full border data-[state=checked]:border-stone-700 data-[state=checked]:bg-stone-700 dark:data-[state=checked]:bg-white shadow-sm focus:shadow-[0_0_0_2px] focus:shadow-stone-700 outline-none cursor-default"
         value="compact"
       >
         <RadioGroupIndicator
