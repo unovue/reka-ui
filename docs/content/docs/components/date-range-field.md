@@ -114,6 +114,10 @@ Contains the date field segments
   ]"
 />
 
+## Real-world examples
+
+- [Date Picker Selection](/examples/date-picker-selection): Date pickers let users select a date or a range of dates. They commonly use in booking systems.
+
 ## Accessibility
 
 ### Keyboard Interactions

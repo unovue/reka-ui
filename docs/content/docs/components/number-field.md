@@ -202,6 +202,10 @@ The starting value is clamped to `min` and `max`, but it is not snapped to `step
 </template>
 ```
 
+## Real-world examples
+
+- [Slider with Number Field](/examples/slider-number-field): Render a Slider with a Number Field that shows and interact with the values of the Slider.
+
 ## Accessibility
 
 Adheres to the [Spinbutton WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton).

@@ -334,6 +334,11 @@ Set `granularity="year"` to select a range of years.
 
 <ComponentPreview name="RangeCalendarYear" />
 
+## Real-world examples
+
+- [Date Range Presets](/examples/date-range-presets): Pair a RangeCalendar with the analytics presets people actually reach for — last 7 days, month to date, year to date.
+- [Date Picker Selection](/examples/date-picker-selection): Date pickers let users select a date or a range of dates. They commonly use in booking systems.
+
 ## Accessibility
 
 ### Keyboard Interactions

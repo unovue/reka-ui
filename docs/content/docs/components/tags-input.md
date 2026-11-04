@@ -195,6 +195,10 @@ const delimiter = /[ ,;\t\n\r]+/
 </template>
 ```
 
+## Real-world examples
+
+- [Combobox TagsInput](/examples/combobox-tags-input): Rendering [Combobox](/docs/components/combobox) with [Tags Input](/docs/components/tags-input).
+
 ## Accessibility
 
 ### Keyboard Interactions

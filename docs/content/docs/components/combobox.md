@@ -689,6 +689,15 @@ When the data your `v-for` reads changes, Vue re-renders every item of that `v-f
 
 `v-memo` must list every value the item's props and slot read, such as `:disabled`. A value it leaves out goes stale when only that value changes. The selected and highlighted states don't need listing: the item tracks those itself. For very long lists, see the virtualization example above.
 
+## Real-world examples
+
+- [Combobox Async](/examples/combobox-async): Search a remote endpoint from a Combobox, with debounced requests, a loading state, and out-of-order responses discarded.
+- [Combobox Virtualized](/examples/combobox-virtualized): Render a Combobox over 10,000 options by mounting only the rows in view with `ComboboxVirtualizer`.
+- [Combobox TagsInput](/examples/combobox-tags-input): Rendering [Combobox](/docs/components/combobox) with [Tags Input](/docs/components/tags-input).
+- [Inline Combobox on Textarea](/examples/combobox-textarea): Rendering [Combobox](/docs/components/combobox) as a textarea element to create an accessible multiline textbox. Inserting specific characters triggers a popup with dynamic suggestions.
+- [Dialog Command Menu](/examples/dialog-command-menu): Combining [Dialog](/docs/components/dialog) and [Combobox](/docs/components/combobox) to enable users to search a command list in a modal.
+- [Command Menu with Tabs](/examples/dialog-command-tabs): A command palette whose results are scoped by Tabs, with Tab cycling scopes without leaving the search field.
+
 ## Accessibility
 
 Adheres to the [Combobox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/).

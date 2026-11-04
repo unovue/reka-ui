@@ -181,6 +181,10 @@ import {
 </template>
 ```
 
+## Real-world examples
+
+- [Toolbar Rich Text](/examples/toolbar-rich-text): A formatting toolbar combining ToggleGroup, DropdownMenu and Tooltip under one roving focus ring.
+
 ## Accessibility
 
 Uses [roving tabindex](https://www.w3.org/TR/wai-aria-practices-1.2/examples/radio/radio.html) to manage focus movement among items.

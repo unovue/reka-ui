@@ -120,6 +120,10 @@ import { Label, PinInputInput, PinInputRoot } from 'reka-ui'
 </template>
 ```
 
+## Real-world examples
+
+- [Pin Input OTP](/examples/pin-input-otp): A one-time-code field that verifies on complete, handles paste, reports failure, and throttles resends.
+
 ## Accessibility
 
 ### Keyboard Interactions

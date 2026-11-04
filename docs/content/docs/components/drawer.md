@@ -639,6 +639,11 @@ drawer programmatically from anywhere inside it.
 </template>
 ```
 
+## Real-world examples
+
+- [Responsive Dialog Drawer](/examples/dialog-responsive-drawer): Present the same content as a centred Dialog on desktop and a swipeable Drawer on small screens, driven by one media query.
+- [Navigation Mobile Nav](/examples/navigation-mobile-nav): One set of navigation links rendered as a desktop flyout and, below the breakpoint, as an Accordion inside a Drawer.
+
 ## Accessibility
 
 Adheres to the [Dialog WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).

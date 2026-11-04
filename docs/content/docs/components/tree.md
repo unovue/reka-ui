@@ -382,6 +382,10 @@ For more complex draggable `Tree` component, in this example we will be using [p
 
 [Stackblitz Demo](https://stackblitz.com/edit/github-8f3fzs?file=src%2FTreeDND.vue)
 
+## Real-world examples
+
+- [Tree Multi Select](/examples/tree-multi-select): Tri-state folder selection driven by Tree's `propagate-select` and `bubble-select`, with both toggleable so you can see what each one does.
+
 ## Accessibility
 
 Adheres to the [Tree WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/treeview/).

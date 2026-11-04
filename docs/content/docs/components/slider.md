@@ -263,6 +263,11 @@ import { SliderRange, SliderRoot, SliderThumb, SliderTrack } from 'reka-ui'
 </template>
 ```
 
+## Real-world examples
+
+- [Slider with Number Field](/examples/slider-number-field): Render a Slider with a Number Field that shows and interact with the values of the Slider.
+- [Slider Tooltip](/examples/slider-tooltip): Render a Slider with a Tooltip that shows the current value of the Slider.
+
 ## Accessibility
 
 Adheres to the [Slider WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slidertwothumb).

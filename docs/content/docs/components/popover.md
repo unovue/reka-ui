@@ -402,6 +402,12 @@ const userPopover = createPopoverHandle<User>()
 
 The handle itself holds no state. The mounted root owns it, and the root and the triggers only connect to the handle after they mount. A handle created at module scope is therefore safe under SSR: nothing from one request can reach another, and every trigger renders closed on the server. Prefer creating the handle in the `<script setup>` of the component that renders the root and passing it down. Use a module-scope handle when the triggers live in unrelated parts of the app. Use one mounted root per handle: a second root that mounts with the same handle takes it over and closes the first, with a dev warning. A root or trigger kept alive by `<KeepAlive>` disconnects from the handle while it is inactive.
 
+## Real-world examples
+
+- [Selection Popover](/examples/popover-selection): A formatting toolbar anchored to the current text selection using a virtual Popper reference.
+- [Color Picker](/examples/color-picker): A comprehensive color picker component that combines ColorArea, ColorSlider, ColorField, and ColorSwatch inside a Popover. This example demonstrates how to build a complete color selection interface with 2D color area, hue and alpha sliders, and input fields for precise color value entry.
+- [Date Range Presets](/examples/date-range-presets): Pair a RangeCalendar with the analytics presets people actually reach for — last 7 days, month to date, year to date.
+
 ## Accessibility
 
 Adheres to the [Dialog WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).

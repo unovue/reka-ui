@@ -771,6 +771,10 @@ import { ContextMenuContent, ContextMenuPortal, ContextMenuRoot, ContextMenuTrig
 }
 ```
 
+## Real-world examples
+
+- [Data Table](/examples/data-table): Compose Checkbox, DropdownMenu, ContextMenu, ScrollArea and Pagination into a sortable, selectable table.
+
 ## Accessibility
 
 Uses [roving tabindex](https://www.w3.org/WAI/ARIA/apg/patterns/kbd_roving_tabindex) to manage focus movement among menu items.

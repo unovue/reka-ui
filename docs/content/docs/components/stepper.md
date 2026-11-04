@@ -216,6 +216,10 @@ const stepper = useTemplateRef('stepper')
 </template>
 ```
 
+## Real-world examples
+
+- [Stepper Form Wizard](/examples/stepper-form-wizard): Gate each step of a multi-step form on its own validation, so Next and the step triggers stay in sync.
+
 ## Accessibility
 
 ### Keyboard Interactions

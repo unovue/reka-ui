@@ -179,6 +179,10 @@ onMounted(() => {
 
 The custom scrollbars stay in the components: their ResizeObserver sizing, pointer capture, thumb positioning and the `auto` / `scroll` / `hover` / `glimpse` visibility timers are not part of the composable, so `type` and `scrollHideDelay` only matter when the scrollbar parts render. Hide the native scrollbars yourself when you render your own. The composable is experimental and callable outside component setup.
 
+## Real-world examples
+
+- [Data Table](/examples/data-table): Compose Checkbox, DropdownMenu, ContextMenu, ScrollArea and Pagination into a sortable, selectable table.
+
 ## Accessibility
 
 In most cases, it's best to rely on native scrolling and work with the customization options available in CSS. When that isn't enough, `ScrollArea` provides additional customizability while maintaining the browser's native scroll behavior (as well as accessibility features, like keyboard scrolling).

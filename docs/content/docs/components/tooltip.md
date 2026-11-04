@@ -344,6 +344,12 @@ import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from 're
 }
 ```
 
+## Real-world examples
+
+- [Tooltip Cursor](/examples/tooltip-cursor): Render a Tooltip that follows the cursor when hovering over the target element.
+- [Slider Tooltip](/examples/slider-tooltip): Render a Slider with a Tooltip that shows the current value of the Slider.
+- [Toolbar Rich Text](/examples/toolbar-rich-text): A formatting toolbar combining ToggleGroup, DropdownMenu and Tooltip under one roving focus ring.
+
 ## Accessibility
 
 ### Keyboard Interactions

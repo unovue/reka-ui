@@ -620,6 +620,11 @@ import {
 }
 ```
 
+## Real-world examples
+
+- [Navigation Mega Menu](/examples/navigation-mega-menu): A mega menu whose viewport resizes to the active panel and whose indicator tracks the active trigger.
+- [Navigation Mobile Nav](/examples/navigation-mobile-nav): One set of navigation links rendered as a desktop flyout and, below the breakpoint, as an Accordion inside a Drawer.
+
 ## Accessibility
 
 Adheres to the [`navigation` role requirements](https://www.w3.org/TR/wai-aria-1.2/#navigation).

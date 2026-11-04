@@ -351,6 +351,14 @@ const editDialog = createDialogHandle<Project>()
 
 The handle itself holds no state. The mounted root owns it, and the root and the triggers only connect to the handle after they mount. A handle created at module scope is therefore safe under SSR: nothing from one request can reach another, and every trigger renders closed on the server. Prefer creating the handle in the `<script setup>` of the component that renders the root and passing it down. Use a module-scope handle when the triggers live in unrelated parts of the app. Use one mounted root per handle: a second root that mounts with the same handle takes it over and closes the first, with a dev warning. A root or trigger kept alive by `<KeepAlive>` disconnects from the handle while it is inactive.
 
+## Real-world examples
+
+- [Dialog with Unsaved Changes](/examples/dialog-unsaved-changes): Hold a dirty Dialog open by preventing its close events, and hand the decision to an AlertDialog.
+- [Responsive Dialog Drawer](/examples/dialog-responsive-drawer): Present the same content as a centred Dialog on desktop and a swipeable Drawer on small screens, driven by one media query.
+- [Dialog Command Menu](/examples/dialog-command-menu): Combining [Dialog](/docs/components/dialog) and [Combobox](/docs/components/combobox) to enable users to search a command list in a modal.
+- [Command Menu with Tabs](/examples/dialog-command-tabs): A command palette whose results are scoped by Tabs, with Tab cycling scopes without leaving the search field.
+- [Dialog Gesture Driven](/examples/dialog-gesture-driven): An iOS-style gesture driven modal sheet built with Reka UI, and [Motion-v](https://motion.unovue.com/).
+
 ## Accessibility
 
 Adheres to the [Dialog WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).

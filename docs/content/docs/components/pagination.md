@@ -230,3 +230,7 @@ const currentPage = ref(1)
     },
   ]"
 />
+
+## Real-world examples
+
+- [Data Table](/examples/data-table): Compose Checkbox, DropdownMenu, ContextMenu, ScrollArea and Pagination into a sortable, selectable table.

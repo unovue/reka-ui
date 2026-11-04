@@ -344,6 +344,11 @@ This example showcases usage of the CalendarWeek component used to display the n
 
 <ComponentPreview name="CalendarWeeks" />
 
+## Real-world examples
+
+- [Date Picker View Switching](/examples/date-picker-view-switching): One Calendar with day, month and year views: click the heading to drill up, select a cell to drill back down.
+- [Date Picker Selection](/examples/date-picker-selection): Date pickers let users select a date or a range of dates. They commonly use in booking systems.
+
 ## Accessibility
 
 ### Keyboard Interactions

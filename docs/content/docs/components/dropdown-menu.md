@@ -927,6 +927,12 @@ const rowMenu = createDropdownMenuHandle<Member>()
 
 The handle itself holds no state. The mounted root owns it, and the root and the triggers only connect to the handle after they mount. A handle created at module scope is therefore safe under SSR: nothing from one request can reach another, and every trigger renders closed on the server. Prefer creating the handle in the `<script setup>` of the component that renders the root and passing it down. Use a module-scope handle when the triggers live in unrelated parts of the app. Use one mounted root per handle: a second root that mounts with the same handle takes it over and closes the first, with a dev warning. A root or trigger kept alive by `<KeepAlive>` disconnects from the handle while it is inactive.
 
+## Real-world examples
+
+- [Searchable Menu](/examples/menu-filter): A dropdown menu with a search field, and a submenu that filters on its own, using `DropdownMenuFilter`.
+- [Data Table](/examples/data-table): Compose Checkbox, DropdownMenu, ContextMenu, ScrollArea and Pagination into a sortable, selectable table.
+- [Toolbar Rich Text](/examples/toolbar-rich-text): A formatting toolbar combining ToggleGroup, DropdownMenu and Tooltip under one roving focus ring.
+
 ## Accessibility
 
 Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button) and uses [roving tabindex](https://www.w3.org/WAI/ARIA/apg/practices/keyboard-interface/#kbd_roving_tabindex) to manage focus movement among menu items.

@@ -376,6 +376,10 @@ When the data your `v-for` reads changes, Vue re-renders every item of that `v-f
 
 `v-memo` must list every value the item's props and slot read, such as `:disabled`. A value it leaves out goes stale when only that value changes. The selected and highlighted states don't need listing: the item tracks those itself. For very long lists, see the virtualization example above.
 
+## Real-world examples
+
+- [Listbox Transfer](/examples/listbox-transfer): Render a Transfer component with Listbox.
+
 ## Accessibility
 
 Adheres to the [Listbox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).

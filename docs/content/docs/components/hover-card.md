@@ -290,6 +290,10 @@ import { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, Hover
 }
 ```
 
+## Real-world examples
+
+- [Avatar Stack](/examples/avatar-stack): An overlapping avatar stack with a +N overflow and profile cards that load on first open.
+
 ## Accessibility
 
 The hover card is intended for sighted users only, the content will be inaccessible to keyboard users.
