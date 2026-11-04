@@ -173,7 +173,7 @@ Uses [roving tabindex](https://www.w3.org/TR/wai-aria-practices-1.2/examples/rad
   ]"
 />
 
-In a right-to-left layout (`dir="rtl"` on `ToggleGroupRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), `ArrowLeft` moves to the next item and `ArrowRight` to the previous one. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
+In a right-to-left layout (`dir="rtl"` on `ToggleGroupRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), a horizontal group's `ArrowLeft` moves to the next item and `ArrowRight` to the previous one. A vertical group uses `ArrowUp` and `ArrowDown` in either direction. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
 
 ## Headless composable
 

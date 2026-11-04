@@ -142,7 +142,7 @@ Some parts need the DOM, so the server renders them in a neutral state and the c
 Vue warns in development when the client renders something other than the server HTML ("Hydration … mismatch"). In production it keeps the server's attributes without correcting them. Common causes with Reka UI:
 
 - **Different ids.** Vue 3.4, or different id prefixes on the server and the client. See [Generated ids](#generated-ids).
-- **Today's date.** A Calendar, Range Calendar or Date Picker without a value or placeholder opens on today, in the time zone of the runtime that renders it. When the server and the browser are on different days, the focusable day differs. Pick the date once, on the server, and send it to the client: with Nuxt, `useState` does that. It needs a serialisable value, so keep the ISO string:
+- **Today's date.** A Calendar, Range Calendar or Date Picker without a value or placeholder opens on today, in the time zone of the runtime that renders it. When the server and the browser are on different days, the focusable day differs. Pick the date once, on the server, and send it to the client: with Nuxt, `useState` does that. It needs a serialisable value, so keep the ISO string. On a server without native `Temporal`, load the polyfill first (see [Dates: server-side rendering](/docs/guides/dates#server-side-rendering)):
 
   ```vue
   <script setup lang="ts">

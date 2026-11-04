@@ -253,7 +253,7 @@ const stepper = useTemplateRef('stepper')
   ]"
 />
 
-In a right-to-left layout (`dir="rtl"` on `StepperRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), `ArrowLeft` moves to the next step trigger and `ArrowRight` to the previous one. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
+In a right-to-left layout (`dir="rtl"` on `StepperRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), a horizontal stepper's `ArrowLeft` moves to the next step trigger and `ArrowRight` to the previous one. A vertical stepper uses `ArrowUp` and `ArrowDown` in either direction. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
 
 ## Headless composable
 

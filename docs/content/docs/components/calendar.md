@@ -427,7 +427,7 @@ This example showcases usage of the CalendarWeek component used to display the n
   ]"
 />
 
-In a right-to-left layout (`dir="rtl"` on `CalendarRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), `ArrowLeft` moves to the next day and `ArrowRight` to the previous day. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
+In a right-to-left layout (`dir="rtl"` on `CalendarRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), `ArrowLeft` moves to the next day and `ArrowRight` to the previous day; in the month and year views, to the next or previous month or year. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
 
 ## Headless composable
 
