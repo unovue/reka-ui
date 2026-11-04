@@ -2,6 +2,11 @@
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface SliderThumbProps extends PrimitiveProps {}
+
+// Inside a Field: how many thumbs of each field's slider are set up, so a
+// thumb knows its place before it's mounted (on the server, and the first
+// render), when its collection position isn't known yet.
+const fieldThumbCounts = new WeakMap<object, number>()
 </script>
 
 <script setup lang="ts">
@@ -32,6 +37,12 @@ defineExpose(expose)
 useCollectionItem(thumbElement)
 
 const field = injectSliderFieldContext(null)
+// The thumb's place in setup order, only inside a Field.
+const setupOrder = field ? (fieldThumbCounts.get(field) ?? 0) : 0
+if (field) {
+  fieldThumbCounts.set(field, setupOrder + 1)
+  onUnmounted(() => fieldThumbCounts.set(field, (fieldThumbCounts.get(field) ?? 1) - 1))
+}
 
 const position = computed(() => thumbElement.value ? getItems(true).findIndex(i => i.ref === thumbElement.value) : -1)
 
@@ -81,9 +92,12 @@ function elementAttrs(consumerAttrs: Record<string, unknown>) {
 // a color channel) also references itself, so its name is the field's label
 // followed by its own.
 function fieldAttrs(consumerAttrs: Record<string, unknown>, label: string | undefined) {
-  // A thumb's place is only known once mounted (`-1` on the server and the
-  // first render), so a thumb of a range slider has no derived id until then.
-  const index = consumerIndex.value ?? ((rootContext.modelValue?.value?.length ?? 0) > 1 ? position.value : 0)
+  // Once mounted, a thumb's place is its collection position whenever more
+  // than one value or thumb renders (two thumbs over a one-value model must
+  // not share the field's id). Before that (on the server and the first
+  // render), it's the setup order.
+  const several = (rootContext.modelValue?.value?.length ?? 0) > 1 || rootContext.thumbElements.value.length > 1
+  const index = consumerIndex.value ?? (!isMounted.value ? setupOrder : several ? position.value : 0)
   const fieldId = field!.context.fieldId.value
   const id = (consumerAttrs.id as string | undefined) ?? (index === 0 ? fieldId : index > 0 ? `${fieldId}-${index}` : undefined)
   const aria = field!.ariaAttrs(consumerAttrs, rootContext.disabled.value)

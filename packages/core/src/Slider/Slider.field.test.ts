@@ -154,3 +154,27 @@ describe('given a required Field-wrapped Slider', () => {
     wrapper.unmount()
   })
 })
+
+describe('given a Field-wrapped Slider rendering two thumbs for a one-value model', () => {
+  const app = () => defineComponent({
+    setup: () => () => h(FieldRoot, { name: 'volume' }, () => [
+      h(FieldLabel, () => 'Volume'),
+      renderSlider({ defaultValue: [50] }, 2),
+    ]),
+  })
+
+  it('gives each thumb its own id on the server', async () => {
+    const html = await renderToString(createSSRApp(app()))
+    const ids = Array.from(html.matchAll(/ id="([^"]+)"/g), match => match[1])
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('gives each thumb its own id once mounted', async () => {
+    const wrapper = mount(app(), { attachTo: document.body })
+    await flushPromises()
+    const ids = wrapper.findAll('[role="slider"]').map(thumb => thumb.attributes('id'))
+    expect(ids[0]).toBe(wrapper.find('label').attributes('for'))
+    expect(new Set(ids).size).toBe(2)
+    wrapper.unmount()
+  })
+})
