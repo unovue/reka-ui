@@ -14,7 +14,7 @@ export interface PinInputInputProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from 'vue'
+import { onBeforeUnmount, onMounted, watch } from 'vue'
 
 const props = withDefaults(defineProps<PinInputInputProps>(), {
   as: 'input',
@@ -42,7 +42,8 @@ onMounted(() => {
   fieldSlots?.set(currentElement.value, () => props.index)
   context.onInputElementChange(currentElement.value)
 })
-onUnmounted(() => {
+// Before unmount: the element ref is already cleared once unmounted.
+onBeforeUnmount(() => {
   fieldSlots?.delete(currentElement.value)
   context.inputElements?.value.delete(currentElement.value)
 })

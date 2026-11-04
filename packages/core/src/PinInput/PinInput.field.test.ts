@@ -179,3 +179,25 @@ describe('given a Field-wrapped PinInput whose as-child input is replaced while 
     wrapper.unmount()
   })
 })
+
+describe('given a Field-wrapped PinInput whose slots change', () => {
+  it('refreshes filled when an empty slot is removed or added', async () => {
+    const count = ref(4)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { 'name': 'code', 'data-testid': 'field' }, () =>
+        h(PinInputRoot, { defaultValue: ['1', '2', '3'] }, () => Array.from({ length: count.value }, (_, index) => h(PinInputInput, { key: index, index })))),
+    }), { attachTo: document.body })
+    await flushPromises()
+    const field = () => wrapper.find('[data-testid="field"]')
+    expect(field().attributes('data-filled')).toBeUndefined()
+
+    count.value = 3
+    await flushPromises()
+    expect(field().attributes('data-filled')).toBe('')
+
+    count.value = 4
+    await flushPromises()
+    expect(field().attributes('data-filled')).toBeUndefined()
+    wrapper.unmount()
+  })
+})
