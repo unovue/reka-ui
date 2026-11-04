@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { createApp, defineAsyncComponent, defineComponent, h, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { isMacWebKit } from '@/test/browser'
 import { SelectContent, SelectGroup, SelectItem, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '.'
 
 let app: ReturnType<typeof createApp> | undefined
@@ -50,7 +51,8 @@ function mountSelect(content: () => unknown, root: () => Record<string, unknown>
 }
 
 describe('release', () => {
-  it('a real blur unmounts the lean items a key rendered, and a focus alone does not bring them back', async () => {
+  // Tabs to a button or link: see `isMacWebKit`.
+  it.skipIf(isMacWebKit)('a real blur unmounts the lean items a key rendered, and a focus alone does not bring them back', async () => {
     mountSelect(() => ['Apple', 'Banana'].map(text => item(text)))
     await nextTick()
     trigger().focus()

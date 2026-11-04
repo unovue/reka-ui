@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, ref } from 'vue'
+import { isMacWebKit } from '@/test/browser'
 import { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot } from '.'
 
 function mountInForm({ addOnTab = false } = {}) {
@@ -59,7 +60,8 @@ describe('given a TagsInput inside a form, in a real browser', () => {
     expect(document.activeElement).toBe(input)
   })
 
-  it('moves focus on Tab when the draft is empty (addOnTab)', async () => {
+  // Tabs to a button or link: see `isMacWebKit`.
+  it.skipIf(isMacWebKit)('moves focus on Tab when the draft is empty (addOnTab)', async () => {
     const { input } = mountInForm({ addOnTab: true })
 
     await userEvent.click(input)

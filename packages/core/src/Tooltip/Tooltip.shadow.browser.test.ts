@@ -3,6 +3,7 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { mountInShadowRoot } from '@/shared/test/shadowDom'
+import { isMacWebKit } from '@/test/browser'
 import { TooltipContent, TooltipPortal, TooltipProvider, TooltipRoot, TooltipTrigger } from '.'
 
 function mountTooltip() {
@@ -73,7 +74,8 @@ describe('given a Tooltip inside a shadow root, in a real browser', () => {
     }
   })
 
-  it('opens on keyboard focus and closes on Escape', async () => {
+  // Tabs to a button or link: see `isMacWebKit`.
+  it.skipIf(isMacWebKit)('opens on keyboard focus and closes on Escape', async () => {
     const { get } = mountTooltip()
 
     get('outside')!.focus()

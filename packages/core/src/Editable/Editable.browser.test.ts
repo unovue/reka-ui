@@ -2,10 +2,12 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
+import { isMacWebKit } from '@/test/browser'
 import { EditableArea, EditableInput, EditablePreview, EditableRoot } from '.'
 
 describe('given an Editable with submitMode "blur", in a real browser', () => {
-  it('a cancelled outside click runs beforeUpdate:modelValue once and keeps edit mode', async () => {
+  // The click focuses the outside button, which macOS WebKit doesn't do: see `isMacWebKit`.
+  it.skipIf(isMacWebKit)('a cancelled outside click runs beforeUpdate:modelValue once and keeps edit mode', async () => {
     const onBeforeUpdate = vi.fn((_value: string, details: { cancel: () => void }) => details.cancel())
     const wrapper = mount(defineComponent({
       setup: () => () => [

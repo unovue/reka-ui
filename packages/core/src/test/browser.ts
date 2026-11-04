@@ -1,4 +1,12 @@
-import { userEvent } from 'vitest/browser'
+import { server, userEvent } from 'vitest/browser'
+
+/**
+ * WebKit on macOS keeps Safari's defaults: Tab moves between text fields only,
+ * skipping buttons and links, and a click doesn't focus a button. Playwright
+ * can't change either. WebKit on Linux, which CI runs, does both like Chromium
+ * and Firefox, so a test that needs them is skipped on macOS WebKit only.
+ */
+export const isMacWebKit = server.browser === 'webkit' && server.platform === 'darwin'
 
 /**
  * Hovers `el` with the real mouse and returns that pointer's `pointerId`, for
