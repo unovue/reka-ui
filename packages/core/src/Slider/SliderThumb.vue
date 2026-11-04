@@ -81,11 +81,13 @@ function elementAttrs(consumerAttrs: Record<string, unknown>) {
 // a color channel) also references itself, so its name is the field's label
 // followed by its own.
 function fieldAttrs(consumerAttrs: Record<string, unknown>, label: string | undefined) {
-  const index = consumerIndex.value ?? position.value
+  // A thumb's place is only known once mounted (`-1` on the server and the
+  // first render), so a thumb of a range slider has no derived id until then.
+  const index = consumerIndex.value ?? ((rootContext.modelValue?.value?.length ?? 0) > 1 ? position.value : 0)
   const fieldId = field!.context.fieldId.value
-  const id = (consumerAttrs.id as string | undefined) ?? (index > 0 ? `${fieldId}-${index}` : fieldId)
+  const id = (consumerAttrs.id as string | undefined) ?? (index === 0 ? fieldId : index > 0 ? `${fieldId}-${index}` : undefined)
   const aria = field!.ariaAttrs(consumerAttrs, rootContext.disabled.value)
-  if (label && field!.context.labelId.value)
+  if (label && id && field!.context.labelId.value)
     aria['aria-labelledby'] = `${aria['aria-labelledby']} ${id}`
   return { id, ...aria }
 }

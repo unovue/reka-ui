@@ -1,7 +1,8 @@
 import type { VueWrapper } from '@vue/test-utils'
+import { renderToString } from '@vue/server-renderer'
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
 import { FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
 import { describeFieldControlContract } from '@/test/fieldControlContract'
@@ -119,5 +120,18 @@ describe('given an invalid Field-wrapped Slider', () => {
     expect(max.getAttribute('aria-invalid')).toBe('true')
     expect(document.activeElement).toBe(min)
     wrapper.unmount()
+  })
+})
+
+describe('given a server-rendered Field-wrapped range Slider', () => {
+  it('renders no duplicate thumb ids', async () => {
+    const html = await renderToString(createSSRApp(defineComponent({
+      setup: () => () => h(FieldRoot, { name: 'range' }, () => [
+        h(FieldLabel, () => 'Price'),
+        renderSlider({ defaultValue: [20, 80] }, 2),
+      ]),
+    })))
+    const ids = Array.from(html.matchAll(/ id="([^"]+)"/g), match => match[1])
+    expect(new Set(ids).size).toBe(ids.length)
   })
 })
