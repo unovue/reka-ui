@@ -76,6 +76,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   rootContext.focusable.value = true
+  // Unless another input took its place: the field's label then follows the trigger.
+  if (!rootContext.inputElement.value?.isConnected)
+    rootContext.onInputElementChange(undefined)
 })
 
 function resetSearchTerm(reason: ComboboxInputChangeReason | BaseChangeReason) {

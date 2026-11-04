@@ -225,3 +225,43 @@ describe('given a Field-wrapped Combobox whose focused option is removed from th
     wrapper.unmount()
   })
 })
+
+describe('given a Field-wrapped Combobox whose input was removed', () => {
+  it.each([
+    ['its own id', { id: 'own' }],
+    ['the field\'s id', {}],
+  ])('points the label at the trigger rather than the removed input (%s)', async (_, inputAttrs) => {
+    const showInput = ref(true)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { name: 'fruit' }, () => [
+        h(FieldLabel, () => 'Fruit'),
+        h(ComboboxRoot, null, () =>
+          h(ComboboxAnchor, () => [
+            showInput.value ? h(ComboboxInput, { 'data-testid': 'input', ...inputAttrs }) : null,
+            h(ComboboxTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
+          ])),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    const label = () => wrapper.find('label').element as HTMLLabelElement
+    expect(document.getElementById(label().htmlFor)).toBe(input(wrapper))
+
+    showInput.value = false
+    await flushPromises()
+    const trigger = wrapper.find('[data-testid="trigger"]').element
+    expect(document.getElementById(label().htmlFor)).toBe(trigger)
+    wrapper.unmount()
+  })
+
+  it('keeps a consumer id on the trigger', async () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { name: 'fruit' }, () => [
+        h(FieldLabel, () => 'Fruit'),
+        h(ComboboxRoot, null, () => h(ComboboxAnchor, () => h(ComboboxTrigger, { id: 'own-trigger' }, () => 'Open'))),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    expect(wrapper.find('label').attributes('for')).toBe('own-trigger')
+    wrapper.unmount()
+  })
+})
