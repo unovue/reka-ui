@@ -56,17 +56,19 @@ export interface FieldControlContractSpec {
    * untouched while focus moves between them, and is touched once it leaves.
    */
   parts?: (wrapper: VueWrapper) => HTMLElement[]
+  /** Skips the `name` precedence checks, for a control without a `name` prop. */
+  noName?: boolean
 }
 
 export function describeFieldControlContract(spec: FieldControlContractSpec) {
-  function mountInField(options: { fieldProps?: Record<string, unknown>, form?: boolean, onFormSubmit?: (values: Record<string, unknown>) => void, model?: unknown } = {}) {
+  function mountInField(options: { fieldProps?: Record<string, unknown>, controlProps?: Record<string, unknown>, form?: boolean, onFormSubmit?: (values: Record<string, unknown>) => void, model?: unknown } = {}) {
     const model = ref(options.model ?? spec.emptyValue)
     const Harness = defineComponent({
       setup() {
         return () => {
           const field = h(FieldRoot, { 'name': 'field', 'data-testid': 'field', ...options.fieldProps }, () => [
             h(FieldLabel, () => 'Label'),
-            spec.render({ 'modelValue': model.value, 'onUpdate:modelValue': (value: unknown) => { model.value = value } }),
+            spec.render({ ...options.controlProps, 'modelValue': model.value, 'onUpdate:modelValue': (value: unknown) => { model.value = value } }),
             h(FieldDescription, () => 'Description'),
           ])
           if (!options.form)
@@ -110,6 +112,31 @@ export function describeFieldControlContract(spec: FieldControlContractSpec) {
       expect(serialize(values.field)).toEqual(serialize(spec.interactedValue))
       wrapper.unmount()
     })
+
+    if (!spec.noName) {
+      // The native inputs a control renders for form submission (some name
+      // theirs after the field's, e.g. `field[0]`).
+      const namedInputs = (wrapper: VueWrapper) => Array.from((wrapper.element as HTMLElement).ownerDocument.querySelectorAll('[data-testid="field"] [name]'))
+        .map(element => element.getAttribute('name'))
+
+      it('submits natively under the field name, which takes precedence over its own', async () => {
+        const { wrapper } = mountInField({ form: true, controlProps: { name: 'own' }, model: spec.filledValue })
+        await flushPromises()
+        const names = namedInputs(wrapper)
+        expect(names.length).toBeGreaterThan(0)
+        expect(names.every(name => name!.startsWith('field'))).toBe(true)
+        wrapper.unmount()
+      })
+
+      it('submits natively under its own name when the field has none', async () => {
+        const { wrapper } = mountInField({ form: true, fieldProps: { name: undefined }, controlProps: { name: 'own' }, model: spec.filledValue })
+        await flushPromises()
+        const names = namedInputs(wrapper)
+        expect(names.length).toBeGreaterThan(0)
+        expect(names.every(name => name!.startsWith('own'))).toBe(true)
+        wrapper.unmount()
+      })
+    }
 
     if (spec.parts) {
       it('is touched only once focus leaves the whole control', async () => {

@@ -30,6 +30,8 @@ describeFieldControlContract({
   filledValue: convertToSpace(parseColor('#00ff00'), 'hsl'),
   // A color area always has a value.
   noRequired: true,
+  // Its inputs are named per channel (`xName`/`yName`).
+  noName: true,
 })
 
 describe('given a Field-wrapped ColorArea', () => {

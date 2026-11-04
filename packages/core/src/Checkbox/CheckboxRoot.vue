@@ -93,7 +93,7 @@ const fieldContext = injectFieldRootContext(null)
 // takes the field's id (it would be duplicated) or acts as its control.
 const participatesAsControl = computed(() => Boolean(fieldContext) && !checkboxGroupContext)
 const resolvedId = computed(() => props.id ?? (participatesAsControl.value ? fieldContext?.fieldId.value : undefined))
-const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
+const resolvedName = computed(() => fieldContext?.name.value ?? props.name)
 // `required` is a plain (non-optional-default) `Boolean` prop, so Vue casts
 // it to `false` rather than `undefined` when omitted — `props.required` can
 // never actually be `undefined`. Only fall back to the Field's `required`

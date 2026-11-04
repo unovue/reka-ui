@@ -168,11 +168,11 @@ defineSlots<{
 // `null` (instead of throwing) outside a `FieldRoot`, so every binding below
 // is inert — and byte-for-byte identical to before — when there is no Field.
 // `SelectTrigger` (the focusable element) registers the Select as the
-// field's control and owns the id/aria wiring. Field's `name`/`required`/
-// `disabled` act as fallbacks for the local props (local props always win).
+// field's control and owns the id/aria wiring. Field's `name` takes
+// precedence over the local prop; `required`/`disabled` apply when set on either.
 const fieldContext = injectFieldRootContext(null)
 
-const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
+const resolvedName = computed(() => fieldContext?.name.value ?? props.name)
 // `required` is a plain (non-optional-default) `Boolean` prop, so Vue casts
 // it to `false` rather than `undefined` when omitted — `props.required` can
 // never actually be `undefined`. Only fall back to the Field's `required`

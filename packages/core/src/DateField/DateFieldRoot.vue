@@ -125,10 +125,11 @@ const dir = useDirection(propDir)
 // Optional Field participation: `injectFieldRootContext(null)` returns
 // `null` (instead of throwing) outside a `FieldRoot`, so every Field binding
 // is inert — and byte-for-byte identical to before — when there is no Field.
-// Field's `name`/`required`/`disabled` act as fallbacks for the local props.
+// Field's `name` takes precedence over the local prop; `required`/`disabled`
+// apply when set on either.
 const fieldContext = injectFieldRootContext(null)
 const disabled = computed(() => Boolean(props.disabled || fieldContext?.disabled.value))
-const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
+const resolvedName = computed(() => fieldContext?.name.value ?? props.name)
 const resolvedRequired = computed(() => (fieldContext ? (props.required || fieldContext.required.value) : props.required))
 
 const { primitiveElement, currentElement: parentElement, expose } = usePrimitiveElement()

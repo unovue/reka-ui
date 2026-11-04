@@ -69,12 +69,12 @@ describe('given a Field-wrapped TimeField', () => {
     wrapper.unmount()
   })
 
-  it('keeps the control\'s own id, name and invalid state', async () => {
+  it('keeps the control\'s own id and invalid state, but takes the field\'s name', async () => {
     const wrapper = mountField({}, { 'id': 'own', 'name': 'own-name', 'aria-invalid': 'false' })
     await nextTick()
     expect(wrapper.find('label').attributes('for')).toBe('own')
-    // As with every `useFieldControl` participant, the control's own name wins.
-    expect(wrapper.find('#own').attributes('name')).toBe('own-name')
+    // As with every `useFieldControl` participant, the field's name wins.
+    expect(wrapper.find('#own').attributes('name')).toBe('time')
     expect(wrapper.find('[role="group"]').attributes('aria-invalid')).toBe('false')
     wrapper.unmount()
   })

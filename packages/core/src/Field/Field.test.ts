@@ -400,6 +400,38 @@ describe('given pilot controls participating in a Field', () => {
   })
 })
 
+describe('given a pilot control with its own name inside a named Field', () => {
+  const controls = {
+    Checkbox: '<CheckboxRoot name="control-name" :model-value="true" />',
+    Select: '<SelectRoot name="control-name" model-value="apple"><SelectTrigger>Fruit</SelectTrigger></SelectRoot>',
+    DateField: '<DateFieldRoot name="control-name"><template #default="{ segments }"><DateFieldInput v-for="item in segments" :key="item.part" :part="item.part">{{ item.value }}</DateFieldInput></template></DateFieldRoot>',
+  }
+
+  for (const [family, control] of Object.entries(controls)) {
+    it(`${family} submits natively under the field's name`, async () => {
+      const wrapper = mount({
+        components: { ...components, FormRoot, CheckboxRoot, SelectRoot, SelectTrigger, DateFieldRoot, DateFieldInput },
+        template: `<FormRoot><FieldRoot name="field-name">${control}</FieldRoot></FormRoot>`,
+      }, { attachTo: document.body })
+      await flushPromises()
+      const names = Array.from((wrapper.element as HTMLElement).querySelectorAll('[name]')).map(element => element.getAttribute('name'))
+      expect(names).toEqual(['field-name'])
+      wrapper.unmount()
+    })
+
+    it(`${family} keeps its own name when the field has none`, async () => {
+      const wrapper = mount({
+        components: { ...components, FormRoot, CheckboxRoot, SelectRoot, SelectTrigger, DateFieldRoot, DateFieldInput },
+        template: `<FormRoot><FieldRoot>${control}</FieldRoot></FormRoot>`,
+      }, { attachTo: document.body })
+      await flushPromises()
+      const names = Array.from((wrapper.element as HTMLElement).querySelectorAll('[name]')).map(element => element.getAttribute('name'))
+      expect(names).toEqual(['control-name'])
+      wrapper.unmount()
+    })
+  }
+})
+
 describe('given a Field-wrapped Select', () => {
   const selectComponents = { ...components, FormRoot, SelectRoot, SelectTrigger, SelectPortal, SelectContent, SelectViewport, SelectItem }
 

@@ -25,7 +25,7 @@ export interface FieldControlBinding {
   context: FieldRootContext
   /** The control's own id, else the field's generated id (only while it participates). */
   id: () => string | undefined
-  /** The field's `name`, unless the control sets its own. */
+  /** The field's `name`, which takes precedence; the control's own when the field has none. */
   name: (own: string | undefined) => string | undefined
   /** Set on either the field or the control. */
   disabled: (own: boolean | undefined) => boolean
@@ -100,7 +100,7 @@ export function useFieldControl(options: UseFieldControlOptions): FieldControlBi
   return {
     context,
     id: () => ownId?.() ?? (participates() ? context.fieldId.value : undefined),
-    name: own => own ?? context.name.value,
+    name: own => context.name.value ?? own,
     disabled: own => Boolean(own || context.disabled.value),
     required: own => Boolean(own || context.required.value),
     dataAttributes: () => context.dataAttributes.value,
