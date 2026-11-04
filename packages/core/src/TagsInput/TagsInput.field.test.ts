@@ -167,3 +167,25 @@ describe('given a Field-wrapped TagsInput whose wrapped input is replaced while 
     wrapper.unmount()
   })
 })
+
+describe('given a Field-wrapped TagsInput whose wrapped input has no id', () => {
+  it('puts the field\'s id on the input, not the wrapper, and keeps it there when the input is replaced', async () => {
+    const swapped = ref(false)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { name: 'tags' }, () => [
+        h(FieldLabel, () => 'Tags'),
+        h(TagsInputRoot, null, () => h(TagsInputInput, { 'as': 'div', 'data-testid': 'wrapper' }, () =>
+          h('input', { 'key': swapped.value ? 'b' : 'a', 'data-testid': swapped.value ? 'b' : 'a' }))),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    const label = () => wrapper.find('label').element as HTMLLabelElement
+    expect(wrapper.find('[data-testid="wrapper"]').attributes('id')).toBeUndefined()
+    expect(document.getElementById(label().htmlFor)).toBe(wrapper.find('[data-testid="a"]').element)
+
+    swapped.value = true
+    await flushPromises()
+    expect(document.getElementById(label().htmlFor)).toBe(wrapper.find('[data-testid="b"]').element)
+    wrapper.unmount()
+  })
+})

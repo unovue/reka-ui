@@ -13,7 +13,7 @@ export interface TagsInputInputProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { mergeProps, onBeforeUnmount, onMounted, watch } from 'vue'
+import { mergeProps, onBeforeUnmount, onMounted, onUpdated, watch } from 'vue'
 import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
 import { injectTagsInputFieldContext, injectTagsInputRootContext } from './TagsInputRoot.vue'
 import { createTagsInputInputSurface } from './useTagsInput'
@@ -62,13 +62,38 @@ if (fieldContext) {
   onBeforeUnmount(() => {
     fieldContext.inputElement.value = undefined
   })
+  // A wrapper isn't labelable: the field's id goes on the input inside it
+  // (unless that input has an id of its own), so the label's `for` focuses it.
+  // Re-applied on update, as slot content can replace that input.
+  let assignedId: string | undefined
+  const labelWrappedInput = () => {
+    const element = currentElement.value
+    if (!element || element.nodeName === 'INPUT')
+      return
+    const inner = element.querySelector('input')
+    const id = context.id?.value
+    if (inner && id && (!inner.id || inner.id === assignedId)) {
+      inner.id = id
+      assignedId = id
+    }
+  }
+  onMounted(labelWrappedInput)
+  onUpdated(labelWrappedInput)
 }
 
 // The Field's state attributes fill in what the input leaves unset; its
 // aria ids are merged with the consumer's.
 function fieldAttrs(attrs: Record<string, unknown>) {
   const { field } = fieldContext!
-  return field.fillDataAttributes(mergeProps(input.attrs.value, attrs, { ...field.ariaAttrs(attrs, context.disabled.value) }))
+  // A wrapper keeps only a consumer's id: the field's goes on the input inside.
+  const element = currentElement.value
+  const isWrapper = element ? element.nodeName !== 'INPUT' : (!props.asChild && props.as !== 'input')
+  return field.fillDataAttributes(mergeProps(
+    input.attrs.value,
+    attrs,
+    { ...field.ariaAttrs(attrs, context.disabled.value) },
+    isWrapper ? { id: attrs.id as string | undefined } : {},
+  ))
 }
 </script>
 
