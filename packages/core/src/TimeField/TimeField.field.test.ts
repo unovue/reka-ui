@@ -50,7 +50,7 @@ describe('given a Field-wrapped TimeField', () => {
   it('points the label at the hidden input, which moves focus into the first segment', async () => {
     const wrapper = mountField()
     await nextTick()
-    const target = document.getElementById(wrapper.find('label').attributes('for')!)!
+    const target = wrapper.find(`#${wrapper.find('label').attributes('for')}`).element as HTMLElement
     expect(target.tagName).toBe('INPUT')
     expect(target.getAttribute('name')).toBe('time')
     target.focus()
