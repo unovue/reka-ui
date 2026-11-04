@@ -425,6 +425,8 @@ Adheres to the [Tree WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/pa
   ]"
 />
 
+In a right-to-left layout (`dir="rtl"` on `TreeRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), `ArrowLeft` expands an item or moves to its first child, and `ArrowRight` collapses it or moves to its parent. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
+
 ## Headless composable
 
 `useTree` flattens the `items` into `flattenItems` (with `getKey`, `getChildren`, the expanded keys), and holds the selection and expansion models (`modelValue`, `expanded`, `select()`, `toggle()`, `setExpanded()`, `propagateSelect`, `bubbleSelect`), with `getItemSurface()` and `getItemStatus()` for each item. Expansion changes have their own `onBeforeUpdateExpanded` / `onUpdateExpanded` and `lastExpandedChangeDetails`. It is pure, so it can be called outside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

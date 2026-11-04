@@ -296,6 +296,8 @@ Adheres to the [Tabs WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/pa
   ]"
 />
 
+In a right-to-left layout (`dir="rtl"` on `TabsRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), `ArrowLeft` moves to the next trigger and `ArrowRight` to the previous one, in a horizontal list. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
+
 ## Headless composable
 
 `useTabs` holds the selected value (`modelValue`, `selectTab()`), the ids and the ARIA wiring: the `root` and `list` [part surfaces](/docs/guides/composables#part-surfaces), and `getTriggerSurface(value, disabled?)` and `getContentSurface(value)` for each tab. It doesn't move focus between the triggers with the arrow keys, or mount and unmount the panels: wrap the triggers in a [`RovingFocusGroup`](/docs/utilities/roving-focus) and render the panels with `v-if` or [`Presence`](/docs/utilities/presence), or use the components. Call the surface getters in `setup()`, once per tab, not in the template. Pass a stable `baseId` when rendering on the server. The composable is experimental; see [Headless composables](/docs/guides/composables).
