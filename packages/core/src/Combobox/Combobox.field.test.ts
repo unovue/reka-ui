@@ -168,3 +168,26 @@ describe('given a TagsInput composed into a Field-wrapped Combobox', () => {
     wrapper.unmount()
   })
 })
+
+describe('given a required Field-wrapped Combobox whose input was removed', () => {
+  it('focuses its trigger on an invalid submit', async () => {
+    const showInput = ref(true)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FormRoot, null, () => [
+        h(FieldRoot, { name: 'fruit', required: true }, () => h(ComboboxRoot, null, () =>
+          h(ComboboxAnchor, () => [
+            showInput.value ? h(ComboboxInput, { 'data-testid': 'input' }) : null,
+            h(ComboboxTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
+          ]))),
+        h('button', { type: 'submit' }, 'Submit'),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    showInput.value = false
+    await flushPromises()
+    await wrapper.find('button[type="submit"]').trigger('submit')
+    await flushPromises()
+    expect(document.activeElement).toBe(wrapper.find('[data-testid="trigger"]').element)
+    wrapper.unmount()
+  })
+})

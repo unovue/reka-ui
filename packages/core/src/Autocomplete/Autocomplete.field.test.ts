@@ -2,7 +2,7 @@ import type { VueWrapper } from '@vue/test-utils'
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
-import { FieldLabel, FieldRoot } from '@/Field'
+import { FieldControl, FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
 import { describeFieldControlContract } from '@/test/fieldControlContract'
 import { AutocompleteAnchor, AutocompleteContent, AutocompleteInput, AutocompleteItem, AutocompletePortal, AutocompleteRoot, AutocompleteTrigger, AutocompleteViewport } from '.'
@@ -80,6 +80,27 @@ describe('given a Field-wrapped Autocomplete', () => {
     ;(wrapper.find('[data-testid="trigger"]').element as HTMLElement).blur()
     await nextTick()
     expect(field().attributes('data-touched')).toBe('')
+    wrapper.unmount()
+  })
+})
+
+describe('given a required Field-wrapped Autocomplete whose input was removed', () => {
+  it('leaves focus on submit to the next invalid field', async () => {
+    const showInput = ref(true)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FormRoot, null, () => [
+        h(FieldRoot, { name: 'fruit', required: true }, () => h(AutocompleteRoot, null, () =>
+          h(AutocompleteAnchor, () => showInput.value ? h(AutocompleteInput, { 'data-testid': 'input' }) : null))),
+        h(FieldRoot, { name: 'other', required: true }, () => h(FieldControl, { 'data-testid': 'other' })),
+        h('button', { type: 'submit' }, 'Submit'),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    showInput.value = false
+    await flushPromises()
+    await wrapper.find('button[type="submit"]').trigger('submit')
+    await flushPromises()
+    expect(document.activeElement).toBe(wrapper.find('[data-testid="other"]').element)
     wrapper.unmount()
   })
 })

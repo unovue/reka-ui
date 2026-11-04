@@ -156,7 +156,9 @@ const field = useFieldControl({
   // return object: capturing it in a closure would keep it alive per instance.
   // The input renders its own `id`, else the field's.
   id: () => context.inputElement.value?.id || undefined,
-  element: () => context.inputElement.value,
+  // A removed input can linger in the context: report none then, so an
+  // invalid submit moves focus to the next field.
+  element: () => context.inputElement.value?.isConnected ? context.inputElement.value : undefined,
   // The input text.
   getValue: () => modelValue.value,
   required: () => props.required,

@@ -211,7 +211,8 @@ const field = useFieldControl({
   // return object: capturing it in a closure would keep it alive per instance.
   // The input renders its own `id`, else the field's.
   id: () => context.inputElement.value?.id || undefined,
-  element: () => context.inputElement.value ?? context.triggerElement.value,
+  // A removed input can linger in the context: fall back to the trigger then.
+  element: () => (context.inputElement.value?.isConnected ? context.inputElement.value : undefined) ?? context.triggerElement.value,
   // The selected value(s), not the typed text.
   getValue: () => modelValue.value,
   required: () => props.required,
