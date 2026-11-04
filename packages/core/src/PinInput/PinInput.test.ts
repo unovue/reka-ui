@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
+import { PinInputInput, PinInputRoot } from '.'
 import PinInput from './story/_PinInput.vue'
 
 const originalGetComputedStyle = window.getComputedStyle
@@ -553,5 +554,22 @@ describe('give OTP PinInput', () => {
     expect(document.activeElement).toBe(inputs[1].element)
     await userEvent.tab({ shift: true })
     expect(document.activeElement).toBe(inputs[0].element)
+  })
+})
+
+describe('given a PinInput whose empty last input is removed', () => {
+  it('counts only the mounted inputs toward completion', async () => {
+    const count = ref(4)
+    const wrapper = mount(defineComponent(() => () =>
+      h(PinInputRoot, { 'defaultValue': ['1', '2', '3'], 'data-testid': 'root' }, () =>
+        Array.from({ length: count.value }, (_, index) => h(PinInputInput, { key: index, index })))), { attachTo: document.body })
+    await nextTick()
+    const root = () => wrapper.find('[data-testid="root"]')
+    expect(root().attributes('data-complete')).toBeUndefined()
+
+    count.value = 3
+    await nextTick()
+    expect(root().attributes('data-complete')).toBe('')
+    wrapper.unmount()
   })
 })

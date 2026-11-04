@@ -74,10 +74,20 @@ export interface PinInputRootContext<Type extends PinInputType = 'text'> {
 
 export const [injectPinInputRootContext, providePinInputRootContext]
   = createContext<PinInputRootContext<PinInputType>>('PinInputRoot')
+
+/**
+ * Inside a Field: each mounted input's `index`, so filled can check the entry
+ * at every slot. Provided only in a Field (`null` in a nested root outside one).
+ * @internal
+ */
+export const [injectPinInputFieldSlots, providePinInputFieldSlots]
+  = createContext<Map<HTMLInputElement, () => number> | null>('PinInputRoot', 'PinInputFieldSlots')
 </script>
 
 <script setup lang="ts" generic="Type extends PinInputType">
-import { mergeProps } from 'vue'
+import { mergeProps, useAttrs, watch } from 'vue'
+import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { usePinInput } from './usePinInput'
 
@@ -98,9 +108,62 @@ defineSlots<{
   }) => any
 }>()
 
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const dir = useDirection(() => props.dir)
+
+// Optional Field participation: `null` outside a `FieldRoot`, so every binding
+// below is inert without a Field. As with the date fields, the hidden input
+// takes the field's id (the label forwards focus to the first input) and the
+// root, a `role="group"` inside a Field, carries the label/description wiring.
+// The value collected is the model array, as `update:modelValue` emits it,
+// without trailing empty entries (see `toFieldValue`). A required pin input
+// needs every input filled, and only then is it filled.
+const field = useFieldControl({
+  id: () => props.id,
+  element: () => firstInput(),
+  getValue: () => toFieldValue(modelValue.value),
+  required: () => props.required,
+  // Every mounted slot's entry, by its `index`: not a count, which an extra
+  // entry past the last slot could make up for an empty one.
+  isFilled: (value) => {
+    const entries = Array.isArray(value) ? value : []
+    const indexes = [...fieldSlots!.values()]
+    return indexes.length > 0 && indexes.every((index) => {
+      const item = entries[index()]
+      return !!item || (context.isNumericMode.value && item === 0)
+    })
+  },
+})
+const fieldSlots = field ? new Map<HTMLInputElement, () => number>() : undefined
+if (fieldSlots)
+  providePinInputFieldSlots(fieldSlots)
+// A nested pin input outside a Field only shadows an ancestor's slots, so its
+// inputs don't register there; otherwise providing nothing already reads as
+// `null`, and costs nothing.
+else if (injectPinInputFieldSlots(null))
+  providePinInputFieldSlots(null)
+const resolvedId = () => field ? field.id() : props.id
+const resolvedName = () => field ? field.name(props.name) : props.name
+const resolvedRequired = () => field ? field.required(props.required) : props.required
+const resolvedDisabled = () => field ? field.disabled(props.disabled) : props.disabled
+
+// The model keeps a cleared input's entry in some cases (`undefined` in number
+// mode, a gap before a later digit), so clearing every digit can leave
+// `[undefined, undefined, undefined]`. The field sees the value without its
+// trailing empty entries, so a cleared pin equals an initial `[]` (and isn't
+// dirty) and submits as one. Done here rather than in FieldRoot's generic
+// comparison: only the pin input knows an empty entry carries no value.
+function toFieldValue(value: unknown) {
+  const entries = Array.isArray(value) ? [...value] : []
+  while (entries.length > 0 && (entries.at(-1) === undefined || entries.at(-1) === null || entries.at(-1) === ''))
+    entries.pop()
+  return entries
+}
+
+function firstInput() {
+  return Array.from(context.inputElements!.value)[0]
+}
 
 // The composable owns the model (`useControllableState`), `beforeUpdate:` /
 // `update:` and the `complete` watcher; the shell keeps `dir` resolution and
@@ -113,33 +176,68 @@ const { modelValue: model, currentModelValue, root, context } = usePinInput({
   otp: () => props.otp,
   placeholder: () => props.placeholder,
   dir,
-  disabled: () => props.disabled,
+  disabled: resolvedDisabled,
   emit: emits,
+  // The Field hears its own commits by reason (`change`): user input, or, for
+  // a programmatic one (`setModelValue` and the like), only the watcher below,
+  // which also reports a parent-driven change.
+  onUpdate: field ? (value, details) => field.change(toFieldValue(value), details) : undefined,
 })
 const modelValue = model as unknown as Readonly<Ref<PinInputValue<Type>>>
 
 providePinInputRootContext(context)
+
+// Touched once focus leaves the whole group, not when it moves between inputs.
+const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
+
+// A slot mounting or unmounting changes `filled` too (e.g. an empty last
+// input removed): the inputs register with both the slots and this set. So
+// does a mounted input's `index` changing: the slot then reads another entry.
+if (field) {
+  watch([
+    model,
+    () => context.inputElements!.value.size,
+    () => Array.from(fieldSlots!.values(), index => index()).join(),
+  ], ([value]) => field.sync(value), { deep: true })
+}
+
+// `$attrs` isn't reactive, so the Field's wiring is read during render. Its
+// state attributes go first and the root's own win; its aria ids are merged
+// with the consumer's, and a consumer `aria-invalid` (or `role`) wins.
+const attrs = useAttrs()
+function getRootAttrs() {
+  if (!field)
+    return mergeProps(attrs, root.attrs.value)
+  return mergeProps(
+    field.dataAttributes(),
+    { role: 'group' },
+    attrs,
+    { ...field.ariaAttrs(attrs, resolvedDisabled()) },
+    root.attrs.value,
+    { onFocusin: focusWithin!.onFocusin, onFocusout: focusWithin!.onFocusout },
+  )
+}
 </script>
 
 <template>
   <component
     :is="renderAs(as, asChild)"
-    v-bind="mergeProps($attrs, root.attrs.value)"
+    v-bind="getRootAttrs()"
     :ref="forwardRef"
   >
     <slot :model-value="modelValue" />
 
     <VisuallyHiddenInput
-      :id="id"
+      :id="resolvedId()"
       as="input"
       feature="focusable"
       aria-hidden="true"
       tabindex="-1"
       :value="currentModelValue.join('')"
-      :name="name ?? ''"
-      :disabled="disabled"
-      :required="required"
-      @focus="Array.from(context.inputElements!.value)?.[0]?.focus()"
+      :name="resolvedName() ?? ''"
+      :disabled="resolvedDisabled()"
+      :required="resolvedRequired()"
+      @focus="firstInput()?.focus()"
     />
   </component>
 </template>

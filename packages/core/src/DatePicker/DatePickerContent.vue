@@ -14,6 +14,7 @@ export type DatePickerContentEmits = PopoverContentEmits
 </script>
 
 <script setup lang="ts">
+import { injectFieldForControl, provideFieldControlOwner } from '@/Field/useFieldControl'
 import { useForwardElement } from '@/shared'
 
 const props = defineProps<DatePickerContentProps>()
@@ -27,6 +28,9 @@ const forwarded = useForwardPropsEmits(propsToForward, emits)
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
+
+// The picker's field is the composed date field's: a control in the calendar leaves it alone.
+provideFieldControlOwner(injectFieldForControl())
 </script>
 
 <template>

@@ -13,7 +13,9 @@ import { createPartSurface, getterRef, useControllableState } from '@/shared'
  * - `'outside-press'`: a pointer down outside the root (`submitMode` `'blur'` / `'both'`);
  * - `'focus-outside'`: focus moved outside the root (`submitMode` `'blur'` / `'both'`).
  *
- * `submit()` called from a slot, a template ref or the composable reports `'imperative-action'`.
+ * `submit()` called with no arguments (a template ref, the composable) reports
+ * `'imperative-action'`. Bound as a listener (`@click="submit"`, from the slot
+ * or a custom part), it receives the user's event and reports `'submit-press'`.
  */
 export type EditableChangeReason = 'submit-press' | 'enter-key' | 'outside-press' | 'focus-outside'
 
@@ -270,11 +272,11 @@ export function useEditable(props: UseEditableProps = {}): UseEditableReturn {
   }
 
   function submit(reason: SubmitReason | Event = 'imperative-action', event?: Event): boolean {
-    // Tolerate `@click="submit"` from a slot or a custom part: Vue passes the
-    // native event as the first argument.
+    // `@click="submit"` from a slot or a custom part: Vue passes the user's
+    // event as the first argument, so this is a press on a submit control.
     if (typeof reason !== 'string') {
       event = reason
-      reason = 'imperative-action'
+      reason = 'submit-press'
     }
     const draft = inputValue.value
     // An unchanged draft still leaves edit mode and fires `submit` (v2 parity);

@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { HTMLAttributes, Ref } from 'vue'
 import type { NumberFieldChangeReason } from './useNumberField'
+import type { FieldControlBinding } from '@/Field/useFieldControl'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { FormFieldProps } from '@/shared/types'
@@ -74,12 +75,18 @@ export interface NumberFieldRootContext {
 }
 
 export const [injectNumberFieldRootContext, provideNumberFieldRootContext] = createContext<NumberFieldRootContext>('NumberFieldRoot')
+
+/** @internal The root's Field binding, for `NumberFieldInput`. Only provided inside a `FieldRoot`. */
+export const [injectNumberFieldFieldControl, provideNumberFieldFieldControl]
+  = createContext<FieldControlBinding | null>('NumberFieldRoot', 'NumberFieldFieldControl')
 </script>
 
 <script setup lang="ts">
-import { mergeProps, toRef } from 'vue'
+import { mergeProps, ref, toRef, watch } from 'vue'
+import { createPendingFieldInput } from '@/Field/pendingFieldInput'
+import { useFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
-import { VisuallyHiddenInput } from '@/VisuallyHidden'
+import { VisuallyHidden, VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useNumberField } from './useNumberField'
 
 defineOptions({
@@ -103,6 +110,27 @@ defineExpose(expose)
 const locale = useLocale(toRef(() => props.locale))
 const isFormControl = useFormControl(currentElement)
 
+// Optional Field participation (Base UI parity): `null` outside a `FieldRoot`,
+// so every binding below is inert without a Field. The input takes the field's
+// id and label; the value is `number | null`. A hidden `type="number"` input
+// mirrors the value with `min`/`max`/`required`, so its `ValidityState` drives
+// the field's constraint validation (`rangeUnderflow`/`rangeOverflow` for an
+// `allowInvalid` value out of range).
+const nativeInput = ref<InstanceType<typeof VisuallyHidden>>()
+const field = useFieldControl({
+  // The input renders `id` (or its own), else the field's.
+  id: () => context.inputEl.value?.id || props.id,
+  element: () => context.inputEl.value,
+  getValue: () => modelValue.value ?? null,
+  validityElement: () => nativeInput.value?.$el as HTMLInputElement | undefined,
+})
+const resolvedName = () => field ? field.name(props.name) : props.name
+const resolvedRequired = () => field ? field.required(props.required) : props.required
+// The value of a user change the field committed (typing, a step, the wheel),
+// as opposed to a programmatic or parent-driven one; read once the hidden
+// input has updated. Only in a Field.
+const pendingInput = field ? createPendingFieldInput<number | undefined>() : undefined
+
 const { modelValue, textValue, readonly, disabled, root, context } = useNumberField({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
@@ -114,22 +142,39 @@ const { modelValue, textValue, readonly, disabled, root, context } = useNumberFi
   focusOnChange: () => props.focusOnChange,
   formatOptions: () => props.formatOptions,
   locale,
-  disabled: () => props.disabled,
+  disabled: () => field ? field.disabled(props.disabled) : props.disabled,
   readonly: () => props.readonly,
   disableWheelChange: () => props.disableWheelChange,
   invertWheelChange: () => props.invertWheelChange,
-  id: () => props.id,
+  id: () => field ? field.id() : props.id,
   startingValue: () => props.startingValue,
   emit: emits,
+  onUpdate: pendingInput?.record,
 })
 
 provideNumberFieldRootContext(context)
+
+if (field) {
+  provideNumberFieldFieldControl(field)
+  // Flushed after render, so the hidden input's validity reflects the new value.
+  watch(modelValue, (value) => {
+    const pending = pendingInput!.take()
+    if (pending && Object.is(pending.value, value))
+      field.input(value ?? null)
+    else
+      field.sync(value ?? null)
+  }, { flush: 'post' })
+}
+
+function focusInput() {
+  context.inputEl.value?.focus()
+}
 </script>
 
 <template>
   <component
     :is="renderAs(as, asChild)"
-    v-bind="mergeProps($attrs, root.attrs.value)"
+    v-bind="field ? mergeProps(field.dataAttributes(), $attrs, root.attrs.value) : mergeProps($attrs, root.attrs.value)"
     :ref="forwardRef"
   >
     <slot
@@ -138,8 +183,26 @@ provideNumberFieldRootContext(context)
       :readonly="readonly"
     />
 
+    <VisuallyHidden
+      v-if="field"
+      ref="nativeInput"
+      as="input"
+      feature="focusable"
+      aria-hidden="true"
+      tabindex="-1"
+      type="number"
+      step="any"
+      :value="modelValue ?? ''"
+      :name="resolvedName()"
+      :min="context.min.value"
+      :max="context.max.value"
+      :disabled="disabled"
+      :readonly="readonly"
+      :required="resolvedRequired()"
+      @focus="focusInput"
+    />
     <VisuallyHiddenInput
-      v-if="isFormControl && name"
+      v-else-if="isFormControl && name"
       type="text"
       :value="modelValue"
       :name="name"

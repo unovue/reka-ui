@@ -31,7 +31,8 @@ export interface ToggleProps extends PrimitiveProps, FormFieldProps {
 </script>
 
 <script setup lang="ts">
-import { computed, mergeProps } from 'vue'
+import { computed, mergeProps, useAttrs, watch } from 'vue'
+import { useFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
 import { useTogglePressed } from './useTogglePressed'
 
@@ -66,16 +67,41 @@ defineExpose(expose)
 // `nested-interactive` a11y violation; forward the parent scope id for scoped styles.
 const scopeIdAttrs = useForwardScopeId()
 const toggleGroupContext = injectToggleGroupRootContext(null)
+const attrs = useAttrs()
+
+// Optional Field participation: `null` outside a `FieldRoot`, so every
+// binding below is inert without a Field. A toggle in a `ToggleGroupRoot` is
+// one item of the group's value: the group is the field's control.
+const field = toggleGroupContext
+  ? null
+  : useFieldControl({
+      id: () => attrs.id as string | undefined,
+      element: () => currentElement.value as HTMLElement | undefined,
+      getValue: () => pressed.value,
+      required: () => props.required,
+      // A required toggle must be pressed.
+      isFilled: value => value === true,
+    })
+// Getters rather than computeds: cheap, and free for a standalone toggle.
+const resolvedName = () => field ? field.name(props.name) : props.name
+const resolvedRequired = () => field ? field.required(props.required) : props.required
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
 // composable's `useControllableState` (`modelValue === undefined` → uncontrolled;
 // `null` is controlled and reads through, exactly as `useVModel` did).
-const { modelValue, root } = useTogglePressed({
+const { modelValue, pressed, disabled, root } = useTogglePressed({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
-  disabled: () => props.disabled,
+  disabled: () => field ? field.disabled(props.disabled) : props.disabled,
   emit: emits,
+  // The Field hears its own commits by reason (`change`): user input, or, for
+  // a programmatic one (`setModelValue` and the like), only the watcher below,
+  // which also reports a parent-driven change.
+  onUpdate: field?.change,
 })
+
+if (field)
+  watch(pressed, value => field.sync(value))
 
 const isFormControl = useFormControl(currentElement)
 
@@ -88,6 +114,20 @@ const rootAttrs = computed(() => {
   const { onClick: _onClick, ...attrs } = root.attrs.value
   return attrs
 })
+
+// `$attrs` isn't reactive, so the Field's wiring is read during render. Its
+// state attributes fill in what the toggle leaves unset;
+// its aria ids are merged with the consumer's.
+function renderAttrs(attrs: Record<string, unknown>) {
+  if (!field)
+    return mergeProps(rootAttrs.value, scopeIdAttrs, attrs)
+  return field.fillDataAttributes(mergeProps(
+    rootAttrs.value,
+    scopeIdAttrs,
+    attrs,
+    { id: field.id(), ...field.ariaAttrs(attrs, disabled.value), onFocus: field.onFocus, onBlur: field.onBlur },
+  ))
+}
 </script>
 
 <template>
@@ -95,7 +135,7 @@ const rootAttrs = computed(() => {
     :is="renderAs(as, props.asChild)"
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
-    v-bind="mergeProps(rootAttrs, scopeIdAttrs, $attrs)"
+    v-bind="renderAttrs($attrs)"
     @click="root.props.value.onClick"
   >
     <slot
@@ -107,13 +147,13 @@ const rootAttrs = computed(() => {
   </component>
 
   <VisuallyHiddenInput
-    v-if="isFormControl && name && !toggleGroupContext"
+    v-if="isFormControl && resolvedName() && !toggleGroupContext"
     type="checkbox"
-    :name="name"
+    :name="resolvedName()!"
     :value="modelValue"
     :checked="!!modelValue"
     :disabled="disabled"
-    :required="required"
+    :required="resolvedRequired()"
     v-bind="scopeIdAttrs"
   />
 </template>

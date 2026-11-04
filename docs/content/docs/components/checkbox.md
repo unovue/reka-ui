@@ -198,7 +198,7 @@ A parent checkbox that selects every option of a `CheckboxGroupRoot` derives its
 
 ### In a form
 
-Inside a [`FieldRoot`](field) with `required`, an unchecked checkbox is missing (`valueMissing`), so a [`FormRoot`](form) won't submit until it's checked. The field's `name`, `required` and `disabled` apply to the checkbox, and `FieldLabel` labels it. A checkbox inside a `CheckboxGroupRoot` doesn't register with a field. See [Forms and validation](/docs/guides/forms).
+Inside a [`FieldRoot`](field) with `required`, an unchecked checkbox is missing (`valueMissing`), so a [`FormRoot`](form) won't submit until it's checked. The field's `name`, `required` and `disabled` apply to the checkbox, and `FieldLabel` labels it. Inside a `CheckboxGroupRoot`, the group is the field's control instead: the field collects the array of checked values, and `required` means at least one is checked. See [Forms and validation](/docs/guides/forms).
 
 ```vue
 <template>

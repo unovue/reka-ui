@@ -1,7 +1,8 @@
 <script lang="ts">
 import type { EventHook } from '@vueuse/core'
-import type { ComputedRef, Ref } from 'vue'
+import type { ComputedRef, Ref, ShallowRef } from 'vue'
 import type { ListboxChangeReason, ListboxFilterFunction, ListboxFilterItem, ListboxHighlightScroll, ListboxLabelRegistry, ListboxNavigationIntent, ListboxVirtualKeydown } from './useListbox'
+import type { FieldControlBinding } from '@/Field/useFieldControl'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
@@ -79,6 +80,21 @@ export type ListboxRootContext<T> = {
 export const [injectListboxRootContext, provideListboxRootContext]
   = createContext<ListboxRootContext<AcceptableValue>>('ListboxRoot')
 
+/**
+ * A listbox's participation in an ancestor `FieldRoot`: the root owns the
+ * value and the registration, `ListboxContent` (the `role="listbox"` element)
+ * carries the field's id, label and aria wiring. `null` outside a Field.
+ * @internal
+ */
+export interface ListboxFieldContext {
+  field: FieldControlBinding
+  /** The `ListboxContent` element. */
+  contentElement: ShallowRef<HTMLElement | undefined>
+}
+
+export const [injectListboxFieldContext, provideListboxFieldContext]
+  = createContext<ListboxFieldContext | null>('ListboxRoot', 'ListboxFieldContext')
+
 export const [injectListboxHighlightScrollContext, provideListboxHighlightScrollContext]
   = createContext<ListboxHighlightScroll>('ListboxHighlightScroll')
 
@@ -144,8 +160,10 @@ export type ListboxRootEmits<T = AcceptableValue, M extends boolean = boolean> =
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false">
-import { ref, toRef, toRefs } from 'vue'
+import { mergeProps, ref, shallowRef, toRef, toRefs, watch } from 'vue'
 import { useCollection } from '@/Collection'
+import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useListboxRoot } from './useListbox'
@@ -182,13 +200,31 @@ provideListboxHighlightScrollContext({
 
 const isFormControl = useFormControl(currentElement)
 
+// Optional Field participation: `null` outside a `FieldRoot`, so every
+// binding below is inert without a Field. The root owns the value;
+// `ListboxContent` carries the field's id, label and aria wiring.
+// The ref is only created inside a Field, so a standalone listbox allocates nothing.
+let fieldContent: ShallowRef<HTMLElement | undefined> | undefined
+const field = useFieldControl({
+  // Getters read bindings that are retained anyway, not the composable's
+  // return object: capturing it in a closure would keep it alive per instance.
+  // The content renders its own `id`, else the field's.
+  id: () => fieldContent?.value?.id || undefined,
+  element: () => fieldContent?.value,
+  getValue: () => modelValue.value,
+  required: () => props.required,
+})
+if (field)
+  fieldContent = shallowRef()
+const resolvedDisabled = field ? () => field.disabled(props.disabled) : () => props.disabled
+
 const listbox = useListboxRoot<AcceptableValue>({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   multiple: () => props.multiple,
   orientation: () => props.orientation,
   dir,
-  disabled: () => props.disabled,
+  disabled: resolvedDisabled,
   selectionBehavior: () => props.selectionBehavior,
   highlightOnHover: () => props.highlightOnHover,
   loop: () => props.loop,
@@ -201,6 +237,10 @@ const listbox = useListboxRoot<AcceptableValue>({
   highlightScroll: highlightScrollContext,
   element: currentElement,
   emit: emits,
+  // The Field hears its own commits by reason (`change`): user input, or, for
+  // a programmatic one (`setModelValue` and the like), only the watcher below,
+  // which also reports a parent-driven change.
+  onUpdate: field?.change,
   onHighlight: payload => emits('highlight', payload),
   onEntryFocus: event => emits('entryFocus', event),
   onLeave: event => emits('leave', event),
@@ -223,22 +263,35 @@ defineExpose(mergeExpose(expose, {
 }))
 
 provideListboxRootContext(context)
+if (field)
+  provideListboxFieldContext({ field, contentElement: fieldContent! })
+// Only shadow an ancestor listbox's wiring; otherwise providing nothing already reads as `null`.
+else if (injectListboxFieldContext(null))
+  provideListboxFieldContext(null)
+
+if (field)
+  watch(modelValue, value => field.sync(value))
+
+// The field is focused while focus is anywhere in the listbox (the content,
+// an item, a `ListboxFilter`), and blurred once it leaves.
+const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
+const fieldFocusHandlers = focusWithin && { onFocusin: focusWithin.onFocusin, onFocusout: focusWithin.onFocusout }
 </script>
 
 <template>
   <component
     :is="renderAs(as, asChild)"
     ref="primitiveElement"
-    v-bind="root.attrs.value"
+    v-bind="fieldFocusHandlers ? mergeProps(root.attrs.value, fieldFocusHandlers) : root.attrs.value"
   >
     <slot :model-value="modelValue" />
 
     <VisuallyHiddenInput
-      v-if="isFormControl && name"
-      :name="name"
+      v-if="isFormControl && (field ? field.name(name) : name)"
+      :name="(field ? field.name(name) : name)!"
       :value="modelValue"
-      :disabled="disabled"
-      :required="required"
+      :disabled="resolvedDisabled()"
+      :required="field ? field.required(required) : required"
     />
   </component>
 </template>

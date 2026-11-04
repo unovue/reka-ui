@@ -25,6 +25,7 @@ import { computed, onBeforeUnmount, onMounted, useAttrs, watch } from 'vue'
 import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
 import { createChangeEventDetails, useForwardElement } from '@/shared'
 import { injectFieldRootContext } from './FieldRoot.vue'
+import { provideFieldControlOwner } from './useFieldControl'
 
 defineOptions({
   inheritAttrs: false,
@@ -38,6 +39,11 @@ const props = withDefaults(defineProps<FieldControlProps>(), {
 const emits = defineEmits<FieldControlEmits>()
 
 const fieldContext = injectFieldRootContext()
+// The field's control: a Reka control composed inside it (as its child) leaves
+// the field alone. A void element (the default `input`) has no children, so
+// it skips the per-instance `provide`.
+if (rendersChildren(props.as, props.asChild))
+  provideFieldControlOwner(fieldContext)
 const attrs = useAttrs()
 
 const { forwardRef, currentElement, expose } = useForwardElement()
@@ -108,20 +114,40 @@ function getElement() {
     : undefined
 }
 
+// A user's `input` whose controlled value is on its way. Decided when the
+// event fires: the `modelValue` the parent then applies (rewritten or not) is
+// that input, while one that arrives without it is the parent's own change.
+// Dropped once the task's renders have run, for a parent that rejected it.
+let inputPending = false
+
 function handleInput(event: Event) {
   const element = getElement()
   if (element)
     emits('update:modelValue', element.value, createChangeEventDetails<BaseChangeReason>('none', event))
   // A controlled value reaches the field through the `modelValue` watcher
   // instead, so a value the consumer rejects or rewrites never does.
-  if (!isControlled.value)
+  if (!isControlled.value) {
     fieldContext.handleControlInput()
+    return
+  }
+  inputPending = true
+  setTimeout(() => {
+    inputPending = false
+  })
 }
 
 // Flushed after render, so the element's value (and validity) is up to date.
+// A parent-driven change (a reset, a server value) only updates `filled`.
 watch(() => props.modelValue, (value, previous) => {
-  if (value !== undefined && value !== previous)
+  if (value === undefined || value === previous)
+    return
+  if (inputPending) {
+    inputPending = false
     fieldContext.handleControlInput({ value: String(value) })
+  }
+  else {
+    fieldContext.reportControlState({ filled: String(value) !== '' })
+  }
 }, { flush: 'post' })
 
 let unregister: (() => void) | undefined

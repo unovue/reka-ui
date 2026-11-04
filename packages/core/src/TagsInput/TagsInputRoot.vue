@@ -1,6 +1,7 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { Ref, ShallowRef } from 'vue'
 import type { TagsInputChangeReason } from './useTagsInput'
+import type { FieldControlBinding } from '@/Field/useFieldControl'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
@@ -81,12 +82,37 @@ export interface TagsInputRootContext<T = AcceptableInputValue> {
 
 export const [injectTagsInputRootContext, provideTagsInputRootContext]
   = createContext<TagsInputRootContext>('TagsInputRoot')
+
+/**
+ * A tags input's participation in an ancestor `FieldRoot`: the root owns the
+ * tags and the registration, `TagsInputInput` carries the field's id, label
+ * and aria wiring. `null` outside a Field.
+ * @internal
+ */
+export interface TagsInputFieldContext {
+  field: FieldControlBinding
+  /**
+   * The `TagsInputInput` element: the `input`, or a wrapper rendering one. The
+   * inner input is resolved on each read, as slot content can replace it.
+   */
+  inputElement: ShallowRef<HTMLElement | undefined>
+}
+
+export const [injectTagsInputFieldContext, provideTagsInputFieldContext]
+  = createContext<TagsInputFieldContext | null>('TagsInputRoot', 'TagsInputFieldContext')
+
+/** The `input` a `TagsInputInput` element is, or renders. */
+function resolveFieldInput(element: HTMLElement | undefined) {
+  return (element?.nodeName === 'INPUT' ? element : element?.querySelector('input') ?? undefined) as HTMLInputElement | undefined
+}
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableInputValue = string">
 import { useFocusWithin } from '@vueuse/core'
-import { mergeProps } from 'vue'
+import { mergeProps, nextTick, shallowRef, watch } from 'vue'
 import { useCollection, useCollectionSlot } from '@/Collection'
+import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useTagsInput } from './useTagsInput'
@@ -122,6 +148,22 @@ const isFormControl = useFormControl(currentElement)
 const { getItems } = useCollection({ isProvider: true })
 useCollectionSlot(currentElement)
 
+// Optional Field participation: `null` outside a `FieldRoot`, so every
+// binding below is inert without a Field. The root owns the tags;
+// `TagsInputInput` carries the field's id, label and aria wiring.
+const fieldInput = shallowRef<HTMLElement>()
+const field = useFieldControl({
+  // The input renders `id` (or its own), else the field's.
+  id: () => resolveFieldInput(fieldInput.value)?.id || props.id,
+  element: () => resolveFieldInput(fieldInput.value),
+  getValue: () => modelValue.value,
+  required: () => props.required,
+})
+// Getters rather than computeds: cheap, and free for a standalone tags input.
+const resolvedName = () => field ? field.name(props.name) : props.name
+const resolvedRequired = () => field ? field.required(props.required) : props.required
+const resolvedDisabled = () => field ? field.disabled(props.disabled) : props.disabled
+
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
 // composable's `useControllableState` (`modelValue === undefined` → uncontrolled).
 const { modelValue, root, context } = useTagsInput<T>({
@@ -134,33 +176,55 @@ const { modelValue, root, context } = useTagsInput<T>({
   addOnTab: () => props.addOnTab,
   addOnBlur: () => props.addOnBlur,
   duplicate: () => props.duplicate,
-  disabled: () => props.disabled,
+  disabled: resolvedDisabled,
   delimiter: () => props.delimiter,
   dir,
   max: () => props.max,
-  id: () => props.id,
+  id: () => field ? (props.id ?? field.context.fieldId.value) : props.id,
   focused,
   getItems: () => getItems() as { ref: HTMLElement, value?: T }[],
   emit: emits,
+  // The Field hears its own commits by reason (`change`): user input, or, for
+  // a programmatic one (`setModelValue` and the like), only the watcher below,
+  // which also reports a parent-driven change.
+  onUpdate: field?.change,
 })
 
 provideTagsInputRootContext(context as unknown as TagsInputRootContext)
+provideTagsInputFieldContext(field ? { field, inputElement: fieldInput } : null)
+
+if (field)
+  watch(modelValue, value => field.sync(value))
+
+// The field is focused while focus is anywhere in the tags input (the input,
+// a tag, a delete button), and blurred once it leaves. With `addOnBlur`, the
+// blur adds the typed tag first, which a controlled parent applies on the next
+// render: report the blur after it, so `onBlur` validation sees the new tag.
+const focusWithin = useFieldFocusWithin(field && {
+  ...field,
+  onBlur: () => nextTick(() => {
+    // Unless focus came back in the meantime.
+    if (!focusWithin!.isFocusWithin())
+      field.onBlur()
+  }),
+}, currentElement as Ref<HTMLElement | undefined>)
+const fieldFocusHandlers = focusWithin && { onFocusin: focusWithin.onFocusin, onFocusout: focusWithin.onFocusout }
 </script>
 
 <template>
   <component
     :is="renderAs(as, asChild)"
-    v-bind="mergeProps($attrs, root.attrs.value)"
+    v-bind="fieldFocusHandlers ? mergeProps($attrs, root.attrs.value, fieldFocusHandlers) : mergeProps($attrs, root.attrs.value)"
     :ref="forwardRef"
   >
     <slot :model-value="modelValue" />
 
     <VisuallyHiddenInput
-      v-if="isFormControl && name"
-      :name="name"
+      v-if="isFormControl && resolvedName()"
+      :name="resolvedName()!"
       :value="modelValue"
-      :required="required"
-      :disabled="disabled"
+      :required="resolvedRequired()"
+      :disabled="resolvedDisabled()"
     />
   </component>
 </template>

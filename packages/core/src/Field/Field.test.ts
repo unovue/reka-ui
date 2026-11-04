@@ -7,6 +7,7 @@ import { CheckboxGroupRoot, CheckboxRoot } from '@/Checkbox'
 import { DateFieldInput, DateFieldRoot } from '@/DateField'
 import { FormRoot } from '@/Form'
 import { SelectContent, SelectItem, SelectPortal, SelectRoot, SelectTrigger, SelectViewport } from '@/Select'
+import { providedContext } from '@/test/fieldControlContract'
 import { FieldControl, FieldDescription, FieldError, FieldLabel, FieldRoot, FieldValidity, injectFieldRootContext } from '.'
 
 // Reports arbitrary (non-string) values through the same side channel a
@@ -400,6 +401,63 @@ describe('given pilot controls participating in a Field', () => {
   })
 })
 
+describe('given a Field-wrapped DateField whose parent changes the value while focus is inside', () => {
+  it('marks the field filled, not dirty', async () => {
+    const wrapper = mount({
+      components: { ...components, DateFieldRoot, DateFieldInput },
+      data: () => ({ value: null as unknown }),
+      template: `
+        <FieldRoot name="dob" data-testid="field">
+          <DateFieldRoot v-model="value" granularity="day" v-slot="{ segments }">
+            <DateFieldInput v-for="item in segments" :key="item.part" :part="item.part" :data-segment="item.part">{{ item.value }}</DateFieldInput>
+          </DateFieldRoot>
+        </FieldRoot>
+      `,
+    }, { attachTo: document.body })
+    await nextTick()
+    ;(wrapper.find('[data-segment="month"]').element as HTMLElement).focus()
+    await nextTick()
+    expect(wrapper.find('[data-testid="field"]').attributes('data-focused')).toBe('')
+    ;(wrapper.vm as unknown as { value: unknown }).value = Temporal.PlainDate.from('2024-01-15')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="field"]').attributes('data-filled')).toBe('')
+    expect(wrapper.find('[data-testid="field"]').attributes('data-dirty')).toBeUndefined()
+    wrapper.unmount()
+  })
+})
+
+describe('given a pilot control with its own name inside a named Field', () => {
+  const controls = {
+    Checkbox: '<CheckboxRoot name="control-name" :model-value="true" />',
+    Select: '<SelectRoot name="control-name" model-value="apple"><SelectTrigger>Fruit</SelectTrigger></SelectRoot>',
+    DateField: '<DateFieldRoot name="control-name"><template #default="{ segments }"><DateFieldInput v-for="item in segments" :key="item.part" :part="item.part">{{ item.value }}</DateFieldInput></template></DateFieldRoot>',
+  }
+
+  for (const [family, control] of Object.entries(controls)) {
+    it(`${family} submits natively under the field's name`, async () => {
+      const wrapper = mount({
+        components: { ...components, FormRoot, CheckboxRoot, SelectRoot, SelectTrigger, DateFieldRoot, DateFieldInput },
+        template: `<FormRoot><FieldRoot name="field-name">${control}</FieldRoot></FormRoot>`,
+      }, { attachTo: document.body })
+      await flushPromises()
+      const names = Array.from((wrapper.element as HTMLElement).querySelectorAll('[name]')).map(element => element.getAttribute('name'))
+      expect(names).toEqual(['field-name'])
+      wrapper.unmount()
+    })
+
+    it(`${family} keeps its own name when the field has none`, async () => {
+      const wrapper = mount({
+        components: { ...components, FormRoot, CheckboxRoot, SelectRoot, SelectTrigger, DateFieldRoot, DateFieldInput },
+        template: `<FormRoot><FieldRoot>${control}</FieldRoot></FormRoot>`,
+      }, { attachTo: document.body })
+      await flushPromises()
+      const names = Array.from((wrapper.element as HTMLElement).querySelectorAll('[name]')).map(element => element.getAttribute('name'))
+      expect(names).toEqual(['control-name'])
+      wrapper.unmount()
+    })
+  }
+})
+
 describe('given a Field-wrapped Select', () => {
   const selectComponents = { ...components, FormRoot, SelectRoot, SelectTrigger, SelectPortal, SelectContent, SelectViewport, SelectItem }
 
@@ -422,6 +480,25 @@ describe('given a Field-wrapped Select', () => {
 
     await wrapper.setProps({ modelValue: 'apple' })
 
+    expect(field.attributes('data-filled')).toBe('')
+    expect(field.attributes('data-dirty')).toBeUndefined()
+  })
+
+  it('a change through its own imperative API reports filled but not dirty', async () => {
+    const wrapper = mount({
+      components: selectComponents,
+      template: `
+        <FieldRoot name="fruit" data-testid="field">
+          <SelectRoot>
+            <SelectTrigger>Choose a fruit</SelectTrigger>
+          </SelectRoot>
+        </FieldRoot>
+      `,
+    })
+    // As a custom part would: the change reports `'imperative-action'`.
+    providedContext(wrapper, SelectRoot, 'onValueChange').onValueChange('apple')
+    await flushPromises()
+    const field = wrapper.find('[data-testid="field"]')
     expect(field.attributes('data-filled')).toBe('')
     expect(field.attributes('data-dirty')).toBeUndefined()
   })
@@ -485,11 +562,105 @@ describe('given a Field-wrapped Select', () => {
 
     await selectFirstOption(wrapper)
 
-    const trigger = wrapper.find('[role="combobox"]')
-    await trigger.trigger('blur')
+    const trigger = wrapper.find('[role="combobox"]').element as HTMLElement
+    trigger.focus()
+    trigger.blur()
+    await nextTick()
 
     expect(validate).toHaveBeenCalledWith('apple', expect.anything())
 
+    wrapper.unmount()
+  })
+
+  it('stays untouched while focus is in its popup, and is touched once focus leaves both', async () => {
+    const validate = vi.fn(() => null)
+    const wrapper = mount({
+      components: selectComponents,
+      props: ['validate'],
+      template: `
+        <FieldRoot name="fruit" :validate="validate" validation-mode="onBlur" data-testid="field">
+          <SelectRoot>
+            <SelectTrigger>Choose a fruit</SelectTrigger>
+            <SelectPortal>
+              <SelectContent>
+                <SelectViewport>
+                  <SelectItem value="apple">Apple</SelectItem>
+                  <SelectItem value="banana">Banana</SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </SelectPortal>
+          </SelectRoot>
+          <button data-testid="outside">Outside</button>
+        </FieldRoot>
+      `,
+    }, { props: { validate }, attachTo: document.body })
+    const field = () => wrapper.find('[data-testid="field"]')
+    const trigger = wrapper.find('[role="combobox"]').element as HTMLElement
+
+    trigger.focus()
+    await nextTick()
+    expect(field().attributes('data-focused')).toBe('')
+
+    await fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false })
+    await flushPromises()
+    const options = Array.from(document.querySelectorAll('[role="option"]')) as HTMLElement[]
+    options[0].focus()
+    options[1].focus()
+    await nextTick()
+    expect(field().attributes('data-focused')).toBe('')
+    expect(field().attributes('data-touched')).toBeUndefined()
+    expect(validate).not.toHaveBeenCalled()
+
+    // Picking closes the popup and returns focus to the trigger.
+    await fireEvent.pointerUp(options[1])
+    await fireEvent.pointerUp(options[1])
+    await flushPromises()
+    trigger.focus()
+    await nextTick()
+    expect(field().attributes('data-touched')).toBeUndefined()
+    expect(validate).not.toHaveBeenCalled()
+
+    ;(wrapper.find('[data-testid="outside"]').element as HTMLElement).focus()
+    await nextTick()
+    expect(field().attributes('data-focused')).toBeUndefined()
+    expect(field().attributes('data-touched')).toBe('')
+    expect(validate).toHaveBeenCalledTimes(1)
+    expect(validate).toHaveBeenCalledWith('banana', expect.anything())
+    wrapper.unmount()
+  })
+
+  it('is touched when focus leaves its open popup for outside the select', async () => {
+    const wrapper = mount({
+      components: selectComponents,
+      template: `
+        <FieldRoot name="fruit" data-testid="field">
+          <SelectRoot>
+            <SelectTrigger>Choose a fruit</SelectTrigger>
+            <SelectPortal>
+              <SelectContent position="popper">
+                <SelectViewport>
+                  <SelectItem value="apple">Apple</SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </SelectPortal>
+          </SelectRoot>
+          <button data-testid="outside">Outside</button>
+        </FieldRoot>
+      `,
+    }, { attachTo: document.body })
+    const field = () => wrapper.find('[data-testid="field"]')
+    const trigger = wrapper.find('[role="combobox"]').element as HTMLElement
+    trigger.focus()
+    await fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false })
+    await flushPromises()
+    ;(document.querySelector('[role="option"]') as HTMLElement).focus()
+    await nextTick()
+    expect(field().attributes('data-touched')).toBeUndefined()
+
+    ;(wrapper.find('[data-testid="outside"]').element as HTMLElement).focus()
+    await flushPromises()
+    expect(field().attributes('data-focused')).toBeUndefined()
+    expect(field().attributes('data-touched')).toBe('')
     wrapper.unmount()
   })
 
@@ -1016,6 +1187,45 @@ describe('given a FieldControl with v-model', () => {
     await nextTick()
     expect((wrapper.vm as unknown as { text: string }).text).toBe('ab')
     expect(validate).toHaveBeenLastCalledWith('ab', expect.anything())
+    expect(wrapper.find('[data-testid="field"]').attributes('data-dirty')).toBe('')
+  })
+
+  it('only marks the field filled when the parent changes the value', async () => {
+    const validate = vi.fn(() => null)
+    const wrapper = mount({
+      components,
+      props: ['validate'],
+      data: () => ({ text: '' }),
+      template: `
+        <FieldRoot :validate="validate" validation-mode="onChange" data-testid="field">
+          <FieldControl v-model="text" />
+        </FieldRoot>
+      `,
+    }, { props: { validate } })
+    await flushPromises()
+    validate.mockClear()
+    ;(wrapper.vm as unknown as { text: string }).text = 'from the server'
+    await flushPromises()
+    const field = wrapper.find('[data-testid="field"]')
+    expect((wrapper.find('input').element as HTMLInputElement).value).toBe('from the server')
+    expect(field.attributes('data-filled')).toBe('')
+    expect(field.attributes('data-dirty')).toBeUndefined()
+    expect(validate).not.toHaveBeenCalled()
+  })
+
+  it('reports a value the parent rewrites from the user\'s input as input', async () => {
+    const wrapper = mount({
+      components,
+      data: () => ({ text: '' }),
+      template: `
+        <FieldRoot data-testid="field">
+          <FieldControl :model-value="text" @update:model-value="text = $event.toUpperCase()" />
+        </FieldRoot>
+      `,
+    })
+    await wrapper.find('input').setValue('ab')
+    await flushPromises()
+    expect((wrapper.vm as unknown as { text: string }).text).toBe('AB')
     expect(wrapper.find('[data-testid="field"]').attributes('data-dirty')).toBe('')
   })
 

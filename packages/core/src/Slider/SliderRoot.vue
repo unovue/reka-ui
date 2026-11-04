@@ -72,12 +72,14 @@ export const [injectSliderRootContext, provideSliderRootContext]
 
 <script setup lang="ts">
 import { computed, getCurrentInstance, mergeProps, useAttrs, watch } from 'vue'
+import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { createWrapperEmit, splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useSlider } from './useSlider'
 import { useSliderPointer } from './useSliderPointer'
-import { provideSliderOrientationContext } from './utils'
+import { injectSliderFieldContext, provideSliderFieldContext, provideSliderOrientationContext } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -112,12 +114,32 @@ const isFormControl = useFormControl(currentElement)
 useCollection({ isProvider: true })
 useCollectionSlot(currentElement)
 
+// Optional Field participation: `null` outside a `FieldRoot`, so every
+// binding below is inert without a Field. A wrapping control that owns the
+// value (`ColorSliderRoot`) hands down its own binding instead.
+const inheritedField = injectSliderFieldContext(null)
+const ownField = inheritedField
+  ? null
+  : useFieldControl({
+      // The first thumb renders its own `id`, else the field's.
+      id: () => context.thumbElements.value[0]?.id || undefined,
+      element: () => context.thumbElements.value[0],
+      // Reka's model: an array, even for a single thumb.
+      getValue: () => modelValue.value,
+      required: () => props.required,
+    })
+const field = inheritedField ?? ownField
+// Getters rather than computeds: cheap, and free for a standalone slider.
+const resolvedName = () => ownField ? ownField.name(props.name) : props.name
+const resolvedRequired = () => ownField ? ownField.required(props.required) : props.required
+const resolvedDisabled = () => ownField ? ownField.disabled(props.disabled) : props.disabled
+
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` / `valueCommit` emits
 // live in the composable (`modelValue === undefined` → uncontrolled).
 const { modelValue, root, orientation: orientationGeometry, startSlide, moveSlide, endSlide, context } = useSlider({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
-  disabled: () => props.disabled,
+  disabled: resolvedDisabled,
   orientation: () => props.orientation,
   dir,
   inverted: () => props.inverted,
@@ -127,9 +149,22 @@ const { modelValue, root, orientation: orientationGeometry, startSlide, moveSlid
   minStepsBetweenThumbs: () => props.minStepsBetweenThumbs,
   thumbAlignment: () => props.thumbAlignment,
   emit: emits,
+  // The Field hears its own commits by reason (`change`): user input, or, for
+  // a programmatic one (`setModelValue` and the like), only the watcher below,
+  // which also reports a parent-driven change.
+  onUpdate: ownField?.change,
 })
 
 provideSliderRootContext(context)
+provideSliderFieldContext(field)
+
+if (ownField)
+  watch(modelValue, value => ownField.sync(value))
+
+// The field is focused while focus is on any thumb, and blurred once it
+// leaves the slider.
+const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
+const fieldElementAttrs = focusWithin && { onFocusin: focusWithin.onFocusin, onFocusout: focusWithin.onFocusout }
 provideSliderOrientationContext(orientationGeometry)
 
 // A consumer's `@slide-start` / `@slide-move` / `@slide-end` still hears the
@@ -181,7 +216,8 @@ const ownElementAttrs = { 'data-slider-impl': '', ...pointer.handlers }
 // attributes keep their place on the element: horizontal renders `dir` early.
 function elementProps(consumerAttrs: Record<string, unknown>) {
   const { leading, attrs: rootAttrs, onPointerdown } = split.value
-  return mergeProps(
+  const merged = mergeProps(
+    fieldElementAttrs || {},
     ownElementAttrs,
     props.orientation === 'horizontal' ? { 'dir': rootAttrs.dir as string, 'data-orientation': 'horizontal' } : { 'data-orientation': 'vertical' },
     leading,
@@ -189,6 +225,7 @@ function elementProps(consumerAttrs: Record<string, unknown>) {
     rootAttrs,
     { onPointerdown },
   )
+  return field ? field.fillDataAttributes(merged) : merged
 }
 </script>
 
@@ -202,12 +239,12 @@ function elementProps(consumerAttrs: Record<string, unknown>) {
     <slot :model-value="modelValue ?? null" />
 
     <VisuallyHiddenInput
-      v-if="isFormControl && name"
+      v-if="isFormControl && resolvedName()"
       type="number"
       :value="modelValue"
-      :name="name"
-      :required="required"
-      :disabled="disabled"
+      :name="resolvedName()!"
+      :required="resolvedRequired()"
+      :disabled="resolvedDisabled()"
       :step="step"
     />
   </component>
