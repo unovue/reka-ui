@@ -85,6 +85,7 @@ import { mergeProps, watch } from 'vue'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
+import { colorToString } from '@/shared/color'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useColorArea } from './useColorArea'
 
@@ -156,19 +157,31 @@ const fieldAttrs = focusWithin && { onFocusin: focusWithin.onFocusin, onFocusout
   >
     <slot :style="areaStyles" />
 
-    <VisuallyHiddenInput
-      v-if="isFormControl && xName"
-      type="text"
-      :value="xValue"
-      :name="xName"
-      :disabled="context.disabled.value"
-    />
-    <VisuallyHiddenInput
-      v-if="isFormControl && yName"
-      type="text"
-      :value="yValue"
-      :name="yName"
-      :disabled="context.disabled.value"
-    />
+    <!-- One placeholder for all hidden inputs, so a non-form instance renders a single comment node. -->
+    <template v-if="isFormControl && ((field ? field.name(name) : name) || xName || yName)">
+      <!-- The color, as ColorField submits it, under the field's name (or its own); `xName`/`yName` add the channel values. -->
+      <VisuallyHiddenInput
+        v-if="field ? field.name(name) : name"
+        type="text"
+        :value="colorToString(color, 'hex')"
+        :name="(field ? field.name(name) : name)!"
+        :disabled="context.disabled.value"
+        :required="field ? field.required(required) : required"
+      />
+      <VisuallyHiddenInput
+        v-if="xName"
+        type="text"
+        :value="xValue"
+        :name="xName"
+        :disabled="context.disabled.value"
+      />
+      <VisuallyHiddenInput
+        v-if="yName"
+        type="text"
+        :value="yValue"
+        :name="yName"
+        :disabled="context.disabled.value"
+      />
+    </template>
   </component>
 </template>

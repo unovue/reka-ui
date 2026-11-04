@@ -68,7 +68,8 @@ Every Reka UI form control detects a surrounding `FieldRoot` and acts as its con
 | [Time Field](../components/time-field) | no complete time | the Temporal value |
 | [Time Range Field](../components/time-range-field) | either end missing | `{ start, end }` |
 | [Slider](../components/slider) | the model is `null` | the array of thumb values |
-| [Color Field](../components/color-field), [Color Slider](../components/color-slider) and [Color Area](../components/color-area) | never | the `Color` |
+| [Color Field](../components/color-field) and [Color Slider](../components/color-slider) | never | the `Color` |
+| [Color Area](../components/color-area) | never | the `Color`; a native submit sends its hex string under the field name, and `xName`/`yName` add each channel's value under those names |
 
 ```vue
 <template>

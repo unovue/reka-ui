@@ -30,8 +30,6 @@ describeFieldControlContract({
   filledValue: convertToSpace(parseColor('#00ff00'), 'hsl'),
   // A color area always has a value.
   noRequired: true,
-  // Its inputs are named per channel (`xName`/`yName`).
-  noName: true,
 })
 
 describe('given a Field-wrapped ColorArea', () => {
@@ -84,6 +82,24 @@ describe('given a Field-wrapped ColorArea', () => {
     y.blur()
     await nextTick()
     expect(field().attributes('data-touched')).toBe('')
+    wrapper.unmount()
+  })
+})
+
+describe('given a named Field-wrapped ColorArea in a native form', () => {
+  it('submits the color under the field name, with the channel inputs under xName/yName', async () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('form', [
+        h(FieldRoot, { name: 'accent' }, () => renderColorArea({ defaultValue: red, xName: 'x', yName: 'y' })),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    const data = new FormData(wrapper.find('form').element as HTMLFormElement)
+    expect(data.get('accent')).toBe('#ff0000')
+    // The channel values, as the axes' range inputs hold them.
+    const [x, y] = inputs(wrapper).map(input => (input.element as HTMLInputElement).value)
+    expect(data.get('x')).toBe(x)
+    expect(data.get('y')).toBe(y)
     wrapper.unmount()
   })
 })
