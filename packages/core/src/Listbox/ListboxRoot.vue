@@ -163,6 +163,7 @@ export type ListboxRootEmits<T = AcceptableValue, M extends boolean = boolean> =
 import { mergeProps, ref, shallowRef, toRef, toRefs, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useListboxRoot } from './useListbox'
@@ -266,13 +267,8 @@ if (field)
 
 // The field is focused while focus is anywhere in the listbox (the content,
 // an item, a `ListboxFilter`), and blurred once it leaves.
-const fieldFocusHandlers = field && {
-  onFocusin: field.onFocus,
-  onFocusout: (event: FocusEvent) => {
-    if (!currentElement.value?.contains(event.relatedTarget as Node | null))
-      field.onBlur()
-  },
-}
+const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
+const fieldFocusHandlers = focusWithin && { onFocusin: focusWithin.onFocusin, onFocusout: focusWithin.onFocusout }
 </script>
 
 <template>

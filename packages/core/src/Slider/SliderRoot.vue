@@ -73,6 +73,7 @@ export const [injectSliderRootContext, provideSliderRootContext]
 <script setup lang="ts">
 import { computed, getCurrentInstance, mergeProps, useAttrs, watch } from 'vue'
 import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { createWrapperEmit, splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -162,13 +163,8 @@ if (ownField)
 
 // The field is focused while focus is on any thumb, and blurred once it
 // leaves the slider.
-const fieldElementAttrs = field && {
-  onFocusin: field.onFocus,
-  onFocusout: (event: FocusEvent) => {
-    if (!currentElement.value?.contains(event.relatedTarget as Node | null))
-      field.onBlur()
-  },
-}
+const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
+const fieldElementAttrs = focusWithin && { onFocusin: focusWithin.onFocusin, onFocusout: focusWithin.onFocusout }
 provideSliderOrientationContext(orientationGeometry)
 
 // A consumer's `@slide-start` / `@slide-move` / `@slide-end` still hears the

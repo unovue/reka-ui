@@ -46,6 +46,7 @@ export const [injectToggleGroupRootContext, provideToggleGroupRootContext]
 <script setup lang="ts">
 import { mergeProps, useAttrs, watch } from 'vue'
 import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { Slot } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { RovingFocusGroup } from '@/RovingFocus'
@@ -124,10 +125,7 @@ if (field)
   watch(modelValue, value => field.sync(value))
 
 // Touched once focus leaves the whole group, not on every item-to-item move.
-function onFocusout(event: FocusEvent) {
-  if (!currentElement.value?.contains(event.relatedTarget as Node | null))
-    field?.onBlur()
-}
+const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
 
 // The consumer's `$attrs` fall through to the wrapper, under these bindings,
 // so they're only read here for the Field's wiring: its aria ids are merged
@@ -137,7 +135,7 @@ function renderAttrs(attrs: Record<string, unknown>) {
     return root.attrs.value
   return field.fillDataAttributes(mergeProps(
     root.attrs.value,
-    { id: field.id(), ...field.ariaAttrs(attrs, resolvedDisabled()), onFocusin: field.onFocus, onFocusout },
+    { id: field.id(), ...field.ariaAttrs(attrs, resolvedDisabled()), onFocusin: focusWithin!.onFocusin, onFocusout: focusWithin!.onFocusout },
   ), Object.keys(attrs))
 }
 </script>

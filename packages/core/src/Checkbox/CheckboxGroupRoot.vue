@@ -59,6 +59,7 @@ export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useCheckboxGroup } from './useCheckboxGroup'
@@ -125,10 +126,7 @@ if (field)
   watch(modelValue, value => field.sync(value))
 
 // Touched once focus leaves the whole group, not on every checkbox-to-checkbox move.
-function onFocusout(event: FocusEvent) {
-  if (!currentElement.value?.contains(event.relatedTarget as Node | null))
-    field?.onBlur()
-}
+const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
 
 // Without roving focus the group renders its own element (no wrapper), so
 // `as` / `asChild` are only props of `RovingFocusGroup`.
@@ -151,8 +149,8 @@ function renderAttrs(attrs: Record<string, unknown>) {
       role: attrs.role ?? 'group',
       id: field.id(),
       ...field.ariaAttrs(attrs, disabled.value),
-      onFocusin: field.onFocus,
-      onFocusout,
+      onFocusin: focusWithin!.onFocusin,
+      onFocusout: focusWithin!.onFocusout,
     },
   ))
 }

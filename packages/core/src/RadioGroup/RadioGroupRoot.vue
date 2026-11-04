@@ -49,6 +49,7 @@ export const [injectRadioGroupRootContext, provideRadioGroupRootContext]
 <script setup lang="ts">
 import { mergeProps, useAttrs, watch } from 'vue'
 import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusGroup } from '@/RovingFocus/useRovingFocusGroup'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -130,10 +131,7 @@ if (field)
   watch(modelValue, value => field.sync(value))
 
 // Touched once focus leaves the whole group, not on every radio-to-radio move.
-function onFocusout(event: FocusEvent) {
-  if (!currentElement.value?.contains(event.relatedTarget as Node | null))
-    field?.onBlur()
-}
+const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
 
 // Arrow-key navigation between the radios.
 const roving = useRovingFocusGroup({
@@ -157,7 +155,7 @@ function renderAttrs(attrs: Record<string, unknown>) {
     return own
   return field.fillDataAttributes(mergeProps(
     own,
-    { id: field.id(), ...field.ariaAttrs(attrs, disabled.value), onFocusin: field.onFocus, onFocusout },
+    { id: field.id(), ...field.ariaAttrs(attrs, disabled.value), onFocusin: focusWithin!.onFocusin, onFocusout: focusWithin!.onFocusout },
   ))
 }
 </script>

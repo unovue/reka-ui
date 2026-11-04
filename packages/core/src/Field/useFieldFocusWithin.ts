@@ -80,6 +80,27 @@ export function useFieldFocusWithin(field: FieldFocusTarget | null, element: Ref
     return extension.elements().find(el => el?.contains(node)) ?? undefined
   }
 
+  // A focused part can be removed while the element stays (an item, a thumb),
+  // and not every browser fires `focusout` for a removed element: while focus
+  // is inside, a removal that takes focus with it leaves the field.
+  let observer: MutationObserver | undefined
+  function watchRemovals() {
+    if (observer || !element.value || typeof MutationObserver === 'undefined')
+      return
+    observer = new MutationObserver(() => {
+      if (focus === 'element' && !element.value?.contains(getActiveElement(element.value))) {
+        unwatchRemovals()
+        focus = 'out'
+        field!.context.reportControlState({ focused: false })
+      }
+    })
+    observer.observe(element.value, { childList: true, subtree: true })
+  }
+  function unwatchRemovals() {
+    observer?.disconnect()
+    observer = undefined
+  }
+
   function stopFollowing() {
     followed?.removeEventListener('focusout', onExtensionFocusout)
     followed = undefined
@@ -98,6 +119,7 @@ export function useFieldFocusWithin(field: FieldFocusTarget | null, element: Ref
   // `focusout` after the cleanup below has reset the state, and that's a blur.
   function leave() {
     stopFollowing()
+    unwatchRemovals()
     focus = 'out'
     field!.onBlur()
   }
@@ -110,6 +132,7 @@ export function useFieldFocusWithin(field: FieldFocusTarget | null, element: Ref
     }
     const target = extensionElementOf(next)
     if (target) {
+      unwatchRemovals()
       focus = 'extension'
       follow(target)
       return
@@ -125,6 +148,7 @@ export function useFieldFocusWithin(field: FieldFocusTarget | null, element: Ref
       field!.onFocus()
     focus = 'element'
     stopFollowing()
+    watchRemovals()
   }
 
   function onFocusout(event: FocusEvent) {
@@ -172,6 +196,7 @@ export function useFieldFocusWithin(field: FieldFocusTarget | null, element: Ref
         if (element.value?.contains(active)) {
           focus = 'element'
           stopFollowing()
+          watchRemovals()
           return
         }
         moveTo(active)
@@ -192,6 +217,7 @@ export function useFieldFocusWithin(field: FieldFocusTarget | null, element: Ref
       el.removeEventListener('focusout', onFocusout)
       doc.removeEventListener('focusin', onDocumentFocusin, true)
       stopFollowing()
+      unwatchRemovals()
       // The element is going away (an `as` or as-child change, or unmount), and not every
       // browser fires `focusout` for a removed element, so focus can't still be inside it.
       if (focus !== 'out') {

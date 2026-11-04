@@ -6,7 +6,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { createContext, getActiveElement, useDirection, useFormControl, useForwardElement } from '@/shared'
+import { createContext, useDirection, useFormControl, useForwardElement } from '@/shared'
 
 export type AcceptableInputValue = string | number | bigint | Record<string, any>
 
@@ -104,6 +104,7 @@ import { useFocusWithin } from '@vueuse/core'
 import { mergeProps, nextTick, shallowRef, watch } from 'vue'
 import { useCollection, useCollectionSlot } from '@/Collection'
 import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useTagsInput } from './useTagsInput'
@@ -190,18 +191,15 @@ if (field)
 // a tag, a delete button), and blurred once it leaves. With `addOnBlur`, the
 // blur adds the typed tag first, which a controlled parent applies on the next
 // render: report the blur after it, so `onBlur` validation sees the new tag.
-const fieldFocusHandlers = field && {
-  onFocusin: field.onFocus,
-  onFocusout: (event: FocusEvent) => {
-    if (currentElement.value?.contains(event.relatedTarget as Node | null))
-      return
-    nextTick(() => {
-      // Unless focus came back in the meantime.
-      if (!currentElement.value?.contains(getActiveElement(currentElement.value)))
-        field.onBlur()
-    })
-  },
-}
+const focusWithin = useFieldFocusWithin(field && {
+  ...field,
+  onBlur: () => nextTick(() => {
+    // Unless focus came back in the meantime.
+    if (!focusWithin!.isFocusWithin())
+      field.onBlur()
+  }),
+}, currentElement as Ref<HTMLElement | undefined>)
+const fieldFocusHandlers = focusWithin && { onFocusin: focusWithin.onFocusin, onFocusout: focusWithin.onFocusout }
 </script>
 
 <template>

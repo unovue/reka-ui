@@ -83,6 +83,7 @@ export const [injectColorAreaFieldContext, provideColorAreaFieldContext]
 <script setup lang="ts">
 import { mergeProps, watch } from 'vue'
 import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useColorArea } from './useColorArea'
@@ -143,13 +144,8 @@ if (field)
 
 // The Field's state attributes go first so the area's own `data-*` win. The
 // field is focused while focus is on either axis, and blurred once it leaves.
-const fieldAttrs = field && {
-  onFocusin: field.onFocus,
-  onFocusout: (event: FocusEvent) => {
-    if (!currentElement.value?.contains(event.relatedTarget as Node | null))
-      field.onBlur()
-  },
-}
+const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
+const fieldAttrs = focusWithin && { onFocusin: focusWithin.onFocusin, onFocusout: focusWithin.onFocusout }
 </script>
 
 <template>
