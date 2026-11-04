@@ -24,7 +24,7 @@ Accessible wiring between a label, control, description, and error message, with
     'Reads native constraint-validation state (`required`, `pattern`, `type=email`, ...) automatically.',
     'Exposes `data-valid`/`data-invalid`/`data-dirty`/`data-touched`/`data-filled`/`data-focused` on every part for styling.',
     'Shows the browser\'s validation message by default, or your own per failing constraint.',
-    'Fully additive — every reka control behaves exactly as before when used outside a Field.',
+    'Fully additive — outside a Field, a Reka UI control renders no field wiring.',
   ]"
 />
 
@@ -118,7 +118,7 @@ A native form control (`input` by default — pass `as="textarea"` or `as="selec
 
 Bind its value with `v-model`, or set a starting value with `default-value`. A controlled value is validated when it changes, so a value you reject or rewrite never reaches the field.
 
-Every Reka UI form control (`CheckboxRoot`, `SwitchRoot`, `RadioGroupRoot`, `SelectRoot`, `ComboboxRoot`, `NumberFieldRoot`, `SliderRoot`, `DateFieldRoot`, …) can be used directly inside a `FieldRoot` instead of `FieldControl` — it picks up the same wiring automatically by optionally reading the Field's context, and behaves exactly as before when used outside a Field. See [Forms and validation](/docs/guides/forms#reka-ui-controls-inside-a-field) for what each one collects.
+Every Reka UI form control (`CheckboxRoot`, `SwitchRoot`, `RadioGroupRoot`, `SelectRoot`, `ComboboxRoot`, `NumberFieldRoot`, `SliderRoot`, `DateFieldRoot`, …) can be used directly inside a `FieldRoot` instead of `FieldControl` — it picks up the same wiring automatically by optionally reading the Field's context, and renders none of it outside a Field. (Two v3 fixes do apply everywhere: disabled Listbox, Combobox and Slider parts get `aria-disabled`, and a disabled Checkbox Group or Toggle Group no longer submits its values.) See [Forms and validation](/docs/guides/forms#reka-ui-controls-inside-a-field) for what each one collects.
 
 <!-- @include: @/meta/FieldControl.md -->
 

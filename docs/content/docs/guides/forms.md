@@ -61,13 +61,13 @@ Every Reka UI form control detects a surrounding `FieldRoot` and acts as its con
 | [Tag Group](../components/tag-group) | nothing selected | the selection |
 | [Tags Input](../components/tags-input) | no tags | the array of tags |
 | [Number Field](../components/number-field) | no number | the number, or `null` |
-| [Pin Input](../components/pin-input) | any input empty | the model array |
+| [Pin Input](../components/pin-input) | any input empty | the model array, without trailing empty entries (a cleared pin is `[]`) |
 | [Editable](../components/editable) | no submitted text | the submitted text, not the draft |
 | [Date Field](../components/date-field) and [Date Picker](../components/date-picker) | no complete date | the Temporal value |
 | [Date Range Field](../components/date-range-field) and [Date Range Picker](../components/date-range-picker) | either end missing | `{ start, end }` |
 | [Time Field](../components/time-field) | no complete time | the Temporal value |
 | [Time Range Field](../components/time-range-field) | either end missing | `{ start, end }` |
-| [Slider](../components/slider) | never | the array of thumb values |
+| [Slider](../components/slider) | the model is `null` | the array of thumb values |
 | [Color Field](../components/color-field), [Color Slider](../components/color-slider) and [Color Area](../components/color-area) | never | the `Color` |
 
 ```vue
@@ -87,7 +87,7 @@ Every Reka UI form control detects a surrounding `FieldRoot` and acts as its con
 A few controls are made of several parts:
 
 - **Groups** (Radio Group, Checkbox Group, Toggle Group): the group is the field's control. `FieldLabel` labels the group, not an item, and an invalid submission focuses the checked item, or the first enabled one. The field is touched once focus leaves the group, not when it moves between items.
-- **Controls with a popup** (Select, Combobox, Autocomplete, Date Picker): moving focus into the popup doesn't count as leaving the field.
+- **Controls with a popup** (Select, Combobox, Autocomplete, Date Picker, Date Range Picker): moving focus into the popup doesn't count as leaving the field.
 - **Segmented fields** (Date, Time and their range variants, Pin Input): the label points at the control's hidden input, which forwards focus to the first segment.
 - **Composed controls**, such as a Tags Input used as a Combobox's input: the outermost control owns the field.
 
