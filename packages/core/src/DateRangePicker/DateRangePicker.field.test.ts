@@ -54,6 +54,41 @@ const Harness = defineComponent({
   `,
 })
 
+const RejectingHarness = defineComponent({
+  components: { FormRoot, FieldRoot, FieldLabel, DateRangePickerRoot, DateRangePickerField, DateRangePickerInput, DateRangePickerTrigger, DateRangePickerContent, DateRangePickerCalendar, DateRangePickerGrid, DateRangePickerGridBody, DateRangePickerGridRow, DateRangePickerCell, DateRangePickerCellTrigger },
+  props: { model: null, onFormSubmit: Function, fieldProps: Object },
+  setup: () => ({ placeholder: Temporal.PlainDate.from('2024-01-10') }),
+  template: `
+    <FormRoot @form-submit="(values) => onFormSubmit?.(values)">
+      <FieldRoot name="stay" data-testid="field" v-bind="fieldProps">
+        <FieldLabel>Stay</FieldLabel>
+        <DateRangePickerRoot :model-value="model" @update:model-value="() => {}" :default-placeholder="placeholder" locale="en-US">
+          <DateRangePickerField v-slot="{ segments }">
+            <template v-for="type in ['start', 'end']" :key="type">
+              <DateRangePickerInput v-for="item in segments[type]" :key="type + item.part" :type="type" :part="item.part" :data-segment="type + '-' + item.part">{{ item.value }}</DateRangePickerInput>
+            </template>
+            <DateRangePickerTrigger data-testid="trigger">Open</DateRangePickerTrigger>
+          </DateRangePickerField>
+          <DateRangePickerContent>
+            <DateRangePickerCalendar v-slot="{ grid }">
+              <DateRangePickerGrid v-for="month in grid" :key="month.value.toString()" :value="month.value">
+                <DateRangePickerGridBody>
+                  <DateRangePickerGridRow v-for="(week, index) in month.rows" :key="index">
+                    <DateRangePickerCell v-for="day in week" :key="day.toString()" :value="day">
+                      <DateRangePickerCellTrigger :value="day" :data-testid="'day-' + day.toString()" />
+                    </DateRangePickerCell>
+                  </DateRangePickerGridRow>
+                </DateRangePickerGridBody>
+              </DateRangePickerGrid>
+            </DateRangePickerCalendar>
+          </DateRangePickerContent>
+        </DateRangePickerRoot>
+      </FieldRoot>
+      <button type="submit">Submit</button>
+    </FormRoot>
+  `,
+})
+
 describe('given a Field-wrapped DateRangePicker', () => {
   it('labels the field\'s range group and points the label at its hidden input', async () => {
     const { container, getByText } = render(Harness)
@@ -120,5 +155,22 @@ describe('given a Field-wrapped DateRangePicker', () => {
     expect(field.getAttribute('data-focused')).toBeNull()
     expect(field.getAttribute('data-touched')).toBe('')
     expect(validate).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('given a Field-wrapped DateRangePicker whose parent rejects a change', () => {
+  it('doesn\'t count a later parent-driven change to that value as user input', async () => {
+    const user = userEvent.setup()
+    const { getByTestId, rerender } = render(RejectingHarness, { props: { model: null } })
+    await nextTick()
+    await user.click(getByTestId('trigger'))
+    await user.click(getByTestId('day-2024-01-15'))
+    await user.click(getByTestId('day-2024-01-18'))
+    await flushPromises()
+    await new Promise(resolve => setTimeout(resolve))
+    await rerender({ model: { start: Temporal.PlainDate.from('2024-01-15'), end: Temporal.PlainDate.from('2024-01-18') } })
+    await flushPromises()
+    expect(getByTestId('field').getAttribute('data-filled')).toBe('')
+    expect(getByTestId('field').getAttribute('data-dirty')).toBeNull()
   })
 })

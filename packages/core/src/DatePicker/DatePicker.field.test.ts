@@ -52,6 +52,39 @@ const Harness = defineComponent({
   `,
 })
 
+const RejectingHarness = defineComponent({
+  components: { FormRoot, FieldRoot, FieldLabel, DatePickerRoot, DatePickerField, DatePickerInput, DatePickerTrigger, DatePickerContent, DatePickerCalendar, DatePickerGrid, DatePickerGridBody, DatePickerGridRow, DatePickerCell, DatePickerCellTrigger },
+  props: { model: null, onFormSubmit: Function, fieldProps: Object, closeOnSelect: Boolean },
+  setup: () => ({ placeholder: Temporal.PlainDate.from('2024-01-10') }),
+  template: `
+    <FormRoot @form-submit="(values) => onFormSubmit?.(values)">
+      <FieldRoot name="date" data-testid="field" v-bind="fieldProps">
+        <FieldLabel>Date</FieldLabel>
+        <DatePickerRoot :model-value="model" @update:model-value="() => {}" :default-placeholder="placeholder" locale="en-US" :close-on-select="closeOnSelect">
+          <DatePickerField v-slot="{ segments }">
+            <DatePickerInput v-for="item in segments" :key="item.part" :part="item.part" :data-segment="item.part">{{ item.value }}</DatePickerInput>
+            <DatePickerTrigger data-testid="trigger">Open</DatePickerTrigger>
+          </DatePickerField>
+          <DatePickerContent>
+            <DatePickerCalendar v-slot="{ grid }">
+              <DatePickerGrid v-for="month in grid" :key="month.value.toString()" :value="month.value">
+                <DatePickerGridBody>
+                  <DatePickerGridRow v-for="(week, index) in month.rows" :key="index">
+                    <DatePickerCell v-for="day in week" :key="day.toString()" :value="day">
+                      <DatePickerCellTrigger :value="day" :data-testid="'day-' + day.toString()" />
+                    </DatePickerCell>
+                  </DatePickerGridRow>
+                </DatePickerGridBody>
+              </DatePickerGrid>
+            </DatePickerCalendar>
+          </DatePickerContent>
+        </DatePickerRoot>
+      </FieldRoot>
+      <button type="submit">Submit</button>
+    </FormRoot>
+  `,
+})
+
 describe('given a Field-wrapped DatePicker', () => {
   it('treats typing in the segments as user input, reported once', async () => {
     const user = userEvent.setup()
@@ -205,5 +238,21 @@ describe('given a Field-wrapped DatePicker whose trigger is outside the date fie
     expect(field.getAttribute('data-touched')).toBe('')
     expect(validate).toHaveBeenCalledTimes(1)
     expect(String(validate.mock.calls[0][0])).toBe('2024-01-15')
+  })
+})
+
+describe('given a Field-wrapped DatePicker whose parent rejects a change', () => {
+  it('doesn\'t count a later parent-driven change to that value as user input', async () => {
+    const user = userEvent.setup()
+    const { getByTestId, rerender } = render(RejectingHarness, { props: { model: null } })
+    await nextTick()
+    await user.click(getByTestId('trigger'))
+    await user.click(getByTestId('day-2024-01-15'))
+    await flushPromises()
+    await new Promise(resolve => setTimeout(resolve))
+    await rerender({ model: Temporal.PlainDate.from('2024-01-15') })
+    await flushPromises()
+    expect(getByTestId('field').getAttribute('data-filled')).toBe('')
+    expect(getByTestId('field').getAttribute('data-dirty')).toBeNull()
   })
 })

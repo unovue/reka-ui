@@ -93,6 +93,7 @@ export const [injectEditableFieldControl, provideEditableFieldControl]
 <script setup lang="ts">
 import { mergeProps, ref, shallowRef, watch } from 'vue'
 import { useFocusOutside, usePointerDownOutside } from '@/DismissableLayer'
+import { createPendingFieldInput } from '@/Field/pendingFieldInput'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { Primitive } from '@/Primitive'
@@ -175,14 +176,12 @@ const { modelValue, isEditing, isEmpty, edit, cancel, submit, dismiss, root, con
   // A submit is the user's (whatever started it); a parent-driven change is
   // reported through the watcher below.
   onUpdate: field
-    ? (value) => {
-        pendingInput = { value }
-      }
+    ? value => pendingInput.set(value)
     : undefined,
 })
 
 // The value of a submitted change, reported once the hidden input has rendered it.
-let pendingInput: { value: string | null | undefined } | undefined
+const pendingInput = createPendingFieldInput<string | null | undefined>()
 // Touched once focus leaves the whole editable, not when it moves from the
 // preview to the input. A blur can submit the draft (`submitMode`), through a
 // focus-outside check that settles a couple of ticks later, so the blur is
@@ -198,11 +197,11 @@ const focusWithin = useFieldFocusWithin(field && {
 if (field) {
   provideEditableFieldControl({ binding: field, preview: previewElement })
   watch(modelValue, (value) => {
-    if (pendingInput && Object.is(pendingInput.value, value))
+    const pending = pendingInput.take()
+    if (pending && Object.is(pending.value, value))
       field.input(value)
     else
       field.sync(value)
-    pendingInput = undefined
   }, { flush: 'post' })
 }
 

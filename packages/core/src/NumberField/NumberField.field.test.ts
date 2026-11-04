@@ -137,3 +137,22 @@ describe('given a Field-wrapped NumberField whose input has its own id', () => {
     wrapper.unmount()
   })
 })
+
+describe('given a Field-wrapped NumberField whose parent rejects a change', () => {
+  it('doesn\'t count a later parent-driven change to that value as user input', async () => {
+    const model = ref<number | null>(null)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { 'name': 'amount', 'data-testid': 'field' }, () =>
+        render({ 'modelValue': model.value, 'onUpdate:modelValue': () => {} })),
+    }), { attachTo: document.body })
+    await nextTick()
+    await type(wrapper, '5')
+    await new Promise(resolve => setTimeout(resolve))
+    model.value = 5
+    await flushPromises()
+    const field = wrapper.find('[data-testid="field"]')
+    expect(field.attributes('data-filled')).toBe('')
+    expect(field.attributes('data-dirty')).toBeUndefined()
+    wrapper.unmount()
+  })
+})

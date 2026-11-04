@@ -120,3 +120,22 @@ describe('given a Field-wrapped Editable', () => {
     wrapper.unmount()
   })
 })
+
+describe('given a Field-wrapped Editable whose parent rejects a change', () => {
+  it('doesn\'t count a later parent-driven change to that value as user input', async () => {
+    const model = ref('')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { 'name': 'title', 'data-testid': 'field' }, () =>
+        render({ 'modelValue': model.value, 'onUpdate:modelValue': () => {} })),
+    }), { attachTo: document.body })
+    await nextTick()
+    await type(wrapper, 'Hello')
+    await settle()
+    model.value = 'Hello'
+    await flushPromises()
+    const field = wrapper.find('[data-testid="field"]')
+    expect(field.attributes('data-filled')).toBe('')
+    expect(field.attributes('data-dirty')).toBeUndefined()
+    wrapper.unmount()
+  })
+})

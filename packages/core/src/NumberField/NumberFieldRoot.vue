@@ -83,6 +83,7 @@ export const [injectNumberFieldFieldControl, provideNumberFieldFieldControl]
 
 <script setup lang="ts">
 import { mergeProps, ref, toRef, watch } from 'vue'
+import { createPendingFieldInput } from '@/Field/pendingFieldInput'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHidden, VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -127,7 +128,7 @@ const resolvedName = () => field ? field.name(props.name) : props.name
 const resolvedRequired = () => field ? field.required(props.required) : props.required
 // The value of a change the field made itself (typing, a step, the wheel), as
 // opposed to a parent-driven one; read once the hidden input has updated.
-let pendingInput: { value: number | undefined } | undefined
+const pendingInput = createPendingFieldInput<number | undefined>()
 
 const { modelValue, textValue, readonly, disabled, root, context } = useNumberField({
   modelValue: () => props.modelValue,
@@ -148,9 +149,7 @@ const { modelValue, textValue, readonly, disabled, root, context } = useNumberFi
   startingValue: () => props.startingValue,
   emit: emits,
   onUpdate: field
-    ? (value) => {
-        pendingInput = { value }
-      }
+    ? value => pendingInput.set(value)
     : undefined,
 })
 
@@ -160,11 +159,11 @@ if (field) {
   provideNumberFieldFieldControl(field)
   // Flushed after render, so the hidden input's validity reflects the new value.
   watch(modelValue, (value) => {
-    if (pendingInput && Object.is(pendingInput.value, value))
+    const pending = pendingInput.take()
+    if (pending && Object.is(pending.value, value))
       field.input(value ?? null)
     else
       field.sync(value ?? null)
-    pendingInput = undefined
   }, { flush: 'post' })
 }
 

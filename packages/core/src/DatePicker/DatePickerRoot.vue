@@ -116,6 +116,7 @@ export const [injectDatePickerRootContext, provideDatePickerRootContext]
 
 <script setup lang="ts">
 import { computed, toRefs, watch } from 'vue'
+import { createPendingFieldInput } from '@/Field/pendingFieldInput'
 import { injectFieldForControl } from '@/Field/useFieldControl'
 import { provideFieldFocusExtension } from '@/Field/useFieldFocusWithin'
 import { providePopoverRootContext } from '@/Popover/PopoverRoot.vue'
@@ -164,7 +165,7 @@ const locale = useLocale(propLocale)
 // reports that one as the user's input.
 // Not claimed: the composed field claims it (`null` when another control owns it).
 const fieldContext = injectFieldForControl()
-let pendingInput: { value: unknown } | undefined
+const pendingInput = createPendingFieldInput<unknown>()
 
 const { context, popover } = useDatePicker({
   modelValue: () => props.modelValue,
@@ -206,17 +207,14 @@ const { context, popover } = useDatePicker({
   emit: emits,
   onOpenComplete: value => emits('update:openComplete', value),
   onUpdate: fieldContext
-    ? (value) => {
-        pendingInput = { value }
-      }
+    ? value => pendingInput.set(value)
     : undefined,
 })
 
 if (fieldContext) {
   // After render, as the field's own watcher, so its hidden input is current.
   watch(() => context.modelValue.value, (value) => {
-    const pending = pendingInput
-    pendingInput = undefined
+    const pending = pendingInput.take()
     // A parent-driven change: the field reports it as programmatic.
     if (!pending || !isEqual(pending.value, value))
       return
