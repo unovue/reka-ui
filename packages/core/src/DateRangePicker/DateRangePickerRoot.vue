@@ -6,7 +6,7 @@ import type { CalendarUnit, DateValue, Matcher, WeekDayFormat, WeekStartsOn } fr
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { DateRange, DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { createContext, useDirection, useId, useLocale } from '@/shared'
+import { createContext, getActiveElement, useDirection, useId, useLocale } from '@/shared'
 
 export type DateRangePickerRootContext = {
   id: Ref<string | undefined>
@@ -126,9 +126,11 @@ export const [injectDateRangePickerRootContext, provideDateRangePickerRootContex
 </script>
 
 <script setup lang="ts">
-import { computed, toRefs } from 'vue'
+import { computed, toRefs, watch } from 'vue'
+import { injectFieldRootContext } from '@/Field/FieldRoot.vue'
 import { providePopoverRootContext } from '@/Popover/PopoverRoot.vue'
 import { PopperRoot } from '@/Popper'
+import { isEqual } from '@/shared/compare'
 import { useDateRangePicker } from './useDateRangePicker'
 
 defineOptions({
@@ -178,6 +180,13 @@ const locale = useLocale(propLocale)
 // The range, placeholder, start value, open (through the composed
 // `usePopover`) and view models with their `beforeUpdate:` / `update:` emits
 // live in the composable. The root provides the Popover context itself.
+// Inside a `FieldRoot`, the composed `DateRangeFieldRoot` is the field's
+// control and reports edits made in its segments. A pick in the calendar
+// changes its value while focus is outside it, which it reads as
+// programmatic; the picker reports that one as the user's input.
+const fieldContext = injectFieldRootContext(null)
+let pendingInput: { value: unknown } | undefined
+
 const { context, popover, modelValue, open } = useDateRangePicker({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
@@ -222,7 +231,28 @@ const { context, popover, modelValue, open } = useDateRangePicker({
   baseId: useId(undefined, 'reka-popover'),
   emit: emits,
   onOpenComplete: value => emits('update:openComplete', value),
+  onUpdate: fieldContext
+    ? (value) => {
+        pendingInput = { value }
+      }
+    : undefined,
 })
+
+if (fieldContext) {
+  // After render, as the field's own watcher, so its state is current.
+  watch(() => context.modelValue.value, (value) => {
+    const pending = pendingInput
+    pendingInput = undefined
+    // A parent-driven change: the field reports it as programmatic.
+    if (!pending || !isEqual(pending.value, value))
+      return
+    // An edit in the segments: the field reports it itself.
+    const fieldElement = (context.dateFieldRef.value as { $el?: Node } | undefined)?.$el
+    if (fieldElement?.contains(getActiveElement()))
+      return
+    fieldContext.handleControlInput({ value })
+  }, { flush: 'post' })
+}
 
 providePopoverRootContext(popover.context)
 provideDateRangePickerRootContext(context)

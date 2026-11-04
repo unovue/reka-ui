@@ -77,7 +77,9 @@ export const [injectPinInputRootContext, providePinInputRootContext]
 </script>
 
 <script setup lang="ts" generic="Type extends PinInputType">
-import { mergeProps } from 'vue'
+import { mergeProps, useAttrs, watch } from 'vue'
+import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { usePinInput } from './usePinInput'
 
@@ -98,9 +100,35 @@ defineSlots<{
   }) => any
 }>()
 
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const dir = useDirection(() => props.dir)
+
+// Optional Field participation: `null` outside a `FieldRoot`, so every binding
+// below is inert without a Field. As with the date fields, the hidden input
+// takes the field's id (the label forwards focus to the first input) and the
+// root, a `role="group"` inside a Field, carries the label/description wiring.
+// The value collected is the model array, as `update:modelValue` emits it. A
+// required pin input needs every input filled, and only then is it filled.
+const field = useFieldControl({
+  id: () => props.id,
+  element: () => firstInput(),
+  getValue: () => modelValue.value,
+  required: () => props.required,
+  isFilled: (value) => {
+    const size = context.inputElements!.value.size
+    const filled = (Array.isArray(value) ? value : []).filter(item => !!item || (context.isNumericMode.value && item === 0))
+    return size > 0 && filled.length === size
+  },
+})
+const resolvedId = () => field ? field.id() : props.id
+const resolvedName = () => field ? field.name(props.name) : props.name
+const resolvedRequired = () => field ? field.required(props.required) : props.required
+const resolvedDisabled = () => field ? field.disabled(props.disabled) : props.disabled
+
+function firstInput() {
+  return Array.from(context.inputElements!.value)[0]
+}
 
 // The composable owns the model (`useControllableState`), `beforeUpdate:` /
 // `update:` and the `complete` watcher; the shell keeps `dir` resolution and
@@ -113,33 +141,59 @@ const { modelValue: model, currentModelValue, root, context } = usePinInput({
   otp: () => props.otp,
   placeholder: () => props.placeholder,
   dir,
-  disabled: () => props.disabled,
+  disabled: resolvedDisabled,
   emit: emits,
+  // Typing, pasting or deleting is the user's; a parent-driven change is
+  // reported through the watcher below.
+  onUpdate: field ? value => field.input(value) : undefined,
 })
 const modelValue = model as unknown as Readonly<Ref<PinInputValue<Type>>>
 
 providePinInputRootContext(context)
+
+// Touched once focus leaves the whole group, not when it moves between inputs.
+const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
+
+if (field)
+  watch(model, value => field.sync(value), { deep: true })
+
+// `$attrs` isn't reactive, so the Field's wiring is read during render. Its
+// state attributes go first and the root's own win; its aria ids are merged
+// with the consumer's, and a consumer `aria-invalid` (or `role`) wins.
+const attrs = useAttrs()
+function getRootAttrs() {
+  if (!field)
+    return mergeProps(attrs, root.attrs.value)
+  return mergeProps(
+    field.dataAttributes(),
+    { role: 'group' },
+    attrs,
+    { ...field.ariaAttrs(attrs, resolvedDisabled()) },
+    root.attrs.value,
+    { onFocusin: focusWithin!.onFocusin, onFocusout: focusWithin!.onFocusout },
+  )
+}
 </script>
 
 <template>
   <component
     :is="renderAs(as, asChild)"
-    v-bind="mergeProps($attrs, root.attrs.value)"
+    v-bind="getRootAttrs()"
     :ref="forwardRef"
   >
     <slot :model-value="modelValue" />
 
     <VisuallyHiddenInput
-      :id="id"
+      :id="resolvedId()"
       as="input"
       feature="focusable"
       aria-hidden="true"
       tabindex="-1"
       :value="currentModelValue.join('')"
-      :name="name ?? ''"
-      :disabled="disabled"
-      :required="required"
-      @focus="Array.from(context.inputElements!.value)?.[0]?.focus()"
+      :name="resolvedName() ?? ''"
+      :disabled="resolvedDisabled()"
+      :required="resolvedRequired()"
+      @focus="firstInput()?.focus()"
     />
   </component>
 </template>
