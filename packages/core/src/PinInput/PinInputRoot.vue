@@ -74,6 +74,14 @@ export interface PinInputRootContext<Type extends PinInputType = 'text'> {
 
 export const [injectPinInputRootContext, providePinInputRootContext]
   = createContext<PinInputRootContext<PinInputType>>('PinInputRoot')
+
+/**
+ * Inside a Field: each mounted input's `index`, so filled can check the entry
+ * at every slot. Provided only in a Field.
+ * @internal
+ */
+export const [injectPinInputFieldSlots, providePinInputFieldSlots]
+  = createContext<Map<HTMLInputElement, () => number>>('PinInputRoot', 'PinInputFieldSlots')
 </script>
 
 <script setup lang="ts" generic="Type extends PinInputType">
@@ -116,12 +124,20 @@ const field = useFieldControl({
   element: () => firstInput(),
   getValue: () => toFieldValue(modelValue.value),
   required: () => props.required,
+  // Every mounted slot's entry, by its `index`: not a count, which an extra
+  // entry past the last slot could make up for an empty one.
   isFilled: (value) => {
-    const size = context.inputElements!.value.size
-    const filled = (Array.isArray(value) ? value : []).filter(item => !!item || (context.isNumericMode.value && item === 0))
-    return size > 0 && filled.length === size
+    const entries = Array.isArray(value) ? value : []
+    const indexes = [...fieldSlots!.values()]
+    return indexes.length > 0 && indexes.every((index) => {
+      const item = entries[index()]
+      return !!item || (context.isNumericMode.value && item === 0)
+    })
   },
 })
+const fieldSlots = field ? new Map<HTMLInputElement, () => number>() : undefined
+if (fieldSlots)
+  providePinInputFieldSlots(fieldSlots)
 const resolvedId = () => field ? field.id() : props.id
 const resolvedName = () => field ? field.name(props.name) : props.name
 const resolvedRequired = () => field ? field.required(props.required) : props.required

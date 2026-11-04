@@ -137,3 +137,21 @@ describe('given a Field-wrapped PinInput', () => {
     wrapper.unmount()
   })
 })
+
+describe('given a required Field-wrapped PinInput with an empty slot', () => {
+  it('is not filled even when the model has as many digits as there are inputs', async () => {
+    const onFormSubmit = vi.fn()
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FormRoot, { onFormSubmit }, () => [
+        h(FieldRoot, { 'name': 'code', 'required': true, 'data-testid': 'field' }, () => render({ modelValue: ['1', '', '3', '4'] })),
+        h('button', { type: 'submit' }, 'Submit'),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="field"]').attributes('data-filled')).toBeUndefined()
+    await wrapper.find('button[type="submit"]').trigger('submit')
+    await flushPromises()
+    expect(onFormSubmit).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+})
