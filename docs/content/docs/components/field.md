@@ -18,7 +18,7 @@ Accessible wiring between a label, control, description, and error message, with
 <Highlights
   :features="[
     'Generates and wires up ids/aria-describedby/aria-invalid automatically.',
-    'Works with a plain native input, or with existing reka controls (Checkbox, Select, DateField, ...) placed inside it.',
+    'Works with a plain native input, or with a Checkbox, Select, DateField (or DatePicker) or TagGroup placed inside it.',
     'Sync or async custom validation, with `onSubmit`/`onBlur`/`onChange` timing and optional debounce.',
     'Validates `required` on non-native controls (Checkbox, Select, DateField) too.',
     'Reads native constraint-validation state (`required`, `pattern`, `type=email`, ...) automatically.',
@@ -118,7 +118,7 @@ A native form control (`input` by default — pass `as="textarea"` or `as="selec
 
 Bind its value with `v-model`, or set a starting value with `default-value`. A controlled value is validated when it changes, so a value you reject or rewrite never reaches the field.
 
-Existing reka controls (`CheckboxRoot`, `SelectRoot`/`SelectTrigger`, `DateFieldRoot`, ...) can be used directly inside a `FieldRoot` instead of `FieldControl` — they pick up the same wiring automatically by optionally reading the Field's context, and behave exactly as before when used outside a Field.
+`CheckboxRoot`, `SelectRoot`/`SelectTrigger`, `DateFieldRoot` (also inside a `DatePickerRoot`) and `TagGroupRoot` can be used directly inside a `FieldRoot` instead of `FieldControl` — they pick up the same wiring automatically by optionally reading the Field's context, and behave exactly as before when used outside a Field. Other controls don't register with the field yet; see [Forms and validation](/docs/guides/forms#other-controls).
 
 <!-- @include: @/meta/FieldControl.md -->
 
@@ -205,7 +205,7 @@ A `FieldRoot` without its own `validation-mode` uses the `FormRoot`'s.
 
 ### Using an existing reka control
 
-Place any reka form control inside a `FieldRoot` instead of `FieldControl` — it participates automatically.
+Place a `CheckboxRoot`, `SelectRoot`, `DateFieldRoot`, `DatePickerRoot` or `TagGroupRoot` inside a `FieldRoot` instead of `FieldControl` — it participates automatically. Other Reka UI controls (Switch, Radio Group, Combobox, Number Field, …) don't register with a field yet: see [Forms and validation](/docs/guides/forms#other-controls) for how to use them in a form.
 
 ```vue line=5-8
 <script setup>

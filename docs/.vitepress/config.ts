@@ -115,6 +115,8 @@ export default defineConfig({
           { text: 'Animation/Transition', link: '/docs/guides/animation' },
           { text: 'Composition', link: '/docs/guides/composition' },
           { text: `Controlled State ${BadgeHTML('New')}`, link: '/docs/guides/controlled-state' },
+          { text: `Headless composables ${BadgeHTML('New')}`, link: '/docs/guides/composables' },
+          { text: `Forms and validation ${BadgeHTML('New')}`, link: '/docs/guides/forms' },
           {
             text: 'Server side rendering',
             link: '/docs/guides/server-side-rendering',

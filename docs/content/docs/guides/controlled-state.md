@@ -78,7 +78,7 @@ An **uncontrolled** component manages its own state internally, without requirin
 #### Example: Uncontrolled `SwitchRoot`
 ```vue
 <template>
-  <SwitchRoot default-value="true">
+  <SwitchRoot :default-value="true">
     <SwitchThumb />
   </SwitchRoot>
 </template>
@@ -177,7 +177,7 @@ The components do not expose it as a slot prop, as in Base UI: listen to `update
 <SwitchRoot :modelValue="true" />
 
 <!-- ✅ Correct: -->
-<SwitchRoot defaultValue="true" />
+<SwitchRoot :defaultValue="true" />
 ```
 
 ### 3. Not Providing a Setter for Computed Props
