@@ -109,6 +109,27 @@ describe('given a Field-wrapped PinInput', () => {
     wrapper.unmount()
   })
 
+  it.each(['text', 'number'])('is no longer dirty once every %s digit is cleared', async (type_) => {
+    const { wrapper, field, submit, onFormSubmit } = mountField({}, { type: type_ })
+    await nextTick()
+    await type(wrapper, '123')
+    expect(field().attributes('data-dirty')).toBe('')
+
+    // Clear them out of order, so no clear is of the last entered digit.
+    const user = userEvent.setup()
+    for (const index of [0, 2, 1]) {
+      await user.click(inputs(wrapper)[index])
+      await user.keyboard('{Delete}')
+    }
+    await flushPromises()
+    expect(inputs(wrapper).map(input => input.value)).toEqual(['', '', ''])
+    expect(field().attributes('data-dirty')).toBeUndefined()
+    expect(field().attributes('data-filled')).toBeUndefined()
+    await submit()
+    expect(onFormSubmit.mock.calls[0][0]).toEqual({ code: [] })
+    wrapper.unmount()
+  })
+
   it('disables every input with the field', async () => {
     const { wrapper } = mountField({ disabled: true })
     await nextTick()

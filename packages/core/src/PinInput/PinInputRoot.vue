@@ -108,12 +108,13 @@ const dir = useDirection(() => props.dir)
 // below is inert without a Field. As with the date fields, the hidden input
 // takes the field's id (the label forwards focus to the first input) and the
 // root, a `role="group"` inside a Field, carries the label/description wiring.
-// The value collected is the model array, as `update:modelValue` emits it. A
-// required pin input needs every input filled, and only then is it filled.
+// The value collected is the model array, as `update:modelValue` emits it,
+// without trailing empty entries (see `toFieldValue`). A required pin input
+// needs every input filled, and only then is it filled.
 const field = useFieldControl({
   id: () => props.id,
   element: () => firstInput(),
-  getValue: () => modelValue.value,
+  getValue: () => toFieldValue(modelValue.value),
   required: () => props.required,
   isFilled: (value) => {
     const size = context.inputElements!.value.size
@@ -125,6 +126,19 @@ const resolvedId = () => field ? field.id() : props.id
 const resolvedName = () => field ? field.name(props.name) : props.name
 const resolvedRequired = () => field ? field.required(props.required) : props.required
 const resolvedDisabled = () => field ? field.disabled(props.disabled) : props.disabled
+
+// The model keeps a cleared input's entry in some cases (`undefined` in number
+// mode, a gap before a later digit), so clearing every digit can leave
+// `[undefined, undefined, undefined]`. The field sees the value without its
+// trailing empty entries, so a cleared pin equals an initial `[]` (and isn't
+// dirty) and submits as one. Done here rather than in FieldRoot's generic
+// comparison: only the pin input knows an empty entry carries no value.
+function toFieldValue(value: unknown) {
+  const entries = Array.isArray(value) ? [...value] : []
+  while (entries.length > 0 && (entries.at(-1) === undefined || entries.at(-1) === null || entries.at(-1) === ''))
+    entries.pop()
+  return entries
+}
 
 function firstInput() {
   return Array.from(context.inputElements!.value)[0]
@@ -145,7 +159,7 @@ const { modelValue: model, currentModelValue, root, context } = usePinInput({
   emit: emits,
   // Typing, pasting or deleting is the user's; a parent-driven change is
   // reported through the watcher below.
-  onUpdate: field ? value => field.input(value) : undefined,
+  onUpdate: field ? value => field.input(toFieldValue(value)) : undefined,
 })
 const modelValue = model as unknown as Readonly<Ref<PinInputValue<Type>>>
 
