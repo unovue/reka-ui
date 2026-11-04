@@ -5,6 +5,7 @@ import type { BaseChangeReason, By, ChangeEventDetails, PartSurface, SelectionSt
 import type { AcceptableValue, Direction } from '@/shared/types'
 import { computed, nextTick, ref, shallowReactive, toValue } from 'vue'
 import { compare, createPartSurface, getActiveElement, selectionState, useControllableState, useTypeahead, valueComparator } from '@/shared'
+import { compareDocumentOrder } from '@/shared/documentOrder'
 
 /**
  * Why the selection changed; carried as `details.reason` on every change (#2828).
@@ -325,7 +326,7 @@ export function useTagGroup<T extends AcceptableValue = AcceptableValue>(props: 
   function getOrderedItems() {
     return Array.from(items, item => ({ ...item, el: item.element() }))
       .filter((item): item is TagGroupItemRegistration & { el: HTMLElement } => !!item.el)
-      .sort((a, b) => a.el.compareDocumentPosition(b.el) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
+      .sort((a, b) => compareDocumentOrder(a.el, b.el))
   }
 
   function isDisabledValue(value: T) {

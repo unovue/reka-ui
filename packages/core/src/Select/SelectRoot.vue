@@ -8,6 +8,7 @@ import type { SelectionSelector } from '@/shared/selectionSelector'
 import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
 import { useCollection } from '@/Collection'
 import { createContext, isNullish, useDirection, useFormControl, useId } from '@/shared'
+import { compareDocumentOrder } from '@/shared/documentOrder'
 import { isDisabledItem } from '@/shared/isDisabledItem'
 
 export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
@@ -245,7 +246,7 @@ closedItems.liveItems = () => {
     return []
   return items
     .slice()
-    .sort((a, b) => a.ref.compareDocumentPosition(b.ref) & Node.DOCUMENT_POSITION_PRECEDING ? 1 : -1)
+    .sort((a, b) => compareDocumentOrder(a.ref, b.ref))
     .map(item => ({ value: item.value.value, textValue: item.value.textValue, disabled: isDisabledItem(item.ref) }))
 }
 
