@@ -152,11 +152,13 @@ const isFormControl = useFormControl(currentElement)
 // binding below is inert without a Field. The root owns the value; the input
 // (Base UI parity) carries the field's id, label and aria wiring.
 const field = useFieldControl({
+  // Getters read bindings that are retained anyway, not the composable's
+  // return object: capturing it in a closure would keep it alive per instance.
   // The input renders its own `id`, else the field's.
-  id: () => combobox.context.inputElement.value?.id || undefined,
-  element: () => combobox.context.inputElement.value,
+  id: () => context.inputElement.value?.id || undefined,
+  element: () => context.inputElement.value,
   // The input text.
-  getValue: () => combobox.modelValue.value,
+  getValue: () => modelValue.value,
   required: () => props.required,
 })
 // Getters rather than computeds: cheap, and free for a standalone autocomplete.

@@ -110,15 +110,16 @@ const isFormControl = useFormControl(currentElement)
 // below is inert without a Field. The input is the field's control (id, label,
 // focus); the value collected is the `Color`, as emitted. A color field always
 // holds a color, so `required` never fails.
-const fieldInput: ColorFieldFieldControl['input'] = shallowRef()
+// The ref is only created inside a Field, so a standalone field allocates nothing.
+let fieldInput: ColorFieldFieldControl['input'] | undefined
 const field = useFieldControl({
-  id: () => fieldInput.value?.id(),
-  element: () => fieldInput.value?.element(),
+  id: () => fieldInput?.value?.id(),
+  element: () => fieldInput?.value?.element(),
   getValue: () => color.value,
   required: () => props.required,
 })
-const resolvedName = () => field ? field.name(props.name) : props.name
-const resolvedRequired = () => field ? field.required(props.required) : props.required
+if (field)
+  fieldInput = shallowRef()
 
 const { root, context, color, disabled } = useColorField({
   colorSpace: () => props.colorSpace,
@@ -139,7 +140,7 @@ const { root, context, color, disabled } = useColorField({
 provideColorFieldRootContext(context)
 
 if (field) {
-  provideColorFieldFieldControl({ binding: field, input: fieldInput })
+  provideColorFieldFieldControl({ binding: field, input: fieldInput! })
   watch(color, value => field.sync(value))
 }
 </script>
@@ -153,12 +154,12 @@ if (field) {
     <slot />
 
     <VisuallyHiddenInput
-      v-if="isFormControl && resolvedName()"
+      v-if="isFormControl && (field ? field.name(name) : name)"
       type="text"
       :value="colorToString(color, 'hex')"
-      :name="resolvedName()!"
+      :name="(field ? field.name(name) : name)!"
       :disabled="disabled"
-      :required="resolvedRequired()"
+      :required="field ? field.required(required) : required"
     />
   </component>
 </template>

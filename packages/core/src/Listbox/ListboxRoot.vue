@@ -203,18 +203,20 @@ const isFormControl = useFormControl(currentElement)
 // Optional Field participation: `null` outside a `FieldRoot`, so every
 // binding below is inert without a Field. The root owns the value;
 // `ListboxContent` carries the field's id, label and aria wiring.
-const fieldContent = shallowRef<HTMLElement>()
+// The ref is only created inside a Field, so a standalone listbox allocates nothing.
+let fieldContent: ShallowRef<HTMLElement | undefined> | undefined
 const field = useFieldControl({
+  // Getters read bindings that are retained anyway, not the composable's
+  // return object: capturing it in a closure would keep it alive per instance.
   // The content renders its own `id`, else the field's.
-  id: () => fieldContent.value?.id || undefined,
-  element: () => fieldContent.value,
-  getValue: () => listbox.modelValue.value,
+  id: () => fieldContent?.value?.id || undefined,
+  element: () => fieldContent?.value,
+  getValue: () => modelValue.value,
   required: () => props.required,
 })
-// Getters rather than computeds: cheap, and free for a standalone listbox.
-const resolvedName = () => field ? field.name(props.name) : props.name
-const resolvedRequired = () => field ? field.required(props.required) : props.required
-const resolvedDisabled = () => field ? field.disabled(props.disabled) : props.disabled
+if (field)
+  fieldContent = shallowRef()
+const resolvedDisabled = field ? () => field.disabled(props.disabled) : () => props.disabled
 
 const listbox = useListboxRoot<AcceptableValue>({
   modelValue: () => props.modelValue,
@@ -260,7 +262,11 @@ defineExpose(mergeExpose(expose, {
 }))
 
 provideListboxRootContext(context)
-provideListboxFieldContext(field ? { field, contentElement: fieldContent } : null)
+if (field)
+  provideListboxFieldContext({ field, contentElement: fieldContent! })
+// Only shadow an ancestor listbox's wiring; otherwise providing nothing already reads as `null`.
+else if (injectListboxFieldContext(null))
+  provideListboxFieldContext(null)
 
 if (field)
   watch(modelValue, value => field.sync(value))
@@ -280,11 +286,11 @@ const fieldFocusHandlers = focusWithin && { onFocusin: focusWithin.onFocusin, on
     <slot :model-value="modelValue" />
 
     <VisuallyHiddenInput
-      v-if="isFormControl && resolvedName()"
-      :name="resolvedName()!"
+      v-if="isFormControl && (field ? field.name(name) : name)"
+      :name="(field ? field.name(name) : name)!"
       :value="modelValue"
       :disabled="resolvedDisabled()"
-      :required="resolvedRequired()"
+      :required="field ? field.required(required) : required"
     />
   </component>
 </template>

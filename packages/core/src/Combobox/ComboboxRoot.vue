@@ -207,17 +207,17 @@ const isFormControl = useFormControl(currentElement)
 // binding below is inert without a Field. The root owns the value; the input
 // (Base UI parity) carries the field's id, label and aria wiring.
 const field = useFieldControl({
+  // Getters read bindings that are retained anyway, not the composable's
+  // return object: capturing it in a closure would keep it alive per instance.
   // The input renders its own `id`, else the field's.
-  id: () => combobox.context.inputElement.value?.id || undefined,
-  element: () => combobox.context.inputElement.value ?? combobox.context.triggerElement.value,
+  id: () => context.inputElement.value?.id || undefined,
+  element: () => context.inputElement.value ?? context.triggerElement.value,
   // The selected value(s), not the typed text.
-  getValue: () => combobox.modelValue.value,
+  getValue: () => modelValue.value,
   required: () => props.required,
 })
 // Getters rather than computeds: cheap, and free for a standalone combobox.
-const resolvedName = () => field ? field.name(props.name) : props.name
-const resolvedRequired = () => field ? field.required(props.required) : props.required
-const resolvedDisabled = () => field ? field.disabled(props.disabled) : props.disabled
+const resolvedDisabled = field ? () => field.disabled(props.disabled) : () => props.disabled
 
 const combobox = useComboboxRoot<AcceptableValue>({
   modelValue: () => props.modelValue,
@@ -284,11 +284,11 @@ provideComboboxField(field, context)
       />
 
       <VisuallyHiddenInput
-        v-if="isFormControl && resolvedName()"
-        :name="resolvedName()!"
+        v-if="isFormControl && (field ? field.name(name) : name)"
+        :name="(field ? field.name(name) : name)!"
         :value="modelValue"
         :disabled="resolvedDisabled()"
-        :required="resolvedRequired()"
+        :required="field ? field.required(required) : required"
       />
     </component>
   </PopperRoot>

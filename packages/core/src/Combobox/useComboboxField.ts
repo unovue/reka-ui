@@ -28,7 +28,10 @@ export const [injectComboboxFieldContext, provideComboboxFieldContext]
  */
 export function provideComboboxField(field: FieldControlBinding | null, context: ComboboxRootContext<any>) {
   if (!field) {
-    provideComboboxFieldContext(null)
+    // Only shadow an ancestor combobox's wiring; otherwise providing nothing
+    // already reads as `null`, and costs nothing.
+    if (injectComboboxFieldContext(null))
+      provideComboboxFieldContext(null)
     return
   }
 

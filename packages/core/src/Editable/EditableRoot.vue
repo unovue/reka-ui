@@ -146,16 +146,18 @@ const isFormControl = useFormControl(currentElement)
 // invalid state; the field is touched when focus leaves the whole editable.
 // The value collected is the submitted string, not the draft.
 const nativeInput = ref<InstanceType<typeof VisuallyHidden>>()
-const previewElement: EditableFieldControl['preview'] = shallowRef()
+// Created only inside a Field, so a standalone editable doesn't allocate it.
+let previewElement: EditableFieldControl['preview'] | undefined
 const field = useFieldControl({
   id: () => props.id,
-  element: () => (isEditing.value ? context.inputRef.value : previewElement.value) ?? context.inputRef.value,
+  element: () => (isEditing.value ? context.inputRef.value : previewElement?.value) ?? context.inputRef.value,
   getValue: () => modelValue.value,
   validityElement: () => nativeInput.value?.$el as HTMLInputElement | undefined,
 })
-const resolvedName = () => field ? field.name(props.name) : props.name
-const resolvedRequired = () => field ? field.required(props.required) : props.required
-const resolvedDisabled = () => field ? field.disabled(props.disabled) : props.disabled
+if (field)
+  previewElement = shallowRef()
+const resolvedName = field ? () => field.name(props.name) : () => props.name
+const resolvedDisabled = field ? () => field.disabled(props.disabled) : () => props.disabled
 
 const { modelValue, isEditing, isEmpty, edit, cancel, submit, dismiss, root, context } = useEditable({
   modelValue: () => props.modelValue,
@@ -176,12 +178,12 @@ const { modelValue, isEditing, isEmpty, edit, cancel, submit, dismiss, root, con
   // A submit is the user's (whatever started it); a parent-driven change is
   // reported through the watcher below.
   onUpdate: field
-    ? value => pendingInput.set(value)
+    ? value => pendingInput!.set(value)
     : undefined,
 })
 
 // The value of a submitted change, reported once the hidden input has rendered it.
-const pendingInput = createPendingFieldInput<string | null | undefined>()
+const pendingInput = field ? createPendingFieldInput<string | null | undefined>() : undefined
 // Touched once focus leaves the whole editable, not when it moves from the
 // preview to the input. A blur can submit the draft (`submitMode`), through a
 // focus-outside check that settles a couple of ticks later, so the blur is
@@ -195,9 +197,9 @@ const focusWithin = useFieldFocusWithin(field && {
 }, currentElement as Ref<HTMLElement | undefined>)
 
 if (field) {
-  provideEditableFieldControl({ binding: field, preview: previewElement })
+  provideEditableFieldControl({ binding: field, preview: previewElement! })
   watch(modelValue, (value) => {
-    const pending = pendingInput.take()
+    const pending = pendingInput!.take()
     if (pending && Object.is(pending.value, value))
       field.input(value)
     else
@@ -206,7 +208,7 @@ if (field) {
 }
 
 function focusControl() {
-  (isEditing.value ? context.inputRef.value : previewElement.value)?.focus()
+  (isEditing.value ? context.inputRef.value : previewElement?.value)?.focus()
 }
 
 // The Field's state attributes go first, so the root's own and the consumer's win.
@@ -271,7 +273,7 @@ provideEditableRootContext(context)
       :value="modelValue ?? ''"
       :name="resolvedName()"
       :disabled="resolvedDisabled()"
-      :required="resolvedRequired()"
+      :required="field ? field.required(required) : required"
       @focus="focusControl"
     />
     <VisuallyHiddenInput
