@@ -117,7 +117,8 @@ const isFormControl = useFormControl(currentElement)
 // `allowInvalid` value out of range).
 const nativeInput = ref<InstanceType<typeof VisuallyHidden>>()
 const field = useFieldControl({
-  id: () => props.id,
+  // The input renders `id` (or its own), else the field's.
+  id: () => context.inputEl.value?.id || props.id,
   element: () => context.inputEl.value,
   getValue: () => modelValue.value ?? null,
   validityElement: () => nativeInput.value?.$el as HTMLInputElement | undefined,

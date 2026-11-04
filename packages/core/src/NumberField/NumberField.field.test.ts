@@ -122,3 +122,18 @@ describe('given a Field-wrapped NumberField', () => {
     wrapper.unmount()
   })
 })
+
+describe('given a Field-wrapped NumberField whose input has its own id', () => {
+  it('points the label at the input', async () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { name: 'amount' }, () => [
+        h(FieldLabel, () => 'Amount'),
+        h(NumberFieldRoot, null, () => h(NumberFieldInput, { id: 'amount' })),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    expect(wrapper.find('label').attributes('for')).toBe('amount')
+    expect(wrapper.find('input#amount').exists()).toBe(true)
+    wrapper.unmount()
+  })
+})
