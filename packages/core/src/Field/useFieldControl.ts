@@ -1,5 +1,6 @@
+import type { InjectionKey } from 'vue'
 import type { FieldControlRegistration, FieldDataAttributes, FieldRootContext } from './FieldRoot.vue'
-import { onBeforeUnmount, onMounted } from 'vue'
+import { inject, onBeforeUnmount, onMounted, provide } from 'vue'
 import { injectFieldRootContext } from './FieldRoot.vue'
 
 export interface UseFieldControlOptions extends Omit<FieldControlRegistration, 'id'> {
@@ -53,6 +54,9 @@ export interface FieldControlBinding {
   sync: (value: unknown) => void
 }
 
+// The field whose control an ancestor component already is.
+const FIELD_CONTROL_OWNER: InjectionKey<FieldRootContext> = Symbol('FieldControlOwner')
+
 function mergeIds(consumerValue: unknown, fieldValue: string | undefined) {
   return [consumerValue as string | undefined, fieldValue].filter(Boolean).join(' ') || undefined
 }
@@ -60,12 +64,15 @@ function mergeIds(consumerValue: unknown, fieldValue: string | undefined) {
 /**
  * Optional participation of a Reka control in an ancestor `FieldRoot`.
  * Returns `null` outside a Field, creating no reactive state, so a standalone
- * control pays nothing for it.
+ * control pays nothing for it. Also `null` inside another control of the
+ * same field (e.g. a `TagsInput` composed into a `Combobox`): the outer
+ * control owns the field.
  */
 export function useFieldControl(options: UseFieldControlOptions): FieldControlBinding | null {
   const context = injectFieldRootContext(null)
-  if (!context)
+  if (!context || inject(FIELD_CONTROL_OWNER, null) === context)
     return null
+  provide(FIELD_CONTROL_OWNER, context)
 
   const { id: ownId, participates = () => true, ...registration } = options
   const isFilled = (value: unknown) => registration.isFilled

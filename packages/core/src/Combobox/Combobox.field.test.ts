@@ -132,3 +132,39 @@ describe('given a Field-wrapped Combobox', () => {
     wrapper.unmount()
   })
 })
+
+describe('given a TagsInput composed into a Field-wrapped Combobox', () => {
+  it('lets the Combobox own the field, wiring the shared input once', async () => {
+    const { TagsInputInput, TagsInputRoot } = await import('@/TagsInput')
+    const model = ref<string[]>([])
+    const onFormSubmit = vi.fn()
+    const Harness = defineComponent({
+      setup: () => () => h(FormRoot, { onFormSubmit }, () => [
+        h(FieldRoot, { name: 'fruits' }, () => [
+          h(FieldLabel, () => 'Fruits'),
+          h(ComboboxRoot, { 'modelValue': model.value, 'onUpdate:modelValue': (value: string[]) => { model.value = value }, 'multiple': true }, () => [
+            h(ComboboxAnchor, () => [
+              h(TagsInputRoot, { 'modelValue': model.value, 'onUpdate:modelValue': (value: string[]) => { model.value = value } }, () =>
+                h(ComboboxInput, { asChild: true }, () => h(TagsInputInput, { 'data-testid': 'input' }))),
+              h(ComboboxTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
+            ]),
+            h(ComboboxPortal, () => h(ComboboxContent, () => h(ComboboxViewport, () =>
+              fruits.map(fruit => h(ComboboxItem, { value: fruit }, () => fruit))))),
+          ]),
+        ]),
+        h('button', { type: 'submit' }, 'Submit'),
+      ]),
+    })
+    const wrapper = mount(Harness, { attachTo: document.body })
+    await nextTick()
+
+    const label = wrapper.find('label').element
+    expect(input(wrapper).getAttribute('aria-labelledby')).toBe(label.id)
+    expect(label.getAttribute('for')).toBe(input(wrapper).id)
+
+    await selectItem(wrapper, 'Banana')
+    await wrapper.find('button[type="submit"]').trigger('submit')
+    expect(onFormSubmit.mock.calls[0][0]).toEqual({ fruits: ['Banana'] })
+    wrapper.unmount()
+  })
+})
