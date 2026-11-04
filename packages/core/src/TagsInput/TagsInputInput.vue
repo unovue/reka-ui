@@ -54,11 +54,10 @@ onMounted(() => {
 })
 
 if (fieldContext) {
-  // Followed, not read once: an as-child change swaps the element.
+  // Followed, not read once: an as-child change swaps the element. The root
+  // resolves the input inside it on each read, as slot content can replace it.
   watch(currentElement, (element) => {
-    const inputEl = element?.nodeName === 'INPUT' ? element : element?.querySelector('input')
-    if (inputEl)
-      fieldContext.inputElement.value = inputEl as HTMLInputElement
+    fieldContext.inputElement.value = (element ?? undefined) as HTMLElement | undefined
   }, { immediate: true })
   onBeforeUnmount(() => {
     fieldContext.inputElement.value = undefined

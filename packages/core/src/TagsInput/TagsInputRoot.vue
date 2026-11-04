@@ -91,12 +91,20 @@ export const [injectTagsInputRootContext, provideTagsInputRootContext]
  */
 export interface TagsInputFieldContext {
   field: FieldControlBinding
-  /** The `TagsInputInput` element. */
-  inputElement: ShallowRef<HTMLInputElement | undefined>
+  /**
+   * The `TagsInputInput` element: the `input`, or a wrapper rendering one. The
+   * inner input is resolved on each read, as slot content can replace it.
+   */
+  inputElement: ShallowRef<HTMLElement | undefined>
 }
 
 export const [injectTagsInputFieldContext, provideTagsInputFieldContext]
   = createContext<TagsInputFieldContext | null>('TagsInputRoot', 'TagsInputFieldContext')
+
+/** The `input` a `TagsInputInput` element is, or renders. */
+function resolveFieldInput(element: HTMLElement | undefined) {
+  return (element?.nodeName === 'INPUT' ? element : element?.querySelector('input') ?? undefined) as HTMLInputElement | undefined
+}
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableInputValue = string">
@@ -143,11 +151,11 @@ useCollectionSlot(currentElement)
 // Optional Field participation: `null` outside a `FieldRoot`, so every
 // binding below is inert without a Field. The root owns the tags;
 // `TagsInputInput` carries the field's id, label and aria wiring.
-const fieldInput = shallowRef<HTMLInputElement>()
+const fieldInput = shallowRef<HTMLElement>()
 const field = useFieldControl({
   // The input renders `id` (or its own), else the field's.
-  id: () => fieldInput.value?.id || props.id,
-  element: () => fieldInput.value,
+  id: () => resolveFieldInput(fieldInput.value)?.id || props.id,
+  element: () => resolveFieldInput(fieldInput.value),
   getValue: () => modelValue.value,
   required: () => props.required,
 })

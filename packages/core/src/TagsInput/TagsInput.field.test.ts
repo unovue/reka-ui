@@ -141,3 +141,27 @@ describe('given a Field-wrapped TagsInput whose as-child input changes', () => {
     wrapper.unmount()
   })
 })
+
+describe('given a Field-wrapped TagsInput whose wrapped input is replaced while the wrapper stays mounted', () => {
+  it('focuses the replacement and points the label at it', async () => {
+    const swapped = ref(false)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { name: 'tags' }, () => [
+        h(FieldLabel, () => 'Tags'),
+        h(FieldLabel, { 'nativeLabel': false, 'as': 'div', 'data-testid': 'label' }, () => 'Tags'),
+        h(TagsInputRoot, null, () => h(TagsInputInput, { as: 'div' }, () =>
+          h('input', { 'key': swapped.value ? 'b' : 'a', 'id': swapped.value ? 'b' : 'a', 'data-testid': swapped.value ? 'b' : 'a' }))),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    expect(wrapper.find('label').attributes('for')).toBe('a')
+    swapped.value = true
+    await flushPromises()
+    expect(wrapper.find('[data-testid="a"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="label"]').trigger('click')
+    expect(document.activeElement).toBe(wrapper.find('[data-testid="b"]').element)
+    expect(wrapper.find('label').attributes('for')).toBe('b')
+    wrapper.unmount()
+  })
+})
