@@ -104,7 +104,7 @@ function onSubmit(event) {
 </template>
 ```
 
-To show a validation error for such a control, wrap it in a `FieldRoot`, compute the error yourself and pass `:invalid` (here `submitted` is a flag you set in your submit handler). The `FieldError` then shows your message, and an invalid field also blocks the `FormRoot` submission:
+To show a validation error for such a control, wrap it in a `FieldRoot`, compute the error yourself and pass `:invalid` (here `submitted` is a flag you set in your submit handler). The `FieldError` then shows your message, and an invalid field also blocks the `FormRoot` submission. Focus doesn't move to such a control when the submission is blocked, because it doesn't register a control element with the field, and `submit` doesn't fire for a blocked submission:
 
 ```vue
 <template>

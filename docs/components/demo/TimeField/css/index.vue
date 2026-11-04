@@ -17,8 +17,8 @@ import './styles.css'
       class="TimeField"
     >
       <template
-        v-for="item in segments"
-        :key="item.part"
+        v-for="(item, index) in segments"
+        :key="item.part === 'literal' ? index : item.part"
       >
         <TimeFieldInput
           v-if="item.part === 'literal'"

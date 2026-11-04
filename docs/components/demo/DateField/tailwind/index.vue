@@ -17,8 +17,8 @@ import { DateFieldInput, DateFieldRoot, Label } from 'reka-ui'
       class="w-36 flex select-none bg-white items-center rounded-lg shadow-sm text-center text-green10 border p-1 data-[invalid]:border-red-500"
     >
       <template
-        v-for="item in segments"
-        :key="item.part"
+        v-for="(item, index) in segments"
+        :key="item.part === 'literal' ? index : item.part"
       >
         <DateFieldInput
           v-if="item.part === 'literal'"

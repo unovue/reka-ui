@@ -509,6 +509,9 @@ const forwarded = useForwardPropsEmits(props, emits)
 
 ```ts
 import { useDialog } from 'reka-ui'
+import { ref } from 'vue'
+
+const saving = ref(false)
 
 const dialog = useDialog({
   onBeforeUpdate: (open, details) => {

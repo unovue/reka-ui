@@ -84,8 +84,8 @@ function onFormSubmit(values: Record<string, unknown>) {
         >
           <div class="flex items-center">
             <template
-              v-for="item in segments"
-              :key="item.part"
+              v-for="(item, index) in segments"
+              :key="item.part === 'literal' ? index : item.part"
             >
               <DatePickerInput
                 v-if="item.part === 'literal'"

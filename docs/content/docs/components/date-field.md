@@ -121,7 +121,7 @@ The examples render the segments from the root's slot, as the demo at the top of
 ```vue
 <template>
   <DateFieldRoot v-slot="{ segments }">
-    <template v-for="item in segments" :key="item.part">
+    <template v-for="(item, index) in segments" :key="item.part === 'literal' ? index : item.part">
       <DateFieldInput :part="item.part">
         {{ item.value }}
       </DateFieldInput>
@@ -151,7 +151,7 @@ const placeholder = Temporal.PlainDateTime.from('2026-11-04T08:00')
     granularity="minute"
     :hour-cycle="24"
   >
-    <DateFieldInput v-for="item in segments" :key="item.part" :part="item.part">
+    <DateFieldInput v-for="(item, index) in segments" :key="item.part === 'literal' ? index : item.part" :part="item.part">
       {{ item.value }}
     </DateFieldInput>
   </DateFieldRoot>
@@ -175,7 +175,7 @@ const latest = today().subtract({ years: 18 })
     :max-value="latest"
     class="data-[invalid]:border-red-500"
   >
-    <DateFieldInput v-for="item in segments" :key="item.part" :part="item.part">
+    <DateFieldInput v-for="(item, index) in segments" :key="item.part === 'literal' ? index : item.part" :part="item.part">
       {{ item.value }}
     </DateFieldInput>
   </DateFieldRoot>
@@ -191,7 +191,7 @@ Inside a [`FieldRoot`](field) the date field takes the field's `name`, `required
   <FieldRoot name="birthday" required>
     <FieldLabel>Date of birth</FieldLabel>
     <DateFieldRoot v-slot="{ segments }">
-      <DateFieldInput v-for="item in segments" :key="item.part" :part="item.part">
+      <DateFieldInput v-for="(item, index) in segments" :key="item.part === 'literal' ? index : item.part" :part="item.part">
         {{ item.value }}
       </DateFieldInput>
     </DateFieldRoot>

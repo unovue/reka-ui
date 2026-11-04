@@ -11,7 +11,7 @@ const isDirty = computed(() => name.value !== savedName.value)
 const blocked = ref(false)
 
 // Runs before the tab changes, for a click, an arrow key or focus alike.
-// Cancelling keeps the current tab selected and focus where it was.
+// Cancelling keeps the current tab selected. Keyboard focus can still move to the target tab.
 function guardUnsaved(_value: string | number | undefined, details: ChangeEventDetails<TabsChangeReason>) {
   blocked.value = isDirty.value
   if (isDirty.value)
@@ -68,7 +68,7 @@ const buttonClass = 'h-8 rounded-lg px-3 text-sm font-medium outline-none focus-
         >
       </label>
       <p
-        v-if="blocked"
+        v-if="blocked && isDirty"
         role="alert"
         class="text-xs text-red-500"
       >

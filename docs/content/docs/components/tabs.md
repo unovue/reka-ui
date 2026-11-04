@@ -215,7 +215,10 @@ const route = useRoute()
 const router = useRouter()
 
 const tab = computed({
-  get: () => (route.query.tab as string | undefined) ?? 'overview',
+  get: () => {
+    const tab = route.query.tab
+    return (Array.isArray(tab) ? tab[0] : tab) ?? 'overview'
+  },
   set: value => router.replace({ query: { ...route.query, tab: value } }),
 })
 </script>
