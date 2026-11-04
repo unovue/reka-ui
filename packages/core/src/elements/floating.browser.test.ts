@@ -31,9 +31,12 @@ function tooltip(name: string) {
     </reka-tooltip-root>`
 }
 
+// The delays leave room for `userEvent.hover` round trips, which can take a few
+// hundred milliseconds in a loaded Firefox: `delay-duration` for a hover and a
+// 100ms wait inside it, `skip-delay-duration` for two hovers, trigger to trigger.
 const TOOLTIPS = `
   <button id="outside">Outside</button>
-  <reka-tooltip-provider delay-duration="200" skip-delay-duration="300">
+  <reka-tooltip-provider delay-duration="500" skip-delay-duration="1000">
     ${tooltip('bold')}
     ${tooltip('italic')}
   </reka-tooltip-provider>
@@ -94,7 +97,7 @@ describe('tooltip elements', () => {
     // Away for longer than `skip-delay-duration`: the delay applies again.
     await userEvent.hover(query('#away'))
     await vi.waitFor(() => expect(italicContent.hasAttribute('data-reka-unmounted')).toBe(true))
-    await wait(400)
+    await wait(1100)
     await userEvent.hover(bold)
     await wait(100)
     expect(query('[data-test=bold-content]').hasAttribute('data-reka-unmounted')).toBe(true)
