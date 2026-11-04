@@ -77,11 +77,11 @@ export const [injectPinInputRootContext, providePinInputRootContext]
 
 /**
  * Inside a Field: each mounted input's `index`, so filled can check the entry
- * at every slot. Provided only in a Field.
+ * at every slot. Provided only in a Field (`null` in a nested root outside one).
  * @internal
  */
 export const [injectPinInputFieldSlots, providePinInputFieldSlots]
-  = createContext<Map<HTMLInputElement, () => number>>('PinInputRoot', 'PinInputFieldSlots')
+  = createContext<Map<HTMLInputElement, () => number> | null>('PinInputRoot', 'PinInputFieldSlots')
 </script>
 
 <script setup lang="ts" generic="Type extends PinInputType">
@@ -138,6 +138,11 @@ const field = useFieldControl({
 const fieldSlots = field ? new Map<HTMLInputElement, () => number>() : undefined
 if (fieldSlots)
   providePinInputFieldSlots(fieldSlots)
+// A nested pin input outside a Field only shadows an ancestor's slots, so its
+// inputs don't register there; otherwise providing nothing already reads as
+// `null`, and costs nothing.
+else if (injectPinInputFieldSlots(null))
+  providePinInputFieldSlots(null)
 const resolvedId = () => field ? field.id() : props.id
 const resolvedName = () => field ? field.name(props.name) : props.name
 const resolvedRequired = () => field ? field.required(props.required) : props.required

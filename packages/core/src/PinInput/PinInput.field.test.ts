@@ -201,3 +201,19 @@ describe('given a Field-wrapped PinInput whose slots change', () => {
     wrapper.unmount()
   })
 })
+
+describe('given a Field-wrapped PinInput with a nested PinInput', () => {
+  it('counts only its own inputs toward filled', async () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { 'name': 'code', 'data-testid': 'field' }, () =>
+        h(PinInputRoot, { defaultValue: ['1', '2'] }, () => [
+          h(PinInputInput, { index: 0 }),
+          h(PinInputInput, { index: 1 }),
+          h(PinInputRoot, null, () => [0, 1, 2].map(index => h(PinInputInput, { key: index, index }))),
+        ])),
+    }), { attachTo: document.body })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="field"]').attributes('data-filled')).toBe('')
+    wrapper.unmount()
+  })
+})
