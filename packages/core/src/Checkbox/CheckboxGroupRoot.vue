@@ -171,6 +171,7 @@ function renderAttrs(attrs: Record<string, unknown>) {
       :name="resolvedName()!"
       :value="modelValue"
       :required="resolvedRequired()"
+      :disabled="disabled"
     />
   </component>
 </template>

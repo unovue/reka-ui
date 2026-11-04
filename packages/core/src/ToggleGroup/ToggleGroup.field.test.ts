@@ -138,3 +138,18 @@ describe('given a Field-wrapped ToggleGroup', () => {
     expect(await axe(wrapper!.element)).toHaveNoViolations()
   })
 })
+
+describe('given a disabled ToggleGroup in a native form', () => {
+  it('leaves its value out of the submission', async () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('form', [
+        h(ToggleGroupRoot, { name: 'align', type: 'single', disabled: true, defaultValue: 'left' }, () => [
+          h(ToggleGroupItem, { value: 'left' }, () => 'Left'),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    expect([...new FormData(wrapper.find('form').element).keys()]).toEqual([])
+    wrapper.unmount()
+  })
+})

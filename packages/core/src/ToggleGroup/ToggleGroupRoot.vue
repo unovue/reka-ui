@@ -158,6 +158,7 @@ function renderAttrs(attrs: Record<string, unknown>) {
         v-if="isFormControl && resolvedName()"
         :name="resolvedName()!"
         :required="resolvedRequired()"
+        :disabled="resolvedDisabled()"
         :value="modelValue"
       />
     </component>

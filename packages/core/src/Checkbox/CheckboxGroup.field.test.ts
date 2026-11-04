@@ -133,3 +133,18 @@ describe('given a Field-wrapped CheckboxGroup', () => {
     expect(await axe(wrapper!.element)).toHaveNoViolations()
   })
 })
+
+describe('given a disabled CheckboxGroup in a native form', () => {
+  it('leaves its values out of the submission', async () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('form', [
+        h(CheckboxGroupRoot, { name: 'fruits', disabled: true, defaultValue: ['apple'] }, () => [
+          h(CheckboxRoot, { value: 'apple' }),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    expect([...new FormData(wrapper.find('form').element).keys()]).toEqual([])
+    wrapper.unmount()
+  })
+})
