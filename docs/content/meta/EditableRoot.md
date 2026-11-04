@@ -155,8 +155,8 @@
   },
   {
     'name': 'submit',
-    'description': '<p>Function to submit the value of the editable</p>\n',
-    'type': '(): void'
+    'description': '<p>Function to submit the value of the editable. Bound as a listener (<code>@click=&quot;submit&quot;</code>), the change reports <code>\'submit-press\'</code>.</p>\n',
+    'type': '(event?: Event | undefined): void'
   },
   {
     'name': 'cancel',
@@ -174,7 +174,7 @@
   {
     'name': 'submit',
     'description': '<p>Function to submit the value of the editable</p>\n',
-    'type': '() =&gt; void'
+    'type': '(event?: Event | undefined) =&gt; void'
   },
   {
     'name': 'cancel',
@@ -229,7 +229,7 @@
 | `isEditing` | Whether the editable field is in edit mode | `boolean` |
 | `modelValue` | The value of the editable field | `string \| null \| undefined` |
 | `isEmpty` | Whether the editable field is empty | `boolean` |
-| `submit` | Function to submit the value of the editable | `(): void` |
+| `submit` | Function to submit the value of the editable. Bound as a listener (`@click="submit"`), the change reports `'submit-press'`. | `(event?: Event \| undefined): void` |
 | `cancel` | Function to cancel the value of the editable | `(): void` |
 | `edit` | Function to set the editable in edit mode | `(): void` |
 
@@ -237,7 +237,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `submit` | Function to submit the value of the editable | `() => void` |
+| `submit` | Function to submit the value of the editable | `(event?: Event \| undefined) => void` |
 | `cancel` | Function to cancel the value of the editable | `() => void` |
 | `edit` | Function to set the editable in edit mode | `() => void` |
 
