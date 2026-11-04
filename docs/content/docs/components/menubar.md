@@ -866,3 +866,7 @@ Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA
     },
   ]"
 />
+
+## Headless composable
+
+`useMenubar` holds which menu is open (`modelValue`, `onMenuOpen()`, `onMenuClose()`, `onMenuToggle()`), the roving tab stop and the `root` part surface. `useMenubarMenu(context, { value })` returns the `open` state and the `trigger` and `content` [part surfaces](/docs/guides/composables#part-surfaces) of one menu. The menus' items and positioning stay in the components. The composable is experimental; see [Headless composables](/docs/guides/composables).

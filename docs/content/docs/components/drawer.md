@@ -728,3 +728,7 @@ const forwarded = useForwardPropsEmits(props, emits)
   </DrawerPortal>
 </template>
 ```
+
+## Headless composable
+
+`useDrawer` holds the open state, `modal`, the swipe direction and the active snap point (`setActiveSnapPoint()`), with the `trigger`, `close`, `title`, `description`, `grabber`, `viewport`, `overlay` and `content` [part surfaces](/docs/guides/composables#part-surfaces). The gesture logic is split out: `useDrawerContent` (swiping, snapping and dismissal of the mounted content), `useDrawerContentModality` (focus trapping and outside interaction for modal and non-modal drawers) and `useDrawerSwipeArea` (opening by swiping from an edge). `useDrawerContent` and `useDrawerSwipeArea` register listeners, so call them inside `setup()`. The composables are experimental; see [Headless composables](/docs/guides/composables).

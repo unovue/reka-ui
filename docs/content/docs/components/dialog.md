@@ -502,3 +502,21 @@ const forwarded = useForwardPropsEmits(props, emits)
   </DialogPortal>
 </template>
 ```
+
+## Headless composable
+
+`useDialog` holds the open state (`open`, `onOpenChange(value, reason?)`, `onOpenToggle()`), the ids and the `trigger`, `close`, `overlay`, `content`, `title` and `description` [part surfaces](/docs/guides/composables#part-surfaces): `aria-haspopup`, `aria-expanded`, `aria-controls`, `role="dialog"`, `aria-labelledby`, `aria-describedby` and `data-state`. With a `handle` it also tracks the detached trigger that opened it and its `payload`. Mounting and exit animations ([Presence](/docs/utilities/presence)), focus trapping ([FocusScope](/docs/utilities/focus-scope)), dismissal on Escape and outside interaction, scroll locking, hiding the rest of the page from assistive technology and the portal are not part of it: compose them yourself, or use the components. It is pure, so it can be called outside `setup()`; pass a stable `baseId` when rendering on the server. The composable is experimental; see [Headless composables](/docs/guides/composables).
+
+```ts
+import { useDialog } from 'reka-ui'
+
+const dialog = useDialog({
+  onBeforeUpdate: (open, details) => {
+    // keep the dialog open while a save is in flight
+    if (!open && saving.value)
+      details.cancel()
+  },
+})
+
+dialog.onOpenChange(true) // details.reason === 'imperative-action'
+```

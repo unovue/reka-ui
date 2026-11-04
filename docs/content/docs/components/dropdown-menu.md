@@ -1159,3 +1159,7 @@ const forwarded = useForwardPropsEmits(props, emits)
   </DropdownMenuRadioItem>
 </template>
 ```
+
+## Headless composable
+
+`useDropdownMenu` holds the open state (`open`, `onOpenChange()`, `onOpenToggle()`), the detached-trigger state of a `handle`, and the `trigger` and `content` [part surfaces](/docs/guides/composables#part-surfaces). It also returns the `menuContext` and `menuRootContext` the menu parts read. Item navigation, typeahead, submenus, positioning and dismissal stay in the components. It registers watchers, so call it inside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

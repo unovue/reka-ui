@@ -335,3 +335,7 @@ description: 'Moves focus to the previous focusable element.',
 keys: ['Esc'],
 description: 'Closes the dialog and moves focus to <Code>AlertDialogTrigger</code>.',
 }]" />
+
+## Headless composable
+
+`useAlertDialog` is [`useDialog`](dialog#headless-composable) with `modal` forced on, a `content` surface with `role="alertdialog"`, and the `action` and `cancel` [part surfaces](/docs/guides/composables#part-surfaces). `useAlertDialogContent()` returns the content behaviour of an alert dialog: it ignores outside presses and focuses the registered cancel button on open. Mounting and exit animations ([Presence](/docs/utilities/presence)), focus trapping ([FocusScope](/docs/utilities/focus-scope)), dismissal on Escape and outside interaction, scroll locking and the portal are not part of it: compose them yourself, or use the components. The composable is experimental; see [Headless composables](/docs/guides/composables).

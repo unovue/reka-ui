@@ -814,3 +814,7 @@ Uses [roving tabindex](https://www.w3.org/WAI/ARIA/apg/patterns/kbd_roving_tabin
     },
   ]"
 />
+
+## Headless composable
+
+`useContextMenu` holds the open state (`open`, `onOpenChange()`) and the `trigger` and `content` [part surfaces](/docs/guides/composables#part-surfaces), including the touch long press (`pressOpenDelay`, 700ms by default). The menu itself (items, submenus, typeahead, positioning at the pointer) stays in the components. The composable is experimental; see [Headless composables](/docs/guides/composables).
