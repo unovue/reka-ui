@@ -115,18 +115,17 @@ const rootAttrs = computed(() => {
 })
 
 // `$attrs` isn't reactive, so the Field's wiring is read during render. Its
-// state attributes go first so the toggle's own (e.g. `data-disabled`) win;
+// state attributes fill in what the toggle leaves unset;
 // its aria ids are merged with the consumer's.
 function renderAttrs(attrs: Record<string, unknown>) {
   if (!field)
     return mergeProps(rootAttrs.value, scopeIdAttrs, attrs)
-  return mergeProps(
-    field.dataAttributes(),
+  return field.fillDataAttributes(mergeProps(
     rootAttrs.value,
     scopeIdAttrs,
     attrs,
     { id: field.id(), ...field.ariaAttrs(attrs, disabled.value), onFocus: field.onFocus, onBlur: field.onBlur },
-  )
+  ))
 }
 </script>
 

@@ -156,7 +156,7 @@ const fieldAttrs = field && {
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="field ? mergeProps(field.dataAttributes(), root.attrs.value, fieldAttrs!) : root.attrs.value"
+    v-bind="field ? field.fillDataAttributes(mergeProps(root.attrs.value, fieldAttrs!)) : root.attrs.value"
   >
     <slot :style="areaStyles" />
 

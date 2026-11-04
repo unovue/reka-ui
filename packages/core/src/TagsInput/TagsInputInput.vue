@@ -61,11 +61,11 @@ if (fieldContext) {
   })
 }
 
-// The Field's state attributes go first so the input's own `data-*` win; its
+// The Field's state attributes fill in what the input leaves unset; its
 // aria ids are merged with the consumer's.
 function fieldAttrs(attrs: Record<string, unknown>) {
   const { field } = fieldContext!
-  return mergeProps(field.dataAttributes(), input.attrs.value, attrs, { ...field.ariaAttrs(attrs, context.disabled.value) })
+  return field.fillDataAttributes(mergeProps(input.attrs.value, attrs, { ...field.ariaAttrs(attrs, context.disabled.value) }))
 }
 </script>
 

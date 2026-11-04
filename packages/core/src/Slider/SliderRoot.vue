@@ -220,9 +220,8 @@ const ownElementAttrs = { 'data-slider-impl': '', ...pointer.handlers }
 // attributes keep their place on the element: horizontal renders `dir` early.
 function elementProps(consumerAttrs: Record<string, unknown>) {
   const { leading, attrs: rootAttrs, onPointerdown } = split.value
-  return mergeProps(
-    // The Field's state attributes go first so the slider's own `data-*` win.
-    field ? { ...field.dataAttributes(), ...fieldElementAttrs } : {},
+  const merged = mergeProps(
+    fieldElementAttrs || {},
     ownElementAttrs,
     props.orientation === 'horizontal' ? { 'dir': rootAttrs.dir as string, 'data-orientation': 'horizontal' } : { 'data-orientation': 'vertical' },
     leading,
@@ -230,6 +229,7 @@ function elementProps(consumerAttrs: Record<string, unknown>) {
     rootAttrs,
     { onPointerdown },
   )
+  return field ? field.fillDataAttributes(merged) : merged
 }
 </script>
 

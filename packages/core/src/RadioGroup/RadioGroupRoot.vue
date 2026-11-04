@@ -149,17 +149,16 @@ const roving = useRovingFocusGroup({
 useArrowKeyListeners()
 
 // `$attrs` isn't reactive, so the Field's wiring is read during render. Its
-// state attributes go first so the group's own (e.g. `data-disabled`) win;
+// state attributes fill in what the group leaves unset;
 // its aria ids are merged with the consumer's.
 function renderAttrs(attrs: Record<string, unknown>) {
   const own = mergeProps(roving.consumerAttrs(attrs), roving.attrs(), root.attrs.value)
   if (!field)
     return own
-  return mergeProps(
-    field.dataAttributes(),
+  return field.fillDataAttributes(mergeProps(
     own,
     { id: field.id(), ...field.ariaAttrs(attrs, disabled.value), onFocusin: field.onFocus, onFocusout },
-  )
+  ))
 }
 </script>
 

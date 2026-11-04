@@ -135,16 +135,10 @@ function onFocusout(event: FocusEvent) {
 function renderAttrs(attrs: Record<string, unknown>) {
   if (!field)
     return root.attrs.value
-  const data: Record<string, unknown> = { ...field.dataAttributes() }
-  for (const key of Object.keys(data)) {
-    if (key in attrs)
-      delete data[key]
-  }
-  return mergeProps(
-    data,
+  return field.fillDataAttributes(mergeProps(
     root.attrs.value,
     { id: field.id(), ...field.ariaAttrs(attrs, resolvedDisabled()), onFocusin: field.onFocus, onFocusout },
-  )
+  ), Object.keys(attrs))
 }
 </script>
 

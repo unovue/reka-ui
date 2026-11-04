@@ -91,8 +91,7 @@ export function provideComboboxField(field: FieldControlBinding | null, context:
  */
 export function getComboboxInputFieldAttrs(fieldContext: ComboboxFieldContext, own: Record<string, unknown>, attrs: Record<string, unknown>) {
   const { field } = fieldContext
-  return mergeProps(
-    field.dataAttributes(),
+  return field.fillDataAttributes(mergeProps(
     own,
     attrs,
     {
@@ -101,5 +100,5 @@ export function getComboboxInputFieldAttrs(fieldContext: ComboboxFieldContext, o
       onFocus: fieldContext.onFocus,
       onBlur: fieldContext.onBlur,
     },
-  )
+  ))
 }

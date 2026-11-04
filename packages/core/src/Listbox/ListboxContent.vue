@@ -65,14 +65,14 @@ if (fieldContext) {
       fieldContext.contentElement.value = undefined
   })
 }
-// The Field's state attributes go first so the listbox's own `data-*` win;
+// The Field's state attributes fill in what the listbox leaves unset;
 // its aria ids are merged with the consumer's, and its id yields to theirs.
 function fieldAttrs(attrs: Record<string, unknown>) {
   const { field } = fieldContext!
-  return mergeProps(field.dataAttributes(), attrs, surface.attrs.value, {
+  return field.fillDataAttributes(mergeProps(attrs, surface.attrs.value, {
     id: (attrs.id as string | undefined) ?? field.context.fieldId.value,
     ...field.ariaAttrs(attrs, rootContext.disabled.value),
-  })
+  }))
 }
 
 const tabindex = getListboxContentTabindex(rootContext)

@@ -139,12 +139,11 @@ const rovingFocusProps = computed(() => {
 provideCheckboxGroupRootContext(field ? { ...context, field: field.context } : context)
 
 // `$attrs` isn't reactive, so the Field's wiring is read during render. Its
-// state attributes go first; its aria ids are merged with the consumer's.
+// state attributes fill in what's left unset; its aria ids are merged with the consumer's.
 function renderAttrs(attrs: Record<string, unknown>) {
   if (!field)
     return mergeProps(rovingFocusProps.value, attrs)
-  return mergeProps(
-    field.dataAttributes(),
+  return field.fillDataAttributes(mergeProps(
     rovingFocusProps.value,
     attrs,
     {
@@ -155,7 +154,7 @@ function renderAttrs(attrs: Record<string, unknown>) {
       onFocusin: field.onFocus,
       onFocusout,
     },
-  )
+  ))
 }
 </script>
 

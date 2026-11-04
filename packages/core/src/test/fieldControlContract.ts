@@ -127,6 +127,7 @@ export function describeFieldControlContract(spec: FieldControlContractSpec) {
         expect(onFormSubmit).not.toHaveBeenCalled()
         expect(wrapper.find('[data-testid="field"]').attributes('data-invalid')).toBe('')
         expect(spec.control(wrapper).getAttribute('aria-invalid')).toBe('true')
+        expect(spec.control(wrapper).hasAttribute('data-invalid')).toBe(true)
         expect(document.activeElement).toBe((spec.focusTarget ?? spec.control)(wrapper))
         wrapper.unmount()
       })

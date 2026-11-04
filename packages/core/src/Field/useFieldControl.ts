@@ -33,6 +33,14 @@ export interface FieldControlBinding {
   /** The field's state as data attributes. */
   dataAttributes: () => FieldDataAttributes
   /**
+   * Adds the field's state attributes to a control's merged attributes,
+   * filling only the keys left unset: a defined value from the control or
+   * consumer wins, but an `undefined` one (e.g. the control's own
+   * `data-invalid` while it's valid) doesn't erase the field's flag.
+   * Keys in `except` are left alone.
+   */
+  fillDataAttributes: <T extends Record<string, unknown>>(merged: T, except?: string[]) => T
+  /**
    * Field aria wiring merged with (never overwriting) the consumer's ids. A
    * consumer-provided `aria-invalid` wins, and a disabled control is never invalid.
    */
@@ -89,6 +97,15 @@ export function useFieldControl(options: UseFieldControlOptions): FieldControlBi
     disabled: own => Boolean(own || context.disabled.value),
     required: own => Boolean(own || context.required.value),
     dataAttributes: () => context.dataAttributes.value,
+    fillDataAttributes: (merged, except) => {
+      const data = context.dataAttributes.value
+      for (const key in data) {
+        const value = data[key as keyof FieldDataAttributes]
+        if (value !== undefined && merged[key] === undefined && !except?.includes(key))
+          (merged as Record<string, unknown>)[key] = value
+      }
+      return merged
+    },
     ariaAttrs: (attrs, disabled) => ({
       'aria-labelledby': mergeIds(attrs['aria-labelledby'], participates() ? context.labelId.value : undefined),
       'aria-describedby': mergeIds(attrs['aria-describedby'], context.describedBy.value),
