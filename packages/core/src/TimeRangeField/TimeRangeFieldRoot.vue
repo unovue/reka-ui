@@ -91,7 +91,7 @@ export const [injectTimeRangeFieldRootContext, provideTimeRangeFieldRootContext]
 
 <script setup lang="ts">
 import { computed, mergeProps, toRefs, useAttrs, watch } from 'vue'
-import { createPendingFieldInput } from '@/Field/pendingFieldInput'
+import { createPendingFieldInput, isProgrammaticChange } from '@/Field/pendingFieldInput'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
@@ -177,7 +177,14 @@ const { root, context, modelValue, segments, isInvalid, segmentElements, setFocu
   isTimeUnavailable: computed(() => props.isTimeUnavailable),
   parentElement,
   emit: emits,
-  onUpdate: pendingInput ? value => pendingInput.set(value) : undefined,
+  // Segment edits only: a programmatic `setModelValue` while a segment has
+  // focus isn't the user's input.
+  onUpdate: pendingInput
+    ? (value, { reason }) => {
+        if (!isProgrammaticChange(reason))
+          pendingInput.set(value)
+      }
+    : undefined,
 })
 
 // Touched once focus leaves the whole group, not when it moves between the ends.

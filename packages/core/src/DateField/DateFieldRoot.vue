@@ -88,7 +88,7 @@ export const [injectDateFieldRootContext, provideDateFieldRootContext]
 
 <script setup lang="ts">
 import { computed, mergeProps, onBeforeUnmount, onMounted, ref, toRefs, useAttrs, watch } from 'vue'
-import { createPendingFieldInput } from '@/Field/pendingFieldInput'
+import { createPendingFieldInput, isProgrammaticChange } from '@/Field/pendingFieldInput'
 import { claimFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
@@ -172,7 +172,14 @@ const {
   isDateUnavailable: computed(() => props.isDateUnavailable),
   parentElement,
   emit: emits,
-  onUpdate: pendingInput ? value => pendingInput.set(value) : undefined,
+  // Segment edits only: a programmatic `setModelValue` while a segment has
+  // focus isn't the user's input.
+  onUpdate: pendingInput
+    ? (value, { reason }) => {
+        if (!isProgrammaticChange(reason))
+          pendingInput.set(value)
+      }
+    : undefined,
 })
 
 const inputType = computed(() => getInputType(granularity.value))

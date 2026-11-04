@@ -27,3 +27,13 @@ export function createPendingFieldInput<T>() {
     },
   }
 }
+
+/**
+ * Whether a change came from code (`setModelValue` and the like default to
+ * `'imperative-action'`) rather than from the control's own parts, so a
+ * segmented field records only its segment edits as pending input.
+ * @internal
+ */
+export function isProgrammaticChange(reason: string) {
+  return reason === 'imperative-action' || reason === 'none'
+}
