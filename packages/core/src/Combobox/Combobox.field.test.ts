@@ -265,3 +265,65 @@ describe('given a Field-wrapped Combobox whose input was removed', () => {
     wrapper.unmount()
   })
 })
+
+describe('given a Field-wrapped Combobox whose focused part is removed without a blur', () => {
+  it('leaves the field when the focused input is removed while the popup is closed', async () => {
+    const showInput = ref(true)
+    const validate = vi.fn(() => null)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { 'name': 'fruit', 'data-testid': 'field', validate, 'validationMode': 'onBlur' }, () =>
+        h(ComboboxRoot, null, () => h(ComboboxAnchor, () => [
+          showInput.value ? h(ComboboxInput, { 'data-testid': 'input' }) : null,
+          h(ComboboxTrigger, () => 'Open'),
+        ]))),
+    }), { attachTo: document.body })
+    await flushPromises()
+    const field = () => wrapper.find('[data-testid="field"]')
+    const inputEl = input(wrapper)
+    inputEl.focus()
+    await flushPromises()
+    expect(field().attributes('data-focused')).toBe('')
+
+    // jsdom, like Firefox and WebKit, fires no `blur` for the removed input.
+    showInput.value = false
+    await flushPromises()
+    expect(inputEl.isConnected).toBe(false)
+    expect(field().attributes('data-focused')).toBeUndefined()
+    expect(field().attributes('data-touched')).toBe('')
+    expect(validate).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
+  it('leaves the field when the content holding a focused option is removed while open', async () => {
+    const showContent = ref(true)
+    const validate = vi.fn(() => null)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { 'name': 'fruit', 'data-testid': 'field', validate, 'validationMode': 'onBlur' }, () =>
+        h(ComboboxRoot, { open: true }, () => [
+          h(ComboboxAnchor, () => h(ComboboxInput, { 'data-testid': 'input' })),
+          h(ComboboxPortal, () => showContent.value
+            ? h(ComboboxContent, () => h(ComboboxViewport, () =>
+                fruits.map(fruit => h(ComboboxItem, { 'key': fruit, 'value': fruit, 'data-testid': fruit }, () => fruit))))
+            : null),
+        ])),
+    }), { attachTo: document.body })
+    await flushPromises()
+    const field = () => wrapper.find('[data-testid="field"]')
+    input(wrapper).focus()
+    await flushPromises()
+    const option = document.querySelector<HTMLElement>('[data-testid="Banana"]')!
+    option.tabIndex = -1
+    option.focus()
+    await flushPromises()
+    expect(document.activeElement).toBe(option)
+    expect(field().attributes('data-focused')).toBe('')
+
+    showContent.value = false
+    await flushPromises()
+    expect(option.isConnected).toBe(false)
+    expect(field().attributes('data-focused')).toBeUndefined()
+    expect(field().attributes('data-touched')).toBe('')
+    expect(validate).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+})

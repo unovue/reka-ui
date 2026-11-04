@@ -104,3 +104,32 @@ describe('given a required Field-wrapped Autocomplete whose input was removed', 
     wrapper.unmount()
   })
 })
+
+describe('given a Field-wrapped Autocomplete whose focused input is removed while the popup is closed', () => {
+  it('leaves the field: unfocused, touched and validated on blur', async () => {
+    const showInput = ref(true)
+    const validate = vi.fn(() => null)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { 'name': 'fruit', 'data-testid': 'field', validate, 'validationMode': 'onBlur' }, () =>
+        h(AutocompleteRoot, null, () => h(AutocompleteAnchor, () => [
+          showInput.value ? h(AutocompleteInput, { 'data-testid': 'input' }) : null,
+          h(AutocompleteTrigger, () => 'Open'),
+        ]))),
+    }), { attachTo: document.body })
+    await flushPromises()
+    const field = () => wrapper.find('[data-testid="field"]')
+    const inputEl = input(wrapper)
+    inputEl.focus()
+    await flushPromises()
+    expect(field().attributes('data-focused')).toBe('')
+
+    // jsdom, like Firefox and WebKit, fires no `blur` for the removed input.
+    showInput.value = false
+    await flushPromises()
+    expect(inputEl.isConnected).toBe(false)
+    expect(field().attributes('data-focused')).toBeUndefined()
+    expect(field().attributes('data-touched')).toBe('')
+    expect(validate).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+})
