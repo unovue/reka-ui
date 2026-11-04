@@ -56,7 +56,7 @@ const cases: Array<[string, () => () => ReturnType<typeof h>]> = [
   }))],
   ['TimeField', () => single(TimeFieldRoot, TimeFieldInput, { hourCycle: 24, granularity: 'minute' }, setter(() => {
     const context = injectTimeFieldRootContext()
-    write = () => context.setModelValue(Temporal.PlainTime.from('10:30'))
+    write = () => context.setModelValue(Temporal.PlainDateTime.from('2024-01-15T10:30'))
   }))],
   ['TimeRangeField', () => range(TimeRangeFieldRoot, TimeRangeFieldInput, { hourCycle: 24, granularity: 'minute' }, setter(() => {
     const context = injectTimeRangeFieldRootContext()
