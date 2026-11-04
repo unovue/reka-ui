@@ -7,6 +7,7 @@ import { CheckboxGroupRoot, CheckboxRoot } from '@/Checkbox'
 import { DateFieldInput, DateFieldRoot } from '@/DateField'
 import { FormRoot } from '@/Form'
 import { SelectContent, SelectItem, SelectPortal, SelectRoot, SelectTrigger, SelectViewport } from '@/Select'
+import { providedContext } from '@/test/fieldControlContract'
 import { FieldControl, FieldDescription, FieldError, FieldLabel, FieldRoot, FieldValidity, injectFieldRootContext } from '.'
 
 // Reports arbitrary (non-string) values through the same side channel a
@@ -479,6 +480,25 @@ describe('given a Field-wrapped Select', () => {
 
     await wrapper.setProps({ modelValue: 'apple' })
 
+    expect(field.attributes('data-filled')).toBe('')
+    expect(field.attributes('data-dirty')).toBeUndefined()
+  })
+
+  it('a change through its own imperative API reports filled but not dirty', async () => {
+    const wrapper = mount({
+      components: selectComponents,
+      template: `
+        <FieldRoot name="fruit" data-testid="field">
+          <SelectRoot>
+            <SelectTrigger>Choose a fruit</SelectTrigger>
+          </SelectRoot>
+        </FieldRoot>
+      `,
+    })
+    // As a custom part would: the change reports `'imperative-action'`.
+    providedContext(wrapper, SelectRoot, 'onValueChange').onValueChange('apple')
+    await flushPromises()
+    const field = wrapper.find('[data-testid="field"]')
     expect(field.attributes('data-filled')).toBe('')
     expect(field.attributes('data-dirty')).toBeUndefined()
   })
@@ -1167,6 +1187,45 @@ describe('given a FieldControl with v-model', () => {
     await nextTick()
     expect((wrapper.vm as unknown as { text: string }).text).toBe('ab')
     expect(validate).toHaveBeenLastCalledWith('ab', expect.anything())
+    expect(wrapper.find('[data-testid="field"]').attributes('data-dirty')).toBe('')
+  })
+
+  it('only marks the field filled when the parent changes the value', async () => {
+    const validate = vi.fn(() => null)
+    const wrapper = mount({
+      components,
+      props: ['validate'],
+      data: () => ({ text: '' }),
+      template: `
+        <FieldRoot :validate="validate" validation-mode="onChange" data-testid="field">
+          <FieldControl v-model="text" />
+        </FieldRoot>
+      `,
+    }, { props: { validate } })
+    await flushPromises()
+    validate.mockClear()
+    ;(wrapper.vm as unknown as { text: string }).text = 'from the server'
+    await flushPromises()
+    const field = wrapper.find('[data-testid="field"]')
+    expect((wrapper.find('input').element as HTMLInputElement).value).toBe('from the server')
+    expect(field.attributes('data-filled')).toBe('')
+    expect(field.attributes('data-dirty')).toBeUndefined()
+    expect(validate).not.toHaveBeenCalled()
+  })
+
+  it('reports a value the parent rewrites from the user\'s input as input', async () => {
+    const wrapper = mount({
+      components,
+      data: () => ({ text: '' }),
+      template: `
+        <FieldRoot data-testid="field">
+          <FieldControl :model-value="text" @update:model-value="text = $event.toUpperCase()" />
+        </FieldRoot>
+      `,
+    })
+    await wrapper.find('input').setValue('ab')
+    await flushPromises()
+    expect((wrapper.vm as unknown as { text: string }).text).toBe('AB')
     expect(wrapper.find('[data-testid="field"]').attributes('data-dirty')).toBe('')
   })
 

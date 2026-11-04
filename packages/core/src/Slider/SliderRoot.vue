@@ -149,10 +149,10 @@ const { modelValue, root, orientation: orientationGeometry, startSlide, moveSlid
   minStepsBetweenThumbs: () => props.minStepsBetweenThumbs,
   thumbAlignment: () => props.thumbAlignment,
   emit: emits,
-  // A drag or keyboard step is user input for the Field (Base UI marks it
-  // dirty on every value change); a programmatic or parent-driven change is
-  // reported by the watcher below.
-  onUpdate: ownField ? value => ownField.input(value) : undefined,
+  // The Field hears its own commits by reason (`change`): user input, or, for
+  // a programmatic one (`setModelValue` and the like), only the watcher below,
+  // which also reports a parent-driven change.
+  onUpdate: ownField?.change,
 })
 
 provideSliderRootContext(context)

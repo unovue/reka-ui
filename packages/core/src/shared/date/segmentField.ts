@@ -305,6 +305,16 @@ export function bridgeChange<T, R extends string>(
 
 export type { SegmentFieldChangeReason }
 
+/**
+ * Whether a picker's change came from its composed field's segments (a
+ * `SegmentFieldChangeReason`), which that field reports to a `FieldRoot`
+ * itself: the picker reports only its calendar's.
+ * @internal
+ */
+export function isSegmentFieldChange(reason: string) {
+  return reason.startsWith('segment-') || reason === 'step-snap'
+}
+
 /** The segment values a field shows, as `{ part, value }` pairs (literals included). */
 export type SegmentContents = { part: SegmentPart, value: string }[]
 

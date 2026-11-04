@@ -173,6 +173,8 @@ Uses [roving tabindex](https://www.w3.org/TR/wai-aria-practices-1.2/examples/rad
   ]"
 />
 
+In a right-to-left layout (`dir="rtl"` on `ToggleGroupRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), a horizontal group's `ArrowLeft` moves to the next item and `ArrowRight` to the previous one. A vertical group uses `ArrowUp` and `ArrowDown` in either direction. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
+
 ## Headless composable
 
 `useToggleGroup` holds the pressed value or values (`type` `single` or `multiple`, `modelValue`, `changeModelValue(value)`), the `root` [part surface](/docs/guides/composables#part-surfaces) and `getItemSurface(value)` for each item. Arrow-key navigation between the items is not part of it: wrap them in a [`RovingFocusGroup`](/docs/utilities/roving-focus), or use the components. It is pure, so it can be called outside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

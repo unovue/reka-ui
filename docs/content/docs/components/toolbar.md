@@ -232,6 +232,8 @@ Uses [roving tabindex](https://www.w3.org/TR/wai-aria-practices-1.2/examples/rad
   ]"
 />
 
+In a right-to-left layout (`dir="rtl"` on `ToolbarRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), `ArrowLeft` moves to the next item and `ArrowRight` to the previous one, in a horizontal toolbar. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
+
 ## Headless composable
 
 `useToolbar` returns the `root` and `link` [part surfaces](/docs/guides/composables#part-surfaces) and `getButtonSurface()` for each button: `role="toolbar"`, `aria-orientation` and the direction. Moving focus between the items with the arrow keys comes from a [`RovingFocusGroup`](/docs/utilities/roving-focus) that the components render. It is pure, so it can be called outside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

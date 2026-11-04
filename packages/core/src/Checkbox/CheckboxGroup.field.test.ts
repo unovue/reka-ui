@@ -5,13 +5,14 @@ import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick } from 'vue'
 import { FieldDescription, FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
-import { describeFieldControlContract } from '@/test/fieldControlContract'
+import { describeFieldControlContract, providedContext } from '@/test/fieldControlContract'
 import { CheckboxGroupRoot, CheckboxRoot } from '.'
 
 const checkbox = (wrapper: VueWrapper, label: string) => wrapper.find(`[role="checkbox"][aria-label="${label}"]`)
 
 describeFieldControlContract({
   name: 'CheckboxGroup',
+  setProgrammatically: (wrapper, value) => providedContext(wrapper, CheckboxGroupRoot, 'changeModelValue').changeModelValue(value),
   render: props => h(CheckboxGroupRoot, props, () => [
     h(CheckboxRoot, { 'value': 'a', 'aria-label': 'A' }),
     h(CheckboxRoot, { 'value': 'b', 'aria-label': 'B' }),

@@ -210,9 +210,10 @@ const combobox = useComboboxRoot<AcceptableValue>({
     }
     return (emits as (event: string, ...args: unknown[]) => void)(event, ...args)
   },
-  // Typing and a selection are user input for the Field; a programmatic or
-  // parent-driven change is reported by the watcher below.
-  onUpdate: field ? value => field.input(value) : undefined,
+  // The Field hears its own commits by reason (`change`): user input, or, for
+  // a programmatic one (`setModelValue` and the like), only the watcher below,
+  // which also reports a parent-driven change.
+  onUpdate: field?.change,
   onHighlight: payload => emits('highlight', payload as { ref: HTMLElement, value: T } | undefined),
   onOpenComplete: value => emits('update:openComplete', value),
 })

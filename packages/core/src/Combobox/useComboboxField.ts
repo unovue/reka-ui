@@ -43,18 +43,20 @@ export function provideComboboxField(field: FieldControlBinding | null, context:
   }
 
   let focusWithin = false
-  // A followed part can be removed while the combobox stays (an option the
-  // list no longer shows), and not every browser fires `focusout` for a
-  // removed element: a removal that takes focus with it leaves the field.
+  // A focused part can be removed while the combobox stays (the input, the
+  // content, an option the list no longer shows), and not every browser fires
+  // `blur`/`focusout` for a removed element: a removal that takes focus with
+  // it leaves the field. Armed from focus entry until focus leaves, on the
+  // part's document or shadow root, since the part itself can be the one removed.
   let observer: MutationObserver | undefined
-  function watchRemovals(container: Element | null | undefined) {
-    if (!container || typeof MutationObserver === 'undefined')
+  function watchRemovals(node: Node | null | undefined) {
+    if (!node || typeof MutationObserver === 'undefined')
       return
     observer ??= new MutationObserver(() => {
       if (focusWithin && !isInside(getActiveElement(context.parentElement.value)))
         leave()
     })
-    observer.observe(container, { childList: true, subtree: true })
+    observer.observe(node.getRootNode(), { childList: true, subtree: true })
   }
   function leave() {
     observer?.disconnect()
@@ -68,8 +70,8 @@ export function provideComboboxField(field: FieldControlBinding | null, context:
     if (isInside(next)) {
       // Follow focus to that part, and decide again when it leaves.
       next!.addEventListener('focusout', onBlur as EventListener, { once: true })
-      const parent = context.parentElement.value
-      watchRemovals(parent?.contains(next) ? parent : getElementByIdFrom(parent, context.contentId))
+      // The (portaled) content can live in another root than the input.
+      watchRemovals(next)
       return
     }
     leave()
@@ -96,6 +98,7 @@ export function provideComboboxField(field: FieldControlBinding | null, context:
       if (focusWithin)
         return
       focusWithin = true
+      watchRemovals(context.parentElement.value)
       field.onFocus()
     },
     onBlur,

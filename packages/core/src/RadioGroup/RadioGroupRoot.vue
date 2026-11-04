@@ -114,9 +114,10 @@ const { modelValue, disabled, root, context } = useRadioGroup({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   emit: emits,
-  // A radio press is user input for the Field; a programmatic or
-  // parent-driven change is reported through the `modelValue` watcher below.
-  onUpdate: value => field?.input(value),
+  // The Field hears its own commits by reason (`change`): user input, or, for
+  // a programmatic one (`setModelValue` and the like), only the watcher below,
+  // which also reports a parent-driven change.
+  onUpdate: field?.change,
   disabled: () => field ? field.disabled(props.disabled) : props.disabled,
   required: resolvedRequired,
   orientation: () => props.orientation,

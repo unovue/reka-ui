@@ -124,8 +124,8 @@ defineSlots<{
     modelValue: typeof modelValue.value
     /** Whether the editable field is empty */
     isEmpty: boolean
-    /** Function to submit the value of the editable */
-    submit: () => void
+    /** Function to submit the value of the editable. Bound as a listener (`@click="submit"`), the change reports `'submit-press'`. */
+    submit: (event?: Event) => void
     /** Function to cancel the value of the editable */
     cancel: () => void
     /** Function to set the editable in edit mode */
@@ -175,14 +175,15 @@ const { modelValue, isEditing, isEmpty, edit, cancel, submit, dismiss, root, con
   id: () => field ? field.id() : props.id,
   name: resolvedName,
   emit: emits,
-  // A submit is the user's (whatever started it); a parent-driven change is
-  // reported through the watcher below.
+  // A submit by the user (a part, Enter, a dismiss, a slot `submit` bound to
+  // a click) is input; a programmatic one (`submit()` from a ref) and a
+  // parent-driven change are reported through the watcher below as `filled`.
   onUpdate: field
-    ? value => pendingInput!.set(value)
+    ? (value, details) => pendingInput!.record(value, details)
     : undefined,
 })
 
-// The value of a submitted change, reported once the hidden input has rendered it.
+// The value of a user's submit, reported once the hidden input has rendered it.
 const pendingInput = field ? createPendingFieldInput<string | null | undefined>() : undefined
 // Touched once focus leaves the whole editable, not when it moves from the
 // preview to the input. A blur can submit the draft (`submitMode`), through a
@@ -227,9 +228,14 @@ function getRootAttrs(attrs: Record<string, unknown>) {
 const pointerDownOutside = usePointerDownOutside(event => dismiss('outside-press', event), currentElement, isEditing)
 useFocusOutside(event => dismiss('focus-outside', event), currentElement, isEditing)
 
-// Zero-argument wrappers: a slot or template-ref caller binding `@click="submit"` reports `imperative-action`.
-function submitImperative() {
-  submit()
+// Takes only an event, never a reason: called bare (a template ref) it reports
+// `'imperative-action'`; bound as a listener (`@click="submit"` in the slot) it
+// receives the user's event and reports `'submit-press'`.
+function submitImperative(event?: Event) {
+  if (event instanceof Event)
+    submit('submit-press', event)
+  else
+    submit()
 }
 
 defineExpose(mergeExpose(expose, {

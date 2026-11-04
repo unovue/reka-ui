@@ -14,7 +14,7 @@ export interface PinInputInputProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from 'vue'
+import { onBeforeUnmount, onMounted, watch } from 'vue'
 
 const props = withDefaults(defineProps<PinInputInputProps>(), {
   as: 'input',
@@ -42,10 +42,31 @@ onMounted(() => {
   fieldSlots?.set(currentElement.value, () => props.index)
   context.onInputElementChange(currentElement.value)
 })
-onUnmounted(() => {
+// Before unmount: the element ref is already cleared once unmounted.
+onBeforeUnmount(() => {
   fieldSlots?.delete(currentElement.value)
   context.inputElements?.value.delete(currentElement.value)
 })
+if (fieldSlots) {
+  // Followed, not read once: an as-child child replaced while this input
+  // stays mounted takes over its slot and its place among the inputs, so the
+  // field focuses the element that is in the document.
+  watch(currentElement, (element, previous) => {
+    if (previous)
+      fieldSlots.delete(previous)
+    if (element)
+      fieldSlots.set(element, () => props.index)
+    const inputs = context.inputElements?.value
+    if (!inputs || !previous || !inputs.has(previous)) {
+      if (element)
+        context.onInputElementChange(element)
+      return
+    }
+    const order = [...inputs]
+    order.splice(order.indexOf(previous), 1, ...(element ? [element] : []))
+    context.inputElements!.value = new Set(order)
+  })
+}
 </script>
 
 <template>

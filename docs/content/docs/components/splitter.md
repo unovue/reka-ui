@@ -377,3 +377,5 @@ Adheres to the [Window Splitter WAI-ARIA design pattern](https://www.w3.org/WAI/
       keys: ['End'],
       description: 'Moves splitter to the position that gives the primary pane its largest allowed size.',
     }]" />
+
+In a right-to-left layout (`dir="rtl"` on a [`ConfigProvider`](/docs/utilities/config-provider); `SplitterGroup` has no `dir` prop), `ArrowLeft` on a horizontal handle grows the panel before it and `ArrowRight` shrinks it. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).

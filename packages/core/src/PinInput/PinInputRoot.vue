@@ -77,11 +77,11 @@ export const [injectPinInputRootContext, providePinInputRootContext]
 
 /**
  * Inside a Field: each mounted input's `index`, so filled can check the entry
- * at every slot. Provided only in a Field.
+ * at every slot. Provided only in a Field (`null` in a nested root outside one).
  * @internal
  */
 export const [injectPinInputFieldSlots, providePinInputFieldSlots]
-  = createContext<Map<HTMLInputElement, () => number>>('PinInputRoot', 'PinInputFieldSlots')
+  = createContext<Map<HTMLInputElement, () => number> | null>('PinInputRoot', 'PinInputFieldSlots')
 </script>
 
 <script setup lang="ts" generic="Type extends PinInputType">
@@ -138,6 +138,11 @@ const field = useFieldControl({
 const fieldSlots = field ? new Map<HTMLInputElement, () => number>() : undefined
 if (fieldSlots)
   providePinInputFieldSlots(fieldSlots)
+// A nested pin input outside a Field only shadows an ancestor's slots, so its
+// inputs don't register there; otherwise providing nothing already reads as
+// `null`, and costs nothing.
+else if (injectPinInputFieldSlots(null))
+  providePinInputFieldSlots(null)
 const resolvedId = () => field ? field.id() : props.id
 const resolvedName = () => field ? field.name(props.name) : props.name
 const resolvedRequired = () => field ? field.required(props.required) : props.required
@@ -173,9 +178,10 @@ const { modelValue: model, currentModelValue, root, context } = usePinInput({
   dir,
   disabled: resolvedDisabled,
   emit: emits,
-  // Typing, pasting or deleting is the user's; a parent-driven change is
-  // reported through the watcher below.
-  onUpdate: field ? value => field.input(toFieldValue(value)) : undefined,
+  // The Field hears its own commits by reason (`change`): user input, or, for
+  // a programmatic one (`setModelValue` and the like), only the watcher below,
+  // which also reports a parent-driven change.
+  onUpdate: field ? (value, details) => field.change(toFieldValue(value), details) : undefined,
 })
 const modelValue = model as unknown as Readonly<Ref<PinInputValue<Type>>>
 
@@ -184,8 +190,16 @@ providePinInputRootContext(context)
 // Touched once focus leaves the whole group, not when it moves between inputs.
 const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
 
-if (field)
-  watch(model, value => field.sync(value), { deep: true })
+// A slot mounting or unmounting changes `filled` too (e.g. an empty last
+// input removed): the inputs register with both the slots and this set. So
+// does a mounted input's `index` changing: the slot then reads another entry.
+if (field) {
+  watch([
+    model,
+    () => context.inputElements!.value.size,
+    () => Array.from(fieldSlots!.values(), index => index()).join(),
+  ], ([value]) => field.sync(value), { deep: true })
+}
 
 // `$attrs` isn't reactive, so the Field's wiring is read during render. Its
 // state attributes go first and the root's own win; its aria ids are merged

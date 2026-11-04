@@ -257,6 +257,8 @@ Built on top of the [Radio Group](/docs/components/radio-group) primitive and ad
   ]"
 />
 
+In a right-to-left layout (`dir="rtl"` on `RatingRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), `ArrowLeft` moves to the next item and `ArrowRight` to the previous one. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
+
 ## Headless composable
 
 `useRating` holds the value and the hover preview (`modelValue`, `hoveredRating`, `changeModelValue()`, `changeHoveredRating()`, `resetHoveredRating()`), the `items` to render for `length`, `getItemSteps()` for fractional `step`s, and the `root` [part surface](/docs/guides/composables#part-surfaces) with `getItemIndicatorSurface()`. It is pure, so it can be called outside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

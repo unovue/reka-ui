@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
-import { describeFieldControlContract } from '@/test/fieldControlContract'
+import { describeFieldControlContract, providedContext } from '@/test/fieldControlContract'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '.'
 
 const fruits = ['Apple', 'Banana', 'Cherry']
@@ -32,6 +32,7 @@ async function selectItem(wrapper: VueWrapper, text: string) {
 
 describeFieldControlContract({
   name: 'Combobox',
+  setProgrammatically: (wrapper, value) => providedContext(wrapper, ComboboxRoot, 'setModelValue').setModelValue(value),
   render: renderCombobox,
   control: input,
   interact: wrapper => selectItem(wrapper, 'Banana'),
@@ -42,6 +43,7 @@ describeFieldControlContract({
 
 describeFieldControlContract({
   name: 'multiple Combobox',
+  setProgrammatically: (wrapper, value) => providedContext(wrapper, ComboboxRoot, 'setModelValue').setModelValue(value),
   render: props => renderCombobox({ ...props, multiple: true }),
   control: input,
   interact: wrapper => selectItem(wrapper, 'Banana'),
@@ -222,6 +224,182 @@ describe('given a Field-wrapped Combobox whose focused option is removed from th
     expect(field().attributes('data-focused')).toBeUndefined()
     expect(field().attributes('data-touched')).toBe('')
     expect(validate).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+})
+
+describe('given a Field-wrapped Combobox whose input was removed', () => {
+  it.each([
+    ['its own id', { id: 'own' }],
+    ['the field\'s id', {}],
+  ])('points the label at the trigger rather than the removed input (%s)', async (_, inputAttrs) => {
+    const showInput = ref(true)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { name: 'fruit' }, () => [
+        h(FieldLabel, () => 'Fruit'),
+        h(ComboboxRoot, null, () =>
+          h(ComboboxAnchor, () => [
+            showInput.value ? h(ComboboxInput, { 'data-testid': 'input', ...inputAttrs }) : null,
+            h(ComboboxTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
+          ])),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    const label = () => wrapper.find('label').element as HTMLLabelElement
+    expect(document.getElementById(label().htmlFor)).toBe(input(wrapper))
+
+    showInput.value = false
+    await flushPromises()
+    const trigger = wrapper.find('[data-testid="trigger"]').element
+    expect(document.getElementById(label().htmlFor)).toBe(trigger)
+    wrapper.unmount()
+  })
+
+  it('keeps a consumer id on the trigger', async () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { name: 'fruit' }, () => [
+        h(FieldLabel, () => 'Fruit'),
+        h(ComboboxRoot, null, () => h(ComboboxAnchor, () => h(ComboboxTrigger, { id: 'own-trigger' }, () => 'Open'))),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    expect(wrapper.find('label').attributes('for')).toBe('own-trigger')
+    wrapper.unmount()
+  })
+})
+
+describe('given a Field-wrapped Combobox whose focused part is removed without a blur', () => {
+  it('leaves the field when the focused input is removed while the popup is closed', async () => {
+    const showInput = ref(true)
+    const validate = vi.fn(() => null)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { 'name': 'fruit', 'data-testid': 'field', validate, 'validationMode': 'onBlur' }, () =>
+        h(ComboboxRoot, null, () => h(ComboboxAnchor, () => [
+          showInput.value ? h(ComboboxInput, { 'data-testid': 'input' }) : null,
+          h(ComboboxTrigger, () => 'Open'),
+        ]))),
+    }), { attachTo: document.body })
+    await flushPromises()
+    const field = () => wrapper.find('[data-testid="field"]')
+    const inputEl = input(wrapper)
+    inputEl.focus()
+    await flushPromises()
+    expect(field().attributes('data-focused')).toBe('')
+
+    // jsdom, like Firefox and WebKit, fires no `blur` for the removed input.
+    showInput.value = false
+    await flushPromises()
+    expect(inputEl.isConnected).toBe(false)
+    expect(field().attributes('data-focused')).toBeUndefined()
+    expect(field().attributes('data-touched')).toBe('')
+    expect(validate).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
+  it('leaves the field when the content holding a focused option is removed while open', async () => {
+    const showContent = ref(true)
+    const validate = vi.fn(() => null)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { 'name': 'fruit', 'data-testid': 'field', validate, 'validationMode': 'onBlur' }, () =>
+        h(ComboboxRoot, { open: true }, () => [
+          h(ComboboxAnchor, () => h(ComboboxInput, { 'data-testid': 'input' })),
+          h(ComboboxPortal, () => showContent.value
+            ? h(ComboboxContent, () => h(ComboboxViewport, () =>
+                fruits.map(fruit => h(ComboboxItem, { 'key': fruit, 'value': fruit, 'data-testid': fruit }, () => fruit))))
+            : null),
+        ])),
+    }), { attachTo: document.body })
+    await flushPromises()
+    const field = () => wrapper.find('[data-testid="field"]')
+    input(wrapper).focus()
+    await flushPromises()
+    const option = document.querySelector<HTMLElement>('[data-testid="Banana"]')!
+    option.tabIndex = -1
+    option.focus()
+    await flushPromises()
+    expect(document.activeElement).toBe(option)
+    expect(field().attributes('data-focused')).toBe('')
+
+    showContent.value = false
+    await flushPromises()
+    expect(option.isConnected).toBe(false)
+    expect(field().attributes('data-focused')).toBeUndefined()
+    expect(field().attributes('data-touched')).toBe('')
+    expect(validate).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+})
+
+describe('given a Field-wrapped Combobox with only a trigger', () => {
+  it('is focused by the trigger, and touched and validated once it blurs', async () => {
+    const validate = vi.fn(() => null)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { 'name': 'fruit', 'data-testid': 'field', validate, 'validationMode': 'onBlur' }, () =>
+        h(ComboboxRoot, null, () => h(ComboboxAnchor, () => h(ComboboxTrigger, { 'data-testid': 'trigger' }, () => 'Open')))),
+    }), { attachTo: document.body })
+    await flushPromises()
+    const field = () => wrapper.find('[data-testid="field"]')
+    const trigger = wrapper.find('[data-testid="trigger"]').element as HTMLElement
+    trigger.focus()
+    await nextTick()
+    expect(field().attributes('data-focused')).toBe('')
+    expect(field().attributes('data-touched')).toBeUndefined()
+
+    trigger.blur()
+    await nextTick()
+    expect(field().attributes('data-focused')).toBeUndefined()
+    expect(field().attributes('data-touched')).toBe('')
+    expect(validate).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+})
+
+describe('given a required Field-wrapped Combobox whose as-child part is replaced while it stays mounted', () => {
+  function mountSwapping(part: 'input' | 'trigger') {
+    const swapped = ref(false)
+    const child = () => h(part === 'input' ? 'input' : 'button', { 'key': swapped.value ? 'b' : 'a', 'data-testid': swapped.value ? 'b' : 'a' }, part === 'trigger' ? 'Open' : undefined)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FormRoot, null, () => [
+        h(FieldRoot, { name: 'fruit', required: true }, () => [
+          h(FieldLabel, () => 'Fruit'),
+          h(ComboboxRoot, null, () => h(ComboboxAnchor, () => part === 'input'
+            ? [h(ComboboxInput, { asChild: true }, child), h(ComboboxTrigger, { 'data-testid': 'trigger' }, () => 'Open')]
+            : h(ComboboxTrigger, { asChild: true }, child))),
+        ]),
+        h('button', { type: 'submit' }, 'Submit'),
+      ]),
+    }), { attachTo: document.body })
+    return { wrapper, swapped }
+  }
+
+  it.each(['input', 'trigger'] as const)('focuses and labels the replacement %s', async (part) => {
+    const { wrapper, swapped } = mountSwapping(part)
+    await flushPromises()
+    swapped.value = true
+    await flushPromises()
+    expect(wrapper.find('[data-testid="a"]').exists()).toBe(false)
+    const replacement = wrapper.find('[data-testid="b"]').element as HTMLElement
+    expect(document.getElementById(wrapper.find('label').attributes('for')!)).toBe(replacement)
+    await wrapper.find('button[type="submit"]').trigger('submit')
+    await flushPromises()
+    expect(document.activeElement).toBe(replacement)
+    wrapper.unmount()
+  })
+})
+
+describe('given a Field-wrapped Combobox whose trigger unmounts', () => {
+  it('no longer holds the removed trigger as the element the field focuses', async () => {
+    const showTrigger = ref(true)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { name: 'fruit' }, () =>
+        h(ComboboxRoot, null, () => h(ComboboxAnchor, () => showTrigger.value ? h(ComboboxTrigger, () => 'Open') : null))),
+    }), { attachTo: document.body })
+    await flushPromises()
+    const context = providedContext<{ triggerElement: { value: HTMLElement | undefined } }>(wrapper, ComboboxRoot, 'onTriggerElementChange')
+    expect(context.triggerElement.value?.isConnected).toBe(true)
+    showTrigger.value = false
+    await flushPromises()
+    expect(context.triggerElement.value).toBeUndefined()
     wrapper.unmount()
   })
 })

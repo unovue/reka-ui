@@ -232,6 +232,8 @@ const delimiter = /[ ,;\t\n\r]+/
   ]"
 />
 
+In a right-to-left layout (`dir="rtl"` on `TagsInputRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), `ArrowRight` moves from the start of the input to the last tag, and `ArrowLeft` and `ArrowRight` swap when moving between tags. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
+
 ## Headless composable
 
 `useTagsInput` holds the tags (`modelValue`, `addTags()`, `removeTag()`, `clear()`), validation (`max`, `duplicate`, `isInvalidInput`, `onInvalid`), the delimiters and paste behaviour, and the `root`, `input` and `clearButton` [part surfaces](/docs/guides/composables#part-surfaces) with `getItemSurfaces(value)` for each tag. It is pure, so it can be called outside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

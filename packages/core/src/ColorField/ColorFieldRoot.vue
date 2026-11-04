@@ -132,9 +132,10 @@ const { root, context, color, disabled } = useColorField({
   modelValue: () => props.modelValue,
   defaultValue: () => props.defaultValue,
   emit: emits,
-  // A commit, step or wheel change is the user's; a parent-driven change is
-  // reported through the watcher below.
-  onUpdate: field ? value => field.input(value) : undefined,
+  // The Field hears its own commits by reason (`change`): user input, or, for
+  // a programmatic one (`setModelValue` and the like), only the watcher below,
+  // which also reports a parent-driven change.
+  onUpdate: field?.change,
 })
 
 provideColorFieldRootContext(context)

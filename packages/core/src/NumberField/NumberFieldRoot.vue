@@ -126,9 +126,10 @@ const field = useFieldControl({
 })
 const resolvedName = () => field ? field.name(props.name) : props.name
 const resolvedRequired = () => field ? field.required(props.required) : props.required
-// The value of a change the field made itself (typing, a step, the wheel), as
-// opposed to a parent-driven one; read once the hidden input has updated.
-const pendingInput = createPendingFieldInput<number | undefined>()
+// The value of a user change the field committed (typing, a step, the wheel),
+// as opposed to a programmatic or parent-driven one; read once the hidden
+// input has updated. Only in a Field.
+const pendingInput = field ? createPendingFieldInput<number | undefined>() : undefined
 
 const { modelValue, textValue, readonly, disabled, root, context } = useNumberField({
   modelValue: () => props.modelValue,
@@ -148,9 +149,7 @@ const { modelValue, textValue, readonly, disabled, root, context } = useNumberFi
   id: () => field ? field.id() : props.id,
   startingValue: () => props.startingValue,
   emit: emits,
-  onUpdate: field
-    ? value => pendingInput.set(value)
-    : undefined,
+  onUpdate: pendingInput?.record,
 })
 
 provideNumberFieldRootContext(context)
@@ -159,7 +158,7 @@ if (field) {
   provideNumberFieldFieldControl(field)
   // Flushed after render, so the hidden input's validity reflects the new value.
   watch(modelValue, (value) => {
-    const pending = pendingInput.take()
+    const pending = pendingInput!.take()
     if (pending && Object.is(pending.value, value))
       field.input(value ?? null)
     else

@@ -58,9 +58,9 @@ useCollectionSlot(currentElement)
 const fieldContext = injectListboxFieldContext(null)
 if (fieldContext) {
   // Followed, not read once: an `as` / as-child change swaps the element.
+  // Cleared while it renders none, so the field doesn't focus a detached node.
   watch(currentElement, (element) => {
-    if (element)
-      fieldContext.contentElement.value = element as HTMLElement
+    fieldContext.contentElement.value = (element ?? undefined) as HTMLElement | undefined
   }, { immediate: true })
   onBeforeUnmount(() => {
     if (fieldContext.contentElement.value === currentElement.value)

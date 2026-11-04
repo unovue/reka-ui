@@ -2,6 +2,7 @@ import type { InjectionKey } from 'vue'
 import type { FieldControlRegistration, FieldDataAttributes, FieldRootContext } from './FieldRoot.vue'
 import { inject, onBeforeUnmount, onMounted, provide } from 'vue'
 import { injectFieldRootContext } from './fieldRootContext'
+import { isProgrammaticChange } from './pendingFieldInput'
 
 export interface UseFieldControlOptions extends Omit<FieldControlRegistration, 'id'> {
   /** The control's own `id` prop. The field's generated id is used when it's unset. */
@@ -50,6 +51,13 @@ export interface FieldControlBinding {
   onBlur: () => void
   /** A user-driven value change: marks the field dirty and runs on-change validation. */
   input: (value: unknown) => void
+  /**
+   * A change the control committed itself, as its `onUpdate` receives it:
+   * input unless its reason is programmatic (`isProgrammaticChange`). A
+   * programmatic one is left to the model watcher's `sync`, which also sees
+   * whether a controlled parent applied it. Pass it as `onUpdate` directly.
+   */
+  change: (value: unknown, details: { reason: string }) => void
   /** A programmatic/parent-driven value change: only updates `filled`. */
   sync: (value: unknown) => void
 }
@@ -164,6 +172,10 @@ export function useFieldControl(options: UseFieldControlOptions): FieldControlBi
     },
     input: (value) => {
       if (isControl)
+        context.handleControlInput({ value })
+    },
+    change: (value, details) => {
+      if (isControl && !isProgrammaticChange(details.reason))
         context.handleControlInput({ value })
     },
     sync: (value) => {

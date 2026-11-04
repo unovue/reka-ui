@@ -76,7 +76,22 @@ onMounted(() => {
 
 onUnmounted(() => {
   rootContext.focusable.value = true
+  // Unless another input took its place: the field's label then follows the trigger.
+  if (!rootContext.inputElement.value?.isConnected)
+    rootContext.onInputElementChange(undefined)
 })
+
+// Inside a Field, followed rather than read once: an as-child swap replaces
+// the element while the input stays mounted, and the field focuses (and
+// labels) the connected one.
+if (fieldContext) {
+  watch(currentElement, (element, previous) => {
+    if (element)
+      rootContext.onInputElementChange(element as HTMLInputElement)
+    else if (rootContext.inputElement.value === previous)
+      rootContext.onInputElementChange(undefined)
+  }, { flush: 'post' })
+}
 
 function resetSearchTerm(reason: ComboboxInputChangeReason | BaseChangeReason) {
   setText(getComboboxInputText(rootContext, props.displayValue), reason)

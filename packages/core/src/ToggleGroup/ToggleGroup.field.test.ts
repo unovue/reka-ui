@@ -5,7 +5,7 @@ import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick } from 'vue'
 import { FieldDescription, FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
-import { describeFieldControlContract } from '@/test/fieldControlContract'
+import { describeFieldControlContract, providedContext } from '@/test/fieldControlContract'
 import { ToggleGroupItem, ToggleGroupRoot } from '.'
 
 const item = (wrapper: VueWrapper, label: string) => wrapper.find(`[aria-pressed][aria-label="${label}"]`)
@@ -14,6 +14,7 @@ for (const type of ['single', 'multiple'] as const) {
   const multiple = type === 'multiple'
   describeFieldControlContract({
     name: `ToggleGroup (${type})`,
+    setProgrammatically: (wrapper, value) => providedContext(wrapper, ToggleGroupRoot, 'changeModelValue').changeModelValue(Array.isArray(value) ? value[0] : value),
     render: props => h(ToggleGroupRoot, { type, ...props }, () => [
       h(ToggleGroupItem, { 'value': 'a', 'aria-label': 'A' }),
       h(ToggleGroupItem, { 'value': 'b', 'aria-label': 'B' }),

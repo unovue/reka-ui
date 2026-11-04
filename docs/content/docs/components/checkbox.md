@@ -239,6 +239,8 @@ Adheres to the [tri-state Checkbox WAI-ARIA design pattern](https://www.w3.org/W
   ]"
 />
 
+In a right-to-left layout (`dir="rtl"` on `CheckboxGroupRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), a group with `roving-focus` moves to the next checkbox with `ArrowLeft` and to the previous one with `ArrowRight`. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
+
 ## Headless composable
 
 `useCheckbox` returns the checked state (`checked`, and `checkedState` with `'indeterminate'`), `toggle()` / `setChecked()`, and the `root` and `indicator` [part surfaces](/docs/guides/composables#part-surfaces). It takes the same options as `CheckboxRoot` (`modelValue`, `defaultValue`, `trueValue`, `falseValue`, `disabled`, `required`, `onBeforeUpdate`, `onUpdate`). `useCheckboxGroup` holds the array model of a group, with `max`; pass its `context` as the `group` option of each `useCheckbox`.

@@ -148,6 +148,7 @@ export const [injectSelectFieldContext, provideSelectFieldContext]
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false">
 import { computed, onBeforeUnmount, onMounted, toRef, watch } from 'vue'
+import { isProgrammaticChange } from '@/Field/pendingFieldInput'
 import { claimFieldControl } from '@/Field/useFieldControl'
 import { PopperRoot } from '@/Popper'
 import BubbleSelect from './BubbleSelect.vue'
@@ -210,12 +211,16 @@ const select = useSelectRoot<AcceptableValue>({
   items: () => props.items as SelectItems<AcceptableValue> | undefined,
   getNavigationIntent: event => props.getNavigationIntent?.(event),
   emit: emits,
-  // User-driven selection (as opposed to a programmatic/parent-driven
-  // `modelValue` change, handled by the `watch` below) — this is what should
-  // mark the field dirty and run on-change validation. Report the resulting
-  // selection explicitly: a controlled `modelValue` only updates once the
-  // parent re-renders.
-  onUpdate: value => fieldContext?.handleControlInput({ value }),
+  // A user selection marks the field dirty and runs on-change validation; a
+  // programmatic one (`isProgrammaticChange`) or a parent-driven `modelValue`
+  // change only reaches the watcher below. The selection is reported
+  // explicitly: a controlled `modelValue` only updates once the parent re-renders.
+  onUpdate: fieldContext
+    ? (value, details) => {
+        if (!isProgrammaticChange(details.reason))
+          fieldContext.handleControlInput({ value })
+      }
+    : undefined,
   onOpenComplete: value => emits('update:openComplete', value),
 })
 const { context, open, isEmptyModelValue, isSelected } = select
@@ -224,9 +229,11 @@ const modelValue = select.modelValue as unknown as Ref<M extends true ? T[] : T 
 // `dirty` is reported from `onUpdate` instead (the user-driven path) — this
 // watcher also fires for a programmatic/parent-driven `modelValue` change,
 // which should update `filled` but must not mark the field dirty.
-watch(modelValue, () => {
-  fieldContext?.reportControlState({ filled: !isEmptyModelValue.value })
-})
+if (fieldContext) {
+  watch(modelValue, () => {
+    fieldContext.reportControlState({ filled: !isEmptyModelValue.value })
+  })
+}
 
 const isFormControl = useFormControl(context.triggerElement)
 

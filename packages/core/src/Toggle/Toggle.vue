@@ -94,9 +94,10 @@ const { modelValue, pressed, disabled, root } = useTogglePressed({
   defaultValue: props.defaultValue,
   disabled: () => field ? field.disabled(props.disabled) : props.disabled,
   emit: emits,
-  // A press is user input for the Field; a programmatic or parent-driven
-  // change is reported through the `pressed` watcher below.
-  onUpdate: value => field?.input(value),
+  // The Field hears its own commits by reason (`change`): user input, or, for
+  // a programmatic one (`setModelValue` and the like), only the watcher below,
+  // which also reports a parent-driven change.
+  onUpdate: field?.change,
 })
 
 if (field)

@@ -37,9 +37,9 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
   onContentUnmount: (content: symbol) => void
   isUserInputted: Ref<boolean>
   inputElement: Ref<HTMLInputElement | undefined>
-  onInputElementChange: (el: HTMLInputElement) => void
+  onInputElementChange: (el: HTMLInputElement | undefined) => void
   triggerElement: Ref<HTMLElement | undefined>
-  onTriggerElementChange: (el: HTMLElement) => void
+  onTriggerElementChange: (el: HTMLElement | undefined) => void
   parentElement: Ref<HTMLElement | undefined>
   resetSearchTermOnSelect: Ref<boolean>
   /** Called with the close reason when the popup closes and the input text should be reset. */
@@ -209,9 +209,10 @@ const isFormControl = useFormControl(currentElement)
 const field = useFieldControl({
   // Getters read bindings that are retained anyway, not the composable's
   // return object: capturing it in a closure would keep it alive per instance.
-  // The input renders its own `id`, else the field's.
-  id: () => context.inputElement.value?.id || undefined,
-  // A removed input can linger in the context: fall back to the trigger then.
+  // The element the field focuses, so `FieldLabel`'s `for` and `focusControl()`
+  // agree: the input (its own `id`, else the field's), else the trigger. A
+  // removed input can linger in the context (an as-child swap): skipped then.
+  id: () => (context.inputElement.value?.isConnected ? context.inputElement.value : context.triggerElement.value)?.id || undefined,
   element: () => (context.inputElement.value?.isConnected ? context.inputElement.value : undefined) ?? context.triggerElement.value,
   // The selected value(s), not the typed text.
   getValue: () => modelValue.value,
@@ -246,9 +247,10 @@ const combobox = useComboboxRoot<AcceptableValue>({
   getItem,
   element: currentElement,
   emit: emits,
-  // A selection is user input for the Field (typing alone isn't); a
-  // programmatic or parent-driven change is reported by the watcher below.
-  onUpdate: field ? value => field.input(value) : undefined,
+  // The Field hears its own commits by reason (`change`): user input, or, for
+  // a programmatic one (`setModelValue` and the like), only the watcher below,
+  // which also reports a parent-driven change.
+  onUpdate: field?.change,
   onHighlight: payload => emits('highlight', payload as { ref: HTMLElement, value: T } | undefined),
   onOpenComplete: value => emits('update:openComplete', value),
 })

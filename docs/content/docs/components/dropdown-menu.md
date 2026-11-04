@@ -1001,6 +1001,8 @@ Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA
   ]"
 />
 
+In a right-to-left layout (`dir="rtl"` on `DropdownMenuRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), `ArrowLeft` opens a submenu and `ArrowRight` closes it, and submenus open on the left. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
+
 #### When focus is on the filter
 
 The input keeps focus while keyboard navigation updates the highlighted item through `aria-activedescendant`.

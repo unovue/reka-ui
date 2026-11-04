@@ -5,7 +5,7 @@ import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { FieldError, FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
-import { describeFieldControlContract } from '@/test/fieldControlContract'
+import { describeFieldControlContract, providedContext } from '@/test/fieldControlContract'
 import { EditableArea, EditableInput, EditablePreview, EditableRoot } from '.'
 
 function render(props: Record<string, unknown>) {
@@ -28,6 +28,12 @@ async function type(wrapper: VueWrapper, text: string) {
 
 describeFieldControlContract({
   name: 'Editable',
+  setProgrammatically: (wrapper, value) => {
+    const context = providedContext(wrapper, EditableRoot, 'submit')
+    context.edit()
+    ;(context.inputValue as unknown as { value: unknown }).value = value
+    context.submit()
+  },
   render,
   control: wrapper => input(wrapper).element as HTMLElement,
   focusTarget: wrapper => preview(wrapper).element as HTMLElement,
@@ -157,6 +163,29 @@ describe('given a Field-wrapped Editable that is previewing', () => {
     expect(element.attributes('aria-describedby')).toContain(error.attributes('id'))
     expect(element.attributes('aria-invalid')).toBe('true')
     expect(await axe(wrapper.element)).toHaveNoViolations()
+    wrapper.unmount()
+  })
+})
+
+describe('given a Field-wrapped Editable submitted from its slot', () => {
+  it('reports a slot `submit` bound to a click as the user\'s input', async () => {
+    const onUpdate = vi.fn()
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { 'name': 'title', 'data-testid': 'field' }, () =>
+        h(EditableRoot, { 'activationMode': 'dblclick', 'submitMode': 'none', 'onUpdate:modelValue': onUpdate }, {
+          default: ({ submit }: { submit: (event?: Event) => void }) => [
+            h(EditableArea, () => [h(EditablePreview), h(EditableInput)]),
+            h('button', { 'type': 'button', 'data-testid': 'save', 'onClick': submit }, 'Save'),
+          ],
+        })),
+    }), { attachTo: document.body })
+    await preview(wrapper).trigger('dblclick')
+    await flushPromises()
+    await input(wrapper).setValue('Hello')
+    await wrapper.find('[data-testid="save"]').trigger('click')
+    await flushPromises()
+    expect(onUpdate).toHaveBeenCalledWith('Hello', expect.objectContaining({ reason: 'submit-press' }))
+    expect(wrapper.find('[data-testid="field"]').attributes('data-dirty')).toBe('')
     wrapper.unmount()
   })
 })

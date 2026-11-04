@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
-import { describeFieldControlContract } from '@/test/fieldControlContract'
+import { describeFieldControlContract, providedContext } from '@/test/fieldControlContract'
 import { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot } from '.'
 
 function renderTagsInput(props: Record<string, unknown>) {
@@ -30,6 +30,8 @@ async function addTag(wrapper: VueWrapper, text: string) {
 
 describeFieldControlContract({
   name: 'TagsInput',
+  // `onAddValue` from a custom part, as `setModelValue` would: `'imperative-action'`.
+  setProgrammatically: (wrapper, value) => providedContext(wrapper, TagsInputRoot, 'onAddValue').onAddValue((value as string[])[0]),
   render: renderTagsInput,
   control: input,
   interact: wrapper => addTag(wrapper, 'Kiwi'),
@@ -138,6 +140,52 @@ describe('given a Field-wrapped TagsInput whose as-child input changes', () => {
     await wrapper.find('button[type="submit"]').trigger('submit')
     await flushPromises()
     expect(document.activeElement).toBe(wrapper.find('[data-testid="second"]').element)
+    wrapper.unmount()
+  })
+})
+
+describe('given a Field-wrapped TagsInput whose wrapped input is replaced while the wrapper stays mounted', () => {
+  it('focuses the replacement and points the label at it', async () => {
+    const swapped = ref(false)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { name: 'tags' }, () => [
+        h(FieldLabel, () => 'Tags'),
+        h(FieldLabel, { 'nativeLabel': false, 'as': 'div', 'data-testid': 'label' }, () => 'Tags'),
+        h(TagsInputRoot, null, () => h(TagsInputInput, { as: 'div' }, () =>
+          h('input', { 'key': swapped.value ? 'b' : 'a', 'id': swapped.value ? 'b' : 'a', 'data-testid': swapped.value ? 'b' : 'a' }))),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    expect(wrapper.find('label').attributes('for')).toBe('a')
+    swapped.value = true
+    await flushPromises()
+    expect(wrapper.find('[data-testid="a"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="label"]').trigger('click')
+    expect(document.activeElement).toBe(wrapper.find('[data-testid="b"]').element)
+    expect(wrapper.find('label').attributes('for')).toBe('b')
+    wrapper.unmount()
+  })
+})
+
+describe('given a Field-wrapped TagsInput whose wrapped input has no id', () => {
+  it('puts the field\'s id on the input, not the wrapper, and keeps it there when the input is replaced', async () => {
+    const swapped = ref(false)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { name: 'tags' }, () => [
+        h(FieldLabel, () => 'Tags'),
+        h(TagsInputRoot, null, () => h(TagsInputInput, { 'as': 'div', 'data-testid': 'wrapper' }, () =>
+          h('input', { 'key': swapped.value ? 'b' : 'a', 'data-testid': swapped.value ? 'b' : 'a' }))),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    const label = () => wrapper.find('label').element as HTMLLabelElement
+    expect(wrapper.find('[data-testid="wrapper"]').attributes('id')).toBeUndefined()
+    expect(document.getElementById(label().htmlFor)).toBe(wrapper.find('[data-testid="a"]').element)
+
+    swapped.value = true
+    await flushPromises()
+    expect(document.getElementById(label().htmlFor)).toBe(wrapper.find('[data-testid="b"]').element)
     wrapper.unmount()
   })
 })

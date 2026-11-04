@@ -6,7 +6,7 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import { FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
 import { colorToString } from '@/shared/color'
-import { describeFieldControlContract } from '@/test/fieldControlContract'
+import { describeFieldControlContract, providedContext } from '@/test/fieldControlContract'
 import { ColorFieldInput, ColorFieldRoot } from '.'
 
 function render(props: Record<string, unknown>, inputProps: Record<string, unknown> = {}) {
@@ -27,6 +27,11 @@ const hex = (value: unknown) => typeof value === 'string' ? value : colorToStrin
 
 describeFieldControlContract({
   name: 'ColorField',
+  setProgrammatically: (wrapper, value) => {
+    const context = providedContext(wrapper, ColorFieldRoot, 'commit')
+    context.updateValue(value)
+    context.commit()
+  },
   render: props => render(props),
   control: wrapper => input(wrapper).element as HTMLElement,
   interact: wrapper => type(wrapper, '#ff0000'),

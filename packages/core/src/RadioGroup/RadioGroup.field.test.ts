@@ -5,13 +5,14 @@ import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick } from 'vue'
 import { FieldDescription, FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
-import { describeFieldControlContract } from '@/test/fieldControlContract'
+import { describeFieldControlContract, providedContext } from '@/test/fieldControlContract'
 import { RadioGroupItem, RadioGroupRoot } from '.'
 
 const radio = (wrapper: VueWrapper, value: string) => wrapper.find(`[role="radio"][value="${value}"]`)
 
 describeFieldControlContract({
   name: 'RadioGroup',
+  setProgrammatically: (wrapper, value) => providedContext(wrapper, RadioGroupRoot, 'changeModelValue').changeModelValue(value),
   render: props => h(RadioGroupRoot, props, () => [
     h(RadioGroupItem, { 'value': 'a', 'aria-label': 'A' }),
     h(RadioGroupItem, { 'value': 'b', 'aria-label': 'B' }),

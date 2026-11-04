@@ -6,7 +6,7 @@ import type { CalendarUnit, DateValue, Matcher, WeekDayFormat, WeekStartsOn } fr
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { createContext, getActiveElement, getElementByIdFrom, useDirection, useId, useLocale } from '@/shared'
+import { createContext, getElementByIdFrom, useDirection, useId, useLocale } from '@/shared'
 
 export type DatePickerRootContext = {
   id: Ref<string | undefined>
@@ -122,6 +122,7 @@ import { provideFieldFocusExtension } from '@/Field/useFieldFocusWithin'
 import { providePopoverRootContext } from '@/Popover/PopoverRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { isEqual } from '@/shared/compare'
+import { isSegmentFieldChange } from '@/shared/date/segmentField'
 import { useDatePicker } from './useDatePicker'
 
 defineOptions({
@@ -160,12 +161,12 @@ const locale = useLocale(propLocale)
 // The root provides the Popover context itself instead of rendering a
 // `PopoverRoot`, so `open` has one model.
 // Inside a `FieldRoot`, the composed `DateFieldRoot` is the field's control and
-// reports edits made in its segments. A pick in the calendar changes its value
-// while focus is outside it, which it reads as programmatic; the picker
-// reports that one as the user's input.
+// reports edits made in its segments. A pick in the calendar never commits through
+// the field, which reads it as parent-driven; the picker reports that one as
+// the user's input, deciding by reason as every control does.
 // Not claimed: the composed field claims it (`null` when another control owns it).
 const fieldContext = injectFieldForControl()
-const pendingInput = createPendingFieldInput<unknown>()
+const pendingInput = fieldContext ? createPendingFieldInput<unknown>() : undefined
 
 const { context, popover } = useDatePicker({
   modelValue: () => props.modelValue,
@@ -206,23 +207,24 @@ const { context, popover } = useDatePicker({
   baseId: useId(undefined, 'reka-popover'),
   emit: emits,
   onOpenComplete: value => emits('update:openComplete', value),
-  onUpdate: fieldContext
-    ? value => pendingInput.set(value)
+  // A segment edit commits here too (the field's `beforeUpdate:modelValue`
+  // runs the picker's change); the field records and reports that one itself.
+  onUpdate: pendingInput
+    ? (value, details) => {
+        if (!isSegmentFieldChange(details.reason))
+          pendingInput.record(value, details)
+      }
     : undefined,
 })
 
 if (fieldContext) {
   // After render, as the field's own watcher, so its hidden input is current.
   watch(() => context.modelValue.value, (value) => {
-    const pending = pendingInput.take()
-    // A parent-driven change: the field reports it as programmatic.
-    if (!pending || !isEqual(pending.value, value))
-      return
-    // An edit in the segments: the field reports it itself.
-    const fieldElement = (context.dateFieldRef.value as { $el?: Node } | undefined)?.$el
-    if (fieldElement?.contains(getActiveElement()))
-      return
-    fieldContext.handleControlInput({ value })
+    const pending = pendingInput!.take()
+    // Anything but a recorded calendar pick (a segment edit, a programmatic
+    // or parent-driven change): the field reports it itself.
+    if (pending && isEqual(pending.value, value))
+      fieldContext.handleControlInput({ value })
   }, { flush: 'post' })
 
   // The trigger and the (portaled) calendar are part of the field's control:

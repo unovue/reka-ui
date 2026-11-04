@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { FieldError, FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
-import { describeFieldControlContract } from '@/test/fieldControlContract'
+import { describeFieldControlContract, providedContext } from '@/test/fieldControlContract'
 import { DateRangeFieldInput, DateRangeFieldRoot } from '.'
 
 type Segment = { part: string, value: string }
@@ -33,6 +33,7 @@ function serialize(value: unknown) {
 
 describeFieldControlContract({
   name: 'DateRangeField',
+  setProgrammatically: (wrapper, value) => providedContext(wrapper, DateRangeFieldRoot, 'setModelValue').setModelValue(value),
   render,
   control: wrapper => wrapper.find('[role="group"]').element as HTMLElement,
   focusTarget: wrapper => segment(wrapper, 'start-month'),

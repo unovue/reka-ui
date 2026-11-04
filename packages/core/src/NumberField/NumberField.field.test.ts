@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { FieldError, FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
-import { describeFieldControlContract } from '@/test/fieldControlContract'
+import { describeFieldControlContract, providedContext } from '@/test/fieldControlContract'
 import { NumberFieldDecrement, NumberFieldIncrement, NumberFieldInput, NumberFieldRoot } from '.'
 
 function render(props: Record<string, unknown>) {
@@ -27,6 +27,10 @@ async function type(wrapper: VueWrapper, text: string) {
 
 describeFieldControlContract({
   name: 'NumberField',
+  setProgrammatically: (wrapper, value) => {
+    // Custom parts assign the context's writable model (v2).
+    (providedContext(wrapper, NumberFieldRoot, 'handleIncrease').modelValue as unknown as { value: unknown }).value = value
+  },
   render,
   control: wrapper => input(wrapper).element as HTMLElement,
   interact: wrapper => type(wrapper, '5'),

@@ -240,6 +240,8 @@ Inside a [`FieldRoot`](field) the date field takes the field's `name`, `required
   ]"
 />
 
+In a right-to-left layout (`dir="rtl"` on `DateFieldRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), `ArrowLeft` moves to the next segment and `ArrowRight` to the previous one. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
+
 ## Headless composable
 
 `useDateField` owns the value, the placeholder and the segments: `segments` (to render), `setModelValue()`, `isInvalid`, the `root` [part surface](/docs/guides/composables#part-surfaces) and `createInputSurface(part)` for each segment, which carries the `spinbutton` role, its `aria-value*` attributes and the typing and arrow-key handling. It registers watchers and collects the segment elements on mount, so call it inside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).
