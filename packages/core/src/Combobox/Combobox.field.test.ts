@@ -191,3 +191,37 @@ describe('given a required Field-wrapped Combobox whose input was removed', () =
     wrapper.unmount()
   })
 })
+
+describe('given a Field-wrapped Combobox whose focused option is removed from the open popup', () => {
+  it('leaves the field: unfocused, touched and validated on blur', async () => {
+    const shown = ref([...fruits])
+    const validate = vi.fn(() => null)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FieldRoot, { 'name': 'fruit', 'data-testid': 'field', validate, 'validationMode': 'onBlur' }, () =>
+        h(ComboboxRoot, null, () => [
+          h(ComboboxAnchor, () => [h(ComboboxInput, { 'data-testid': 'input' }), h(ComboboxTrigger, { 'data-testid': 'trigger' }, () => 'Open')]),
+          h(ComboboxPortal, () => h(ComboboxContent, () => h(ComboboxViewport, () =>
+            shown.value.map(fruit => h(ComboboxItem, { 'key': fruit, 'value': fruit, 'data-testid': fruit }, () => fruit))))),
+        ])),
+    }), { attachTo: document.body })
+    await nextTick()
+    const field = () => wrapper.find('[data-testid="field"]')
+    input(wrapper).focus()
+    await wrapper.find('[data-testid="trigger"]').trigger('click')
+    await flushPromises()
+    const option = document.querySelector<HTMLElement>('[data-testid="Banana"]')!
+    option.tabIndex = -1
+    option.focus()
+    await flushPromises()
+    expect(document.activeElement).toBe(option)
+    expect(field().attributes('data-focused')).toBe('')
+
+    shown.value = fruits.filter(fruit => fruit !== 'Banana')
+    await flushPromises()
+    expect(option.isConnected).toBe(false)
+    expect(field().attributes('data-focused')).toBeUndefined()
+    expect(field().attributes('data-touched')).toBe('')
+    expect(validate).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+})

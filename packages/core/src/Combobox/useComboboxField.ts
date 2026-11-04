@@ -43,7 +43,21 @@ export function provideComboboxField(field: FieldControlBinding | null, context:
   }
 
   let focusWithin = false
+  // A followed part can be removed while the combobox stays (an option the
+  // list no longer shows), and not every browser fires `focusout` for a
+  // removed element: a removal that takes focus with it leaves the field.
+  let observer: MutationObserver | undefined
+  function watchRemovals(container: Element | null | undefined) {
+    if (!container || typeof MutationObserver === 'undefined')
+      return
+    observer ??= new MutationObserver(() => {
+      if (focusWithin && !isInside(getActiveElement(context.parentElement.value)))
+        leave()
+    })
+    observer.observe(container, { childList: true, subtree: true })
+  }
   function leave() {
+    observer?.disconnect()
     if (!focusWithin)
       return
     focusWithin = false
@@ -54,6 +68,8 @@ export function provideComboboxField(field: FieldControlBinding | null, context:
     if (isInside(next)) {
       // Follow focus to that part, and decide again when it leaves.
       next!.addEventListener('focusout', onBlur as EventListener, { once: true })
+      const parent = context.parentElement.value
+      watchRemovals(parent?.contains(next) ? parent : getElementByIdFrom(parent, context.contentId))
       return
     }
     leave()
@@ -70,6 +86,7 @@ export function provideComboboxField(field: FieldControlBinding | null, context:
     }
   })
   onBeforeUnmount(() => {
+    observer?.disconnect()
     focusWithin = false
   })
 
