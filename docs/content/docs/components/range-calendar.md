@@ -334,6 +334,11 @@ Set `granularity="year"` to select a range of years.
 
 <ComponentPreview name="RangeCalendarYear" />
 
+## Real-world examples
+
+- [Date Range Presets](/examples/date-range-presets): Pair a RangeCalendar with the analytics presets people actually reach for — last 7 days, month to date, year to date.
+- [Date Picker Selection](/examples/date-picker-selection): Date pickers let users select a date or a range of dates. They commonly use in booking systems.
+
 ## Accessibility
 
 ### Keyboard Interactions
@@ -411,3 +416,7 @@ Set `granularity="year"` to select a range of years.
     }
   ]"
 />
+
+## Headless composable
+
+`useRangeCalendar` is the range counterpart of [`useCalendar`](calendar#headless-composable): it adds `startValue` / `endValue`, the `highlightedRange` while the user picks the end, `abortEditing()`, and the range options (`allowNonContiguousRanges`, `maximumLength`, `fixedDate`, `isDateHighlightable`). It registers watchers, so call it inside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

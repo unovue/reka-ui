@@ -44,6 +44,10 @@ import { ProgressIndicator, ProgressRoot } from 'reka-ui'
 </template>
 ```
 
+## Real-world examples
+
+- [Circular Progress](/examples/progress-circular): Rendering progress bar as a Circular Progress.
+
 ## Accessibility
 
 Adheres to the [`progressbar` role requirements](https://www.w3.org/WAI/ARIA/apg/patterns/meter).

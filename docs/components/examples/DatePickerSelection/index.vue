@@ -247,8 +247,8 @@ const quickOptions = [
       >
         <div class="flex items-center border rounded-md p-1 shadow-sm [[data-invalid]_&]:border-red-500">
           <template
-            v-for="item in segments.start"
-            :key="item.part"
+            v-for="(item, index) in segments.start"
+            :key="item.part === 'literal' ? index : item.part"
           >
             <DateRangeFieldInput
               v-if="item.part === 'literal'"
@@ -273,8 +273,8 @@ const quickOptions = [
 
         <div class="flex items-center border rounded-md p-1 shadow-sm [[data-invalid]_&]:border-red-500">
           <template
-            v-for="item in segments.end"
-            :key="item.part"
+            v-for="(item, index) in segments.end"
+            :key="item.part === 'literal' ? index : item.part"
           >
             <DateRangeFieldInput
               v-if="item.part === 'literal'"

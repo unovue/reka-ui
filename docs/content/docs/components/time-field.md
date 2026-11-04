@@ -150,3 +150,7 @@ Contains the time field segments
     }
   ]"
 />
+
+## Headless composable
+
+`useTimeField` owns the value, the placeholder and the segments: `segments`, `setModelValue()`, `isInvalid` (with `minValue`, `maxValue` and `isTimeUnavailable`), the `root` [part surface](/docs/guides/composables#part-surfaces) and `createInputSurface(part)` for each segment. It registers watchers and collects the segment elements on mount, so call it inside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

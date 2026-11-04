@@ -77,3 +77,7 @@ The toggle.
     },
   ]"
 />
+
+## Headless composable
+
+`useTogglePressed` returns `pressed`, `toggle()`, `setPressed()`, `lastChangeDetails` and the `root` [part surface](/docs/guides/composables#part-surfaces) (`aria-pressed`, `data-state`, the press handler). It takes `modelValue`, `defaultValue`, `disabled`, `onBeforeUpdate` and `onUpdate`. It is pure, so it can be called outside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

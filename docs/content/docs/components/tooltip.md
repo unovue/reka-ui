@@ -344,6 +344,12 @@ import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from 're
 }
 ```
 
+## Real-world examples
+
+- [Tooltip Cursor](/examples/tooltip-cursor): Render a Tooltip that follows the cursor when hovering over the target element.
+- [Slider Tooltip](/examples/slider-tooltip): Render a Slider with a Tooltip that shows the current value of the Slider.
+- [Toolbar Rich Text](/examples/toolbar-rich-text): A formatting toolbar combining ToggleGroup, DropdownMenu and Tooltip under one roving focus ring.
+
 ## Accessibility
 
 ### Keyboard Interactions
@@ -425,3 +431,7 @@ const forward = useForwardPropsEmits(props, emits)
   </TooltipRoot>
 </template>
 ```
+
+## Headless composable
+
+`useTooltip` holds the open state and the delay logic: `open`, `isDelayed`, `onOpen()` / `onClose()`, `onTriggerEnter()` / `onTriggerLeave()` for the hover timers, and the `trigger`, `content` and `label` [part surfaces](/docs/guides/composables#part-surfaces) (`aria-describedby` on the trigger while open, `role="tooltip"` on the label). The shared delay of a `TooltipProvider`, the grace area between trigger and content, positioning and the portal stay in the components. The composable is experimental; see [Headless composables](/docs/guides/composables).

@@ -190,6 +190,73 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 </template>
 ```
 
+### Manual activation
+
+By default a tab activates as soon as its trigger gets focus, so arrow keys switch panels immediately. When a panel is expensive to render or fetches data, set `activation-mode="manual"`: the arrow keys only move focus, and Enter, Space or a click activates the focused tab.
+
+```vue
+<template>
+  <TabsRoot default-value="overview" activation-mode="manual">
+    <!-- ... -->
+  </TabsRoot>
+</template>
+```
+
+### Syncing the tab with the URL
+
+Control the value with `v-model` and read and write it from the route, so a reload or a shared link opens the same tab.
+
+```vue
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
+
+const tab = computed({
+  get: () => {
+    const tab = route.query.tab
+    return (Array.isArray(tab) ? tab[0] : tab) ?? 'overview'
+  },
+  set: value => router.replace({ query: { ...route.query, tab: value } }),
+})
+</script>
+
+<template>
+  <TabsRoot v-model="tab">
+    <!-- ... -->
+  </TabsRoot>
+</template>
+```
+
+### Preventing a tab change
+
+`beforeUpdate:modelValue` fires before every change, with a `details` object whose `reason` is `'trigger-press'`, `'trigger-focus'` (automatic activation), `'trigger-keydown'` or `'imperative-action'`. Call `details.cancel()` to keep the current tab, for example while a form in it has unsaved changes.
+
+<ComponentPreview name="TabsUnsavedGuard" />
+
+### Keeping inactive panels mounted
+
+The panel elements of inactive tabs stay in the DOM with `hidden`, but their content unmounts. Set `:unmount-on-hide="false"` on `TabsRoot` to keep the content mounted too, so its state (form input, a playing video, a loaded iframe) survives switching tabs.
+
+### Animated indicator
+
+`TabsIndicator` renders inside `TabsList` and exposes the size and position of the active trigger as the `--reka-tabs-indicator-size` and `--reka-tabs-indicator-position` CSS variables. Transition them to slide an underline between tabs, as in the demo at the top of this page.
+
+```vue
+<template>
+  <TabsList class="relative">
+    <TabsIndicator class="absolute bottom-0 left-0 h-0.5 w-[--reka-tabs-indicator-size] translate-x-[--reka-tabs-indicator-position] bg-black transition-[width,transform]" />
+    <!-- triggers -->
+  </TabsList>
+</template>
+```
+
+## Real-world examples
+
+- [Command Menu with Tabs](/examples/dialog-command-tabs): A command palette whose results are scoped by Tabs, with Tab cycling scopes without leaving the search field.
+
 ## Accessibility
 
 Adheres to the [Tabs WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabpanel).
@@ -228,3 +295,7 @@ Adheres to the [Tabs WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/pa
     },
   ]"
 />
+
+## Headless composable
+
+`useTabs` holds the selected value (`modelValue`, `selectTab()`), the ids and the ARIA wiring: the `root` and `list` [part surfaces](/docs/guides/composables#part-surfaces), and `getTriggerSurface(value, disabled?)` and `getContentSurface(value)` for each tab. It doesn't move focus between the triggers with the arrow keys, or mount and unmount the panels: wrap the triggers in a [`RovingFocusGroup`](/docs/utilities/roving-focus) and render the panels with `v-if` or [`Presence`](/docs/utilities/presence), or use the components. Call the surface getters in `setup()`, once per tab, not in the template. Pass a stable `baseId` when rendering on the server. The composable is experimental; see [Headless composables](/docs/guides/composables).

@@ -378,6 +378,71 @@ The calendar heading as a button that switches to the next coarser view (day →
 
 <!-- @include: @/meta/DatePickerViewTrigger.md -->
 
+## Examples
+
+### Booking a day
+
+`min-value` and `max-value` bound the dates, and `is-date-unavailable` strikes out days that can't be picked, here weekends (with `isWeekend` from `reka-ui/date`, which follows the locale) and fully booked days. Inside a [`FieldRoot`](field) the picker's field takes the field's `name` and `required`, and a `validate` function explains what's wrong with a date the user typed into the segments. Inside a [`FormRoot`](form) the submitted value is a `Temporal.PlainDate`.
+
+<ComponentPreview name="DatePickerBooking" />
+
+### Picking a date and time
+
+The type of the value sets the segments. A `Temporal.PlainDateTime` (or a `placeholder` of that type) adds hour and minute segments; `granularity` sets the smallest one (`'day'`, `'hour'`, `'minute'` or `'second'`), and `hour-cycle` forces a 12 or 24 hour clock instead of the locale's. The calendar keeps the time of day when the user picks another day.
+
+```vue
+<script setup lang="ts">
+import { shallowRef } from 'vue'
+
+const startsAt = shallowRef(Temporal.PlainDateTime.from('2026-11-04T09:30'))
+</script>
+
+<template>
+  <DatePickerRoot
+    v-model="startsAt"
+    granularity="minute"
+    :hour-cycle="24"
+  >
+    <!-- ... -->
+  </DatePickerRoot>
+</template>
+```
+
+### In a time zone
+
+With a `Temporal.ZonedDateTime`, the field shows the wall-clock time in the value's zone with the zone's name, and the value keeps its zone when the user picks another day. Set `hide-time-zone` to leave the zone name out of the field. Convert a value to show it in another zone: `startsAt.withTimeZone('Europe/Paris')`. See [Time zones](/docs/guides/dates#time-zones).
+
+```vue
+<script setup lang="ts">
+import { shallowRef } from 'vue'
+
+const meeting = shallowRef(Temporal.ZonedDateTime.from('2026-11-04T15:00[America/New_York]'))
+</script>
+
+<template>
+  <DatePickerRoot v-model="meeting" granularity="minute">
+    <!-- ... -->
+  </DatePickerRoot>
+</template>
+```
+
+### Closing on select
+
+By default the calendar stays open after a date is picked, so the user can check the field before leaving. Set `close-on-select` to close it as soon as a date is picked; that close carries the reason `'date-select'` in the `update:open` details.
+
+```vue
+<template>
+  <DatePickerRoot v-model="date" close-on-select>
+    <!-- ... -->
+  </DatePickerRoot>
+</template>
+```
+
+## Real-world examples
+
+- [Date Picker View Switching](/examples/date-picker-view-switching): One Calendar with day, month and year views: click the heading to drill up, select a cell to drill back down.
+- [Date Picker Selection](/examples/date-picker-selection): Date pickers let users select a date or a range of dates. They commonly use in booking systems.
+
 ## Accessibility
 
 ### Keyboard Interactions
@@ -431,3 +496,7 @@ The calendar heading as a button that switches to the next coarser view (day →
     }
   ]"
 />
+
+## Headless composable
+
+`useDatePicker` owns the value, the placeholder, the open state and the calendar view, and returns `getFieldProps()` and `getCalendarProps()`: the options that make a [`useDateField`](date-field#headless-composable) and a [`useCalendar`](calendar) its field and its calendar. Positioning, the popover and focus management stay in the components. It registers watchers, so call it inside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

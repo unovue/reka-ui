@@ -845,3 +845,7 @@ function bookAppointment() {
     </form>
   </div>
 </template>
+
+## Headless composable
+
+`useTimeRangeField` is the range counterpart of [`useTimeField`](time-field#headless-composable): it holds the start and end times and the segments of both. It registers watchers and collects the segment elements on mount, so call it inside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

@@ -119,6 +119,32 @@ const enabled = ref(0)
 </template>
 ```
 
+### Waiting for the server
+
+`beforeUpdate:modelValue` fires before the switch changes, with the requested value and a `details` object. Calling `details.cancel()` keeps the switch where it is, so you can save first and apply the value the server returns. Mark the switch `aria-busy` while the request runs.
+
+<ComponentPreview name="SwitchServerConfirmed" />
+
+The `reason` of the details tells a click (`'trigger-press'`) from the Enter key (`'trigger-keydown'`); a change you make in code is `'imperative-action'`.
+
+### In a form
+
+With a `name`, a switch inside a `form` renders a hidden native checkbox, so the browser submits its `value` (`'on'` by default) while it's on and nothing while it's off, like a native checkbox. A switch doesn't register with a [`FieldRoot`](field) yet: label it with a `label` whose `for` matches its `id`, as above. See [Forms and validation](/docs/guides/forms#other-controls).
+
+```vue
+<template>
+  <form @submit.prevent="(event) => save(new FormData(event.currentTarget))">
+    <label for="marketing">Marketing emails</label>
+    <SwitchRoot id="marketing" name="marketing" value="yes">
+      <SwitchThumb />
+    </SwitchRoot>
+    <button type="submit">
+      Save
+    </button>
+  </form>
+</template>
+```
+
 ## Accessibility
 
 Adheres to the [`switch` role requirements](https://www.w3.org/WAI/ARIA/apg/patterns/switch).
@@ -137,3 +163,29 @@ Adheres to the [`switch` role requirements](https://www.w3.org/WAI/ARIA/apg/patt
     },
   ]"
 />
+
+## Headless composable
+
+`useSwitch` returns `checked`, `toggle()`, `setChecked()`, `lastChangeDetails` and the `root` and `thumb` [part surfaces](/docs/guides/composables#part-surfaces). Bind them to your own elements, for example a `button` and a `span`. It takes the same options as `SwitchRoot` (`modelValue`, `defaultValue`, `trueValue`, `falseValue`, `disabled`, `required`, `value`), with `onBeforeUpdate` and `onUpdate` in place of the emits. It doesn't render the hidden input used for native form submission.
+
+```vue
+<script setup lang="ts">
+import { useSwitch } from 'reka-ui'
+import { ref } from 'vue'
+
+const darkMode = ref(false)
+const control = useSwitch({ modelValue: darkMode })
+</script>
+
+<template>
+  <button
+    type="button"
+    aria-label="Dark mode"
+    v-bind="control.root.attrs.value"
+  >
+    <span v-bind="control.thumb.attrs.value" />
+  </button>
+</template>
+```
+
+See [Headless composables](/docs/guides/composables) for a live example and how state ownership works. The composable is experimental.

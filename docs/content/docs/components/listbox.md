@@ -376,6 +376,10 @@ When the data your `v-for` reads changes, Vue re-renders every item of that `v-f
 
 `v-memo` must list every value the item's props and slot read, such as `:disabled`. A value it leaves out goes stale when only that value changes. The selected and highlighted states don't need listing: the item tracks those itself. For very long lists, see the virtualization example above.
 
+## Real-world examples
+
+- [Listbox Transfer](/examples/listbox-transfer): Render a Transfer component with Listbox.
+
 ## Accessibility
 
 Adheres to the [Listbox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).
@@ -410,3 +414,7 @@ Adheres to the [Listbox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg
     }
   ]"
 />
+
+## Headless composable
+
+`useListboxRoot` holds the selection (`modelValue`, `select()`, `isSelected()`, `by`, `multiple`, `selectionBehavior`), the highlight (`highlightedElement`, `highlightItem()`, `highlightFirstItem()`, `changeHighlight()`), the built-in filter (`filterSearch`, `setFilterSearch()`) and the `root` and `content` [part surfaces](/docs/guides/composables#part-surfaces) with `getItemSurface()` for each option. It registers watchers, so call it inside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

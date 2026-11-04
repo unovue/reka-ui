@@ -91,6 +91,10 @@ import { AvatarImage, AvatarRoot, TooltipArrow, TooltipRoot, TooltipTrigger } fr
 </template>
 ```
 
+## Real-world examples
+
+- [Avatar Stack](/examples/avatar-stack): An overlapping avatar stack with a +N overflow and profile cards that load on first open.
+
 ## Headless composable
 
 `useAvatar` holds the shared image loading status. `useAvatarImage` loads the image off-DOM, reports each status through `onLoadingStatusChange` and returns the image surface, and `useAvatarFallback` decides when the fallback shows.

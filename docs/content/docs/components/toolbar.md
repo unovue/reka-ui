@@ -181,6 +181,10 @@ import {
 </template>
 ```
 
+## Real-world examples
+
+- [Toolbar Rich Text](/examples/toolbar-rich-text): A formatting toolbar combining ToggleGroup, DropdownMenu and Tooltip under one roving focus ring.
+
 ## Accessibility
 
 Uses [roving tabindex](https://www.w3.org/TR/wai-aria-practices-1.2/examples/radio/radio.html) to manage focus movement among items.
@@ -227,3 +231,7 @@ Uses [roving tabindex](https://www.w3.org/TR/wai-aria-practices-1.2/examples/rad
     },
   ]"
 />
+
+## Headless composable
+
+`useToolbar` returns the `root` and `link` [part surfaces](/docs/guides/composables#part-surfaces) and `getButtonSurface()` for each button: `role="toolbar"`, `aria-orientation` and the direction. Moving focus between the items with the arrow keys comes from a [`RovingFocusGroup`](/docs/utilities/roving-focus) that the components render. It is pure, so it can be called outside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

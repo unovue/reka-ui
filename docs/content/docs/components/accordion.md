@@ -349,6 +349,32 @@ This will also allow browser to search the hidden text, and open the accordion.
 </template>
 ```
 
+### Expand and collapse all
+
+Control the open items with `v-model`. With `type="multiple"` the model is an array of item values, so “Expand all” sets it to every value and “Collapse all” to `[]`. The header renders an `h3` by default; set `as` on `AccordionHeader` to the heading level that fits your page.
+
+<ComponentPreview name="AccordionExpandAll" />
+
+### Reacting to changes
+
+`update:modelValue` receives a second argument whose `reason` is `'trigger-press'`, `'content-found'` (the browser's find-in-page revealed a closed item's text, with `:unmount-on-hide="false"`) or `'imperative-action'`. `beforeUpdate:modelValue` fires first; `details.cancel()` keeps the current items open.
+
+```vue
+<template>
+  <AccordionRoot
+    v-model="open"
+    type="multiple"
+    @update:model-value="(value, details) => analytics.track('faq-toggle', { value, reason: details.reason })"
+  >
+    <!-- ... -->
+  </AccordionRoot>
+</template>
+```
+
+## Real-world examples
+
+- [Navigation Mobile Nav](/examples/navigation-mobile-nav): One set of navigation links rendered as a desktop flyout and, below the breakpoint, as an Accordion inside a Drawer.
+
 ## Accessibility
 
 Adheres to the [Accordion WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/accordion).
@@ -396,3 +422,7 @@ Adheres to the [Accordion WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/a
       keys: ['End'],
       description: 'When focus is on an <code>AccordionTrigger</code>, moves focus to the last <code>AccordionTrigger</code>.',
     }]" />
+
+## Headless composable
+
+`useAccordion` holds the open items (`modelValue`, `changeModelValue(value)`) for `type` `single` or `multiple`, and `getItemSurface(value)` returns the state and the `header`, `trigger` and `content` [part surfaces](/docs/guides/composables#part-surfaces) of one item. Arrow-key navigation between the triggers and the content's mount and size animation stay in the components. The composable is experimental; see [Headless composables](/docs/guides/composables).

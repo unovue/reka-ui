@@ -78,7 +78,7 @@ function select(event: Event, item: CommandItem) {
                   v-for="item in scopes"
                   :key="item.value"
                   :value="item.value"
-                  class="flex items-center gap-1.5 px-2 py-2 text-xs text-muted-foreground outline-none data-[state=active]:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
+                  class="flex items-center gap-1.5 px-2 py-2 text-xs text-muted-foreground outline-none data-[state=checked]:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
                   {{ item.label }}
                   <span class="rounded bg-muted px-1 text-[10px] tabular-nums">{{ item.items.length }}</span>

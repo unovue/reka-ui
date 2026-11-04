@@ -120,6 +120,10 @@ import { Label, PinInputInput, PinInputRoot } from 'reka-ui'
 </template>
 ```
 
+## Real-world examples
+
+- [Pin Input OTP](/examples/pin-input-otp): A one-time-code field that verifies on complete, handles paste, reports failure, and throttles resends.
+
 ## Accessibility
 
 ### Keyboard Interactions
@@ -157,3 +161,7 @@ Pastes the contents of the clipboard into the pin input. If the number of charac
     }
   ]"
 />
+
+## Headless composable
+
+`usePinInput` holds the value as an array of characters (`modelValue`, `updateModelValueAt(index, value)`), `isCompleted` and `onComplete`, `registerInput()` for each input, and the `root` [part surface](/docs/guides/composables#part-surfaces) with `createInputSurface(index)` for each cell, which handles typing, paste, Backspace and the arrow keys. It installs a watcher for `onComplete`, so call it inside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

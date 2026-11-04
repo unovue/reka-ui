@@ -343,6 +343,12 @@ import { PopoverAnchor, PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot
 </template>
 ```
 
+### Editing in place
+
+A popover often holds a small form. Bind `v-model:open` so the form can close it after saving, and read the `reason` in the details of `update:open` to tell how it closed: `'close-press'` (a `PopoverClose`), `'escape-key'`, `'outside-press'`, `'focus-outside'` or `'trigger-press'`. Here only Save keeps the draft; every other way out discards it. Closing by setting `open` yourself emits nothing, as with any controlled prop.
+
+<ComponentPreview name="PopoverQuickEdit" />
+
 ### Detached triggers
 
 A `PopoverTrigger` does not have to be inside its `PopoverRoot`. Create a handle with `createPopoverHandle()` and pass it to the `handle` prop of the root and of any number of triggers. The triggers can live anywhere in the app, including other components and portals. Here each user in a list opens the same popover with their own data, and a separate button opens it from code for one of the triggers.
@@ -401,6 +407,12 @@ const userPopover = createPopoverHandle<User>()
 `handle.open(triggerId)` opens the popover for the trigger with that `id`. It throws if no such trigger uses the handle, because a popover needs a trigger to anchor to. `handle.close()` closes it. `handle.isOpen` is reactive. These calls report the reason `'imperative-action'` through `beforeUpdate:open` and `update:open`, so `details.cancel()` can veto them. They do nothing while no root with the handle is mounted. `details.trigger` is the trigger's element when a trigger press opens, switches or closes the popup, or `handle.open(triggerId)` opens it. It is `undefined` for other changes, such as `handle.close()`, Escape or an outside press.
 
 The handle itself holds no state. The mounted root owns it, and the root and the triggers only connect to the handle after they mount. A handle created at module scope is therefore safe under SSR: nothing from one request can reach another, and every trigger renders closed on the server. Prefer creating the handle in the `<script setup>` of the component that renders the root and passing it down. Use a module-scope handle when the triggers live in unrelated parts of the app. Use one mounted root per handle: a second root that mounts with the same handle takes it over and closes the first, with a dev warning. A root or trigger kept alive by `<KeepAlive>` disconnects from the handle while it is inactive.
+
+## Real-world examples
+
+- [Selection Popover](/examples/popover-selection): A formatting toolbar anchored to the current text selection using a virtual Popper reference.
+- [Color Picker](/examples/color-picker): A comprehensive color picker component that combines ColorArea, ColorSlider, ColorField, and ColorSwatch inside a Popover. This example demonstrates how to build a complete color selection interface with 2D color area, hue and alpha sliders, and input fields for precise color value entry.
+- [Date Range Presets](/examples/date-range-presets): Pair a RangeCalendar with the analytics presets people actually reach for — last 7 days, month to date, year to date.
 
 ## Accessibility
 
@@ -485,3 +497,7 @@ const forwarded = useForwardPropsEmits(props, emits)
   </PopoverPortal>
 </template>
 ```
+
+## Headless composable
+
+`usePopover` holds the open state (`open`, `onOpenChange(value, reason?)`, `onOpenToggle()`), the ids, the detached-trigger state of a `handle`, and the `trigger`, `close` and `content` [part surfaces](/docs/guides/composables#part-surfaces). Mounting and exit animations ([Presence](/docs/utilities/presence)), focus trapping ([FocusScope](/docs/utilities/focus-scope)), dismissal on Escape and outside interaction, positioning against the trigger and the portal are not part of it: compose them yourself, or use the components. It is pure; pass a stable `baseId` when rendering on the server. The composable is experimental; see [Headless composables](/docs/guides/composables).

@@ -309,6 +309,10 @@ function onCloseAutoFocus(event: Event) {
 
 The handle itself holds no state. The mounted root owns it, and the root and the triggers only connect to the handle after they mount. A handle created at module scope is therefore safe under SSR: nothing from one request can reach another, and every trigger renders closed on the server. Prefer creating the handle in the `<script setup>` of the component that renders the root and passing it down. Use a module-scope handle when the triggers live in unrelated parts of the app. Use one mounted root per handle: a second root that mounts with the same handle takes it over and closes the first, with a dev warning. A root or trigger kept alive by `<KeepAlive>` disconnects from the handle while it is inactive.
 
+## Real-world examples
+
+- [Dialog with Unsaved Changes](/examples/dialog-unsaved-changes): Hold a dirty Dialog open by preventing its close events, and hand the decision to an AlertDialog.
+
 ## Accessibility
 
 Adheres to the [Alert and Message Dialogs WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog).
@@ -331,3 +335,7 @@ description: 'Moves focus to the previous focusable element.',
 keys: ['Esc'],
 description: 'Closes the dialog and moves focus to <Code>AlertDialogTrigger</code>.',
 }]" />
+
+## Headless composable
+
+`useAlertDialog` is [`useDialog`](dialog#headless-composable) with `modal` forced on, a `content` surface with `role="alertdialog"`, and the `action` and `cancel` [part surfaces](/docs/guides/composables#part-surfaces). `useAlertDialogContent()` returns the content behaviour of an alert dialog: it ignores outside presses and focuses the registered cancel button on open. Mounting and exit animations ([Presence](/docs/utilities/presence)), focus trapping ([FocusScope](/docs/utilities/focus-scope)), dismissal on Escape and outside interaction, scroll locking and the portal are not part of it: compose them yourself, or use the components. The composable is experimental; see [Headless composables](/docs/guides/composables).

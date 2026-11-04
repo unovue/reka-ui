@@ -105,6 +105,72 @@ Renders when the radio item is in a checked state. You can style this element di
   ]"
 />
 
+## Examples
+
+### Card options
+
+Render anything inside a `RadioGroupItem`: it is the radio, so its text becomes its accessible name and the whole card is clickable. Style the selected card with `[data-state=checked]` and a disabled one with `[data-disabled]`.
+
+<ComponentPreview name="RadioGroupCards" />
+
+### Orientation and direction
+
+Without `orientation`, all four arrow keys move between the items. Set `orientation="horizontal"` to use only Left and Right (or `vertical` for Up and Down), so the other keys stay free, for example for scrolling. In a right-to-left layout, set `dir="rtl"` (or wrap the app in a [`ConfigProvider`](/docs/utilities/config-provider)) so Left and Right follow the reading direction. Set `:loop="false"` to stop at the first and last item.
+
+```vue
+<template>
+  <RadioGroupRoot
+    v-model="alignment"
+    orientation="horizontal"
+    dir="rtl"
+    :loop="false"
+  >
+    <!-- ... -->
+  </RadioGroupRoot>
+</template>
+```
+
+### In a form
+
+With a `name`, each item inside a `form` renders a hidden native radio, so the browser submits the selected `value`. A radio group doesn't register with a [`FieldRoot`](field) yet: label it with `aria-labelledby` (or `aria-label`), and see [Forms and validation](/docs/guides/forms#other-controls) for showing an error.
+
+```vue
+<template>
+  <form @submit.prevent="onSubmit">
+    <span id="shipping-label">Shipping</span>
+    <RadioGroupRoot
+      name="shipping"
+      default-value="standard"
+      aria-labelledby="shipping-label"
+    >
+      <RadioGroupItem value="standard" aria-label="Standard" />
+      <RadioGroupItem value="express" aria-label="Express" />
+    </RadioGroupRoot>
+    <button type="submit">
+      Continue
+    </button>
+  </form>
+</template>
+```
+
+### Reacting to changes
+
+`update:modelValue` receives a second argument with the `reason` (`'item-press'`, also for arrow-key selection, or `'imperative-action'`) and the native `event`. `beforeUpdate:modelValue` fires first; call `details.cancel()` to keep the current value.
+
+```vue
+<template>
+  <RadioGroupRoot
+    v-model="plan"
+    @before-update:model-value="(value, details) => {
+      if (value === 'free' && hasPaidFeatures)
+        details.cancel()
+    }"
+  >
+    <!-- ... -->
+  </RadioGroupRoot>
+</template>
+```
+
 ## Accessibility
 
 Adheres to the [Radio Group WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/radiobutton) and uses [roving tabindex](https://www.w3.org/TR/wai-aria-practices-1.2/examples/radio/radio.html) to manage focus movement among radio items.
@@ -139,3 +205,7 @@ Adheres to the [Radio Group WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA
     },
   ]"
 />
+
+## Headless composable
+
+`useRadioGroup` holds the selected value (`modelValue`, `selectValue()`), the `root` [part surface](/docs/guides/composables#part-surfaces) and `getItemSurface(value, disabled?)`, which returns the surface of one radio: `role="radio"`, `aria-checked`, `data-state` and the press handler. Arrow-key navigation between the radios is not part of it: render the items in a [`RovingFocusGroup`](/docs/utilities/roving-focus), or use the components. The composable is experimental; see [Headless composables](/docs/guides/composables).

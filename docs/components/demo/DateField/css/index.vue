@@ -17,8 +17,8 @@ import './styles.css'
       class="DateField"
     >
       <template
-        v-for="item in segments"
-        :key="item.part"
+        v-for="(item, index) in segments"
+        :key="item.part === 'literal' ? index : item.part"
       >
         <DateFieldInput
           v-if="item.part === 'literal'"

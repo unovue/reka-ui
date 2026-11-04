@@ -290,6 +290,10 @@ import { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, Hover
 }
 ```
 
+## Real-world examples
+
+- [Avatar Stack](/examples/avatar-stack): An overlapping avatar stack with a +N overflow and profile cards that load on first open.
+
 ## Accessibility
 
 The hover card is intended for sighted users only, the content will be inaccessible to keyboard users.
@@ -305,3 +309,7 @@ The hover card is intended for sighted users only, the content will be inaccessi
       keys: ['Enter'],
       description: 'Opens the hover card link',
     }]" />
+
+## Headless composable
+
+`useHoverCard` holds the open state and its open and close delays: `open`, `onOpen()`, `onClose()`, `onDismiss()`, `onOpenChange()` and the `trigger` and `content` [part surfaces](/docs/guides/composables#part-surfaces). Every timer and the touch toggle go through one model, so `onBeforeUpdate` can cancel any of them. Positioning, the grace area and the portal stay in the components. The composable is experimental; see [Headless composables](/docs/guides/composables).

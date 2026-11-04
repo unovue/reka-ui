@@ -144,10 +144,11 @@ const permission = ref(0)
 
 You can set the checkbox to `indeterminate` by taking control of its state.
 
-```vue line=5,9-14,16-18
+```vue line=6,10-15,17-19
 <script setup>
 import { Icon } from '@iconify/vue'
 import { CheckboxIndicator, CheckboxRoot } from 'reka-ui'
+import { ref } from 'vue'
 
 const checked = ref('indeterminate')
 </script>
@@ -175,6 +176,54 @@ const checked = ref('indeterminate')
 </template>
 ```
 
+### Select all
+
+A parent checkbox that selects every option of a `CheckboxGroupRoot` derives its state from the group: unchecked when nothing is selected, checked when everything is, and `indeterminate` in between. Bind it to a writable `computed`. Pressing an indeterminate checkbox checks it.
+
+<ComponentPreview name="CheckboxSelectAll" />
+
+### Limiting the selection
+
+`max` on `CheckboxGroupRoot` caps how many values can be selected. Once it is reached, the unchecked checkboxes get `aria-disabled` and ignore presses, while the checked ones can still be unchecked.
+
+```vue
+<template>
+  <CheckboxGroupRoot v-model="toppings" :max="2">
+    <CheckboxRoot value="cheese" />
+    <CheckboxRoot value="olives" />
+    <CheckboxRoot value="peppers" />
+  </CheckboxGroupRoot>
+</template>
+```
+
+### In a form
+
+Inside a [`FieldRoot`](field) with `required`, an unchecked checkbox is missing (`valueMissing`), so a [`FormRoot`](form) won't submit until it's checked. The field's `name`, `required` and `disabled` apply to the checkbox, and `FieldLabel` labels it. A checkbox inside a `CheckboxGroupRoot` doesn't register with a field. See [Forms and validation](/docs/guides/forms).
+
+```vue
+<template>
+  <FieldRoot name="terms" required>
+    <CheckboxRoot>
+      <CheckboxIndicator>
+        <Icon icon="radix-icons:check" />
+      </CheckboxIndicator>
+    </CheckboxRoot>
+    <FieldLabel>I accept the terms and conditions</FieldLabel>
+    <FieldError match="valueMissing">
+      Accept the terms to continue.
+    </FieldError>
+  </FieldRoot>
+</template>
+```
+
+Outside a Field, a checkbox with a `name` inside a `form` renders a hidden native checkbox, so the browser submits its `value` (`'on'` by default) when it's checked.
+
+## Real-world examples
+
+- [Checkbox Group](/examples/checkbox-group): Rendering multiple Checkbox elements to form a group of checkboxes. The behavior is similar to having `v-model` for multiple native `input[type="checkbox"]`.
+- [Tree Multi Select](/examples/tree-multi-select): Tri-state folder selection driven by Tree's `propagate-select` and `bubble-select`, with both toggleable so you can see what each one does.
+- [Data Table](/examples/data-table): Compose Checkbox, DropdownMenu, ContextMenu, ScrollArea and Pagination into a sortable, selectable table.
+
 ## Accessibility
 
 Adheres to the [tri-state Checkbox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox).
@@ -189,3 +238,30 @@ Adheres to the [tri-state Checkbox WAI-ARIA design pattern](https://www.w3.org/W
     },
   ]"
 />
+
+## Headless composable
+
+`useCheckbox` returns the checked state (`checked`, and `checkedState` with `'indeterminate'`), `toggle()` / `setChecked()`, and the `root` and `indicator` [part surfaces](/docs/guides/composables#part-surfaces). It takes the same options as `CheckboxRoot` (`modelValue`, `defaultValue`, `trueValue`, `falseValue`, `disabled`, `required`, `onBeforeUpdate`, `onUpdate`). `useCheckboxGroup` holds the array model of a group, with `max`; pass its `context` as the `group` option of each `useCheckbox`.
+
+```vue
+<script setup lang="ts">
+import { useCheckbox } from 'reka-ui'
+
+const newsletter = useCheckbox({ defaultValue: true })
+</script>
+
+<template>
+  <button
+    type="button"
+    aria-label="Subscribe to the newsletter"
+    v-bind="newsletter.root.attrs.value"
+  >
+    <span
+      v-if="newsletter.checked.value"
+      v-bind="newsletter.indicator.attrs.value"
+    >✓</span>
+  </button>
+</template>
+```
+
+The composables don't render the hidden input used for native form submission, and don't register with a `FieldRoot`. They are experimental; see [Headless composables](/docs/guides/composables).

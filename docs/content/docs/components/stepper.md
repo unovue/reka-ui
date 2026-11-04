@@ -216,6 +216,10 @@ const stepper = useTemplateRef('stepper')
 </template>
 ```
 
+## Real-world examples
+
+- [Stepper Form Wizard](/examples/stepper-form-wizard): Gate each step of a multi-step form on its own validation, so Next and the step triggers stay in sync.
+
 ## Accessibility
 
 ### Keyboard Interactions
@@ -248,3 +252,7 @@ const stepper = useTemplateRef('stepper')
     },
   ]"
 />
+
+## Headless composable
+
+`useStepper` holds the current step (`modelValue`, `goToStep()`, `nextStep()`, `prevStep()`, `isNextDisabled`, `isPrevDisabled`) with `linear` gating, and the `root` [part surface](/docs/guides/composables#part-surfaces) with `getItem(step)` for each step's state (`completed`, `current` or `upcoming`). It registers watchers, so call it inside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

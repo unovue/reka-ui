@@ -653,6 +653,10 @@ Combine `--reka-toast-swipe-move-[x|y]` and `--reka-toast-swipe-end-[x|y]` CSS v
 }
 ```
 
+## Real-world examples
+
+- [Toast Undo](/examples/toast-undo): Archive optimistically and let a Toast own the rollback, with a countdown bar that pauses whenever the dismiss timer does.
+
 ## Accessibility
 
 Adheres to the [`aria-live` requirements](https://www.w3.org/TR/wai-aria/#aria-live).

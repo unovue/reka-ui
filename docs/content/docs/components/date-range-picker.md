@@ -408,6 +408,11 @@ The calendar heading as a button that switches to the next coarser view (day →
 
 <!-- @include: @/meta/DateRangePickerViewTrigger.md -->
 
+## Real-world examples
+
+- [Date Range Presets](/examples/date-range-presets): Pair a RangeCalendar with the analytics presets people actually reach for — last 7 days, month to date, year to date.
+- [Date Picker Selection](/examples/date-picker-selection): Date pickers let users select a date or a range of dates. They commonly use in booking systems.
+
 ## Accessibility
 
 ### Keyboard Interactions
@@ -461,3 +466,7 @@ The calendar heading as a button that switches to the next coarser view (day →
     }
   ]"
 />
+
+## Headless composable
+
+`useDateRangePicker` owns the range, the placeholder, the open state and the view, and returns `getFieldProps()` and `getCalendarProps()`: the options that make a [`useDateRangeField`](date-range-field#headless-composable) and a [`useRangeCalendar`](range-calendar#headless-composable) its field and its calendar, plus the `popover` state. Positioning and focus management stay in the components. It registers watchers, so call it inside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

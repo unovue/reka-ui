@@ -338,6 +338,10 @@ const main = useSplitterPanel(splitter.context, { id: 'main' })
 
 `useSplitter` takes `layout` with `onUpdate` for a controlled layout, `onBeforeUpdate(value, details)` to cancel a `drag`, `keyboard` or `imperative-action` change, and `onLayout` for the `@layout` notification. The composables are experimental and register watchers, so call them inside `setup()`. Pass stable `id`s when rendering on the server.
 
+## Real-world examples
+
+- [Splitter IDE Layout](/examples/splitter-ide-layout): Nest Splitter groups into an editor layout with collapsible panels and sizes persisted across reloads.
+
 ## Accessibility
 
 Adheres to the [Window Splitter WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter).

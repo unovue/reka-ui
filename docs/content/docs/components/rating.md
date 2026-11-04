@@ -256,3 +256,7 @@ Built on top of the [Radio Group](/docs/components/radio-group) primitive and ad
     },
   ]"
 />
+
+## Headless composable
+
+`useRating` holds the value and the hover preview (`modelValue`, `hoveredRating`, `changeModelValue()`, `changeHoveredRating()`, `resetHoveredRating()`), the `items` to render for `length`, `getItemSteps()` for fractional `step`s, and the `root` [part surface](/docs/guides/composables#part-surfaces) with `getItemIndicatorSurface()`. It is pure, so it can be called outside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).
