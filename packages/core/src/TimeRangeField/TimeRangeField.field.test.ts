@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { FieldError, FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
-import { describeFieldControlContract } from '@/test/fieldControlContract'
+import { describeFieldControlContract, providedContext } from '@/test/fieldControlContract'
 import { TimeRangeFieldInput, TimeRangeFieldRoot } from '.'
 
 type Segment = { part: string, value: string }
@@ -33,6 +33,7 @@ function serialize(value: unknown) {
 
 describeFieldControlContract({
   name: 'TimeRangeField',
+  setProgrammatically: (wrapper, value) => providedContext(wrapper, TimeRangeFieldRoot, 'setModelValue').setModelValue(value),
   render,
   control: wrapper => wrapper.find('[role="group"]').element as HTMLElement,
   focusTarget: wrapper => segment(wrapper, 'start-hour'),

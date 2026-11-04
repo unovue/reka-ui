@@ -90,7 +90,7 @@ export const [injectTimeFieldRootContext, provideTimeFieldRootContext]
 <script setup lang="ts">
 import { computed, mergeProps, ref, toRefs, useAttrs, watch } from 'vue'
 import { toIsoString } from '@/date'
-import { createPendingFieldInput, isProgrammaticChange } from '@/Field/pendingFieldInput'
+import { createPendingFieldInput } from '@/Field/pendingFieldInput'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
@@ -153,8 +153,9 @@ const resolvedRequired = () => field ? field.required(props.required) : props.re
 
 // Controlled/uncontrolled + the `beforeUpdate:` / `update:` emits for the value
 // and the placeholder live in the composable's `useControllableState`.
-// The control's own segment edits, so a parent's change while focus is in
-// the segments (e.g. a reset) isn't mistaken for the user's. Only in a Field.
+// The user's segment edits, decided by reason when they commit: a parent's
+// change (e.g. a reset) or a programmatic `setModelValue` isn't recorded, and
+// a user edit stays one wherever focus goes next. Only in a Field.
 const pendingInput = field ? createPendingFieldInput<unknown>() : undefined
 
 const { root, context, modelValue, segments, isInvalid, segmentElements, setFocusedElement, focusFirstSegment } = useTimeField({
@@ -176,26 +177,19 @@ const { root, context, modelValue, segments, isInvalid, segmentElements, setFocu
   isTimeUnavailable: computed(() => props.isTimeUnavailable),
   parentElement,
   emit: emits,
-  // Segment edits only: a programmatic `setModelValue` while a segment has
-  // focus isn't the user's input.
-  onUpdate: pendingInput
-    ? (value, { reason }) => {
-        if (!isProgrammaticChange(reason))
-          pendingInput.set(value)
-      }
-    : undefined,
+  onUpdate: pendingInput?.record,
 })
 
 // Touched once focus leaves the whole group, not on every segment change.
 const focusWithin = useFieldFocusWithin(field, parentElement)
 
-// A value change while focus is inside the segments is the user editing it;
-// anything else is programmatic, which updates `filled` but isn't dirtying.
-// Flushed after render so the hidden input's validity reflects the new value.
+// The user's recorded edit, once it arrives, is input; anything else is
+// programmatic, which updates `filled` but isn't dirtying. Flushed after
+// render so the hidden input's validity reflects the new value.
 if (field) {
   watch(modelValue, (value) => {
     const pending = pendingInput!.take()
-    if (pending && isEqual(pending.value, value) && focusWithin!.isFocusWithin())
+    if (pending && isEqual(pending.value, value))
       field.input(value)
     else
       field.sync(value)

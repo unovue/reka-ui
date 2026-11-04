@@ -64,17 +64,42 @@ export interface FieldControlContractSpec {
   disabledParts?: (wrapper: VueWrapper) => HTMLElement[]
   /** Skips the `name` precedence checks, for a control without a `name` prop. */
   noName?: boolean
+  /**
+   * Changes the value to `value` through the control's own imperative API
+   * (e.g. its root context's `setModelValue`, as a consumer's custom part
+   * would call it), whose change reports `'imperative-action'`. Omitted for a
+   * control that exposes none (every change it commits is the user's). See
+   * `providedContext`.
+   */
+  setProgrammatically?: (wrapper: VueWrapper, value: unknown) => void | Promise<void>
+}
+
+/**
+ * Test-only: the context `component` provides itself (not one it inherits)
+ * whose `method` is a function, for driving a control's imperative API.
+ */
+export function providedContext<T = Record<string, (...args: any[]) => any>>(wrapper: VueWrapper, component: Component, method: string): T {
+  const provides = (wrapper.findComponent(component).vm.$ as unknown as { provides: Record<symbol, unknown> }).provides
+  const context = Object.getOwnPropertySymbols(provides)
+    .map(key => provides[key] as Record<string, unknown> | null)
+    .find(value => typeof value?.[method] === 'function')
+  if (!context)
+    throw new Error(`no context with \`${method}\` provided by the component`)
+  return context as T
 }
 
 export function describeFieldControlContract(spec: FieldControlContractSpec) {
-  function mountInField(options: { fieldProps?: Record<string, unknown>, controlProps?: Record<string, unknown>, form?: boolean, onFormSubmit?: (values: Record<string, unknown>) => void, model?: unknown } = {}) {
+  function mountInField(options: { fieldProps?: Record<string, unknown>, controlProps?: Record<string, unknown>, form?: boolean, onFormSubmit?: (values: Record<string, unknown>) => void, model?: unknown, onUpdate?: () => void } = {}) {
     const model = ref(options.model ?? spec.emptyValue)
     const Harness = defineComponent({
       setup() {
         return () => {
           const field = h(FieldRoot, { 'name': 'field', 'data-testid': 'field', ...options.fieldProps }, () => [
             h(FieldLabel, () => 'Label'),
-            spec.render({ ...options.controlProps, 'modelValue': model.value, 'onUpdate:modelValue': (value: unknown) => { model.value = value } }),
+            spec.render({ ...options.controlProps, 'modelValue': model.value, 'onUpdate:modelValue': (value: unknown) => {
+              model.value = value
+              options.onUpdate?.()
+            } }),
             h(FieldDescription, () => 'Description'),
           ])
           if (!options.form)
@@ -201,6 +226,36 @@ export function describeFieldControlContract(spec: FieldControlContractSpec) {
       await flushPromises()
       expect(field().attributes('data-dirty')).toBe('')
       wrapper.unmount()
+    })
+
+    if (spec.setProgrammatically) {
+      it('only marks the field filled when changed through its own imperative API', async () => {
+        const validate = vi.fn(() => null)
+        const { wrapper, model } = mountInField({ fieldProps: { validate, validationMode: 'onChange' } })
+        await flushPromises()
+        validate.mockClear()
+        const field = () => wrapper.find('[data-testid="field"]')
+
+        await spec.setProgrammatically!(wrapper, spec.filledValue)
+        await flushPromises()
+        const serialize = spec.serialize ?? ((value: unknown) => value)
+        expect(serialize(model.value)).toEqual(serialize(spec.filledValue))
+        expect(field().attributes('data-filled')).toBe('')
+        expect(field().attributes('data-dirty')).toBeUndefined()
+        expect(validate).not.toHaveBeenCalled()
+        wrapper.unmount()
+      })
+    }
+
+    it('marks the field dirty on user input whose update handler moves focus out of the control', async () => {
+      const outside = document.body.appendChild(document.createElement('button'))
+      const { wrapper } = mountInField({ onUpdate: () => outside.focus() })
+      await nextTick()
+      await spec.interact(wrapper)
+      await flushPromises()
+      expect(wrapper.find('[data-testid="field"]').attributes('data-dirty')).toBe('')
+      wrapper.unmount()
+      outside.remove()
     })
 
     it('is disabled by a disabled field', async () => {

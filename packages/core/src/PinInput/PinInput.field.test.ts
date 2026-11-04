@@ -6,7 +6,7 @@ import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { FieldError, FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
-import { describeFieldControlContract } from '@/test/fieldControlContract'
+import { describeFieldControlContract, providedContext } from '@/test/fieldControlContract'
 import { PinInputInput, PinInputRoot } from '.'
 
 function render(props: Record<string, unknown>) {
@@ -24,6 +24,7 @@ async function type(wrapper: VueWrapper, text: string) {
 
 describeFieldControlContract({
   name: 'PinInput',
+  setProgrammatically: (wrapper, value) => providedContext(wrapper, PinInputRoot, 'setModelValue').setModelValue(value),
   render,
   control: wrapper => inputs(wrapper)[0].parentElement!,
   disabledParts: inputs,

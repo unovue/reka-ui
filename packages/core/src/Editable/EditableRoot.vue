@@ -175,14 +175,15 @@ const { modelValue, isEditing, isEmpty, edit, cancel, submit, dismiss, root, con
   id: () => field ? field.id() : props.id,
   name: resolvedName,
   emit: emits,
-  // A submit is the user's (whatever started it); a parent-driven change is
-  // reported through the watcher below.
+  // A submit by the user (a part, Enter, a dismiss, a slot `submit` bound to
+  // a click) is input; a programmatic one (`submit()` from a ref) and a
+  // parent-driven change are reported through the watcher below as `filled`.
   onUpdate: field
-    ? value => pendingInput!.set(value)
+    ? (value, details) => pendingInput!.record(value, details)
     : undefined,
 })
 
-// The value of a submitted change, reported once the hidden input has rendered it.
+// The value of a user's submit, reported once the hidden input has rendered it.
 const pendingInput = field ? createPendingFieldInput<string | null | undefined>() : undefined
 // Touched once focus leaves the whole editable, not when it moves from the
 // preview to the input. A blur can submit the draft (`submitMode`), through a

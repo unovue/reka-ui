@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
-import { describeFieldControlContract } from '@/test/fieldControlContract'
+import { describeFieldControlContract, providedContext } from '@/test/fieldControlContract'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '.'
 
 const fruits = ['Apple', 'Banana', 'Cherry']
@@ -32,6 +32,7 @@ async function selectItem(wrapper: VueWrapper, text: string) {
 
 describeFieldControlContract({
   name: 'Combobox',
+  setProgrammatically: (wrapper, value) => providedContext(wrapper, ComboboxRoot, 'setModelValue').setModelValue(value),
   render: renderCombobox,
   control: input,
   interact: wrapper => selectItem(wrapper, 'Banana'),
@@ -42,6 +43,7 @@ describeFieldControlContract({
 
 describeFieldControlContract({
   name: 'multiple Combobox',
+  setProgrammatically: (wrapper, value) => providedContext(wrapper, ComboboxRoot, 'setModelValue').setModelValue(value),
   render: props => renderCombobox({ ...props, multiple: true }),
   control: input,
   interact: wrapper => selectItem(wrapper, 'Banana'),

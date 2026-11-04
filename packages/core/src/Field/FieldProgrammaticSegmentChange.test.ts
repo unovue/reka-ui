@@ -1,7 +1,7 @@
 import type { Component } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, shallowRef } from 'vue'
 import { DateFieldInput, DateFieldRoot, injectDateFieldRootContext } from '@/DateField'
 import { DateRangeFieldInput, DateRangeFieldRoot, injectDateRangeFieldRootContext } from '@/DateRangeField'
 import { injectTimeFieldRootContext, TimeFieldInput, TimeFieldRoot } from '@/TimeField'
@@ -89,5 +89,36 @@ describe.each(cases)('a Field-wrapped %s set programmatically while a segment ha
     expect(field().attributes('data-filled')).toBe('')
     expect(field().attributes('data-dirty')).toBeUndefined()
     expect(validate).not.toHaveBeenCalled()
+  })
+})
+
+// The other segmented fields run the same check through the control contract.
+describe('a Field-wrapped DateField whose update handler moves focus out of it', () => {
+  it('is dirty after a segment edit', async () => {
+    const outside = document.body.appendChild(document.createElement('button'))
+    const model = shallowRef<unknown>(Temporal.PlainDate.from('2024-01-15'))
+    const wrapper = mount(defineComponent(() => () =>
+      h(FieldRoot, { 'name': 'value', 'data-testid': 'field' }, () => h(DateFieldRoot, {
+        'locale': 'en-US',
+        'modelValue': model.value,
+        'onUpdate:modelValue': (value: unknown) => {
+          model.value = value
+          outside.focus()
+        },
+      }, {
+        default: ({ segments }: { segments: Segment[] }) => segments.map(segment =>
+          h(DateFieldInput, { 'key': segment.part, 'part': segment.part, 'data-part': segment.part }, () => segment.value)),
+      }))), { attachTo: document.body })
+    await flushPromises()
+    const day = wrapper.find('[data-part="day"]').element as HTMLElement
+    day.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    day.focus()
+    day.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }))
+    await flushPromises()
+    expect(String(model.value)).toBe('2024-01-16')
+    expect(document.activeElement).toBe(outside)
+    expect(wrapper.find('[data-testid="field"]').attributes('data-dirty')).toBe('')
+    wrapper.unmount()
+    outside.remove()
   })
 })

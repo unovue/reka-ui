@@ -178,9 +178,10 @@ const { modelValue: model, currentModelValue, root, context } = usePinInput({
   dir,
   disabled: resolvedDisabled,
   emit: emits,
-  // Typing, pasting or deleting is the user's; a parent-driven change is
-  // reported through the watcher below.
-  onUpdate: field ? value => field.input(toFieldValue(value)) : undefined,
+  // The Field hears its own commits by reason (`change`): user input, or, for
+  // a programmatic one (`setModelValue` and the like), only the watcher below,
+  // which also reports a parent-driven change.
+  onUpdate: field ? (value, details) => field.change(toFieldValue(value), details) : undefined,
 })
 const modelValue = model as unknown as Readonly<Ref<PinInputValue<Type>>>
 

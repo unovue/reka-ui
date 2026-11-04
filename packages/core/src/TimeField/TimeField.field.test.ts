@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { FieldLabel, FieldRoot } from '@/Field'
-import { describeFieldControlContract } from '@/test/fieldControlContract'
+import { describeFieldControlContract, providedContext } from '@/test/fieldControlContract'
 import { TimeFieldInput, TimeFieldRoot } from '.'
 
 function render(props: Record<string, unknown>) {
@@ -27,6 +27,8 @@ async function type(wrapper: VueWrapper, keys: string[]) {
 
 describeFieldControlContract({
   name: 'TimeField',
+  // The context's setter takes a date-time, as a custom part's would.
+  setProgrammatically: (wrapper, value) => providedContext(wrapper, TimeFieldRoot, 'setModelValue').setModelValue(Temporal.PlainDate.from('2024-01-15').toPlainDateTime(value as Temporal.PlainTime)),
   render,
   control: wrapper => wrapper.find('[role="group"]').element as HTMLElement,
   focusTarget: wrapper => segment(wrapper, 'hour').element as HTMLElement,

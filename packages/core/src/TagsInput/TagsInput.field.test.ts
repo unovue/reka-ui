@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
-import { describeFieldControlContract } from '@/test/fieldControlContract'
+import { describeFieldControlContract, providedContext } from '@/test/fieldControlContract'
 import { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot } from '.'
 
 function renderTagsInput(props: Record<string, unknown>) {
@@ -30,6 +30,8 @@ async function addTag(wrapper: VueWrapper, text: string) {
 
 describeFieldControlContract({
   name: 'TagsInput',
+  // `onAddValue` from a custom part, as `setModelValue` would: `'imperative-action'`.
+  setProgrammatically: (wrapper, value) => providedContext(wrapper, TagsInputRoot, 'onAddValue').onAddValue((value as string[])[0]),
   render: renderTagsInput,
   control: input,
   interact: wrapper => addTag(wrapper, 'Kiwi'),

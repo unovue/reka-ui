@@ -5,7 +5,7 @@ import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { FieldError, FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
-import { describeFieldControlContract } from '@/test/fieldControlContract'
+import { describeFieldControlContract, providedContext } from '@/test/fieldControlContract'
 import { EditableArea, EditableInput, EditablePreview, EditableRoot } from '.'
 
 function render(props: Record<string, unknown>) {
@@ -28,6 +28,12 @@ async function type(wrapper: VueWrapper, text: string) {
 
 describeFieldControlContract({
   name: 'Editable',
+  setProgrammatically: (wrapper, value) => {
+    const context = providedContext(wrapper, EditableRoot, 'submit')
+    context.edit()
+    ;(context.inputValue as unknown as { value: unknown }).value = value
+    context.submit()
+  },
   render,
   control: wrapper => input(wrapper).element as HTMLElement,
   focusTarget: wrapper => preview(wrapper).element as HTMLElement,

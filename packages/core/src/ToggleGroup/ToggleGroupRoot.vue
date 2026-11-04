@@ -108,9 +108,10 @@ const { modelValue, root, context } = useToggleGroup({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   emit: emits,
-  // An item press is user input for the Field; a programmatic or
-  // parent-driven change is reported through the `modelValue` watcher below.
-  onUpdate: value => field?.input(value),
+  // The Field hears its own commits by reason (`change`): user input, or, for
+  // a programmatic one (`setModelValue` and the like), only the watcher below,
+  // which also reports a parent-driven change.
+  onUpdate: field?.change,
   disabled: resolvedDisabled,
   orientation: props.orientation,
   dir,

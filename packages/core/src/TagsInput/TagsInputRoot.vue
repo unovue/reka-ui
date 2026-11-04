@@ -184,9 +184,10 @@ const { modelValue, root, context } = useTagsInput<T>({
   focused,
   getItems: () => getItems() as { ref: HTMLElement, value?: T }[],
   emit: emits,
-  // Adding or removing a tag is user input for the Field; a programmatic or
-  // parent-driven change is reported by the watcher below.
-  onUpdate: field ? value => field.input(value) : undefined,
+  // The Field hears its own commits by reason (`change`): user input, or, for
+  // a programmatic one (`setModelValue` and the like), only the watcher below,
+  // which also reports a parent-driven change.
+  onUpdate: field?.change,
 })
 
 provideTagsInputRootContext(context as unknown as TagsInputRootContext)

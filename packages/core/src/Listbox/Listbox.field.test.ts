@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { FieldControl, FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
-import { describeFieldControlContract } from '@/test/fieldControlContract'
+import { describeFieldControlContract, providedContext } from '@/test/fieldControlContract'
 import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot } from '.'
 
 const fruits = ['Apple', 'Banana', 'Cherry']
@@ -21,6 +21,7 @@ const option = (wrapper: VueWrapper, text: string) => wrapper.findAll('[role="op
 
 describeFieldControlContract({
   name: 'Listbox',
+  setProgrammatically: (wrapper, value) => providedContext(wrapper, ListboxRoot, 'onValueChange').onValueChange(Array.isArray(value) ? value[0] : value),
   render: renderListbox,
   control: listbox,
   interact: wrapper => option(wrapper, 'Banana').trigger('click'),
@@ -31,6 +32,7 @@ describeFieldControlContract({
 
 describeFieldControlContract({
   name: 'multiple Listbox',
+  setProgrammatically: (wrapper, value) => providedContext(wrapper, ListboxRoot, 'onValueChange').onValueChange(Array.isArray(value) ? value[0] : value),
   render: props => renderListbox({ ...props, multiple: true }),
   control: listbox,
   interact: wrapper => option(wrapper, 'Banana').trigger('click'),

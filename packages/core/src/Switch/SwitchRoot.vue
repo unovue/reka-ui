@@ -103,9 +103,10 @@ const { modelValue, checked, disabled, root, context } = useSwitch<T>({
   modelValue: () => props.modelValue as T | undefined,
   defaultValue: props.defaultValue,
   emit,
-  // A press is user input for the Field; a programmatic or parent-driven
-  // change is reported through the `checked` watcher below.
-  onUpdate: value => field?.input(value === props.trueValue),
+  // The Field hears its own commits by reason (`change`): user input, or, for
+  // a programmatic one (`setModelValue` and the like), only the watcher below,
+  // which also reports a parent-driven change.
+  onUpdate: field ? (value, details) => field.change(value === props.trueValue, details) : undefined,
   disabled: () => field ? field.disabled(props.disabled) : props.disabled,
   required: resolvedRequired,
   value: () => props.value,

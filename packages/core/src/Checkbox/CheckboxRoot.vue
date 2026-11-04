@@ -50,6 +50,7 @@ export const [injectCheckboxRootContext, provideCheckboxRootContext]
 
 <script setup lang="ts" generic="T = boolean">
 import { computed, mergeProps, onBeforeUnmount, onMounted, useAttrs, watch } from 'vue'
+import { isProgrammaticChange } from '@/Field/pendingFieldInput'
 import { claimFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
@@ -111,12 +112,15 @@ const { modelValue, checkedState: checkboxState, disabled, root, context } = use
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   emit: emits,
-  // Only a committed press is user input for the Field; a programmatic or
-  // parent-driven change is reported through the `checkboxState` watcher below.
-  onUpdate: (value, details) => {
-    if (details.reason === 'trigger-press' && participatesAsControl.value)
-      fieldContext?.handleControlInput({ value: isEqual(value, props.trueValue) })
-  },
+  // A press is user input for the Field; a programmatic change
+  // (`isProgrammaticChange`) and a parent-driven one are reported through the
+  // `checkboxState` watcher below.
+  onUpdate: fieldContext
+    ? (value, details) => {
+        if (!isProgrammaticChange(details.reason) && participatesAsControl.value)
+          fieldContext.handleControlInput({ value: isEqual(value, props.trueValue) })
+      }
+    : undefined,
   disabled: () => Boolean(props.disabled || fieldContext?.disabled.value),
   required: resolvedRequired,
   value: () => props.value,

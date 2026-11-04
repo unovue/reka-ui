@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { FieldControl, FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
-import { describeFieldControlContract } from '@/test/fieldControlContract'
+import { describeFieldControlContract, providedContext } from '@/test/fieldControlContract'
 import { AutocompleteAnchor, AutocompleteContent, AutocompleteInput, AutocompleteItem, AutocompletePortal, AutocompleteRoot, AutocompleteTrigger, AutocompleteViewport } from '.'
 
 const fruits = ['Apple', 'Banana', 'Cherry']
@@ -24,6 +24,7 @@ const input = (wrapper: VueWrapper) => wrapper.find('[data-testid="input"]').ele
 
 describeFieldControlContract({
   name: 'Autocomplete',
+  setProgrammatically: (wrapper, value) => providedContext(wrapper, AutocompleteRoot, 'onModelValueChange').onModelValueChange(value),
   render: renderAutocomplete,
   control: input,
   // Typing is the value: the input text, selected or not.
