@@ -77,12 +77,19 @@ export function createHoverTransformer(): ShikiTransformer {
       })
 
       // We excluded vPre transformer during preprocess so that we can render `LinkHoverCard` component
-      // However this causes some code to be executed instead of just being rendered as string
-      // Temporary using hacky way to add `v-pre` to each line.
-      const ignoredPreLine = tokensMap.map(i => i[0])
-      this.lines.forEach((lineEl, line) => {
-        if (!ignoredPreLine.includes(line)) {
+      // However this causes some code to be executed instead of just being rendered as string,
+      // so add `v-pre` back to every line, or, on a line with a component, to every other token:
+      // `<SelectItemText>{{ fruit.label }}` would otherwise evaluate `fruit.label` at render.
+      const hoverTokens = new Set(tokensMap.map(i => i[3]))
+      this.lines.forEach((lineEl) => {
+        const tokens = lineEl.children.filter((i): i is Element => i.type === 'element')
+        if (!tokens.some(token => token.children.some(child => hoverTokens.has(child as Element | Text)))) {
           lineEl.properties['v-pre'] = ''
+          return
+        }
+        for (const token of tokens) {
+          if (!token.children.some(child => hoverTokens.has(child as Element | Text)))
+            token.properties['v-pre'] = ''
         }
       })
 
