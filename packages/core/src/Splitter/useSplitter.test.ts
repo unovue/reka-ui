@@ -142,6 +142,14 @@ describe('splitterGroup — layout model', () => {
     expect(group.emitted('update:layout')!.at(-1)![0]).toEqual([60, 40])
   })
 
+  it('renders `dir` as an attribute only when the prop is set', async () => {
+    // The keys flip with `dir`, so the panels must be laid out in that direction too.
+    expect(mountGroup({ dir: 'rtl' }).element.getAttribute('dir')).toBe('rtl')
+    wrapper?.unmount()
+    // Unset, it inherits the page's direction rather than forcing one.
+    expect(mountGroup().element.hasAttribute('dir')).toBe(false)
+  })
+
   it('`dir` on SplitterGroup wins over ConfigProvider', async () => {
     const onLayout = vi.fn()
     wrapper = mount(() => h(ConfigProvider, { dir: 'rtl' }, () => h(SplitterGroup, { direction: 'horizontal', dir: 'ltr', onLayout }, () => [

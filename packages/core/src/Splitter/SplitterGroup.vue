@@ -17,7 +17,7 @@ export interface SplitterGroupProps extends PrimitiveProps {
   direction: Direction
   /** Step size when arrow key was pressed. */
   keyboardResizeBy?: number | null
-  /** The reading direction of the splitter group when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
+  /** The reading direction of the splitter group when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. Set, it is also rendered as the group's `dir` attribute, so the panels are laid out in that direction. */
   dir?: ReadingDirection
   /** Custom storage API; defaults to localStorage */
   storage?: PanelGroupStorage
@@ -113,6 +113,7 @@ providePanelGroupContext(context)
     :ref="forwardRef"
     :as="as"
     :as-child="asChild"
+    :dir="props.dir"
     v-bind="root.attrs.value"
   >
     <slot :layout="layout" />
