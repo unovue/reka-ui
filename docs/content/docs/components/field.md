@@ -18,9 +18,9 @@ Accessible wiring between a label, control, description, and error message, with
 <Highlights
   :features="[
     'Generates and wires up ids/aria-describedby/aria-invalid automatically.',
-    'Works with a plain native input, or with a Checkbox, Select, DateField (or DatePicker) or TagGroup placed inside it.',
+    'Works with a plain native input, or with any Reka UI form control placed inside it.',
     'Sync or async custom validation, with `onSubmit`/`onBlur`/`onChange` timing and optional debounce.',
-    'Validates `required` on non-native controls (Checkbox, Select, DateField) too.',
+    'Validates `required` on non-native controls (Checkbox, Select, Radio Group, Combobox, …) too.',
     'Reads native constraint-validation state (`required`, `pattern`, `type=email`, ...) automatically.',
     'Exposes `data-valid`/`data-invalid`/`data-dirty`/`data-touched`/`data-filled`/`data-focused` on every part for styling.',
     'Shows the browser\'s validation message by default, or your own per failing constraint.',
@@ -118,7 +118,7 @@ A native form control (`input` by default — pass `as="textarea"` or `as="selec
 
 Bind its value with `v-model`, or set a starting value with `default-value`. A controlled value is validated when it changes, so a value you reject or rewrite never reaches the field.
 
-`CheckboxRoot`, `SelectRoot`/`SelectTrigger`, `DateFieldRoot` (also inside a `DatePickerRoot`) and `TagGroupRoot` can be used directly inside a `FieldRoot` instead of `FieldControl` — they pick up the same wiring automatically by optionally reading the Field's context, and behave exactly as before when used outside a Field. Other controls don't register with the field yet; see [Forms and validation](/docs/guides/forms#other-controls).
+Every Reka UI form control (`CheckboxRoot`, `SwitchRoot`, `RadioGroupRoot`, `SelectRoot`, `ComboboxRoot`, `NumberFieldRoot`, `SliderRoot`, `DateFieldRoot`, …) can be used directly inside a `FieldRoot` instead of `FieldControl` — it picks up the same wiring automatically by optionally reading the Field's context, and behaves exactly as before when used outside a Field. See [Forms and validation](/docs/guides/forms#reka-ui-controls-inside-a-field) for what each one collects.
 
 <!-- @include: @/meta/FieldControl.md -->
 
@@ -205,7 +205,7 @@ A `FieldRoot` without its own `validation-mode` uses the `FormRoot`'s.
 
 ### Using an existing reka control
 
-Place a `CheckboxRoot`, `SelectRoot`, `DateFieldRoot`, `DatePickerRoot` or `TagGroupRoot` inside a `FieldRoot` instead of `FieldControl` — it participates automatically. Other Reka UI controls (Switch, Radio Group, Combobox, Number Field, …) don't register with a field yet: see [Forms and validation](/docs/guides/forms#other-controls) for how to use them in a form.
+Place any Reka UI form control inside a `FieldRoot` instead of `FieldControl` — it participates automatically. See [Forms and validation](/docs/guides/forms#reka-ui-controls-inside-a-field) for the value each control collects and when it counts as empty.
 
 ```vue line=5-8
 <script setup>
@@ -234,7 +234,7 @@ import { FieldDescription, FieldLabel, FieldRoot, SelectContent, SelectItem, Sel
 </template>
 ```
 
-Participating controls report focus/dirty/filled state, pass their actual value to `validate`, and enforce `required`: an empty `Select`, an unchecked `Checkbox` or an empty `DateField` makes the field invalid (`match="valueMissing"`).
+Participating controls report focus/dirty/filled state, pass their actual value to `validate`, and enforce `required`: an empty `Select`, an unchecked `Checkbox`, a radio group with nothing selected or an empty `DateField` makes the field invalid (`match="valueMissing"`).
 
 ## Accessibility
 
