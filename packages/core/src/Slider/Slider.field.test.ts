@@ -135,3 +135,22 @@ describe('given a server-rendered Field-wrapped range Slider', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 })
+
+describe('given a required Field-wrapped Slider', () => {
+  // As in Base UI, any value counts as filled; only a `null` model (which Base
+  // UI can't represent: its value defaults to `min`) is empty.
+  it.each([[[0], true], [null, false]] as const)('with the model %j, submits: %s', async (modelValue, submits) => {
+    const onFormSubmit = vi.fn()
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(FormRoot, { onFormSubmit }, () => [
+        h(FieldRoot, { name: 'volume', required: true }, () => renderSlider({ modelValue })),
+        h('button', { type: 'submit' }, 'Submit'),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    await wrapper.find('button[type="submit"]').trigger('submit')
+    await flushPromises()
+    expect(onFormSubmit).toHaveBeenCalledTimes(submits ? 1 : 0)
+    wrapper.unmount()
+  })
+})
