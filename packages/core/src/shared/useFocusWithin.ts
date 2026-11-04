@@ -8,7 +8,8 @@ import { containsComposed } from './getRootNode'
  * `@vueuse/core`'s `useFocusWithin`, and also cleared when the focused element is
  * removed from inside it. Chromium fires `focusout` for a removed element, but
  * Firefox and WebKit fire nothing, so while focus is inside, a `MutationObserver`
- * re-reads it from the document after each removal.
+ * re-reads it from the document after each removal. It observes the light DOM
+ * under `target` only: a removal inside a descendant's shadow root isn't seen.
  */
 export function useFocusWithin(target: MaybeRefOrGetter<HTMLElement | null | undefined>): { focused: Readonly<Ref<boolean>> } {
   const focused = shallowRef(false)
