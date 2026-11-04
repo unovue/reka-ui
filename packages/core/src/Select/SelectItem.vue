@@ -142,7 +142,7 @@ onMounted(() => {
   contentContext.itemRefCallback(
     currentElement.value,
     props.value,
-    disabled.value,
+    props.disabled,
   )
 })
 

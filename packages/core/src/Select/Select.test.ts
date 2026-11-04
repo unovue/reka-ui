@@ -7,6 +7,7 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import { handleSubmit } from '@/test'
 import { SelectContent, SelectItem, SelectItemIndicator, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '.'
 import SelectUnmountCleanup from './__test__/SelectUnmountCleanup.vue'
+import { injectSelectContentContext } from './SelectContentImpl.vue'
 import Select from './story/_SelectTest.vue'
 
 beforeAll(() => {
@@ -497,6 +498,34 @@ describe('given Select in a form', async () => {
       expect(handleSubmit).toHaveBeenCalledTimes(1)
       expect(handleSubmit.mock.results[0].value).toStrictEqual({ test: 'Pineapple' })
     })
+  })
+})
+
+describe('given an initially disabled, open Select', () => {
+  it('keeps a fallback item for positioning and scrolling after enabling', async () => {
+    const disabled = ref(true)
+    const ContentProbe = defineComponent({
+      setup() {
+        const context = injectSelectContentContext()
+        return () => h('span', { 'data-testid': 'scroll-item' }, context.selectedItem?.value?.textContent)
+      },
+    })
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(SelectRoot, { open: true, disabled: disabled.value }, () =>
+          h(SelectContent, { position: 'popper' }, () => [
+            h(SelectViewport, () => ['Apple', 'Orange'].map(value =>
+              h(SelectItem, { value }, () => h(SelectItemText, () => value)),
+            )),
+            h(ContentProbe),
+          ]))
+      },
+    }), { attachTo: document.body })
+    await nextTick()
+    disabled.value = false
+    await nextTick()
+    expect(wrapper.get('[data-testid="scroll-item"]').text()).toBe('Apple')
+    wrapper.unmount()
   })
 })
 
