@@ -98,7 +98,7 @@ describe('a Field-wrapped DateField whose update handler moves focus out of it',
     const outside = document.body.appendChild(document.createElement('button'))
     const model = shallowRef<unknown>(Temporal.PlainDate.from('2024-01-15'))
     const wrapper = mount(defineComponent(() => () =>
-      h(FieldRoot, { 'name': 'value', 'data-testid': 'field' }, () => h(DateFieldRoot, {
+      h(FieldRoot, { 'name': 'value', 'data-testid': 'field' }, () => h(DateFieldRoot as Component, {
         'locale': 'en-US',
         'modelValue': model.value,
         'onUpdate:modelValue': (value: unknown) => {
@@ -107,7 +107,7 @@ describe('a Field-wrapped DateField whose update handler moves focus out of it',
         },
       }, {
         default: ({ segments }: { segments: Segment[] }) => segments.map(segment =>
-          h(DateFieldInput, { 'key': segment.part, 'part': segment.part, 'data-part': segment.part }, () => segment.value)),
+          h(DateFieldInput as Component, { 'key': segment.part, 'part': segment.part, 'data-part': segment.part }, () => segment.value)),
       }))), { attachTo: document.body })
     await flushPromises()
     const day = wrapper.find('[data-part="day"]').element as HTMLElement
