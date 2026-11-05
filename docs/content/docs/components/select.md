@@ -450,6 +450,54 @@ import './styles.css'
 }
 ```
 
+### Clearing the value
+
+`null` is the empty value, as in [Base UI](https://base-ui.com/react/components/select). Set `v-model` to `null` to clear the selection and show the placeholder.
+
+An item can have `value=""`. Selecting it sets the value to `''` and marks that item as selected, but, as in Base UI, an empty string still reads as no value: `data-placeholder` is set, and `SelectValue` shows the placeholder. When `items` has a `null` entry, it shows the label of the `''` entry in `items` instead, so list both: with a `null` entry and no `''` entry, a `''` value renders blank, as in Base UI. Inside a `multiple` array, `''` is a selected value like any other.
+
+To let users clear the selection from the list, add an item with a `null` value. Pressing it sets the value to `null`. List it in `items` too and `SelectValue` shows its label while the select is empty, instead of the placeholder. `data-placeholder` is still set.
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+
+const theme = ref<string | null>(null)
+const themes = [
+  { value: null, label: 'Select theme' },
+  { value: 'system', label: 'System default' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+]
+</script>
+
+<template>
+  <SelectRoot
+    v-model="theme"
+    :items="themes"
+  >
+    <SelectTrigger>
+      <SelectValue />
+    </SelectTrigger>
+    <SelectPortal>
+      <SelectContent>
+        <SelectViewport>
+          <SelectItem
+            v-for="item in themes"
+            :key="String(item.value)"
+            :value="item.value"
+          >
+            <SelectItemText>{{ item.label }}</SelectItemText>
+          </SelectItem>
+        </SelectViewport>
+      </SelectContent>
+    </SelectPortal>
+  </SelectRoot>
+</template>
+```
+
+In a form, `''` submits an empty string and `null` submits `nullable-value` (`""` by default). With `required`, `''` is missing a value, and so is `null` while `nullable-value` is empty; a non-empty `nullable-value` is submitted as a value and satisfies `required`. Inside a `Field`, neither `null` nor `''` counts as filled, as in Base UI. With `multiple`, `null` and `''` are ordinary values that toggle in the array and are submitted; clear a multiple select with `[]`.
+
 ### With separators
 
 Use the `Separator` part to add a separator between items.

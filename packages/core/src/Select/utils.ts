@@ -18,6 +18,10 @@ export function getScrollStep(viewport: HTMLElement, selectedItem?: HTMLElement)
   return viewport.querySelector<HTMLElement>('[role=option]')?.offsetHeight ?? 0
 }
 
+/**
+ * Whether nothing is selected, as Base UI's `hasSelectedValue` reads it: a nullish value (`null` is the empty value),
+ * an empty string (it submits nothing) or an empty array. An empty string inside an array is a selected value.
+ */
 export function shouldShowPlaceholder(value?: AcceptableValue | AcceptableValue[]): boolean {
   return value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0)
 }
