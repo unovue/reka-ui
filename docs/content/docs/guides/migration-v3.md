@@ -185,7 +185,7 @@ What to check in your code:
 
 - Replace `require()` calls with `import`, or with a dynamic `import()` inside files that must stay CommonJS.
 - Vite, Nuxt and Vitest need no change.
-- Jest needs ESM support for the package: run Jest in ESM mode, or let it transform `reka-ui` by excluding it from `transformIgnorePatterns`.
+- Jest must run in ESM mode (`--experimental-vm-modules`). The package's `exports` only have an `import` condition, so a CommonJS Jest cannot resolve `reka-ui` at all, and `transformIgnorePatterns` does not help. Moving the tests to Vitest also works.
 
 ## Auto-imports use per-component entry points
 
