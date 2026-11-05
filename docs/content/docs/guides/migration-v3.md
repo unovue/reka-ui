@@ -11,6 +11,8 @@ This guide collects the breaking changes between Reka UI v2 and v3, with search-
 
 Reka UI v3 is still in progress. This page collects the breaking changes as they land on the `v3` branch, so it will keep growing until the release is finalized. Each section describes what changed and the mechanical rewrite needed to move an existing v2 codebase over.
 
+The `--reka-*` CSS custom properties (`--reka-popover-content-available-height`, `--reka-accordion-content-height`, …) are unchanged.
+
 Prefer to hand the mechanical work to an AI agent? [Migrating with an AI agent](./migration-v3-agent) is this guide rewritten as instructions for one: point your agent at it, let it apply the rewrites, and review the diff.
 
 ## `data-state` vocabulary
@@ -78,6 +80,11 @@ Because both values are now always emitted, any styles that relied on the attrib
 }
 ```
 
+The same values reach your code in two other places that a selector search does not find:
+
+- **Slot props.** The `state` slot prop of `Toggle` is `checked` / `unchecked` (v2: `on` / `off`), and the `state` slot prop of `StepperItem` is `current` / `upcoming` (v2: `active` / `inactive`; `completed` is unchanged). Comparisons such as `v-if="state === 'active'"` fail the type-check.
+- **Custom variants and shortcuts.** A Tailwind `@custom-variant` or `addVariant`, a UnoCSS shortcut or a Sass mixin that wraps `[data-state=active]` keeps compiling, but no longer matches a Reka UI part. Rewrite the value inside it. If the same variant also styles components outside Reka UI that still emit the old value, split it into two variants first, so each keeps its own value.
+
 ## Change events carry details
 
 `update:*` events on stateful roots now receive a second argument, a `ChangeEventDetails` object, and a cancellable `beforeUpdate:*` event fires before every change. `v-model` keeps working unchanged. The details tell you *why* the state changed (`details.reason`) and which native event caused it (`details.event`), and `details.cancel()` inside `beforeUpdate:*` keeps the current state.
@@ -140,6 +147,11 @@ What to check in your code:
 />
 ```
 
+Two consequences of the second argument:
+
+- **Listeners bound as a function reference.** `@update:model-value="handleChange"` passes the details object as the function's second argument. When that function takes a second parameter, optional or not, such as vee-validate's `handleChange(value, shouldValidate)` or TanStack Form's `field.handleChange(updater, options)`, wrap it: `@update:model-value="(value) => handleChange(value)"`. Don't wrap a handler whose second parameter is meant for the details (it reads `details.reason` or calls `details.cancel()`): wrapping it would drop them.
+- **`CalendarRoot`'s `update:modelValue` type.** It is declared `DateValue | DateValue[] | undefined`, which covers `multiple` (v2 declared `DateValue | undefined`). A handler typed for a single value needs its parameter widened to `DateValue | DateValue[] | undefined`; an `Array.isArray` check inside the handler then narrows it where the calendar can be `multiple`.
+
 ## Tree, Pagination and Stepper
 
 `TreeRoot`, `PaginationRoot` and `StepperRoot` are built on `useTree()`, `usePagination()` and `useStepper()`, and `ToolbarRoot` on `useToolbar()`. The DOM is unchanged. Their models follow the [details contract](#change-events-carry-details). These changes need attention:
@@ -153,6 +165,18 @@ What to check in your code:
 
 The composables are new and additive. A standalone `useTree()` returns the selection and expanded models, the flattened visible items and per-item surfaces, but arrow-key focus still comes from `RovingFocusGroup` / `RovingFocusItem`, and `TreeVirtualizer` stays a component. `TreeRoot` has no `getNavigationIntent` yet; arrow keys go through `RovingFocus` as in v2.
 
+## Vue 3.5 and Node 22
+
+v3 requires Vue 3.5 or later (the `vue` peer range is now `>= 3.5.0`) and Node 22 or later wherever the package runs on the server. v3 depends on VueUse 15, which already requires both.
+
+Generated ids now always come from Vue's own [`useId()`](https://vuejs.org/api/composition-api-helpers.html#useid), unless you pass an `id` or give `ConfigProvider` a `useId` function. The module counter v2 used on Vue 3.4 is gone. Importing `useId` by name, instead of reading it from the whole `vue` module, lets your bundler drop the parts of Vue you don't use, such as the Vapor runtime in Vue 3.6.
+
+What to check in your code:
+
+- Upgrade `vue` to 3.5 or later. With Nuxt, upgrade Nuxt to a release that ships Vue 3.5.
+- Run SSR, prerendering and build scripts on Node 22 or later.
+- A `ConfigProvider` `use-id` you added only to work around Vue 3.4 hydration mismatches can be removed. Keep it if your framework prerenders with a different Vue app id prefix than the client hydrates with.
+
 ## ESM only
 
 v3 ships ES modules only. The CommonJS build and the `require` export conditions are gone, so `require('reka-ui')` no longer resolves.
@@ -161,7 +185,7 @@ What to check in your code:
 
 - Replace `require()` calls with `import`, or with a dynamic `import()` inside files that must stay CommonJS.
 - Vite, Nuxt and Vitest need no change.
-- Jest needs ESM support for the package: run Jest in ESM mode, or let it transform `reka-ui` by excluding it from `transformIgnorePatterns`.
+- Jest must run in ESM mode (`--experimental-vm-modules`). The package's `exports` only have an `import` condition, so a CommonJS Jest cannot resolve `reka-ui` at all, and `transformIgnorePatterns` does not help. Moving the tests to Vitest also works.
 
 ## Auto-imports use per-component entry points
 
@@ -299,6 +323,8 @@ The `update:modelValue` and `beforeUpdate:modelValue` events of `ListboxRoot` ar
 ## Listbox filtering
 
 `ListboxRoot` has a new, opt-in `filter` prop. Nothing changes until you pass one: without it (or with `null`) the listbox filters nothing, and a list you already filter by hand from the `ListboxFilter` value keeps working as in v2. With a filter function, for example `contains` from `useFilter({ sensitivity: 'base' })`, items whose text does not match the `ListboxFilter` value are not rendered, a group whose items all fail to match is hidden, and keyboard navigation, typeahead and select-all only see the matching items. In a `ListboxVirtualizer`, the filter runs over `options` (matching `textContent(option)`), so a filtered-out option takes no virtual index. See [Filtering](../components/listbox#filtering). `ComboboxRoot` and `AutocompleteRoot` filter through the same mechanism, on by default; see [Combobox and Autocomplete filtering](#combobox-and-autocomplete-filtering).
+
+One case breaks: a wrapper that already forwarded its own `filter` prop to `ListboxRoot`, such as a `Command` wrapper with a cmdk-style `filter(value, search, keywords)`. v2 ignored it; v3 calls it as `(text, search, value) => boolean` for every item. Stop forwarding it if the wrapper filters by itself, or rewrite it to the v3 signature.
 
 ## Combobox and Autocomplete filtering
 
@@ -441,6 +467,38 @@ defineExpose(expose) // [!code ++]
 ```
 
 If the component already calls `defineExpose({ ... })`, wrap the object in `mergeExpose(expose, { ... })`.
+
+`useForwardExpose` also forwarded the methods of the part a wrapper renders. A wrapper whose callers rely on them, for example a `ResizablePanel` around `SplitterPanel` whose callers call `collapse()` or `getSize()`, has to re-expose them from a template ref on the inner part:
+
+```vue
+<script setup lang="ts">
+import type { ComponentPublicInstance } from 'vue'
+import { mergeExpose, SplitterPanel, useForwardElement } from 'reka-ui'
+import { shallowRef } from 'vue'
+
+const panel = shallowRef<InstanceType<typeof SplitterPanel>>()
+const { forwardRef, expose } = useForwardElement()
+
+// `SplitterPanel` is the root here, and an element keeps only one `ref`,
+// so a single function ref feeds both the element and the methods.
+function setPanel(instance: Element | ComponentPublicInstance | null) {
+  forwardRef(instance)
+  panel.value = (instance ?? undefined) as InstanceType<typeof SplitterPanel> | undefined
+}
+
+defineExpose(mergeExpose(expose, {
+  collapse: () => panel.value?.collapse(),
+  expand: () => panel.value?.expand(),
+  getSize: () => panel.value?.getSize(),
+}))
+</script>
+
+<template>
+  <SplitterPanel :ref="setPanel">
+    <slot />
+  </SplitterPanel>
+</template>
+```
 
 ## Modal layers no longer touch `<body>`
 
@@ -762,6 +820,8 @@ Use `temporal-polyfill-lite/calendars-full/shim` if you use calendars other than
 
 The types come from TypeScript 6's `esnext.temporal` lib: use TypeScript 6 with `"lib": ["ESNext", "DOM", "DOM.Iterable"]`. `@vue/tsconfig` sets `lib` to `ES2022`, without Temporal, so override it in your own `tsconfig`. On TypeScript 5, add `import 'temporal-polyfill-lite/types/global'` to a `.d.ts` file. Without either, `skipLibCheck: true` turns `DateValue` into `any` without an error.
 
+Publishing a library or a copy-paste registry on top of Reka UI? You cannot load the polyfill for the apps that install your components. Depend on `reka-ui@^3.0.0-alpha.0` while v3 is a prerelease (`^3` does not match prereleases; switch to `^3` once it is stable), and tell your users in your install instructions to provide a global `Temporal` as above.
+
 ### Types
 
 | v2 (`@internationalized/date`) | v3 (Temporal) |
@@ -781,6 +841,7 @@ The types come from TypeScript 6's `esnext.temporal` lib: use TypeScript 6 with 
 - **Era codes.** `era` is a lower-case Temporal era code. An `iso8601` value has no era (`undefined`), and the codes of some calendars changed: `gregory` uses `ce` / `bce` (v2: `AD` / `BC`), `roc` uses `roc` / `broc` (v2: `minguo` / `before_minguo`), and `buddhist`, `persian`, `islamic-*` and `hebrew` use `be`, `ap`, `ah` and `am` (v2: upper case). Japanese era names (`reiwa`, `heisei`, …) are unchanged. Compare `era` against the new codes, and show `formatter.part(value, 'era')` rather than the code to users.
 - **First day of the week.** It comes from `Intl.Locale.prototype.getWeekInfo()`, with a CLDR table as fallback. A few regions differ from v2, for example `AE` now starts on Monday. `weekStartsOn` still overrides it.
 - **Not in templates.** Vue templates only see an allow-list of globals, and `Temporal` is not on it. Create values in `<script setup>` and bind them by name instead of writing `:min-value="new Temporal.PlainDate(2024, 1, 1)"`.
+- **Out-of-range fields throw.** `@internationalized/date` clamped them (`new CalendarDate(2024, 0, 20)` was January 20), but `new Temporal.PlainDate(2024, 0, 20)` throws a `RangeError`. Pass in-range values. `Temporal.PlainDate.from({ year, month, day }, { overflow: 'constrain' })` clamps fields that are too large (month 13 → 12, February 31 → 29), but a month or day of `0` still throws.
 - **No comparison operators.** Temporal values throw on `valueOf()`, so `<`, `>` and `+date` throw, and `===` compares identity. Use the `compare` of the values' type (`Temporal.PlainDateTime.compare(a, b)` for two `PlainDateTime`s), `a.equals(b)`, or `compareDateValues(a, b)` from `reka-ui/date` for values of any type. `Temporal.PlainDate.compare` reads only the date of a `PlainDateTime` or `ZonedDateTime`.
 - **Unchanged:** form input values, `data-value` attributes and the `ZonedDateTime` daylight saving handling. Form values and `data-value` are ISO strings without a calendar annotation, as v2's `toString()` produced.
 
@@ -810,3 +871,4 @@ The types come from TypeScript 6's `esnext.temporal` lib: use TypeScript 6 with 
 | `value instanceof CalendarDate` | `isPlainDate(value)` from `reka-ui/date` (also `isPlainDateTime`, `isZonedDateTime`, `isPlainTime`) |
 | `isCalendarDateTime(value)` from `reka-ui/date` | `isPlainDateTime(value)` (the old name is a deprecated alias) |
 | `formatter.custom(value.toDate(tz), options)` | `formatter.custom(value, options)`: `useDateFormatter` accepts Temporal values |
+| `new DateFormatter(locale, options).format(value.toDate(tz))` | `useDateFormatter(locale).custom(value, options)`, or `value.toLocaleString(locale, options)` |

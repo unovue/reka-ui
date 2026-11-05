@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@stackblitz/sdk": "^1.11.0",
-    "@vueuse/core": "^14.1.0",
+    "@vueuse/core": "^15.0.0",
     "motion-v": "2.2.0",
     "reka-ui": "link:../packages/core",
     "temporal-polyfill-lite": "^0.4.3",
