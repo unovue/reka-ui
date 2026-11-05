@@ -83,7 +83,9 @@ Because both values are now always emitted, any styles that relied on the attrib
 
 A popup trigger no longer renders `data-state`. While its popup is open it carries an empty `data-popup-open` attribute, and while the popup is closed the attribute is absent. This follows Base UI. In v2 the trigger wrote `data-state="open"` / `"closed"`, which overwrote the `data-state` of a stateful control it was rendered `asChild` onto: a `TooltipTrigger` on a `Toggle` replaced the toggle's `checked` / `unchecked` with `open` / `closed`. In v3 the control keeps its own `data-state`.
 
-The affected parts are `DialogTrigger`, `AlertDialogTrigger`, `DrawerTrigger`, `PopoverTrigger`, `TooltipTrigger`, `HoverCardTrigger`, `DropdownMenuTrigger`, `DropdownMenuSubTrigger`, `ContextMenuTrigger`, `ContextMenuSubTrigger`, `MenubarTrigger`, `MenubarSubTrigger`, `SelectTrigger`, `ComboboxTrigger`, `NavigationMenuTrigger`, `DatePickerTrigger` and `DateRangePickerTrigger`, and their custom elements (`<reka-dialog-trigger>`, …). The popup content, overlay and viewport parts keep `data-state="open"` / `"closed"`, and so do triggers that describe their own state: `AccordionTrigger`, `CollapsibleTrigger`, `TabsTrigger` and `StepperTrigger` are unchanged. The other attributes on the triggers stay as they were, including `data-delayed` on `TooltipTrigger`, `data-highlighted` on menu and menubar triggers, and `data-disabled` and `data-placeholder`. `aria-expanded` also reports the open state, if you prefer to style on that.
+The affected parts are `DialogTrigger`, `AlertDialogTrigger`, `DrawerTrigger`, `PopoverTrigger`, `TooltipTrigger`, `HoverCardTrigger`, `DropdownMenuTrigger`, `DropdownMenuSubTrigger`, `ContextMenuTrigger`, `ContextMenuSubTrigger`, `MenubarTrigger`, `MenubarSubTrigger`, `SelectTrigger`, `ComboboxTrigger`, `NavigationMenuTrigger`, `DatePickerTrigger` and `DateRangePickerTrigger`, and their custom elements (`<reka-dialog-trigger>`, …). The popup content, overlay and viewport parts keep `data-state="open"` / `"closed"`, and so do triggers that describe their own state: `AccordionTrigger`, `CollapsibleTrigger`, `TabsTrigger` and `StepperTrigger` are unchanged. The other attributes on the triggers stay as they were, including `data-delayed` on `TooltipTrigger`, `data-highlighted` on menu and menubar triggers, and `data-disabled` and `data-placeholder`. Triggers that render `aria-expanded` also report the open state there, if you prefer to style on that. `TooltipTrigger` and `HoverCardTrigger` don't render it, so use `data-popup-open` on them.
+
+The headless composables change the same way: the trigger state of `useDialog()`, `usePopover()`, `useTooltip()` and the other families above is `{ popupOpen: boolean }` instead of `{ state: 'open' | 'closed' }` (`TooltipTrigger` keeps `delayed`). Code that reads `trigger.state.value.state` fails type-checking; read `popupOpen` instead.
 
 ### Search and replace
 
@@ -101,6 +103,7 @@ Only rewrite a selector whose element is one of the triggers above, either the t
 - `[data-state='open']` → `[data-popup-open]`, `[data-state='closed']` → `:not([data-popup-open])`
 - On `TooltipTrigger`, `data-[state=delayed-open]:` → `data-[popup-open]:data-[delayed]:`.
 - In scripts and tests, `getAttribute('data-state') === 'open'` → `hasAttribute('data-popup-open')`.
+- In composable code, a trigger's `state.value.state === 'open'` → `state.value.popupOpen`.
 
 ```vue
 <template>

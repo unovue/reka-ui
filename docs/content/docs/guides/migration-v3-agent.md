@@ -96,10 +96,11 @@ A class string often spans several lines, so check the element each hit is appli
 - Rewrite a selector or read only when its element is one of the triggers above: the trigger component itself, the element it renders `asChild` onto, a class such as `.SelectTrigger` used on one, or a `group` / `peer` that is the trigger. Selectors on content, overlay and viewport parts stay as they are. When you cannot tell whether an element is a trigger, leave it and *ask*, listing the file and line.
 - Tailwind: `data-[state=open]:` → `data-[popup-open]:`, `group-data-[state=open]:` → `group-data-[popup-open]:` (keep any `/name` suffix), `data-[state=closed]:` → `[&:not([data-popup-open])]:`, `[&[data-state=open]>svg]:` → `[&[data-popup-open]>svg]:`. On `TooltipTrigger`, `data-[state=delayed-open]:` → `data-[popup-open]:data-[delayed]:`.
 - CSS: `[data-state='open']` → `[data-popup-open]`, `[data-state='closed']` → `:not([data-popup-open])`, with any quotes.
-- JavaScript and tests: `getAttribute('data-state') === 'open'` or `dataset.state === 'open'` on a trigger → `hasAttribute('data-popup-open')`; an assertion that a trigger is `closed` → the attribute is absent.
+- JavaScript and tests: `getAttribute('data-state') === 'open'` or `dataset.state === 'open'` on a trigger → `hasAttribute('data-popup-open')`; an assertion that a trigger is `closed` → the attribute is absent. `aria-expanded` is an alternative only on triggers that render it: `TooltipTrigger` and `HoverCardTrigger` don't.
+- Headless composables: the trigger state of the families above is `{ popupOpen: boolean }` instead of `{ state: 'open' | 'closed' }` (`TooltipTrigger` keeps `delayed`). Rewrite `trigger.state.value.state === 'open'` → `trigger.state.value.popupOpen`; the type-check flags every read.
 - A selector that relied on the trigger *overwriting* a control's `data-state` (for example styling a `Toggle` rendered `asChild` in a `TooltipTrigger` with `data-[state=open]:`) now sees the control's own `checked` / `unchecked`. Rewrite it to `data-[popup-open]:`.
 
-**Verify.** No `data-[state=open]`, `data-[state=closed]`, `[data-state='open']` or `[data-state='closed']` remains on a trigger listed above. Tests that read a trigger's open state use `data-popup-open` or `aria-expanded`.
+**Verify.** No `data-[state=open]`, `data-[state=closed]`, `[data-state='open']` or `[data-state='closed']` remains on a trigger listed above. Tests that read a trigger's open state use `data-popup-open`, or `aria-expanded` on triggers that render it. No composable code reads a trigger's `state.value.state`.
 
 ### 2. Change events carry details
 
