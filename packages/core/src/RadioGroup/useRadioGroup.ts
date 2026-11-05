@@ -7,6 +7,7 @@ import type { AcceptableValue, DataOrientation, Direction } from '@/shared/types
 import { computed, toValue } from 'vue'
 import { createPartSurface, getterRef, selectionState, useControllableState } from '@/shared'
 import { isEqual } from '@/shared/compare'
+import { resolveDirection } from '@/shared/useDirection'
 import { handleSelect } from './utils'
 
 /**
@@ -209,7 +210,7 @@ export interface UseRadioGroupProps {
   orientation?: MaybeRefOrGetter<DataOrientation | undefined>
   /** When `true`, keyboard navigation loops from last item to first, and vice versa. @defaultValue `true` */
   loop?: MaybeRefOrGetter<boolean | undefined>
-  /** Resolved reading direction (the SFC hands its `useDirection` ref). @defaultValue `'ltr'` */
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** Form field name. Snapshotted into `context.name` at call time (as `RadioGroupRoot` always did). */
   name?: MaybeRefOrGetter<string | undefined>
@@ -272,7 +273,7 @@ export function useRadioGroup(props: UseRadioGroupProps = {}): UseRadioGroupRetu
   const required = computed(() => toValue(props.required) ?? false)
   const orientation = computed(() => toValue(props.orientation))
   const loop = computed(() => toValue(props.loop) ?? true)
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
 
   function selectValue(value: AcceptableValue | undefined, reason: RadioGroupChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
     return setState(value, reason, event)

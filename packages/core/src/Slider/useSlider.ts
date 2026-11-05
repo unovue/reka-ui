@@ -5,6 +5,7 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { DataOrientation, Direction } from '@/shared/types'
 import { computed, ref, toRaw, toValue } from 'vue'
 import { clamp, createPartSurface, fieldRef, getterRef, useControllableState } from '@/shared'
+import { resolveDirection } from '@/shared/useDirection'
 import {
   ARROW_KEYS,
   BACK_KEYS,
@@ -169,7 +170,7 @@ export interface UseSliderProps {
   disabled?: MaybeRefOrGetter<boolean | undefined>
   /** @defaultValue `'horizontal'` */
   orientation?: MaybeRefOrGetter<DataOrientation | undefined>
-  /** Reading direction; the SFC resolves it through `ConfigProvider`. @defaultValue `'ltr'` */
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   inverted?: MaybeRefOrGetter<boolean | undefined>
   /** @defaultValue `0` */
@@ -252,7 +253,7 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
   const orientation = getterRef<DataOrientation>(() => toValue(props.orientation) ?? 'horizontal')
   const disabled = getterRef(() => toValue(props.disabled) ?? false)
   const inverted = getterRef(() => toValue(props.inverted) ?? false)
-  const dir = getterRef<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const thumbAlignment = getterRef<ThumbAlignment>(() => toValue(props.thumbAlignment) ?? 'contain')
 
   const valueIndexToChangeRef = ref(0)

@@ -4,6 +4,7 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { Direction } from '@/shared/types'
 import { computed, ref, toRaw, toValue, watch } from 'vue'
 import { createPartSurface, getterRef, useControllableState } from '@/shared'
+import { resolveDirection } from '@/shared/useDirection'
 
 /**
  * Why the value changed; carried as `details.reason` on every change (#2828).
@@ -43,6 +44,7 @@ export interface UseEditableProps {
   defaultValue?: MaybeRefOrGetter<string | undefined>
   /** A string, or separate placeholders for edit and preview. @defaultValue `'Enter text...'` */
   placeholder?: MaybeRefOrGetter<string | { edit: string, preview: string } | undefined>
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   disabled?: MaybeRefOrGetter<boolean | undefined>
   readonly?: MaybeRefOrGetter<boolean | undefined>
@@ -240,7 +242,7 @@ export function useEditable(props: UseEditableProps = {}): UseEditableReturn {
   const maxLength = getterRef(() => toValue(props.maxLength))
   const id = getterRef(() => toValue(props.id))
   const name = getterRef(() => toValue(props.name))
-  const dir = getterRef<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const placeholder = computed(() => {
     const value = toValue(props.placeholder) ?? 'Enter text...'
     return typeof value === 'string' ? { edit: value, preview: value } : value

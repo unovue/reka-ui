@@ -4,6 +4,7 @@ import type { PartSurface } from '@/shared'
 import type { DataOrientation, Direction } from '@/shared/types'
 import { computed, toValue } from 'vue'
 import { createPartSurface } from '@/shared'
+import { resolveDirection } from '@/shared/useDirection'
 
 /** Semantic state of a toolbar button (none rendered: v2 had no `data-*` on it). */
 export type ToolbarButtonState = { disabled: boolean }
@@ -43,7 +44,7 @@ export function getToolbarLinkSurface(): PartSurface<Record<string, never>> {
 export interface UseToolbarProps {
   /** @defaultValue `'horizontal'` */
   orientation?: MaybeRefOrGetter<DataOrientation | undefined>
-  /** Resolved reading direction (the SFC hands its `useDirection` ref). @defaultValue `'ltr'` */
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
 }
 
@@ -75,7 +76,7 @@ export interface UseToolbarReturn {
  */
 export function useToolbar(props: UseToolbarProps = {}): UseToolbarReturn {
   const orientation = computed<DataOrientation>(() => toValue(props.orientation) ?? 'horizontal')
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
 
   const context: ToolbarRootContext = {
     orientation: orientation as Ref<DataOrientation>,

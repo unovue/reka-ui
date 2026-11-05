@@ -9,6 +9,7 @@ import { computed, ref, toValue, watch } from 'vue'
 import { useMenuRoot } from '@/Menu/useMenu'
 import { createPartSurface, disclosureState, useControllableState } from '@/shared'
 import { isDisabledItem } from '@/shared/isDisabledItem'
+import { resolveDirection } from '@/shared/useDirection'
 import { wrapArray } from '@/shared/useTypeahead'
 
 // =============================================================================
@@ -54,7 +55,7 @@ export interface UseMenubarProps {
   modelValue?: MaybeRefOrGetter<string | undefined>
   /** Initial open menu when uncontrolled. @defaultValue `''` */
   defaultValue?: string
-  /** Resolved reading direction (the SFC hands its `useDirection` ref). @defaultValue `'ltr'` */
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** Loop keyboard navigation between menus. @defaultValue `false` */
   loop?: MaybeRefOrGetter<boolean | undefined>
@@ -103,7 +104,7 @@ export function useMenubar(props: UseMenubarProps = {}): UseMenubarReturn {
     onBeforeUpdate: props.onBeforeUpdate,
     onUpdate: props.onUpdate,
   })
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const loop = computed<boolean>(() => toValue(props.loop) ?? false)
   const currentTabStopId = ref<string | null>(null)
 

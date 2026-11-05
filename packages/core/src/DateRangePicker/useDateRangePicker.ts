@@ -13,6 +13,7 @@ import { isSameRange } from '@/DateRangeField/useDateRangeField'
 import { usePopover } from '@/Popover/usePopover'
 import { getterRef, useControllableState } from '@/shared'
 import { bridgeChange, getDefaultDate, isSameTemporalValue } from '@/shared/date'
+import { resolveDirection } from '@/shared/useDirection'
 
 /**
  * Why the DateRangePicker range, placeholder or start value changed (#2828):
@@ -38,6 +39,7 @@ export interface UseDateRangePickerProps {
   maxView?: MaybeRefOrGetter<CalendarUnit | undefined>
   closeOnSelect?: MaybeRefOrGetter<boolean | undefined>
   locale?: MaybeRefOrGetter<string | undefined>
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   id?: MaybeRefOrGetter<string | undefined>
   name?: MaybeRefOrGetter<string | undefined>
@@ -117,7 +119,7 @@ export interface UseDateRangePickerReturn {
  */
 export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDateRangePickerReturn {
   const locale = getterRef(() => toValue(props.locale) ?? 'en')
-  const dir = getterRef<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const closeOnSelect = getterRef(() => toValue(props.closeOnSelect) ?? false)
   const weekStartsOn = computed(() => toValue(props.weekStartsOn) ?? getWeekStartsOn(locale.value))
 

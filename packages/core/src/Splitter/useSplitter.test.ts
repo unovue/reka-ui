@@ -1,10 +1,12 @@
 import type { VueWrapper } from '@vue/test-utils'
+import type { PropType } from 'vue'
 import type { PanelGroupStorage } from '.'
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, mergeProps, nextTick, ref } from 'vue'
+import { ConfigProvider } from '@/ConfigProvider'
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle, useSplitter, useSplitterPanel, useSplitterResizeHandle } from '.'
 import * as Reka from '../index'
 
@@ -28,13 +30,14 @@ async function flush() {
 
 describe('useSplitter — standalone', () => {
   const Standalone = defineComponent({
-    props: { onUpdate: Function, onLayout: Function },
+    props: { onUpdate: Function, onLayout: Function, dir: String as PropType<'ltr' | 'rtl'> },
     setup(props) {
       const groupEl = ref<HTMLElement | null>(null)
       const handleEl = ref<HTMLElement | null>(null)
       const splitter = useSplitter({
         id: 'g',
         direction: 'horizontal',
+        dir: () => props.dir,
         element: groupEl,
         onUpdate: (value, details) => props.onUpdate?.(value, details),
         onLayout: value => props.onLayout?.(value),
@@ -80,6 +83,22 @@ describe('useSplitter — standalone', () => {
     await nextTick()
     expect(panelSize('a')).toBe('60.0')
   })
+
+  it('reads the ConfigProvider direction when no dir is passed', async () => {
+    const onUpdate = vi.fn()
+    wrapper = mount(() => h(ConfigProvider, { dir: 'rtl' }, () => h(Standalone, { onUpdate })), { attachTo: document.body })
+    await flush()
+    await fireEvent.keyDown(document.getElementById('h')!, { key: 'ArrowLeft' })
+    expect(onUpdate.mock.lastCall![0]).toEqual([60, 40])
+  })
+
+  it('its own dir option wins over ConfigProvider', async () => {
+    const onUpdate = vi.fn()
+    wrapper = mount(() => h(ConfigProvider, { dir: 'rtl' }, () => h(Standalone, { onUpdate, dir: 'ltr' })), { attachTo: document.body })
+    await flush()
+    await fireEvent.keyDown(document.getElementById('h')!, { key: 'ArrowLeft' })
+    expect(onUpdate.mock.lastCall![0]).toEqual([40, 60])
+  })
 })
 
 describe('splitterGroup — layout model', () => {
@@ -114,6 +133,33 @@ describe('splitterGroup — layout model', () => {
     expect(group.emitted('update:layout')!.at(-1)![0]).toEqual([40, 60])
     expect((group.emitted('update:layout')!.at(-1)![1] as any).reason).toBe('keyboard')
     expect(group.emitted('layout')!.at(-1)![0]).toEqual([40, 60])
+  })
+
+  it('`dir="rtl"` without a ConfigProvider flips horizontal arrow keys', async () => {
+    const group = mountGroup({ dir: 'rtl' })
+    await flush()
+    await fireEvent.keyDown(handle(), { key: 'ArrowLeft' })
+    expect(group.emitted('update:layout')!.at(-1)![0]).toEqual([60, 40])
+  })
+
+  it('renders `dir` as an attribute only when the prop is set', async () => {
+    // The keys flip with `dir`, so the panels must be laid out in that direction too.
+    expect(mountGroup({ dir: 'rtl' }).element.getAttribute('dir')).toBe('rtl')
+    wrapper?.unmount()
+    // Unset, it inherits the page's direction rather than forcing one.
+    expect(mountGroup().element.hasAttribute('dir')).toBe(false)
+  })
+
+  it('`dir` on SplitterGroup wins over ConfigProvider', async () => {
+    const onLayout = vi.fn()
+    wrapper = mount(() => h(ConfigProvider, { dir: 'rtl' }, () => h(SplitterGroup, { direction: 'horizontal', dir: 'ltr', onLayout }, () => [
+      h(SplitterPanel, { id: 'a' }),
+      h(SplitterResizeHandle, { id: 'h' }),
+      h(SplitterPanel, { id: 'b' }),
+    ])), { attachTo: document.body })
+    await flush()
+    await fireEvent.keyDown(handle(), { key: 'ArrowLeft' })
+    expect(onLayout).toHaveBeenLastCalledWith([40, 60])
   })
 
   it('does not emit when the layout does not change', async () => {

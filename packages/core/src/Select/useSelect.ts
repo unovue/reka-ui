@@ -26,6 +26,7 @@ import {
 } from '@/shared'
 import { getterRef } from '@/shared/partSurface'
 import { SelectionSelector } from '@/shared/selectionSelector'
+import { resolveDirection } from '@/shared/useDirection'
 import { getNextMatch, wrapArray } from '@/shared/useTypeahead'
 import { SelectClosedItems } from './closedItems'
 import { OPEN_KEYS, SELECTION_KEYS, shouldShowPlaceholder } from './utils'
@@ -236,7 +237,7 @@ export interface UseSelectRootProps<T = AcceptableValue> {
   disabled?: MaybeRefOrGetter<boolean | undefined>
   /** @defaultValue `false` */
   required?: MaybeRefOrGetter<boolean | undefined>
-  /** Resolved reading direction (the SFC hands its `useDirection` ref). @defaultValue `'ltr'` */
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   /**
    * Base id the content id derives from (`<baseId>-content`). Defaults to
@@ -464,7 +465,7 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
     required: computed(() => toValue(props.required) ?? false),
     disabled: computed(() => toValue(props.disabled) ?? false),
     by: props.by,
-    dir: computed(() => toValue(props.dir) ?? 'ltr'),
+    dir: resolveDirection(props.dir),
     triggerPointerDownPosRef: ref({ x: 0, y: 0 }),
     isEmptyModelValue,
     labels,

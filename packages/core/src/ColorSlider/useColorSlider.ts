@@ -7,6 +7,7 @@ import { computed, toValue } from 'vue'
 import { createPartSurface, useControllableState } from '@/shared'
 import { colorToHex, convertToSpace, getChannelColorSpace, getChannelName, getChannelRange, getChannelValue, getSliderBackgroundStyle, isEqualColor, normalizeColor, setChannelValue } from '@/shared/color'
 import { createChangeEndTracker } from '@/shared/color/changeEnd'
+import { resolveDirection } from '@/shared/useDirection'
 
 type Inputs = Pick<ColorSliderRootProps, 'orientation' | 'dir' | 'disabled' | 'inverted' | 'channel' | 'colorSpace' | 'step' | 'modelValue' | 'defaultValue'>
 export type ColorSliderChangeReason = 'slider'
@@ -61,7 +62,7 @@ export interface UseColorSliderReturn {
  */
 export function useColorSlider(props: UseColorSliderProps): UseColorSliderReturn {
   const orientation = computed(() => toValue(props.orientation) ?? 'horizontal')
-  const dir = computed(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const inverted = computed(() => toValue(props.inverted) ?? false)
   const channel = computed(() => toValue(props.channel))

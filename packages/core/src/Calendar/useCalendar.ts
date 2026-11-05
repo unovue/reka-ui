@@ -8,6 +8,7 @@ import { clampCalendarView, coarserUnit, compareDateValues, finerUnit, focusedDa
 import { assertTemporal } from '@/date/runtime'
 import { createPartSurface, getterRef, useControllableState } from '@/shared'
 import { CELL_FOCUS_TARGET, CELL_SELECTED, CELL_TODAY, createCalendarCellIndex, getCalendarCellIndex, getCellFocusNavigation, getDefaultDate, readCalendarCellFlags, setCalendarCellIndex, useCalendarGrid } from '@/shared/date'
+import { resolveDirection } from '@/shared/useDirection'
 
 /** Why the model, placeholder or view changed; carried as `details.reason` on every change (#2828). */
 export type CalendarChangeReason
@@ -64,6 +65,7 @@ export interface UseCalendarProps {
   initialFocus?: MaybeRefOrGetter<boolean | undefined>
   disableDaysOutsideCurrentView?: MaybeRefOrGetter<boolean | undefined>
   locale: MaybeRefOrGetter<string>
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   weekStartsOn: MaybeRefOrGetter<WeekStartsOn>
   weekdayFormat?: MaybeRefOrGetter<WeekDayFormat | undefined>
@@ -426,7 +428,7 @@ export function getCalendarCellTriggerSurface(
 export function useCalendar(props: UseCalendarProps): UseCalendarReturn {
   assertTemporal()
   const locale = computed(() => toValue(props.locale))
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const readonly = computed(() => toValue(props.readonly) ?? false)
   const initialFocus = computed(() => toValue(props.initialFocus) ?? false)

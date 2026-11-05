@@ -11,6 +11,7 @@ import { compare, createLabelRegistry, createPartSurface, findValuesBetween, han
 import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
 import { isDisabledItem } from '@/shared/isDisabledItem'
 import { SelectionSelector } from '@/shared/selectionSelector'
+import { resolveDirection } from '@/shared/useDirection'
 
 /**
  * Why the selection changed; carried as `details.reason` on every change (#2828).
@@ -324,7 +325,7 @@ export interface UseListboxRootProps<T = AcceptableValue> {
   multiple?: MaybeRefOrGetter<boolean | undefined>
   /** @defaultValue `'vertical'` */
   orientation?: MaybeRefOrGetter<DataOrientation | undefined>
-  /** Resolved reading direction (the SFC hands its `useDirection` ref). @defaultValue `'ltr'` */
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** @defaultValue `false` */
   disabled?: MaybeRefOrGetter<boolean | undefined>
@@ -466,7 +467,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
 
   const multiple = computed(() => toValue(props.multiple) ?? false)
   const orientation = computed<DataOrientation>(() => toValue(props.orientation) ?? 'vertical')
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const selectionBehavior = computed<'toggle' | 'replace'>(() => toValue(props.selectionBehavior) ?? 'toggle')
   const highlightOnHover = computed(() => toValue(props.highlightOnHover) ?? false)

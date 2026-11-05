@@ -87,7 +87,7 @@ setValue([120])
 </template>
 ```
 
-Pass the slider's reading direction as `dir` (`'ltr'` by default) along with `orientation` and `inverted`, so the track gradient runs the same way as the slider. `sliderProps` carries `orientation` and `inverted` but not the direction, so set `dir` on `SliderRoot` too, as above. The component reads it from `ConfigProvider` for you.
+Pass the slider's reading direction as `dir` along with `orientation` and `inverted`, so the track gradient runs the same way as the slider. Without `dir`, `useColorSlider()` called in `setup()` follows the nearest `ConfigProvider`, then `'ltr'`, as `SliderRoot` does. `sliderProps` carries `orientation` and `inverted` but not the direction, so when you pass `dir`, set it on `SliderRoot` too, as above.
 
 Binding these surfaces to plain elements does not supply Slider interactions. Delegated updates have the `slider` reason; Slider's model event does not supply a native event. Hidden color form inputs remain in `ColorSliderRoot`.
 

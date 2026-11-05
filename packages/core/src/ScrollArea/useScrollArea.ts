@@ -6,6 +6,7 @@ import type { Direction, ScrollType, Sizes } from './types'
 import type { DisclosureState, PartSurface } from '@/shared'
 import { computed, ref, toValue } from 'vue'
 import { createPartSurface, disclosureState } from '@/shared'
+import { resolveDirection } from '@/shared/useDirection'
 import {
   getScrollPositionFromPointer,
   getThumbOffsetFromScroll,
@@ -17,7 +18,7 @@ import {
 export interface UseScrollAreaProps {
   /** Scrollbar visibility: `'hover'` (default), `'auto'`, `'always'`, `'scroll'` or `'glimpse'`. */
   type?: MaybeRefOrGetter<ScrollType | undefined>
-  /** Reading direction; defaults to `'ltr'`. The component resolves `ConfigProvider` first. */
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** Delay before `scroll`/`hover`/`glimpse` scrollbars hide, in ms. Defaults to `600`. */
   scrollHideDelay?: MaybeRefOrGetter<number | undefined>
@@ -60,7 +61,7 @@ export function useScrollArea(props: UseScrollAreaProps = {}): UseScrollAreaRetu
   const scrollbarYEnabled = ref(false)
 
   const type = computed(() => toValue(props.type) ?? 'hover')
-  const dir = computed(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const scrollHideDelay = computed(() => toValue(props.scrollHideDelay) ?? 600)
 
   function scrollTop() {

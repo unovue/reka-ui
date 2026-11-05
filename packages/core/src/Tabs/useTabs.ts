@@ -5,6 +5,7 @@ import type { DataOrientation, Direction, StringOrNumber } from '@/shared/types'
 import { computed, ref, shallowRef, toValue } from 'vue'
 import { createPartSurface, selectionState, useControllableState } from '@/shared'
 import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
+import { resolveDirection } from '@/shared/useDirection'
 import { makeContentId, makeTriggerId } from './utils'
 
 // `PartSurface` is the shared contract in `@/shared` and is already published via
@@ -156,7 +157,7 @@ export interface UseTabsProps {
   onUpdate?: (value: StringOrNumber | undefined, details: ChangeEventDetails<TabsChangeReason>) => void
   /** @defaultValue `'horizontal'` */
   orientation?: MaybeRefOrGetter<DataOrientation | undefined>
-  /** @defaultValue `'ltr'` */
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** @defaultValue `true` */
   unmountOnHide?: MaybeRefOrGetter<boolean | undefined>
@@ -218,7 +219,7 @@ export function useTabs(props: UseTabsProps = {}): UseTabsReturn {
     onUpdate: props.onUpdate,
   })
   const orientation = computed<DataOrientation>(() => toValue(props.orientation) ?? 'horizontal')
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const unmountOnHide = computed<boolean>(() => toValue(props.unmountOnHide) ?? true)
 
   const tabsList = ref<HTMLElement>()

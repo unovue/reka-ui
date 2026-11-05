@@ -5,6 +5,7 @@ import type { DataOrientation, Direction, SingleOrMultipleType } from '@/shared/
 import { computed, ref, toValue } from 'vue'
 import { getCollapsibleTriggerProps } from '@/Collapsible/useCollapsible'
 import { createPartSurface, disclosureState, getterRef, useArrowNavigation, useControllableState } from '@/shared'
+import { resolveDirection } from '@/shared/useDirection'
 
 /** Why the expanded value changed; carried as `details.reason` on every change. */
 export type AccordionChangeReason = 'trigger-press' | 'content-found'
@@ -26,7 +27,7 @@ export interface UseAccordionProps {
   type?: MaybeRefOrGetter<SingleOrMultipleType | undefined>
   /** @defaultValue `false` */
   collapsible?: MaybeRefOrGetter<boolean | undefined>
-  /** @defaultValue `'ltr'` */
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** @defaultValue `false` */
   disabled?: MaybeRefOrGetter<boolean | undefined>
@@ -329,7 +330,7 @@ export function useAccordion(props: UseAccordionProps = {}): UseAccordionReturn 
   }
 
   const disabled = computed(() => toValue(props.disabled) ?? false)
-  const direction = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const direction = resolveDirection(props.dir)
   const unmountOnHide = computed(() => toValue(props.unmountOnHide) ?? true)
   const parentElement = props.parentElement ?? ref<HTMLElement>()
 

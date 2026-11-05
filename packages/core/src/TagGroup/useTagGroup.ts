@@ -6,6 +6,7 @@ import type { AcceptableValue, Direction } from '@/shared/types'
 import { computed, nextTick, ref, shallowReactive, toValue } from 'vue'
 import { compare, createPartSurface, getActiveElement, selectionState, useControllableState, useTypeahead, valueComparator } from '@/shared'
 import { compareDocumentOrder } from '@/shared/documentOrder'
+import { resolveDirection } from '@/shared/useDirection'
 
 /**
  * Why the selection changed; carried as `details.reason` on every change (#2828).
@@ -40,7 +41,7 @@ export interface UseTagGroupProps<T = AcceptableValue> {
   /** @defaultValue `'clearSelection'` */
   escapeKeyBehavior?: MaybeRefOrGetter<'clearSelection' | 'none' | undefined>
   disabled?: MaybeRefOrGetter<boolean | undefined>
-  /** @defaultValue `'ltr'` */
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   by?: MaybeRefOrGetter<By<T> | undefined>
   /** Whether tags can be removed. Defaults to whether `onRemove` is given. The SFC passes "has a `remove` listener". */
@@ -265,7 +266,7 @@ export function useTagGroup<T extends AcceptableValue = AcceptableValue>(props: 
   let itemCount = 0
   const selectionMode = computed<TagGroupSelectionMode>(() => toValue(props.selectionMode) ?? 'none')
   const disabled = computed(() => toValue(props.disabled) ?? false)
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const by = () => toValue(props.by)
 
   function toArray(value: TagGroupValue<T>): T[] {

@@ -5,6 +5,7 @@ import type { AcceptableValue, DataOrientation, Direction, SingleOrMultipleType 
 import { computed, toValue } from 'vue'
 import { createPartSurface, isValueEqualOrExist, selectionState, useControllableState } from '@/shared'
 import { isEqual } from '@/shared/compare'
+import { resolveDirection } from '@/shared/useDirection'
 
 /** Why the value changed; carried as `details.reason` on every change (#2828). */
 export type ToggleGroupChangeReason = 'item-press'
@@ -68,7 +69,7 @@ export interface UseToggleGroupProps {
   disabled?: MaybeRefOrGetter<boolean | undefined>
   /** Snapshot, like the context field it feeds (arrow-key orientation lives in `RovingFocusGroup`). */
   orientation?: DataOrientation
-  /** @defaultValue `'ltr'` */
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** @defaultValue `true` */
   loop?: MaybeRefOrGetter<boolean | undefined>
@@ -145,7 +146,7 @@ export function useToggleGroup(props: UseToggleGroupProps = {}): UseToggleGroupR
   })
 
   const disabled = computed(() => toValue(props.disabled) ?? false)
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const loop = computed(() => toValue(props.loop) ?? true)
   const rovingFocus = computed(() => toValue(props.rovingFocus) ?? true)
 

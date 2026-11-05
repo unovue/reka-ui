@@ -22,6 +22,7 @@ import {
   useSegmentFieldNavigation,
   watchSegmentFieldLocale,
 } from '@/shared/date'
+import { resolveDirection } from '@/shared/useDirection'
 
 /**
  * Why the TimeField value changed; carried as `details.reason` (#2828).
@@ -79,6 +80,7 @@ export interface UseTimeFieldProps {
   placeholder?: MaybeRefOrGetter<TimeValue | undefined>
   defaultPlaceholder?: TimeValue
   locale?: MaybeRefOrGetter<string | undefined>
+  /** Reading direction. Falls back to the nearest `ConfigProvider`, then `'ltr'`. */
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** Read once, when the field is created. */
   hourCycle?: HourCycle
@@ -149,7 +151,7 @@ export function createTimeFieldInputSurface(context: TimeFieldRootContext, part:
 export function useTimeField(props: UseTimeFieldProps = {}): UseTimeFieldReturn {
   assertTemporal()
   const locale = computed(() => toValue(props.locale) ?? 'en')
-  const dir = computed<Direction>(() => toValue(props.dir) ?? 'ltr')
+  const dir = resolveDirection(props.dir)
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const readonly = computed(() => toValue(props.readonly) ?? false)
   const stepSnapping = computed(() => toValue(props.stepSnapping) ?? false)
