@@ -29,11 +29,14 @@ const selectProps = computed(() => {
 // This would bubble "change" event to form, with the target as Select element.
 // `post`: the options' `selected` state is patched first, so a `change`
 // listener reads the new selection.
-// The nullable option is inserted when the model clears; re-assert the
-// selection so the browser's reset to another option cannot win.
+// The nullable option is inserted when the model clears; select it so the
+// browser's reset to another option cannot win. Only that option: the others'
+// `selected` is bound by `SelectRoot`, which also matches record keys.
 watch(() => props.value, (cur, prev) => {
   if (cur !== prev && selectElement.value) {
-    syncSelection()
+    const nullable = selectElement.value.querySelector<HTMLOptionElement>('option[data-nullable]')
+    if (nullable)
+      nullable.selected = true
     selectElement.value.dispatchEvent(new Event('change', { bubbles: true }))
   }
 }, { flush: 'post' })
@@ -45,9 +48,8 @@ watch(() => props.value, (cur, prev) => {
 function handleInput(event: Event) {
   const select = event.target as HTMLSelectElement
   const option = select.options[select.selectedIndex] as NativeOption | undefined
-  // The nullable option stands for the empty selection (`null`), whatever its `nullableValue`.
   if (option)
-    rootContext.onValueChange(option.hasAttribute('data-nullable') ? null : optionValue(option), 'autofill', event)
+    rootContext.onValueChange(optionValue(option), 'autofill', event)
   // The browser already moved the native selection. When the change was
   // cancelled (`beforeUpdate:modelValue`) or a controlled parent ignored it,
   // nothing re-renders the options, so put their `selected` back in line with

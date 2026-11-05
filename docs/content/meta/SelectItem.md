@@ -29,7 +29,7 @@
   },
   {
     'name': 'value',
-    'description': '<p>The value given as data when submitted with a <code>name</code>. <code>null</code> is the empty value, so pressing an item with a <code>null</code>\nvalue clears the selection. An empty string is allowed; as in Base UI, a selected <code>\'\'</code> still shows the placeholder.</p>\n',
+    'description': '<p>The value given as data when submitted with a <code>name</code>. In a single select, <code>null</code> is the empty value, so pressing an\nitem with a <code>null</code> value clears the selection, and an empty string is allowed but, as in Base UI, a selected <code>\'\'</code>\nstill shows the placeholder. In a <code>multiple</code> select, <code>null</code> and <code>\'\'</code> are ordinary values that toggle in the array.</p>\n',
     'type': 'AcceptableValue',
     'required': true
   }
@@ -62,7 +62,7 @@
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `disabled` | When `true`, prevents the user from interacting with the item. | `boolean` | No | - |
 | `textValue` | Optional text used for typeahead purposes. By default the typeahead behavior will use the `.textContent` of the `SelectItemText` part. Use this when the content is complex, or you have non-textual content inside. | `string` | No | - |
-| `value` | The value given as data when submitted with a `name`. `null` is the empty value, so pressing an item with a `null` value clears the selection. An empty string is allowed; as in Base UI, a selected `''` still shows the placeholder. | `AcceptableValue` | Yes | - |
+| `value` | The value given as data when submitted with a `name`. In a single select, `null` is the empty value, so pressing an item with a `null` value clears the selection, and an empty string is allowed but, as in Base UI, a selected `''` still shows the placeholder. In a `multiple` select, `null` and `''` are ordinary values that toggle in the array. | `AcceptableValue` | Yes | - |
 
 **Events**
 

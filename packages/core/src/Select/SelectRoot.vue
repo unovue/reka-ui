@@ -311,8 +311,10 @@ const nativeOptions = computed(() => {
     if (!(data && getItemData(selected)) && !context.labels.entry(selected))
       options.push({ value: selected, label: context.displayValue.value?.(selected) ?? '', disabled: false, selected: true })
   }
-  // A `null` item is the empty selection: the `data-nullable` option stands for it.
-  const filtered = options.filter(option => !isNullish(option.value))
+  // In a single select a `null` item is the empty selection: the
+  // `data-nullable` option stands for it. In a `multiple` select `null` is an
+  // ordinary entry, so its option stays (selected, and submitted).
+  const filtered = props.multiple ? options : options.filter(option => !isNullish(option.value))
   // As in Base UI, a selected empty string submits nothing: a `required` single
   // select is missing a value. Natively that takes the selected option being the
   // first one (the placeholder label option), so it moves there.

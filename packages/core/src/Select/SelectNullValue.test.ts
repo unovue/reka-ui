@@ -137,7 +137,7 @@ describe('null is the empty value', () => {
     expect(new FormData(form()).get('fruit')).toBe('none')
   })
 
-  it('autofill picking the nullable option writes `null`, not `\'\'`', async () => {
+  it('autofill picking the nullable option writes its `nullableValue` (`\'\'`, read as empty), not `null`', async () => {
     // An unset (`undefined`) model renders the nullable option, selected.
     const { onUpdate } = make()
     await settle()
@@ -145,7 +145,9 @@ describe('null is the empty value', () => {
     expect(select.selectedOptions[0].hasAttribute('data-nullable')).toBe(true)
     select.dispatchEvent(new Event('input', { bubbles: true }))
     await settle()
-    expect(onUpdate).toHaveBeenLastCalledWith(null, expect.objectContaining({ reason: 'autofill' }))
+    // `null` is emitted only by an item whose value is `null`, so a single
+    // select's payload stays within its item type.
+    expect(onUpdate).toHaveBeenLastCalledWith('', expect.objectContaining({ reason: 'autofill' }))
   })
 
   it('autofill picking the `\'\'` option writes `\'\'`', async () => {
@@ -220,5 +222,13 @@ describe('multiple', () => {
     el.focus()
     await keydown(el, 'Enter')
     expect(onUpdate).toHaveBeenLastCalledWith(['a', null], expect.anything())
+  })
+
+  it('a selected `null` entry keeps its native option: `[null]` satisfies `required` and is submitted', async () => {
+    make({ model: ref<any>([null]), props: () => ({ multiple: true, required: true }) })
+    await settle()
+    expect(nativeSelect().selectedOptions).toHaveLength(1)
+    expect(nativeSelect().checkValidity()).toBe(true)
+    expect(new FormData(form()).getAll('fruit')).toHaveLength(1)
   })
 })

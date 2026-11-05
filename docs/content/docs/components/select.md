@@ -496,7 +496,7 @@ const themes = [
 </template>
 ```
 
-In a form, `null` and `''` both submit an empty string (`null` submits `nullable-value`, `""` by default). With `required`, both are missing a value, and inside a `Field` neither counts as filled, as in Base UI. With `multiple`, a `null` item is an ordinary value that toggles in the array; clear a multiple select with `[]`.
+In a form, `''` submits an empty string and `null` submits `nullable-value` (`""` by default). With `required`, `''` is missing a value, and so is `null` while `nullable-value` is empty; a non-empty `nullable-value` is submitted as a value and satisfies `required`. Inside a `Field`, neither `null` nor `''` counts as filled, as in Base UI. With `multiple`, `null` and `''` are ordinary values that toggle in the array and are submitted; clear a multiple select with `[]`.
 
 ### With separators
 
