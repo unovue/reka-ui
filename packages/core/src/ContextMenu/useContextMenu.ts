@@ -190,8 +190,8 @@ export function createContextMenuContentHandlers(
     },
     onInteractOutside: (event) => {
       const originalEvent = event.detail.originalEvent as PointerEvent
-      // Prevent closing when right click (button=2) with the trigger element
-      if (originalEvent.button === 2 && event.target === context.triggerElement.value)
+      // Prevent closing when right click (button=2) on the trigger element or its descendants
+      if (originalEvent.button === 2 && context.triggerElement.value?.contains(event.target as Node))
         event.preventDefault()
       if (!event.defaultPrevented && !context.modal.value)
         hasInteractedOutside = true

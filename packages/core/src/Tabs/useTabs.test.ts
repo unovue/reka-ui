@@ -124,8 +124,11 @@ describe('useTabs — trigger surface', () => {
   it('onMousedown (left) selects the tab; right button and ctrl+click do not', () => {
     const t = useTabs({ defaultValue: 'a', baseId: 'x' })
     const trig = t.getTriggerSurface('b')
-    trig.props.value.onMousedown(new MouseEvent('mousedown', { button: 2 }))
+    const right = new MouseEvent('mousedown', { button: 2, cancelable: true })
+    trig.props.value.onMousedown(right)
     expect(t.modelValue.value).toBe('a')
+    // Prevented, or the browser focuses the trigger and automatic activation selects it (#3027).
+    expect(right.defaultPrevented).toBe(true)
     trig.props.value.onMousedown(new MouseEvent('mousedown', { button: 0, ctrlKey: true }))
     expect(t.modelValue.value).toBe('a')
     trig.props.value.onMousedown(new MouseEvent('mousedown', { button: 0 }))

@@ -77,7 +77,7 @@ function setFocusProxyRef(node: Element | ComponentPublicInstance | null) {
       @focus="onFocusProxyFocus"
     />
     <span
-      v-if="menuContext.viewport"
+      v-if="menuContext.viewport.value"
       :aria-owns="itemContext.contentId"
     />
   </template>

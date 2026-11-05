@@ -123,6 +123,36 @@ describe('given a Menu with submenu', () => {
     expect(wrapper.find('[role="menu"][aria-labelledby]').exists()).toBe(true)
   })
 
+  it('should keep the submenu open when the pointer returns to its trigger', async () => {
+    vi.useFakeTimers()
+    const subTrigger = wrapper.get<HTMLElement>('[aria-haspopup="menu"]').element
+
+    // jsdom does not support PointerEvent.
+    async function dispatchPointer(type: string) {
+      const event = new MouseEvent(type, { bubbles: type !== 'pointerleave' })
+      Object.defineProperty(event, 'pointerType', { value: 'mouse' })
+      subTrigger.dispatchEvent(event)
+      await nextTick()
+      await nextTick()
+    }
+
+    await dispatchPointer('pointermove')
+    await vi.advanceTimersByTimeAsync(100)
+    expect(subTrigger).toHaveAttribute('aria-expanded', 'true')
+
+    // A focused text field keeps focus in the submenu while the pointer is over the parent menu.
+    const input = wrapper.get<HTMLInputElement>('input').element
+    input.focus()
+
+    // Leave the trigger for a non-item area of the parent menu, then come back.
+    await dispatchPointer('pointerleave')
+    expect(subTrigger).not.toHaveAttribute('data-highlighted')
+    await dispatchPointer('pointermove')
+
+    expect(subTrigger).toHaveAttribute('aria-expanded', 'true')
+    expect(input).toHaveFocus()
+  })
+
   it.each([undefined, 1000])('should not render `graceDuration` (%s) as an attribute on the sub trigger', async (graceDuration) => {
     await wrapper.setProps({ graceDuration })
 

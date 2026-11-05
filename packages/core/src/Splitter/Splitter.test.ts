@@ -174,4 +174,35 @@ describe('nested px SplitterGroup layout re-initialization (issue #2509)', () =>
 
     expect(sidebar.attributes('data-state')).toBe('closed')
   })
+
+  // Regression test for https://github.com/unovue/reka-ui/issues/3131
+  // Enter on the handle only updated the drawn layout, so data-state kept
+  // reporting the pre-Enter state and collapse()/expand() acted on it.
+  it('should update data-state when a panel is collapsed with Enter on the handle', async () => {
+    const TestComponent = defineComponent({
+      components: { SplitterGroup, SplitterPanel, SplitterResizeHandle },
+      template: `
+        <SplitterGroup direction="horizontal">
+          <SplitterPanel id="sidebar" collapsible :collapsed-size="0" :default-size="40" :min-size="20" />
+          <SplitterResizeHandle id="handle" />
+          <SplitterPanel id="content" />
+        </SplitterGroup>
+      `,
+    })
+
+    const wrapper = mount(TestComponent)
+    await nextTick()
+    fireResize(923)
+    await nextTick()
+    await nextTick()
+
+    const sidebar = wrapper.find('#sidebar')
+    expect(sidebar.attributes('data-state')).toBe('open')
+
+    await wrapper.find('#handle').trigger('keydown', { key: 'Enter' })
+    expect(sidebar.attributes('data-state')).toBe('closed')
+
+    await wrapper.find('#handle').trigger('keydown', { key: 'Enter' })
+    expect(sidebar.attributes('data-state')).toBe('open')
+  })
 })

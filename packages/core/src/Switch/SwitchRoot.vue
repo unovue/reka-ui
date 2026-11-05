@@ -6,11 +6,11 @@ import type { ChangeEventDetails } from '@/shared'
 import type { FormFieldProps } from '@/shared/types'
 import { createContext, getRootNode, useFormControl, useForwardElement, useForwardScopeId } from '@/shared'
 
-export interface SwitchRootProps<T = boolean> extends PrimitiveProps, FormFieldProps {
+export interface SwitchRootProps<TrueValue = boolean, FalseValue = TrueValue> extends PrimitiveProps, FormFieldProps {
   /** The state of the switch when it is initially rendered. Use when you do not need to control its state. */
-  defaultValue?: T
+  defaultValue?: NoInfer<TrueValue | FalseValue>
   /** The controlled state of the switch. Can be bind as `v-model`. */
-  modelValue?: T | null
+  modelValue?: NoInfer<TrueValue | FalseValue> | null
   /** When `true`, prevents the user from interacting with the switch. */
   disabled?: boolean
   id?: string
@@ -19,18 +19,18 @@ export interface SwitchRootProps<T = boolean> extends PrimitiveProps, FormFieldP
   /**
    * The value used when the switch is on. Defaults to `true`.
    */
-  trueValue?: T
+  trueValue?: TrueValue
   /**
    * The value used when the switch is off. Defaults to `false`.
    */
-  falseValue?: T
+  falseValue?: FalseValue
 }
 
-export type SwitchRootEmits<T = boolean> = {
+export type SwitchRootEmits<TrueValue = boolean, FalseValue = TrueValue> = {
   /** Event handler called before the value of the switch changes; `details.cancel()` vetoes the change. */
-  'beforeUpdate:modelValue': [payload: T, details: ChangeEventDetails<SwitchChangeReason>]
+  'beforeUpdate:modelValue': [payload: TrueValue | FalseValue, details: ChangeEventDetails<SwitchChangeReason>]
   /** Event handler called when the value of the switch changes. */
-  'update:modelValue': [payload: T, details: ChangeEventDetails<SwitchChangeReason>]
+  'update:modelValue': [payload: TrueValue | FalseValue, details: ChangeEventDetails<SwitchChangeReason>]
 }
 
 export interface SwitchRootContext {
@@ -43,7 +43,7 @@ export const [injectSwitchRootContext, provideSwitchRootContext]
   = createContext<SwitchRootContext>('SwitchRoot')
 </script>
 
-<script setup lang="ts" generic="T = boolean">
+<script setup lang="ts" generic="TrueValue = true, FalseValue = false">
 import { computed, mergeProps, watch } from 'vue'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
@@ -54,14 +54,14 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<SwitchRootProps<T>>(), {
+const props = withDefaults(defineProps<SwitchRootProps<TrueValue, FalseValue>>(), {
   as: 'button',
   modelValue: undefined,
   value: 'on',
   trueValue: (() => true) as unknown as undefined,
   falseValue: (() => false) as unknown as undefined,
 })
-const emit = defineEmits<SwitchRootEmits<T>>()
+const emit = defineEmits<SwitchRootEmits<TrueValue, FalseValue>>()
 
 defineSlots<{
   default?: (props: {
@@ -99,8 +99,8 @@ const ariaLabel = computed(() => resolvedId() && currentElement.value ? (getRoot
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
 // composable's `useControllableState` (`modelValue === undefined` → uncontrolled).
-const { modelValue, checked, disabled, root, context } = useSwitch<T>({
-  modelValue: () => props.modelValue as T | undefined,
+const { modelValue, checked, disabled, root, context } = useSwitch<TrueValue | FalseValue>({
+  modelValue: () => props.modelValue as TrueValue | FalseValue | undefined,
   defaultValue: props.defaultValue,
   emit,
   // The Field hears its own commits by reason (`change`): user input, or, for
@@ -110,8 +110,8 @@ const { modelValue, checked, disabled, root, context } = useSwitch<T>({
   disabled: () => field ? field.disabled(props.disabled) : props.disabled,
   required: resolvedRequired,
   value: () => props.value,
-  trueValue: () => props.trueValue as T,
-  falseValue: () => props.falseValue as T,
+  trueValue: () => props.trueValue as TrueValue,
+  falseValue: () => props.falseValue as FalseValue,
 })
 
 provideSwitchRootContext(context)

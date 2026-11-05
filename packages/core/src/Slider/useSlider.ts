@@ -118,7 +118,11 @@ export function getSliderThumbSurface(
   // property reads, cheaper than a computed per value per thumb.
   const getIndex = () => toValue(options.index)
   function onFocus() {
-    context.valueIndexToChangeRef.value = getIndex()
+    // A thumb that already left the collection (its template ref is null
+    // during an out-in leave) has no index: keep the active one valid.
+    const index = getIndex()
+    if (index >= 0)
+      context.valueIndexToChangeRef.value = index
   }
 
   return createPartSurface<SliderThumbState>(
