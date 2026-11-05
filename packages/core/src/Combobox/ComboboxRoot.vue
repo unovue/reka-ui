@@ -203,6 +203,10 @@ const { forwardRef, currentElement, expose } = useForwardElement()
 const dir = useDirection(toRef(() => props.dir))
 const isFormControl = useFormControl(currentElement)
 
+function isComboboxFilled(value: unknown) {
+  return Array.isArray(value) ? value.length > 0 : value != null
+}
+
 // Optional Field participation: `null` outside a `FieldRoot`, so every
 // binding below is inert without a Field. The root owns the value; the input
 // (Base UI parity) carries the field's id, label and aria wiring.
@@ -217,6 +221,10 @@ const field = useFieldControl({
   // The selected value(s), not the typed text.
   getValue: () => modelValue.value,
   required: () => props.required,
+  // Base UI: a single value is filled unless `null` (`''` included), but `''`
+  // submits nothing, so `required` still reports it missing.
+  isFilled: isComboboxFilled,
+  isMissing: value => !isComboboxFilled(value) || value === '',
 })
 // Getters rather than computeds: cheap, and free for a standalone combobox.
 const resolvedDisabled = field ? () => field.disabled(props.disabled) : () => props.disabled
@@ -286,12 +294,13 @@ provideComboboxField(field, context)
         :model-value="modelValue"
       />
 
+      <!-- Base UI: a multiple combobox with any selection (`['']` included) is not missing a value. -->
       <VisuallyHiddenInput
         v-if="isFormControl && (field ? field.name(name) : name)"
         :name="(field ? field.name(name) : name)!"
         :value="modelValue"
         :disabled="resolvedDisabled()"
-        :required="field ? field.required(required) : required"
+        :required="(field ? field.required(required) : required) && !(multiple && isComboboxFilled(modelValue))"
       />
     </component>
   </PopperRoot>

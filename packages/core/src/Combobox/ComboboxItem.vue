@@ -10,6 +10,11 @@ export { injectListboxItemContext as injectComboboxItemContext } from '@/Listbox
 export type ComboboxItemEmits<T = AcceptableValue> = ListboxItemEmits<T>
 export interface ComboboxItemProps<T = AcceptableValue> extends ListboxItemProps<T> {
   /**
+   * The value given as data when submitted with a `name`. `null` is the empty value, so pressing an item with a `null`
+   * value clears a single selection. An empty string is a value like any other, as in Base UI.
+   */
+  value: T
+  /**
    * A string representation of the item contents.
    *
    * If the children are not plain text, then the `textValue` prop must also be set to a plain text representation, which is used to filter the items and for typeahead.
@@ -36,12 +41,6 @@ const rootContext = injectComboboxRootContext()
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
-
-if (props.value === '') {
-  throw new Error(
-    'A <ComboboxItem /> must have a value prop that is not an empty string. This is because the Combobox value can be set to an empty string to clear the selection and show the placeholder.',
-  )
-}
 
 // Matching (the shared Listbox `filter` over `textValue` or the rendered
 // text), the label registry and the select protocol live in `ListboxItem`. A

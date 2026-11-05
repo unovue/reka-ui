@@ -325,6 +325,39 @@ What changed:
 - **`ComboboxInput` and `AutocompleteInput` render the input themselves** instead of wrapping `ListboxFilter`. The rendered `<input>` and its attributes are unchanged. Tests that look up `ListboxRoot` or `ListboxFilter` with `findComponent` inside a combobox no longer find them.
 - **`update:modelValue` is typed by `multiple`**: `T[]` when `multiple` is set, `T | null` when it is absent (`ComboboxCancel` with `reset-model-value-on-clear` emits `null`), either while it is a plain `boolean`. The runtime payload is unchanged.
 - **`modelValue` and `defaultValue` accept `null`** (`T | T[] | null`, v2: `T | T[]`), so the `null` a clear emits can be bound back: `v-model` on a `ref<string | null>` type-checks even when `T` is pinned to `string`. Type-only; the same holds for `useComboboxRoot()`'s `modelValue`, `defaultValue` and `setModelValue`.
+- **`null` is the empty value, and `''` items are allowed.** In v2 a `ComboboxItem` (and so an `AutocompleteItem`) with `value=""` threw, because `''` was the sentinel that cleared the selection. Now, as in [Base UI](https://base-ui.com/react/components/combobox), `null` is the empty value and an item can have `value=""`. Unlike Select, a selected `''` is a value like any other: the item is marked selected, the input shows its text through `displayValue`, and a `Field` counts it as filled (Base UI's `selectedValue != null`). It still submits `''`, so `required` reports it missing. A `ComboboxItem` with a `null` value is allowed and sets the model to `null` when pressed. With `multiple`, `''` and `null` are ordinary entries of the array (a `null` entry no longer throws in the hidden inputs), `[]` is empty, and any selection satisfies `required`; v2 marked every hidden input `required`, so an array holding `''` could not be submitted. A single value of `0` or `false` now shows its string form in the input without a `displayValue` (v2 showed an empty input). An `AutocompleteRoot` value stays the input text, where `''` is empty.
+
+  Before, a "None" option needed a sentinel, and code checked for `''`:
+
+  ```vue
+  <script setup lang="ts">
+  const fruit = ref('')
+  const isEmpty = computed(() => fruit.value === '' || fruit.value === '__none__')
+  </script>
+
+  <template>
+    <ComboboxItem value="__none__">
+      None
+    </ComboboxItem>
+  </template>
+  ```
+
+  After, `null` is the empty value:
+
+  ```vue
+  <script setup lang="ts">
+  const fruit = ref<string | null>(null)
+  const isEmpty = computed(() => fruit.value == null)
+  </script>
+
+  <template>
+    <ComboboxItem :value="null">
+      None
+    </ComboboxItem>
+  </template>
+  ```
+
+  To find what to change, search for empty-string checks and initial values on the models bound to a `ComboboxRoot`: `grep -rnE "ref(<[^>]*>)?\\(''\\)|= ''|=== ''|!== ''|default-value=\"\"|:default-value=\"''\"" --include='*.vue' --include='*.ts' src`, then keep only the ones that feed a `ComboboxRoot` `v-model` / `default-value` or compare its value (the `ComboboxInput` text is a string and keeps `''`). Initial `''` values keep an empty input; switch them to `null` when convenient. A `=== ''` check for "nothing selected" must also accept `null`, which a clear emits. A sentinel item you wrote around the v2 throw (`value="__none__"`) can become `:value="null"`, but the form then submits `''` instead of the sentinel.
 - **New:** `displayValue` on `ComboboxRoot` sets the input text for the selected value when `ComboboxInput` has no `displayValue` of its own. On `AutocompleteRoot` it sets the text a selected item writes into the value.
 
 ## Color values are `Color` objects

@@ -389,6 +389,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - `update:modelValue` is typed `T[]` when `multiple` is set and `T | null` otherwise (type-only; a clear emits `null`). `beforeUpdate:modelValue` and `beforeUpdate:open` are new (section 2).
 - `modelValue` and `defaultValue` on `ComboboxRoot` are typed `T | T[] | null` (v2 `T | T[]`), so the emitted `null` binds back through `v-model`. Type-only and widening: no rewrite needed.
 - New and additive: `displayValue` on both roots, `getNavigationIntent` on both roots (section 8), `useComboboxRoot()`.
+- `null` is the empty value, and `''` items are allowed (Base UI semantics). v2 threw for `<ComboboxItem value="">` (also `AutocompleteItem`) because `''` was the clearing sentinel. Unlike Select (section 19), a selected `''` is an ordinary value: its item is marked selected, the input shows its text through `displayValue`, and it is `filled` in a `Field` (Base UI `selectedValue != null`); it still submits `''`, so `required` reports it missing. A `ComboboxItem` with a `null` value is allowed and sets the model to `null` when pressed. With `multiple`, `''` and `null` are ordinary array entries (a `null` entry no longer throws in the hidden inputs), `[]` is empty, and any selection satisfies `required` (v2 marked every hidden input `required`, so `['']` blocked submission). A single `0` or `false` now shows its string form in the input without a `displayValue` (v2: empty). `AutocompleteRoot` is unchanged: its value is the input text and `''` is empty.
 
 **How to find it.**
 - `ignore-filter`, `:ignore-filter`, `ignoreFilter` on `ComboboxRoot` / `AutocompleteRoot`.
@@ -397,6 +398,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - `injectComboboxRootContext(` / `injectAutocompleteRootContext(` in custom parts; within them, `allItems`, `allGroups`, `ignoreFilter`, `filterState`, `await` on `onOpenChange`, writes to `modelValue.value`.
 - `reka-combobox-content` in selectors, snapshots and tests; `findComponent(ListboxRoot)` / `findComponent(ListboxFilter)` in combobox tests.
 - Handlers on `@update:model-value` of a `multiple` combobox typed for a single value.
+- Empty-string checks and initial values on a `ComboboxRoot` model: `grep -rnE "ref(<[^>]*>)?\\(''\\)|= ''|=== ''|!== ''|default-value=\"\"" --include='*.vue' --include='*.ts' src`. Skip `ComboboxInput` / `AutocompleteRoot` text models. Also sentinel values used as a "none" item to work around the v2 throw (`'__none__'`, `'none'`, `'all'`).
 
 **Rewrite rules.**
 - `ignore-filter` / `:ignore-filter="true"`: replace with `:filter="null"`. `:ignore-filter="flag"`: replace with `:filter="flag ? null : undefined"`.
@@ -407,8 +409,9 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 - Old content ids in selectors or snapshots: select by `role="listbox"` or the input's `aria-controls` instead of the literal id; update snapshots.
 - `findComponent(ListboxRoot)` / `findComponent(ListboxFilter)` in combobox tests: query the rendered element instead (`[role=listbox]`'s parent for the root, `input[role=combobox]` for the input).
 - A single-value handler on a `multiple` combobox: type it as an array. Do not change runtime logic.
+- A check that means "nothing selected" on a single combobox's model (`value === ''`, `value !== ''`): make it accept `null` too (`value == null || value === ''`), since a clear emits `null`. Leave initial or cleared `''` values (`ref('')`, `model.value = ''`) as they are; the input stays empty. Only touch empty strings that belong to a `ComboboxRoot`. A sentinel "none" item (`value="__none__"`): *ask* before replacing it with `:value="null"`, since the submitted form value changes from the sentinel to `''`.
 
-**Verify.** Typing in each combobox still narrows the options as before, a virtualized combobox shows its options with an empty input and narrows them when typing, the type-check passes, and tests that assert on content ids or inner components pass after the updates above.
+**Verify.** Typing in each combobox still narrows the options as before, a cleared combobox (model `null`) shows an empty input, a virtualized combobox shows its options with an empty input and narrows them when typing, the type-check passes, and tests that assert on content ids or inner components pass after the updates above.
 
 ### 17. Form input contexts
 

@@ -323,7 +323,9 @@ export function createComboboxInputSurface(
 /**
  * The text a combobox input shows for its value after a selection: the input's
  * own `displayValue`, then the root's, then a single primitive value's string
- * form; empty for an object value without a resolver and for `multiple`.
+ * form; empty for `null` (the empty value), for an object value without a
+ * resolver and for `multiple`. As in Base UI, `''`, `0` and `false` are values:
+ * they go through the root's `displayValue`.
  */
 export function getComboboxInputText(
   context: ComboboxRootContext<any>,
@@ -332,7 +334,7 @@ export function getComboboxInputText(
   const value = context.modelValue.value
   if (displayValue)
     return displayValue(value)
-  if (context.multiple.value || !value || Array.isArray(value))
+  if (context.multiple.value || value == null || Array.isArray(value))
     return ''
   if (context.displayValue)
     return context.displayValue(value)

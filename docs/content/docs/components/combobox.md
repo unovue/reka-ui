@@ -350,6 +350,55 @@ const selectedPeople = ref([people[0], people[1]])
 </template>
 ```
 
+### Clearing the value
+
+`null` is the empty value, as in [Base UI](https://base-ui.com/react/components/combobox). Set `v-model` to `null` to clear the selection and empty the input.
+
+An item can have `value=""`. Unlike in a [Select](select.md), an empty string is a value like any other: selecting it marks that item as selected, the input shows its text through `displayValue`, and inside a `Field` the field counts as filled. Inside a `multiple` array, `''` is a selected value too.
+
+To let users clear the selection from the list, add an item with a `null` value. Pressing it sets the value to `null` and empties the input (`displayValue` is not called for `null`), and that item is the selected one while the combobox is empty.
+
+```vue line=5,7,16
+<script setup lang="ts">
+import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxViewport } from 'reka-ui'
+import { ref } from 'vue'
+
+const fruit = ref<string | null>(null)
+const fruits = [
+  { value: null, label: 'None' },
+  { value: 'apple', label: 'Apple' },
+  { value: 'banana', label: 'Banana' },
+]
+</script>
+
+<template>
+  <ComboboxRoot
+    v-model="fruit"
+    :display-value="value => fruits.find(item => item.value === value)?.label ?? ''"
+  >
+    <ComboboxAnchor>
+      <ComboboxInput placeholder="Select a fruit" />
+    </ComboboxAnchor>
+    <ComboboxPortal>
+      <ComboboxContent>
+        <ComboboxViewport>
+          <ComboboxItem
+            v-for="item in fruits"
+            :key="String(item.value)"
+            :value="item.value"
+            :text-value="item.label"
+          >
+            {{ item.label }}
+          </ComboboxItem>
+        </ComboboxViewport>
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>
+</template>
+```
+
+In a form, `null` and `''` both submit an empty string. With `required`, both are missing a value, as in Base UI, where the hidden input carries the submitted string. With `multiple`, any selection satisfies `required`, `['']` included; `null` and `''` are ordinary values that toggle in the array, and `[]` is empty.
+
 ### Custom filtering
 
 `ComboboxRoot` filters the items by the text typed in `ComboboxInput`. Each item is matched on its `textValue`, or on its rendered text, with `useFilter`'s `contains` (case and accent insensitive). A non-matching item stays mounted but renders nothing, so keyboard navigation skips it, and a `ComboboxGroup` whose items all fail to match is hidden.

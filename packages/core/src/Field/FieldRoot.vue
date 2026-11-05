@@ -86,6 +86,11 @@ export interface FieldControlRegistration {
   required?: () => boolean
   /** Whether a value counts as filled. Defaults to anything but `null`/`undefined`/`''`/`[]`. */
   isFilled?: (value: unknown) => boolean
+  /**
+   * Whether a value is missing for `required`, when that differs from not being filled (a Combobox's `''` is
+   * filled but submits nothing). Defaults to `!isFilled(value)`. Only used without a `validityElement`.
+   */
+  isMissing?: (value: unknown) => boolean
 }
 
 export type FieldDataAttributes = Record<`data-${'disabled' | 'valid' | 'invalid' | 'dirty' | 'touched' | 'filled' | 'focused'}`, '' | undefined>
@@ -359,7 +364,7 @@ function getValiditySource() {
     return { element: current.validityElement() ?? undefined }
   return {
     getValidity: (value: unknown) => createValidityState({
-      valueMissing: (required.value || Boolean(current.required?.())) && !isFilled(value),
+      valueMissing: (required.value || Boolean(current.required?.())) && (current.isMissing ? current.isMissing(value) : !isFilled(value)),
     }),
   }
 }
