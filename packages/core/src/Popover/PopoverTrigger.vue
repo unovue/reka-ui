@@ -75,7 +75,7 @@ function getDetachedTrigger() {
   } as Parameters<typeof getPopoverTriggerSurface>[0])
 }
 
-// id/aria/data-state + the toggling `onClick` all come from the shared surface
+// id/aria/data-popup-open + the toggling `onClick` all come from the shared surface
 // builder (single source with `usePopover()`); the popper anchor (skipped
 // when a `PopoverAnchor` is present), the element registration and the
 // tag-dependent `type` stay in the SFC. Listener order is unchanged: `$attrs`

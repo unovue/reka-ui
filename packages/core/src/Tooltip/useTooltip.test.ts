@@ -81,7 +81,7 @@ describe('useTooltip — state', () => {
     expect(t.open.value).toBe(true)
     expect(t.lastChangeDetails.value).toMatchObject({ reason: 'trigger-blur', isCanceled: true })
     expect(onUpdate).not.toHaveBeenCalled()
-    expect(t.trigger.attrs.value['data-state']).toBe('open')
+    expect(t.trigger.attrs.value['data-popup-open']).toBe('')
   })
 })
 
@@ -119,7 +119,7 @@ describe('useTooltip — delayed open', () => {
     const event = pointerEvent('pointermove')
     t.onTriggerEnter(event)
     expect(t.open.value).toBe(false)
-    expect(t.trigger.attrs.value).toMatchObject({ 'data-state': 'closed' })
+    expect(t.trigger.attrs.value).not.toHaveProperty('data-popup-open')
     expect(t.trigger.attrs.value['data-delayed']).toBeUndefined()
 
     vi.advanceTimersByTime(499)
@@ -129,8 +129,8 @@ describe('useTooltip — delayed open', () => {
     expect(t.isDelayed.value).toBe(true)
     expect(onUpdate).toHaveBeenCalledWith(true, expect.objectContaining({ reason: 'trigger-hover', event, isCanceled: false }))
     // `data-delayed` is the empty-string boolean attribute while delayed (#2823).
-    expect(t.trigger.state.value).toEqual({ state: 'open', delayed: true })
-    expect(t.trigger.attrs.value).toMatchObject({ 'data-state': 'open', 'data-delayed': '' })
+    expect(t.trigger.state.value).toEqual({ popupOpen: true, delayed: true })
+    expect(t.trigger.attrs.value).toMatchObject({ 'data-popup-open': '', 'data-delayed': '' })
     expect(t.content.state.value).toEqual({ state: 'open', delayed: true })
     expect(t.content.attrs.value).toEqual({ 'data-state': 'open', 'data-delayed': '' })
   })
@@ -172,7 +172,7 @@ describe('useTooltip — delayed open', () => {
     expect(t.open.value).toBe(true)
     expect(t.isDelayed.value).toBe(false)
     expect(onUpdate).toHaveBeenCalledWith(true, expect.objectContaining({ reason: 'trigger-hover', event }))
-    expect(t.trigger.attrs.value).toEqual(expect.objectContaining({ 'data-state': 'open' }))
+    expect(t.trigger.attrs.value).toEqual(expect.objectContaining({ 'data-popup-open': '' }))
     expect(t.trigger.attrs.value['data-delayed']).toBeUndefined()
   })
 
@@ -224,10 +224,10 @@ describe('useTooltip — delayed open', () => {
 
     open.value = false
     await nextTick()
-    expect(t.trigger.attrs.value).toEqual(expect.objectContaining({ 'data-state': 'closed' }))
+    expect(t.trigger.attrs.value).not.toHaveProperty('data-popup-open')
     open.value = true
     expect(t.isDelayed.value).toBe(false)
-    expect(t.trigger.attrs.value['data-state']).toBe('open')
+    expect(t.trigger.attrs.value['data-popup-open']).toBe('')
     expect(t.trigger.attrs.value['data-delayed']).toBeUndefined()
   })
 })
@@ -241,7 +241,7 @@ describe('useTooltip — trigger surface', () => {
     vi.useRealTimers()
   })
 
-  it('props expose aria-describedby, the grace-area selector and the listeners; data-state lives in attrs', () => {
+  it('props expose aria-describedby, the grace-area selector and the listeners; data-popup-open lives in attrs', () => {
     const t = useTooltip({ baseId: 'x' })
     const props = t.trigger.props.value
     expect(props['aria-describedby']).toBeUndefined()
@@ -250,8 +250,10 @@ describe('useTooltip — trigger surface', () => {
     expect(dataAttrKeys(props)).toEqual(['data-grace-area-trigger'])
     for (const name of ['onClick', 'onFocus', 'onPointermove', 'onPointerleave', 'onPointerdown', 'onBlur'])
       expect(typeof props[name]).toBe('function')
-    expect(t.trigger.state.value).toEqual({ state: 'closed', delayed: false })
-    expect(t.trigger.attrs.value).toMatchObject({ 'data-state': 'closed', 'data-grace-area-trigger': '' })
+    expect(t.trigger.state.value).toEqual({ popupOpen: false, delayed: false })
+    expect(t.trigger.attrs.value).toMatchObject({ 'data-grace-area-trigger': '' })
+    expect(t.trigger.attrs.value).not.toHaveProperty('data-popup-open')
+    expect(t.trigger.attrs.value).not.toHaveProperty('data-state')
     expect(t.trigger.attrs.value['data-delayed']).toBeUndefined()
   })
 
@@ -435,7 +437,7 @@ describe('useTooltip — rendered surfaces', () => {
     const { container, getByRole, getByText, queryByRole } = render(Fixture)
     const trigger = getByText('Hover')
     expect(trigger.getAttribute('aria-describedby')).toBeNull()
-    expect(trigger.getAttribute('data-state')).toBe('closed')
+    expect(trigger.getAttribute('data-popup-open')).toBeNull()
     expect(trigger.hasAttribute('data-delayed')).toBe(false)
     expect(trigger.hasAttribute('data-grace-area-trigger')).toBe(true)
     expect(queryByRole('tooltip')).toBeNull()
@@ -445,14 +447,14 @@ describe('useTooltip — rendered surfaces', () => {
     const label = getByRole('tooltip')
     expect(label.id).toBe('fixture-content')
     expect(trigger.getAttribute('aria-describedby')).toBe(label.id)
-    expect(trigger.getAttribute('data-state')).toBe('open')
+    expect(trigger.getAttribute('data-popup-open')).toBe('')
     expect(getByText('Body', { exact: false }).getAttribute('data-state')).toBe('open')
     expect(await axe(container)).toHaveNoViolations()
 
     await fireEvent.blur(trigger)
     expect(queryByRole('tooltip')).toBeNull()
     expect(trigger.getAttribute('aria-describedby')).toBeNull()
-    expect(trigger.getAttribute('data-state')).toBe('closed')
+    expect(trigger.getAttribute('data-popup-open')).toBeNull()
   })
 })
 

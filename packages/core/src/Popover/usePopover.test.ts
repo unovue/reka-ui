@@ -120,13 +120,16 @@ describe('usePopover — trigger surface', () => {
     expect(typeof p.trigger.props.value.onClick).toBe('function')
   })
 
-  it('attrs merge props with the data-state derived from state', () => {
+  it('attrs merge props with the data-popup-open derived from state (no data-state, #1407)', () => {
     const p = usePopover({ baseId: 'x' })
-    expect(p.trigger.state.value).toEqual({ state: 'closed' })
-    expect(p.trigger.attrs.value).toMatchObject({ 'aria-expanded': false, 'data-state': 'closed' })
+    expect(p.trigger.state.value).toEqual({ popupOpen: false })
+    expect(p.trigger.attrs.value).toMatchObject({ 'aria-expanded': false })
+    expect(p.trigger.attrs.value).not.toHaveProperty('data-popup-open')
+    expect(p.trigger.attrs.value).not.toHaveProperty('data-state')
     p.onOpenChange(true)
-    expect(p.trigger.state.value).toEqual({ state: 'open' })
-    expect(p.trigger.attrs.value).toMatchObject({ 'aria-expanded': true, 'data-state': 'open' })
+    expect(p.trigger.state.value).toEqual({ popupOpen: true })
+    expect(p.trigger.attrs.value).toMatchObject({ 'aria-expanded': true, 'data-popup-open': '' })
+    expect(p.trigger.attrs.value).not.toHaveProperty('data-state')
   })
 
   it('onClick toggles with reason trigger-press and the original event', () => {
@@ -223,7 +226,7 @@ describe('usePopover — rendered surfaces', () => {
     expect(trigger.getAttribute('aria-haspopup')).toBe('dialog')
     expect(trigger.getAttribute('aria-expanded')).toBe('false')
     expect(trigger.getAttribute('aria-controls')).toBeNull()
-    expect(trigger.getAttribute('data-state')).toBe('closed')
+    expect(trigger.getAttribute('data-popup-open')).toBeNull()
     expect(queryByRole('dialog')).toBeNull()
     expect(await axe(container)).toHaveNoViolations()
 
@@ -234,7 +237,7 @@ describe('usePopover — rendered surfaces', () => {
     expect(dialog.getAttribute('data-state')).toBe('open')
     expect(trigger.getAttribute('aria-controls')).toBe('fixture-content')
     expect(trigger.getAttribute('aria-expanded')).toBe('true')
-    expect(trigger.getAttribute('data-state')).toBe('open')
+    expect(trigger.getAttribute('data-popup-open')).toBe('')
     expect(await axe(container)).toHaveNoViolations()
 
     await fireEvent.click(getByText('Close'))

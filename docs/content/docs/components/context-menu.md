@@ -118,8 +118,8 @@ The area that opens the context menu. Wrap it around the target you want the con
 <DataAttributesTable
   :data="[
     {
-      attribute: '[data-state]',
-      values: ['open', 'closed'],
+      attribute: '[data-popup-open]',
+      values: 'Present when the menu is open',
     },
   ]"
 />
@@ -309,8 +309,8 @@ An item that opens a submenu. Must be rendered inside `ContextMenu.Sub`.
 <DataAttributesTable
   :data="[
     {
-      attribute: '[data-state]',
-      values: ['open', 'closed'],
+      attribute: '[data-popup-open]',
+      values: 'Present when the submenu is open',
     },
     {
       attribute: '[data-highlighted]',

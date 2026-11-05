@@ -88,7 +88,7 @@ The headless composables (`useDialog`, `useTabs`, …) don't call `useId()`: pas
 
 ## Popups and portals
 
-A family portal (`DialogPortal`, `PopoverPortal`, `SelectPortal`, `TooltipPortal`, …) renders nothing on the server, open or closed. The trigger is in the server HTML with its open state (`data-state="open"`, `aria-expanded="true"`). The popup content mounts right after hydration, so a page rendered with `defaultOpen` (or `v-model:open` set to `true`) shows its dialog once the client has hydrated.
+A family portal (`DialogPortal`, `PopoverPortal`, `SelectPortal`, `TooltipPortal`, …) renders nothing on the server, open or closed. The trigger is in the server HTML with its open state (`data-popup-open`, `aria-expanded="true"`). The popup content mounts right after hydration, so a page rendered with `defaultOpen` (or `v-model:open` set to `true`) shows its dialog once the client has hydrated.
 
 Without a portal, open content is rendered on the server in place. Floating content (Popover, Tooltip, Hover Card, menus, …) is rendered off-screen and positioned once the client measures the trigger:
 

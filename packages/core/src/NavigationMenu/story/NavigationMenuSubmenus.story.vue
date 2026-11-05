@@ -36,7 +36,7 @@ const currentTrigger = ref('')
                 Products
                 <Icon
                   icon="radix-icons:caret-down"
-                  class="text-green10 relative top-[1px] transition-transform duration-250 ease-in group-data-[state=open]:-rotate-180"
+                  class="text-green10 relative top-[1px] transition-transform duration-250 ease-in group-data-[popup-open]:-rotate-180"
                 />
               </NavigationMenuTrigger>
 
@@ -57,7 +57,7 @@ const currentTrigger = ref('')
                         Extensibility
                         <Icon
                           icon="radix-icons:caret-down"
-                          class="text-green10 relative top-[1px] transition-transform duration-250 ease-in group-data-[state=open]:-rotate-180"
+                          class="text-green10 relative top-[1px] transition-transform duration-250 ease-in group-data-[popup-open]:-rotate-180"
                         />
                       </NavigationMenuTrigger>
 
@@ -84,7 +84,7 @@ const currentTrigger = ref('')
                         Security
                         <Icon
                           icon="radix-icons:caret-down"
-                          class="text-green10 relative top-[1px] transition-transform duration-250 ease-in group-data-[state=open]:-rotate-180"
+                          class="text-green10 relative top-[1px] transition-transform duration-250 ease-in group-data-[popup-open]:-rotate-180"
                         />
                       </NavigationMenuTrigger>
                       <NavigationMenuContent
@@ -107,7 +107,7 @@ const currentTrigger = ref('')
                         Authentication
                         <Icon
                           icon="radix-icons:caret-down"
-                          class="text-green10 relative top-[1px] transition-transform duration-250 ease-in group-data-[state=open]:-rotate-180"
+                          class="text-green10 relative top-[1px] transition-transform duration-250 ease-in group-data-[popup-open]:-rotate-180"
                         />
                       </NavigationMenuTrigger>
                       <NavigationMenuContent
@@ -138,7 +138,7 @@ const currentTrigger = ref('')
                 Company
                 <Icon
                   icon="radix-icons:caret-down"
-                  class="text-green10 relative top-[1px] transition-transform duration-250 ease-in group-data-[state=open]:-rotate-180"
+                  class="text-green10 relative top-[1px] transition-transform duration-250 ease-in group-data-[popup-open]:-rotate-180"
                 />
               </NavigationMenuTrigger>
               <NavigationMenuContent
@@ -160,7 +160,7 @@ const currentTrigger = ref('')
                         Customers
                         <Icon
                           icon="radix-icons:caret-down"
-                          class="text-green10 relative top-[1px] transition-transform duration-250 ease-in group-data-[state=open]:-rotate-180"
+                          class="text-green10 relative top-[1px] transition-transform duration-250 ease-in group-data-[popup-open]:-rotate-180"
                         />
                       </NavigationMenuTrigger>
 
@@ -187,7 +187,7 @@ const currentTrigger = ref('')
                         Security
                         <Icon
                           icon="radix-icons:caret-down"
-                          class="text-green10 relative top-[1px] transition-transform duration-250 ease-in group-data-[state=open]:-rotate-180"
+                          class="text-green10 relative top-[1px] transition-transform duration-250 ease-in group-data-[popup-open]:-rotate-180"
                         />
                       </NavigationMenuTrigger>
                       <NavigationMenuContent
@@ -210,7 +210,7 @@ const currentTrigger = ref('')
                         Authentication
                         <Icon
                           icon="radix-icons:caret-down"
-                          class="text-green10 relative top-[1px] transition-transform duration-250 ease-in group-data-[state=open]:-rotate-180"
+                          class="text-green10 relative top-[1px] transition-transform duration-250 ease-in group-data-[popup-open]:-rotate-180"
                         />
                       </NavigationMenuTrigger>
                       <NavigationMenuContent

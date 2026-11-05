@@ -141,7 +141,7 @@ describe('useMenubarMenu — composes useMenuRoot', () => {
 })
 
 describe('useMenubarMenu — trigger surface', () => {
-  it('role/aria in props, highlighted/state/disabled as data-*', async () => {
+  it('role/aria in props, highlighted/popupOpen/disabled as data-*', async () => {
     const bar = useMenubar()
     const menu = menuHarness(bar.context, { value: 'file', contentId: 'c' })
     const t = menu.trigger
@@ -154,7 +154,8 @@ describe('useMenubarMenu — trigger surface', () => {
     })
     // `data-value` is the functional selector the arrow navigation reads.
     expect(Object.keys(t.props.value).filter(k => k.startsWith('data-'))).toEqual(['data-value'])
-    expect(t.attrs.value['data-state']).toBe('closed')
+    expect(t.attrs.value['data-popup-open']).toBeUndefined()
+    expect(t.attrs.value['data-state']).toBeUndefined()
     t.props.value.onFocus()
     expect(t.attrs.value['data-highlighted']).toBe('')
     t.props.value.onBlur()
@@ -312,7 +313,7 @@ describe('useMenubar — through MenubarRoot', () => {
     const root = wrapper.findComponent(Reka.MenubarRoot)
     await fireEvent.pointerDown(wrapper.find('button').element, { button: 0 })
     expect(root.emitted('update:modelValue')).toBeUndefined()
-    expect(wrapper.find('button').attributes('data-state')).toBe('closed')
+    expect(wrapper.find('button').attributes('data-popup-open')).toBeUndefined()
     wrapper.unmount()
   })
 })
@@ -345,7 +346,7 @@ describe('useMenubar — rendered surfaces', () => {
     const menu = getByRole('menu')
     expect(menu.getAttribute('aria-labelledby')).toBe(getByText('File').id)
     expect(getByText('File').getAttribute('aria-controls')).toBe(menu.id)
-    expect(getByText('File').getAttribute('data-state')).toBe('open')
+    expect(getByText('File').getAttribute('data-popup-open')).toBe('')
     expect(await axe(container)).toHaveNoViolations()
   })
 })

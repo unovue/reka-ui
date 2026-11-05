@@ -111,13 +111,16 @@ describe('one component per part: overlays', () => {
     }), { attachTo: document.body })
     const trigger = wrapper.find('.trigger')
     expect(trigger.attributes('aria-expanded')).toBe('false')
-    expect(trigger.attributes('data-state')).toBe('closed')
+    // The trigger renders no `data-state` of its own (#1407): the consumer's is kept.
+    expect(trigger.attributes('data-state')).toBe('custom')
+    expect(trigger.attributes('data-popup-open')).toBeUndefined()
     expect(trigger.attributes('data-test')).toBe('kept')
     expect(trigger.attributes('type')).toBe('button')
     await trigger.trigger('click')
     // Both handlers run: the consumer's and the trigger's own toggle.
     expect(clicks).toBe(1)
-    expect(trigger.attributes('data-state')).toBe('open')
+    expect(trigger.attributes('data-popup-open')).toBe('')
+    expect(trigger.attributes('data-state')).toBe('custom')
     wrapper.unmount()
   })
 

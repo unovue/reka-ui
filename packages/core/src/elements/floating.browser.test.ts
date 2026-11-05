@@ -48,7 +48,7 @@ describe('tooltip elements', () => {
     render(TOOLTIPS)
     const trigger = query('[data-test=bold]')
     const content = query('[data-test=bold-content]')
-    await vi.waitFor(() => expect(trigger.getAttribute('data-state')).toBe('closed'))
+    await vi.waitFor(() => expect(trigger.hasAttribute('data-grace-area-trigger')).toBe(true))
     const root = trigger.closest('reka-tooltip-root')!
     const opens: unknown[] = []
     root.addEventListener('update-open', event => opens.push((event as CustomEvent).detail.value))
@@ -61,7 +61,7 @@ describe('tooltip elements', () => {
     // Opened by the delay timer.
     expect(content.hasAttribute('data-delayed')).toBe(true)
     expect(opens).toEqual([true])
-    expect(trigger.getAttribute('data-state')).toBe('open')
+    expect(trigger.hasAttribute('data-popup-open')).toBe(true)
 
     // The trigger is described by the (visually hidden) tooltip.
     const tip = document.getElementById(trigger.getAttribute('aria-describedby')!)!
@@ -83,7 +83,7 @@ describe('tooltip elements', () => {
     const bold = query('[data-test=bold]')
     const italic = query('[data-test=italic]')
     const italicContent = query('[data-test=italic-content]')
-    await vi.waitFor(() => expect(italic.getAttribute('data-state')).toBe('closed'))
+    await vi.waitFor(() => expect(italic.hasAttribute('data-grace-area-trigger')).toBe(true))
 
     await userEvent.hover(bold)
     await vi.waitFor(() => expect(query('[data-test=bold-content]').hasAttribute('data-delayed')).toBe(true))
@@ -108,7 +108,7 @@ describe('tooltip elements', () => {
     render(TOOLTIPS)
     const trigger = query('[data-test=bold]')
     const content = query('[data-test=bold-content]')
-    await vi.waitFor(() => expect(trigger.getAttribute('data-state')).toBe('closed'))
+    await vi.waitFor(() => expect(trigger.hasAttribute('data-grace-area-trigger')).toBe(true))
     query('#outside').focus()
     await userEvent.keyboard('{Tab}')
     expect(document.activeElement).toBe(trigger)
@@ -122,7 +122,7 @@ describe('tooltip elements', () => {
   it('renders its arrow as an SVG, pointing at the trigger', async () => {
     render(TOOLTIPS)
     const trigger = query('[data-test=bold]')
-    await vi.waitFor(() => expect(trigger.getAttribute('data-state')).toBe('closed'))
+    await vi.waitFor(() => expect(trigger.hasAttribute('data-grace-area-trigger')).toBe(true))
     trigger.focus()
     const arrow = query('[data-test=bold-arrow]')
     await vi.waitFor(() => expect(arrow.querySelector('svg')).not.toBeNull())
@@ -155,13 +155,13 @@ describe('hover card elements', () => {
     render(HOVER_CARD)
     const trigger = query('reka-hover-card-trigger')
     const content = query('reka-hover-card-content')
-    await vi.waitFor(() => expect(trigger.getAttribute('data-state')).toBe('closed'))
+    await vi.waitFor(() => expect(trigger.hasAttribute('data-grace-area-trigger')).toBe(true))
     const opens: unknown[] = []
     query('reka-hover-card-root').addEventListener('update-open', event => opens.push((event as CustomEvent).detail.value))
 
     await userEvent.hover(trigger)
     await vi.waitFor(() => expect(content.getAttribute('data-state')).toBe('open'))
-    expect(trigger.getAttribute('data-state')).toBe('open')
+    expect(trigger.hasAttribute('data-popup-open')).toBe(true)
     expect(opens).toEqual([true])
     await vi.waitFor(() => expect(content.getBoundingClientRect().top).toBeGreaterThan(trigger.getBoundingClientRect().bottom))
     expect(query('reka-hover-card-arrow').querySelector('svg')).not.toBeNull()
@@ -180,7 +180,7 @@ describe('hover card elements', () => {
     render(HOVER_CARD)
     const trigger = query('reka-hover-card-trigger')
     const content = query('reka-hover-card-content')
-    await vi.waitFor(() => expect(trigger.getAttribute('data-state')).toBe('closed'))
+    await vi.waitFor(() => expect(trigger.hasAttribute('data-grace-area-trigger')).toBe(true))
     // The trigger renders as a link by default: give it a tab stop, as an `<a href>` has.
     trigger.tabIndex = 0
     query('#outside').focus()

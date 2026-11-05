@@ -46,10 +46,10 @@ const previewClass = computed(() => [
 
 const activeBlockLabel = computed(() => blocks.find(item => item.value === block.value)!.label)
 
-// The Tooltip trigger wraps each item with `as-child` and sets its own `data-state`
-// (`open` / `closed`) on the same element, so style the pressed state with
-// `aria-pressed`, which only the toggle sets.
-const itemClass = 'inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 aria-pressed:bg-muted aria-pressed:text-foreground'
+// The Tooltip trigger wraps each item with `as-child`. It marks its open tooltip
+// with `data-popup-open` and leaves `data-state` to the toggle, so the pressed
+// state is styled with `data-[state=checked]`.
+const itemClass = 'inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 data-[state=checked]:bg-muted data-[state=checked]:text-foreground'
 </script>
 
 <template>

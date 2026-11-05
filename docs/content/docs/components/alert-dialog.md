@@ -83,9 +83,9 @@ A button that opens the dialog.
 <DataAttributesTable
   :data="[
     {
-      attribute: '[data-state]',
-      values: ['open', 'closed'],
-    }
+      attribute: '[data-popup-open]',
+      values: 'Present when the dialog is open',
+    },
   ]"
 />
 

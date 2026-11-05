@@ -51,7 +51,8 @@ You are migrating a Vue project from Reka UI v2 to Reka UI v3. Work through the 
 | `ScrollAreaScrollbar`, `ScrollAreaThumb`, `NavigationMenuIndicator` | `visible` / `hidden` | `open` / `closed` |
 | `SplitterPanel` | `expanded` / `collapsed` / (absent when not collapsible) | `open` / `closed` (non-collapsible panels are always `open`) |
 | `CollapsibleContent` | `open` / `closed` / (absent on the initial animated mount) | `open` / `closed` |
-| `TooltipTrigger`, `TooltipContent` | `closed` / `delayed-open` / `instant-open` | `open` / `closed`, plus a boolean `data-delayed` attribute while open when the open was delayed |
+| `TooltipContent` | `closed` / `delayed-open` / `instant-open` | `open` / `closed`, plus a boolean `data-delayed` attribute while open when the open was delayed |
+| `TooltipTrigger` | `closed` / `delayed-open` / `instant-open` | no `data-state`: `data-popup-open` while open, plus `data-delayed` (see *Popup triggers use `data-popup-open`* below) |
 | Everything already on `open` / `closed` or `checked` / `unchecked` / `indeterminate` | unchanged | unchanged |
 
 **How to find it.** Search the scope for these patterns (case-sensitive, all of them):
@@ -76,6 +77,29 @@ You are migrating a Vue project from Reka UI v2 to Reka UI v3. Work through the 
 - Leave alone: `data-orientation`, `data-side`, `data-align`, `data-disabled`, `data-highlighted`, `data-selected`, `data-active` (that one is the roving-focus tab stop, unrelated to `data-state`), and every value that is already `open` / `closed` / `checked` / `unchecked` / `indeterminate`.
 
 **Verify.** After the rewrite, a search for `data-[state=` and `[data-state` must show no `on`, `off`, `visible`, `hidden`, `expanded`, `collapsed`, `delayed-open` or `instant-open`, and `active` / `inactive` only on Splitter resize-handle selectors (`inactive`) or on selectors you deliberately left for the developer to decide. Presence-only `[data-state]` selectors must be gone.
+
+#### Popup triggers use `data-popup-open`
+
+**What changed.** A popup trigger no longer renders `data-state`. It carries an empty `data-popup-open` attribute while its popup is open, and none while the popup is closed. The affected parts are `DialogTrigger`, `AlertDialogTrigger`, `DrawerTrigger`, `PopoverTrigger`, `TooltipTrigger`, `HoverCardTrigger`, `DropdownMenuTrigger`, `DropdownMenuSubTrigger`, `ContextMenuTrigger`, `ContextMenuSubTrigger`, `MenubarTrigger`, `MenubarSubTrigger`, `SelectTrigger`, `ComboboxTrigger`, `NavigationMenuTrigger`, `DatePickerTrigger` and `DateRangePickerTrigger`, and their custom elements (`reka-dialog-trigger`, `reka-popover-trigger`, …). Content, overlay and viewport parts keep `data-state="open"` / `"closed"`. `AccordionTrigger`, `CollapsibleTrigger`, `TabsTrigger` and `StepperTrigger` keep their `data-state`. `data-delayed`, `data-highlighted`, `data-disabled` and `data-placeholder` on the triggers are unchanged.
+
+**How to find it.** Reuse the search from this section, then keep only the hits on a trigger. These two searches narrow it down:
+
+```sh
+grep -rnE "data-\[state=['\"]?(open|closed)['\"]?\]|\[data-state=['\"]?(open|closed)['\"]?\]" src
+grep -rnE "Trigger[^>]*data-\[state=|trigger[^>]*data-\[state=|Trigger\[data-state" src
+```
+
+A class string often spans several lines, so check the element each hit is applied to rather than relying on the second search alone.
+
+**Rewrite rules.**
+
+- Rewrite a selector or read only when its element is one of the triggers above: the trigger component itself, the element it renders `asChild` onto, a class such as `.SelectTrigger` used on one, or a `group` / `peer` that is the trigger. Selectors on content, overlay and viewport parts stay as they are. When you cannot tell whether an element is a trigger, leave it and *ask*, listing the file and line.
+- Tailwind: `data-[state=open]:` → `data-[popup-open]:`, `group-data-[state=open]:` → `group-data-[popup-open]:` (keep any `/name` suffix), `data-[state=closed]:` → `[&:not([data-popup-open])]:`, `[&[data-state=open]>svg]:` → `[&[data-popup-open]>svg]:`. On `TooltipTrigger`, `data-[state=delayed-open]:` → `data-[popup-open]:data-[delayed]:`.
+- CSS: `[data-state='open']` → `[data-popup-open]`, `[data-state='closed']` → `:not([data-popup-open])`, with any quotes.
+- JavaScript and tests: `getAttribute('data-state') === 'open'` or `dataset.state === 'open'` on a trigger → `hasAttribute('data-popup-open')`; an assertion that a trigger is `closed` → the attribute is absent.
+- A selector that relied on the trigger *overwriting* a control's `data-state` (for example styling a `Toggle` rendered `asChild` in a `TooltipTrigger` with `data-[state=open]:`) now sees the control's own `checked` / `unchecked`. Rewrite it to `data-[popup-open]:`.
+
+**Verify.** No `data-[state=open]`, `data-[state=closed]`, `[data-state='open']` or `[data-state='closed']` remains on a trigger listed above. Tests that read a trigger's open state use `data-popup-open` or `aria-expanded`.
 
 ### 2. Change events carry details
 
@@ -877,5 +901,5 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 When you are done, give the developer:
 
 1. The list of files you changed, grouped by the section above that required the change.
-2. Every `active` / `inactive` selector, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, every Splitter handler that ignores keyboard collapses, cancelled structural layout change or `v-model:layout` suggestion from section 22, every `NavigationMenuContent` double-emit compensation or focus-only `interactOutside` handler from section 23, every alias to a copy without per-component entry points from section 24, every transition on a part, hover-only transition and hand-written unmount delay from section 25, every shadow-root teleport target, document stylesheet for portalled content or shadow DOM workaround from section 27, every drawer `update:open` handler that does more than cancel, hand-written tree selection workaround or select flag without `multiple` from section 28, and every cancelling `beforeUpdate:modelValue` on an uncontrolled `AutocompleteRoot` from section 29, and every kept `@internationalized/date` use, existing Temporal polyfill or TypeScript 5 project from section 30 that you left unchanged because the rule said to ask, with file and line.
+2. Every `active` / `inactive` selector, every open or closed selector you could not attribute to a popup trigger or its content, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, every Splitter handler that ignores keyboard collapses, cancelled structural layout change or `v-model:layout` suggestion from section 22, every `NavigationMenuContent` double-emit compensation or focus-only `interactOutside` handler from section 23, every alias to a copy without per-component entry points from section 24, every transition on a part, hover-only transition and hand-written unmount delay from section 25, every shadow-root teleport target, document stylesheet for portalled content or shadow DOM workaround from section 27, every drawer `update:open` handler that does more than cancel, hand-written tree selection workaround or select flag without `multiple` from section 28, and every cancelling `beforeUpdate:modelValue` on an uncontrolled `AutocompleteRoot` from section 29, and every kept `@internationalized/date` use, existing Temporal polyfill or TypeScript 5 project from section 30 that you left unchanged because the rule said to ask, with file and line.
 3. The result of the type-check, lint and test commands, compared with the baseline you recorded at the start.

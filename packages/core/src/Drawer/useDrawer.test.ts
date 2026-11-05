@@ -54,7 +54,7 @@ describe('useDrawer — state', () => {
     })
     expect(d.close.props.value.onClick()).toBe(false)
     expect(d.open.value).toBe(true)
-    expect(d.trigger.attrs.value['data-state']).toBe('open')
+    expect(d.trigger.attrs.value['data-popup-open']).toBe('')
   })
 
   it('controlled: reads the prop and reports the request without moving off it', () => {
@@ -155,7 +155,9 @@ describe('useDrawer — ids and surfaces', () => {
     for (const part of [d.trigger, d.close, d.title, d.description, d.grabber, d.viewport, d.overlay, d.content])
       expect(noDataAttrs(part.props.value)).toBe(true)
 
-    expect(d.trigger.attrs.value).toMatchObject({ 'aria-haspopup': 'dialog', 'aria-expanded': false, 'data-state': 'closed' })
+    expect(d.trigger.attrs.value).toMatchObject({ 'aria-haspopup': 'dialog', 'aria-expanded': false })
+    expect(d.trigger.attrs.value).not.toHaveProperty('data-state')
+    expect(d.trigger.attrs.value).not.toHaveProperty('data-popup-open')
     expect(d.trigger.attrs.value['aria-controls']).toBeUndefined()
     expect(d.grabber.attrs.value).toEqual({ 'aria-hidden': 'true', 'data-state': 'closed' })
     expect(d.viewport.attrs.value).toEqual({ 'data-drawer-viewport': '', 'data-state': 'closed' })
@@ -253,7 +255,7 @@ describe('useDrawer — rendered surfaces', () => {
     await fireEvent.click(getByText('Close'))
     expect(queryByRole('dialog')).toBeNull()
     expect(trigger.getAttribute('aria-expanded')).toBe('false')
-    expect(trigger.getAttribute('data-state')).toBe('closed')
+    expect(trigger.getAttribute('data-popup-open')).toBeNull()
     expect(await axe(container)).toHaveNoViolations()
 
     await fireEvent.click(trigger)

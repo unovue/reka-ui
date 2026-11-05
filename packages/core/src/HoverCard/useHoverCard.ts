@@ -25,8 +25,8 @@ import { excludeTouch } from './utils'
 // mount-bound code in the SFCs.
 // =============================================================================
 
-/** Semantic state of the trigger part; `state` → `data-state="open|closed"`. */
-export type HoverCardTriggerState = { state: DisclosureState }
+/** Semantic state of the trigger part; `popupOpen` → `data-popup-open` while the popup is open (no `data-state`, so an `asChild` control keeps its own). */
+export type HoverCardTriggerState = { popupOpen: boolean }
 /** Semantic state of the content part; `state` → `data-state="open|closed"`. */
 export type HoverCardContentState = { state: DisclosureState }
 
@@ -73,7 +73,7 @@ export function getHoverCardTriggerSurface(context: HoverCardRootContext): PartS
       'onFocus': (event: FocusEvent) => context.onOpen('trigger-focus', event),
       'onBlur': (event: FocusEvent) => context.onClose('trigger-blur', event),
     }),
-    () => ({ state: disclosureState(context.open.value) }),
+    () => ({ popupOpen: context.open.value }),
   )
 }
 
@@ -143,7 +143,7 @@ export interface UseHoverCardReturn {
   /** Details of the last change attempt; initially `{ reason: 'none' }`. */
   lastChangeDetails: Readonly<Ref<ChangeEventDetails<HoverCardOpenChangeReason>>>
   isControlled: ComputedRef<boolean>
-  /** `data-grace-area-trigger` + the hover/leave/touch/focus/blur listeners. */
+  /** `data-grace-area-trigger` + the hover/leave/touch/focus/blur listeners; `data-popup-open`. */
   trigger: PartSurface<HoverCardTriggerState>
   /** State only (`data-state`). */
   content: PartSurface<HoverCardContentState>
@@ -154,7 +154,8 @@ export interface UseHoverCardReturn {
 /**
  * Headless HoverCard logic. The `.vue` shells compose this; a standalone
  * consumer gets the delayed open/close model (with `beforeUpdate`/`update`
- * details), the trigger listeners and `data-state`, but must still wrap the
+ * details), the trigger listeners and `data-popup-open`, the content's
+ * `data-state`, but must still wrap the
  * content in `Presence`, `DismissableLayer` and `PopperContent` (and the
  * trigger in `PopperAnchor`) and compose `useGraceArea` for the pointer-transit
  * grace — those are component families / mount-bound behaviours a pure

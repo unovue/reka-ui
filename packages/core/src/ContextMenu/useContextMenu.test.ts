@@ -53,12 +53,12 @@ describe('useContextMenu — state and context', () => {
 })
 
 describe('useContextMenu — trigger surface', () => {
-  it('carries the touch-callout style and handlers; data-state/data-disabled from state', () => {
+  it('carries the touch-callout style and handlers; data-popup-open/data-disabled from state', () => {
     const { api } = harness()
     expect(noDataAttrs(api.trigger.props.value)).toBe(true)
     // No `pointer-events: auto` override: nothing sets `pointer-events: none` on <body> (#2822)
     expect(api.trigger.props.value.style).toEqual({ WebkitTouchCallout: 'none' })
-    expect(api.trigger.attrs.value['data-state']).toBe('closed')
+    expect(api.trigger.attrs.value['data-popup-open']).toBeUndefined()
     expect(api.trigger.attrs.value['data-disabled']).toBeUndefined()
     expect(harness({ disabled: true }).api.trigger.attrs.value['data-disabled']).toBe('')
   })
@@ -174,13 +174,13 @@ describe('useContextMenu — rendered surfaces', () => {
   it('opens on contextmenu and passes axe, closed and open', async () => {
     const { container, getByText, getByRole } = render(Fixture)
     const area = getByText('Right click here')
-    expect(area.getAttribute('data-state')).toBe('closed')
+    expect(area.getAttribute('data-popup-open')).toBeNull()
     expect(await axe(container)).toHaveNoViolations()
 
     await fireEvent.contextMenu(area)
     await nextTick()
     expect(getByRole('menu')).toBeTruthy()
-    expect(area.getAttribute('data-state')).toBe('open')
+    expect(area.getAttribute('data-popup-open')).toBe('')
     expect(await axe(container)).toHaveNoViolations()
   })
 })

@@ -58,13 +58,13 @@ describe('given a NavigationMenu, in a real browser', () => {
 
     // The delay itself is asserted with fake timers in `useNavigationMenu.test.ts`.
     await userEvent.hover(byTestId('trigger-one'))
-    await expect.poll(() => byTestId('trigger-one').getAttribute('data-state')).toBe('open')
+    await expect.poll(() => byTestId('trigger-one').hasAttribute('data-popup-open')).toBe(true)
     expect(updates[0][0]).toBe('one')
     expect(updates[0][1].reason).toBe('trigger-hover')
     expect(updates[0][1].event).toBeInstanceOf(PointerEvent)
 
     await userEvent.hover(byTestId('outside'))
-    await expect.poll(() => byTestId('trigger-one').getAttribute('data-state')).toBe('closed')
+    await expect.poll(() => byTestId('trigger-one').hasAttribute('data-popup-open')).toBe(false)
     expect(updates.map(([value, d]) => [value, d.reason])).toEqual([['one', 'trigger-hover'], ['', 'pointer-leave']])
   })
 
@@ -73,9 +73,9 @@ describe('given a NavigationMenu, in a real browser', () => {
     const { byTestId, updates } = current
 
     await userEvent.hover(byTestId('trigger-one'))
-    await expect.poll(() => byTestId('trigger-one').getAttribute('data-state')).toBe('open')
+    await expect.poll(() => byTestId('trigger-one').hasAttribute('data-popup-open')).toBe(true)
     await userEvent.hover(byTestId('trigger-two'))
-    await expect.poll(() => byTestId('trigger-two').getAttribute('data-state')).toBe('open')
+    await expect.poll(() => byTestId('trigger-two').hasAttribute('data-popup-open')).toBe(true)
     expect(updates.map(([value, d]) => [value, d.reason])).toEqual([['one', 'trigger-hover'], ['two', 'trigger-hover']])
   })
 

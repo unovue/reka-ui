@@ -74,8 +74,8 @@ export type NavigationMenuMotion = 'to-start' | 'to-end' | 'from-start' | 'from-
 export type NavigationMenuRootState = { orientation: Orientation }
 /** Semantic state of the list part; `data-orientation`. */
 export type NavigationMenuListState = { orientation: Orientation }
-/** Semantic state of a trigger; `data-state` / `data-disabled`. */
-export type NavigationMenuTriggerState = { state: DisclosureState, disabled: boolean }
+/** Semantic state of a trigger; `data-popup-open` while open / `data-disabled`. No `data-state` (#1407), so an `asChild` control keeps its own. */
+export type NavigationMenuTriggerState = { popupOpen: boolean, disabled: boolean }
 /** Semantic state of a content; `data-state` / `data-motion` / `data-orientation`. */
 export type NavigationMenuContentState = { state: DisclosureState, motion: NavigationMenuMotion | null, orientation: Orientation }
 /** Semantic state of the indicator; `data-state` / `data-orientation`. */
@@ -790,7 +790,7 @@ export function useNavigationMenuTrigger(options: UseNavigationMenuTriggerOption
       'onClick': handleClick,
       'onKeydown': handleKeydown,
     }),
-    () => ({ state: disclosureState(open.value), disabled: disabled.value }),
+    () => ({ popupOpen: open.value, disabled: disabled.value }),
   )
 
   return { open, trigger, onFocusProxyFocus }

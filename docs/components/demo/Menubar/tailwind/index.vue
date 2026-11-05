@@ -35,7 +35,7 @@ function handleClick() {
   >
     <MenubarMenu value="file">
       <MenubarTrigger
-        class="py-2 px-3 outline-none select-none font-semibold leading-none rounded text-grass11 text-xs flex items-center justify-between gap-[2px] data-[highlighted]:bg-green4 data-[state=open]:bg-green4"
+        class="py-2 px-3 outline-none select-none font-semibold leading-none rounded text-grass11 text-xs flex items-center justify-between gap-[2px] data-[highlighted]:bg-green4 data-[popup-open]:bg-green4"
       >
         File
       </MenubarTrigger>
@@ -71,7 +71,7 @@ function handleClick() {
           <MenubarSeparator class="h-[1px] bg-green6 m-[5px]" />
           <MenubarSub>
             <MenubarSubTrigger
-              class="group text-xs leading-none text-grass11 rounded flex items-center h-[25px] px-[10px] relative select-none outline-none data-[state=open]:bg-green4 data-[state=open]:text-grass11 data-[highlighted]:bg-gradient-to-br data-[highlighted]:from-green9 data-[highlighted]:to-green10 data-[highlighted]:text-green1 data-[highlighted]:data-[state=open]:text-green1 data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none"
+              class="group text-xs leading-none text-grass11 rounded flex items-center h-[25px] px-[10px] relative select-none outline-none data-[popup-open]:bg-green4 data-[popup-open]:text-grass11 data-[highlighted]:bg-gradient-to-br data-[highlighted]:from-green9 data-[highlighted]:to-green10 data-[highlighted]:text-green1 data-[highlighted]:data-[popup-open]:text-green1 data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none"
             >
               Share
               <div
@@ -118,7 +118,7 @@ function handleClick() {
 
     <MenubarMenu value="Edit">
       <MenubarTrigger
-        class="py-2 px-3 outline-none select-none font-semibold leading-none rounded text-grass11 text-xs flex items-center justify-between gap-[2px] data-[highlighted]:bg-green4 data-[state=open]:bg-green4"
+        class="py-2 px-3 outline-none select-none font-semibold leading-none rounded text-grass11 text-xs flex items-center justify-between gap-[2px] data-[highlighted]:bg-green4 data-[popup-open]:bg-green4"
       >
         Edit
       </MenubarTrigger>
@@ -148,7 +148,7 @@ function handleClick() {
           <MenubarSeparator class="h-[1px] bg-green6 m-[5px]" />
           <MenubarSub>
             <MenubarSubTrigger
-              class="group text-xs leading-none text-grass11 rounded flex items-center h-[25px] px-[10px] relative select-none outline-none data-[state=open]:bg-green4 data-[state=open]:text-grass11 data-[highlighted]:bg-gradient-to-br data-[highlighted]:from-green9 data-[highlighted]:to-green10 data-[highlighted]:text-green1 data-[highlighted]:data-[state=open]:text-green1 data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none"
+              class="group text-xs leading-none text-grass11 rounded flex items-center h-[25px] px-[10px] relative select-none outline-none data-[popup-open]:bg-green4 data-[popup-open]:text-grass11 data-[highlighted]:bg-gradient-to-br data-[highlighted]:from-green9 data-[highlighted]:to-green10 data-[highlighted]:text-green1 data-[highlighted]:data-[popup-open]:text-green1 data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none"
             >
               Find
               <div
@@ -209,7 +209,7 @@ function handleClick() {
 
     <MenubarMenu value="View">
       <MenubarTrigger
-        class="py-2 px-3 outline-none select-none font-semibold leading-none rounded text-grass11 text-xs flex items-center justify-between gap-[2px] data-[highlighted]:bg-green4 data-[state=open]:bg-green4"
+        class="py-2 px-3 outline-none select-none font-semibold leading-none rounded text-grass11 text-xs flex items-center justify-between gap-[2px] data-[highlighted]:bg-green4 data-[popup-open]:bg-green4"
       >
         View
       </MenubarTrigger>
@@ -279,7 +279,7 @@ function handleClick() {
 
     <MenubarMenu value="Profiles">
       <MenubarTrigger
-        class="py-2 px-3 outline-none select-none font-semibold leading-none rounded text-grass11 text-xs flex items-center justify-between gap-[2px] data-[highlighted]:bg-green4 data-[state=open]:bg-green4"
+        class="py-2 px-3 outline-none select-none font-semibold leading-none rounded text-grass11 text-xs flex items-center justify-between gap-[2px] data-[highlighted]:bg-green4 data-[popup-open]:bg-green4"
       >
         Profiles
       </MenubarTrigger>

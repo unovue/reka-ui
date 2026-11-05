@@ -21,7 +21,8 @@ import { createPopupRootStore, setPopupRootStore } from '@/shared/popupHandle'
 // the modal side-effects (`useHideOthers` / `useBodyScrollLock`) stay wrappers.
 // =============================================================================
 
-export type PopoverTriggerState = { state: DisclosureState }
+/** Semantic state of the trigger part; `popupOpen` → `data-popup-open` while the popup is open (no `data-state`, so an `asChild` control keeps its own). */
+export type PopoverTriggerState = { popupOpen: boolean }
 export type PopoverContentState = { state: DisclosureState }
 
 /** Standalone `usePopover()` calls without a `baseId` draw `reka-popover-<n>` from here. */
@@ -55,7 +56,7 @@ export function getPopoverTriggerSurface(context: PopoverRootContext): PartSurfa
       'aria-controls': context.open.value ? context.contentId : undefined,
       'onClick': (event: MouseEvent) => context.onOpenToggle('trigger-press', event),
     }),
-    () => ({ state: disclosureState(context.open.value) }),
+    () => ({ popupOpen: context.open.value }),
   )
 }
 

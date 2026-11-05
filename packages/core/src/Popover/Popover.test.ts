@@ -172,31 +172,31 @@ describe('popoverRoot change events (v3 foundation contract)', () => {
     expect(root.emitted('update:open')).toBeUndefined()
     expect(vm.open).toBe(true)
     expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
-    expect(trigger().attributes('data-state')).toBe('open')
+    expect(trigger().attributes('data-popup-open')).toBe('')
   })
 
   it('v-model:open round-trips through a wrapper component', async () => {
     const { wrapper, root, vm, trigger, close } = mountPopover()
     expect(vm.open).toBe(false)
-    expect(trigger().attributes('data-state')).toBe('closed')
+    expect(trigger().attributes('data-popup-open')).toBeUndefined()
 
     trigger().element.click()
     await nextTick()
     expect(vm.open).toBe(true)
-    expect(trigger().attributes('data-state')).toBe('open')
+    expect(trigger().attributes('data-popup-open')).toBe('')
     expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
 
     close().element.click()
     // Presence resolves the exit after its own `nextTick`; flush so the content is gone.
     await flushPromises()
     expect(vm.open).toBe(false)
-    expect(trigger().attributes('data-state')).toBe('closed')
+    expect(trigger().attributes('data-popup-open')).toBeUndefined()
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
 
     // Parent-driven change: the prop wins and nothing is emitted for it.
     vm.open = true
     await nextTick()
-    expect(trigger().attributes('data-state')).toBe('open')
+    expect(trigger().attributes('data-popup-open')).toBe('')
     expect(root.emitted('update:open')).toHaveLength(2)
   })
 

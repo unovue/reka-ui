@@ -176,6 +176,15 @@ The button that toggles the popover. By default, the `DatePickerContent` will po
 
 <!-- @include: @/meta/DatePickerTrigger.md -->
 
+<DataAttributesTable
+  :data="[
+    {
+      attribute: '[data-popup-open]',
+      values: 'Present when the popover is open',
+    },
+  ]"
+/>
+
 ### Content
 
 The component that pops out when the popover is open.

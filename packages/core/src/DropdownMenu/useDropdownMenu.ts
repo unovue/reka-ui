@@ -4,11 +4,11 @@ import type { DropdownMenuHandle } from './handle'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { MenuOpenChangeReason, UseMenuRootProps } from '@/Menu'
 import type { MenuContext, MenuRootContext } from '@/Menu/MenuRoot.vue'
-import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { PopupRootStore } from '@/shared/popupHandle'
 import { computed, nextTick, ref, toValue } from 'vue'
 import { useMenuRoot } from '@/Menu/useMenu'
-import { createPartSurface, disclosureState } from '@/shared'
+import { createPartSurface } from '@/shared'
 import { createPopupRootStore, getPopupRootStore, setPopupRootStore } from '@/shared/popupHandle'
 
 // =============================================================================
@@ -25,8 +25,8 @@ import { createPopupRootStore, getPopupRootStore, setPopupRootStore } from '@/sh
 /** Why the dropdown menu's `open` state changed — the Menu union. */
 export type DropdownMenuOpenChangeReason = MenuOpenChangeReason
 
-/** Semantic state of the trigger part (`data-state`, `data-disabled`). */
-export type DropdownMenuTriggerState = { state: DisclosureState, disabled: boolean }
+/** Semantic state of the trigger part (`data-popup-open` while open, `data-disabled`). No `data-state` (#1407), so an `asChild` control keeps its own. */
+export type DropdownMenuTriggerState = { popupOpen: boolean, disabled: boolean }
 
 /** Standalone `useDropdownMenu()` calls without a `baseId` draw `reka-dropdown-menu-<n>` from here. */
 let dropdownMenuCount = 0
@@ -79,7 +79,7 @@ export function getDropdownMenuTriggerSurface(
         event.preventDefault()
       },
     }),
-    () => ({ state: disclosureState(context.open.value), disabled: isDisabled() }),
+    () => ({ popupOpen: context.open.value, disabled: isDisabled() }),
   )
 }
 

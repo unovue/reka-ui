@@ -3,11 +3,11 @@ import type { MenubarMenuContext } from './MenubarMenu.vue'
 import type { MenubarRootContext } from './MenubarRoot.vue'
 import type { MenuOpenChangeReason } from '@/Menu'
 import type { MenuContext, MenuRootContext } from '@/Menu/MenuRoot.vue'
-import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, watch } from 'vue'
 import { useMenuRoot } from '@/Menu/useMenu'
-import { createPartSurface, disclosureState, useControllableState } from '@/shared'
+import { createPartSurface, useControllableState } from '@/shared'
 import { isDisabledItem } from '@/shared/isDisabledItem'
 import { resolveDirection } from '@/shared/useDirection'
 import { wrapArray } from '@/shared/useTypeahead'
@@ -34,8 +34,8 @@ import { wrapArray } from '@/shared/useTypeahead'
  */
 export type MenubarChangeReason = MenuOpenChangeReason
 
-/** Semantic state of a menubar trigger (`data-highlighted`, `data-state`, `data-disabled`). */
-export type MenubarTriggerState = { highlighted: boolean, state: DisclosureState, disabled: boolean }
+/** Semantic state of a menubar trigger (`data-highlighted`, `data-popup-open` while open, `data-disabled`). No `data-state` (#1407), so an `asChild` control keeps its own. */
+export type MenubarTriggerState = { highlighted: boolean, popupOpen: boolean, disabled: boolean }
 
 /** A Collection item as `useCollection().getItems()` returns it. */
 export interface MenubarCollectionItem { ref: HTMLElement }
@@ -320,7 +320,7 @@ export function createMenubarTriggerSurface(
         isFocused.value = false
       },
     }),
-    () => ({ highlighted: isFocused.value, state: disclosureState(open.value), disabled: isDisabled() }),
+    () => ({ highlighted: isFocused.value, popupOpen: open.value, disabled: isDisabled() }),
   )
 }
 
