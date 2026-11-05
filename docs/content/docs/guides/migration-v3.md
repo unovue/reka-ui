@@ -83,7 +83,7 @@ Because both values are now always emitted, any styles that relied on the attrib
 The same values reach your code in two other places that a selector search does not find:
 
 - **Slot props.** The `state` slot prop of `Toggle` is `checked` / `unchecked` (v2: `on` / `off`), and the `state` slot prop of `StepperItem` is `current` / `upcoming` (v2: `active` / `inactive`; `completed` is unchanged). Comparisons such as `v-if="state === 'active'"` fail the type-check.
-- **Custom variants and shortcuts.** A Tailwind `@custom-variant` or `addVariant`, a UnoCSS shortcut or a Sass mixin that wraps `[data-state=active]` keeps compiling, but no longer matches a Reka UI part. Rewrite the value inside it.
+- **Custom variants and shortcuts.** A Tailwind `@custom-variant` or `addVariant`, a UnoCSS shortcut or a Sass mixin that wraps `[data-state=active]` keeps compiling, but no longer matches a Reka UI part. Rewrite the value inside it. If the same variant also styles components outside Reka UI that still emit the old value, split it into two variants first, so each keeps its own value.
 
 ## Change events carry details
 
@@ -149,8 +149,8 @@ What to check in your code:
 
 Two consequences of the second argument:
 
-- **Listeners bound as a function reference.** `@update:model-value="handleChange"` passes the details object as the function's second argument. When that function takes an optional second parameter, such as vee-validate's `handleChange(value, shouldValidate)` or TanStack Form's `field.handleChange(updater, options)`, wrap it: `@update:model-value="(value) => handleChange(value)"`.
-- **`CalendarRoot`'s `update:modelValue` type.** It is declared `DateValue | DateValue[] | undefined`, which covers `multiple` (v2 declared `DateValue | undefined`). Handlers typed for a single value need a wider parameter or an `Array.isArray` check.
+- **Listeners bound as a function reference.** `@update:model-value="handleChange"` passes the details object as the function's second argument. When that function takes an optional second parameter, such as vee-validate's `handleChange(value, shouldValidate)` or TanStack Form's `field.handleChange(updater, options)`, wrap it: `@update:model-value="(value) => handleChange(value)"`. Don't wrap a handler whose second parameter is meant for the details (it reads `details.reason` or calls `details.cancel()`): wrapping it would drop them.
+- **`CalendarRoot`'s `update:modelValue` type.** It is declared `DateValue | DateValue[] | undefined`, which covers `multiple` (v2 declared `DateValue | undefined`). A handler typed for a single value needs its parameter widened to `DateValue | DateValue[] | undefined`; an `Array.isArray` check inside the handler then narrows it where the calendar can be `multiple`.
 
 ## Tree, Pagination and Stepper
 
@@ -458,14 +458,34 @@ If the component already calls `defineExpose({ ... })`, wrap the object in `merg
 
 `useForwardExpose` also forwarded the methods of the part a wrapper renders. A wrapper whose callers rely on them, for example a `ResizablePanel` around `SplitterPanel` whose callers call `collapse()` or `getSize()`, has to re-expose them from a template ref on the inner part:
 
-```ts
-const panel = useTemplateRef('panel')
+```vue
+<script setup lang="ts">
+import type { ComponentPublicInstance } from 'vue'
+import { mergeExpose, SplitterPanel, useForwardElement } from 'reka-ui'
+import { shallowRef } from 'vue'
+
+const panel = shallowRef<InstanceType<typeof SplitterPanel>>()
 const { forwardRef, expose } = useForwardElement()
+
+// `SplitterPanel` is the root here, and an element keeps only one `ref`,
+// so a single function ref feeds both the element and the methods.
+function setPanel(instance: Element | ComponentPublicInstance | null) {
+  forwardRef(instance)
+  panel.value = (instance ?? undefined) as InstanceType<typeof SplitterPanel> | undefined
+}
+
 defineExpose(mergeExpose(expose, {
   collapse: () => panel.value?.collapse(),
   expand: () => panel.value?.expand(),
   getSize: () => panel.value?.getSize(),
 }))
+</script>
+
+<template>
+  <SplitterPanel :ref="setPanel">
+    <slot />
+  </SplitterPanel>
+</template>
 ```
 
 ## Modal layers no longer touch `<body>`
@@ -755,7 +775,7 @@ Use `temporal-polyfill-lite/calendars-full/shim` if you use calendars other than
 
 The types come from TypeScript 6's `esnext.temporal` lib: use TypeScript 6 with `"lib": ["ESNext", "DOM", "DOM.Iterable"]`. `@vue/tsconfig` sets `lib` to `ES2022`, without Temporal, so override it in your own `tsconfig`. On TypeScript 5, add `import 'temporal-polyfill-lite/types/global'` to a `.d.ts` file. Without either, `skipLibCheck: true` turns `DateValue` into `any` without an error.
 
-Publishing a library or a copy-paste registry on top of Reka UI? You cannot load the polyfill for the apps that install your components. Depend on `reka-ui@^3`, and tell your users in your install instructions to provide a global `Temporal` as above.
+Publishing a library or a copy-paste registry on top of Reka UI? You cannot load the polyfill for the apps that install your components. Depend on `reka-ui@^3.0.0-alpha.0` while v3 is a prerelease (`^3` does not match prereleases; switch to `^3` once it is stable), and tell your users in your install instructions to provide a global `Temporal` as above.
 
 ### Types
 
