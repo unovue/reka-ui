@@ -42,12 +42,17 @@ const thumbInBoundsOffset = computed(() => {
 })
 
 const isMounted = useMounted()
+// Keep the mounted element: the template ref is already null by the time `onUnmounted` runs.
+let mountedThumb: HTMLElement | undefined
 onMounted(() => {
-  rootContext.thumbElements.value.push(thumbElement.value)
+  mountedThumb = thumbElement.value
+  rootContext.thumbElements.value.push(mountedThumb)
 })
 onUnmounted(() => {
-  const i = rootContext.thumbElements.value.findIndex(i => i === thumbElement.value) ?? -1
-  rootContext.thumbElements.value.splice(i, 1)
+  const i = rootContext.thumbElements.value.indexOf(mountedThumb!)
+  if (i !== -1)
+    rootContext.thumbElements.value.splice(i, 1)
+  mountedThumb = undefined
 })
 </script>
 
