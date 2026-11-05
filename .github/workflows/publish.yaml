@@ -33,6 +33,17 @@ jobs:
 
       # cloudflare/pages-action was deprecated and its repository removed;
       # wrangler-action is Cloudflare's supported replacement.
+      # A prerelease's docs go to the `next` preview deployment
+      # (next.reka-ui.pages.dev), so reka-ui.com keeps the stable docs.
+      - name: Pick the Pages branch
+        id: pages
+        run: |
+          version=$(node -p "require('./packages/core/package.json').version")
+          case "$version" in
+            *-*) echo "branch=next" >> "$GITHUB_OUTPUT" ;;
+            *) echo "branch=main" >> "$GITHUB_OUTPUT" ;;
+          esac
+
       - name: Publish to Cloudflare Pages
         uses: cloudflare/wrangler-action@v4
         with:
@@ -44,5 +55,5 @@ jobs:
           # The lockfile lives at the repo root, so auto-detection falls back to
           # npm, which can't install into a pnpm workspace (`link:` deps)
           packageManager: pnpm
-          # Deploy as the production branch regardless of the triggering ref
-          command: pages deploy .vitepress/dist --project-name=reka-ui --branch=main
+          # Stable releases deploy as the production branch regardless of the triggering ref
+          command: pages deploy .vitepress/dist --project-name=reka-ui --branch=${{ steps.pages.outputs.branch }}
