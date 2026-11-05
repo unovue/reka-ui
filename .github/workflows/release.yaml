@@ -62,12 +62,15 @@ jobs:
       - name: Publish to npm
         run: |
           version=$(node -p "require('./packages/core/package.json').version")
-          case "$version" in
+          # Build metadata (`+build-1`) is not part of the prerelease.
+          release=${version%%+*}
+          case "$release" in
             *-*)
-              prerelease=${version#*-}
+              prerelease=${release#*-}
               tag=${prerelease%%.*}
-              # A dist-tag can't look like a version (`3.0.0-0` → `0`).
-              [[ "$tag" =~ ^[a-z][a-z0-9-]*$ && "$tag" != latest ]] || tag=next
+              # npm rejects a dist-tag that reads as a semver range (`0`, `v3`, `x`),
+              # so only letters are taken; anything else goes to `next`.
+              [[ "$tag" =~ ^[a-z]+(-[a-z]+)*$ && ! "$tag" =~ ^(latest|x)$ ]] || tag=next
               ;;
             *) tag=latest ;;
           esac

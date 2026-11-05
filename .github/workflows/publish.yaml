@@ -39,7 +39,8 @@ jobs:
         id: pages
         run: |
           version=$(node -p "require('./packages/core/package.json').version")
-          case "$version" in
+          # Build metadata (`+build-1`) is not part of the prerelease.
+          case "${version%%+*}" in
             *-*) echo "branch=next" >> "$GITHUB_OUTPUT" ;;
             *) echo "branch=main" >> "$GITHUB_OUTPUT" ;;
           esac
