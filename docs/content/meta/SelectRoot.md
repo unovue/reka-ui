@@ -76,7 +76,7 @@
   },
   {
     'name': 'nullableValue',
-    'description': '<p>The value of the hidden native select option when the model value is nullish.</p>\n',
+    'description': '<p>The value of the hidden native select option when the model value is nullish (<code>null</code> is the empty value).</p>\n',
     'type': 'string',
     'required': false,
     'default': '\'\''
@@ -126,7 +126,7 @@
 <SlotsTable :data="[
   {
     'name': 'modelValue',
-    'description': '<p>Current input values; <code>undefined</code> while a single select is empty</p>\n',
+    'description': '<p>Current input values; <code>null</code> (or <code>undefined</code> when never set) while a single select is empty</p>\n',
     'type': 'M extends true ? T[] : T | undefined'
   },
   {
@@ -155,7 +155,7 @@
 | `modelValue` | The controlled value of the Select. Can be bind as `v-model`. | `T \| T[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `nullableValue` | The value of the hidden native select option when the model value is nullish. | `string` | No | `""` |
+| `nullableValue` | The value of the hidden native select option when the model value is nullish (`null` is the empty value). | `string` | No | `""` |
 | `open` | The controlled open state of the Select. Can be bind as `v-model:open`. | `boolean` | No | - |
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 
@@ -173,7 +173,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current input values; `undefined` while a single select is empty | `M extends true ? T[] : T \| undefined` |
+| `modelValue` | Current input values; `null` (or `undefined` when never set) while a single select is empty | `M extends true ? T[] : T \| undefined` |
 | `open` | Current open state | `boolean` |
 
 </llm-only>

@@ -586,7 +586,40 @@ In v2, `TagsInputRoot` and `PinInputRoot` kept a local copy of the model (a pass
 
 - **Change details.** `update:modelValue` and `update:open` receive a `ChangeEventDetails` second argument, and the cancellable `beforeUpdate:modelValue` and `beforeUpdate:open` are new. See [Change events carry details](#change-events-carry-details). Cancelling the value of an item press keeps the content open.
 - **No emit for an unchanged value.** Pressing the selected item of a single select closes the content but no longer emits `update:modelValue`, also when `by` matches a different object. Changing an uncontrolled model array in place no longer emits either. Assign a new array instead.
-- **`update:modelValue` is typed by `multiple`**: `T[]` when `multiple` is set, `T` (as in v2) when it is absent, either while it is a plain `boolean`. No interaction clears a single select, so it never emits `null`. The runtime payload is unchanged.
+- **`update:modelValue` is typed by `multiple`**: `T[]` when `multiple` is set, `T` (as in v2) when it is absent, either while it is a plain `boolean`. The runtime payload is unchanged. A single select emits `null` only when an item with a `null` value is pressed or picked by typeahead on the closed trigger (below).
+- **`null` is the empty value, and `''` items are allowed** ([#2484](https://github.com/unovue/reka-ui/issues/2484)). In v2 a `SelectItem` with `value=""` threw, because `''` was the sentinel that cleared the selection. Now, as in [Base UI](https://base-ui.com/react/components/select), `null` is the canonical empty value and a `SelectItem` can have `value=""`. Setting the model to `''` still reads as empty, as before (`SelectValue` shows the placeholder, or, when `items` has a `null` entry, the `''` item's label from `items`): an empty string reads as no value (`data-placeholder`, not `filled` in a `Field`, missing for `required`, submitted as `''`), but an item with `value=""` is now the selected one. A `SelectItem` with a `null` value is allowed and sets the model to `null` when pressed, and a `{ value: null, label }` entry in `items` labels the empty select instead of the placeholder. The select emits `null` only when a `null` item is pressed; autofill onto the empty native option still writes its `nullable-value` (`''` by default), as in v2. With `multiple`, `''` and `null` are ordinary entries of the array; `[]` is empty. See [Clearing the value](../components/select.md#clearing-the-value).
+
+  Before, a "None" option needed a sentinel, and code checked for `''`:
+
+  ```vue
+  <script setup lang="ts">
+  const fruit = ref('')
+  const isEmpty = computed(() => fruit.value === '' || fruit.value === '__none__')
+  </script>
+
+  <template>
+    <SelectItem value="__none__">
+      None
+    </SelectItem>
+  </template>
+  ```
+
+  After, `null` is the empty value:
+
+  ```vue
+  <script setup lang="ts">
+  const fruit = ref<string | null>(null)
+  const isEmpty = computed(() => fruit.value == null || fruit.value === '')
+  </script>
+
+  <template>
+    <SelectItem :value="null">
+      None
+    </SelectItem>
+  </template>
+  ```
+
+  To find what to change, search for empty-string checks and initial values on the models bound to a `SelectRoot`: `grep -rnE "ref(<[^>]*>)?\\(''\\)|= ''|=== ''|!== ''|default-value=\"\"|:default-value=\"''\"" --include='*.vue' --include='*.ts' src`, then keep only the ones that feed a `SelectRoot` `v-model` / `default-value` or compare its value. Checks must also accept `null` and keep their polarity: a "nothing selected" `=== ''` becomes `value == null || value === ''`, and a "has a selection" `!== ''` becomes `value != null && value !== ''`. Initial `''` values keep working; switch them to `null` when convenient. A sentinel item you wrote around the v2 throw (`value="__none__"`) can become `:value="null"`, but the form then submits `''` instead of the sentinel.
 - **Typing on the closed trigger selects.** With focus on a closed `SelectTrigger`, typing selects the next item whose text starts with the typed characters, as a native `<select>` does (reason `typeahead`). In v2 it did nothing. A `multiple` select is unchanged.
 - **The trigger closes a `popper` select.** In `popper` position the trigger stays clickable above the backdrop, and pressing it while open closes the content (reason `trigger-press`).
 - **Item texts are remembered.** `SelectValue` keeps showing the text of a selected item after its `SelectItemText` unmounts. The new `displayValue` prop on `SelectRoot` resolves the text without the items.
