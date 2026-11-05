@@ -121,8 +121,8 @@ The button that toggles the dropdown menu. By default, the `DropdownMenuContent`
 <DataAttributesTable
   :data="[
     {
-      attribute: '[data-state]',
-      values: ['open', 'closed'],
+      attribute: '[data-popup-open]',
+      values: 'Present when the menu is open',
     },
     {
       attribute: '[data-disabled]',
@@ -333,8 +333,8 @@ An item that opens a submenu. Must be rendered inside `DropdownMenuSub`.
 <DataAttributesTable
   :data="[
     {
-      attribute: '[data-state]',
-      values: ['open', 'closed'],
+      attribute: '[data-popup-open]',
+      values: 'Present when the submenu is open',
     },
     {
       attribute: '[data-highlighted]',

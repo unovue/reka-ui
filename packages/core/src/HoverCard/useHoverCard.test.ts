@@ -249,13 +249,15 @@ describe('useHoverCard — trigger surface', () => {
       expect(typeof props[key]).toBe('function')
   })
 
-  it('attrs merge props with the data-state derived from state', () => {
+  it('attrs merge props with the data-popup-open derived from state (no data-state, #1407)', () => {
     const h = useHoverCard()
-    expect(h.trigger.state.value).toEqual({ state: 'closed' })
-    expect(h.trigger.attrs.value).toMatchObject({ 'data-state': 'closed', 'data-grace-area-trigger': '' })
+    expect(h.trigger.state.value).toEqual({ popupOpen: false })
+    expect(h.trigger.attrs.value).toMatchObject({ 'data-grace-area-trigger': '' })
+    expect(h.trigger.attrs.value).not.toHaveProperty('data-popup-open')
+    expect(h.trigger.attrs.value).not.toHaveProperty('data-state')
     h.onOpenChange(true)
-    expect(h.trigger.state.value).toEqual({ state: 'open' })
-    expect(h.trigger.attrs.value['data-state']).toBe('open')
+    expect(h.trigger.state.value).toEqual({ popupOpen: true })
+    expect(h.trigger.attrs.value['data-popup-open']).toBe('')
   })
 
   it('onPointerenter schedules a trigger-hover open; touch pointers are ignored', () => {
@@ -424,19 +426,19 @@ describe('useHoverCard — rendered surfaces', () => {
   it('wires trigger and content together and passes axe, closed and open', async () => {
     const { container, getByText, queryByText } = render(Fixture)
     const trigger = getByText('Trigger')
-    expect(trigger.getAttribute('data-state')).toBe('closed')
+    expect(trigger.getAttribute('data-popup-open')).toBeNull()
     expect(trigger.hasAttribute('data-grace-area-trigger')).toBe(true)
     expect(queryByText('Body')).toBeNull()
     expect(await axe(container)).toHaveNoViolations()
 
     await fireEvent.focus(trigger)
-    await vi.waitFor(() => expect(trigger.getAttribute('data-state')).toBe('open'))
+    await vi.waitFor(() => expect(trigger.getAttribute('data-popup-open')).toBe(''))
     const content = getByText('Body').parentElement!
     expect(content.getAttribute('data-state')).toBe('open')
     expect(await axe(container)).toHaveNoViolations()
 
     await fireEvent.blur(trigger)
-    await vi.waitFor(() => expect(trigger.getAttribute('data-state')).toBe('closed'))
+    await vi.waitFor(() => expect(trigger.getAttribute('data-popup-open')).toBeNull())
     expect(queryByText('Body')).toBeNull()
   })
 })

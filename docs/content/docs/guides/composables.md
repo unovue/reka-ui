@@ -139,7 +139,7 @@ Each setter also takes a `reason` and the native `event`, which end up in the de
 
 A composable is reactive state plus attributes. Anything that needs a mounted element, the document or a separate component stays in the `.vue` parts. In particular:
 
-- **Overlays** (`useDialog`, `usePopover`, `useTooltip`, `useHoverCard`, `useDropdownMenu`, …) give you the open model, ids and `role` / `aria-*` / `data-state`. Mounting and exit animations ([Presence](../utilities/presence)), focus trapping ([FocusScope](../utilities/focus-scope)), dismissal on Escape and outside clicks, scroll locking, portals and positioning are left to you.
+- **Overlays** (`useDialog`, `usePopover`, `useTooltip`, `useHoverCard`, `useDropdownMenu`, …) give you the open model, ids and `role` / `aria-*` / `data-state` (`data-popup-open` on triggers). Mounting and exit animations ([Presence](../utilities/presence)), focus trapping ([FocusScope](../utilities/focus-scope)), dismissal on Escape and outside clicks, scroll locking, portals and positioning are left to you.
 - **Lists** (`useTabs`, `useToolbar`, `useRadioGroup`, …) give you selection and ARIA. Arrow-key navigation comes from [RovingFocusGroup](../utilities/roving-focus).
 - **Form controls** don't render the hidden native input that the components add for form submission. Render your own `<input type="hidden">`, or use the component.
 

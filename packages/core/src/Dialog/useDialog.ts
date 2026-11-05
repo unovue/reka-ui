@@ -22,8 +22,8 @@ import { createPopupRootStore, setPopupRootStore } from '@/shared/popupHandle'
 // `type` binding.
 // =============================================================================
 
-/** Semantic state of the trigger part; `state` → `data-state="open|closed"`. */
-export type DialogTriggerState = { state: DisclosureState }
+/** Semantic state of the trigger part; `popupOpen` → `data-popup-open` while the popup is open (no `data-state`, so an `asChild` control keeps its own). */
+export type DialogTriggerState = { popupOpen: boolean }
 /** Semantic state of the content part; `state` → `data-state="open|closed"`. */
 export type DialogContentState = { state: DisclosureState }
 /** Semantic state of the overlay part; `state` → `data-state="open|closed"`. */
@@ -34,7 +34,7 @@ let dialogCount = 0
 
 /**
  * The trigger surface (`aria-haspopup`/`aria-expanded`/`aria-controls` +
- * `onClick` → `onOpenToggle('trigger-press')`), derived purely from the context.
+ * `onClick` → `onOpenToggle('trigger-press')` + `data-popup-open`), derived purely from the context.
  * The `type` binding is tag-dependent and stays in the SFC.
  */
 export function getDialogTriggerSurface(
@@ -47,7 +47,7 @@ export function getDialogTriggerSurface(
       'aria-controls': context.open.value ? context.contentId : undefined,
       'onClick': (event: MouseEvent) => context.onOpenToggle('trigger-press', event),
     }),
-    () => ({ state: disclosureState(context.open.value) }),
+    () => ({ popupOpen: context.open.value || false }),
   )
 }
 
@@ -195,7 +195,7 @@ export interface UseDialogReturn<Payload = unknown> {
 /**
  * Headless Dialog logic. The `.vue` shells compose this; a standalone consumer
  * gets the open model (with `beforeUpdate`/`update` details), ids and the
- * aria/role/`data-state` surfaces, but must still wrap the content in
+ * aria/role/`data-*` surfaces, but must still wrap the content in
  * `Presence` + `FocusScope`/`DismissableLayer` (or their own equivalents) for
  * mount/unmount, focus trapping and dismissal — those are component families
  * a pure composable cannot absorb (see the #2723 recipe's "Overlay families").

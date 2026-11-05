@@ -29,9 +29,16 @@ const selectProps = computed(() => {
 // This would bubble "change" event to form, with the target as Select element.
 // `post`: the options' `selected` state is patched first, so a `change`
 // listener reads the new selection.
+// The nullable option is inserted when the model clears; select it so the
+// browser's reset to another option cannot win. Only that option: the others'
+// `selected` is bound by `SelectRoot`, which also matches record keys.
 watch(() => props.value, (cur, prev) => {
-  if (cur !== prev && selectElement.value)
+  if (cur !== prev && selectElement.value) {
+    const nullable = selectElement.value.querySelector<HTMLOptionElement>('option[data-nullable]')
+    if (nullable)
+      nullable.selected = true
     selectElement.value.dispatchEvent(new Event('change', { bubbles: true }))
+  }
 }, { flush: 'post' })
 
 /**
@@ -53,6 +60,9 @@ function handleInput(event: Event) {
 type NativeOption = HTMLOptionElement & { _value?: any }
 
 function optionValue(option: NativeOption) {
+  // A `multiple` select's `null` entry submits `''` (as Base UI serializes it) but stands for `null`.
+  if (option.hasAttribute('data-null-value'))
+    return null
   return '_value' in option ? option._value : option.value
 }
 

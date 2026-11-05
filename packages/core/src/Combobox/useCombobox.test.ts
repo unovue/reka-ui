@@ -118,7 +118,7 @@ describe('useComboboxRoot — standalone', () => {
     expect(input.attributes('aria-controls')).toBe('fruit-content')
     expect(input.attributes('aria-expanded')).toBe('false')
     expect(wrapper.find('[data-testid=trigger]').attributes('aria-controls')).toBe('fruit-content')
-    expect(wrapper.find('[data-testid=trigger]').attributes('data-state')).toBe('closed')
+    expect(wrapper.find('[data-testid=trigger]').attributes('data-popup-open')).toBeUndefined()
 
     await wrapper.find('[data-testid=trigger]').trigger('click')
     await settle()

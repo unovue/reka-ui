@@ -20,7 +20,7 @@ export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
   defaultValue?: T | Array<T>
   /** The controlled value of the Select. Can be bind as `v-model`. */
   modelValue?: T | Array<T>
-  /** The value of the hidden native select option when the model value is nullish. */
+  /** The value of the hidden native select option when the model value is nullish (`null` is the empty value). */
   nullableValue?: string
   /** Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. */
   by?: string | ((a: T, b: T) => boolean)
@@ -168,7 +168,7 @@ const emits = defineEmits<SelectRootEmits<T, M>>()
 
 defineSlots<{
   default?: (props: {
-    /** Current input values; `undefined` while a single select is empty */
+    /** Current input values; `null` (or `undefined` when never set) while a single select is empty */
     modelValue: M extends true ? T[] : T | undefined
     /** Current open state */
     open: boolean
@@ -311,7 +311,19 @@ const nativeOptions = computed(() => {
     if (!(data && getItemData(selected)) && !context.labels.entry(selected))
       options.push({ value: selected, label: context.displayValue.value?.(selected) ?? '', disabled: false, selected: true })
   }
-  return options
+  // In a single select a `null` item is the empty selection: the
+  // `data-nullable` option stands for it. In a `multiple` select `null` is an
+  // ordinary entry, so its option stays (selected, and submitted).
+  const filtered = props.multiple ? options : options.filter(option => !isNullish(option.value))
+  // As in Base UI, a selected empty string submits nothing: a `required` single
+  // select is missing a value. Natively that takes the selected option being the
+  // first one (the placeholder label option), so it moves there.
+  if (!props.multiple && value === '') {
+    const index = filtered.findIndex(option => option.selected && option.value === '')
+    if (index > 0)
+      filtered.unshift(...filtered.splice(index, 1))
+  }
+  return filtered
 })
 
 // The native `select` is patched in place (each option's `selected` is bound),
@@ -348,7 +360,8 @@ provideSelectRootContext(context)
       <option
         v-for="(option, index) in nativeOptions"
         :key="index"
-        :value="option.value"
+        :value="option.value ?? ''"
+        :data-null-value="option.value == null ? '' : undefined"
         :disabled="option.disabled"
         :selected="option.selected"
       >

@@ -78,6 +78,11 @@ shows/hides, `SelectionState` (`'checked' | 'unchecked'`) or `TriSelectionState`
 (`'active' | 'inactive'`, `'on' | 'off'`, …) keep them until the #2823 rename PR
 lands — that PR only changes the values, not the shape.
 
+A popup **trigger** has no `state` key: its state is `{ popupOpen: boolean }`
+(→ `data-popup-open` while open, as in Base UI). A trigger is often rendered
+`asChild` onto a stateful control (Toggle, RadioGroupItem, …), and writing
+`data-state` there would overwrite the control's own (#1407).
+
 ## Steps (per family)
 
 1. **Characterize first.** Write characterization tests against the UNMODIFIED

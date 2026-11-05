@@ -95,8 +95,8 @@ export type SelectNavigationIntent = ListboxNavigationIntent
  */
 export type SelectModelValue<T, M extends boolean = boolean> = boolean extends M ? T | T[] : M extends true ? T[] : T
 
-/** Semantic state of the trigger (`data-state` / `data-disabled` / `data-placeholder`). */
-export type SelectTriggerState = { state: DisclosureState, disabled: boolean, placeholder: boolean }
+/** Semantic state of the trigger (`data-popup-open` while open / `data-disabled` / `data-placeholder`). No `data-state` (#1407), so an `asChild` control keeps its own. */
+export type SelectTriggerState = { popupOpen: boolean, disabled: boolean, placeholder: boolean }
 /** Semantic state of the value part: `data-placeholder` holds the placeholder text while nothing is selected. */
 export type SelectValueState = { placeholder: string | undefined }
 /** Semantic state of the content (`data-state`). */
@@ -378,12 +378,8 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
   const getItemRegistration = (data: SelectItemData<T>) => itemRegistrations.value.get(data)
   const isRecordItems = () => !!itemsIndex.value?.record
 
-  const isEmptyModelValue = computed(() => {
-    const value = modelValue.value
-    if (multiple.value && Array.isArray(value))
-      return value.length === 0
-    return isNullish(value)
-  })
+  // As Base UI's `hasSelectedValue`: `''` is empty too, so a `Field` reads it as not filled.
+  const isEmptyModelValue = computed(() => shouldShowPlaceholder(modelValue.value as AcceptableValue | AcceptableValue[]))
 
   function resolveLabel(value: T) {
     const resolve = displayValue.value
@@ -397,16 +393,17 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
     // A selection's text comes from `items` when it lists the value.
     () => {
       const value = modelValue.value
-      const values = (Array.isArray(value) ? value : isNullish(value) ? [] : [value]) as T[]
-      // An empty string clears the selection: it has no label to show.
-      return values.some(v => v !== ('' as T) && getItemData(v) === undefined)
+      // An empty single value (`null` or `''`) shows the placeholder: no label to find.
+      const values = (Array.isArray(value) ? value : shouldShowPlaceholder(value as AcceptableValue) ? [] : [value]) as T[]
+      return values.some(v => getItemData(v) === undefined)
     },
     () => !!items.value,
   )
 
   const selectedLabels = computed(() => {
     const value = modelValue.value
-    const values = (Array.isArray(value) ? value : [value]) as T[]
+    // An empty single value (`null`, or `''` as in Base UI) shows no label: SelectValue shows the placeholder.
+    const values = (Array.isArray(value) ? value : shouldShowPlaceholder(value as AcceptableValue) ? [] : [value]) as T[]
     return values.map(v => resolveLabel(v) ?? '').filter(Boolean)
   })
 
@@ -813,7 +810,7 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
       'onKeydown': onKeydown,
     }),
     () => ({
-      state: disclosureState(context.open.value),
+      popupOpen: context.open.value,
       disabled: isDisabled.value,
       placeholder: shouldShowPlaceholder(context.modelValue.value as AcceptableValue | AcceptableValue[]),
     }),
@@ -837,13 +834,19 @@ export interface UseSelectValueReturn {
   value: PartSurface<SelectValueState>
   /** Text of each selected value (`displayValue`, then the label registry). */
   selectedLabels: ComputedRef<string[]>
-  /** The selected labels joined with `', '`, or the placeholder. */
+  /**
+   * The selected labels joined with `', '`. While a single select is empty (`null` or `''`), the placeholder, or,
+   * when the root's `items` lists a `null` entry, the `items` label of the value (the `null` entry's for `null`).
+   */
   text: ComputedRef<string>
 }
 
 /**
  * The displayed value. Labels resolve through the root's `displayValue`, then
- * the sticky label registry, so they survive the content closing.
+ * the sticky label registry, so they survive the content closing. As in Base UI,
+ * a `null` entry in `items` (`{ value: null, label: 'Select…' }`) labels the
+ * empty selection of a single select over the placeholder; the value still
+ * carries `data-placeholder`.
  *
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle pure
@@ -852,7 +855,15 @@ export function useSelectValue<T extends AcceptableValue = AcceptableValue>(opti
   const { context } = options
   const placeholder = () => toValue(options.placeholder) ?? ''
   const selectedLabels = context.selectedLabels
-  const text = computed(() => selectedLabels.value.length ? selectedLabels.value.join(', ') : placeholder())
+  // Base UI's `SelectValue`: a `null` entry in `items` replaces the placeholder
+  // with the `items` label of the empty value.
+  const emptyLabel = () => {
+    if (context.multiple.value || !context.getItemData?.(null as T))
+      return undefined
+    const current = context.modelValue.value as T | undefined
+    return context.getItemData(isNullish(current) ? null as T : current as T)?.label ?? ''
+  }
+  const text = computed(() => selectedLabels.value.length ? selectedLabels.value.join(', ') : (emptyLabel() ?? placeholder()))
   const value = createPartSurface<SelectValueState>(
     () => ({ style: { pointerEvents: 'none' } }),
     () => ({ placeholder: selectedLabels.value.length ? undefined : placeholder() }),

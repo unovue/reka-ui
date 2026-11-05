@@ -26,7 +26,7 @@ const hexColor = computed(() => colorToString(colorObj.value, 'hex'))
 <template>
   <PopoverRoot>
     <PopoverTrigger
-      class="inline-flex min-w-36 items-center gap-2 px-3 py-2 rounded-md bg-background border border-muted transition hover:bg-muted/80 data-[state=open]:bg-muted/80 focus:outline-none focus:ring-2 focus:ring-primary"
+      class="inline-flex min-w-36 items-center gap-2 px-3 py-2 rounded-md bg-background border border-muted transition hover:bg-muted/80 data-[popup-open]:bg-muted/80 focus:outline-none focus:ring-2 focus:ring-primary"
     >
       <ColorSwatch
         :color="hexColor"

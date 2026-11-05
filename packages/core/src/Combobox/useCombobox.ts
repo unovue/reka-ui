@@ -79,8 +79,8 @@ export type ComboboxOpenChangeReason
     | 'outside-press'
     | 'focus-outside'
 
-/** Semantic state of the trigger (`data-state` / `data-disabled`). */
-export type ComboboxTriggerState = { state: DisclosureState, disabled: boolean }
+/** Semantic state of the trigger (`data-popup-open` while open / `data-disabled`). No `data-state` (#1407), so an `asChild` control keeps its own. */
+export type ComboboxTriggerState = { popupOpen: boolean, disabled: boolean }
 /** Semantic state of the input (`data-disabled`). */
 export type ComboboxInputState = { disabled: boolean }
 /** Semantic state of the content (`data-state` / `data-empty`). */
@@ -119,7 +119,7 @@ export function getComboboxTriggerSurface(
       'aria-disabled': isDisabled.value,
       'onClick': (event: MouseEvent) => context.onOpenChange(!context.open.value, 'trigger-press', event),
     }),
-    () => ({ state: disclosureState(context.open.value), disabled: isDisabled.value }),
+    () => ({ popupOpen: context.open.value, disabled: isDisabled.value }),
   )
 }
 

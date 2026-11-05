@@ -31,7 +31,7 @@ button {
 }
 
 .MenubarTrigger[data-highlighted],
-.MenubarTrigger[data-state='open'] {
+.MenubarTrigger[data-popup-open] {
   background-color: var(--grass-4);
 }
 
@@ -72,7 +72,7 @@ button {
 }
 
 .MenubarItem[data-state='open'],
-.MenubarSubTrigger[data-state='open'] {
+.MenubarSubTrigger[data-popup-open] {
   background-color: var(--grass-4);
   color: var(--grass-11);
 }

@@ -344,10 +344,10 @@ A form reset brings an element back to its default.
 
 ## The element is the part
 
-Each element renders its part onto itself instead of rendering a child element. `<reka-dialog-trigger>` gets `role="button"`, `aria-haspopup`, `aria-expanded`, `data-state`, `tabindex` and the click and keyboard handlers. You style the element directly:
+Each element renders its part onto itself instead of rendering a child element. `<reka-dialog-trigger>` gets `role="button"`, `aria-haspopup`, `aria-expanded`, `data-popup-open`, `tabindex` and the click and keyboard handlers. You style the element directly:
 
 ```css
-reka-dialog-trigger[data-state='open'] { … }
+reka-dialog-trigger[data-popup-open] { … }
 reka-tabs-trigger[data-disabled] { … }
 reka-accordion-content[data-state='closed'] { … }
 ```

@@ -18,7 +18,7 @@ import type { ComponentPublicInstance } from 'vue'
 import { reactiveOmit } from '@vueuse/shared'
 import { mergeProps, nextTick, onUnmounted, ref, watch } from 'vue'
 import { usePopperAnchor } from '@/Popper/usePopperAnchor'
-import { disclosureState, useForwardElement, useId } from '@/shared'
+import { useForwardElement, useId } from '@/shared'
 import { injectMenuContentContext } from './MenuContentImpl.vue'
 import MenuItemImpl from './MenuItemImpl.vue'
 import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
@@ -169,7 +169,7 @@ function setTriggerRef(item: Element | ComponentPublicInstance | null) {
     aria-haspopup="menu"
     :aria-expanded="menuContext.open.value"
     :aria-controls="subContext.contentId"
-    :data-state="disclosureState(menuContext.open.value)"
+    :data-popup-open="menuContext.open.value ? '' : undefined"
     @click="
       async (event: MouseEvent) => {
         if (props.disabled || event.defaultPrevented) return;

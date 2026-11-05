@@ -57,10 +57,9 @@ Parts that reference each other (a trigger's `aria-controls`, a dialog's `aria-l
 
 1. the part's own `id` prop, when you pass one;
 2. the `useId` function given to `ConfigProvider`;
-3. Vue's [`useId()`](https://vuejs.org/api/composition-api-helpers.html#useid) (Vue 3.5 and later);
-4. a module counter (Vue 3.4).
+3. Vue's [`useId()`](https://vuejs.org/api/composition-api-helpers.html#useid).
 
-Vue's `useId()` derives the id from the component's position in the tree, so the server and the client produce the same ids as long as they render the same tree. The counter fallback does not: on a server it keeps counting across requests, and its ids won't match the client's. **Use Vue 3.5 or later for SSR.**
+Vue's `useId()` derives the id from the component's position in the tree, so the server and the client produce the same ids as long as they render the same tree. Reka UI requires Vue 3.5 or later, which provides it.
 
 If the server and the client produce Vue ids with different prefixes, for example when a framework prerenders a page with another app id prefix than the client hydrates with, pass an id source that is stable across both to `ConfigProvider`. Reka UI then uses it before Vue's own `useId()`. See [Config Provider](/docs/utilities/config-provider#hydration-issue).
 
@@ -88,7 +87,7 @@ The headless composables (`useDialog`, `useTabs`, …) don't call `useId()`: pas
 
 ## Popups and portals
 
-A family portal (`DialogPortal`, `PopoverPortal`, `SelectPortal`, `TooltipPortal`, …) renders nothing on the server, open or closed. The trigger is in the server HTML with its open state (`data-state="open"`, `aria-expanded="true"`). The popup content mounts right after hydration, so a page rendered with `defaultOpen` (or `v-model:open` set to `true`) shows its dialog once the client has hydrated.
+A family portal (`DialogPortal`, `PopoverPortal`, `SelectPortal`, `TooltipPortal`, …) renders nothing on the server, open or closed. The trigger is in the server HTML with its open state (`data-popup-open`, `aria-expanded="true"`). The popup content mounts right after hydration, so a page rendered with `defaultOpen` (or `v-model:open` set to `true`) shows its dialog once the client has hydrated.
 
 Without a portal, open content is rendered on the server in place. Floating content (Popover, Tooltip, Hover Card, menus, …) is rendered off-screen and positioned once the client measures the trigger:
 
@@ -141,7 +140,7 @@ Some parts need the DOM, so the server renders them in a neutral state and the c
 
 Vue warns in development when the client renders something other than the server HTML ("Hydration … mismatch"). In production it keeps the server's attributes without correcting them. Common causes with Reka UI:
 
-- **Different ids.** Vue 3.4, or different id prefixes on the server and the client. See [Generated ids](#generated-ids).
+- **Different ids.** Different id prefixes on the server and the client. See [Generated ids](#generated-ids).
 - **Today's date.** A Calendar, Range Calendar or Date Picker without a value or placeholder opens on today, in the time zone of the runtime that renders it. When the server and the browser are on different days, the focusable day differs. Pick the date once, on the server, and send it to the client: with Nuxt, `useState` does that. It needs a serialisable value, so keep the ISO string. On a server without native `Temporal`, load the polyfill first (see [Dates: server-side rendering](/docs/guides/dates#server-side-rendering)):
 
   ```vue

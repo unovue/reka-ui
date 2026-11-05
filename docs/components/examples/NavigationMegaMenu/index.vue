@@ -22,7 +22,7 @@ const current = ref('')
           {{ section.label }}
           <Icon
             icon="lucide:chevron-down"
-            class="size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:-rotate-180"
+            class="size-3.5 text-muted-foreground transition-transform duration-200 group-data-[popup-open]:-rotate-180"
           />
         </NavigationMenuTrigger>
 

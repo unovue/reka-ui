@@ -27,12 +27,13 @@ import { createTimeout } from '@/shared/timeout'
 // =============================================================================
 
 /**
- * Semantic state of the trigger part; `state` → `data-state="open|closed"`,
- * `delayed` → `data-delayed=""` only while `true` (#2823: the disclosure axis
- * and the "delayed" qualifier are two attributes, not one value).
+ * Semantic state of the trigger part; `popupOpen` → `data-popup-open=""` and
+ * `delayed` → `data-delayed=""`, each only while `true` (#2823: the disclosure
+ * axis and the "delayed" qualifier are two attributes, not one value). The
+ * trigger renders no `data-state` (#1407), so an `asChild` control keeps its own.
  */
-export type TooltipTriggerState = { state: DisclosureState, delayed: boolean }
-/** Semantic state of the content part; same two axes as the trigger. */
+export type TooltipTriggerState = { popupOpen: boolean, delayed: boolean }
+/** Semantic state of the content part; `state` → `data-state="open|closed"`, plus `data-delayed`. */
 export type TooltipContentState = { state: DisclosureState, delayed: boolean }
 
 /** Standalone `useTooltip()` calls without a `baseId` draw `reka-tooltip-<n>` from here. */
@@ -135,7 +136,7 @@ export function createTooltipTriggerSurface(context: TooltipContext): PartSurfac
             onBlur: handleBlur,
           }),
     }),
-    () => ({ state: context.stateAttribute.value, delayed: context.isDelayed.value }),
+    () => ({ popupOpen: context.open.value, delayed: context.isDelayed.value }),
   )
 }
 
@@ -247,7 +248,7 @@ export interface UseTooltipReturn {
   /** Details of the last change attempt; initially `{ reason: 'none' }`. */
   lastChangeDetails: Readonly<Ref<ChangeEventDetails<TooltipOpenChangeReason>>>
   isControlled: ComputedRef<boolean>
-  /** `aria-describedby` + `data-grace-area-trigger` + the pointer/focus/click listeners; `data-state` / `data-delayed`. */
+  /** `aria-describedby` + `data-grace-area-trigger` + the pointer/focus/click listeners; `data-popup-open` / `data-delayed`. */
   trigger: PartSurface<TooltipTriggerState>
   /** State only: `data-state` / `data-delayed`. */
   content: PartSurface<TooltipContentState>

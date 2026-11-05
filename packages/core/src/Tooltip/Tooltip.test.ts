@@ -147,7 +147,7 @@ describe('given tooltip data-state / data-delayed contract', () => {
 
   it('is `closed` without `data-delayed` initially', () => {
     const trigger = wrapper.find('button')
-    expect(trigger.attributes('data-state')).toBe('closed')
+    expect(trigger.attributes('data-popup-open')).toBeUndefined()
     expect(trigger.attributes('data-delayed')).toBeUndefined()
   })
 
@@ -156,7 +156,7 @@ describe('given tooltip data-state / data-delayed contract', () => {
     await trigger.trigger('focus')
     await nextTick()
 
-    expect(trigger.attributes('data-state')).toBe('open')
+    expect(trigger.attributes('data-popup-open')).toBe('')
     expect(trigger.attributes('data-delayed')).toBeUndefined()
     const content = wrapper.find('[data-state="open"]:not(button)')
     expect(content.exists()).toBe(true)
@@ -168,14 +168,14 @@ describe('given tooltip data-state / data-delayed contract', () => {
     await trigger.trigger('pointermove', { pointerType: 'mouse' })
     await nextTick()
     // Timer has not fired yet: still closed, no qualifier.
-    expect(trigger.attributes('data-state')).toBe('closed')
+    expect(trigger.attributes('data-popup-open')).toBeUndefined()
     expect(trigger.attributes('data-delayed')).toBeUndefined()
 
     vi.advanceTimersByTime(700)
     await nextTick()
     await nextTick()
 
-    expect(trigger.attributes('data-state')).toBe('open')
+    expect(trigger.attributes('data-popup-open')).toBe('')
     expect(trigger.attributes('data-delayed')).toBe('')
     const content = wrapper.find('[data-state="open"]:not(button)')
     expect(content.exists()).toBe(true)
@@ -191,7 +191,7 @@ describe('given tooltip data-state / data-delayed contract', () => {
 
     await trigger.trigger('blur')
     await nextTick()
-    expect(trigger.attributes('data-state')).toBe('closed')
+    expect(trigger.attributes('data-popup-open')).toBeUndefined()
     expect(trigger.attributes('data-delayed')).toBeUndefined()
   })
 })
@@ -264,7 +264,7 @@ describe('tooltipRoot change events (v3 foundation contract)', () => {
     expect(details.event).toBeInstanceOf(Event)
     expect(details.event?.type).toBe('pointermove')
     expect(typeof details.cancel).toBe('function')
-    expect(trigger().attributes('data-state')).toBe('open')
+    expect(trigger().attributes('data-popup-open')).toBe('')
     expect(trigger().attributes('data-delayed')).toBe('')
   })
 
@@ -375,7 +375,7 @@ describe('tooltipRoot change events (v3 foundation contract)', () => {
     expect(root.emitted('beforeUpdate:open')).toHaveLength(1)
     expect(root.emitted('update:open')).toBeUndefined()
     expect(vm.open).toBe(false)
-    expect(trigger().attributes('data-state')).toBe('closed')
+    expect(trigger().attributes('data-popup-open')).toBeUndefined()
     expect(trigger().attributes('data-delayed')).toBeUndefined()
     expect(content().exists()).toBe(false)
 
@@ -383,7 +383,7 @@ describe('tooltipRoot change events (v3 foundation contract)', () => {
     // parent-driven open is not a delayed one.
     vm.open = true
     await nextTick()
-    expect(trigger().attributes('data-state')).toBe('open')
+    expect(trigger().attributes('data-popup-open')).toBe('')
     expect(trigger().attributes('data-delayed')).toBeUndefined()
     expect(content().exists()).toBe(true)
     onBeforeUpdateOpen.mockClear()
@@ -397,7 +397,7 @@ describe('tooltipRoot change events (v3 foundation contract)', () => {
     expect(root.emitted('beforeUpdate:open')).toHaveLength(2)
     expect(root.emitted('update:open')).toBeUndefined()
     expect(vm.open).toBe(true)
-    expect(trigger().attributes('data-state')).toBe('open')
+    expect(trigger().attributes('data-popup-open')).toBe('')
     expect(content().exists()).toBe(true)
   })
 
@@ -412,36 +412,36 @@ describe('tooltipRoot change events (v3 foundation contract)', () => {
     await trigger().trigger('blur')
     await nextTick()
     expect(vm.open).toBe(false)
-    expect(trigger().attributes('data-state')).toBe('closed')
+    expect(trigger().attributes('data-popup-open')).toBeUndefined()
 
     vm.open = true
     await nextTick()
-    expect(trigger().attributes('data-state')).toBe('open')
+    expect(trigger().attributes('data-popup-open')).toBe('')
     expect(trigger().attributes('data-delayed')).toBeUndefined()
   })
 
   it('v-model:open round-trips through a wrapper component', async () => {
     const { root, vm, trigger, content } = mountTooltip()
     expect(vm.open).toBe(false)
-    expect(trigger().attributes('data-state')).toBe('closed')
+    expect(trigger().attributes('data-popup-open')).toBeUndefined()
 
     await trigger().trigger('focus')
     await nextTick()
     expect(vm.open).toBe(true)
-    expect(trigger().attributes('data-state')).toBe('open')
+    expect(trigger().attributes('data-popup-open')).toBe('')
     expect(trigger().attributes('aria-describedby')).toBe(content().attributes('id'))
 
     await trigger().trigger('click')
     // Presence resolves the exit after its own `nextTick`; flush so the content is gone.
     await flushPromises()
     expect(vm.open).toBe(false)
-    expect(trigger().attributes('data-state')).toBe('closed')
+    expect(trigger().attributes('data-popup-open')).toBeUndefined()
     expect(content().exists()).toBe(false)
 
     // Parent-driven change: the prop wins and nothing is emitted for it.
     vm.open = true
     await nextTick()
-    expect(trigger().attributes('data-state')).toBe('open')
+    expect(trigger().attributes('data-popup-open')).toBe('')
     expect(root.emitted('update:open')).toHaveLength(2)
   })
 })

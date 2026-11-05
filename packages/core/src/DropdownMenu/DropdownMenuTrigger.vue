@@ -94,7 +94,7 @@ if (rootContext) {
   }, { immediate: true })
 }
 
-// Ids, aria, `data-state`/`data-disabled` and the click/keydown handlers come
+// Ids, aria, `data-popup-open`/`data-disabled` and the click/keydown handlers come
 // from the same builder `useDropdownMenu().trigger` uses.
 const trigger = rootContext ? getDropdownMenuTriggerSurface(rootContext, () => props.disabled) : getDetachedTrigger()
 const attrs = computed(() => detached.enabled.value ? getDetachedTrigger().attrs.value : trigger.attrs.value)

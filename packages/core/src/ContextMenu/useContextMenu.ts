@@ -4,10 +4,10 @@ import type { FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLa
 import type { MenuOpenChangeReason, UseMenuRootProps } from '@/Menu'
 import type { MenuContext, MenuRootContext } from '@/Menu/MenuRoot.vue'
 import type { Point } from '@/Menu/utils'
-import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import { computed, nextTick, ref, toValue, watch } from 'vue'
 import { useMenuRoot } from '@/Menu/useMenu'
-import { createPartSurface, disclosureState } from '@/shared'
+import { createPartSurface } from '@/shared'
 import { isTouchOrPen } from './utils'
 
 // =============================================================================
@@ -24,8 +24,8 @@ import { isTouchOrPen } from './utils'
 /** Why the context menu's `open` state changed — the Menu union. */
 export type ContextMenuOpenChangeReason = MenuOpenChangeReason
 
-/** Semantic state of the trigger part (`data-state`, `data-disabled`). */
-export type ContextMenuTriggerState = { state: DisclosureState, disabled: boolean }
+/** Semantic state of the trigger part (`data-popup-open` while open, `data-disabled`). No `data-state` (#1407), so an `asChild` control keeps its own. */
+export type ContextMenuTriggerState = { popupOpen: boolean, disabled: boolean }
 
 /** The virtual element `MenuAnchor` positions against while the menu was opened at the pointer. */
 export interface ContextMenuVirtualElement {
@@ -45,7 +45,7 @@ export interface ContextMenuTriggerOptions {
 /**
  * The trigger surface: the right-click / long-press machine ported verbatim
  * from `ContextMenuTrigger` (the pointer point, the long-press timer, the
- * pending pointer open a controlled parent may refuse) plus `data-state` /
+ * pending pointer open a controlled parent may refuse) plus `data-popup-open` /
  * `data-disabled` and the touch-callout style. A context-scoped FACTORY with a
  * watcher, so call it exactly once per trigger instance inside `setup()`.
  *
@@ -157,7 +157,7 @@ export function createContextMenuTriggerSurface(
       onPointercancel: handlePointerEvent,
       onPointerup: handlePointerEvent,
     }),
-    () => ({ state: disclosureState(context.open.value), disabled: isDisabled() }),
+    () => ({ popupOpen: context.open.value, disabled: isDisabled() }),
   )
 
   return { ...surface, reference }
