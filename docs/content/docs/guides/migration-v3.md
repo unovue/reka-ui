@@ -149,7 +149,7 @@ What to check in your code:
 
 Two consequences of the second argument:
 
-- **Listeners bound as a function reference.** `@update:model-value="handleChange"` passes the details object as the function's second argument. When that function takes an optional second parameter, such as vee-validate's `handleChange(value, shouldValidate)` or TanStack Form's `field.handleChange(updater, options)`, wrap it: `@update:model-value="(value) => handleChange(value)"`. Don't wrap a handler whose second parameter is meant for the details (it reads `details.reason` or calls `details.cancel()`): wrapping it would drop them.
+- **Listeners bound as a function reference.** `@update:model-value="handleChange"` passes the details object as the function's second argument. When that function takes a second parameter, optional or not, such as vee-validate's `handleChange(value, shouldValidate)` or TanStack Form's `field.handleChange(updater, options)`, wrap it: `@update:model-value="(value) => handleChange(value)"`. Don't wrap a handler whose second parameter is meant for the details (it reads `details.reason` or calls `details.cancel()`): wrapping it would drop them.
 - **`CalendarRoot`'s `update:modelValue` type.** It is declared `DateValue | DateValue[] | undefined`, which covers `multiple` (v2 declared `DateValue | undefined`). A handler typed for a single value needs its parameter widened to `DateValue | DateValue[] | undefined`; an `Array.isArray` check inside the handler then narrows it where the calendar can be `multiple`.
 
 ## Tree, Pagination and Stepper
