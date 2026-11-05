@@ -11,7 +11,7 @@ Use Reka UI primitives outside Vue, as standard custom elements, from plain HTML
 
 <Callout type="warning" title="Experimental">
 
-`reka-ui/elements` is experimental. It covers a first set of families, and its API may change before it is marked stable.
+`reka-ui/elements` is experimental. Its API may change before it is marked stable.
 
 </Callout>
 
@@ -627,6 +627,51 @@ Element types for the default-prefixed tags are opt-in, through a types-only ent
 
 `reka-ui/elements/global` has no JavaScript: reference it from a `.d.ts` file or with `import type {} from 'reka-ui/elements/global'`, not with a runtime `import`. With a custom prefix, declare your tags from `RekaElementTagNameMap` yourself.
 
+## Custom Elements Manifest
+
+The package ships a [Custom Elements Manifest](https://github.com/webcomponents/custom-elements-manifest) (schema 2.1.0) for editors, documentation tools and linters. `package.json` points to it (`"customElements": "dist/custom-elements.json"`), and it is exported as `reka-ui/custom-elements.json`.
+
+It is generated at build time from the registry `defineRekaElements()` reads, so it lists every element of every family, with the default `reka` prefix:
+
+- **Attributes**, with the value each one takes (`'horizontal' | 'vertical'`, a boolean flag, an ISO 8601 string for a date) and the property it sets.
+- **Properties**, with their TypeScript types, including the ones that have no attribute (`handle`, `filter`, …).
+- **Events**, typed as `RekaElementEvent<Value, Details>`. The cancelable ones (`before-update-*`, and the ones that carry a DOM event) say so.
+- **Descriptions and defaults** from the component's API reference.
+
+The element classes are created by `defineRekaElements()`. Their names in the manifest (`DialogRootElement`, …) identify the tags: they are not exports.
+
+**VS Code.** [`custom-element-vs-code-integration`](https://www.npmjs.com/package/custom-element-vs-code-integration) turns the manifest into HTML custom data, for tag and attribute completion, attribute values and hover docs in HTML files:
+
+```js
+// scripts/reka-vscode-data.mjs
+import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { generateVsCodeCustomElementData } from 'custom-element-vs-code-integration'
+
+const require = createRequire(import.meta.url)
+const manifest = JSON.parse(readFileSync(require.resolve('reka-ui/custom-elements.json'), 'utf8'))
+generateVsCodeCustomElementData(manifest, { outdir: '.vscode', cssFileName: null })
+```
+
+```json
+// .vscode/settings.json
+{
+  "html.customData": ["./.vscode/vscode.html-custom-data.json"]
+}
+```
+
+**Storybook.** With the web components framework, give the manifest to `setCustomElementsManifest()`. A story whose `component` is a tag (`component: 'reka-dialog-root'`) gets its attributes, properties and events in the args table, and its description on the docs page:
+
+```ts
+// .storybook/preview.ts
+import { setCustomElementsManifest } from '@storybook/web-components'
+import manifest from 'reka-ui/custom-elements.json'
+
+setCustomElementsManifest(manifest)
+```
+
+With a custom prefix, the manifest still names the `reka-` tags.
+
 ## React
 
 React 19 sets props as properties on custom elements when one exists, and listens to custom events with `on<event-type>`, in the event's own casing:
@@ -716,7 +761,7 @@ Bind props in camelCase (`:modelValue="checked"`, or `:modelValue.prop` to force
 
 ## Limitations
 
-- **Families.** Only the families listed above are available. The rest will follow.
+- **Families.** Every public family is available, except `Label` (below). The utility components (`Primitive`, `Presence`, `FocusScope`, `RovingFocusGroup`, `Viewport`) are building blocks for Vue components and have no elements.
 - **Parts a custom element can't be.** These parts render a native element whose behaviour a custom element can't take on, so they aren't available:
   - `Label`: a `<label>`. Its `for` only labels a control when it's on a native `<label>`. Use a native `<label for>`: it labels Reka form elements, which are form-associated. (`<reka-field-label>` works, through `aria-labelledby`.)
   - `AvatarImage`: an `<img>`. A custom element can't display an image source. `<reka-avatar-root>` and `<reka-avatar-fallback>` work.
@@ -734,5 +779,4 @@ Bind props in camelCase (`:modelValue="checked"`, or `:modelValue.prop` to force
 - **Temporal.** Date families need a global `Temporal`, like the Vue components.
 - **SSR.** Server rendering and declarative shadow DOM are not supported. Elements render on the client after they are defined.
 - **Bundler required.** See the [quick start](#quick-start).
-- **Custom Elements Manifest.** Not generated yet.
 - **Vue version.** Tested on Vue 3.5. With older versions generated ids are not unique between elements, and a warning says so in development.

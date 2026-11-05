@@ -113,7 +113,8 @@ const JS_EXTENSION = /\.(m?)js$/
 export function getTypesVersions(exports: Record<string, unknown>): { '*': Record<string, string[]> } {
   const paths: Record<string, string[]> = {}
   for (const [key, value] of Object.entries(exports)) {
-    if (key === '.' || key === './package.json')
+    // JSON files (`./package.json`, `./custom-elements.json`) have no types.
+    if (key === '.' || key.endsWith('.json'))
       continue
     // Types-only entries (`{ types }`) have no `import` condition.
     const target = (value as { import?: string | { types: string } }).import ?? value as { types: string }
