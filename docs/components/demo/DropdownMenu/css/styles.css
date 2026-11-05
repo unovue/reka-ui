@@ -52,7 +52,7 @@ button {
   user-select: none;
   outline: none;
 }
-.DropdownMenuSubTrigger[data-state='open'] {
+.DropdownMenuSubTrigger[data-popup-open] {
   background-color: var(--grass-4);
   color: var(--grass-11);
 }

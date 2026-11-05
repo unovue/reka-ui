@@ -188,7 +188,7 @@ describe('given controlled ContextMenu', () => {
 
       await wrapper.find('#close-button').trigger('click')
 
-      expect(trigger.attributes('data-state')).toBe('closed')
+      expect(trigger.attributes('data-popup-open')).toBeUndefined()
 
       // Give floating-ui a chance to reposition against a changed anchor.
       await new Promise(resolve => setTimeout(resolve, 50))

@@ -123,11 +123,12 @@ describe('useNavigationMenu — standalone', () => {
       'id': 'nav-trigger-docs',
       'aria-controls': 'nav-content-docs',
       'aria-expanded': 'false',
-      'data-state': 'closed',
     })
+    expect(trigger.attributes('data-popup-open')).toBeUndefined()
+    expect(trigger.attributes('data-state')).toBeUndefined()
 
     await trigger.trigger('click')
-    expect(trigger.attributes()).toMatchObject({ 'aria-expanded': 'true', 'data-state': 'open' })
+    expect(trigger.attributes()).toMatchObject({ 'aria-expanded': 'true', 'data-popup-open': '' })
     expect(wrapper.get('[data-testid="model"]').text()).toBe('docs')
     expect(wrapper.get('a').attributes()).toMatchObject({ 'aria-current': 'page', 'data-active': '' })
     expect(await axe(wrapper.element)).toHaveNoViolations()
@@ -291,7 +292,7 @@ describe('navigationMenuRoot — cancellation', () => {
     await nextTick()
     expect(beforeUpdates).toHaveLength(1)
     expect(updates).toHaveLength(0)
-    expect(byTestId('trigger-one')!.getAttribute('data-state')).toBe('closed')
+    expect(byTestId('trigger-one')!.getAttribute('data-popup-open')).toBeNull()
     expect(byTestId('content-one')).toBeNull()
   })
 
@@ -345,7 +346,7 @@ describe('navigationMenuRoot — cancellation', () => {
     trigger.click()
     await nextTick()
     expect(updates.map(([value, d]) => [value, d.reason])).toEqual([['one', 'trigger-press']])
-    expect(trigger.getAttribute('data-state')).toBe('open')
+    expect(trigger.getAttribute('data-popup-open')).toBe('')
   })
 
   it('still ignores the click that follows a committed hover open', async () => {
@@ -358,7 +359,7 @@ describe('navigationMenuRoot — cancellation', () => {
     trigger.click()
     await nextTick()
     expect(updates.map(([value, d]) => [value, d.reason])).toEqual([['one', 'trigger-hover']])
-    expect(trigger.getAttribute('data-state')).toBe('open')
+    expect(trigger.getAttribute('data-popup-open')).toBe('')
   })
 
   it('does not skip the hover delay after a cancelled pointer-leave close', async () => {
@@ -398,23 +399,23 @@ describe('navigationMenuRoot — cancellation', () => {
     byTestId('content-one')!.dispatchEvent(pointer('pointerleave'))
     await vi.advanceTimersByTimeAsync(500)
     expect(updates).toHaveLength(1)
-    expect(byTestId('trigger-one')!.getAttribute('data-state')).toBe('open')
+    expect(byTestId('trigger-one')!.getAttribute('data-popup-open')).toBe('')
   })
 })
 
 describe('navigationMenuRoot — controlled and uncontrolled', () => {
   it('opens defaultValue when uncontrolled', () => {
     const { byTestId } = mountMenu({ defaultValue: 'two' })
-    expect(byTestId('trigger-two')!.getAttribute('data-state')).toBe('open')
+    expect(byTestId('trigger-two')!.getAttribute('data-popup-open')).toBe('')
   })
 
   it('follows a controlled model and its external changes', async () => {
     const model = ref('one')
     const { byTestId, updates } = mountMenu({ model })
-    expect(byTestId('trigger-one')!.getAttribute('data-state')).toBe('open')
+    expect(byTestId('trigger-one')!.getAttribute('data-popup-open')).toBe('')
     model.value = 'two'
     await nextTick()
-    expect(byTestId('trigger-two')!.getAttribute('data-state')).toBe('open')
+    expect(byTestId('trigger-two')!.getAttribute('data-popup-open')).toBe('')
     expect(updates).toHaveLength(0)
   })
 
@@ -424,7 +425,7 @@ describe('navigationMenuRoot — controlled and uncontrolled', () => {
     byTestId('trigger-one')!.click()
     await nextTick()
     expect(updates.map(([value]) => value)).toEqual(['one'])
-    expect(byTestId('trigger-one')!.getAttribute('data-state')).toBe('closed')
+    expect(byTestId('trigger-one')!.getAttribute('data-popup-open')).toBeNull()
   })
 
   it('does not emit when hovering the trigger of the item already open', async () => {
@@ -465,7 +466,7 @@ describe('navigationMenuSub — reasons and model', () => {
     const { byTestId, updates } = mountSub()
     byTestId('sub-b')!.dispatchEvent(pointer('pointermove'))
     await nextTick()
-    expect(byTestId('sub-b')!.getAttribute('data-state')).toBe('open')
+    expect(byTestId('sub-b')!.getAttribute('data-popup-open')).toBe('')
     byTestId('sub-b')!.dispatchEvent(pointer('pointerleave'))
     byTestId('sub-a')!.click()
     await nextTick()
@@ -477,7 +478,7 @@ describe('navigationMenuSub — reasons and model', () => {
     byTestId('sub-b')!.click()
     await nextTick()
     expect(updates).toHaveLength(0)
-    expect(byTestId('sub-a')!.getAttribute('data-state')).toBe('open')
+    expect(byTestId('sub-a')!.getAttribute('data-popup-open')).toBe('')
   })
 })
 
@@ -525,7 +526,7 @@ describe('navigationMenuContent — outside events', () => {
     })
     await nextTick()
     expect(onUpdate).not.toHaveBeenCalled()
-    expect(document.querySelector('[data-testid="trigger"]')!.getAttribute('data-state')).toBe('open')
+    expect(document.querySelector('[data-testid="trigger"]')!.getAttribute('data-popup-open')).toBe('')
   })
 
   it('runs consumer keydown listeners before the content\'s own', async () => {

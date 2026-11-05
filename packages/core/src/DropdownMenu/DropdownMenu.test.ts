@@ -280,7 +280,7 @@ describe('dropdownMenu change events (v3 contract on the wrapper roots)', () => 
     expect(value).toBe(true)
     expect(details.reason).toBe('trigger-press')
     expect(details.event).toBeInstanceOf(MouseEvent)
-    expect(trigger.attributes('data-state')).toBe('open')
+    expect(trigger.attributes('data-popup-open')).toBe('')
     wrapper.unmount()
   })
 
@@ -291,7 +291,7 @@ describe('dropdownMenu change events (v3 contract on the wrapper roots)', () => 
     await trigger.trigger('click', { button: 0, ctrlKey: false })
 
     expect(root.emitted('update:open')).toBeUndefined()
-    expect(trigger.attributes('data-state')).toBe('closed')
+    expect(trigger.attributes('data-popup-open')).toBeUndefined()
     wrapper.unmount()
   })
 
@@ -319,7 +319,7 @@ describe('dropdownMenu change events (v3 contract on the wrapper roots)', () => 
 
     expect(sub().emitted('beforeUpdate:open')).toHaveLength(1)
     expect(sub().emitted('update:open')).toBeUndefined()
-    expect(subTrigger.attributes('data-state')).toBe('closed')
+    expect(subTrigger.attributes('data-popup-open')).toBeUndefined()
     wrapper.unmount()
   })
 })

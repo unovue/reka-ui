@@ -73,7 +73,7 @@ describe('useDialog — state', () => {
     expect(d.open.value).toBe(true)
     expect(d.lastChangeDetails.value).toMatchObject({ reason: 'close-press', isCanceled: true })
     expect(onUpdate).not.toHaveBeenCalled()
-    expect(d.trigger.attrs.value['data-state']).toBe('open')
+    expect(d.trigger.attrs.value['data-popup-open']).toBe('')
   })
 })
 
@@ -126,13 +126,15 @@ describe('useDialog — trigger surface', () => {
     expect(onUpdate).toHaveBeenLastCalledWith(false, expect.objectContaining({ reason: 'trigger-press' }))
   })
 
-  it('attrs merges props with data-state derived from state', () => {
+  it('attrs merges props with data-popup-open derived from state (no data-state, #1407)', () => {
     const d = useDialog({ baseId: 'x' })
-    expect(d.trigger.state.value).toEqual({ state: 'closed' })
-    expect(d.trigger.attrs.value).toMatchObject({ 'aria-haspopup': 'dialog', 'data-state': 'closed' })
+    expect(d.trigger.state.value).toEqual({ popupOpen: false })
+    expect(d.trigger.attrs.value).toMatchObject({ 'aria-haspopup': 'dialog' })
+    expect(d.trigger.attrs.value).not.toHaveProperty('data-popup-open')
+    expect(d.trigger.attrs.value).not.toHaveProperty('data-state')
     d.openModal()
-    expect(d.trigger.state.value.state).toBe('open')
-    expect(d.trigger.attrs.value['data-state']).toBe('open')
+    expect(d.trigger.state.value.popupOpen).toBe(true)
+    expect(d.trigger.attrs.value['data-popup-open']).toBe('')
   })
 })
 
@@ -245,7 +247,7 @@ describe('useDialog — rendered surfaces', () => {
     expect(dialog.getAttribute('aria-describedby')).toBe(getByText('Description').id)
     expect(trigger.getAttribute('aria-expanded')).toBe('true')
     expect(trigger.getAttribute('aria-controls')).toBe(dialog.id)
-    expect(trigger.getAttribute('data-state')).toBe('open')
+    expect(trigger.getAttribute('data-popup-open')).toBe('')
     expect(dialog.getAttribute('data-state')).toBe('open')
     expect(await axe(container)).toHaveNoViolations()
 
@@ -253,7 +255,7 @@ describe('useDialog — rendered surfaces', () => {
     expect(queryByRole('dialog')).toBeNull()
     expect(trigger.getAttribute('aria-expanded')).toBe('false')
     expect(trigger.getAttribute('aria-controls')).toBeNull()
-    expect(trigger.getAttribute('data-state')).toBe('closed')
+    expect(trigger.getAttribute('data-popup-open')).toBeNull()
     expect(await axe(container)).toHaveNoViolations()
 
     await fireEvent.click(trigger)

@@ -90,7 +90,7 @@ const itemClass = 'flex cursor-default select-none items-center gap-2 rounded-md
                returns focus to the parent filter rather than to the trigger. -->
           <DropdownMenuSub>
             <DropdownMenuSubTrigger
-              class="data-[state=open]:bg-muted"
+              class="data-[popup-open]:bg-muted"
               :class="itemClass"
             >
               <Icon

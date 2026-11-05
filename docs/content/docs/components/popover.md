@@ -73,8 +73,8 @@ The button that toggles the popover. By default, the `PopoverContent` will posit
 <DataAttributesTable
   :data="[
     {
-      attribute: '[data-state]',
-      values: ['open', 'closed'],
+      attribute: '[data-popup-open]',
+      values: 'Present when the popover is open',
     },
   ]"
 />

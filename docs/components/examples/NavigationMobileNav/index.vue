@@ -38,7 +38,7 @@ const current = ref('')
               {{ section.label }}
               <Icon
                 icon="lucide:chevron-down"
-                class="size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:-rotate-180"
+                class="size-3.5 text-muted-foreground transition-transform duration-200 group-data-[popup-open]:-rotate-180"
               />
             </NavigationMenuTrigger>
             <NavigationMenuContent class="absolute left-0 top-0 w-full data-[motion=from-start]:animate-enterFromLeft data-[motion=from-end]:animate-enterFromRight data-[motion=to-start]:animate-exitToLeft data-[motion=to-end]:animate-exitToRight sm:w-auto">

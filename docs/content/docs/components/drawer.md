@@ -241,8 +241,8 @@ The button that opens the drawer.
 <DataAttributesTable
   :data="[
     {
-      attribute: '[data-state]',
-      values: ['open', 'closed'],
+      attribute: '[data-popup-open]',
+      values: 'Present when the drawer is open',
     },
   ]"
 />

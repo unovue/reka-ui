@@ -244,7 +244,7 @@ describe('given default NavigationMenu', () => {
       await triggers[1].trigger('pointermove', { pointerType: 'mouse' })
       await nextTick()
 
-      expect(triggers[1].attributes('data-state')).toBe('open')
+      expect(triggers[1].attributes('data-popup-open')).toBe('')
       expect(findContent().exists()).toBe(true)
 
       await vi.advanceTimersByTimeAsync(150)

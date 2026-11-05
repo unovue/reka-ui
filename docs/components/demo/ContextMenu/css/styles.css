@@ -41,7 +41,7 @@
   user-select: none;
   outline: none;
 }
-.ContextMenuSubTrigger[data-state='open'] {
+.ContextMenuSubTrigger[data-popup-open] {
   background-color: var(--grass-4);
   color: var(--grass-11);
 }

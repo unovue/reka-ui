@@ -69,8 +69,8 @@ The link that opens the hover card when hovered.
 <DataAttributesTable
   :data="[
     {
-      attribute: '[data-state]',
-      values: ['open', 'closed'],
+      attribute: '[data-popup-open]',
+      values: 'Present when the hover card is open',
     },
   ]"
 />

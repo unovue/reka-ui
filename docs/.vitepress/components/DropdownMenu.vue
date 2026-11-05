@@ -13,7 +13,7 @@ defineProps<{
 
 <template>
   <DropdownMenuRoot>
-    <DropdownMenuTrigger class="py-2 px-2 text-nowrap md:px-0 mx-0 md:mx-3 text-sm font-semibold text-muted-foreground hover:text-foreground h-full inline-flex items-center justify-between data-[state=open]:text-foreground">
+    <DropdownMenuTrigger class="py-2 px-2 text-nowrap md:px-0 mx-0 md:mx-3 text-sm font-semibold text-muted-foreground hover:text-foreground h-full inline-flex items-center justify-between data-[popup-open]:text-foreground">
       <span>{{ label }}</span>
       <Icon
         icon="lucide:chevron-down"

@@ -95,8 +95,8 @@ export type SelectNavigationIntent = ListboxNavigationIntent
  */
 export type SelectModelValue<T, M extends boolean = boolean> = boolean extends M ? T | T[] : M extends true ? T[] : T
 
-/** Semantic state of the trigger (`data-state` / `data-disabled` / `data-placeholder`). */
-export type SelectTriggerState = { state: DisclosureState, disabled: boolean, placeholder: boolean }
+/** Semantic state of the trigger (`data-popup-open` while open / `data-disabled` / `data-placeholder`). No `data-state` (#1407), so an `asChild` control keeps its own. */
+export type SelectTriggerState = { popupOpen: boolean, disabled: boolean, placeholder: boolean }
 /** Semantic state of the value part: `data-placeholder` holds the placeholder text while nothing is selected. */
 export type SelectValueState = { placeholder: string | undefined }
 /** Semantic state of the content (`data-state`). */
@@ -810,7 +810,7 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
       'onKeydown': onKeydown,
     }),
     () => ({
-      state: disclosureState(context.open.value),
+      popupOpen: context.open.value,
       disabled: isDisabled.value,
       placeholder: shouldShowPlaceholder(context.modelValue.value as AcceptableValue | AcceptableValue[]),
     }),

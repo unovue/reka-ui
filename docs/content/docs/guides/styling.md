@@ -42,6 +42,8 @@ When components are stateful, their state will be exposed in a `data-state` attr
 
 `data-state` answers exactly one of two questions. For disclosure ("is this surface revealed?") the value is `open` or `closed`—an [Accordion Item](../components/accordion) that is expanded has `data-state="open"`. For selection ("is this control in its affirmative state?") the value is `checked` or `unchecked`—a pressed [Toggle](../components/toggle) has `data-state="checked"`. The only third value is `indeterminate`, emitted by tri-state controls such as [Checkbox](../components/checkbox) alongside `aria-checked="mixed"`. Qualifiers that describe *how* a state was reached live in their own attribute rather than in `data-state`: a [Tooltip](../components/tooltip) that opened after its delay is `data-state="open"` with an additional `data-delayed` attribute.
 
+A popup trigger (`DialogTrigger`, `PopoverTrigger`, `TooltipTrigger`, `DropdownMenuTrigger`, `SelectTrigger`, …) does not describe its own state, so it renders no `data-state`. It carries `data-popup-open` while its popup is open instead. That way a trigger rendered `asChild` onto a stateful control, such as a [Toggle](../components/toggle), leaves the control's own `data-state` alone.
+
 ```css
 .AccordionItem[data-state="open"] {
   /* revealed */
@@ -53,6 +55,10 @@ When components are stateful, their state will be exposed in a `data-state` attr
 
 .TooltipContent[data-state="open"][data-delayed] {
   /* opened after the delay */
+}
+
+.DropdownMenuTrigger[data-popup-open] {
+  /* its menu is open */
 }
 ```
 

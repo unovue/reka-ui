@@ -114,8 +114,8 @@ The button that toggles the Select The `SelectContent` will position itself by a
 <DataAttributesTable
   :data="[
     {
-      attribute: '[data-state]',
-      values: ['open', 'closed'],
+      attribute: '[data-popup-open]',
+      values: 'Present when the select is open',
     },
     {
       attribute: '[data-disabled]',

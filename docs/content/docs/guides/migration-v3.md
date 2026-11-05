@@ -31,7 +31,8 @@ Parts that were already on `open` / `closed` or `checked` / `unchecked` / `indet
 | `ScrollAreaScrollbar`, `ScrollAreaThumb`, `NavigationMenuIndicator` | `visible` / `hidden` | `open` / `closed` |
 | `SplitterPanel` | `expanded` / `collapsed` / (absent when not collapsible) | `open` / `closed` (non-collapsible panels are always `open`) |
 | `CollapsibleContent` | `open` / `closed` / (absent on the initial animated mount) | `open` / `closed` |
-| `TooltipTrigger`, `TooltipContent` | `closed` / `delayed-open` / `instant-open` | `open` / `closed`, plus a boolean `data-delayed` attribute present while open when the open was delayed |
+| `TooltipContent` | `closed` / `delayed-open` / `instant-open` | `open` / `closed`, plus a boolean `data-delayed` attribute present while open when the open was delayed |
+| `TooltipTrigger` | `closed` / `delayed-open` / `instant-open` | no `data-state`: `data-popup-open` while open, plus `data-delayed` (see [Popup triggers use `data-popup-open`](#popup-triggers-use-data-popup-open)) |
 | Everything already on `open` / `closed` or `checked` / `unchecked` / `indeterminate` | unchanged | unchanged |
 
 ### Search and replace
@@ -84,6 +85,46 @@ The same values reach your code in two other places that a selector search does 
 
 - **Slot props.** The `state` slot prop of `Toggle` is `checked` / `unchecked` (v2: `on` / `off`), and the `state` slot prop of `StepperItem` is `current` / `upcoming` (v2: `active` / `inactive`; `completed` is unchanged). Comparisons such as `v-if="state === 'active'"` fail the type-check.
 - **Custom variants and shortcuts.** A Tailwind `@custom-variant` or `addVariant`, a UnoCSS shortcut or a Sass mixin that wraps `[data-state=active]` keeps compiling, but no longer matches a Reka UI part. Rewrite the value inside it. If the same variant also styles components outside Reka UI that still emit the old value, split it into two variants first, so each keeps its own value.
+
+## Popup triggers use `data-popup-open`
+
+A popup trigger no longer renders `data-state`. While its popup is open it carries an empty `data-popup-open` attribute, and while the popup is closed the attribute is absent. This follows Base UI. In v2 the trigger wrote `data-state="open"` / `"closed"`, which overwrote the `data-state` of a stateful control it was rendered `asChild` onto: a `TooltipTrigger` on a `Toggle` replaced the toggle's `checked` / `unchecked` with `open` / `closed`. In v3 the control keeps its own `data-state`.
+
+The affected parts are `DialogTrigger`, `AlertDialogTrigger`, `DrawerTrigger`, `PopoverTrigger`, `TooltipTrigger`, `HoverCardTrigger`, `DropdownMenuTrigger`, `DropdownMenuSubTrigger`, `ContextMenuTrigger`, `ContextMenuSubTrigger`, `MenubarTrigger`, `MenubarSubTrigger`, `SelectTrigger`, `ComboboxTrigger`, `NavigationMenuTrigger`, `DatePickerTrigger` and `DateRangePickerTrigger`, and their custom elements (`<reka-dialog-trigger>`, …). The popup content, overlay and viewport parts keep `data-state="open"` / `"closed"`, and so do triggers that describe their own state: `AccordionTrigger`, `CollapsibleTrigger`, `TabsTrigger` and `StepperTrigger` are unchanged. The other attributes on the triggers stay as they were, including `data-delayed` on `TooltipTrigger`, `data-highlighted` on menu and menubar triggers, and `data-disabled` and `data-placeholder`. Triggers that render `aria-expanded` also report the open state there, if you prefer to style on that. `TooltipTrigger` and `HoverCardTrigger` don't render it, so use `data-popup-open` on them.
+
+The headless composables change the same way: the trigger state of `useDialog()`, `usePopover()`, `useTooltip()` and the other families above is `{ popupOpen: boolean }` instead of `{ state: 'open' | 'closed' }` (`TooltipTrigger` keeps `delayed`). Code that reads `trigger.state.value.state` fails type-checking; read `popupOpen` instead.
+
+### Search and replace
+
+Find selectors that may target a trigger. The first search lists every open or closed selector, the second narrows it to lines that name a trigger:
+
+```sh
+grep -rnE "data-\[state=['\"]?(open|closed)['\"]?\]|\[data-state=['\"]?(open|closed)['\"]?\]" src
+grep -rnE "Trigger[^>]*data-\[state=|trigger[^>]*data-\[state=|Trigger\[data-state" src
+```
+
+Only rewrite a selector whose element is one of the triggers above, either the trigger itself or the element it renders `asChild` onto. A `group-data-[state=open]:` variant counts when its `group` is the trigger. Leave selectors on content, overlay and viewport parts alone.
+
+- `data-[state=open]:` → `data-[popup-open]:`, and `group-data-[state=open]:` → `group-data-[popup-open]:` when the group is the trigger.
+- `data-[state=closed]:` → `[&:not([data-popup-open])]:`
+- `[data-state='open']` → `[data-popup-open]`, `[data-state='closed']` → `:not([data-popup-open])`
+- On `TooltipTrigger`, `data-[state=delayed-open]:` → `data-[popup-open]:data-[delayed]:`.
+- In scripts and tests, `getAttribute('data-state') === 'open'` → `hasAttribute('data-popup-open')`.
+- In composable code, a trigger's `state.value.state === 'open'` → `state.value.popupOpen`.
+
+```vue
+<template>
+  <DropdownMenuTrigger class="[&[data-state=open]>svg]:rotate-180" /> <!-- [!code --] -->
+  <DropdownMenuTrigger class="[&[data-popup-open]>svg]:rotate-180" /> <!-- [!code ++] -->
+</template>
+```
+
+```css
+.MenubarTrigger[data-state='open'] { /* [!code --] */
+.MenubarTrigger[data-popup-open] { /* [!code ++] */
+  background-color: var(--grass-4);
+}
+```
 
 ## Change events carry details
 

@@ -335,7 +335,7 @@ describe('context menu elements', () => {
     const trigger = query('reka-context-menu-trigger')
     const root = query('reka-context-menu-root')
     const content = query('reka-context-menu-content')
-    await vi.waitFor(() => expect(trigger.getAttribute('data-state')).toBe('closed'))
+    await vi.waitFor(() => expect(trigger.hasAttribute('data-reka-owned')).toBe(true))
     const opens: unknown[] = []
     root.addEventListener('update-open', event => opens.push((event as CustomEvent).detail.value))
 
@@ -343,7 +343,7 @@ describe('context menu elements', () => {
     await userEvent.click(trigger, { button: 'right', position: { x: 120, y: 60 } })
     await vi.waitFor(() => expect(content.getAttribute('data-state')).toBe('open'))
     expect(opens).toEqual([true])
-    expect(trigger.getAttribute('data-state')).toBe('open')
+    expect(trigger.hasAttribute('data-popup-open')).toBe(true)
     expect(content.getAttribute('role')).toBe('menu')
     // Anchored to the pointer, not to the trigger.
     await vi.waitFor(() => {
@@ -360,7 +360,7 @@ describe('context menu elements', () => {
     render(CONTEXT_MENU)
     const trigger = query('reka-context-menu-trigger')
     const content = query('reka-context-menu-content')
-    await vi.waitFor(() => expect(trigger.getAttribute('data-state')).toBe('closed'))
+    await vi.waitFor(() => expect(trigger.hasAttribute('data-reka-owned')).toBe(true))
     await userEvent.click(trigger, { button: 'right', position: { x: 10, y: 10 } })
     await vi.waitFor(() => expect(content.contains(document.activeElement)).toBe(true))
 
@@ -487,12 +487,12 @@ describe('menubar elements', () => {
     const [file, edit] = triggers()
     await vi.waitFor(() => expect(file.getAttribute('aria-haspopup')).toBe('menu'))
     await userEvent.click(file)
-    await vi.waitFor(() => expect(file.getAttribute('data-state')).toBe('open'))
+    await vi.waitFor(() => expect(file.hasAttribute('data-popup-open')).toBe(true))
     await userEvent.hover(edit)
-    await vi.waitFor(() => expect(edit.getAttribute('data-state')).toBe('open'))
-    expect(file.getAttribute('data-state')).toBe('closed')
+    await vi.waitFor(() => expect(edit.hasAttribute('data-popup-open')).toBe(true))
+    expect(file.hasAttribute('data-popup-open')).toBe(false)
     await userEvent.click(query('[data-test=undo]'))
-    await vi.waitFor(() => expect(edit.getAttribute('data-state')).toBe('closed'))
+    await vi.waitFor(() => expect(edit.hasAttribute('data-popup-open')).toBe(false))
   })
 })
 

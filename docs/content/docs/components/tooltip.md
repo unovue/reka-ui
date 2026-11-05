@@ -69,8 +69,8 @@ The button that toggles the tooltip. By default, the `TooltipContent` will posit
 <DataAttributesTable
   :data="[
     {
-      attribute: '[data-state]',
-      values: ['open', 'closed'],
+      attribute: '[data-popup-open]',
+      values: 'Present when the tooltip is open',
     },
     {
       attribute: '[data-delayed]',

@@ -607,7 +607,7 @@ export interface UsePopupHandleTriggerReturn {
   id: ComputedRef<string>
   /** The attached Root's store; `null` while no Root is mounted (and on the server). */
   store: ComputedRef<PopupRootStore<any> | null>
-  /** Open and owned by this trigger: drives `aria-expanded` / `data-state`. */
+  /** Open and owned by this trigger: drives `aria-expanded` / `data-popup-open`. */
   open: ComputedRef<boolean>
   /** `aria-controls` target while this trigger owns the open popup. */
   contentId: ComputedRef<string | undefined>

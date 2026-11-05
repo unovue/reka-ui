@@ -227,7 +227,7 @@ p {
   top: 1px;
   transition: transform 250ms ease;
 }
-[data-state='open'] > .CaretDown {
+[data-popup-open] > .CaretDown {
   transform: rotate(-180deg);
 }
 

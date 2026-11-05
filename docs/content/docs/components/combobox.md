@@ -122,8 +122,8 @@ The button that toggles the Combobox Content.
 <DataAttributesTable
   :data="[
     {
-      attribute: '[data-state]',
-      values: ['open', 'closed'],
+      attribute: '[data-popup-open]',
+      values: 'Present when the combobox is open',
     },
     {
       attribute: '[data-disabled]',

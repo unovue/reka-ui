@@ -167,7 +167,7 @@ const menuItemClass = 'flex cursor-default select-none items-center gap-2 rounde
             >
               <ContextMenuTrigger as-child>
                 <tr
-                  class="border-b border-muted last:border-0 data-[state=open]:bg-muted"
+                  class="border-b border-muted last:border-0 data-[popup-open]:bg-muted"
                   :class="selected.has(row.id) && 'bg-muted/60'"
                 >
                   <td class="px-3 py-2.5">

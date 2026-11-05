@@ -628,7 +628,7 @@ describe('given a default Dialog', () => {
         // (registered via setTimeout(0) inside DismissableLayer).
         await new Promise(resolve => setTimeout(resolve, 0))
         // Find the overlay: the only element with data-state="open" that
-        // isn't the trigger button or the dialog content.
+        // isn't the dialog content (the trigger carries data-popup-open instead).
         const overlayEl = Array.from(
           document.querySelectorAll('[data-state="open"]'),
         ).find(el => el.tagName === 'DIV' && !el.getAttribute('role')) as HTMLElement
@@ -782,7 +782,7 @@ describe('dialogRoot change events (v3 foundation contract)', () => {
     expect(root.emitted('beforeUpdate:open')).toHaveLength(1)
     expect(root.emitted('update:open')).toBeUndefined()
     expect(document.body.innerHTML).toContain(CLOSE_TEXT)
-    expect(wrapper.find('button').attributes('data-state')).toBe('open')
+    expect(wrapper.find('button').attributes('data-popup-open')).toBe('')
   })
 
   it('details.cancel() in beforeUpdate:open keeps a closed dialog closed', async () => {
@@ -795,7 +795,7 @@ describe('dialogRoot change events (v3 foundation contract)', () => {
     const root = wrapper.findComponent(DialogRoot)
     expect(root.emitted('update:open')).toBeUndefined()
     expect(document.body.innerHTML).not.toContain(CLOSE_TEXT)
-    expect(wrapper.find('button').attributes('data-state')).toBe('closed')
+    expect(wrapper.find('button').attributes('data-popup-open')).toBeUndefined()
   })
 
   it('v-model:open round-trips through update:open', async () => {
@@ -816,13 +816,13 @@ describe('dialogRoot change events (v3 foundation contract)', () => {
     await fireEvent.click(wrapper.find('button').element)
     const closeButton = await findByText(document.body, CLOSE_TEXT)
     expect(wrapper.vm.open).toBe(true)
-    expect(wrapper.find('button').attributes('data-state')).toBe('open')
+    expect(wrapper.find('button').attributes('data-popup-open')).toBe('')
 
     await fireEvent.click(closeButton)
     await nextTick()
     expect(wrapper.vm.open).toBe(false)
     expect(document.body.innerHTML).not.toContain(CLOSE_TEXT)
-    expect(wrapper.find('button').attributes('data-state')).toBe('closed')
+    expect(wrapper.find('button').attributes('data-popup-open')).toBeUndefined()
   })
 
   it('does not mutate a controlled open prop; the parent owns the write', async () => {
@@ -844,7 +844,7 @@ describe('dialogRoot change events (v3 foundation contract)', () => {
     expect(root.emitted('update:open')?.[0]?.[0]).toBe(true)
     expect(root.emitted('update:open')?.[0]?.[1]).toMatchObject({ reason: 'trigger-press' })
     // controlled: the rendered state stays until the parent updates the prop
-    expect(wrapper.find('button').attributes('data-state')).toBe('closed')
+    expect(wrapper.find('button').attributes('data-popup-open')).toBeUndefined()
     expect(document.body.innerHTML).not.toContain(CLOSE_TEXT)
   })
 })
