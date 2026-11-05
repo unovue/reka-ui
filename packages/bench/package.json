@@ -1,7 +1,7 @@
 {
   "name": "bench",
   "type": "module",
-  "version": "2.11.0",
+  "version": "3.0.0-alpha.0",
   "private": true,
   "description": "Browser benchmark: retained heap and mount time per component family, on a production build of reka-ui",
   "scripts": {
