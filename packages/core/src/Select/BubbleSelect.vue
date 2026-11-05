@@ -60,6 +60,9 @@ function handleInput(event: Event) {
 type NativeOption = HTMLOptionElement & { _value?: any }
 
 function optionValue(option: NativeOption) {
+  // A `multiple` select's `null` entry submits `''` (as Base UI serializes it) but stands for `null`.
+  if (option.hasAttribute('data-null-value'))
+    return null
   return '_value' in option ? option._value : option.value
 }
 

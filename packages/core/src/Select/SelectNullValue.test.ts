@@ -229,6 +229,7 @@ describe('multiple', () => {
     await settle()
     expect(nativeSelect().selectedOptions).toHaveLength(1)
     expect(nativeSelect().checkValidity()).toBe(true)
-    expect(new FormData(form()).getAll('fruit')).toHaveLength(1)
+    // Not the option text: `null` submits `''`, as Base UI serializes it.
+    expect(new FormData(form()).getAll('fruit')).toEqual([''])
   })
 })

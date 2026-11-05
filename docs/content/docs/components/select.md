@@ -454,7 +454,7 @@ import './styles.css'
 
 `null` is the empty value, as in [Base UI](https://base-ui.com/react/components/select). Set `v-model` to `null` to clear the selection and show the placeholder.
 
-An item can have `value=""`. Selecting it sets the value to `''` and marks that item as selected, but, as in Base UI, an empty string still reads as no value: `SelectValue` shows the placeholder and `data-placeholder` is set. Inside a `multiple` array, `''` is a selected value like any other.
+An item can have `value=""`. Selecting it sets the value to `''` and marks that item as selected, but, as in Base UI, an empty string still reads as no value: `data-placeholder` is set, and `SelectValue` shows the placeholder (or, when `items` has a `null` entry, the `''` item's label from `items`). Inside a `multiple` array, `''` is a selected value like any other.
 
 To let users clear the selection from the list, add an item with a `null` value. Pressing it sets the value to `null`. List it in `items` too and `SelectValue` shows its label while the select is empty, instead of the placeholder. `data-placeholder` is still set.
 

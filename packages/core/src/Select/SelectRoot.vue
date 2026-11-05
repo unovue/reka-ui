@@ -360,7 +360,8 @@ provideSelectRootContext(context)
       <option
         v-for="(option, index) in nativeOptions"
         :key="index"
-        :value="option.value"
+        :value="option.value ?? ''"
+        :data-null-value="option.value == null ? '' : undefined"
         :disabled="option.disabled"
         :selected="option.selected"
       >
