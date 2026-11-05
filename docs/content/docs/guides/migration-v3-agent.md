@@ -106,13 +106,13 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 **Verify.** The project's type-check must pass. Every test that asserts on an `update:*` payload of a converted family must pass.
 
-### 3. ESM only
+### 3. ESM only, Vue 3.5 and Node 22
 
-**What changed.** v3 ships ES modules only. The CommonJS build and the `require` export conditions are gone, for `reka-ui` and for its `reka-ui/nuxt`, `reka-ui/resolver`, `reka-ui/namespaced`, `reka-ui/date`, `reka-ui/constant` and `reka-ui/internal` entries.
+**What changed.** v3 requires Vue 3.5 or later (`vue` peer `>= 3.5.0`) and Node 22 or later wherever the package runs on the server; it depends on VueUse 15, which requires both. Generated ids always come from Vue's `useId()` unless an `id` or a `ConfigProvider` `use-id` is given; the Vue 3.4 counter fallback is gone. v3 also ships ES modules only. The CommonJS build and the `require` export conditions are gone, for `reka-ui` and for its `reka-ui/nuxt`, `reka-ui/resolver`, `reka-ui/namespaced`, `reka-ui/date`, `reka-ui/constant` and `reka-ui/internal` entries.
 
-**How to find it.** Search for `require('reka-ui` and `require("reka-ui`, and check the test runner and any Node scripts that load the package.
+**How to find it.** Check the installed `vue` version and the Node version in `package.json` `engines`, `.nvmrc` / `.node-version`, Dockerfiles and CI. Search for `require('reka-ui` and `require("reka-ui`, and check the test runner and any Node scripts that load the package.
 
-**Rewrite rules.** Replace `require()` with `import` (or dynamic `import()` inside CommonJS files). Vite, Nuxt and Vitest need nothing else. Jest projects need ESM support for the package: either run Jest in ESM mode or add `reka-ui` to `transformIgnorePatterns` exceptions so it is transformed. If the project's own package is CommonJS and cannot move to ESM, *ask* before restructuring it.
+**Rewrite rules.** If `vue` resolves below 3.5, *ask* before upgrading it, since it affects the whole app. If the project pins Node below 22 for server code, *ask* before changing it. Keep a `ConfigProvider` `use-id`; it still takes precedence. Replace `require()` with `import` (or dynamic `import()` inside CommonJS files). Vite, Nuxt and Vitest need nothing else. Jest projects need ESM support for the package: either run Jest in ESM mode or add `reka-ui` to `transformIgnorePatterns` exceptions so it is transformed. If the project's own package is CommonJS and cannot move to ESM, *ask* before restructuring it.
 
 **Verify.** The build and the test runner start without a "Cannot use import statement" or "require() of ES Module" error.
 
