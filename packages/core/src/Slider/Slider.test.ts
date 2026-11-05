@@ -1,4 +1,5 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
+import type { Ref } from 'vue'
 import type SliderImpl from './SliderImpl.vue'
 import { fireEvent } from '@testing-library/vue'
 import { flushPromises, mount } from '@vue/test-utils'
@@ -486,6 +487,63 @@ describe('given slider on a page that leaves through an out-in transition', () =
     }
     finally {
       finishLeave()
+      wrapper.unmount()
+    }
+  })
+})
+
+function mountRangeSlider(thumbs: Ref<string[]>, value: Ref<number[]>) {
+  return mount(defineComponent(() => () => h(
+    SliderRoot,
+    { 'modelValue': value.value, 'onUpdate:modelValue': (v: number[] | undefined) => { value.value = v! } },
+    () => [h(SliderTrack), ...thumbs.value.map(key => h(SliderThumb, { key, 'data-key': key }))],
+  )), { attachTo: document.body })
+}
+
+describe('given a range slider whose thumbs change', () => {
+  it('should not throw when an earlier thumb is removed while a later one is active', async () => {
+    const thumbs = ref(['a', 'b'])
+    const value = ref([20, 80])
+    const wrapper = mountRangeSlider(thumbs, value)
+    try {
+      await nextTick()
+      await wrapper.find('[data-key="b"]').trigger('focus')
+      thumbs.value = ['b']
+      value.value = [80]
+      await nextTick()
+      const sliderImpl = wrapper.find('[data-slider-impl]').element
+      vi.spyOn(sliderImpl, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 20))
+
+      await fireEvent.pointerDown(sliderImpl, { clientX: 30, clientY: 10, pointerId: 1 })
+
+      expect(value.value).toEqual([30])
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('should move and focus the thumb nearest the pointer after a thumb is reinserted', async () => {
+    const thumbs = ref(['a', 'b'])
+    const value = ref([20, 80])
+    const wrapper = mountRangeSlider(thumbs, value)
+    try {
+      await nextTick()
+      thumbs.value = ['b']
+      value.value = [80]
+      await nextTick()
+      thumbs.value = ['a', 'b']
+      value.value = [20, 80]
+      await nextTick()
+      const sliderImpl = wrapper.find('[data-slider-impl]').element
+      vi.spyOn(sliderImpl, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 20))
+
+      await fireEvent.pointerDown(sliderImpl, { clientX: 10, clientY: 10, pointerId: 1 })
+
+      expect(value.value).toEqual([10, 80])
+      expect(document.activeElement).toBe(wrapper.find('[data-key="a"]').element)
+    }
+    finally {
       wrapper.unmount()
     }
   })
