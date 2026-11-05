@@ -1,6 +1,7 @@
 import type { ComputedRef } from 'vue'
 import type { AcceptableValue } from '@/shared/types'
 import { computed, nextTick, shallowRef } from 'vue'
+import { compareDocumentOrder } from '@/shared/documentOrder'
 
 /** An entry the closed trigger's typeahead can select. */
 export interface SelectTypeaheadItem<T = AcceptableValue> {
@@ -20,9 +21,10 @@ const WATCH_SUBTREE: MutationObserverInit = { characterData: true, childList: tr
 function byDocumentPosition<T>(a: HarvestedItem<T>, b: HarvestedItem<T>): number {
   const ea = a.element()
   const eb = b.element()
-  if (!ea || !eb || ea === eb)
+  if (!ea || !eb)
     return 0
-  return ea.compareDocumentPosition(eb) & Node.DOCUMENT_POSITION_PRECEDING ? 1 : -1
+  // Across trees too: a KeepAlive keeps a deactivated branch's items, in its storage.
+  return compareDocumentOrder(ea, eb)
 }
 
 /**
