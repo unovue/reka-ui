@@ -3,7 +3,7 @@ import type { MenuContentContext } from './MenuContentImpl.vue'
 import type { MenuContext, MenuRootContext } from './MenuRoot.vue'
 import type { Direction, GraceIntent, Side } from './utils'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface, SetStateOptions } from '@/shared'
-import { computed, nextTick, onUnmounted, ref, toValue, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, shallowRef, toValue, watch } from 'vue'
 import { createPartSurface, disclosureState, getActiveElement, getterRef, useArrowNavigation, useControllableState, useTypeahead } from '@/shared'
 import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
 import { resolveDirection } from '@/shared/useDirection'
@@ -417,7 +417,8 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
   const highlightedElement = ref<HTMLElement>()
   const highlight = createKeyedSelector<HTMLElement>(() => highlightedElement.value)
   const filterElement = ref<HTMLElement>()
-  const activeSubmenuContext = ref<{ onOpenChange: MenuContext['onOpenChange'], trigger: Ref<HTMLElement | undefined> }>()
+  // A deep `ref` would unwrap `trigger` to the element, so `trigger.value` would always be `undefined`.
+  const activeSubmenuContext = shallowRef<{ onOpenChange: MenuContext['onOpenChange'], trigger: Ref<HTMLElement | undefined> }>()
 
   const { handleTypeaheadSearch } = useTypeahead()
 

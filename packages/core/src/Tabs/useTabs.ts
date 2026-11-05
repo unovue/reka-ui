@@ -47,17 +47,16 @@ export function getTabsTriggerSurface(
   const isSelected = isTabSelected(context, value)
   const isDisabled = () => toValue(disabled) ?? false
 
-  // Ported verbatim from TabsTrigger.vue's `@mousedown.left`: the `.left`
-  // modifier is the `button !== 0` guard; Ctrl+click is ignored (avoids the
-  // MacOS right-click), and a blocked click prevents focus so it can't
-  // accidentally activate. Handlers are created once, not on every render.
+  // Only a plain left press activates: Ctrl+click is ignored (avoids the
+  // MacOS right-click), and any other press (right/middle button, Ctrl, a
+  // disabled trigger) prevents the default so the browser doesn't focus the
+  // trigger, which automatic activation would turn into a selection (#3027).
+  // Handlers are created once, not on every render.
   const onMousedown = (event: MouseEvent) => {
-    if (event.button !== 0)
-      return
     // A consumer listener that prevented the event opts out of activation.
     if (event.defaultPrevented)
       return
-    if (isDisabled() || event.ctrlKey !== false) {
+    if (isDisabled() || event.button !== 0 || event.ctrlKey !== false) {
       event.preventDefault()
       return
     }

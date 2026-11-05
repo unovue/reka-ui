@@ -32,7 +32,10 @@ export function useSliderPointer(options: UseSliderPointerOptions) {
 
   function getValue(event: PointerEvent, slideStart?: boolean) {
     const horizontal = context.orientation.value === 'horizontal'
-    const bounds = rect || element()!.getBoundingClientRect()
+    // Falls back to the listening element: inside a Suspense, an out-in leave
+    // nulls the template ref while the element is still in the DOM and
+    // receiving pointer events (#3148).
+    const bounds = rect || (element() ?? event.currentTarget as HTMLElement).getBoundingClientRect()
     const contain = context.thumbAlignment.value === 'contain'
 
     // Get the currently active thumb element

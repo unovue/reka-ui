@@ -287,6 +287,7 @@ defineExpose(mergeExpose(expose, {
       :required="resolvedRequired"
       :max="inputMaxValue"
       :min="inputMinValue"
+      :step="granularity === 'second' ? 1 : undefined"
       @focus="focusFirstSegment"
     />
   </component>

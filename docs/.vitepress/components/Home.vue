@@ -12,6 +12,7 @@ import TimeRangeFieldDemo from '../../components/demo/TimeRangeField/tailwind/in
 
 import ToolbarDemo from '../../components/demo/Toolbar/tailwind/index.vue'
 import TreeDemo from '../../components/demo/Tree/tailwind/index.vue'
+import { openCollective, sponsor } from '../meta'
 import Chip from './Chip.vue'
 import Sponsors from './Sponsors.vue'
 </script>
@@ -298,6 +299,27 @@ import Sponsors from './Sponsors.vue'
     </p>
 
     <Sponsors class="mt-8 md:mt-12" />
+
+    <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+      <a
+        :href="openCollective"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground hover:bg-primary/90 transition"
+      >
+        <Icon icon="lucide:building-2" />
+        Sponsor as a company
+      </a>
+      <a
+        :href="sponsor"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-2 rounded-lg border border-muted bg-card px-4 py-2 font-semibold hover:bg-muted/50 transition"
+      >
+        <Icon icon="lucide:heart" />
+        Sponsor on GitHub
+      </a>
+    </div>
   </section>
 
   <section class="px-4 py-12 md:py-32 max-w-screen-xl mx-auto md:px-6">

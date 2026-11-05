@@ -134,6 +134,27 @@ describe('useNavigationMenu — standalone', () => {
     wrapper.unmount()
   })
 
+  it('toggles a non-button trigger wired with the composables alone on Space', async () => {
+    const wrapper = mount(defineComponent({
+      setup() {
+        const { root, list, context, modelValue } = useNavigationMenu({ baseId: 'nav', defaultValue: '' })
+        const { item, itemContext } = useNavigationMenuItem({ context, value: 'docs' })
+        const { trigger } = useNavigationMenuTrigger({ context, itemContext })
+        return () => h('nav', root.attrs.value, [
+          h('ul', list.attrs.value, [
+            h('li', item.attrs.value, [
+              h('span', { ...trigger.attrs.value, 'tabindex': 0, 'data-testid': 'trigger' }, 'Docs'),
+            ]),
+          ]),
+          h('output', { 'data-testid': 'model' }, modelValue.value),
+        ])
+      },
+    }), { attachTo: document.body })
+    await wrapper.get('[data-testid="trigger"]').trigger('keydown', { key: ' ', keyCode: 32 })
+    expect(wrapper.get('[data-testid="model"]').text()).toBe('docs')
+    wrapper.unmount()
+  })
+
   it('reports trigger-press and imperative-action, and does not emit for an unchanged value', () => {
     const onUpdate = vi.fn()
     const menu = useNavigationMenu({ onUpdate })
