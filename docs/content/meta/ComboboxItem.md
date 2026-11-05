@@ -29,9 +29,9 @@
   },
   {
     'name': 'value',
-    'description': '<p>The value given as data when submitted with a <code>name</code>. <code>null</code> is the empty value, so pressing an item with a <code>null</code>\nvalue clears a single selection. An empty string is a value like any other, as in Base UI.</p>\n',
+    'description': '<p>The value given as data when submitted with a <code>name</code>. <code>null</code> is the empty value, so pressing an item with a <code>null</code>\nvalue clears a single selection; an item without a <code>value</code> has <code>null</code>, as in Base UI. An empty string is a value\nlike any other.</p>\n',
     'type': 'T',
-    'required': true
+    'required': false
   }
 ]" />
 
@@ -62,7 +62,7 @@
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `disabled` | When `true`, prevents the user from interacting with the item. | `boolean` | No | - |
 | `textValue` | A string representation of the item contents. If the children are not plain text, then the `textValue` prop must also be set to a plain text representation, which is used to filter the items and for typeahead. | `string` | No | - |
-| `value` | The value given as data when submitted with a `name`. `null` is the empty value, so pressing an item with a `null` value clears a single selection. An empty string is a value like any other, as in Base UI. | `T` | Yes | - |
+| `value` | The value given as data when submitted with a `name`. `null` is the empty value, so pressing an item with a `null` value clears a single selection; an item without a `value` has `null`, as in Base UI. An empty string is a value like any other. | `T` | No | - |
 
 **Events**
 

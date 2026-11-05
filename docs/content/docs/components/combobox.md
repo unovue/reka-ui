@@ -356,7 +356,14 @@ const selectedPeople = ref([people[0], people[1]])
 
 An item can have `value=""`. Unlike in a [Select](select.md), an empty string is a value like any other: selecting it marks that item as selected, the input shows its text through `displayValue`, and inside a `Field` the field counts as filled. Inside a `multiple` array, `''` is a selected value too.
 
-To let users clear the selection from the list, add an item with a `null` value. Pressing it sets the value to `null` and empties the input (`displayValue` is not called for `null`), and that item is the selected one while the combobox is empty.
+To let users clear the selection from the list, add an item with a `null` value, or leave out `value`: it defaults to `null`, as in Base UI. Pressing it sets the value to `null` and empties the input (`displayValue` is not called for `null`), and that item is the selected one while the combobox is empty.
+
+The keyboard clears the value too, as in Base UI:
+
+- Emptying the input of a single combobox sets the value to `null` (reason `'input-clear'`). A `multiple` selection is kept.
+- Escape on a closed combobox sets the value to `null` (`[]` with `multiple`) and empties the input (reason `'escape-key'`). When there was a value to clear, the Escape stops there, so it does not also close a surrounding dialog. While the popup is open, Escape only closes it.
+
+Both go through `beforeUpdate:modelValue`; `details.cancel()` keeps the value (and, for Escape, the text).
 
 ```vue line=5,7,16
 <script setup lang="ts">
@@ -397,7 +404,7 @@ const fruits = [
 </template>
 ```
 
-In a form, `null` and `''` both submit an empty string. With `required`, both are missing a value, as in Base UI, where the hidden input carries the submitted string. With `multiple`, any selection satisfies `required`, `['']` included; `null` and `''` are ordinary values that toggle in the array, and `[]` is empty.
+In a form, `null` and `''` both submit an empty string. With `required`, both are missing a value, as in Base UI, where the hidden input carries the submitted string. With `multiple`, any selection satisfies `required`, `['']` included; `null` and `''` are ordinary values that toggle in the array, and `[]` is empty. Inside a `Field`, `null` and `''` are different values for `dirty` (an unset value counts as `null`), as in Base UI.
 
 ### Custom filtering
 
@@ -771,7 +778,7 @@ See the W3C [Combobox Autocomplete List](https://www.w3.org/WAI/ARIA/apg/pattern
     },
     {
       keys: ['Esc'],
-      description: '<span> Closes combobox and restores the selected item in the <Code>ComboboxInput</Code> field. </span>',
+      description: '<span> Closes combobox and restores the selected item in the <Code>ComboboxInput</Code> field. <br /> When the combobox is closed, clears the value (<Code>null</Code>, or <Code>[]</Code> with <Code>multiple</Code>) and the input text. </span>',
     },
   ]"
 />

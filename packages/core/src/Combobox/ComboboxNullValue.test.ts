@@ -217,3 +217,187 @@ describe('multiple', () => {
     expect(field().hasAttribute('data-filled')).toBe(true)
   })
 })
+
+describe('`ComboboxItem` `value` (Base UI: optional, defaults to `null`)', () => {
+  it('an item without a `value` is a `null` item: pressing it clears the selection', async () => {
+    const model = ref<any>('a')
+    const onUpdate = vi.fn((v: any) => { model.value = v })
+    mount(defineComponent({
+      setup: () => () => h(ComboboxRoot, { 'modelValue': model.value, 'onUpdate:modelValue': onUpdate }, () => [
+        h(ComboboxAnchor, () => [h(ComboboxInput, { 'data-testid': 'input' }), h(ComboboxTrigger, { 'data-testid': 'trigger' }, () => 'Open')]),
+        h(ComboboxPortal, () => h(ComboboxContent, () => h(ComboboxViewport, () => [
+          h(ComboboxItem, { textValue: 'None' }, () => 'None'),
+          h(ComboboxItem, { value: 'a', textValue: 'Apple' }, () => 'Apple'),
+        ]))),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    await pick('None')
+    expect(onUpdate).toHaveBeenLastCalledWith(null, expect.objectContaining({ reason: 'item-press' }))
+    await open()
+    expect(option('None').getAttribute('aria-selected')).toBe('true')
+  })
+})
+
+describe('field `dirty` (Base UI `isSelectedValueDirty`)', () => {
+  it('`null` and `\'\'` differ; an unset value reads as `null`', async () => {
+    const model = ref<any>(undefined)
+    make({ model, field: true })
+    await nextTick()
+    expect(field().hasAttribute('data-dirty')).toBe(false)
+    await pick('Empty')
+    expect(model.value).toBe('')
+    expect(field().hasAttribute('data-dirty')).toBe(true)
+    await pick('None')
+    expect(model.value).toBe(null)
+    expect(field().hasAttribute('data-dirty')).toBe(false)
+  })
+
+  it('an initial `\'\'` is dirty once cleared to `null`', async () => {
+    const model = ref<any>('')
+    make({ model, field: true })
+    await nextTick()
+    await pick('None')
+    expect(field().hasAttribute('data-dirty')).toBe(true)
+    await pick('Empty')
+    expect(field().hasAttribute('data-dirty')).toBe(false)
+  })
+
+  it('a multiple selection compares entry by entry', async () => {
+    const model = ref<any[]>([])
+    make({ model, field: true, props: { multiple: true } })
+    await nextTick()
+    await open()
+    option('Empty').click()
+    await flushPromises()
+    expect(field().hasAttribute('data-dirty')).toBe(true)
+    option('Empty').click()
+    await flushPromises()
+    expect(model.value).toEqual([])
+    expect(field().hasAttribute('data-dirty')).toBe(false)
+  })
+})
+
+async function type(text: string) {
+  input().value = text
+  input().dispatchEvent(new Event('input', { bubbles: true }))
+  await flushPromises()
+}
+
+const cancelAll = { 'onBeforeUpdate:modelValue': (_: unknown, details: { cancel: () => void }) => details.cancel() }
+
+describe('emptying the input (Base UI `input-clear`)', () => {
+  it('clears a single value to `null` with reason `input-clear`', async () => {
+    const { onUpdate, model } = make({ model: ref('a') })
+    await nextTick()
+    await type('')
+    expect(onUpdate).toHaveBeenLastCalledWith(null, expect.objectContaining({ reason: 'input-clear' }))
+    expect(model.value).toBe(null)
+  })
+
+  it('also clears a selected `\'\'`', async () => {
+    const { onUpdate } = make({ model: ref(''), props: { displayValue: (v: any) => items.find(o => o.value === v)?.text ?? '' } })
+    await nextTick()
+    expect(input().value).toBe('Empty')
+    await type('')
+    expect(onUpdate).toHaveBeenLastCalledWith(null, expect.objectContaining({ reason: 'input-clear' }))
+  })
+
+  it('emits nothing when the value is already empty', async () => {
+    const { onUpdate } = make({ model: ref(null) })
+    await nextTick()
+    await type('ab')
+    await type('')
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+
+  it('never clears a multiple selection', async () => {
+    const { onUpdate } = make({ model: ref(['a']), props: { multiple: true } })
+    await nextTick()
+    await type('ab')
+    await type('')
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+
+  it('is cancellable through `beforeUpdate:modelValue`', async () => {
+    const { onUpdate, model } = make({ model: ref('a'), props: cancelAll })
+    await nextTick()
+    await type('')
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(model.value).toBe('a')
+  })
+})
+
+async function escape() {
+  const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+  const stop = vi.spyOn(event, 'stopPropagation')
+  input().dispatchEvent(event)
+  await flushPromises()
+  await new Promise(r => setTimeout(r, 10))
+  await flushPromises()
+  return stop
+}
+
+describe('escape on a closed combobox (Base UI)', () => {
+  it('clears a single value and the text with reason `escape-key`, and stops the event', async () => {
+    const onText = vi.fn()
+    const model = ref<any>('a')
+    const onUpdate = vi.fn((v: any) => { model.value = v })
+    mount(defineComponent({
+      setup: () => () => h(ComboboxRoot, { 'modelValue': model.value, 'onUpdate:modelValue': onUpdate }, () => [
+        h(ComboboxAnchor, () => [h(ComboboxInput, { 'data-testid': 'input', 'onUpdate:modelValue': onText })]),
+        h(ComboboxPortal, () => h(ComboboxContent, () => h(ComboboxViewport, () => items.map(o => h(ComboboxItem, { key: String(o.value), value: o.value }, () => o.text))))),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    expect(input().value).toBe('a')
+    const stop = await escape()
+    expect(onUpdate).toHaveBeenLastCalledWith(null, expect.objectContaining({ reason: 'escape-key' }))
+    expect(onText).toHaveBeenCalledWith('', expect.objectContaining({ reason: 'escape-key' }))
+    expect(input().value).toBe('')
+    expect(stop).toHaveBeenCalled()
+  })
+
+  it('clears a selected `\'\'` to `null`', async () => {
+    const { onUpdate } = make({ model: ref('') })
+    await nextTick()
+    await escape()
+    expect(onUpdate).toHaveBeenLastCalledWith(null, expect.objectContaining({ reason: 'escape-key' }))
+  })
+
+  it('clears a multiple selection to `[]`', async () => {
+    const { onUpdate } = make({ model: ref(['', null]), props: { multiple: true } })
+    await nextTick()
+    await escape()
+    expect(onUpdate).toHaveBeenLastCalledWith([], expect.objectContaining({ reason: 'escape-key' }))
+  })
+
+  it('lets the event through and emits nothing when there is nothing to clear', async () => {
+    const { onUpdate } = make({ model: ref(null) })
+    await nextTick()
+    const stop = await escape()
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(stop).not.toHaveBeenCalled()
+  })
+
+  it('a cancelled clear keeps the value and the text, and lets the event through', async () => {
+    const { onUpdate, model } = make({ model: ref('a'), props: cancelAll })
+    await nextTick()
+    const stop = await escape()
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(model.value).toBe('a')
+    expect(input().value).toBe('a')
+    expect(stop).not.toHaveBeenCalled()
+  })
+
+  it('on an open combobox, Escape only closes it and keeps the value', async () => {
+    const { onUpdate, model } = make({ model: ref('a') })
+    await nextTick()
+    await open()
+    expect(input().getAttribute('aria-expanded')).toBe('true')
+    await escape()
+    expect(input().getAttribute('aria-expanded')).toBe('false')
+    expect(model.value).toBe('a')
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+})

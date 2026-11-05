@@ -116,3 +116,45 @@ describe('combobox with an empty-string and a null item, in a real browser', () 
     expect(submitted[0].get('fruit[1]')).toBe('')
   })
 })
+
+describe('combobox Escape and input clearing with real keys (Base UI)', () => {
+  it('escape closes an open popup keeping the value, then clears the closed combobox and stops there', async () => {
+    const { wrapper, get, model, form } = mountCombobox()
+    unmount = () => wrapper.unmount()
+    const input = () => get('input') as HTMLInputElement
+    const outer: string[] = []
+    form().addEventListener('keydown', event => outer.push(event.key))
+    await expect.poll(() => input().value).toBe('Apple')
+
+    await userEvent.click(get('trigger'))
+    await expect.poll(() => input().getAttribute('aria-expanded')).toBe('true')
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => input().getAttribute('aria-expanded')).toBe('false')
+    expect(model.value).toBe('a')
+    expect(input().value).toBe('Apple')
+
+    input().focus()
+    outer.length = 0
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => model.value).toBe(null)
+    await expect.poll(() => input().value).toBe('')
+    // Something was cleared: the Escape does not reach an outer layer (a dialog).
+    expect(outer).toEqual([])
+
+    // Nothing left to clear: it propagates.
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => outer).toEqual(['Escape'])
+  })
+
+  it('emptying the input with the keyboard clears a single selection', async () => {
+    const { wrapper, get, model } = mountCombobox()
+    unmount = () => wrapper.unmount()
+    const input = () => get('input') as HTMLInputElement
+    await expect.poll(() => input().value).toBe('Apple')
+    await userEvent.click(input())
+    input().select()
+    await userEvent.keyboard('{Backspace}')
+    await expect.poll(() => model.value).toBe(null)
+    expect(input().value).toBe('')
+  })
+})

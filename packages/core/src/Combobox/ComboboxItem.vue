@@ -8,12 +8,14 @@ import { injectComboboxRootContext } from './ComboboxRoot.vue'
 export { injectListboxItemContext as injectComboboxItemContext } from '@/Listbox'
 
 export type ComboboxItemEmits<T = AcceptableValue> = ListboxItemEmits<T>
-export interface ComboboxItemProps<T = AcceptableValue> extends ListboxItemProps<T> {
+export interface ComboboxItemProps<T = AcceptableValue> extends Omit<ListboxItemProps<T>, 'value'> {
   /**
    * The value given as data when submitted with a `name`. `null` is the empty value, so pressing an item with a `null`
-   * value clears a single selection. An empty string is a value like any other, as in Base UI.
+   * value clears a single selection; an item without a `value` has `null`, as in Base UI. An empty string is a value
+   * like any other.
+   * @defaultValue `null`
    */
-  value: T
+  value?: T
   /**
    * A string representation of the item contents.
    *
@@ -27,6 +29,8 @@ export interface ComboboxItemProps<T = AcceptableValue> extends ListboxItemProps
 import { ListboxItem } from '@/Listbox'
 
 const props = defineProps<ComboboxItemProps<T>>()
+// Base UI: an item without a `value` (read as `value ?? null`) is the `null`
+// item, which clears a single selection.
 const emits = defineEmits<ComboboxItemEmits<T>>()
 
 defineSlots<{
@@ -54,7 +58,7 @@ function onSelect(event: SelectEvent<T>) {
   if (!rootContext.multiple.value) {
     event.preventDefault()
     if (!props.disabled && !rootContext.disabled.value) {
-      rootContext.pressItem(props.value, event.detail.originalEvent)
+      rootContext.pressItem((props.value ?? null) as T, event.detail.originalEvent)
     }
   }
   else {
@@ -69,6 +73,7 @@ function onSelect(event: SelectEvent<T>) {
     :id="id"
     :ref="forwardRef"
     v-slot="slotProps"
+    :value="value ?? null"
     :disabled="rootContext.disabled.value || disabled"
     @select="onSelect"
   >
