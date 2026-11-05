@@ -570,8 +570,12 @@ export function useNavigationMenuItem(options: UseNavigationMenuItemOptions): Us
     const currentFocus = getActiveElement() as HTMLElement
     if (ev.keyCode === 32) {
       // Only the trigger of this item toggles; links and nested items keep their own behaviour.
-      // `NavigationMenuTrigger` replaces `itemContext.triggerRef` with its element ref on mount.
-      if (ev.target !== itemContext.triggerRef.value)
+      // `NavigationMenuTrigger` replaces `itemContext.triggerRef` with its element ref on mount;
+      // a trigger wired with the composables alone is known by its id.
+      const isTrigger = itemContext.triggerRef.value
+        ? ev.target === itemContext.triggerRef.value
+        : (ev.target as HTMLElement).id === makeTriggerId(context.baseId, value)
+      if (!isTrigger)
         return
       if (ev.repeat) {
         ev.preventDefault()

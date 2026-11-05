@@ -548,6 +548,62 @@ describe('given a range slider whose thumbs change', () => {
   })
 })
 
+describe('given a range slider whose thumb is reinserted before the focused one', () => {
+  it('should keep stepping the focused thumb with the keyboard', async () => {
+    const thumbs = ref(['a', 'b'])
+    const value = ref([20, 80])
+    const wrapper = mountRangeSlider(thumbs, value)
+    try {
+      await nextTick()
+      await wrapper.find('[data-key="b"]').trigger('focus')
+      thumbs.value = ['b']
+      value.value = [80]
+      await nextTick()
+      thumbs.value = ['a', 'b']
+      value.value = [20, 80]
+      await nextTick()
+
+      await wrapper.find('[data-key="b"]').trigger('keydown', { key: 'ArrowRight' })
+
+      expect(value.value).toEqual([20, 81])
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+})
+
+describe('given a range slider with an asChild thumb that renders no element', () => {
+  it('should register the other thumbs', async () => {
+    const value = ref([20, 80])
+    const errors: unknown[] = []
+    const wrapper = mount(defineComponent(() => () => h(
+      SliderRoot,
+      { 'modelValue': value.value, 'onUpdate:modelValue': (v: number[] | undefined) => { value.value = v! } },
+      () => [
+        h(SliderTrack),
+        h(SliderThumb, { 'data-key': 'a' }),
+        h(SliderThumb, { asChild: true }, () => null),
+        h(SliderThumb, { 'data-key': 'b' }),
+      ],
+    )), { attachTo: document.body, global: { config: { errorHandler: error => errors.push(error) } } })
+    try {
+      await nextTick()
+      const sliderImpl = wrapper.find('[data-slider-impl]').element
+      vi.spyOn(sliderImpl, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 20))
+
+      await fireEvent.pointerDown(sliderImpl, { clientX: 90, clientY: 10, pointerId: 1 })
+
+      expect(errors).toEqual([])
+      expect(value.value).toEqual([20, 90])
+      expect(document.activeElement).toBe(wrapper.find('[data-key="b"]').element)
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+})
+
 describe('given a range slider whose first thumb is removed', () => {
   it('should focus the remaining thumb, not the detached one, on pointer input', async () => {
     const thumbs = ref(['a', 'b'])

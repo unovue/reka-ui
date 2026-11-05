@@ -66,15 +66,25 @@ const thumb = getSliderThumbSurface(rootContext, orientation, {
 // Keep the mounted element: the template ref is already null by the time `onUnmounted` runs.
 let mountedThumb: HTMLElement | undefined
 onMounted(() => {
+  // An `asChild` thumb that rendered no element has nothing to register.
+  if (!(thumbElement.value instanceof Element))
+    return
   mountedThumb = thumbElement.value as HTMLElement
   const thumbs = rootContext.thumbElements.value
+  const active = rootContext.valueIndexToChangeRef
+  const activeThumb = thumbs[active.value]
   // Insert in DOM order: thumb indexes come from the collection, so a reinserted thumb must not land at the end.
   const next = thumbs.findIndex(thumb => mountedThumb!.compareDocumentPosition(thumb) & Node.DOCUMENT_POSITION_FOLLOWING)
   thumbs.splice(next === -1 ? thumbs.length : next, 0, mountedThumb)
+  // Keep the active index on the same thumb when this one lands before it.
+  if (activeThumb)
+    active.value = thumbs.indexOf(activeThumb)
 })
 onUnmounted(() => {
+  if (!mountedThumb)
+    return
   const thumbs = rootContext.thumbElements.value
-  const i = thumbs.indexOf(mountedThumb!)
+  const i = thumbs.indexOf(mountedThumb)
   mountedThumb = undefined
   if (i === -1)
     return
