@@ -76,12 +76,16 @@ describe('select with an empty-string and a null item, in a real browser', () =>
     await expect.poll(() => get('value').textContent).toBe('Apple')
     expect(nativeSelect().checkValidity()).toBe(true)
 
+    // Checked through the form's own constraint validation rather than clicking
+    // submit: a blocked submit opens the browser's validation popup, which in
+    // Firefox can swallow the next click.
+    const form = () => nativeSelect().form!
     model.value = ''
     await expect.poll(() => nativeSelect().validity.valueMissing).toBe(true)
-    await userEvent.click(get('submit'))
+    expect(form().checkValidity()).toBe(false)
     model.value = null
     await expect.poll(() => nativeSelect().validity.valueMissing).toBe(true)
-    await userEvent.click(get('submit'))
+    expect(form().checkValidity()).toBe(false)
     expect(submitted).toHaveLength(0)
 
     model.value = 'a'
