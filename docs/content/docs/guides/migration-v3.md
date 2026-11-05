@@ -165,6 +165,18 @@ Two consequences of the second argument:
 
 The composables are new and additive. A standalone `useTree()` returns the selection and expanded models, the flattened visible items and per-item surfaces, but arrow-key focus still comes from `RovingFocusGroup` / `RovingFocusItem`, and `TreeVirtualizer` stays a component. `TreeRoot` has no `getNavigationIntent` yet; arrow keys go through `RovingFocus` as in v2.
 
+## Vue 3.5 and Node 22
+
+v3 requires Vue 3.5 or later (the `vue` peer range is now `>= 3.5.0`) and Node 22 or later wherever the package runs on the server. v3 depends on VueUse 15, which already requires both.
+
+Generated ids now always come from Vue's own [`useId()`](https://vuejs.org/api/composition-api-helpers.html#useid), unless you pass an `id` or give `ConfigProvider` a `useId` function. The module counter v2 used on Vue 3.4 is gone. Importing `useId` by name, instead of reading it from the whole `vue` module, lets your bundler drop the parts of Vue you don't use, such as the Vapor runtime in Vue 3.6.
+
+What to check in your code:
+
+- Upgrade `vue` to 3.5 or later. With Nuxt, upgrade Nuxt to a release that ships Vue 3.5.
+- Run SSR, prerendering and build scripts on Node 22 or later.
+- A `ConfigProvider` `use-id` you added only to work around Vue 3.4 hydration mismatches can be removed. Keep it if your framework prerenders with a different Vue app id prefix than the client hydrates with.
+
 ## ESM only
 
 v3 ships ES modules only. The CommonJS build and the `require` export conditions are gone, so `require('reka-ui')` no longer resolves.
@@ -173,7 +185,7 @@ What to check in your code:
 
 - Replace `require()` calls with `import`, or with a dynamic `import()` inside files that must stay CommonJS.
 - Vite, Nuxt and Vitest need no change.
-- Jest needs ESM support for the package: run Jest in ESM mode, or let it transform `reka-ui` by excluding it from `transformIgnorePatterns`.
+- Jest must run in ESM mode (`--experimental-vm-modules`). The package's `exports` only have an `import` condition, so a CommonJS Jest cannot resolve `reka-ui` at all, and `transformIgnorePatterns` does not help. Moving the tests to Vitest also works.
 
 ## Auto-imports use per-component entry points
 

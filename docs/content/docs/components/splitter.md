@@ -285,9 +285,9 @@ Customize the handle by passing any element as the slot.
 
 ### SSR
 
-Splitter component heavily relies on unique `id`, however for Vue<3.4 we don't have a reliable way of generating [SSR-friendly `id`](https://github.com/vuejs/rfcs/discussions/557).
+Splitter relies on unique `id`s. Generated ids come from Vue's `useId()`, so they match between the server and the client (see [Generated ids](/docs/guides/server-side-rendering#generated-ids)).
 
-Thus, if you are using Nuxt or other SSR framework, you are required to manually add the `id` for all Splitter components. Alternatively, you can wrap the component with `<ClientOnly>`.
+Pass your own `id`s when you need them to be predictable, for example when a persisted layout or your styles refer to a panel:
 
 ```vue
 <template>
