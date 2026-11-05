@@ -29,7 +29,7 @@
   },
   {
     'name': 'value',
-    'description': '<p>The value given as data when submitted with a <code>name</code>.</p>\n',
+    'description': '<p>The value given as data when submitted with a <code>name</code>. <code>null</code> is the empty value, so pressing an item with a <code>null</code>\nvalue clears the selection. An empty string is allowed; as in Base UI, a selected <code>\'\'</code> still shows the placeholder.</p>\n',
     'type': 'AcceptableValue',
     'required': true
   }
@@ -62,7 +62,7 @@
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `disabled` | When `true`, prevents the user from interacting with the item. | `boolean` | No | - |
 | `textValue` | Optional text used for typeahead purposes. By default the typeahead behavior will use the `.textContent` of the `SelectItemText` part. Use this when the content is complex, or you have non-textual content inside. | `string` | No | - |
-| `value` | The value given as data when submitted with a `name`. | `AcceptableValue` | Yes | - |
+| `value` | The value given as data when submitted with a `name`. `null` is the empty value, so pressing an item with a `null` value clears the selection. An empty string is allowed; as in Base UI, a selected `''` still shows the placeholder. | `AcceptableValue` | Yes | - |
 
 **Events**
 

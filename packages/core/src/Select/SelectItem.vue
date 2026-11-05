@@ -27,7 +27,10 @@ export type SelectItemEmits<T = AcceptableValue> = {
 }
 
 export interface SelectItemProps<T = AcceptableValue> extends PrimitiveProps {
-  /** The value given as data when submitted with a `name`. */
+  /**
+   * The value given as data when submitted with a `name`. `null` is the empty value, so pressing an item with a `null`
+   * value clears the selection. An empty string is allowed; as in Base UI, a selected `''` still shows the placeholder.
+   */
   value: T
   /** When `true`, prevents the user from interacting with the item. */
   disabled?: boolean
@@ -69,12 +72,6 @@ const rootContext = injectSelectRootContext()
 const contentContext = injectSelectContentContext()
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
-
-if (props.value === '') {
-  throw new Error(
-    'A <SelectItem /> must have a value prop that is not an empty string. This is because the Select value can be set to an empty string to clear the selection and show the placeholder.',
-  )
-}
 
 // A closed content's detached item only keeps its value, text and `disabled` live:
 // it renders lean (see `SelectClosedItems`).

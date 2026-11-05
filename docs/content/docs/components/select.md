@@ -450,6 +450,54 @@ import './styles.css'
 }
 ```
 
+### Clearing the value
+
+`null` is the empty value, as in [Base UI](https://base-ui.com/react/components/select). Set `v-model` to `null` to clear the selection and show the placeholder.
+
+An item can have `value=""`. Selecting it sets the value to `''` and marks that item as selected, but, as in Base UI, an empty string still reads as no value: `SelectValue` shows the placeholder and `data-placeholder` is set. Inside a `multiple` array, `''` is a selected value like any other.
+
+To let users clear the selection from the list, add an item with a `null` value. Pressing it sets the value to `null`. List it in `items` too and `SelectValue` shows its label while the select is empty, instead of the placeholder. `data-placeholder` is still set.
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+
+const theme = ref<string | null>(null)
+const themes = [
+  { value: null, label: 'Select theme' },
+  { value: 'system', label: 'System default' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+]
+</script>
+
+<template>
+  <SelectRoot
+    v-model="theme"
+    :items="themes"
+  >
+    <SelectTrigger>
+      <SelectValue />
+    </SelectTrigger>
+    <SelectPortal>
+      <SelectContent>
+        <SelectViewport>
+          <SelectItem
+            v-for="item in themes"
+            :key="String(item.value)"
+            :value="item.value"
+          >
+            <SelectItemText>{{ item.label }}</SelectItemText>
+          </SelectItem>
+        </SelectViewport>
+      </SelectContent>
+    </SelectPortal>
+  </SelectRoot>
+</template>
+```
+
+In a form, `null` and `''` both submit an empty string (`null` submits `nullable-value`, `""` by default). With `required`, both are missing a value, and inside a `Field` neither counts as filled, as in Base UI. With `multiple`, a `null` item is an ordinary value that toggles in the array; clear a multiple select with `[]`.
+
 ### With separators
 
 Use the `Separator` part to add a separator between items.
