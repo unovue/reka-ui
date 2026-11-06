@@ -727,7 +727,7 @@ Two fixes in neighbouring families:
 
 ## Tabs select the first tab
 
-`TabsRoot` without a `defaultValue` selects the first enabled tab, as Base UI does ([#2328](https://github.com/unovue/reka-ui/issues/2328)). In v2 (and Radix) no tab and no panel were shown until you clicked one. An uncontrolled root also moves to the first enabled tab when the selected one is removed (`v-if`) or becomes disabled, and a `defaultValue` that matches no tab falls back the same way. Controlled tabs keep the value you give them. A `v-model` bound to `undefined` counts as uncontrolled, so it receives the `defaultValue`, or the first tab when there is none.
+`TabsRoot` without a `defaultValue` selects the first enabled tab, as Base UI does ([#2328](https://github.com/unovue/reka-ui/issues/2328)). In v2 (and Radix) no tab and no panel were shown until you clicked one. An uncontrolled root also moves to the first enabled tab when the selected one is removed (`v-if`) or becomes disabled, and a `defaultValue` that matches no tab falls back the same way. Controlled tabs keep the value you give them. A `v-model` that is `undefined` from mount counts as uncontrolled. With a `defaultValue`, the root shows that tab and emits nothing, so the model stays `undefined`. Without one, the root emits the first tab, so the model receives it. A model that has held a value stays controlled when it is cleared to `undefined` (see [Change events carry details](#change-events-carry-details)).
 
 ```vue
 <TabsRoot default-value="account"> <!-- unchanged -->

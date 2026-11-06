@@ -36,7 +36,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled value of the tab to activate. Can be bind as <code>v-model</code>. <code>null</code> selects no tab. While it is\n<code>undefined</code> the tabs are uncontrolled: they start on <code>defaultValue</code>, or on the first enabled tab without one.</p>\n',
+    'description': '<p>The controlled value of the tab to activate. Can be bind as <code>v-model</code>. <code>null</code> selects no tab. While it has been\n<code>undefined</code> since mount the tabs are uncontrolled: they start on <code>defaultValue</code> (not emitted), or on the first\nenabled tab without one (emitted). Once defined, it stays controlled, also when cleared to <code>undefined</code>.</p>\n',
     'type': 'null | T',
     'required': false
   },
@@ -89,7 +89,7 @@
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultValue` | The value of the tab that should be active when initially rendered. Use when you do not need to control the state of the tabs. Without it, the first enabled tab is selected; `null` selects no tab. | `null \| T` | No | - |
 | `dir` | The reading direction of the combobox when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
-| `modelValue` | The controlled value of the tab to activate. Can be bind as `v-model`. `null` selects no tab. While it is `undefined` the tabs are uncontrolled: they start on `defaultValue`, or on the first enabled tab without one. | `null \| T` | No | - |
+| `modelValue` | The controlled value of the tab to activate. Can be bind as `v-model`. `null` selects no tab. While it has been `undefined` since mount the tabs are uncontrolled: they start on `defaultValue` (not emitted), or on the first enabled tab without one (emitted). Once defined, it stays controlled, also when cleared to `undefined`. | `null \| T` | No | - |
 | `orientation` | The orientation the tabs are laid out. Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"vertical" \| "horizontal"` | No | `"horizontal"` |
 | `unmountOnHide` | When `true`, the element will be unmounted on closed state. | `boolean` | No | `true` |
 

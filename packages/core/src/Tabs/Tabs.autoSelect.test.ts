@@ -75,6 +75,33 @@ describe('given uncontrolled Tabs without a defaultValue', () => {
     expect(model.value).toBe('one')
     wrapper.unmount()
   })
+
+  it('shows a defaultValue without emitting it to a v-model bound to `undefined`', async () => {
+    const model = ref<string>()
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(TabsRoot, { 'defaultValue': 'two', 'modelValue': model.value, 'onUpdate:modelValue': (v: any) => { model.value = v } }, () =>
+        h(TabsList, () => ['one', 'two'].map(value => h(TabsTrigger, { key: value, value }, () => value)))),
+    }), { attachTo: document.body })
+    await nextTick()
+    expect(wrapper.find('[role=tab][aria-selected=true]').text()).toBe('two')
+    expect(model.value).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it('selects nothing for a v-model cleared to `undefined` after holding a value', async () => {
+    const model = ref<string | undefined>('two')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(TabsRoot, { 'modelValue': model.value, 'onUpdate:modelValue': (v: any) => { model.value = v } }, () =>
+        h(TabsList, () => ['one', 'two'].map(value => h(TabsTrigger, { key: value, value }, () => value)))),
+    }), { attachTo: document.body })
+    await nextTick()
+    model.value = undefined
+    await nextTick()
+    await nextTick()
+    expect(wrapper.find('[role=tab][aria-selected=true]').exists()).toBe(false)
+    expect(model.value).toBeUndefined()
+    wrapper.unmount()
+  })
 })
 
 describe('given uncontrolled Tabs with a selected tab', () => {
