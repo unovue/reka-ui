@@ -25,7 +25,7 @@ describe('tabs render counts', () => {
     await nextTick()
     renders.fill(0)
 
-    await wrapper.findAll('[role=tab]')[11].trigger('mousedown', { button: 0 })
+    await wrapper.findAll('[role=tab]')[11].trigger('click')
     await nextTick()
     expect(wrapper.find('[aria-selected=true]').text()).toBe('Tab 11')
     expect(renders.flatMap((n, i) => n ? [i] : [])).toEqual([2, 11])

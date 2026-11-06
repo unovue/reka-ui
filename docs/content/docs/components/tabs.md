@@ -190,13 +190,13 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 </template>
 ```
 
-### Manual activation
+### Automatic activation
 
-By default a tab activates as soon as its trigger gets focus, so arrow keys switch panels immediately. When a panel is expensive to render or fetches data, set `activation-mode="manual"`: the arrow keys only move focus, and Enter, Space or a click activates the focused tab.
+By default, as in Base UI, a tab activates when it is clicked (once the mouse button is released over it) or when Enter or Space is pressed on it. The arrow keys only move focus between the triggers. Set `activation-mode="automatic"` to activate a tab as soon as its trigger gets focus: the arrow keys then switch panels as they move, and a mouse press activates a tab before it is released. Keep the default when a panel is expensive to render or fetches data.
 
 ```vue
 <template>
-  <TabsRoot default-value="overview" activation-mode="manual">
+  <TabsRoot default-value="overview" activation-mode="automatic">
     <!-- ... -->
   </TabsRoot>
 </template>
@@ -256,7 +256,18 @@ An uncontrolled `TabsRoot` (no `v-model`, or one that has been `undefined` since
 
 ### Keeping inactive panels mounted
 
-The panel elements of inactive tabs stay in the DOM with `hidden`, but their content unmounts. Set `:unmount-on-hide="false"` on `TabsRoot` to keep the content mounted too, so its state (form input, a playing video, a loaded iframe) survives switching tabs.
+As in Base UI, an inactive `TabsContent` is removed from the DOM, element and all, and the trigger's `aria-controls` names a panel only while it is rendered. Set `:unmount-on-hide="false"` on `TabsRoot` to keep every panel mounted, so its state (form input, a playing video, a loaded iframe) survives switching tabs. Inactive panels are then hidden with the `hidden` attribute, which any `display` style on the panel overrides (a `flex` class, for example). Hide them by state in that case:
+
+```vue
+<template>
+  <TabsRoot default-value="overview" :unmount-on-hide="false">
+    <!-- ... -->
+    <TabsContent value="overview" class="flex data-[state=unchecked]:hidden">
+      <!-- ... -->
+    </TabsContent>
+  </TabsRoot>
+</template>
+```
 
 ### Animated indicator
 
@@ -289,27 +300,31 @@ Adheres to the [Tabs WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/pa
     },
     {
       keys: ['ArrowDown'],
-      description: '<span> Moves focus to the next trigger depending on <Code>orientation</Code> and activates its associated content.</span>',
+      description: '<span> Moves focus to the next trigger depending on <Code>orientation</Code>. With <Code>activation-mode=&quot;automatic&quot;</Code>, also activates its associated content.</span>',
     },
     {
       keys: ['ArrowRight'],
-      description: '<span> Moves focus to the next trigger depending on <Code>orientation</Code> and activates its associated content.</span>',
+      description: '<span> Moves focus to the next trigger depending on <Code>orientation</Code>. With <Code>activation-mode=&quot;automatic&quot;</Code>, also activates its associated content.</span>',
     },
     {
       keys: ['ArrowUp'],
-      description: '<span> Moves focus to the previous trigger depending on <Code>orientation</Code> and activates its associated content.</span>',
+      description: '<span> Moves focus to the previous trigger depending on <Code>orientation</Code>. With <Code>activation-mode=&quot;automatic&quot;</Code>, also activates its associated content.</span>',
     },
     {
       keys: ['ArrowLeft'],
-      description: '<span> Moves focus to the previous trigger depending on <Code>orientation</Code> and activates its associated content.</span>',
+      description: '<span> Moves focus to the previous trigger depending on <Code>orientation</Code>. With <Code>activation-mode=&quot;automatic&quot;</Code>, also activates its associated content.</span>',
     },
     {
       keys: ['Home'],
-      description: '<span> Moves focus to the first trigger and activates its associated content.</span>',
+      description: '<span> Moves focus to the first trigger. With <Code>activation-mode=&quot;automatic&quot;</Code>, also activates its associated content.</span>',
     },
     {
       keys: ['End'],
-      description: '<span> Moves focus to the last trigger and activates its associated content.</span>',
+      description: '<span> Moves focus to the last trigger. With <Code>activation-mode=&quot;automatic&quot;</Code>, also activates its associated content.</span>',
+    },
+    {
+      keys: ['Enter', 'Space'],
+      description: '<span> Activates the focused trigger.</span>',
     },
   ]"
 />

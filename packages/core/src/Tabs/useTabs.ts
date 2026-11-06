@@ -58,12 +58,20 @@ export function getTabsTriggerSurface(
   const isSelected = isTabSelected(context, value)
   const isDisabled = () => toValue(disabled) ?? false
 
-  // Only a plain left press activates: Ctrl+click is ignored (avoids the
-  // MacOS right-click), and any other press (right/middle button, Ctrl, a
-  // disabled trigger) prevents the default so the browser doesn't focus the
-  // trigger, which automatic activation would turn into a selection (#3027).
+  // Base UI selects a tab on click, once the press is released over it (#842).
+  // Automatic activation also selects on the focus a press gives (Base UI's
+  // `activateOnFocus`), so that mode alone selects on mousedown. Only a plain
+  // left press focuses: Ctrl+click is ignored (avoids the MacOS right-click),
+  // and any other press (right/middle button, Ctrl, a disabled trigger)
+  // prevents the default so the browser doesn't focus the trigger, which
+  // automatic activation would turn into a selection (#3027).
   // Handlers are created once, not on every render.
+  const isAutomatic = () => context.activationMode === 'automatic'
+  // An Enter/Space keydown already attempted the change that its keyboard
+  // click repeats: a cancelled change must not be asked for twice.
+  let keyActivated = false
   const onMousedown = (event: MouseEvent) => {
+    keyActivated = false
     // A consumer listener that prevented the event opts out of activation.
     if (event.defaultPrevented)
       return
@@ -71,6 +79,8 @@ export function getTabsTriggerSurface(
       event.preventDefault()
       return
     }
+    if (!isAutomatic())
+      return
     // A `beforeUpdate` cancel of the press must also block the browser's
     // follow-up focus, or automatic activation would re-attempt the change
     // as `trigger-focus`. An already-selected trigger attempts nothing
@@ -79,17 +89,29 @@ export function getTabsTriggerSurface(
     if (!isSelected() && !changed)
       event.preventDefault()
   }
+  const onClick = (event: MouseEvent) => {
+    if (event.defaultPrevented || isDisabled())
+      return
+    // In automatic mode a pointer click (`detail` > 0) was handled by its
+    // mousedown; a keyboard click (`detail` 0) by its keydown.
+    if (event.detail > 0 ? isAutomatic() : keyActivated) {
+      keyActivated = false
+      return
+    }
+    context.changeModelValue(toValue(value), 'trigger-press', event)
+  }
   // `@keydown.enter.space` — no preventDefault today; keep it that way.
   const onKeydown = (event: KeyboardEvent) => {
     if (event.defaultPrevented)
       return
-    if (event.key === 'Enter' || event.key === ' ')
+    if (event.key === 'Enter' || event.key === ' ') {
+      keyActivated = true
       context.changeModelValue(toValue(value), 'trigger-keydown', event)
+    }
   }
   // Automatic activation follows focus; manual mode needs a click/key.
   const onFocus = (event?: FocusEvent) => {
-    const isAutomaticActivation = context.activationMode !== 'manual'
-    if (!isSelected() && !isDisabled() && isAutomaticActivation)
+    if (!isSelected() && !isDisabled() && isAutomatic())
       context.changeModelValue(toValue(value), 'trigger-focus', event)
   }
 
@@ -103,6 +125,7 @@ export function getTabsTriggerSurface(
         'aria-controls': context.contentIds.value.has(tab) ? getTabsContentId(context, tab) : undefined,
         'disabled': isDisabled(),
         'onMousedown': onMousedown,
+        'onClick': onClick,
         'onKeydown': onKeydown,
         'onFocus': onFocus,
       }
@@ -171,7 +194,7 @@ export interface UseTabsProps {
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** @defaultValue `true` */
   unmountOnHide?: MaybeRefOrGetter<boolean | undefined>
-  /** @defaultValue `'automatic'` */
+  /** @defaultValue `'manual'` */
   activationMode?: 'automatic' | 'manual'
   /**
    * Base id the trigger/content ids derive from. Defaults to `reka-tabs-<n>`
@@ -218,7 +241,7 @@ export interface UseTabsReturn {
  */
 export function useTabs(props: UseTabsProps = {}): UseTabsReturn {
   const baseId = props.baseId ?? `reka-tabs-${++tabsCount}`
-  const activationMode = props.activationMode ?? 'automatic'
+  const activationMode = props.activationMode ?? 'manual'
 
   // `null` (no tab) only comes in through the props: changes always carry a
   // tab value, so the change callbacks keep their `StringOrNumber` type.
