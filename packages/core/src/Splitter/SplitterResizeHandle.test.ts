@@ -1,8 +1,9 @@
 import type { VueWrapper } from '@vue/test-utils'
+import type { Direction } from './utils/types'
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from '.'
 
 // Regression test for https://github.com/unovue/reka-ui/issues/2893
@@ -147,5 +148,144 @@ describe('resize handles in two documents', () => {
 
     expect(framed.find('.handle').attributes('data-state')).toBe('hover')
     expect(page.find('.handle').attributes('data-state')).toBe('inactive')
+  })
+})
+
+describe('resize handle keyboard behavior after mounting into an existing group (issue #3160)', () => {
+  let wrapper: VueWrapper
+
+  afterEach(() => {
+    wrapper.unmount()
+    document.body.innerHTML = ''
+  })
+
+  function mountSplitter({
+    direction = 'horizontal',
+    initiallyShown = true,
+    withSecondHandle = false,
+  }: {
+    direction?: Direction
+    initiallyShown?: boolean
+    withSecondHandle?: boolean
+  } = {}) {
+    const shown = ref(initiallyShown)
+    const disabled = ref(false)
+
+    wrapper = mount(defineComponent({
+      components: { SplitterGroup, SplitterPanel, SplitterResizeHandle },
+      setup() {
+        return { shown, disabled, direction, withSecondHandle }
+      },
+      template: `
+        <SplitterGroup :direction="direction">
+          <template v-if="shown">
+            <SplitterPanel id="side" :order="0" :default-size="30" :min-size="10" />
+            <SplitterResizeHandle id="handle" :disabled="disabled" />
+          </template>
+          <SplitterPanel id="main" :order="1" />
+          <template v-if="withSecondHandle">
+            <SplitterResizeHandle id="second-handle" />
+            <SplitterPanel id="end" :order="2" :default-size="20" />
+          </template>
+        </SplitterGroup>
+      `,
+    }), { attachTo: document.body })
+
+    return { shown, disabled }
+  }
+
+  function sideSize() {
+    return Number(wrapper.get<HTMLElement>('#side').element.style.flexGrow)
+  }
+
+  it.each([
+    { direction: 'horizontal', key: 'ArrowRight', expectedSize: 40 },
+    { direction: 'horizontal', key: 'ArrowLeft', expectedSize: 20 },
+    { direction: 'vertical', key: 'ArrowDown', expectedSize: 40 },
+    { direction: 'vertical', key: 'ArrowUp', expectedSize: 20 },
+    { direction: 'horizontal', key: 'Home', expectedSize: 10 },
+    { direction: 'horizontal', key: 'End', expectedSize: 100 },
+  ] as const)('should resize with $key in a $direction group before and after remounting', async ({ direction, key, expectedSize }) => {
+    const { shown } = mountSplitter({ direction })
+    await nextTick()
+    const groupElement = wrapper.getComponent(SplitterGroup).element
+
+    expect(sideSize()).toBe(30)
+    wrapper.get<HTMLElement>('#handle').element.focus()
+    await fireEvent.keyDown(wrapper.get('#handle').element, { key })
+    expect(sideSize()).toBe(expectedSize)
+
+    shown.value = false
+    await nextTick()
+    expect(wrapper.find('#handle').exists()).toBe(false)
+
+    shown.value = true
+    await nextTick()
+    expect(wrapper.getComponent(SplitterGroup).element).toBe(groupElement)
+    expect(sideSize()).toBe(30)
+    wrapper.get<HTMLElement>('#handle').element.focus()
+    await fireEvent.keyDown(wrapper.get('#handle').element, { key })
+    expect(sideSize()).toBe(expectedSize)
+  })
+
+  it('should resize when the handle first mounts after the group', async () => {
+    const { shown } = mountSplitter({ initiallyShown: false })
+    await nextTick()
+    expect(wrapper.find('#handle').exists()).toBe(false)
+
+    shown.value = true
+    await nextTick()
+    wrapper.get<HTMLElement>('#handle').element.focus()
+    await fireEvent.keyDown(wrapper.get('#handle').element, { key: 'ArrowRight' })
+    expect(sideSize()).toBe(40)
+  })
+
+  it('should cycle focus with F6 and Shift+F6 after remounting', async () => {
+    const { shown } = mountSplitter({ withSecondHandle: true })
+    await nextTick()
+
+    shown.value = false
+    await nextTick()
+    shown.value = true
+    await nextTick()
+
+    const handle = wrapper.get<HTMLElement>('#handle').element
+    const secondHandle = wrapper.get<HTMLElement>('#second-handle').element
+    handle.focus()
+
+    await fireEvent.keyDown(handle, { key: 'F6' })
+    expect(document.activeElement).toBe(secondHandle)
+    await fireEvent.keyDown(secondHandle, { key: 'F6' })
+    expect(document.activeElement).toBe(handle)
+    await fireEvent.keyDown(handle, { key: 'F6', shiftKey: true })
+    expect(document.activeElement).toBe(secondHandle)
+  })
+
+  it('should respect disabled changes after mounting into an existing group', async () => {
+    const { shown, disabled } = mountSplitter({ initiallyShown: false })
+    await nextTick()
+    disabled.value = true
+    shown.value = true
+    await nextTick()
+
+    const handle = wrapper.get<HTMLElement>('#handle').element
+    handle.focus()
+    await fireEvent.keyDown(handle, { key: 'ArrowRight' })
+    expect(sideSize()).toBe(30)
+
+    disabled.value = false
+    await nextTick()
+    await fireEvent.keyDown(handle, { key: 'ArrowRight' })
+    expect(sideSize()).toBe(40)
+
+    disabled.value = true
+    await nextTick()
+    await fireEvent.keyDown(handle, { key: 'ArrowRight' })
+    expect(sideSize()).toBe(40)
+
+    disabled.value = false
+    await nextTick()
+    await fireEvent.keyDown(handle, { key: 'ArrowRight' })
+    expect(sideSize()).toBe(50)
   })
 })

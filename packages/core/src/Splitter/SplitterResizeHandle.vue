@@ -140,6 +140,7 @@ watchEffect((onCleanup) => {
 useWindowSplitterResizeHandlerBehavior({
   disabled,
   resizeHandler,
+  resizeHandleElement: currentElement,
   handleId: resizeHandleId,
   panelGroupElement,
 })

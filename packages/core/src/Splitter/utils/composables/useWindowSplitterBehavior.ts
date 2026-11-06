@@ -2,7 +2,7 @@ import type { Ref } from 'vue'
 import type { ResizeHandler } from '../types'
 import { watchEffect } from 'vue'
 import { assert } from '../assert'
-import { getResizeHandleElement, getResizeHandleElementIndex, getResizeHandleElementsForGroup } from '../dom'
+import { getResizeHandleElementIndex, getResizeHandleElementsForGroup } from '../dom'
 
 // https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/
 
@@ -10,11 +10,13 @@ export function useWindowSplitterResizeHandlerBehavior({
   disabled,
   handleId,
   resizeHandler,
+  resizeHandleElement,
   panelGroupElement,
 }: {
   disabled: Ref<boolean>
   handleId: string
   resizeHandler: Ref<ResizeHandler | null>
+  resizeHandleElement: Ref<HTMLElement | undefined>
   panelGroupElement: Ref<ParentNode | null>
 }): void {
   watchEffect((onCleanup) => {
@@ -22,7 +24,8 @@ export function useWindowSplitterResizeHandlerBehavior({
     if (disabled.value || resizeHandler.value === null || _panelGroupElement === null)
       return
 
-    const handleElement = getResizeHandleElement(handleId, _panelGroupElement)
+    // The handle may mount after the group, so track its own element becoming available.
+    const handleElement = resizeHandleElement.value
     if (handleElement == null)
       return
 
