@@ -143,6 +143,46 @@ describe('given a Dialog opened programmatically, in a real browser', () => {
     wrapper.unmount()
   })
 
+  it('records afresh when a controlled parent ignored an earlier open request', async () => {
+    const open = ref(false)
+    const accept = ref(false)
+    const Fixture = defineComponent({
+      setup() {
+        return () => h('div', [
+          h('input', { 'data-testid': 'search' }),
+          h(DialogRoot, {
+            'open': open.value,
+            'onUpdate:open': (value: boolean) => {
+              if (accept.value || !value)
+                open.value = value
+            },
+          }, () => [
+            h(DialogTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
+            h(DialogPortal, null, () => h(DialogContent, { 'aria-describedby': undefined, 'data-testid': 'content' }, () => [
+              h(DialogTitle, null, () => 'Title'),
+              h(DialogClose, { 'data-testid': 'close' }, () => 'Close'),
+            ])),
+          ]),
+        ])
+      },
+    })
+    const wrapper = mount(Fixture, { attachTo: document.body })
+    const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
+    // The parent ignores this press: the dialog stays closed.
+    await userEvent.click(get('trigger')!)
+    await new Promise(r => setTimeout(r, 50))
+    expect(get('content')).toBeNull()
+    // Later the parent opens it itself while the input has focus.
+    get('search')!.focus()
+    accept.value = true
+    open.value = true
+    await expect.poll(() => document.activeElement?.getAttribute('data-testid')).toBe('close')
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => get('content')).toBeNull()
+    await expect.poll(() => document.activeElement).toBe(get('search'))
+    wrapper.unmount()
+  })
+
   it('records the focus again on each open when the content stays mounted', async () => {
     const { wrapper, get, open } = mountProgrammatic({ unmountOnHide: false })
     get('search')!.focus()
