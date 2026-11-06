@@ -17,7 +17,7 @@ export interface TabsTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { mergeProps } from 'vue'
+import { mergeProps, onScopeDispose } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { injectTabsRootContext } from './TabsRoot.vue'
@@ -39,6 +39,10 @@ const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectTabsRootContext()
 useTabsPartId(rootContext.customTriggerIds, () => props.value, () => props.id)
+// Registered for the root's automatic selection of the first enabled tab.
+const entry = { element: currentElement, props }
+rootContext.triggers?.add(entry)
+onScopeDispose(() => rootContext.triggers?.delete(entry))
 
 // id/aria/data-state + the mousedown/keydown/focus handlers all come from the
 // shared surface builder (single source with `useTabs()`); the roving item

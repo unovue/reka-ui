@@ -2,7 +2,7 @@ import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { TabsRootContext } from './TabsRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface, SelectionState } from '@/shared'
 import type { DataOrientation, Direction, StringOrNumber } from '@/shared/types'
-import { computed, ref, shallowRef, toValue } from 'vue'
+import { computed, ref, shallowReactive, shallowRef, toValue, watchEffect } from 'vue'
 import { createPartSurface, selectionState, useControllableState } from '@/shared'
 import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
 import { resolveDirection } from '@/shared/useDirection'
@@ -11,8 +11,19 @@ import { makeContentId, makeTriggerId } from './utils'
 // `PartSurface` is the shared contract in `@/shared` and is already published via
 // `@/Switch`; NOT re-exported here to avoid an ambiguous duplicate in the barrel.
 
-/** Why the selected tab changed; carried as `details.reason` on every change (#2828). */
-export type TabsChangeReason = 'trigger-press' | 'trigger-focus' | 'trigger-keydown'
+/**
+ * Why the selected tab changed; carried as `details.reason` on every change (#2828).
+ * An uncontrolled root also selects a tab by itself, as Base UI does: `'initial'`
+ * for the first enabled tab when there is no `defaultValue`, `'missing'` when the
+ * selected tab is gone, `'disabled'` when it became disabled.
+ */
+export type TabsChangeReason = 'trigger-press' | 'trigger-focus' | 'trigger-keydown' | 'initial' | 'missing' | 'disabled'
+
+/** A mounted `TabsTrigger`, registered so an uncontrolled root can fall back to the first enabled tab. */
+export interface TabsTriggerEntry {
+  element: Ref<HTMLElement | undefined>
+  props: { value: StringOrNumber, disabled?: boolean }
+}
 
 export type TabsTriggerState = {
   state: SelectionState
@@ -145,9 +156,9 @@ export interface UseTabsProps {
    * uncontrolled; a writable `Ref` with neither `emit` nor `onUpdate` is written
    * back on change ("ref-owned" mode).
    */
-  modelValue?: MaybeRefOrGetter<StringOrNumber | undefined>
-  /** Initial value when uncontrolled. */
-  defaultValue?: StringOrNumber
+  modelValue?: MaybeRefOrGetter<StringOrNumber | null | undefined>
+  /** Initial value when uncontrolled. `null` selects no tab. */
+  defaultValue?: StringOrNumber | null
   /** Component `emit`; fires `beforeUpdate:modelValue` then `update:modelValue`. */
   emit?: (event: any, ...args: any[]) => void
   /** Runs before a change is applied; `details.cancel()` keeps the current tab. */
@@ -172,7 +183,7 @@ export interface UseTabsProps {
 }
 
 export interface UseTabsReturn {
-  modelValue: ComputedRef<StringOrNumber | undefined>
+  modelValue: ComputedRef<StringOrNumber | null | undefined>
   /**
    * Activate a tab by value; returns `false` when unchanged or cancelled.
    * The caller gates disabled/roving concerns.
@@ -209,14 +220,17 @@ export function useTabs(props: UseTabsProps = {}): UseTabsReturn {
   const baseId = props.baseId ?? `reka-tabs-${++tabsCount}`
   const activationMode = props.activationMode ?? 'automatic'
 
-  const { state: modelValue, setState, lastChangeDetails, isControlled } = useControllableState<StringOrNumber | undefined, TabsChangeReason>({
-    prop: props.modelValue,
-    defaultValue: props.defaultValue,
+  // `null` (no tab) only comes in through the props: changes always carry a
+  // tab value, so the change callbacks keep their `StringOrNumber` type.
+  const { state, setState, lastChangeDetails, isControlled } = useControllableState<StringOrNumber | undefined, TabsChangeReason>({
+    prop: props.modelValue as MaybeRefOrGetter<StringOrNumber | undefined>,
+    defaultValue: props.defaultValue as StringOrNumber | undefined,
     name: 'modelValue',
     emit: props.emit,
     onBeforeUpdate: props.onBeforeUpdate,
     onUpdate: props.onUpdate,
   })
+  const modelValue = state as ComputedRef<StringOrNumber | null | undefined>
   const orientation = computed<DataOrientation>(() => toValue(props.orientation) ?? 'horizontal')
   const dir = resolveDirection(props.dir)
   const unmountOnHide = computed<boolean>(() => toValue(props.unmountOnHide) ?? true)
@@ -251,6 +265,7 @@ export function useTabs(props: UseTabsProps = {}): UseTabsReturn {
     customContentIds: shallowRef(new Map()),
     registerContent,
     unregisterContent,
+    triggers: shallowReactive(new Set()),
   }
 
   const root = createPartSurface<{ orientation: DataOrientation }>(
@@ -271,4 +286,61 @@ export function useTabs(props: UseTabsProps = {}): UseTabsReturn {
     getContentSurface: value => getTabsContentSurface(context, value),
     context,
   }
+}
+
+/** `a` comes before `b` in the document. */
+function precedes(a: HTMLElement, b: HTMLElement) {
+  return !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
+}
+
+/**
+ * Base UI's automatic selection for an uncontrolled root: with no tab selected
+ * (no `defaultValue`), or with the selected tab removed or disabled, select the
+ * first enabled trigger in document order. An explicit `defaultValue` pointing
+ * at a disabled tab is honoured until that tab has been selectable once; `null`
+ * selects nothing. A controlled root keeps the value its parent gives.
+ *
+ * @lifecycle setup
+ */
+export function useTabsAutoSelect(tabs: Pick<UseTabsReturn, 'context' | 'isControlled' | 'selectTab'>, defaultValue: StringOrNumber | null | undefined) {
+  const { context, isControlled, selectTab } = tabs
+  const hasExplicitDefault = defaultValue !== undefined
+  // The first automatic selection without a `defaultValue` reports `'initial'`.
+  let notifyInitial = !hasExplicitDefault
+  let honorDisabledDefault = hasExplicitDefault
+
+  watchEffect(() => {
+    if (isControlled.value || !context.triggers.size)
+      return
+    const value = context.modelValue.value
+    let selected: TabsTriggerEntry | undefined
+    let firstEnabled: HTMLElement | undefined
+    let fallback: StringOrNumber | undefined
+    for (const entry of context.triggers) {
+      const element = entry.element.value
+      if (!element)
+        continue
+      if (entry.props.value === value)
+        selected = entry
+      if (!entry.props.disabled && (!firstEnabled || precedes(element, firstEnabled))) {
+        firstEnabled = element
+        fallback = entry.props.value
+      }
+    }
+    const isDisabled = !!selected?.props.disabled
+    if (!isDisabled && value === defaultValue)
+      honorDisabledDefault = false
+    if (honorDisabledDefault && isDisabled && value === defaultValue)
+      return
+    // A selectable tab (or `null`, no tab) stays; with no enabled tab nothing changes.
+    if ((!isDisabled && (selected || value === null)) || fallback === undefined)
+      return
+    if (value === fallback) {
+      notifyInitial = false
+      return
+    }
+    const reason = notifyInitial ? 'initial' : isDisabled ? 'disabled' : 'missing'
+    notifyInitial = false
+    selectTab(fallback, reason)
+  }, { flush: 'post' })
 }

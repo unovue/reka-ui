@@ -41,7 +41,9 @@ useTabsPartId(rootContext.customContentIds, () => props.value, () => props.id)
 // mount-animation `style` stay in the SFC.
 const surface = getTabsContentSurface(rootContext, () => props.value)
 
-const isMountAnimationPreventedRef = ref(surface.state.value.state === 'checked')
+// No mount animation either while the root has yet to select its first tab
+// (`undefined`): the automatic selection lands before the next frame.
+const isMountAnimationPreventedRef = ref(surface.state.value.state === 'checked' || rootContext.modelValue.value === undefined)
 
 onMounted(() => {
   rootContext.registerContent(props.value)

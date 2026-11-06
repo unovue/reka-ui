@@ -1,14 +1,14 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
 import type { DataOrientation, Direction, StringOrNumber } from '../shared/types'
-import type { TabsChangeReason } from './useTabs'
+import type { TabsChangeReason, TabsTriggerEntry } from './useTabs'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
 import { createContext, useDirection, useForwardElement, useId } from '@/shared'
 
 export interface TabsRootContext {
-  modelValue: ComputedRef<StringOrNumber | undefined>
+  modelValue: ComputedRef<StringOrNumber | null | undefined>
   /** `modelValue` as a keyed selector: triggers and contents read their own cell. */
   selected?: KeyedSelector<StringOrNumber>
   /** Returns `false` when the value is unchanged or the change was cancelled. */
@@ -26,13 +26,16 @@ export interface TabsRootContext {
   customContentIds: Ref<Map<StringOrNumber, string>>
   registerContent: (value: StringOrNumber) => void
   unregisterContent: (value: StringOrNumber) => void
+  /** The mounted triggers (reactive), for the automatic first-tab selection. */
+  triggers: Set<TabsTriggerEntry>
 }
 
 export interface TabsRootProps<T extends StringOrNumber = StringOrNumber> extends PrimitiveProps {
   /**
-   * The value of the tab that should be active when initially rendered. Use when you do not need to control the state of the tabs
+   * The value of the tab that should be active when initially rendered. Use when you do not need to control the state of the tabs.
+   * Without it, the first enabled tab is selected; `null` selects no tab.
    */
-  defaultValue?: T
+  defaultValue?: T | null
   /**
    * The orientation the tabs are laid out.
    * Mainly so arrow navigation is done accordingly (left & right vs. up & down)
@@ -48,8 +51,11 @@ export interface TabsRootProps<T extends StringOrNumber = StringOrNumber> extend
    * @defaultValue automatic
    */
   activationMode?: 'automatic' | 'manual'
-  /** The controlled value of the tab to activate. Can be bind as `v-model`. */
-  modelValue?: T
+  /**
+   * The controlled value of the tab to activate. Can be bind as `v-model`. `null` selects no tab. While it is
+   * `undefined` the tabs are uncontrolled and select the first enabled tab.
+   */
+  modelValue?: T | null
   /**
    * When `true`, the element will be unmounted on closed state.
    *
@@ -70,7 +76,7 @@ export const [injectTabsRootContext, provideTabsRootContext]
 
 <script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">
 import { renderAs } from '@/Primitive/renderAs'
-import { useTabs } from './useTabs'
+import { useTabs, useTabsAutoSelect } from './useTabs'
 
 const props = withDefaults(defineProps<TabsRootProps<T>>(), {
   orientation: 'horizontal',
@@ -82,7 +88,7 @@ const emits = defineEmits<TabsRootEmits<T>>()
 defineSlots<{
   default?: (props: {
     /** Current input values */
-    modelValue: T | undefined
+    modelValue: T | null | undefined
   }) => any
 }>()
 
@@ -92,7 +98,7 @@ const dir = useDirection(() => props.dir)
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
-const { root, context, modelValue } = useTabs({
+const tabs = useTabs({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   emit: emits,
@@ -104,11 +110,15 @@ const { root, context, modelValue } = useTabs({
   baseId: useId(undefined, 'reka-tabs'),
 })
 
+const { root, context, modelValue } = tabs
+// Base UI: an uncontrolled root selects the first enabled tab by itself.
+useTabsAutoSelect(tabs, props.defaultValue)
+
 provideTabsRootContext(context)
 
 // The composable is untyped over `T`; narrow once here for the slot payload
 // (a `T | undefined` cast in the template reads as a deprecated filter to eslint).
-const slotModelValue = modelValue as ComputedRef<T | undefined>
+const slotModelValue = modelValue as ComputedRef<T | null | undefined>
 </script>
 
 <template>
