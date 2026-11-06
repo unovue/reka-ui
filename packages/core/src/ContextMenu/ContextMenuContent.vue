@@ -19,8 +19,9 @@ export interface ContextMenuContentProps
 </script>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
+import { getInternalBackdrop } from '@/DismissableLayer/internalBackdrop'
 import { MenuContent } from '@/Menu'
-import { provideMenuBackdropCutoutContext } from '@/Menu/MenuContentImpl.vue'
 import { omitEntryFocusListener } from '@/Menu/utils'
 import { injectContextMenuRootContext } from './ContextMenuRoot.vue'
 import { createContextMenuContentHandlers } from './useContextMenu'
@@ -40,12 +41,21 @@ const props = withDefaults(defineProps<ContextMenuContentProps>(), {
 const emits = defineEmits<ContextMenuContentEmits>()
 const forwarded = useForwardPropsEmits(props, emits)
 
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectContextMenuRootContext()
-// A right-click inside the trigger area re-opens a modal menu at the new point,
-// so the area stays interactive through the menu's backdrop.
-provideMenuBackdropCutoutContext(rootContext.triggerElement)
+// Unlike a DropdownMenu trigger, the trigger area is NOT cut out of a modal
+// menu's backdrop (Base UI `MenuPositioner` only cuts out a plain Menu
+// trigger): a press over the area while open is an outside press, so a left
+// click only dismisses the menu and never reaches what is under it (#1923).
+// A right click there dismisses too, and its `contextmenu` (once the backdrop
+// is gone) re-opens the menu at the new point.
+// A right click on the backdrop while the menu stays open (a prevented
+// dismissal) must not show the native menu either (Base UI `ContextMenuTrigger`).
+useEventListener(() => currentElement.value?.ownerDocument, 'contextmenu', (event: MouseEvent) => {
+  if (getInternalBackdrop(currentElement.value)?.contains(event.target as Node))
+    event.preventDefault()
+})
 // Bound after the forwarded emits, so they still see a consumer's `preventDefault()`.
 const { onCloseAutoFocus, onInteractOutside } = createContextMenuContentHandlers(rootContext)
 </script>
