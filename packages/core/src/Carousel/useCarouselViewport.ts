@@ -440,6 +440,8 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       interrupt(state.pointerType === 'touch' ? 'swipe' : 'drag')
       if (!fade.value) {
         setScrollSnapSuspended(true)
+        // Any selection the press started before it became a drag.
+        getOwnerWindow(el).getSelection()?.removeAllRanges()
         // Captured only now: capturing on press would retarget the click on a link or button in a slide.
         try {
           el.setPointerCapture(event.pointerId)
@@ -541,6 +543,13 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     }
     inputReason = 'drag'
     momentumFrame = win.requestAnimationFrame(frame)
+  }
+
+  function onSelectstart(event: Event) {
+    // A held mouse or pen press is a drag, not a text selection: a selection that
+    // leaves the viewport makes Firefox autoscroll the track under the release scroll.
+    if (dragState && !fade.value)
+      event.preventDefault()
   }
 
   function onDragstart(event: DragEvent) {
@@ -800,6 +809,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     onScrollend: settle,
     onPointerdown,
     onDragstart,
+    onSelectstart,
     onWheel,
     onKeydown,
   }))
