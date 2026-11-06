@@ -1130,8 +1130,13 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
         ? candidates.find(el => !trigger.contains(el) && !!(trigger.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING))
         : candidates[index + 1]
     }
-    focusedOut = !!target
     ;(target ?? trigger).focus({ preventScroll: !target })
+    // Out only if focus really left the content (and the trigger): a target
+    // that did not take focus (`inert`) falls back to the trigger on close; a
+    // focus handler that moved it to another outside element still counts.
+    const active = getActiveElement()
+    focusedOut = !!target && !!active && active !== active.ownerDocument.body && active !== trigger
+      && !contentElement.value?.contains(active)
   }
 
   function onKeydown(event: KeyboardEvent) {

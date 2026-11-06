@@ -952,7 +952,7 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 
 **Rewrite rules.**
 - Exhaustive switches: add `'focus-outside'`.
-- Tests expecting the content to stay open on Tab: expect it closed and focus on the next element. Do not add code that selects on Tab; if the developer wants that, *ask*.
+- Tests expecting the content to stay open on Tab: expect it closed. For Tab, expect focus on the next tabbable element after `SelectTrigger`, or on the trigger when there is none (or it cannot take focus). For Shift+Tab, expect focus on the trigger. Leave tests unchanged where a `beforeUpdate:open` handler cancels the close: the select stays open. Do not add code that selects on Tab; if the developer wants that, *ask*.
 
 **Verify.** The type-check passes; Tab out of an open select lands on the next field.
 
