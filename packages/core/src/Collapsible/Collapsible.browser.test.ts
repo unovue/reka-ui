@@ -11,6 +11,7 @@ const css = `
 @keyframes reka-test-close { from { opacity: 1 } to { opacity: 0 } }
 .content[data-state="open"] { animation: reka-test-open 100ms linear }
 .content[data-state="closed"] { animation: reka-test-close 100ms linear }
+.content.with-paused[data-state="open"] { animation: reka-test-open 100ms linear, reka-test-close 1s linear infinite paused }
 .with-transition { transition: background-color 300ms linear }
 .with-transition.tinted { background-color: rgb(255, 0, 0) }
 `
@@ -84,6 +85,19 @@ describe('given a list of Collapsibles with CSS keyframe animations, in a real b
 
     await moveFirstToEnd()
     expect(runningAnimations('content-a')).toEqual([])
+  })
+
+  it('keeps a paused animation applied after the open animation ends', async () => {
+    const { get } = mountList(false, 'content with-paused')
+    const states = () => get('content-a').getAnimations().map(a => `${(a as CSSAnimation).animationName}:${a.playState}`)
+
+    await userEvent.click(get('trigger-a'))
+    await expect.poll(states).toEqual(['reka-test-open:running', 'reka-test-close:paused'])
+    await expect.poll(states).toEqual(['reka-test-close:paused'])
+    await new Promise(resolve => requestAnimationFrame(resolve))
+    await new Promise(resolve => requestAnimationFrame(resolve))
+
+    expect(states()).toEqual(['reka-test-close:paused'])
   })
 
   it('still animates the next close and open after a move', async () => {
