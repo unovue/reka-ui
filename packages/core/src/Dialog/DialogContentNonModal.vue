@@ -5,6 +5,7 @@ import { useEmitAsProps, useForwardElement } from '@/shared'
 import { getPopupRootStore } from '@/shared/popupHandle'
 import DialogContentImpl from './DialogContentImpl.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
+import { getReturnFocusElement } from './utils'
 
 const props = defineProps<DialogContentImplProps & { present: boolean }>()
 const emits = defineEmits<DialogContentImplEmits>()
@@ -29,7 +30,7 @@ const forwardedProps = computed(() => {
 watch(() => props.present, (isPresent, wasPresent) => {
   if (!isPresent && wasPresent) {
     if (!hasInteractedOutsideRef.value)
-      rootContext.triggerElement.value?.focus()
+      getReturnFocusElement(rootContext)?.focus()
     hasInteractedOutsideRef.value = false
     hasPointerDownOutsideRef.value = false
   }
@@ -46,7 +47,7 @@ watch(() => props.present, (isPresent, wasPresent) => {
     @close-auto-focus="
       (event) => {
         if (!event.defaultPrevented) {
-          if (!hasInteractedOutsideRef) rootContext.triggerElement.value?.focus();
+          if (!hasInteractedOutsideRef) getReturnFocusElement(rootContext)?.focus();
           // Always prevent auto focus because we either focus manually or want user agent focus
           event.preventDefault();
         }

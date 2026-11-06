@@ -761,6 +761,22 @@ Two fixes in neighbouring families:
 
 `ProgressRoot` displays a value; it never changes it, so it gets no `beforeUpdate:modelValue` or change details. An invalid `modelValue` (negative, above `max`, `NaN`) now renders as indeterminate, and an invalid `max` as `100`, straight away; v2 rendered the invalid value until the parent applied the correction. The value is validated against the corrected `max`, so lowering `max` below the value also renders indeterminate and emits `update:modelValue(null)`. `ProgressRoot` still emits `update:modelValue(null)` or `update:max(100)` once when it corrects a prop, and `update:modelValue` is now typed `[value: number | null]` (v2 declared `[value: string[] | undefined]`).
 
+## Tabs select the first tab
+
+`TabsRoot` without a `defaultValue` selects the first enabled tab, as Base UI does ([#2328](https://github.com/unovue/reka-ui/issues/2328)). In v2 (and Radix) no tab and no panel were shown until you clicked one. An uncontrolled root also moves to the first enabled tab when the selected one is removed (`v-if`) or becomes disabled, and a `defaultValue` that matches no tab falls back the same way. Controlled tabs keep the value you give them. A `v-model` that is `undefined` from mount counts as uncontrolled. With a `defaultValue`, the root shows that tab and emits nothing, so the model stays `undefined`. Without one, the root emits the first tab, so the model receives it. A model that has held a value stays controlled when it is cleared to `undefined` (see [Change events carry details](#change-events-carry-details)).
+
+```vue
+<TabsRoot default-value="account"> <!-- unchanged -->
+
+<TabsRoot> <!-- v2: no tab; v3: the first enabled tab -->
+
+<TabsRoot :default-value="null"> <!-- v3: no tab, as v2 without a default -->
+```
+
+- **`update:modelValue` can fire without user input.** It carries the new reasons `'initial'` (the first selection when there is no `defaultValue`), `'missing'` and `'disabled'`, which are added to `TabsChangeReason`. A `switch` over the reasons that assumes every change comes from a trigger needs a branch for them.
+- **`null` selects no tab.** `defaultValue` and `modelValue` accept `null`.
+- **The first tab of an uncontrolled root is skipped when it is disabled.** An explicit `defaultValue` that points at a disabled tab is still kept.
+
 ## NavigationMenu
 
 `NavigationMenuRoot` and `NavigationMenuSub` are built on `useNavigationMenu()` and `useNavigationMenuSub()`, with one composable per part: `useNavigationMenuItem()`, `useNavigationMenuTrigger()`, `useNavigationMenuContent()`, `useNavigationMenuLink()`, `useNavigationMenuIndicator()` and `useNavigationMenuViewport()`. The DOM is the same. What changed:
@@ -835,6 +851,7 @@ These come from the review of the Alpha components for their Stable release ([#2
 - **`propagateSelect` and `bubbleSelect` with a custom `getChildren`.** `TreeRoot` now reads every level of descendants through `getChildren`. v2 used it for the first level only and read `item.children` below it, so with another children key (`getChildren: item => item.nodes`) grandchildren were neither selected with their ancestor nor counted for its indeterminate state.
 - **`TreeRoot` warns** in development when `propagateSelect` or `bubbleSelect` is set without `multiple`; both have always required it and were ignored.
 - **Combobox and Autocomplete blur reset.** With `resetSearchTermOnBlur`, the reset runs a tick after the popup closes. Typing within that tick drops it, even when `beforeUpdate:open` cancels the reopen the typing requests; v2 still ran it and wiped the text being typed. Another open request within that tick (a quick second click, a focus) drops it once the popup opens, and a controlled parent that sets `open` back to `true` keeps the text too. A cancelled click or focus still resets the input.
+- **`resetSearchTermOnSelect` works in a `multiple` combobox** ([#2151](https://github.com/unovue/reka-ui/issues/2151)). Pressing an item (or Enter on the highlighted one) while filtering now clears the input text and the filter, and the popup stays open, as in Base UI. v2 kept the typed text, so the list stayed filtered until you erased it. The input emits `update:modelValue` with `''` and `reason: 'input-clear'`; cancel it in `beforeUpdate:modelValue` to keep the text for one selection, or set `:reset-search-term-on-select="false"` to keep the v2 behavior.
 
 ## Change details coverage
 

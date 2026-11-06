@@ -20,7 +20,7 @@
   {
     "path": "dist/index.js",
     "import": "{ ComboboxRoot, ComboboxInput, ComboboxContent, ComboboxItem, ComboboxVirtualizer }",
-    "limit": "40.9 KB",
+    "limit": "41 KB",
     "name": "Combobox"
   },
   {
@@ -68,13 +68,13 @@
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, rekaElementFamilies }",
-    "limit": "198.5 KB",
+    "limit": "199.0 KB",
     "name": "Elements: all supported families"
   },
   {
     "path": "dist/index.js",
     "import": "*",
-    "limit": "198.4 KB",
+    "limit": "198.8 KB",
     "name": "Full library"
   }
 ]

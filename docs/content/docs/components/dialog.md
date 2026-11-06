@@ -351,6 +351,18 @@ const editDialog = createDialogHandle<Project>()
 
 The handle itself holds no state. The mounted root owns it, and the root and the triggers only connect to the handle after they mount. A handle created at module scope is therefore safe under SSR: nothing from one request can reach another, and every trigger renders closed on the server. Prefer creating the handle in the `<script setup>` of the component that renders the root and passing it down. Use a module-scope handle when the triggers live in unrelated parts of the app. Use one mounted root per handle: a second root that mounts with the same handle takes it over and closes the first, with a dev warning. A root or trigger kept alive by `<KeepAlive>` disconnects from the handle while it is inactive.
 
+### Returning focus on close
+
+On close, focus returns to the element that had focus when the dialog opened, as in Base UI. When `DialogTrigger` opened the dialog, that element is the trigger. When the dialog was opened programmatically, for example with a <kbd>Ctrl</kbd> + <kbd>K</kbd> shortcut, it is whatever was focused at that moment, such as a search input. If that element has left the DOM, or nothing was focused, focus goes to `DialogTrigger` instead. To send focus somewhere else, focus it in `@close-auto-focus` and call `event.preventDefault()`.
+
+```vue
+<template>
+  <DialogContent @close-auto-focus="(event) => { event.preventDefault(); searchInput?.focus() }">
+    …
+  </DialogContent>
+</template>
+```
+
 ## Real-world examples
 
 - [Dialog with Unsaved Changes](/examples/dialog-unsaved-changes): Hold a dirty Dialog open by preventing its close events, and hand the decision to an AlertDialog.
