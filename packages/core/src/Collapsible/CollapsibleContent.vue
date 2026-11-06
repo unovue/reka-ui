@@ -85,6 +85,21 @@ onMounted(() => {
   })
 })
 
+// Browsers restart a CSS animation whenever its element is inserted into the document again,
+// e.g. when a keyed list moves the Collapsible. Once the open/close animation has finished,
+// block it again (as on the initial mount) so it only replays on the next toggle, which
+// restores the original style above. Deferred so Presence still reads the finished
+// animation's name in its own `animationend` handler, and skipped if another one is running.
+useEventListener(currentElement, 'animationend', (ev) => {
+  const node = currentElement.value!
+  if (ev.target === node) {
+    requestAnimationFrame(() => {
+      if (!node.getAnimations?.().some(animation => animation.playState === 'running'))
+        node.style.animationName = 'none'
+    })
+  }
+})
+
 useEventListener(currentElement, 'beforematch', (ev) => {
   requestAnimationFrame(() => {
     rootContext.onOpenToggle()
