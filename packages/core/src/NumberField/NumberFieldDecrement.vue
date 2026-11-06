@@ -24,7 +24,8 @@ const isDisabled = getterRef(() => isNumberFieldButtonDisabled(rootContext, 'dec
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 // Press-and-hold repeat (window pointer listeners) stays in the shell.
-const { isPressed, onTrigger } = usePressedHold({ target: currentElement, disabled: isDisabled })
+// A press commits once it is released, after any hold-repeat steps (Base UI parity).
+const { isPressed, onTrigger } = usePressedHold({ target: currentElement, disabled: isDisabled, onRelease: rootContext.commitValue })
 const button = getNumberFieldButtonSurface(rootContext, 'decrease', { disabled: () => props.disabled, pressed: isPressed })
 
 onTrigger((event) => {
