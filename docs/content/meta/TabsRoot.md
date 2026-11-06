@@ -4,10 +4,10 @@
 <PropsTable :data="[
   {
     'name': 'activationMode',
-    'description': '<p>Whether a tab is activated automatically (on focus) or manually (on click).</p>\n',
+    'description': '<p>Whether a tab is activated automatically (on focus, so arrow keys select tabs as they move) or\nmanually (on click, or Enter/Space; arrow keys only move focus).</p>\n',
     'type': '\'automatic\' | \'manual\'',
     'required': false,
-    'default': '\'automatic\''
+    'default': '\'manual\''
   },
   {
     'name': 'as',
@@ -49,7 +49,7 @@
   },
   {
     'name': 'unmountOnHide',
-    'description': '<p>When <code>true</code>, the element will be unmounted on closed state.</p>\n',
+    'description': '<p>When <code>true</code>, an inactive <code>TabsContent</code> is removed from the DOM, element and all. When <code>false</code>, it\nstays mounted with the <code>hidden</code> attribute (any <code>display</code> style you give it overrides <code>hidden</code>).</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'true'
@@ -84,14 +84,14 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `activationMode` | Whether a tab is activated automatically (on focus) or manually (on click). | `"automatic" \| "manual"` | No | `"automatic"` |
+| `activationMode` | Whether a tab is activated automatically (on focus, so arrow keys select tabs as they move) or manually (on click, or Enter/Space; arrow keys only move focus). | `"automatic" \| "manual"` | No | `"manual"` |
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultValue` | The value of the tab that should be active when initially rendered. Use when you do not need to control the state of the tabs. Without it, the first enabled tab is selected; `null` selects no tab. | `null \| T` | No | - |
 | `dir` | The reading direction of the combobox when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `modelValue` | The controlled value of the tab to activate. Can be bind as `v-model`. `null` selects no tab. While it has been `undefined` since mount the tabs are uncontrolled: they start on `defaultValue` (not emitted), or on the first enabled tab without one (emitted). Once defined, it stays controlled, also when cleared to `undefined`. | `null \| T` | No | - |
 | `orientation` | The orientation the tabs are laid out. Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"vertical" \| "horizontal"` | No | `"horizontal"` |
-| `unmountOnHide` | When `true`, the element will be unmounted on closed state. | `boolean` | No | `true` |
+| `unmountOnHide` | When `true`, an inactive `TabsContent` is removed from the DOM, element and all. When `false`, it stays mounted with the `hidden` attribute (any `display` style you give it overrides `hidden`). | `boolean` | No | `true` |
 
 **Events**
 

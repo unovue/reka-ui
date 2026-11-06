@@ -20,7 +20,7 @@ export interface TabsContentProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Presence } from '@/Presence'
 import { renderAs } from '@/Primitive/renderAs'
 import { onNextFrame } from '@/shared/timeout'
@@ -30,15 +30,16 @@ import { useTabsPartId } from './utils'
 
 const props = defineProps<TabsContentProps>()
 
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectTabsRootContext()
 useTabsPartId(rootContext.customContentIds, () => props.value, () => props.id)
 
 // id/role/aria-labelledby/tabindex + data-state/data-orientation from the shared
 // surface builder (selection is read from its `state`, not re-derived); the
-// Presence wrapper, the registration lifecycle, `hidden`, and the
-// mount-animation `style` stay in the SFC.
+// Presence wrapper (an inactive panel leaves the DOM, element and all,
+// unless `unmountOnHide` is off: #2476), the registration, `hidden`,
+// and the mount-animation `style` stay in the SFC.
 const surface = getTabsContentSurface(rootContext, () => props.value)
 
 // No mount animation either while the root has yet to select its first tab
@@ -46,10 +47,18 @@ const surface = getTabsContentSurface(rootContext, () => props.value)
 const isMountAnimationPreventedRef = ref(surface.state.value.state === 'checked' || rootContext.modelValue.value === undefined)
 
 onMounted(() => {
-  rootContext.registerContent(props.value)
   onNextFrame(() => {
     isMountAnimationPreventedRef.value = false
   })
+})
+
+// The trigger's `aria-controls` names the panel only while the panel
+// element is in the DOM, which with `unmountOnHide` is only while it is shown.
+// A `value` change moves the registration to the new value.
+watch([currentElement, () => props.value], ([element, value], [, previous]) => {
+  rootContext.unregisterContent(previous)
+  if (element)
+    rootContext.registerContent(value)
 })
 
 onBeforeUnmount(() => {
@@ -61,7 +70,7 @@ onBeforeUnmount(() => {
   <Presence
     v-slot="{ present }"
     :present="forceMount || surface.state.value.state === 'checked'"
-    force-mount
+    :force-mount="!rootContext.unmountOnHide.value"
   >
     <component
       :is="renderAs(as, asChild)"
@@ -72,7 +81,7 @@ onBeforeUnmount(() => {
         animationDuration: isMountAnimationPreventedRef ? '0s' : undefined,
       }"
     >
-      <slot v-if="rootContext.unmountOnHide.value ? present : true" />
+      <slot />
     </component>
   </Presence>
 </template>

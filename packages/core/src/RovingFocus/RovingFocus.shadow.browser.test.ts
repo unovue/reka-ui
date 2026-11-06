@@ -15,7 +15,7 @@ describe('given roving focus inside a shadow root, in a real browser', () => {
     const { get, activeElement } = mountInShadowRoot(defineComponent({
       setup: () => () => h('div', [
         h('button', { 'data-testid': 'before' }, 'Before'),
-        h(TabsRoot, { 'modelValue': tab.value, 'onUpdate:modelValue': (v: unknown) => { tab.value = v as string } }, () => [
+        h(TabsRoot, { 'modelValue': tab.value, 'activationMode': 'automatic', 'onUpdate:modelValue': (v: unknown) => { tab.value = v as string } }, () => [
           h(TabsList, { 'aria-label': 'Tabs' }, () => ['one', 'two', 'three'].map(value =>
             h(TabsTrigger, { 'value': value, 'data-testid': `tab-${value}` }, () => value))),
           ...['one', 'two', 'three'].map(value => h(TabsContent, { 'value': value, 'data-testid': `panel-${value}` }, () => value)),

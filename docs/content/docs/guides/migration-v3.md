@@ -769,7 +769,7 @@ Two fixes in neighbouring families:
 
 ## Tabs select the first tab
 
-`TabsRoot` without a `defaultValue` selects the first enabled tab, as Base UI does ([#2328](https://github.com/unovue/reka-ui/issues/2328)). In v2 (and Radix) no tab and no panel were shown until you clicked one. An uncontrolled root also moves to the first enabled tab when the selected one is removed (`v-if`) or becomes disabled, and a `defaultValue` that matches no tab falls back the same way. Controlled tabs keep the value you give them. A `v-model` that is `undefined` from mount counts as uncontrolled. With a `defaultValue`, the root shows that tab and emits nothing, so the model stays `undefined`. Without one, the root emits the first tab, so the model receives it. A model that has held a value stays controlled when it is cleared to `undefined` (see [Change events carry details](#change-events-carry-details)).
+`TabsRoot` without a `defaultValue` selects the first enabled tab ([#2328](https://github.com/unovue/reka-ui/issues/2328)). In v2 (and Radix) no tab and no panel were shown until you clicked one. An uncontrolled root also moves to the first enabled tab when the selected one is removed (`v-if`) or becomes disabled, and a `defaultValue` that matches no tab falls back the same way. Controlled tabs keep the value you give them. A `v-model` that is `undefined` from mount counts as uncontrolled. With a `defaultValue`, the root shows that tab and emits nothing, so the model stays `undefined`. Without one, the root emits the first tab, so the model receives it. A model that has held a value stays controlled when it is cleared to `undefined` (see [Change events carry details](#change-events-carry-details)).
 
 ```vue
 <TabsRoot default-value="account"> <!-- unchanged -->
@@ -782,6 +782,14 @@ Two fixes in neighbouring families:
 - **`update:modelValue` can fire without user input.** It carries the new reasons `'initial'` (the first selection when there is no `defaultValue`), `'missing'` and `'disabled'`, which are added to `TabsChangeReason`. A `switch` over the reasons that assumes every change comes from a trigger needs a branch for them.
 - **`null` selects no tab.** `defaultValue` and `modelValue` accept `null`.
 - **The first tab of an uncontrolled root is skipped when it is disabled.** An explicit `defaultValue` that points at a disabled tab is still kept.
+- **Tabs activate manually by default, on click.** `activationMode` defaults to `'manual'` ([#842](https://github.com/unovue/reka-ui/issues/842)). The arrow keys move focus without selecting; Enter, Space or a click selects the focused tab. A mouse press selects a tab on `click`, once the button is released over it, instead of on `mousedown`; pressing a tab and releasing outside it selects nothing. Add `activation-mode="automatic"` for v2's behaviour: focus selects, so the arrow keys switch panels as they move and a press selects before it is released. A click without a press (`element.click()`, assistive technology) now selects in both modes; v2 ignored it. A press in manual mode reports `trigger-press` from the `click` event, not `mousedown`.
+- **An inactive `TabsContent` renders no element** ([#2476](https://github.com/unovue/reka-ui/issues/2476)). An inactive panel is removed from the DOM, element and all. v2 kept an empty `<div role="tabpanel" hidden>` for each, which any `display` style on the panel (a `flex` class) made visible and gave layout space. A trigger's `aria-controls` names its panel only while the panel is rendered. `:unmount-on-hide="false"` keeps every panel mounted with `hidden`, as before; `forceMount` on a `TabsContent` still renders it while inactive.
+
+```vue
+<TabsRoot default-value="account"> <!-- v3: arrow keys only move focus; a click or Enter selects -->
+
+<TabsRoot default-value="account" activation-mode="automatic"> <!-- v2 behaviour: focus selects -->
+```
 
 ## NavigationMenu
 

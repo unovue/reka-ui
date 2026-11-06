@@ -30,6 +30,12 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+/** A `click` with the given `detail`: 1 for a pointer click, 0 for a keyboard one (VTU's `trigger` cannot set it). */
+async function click(wrapper: { element: Element }, detail: number) {
+  wrapper.element.dispatchEvent(new MouseEvent('click', { detail, bubbles: true, cancelable: true }))
+  await nextTick()
+}
+
 describe('ssr hydration', () => {
   it('uses ConfigProvider ids when Vue app id prefixes differ', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -93,10 +99,233 @@ describe('given default Tabs', () => {
       expect(trigger.element).toBe(document.activeElement)
     })
 
-    it('should render it\'s content', () => {
-      expect(wrapper.find('[role=tabpanel]').exists()).toBeTruthy()
+    // Manual activation by default (#842); focus alone selects nothing.
+    it('should keep the current content until the tab is activated', async () => {
+      expect(wrapper.findAll('[role=tabpanel]')).toHaveLength(1)
+      expect(wrapper.html()).toContain('Make changes')
+      expect(wrapper.html()).not.toContain('Change your password')
+
+      await wrapper.findAll('button')[1].trigger('keydown', { key: 'Enter' })
+      expect(wrapper.findAll('[role=tabpanel]')).toHaveLength(1)
       expect(wrapper.html()).toContain('Change your password')
     })
+  })
+})
+
+describe('activation defaults (#842)', () => {
+  function mountTabs(props: Record<string, unknown> = {}) {
+    return mount(TabsRoot, {
+      props: { defaultValue: 'tab1', ...props },
+      slots: {
+        default: () => [
+          h(TabsList, () => [
+            h(TabsTrigger, { value: 'tab1' }, () => 'Tab 1'),
+            h(TabsTrigger, { value: 'tab2' }, () => 'Tab 2'),
+          ]),
+        ],
+      },
+      attachTo: document.body,
+    })
+  }
+
+  it('defaults to manual activation: focusing a tab does not select it', async () => {
+    const wrapper = mountTabs()
+    const [t1, t2] = wrapper.findAll('[role="tab"]')
+    await t2.trigger('focus')
+    expect(t1.attributes('data-state')).toBe('checked')
+    expect(t2.attributes('data-state')).toBe('unchecked')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it('selects on click, not on mousedown', async () => {
+    const wrapper = mountTabs()
+    const t2 = wrapper.findAll('[role="tab"]')[1]
+    await t2.trigger('mousedown', { button: 0 })
+    expect(t2.attributes('data-state')).toBe('unchecked')
+
+    await t2.trigger('mouseup', { button: 0 })
+    await click(t2, 1)
+    expect(t2.attributes('data-state')).toBe('checked')
+    expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toBe('tab2')
+    expect(wrapper.emitted('update:modelValue')?.[0]?.[1]).toMatchObject({ reason: 'trigger-press' })
+    wrapper.unmount()
+  })
+
+  it('selects on a click without a press (`element.click()`), in either mode', async () => {
+    for (const activationMode of ['manual', 'automatic']) {
+      const wrapper = mountTabs({ activationMode })
+      const t2 = wrapper.findAll('[role="tab"]')[1];
+      (t2.element as HTMLElement).click()
+      await nextTick()
+      expect(t2.attributes('data-state')).toBe('checked')
+      wrapper.unmount()
+    }
+  })
+
+  it('automatic activation selects on the press, and its click asks for no second change', async () => {
+    const onBeforeUpdate = vi.fn((_value: unknown, details: { cancel: () => void }) => details.cancel())
+    const wrapper = mountTabs({ 'activationMode': 'automatic', 'onBeforeUpdate:modelValue': onBeforeUpdate })
+    const t2 = wrapper.findAll('[role="tab"]')[1]
+    await t2.trigger('mousedown', { button: 0 })
+    await click(t2, 1)
+    expect(onBeforeUpdate).toHaveBeenCalledTimes(1)
+    expect(onBeforeUpdate.mock.calls[0][1]).toMatchObject({ reason: 'trigger-press' })
+    wrapper.unmount()
+  })
+
+  it('an Enter/Space keydown and its keyboard click ask for one change', async () => {
+    const onBeforeUpdate = vi.fn((_value: unknown, details: { cancel: () => void }) => details.cancel())
+    const wrapper = mountTabs({ 'onBeforeUpdate:modelValue': onBeforeUpdate })
+    const t2 = wrapper.findAll('[role="tab"]')[1]
+    await t2.trigger('keydown', { key: 'Enter' })
+    await click(t2, 0)
+    expect(onBeforeUpdate).toHaveBeenCalledTimes(1)
+    expect(onBeforeUpdate.mock.calls[0][1]).toMatchObject({ reason: 'trigger-keydown' })
+
+    // A later pointer click is a new attempt.
+    await t2.trigger('mousedown', { button: 0 })
+    await click(t2, 1)
+    expect(onBeforeUpdate).toHaveBeenCalledTimes(2)
+    wrapper.unmount()
+  })
+
+  it('a click after a keydown that no keyboard click followed is a new attempt', async () => {
+    vi.useFakeTimers()
+    try {
+      const onBeforeUpdate = vi.fn((_value: unknown, details: { cancel: () => void }) => details.cancel())
+      const wrapper = mountTabs({ 'onBeforeUpdate:modelValue': onBeforeUpdate })
+      const t2 = wrapper.findAll('[role="tab"]')[1]
+      await t2.trigger('keydown', { key: 'Enter' })
+      await t2.trigger('keyup', { key: 'Enter' })
+      vi.runAllTimers()
+      expect(onBeforeUpdate).toHaveBeenCalledTimes(1)
+
+      await click(t2, 0)
+      expect(onBeforeUpdate).toHaveBeenCalledTimes(2)
+      expect(onBeforeUpdate.mock.calls[1][1]).toMatchObject({ reason: 'trigger-press' })
+      wrapper.unmount()
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not select a disabled tab on click', async () => {
+    const wrapper = mount(TabsRoot, {
+      props: { defaultValue: 'tab1' },
+      slots: {
+        default: () => h(TabsList, () => [
+          h(TabsTrigger, { value: 'tab1' }, () => 'Tab 1'),
+          h(TabsTrigger, { value: 'tab2', disabled: true, as: 'div' }, () => 'Tab 2'),
+        ]),
+      },
+      attachTo: document.body,
+    })
+    const t2 = wrapper.findAll('[role="tab"]')[1]
+    await click(t2, 1)
+    expect(t2.attributes('data-state')).toBe('unchecked')
+    wrapper.unmount()
+  })
+})
+
+describe('content mounting defaults (#2476)', () => {
+  function mountTabs(props: Record<string, unknown> = {}) {
+    return mount(TabsRoot, {
+      props: { defaultValue: 'tab1', ...props },
+      slots: {
+        default: () => [
+          h(TabsList, () => [
+            h(TabsTrigger, { value: 'tab1' }, () => 'Tab 1'),
+            h(TabsTrigger, { value: 'tab2' }, () => 'Tab 2'),
+          ]),
+          h(TabsContent, { value: 'tab1', class: 'flex' }, () => 'Content 1'),
+          h(TabsContent, { value: 'tab2', class: 'flex' }, () => 'Content 2'),
+        ],
+      },
+      attachTo: document.body,
+    })
+  }
+
+  it('renders no element for an inactive panel', async () => {
+    const wrapper = mountTabs()
+    await flushPromises()
+    const panels = wrapper.findAll('[role="tabpanel"]')
+    expect(panels).toHaveLength(1)
+    expect(panels[0].text()).toBe('Content 1')
+    expect(panels[0].attributes('hidden')).toBeUndefined()
+
+    await wrapper.findAll('[role="tab"]')[1].trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('[role="tabpanel"]').map(panel => panel.text())).toEqual(['Content 2'])
+    wrapper.unmount()
+  })
+
+  it('points aria-controls only at a panel in the DOM', async () => {
+    const wrapper = mountTabs()
+    await flushPromises()
+    const [t1, t2] = wrapper.findAll('[role="tab"]')
+    expect(t1.attributes('aria-controls')).toBe(wrapper.find('[role="tabpanel"]').attributes('id'))
+    expect(t2.attributes('aria-controls')).toBeUndefined()
+
+    await t2.trigger('click')
+    await flushPromises()
+    expect(t1.attributes('aria-controls')).toBeUndefined()
+    expect(t2.attributes('aria-controls')).toBe(wrapper.find('[role="tabpanel"]').attributes('id'))
+    wrapper.unmount()
+  })
+
+  it('with `unmountOnHide` off, keeps every panel mounted, inactive ones `hidden`', async () => {
+    const wrapper = mountTabs({ unmountOnHide: false })
+    await flushPromises()
+    const [p1, p2] = wrapper.findAll('[role="tabpanel"]')
+    expect(p1.attributes('hidden')).toBeUndefined()
+    expect(p2.attributes('hidden')).toBeDefined()
+    expect(p2.text()).toBe('Content 2')
+    const [t1, t2] = wrapper.findAll('[role="tab"]')
+    expect(t1.attributes('aria-controls')).toBe(p1.attributes('id'))
+    expect(t2.attributes('aria-controls')).toBe(p2.attributes('id'))
+    wrapper.unmount()
+  })
+
+  it('moves aria-controls along when a rendered panel changes `value`', async () => {
+    const panelValue = ref('tab1')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(TabsRoot, { defaultValue: 'tab1', unmountOnHide: false }, () => [
+        h(TabsList, () => [
+          h(TabsTrigger, { value: 'tab1' }, () => 'Tab 1'),
+          h(TabsTrigger, { value: 'tab2' }, () => 'Tab 2'),
+        ]),
+        h(TabsContent, { value: panelValue.value }, () => 'Content'),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    const [t1, t2] = wrapper.findAll('[role="tab"]')
+    expect(t1.attributes('aria-controls')).toBe(wrapper.find('[role="tabpanel"]').attributes('id'))
+
+    panelValue.value = 'tab2'
+    await flushPromises()
+    expect(t1.attributes('aria-controls')).toBeUndefined()
+    expect(t2.attributes('aria-controls')).toBe(wrapper.find('[role="tabpanel"]').attributes('id'))
+    wrapper.unmount()
+  })
+
+  it('a `forceMount` panel stays rendered while inactive', async () => {
+    const wrapper = mount(TabsRoot, {
+      props: { defaultValue: 'tab1' },
+      slots: {
+        default: () => [
+          h(TabsContent, { value: 'tab1' }, () => 'Content 1'),
+          h(TabsContent, { value: 'tab2', forceMount: true }, () => 'Content 2'),
+        ],
+      },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    const panels = wrapper.findAll('[role="tabpanel"]')
+    expect(panels.map(panel => panel.text())).toEqual(['Content 1', 'Content 2'])
+    expect(panels[1].attributes('data-state')).toBe('unchecked')
+    wrapper.unmount()
   })
 })
 
@@ -189,7 +418,7 @@ describe('tabs characterization (pre-refactor contract)', () => {
     await flushPromises()
     const t2 = wrapper.findAll('[role="tab"]')[1]
     const idBefore = t2.attributes('id')
-    await t2.trigger('mousedown')
+    await t2.trigger('click')
     await flushPromises()
     expect(t2.attributes('data-state')).toBe('checked')
     expect(t2.attributes('id')).toBe(idBefore)
@@ -197,7 +426,7 @@ describe('tabs characterization (pre-refactor contract)', () => {
   })
 
   it('automatic activation: focusing a trigger activates its tab', async () => {
-    const wrapper = mount(twoTabFixture, { attachTo: document.body })
+    const wrapper = mount(twoTabFixture, { attachTo: document.body, props: { activationMode: 'automatic' } })
     await flushPromises()
     const t2 = wrapper.findAll('[role="tab"]')[1]
     await t2.trigger('focus')
@@ -235,7 +464,7 @@ describe('tabs characterization (pre-refactor contract)', () => {
     wrapper.unmount()
   })
 
-  it('chains a consumer mousedown listener with the internal activation', async () => {
+  it('chains a consumer mousedown listener with the automatic activation', async () => {
     const spy = vi.fn()
     const wrapper = mount({
       components: { TabsRoot, TabsList, TabsTrigger, TabsContent },
@@ -243,7 +472,7 @@ describe('tabs characterization (pre-refactor contract)', () => {
         return { spy }
       },
       template: `
-        <TabsRoot default-value="tab1">
+        <TabsRoot default-value="tab1" activation-mode="automatic">
           <TabsList>
             <TabsTrigger value="tab1">Tab 1</TabsTrigger>
             <TabsTrigger value="tab2" @mousedown="spy">Tab 2</TabsTrigger>
@@ -298,7 +527,7 @@ describe('v-model (foundation contract)', () => {
     })
     await flushPromises()
     const [t1, t2] = wrapper.findAll('[role="tab"]')
-    await t2.trigger('mousedown')
+    await t2.trigger('click')
     await flushPromises()
 
     const before = wrapper.emitted('beforeUpdate:modelValue')
@@ -320,6 +549,7 @@ describe('v-model (foundation contract)', () => {
     const wrapper = mount(TabsRoot, {
       props: {
         'modelValue': 'tab1',
+        'activationMode': 'automatic',
         'onBeforeUpdate:modelValue': (_value: unknown, details: { cancel: () => void }) => details.cancel(),
       },
       slots: { default: twoTabs },
@@ -372,14 +602,14 @@ describe('v-model (foundation contract)', () => {
     await flushPromises()
     const [t1, t2] = wrapper.findAll('[role="tab"]')
 
-    await t2.trigger('mousedown')
+    await t2.trigger('click')
     await flushPromises()
     expect(value.value).toBe('tab1')
     expect(t1.attributes('data-state')).toBe('checked')
     expect(t2.attributes('data-state')).toBe('unchecked')
 
     cancelNext.value = false
-    await t2.trigger('mousedown')
+    await t2.trigger('click')
     await flushPromises()
     expect(value.value).toBe('tab2')
     expect(t2.attributes('data-state')).toBe('checked')
@@ -418,15 +648,17 @@ describe('given TabsTrigger with consumer event listeners', () => {
     expect(value.value).toBe('one')
   })
 
-  it('should activate on mousedown', async () => {
+  it('should activate on click, not on mousedown', async () => {
     const { value, trigger } = mountTabs()
     await trigger.trigger('mousedown', { button: 0, ctrlKey: false })
+    expect(value.value).toBe('one')
+    await click(trigger, 1)
     expect(value.value).toBe('two')
   })
 
-  it('should not activate on mousedown when the consumer prevents default', async () => {
-    const { value, trigger } = mountTabs({ onMousedown: event => event.preventDefault() })
-    await trigger.trigger('mousedown', { button: 0, ctrlKey: false })
+  it('should not activate on click when the consumer prevents default', async () => {
+    const { value, trigger } = mountTabs({ onClick: event => event.preventDefault() })
+    await click(trigger, 1)
     expect(value.value).toBe('one')
   })
 
