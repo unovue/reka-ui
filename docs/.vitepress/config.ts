@@ -158,6 +158,7 @@ export default defineConfig({
               { text: 'Radio Group', link: '/docs/components/radio-group' },
               { text: `Rating ${BadgeHTML('Alpha', true)}`, link: '/docs/components/rating' },
               { text: 'Select', link: '/docs/components/select' },
+              { text: 'Slider Area', link: '/docs/components/slider-area' },
               { text: 'Slider', link: '/docs/components/slider' },
               { text: 'Switch', link: '/docs/components/switch' },
               { text: `Tag Group ${BadgeHTML('Alpha', true)}`, link: '/docs/components/tag-group' },
