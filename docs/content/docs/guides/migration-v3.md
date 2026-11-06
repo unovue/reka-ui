@@ -761,6 +761,22 @@ Two fixes in neighbouring families:
 
 `ProgressRoot` displays a value; it never changes it, so it gets no `beforeUpdate:modelValue` or change details. An invalid `modelValue` (negative, above `max`, `NaN`) now renders as indeterminate, and an invalid `max` as `100`, straight away; v2 rendered the invalid value until the parent applied the correction. The value is validated against the corrected `max`, so lowering `max` below the value also renders indeterminate and emits `update:modelValue(null)`. `ProgressRoot` still emits `update:modelValue(null)` or `update:max(100)` once when it corrects a prop, and `update:modelValue` is now typed `[value: number | null]` (v2 declared `[value: string[] | undefined]`).
 
+## Tabs select the first tab
+
+`TabsRoot` without a `defaultValue` selects the first enabled tab, as Base UI does ([#2328](https://github.com/unovue/reka-ui/issues/2328)). In v2 (and Radix) no tab and no panel were shown until you clicked one. An uncontrolled root also moves to the first enabled tab when the selected one is removed (`v-if`) or becomes disabled, and a `defaultValue` that matches no tab falls back the same way. Controlled tabs keep the value you give them. A `v-model` that is `undefined` from mount counts as uncontrolled. With a `defaultValue`, the root shows that tab and emits nothing, so the model stays `undefined`. Without one, the root emits the first tab, so the model receives it. A model that has held a value stays controlled when it is cleared to `undefined` (see [Change events carry details](#change-events-carry-details)).
+
+```vue
+<TabsRoot default-value="account"> <!-- unchanged -->
+
+<TabsRoot> <!-- v2: no tab; v3: the first enabled tab -->
+
+<TabsRoot :default-value="null"> <!-- v3: no tab, as v2 without a default -->
+```
+
+- **`update:modelValue` can fire without user input.** It carries the new reasons `'initial'` (the first selection when there is no `defaultValue`), `'missing'` and `'disabled'`, which are added to `TabsChangeReason`. A `switch` over the reasons that assumes every change comes from a trigger needs a branch for them.
+- **`null` selects no tab.** `defaultValue` and `modelValue` accept `null`.
+- **The first tab of an uncontrolled root is skipped when it is disabled.** An explicit `defaultValue` that points at a disabled tab is still kept.
+
 ## NavigationMenu
 
 `NavigationMenuRoot` and `NavigationMenuSub` are built on `useNavigationMenu()` and `useNavigationMenuSub()`, with one composable per part: `useNavigationMenuItem()`, `useNavigationMenuTrigger()`, `useNavigationMenuContent()`, `useNavigationMenuLink()`, `useNavigationMenuIndicator()` and `useNavigationMenuViewport()`. The DOM is the same. What changed:
