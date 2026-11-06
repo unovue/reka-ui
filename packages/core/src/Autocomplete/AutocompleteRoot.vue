@@ -194,7 +194,8 @@ const combobox = useComboboxRoot<AcceptableValue>({
   openOnClick: () => props.openOnClick,
   resetModelValueOnClear: true,
   emptyValue: '',
-  toModelValue: value => props.displayValue ? props.displayValue(value as T) : String(value),
+  // `null` (an item without a `value`) writes no text, as Base UI's `stringifyAsLabel`.
+  toModelValue: value => value == null ? '' : props.displayValue ? props.displayValue(value as T) : String(value),
   // Opening filters by the text already in the input.
   openSearchTerm: () => modelValue.value || '',
   getItems,

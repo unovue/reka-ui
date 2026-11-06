@@ -3,7 +3,7 @@ import type { ComboboxInputChangeReason, ComboboxOpenChangeReason } from './useC
 import type { ListboxFilterProps } from '@/Listbox'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { mergeProps, nextTick, onMounted, onUnmounted, watch } from 'vue'
-import { useControllableState, useForwardElement } from '@/shared'
+import { getElementByIdFrom, useControllableState, useForwardElement } from '@/shared'
 
 export type ComboboxInputEmits = {
   /** Called before the input text changes; `details.cancel()` keeps the current text. */
@@ -20,7 +20,7 @@ export interface ComboboxInputProps extends ListboxFilterProps {
 <script setup lang="ts">
 import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
-import { createComboboxInputSurface, getComboboxInputText } from './useCombobox'
+import { createComboboxInputSurface, getComboboxInputText, hasComboboxValue } from './useCombobox'
 import { getComboboxInputFieldAttrs, injectComboboxFieldContext } from './useComboboxField'
 
 // `$attrs` are merged in the render (as the fall-through did) so the Field's
@@ -57,9 +57,35 @@ const { state: modelValue, setState: setText } = useControllableState<string, Co
 // keyboard (routed through `getNavigationIntent`) come from the shared surface.
 const surface = createComboboxInputSurface(rootContext, {
   modelValue,
-  setText: (value, event) => setText(value, 'input-change', event),
+  setText: (value, event) => {
+    const previous = modelValue.value ?? ''
+    // A cancelled text change keeps the text and the selection.
+    if (!setText(value, 'input-change', event))
+      return false
+    // Base UI: emptying the input (outside the popup) clears a single value.
+    // Decided by the accepted text, not a reread of a controlled text prop
+    // (still the old text here). A cancelled clear keeps the selection, so its
+    // text comes back and the surface restores the element.
+    if (!value && !rootContext.multiple.value && rootContext.modelValue.value != null
+      && !getElementByIdFrom(rootContext.parentElement.value, rootContext.contentId)?.contains(currentElement.value as Element)
+      && !rootContext.clearModelValue(event, 'input-clear')) {
+      setText(previous, 'none', event)
+      return false
+    }
+    return true
+  },
   disabled: () => props.disabled,
   closeOnBlur: true,
+  // Base UI: Escape on a closed combobox clears the value and the text. A
+  // cancelled value clear keeps both; the event stops only when something was cleared.
+  onClosedEscape: (event) => {
+    const filled = hasComboboxValue(rootContext.modelValue.value)
+    if (filled && !rootContext.clearModelValue(event, 'escape-key'))
+      return
+    setText('', 'escape-key', event)
+    if (filled)
+      event.stopPropagation()
+  },
 })
 
 onMounted(() => {

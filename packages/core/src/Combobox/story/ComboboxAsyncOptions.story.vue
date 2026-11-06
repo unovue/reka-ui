@@ -4,7 +4,7 @@ import { useDebounceFn, useFetch } from '@vueuse/core'
 import { ref } from 'vue'
 import { ComboboxAnchor, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxItemIndicator, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '..'
 
-const value = ref('')
+const value = ref<string | null>(null)
 const query = ref('')
 
 const { data, execute, isFetching } = useFetch('https://jsonplaceholder.typicode.com/comments', {
