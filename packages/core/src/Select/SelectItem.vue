@@ -45,7 +45,6 @@ import {
   nextTick,
   onMounted,
   ref,
-  toRefs,
 } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
@@ -61,9 +60,8 @@ defineSlots<{
     selected: boolean
   }) => any
 }>()
-const { disabled } = toRefs(props)
-
 const rootContext = injectSelectRootContext()
+const disabled = computed(() => Boolean(props.disabled || rootContext.disabled?.value))
 const contentContext = injectSelectContentContext()
 const { forwardRef, currentElement } = useForwardExpose()
 const { CollectionItem } = useCollection()

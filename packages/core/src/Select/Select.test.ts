@@ -7,6 +7,7 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import { handleSubmit } from '@/test'
 import { SelectContent, SelectItem, SelectItemIndicator, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '.'
 import SelectUnmountCleanup from './__test__/SelectUnmountCleanup.vue'
+import { injectSelectContentContext } from './SelectContentImpl.vue'
 import Select from './story/_SelectTest.vue'
 
 beforeAll(() => {
@@ -27,6 +28,27 @@ describe('given default Select', () => {
     document.body.innerHTML = ''
     wrapper = mount(Select, { attachTo: document.body })
     valueBox = wrapper.find('[aria-label="Customise options"]')
+  })
+
+  it('disables options when the select becomes disabled while open', async () => {
+    wrapper.unmount()
+    wrapper = mount(Select, { attachTo: document.body, props: { disabled: false } })
+    await fireEvent.pointerDown(wrapper.find('button').element, { button: 0, ctrlKey: false })
+    await nextTick()
+    const option = wrapper.findAll('[role=option]')[1]
+
+    await wrapper.setProps({ disabled: true })
+    await nextTick()
+    expect(option.attributes('aria-disabled')).toBe('true')
+    await option.trigger('pointerup')
+    await option.trigger('keydown', { key: 'Enter' })
+    await nextTick()
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+
+    await wrapper.setProps({ disabled: false })
+    await option.trigger('pointerup')
+    await nextTick()
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['Banana'])
   })
 
   it('should pass axe accessibility tests', async () => {
@@ -476,6 +498,34 @@ describe('given Select in a form', async () => {
       expect(handleSubmit).toHaveBeenCalledTimes(1)
       expect(handleSubmit.mock.results[0].value).toStrictEqual({ test: 'Pineapple' })
     })
+  })
+})
+
+describe('given an initially disabled, open Select', () => {
+  it('keeps a fallback item for positioning and scrolling after enabling', async () => {
+    const disabled = ref(true)
+    const ContentProbe = defineComponent({
+      setup() {
+        const context = injectSelectContentContext()
+        return () => h('span', { 'data-testid': 'scroll-item' }, context.selectedItem?.value?.textContent)
+      },
+    })
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(SelectRoot, { open: true, disabled: disabled.value }, () =>
+          h(SelectContent, { position: 'popper' }, () => [
+            h(SelectViewport, () => ['Apple', 'Orange'].map(value =>
+              h(SelectItem, { value }, () => h(SelectItemText, () => value)),
+            )),
+            h(ContentProbe),
+          ]))
+      },
+    }), { attachTo: document.body })
+    await nextTick()
+    disabled.value = false
+    await nextTick()
+    expect(wrapper.get('[data-testid="scroll-item"]').text()).toBe('Apple')
+    wrapper.unmount()
   })
 })
 
