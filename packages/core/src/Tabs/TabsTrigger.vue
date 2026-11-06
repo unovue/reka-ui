@@ -22,7 +22,7 @@ import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { injectTabsRootContext } from './TabsRoot.vue'
 import { getTabsTriggerSurface } from './useTabs'
-import { useTabsPartId } from './utils'
+import { isInsideKeepAlive, useTabsPartId } from './utils'
 
 defineOptions({
   // `$attrs` are merged under the roving and trigger bindings: the precedence
@@ -44,8 +44,12 @@ const entry = { element: currentElement, props }
 rootContext.triggers?.add(entry)
 onScopeDispose(() => rootContext.triggers?.delete(entry))
 // A trigger cached by `KeepAlive` is out of the document while deactivated.
-onDeactivated(() => rootContext.triggers?.delete(entry))
-onActivated(() => rootContext.triggers?.add(entry))
+// The hooks cost two closures per trigger, so only a trigger that can be
+// deactivated registers them.
+if (isInsideKeepAlive()) {
+  onDeactivated(() => rootContext.triggers?.delete(entry))
+  onActivated(() => rootContext.triggers?.add(entry))
+}
 
 // id/aria/data-state + the mousedown/keydown/focus handlers all come from the
 // shared surface builder (single source with `useTabs()`); the roving item
