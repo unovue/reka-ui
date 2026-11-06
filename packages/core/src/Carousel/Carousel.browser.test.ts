@@ -129,7 +129,7 @@ describe('given a Carousel in a real browser', () => {
     get('item-0').querySelector('button')!.addEventListener('click', () => clicks.push('click'))
     await expect.poll(() => viewport.style.scrollSnapType).toBe('x mandatory')
     const box = get('item-0').getBoundingClientRect()
-    await commands.mouseDrag(box.left + 150, box.top + 20, box.left + 20, box.top + 20)
+    await commands.mouseDrag(box.left + 150, box.top + 20, box.left + 20, box.top + 20, 10)
     await settled(scroll)
     expect(clicks).toEqual([])
     await userEvent.click(get('item-1').querySelector('button')!)
@@ -231,7 +231,7 @@ describe('given a Carousel in a real browser', () => {
     expect(get('item-0').style.opacity).toBe('0')
     expect(viewport.scrollLeft).toBe(0)
     const box = viewport.getBoundingClientRect()
-    await commands.mouseDrag(box.right - 20, box.top + 40, box.left + 20, box.top + 40)
+    await commands.mouseDrag(box.right - 20, box.top + 40, box.left + 20, box.top + 40, 10)
     await expect.poll(() => model.value).toBe(2)
   })
 

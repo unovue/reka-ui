@@ -23,8 +23,8 @@ const TABS = `
 `
 
 describe('tabs elements', () => {
-  it('moves focus with the arrow keys and activates the focused tab', async () => {
-    render(TABS)
+  it('in automatic mode, moves focus with the arrow keys and activates the focused tab', async () => {
+    render(TABS.replace('default-value="one"', 'default-value="one" activation-mode="automatic"'))
     const [one, two] = document.querySelectorAll<HTMLElement>('reka-tabs-trigger')
     const [panelOne, panelTwo] = document.querySelectorAll<HTMLElement>('reka-tabs-content')
     await vi.waitFor(() => expect(one.getAttribute('aria-selected')).toBe('true'))
@@ -45,8 +45,8 @@ describe('tabs elements', () => {
     expect(document.activeElement).toBe(one)
   })
 
-  it('in manual mode, activates on Enter only', async () => {
-    render(TABS.replace('default-value="one"', 'default-value="one" activation-mode="manual"'))
+  it('by default (manual mode), activates on Enter only', async () => {
+    render(TABS)
     const [one, two] = document.querySelectorAll<HTMLElement>('reka-tabs-trigger')
     await vi.waitFor(() => expect(one.getAttribute('aria-selected')).toBe('true'))
     const onUpdate = vi.fn()

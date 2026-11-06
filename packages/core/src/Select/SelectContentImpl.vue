@@ -179,7 +179,7 @@ function handlePointerDownOutside(event: PointerDownOutsideEvent) {
 
 // Keyboard navigation and typeahead, the selected-item tracking for
 // item-aligned positioning, and the pointer-release guard after opening.
-const { content: surface, contentContext, isPositioned } = useSelectContent({
+const { content: surface, contentContext, isPositioned, hasFocusedOut } = useSelectContent({
   context: rootContext,
   contentElement: content as unknown as Ref<HTMLElement | undefined>,
   getItems,
@@ -214,7 +214,9 @@ const focusScopeWrapper = computed(() => splitWrapperAttrs(mergeProps(instance.p
     emits('closeAutoFocus', event)
     if (event.defaultPrevented)
       return
-    rootContext.triggerElement.value?.focus({ preventScroll: true })
+    // Tab already moved focus past the trigger (Base UI): leave it there.
+    if (!hasFocusedOut())
+      rootContext.triggerElement.value?.focus({ preventScroll: true })
     event.preventDefault()
   },
 }), FOCUS_SCOPE_WRAPPER))

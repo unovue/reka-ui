@@ -46,6 +46,8 @@ export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
 export type NumberFieldRootEmits = {
   'beforeUpdate:modelValue': [val: number | undefined, details: ChangeEventDetails<NumberFieldChangeReason>]
   'update:modelValue': [val: number | undefined, details: ChangeEventDetails<NumberFieldChangeReason>]
+  /** Emitted when the user finishes a change: on blur or Enter after typing, when a held step button is released, and together with `update:modelValue` for keyboard and wheel steps. `update:modelValue` fires on each keystroke whose parsed value differs from the current one. */
+  'valueCommit': [val: number | undefined]
 }
 
 type NumberFieldReason = NumberFieldChangeReason | BaseChangeReason
@@ -63,6 +65,12 @@ export interface NumberFieldRootContext {
   validate: (val: string) => boolean
   /** Returns `false` when the change was cancelled or did not change the value. */
   applyInputValue: (val: string, reason?: NumberFieldReason, event?: Event) => boolean
+  /** Live update from typed text: moves the model when the text parses, leaves the text as typed. */
+  handleInputText: (val: string, event?: Event) => void
+  /** `true` while the input holds typed text that blur or Enter has not committed yet. */
+  isEditing: Readonly<Ref<boolean>>
+  /** Emits `valueCommit` when a change has not been committed yet (or always, with `force`). */
+  commitValue: (force?: boolean) => void
   disabled: Ref<boolean>
   readonly: Ref<boolean>
   disableWheelChange: Ref<boolean>

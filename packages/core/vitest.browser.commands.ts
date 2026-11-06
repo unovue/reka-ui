@@ -20,11 +20,14 @@ export const wheelAt: BrowserCommand<[x: number, y: number, deltaY: number]> = a
 }
 
 /**
- * A real (trusted) mouse drag between two points of the test page's viewport,
- * moved in `steps` so pointer listeners see the travel and its speed. `holdMs`
- * waits before releasing, for a release without speed.
+ * A real (trusted) left-button drag between two points of the test page's
+ * viewport: pressed on the first point and released on the second, so
+ * `mousedown` and `mouseup` land on different elements and no `click` fires.
+ * `userEvent` only offers whole clicks. `steps` spreads the travel over several
+ * moves, so pointer listeners see its speed; `holdMs` waits before releasing,
+ * for a release without speed.
  */
-export const mouseDrag: BrowserCommand<[fromX: number, fromY: number, toX: number, toY: number, steps?: number, holdMs?: number]> = async (context, fromX, fromY, toX, toY, steps = 10, holdMs = 0) => {
+export const mouseDrag: BrowserCommand<[fromX: number, fromY: number, toX: number, toY: number, steps?: number, holdMs?: number]> = async (context, fromX, fromY, toX, toY, steps = 1, holdMs = 0) => {
   if (context.provider.name !== 'playwright')
     throw new Error(`mouseDrag needs the playwright provider, not ${context.provider.name}`)
   const { page, iframe } = context

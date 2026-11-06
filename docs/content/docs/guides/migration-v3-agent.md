@@ -497,7 +497,7 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 ### 19. Select
 
 **What changed.**
-- `update:modelValue` and `update:open` on `SelectRoot` carry details, and `beforeUpdate:modelValue` / `beforeUpdate:open` are new (section 2). Reasons: `SelectChangeReason` (`'item-press' | 'item-keydown' | 'typeahead' | 'autofill'`) and `SelectOpenChangeReason` (`'trigger-press' | 'list-navigation' | 'item-press' | 'item-keydown' | 'escape-key' | 'outside-press'`).
+- `update:modelValue` and `update:open` on `SelectRoot` carry details, and `beforeUpdate:modelValue` / `beforeUpdate:open` are new (section 2). Reasons: `SelectChangeReason` (`'item-press' | 'item-keydown' | 'typeahead' | 'autofill'`) and `SelectOpenChangeReason` (`'trigger-press' | 'list-navigation' | 'item-press' | 'item-keydown' | 'escape-key' | 'outside-press' | 'focus-outside'`).
 - Pressing the selected item of a single select closes it without emitting `update:modelValue`, also when `by` matches a different object. Mutating an uncontrolled model array in place no longer emits.
 - `update:modelValue` is typed `T[]` when `multiple` is set and `T` otherwise, as in v2 (type-only). A single select emits `null` only when a `null`-valued item is pressed or picked by typeahead on the closed trigger.
 - `null` is the empty value, and `''` items are allowed (#2484, Base UI semantics). v2 threw for `<SelectItem value="">` because `''` was the clearing sentinel. Now `null` is the canonical empty value. A model of `''` still reads as empty (as in v2 and Base UI: `data-placeholder`, not `filled` in a `Field`, missing for `required`, submitted as `''`), but an item with `value=""` is marked selected. `SelectValue` shows the placeholder for it, unless `items` has a `null` entry: then it shows the `''` item's label from `items`, and `data-placeholder` stays. A `SelectItem` with a `null` value is allowed and sets the model to `null` when pressed; a `{ value: null, label }` entry in `items` labels the empty select instead of the placeholder. The select emits `null` only when a `null` item is pressed; autofill onto the empty native option still writes its `nullable-value` (`''` by default), as in v2. With `multiple`, `''` and `null` are ordinary array entries; `[]` is empty.
@@ -926,24 +926,71 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 - A `TabsRoot` with no `default-value` that is uncontrolled (no `v-model`, or a `v-model` that has been `undefined` since mount) selects the first enabled `TabsTrigger` in document order after mount. In v2 no tab and no panel were shown. It also moves to the first enabled tab when the selected one is removed or becomes disabled, or when `default-value` matches no trigger. An explicit `default-value` that points at a disabled tab is kept. Controlled tabs (a defined `v-model` / `:model-value`) never change by themselves.
 - These automatic selections emit `update:modelValue` (and `beforeUpdate:modelValue`) with the new `TabsChangeReason` values `'initial'`, `'missing'` and `'disabled'`.
 - `default-value` and `model-value` accept `null`, which selects no tab.
+- `activation-mode` defaults to `"manual"`. The arrow keys only move focus; Enter, Space or a click selects. A mouse press selects on `click` (on release over the tab), not on `mousedown`. `activation-mode="automatic"` keeps v2's behaviour (focus selects, so a press selects before release). A click without a press (`element.click()`) now selects in both modes.
+- An inactive `TabsContent` renders no element. v2 kept an empty `<div role="tabpanel" hidden>` per inactive panel. A trigger's `aria-controls` is set only while its panel is rendered. `:unmount-on-hide="false"` still keeps every panel mounted with `hidden`.
 
 **How to find it.**
 - `TabsRoot` / `<Tabs.Root>` without `default-value` / `defaultValue`, and those with a `v-model` whose initial value is `undefined` (`ref()`, `ref<string>()`).
 - Computed `default-value` bindings that pick the first visible tab by hand.
 - `@update:model-value` / `@before-update:model-value` handlers on `TabsRoot`, especially ones that `switch` on `details.reason`, log analytics or navigate (for example, write the tab to the URL).
+- `TabsRoot` / `<Tabs.Root>` without `activation-mode` / `activationMode`, and those with `activation-mode="manual"` (now the default).
+- Tests that fire `mousedown` on a `TabsTrigger` (`trigger('mousedown')`, `fireEvent.mouseDown`) or move focus and expect the tab selected.
+- CSS or code that relies on inactive panels being in the DOM: selectors such as `[role=tabpanel][hidden]`, `[data-state=unchecked]` / `data-[state=unchecked]:` on `TabsContent`, `querySelectorAll('[role=tabpanel]')` counts, or refs to an inactive panel's element. Also `[hidden]` workarounds such as `data-[state=inactive]:hidden` on `TabsContent`.
 
 **Rewrite rules.**
 - `TabsRoot` without a default where the project wants a tab shown: no rewrite.
 - `TabsRoot` that relied on no tab being selected at first (a "pick a tab" placeholder, panels hidden until a click): add `:default-value="null"` (uncontrolled) or start the `v-model` at `null`. *Ask* if you cannot tell from the code whether the empty state is intended.
 - A computed `default-value` that only picks the first visible or enabled tab: it can be removed; *ask* before removing it if it does more.
 - A `switch` over `details.reason` on `TabsRoot`: add cases for `'initial'`, `'missing'` and `'disabled'`. A handler with side effects that should only follow user input (URL sync, analytics): skip those reasons, or *ask*.
+- `TabsRoot` without `activation-mode`: leave it (manual is the new default) unless the project relies on arrow keys switching panels, for example a test or an inline comment that says so; then add `activation-mode="automatic"`. *Ask* if you cannot tell.
+- `activation-mode="manual"`: it can be removed; it is the default.
+- Tests that select a tab with `mousedown`: fire `click` instead (or `mousedown` then `click`). Tests that select a tab by focusing it or pressing arrow keys: add Enter, or set `activation-mode="automatic"` on that root.
+- Code that reads an inactive panel's element, or CSS that styles inactive panels (other than hiding them): add `:unmount-on-hide="false"` to that `TabsRoot` if the element is needed, or *ask*. Workarounds that hide inactive panels (`data-[state=unchecked]:hidden`, `[data-state=inactive] { display: none }`) can be removed when the root keeps the default `unmount-on-hide`.
 
-**Verify.** Each `TabsRoot` without a default shows its first enabled panel on load; each one that had `:default-value="null"` added shows none; the type-check passes.
+**Verify.** Each `TabsRoot` without a default shows its first enabled panel on load; each one that had `:default-value="null"` added shows none; only the active panel is in the DOM unless `unmount-on-hide` is `false`; the arrow keys select tabs only where `activation-mode="automatic"` is set; the type-check passes.
+
+### 32. Select closes on Tab
+
+**What changed.**
+- Tab in an open `SelectContent` closes the select with `details.reason === 'focus-outside'` and moves focus to the next tabbable element after `SelectTrigger`. Shift+Tab closes it and focuses the trigger. The highlighted item is **not** selected (Base UI). v2 swallowed Tab, so focus stayed in the open list.
+- `SelectOpenChangeReason` gains `'focus-outside'`.
+
+**How to find it.**
+- `switch (details.reason)` over `SelectOpenChangeReason` without a default branch.
+- Tests that press Tab inside an open select and expect it to stay open, or to select the highlighted item.
+
+**Rewrite rules.**
+- Exhaustive switches: add `'focus-outside'`.
+- Tests expecting the content to stay open on Tab: expect it closed. For Tab, expect focus on the next tabbable element after `SelectTrigger`, or on the trigger when there is none (or it cannot take focus). For Shift+Tab, expect focus on the trigger. Leave tests unchanged where a `beforeUpdate:open` handler cancels the close: the select stays open. Do not add code that selects on Tab; if the developer wants that, *ask*.
+
+**Verify.** The type-check passes; Tab out of an open select lands on the next field.
+
+### 33. NumberField updates while typing
+
+**What changed.**
+- `NumberFieldRoot` emits `update:modelValue` (and `beforeUpdate:modelValue`) on each keystroke whose text parses to a value different from the current one, with `details.reason` `'input-change'`, and `undefined` with `'input-clear'` when the input is emptied. v2 emitted only on blur or Enter. The value is the one blur would commit: clamped to `min`/`max` unless `allowInvalid`, and snapped to `step` only when `stepSnapping` is on (the default); the displayed text is formatted on blur, Enter, or a step (arrow keys, wheel, buttons).
+- New `valueCommit(value)` event: blur or Enter after typing, release of an increment/decrement press (once per hold), and together with `update:modelValue` for keyboard and wheel steps. `useNumberField()` takes `onValueCommit` and returns `commitValue()`.
+- `NumberFieldChangeReason` gains `'input-change' | 'input-clear'`.
+
+**How to find it.**
+- `@update:model-value` / `@update:modelValue` / `onUpdate:modelValue` / `watch` on a `NumberFieldRoot` `v-model` that triggers side effects: network requests, saving, analytics, toasts, undo history.
+- `switch (details.reason)` on `NumberFieldChangeReason` without a default branch.
+- Tests that type into a `NumberFieldInput` and assert how many times `update:modelValue` fired, or that it did not fire before blur.
+
+**Rewrite rules.**
+- A listener that only mirrors the value into state: leave unchanged.
+- A listener with a side effect that should run once per edit: move it to `@value-commit`. If unsure, *ask*.
+- `valueCommit` reports only user edits. A `watch` whose side effect must also run when the app sets the value itself: keep that path (keep the watcher, or run the side effect where the app assigns the value). If unsure, *ask*.
+- A side effect that must run on each step of a held increment/decrement button: keep it on `update:modelValue`, which fires on every repeat; `valueCommit` fires once on release.
+- Exhaustive switches over `NumberFieldChangeReason`: add the two new reasons.
+- Tests: expect one `update:modelValue` per keystroke that changes the parsed value (none for `12.` after `12`), or assert on `valueCommit` instead.
+
+**Verify.** The type-check passes; typing in a number field updates bound state live; side effects moved to `valueCommit` still run once per edit.
 
 ### Report
 
 When you are done, give the developer:
 
 1. The list of files you changed, grouped by the section above that required the change.
-2. Every `active` / `inactive` selector, every open or closed selector you could not attribute to a popup trigger or its content, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, every Splitter handler that ignores keyboard collapses, cancelled structural layout change or `v-model:layout` suggestion from section 22, every `NavigationMenuContent` double-emit compensation or focus-only `interactOutside` handler from section 23, every alias to a copy without per-component entry points from section 24, every transition on a part, hover-only transition and hand-written unmount delay from section 25, every shadow-root teleport target, document stylesheet for portalled content or shadow DOM workaround from section 27, every drawer `update:open` handler that does more than cancel, hand-written tree selection workaround or select flag without `multiple` from section 28, and every cancelling `beforeUpdate:modelValue` on an uncontrolled `AutocompleteRoot` from section 29, every kept `@internationalized/date` use, existing Temporal polyfill or TypeScript 5 project from section 30, and every `TabsRoot` whose empty initial state you could not confirm from section 31 that you left unchanged because the rule said to ask, with file and line.
+2. Every `active` / `inactive` selector, every open or closed selector you could not attribute to a popup trigger or its content, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, every Splitter handler that ignores keyboard collapses, cancelled structural layout change or `v-model:layout` suggestion from section 22, every `NavigationMenuContent` double-emit compensation or focus-only `interactOutside` handler from section 23, every alias to a copy without per-component entry points from section 24, every transition on a part, hover-only transition and hand-written unmount delay from section 25, every shadow-root teleport target, document stylesheet for portalled content or shadow DOM workaround from section 27, every drawer `update:open` handler that does more than cancel, hand-written tree selection workaround or select flag without `multiple` from section 28, and every cancelling `beforeUpdate:modelValue` on an uncontrolled `AutocompleteRoot` from section 29, every kept `@internationalized/date` use, existing Temporal polyfill or TypeScript 5 project from section 30, every `TabsRoot` whose empty initial state you could not confirm, every `TabsRoot` whose reliance on automatic activation you could not confirm, and every read of an inactive `TabsContent` element from section 31 that you left unchanged because the rule said to ask, with file and line.
 3. The result of the type-check, lint and test commands, compared with the baseline you recorded at the start.

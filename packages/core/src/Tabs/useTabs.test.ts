@@ -122,7 +122,7 @@ describe('useTabs — trigger surface', () => {
   })
 
   it('onMousedown (left) selects the tab; right button and ctrl+click do not', () => {
-    const t = useTabs({ defaultValue: 'a', baseId: 'x' })
+    const t = useTabs({ defaultValue: 'a', baseId: 'x', activationMode: 'automatic' })
     const trig = t.getTriggerSurface('b')
     const right = new MouseEvent('mousedown', { button: 2, cancelable: true })
     trig.props.value.onMousedown(right)
@@ -137,7 +137,7 @@ describe('useTabs — trigger surface', () => {
 
   it('onMousedown reports reason trigger-press with the original event to onUpdate', () => {
     const onUpdate = vi.fn()
-    const t = useTabs({ defaultValue: 'a', baseId: 'x', onUpdate })
+    const t = useTabs({ defaultValue: 'a', baseId: 'x', activationMode: 'automatic', onUpdate })
     const event = new MouseEvent('mousedown', { button: 0 })
     t.getTriggerSurface('b').props.value.onMousedown(event)
     expect(onUpdate).toHaveBeenCalledTimes(1)
@@ -152,6 +152,7 @@ describe('useTabs — trigger surface', () => {
     const t = useTabs({
       defaultValue: 'a',
       baseId: 'x',
+      activationMode: 'automatic',
       onBeforeUpdate: (_value, details) => details.cancel(),
       onUpdate,
     })
@@ -165,7 +166,7 @@ describe('useTabs — trigger surface', () => {
 
   it('onMousedown on the already-selected trigger attempts no change and keeps the default (focus)', () => {
     const onBeforeUpdate = vi.fn()
-    const t = useTabs({ defaultValue: 'a', baseId: 'x', onBeforeUpdate })
+    const t = useTabs({ defaultValue: 'a', baseId: 'x', activationMode: 'automatic', onBeforeUpdate })
     const event = new MouseEvent('mousedown', { button: 0, cancelable: true })
     t.getTriggerSurface('a').props.value.onMousedown(event)
     expect(event.defaultPrevented).toBe(false)
@@ -174,7 +175,7 @@ describe('useTabs — trigger surface', () => {
   })
 
   it('onMousedown does not select a disabled trigger', () => {
-    const t = useTabs({ defaultValue: 'a', baseId: 'x' })
+    const t = useTabs({ defaultValue: 'a', baseId: 'x', activationMode: 'automatic' })
     const trig = t.getTriggerSurface('b', true)
     trig.props.value.onMousedown(new MouseEvent('mousedown', { button: 0 }))
     expect(t.modelValue.value).toBe('a')
@@ -191,13 +192,33 @@ describe('useTabs — trigger surface', () => {
     expect(t.modelValue.value).toBe('b')
   })
 
+  it('onMousedown selects nothing in manual mode (the default); onClick selects with reason trigger-press', () => {
+    const t = useTabs({ defaultValue: 'a', baseId: 'x' })
+    const trig = t.getTriggerSurface('b')
+    const press = new MouseEvent('mousedown', { button: 0, cancelable: true })
+    trig.props.value.onMousedown(press)
+    expect(t.modelValue.value).toBe('a')
+    // The press still focuses the trigger.
+    expect(press.defaultPrevented).toBe(false)
+    const click = new MouseEvent('click', { detail: 1 })
+    trig.props.value.onClick(click)
+    expect(t.modelValue.value).toBe('b')
+    expect(t.lastChangeDetails.value).toMatchObject({ reason: 'trigger-press', event: click })
+  })
+
+  it('onClick does not select a disabled trigger', () => {
+    const t = useTabs({ defaultValue: 'a', baseId: 'x' })
+    t.getTriggerSurface('b', true).props.value.onClick(new MouseEvent('click', { detail: 1 }))
+    expect(t.modelValue.value).toBe('a')
+  })
+
   it('onFocus activates in automatic mode (reason trigger-focus) but not in manual mode', () => {
-    const auto = useTabs({ defaultValue: 'a', baseId: 'x' })
+    const auto = useTabs({ defaultValue: 'a', baseId: 'x', activationMode: 'automatic' })
     auto.getTriggerSurface('b').props.value.onFocus()
     expect(auto.modelValue.value).toBe('b')
     expect(auto.lastChangeDetails.value.reason).toBe('trigger-focus')
 
-    const manual = useTabs({ defaultValue: 'a', baseId: 'x', activationMode: 'manual' })
+    const manual = useTabs({ defaultValue: 'a', baseId: 'x' })
     manual.getTriggerSurface('b').props.value.onFocus()
     expect(manual.modelValue.value).toBe('a')
   })

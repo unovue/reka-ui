@@ -47,8 +47,9 @@ export interface TabsRootProps<T extends StringOrNumber = StringOrNumber> extend
    */
   dir?: Direction
   /**
-   * Whether a tab is activated automatically (on focus) or manually (on click).
-   * @defaultValue automatic
+   * Whether a tab is activated automatically (on focus, so arrow keys select tabs as they move) or
+   * manually (on click, or Enter/Space; arrow keys only move focus).
+   * @defaultValue manual
    */
   activationMode?: 'automatic' | 'manual'
   /**
@@ -58,7 +59,8 @@ export interface TabsRootProps<T extends StringOrNumber = StringOrNumber> extend
    */
   modelValue?: T | null
   /**
-   * When `true`, the element will be unmounted on closed state.
+   * When `true`, an inactive `TabsContent` is removed from the DOM, element and all. When `false`, it
+   * stays mounted with the `hidden` attribute (any `display` style you give it overrides `hidden`).
    *
    * @defaultValue `true`
    */
@@ -81,7 +83,7 @@ import { useTabs, useTabsAutoSelect } from './useTabs'
 
 const props = withDefaults(defineProps<TabsRootProps<T>>(), {
   orientation: 'horizontal',
-  activationMode: 'automatic',
+  activationMode: 'manual',
   unmountOnHide: true,
 })
 const emits = defineEmits<TabsRootEmits<T>>()
@@ -112,7 +114,7 @@ const tabs = useTabs({
 })
 
 const { root, context, modelValue } = tabs
-// Base UI: an uncontrolled root selects the first enabled tab by itself.
+// An uncontrolled root selects the first enabled tab by itself.
 useTabsAutoSelect(tabs, props.defaultValue)
 
 provideTabsRootContext(context)
