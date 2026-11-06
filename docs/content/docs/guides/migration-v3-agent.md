@@ -912,6 +912,26 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 
 **Verify.** The type-check passes with no `Cannot find name 'Temporal'` error. Nothing imports `@internationalized/date` (unless the developer chose to keep it). The app mounts in a browser without native Temporal, with no `[Reka UI] The date components need the Temporal API` error in the console. Each date component shows today's month and emits values of the type it was given. Tests pass after their setup file loads the polyfill.
 
+### 31. NumberField updates while typing
+
+**What changed.**
+- `NumberFieldRoot` emits `update:modelValue` (and `beforeUpdate:modelValue`) on every keystroke whose text parses as a number, with `details.reason` `'input-change'`, and `undefined` with `'input-clear'` when the input is emptied. v2 emitted only on blur or Enter. The value is the one blur would commit (clamped and snapped unless `allowInvalid`); the displayed text is formatted only on blur or Enter.
+- New `valueCommit(value)` event: blur or Enter after typing, release of an increment/decrement press (once per hold), and together with `update:modelValue` for keyboard and wheel steps. `useNumberField()` takes `onValueCommit` and returns `commitValue()`.
+- `NumberFieldChangeReason` gains `'input-change' | 'input-clear'`.
+
+**How to find it.**
+- `@update:model-value` / `@update:modelValue` / `onUpdate:modelValue` / `watch` on a `NumberFieldRoot` `v-model` that triggers side effects: network requests, saving, analytics, toasts, undo history.
+- `switch (details.reason)` on `NumberFieldChangeReason` without a default branch.
+- Tests that type into a `NumberFieldInput` and assert how many times `update:modelValue` fired, or that it did not fire before blur.
+
+**Rewrite rules.**
+- A listener that only mirrors the value into state: leave unchanged.
+- A listener with a side effect that should run once per edit: move it to `@value-commit`. If unsure, *ask*.
+- Exhaustive switches over `NumberFieldChangeReason`: add the two new reasons.
+- Tests: expect one `update:modelValue` per parseable keystroke, or assert on `valueCommit` instead.
+
+**Verify.** The type-check passes; typing in a number field updates bound state live; side effects moved to `valueCommit` still run once per edit.
+
 ### Report
 
 When you are done, give the developer:

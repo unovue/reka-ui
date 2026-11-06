@@ -280,9 +280,13 @@ describe('numberFieldRoot — cancelled text commit', () => {
     }))
     const input = getByTestId('input') as HTMLInputElement
     await fireEvent.update(input, '7')
-    await commit(input)
+    // Typing proposes the value live (cancelled too), and the typed text stays.
     expect(onBeforeUpdate).toHaveBeenCalledTimes(1)
-    expect(onBeforeUpdate.mock.calls[0][1].reason).toBe(reason)
+    expect(onBeforeUpdate.mock.calls[0][1].reason).toBe('input-change')
+    expect(input.value).toBe('7')
+    await commit(input)
+    expect(onBeforeUpdate).toHaveBeenCalledTimes(2)
+    expect(onBeforeUpdate.mock.calls[1][1].reason).toBe(reason)
     expect(input.value).toBe('1')
     tick.value++
     await nextTick()
@@ -310,9 +314,11 @@ describe('numberFieldRoot — cancelled clear', () => {
     const input = getByTestId('input') as HTMLInputElement
     input.focus()
     await fireEvent.update(input, '')
-    await fireEvent.keyDown(input, { key: 'Enter' })
     expect(onBeforeUpdate).toHaveBeenCalledTimes(1)
-    expect(onBeforeUpdate.mock.calls[0][0]).toBeUndefined()
+    expect(onBeforeUpdate.mock.calls[0][1].reason).toBe('input-clear')
+    await fireEvent.keyDown(input, { key: 'Enter' })
+    expect(onBeforeUpdate).toHaveBeenCalledTimes(2)
+    expect(onBeforeUpdate.mock.calls[1][0]).toBeUndefined()
     expect(input.value).toBe('1')
     await fireEvent.keyDown(input, { key: 'ArrowUp' })
     expect(onUpdate).toHaveBeenCalledTimes(1)
@@ -355,5 +361,122 @@ describe('useNumberField lean surfaces', () => {
   it('formats `textValue` with the field formatter', () => {
     const field = useNumberField({ defaultValue: 1234.5, locale: 'de-DE' })
     expect(field.textValue.value).toBe('1.234,5')
+  })
+})
+
+describe('numberFieldRoot — live value while typing (Base UI parity, #1720)', () => {
+  function renderLive(props: Record<string, unknown> = {}) {
+    const onUpdate = vi.fn()
+    const onCommit = vi.fn()
+    const utils = render(defineComponent({
+      setup() {
+        return () => h(NumberFieldRoot, {
+          'onUpdate:modelValue': onUpdate,
+          'onValueCommit': onCommit,
+          ...props,
+        }, () => [
+          h(Reka.NumberFieldInput, { 'data-testid': 'input' }),
+          h(Reka.NumberFieldIncrement, { 'data-testid': 'increment' }),
+        ])
+      },
+    }))
+    const input = utils.getByTestId('input') as HTMLInputElement
+    return { ...utils, input, onUpdate, onCommit }
+  }
+
+  it('emits update:modelValue on each parseable keystroke and leaves the typed text alone', async () => {
+    const { input, onUpdate, onCommit } = renderLive({ defaultValue: 0 })
+    input.focus()
+    await fireEvent.update(input, '1')
+    await fireEvent.update(input, '12')
+    await fireEvent.update(input, '12.')
+    await nextTick()
+    expect(onUpdate.mock.calls.map(c => [c[0], c[1].reason])).toEqual([[1, 'input-change'], [12, 'input-change']])
+    // "12." parses to the current value: no emit, and the text is not reformatted to "12".
+    expect(input.value).toBe('12.')
+    expect(onCommit).not.toHaveBeenCalled()
+    await fireEvent.blur(input)
+    expect(onCommit).toHaveBeenCalledTimes(1)
+    expect(onCommit).toHaveBeenCalledWith(12)
+    expect(input.value).toBe('12')
+  })
+
+  it('emits the value the blur would commit (clamped and snapped), and formats only on blur', async () => {
+    const { input, onUpdate, onCommit } = renderLive({ defaultValue: 0, min: 0, max: 10, step: 2 })
+    await fireEvent.update(input, '7')
+    expect(onUpdate.mock.calls.at(-1)?.[0]).toBe(8)
+    expect(input.value).toBe('7')
+    await fireEvent.blur(input)
+    expect(input.value).toBe('8')
+    expect(onCommit).toHaveBeenCalledWith(8)
+  })
+
+  it('emits undefined (input-clear) when the text is emptied', async () => {
+    const { input, onUpdate } = renderLive({ defaultValue: 5 })
+    await fireEvent.update(input, '')
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+    expect(onUpdate.mock.calls[0][0]).toBeUndefined()
+    expect(onUpdate.mock.calls[0][1].reason).toBe('input-clear')
+  })
+
+  it('does not commit on a focus and blur without changes', async () => {
+    const { input, onCommit } = renderLive({ defaultValue: 5 })
+    input.focus()
+    await fireEvent.blur(input)
+    expect(onCommit).not.toHaveBeenCalled()
+  })
+
+  it('commits keyboard steps together with the change, and Enter after typing', async () => {
+    const { input, onCommit } = renderLive({ defaultValue: 5 })
+    await fireEvent.keyDown(input, { key: 'ArrowUp' })
+    expect(onCommit).toHaveBeenLastCalledWith(6)
+    await fireEvent.update(input, '9')
+    expect(onCommit).toHaveBeenCalledTimes(1)
+    await fireEvent.keyDown(input, { key: 'Enter' })
+    expect(onCommit).toHaveBeenCalledTimes(2)
+    expect(onCommit).toHaveBeenLastCalledWith(9)
+  })
+
+  it('a step while editing replaces the typed text with the formatted result', async () => {
+    const { input } = renderLive({ defaultValue: 0 })
+    await fireEvent.update(input, '3.')
+    await fireEvent.keyDown(input, { key: 'ArrowUp' })
+    await nextTick()
+    expect(input.value).toBe('4')
+  })
+
+  it('does not overwrite the typed text when a controlled parent echoes the value', async () => {
+    const model = ref<number | undefined>(0)
+    const { getByTestId } = render(defineComponent({
+      setup() {
+        return () => h(NumberFieldRoot, {
+          'modelValue': model.value,
+          'onUpdate:modelValue': (v: number | undefined) => { model.value = v },
+          'step': 0.01,
+          'formatOptions': { minimumFractionDigits: 2 },
+        }, () => h(Reka.NumberFieldInput, { 'data-testid': 'input' }))
+      },
+    }))
+    const input = getByTestId('input') as HTMLInputElement
+    await fireEvent.update(input, '1.5')
+    await nextTick()
+    expect(model.value).toBe(1.5)
+    expect(input.value).toBe('1.5')
+    await fireEvent.blur(input)
+    await nextTick()
+    expect(input.value).toBe('1.50')
+  })
+
+  it('commits a held step button once, on release', async () => {
+    const { getByTestId, onCommit, onUpdate } = renderLive({ defaultValue: 0 })
+    const increment = getByTestId('increment')
+    await fireEvent.pointerDown(increment, { button: 0, pointerId: 1, pointerType: 'mouse' })
+    await nextTick()
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+    expect(onCommit).not.toHaveBeenCalled()
+    await fireEvent.pointerUp(window, { button: 0, pointerId: 1, pointerType: 'mouse' })
+    await nextTick()
+    expect(onCommit).toHaveBeenCalledTimes(1)
+    expect(onCommit).toHaveBeenCalledWith(1)
   })
 })

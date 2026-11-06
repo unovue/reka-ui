@@ -142,7 +142,7 @@ Each family exports its reason union, for example `DialogOpenChangeReason` (`'tr
 
 The form-input families report these reasons:
 
-- `NumberFieldChangeReason`: `'increment-press' | 'decrement-press' | 'keyboard' | 'wheel' | 'blur'`. `keyboard` covers the arrow, Page and Home/End keys and Enter committing typed text; `blur` is typed text committed on blur. A held button repeats with `increment-press` / `decrement-press` and no event.
+- `NumberFieldChangeReason`: `'increment-press' | 'decrement-press' | 'keyboard' | 'wheel' | 'blur' | 'input-change' | 'input-clear'`. `keyboard` covers the arrow, Page and Home/End keys and Enter committing typed text; `blur` is typed text committed on blur; `input-change` / `input-clear` are live updates while typing (see [NumberField updates while typing](#numberfield-updates-while-typing)). A held button repeats with `increment-press` / `decrement-press` and no event.
 - `PinInputChangeReason`: `'input' | 'paste' | 'backspace-key' | 'delete-key'`. `input` also covers an IME commit and autofill.
 - `RatingChangeReason`: `'item-press'`, for a pointer or keyboard selection (both reach the rating as a click on the item) and for a clearable reset to `0`.
 - `SliderChangeReason`: `'track-press' | 'drag' | 'keyboard'`. On keyboard steps `valueCommit` still fires before `update:modelValue`; a step cancelled in `beforeUpdate:modelValue` emits no `valueCommit`.
@@ -914,3 +914,17 @@ Publishing a library or a copy-paste registry on top of Reka UI? You cannot load
 | `isCalendarDateTime(value)` from `reka-ui/date` | `isPlainDateTime(value)` (the old name is a deprecated alias) |
 | `formatter.custom(value.toDate(tz), options)` | `formatter.custom(value, options)`: `useDateFormatter` accepts Temporal values |
 | `new DateFormatter(locale, options).format(value.toDate(tz))` | `useDateFormatter(locale).custom(value, options)`, or `value.toLocaleString(locale, options)` |
+
+## NumberField updates while typing
+
+`NumberFieldRoot` now emits `update:modelValue` on every keystroke that parses as a number, as Base UI's `onValueChange` does (#1720, #2103). v2 emitted only when the input was blurred or Enter was pressed. The emitted value is the one blur would commit: clamped to `min`/`max` and snapped to `step` unless `allowInvalid` is set. The typed text itself is left alone until blur or Enter formats it, so typing `1.` does not jump back to `1`. Emptying the input emits `undefined`. The new reasons are `'input-change'` and `'input-clear'`.
+
+For the old once-per-edit timing, listen to the new `valueCommit` event (Base UI's `onValueCommitted`). It fires on blur or Enter after typing, when a step button is released (once per press-and-hold), and together with `update:modelValue` for keyboard and wheel steps. A focus and blur without changes emits nothing.
+
+```vue
+<!-- v2: saved once per edit -->
+<NumberFieldRoot v-model="price" @update:model-value="save" />
+
+<!-- v3: same timing -->
+<NumberFieldRoot v-model="price" @value-commit="save" />
+```

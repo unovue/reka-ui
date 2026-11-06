@@ -202,6 +202,21 @@ The starting value is clamped to `min` and `max`, but it is not snapped to `step
 </template>
 ```
 
+### Committed value
+
+`update:modelValue` fires on every keystroke that parses as a number, with the value blur would commit (clamped and snapped). The typed text is formatted only on blur or Enter. To react once per edit, for example to save, listen to `valueCommit`: it fires on blur or Enter after typing, when an increment or decrement press is released, and with each keyboard or wheel step.
+
+```vue line=4
+<template>
+  <NumberFieldRoot
+    v-model="quantity"
+    @value-commit="save"
+  >
+    …
+  </NumberFieldRoot>
+</template>
+```
+
 ## Real-world examples
 
 - [Slider with Number Field](/examples/slider-number-field): Render a Slider with a Number Field that shows and interact with the values of the Slider.
@@ -243,4 +258,4 @@ Adheres to the [Spinbutton WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/
 
 ## Headless composable
 
-`useNumberField` holds the value and its formatted text (`modelValue`, `textValue`), `increment()` / `decrement()` / `setModelValue()`, `applyInputValue()` to parse what the user typed, and the `root`, `incrementButton` and `decrementButton` [part surfaces](/docs/guides/composables#part-surfaces) with `createInputSurface()` for the input (`role="spinbutton"`, `aria-valuenow`, arrow keys, wheel and Page Up / Down). It takes the same options as `NumberFieldRoot`, `formatOptions` and `locale` included. It is pure, so it can be called outside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).
+`useNumberField` holds the value and its formatted text (`modelValue`, `textValue`), `increment()` / `decrement()` / `setModelValue()`, `applyInputValue()` to parse what the user typed, `commitValue()` to report a pending change through `onValueCommit`, and the `root`, `incrementButton` and `decrementButton` [part surfaces](/docs/guides/composables#part-surfaces) with `createInputSurface()` for the input (`role="spinbutton"`, `aria-valuenow`, arrow keys, wheel and Page Up / Down). It takes the same options as `NumberFieldRoot`, `formatOptions` and `locale` included. It is pure, so it can be called outside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).
