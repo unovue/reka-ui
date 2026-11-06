@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { EventHookOn } from '@vueuse/core'
 import type { ComputedRef, Ref } from 'vue'
-import type { ComboboxChangeReason, ComboboxOpenChangeReason } from './useCombobox'
+import type { ComboboxChangeReason, ComboboxInteractionType, ComboboxOpenChangeReason } from './useCombobox'
 import type { ListboxRootProps } from '@/Listbox'
 import type { ListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import type { ListboxFilterFunction, ListboxFilterState, ListboxNavigationIntent } from '@/Listbox/useListbox'
@@ -40,6 +40,12 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
   onInputElementChange: (el: HTMLInputElement | undefined) => void
   triggerElement: Ref<HTMLElement | undefined>
   onTriggerElementChange: (el: HTMLElement | undefined) => void
+  /**
+   * How the popup was last opened or closed (Base UI's interaction type), read by
+   * the content for `initialFocus` / `finalFocus`: an open by touch focuses the
+   * content rather than an input inside it, so no virtual keyboard opens.
+   */
+  interactionType: Ref<ComboboxInteractionType>
   parentElement: Ref<HTMLElement | undefined>
   resetSearchTermOnSelect: Ref<boolean>
   /** Called with the close reason when the popup closes and the input text should be reset. */

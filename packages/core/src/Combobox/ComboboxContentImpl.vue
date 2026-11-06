@@ -1,9 +1,10 @@
 <script lang="ts">
 import type { Ref } from 'vue'
+import type { ComboboxInteractionType } from './useCombobox'
 import type { DismissableLayerDismissDetails, DismissableLayerEmits, DismissableLayerProps, FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 
-import { createContext, getActiveElement, useFocusGuards, useForwardElement, useForwardProps, useHideOthers } from '@/shared'
+import { createContext, getActiveElement, getOwnerDocument, useFocusGuards, useForwardElement, useForwardProps, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 
 export type ComboboxContentImplEmits = DismissableLayerEmits
@@ -22,7 +23,37 @@ export interface ComboboxContentImplProps extends PopperContentProps, Dismissabl
    * @defaultValue false
    */
   hideWhenEmpty?: boolean
+  /**
+   * The element to focus when the content opens (Base UI `initialFocus`).
+   * - `undefined` (default): with the input inside the content, the input (the content itself when opened by
+   *   touch, so no virtual keyboard opens); with the input outside, focus does not move.
+   * - `true` / `null`: the first tabbable element in the content, else the content.
+   * - `false`: focus does not move.
+   * - an element: that element.
+   * - a function: called with how the content was opened (`'mouse'`, `'touch'`, `'pen'`, `'keyboard'` or `''`);
+   *   returns an element, `true` for the first tabbable element, or `false` / `undefined` to do nothing. Use it
+   *   for an element inside the content, whose template ref is still empty when the prop is read.
+   */
+  initialFocus?: ComboboxFocusTarget
+  /**
+   * The element to focus when the content closes (Base UI `finalFocus`).
+   * - `undefined` (default): `true` with the input inside the content, `false` with it outside.
+   * - `true` / `null`: the trigger with the input inside the content, the input with it outside; only when focus
+   *   was inside the content or lost with it.
+   * - `false`: focus does not move.
+   * - an element: that element.
+   * - a function: called with how the content was closed; returns an element, `true` for the default, or
+   *   `false` / `undefined` to do nothing.
+   */
+  finalFocus?: ComboboxFocusTarget
 }
+
+/** An `initialFocus` / `finalFocus` value of `ComboboxContent`. */
+export type ComboboxFocusTarget
+  = | boolean
+    | HTMLElement
+    | null
+    | ((interactionType: ComboboxInteractionType) => boolean | HTMLElement | null | undefined | void)
 
 export const [injectComboboxContentContext, provideComboboxContentContext]
   = createContext<{
@@ -33,10 +64,11 @@ export const [injectComboboxContentContext, provideComboboxContentContext]
 <script setup lang="ts">
 import type { WrapperSpec } from '@/shared/splitWrapperAttrs'
 import { refAutoReset } from '@vueuse/shared'
-import { computed, getCurrentInstance, mergeProps, nextTick, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
+import { computed, getCurrentInstance, mergeProps, nextTick, onMounted, onUnmounted, toRefs, watch } from 'vue'
 import { useCollectionSlot } from '@/Collection'
 import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer } from '@/DismissableLayer/useDismissableLayer'
 import { FOCUS_SCOPE_WRAPPER, focusScopeOptions, useFocusScope } from '@/FocusScope/useFocusScope'
+import { getTabbableCandidates } from '@/FocusScope/utils'
 import { injectListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { getListboxContentSurface } from '@/Listbox/useListbox'
 import { PopperContent } from '@/Popper'
@@ -52,6 +84,9 @@ defineOptions({
 const props = withDefaults(defineProps<ComboboxContentImplProps & { present?: boolean }>(), {
   position: 'inline',
   present: true,
+  // Not cast to `false` when absent: `undefined` picks the Base UI default.
+  initialFocus: undefined,
+  finalFocus: undefined,
 })
 const emits = defineEmits<ComboboxContentImplEmits>()
 
@@ -89,7 +124,7 @@ useHideOthers(ariaHiddenTarget)
 
 const pickedProps = computed(() => {
   if (props.position === 'popper') {
-    const { present: _, ...forwardedProps } = props
+    const { present: _, initialFocus: _initialFocus, finalFocus: _finalFocus, ...forwardedProps } = props
     return forwardedProps
   }
   // Inline, the content renders its own element (`as` / `asChild`).
@@ -113,35 +148,89 @@ const popperStyle = {
 
 provideComboboxContentContext({ position })
 
-// Handle case where input position within the content
-const isInputWithinContent = ref(false)
-onMounted(() => {
-  if (rootContext.inputElement.value) {
-    isInputWithinContent.value = currentElement.value.contains(rootContext.inputElement.value)
-    if (props.present && isInputWithinContent.value) {
-      rootContext.inputElement.value.focus()
-    }
-  }
-})
+// Focus on open and close, as Base UI's `Combobox.Popup` (`initialFocus` /
+// `finalFocus`): the defaults depend on whether the input is inside the content.
+const isShown = computed(() => props.present && rootContext.open.value)
+let isInputInside = false
 
-watch(() => props.present, async (isPresent, wasPresent) => {
-  if (isPresent || !wasPresent)
+function contains(element: Element | null | undefined) {
+  return !!element && !!currentElement.value?.contains(element)
+}
+
+/** Resolves a focus target: an element, `true` for the default, `undefined` for none. */
+function resolveFocusTarget(target: ComboboxFocusTarget | undefined, fallback: boolean) {
+  // Read once: the next change sets it again; a programmatic one leaves it unknown.
+  const interactionType = rootContext.interactionType.value
+  rootContext.interactionType.value = ''
+  const value = typeof target === 'function' ? target(interactionType) : target === undefined ? fallback : target
+  return { value: value === null ? true : value || undefined, interactionType }
+}
+
+// `false` from an open until its close has returned focus (once).
+let hasReturnedFocus = true
+
+function focusOnOpen() {
+  hasReturnedFocus = false
+  const content = currentElement.value as HTMLElement | undefined
+  const input = rootContext.inputElement.value
+  isInputInside = contains(input)
+  const { value, interactionType } = resolveFocusTarget(props.initialFocus, isInputInside)
+  if (!content || !value || contains(getActiveElement()))
     return
+  let target: HTMLElement | undefined
+  if (value instanceof HTMLElement)
+    target = value
+  else if (props.initialFocus === undefined)
+    target = interactionType === 'touch' ? content : input
+  else
+    target = getTabbableCandidates(content)[0] ?? content
+  target?.focus({ preventScroll: target === content })
+}
 
+function focusOnClose(focusWasInside: boolean) {
+  if (hasReturnedFocus)
+    return
+  hasReturnedFocus = true
+  const { value } = resolveFocusTarget(props.finalFocus, isInputInside)
+  if (value instanceof HTMLElement)
+    value.focus()
+  // The default target, only when focus was inside the content or lost with it.
+  else if (value && focusWasInside)
+    (isInputInside ? rootContext.triggerElement.value : rootContext.inputElement.value)?.focus()
+}
+
+function isFocusInsideOrLost() {
   const activeElement = getActiveElement()
-  if (!activeElement || !currentElement.value.contains(activeElement))
-    return
+  return !activeElement || activeElement === getOwnerDocument(currentElement.value).body || contains(activeElement)
+}
 
+// After a tick: once this content's focus scope has paused an ancestor's trap
+// (a Dialog around the combobox), and once `v-show` (a post-render effect too)
+// has shown a kept-mounted content.
+onMounted(async () => {
+  if (!isShown.value)
+    return
   await nextTick()
-  rootContext.triggerElement.value?.focus()
+  if (isShown.value)
+    focusOnOpen()
 })
+
+watch(isShown, async (shown) => {
+  const focusWasInside = !shown && isFocusInsideOrLost()
+  await nextTick()
+  // Toggled back within the tick: the newer run decides.
+  if (isShown.value !== shown)
+    return
+  if (shown)
+    focusOnOpen()
+  else
+    focusOnClose(focusWasInside)
+}, { flush: 'post' })
 
 onUnmounted(() => {
   rootContext.onContentUnmount(contentId)
-  const activeElement = getActiveElement()
-  if (isInputWithinContent.value && (!activeElement || activeElement === document.body)) {
-    rootContext.triggerElement.value?.focus()
-  }
+  // Unmounted while open: focus inside the content is lost with it.
+  focusOnClose(isFocusInsideOrLost())
 })
 
 function isEventTargetWithinCombobox(target: EventTarget | null) {

@@ -82,6 +82,12 @@
     'required': false
   },
   {
+    'name': 'finalFocus',
+    'description': '<p>The element to focus when the content closes (Base UI <code>finalFocus</code>).</p>\n<ul>\n<li><code>undefined</code> (default): <code>true</code> with the input inside the content, <code>false</code> with it outside.</li>\n<li><code>true</code> / <code>null</code>: the trigger with the input inside the content, the input with it outside; only when focus\nwas inside the content or lost with it.</li>\n<li><code>false</code>: focus does not move.</li>\n<li>an element: that element.</li>\n<li>a function: called with how the content was closed; returns an element, <code>true</code> for the default, or\n<code>false</code> / <code>undefined</code> to do nothing.</li>\n</ul>\n',
+    'type': 'ComboboxFocusTarget',
+    'required': false
+  },
+  {
     'name': 'forceMount',
     'description': '<p>Used to force mounting when more control is needed. Useful when\ncontrolling animation with Vue animation libraries.</p>\n',
     'type': 'boolean',
@@ -103,6 +109,12 @@
     'name': 'hideWhenEmpty',
     'description': '<p>When <code>true</code>, hides the content when there are no items matching the filter.</p>\n',
     'type': 'boolean',
+    'required': false
+  },
+  {
+    'name': 'initialFocus',
+    'description': '<p>The element to focus when the content opens (Base UI <code>initialFocus</code>).</p>\n<ul>\n<li><code>undefined</code> (default): with the input inside the content, the input (the content itself when opened by\ntouch, so no virtual keyboard opens); with the input outside, focus does not move.</li>\n<li><code>true</code> / <code>null</code>: the first tabbable element in the content, else the content.</li>\n<li><code>false</code>: focus does not move.</li>\n<li>an element: that element.</li>\n<li>a function: called with how the content was opened (<code>\'mouse\'</code>, <code>\'touch\'</code>, <code>\'pen\'</code>, <code>\'keyboard\'</code> or <code>\'\'</code>);\nreturns an element, <code>true</code> for the first tabbable element, or <code>false</code> / <code>undefined</code> to do nothing. Use it\nfor an element inside the content, whose template ref is still empty when the prop is read.</li>\n</ul>\n',
+    'type': 'ComboboxFocusTarget',
     'required': false
   },
   {
@@ -210,10 +222,12 @@
 | `dir` | The reading direction of the popper content when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disableOutsidePointerEvents` | When `true`, hover/focus/click interactions will be disabled on elements outside the `DismissableLayer`. Users will need to click twice on outside elements to interact with them: once to close the `DismissableLayer`, and again to trigger the element. Outside elements are covered by a transparent internal backdrop (`[data-reka-internal-backdrop]`) rendered right below the layer; `<body>` styles are never touched. | `boolean` | No | - |
 | `disableUpdateOnLayoutShift` | Whether to disable the update position for the content when the layout shifted. | `boolean` | No | - |
+| `finalFocus` | The element to focus when the content closes (Base UI `finalFocus`).  `undefined` (default): `true` with the input inside the content, `false` with it outside. `true` / `null`: the trigger with the input inside the content, the input with it outside; only when focus was inside the content or lost with it. `false`: focus does not move. an element: that element. a function: called with how the content was closed; returns an element, `true` for the default, or `false` / `undefined` to do nothing. | `ComboboxFocusTarget` | No | - |
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
 | `hideShiftedArrow` | When `true`, hides the arrow when it cannot be centered to the reference element. | `boolean` | No | - |
 | `hideWhenDetached` | Whether to hide the content when the trigger becomes fully occluded. | `boolean` | No | - |
 | `hideWhenEmpty` | When `true`, hides the content when there are no items matching the filter. | `boolean` | No | - |
+| `initialFocus` | The element to focus when the content opens (Base UI `initialFocus`).  `undefined` (default): with the input inside the content, the input (the content itself when opened by touch, so no virtual keyboard opens); with the input outside, focus does not move. `true` / `null`: the first tabbable element in the content, else the content. `false`: focus does not move. an element: that element. a function: called with how the content was opened (`'mouse'`, `'touch'`, `'pen'`, `'keyboard'` or `''`); returns an element, `true` for the first tabbable element, or `false` / `undefined` to do nothing. Use it for an element inside the content, whose template ref is still empty when the prop is read. | `ComboboxFocusTarget` | No | - |
 | `memoDependencies` | Reactive dependencies that should invalidate the memoized content subtree. | `unknown[]` | No | - |
 | `position` | The positioning mode to use, \<br> `inline` is the default and you can control the position using CSS. \<br> `popper` positions content in the same way as our other primitives, for example `Popover` or `DropdownMenu`. | `"inline" \| "popper"` | No | - |
 | `positionStrategy` | The type of CSS position property to use. | `"fixed" \| "absolute"` | No | - |

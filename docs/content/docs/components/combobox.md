@@ -673,6 +673,32 @@ import { ref } from 'vue'
 
 `useComboboxRoot()` is the headless composable behind `ComboboxRoot`. It returns the same models, the search term and filter state, and the `role` / `aria-*` / `data-*` attributes for the input, trigger, content and items.
 
+### Focus management
+
+Focus follows [Base UI](https://base-ui.com/react/components/combobox), and depends on where `ComboboxInput` is:
+
+- **Input outside the content** (the usual layout): a mouse or pen press on `ComboboxTrigger` moves focus to the input, and the trigger never takes it. A touch press, a keyboard press on the trigger and a programmatic open leave focus where it is, so no on-screen keyboard opens. Closing does not move focus.
+- **Input inside the content**: opening focuses the input, or the content itself when it was opened by touch. Closing returns focus to the trigger when focus was inside the content.
+
+`initialFocus` and `finalFocus` on `ComboboxContent` change this: `false` leaves focus where it is, `true` uses the first tabbable element in the content on open and the trigger (input inside) or the input (input outside) on close, and an element focuses that element. A function receives how the content was opened or closed (`'mouse'`, `'touch'`, `'pen'`, `'keyboard'`, or `''` when unknown) and returns one of these; use it for an element inside the content, whose template ref is still empty when the content mounts. `autoFocus` on `ComboboxInput` only focuses the input when it mounts, like the native attribute.
+
+```vue
+<template>
+  <ComboboxRoot>
+    <ComboboxTrigger>Pick a fruit</ComboboxTrigger>
+    <ComboboxPortal>
+      <!-- keep focus on the trigger when the content opens -->
+      <ComboboxContent :initial-focus="false">
+        <ComboboxInput placeholder="Search…" />
+        <ComboboxViewport>
+          …
+        </ComboboxViewport>
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>
+</template>
+```
+
 ### Prevent select behavior
 
 By default, selecting `ComboboxItem` would close the content, and update the `modelValue` with the provided value.
