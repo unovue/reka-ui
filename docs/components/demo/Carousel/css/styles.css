@@ -1,0 +1,79 @@
+@import '@radix-ui/colors/black-alpha.css';
+@import '@radix-ui/colors/grass.css';
+@import '@radix-ui/colors/mauve.css';
+
+/* reset */
+button {
+  all: unset;
+}
+
+.CarouselRoot {
+  width: 320px;
+}
+
+.CarouselViewport {
+  border-radius: 8px;
+  outline: none;
+}
+.CarouselViewport:focus-visible {
+  box-shadow: 0 0 0 2px black;
+}
+
+.CarouselItem {
+  flex-basis: 100%;
+}
+
+.CarouselSlide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 160px;
+  border-radius: 8px;
+  border: 1px solid var(--mauve-6);
+  background-color: white;
+  color: var(--mauve-12);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.CarouselControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.CarouselButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  border: 1px solid var(--mauve-6);
+  background-color: white;
+  color: var(--mauve-12);
+}
+.CarouselButton:hover {
+  background-color: var(--mauve-2);
+}
+.CarouselButton:disabled {
+  opacity: 0.5;
+}
+
+.CarouselIndicators {
+  display: flex;
+  gap: 6px;
+}
+
+.CarouselIndicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background-color: var(--mauve-6);
+  transition: width 200ms, background-color 200ms;
+}
+.CarouselIndicator[data-active] {
+  width: 20px;
+  background-color: var(--grass-9);
+}

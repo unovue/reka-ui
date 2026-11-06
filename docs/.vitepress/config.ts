@@ -211,6 +211,7 @@ export default defineConfig({
               { text: 'Alert Dialog', link: '/docs/components/alert-dialog' },
               { text: 'Aspect Ratio', link: '/docs/components/aspect-ratio' },
               { text: 'Avatar', link: '/docs/components/avatar' },
+              { text: `Carousel ${BadgeHTML('Alpha', true)}`, link: '/docs/components/carousel' },
               { text: 'Collapsible', link: '/docs/components/collapsible' },
               { text: 'Context Menu', link: '/docs/components/context-menu' },
               { text: 'Dialog', link: '/docs/components/dialog' },

@@ -98,6 +98,12 @@
         "default": "./dist/calendar.js"
       }
     },
+    "./carousel": {
+      "import": {
+        "types": "./dist/carousel.d.ts",
+        "default": "./dist/carousel.js"
+      }
+    },
     "./checkbox": {
       "import": {
         "types": "./dist/checkbox.d.ts",
@@ -491,6 +497,9 @@
       ],
       "calendar": [
         "./dist/calendar.d.ts"
+      ],
+      "carousel": [
+        "./dist/carousel.d.ts"
       ],
       "checkbox": [
         "./dist/checkbox.d.ts"
