@@ -23,7 +23,12 @@ function handleClick() {
   }
 
   if (rootContext.resetModelValueOnClear?.value) {
-    rootContext.modelValue.value = rootContext.multiple.value ? [] : null
+    if (rootContext.multiple.value) {
+      rootContext.modelValue.value = []
+    }
+    else {
+      rootContext.modelValue.value = rootContext.getClearValue()
+    }
   }
 
   // Reset the search to show all options.

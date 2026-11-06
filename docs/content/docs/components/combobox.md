@@ -590,6 +590,52 @@ import { ref } from 'vue'
 </template>
 ```
 
+### Custom clear value
+
+When `resetModelValueOnClear` is `true`, clicking `ComboboxCancel` will reset the `modelValue`. In single-select mode, it resets to `null` by default, but you can use `clearValue` to specify a custom value. In multiple-select mode, it always resets to `[]`, regardless of `clearValue`.
+
+Pass `:clear-value="undefined"` to clear a single selection to `undefined` instead of `null`.
+
+```vue line=5-6,14
+<script setup lang="ts">
+import {
+  ComboboxCancel,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxPortal,
+  ComboboxRoot,
+} from 'reka-ui'
+import { ref } from 'vue'
+
+const selectedPerson = ref<string | undefined>('Durward Reynolds')
+</script>
+
+<template>
+  <ComboboxRoot
+    v-model="selectedPerson"
+    reset-model-value-on-clear
+    :clear-value="undefined"
+  >
+    <ComboboxInput placeholder="Search person..." />
+    <ComboboxCancel>Clear</ComboboxCancel>
+    <ComboboxPortal>
+      <ComboboxContent>
+        <ComboboxItem value="Durward Reynolds">
+          Durward Reynolds
+        </ComboboxItem>
+        <ComboboxItem value="Kenton Towne">
+          Kenton Towne
+        </ComboboxItem>
+        <ComboboxItem value="Therese Wunsch">
+          Therese Wunsch
+        </ComboboxItem>
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>
+</template>
+```
+
 ### Virtualized combobox with working filtering
 
 Combobox items **must** be filtered manually before passing them over to the virtualizer.
