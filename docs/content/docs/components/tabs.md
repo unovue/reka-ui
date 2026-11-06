@@ -230,9 +230,27 @@ const tab = computed({
 </template>
 ```
 
+### Default selection
+
+An uncontrolled `TabsRoot` (no `v-model`, or one that has been `undefined` since mount) starts on its `defaultValue`, without emitting it, so a bound `v-model` stays `undefined`. Without a `defaultValue`, it selects the first enabled tab in document order, as Base UI does, and emits it. A `v-model` that has held a value stays controlled when it is cleared to `undefined`, and nothing is selected for it. An uncontrolled root also moves to the first enabled tab when the selected one is removed or becomes disabled. These automatic selections emit `update:modelValue` with the reason `'initial'` (the first selection when there is no `defaultValue`), `'missing'` or `'disabled'`. A `defaultValue` that points at a disabled tab is kept until that tab is enabled while selected. A controlled `v-model` keeps the value its parent gives, and `null` selects no tab:
+
+```vue
+<template>
+  <!-- the first enabled tab is selected -->
+  <TabsRoot>
+    …
+  </TabsRoot>
+
+  <!-- no tab is selected -->
+  <TabsRoot :default-value="null">
+    …
+  </TabsRoot>
+</template>
+```
+
 ### Preventing a tab change
 
-`beforeUpdate:modelValue` fires before every change, with a `details` object whose `reason` is `'trigger-press'`, `'trigger-focus'` (automatic activation), `'trigger-keydown'` or `'imperative-action'`. Call `details.cancel()` to keep the current tab, for example while a form in it has unsaved changes.
+`beforeUpdate:modelValue` fires before every change, with a `details` object whose `reason` is `'trigger-press'`, `'trigger-focus'` (automatic activation), `'trigger-keydown'`, `'imperative-action'`, or one of the automatic reasons above. Call `details.cancel()` to keep the current tab, for example while a form in it has unsaved changes.
 
 <ComponentPreview name="TabsUnsavedGuard" />
 

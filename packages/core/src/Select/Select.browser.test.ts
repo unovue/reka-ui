@@ -137,4 +137,118 @@ describe('given a Select, in a real browser', () => {
     await expect.poll(() => get('trigger')!.getAttribute('aria-expanded')).toBe('false')
     expect(reasons).toEqual(['trigger-press', 'trigger-press'])
   })
+
+  // #1228, Base UI parity: Tab leaves the select without selecting the highlighted item.
+  it.each(['item-aligned', 'popper'] as const)('closes on Tab and moves focus past the trigger without selecting (%s)', async (position) => {
+    const reasons: string[] = []
+    const values: unknown[] = []
+    const { wrapper, get } = mountSelect({
+      'defaultValue': 'Apple',
+      'onUpdate:open': (_open: boolean, details: { reason: string }) => reasons.push(details.reason),
+      'onUpdate:modelValue': (value: unknown) => values.push(value),
+    }, { position })
+    unmount = () => wrapper.unmount()
+
+    get('trigger')!.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => document.activeElement?.textContent).toBe('Apple')
+    await userEvent.keyboard('{ArrowDown}')
+    await expect.poll(() => document.activeElement?.textContent).toBe('Banana')
+
+    await userEvent.keyboard('{Tab}')
+    await expect.poll(() => get('trigger')!.getAttribute('aria-expanded')).toBe('false')
+    await expect.poll(() => get('content')).toBeNull()
+    expect(document.activeElement).toBe(get('submit'))
+    expect(reasons).toEqual(['trigger-press', 'focus-outside'])
+    expect(values).toEqual([])
+    expect(get('value')?.textContent).toBe('Apple')
+  })
+
+  it('closes on Shift+Tab and focuses the trigger without selecting', async () => {
+    const values: unknown[] = []
+    const { wrapper, get } = mountSelect({
+      'defaultValue': 'Apple',
+      'onUpdate:modelValue': (value: unknown) => values.push(value),
+    })
+    unmount = () => wrapper.unmount()
+
+    get('trigger')!.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => document.activeElement?.textContent).toBe('Apple')
+    await userEvent.keyboard('{ArrowDown}')
+    await expect.poll(() => document.activeElement?.textContent).toBe('Banana')
+
+    await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+    await expect.poll(() => get('content')).toBeNull()
+    expect(document.activeElement).toBe(get('trigger'))
+    expect(values).toEqual([])
+  })
+})
+
+describe('given a Select, Tab out edge cases, in a real browser', () => {
+  function mountWithTrigger(triggerProps: Record<string, unknown> = {}, contentProps: Record<string, unknown> = {}) {
+    const Fixture = defineComponent({
+      setup() {
+        return () => h('div', [
+          h('button', { 'data-testid': 'before' }, 'Before'),
+          h(SelectRoot, { defaultValue: 'Apple' }, () => [
+            h(SelectTrigger, { 'data-testid': 'trigger', 'aria-label': 'Fruit', ...triggerProps }, () => h(SelectValue)),
+            h(SelectPortal, () => h(SelectContent, { 'data-testid': 'content', 'position': 'popper', ...contentProps }, () =>
+              h(SelectViewport, () => fruits.slice(0, 3).map(value => h(SelectItem, { value }, () => h(SelectItemText, () => value)))))),
+          ]),
+          h('button', { 'data-testid': 'after' }, 'After'),
+        ])
+      },
+    })
+    const wrapper = mount(Fixture, { attachTo: document.body })
+    const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
+    return { wrapper, get }
+  }
+
+  it('moves focus to the element after a trigger that is not tabbable', async () => {
+    const { wrapper, get } = mountWithTrigger({ tabindex: '-1' })
+    unmount = () => wrapper.unmount()
+    get('trigger')!.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => document.activeElement?.textContent).toBe('Apple')
+    await userEvent.keyboard('{Tab}')
+    await expect.poll(() => get('trigger')!.getAttribute('aria-expanded')).toBe('false')
+    await expect.poll(() => document.activeElement?.getAttribute('data-testid')).toBe('after')
+  })
+
+  it('leaves modified Tab alone', async () => {
+    const { wrapper, get } = mountWithTrigger()
+    unmount = () => wrapper.unmount()
+    get('trigger')!.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => document.activeElement?.textContent).toBe('Apple')
+    const event = new KeyboardEvent('keydown', { key: 'Tab', ctrlKey: true, bubbles: true, cancelable: true })
+    document.activeElement!.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+    expect(get('trigger')!.getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('returns focus to the trigger on a later close after reopening during the Tab-out exit transition', async () => {
+    const style = document.createElement('style')
+    style.textContent = `[data-testid="content"] { transition: opacity 400ms linear; } [data-testid="content"][data-ending-style] { opacity: 0; }`
+    document.head.append(style)
+    const { wrapper, get } = mountWithTrigger()
+    unmount = () => {
+      wrapper.unmount()
+      style.remove()
+    }
+    get('trigger')!.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => document.activeElement?.textContent).toBe('Apple')
+    await userEvent.keyboard('{Tab}')
+    expect(document.activeElement?.getAttribute('data-testid')).toBe('after')
+    // Reopen while the exit transition still runs, so the content instance is reused.
+    expect(get('content')).not.toBeNull()
+    get('trigger')!.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => document.activeElement?.textContent).toBe('Apple')
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => get('content'), { timeout: 3000 }).toBeNull()
+    await expect.poll(() => document.activeElement?.getAttribute('data-testid')).toBe('trigger')
+  })
 })

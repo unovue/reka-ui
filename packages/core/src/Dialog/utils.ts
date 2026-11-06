@@ -44,3 +44,39 @@ For more information, see https://www.reka-ui.com/docs/components/${componentLin
     }
   })
 }
+
+/**
+ * The element that had focus when each dialog opened, keyed by its root
+ * context (kept out of the frozen `DialogRootContext` shape).
+ */
+const focusedBeforeOpen = new WeakMap<object, HTMLElement | null>()
+// Roots whose current open was recorded at the transition (before `update:open` ran).
+const recordedAtOpen = new WeakSet<object>()
+
+/**
+ * Records the element focused as the dialog opens (not `<body>`, not inside
+ * the content). `atTransition` comes from the root's state setter, before the
+ * open is emitted; the content's own record for that open is then skipped. @internal
+ */
+export function recordFocusBeforeOpen(rootContext: object, active: Element | null, content?: HTMLElement, atTransition?: boolean) {
+  if (!atTransition && recordedAtOpen.delete(rootContext))
+    return
+  if (atTransition)
+    recordedAtOpen.add(rootContext)
+  focusedBeforeOpen.set(rootContext, active && active !== active.ownerDocument.body && !content?.contains(active) ? active as HTMLElement : null)
+}
+
+/** The open cycle ended: a later parent-driven open records afresh. @internal */
+export function endFocusRecord(rootContext: object) {
+  recordedAtOpen.delete(rootContext)
+}
+
+/**
+ * Where focus returns on close (Base UI `finalFocus` default): the element
+ * focused before the dialog opened, which is the trigger when the trigger
+ * opened it, else the trigger, skipping one that left the DOM. @internal
+ */
+export function getReturnFocusElement(rootContext: { triggerElement: Ref<HTMLElement | undefined> }) {
+  const candidates = [focusedBeforeOpen.get(rootContext), rootContext.triggerElement.value]
+  return candidates.find(element => element?.isConnected)
+}

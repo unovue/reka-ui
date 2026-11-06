@@ -7,6 +7,7 @@ import { useEmitAsProps, useForwardElement, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import DialogContentImpl from './DialogContentImpl.vue'
 import { injectDialogOverlayElementContext, injectDialogRootContext } from './DialogRoot.vue'
+import { getReturnFocusElement } from './utils'
 
 const props = withDefaults(defineProps<DialogContentImplProps & { present: boolean }>(), {
   disableOutsidePointerEvents: true,
@@ -57,7 +58,7 @@ function onPointerDownOutside(event: PointerDownOutsideEvent) {
 // focus to the trigger manually once the content is no longer present.
 watch(() => props.present, (isPresent, wasPresent) => {
   if (!isPresent && wasPresent)
-    rootContext.triggerElement.value?.focus()
+    getReturnFocusElement(rootContext)?.focus()
 })
 </script>
 
@@ -72,7 +73,7 @@ watch(() => props.present, (isPresent, wasPresent) => {
       (event) => {
         if (!event.defaultPrevented) {
           event.preventDefault();
-          rootContext.triggerElement.value?.focus();
+          getReturnFocusElement(rootContext)?.focus();
         }
       }
     "
