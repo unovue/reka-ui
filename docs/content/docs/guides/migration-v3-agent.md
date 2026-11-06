@@ -362,7 +362,8 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 **What changed.**
 - Modal layers (modal `Dialog`, `AlertDialog`, `Drawer`, `Popover`, `DropdownMenu`, `ContextMenu`, an open `Select`, any content with `disableOutsidePointerEvents`) no longer set `pointer-events: none` on `<body>`. Each renders a transparent `position: fixed` `<div data-reka-internal-backdrop role="presentation">` right below itself instead, with the `z-index` of the layer (or of its positioning wrapper / fixed container). A press on it closes the layer. Page content with a lower `z-index` (a sticky header) is covered; only elements in the root stacking context with a higher `z-index` than the layer stay clickable. A non-portaled layer inside a `transform` / `filter` / `contain: paint` / `will-change: transform` / `backdrop-filter` ancestor gets its backdrop in `<body>`, with a hole over the layer.
 - A modal `Dialog` / `Drawer` closes only on a press on its internal backdrop, its `DialogOverlay` / `DrawerOverlay`, or a container around its content, not on a press on an element stacked above the backdrop.
-- A modal `Popover` / `DropdownMenu` trigger, the `ContextMenu` trigger area and the `Combobox` input are cut out of the backdrop and stay interactive.
+- A modal `Popover` / `DropdownMenu` trigger and the `Combobox` input are cut out of the backdrop and stay interactive.
+- A modal `ContextMenu` trigger area is NOT cut out (Base UI). A left click on it while the menu is open only closes the menu; it no longer reaches the trigger or its children (v2 kept `pointer-events: auto` on the trigger). A right click there closes the menu and re-opens it at the new point (`update:open` emits `false`, then `true`). `modal: false` keeps the trigger area interactive.
 - The scroll lock hides the overflow of the page's scroll container and keeps the gutter with `scrollbar-gutter: stable` (or pins `<body>`'s size and sets `data-reka-scroll-locked` on `<html>` where that is unsupported). It no longer sets `padding-right` / `margin-right` on `<body>` or `--scrollbar-width` on `<html>`, no longer intercepts `touchmove` on iOS, and applies a macrotask after the overlay opens.
 - A modal `Dialog` / `AlertDialog` / `Drawer` locks scroll whenever it is open, with or without its overlay part. In v2 only the overlay part locked it. A `Drawer` with `modal="trap-focus"` no longer locks scroll.
 - `modal` defaults are unchanged.
@@ -374,6 +375,7 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 - `scrollBody` on `ConfigProvider`.
 - Modal `DialogRoot` / `AlertDialogRoot` / `DrawerRoot` usages that render no `DialogOverlay` / `AlertDialogOverlay` / `DrawerOverlay`.
 - Tests that dismiss a modal dialog by firing `pointerdown` / clicking on an element other than the overlay or `document.body`.
+- `ContextMenuRoot` usages (without `:modal="false"`) whose `ContextMenuTrigger` wraps an element with its own left-click action (a link, a card), and code or tests that rely on a left click on that trigger area reaching it while the menu is open, or on `update:open` not emitting for a right click there.
 
 **Rewrite rules.**
 - An assertion that `document.body.style.pointerEvents` is `'none'` while a layer is open: assert `document.querySelector('[data-reka-internal-backdrop]')` is not `null`. An assertion that it is restored after close: assert the backdrop is `null`. Remove code that resets `document.body.style.pointerEvents` between tests.
@@ -383,6 +385,7 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 - A test that dismisses a modal `Dialog` / `Drawer` by pressing an arbitrary outside element: press the overlay, `[data-reka-internal-backdrop]` or `document.body` instead. Playwright / Vitest browser clicks on an element under a modal layer need `force: true`.
 - A modal `Dialog` / `AlertDialog` / `Drawer` with no overlay part: leave it unchanged, and *ask* whether the page should stay scrollable while it is open. If yes, set `:modal="false"` (or `modal="trap-focus"` on a `Drawer`).
 - `scrollBody` on `ConfigProvider`: leave unchanged.
+- A test that left-clicks a modal `ContextMenuTrigger` (or its child) while the menu is open and expects the child's action: expect only the menu to close; click again to trigger the action. A test that right-clicks the open trigger and expects no `update:open`: expect `false` then `true`, with the menu open at the new point. Keep a left click reaching the trigger while open only if the user confirms: *ask*, then set `:modal="false"`.
 - Page chrome (a sticky header, a sidebar) whose `z-index` is higher than the overlay content's and that should be blocked by modal layers: add `isolation: isolate` to the app root element (Base UI's recommendation) when the overlays are portaled to `<body>`. *Ask* before lowering any `z-index`.
 
 **Verify.** Open each modal layer: the page does not scroll, does not shift horizontally, and `<body>` has no `pointer-events` inline style. Close it: `<html>` and `<body>` inline styles are back to what they were. The search for `--scrollbar-width` returns nothing.
