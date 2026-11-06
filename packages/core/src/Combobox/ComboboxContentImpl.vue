@@ -4,7 +4,7 @@ import type { ComboboxInteractionType } from './useCombobox'
 import type { DismissableLayerDismissDetails, DismissableLayerEmits, DismissableLayerProps, FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 
-import { createContext, getActiveElement, getOwnerDocument, useFocusGuards, useForwardElement, useForwardProps, useHideOthers } from '@/shared'
+import { createContext, getActiveElement, getOwnerDocument, isHTMLElement, useFocusGuards, useForwardElement, useForwardProps, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 
 export type ComboboxContentImplEmits = DismissableLayerEmits
@@ -33,6 +33,9 @@ export interface ComboboxContentImplProps extends PopperContentProps, Dismissabl
    * - a function: called with how the content was opened (`'mouse'`, `'touch'`, `'pen'`, `'keyboard'` or `''`);
    *   returns an element, `true` for the first tabbable element, or `false` / `undefined` to do nothing. Use it
    *   for an element inside the content, whose template ref is still empty when the prop is read.
+   *
+   * It only sets what the content does: a mouse press on `ComboboxTrigger` still focuses an input outside the
+   * content, and `autoFocus` on `ComboboxInput` still focuses it on mount.
    */
   initialFocus?: ComboboxFocusTarget
   /**
@@ -75,7 +78,7 @@ import { PopperContent } from '@/Popper'
 import { renderAs } from '@/Primitive/renderAs'
 import { splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
-import { getComboboxContentSurface } from './useCombobox'
+import { focusWithoutOpening, getComboboxContentSurface } from './useCombobox'
 
 defineOptions({
   inheritAttrs: false,
@@ -169,22 +172,26 @@ function resolveFocusTarget(target: ComboboxFocusTarget | undefined, fallback: b
 // `false` from an open until its close has returned focus (once).
 let hasReturnedFocus = true
 
+function focusTook(element: HTMLElement) {
+  element.focus()
+  return getActiveElement(element) === element
+}
+
 function focusOnOpen() {
   hasReturnedFocus = false
   const content = currentElement.value as HTMLElement | undefined
   const input = rootContext.inputElement.value
   isInputInside = contains(input)
   const { value, interactionType } = resolveFocusTarget(props.initialFocus, isInputInside)
-  if (!content || !value || contains(getActiveElement()))
+  if (!content || !value || contains(getActiveElement(content)))
     return
-  let target: HTMLElement | undefined
-  if (value instanceof HTMLElement)
-    target = value
+  if (isHTMLElement(value))
+    value.focus()
   else if (props.initialFocus === undefined)
-    target = interactionType === 'touch' ? content : input
-  else
-    target = getTabbableCandidates(content)[0] ?? content
-  target?.focus({ preventScroll: target === content })
+    (interactionType === 'touch' ? content : input)?.focus({ preventScroll: interactionType === 'touch' })
+  // The first tabbable element that takes focus (a hidden one cannot), else the content.
+  else if (!getTabbableCandidates(content).some(candidate => focusTook(candidate)))
+    content.focus({ preventScroll: true })
 }
 
 function focusOnClose(focusWasInside: boolean) {
@@ -192,15 +199,17 @@ function focusOnClose(focusWasInside: boolean) {
     return
   hasReturnedFocus = true
   const { value } = resolveFocusTarget(props.finalFocus, isInputInside)
-  if (value instanceof HTMLElement)
-    value.focus()
-  // The default target, only when focus was inside the content or lost with it.
-  else if (value && focusWasInside)
-    (isInputInside ? rootContext.triggerElement.value : rootContext.inputElement.value)?.focus()
+  const target = isHTMLElement(value)
+    ? value
+    // The default target, only when focus was inside the content or lost with it.
+    : value && focusWasInside ? (isInputInside ? rootContext.triggerElement.value : rootContext.inputElement.value) : undefined
+  // Focus coming back to the input must not reopen the popup (`openOnFocus`).
+  if (target)
+    focusWithoutOpening(target)
 }
 
 function isFocusInsideOrLost() {
-  const activeElement = getActiveElement()
+  const activeElement = getActiveElement(currentElement.value)
   return !activeElement || activeElement === getOwnerDocument(currentElement.value).body || contains(activeElement)
 }
 

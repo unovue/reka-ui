@@ -106,18 +106,35 @@ let comboboxCount = 0
 export type ComboboxInteractionType = 'mouse' | 'touch' | 'pen' | 'keyboard' | ''
 
 function getInteractionType(event?: Event): ComboboxInteractionType {
+  // A dismissal passes the layer's custom event: read the press or key behind it.
+  const original = (event as CustomEvent<{ originalEvent?: Event }> | undefined)?.detail?.originalEvent
+  if (original)
+    return getInteractionType(original)
   if (!event)
     return ''
-  if (typeof KeyboardEvent !== 'undefined' && event instanceof KeyboardEvent)
-    return 'keyboard'
-  if (typeof InputEvent !== 'undefined' && event instanceof InputEvent)
+  // By type, not `instanceof`: an event from an iframe has another realm's classes.
+  if (event.type.startsWith('key') || event.type === 'input' || event.type === 'beforeinput')
     return 'keyboard'
   const pointerType = (event as PointerEvent).pointerType
   if (pointerType === 'mouse' || pointerType === 'touch' || pointerType === 'pen')
     return pointerType
-  if (typeof MouseEvent !== 'undefined' && event instanceof MouseEvent)
-    return (event as MouseEvent).detail === 0 ? 'keyboard' : 'mouse'
+  if (event.type === 'click' || event.type.startsWith('mouse') || event.type.startsWith('pointer'))
+    return (event as MouseEvent).detail === 0 && event.type === 'click' ? 'keyboard' : 'mouse'
   return ''
+}
+
+/** Inputs being focused by the content on close: their focus must not reopen the popup (`openOnFocus`). */
+const restoringFocus = new WeakSet<Element>()
+
+/** Focuses an element without its focus opening the popup again. */
+export function focusWithoutOpening(element: HTMLElement) {
+  restoringFocus.add(element)
+  try {
+    element.focus()
+  }
+  finally {
+    restoringFocus.delete(element)
+  }
 }
 
 /** Whether the combobox input is rendered inside its content. */
@@ -153,6 +170,9 @@ export function getComboboxTriggerSurface(
         pointerType = event.pointerType
       },
       'onMousedown': (event: MouseEvent) => {
+        // Only the primary button presses the trigger.
+        if (event.button !== 0)
+          return
         // A press moves focus to an input outside the content, and the
         // trigger does not take it. Not by touch: no virtual keyboard opens.
         // An input inside the content is focused by the content on open.
@@ -171,6 +191,10 @@ export function getComboboxTriggerSurface(
         const wasOpen = keyboard ? context.open.value : (openAtPress ?? context.open.value)
         pointerType = undefined
         openAtPress = undefined
+        // Already toggled by its own mousedown (an `openOnFocus` open): nothing
+        // to change, and the record of that open stays.
+        if (context.open.value !== wasOpen)
+          return
         if (context.onOpenChange(!wasOpen, 'trigger-press', event))
           context.interactionType.value = type
       },
@@ -370,7 +394,7 @@ export function createComboboxInputSurface(
       },
       'onKeydown': onKeydown,
       'onFocus': (event: FocusEvent) => {
-        if (context.openOnFocus.value && !context.open.value)
+        if (context.openOnFocus.value && !context.open.value && !restoringFocus.has(event.currentTarget as Element))
           context.onOpenChange(true, 'input-focus', event)
       },
       'onClick': (event: MouseEvent) => {

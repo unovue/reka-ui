@@ -27,6 +27,8 @@ interface FixtureOptions {
   inputProps?: Record<string, unknown>
   /** A focusable control inside the content. */
   contentControl?: boolean
+  /** A `visibility: hidden` button before the other content. */
+  hiddenControl?: boolean
 }
 
 function mountCombobox(options: FixtureOptions = {}) {
@@ -54,6 +56,7 @@ function mountCombobox(options: FixtureOptions = {}) {
               'style': 'background: white;',
               ...options.contentProps?.({ outsideButton: outsideButton.value }),
             }, () => [
+              options.hiddenControl ? h('button', { 'data-testid': 'hidden-control', 'style': 'visibility: hidden;' }, 'Hidden') : null,
               options.inside ? input : null,
               items,
               options.contentControl ? h('button', { 'data-testid': 'content-control' }, 'Control') : null,
@@ -112,6 +115,41 @@ describe('combobox focus with the input outside the content', () => {
     expect(document.activeElement).toBe(get('input'))
   })
 
+  it('a secondary mouse press on the trigger does not move focus to the input', async () => {
+    const { get } = mountCombobox({ rootProps: { openOnFocus: true } })
+    get('outside')!.focus()
+
+    get('trigger')!.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerType: 'mouse', button: 2 }))
+    get('trigger')!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 2 }))
+    await new Promise(resolve => setTimeout(resolve, 50))
+    expect(document.activeElement).toBe(get('outside'))
+  })
+
+  it('with `openOnFocus` and `finalFocus: true`, Escape from a content control closes for good', async () => {
+    const { get, isShown } = mountCombobox({ contentControl: true, rootProps: { openOnFocus: true }, contentProps: () => ({ finalFocus: true }) })
+    await userEvent.click(get('trigger')!)
+    await expect.poll(isShown).toBe(true)
+
+    get('content-control')!.focus()
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => document.activeElement).toBe(get('input'))
+    await new Promise(resolve => setTimeout(resolve, 50))
+    expect(isShown()).toBe(false)
+  })
+
+  it('`finalFocus` as a function is given the pointer type of an outside press', async () => {
+    const calls: string[] = []
+    const { get, isShown } = mountCombobox({ contentProps: () => ({ finalFocus: (type: string) => {
+      calls.push(type)
+      return false
+    } }) })
+    await userEvent.click(get('trigger')!)
+    await expect.poll(isShown).toBe(true)
+    await userEvent.click(get('outside')!)
+    await expect.poll(isShown).toBe(false)
+    await expect.poll(() => calls).toEqual(['mouse'])
+  })
+
   it('a touch press on the trigger opens without focusing the input', async () => {
     const { get, isShown } = mountCombobox()
 
@@ -162,6 +200,13 @@ describe('combobox focus with the input outside the content', () => {
     await userEvent.keyboard('{Escape}')
     await expect.poll(isShown).toBe(false)
     await expect.poll(() => document.activeElement).toBe(get('outside'))
+  })
+
+  it('`initialFocus: true` skips a tabbable element that cannot take focus', async () => {
+    const { get, isShown } = mountCombobox({ contentControl: true, hiddenControl: true, contentProps: () => ({ initialFocus: true }) })
+    await userEvent.click(get('trigger')!)
+    await expect.poll(isShown).toBe(true)
+    await expect.poll(() => document.activeElement).toBe(get('content-control'))
   })
 
   it('`initialFocus: true` focuses the first tabbable element in the content', async () => {
