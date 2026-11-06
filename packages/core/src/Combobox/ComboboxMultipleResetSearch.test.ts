@@ -167,4 +167,39 @@ describe('given a multiple Combobox with a controlled input text', () => {
     expect(input.value).toBe('')
     expect(options()).toEqual(['Apple', 'Apricot', 'Banana'])
   })
+
+  it('lets the parent cancel that clear', async () => {
+    const onBeforeText = vi.fn((_value: string, details: { reason: string, cancel: () => void }) => {
+      if (details.reason === 'input-clear')
+        details.cancel()
+    })
+    wrapper = mount(defineComponent({
+      components: { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxViewport },
+      setup: () => ({ onBeforeText }),
+      template: `<ComboboxRoot multiple>
+  <ComboboxAnchor>
+    <ComboboxInput model-value="" data-testid="input" aria-label="Fruit" @before-update:model-value="onBeforeText" />
+  </ComboboxAnchor>
+  <ComboboxPortal>
+    <ComboboxContent>
+      <ComboboxViewport>
+        <ComboboxItem value="Apple">Apple</ComboboxItem>
+        <ComboboxItem value="Apricot">Apricot</ComboboxItem>
+        <ComboboxItem value="Banana">Banana</ComboboxItem>
+      </ComboboxViewport>
+    </ComboboxContent>
+  </ComboboxPortal>
+</ComboboxRoot>`,
+    }), { attachTo: document.body }) as unknown as ReturnType<typeof mountCombobox>
+    await typeAp(wrapper)
+    const input = wrapper.find('[data-testid=input]').element as HTMLInputElement
+    input.value = 'Ap'
+
+    document.querySelector<HTMLElement>('[role=option]')!.click()
+    await flushPromises()
+
+    expect(onBeforeText).toHaveBeenCalledWith('', expect.objectContaining({ reason: 'input-clear' }))
+    expect(input.value).toBe('Ap')
+    expect(options()).toEqual(['Apple', 'Apricot'])
+  })
 })
