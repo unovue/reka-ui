@@ -137,4 +137,50 @@ describe('given a Select, in a real browser', () => {
     await expect.poll(() => get('trigger')!.getAttribute('aria-expanded')).toBe('false')
     expect(reasons).toEqual(['trigger-press', 'trigger-press'])
   })
+
+  // #1228, Base UI parity: Tab leaves the select without selecting the highlighted item.
+  it.each(['item-aligned', 'popper'] as const)('closes on Tab and moves focus past the trigger without selecting (%s)', async (position) => {
+    const reasons: string[] = []
+    const values: unknown[] = []
+    const { wrapper, get } = mountSelect({
+      'defaultValue': 'Apple',
+      'onUpdate:open': (_open: boolean, details: { reason: string }) => reasons.push(details.reason),
+      'onUpdate:modelValue': (value: unknown) => values.push(value),
+    }, { position })
+    unmount = () => wrapper.unmount()
+
+    get('trigger')!.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => document.activeElement?.textContent).toBe('Apple')
+    await userEvent.keyboard('{ArrowDown}')
+    await expect.poll(() => document.activeElement?.textContent).toBe('Banana')
+
+    await userEvent.keyboard('{Tab}')
+    await expect.poll(() => get('trigger')!.getAttribute('aria-expanded')).toBe('false')
+    await expect.poll(() => get('content')).toBeNull()
+    expect(document.activeElement).toBe(get('submit'))
+    expect(reasons).toEqual(['trigger-press', 'focus-outside'])
+    expect(values).toEqual([])
+    expect(get('value')?.textContent).toBe('Apple')
+  })
+
+  it('closes on Shift+Tab and focuses the trigger without selecting', async () => {
+    const values: unknown[] = []
+    const { wrapper, get } = mountSelect({
+      'defaultValue': 'Apple',
+      'onUpdate:modelValue': (value: unknown) => values.push(value),
+    })
+    unmount = () => wrapper.unmount()
+
+    get('trigger')!.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => document.activeElement?.textContent).toBe('Apple')
+    await userEvent.keyboard('{ArrowDown}')
+    await expect.poll(() => document.activeElement?.textContent).toBe('Banana')
+
+    await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+    await expect.poll(() => get('content')).toBeNull()
+    expect(document.activeElement).toBe(get('trigger'))
+    expect(values).toEqual([])
+  })
 })

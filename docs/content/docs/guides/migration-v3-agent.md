@@ -497,7 +497,7 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 ### 19. Select
 
 **What changed.**
-- `update:modelValue` and `update:open` on `SelectRoot` carry details, and `beforeUpdate:modelValue` / `beforeUpdate:open` are new (section 2). Reasons: `SelectChangeReason` (`'item-press' | 'item-keydown' | 'typeahead' | 'autofill'`) and `SelectOpenChangeReason` (`'trigger-press' | 'list-navigation' | 'item-press' | 'item-keydown' | 'escape-key' | 'outside-press'`).
+- `update:modelValue` and `update:open` on `SelectRoot` carry details, and `beforeUpdate:modelValue` / `beforeUpdate:open` are new (section 2). Reasons: `SelectChangeReason` (`'item-press' | 'item-keydown' | 'typeahead' | 'autofill'`) and `SelectOpenChangeReason` (`'trigger-press' | 'list-navigation' | 'item-press' | 'item-keydown' | 'escape-key' | 'outside-press' | 'focus-outside'`).
 - Pressing the selected item of a single select closes it without emitting `update:modelValue`, also when `by` matches a different object. Mutating an uncontrolled model array in place no longer emits.
 - `update:modelValue` is typed `T[]` when `multiple` is set and `T` otherwise, as in v2 (type-only). A single select emits `null` only when a `null`-valued item is pressed or picked by typeahead on the closed trigger.
 - `null` is the empty value, and `''` items are allowed (#2484, Base UI semantics). v2 threw for `<SelectItem value="">` because `''` was the clearing sentinel. Now `null` is the canonical empty value. A model of `''` still reads as empty (as in v2 and Base UI: `data-placeholder`, not `filled` in a `Field`, missing for `required`, submitted as `''`), but an item with `value=""` is marked selected. `SelectValue` shows the placeholder for it, unless `items` has a `null` entry: then it shows the `''` item's label from `items`, and `data-placeholder` stays. A `SelectItem` with a `null` value is allowed and sets the model to `null` when pressed; a `{ value: null, label }` entry in `items` labels the empty select instead of the placeholder. The select emits `null` only when a `null` item is pressed; autofill onto the empty native option still writes its `nullable-value` (`''` by default), as in v2. With `multiple`, `''` and `null` are ordinary array entries; `[]` is empty.
@@ -916,6 +916,22 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 - Libraries, component kits and copy-paste registries (code other projects install): you cannot load the polyfill for your users. Declare `reka-ui@^3.0.0-alpha.0` while v3 is a prerelease (`^3` does not match prereleases) and `^3` once it is stable, say in the install instructions that the app must provide a global `Temporal` (with the polyfill and TypeScript notes above), and do not import a polyfill from a component file. *Ask* before adding the polyfill as a dependency of a published package.
 
 **Verify.** The type-check passes with no `Cannot find name 'Temporal'` error. Nothing imports `@internationalized/date` (unless the developer chose to keep it). The app mounts in a browser without native Temporal, with no `[Reka UI] The date components need the Temporal API` error in the console. Each date component shows today's month and emits values of the type it was given. Tests pass after their setup file loads the polyfill.
+
+### 31. Select closes on Tab
+
+**What changed.**
+- Tab in an open `SelectContent` closes the select with `details.reason === 'focus-outside'` and moves focus to the next tabbable element after `SelectTrigger`. Shift+Tab closes it and focuses the trigger. The highlighted item is **not** selected (Base UI). v2 swallowed Tab, so focus stayed in the open list.
+- `SelectOpenChangeReason` gains `'focus-outside'`.
+
+**How to find it.**
+- `switch (details.reason)` over `SelectOpenChangeReason` without a default branch.
+- Tests that press Tab inside an open select and expect it to stay open, or to select the highlighted item.
+
+**Rewrite rules.**
+- Exhaustive switches: add `'focus-outside'`.
+- Tests expecting the content to stay open on Tab: expect it closed and focus on the next element. Do not add code that selects on Tab; if the developer wants that, *ask*.
+
+**Verify.** The type-check passes; Tab out of an open select lands on the next field.
 
 ### Report
 

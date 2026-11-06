@@ -7,6 +7,7 @@ import type { ListboxNavigationIntent } from '@/Listbox/useListbox'
 import type { BaseChangeReason, By, ChangeEventDetails, DisclosureState, PartSurface, SelectionState } from '@/shared'
 import type { AcceptableValue, Direction } from '@/shared/types'
 import { computed, getCurrentScope, isRef, nextTick, onBeforeUnmount, onMounted, onScopeDispose, ref, shallowRef, toValue, watch, watchEffect } from 'vue'
+import { getTabbableCandidates, isHidden } from '@/FocusScope/utils'
 import { focusFirst } from '@/Menu/utils'
 import {
   compare,
@@ -72,7 +73,9 @@ export type SelectChangeReason = 'item-press' | 'item-keydown' | 'typeahead' | '
  * - `'item-press'` / `'item-keydown'`: selecting an item closed a single select.
  * - `'escape-key'` / `'outside-press'`: dismissed. Releasing the pointer
  *   outside the content after dragging from the trigger is also
- *   `'outside-press'`. Focus moving out does not close a select.
+ *   `'outside-press'`.
+ * - `'focus-outside'`: Tab or Shift+Tab moved focus out of the content (Base UI).
+ *   The highlighted item is not selected.
  */
 export type SelectOpenChangeReason
   = | 'trigger-press'
@@ -81,6 +84,7 @@ export type SelectOpenChangeReason
     | 'item-keydown'
     | 'escape-key'
     | 'outside-press'
+    | 'focus-outside'
 
 /**
  * What a keydown in the content means: one of the four focus moves, or
@@ -911,6 +915,8 @@ export interface UseSelectContentReturn {
   /** Set to `true` once the content is positioned (the positioning part's `placed`). */
   isPositioned: Ref<boolean>
   focusSelectedItem: () => void
+  /** `true` once Tab moved focus out of the content: closing must not return focus to the trigger. */
+  hasFocusedOut: () => boolean
 }
 
 /**
@@ -1101,12 +1107,36 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
     })
   })
 
+  let focusedOut = false
+  function focusOut(backward: boolean) {
+    const trigger = context.triggerElement.value
+    if (!trigger)
+      return
+    let target: HTMLElement | undefined
+    if (!backward) {
+      const root = trigger.getRootNode()
+      const container = (root instanceof ShadowRoot ? root : trigger.ownerDocument.body) as HTMLElement
+      const content = contentElement.value
+      const candidates = getTabbableCandidates(container)
+        .filter(el => el === trigger || (!content?.contains(el) && !isHidden(el, {})))
+      target = candidates[candidates.indexOf(trigger) + 1]
+    }
+    focusedOut = !!target
+    ;(target ?? trigger).focus({ preventScroll: !target })
+  }
+
   function onKeydown(event: KeyboardEvent) {
     const isModifierKey = event.ctrlKey || event.altKey || event.metaKey
 
-    // select should not be navigated using tab key so we prevent it
-    if (event.key === 'Tab')
+    // Tab leaves the select, as in Base UI: it closes without selecting the
+    // highlighted item. Shift+Tab focuses the trigger; Tab the next tabbable
+    // element after it (the content may be portaled elsewhere in the DOM).
+    if (event.key === 'Tab') {
       event.preventDefault()
+      if (context.onOpenChange(false, 'focus-outside', event))
+        focusOut(event.shiftKey)
+      return
+    }
 
     // Space selects the item when no search is in progress; otherwise it's part of the search
     if (event.code === 'Space') {
@@ -1206,7 +1236,7 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
     loop: () => !!toValue(options.loop),
   }
 
-  return { content, contentContext, isPositioned, focusSelectedItem }
+  return { content, contentContext, isPositioned, focusSelectedItem, hasFocusedOut: () => focusedOut }
 }
 
 // -----------------------------------------------------------------------------
