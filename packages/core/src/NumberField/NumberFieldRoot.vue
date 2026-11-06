@@ -69,8 +69,8 @@ export interface NumberFieldRootContext {
   handleInputText: (val: string, event?: Event) => void
   /** `true` while the input holds typed text that blur or Enter has not committed yet. */
   isEditing: Readonly<Ref<boolean>>
-  /** Emits `valueCommit` when a change has not been committed yet. */
-  commitValue: () => void
+  /** Emits `valueCommit` when a change has not been committed yet (or always, with `force`). */
+  commitValue: (force?: boolean) => void
   disabled: Ref<boolean>
   readonly: Ref<boolean>
   disableWheelChange: Ref<boolean>

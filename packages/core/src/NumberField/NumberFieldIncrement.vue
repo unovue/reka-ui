@@ -11,7 +11,6 @@ export interface NumberFieldIncrementProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { watch } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
 
 const props = withDefaults(defineProps<NumberFieldIncrementProps>(), {
@@ -25,12 +24,8 @@ const isDisabled = getterRef(() => isNumberFieldButtonDisabled(rootContext, 'inc
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 // Press-and-hold repeat (window pointer listeners) stays in the shell.
-const { isPressed, onTrigger } = usePressedHold({ target: currentElement, disabled: isDisabled })
 // A press commits once it is released, after any hold-repeat steps (Base UI parity).
-watch(isPressed, (pressed) => {
-  if (!pressed)
-    rootContext.commitValue()
-})
+const { isPressed, onTrigger } = usePressedHold({ target: currentElement, disabled: isDisabled, onRelease: rootContext.commitValue })
 const button = getNumberFieldButtonSurface(rootContext, 'increase', { disabled: () => props.disabled, pressed: isPressed })
 
 onTrigger((event) => {

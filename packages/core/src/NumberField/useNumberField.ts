@@ -85,7 +85,7 @@ export interface UseNumberFieldReturn {
   /** Parses typed text and commits it (clamped/snapped unless `allowInvalid`). Returns `false` when cancelled or unchanged. */
   applyInputValue: (value: string, reason?: Reason, event?: Event) => boolean
   /** Emits `valueCommit` when a change has not been committed yet (e.g. after a button press is released). */
-  commitValue: () => void
+  commitValue: (force?: boolean) => void
   /** Registers the input element; a standalone consumer binds it as the input's `ref`. */
   setInputElement: (el: HTMLInputElement | undefined | null) => void
   /** The `role="group"` surface. */
@@ -152,31 +152,26 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
   // don't overwrite the typed text (typing "1." would otherwise reformat to "1").
   const isEditing = ref(false)
 
-  function change(value: number | undefined, reason: Reason, event?: Event) {
+  // `step`: a keyboard or wheel step is a discrete, final change, so it commits right away,
+  // together with a typed change still pending when the step lands on the same value.
+  function change(value: number | undefined, reason: Reason, event?: Event, step?: boolean) {
     const applied = setState(value, reason, event)
     if (applied) {
       pendingCommit = true
       lastChangedValue = value
     }
+    if (step && (reason === 'keyboard' || reason === 'wheel'))
+      commitValue()
     return applied
   }
 
-  function commitValue(force = false) {
+  function commitValue(force?: boolean) {
     if (!force && !pendingCommit)
       return
     const value = pendingCommit ? lastChangedValue : modelValue.value
     pendingCommit = false
     props.emit?.('valueCommit', value)
     props.onValueCommit?.(value)
-  }
-
-  // Keyboard and wheel steps are discrete, final changes: they commit right away, together with
-  // any typed change still pending when the step itself lands on the same value.
-  function changeAndCommitStep(value: number | undefined, reason: Reason, event?: Event) {
-    const applied = change(value, reason, event)
-    if (reason === 'keyboard' || reason === 'wheel')
-      commitValue()
-    return applied
   }
 
   function setModelValue(value: number | undefined, reason: Reason = 'imperative-action', event?: Event) {
@@ -273,9 +268,9 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
       // `startingValue` is used as given: kept within min/max, but not snapped to the step grid
       // (a starting price of 40 with step 3 stays 40). The next tick aligns it via getNextValue.
       const startingValue = toValue(props.startingValue)
-      changeAndCommitStep(startingValue === undefined
+      change(startingValue === undefined
         ? clampInputValue(min.value ?? 0)
-        : numberParser.parse(numberFormatter.format(clamp(startingValue, min.value, max.value))), reason, event)
+        : numberParser.parse(numberFormatter.format(clamp(startingValue, min.value, max.value))), reason, event, true)
       return
     }
 
@@ -284,7 +279,7 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
     // direction — ArrowUp above `max` would lower it. Do nothing instead, like HTML stepUp/stepDown.
     if (type === 'increase' ? nextValue < currentInputValue : nextValue > currentInputValue)
       return
-    changeAndCommitStep(nextValue, reason, event)
+    change(nextValue, reason, event, true)
   }
 
   function handleIncrease(multiplier = 1, reason: Reason = 'imperative-action', event?: Event) {
@@ -299,7 +294,7 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
     if (bound === undefined)
       return
     isEditing.value = false
-    changeAndCommitStep(clampInputValue(bound), reason, event)
+    change(clampInputValue(bound), reason, event, true)
   }
 
   function validate(val: string) {
@@ -316,7 +311,7 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
       inputEl.value.value = val
   }
 
-  // The value typed text commits to: clamped/snapped unless `allowInvalid`, `NaN` when unparseable.
+  // The value typed text commits to: clamped/snapped unless `allowInvalid`, `NaN` when it does not parse.
   function parseInputValue(val: string) {
     const parsedValue = numberParser.parse(val)
     if (isNaN(parsedValue))
@@ -369,8 +364,6 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
     set: value => setModelValue(value),
   })
 
-  const editing = getterRef(() => isEditing.value)
-
   const context: NumberFieldRootContext = {
     modelValue: contextModelValue,
     handleDecrease,
@@ -384,8 +377,8 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
     validate,
     applyInputValue,
     handleInputText,
-    isEditing: editing,
-    commitValue: () => commitValue(),
+    isEditing,
+    commitValue,
     disabled,
     disableWheelChange,
     invertWheelChange,
@@ -426,7 +419,7 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
     increment: handleIncrease,
     decrement: handleDecrease,
     applyInputValue,
-    commitValue: () => commitValue(),
+    commitValue,
     setInputElement: (el) => { inputEl.value = el ?? undefined },
     root,
     createInputSurface: () => createNumberFieldInputSurface(context),
@@ -547,8 +540,8 @@ export function createNumberFieldInputSurface(rootContext: NumberFieldRootContex
 
   const inputValue = ref(rootContext.textValue.value)
   // While the user is editing, the model follows the typed text but must not reformat it.
-  watch([() => rootContext.textValue.value, () => rootContext.isEditing.value], ([text, editing]) => {
-    if (!editing)
+  watch(() => rootContext.isEditing.value ? null : rootContext.textValue.value, (text) => {
+    if (text !== null)
       inputValue.value = text
   }, { immediate: true })
 

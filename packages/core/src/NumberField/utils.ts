@@ -9,8 +9,8 @@ const HOLD_DELAY = 400
 const REPEAT_INTERVAL = 60
 const TOUCH_MOVE_TOLERANCE = 10
 
-export function usePressedHold(options: { target?: MaybeComputedElementRef, disabled: Ref<boolean> }) {
-  const { disabled } = options
+export function usePressedHold(options: { target?: MaybeComputedElementRef, disabled: Ref<boolean>, onRelease?: () => void }) {
+  const { disabled, onRelease } = options
   const timeout = ref<number>()
   const triggerHook = createEventHook<PointerEvent | undefined>()
   const isPressed = ref(false)
@@ -102,6 +102,7 @@ export function usePressedHold(options: { target?: MaybeComputedElementRef, disa
 
     if (shouldTriggerTap)
       trigger(event)
+    onRelease?.()
   }
 
   const onPressCancel = (event: PointerEvent) => {
