@@ -216,6 +216,18 @@ describe('given a Select, Tab out edge cases, in a real browser', () => {
     await expect.poll(() => document.activeElement?.getAttribute('data-testid')).toBe('after')
   })
 
+  it('returns focus to the trigger when the next element does not take focus', async () => {
+    const { wrapper, get } = mountWithTrigger()
+    unmount = () => wrapper.unmount()
+    get('after')!.setAttribute('inert', '')
+    get('trigger')!.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => document.activeElement?.textContent).toBe('Apple')
+    await userEvent.keyboard('{Tab}')
+    await expect.poll(() => get('content')).toBeNull()
+    await expect.poll(() => document.activeElement?.getAttribute('data-testid')).toBe('trigger')
+  })
+
   it('leaves modified Tab alone', async () => {
     const { wrapper, get } = mountWithTrigger()
     unmount = () => wrapper.unmount()
