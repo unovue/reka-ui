@@ -2,6 +2,7 @@
 import type { DialogContentImplEmits, DialogContentImplProps } from './DialogContentImpl.vue'
 import { computed, watch } from 'vue'
 import { useEmitAsProps, useForwardExpose, useHideOthers } from '@/shared'
+import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import DialogContentImpl from './DialogContentImpl.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
 
@@ -11,6 +12,12 @@ const props = withDefaults(defineProps<DialogContentImplProps & { present: boole
 const emits = defineEmits<DialogContentImplEmits>()
 
 const rootContext = injectDialogRootContext()
+
+// The overlay can finish leaving before the content. Keep a shared lock until
+// this content's own Presence completes, including keep-mounted dialogs.
+const shouldLockScroll = computed(() => props.present && props.disableOutsidePointerEvents)
+const scrollLocked = useBodyScrollLock(shouldLockScroll.value)
+watch(shouldLockScroll, value => scrollLocked.value = value)
 
 const emitsAsProps = useEmitAsProps(emits)
 
