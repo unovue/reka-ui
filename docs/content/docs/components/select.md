@@ -960,6 +960,14 @@ See the W3C [Select-Only Combobox](https://www.w3.org/TR/wai-aria-practices/exam
       description: '<span> Closes the select and moves focus to <Code>SelectTrigger</Code>. </span>',
     },
     {
+      keys: ['Tab'],
+      description: '<span> Closes the select without selecting the focused item and moves focus to the next focusable element after <Code>SelectTrigger</Code>. </span>',
+    },
+    {
+      keys: ['Shift + Tab'],
+      description: '<span> Closes the select without selecting the focused item and moves focus to <Code>SelectTrigger</Code>. </span>',
+    },
+    {
       keys: ['A-Z', 'a-z'],
       description: '<span> When focus is on a closed <Code>SelectTrigger</Code> of a single select, selects the next item whose text starts with the typed characters. <br /> When focus is on an item, moves focus to the next matching item. </span>',
     },

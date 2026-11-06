@@ -966,3 +966,7 @@ Publishing a library or a copy-paste registry on top of Reka UI? You cannot load
 | `isCalendarDateTime(value)` from `reka-ui/date` | `isPlainDateTime(value)` (the old name is a deprecated alias) |
 | `formatter.custom(value.toDate(tz), options)` | `formatter.custom(value, options)`: `useDateFormatter` accepts Temporal values |
 | `new DateFormatter(locale, options).format(value.toDate(tz))` | `useDateFormatter(locale).custom(value, options)`, or `value.toLocaleString(locale, options)` |
+
+## Select closes on Tab
+
+Pressing Tab in an open `SelectContent` now closes the select and moves focus to the next focusable element after `SelectTrigger`, as in Base UI. Shift+Tab closes it and focuses the trigger. v2 swallowed Tab, so focus stayed in the open list. In both cases the highlighted item is not selected, matching Base UI rather than the native `<select>` ([#1228](https://github.com/unovue/reka-ui/issues/1228)). `update:open` reports the new `'focus-outside'` reason, which `SelectOpenChangeReason` now includes.
