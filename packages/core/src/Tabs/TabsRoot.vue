@@ -114,7 +114,7 @@ const tabs = useTabs({
 })
 
 const { root, context, modelValue } = tabs
-// Base UI: an uncontrolled root selects the first enabled tab by itself.
+// An uncontrolled root selects the first enabled tab by itself.
 useTabsAutoSelect(tabs, props.defaultValue)
 
 provideTabsRootContext(context)

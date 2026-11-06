@@ -49,7 +49,7 @@ describe.each(['automatic', 'manual'] as const)('given Tabs with %s activation, 
   })
 })
 
-// Base UI (#842): a press selects a tab once it is released over it, unless
+// #842: a press selects a tab once it is released over it, unless
 // the press's focus selects it first (automatic activation).
 describe('given Tabs with the default (manual) activation, in a real browser', () => {
   it('does not activate a tab pressed and then released outside it', async () => {

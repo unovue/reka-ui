@@ -29,7 +29,7 @@ export function makeContentId(baseId: string, value: StringOrNumber) {
 /**
  * Keeps a part's `id` prop in the Root's by-value id map (`customTriggerIds` /
  * `customContentIds`), so the paired part's `aria-labelledby` / `aria-controls`
- * follows it (Base UI parity: the consumer's id wins). Follows `value` and `id`
+ * follows it (the consumer's id wins). Follows `value` and `id`
  * changes and drops the entry on unmount.
  *
  * @lifecycle setup

@@ -13,7 +13,7 @@ import { makeContentId, makeTriggerId } from './utils'
 
 /**
  * Why the selected tab changed; carried as `details.reason` on every change (#2828).
- * An uncontrolled root also selects a tab by itself, as Base UI does: `'initial'`
+ * An uncontrolled root also selects a tab by itself: `'initial'`
  * for the first enabled tab when there is no `defaultValue`, `'missing'` when the
  * selected tab is gone, `'disabled'` when it became disabled.
  */
@@ -58,9 +58,9 @@ export function getTabsTriggerSurface(
   const isSelected = isTabSelected(context, value)
   const isDisabled = () => toValue(disabled) ?? false
 
-  // Base UI selects a tab on click, once the press is released over it (#842).
-  // Automatic activation also selects on the focus a press gives (Base UI's
-  // `activateOnFocus`), so that mode alone selects on mousedown. Only a plain
+  // A tab is selected on click, once the press is released over it (#842).
+  // Automatic activation also selects on the focus a press gives, so that
+  // mode alone selects on mousedown. Only a plain
   // left press focuses: Ctrl+click is ignored (avoids the MacOS right-click),
   // and any other press (right/middle button, Ctrl, a disabled trigger)
   // prevents the default so the browser doesn't focus the trigger, which
@@ -325,11 +325,11 @@ function precedes(a: HTMLElement, b: HTMLElement) {
 }
 
 /**
- * Base UI's automatic selection for an uncontrolled root: with no tab selected
+ * Automatic selection for an uncontrolled root: with no tab selected
  * (no `defaultValue`), or with the selected tab removed or disabled, select the
  * first enabled trigger in document order. An explicit `defaultValue` pointing
- * at a disabled tab is honoured until it is selected while enabled (Base UI
- * clears the exemption from the selection, not from the trigger); `null`
+ * at a disabled tab is honoured until it is selected while enabled (the
+ * exemption clears on selection, not on the trigger); `null`
  * selects nothing. A controlled root keeps the value its parent gives.
  *
  * @lifecycle setup

@@ -99,7 +99,7 @@ describe('given default Tabs', () => {
       expect(trigger.element).toBe(document.activeElement)
     })
 
-    // Base UI: manual activation by default (#842); focus alone selects nothing.
+    // Manual activation by default (#842); focus alone selects nothing.
     it('should keep the current content until the tab is activated', async () => {
       expect(wrapper.findAll('[role=tabpanel]')).toHaveLength(1)
       expect(wrapper.html()).toContain('Make changes')
@@ -112,7 +112,7 @@ describe('given default Tabs', () => {
   })
 })
 
-describe('activation (Base UI defaults, #842)', () => {
+describe('activation defaults (#842)', () => {
   function mountTabs(props: Record<string, unknown> = {}) {
     return mount(TabsRoot, {
       props: { defaultValue: 'tab1', ...props },
@@ -229,7 +229,7 @@ describe('activation (Base UI defaults, #842)', () => {
   })
 })
 
-describe('content mounting (Base UI defaults, #2476)', () => {
+describe('content mounting defaults (#2476)', () => {
   function mountTabs(props: Record<string, unknown> = {}) {
     return mount(TabsRoot, {
       props: { defaultValue: 'tab1', ...props },

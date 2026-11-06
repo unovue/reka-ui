@@ -192,7 +192,7 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 
 ### Automatic activation
 
-By default, as in Base UI, a tab activates when it is clicked (once the mouse button is released over it) or when Enter or Space is pressed on it. The arrow keys only move focus between the triggers. Set `activation-mode="automatic"` to activate a tab as soon as its trigger gets focus: the arrow keys then switch panels as they move, and a mouse press activates a tab before it is released. Keep the default when a panel is expensive to render or fetches data.
+By default, a tab activates when it is clicked (once the mouse button is released over it) or when Enter or Space is pressed on it. The arrow keys only move focus between the triggers. Set `activation-mode="automatic"` to activate a tab as soon as its trigger gets focus: the arrow keys then switch panels as they move, and a mouse press activates a tab before it is released. Keep the default when a panel is expensive to render or fetches data.
 
 ```vue
 <template>
@@ -232,7 +232,7 @@ const tab = computed({
 
 ### Default selection
 
-An uncontrolled `TabsRoot` (no `v-model`, or one that has been `undefined` since mount) starts on its `defaultValue`, without emitting it, so a bound `v-model` stays `undefined`. Without a `defaultValue`, it selects the first enabled tab in document order, as Base UI does, and emits it. A `v-model` that has held a value stays controlled when it is cleared to `undefined`, and nothing is selected for it. An uncontrolled root also moves to the first enabled tab when the selected one is removed or becomes disabled. These automatic selections emit `update:modelValue` with the reason `'initial'` (the first selection when there is no `defaultValue`), `'missing'` or `'disabled'`. A `defaultValue` that points at a disabled tab is kept until that tab is enabled while selected. A controlled `v-model` keeps the value its parent gives, and `null` selects no tab:
+An uncontrolled `TabsRoot` (no `v-model`, or one that has been `undefined` since mount) starts on its `defaultValue`, without emitting it, so a bound `v-model` stays `undefined`. Without a `defaultValue`, it selects the first enabled tab in document order and emits it. A `v-model` that has held a value stays controlled when it is cleared to `undefined`, and nothing is selected for it. An uncontrolled root also moves to the first enabled tab when the selected one is removed or becomes disabled. These automatic selections emit `update:modelValue` with the reason `'initial'` (the first selection when there is no `defaultValue`), `'missing'` or `'disabled'`. A `defaultValue` that points at a disabled tab is kept until that tab is enabled while selected. A controlled `v-model` keeps the value its parent gives, and `null` selects no tab:
 
 ```vue
 <template>
@@ -256,7 +256,7 @@ An uncontrolled `TabsRoot` (no `v-model`, or one that has been `undefined` since
 
 ### Keeping inactive panels mounted
 
-As in Base UI, an inactive `TabsContent` is removed from the DOM, element and all, and the trigger's `aria-controls` names a panel only while it is rendered. Set `:unmount-on-hide="false"` on `TabsRoot` to keep every panel mounted, so its state (form input, a playing video, a loaded iframe) survives switching tabs. Inactive panels are then hidden with the `hidden` attribute, which any `display` style on the panel overrides (a `flex` class, for example). Hide them by state in that case:
+An inactive `TabsContent` is removed from the DOM, element and all, and the trigger's `aria-controls` names a panel only while it is rendered. Set `:unmount-on-hide="false"` on `TabsRoot` to keep every panel mounted, so its state (form input, a playing video, a loaded iframe) survives switching tabs. Inactive panels are then hidden with the `hidden` attribute, which any `display` style on the panel overrides (a `flex` class, for example). Hide them by state in that case:
 
 ```vue
 <template>

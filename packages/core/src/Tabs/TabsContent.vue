@@ -37,8 +37,8 @@ useTabsPartId(rootContext.customContentIds, () => props.value, () => props.id)
 
 // id/role/aria-labelledby/tabindex + data-state/data-orientation from the shared
 // surface builder (selection is read from its `state`, not re-derived); the
-// Presence wrapper (an inactive panel leaves the DOM, element and all, as in
-// Base UI, unless `unmountOnHide` is off: #2476), the registration, `hidden`,
+// Presence wrapper (an inactive panel leaves the DOM, element and all,
+// unless `unmountOnHide` is off: #2476), the registration, `hidden`,
 // and the mount-animation `style` stay in the SFC.
 const surface = getTabsContentSurface(rootContext, () => props.value)
 
@@ -52,7 +52,7 @@ onMounted(() => {
   })
 })
 
-// Base UI: the trigger's `aria-controls` names the panel only while the panel
+// The trigger's `aria-controls` names the panel only while the panel
 // element is in the DOM, which with `unmountOnHide` is only while it is shown.
 // A `value` change moves the registration to the new value.
 watch([currentElement, () => props.value], ([element, value], [, previous]) => {
