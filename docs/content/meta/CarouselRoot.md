@@ -96,7 +96,7 @@
   },
   {
     'name': 'itemCount',
-    'description': '<p>The number of slides. Only needed to render <code>snapCount</code>, the indicators and the enabled\nPrevious/Next on the server: the slides register once mounted, and their count wins from then on.</p>\n',
+    'description': '<p>The number of slides. Only needed on the server, to render <code>snapCount</code>, the indicators, the enabled\nPrevious/Next and the slide labels before hydration: the slides register once mounted, and their count wins from then on.</p>\n',
     'type': 'number',
     'required': false
   },
@@ -243,7 +243,7 @@
 | `draggable` | When `false`, the track can't be dragged, swiped or scrolled by the user; the controls still navigate. | `boolean` | No | `true` |
 | `fade` | When `true`, slides are stacked and cross-fade instead of sliding. Set the `transition` on the items yourself. | `boolean` | No | - |
 | `inViewThreshold` | The fraction (0 to 1) of an item that has to be visible for it to count as in view. | `number` | No | `0` |
-| `itemCount` | The number of slides. Only needed to render `snapCount`, the indicators and the enabled Previous/Next on the server: the slides register once mounted, and their count wins from then on. | `number` | No | - |
+| `itemCount` | The number of slides. Only needed on the server, to render `snapCount`, the indicators, the enabled Previous/Next and the slide labels before hydration: the slides register once mounted, and their count wins from then on. | `number` | No | - |
 | `loop` | When `true`, the last slide is followed by the first one, and vice versa. Falls back to `false` when the slides are too few to wrap. | `boolean` | No | - |
 | `modelValue` | The controlled index of the current snap. Can be bound as `v-model`. | `number` | No | - |
 | `orientation` | The axis the slides are laid out and scroll along. | `"vertical" \| "horizontal"` | No | `"horizontal"` |

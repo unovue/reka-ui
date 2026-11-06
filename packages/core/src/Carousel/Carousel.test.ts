@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
-import { CarouselContent, CarouselIndicator, CarouselItem, CarouselNext, CarouselRoot, CarouselViewport } from '.'
+import { CarouselAutoplayToggle, CarouselContent, CarouselIndicator, CarouselItem, CarouselNext, CarouselPrevious, CarouselRoot, CarouselViewport } from '.'
 import Carousel from './story/_Carousel.vue'
 
 function mountCarousel(props: Record<string, unknown> = {}) {
@@ -485,6 +485,62 @@ describe('given a Carousel rendered on the server', () => {
       expect(messages.filter(m => m.includes('Hydration'))).toEqual([])
       // Labels arrive once the total is known.
       expect(container.querySelector('[data-index="1"]')?.getAttribute('aria-label')).toBe('2 of 4')
+    }
+    finally {
+      warn.mockRestore()
+      error.mockRestore()
+    }
+  })
+
+  const FullFixture = defineComponent({
+    props: { options: { type: Object, default: () => ({}) } },
+    setup(props) {
+      return () => h(CarouselRoot, { 'aria-label': 'Hydration', ...props.options }, {
+        default: ({ snapCount }: { snapCount: number }) => [
+          h(CarouselAutoplayToggle, () => 'Toggle'),
+          h(CarouselViewport, () => h(CarouselContent, () =>
+            [1, 2, 3, 4, 5].map(i => h(CarouselItem, { key: i }, () => `Slide ${i}`)))),
+          h(CarouselPrevious, () => 'Prev'),
+          h(CarouselNext, () => 'Next'),
+          ...Array.from({ length: snapCount }, (_, index) => h(CarouselIndicator, { key: index, index })),
+        ],
+      })
+    },
+  })
+
+  it.each([
+    {},
+    { defaultValue: 3 },
+    { loop: true },
+    { fade: true, defaultValue: 2 },
+    { orientation: 'vertical' },
+    { dir: 'rtl' },
+    { align: 'center', slidesToScroll: 2, defaultValue: 1 },
+    { slidesToScroll: 'auto', containScroll: false },
+    { autoHeight: true, draggable: false },
+    { autoplay: { delay: 1000 } },
+    { autoScroll: true, loop: true },
+    { itemCount: 5, defaultValue: 4 },
+    { itemCount: 5, loop: true, fade: true, slidesToScroll: 2 },
+  ])('hydrates %j without mismatches', async (options) => {
+    const container = document.createElement('div')
+    container.innerHTML = await renderToString(createSSRApp(FullFixture, { options }))
+    const serverHtml = container.innerHTML
+    document.body.innerHTML = ''
+    document.body.append(container)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const app = createSSRApp(FullFixture, { options })
+      app.mount(container)
+      await nextTick()
+      const messages = [...warn.mock.calls, ...error.mock.calls].map(args => String(args[0]))
+      expect(messages.filter(m => /hydrat|mismatch/i.test(m))).toEqual([])
+      // The slides are the server's elements, not re-created ones.
+      expect(serverHtml).toContain('aria-roledescription="slide"')
+      expect(container.querySelectorAll('[aria-roledescription="slide"]')).toHaveLength(5)
+      expect(container.querySelector('[data-index="0"]')?.getAttribute('aria-label')).toBe('1 of 5')
+      app.unmount()
     }
     finally {
       warn.mockRestore()

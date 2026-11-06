@@ -82,7 +82,11 @@ The parts set the layout styles they need inline: the overflow and snapping on t
 
 `v-model` is the index of the current **snap**, not of a slide. With one slide per snap they are the same. With `slidesToScroll`, or when `containScroll` merges the snaps at the end of the track, there are fewer snaps than slides: render the indicators from the `snapCount` slot prop.
 
-The slides register once they mount, so on the server `snapCount` is `0` and Previous/Next are disabled. Pass `itemCount` with the number of slides to render the indicators and controls on the server too. Until the track is measured, every group of `slidesToScroll` slides counts as one snap.
+### Server rendering
+
+The server renders a working scroller: before hydration, visitors can already swipe, scroll with a trackpad or the keyboard, and land on a snap. The current slide has `data-active`, and with `fade` the other slides are hidden. Where the browser supports `scroll-initial-target`, the track opens on `defaultValue`; elsewhere it scrolls there on hydration. If a visitor scrolls before hydration, the carousel keeps that place and `v-model` follows it.
+
+The slides register once they mount, so on the server `snapCount` is `0`, Previous/Next are disabled and the slides have no "2 of 5" label. Pass `itemCount` with the number of slides to render the indicators, the controls and the labels on the server too. Until the track is measured, every group of `slidesToScroll` slides counts as one snap.
 
 ## API Reference
 

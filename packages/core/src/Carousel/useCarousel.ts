@@ -273,6 +273,18 @@ function snapStyle(style: CarouselItemSnapStyle | undefined, vertical: boolean, 
 }
 
 /**
+ * "2 of 5". Before mount the total is only known from `itemCount`: the server
+ * renders the first items before the later ones are set up, so without it the
+ * label waits for the client.
+ */
+function getItemLabel(context: CarouselRootContext, index: number): string | undefined {
+  if (index === -1)
+    return undefined
+  const total = context.mounted.value ? context.items.value.length : context.itemCount.value
+  return total ? `${index + 1} of ${total}` : undefined
+}
+
+/**
  * The per-item surface. Before the item is mounted its index is the order it
  * was set up in, which on the server and during hydration is its DOM order;
  * once mounted, it is read from the DOM.
@@ -309,8 +321,7 @@ export function getCarouselItemSurface(context: CarouselRootContext, element: Re
       return {
         'role': 'group',
         'aria-roledescription': 'slide',
-        // Labelled after mount: the total isn't known while the server renders the first items.
-        'aria-label': context.mounted.value && i !== -1 ? `${i + 1} of ${context.items.value.length}` : undefined,
+        'aria-label': getItemLabel(context, i),
         'aria-hidden': hidden ? 'true' : undefined,
         'inert': hidden ? '' : undefined,
         'style': compactStyle(fade
@@ -389,6 +400,7 @@ export function useCarousel(props: UseCarouselProps = {}): UseCarouselReturn {
 
   const mounted = ref(false)
   const items = shallowRef<HTMLElement[]>([])
+  const itemCount = computed(() => Math.max(0, toValue(props.itemCount) ?? 0))
   let setupCount = 0
 
   const measuredSnaps = shallowRef<CarouselSnap[]>()
@@ -397,7 +409,7 @@ export function useCarousel(props: UseCarouselProps = {}): UseCarouselReturn {
   // Until the track is measured (on the server, before hydration, in jsdom), every group of `slidesToScroll` items is a snap.
   const fallbackSnaps = computed<CarouselSnap[]>(() => {
     // Before the slides mount (on the server, in the first render), `itemCount` stands in for them.
-    const count = items.value.length || Math.max(0, toValue(props.itemCount) ?? 0)
+    const count = items.value.length || itemCount.value
     const indices = Array.from({ length: count }, (_, i) => i)
     return chunk(indices, groupSize.value).map(group => ({ position: 0, items: group }))
   })
@@ -467,6 +479,7 @@ export function useCarousel(props: UseCarouselProps = {}): UseCarouselReturn {
         items.value = items.value.filter(item => item !== el)
     },
     nextSetupIndex: () => setupCount++,
+    itemCount,
     measuredSnaps,
     measured,
     snaps,

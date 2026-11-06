@@ -233,10 +233,29 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     updateInView()
     updateAutoHeight()
     // Laid out for the first time, or again after `display: none` reset the scroll: show the current snap.
-    if (!wasMeasured) {
-      scrollToSnap(context.modelValue.value, 'instant')
-      rotate()
+    if (!wasMeasured)
+      showCurrentSnap()
+  }
+
+  let firstLayout = true
+  /**
+   * Brings the current snap into view on a fresh layout. On the first one, a
+   * track the user already scrolled before hydration (the server HTML is a
+   * native scroller) keeps its place: the current snap follows it instead.
+   */
+  function showCurrentSnap() {
+    const position = getScroll()
+    if (firstLayout) {
+      firstLayout = false
+      const nearest = getNearestSnapIndex(position, context.snaps.value)
+      if (position > 1 && nearest !== context.modelValue.value && context.changeModelValue(nearest, 'scroll')) {
+        scrollToSnap(nearest, 'instant')
+        rotate()
+        return
+      }
     }
+    scrollToSnap(context.modelValue.value, 'instant')
+    rotate()
   }
 
   function scrollToSnap(index: number, behavior?: ScrollBehavior) {

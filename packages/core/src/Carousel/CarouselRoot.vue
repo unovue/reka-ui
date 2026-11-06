@@ -47,6 +47,8 @@ export interface CarouselRootContext {
   itemIndex: ComputedRef<Map<HTMLElement, number>>
   registerItem: (el: HTMLElement) => void
   unregisterItem: (el: HTMLElement) => void
+  /** The `itemCount` prop: the number of slides before they mount. */
+  itemCount: ComputedRef<number>
   /** The order an item was set up in: its index until it is mounted. */
   nextSetupIndex: () => number
   /** The snaps measured by the viewport, `undefined` until the track has a size. */
@@ -138,8 +140,8 @@ export interface CarouselRootProps extends PrimitiveProps {
    */
   inViewThreshold?: number
   /**
-   * The number of slides. Only needed to render `snapCount`, the indicators and the enabled
-   * Previous/Next on the server: the slides register once mounted, and their count wins from then on.
+   * The number of slides. Only needed on the server, to render `snapCount`, the indicators, the enabled
+   * Previous/Next and the slide labels before hydration: the slides register once mounted, and their count wins from then on.
    */
   itemCount?: number
   /** Advance to the next snap on an interval. Pauses on hover, stops when keyboard focus enters the carousel. */
