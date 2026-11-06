@@ -46,8 +46,8 @@ import {
 // injected there and handed in.
 // =============================================================================
 
-/** Semantic state of the trigger part; `state` → `data-state="open|closed"`. */
-export type DrawerTriggerState = { state: DisclosureState }
+/** Semantic state of the trigger part; `popupOpen` → `data-popup-open` while the popup is open (no `data-state`, so an `asChild` control keeps its own). */
+export type DrawerTriggerState = { popupOpen: boolean }
 /** Semantic state of the handle part; `state` → `data-state`. */
 export type DrawerGrabberState = { state: DisclosureState }
 /** Semantic state of the viewport part; `state` → `data-state`. */
@@ -71,7 +71,7 @@ let drawerCount = 0
 // Pure part surfaces
 // -----------------------------------------------------------------------------
 
-/** Trigger: `aria-haspopup`/`aria-expanded`/`aria-controls` + `onClick` → `onOpenToggle()`. The tag-dependent `type` stays in the SFC. */
+/** Trigger: `aria-haspopup`/`aria-expanded`/`aria-controls` + `onClick` → `onOpenToggle()` + `data-popup-open`. The tag-dependent `type` stays in the SFC. */
 export function getDrawerTriggerSurface(
   context: Pick<DrawerRootContext, 'open' | 'contentId' | 'onOpenToggle'>,
 ): PartSurface<DrawerTriggerState> {
@@ -82,7 +82,7 @@ export function getDrawerTriggerSurface(
       'aria-controls': context.open.value ? context.contentId : undefined,
       'onClick': () => context.onOpenToggle(),
     }),
-    () => ({ state: disclosureState(context.open.value) }),
+    () => ({ popupOpen: context.open.value }),
   )
 }
 

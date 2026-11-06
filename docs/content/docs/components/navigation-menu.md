@@ -146,8 +146,8 @@ The button that toggles the content.
 <DataAttributesTable
   :data="[
     {
-      attribute: '[data-state]',
-      values: ['open', 'closed'],
+      attribute: '[data-popup-open]',
+      values: 'Present when the content is open',
     },
     {
       attribute: '[data-disabled]',

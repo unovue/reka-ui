@@ -11,6 +11,8 @@ This guide collects the breaking changes between Reka UI v2 and v3, with search-
 
 Reka UI v3 is still in progress. This page collects the breaking changes as they land on the `v3` branch, so it will keep growing until the release is finalized. Each section describes what changed and the mechanical rewrite needed to move an existing v2 codebase over.
 
+The `--reka-*` CSS custom properties (`--reka-popover-content-available-height`, `--reka-accordion-content-height`, …) are unchanged.
+
 Prefer to hand the mechanical work to an AI agent? [Migrating with an AI agent](./migration-v3-agent) is this guide rewritten as instructions for one: point your agent at it, let it apply the rewrites, and review the diff.
 
 ## `data-state` vocabulary
@@ -29,7 +31,8 @@ Parts that were already on `open` / `closed` or `checked` / `unchecked` / `indet
 | `ScrollAreaScrollbar`, `ScrollAreaThumb`, `NavigationMenuIndicator` | `visible` / `hidden` | `open` / `closed` |
 | `SplitterPanel` | `expanded` / `collapsed` / (absent when not collapsible) | `open` / `closed` (non-collapsible panels are always `open`) |
 | `CollapsibleContent` | `open` / `closed` / (absent on the initial animated mount) | `open` / `closed` |
-| `TooltipTrigger`, `TooltipContent` | `closed` / `delayed-open` / `instant-open` | `open` / `closed`, plus a boolean `data-delayed` attribute present while open when the open was delayed |
+| `TooltipContent` | `closed` / `delayed-open` / `instant-open` | `open` / `closed`, plus a boolean `data-delayed` attribute present while open when the open was delayed |
+| `TooltipTrigger` | `closed` / `delayed-open` / `instant-open` | no `data-state`: `data-popup-open` while open, plus `data-delayed` (see [Popup triggers use `data-popup-open`](#popup-triggers-use-data-popup-open)) |
 | Everything already on `open` / `closed` or `checked` / `unchecked` / `indeterminate` | unchanged | unchanged |
 
 ### Search and replace
@@ -75,6 +78,51 @@ Because both values are now always emitted, any styles that relied on the attrib
 .TooltipContent[data-state='delayed-open'][data-side='top'] { /* [!code --] */
 .TooltipContent[data-state='open'][data-delayed][data-side='top'] { /* [!code ++] */
   animation-name: slideDownAndFade;
+}
+```
+
+The same values reach your code in two other places that a selector search does not find:
+
+- **Slot props.** The `state` slot prop of `Toggle` is `checked` / `unchecked` (v2: `on` / `off`), and the `state` slot prop of `StepperItem` is `current` / `upcoming` (v2: `active` / `inactive`; `completed` is unchanged). Comparisons such as `v-if="state === 'active'"` fail the type-check.
+- **Custom variants and shortcuts.** A Tailwind `@custom-variant` or `addVariant`, a UnoCSS shortcut or a Sass mixin that wraps `[data-state=active]` keeps compiling, but no longer matches a Reka UI part. Rewrite the value inside it. If the same variant also styles components outside Reka UI that still emit the old value, split it into two variants first, so each keeps its own value.
+
+## Popup triggers use `data-popup-open`
+
+A popup trigger no longer renders `data-state`. While its popup is open it carries an empty `data-popup-open` attribute, and while the popup is closed the attribute is absent. This follows Base UI. In v2 the trigger wrote `data-state="open"` / `"closed"`, which overwrote the `data-state` of a stateful control it was rendered `asChild` onto: a `TooltipTrigger` on a `Toggle` replaced the toggle's `checked` / `unchecked` with `open` / `closed`. In v3 the control keeps its own `data-state`.
+
+The affected parts are `DialogTrigger`, `AlertDialogTrigger`, `DrawerTrigger`, `PopoverTrigger`, `TooltipTrigger`, `HoverCardTrigger`, `DropdownMenuTrigger`, `DropdownMenuSubTrigger`, `ContextMenuTrigger`, `ContextMenuSubTrigger`, `MenubarTrigger`, `MenubarSubTrigger`, `SelectTrigger`, `ComboboxTrigger`, `NavigationMenuTrigger`, `DatePickerTrigger` and `DateRangePickerTrigger`, and their custom elements (`<reka-dialog-trigger>`, …). The popup content, overlay and viewport parts keep `data-state="open"` / `"closed"`, and so do triggers that describe their own state: `AccordionTrigger`, `CollapsibleTrigger`, `TabsTrigger` and `StepperTrigger` are unchanged. The other attributes on the triggers stay as they were, including `data-delayed` on `TooltipTrigger`, `data-highlighted` on menu and menubar triggers, and `data-disabled` and `data-placeholder`. Triggers that render `aria-expanded` also report the open state there, if you prefer to style on that. `TooltipTrigger` and `HoverCardTrigger` don't render it, so use `data-popup-open` on them.
+
+The headless composables change the same way: the trigger state of `useDialog()`, `usePopover()`, `useTooltip()` and the other families above is `{ popupOpen: boolean }` instead of `{ state: 'open' | 'closed' }` (`TooltipTrigger` keeps `delayed`). Code that reads `trigger.state.value.state` fails type-checking; read `popupOpen` instead.
+
+### Search and replace
+
+Find selectors that may target a trigger. The first search lists every open or closed selector, the second narrows it to lines that name a trigger:
+
+```sh
+grep -rnE "data-\[state=['\"]?(open|closed)['\"]?\]|\[data-state=['\"]?(open|closed)['\"]?\]" src
+grep -rnE "Trigger[^>]*data-\[state=|trigger[^>]*data-\[state=|Trigger\[data-state" src
+```
+
+Only rewrite a selector whose element is one of the triggers above, either the trigger itself or the element it renders `asChild` onto. A `group-data-[state=open]:` variant counts when its `group` is the trigger. Leave selectors on content, overlay and viewport parts alone.
+
+- `data-[state=open]:` → `data-[popup-open]:`, and `group-data-[state=open]:` → `group-data-[popup-open]:` when the group is the trigger.
+- `data-[state=closed]:` → `[&:not([data-popup-open])]:`
+- `[data-state='open']` → `[data-popup-open]`, `[data-state='closed']` → `:not([data-popup-open])`
+- On `TooltipTrigger`, `data-[state=delayed-open]:` → `data-[popup-open]:data-[delayed]:`.
+- In scripts and tests, `getAttribute('data-state') === 'open'` → `hasAttribute('data-popup-open')`.
+- In composable code, a trigger's `state.value.state === 'open'` → `state.value.popupOpen`.
+
+```vue
+<template>
+  <DropdownMenuTrigger class="[&[data-state=open]>svg]:rotate-180" /> <!-- [!code --] -->
+  <DropdownMenuTrigger class="[&[data-popup-open]>svg]:rotate-180" /> <!-- [!code ++] -->
+</template>
+```
+
+```css
+.MenubarTrigger[data-state='open'] { /* [!code --] */
+.MenubarTrigger[data-popup-open] { /* [!code ++] */
+  background-color: var(--grass-4);
 }
 ```
 
@@ -140,6 +188,11 @@ What to check in your code:
 />
 ```
 
+Two consequences of the second argument:
+
+- **Listeners bound as a function reference.** `@update:model-value="handleChange"` passes the details object as the function's second argument. When that function takes a second parameter, optional or not, such as vee-validate's `handleChange(value, shouldValidate)` or TanStack Form's `field.handleChange(updater, options)`, wrap it: `@update:model-value="(value) => handleChange(value)"`. Don't wrap a handler whose second parameter is meant for the details (it reads `details.reason` or calls `details.cancel()`): wrapping it would drop them.
+- **`CalendarRoot`'s `update:modelValue` type.** It is declared `DateValue | DateValue[] | undefined`, which covers `multiple` (v2 declared `DateValue | undefined`). A handler typed for a single value needs its parameter widened to `DateValue | DateValue[] | undefined`; an `Array.isArray` check inside the handler then narrows it where the calendar can be `multiple`.
+
 ## Tree, Pagination and Stepper
 
 `TreeRoot`, `PaginationRoot` and `StepperRoot` are built on `useTree()`, `usePagination()` and `useStepper()`, and `ToolbarRoot` on `useToolbar()`. The DOM is unchanged. Their models follow the [details contract](#change-events-carry-details). These changes need attention:
@@ -153,6 +206,18 @@ What to check in your code:
 
 The composables are new and additive. A standalone `useTree()` returns the selection and expanded models, the flattened visible items and per-item surfaces, but arrow-key focus still comes from `RovingFocusGroup` / `RovingFocusItem`, and `TreeVirtualizer` stays a component. `TreeRoot` has no `getNavigationIntent` yet; arrow keys go through `RovingFocus` as in v2.
 
+## Vue 3.5 and Node 22
+
+v3 requires Vue 3.5 or later (the `vue` peer range is now `>= 3.5.0`) and Node 22 or later wherever the package runs on the server. v3 depends on VueUse 15, which already requires both.
+
+Generated ids now always come from Vue's own [`useId()`](https://vuejs.org/api/composition-api-helpers.html#useid), unless you pass an `id` or give `ConfigProvider` a `useId` function. The module counter v2 used on Vue 3.4 is gone. Importing `useId` by name, instead of reading it from the whole `vue` module, lets your bundler drop the parts of Vue you don't use, such as the Vapor runtime in Vue 3.6.
+
+What to check in your code:
+
+- Upgrade `vue` to 3.5 or later. With Nuxt, upgrade Nuxt to a release that ships Vue 3.5.
+- Run SSR, prerendering and build scripts on Node 22 or later.
+- A `ConfigProvider` `use-id` you added only to work around Vue 3.4 hydration mismatches can be removed. Keep it if your framework prerenders with a different Vue app id prefix than the client hydrates with.
+
 ## ESM only
 
 v3 ships ES modules only. The CommonJS build and the `require` export conditions are gone, so `require('reka-ui')` no longer resolves.
@@ -161,7 +226,7 @@ What to check in your code:
 
 - Replace `require()` calls with `import`, or with a dynamic `import()` inside files that must stay CommonJS.
 - Vite, Nuxt and Vitest need no change.
-- Jest needs ESM support for the package: run Jest in ESM mode, or let it transform `reka-ui` by excluding it from `transformIgnorePatterns`.
+- Jest must run in ESM mode (`--experimental-vm-modules`). The package's `exports` only have an `import` condition, so a CommonJS Jest cannot resolve `reka-ui` at all, and `transformIgnorePatterns` does not help. Moving the tests to Vitest also works.
 
 ## Auto-imports use per-component entry points
 
@@ -300,6 +365,8 @@ The `update:modelValue` and `beforeUpdate:modelValue` events of `ListboxRoot` ar
 
 `ListboxRoot` has a new, opt-in `filter` prop. Nothing changes until you pass one: without it (or with `null`) the listbox filters nothing, and a list you already filter by hand from the `ListboxFilter` value keeps working as in v2. With a filter function, for example `contains` from `useFilter({ sensitivity: 'base' })`, items whose text does not match the `ListboxFilter` value are not rendered, a group whose items all fail to match is hidden, and keyboard navigation, typeahead and select-all only see the matching items. In a `ListboxVirtualizer`, the filter runs over `options` (matching `textContent(option)`), so a filtered-out option takes no virtual index. See [Filtering](../components/listbox#filtering). `ComboboxRoot` and `AutocompleteRoot` filter through the same mechanism, on by default; see [Combobox and Autocomplete filtering](#combobox-and-autocomplete-filtering).
 
+One case breaks: a wrapper that already forwarded its own `filter` prop to `ListboxRoot`, such as a `Command` wrapper with a cmdk-style `filter(value, search, keywords)`. v2 ignored it; v3 calls it as `(text, search, value) => boolean` for every item. Stop forwarding it if the wrapper filters by itself, or rewrite it to the v3 signature.
+
 ## Combobox and Autocomplete filtering
 
 `ComboboxRoot` and `AutocompleteRoot` have a `filter` prop and run it through the shared Listbox filter. Without it they match items with `useFilter`'s `contains` (case and accent insensitive), as in v2. Pass a function `(text, search, value) => boolean` to change how items match, or `null` to turn client filtering off. `ignoreFilter` still works but is deprecated: it is an alias for `:filter="null"` and wins over `filter`.
@@ -325,6 +392,41 @@ What changed:
 - **`ComboboxInput` and `AutocompleteInput` render the input themselves** instead of wrapping `ListboxFilter`. The rendered `<input>` and its attributes are unchanged. Tests that look up `ListboxRoot` or `ListboxFilter` with `findComponent` inside a combobox no longer find them.
 - **`update:modelValue` is typed by `multiple`**: `T[]` when `multiple` is set, `T | null` when it is absent (`ComboboxCancel` with `reset-model-value-on-clear` emits `null`), either while it is a plain `boolean`. The runtime payload is unchanged.
 - **`modelValue` and `defaultValue` accept `null`** (`T | T[] | null`, v2: `T | T[]`), so the `null` a clear emits can be bound back: `v-model` on a `ref<string | null>` type-checks even when `T` is pinned to `string`. Type-only; the same holds for `useComboboxRoot()`'s `modelValue`, `defaultValue` and `setModelValue`.
+- **`null` is the empty value, and `''` items are allowed.** In v2 a `ComboboxItem` (and so an `AutocompleteItem`) with `value=""` threw, because `''` was the sentinel that cleared the selection. Now, as in [Base UI](https://base-ui.com/react/components/combobox), `null` is the empty value and an item can have `value=""`. Unlike Select, a selected `''` is a value like any other: the item is marked selected, the input shows its text through `displayValue`, and a `Field` counts it as filled (Base UI's `selectedValue != null`). It still submits `''`, so `required` reports it missing. A `ComboboxItem` with a `null` value is allowed and sets the model to `null` when pressed; `value` is now optional and defaults to `null`, as in Base UI. Inside a `Field`, `null` and `''` are different values for `dirty` (an unset value counts as `null`; Base UI's `isSelectedValueDirty`), where v2 compared them as equal. With `multiple`, `''` and `null` are ordinary entries of the array (a `null` entry no longer throws in the hidden inputs), `[]` is empty, and any selection satisfies `required`; v2 marked every hidden input `required`, so an array holding `''` could not be submitted. A single value of `0` or `false` now shows its string form in the input without a `displayValue` (v2 showed an empty input). An `AutocompleteRoot` value stays the input text, where `''` is empty.
+
+  The keyboard now clears the value too, as in Base UI. Emptying the input of a single combobox sets the value to `null` (reason `'input-clear'`); a `multiple` selection is kept, and so is the value when the input is inside the popup. Escape on a closed combobox sets the value to `null` (`[]` with `multiple`) and empties the input (reason `'escape-key'`), and stops the Escape when it cleared something, so a surrounding dialog stays open. While the popup is open, Escape only closes it, as before. In v2 neither key cleared the value. Both are cancellable in `beforeUpdate:modelValue`; to keep the old behaviour, cancel when `details.reason` is `'input-clear'` or `'escape-key'`. `ComboboxChangeReason` gains both reasons.
+
+  Before, a "None" option needed a sentinel, and code checked for `''`:
+
+  ```vue
+  <script setup lang="ts">
+  const fruit = ref('')
+  const isEmpty = computed(() => fruit.value === '' || fruit.value === '__none__')
+  </script>
+
+  <template>
+    <ComboboxItem value="__none__">
+      None
+    </ComboboxItem>
+  </template>
+  ```
+
+  After, `null` is the empty value:
+
+  ```vue
+  <script setup lang="ts">
+  const fruit = ref<string | null>(null)
+  const isEmpty = computed(() => fruit.value == null)
+  </script>
+
+  <template>
+    <ComboboxItem :value="null">
+      None
+    </ComboboxItem>
+  </template>
+  ```
+
+  To find what to change, search for empty-string checks and initial values on the models bound to a `ComboboxRoot`: `grep -rnE "ref(<[^>]*>)?\\(''\\)|= ''|=== ''|!== ''|default-value=\"\"|:default-value=\"''\"" --include='*.vue' --include='*.ts' src`, then keep only the ones that feed a `ComboboxRoot` `v-model` / `default-value` or compare its value (the `ComboboxInput` text is a string and keeps `''`). Initial `''` values keep an empty input unless a `ComboboxRoot` `displayValue` returns text for `''`; switch them to `null` when convenient. A `=== ''` check for "nothing selected" must also accept `null`, which a clear emits, and a `!== ''` check for "something selected" must also exclude it (`value != null && value !== ''`). A `displayValue` on `ComboboxInput` is called with `null`, so it must handle `null`. A sentinel item you wrote around the v2 throw (`value="__none__"`) can become `:value="null"`, but the form then submits `''` instead of the sentinel.
 - **New:** `displayValue` on `ComboboxRoot` sets the input text for the selected value when `ComboboxInput` has no `displayValue` of its own. On `AutocompleteRoot` it sets the text a selected item writes into the value.
 
 ## Color values are `Color` objects
@@ -442,6 +544,38 @@ defineExpose(expose) // [!code ++]
 
 If the component already calls `defineExpose({ ... })`, wrap the object in `mergeExpose(expose, { ... })`.
 
+`useForwardExpose` also forwarded the methods of the part a wrapper renders. A wrapper whose callers rely on them, for example a `ResizablePanel` around `SplitterPanel` whose callers call `collapse()` or `getSize()`, has to re-expose them from a template ref on the inner part:
+
+```vue
+<script setup lang="ts">
+import type { ComponentPublicInstance } from 'vue'
+import { mergeExpose, SplitterPanel, useForwardElement } from 'reka-ui'
+import { shallowRef } from 'vue'
+
+const panel = shallowRef<InstanceType<typeof SplitterPanel>>()
+const { forwardRef, expose } = useForwardElement()
+
+// `SplitterPanel` is the root here, and an element keeps only one `ref`,
+// so a single function ref feeds both the element and the methods.
+function setPanel(instance: Element | ComponentPublicInstance | null) {
+  forwardRef(instance)
+  panel.value = (instance ?? undefined) as InstanceType<typeof SplitterPanel> | undefined
+}
+
+defineExpose(mergeExpose(expose, {
+  collapse: () => panel.value?.collapse(),
+  expand: () => panel.value?.expand(),
+  getSize: () => panel.value?.getSize(),
+}))
+</script>
+
+<template>
+  <SplitterPanel :ref="setPanel">
+    <slot />
+  </SplitterPanel>
+</template>
+```
+
 ## Modal layers no longer touch `<body>`
 
 Modal overlays follow [Base UI](https://base-ui.com)'s model in v3. A modal layer (a modal `Dialog`, `AlertDialog`, `Drawer`, `Popover`, `DropdownMenu` or `ContextMenu`, an open `Select`, and any content with `disableOutsidePointerEvents`) no longer sets `pointer-events: none` on `<body>`, and the page scroll lock no longer adds `padding-right` or a `--scrollbar-width` variable.
@@ -452,7 +586,8 @@ The page is now blocked by a transparent internal backdrop that the layer render
 
 - **Only content above the layer's own `z-index` stays interactive.** An element in the root stacking context whose `z-index` is higher than the layer's (a chat launcher or a cookie banner at `z-index: 2147483647`, a toast viewport above your overlays) can be clicked while a modal layer is open. Page content at or below the layer's `z-index` is covered, as in v2. In v2 the whole page was unclickable, whatever its `z-index`.
 - **A modal `Dialog` or `Drawer` closes only on its own backdrop.** A press on the internal backdrop, on `DialogOverlay` / `DrawerOverlay`, or on a container around the content closes it; a press on an element stacked above the backdrop does not. Popovers and menus close on any outside press, as before.
-- **A modal `Popover` or `DropdownMenu` keeps its trigger reachable.** The trigger is cut out of the backdrop, so pressing it toggles the layer closed instead of hitting the backdrop. The `ContextMenu` trigger area and the `Combobox` input are cut out in the same way.
+- **A modal `Popover` or `DropdownMenu` keeps its trigger reachable.** The trigger is cut out of the backdrop, so pressing it toggles the layer closed instead of hitting the backdrop. The `Combobox` input is cut out in the same way.
+- **A modal `ContextMenu` trigger area is covered by the backdrop.** In v2 the trigger kept `pointer-events: auto`, so a left click on it while the menu was open also clicked what was under it (a link, a card's own action). As in Base UI, a press there now only closes the menu. A right click there closes it and opens it again at the new point. With `modal: false` the page, the trigger area included, stays interactive as before.
 - **Layers below a modal layer stay inert.** A non-modal popover that is open under a modal dialog still gets `pointer-events: none` (and so does its positioning wrapper) until the dialog closes, whatever its `z-index`.
 
 What to check in your code:
@@ -528,7 +663,40 @@ In v2, `TagsInputRoot` and `PinInputRoot` kept a local copy of the model (a pass
 
 - **Change details.** `update:modelValue` and `update:open` receive a `ChangeEventDetails` second argument, and the cancellable `beforeUpdate:modelValue` and `beforeUpdate:open` are new. See [Change events carry details](#change-events-carry-details). Cancelling the value of an item press keeps the content open.
 - **No emit for an unchanged value.** Pressing the selected item of a single select closes the content but no longer emits `update:modelValue`, also when `by` matches a different object. Changing an uncontrolled model array in place no longer emits either. Assign a new array instead.
-- **`update:modelValue` is typed by `multiple`**: `T[]` when `multiple` is set, `T` (as in v2) when it is absent, either while it is a plain `boolean`. No interaction clears a single select, so it never emits `null`. The runtime payload is unchanged.
+- **`update:modelValue` is typed by `multiple`**: `T[]` when `multiple` is set, `T` (as in v2) when it is absent, either while it is a plain `boolean`. The runtime payload is unchanged. A single select emits `null` only when an item with a `null` value is pressed or picked by typeahead on the closed trigger (below).
+- **`null` is the empty value, and `''` items are allowed** ([#2484](https://github.com/unovue/reka-ui/issues/2484)). In v2 a `SelectItem` with `value=""` threw, because `''` was the sentinel that cleared the selection. Now, as in [Base UI](https://base-ui.com/react/components/select), `null` is the canonical empty value and a `SelectItem` can have `value=""`. Setting the model to `''` still reads as empty, as before (`SelectValue` shows the placeholder, or, when `items` has a `null` entry, the `''` item's label from `items`): an empty string reads as no value (`data-placeholder`, not `filled` in a `Field`, missing for `required`, submitted as `''`), but an item with `value=""` is now the selected one. A `SelectItem` with a `null` value is allowed and sets the model to `null` when pressed, and a `{ value: null, label }` entry in `items` labels the empty select instead of the placeholder. The select emits `null` only when a `null` item is pressed; autofill onto the empty native option still writes its `nullable-value` (`''` by default), as in v2. With `multiple`, `''` and `null` are ordinary entries of the array; `[]` is empty. See [Clearing the value](../components/select.md#clearing-the-value).
+
+  Before, a "None" option needed a sentinel, and code checked for `''`:
+
+  ```vue
+  <script setup lang="ts">
+  const fruit = ref('')
+  const isEmpty = computed(() => fruit.value === '' || fruit.value === '__none__')
+  </script>
+
+  <template>
+    <SelectItem value="__none__">
+      None
+    </SelectItem>
+  </template>
+  ```
+
+  After, `null` is the empty value:
+
+  ```vue
+  <script setup lang="ts">
+  const fruit = ref<string | null>(null)
+  const isEmpty = computed(() => fruit.value == null || fruit.value === '')
+  </script>
+
+  <template>
+    <SelectItem :value="null">
+      None
+    </SelectItem>
+  </template>
+  ```
+
+  To find what to change, search for empty-string checks and initial values on the models bound to a `SelectRoot`: `grep -rnE "ref(<[^>]*>)?\\(''\\)|= ''|=== ''|!== ''|default-value=\"\"|:default-value=\"''\"" --include='*.vue' --include='*.ts' src`, then keep only the ones that feed a `SelectRoot` `v-model` / `default-value` or compare its value. Checks must also accept `null` and keep their polarity: a "nothing selected" `=== ''` becomes `value == null || value === ''`, and a "has a selection" `!== ''` becomes `value != null && value !== ''`. Initial `''` values keep working; switch them to `null` when convenient. A sentinel item you wrote around the v2 throw (`value="__none__"`) can become `:value="null"`, but the form then submits `''` instead of the sentinel.
 - **Typing on the closed trigger selects.** With focus on a closed `SelectTrigger`, typing selects the next item whose text starts with the typed characters, as a native `<select>` does (reason `typeahead`). In v2 it did nothing. A `multiple` select is unchanged.
 - **The trigger closes a `popper` select.** In `popper` position the trigger stays clickable above the backdrop, and pressing it while open closes the content (reason `trigger-press`).
 - **Item texts are remembered.** `SelectValue` keeps showing the text of a selected item after its `SelectItemText` unmounts. The new `displayValue` prop on `SelectRoot` resolves the text without the items.
@@ -729,6 +897,8 @@ Use `temporal-polyfill-lite/calendars-full/shim` if you use calendars other than
 
 The types come from TypeScript 6's `esnext.temporal` lib: use TypeScript 6 with `"lib": ["ESNext", "DOM", "DOM.Iterable"]`. `@vue/tsconfig` sets `lib` to `ES2022`, without Temporal, so override it in your own `tsconfig`. On TypeScript 5, add `import 'temporal-polyfill-lite/types/global'` to a `.d.ts` file. Without either, `skipLibCheck: true` turns `DateValue` into `any` without an error.
 
+Publishing a library or a copy-paste registry on top of Reka UI? You cannot load the polyfill for the apps that install your components. Depend on `reka-ui@^3.0.0-alpha.0` while v3 is a prerelease (`^3` does not match prereleases; switch to `^3` once it is stable), and tell your users in your install instructions to provide a global `Temporal` as above.
+
 ### Types
 
 | v2 (`@internationalized/date`) | v3 (Temporal) |
@@ -748,6 +918,7 @@ The types come from TypeScript 6's `esnext.temporal` lib: use TypeScript 6 with 
 - **Era codes.** `era` is a lower-case Temporal era code. An `iso8601` value has no era (`undefined`), and the codes of some calendars changed: `gregory` uses `ce` / `bce` (v2: `AD` / `BC`), `roc` uses `roc` / `broc` (v2: `minguo` / `before_minguo`), and `buddhist`, `persian`, `islamic-*` and `hebrew` use `be`, `ap`, `ah` and `am` (v2: upper case). Japanese era names (`reiwa`, `heisei`, …) are unchanged. Compare `era` against the new codes, and show `formatter.part(value, 'era')` rather than the code to users.
 - **First day of the week.** It comes from `Intl.Locale.prototype.getWeekInfo()`, with a CLDR table as fallback. A few regions differ from v2, for example `AE` now starts on Monday. `weekStartsOn` still overrides it.
 - **Not in templates.** Vue templates only see an allow-list of globals, and `Temporal` is not on it. Create values in `<script setup>` and bind them by name instead of writing `:min-value="new Temporal.PlainDate(2024, 1, 1)"`.
+- **Out-of-range fields throw.** `@internationalized/date` clamped them (`new CalendarDate(2024, 0, 20)` was January 20), but `new Temporal.PlainDate(2024, 0, 20)` throws a `RangeError`. Pass in-range values. `Temporal.PlainDate.from({ year, month, day }, { overflow: 'constrain' })` clamps fields that are too large (month 13 → 12, February 31 → 29), but a month or day of `0` still throws.
 - **No comparison operators.** Temporal values throw on `valueOf()`, so `<`, `>` and `+date` throw, and `===` compares identity. Use the `compare` of the values' type (`Temporal.PlainDateTime.compare(a, b)` for two `PlainDateTime`s), `a.equals(b)`, or `compareDateValues(a, b)` from `reka-ui/date` for values of any type. `Temporal.PlainDate.compare` reads only the date of a `PlainDateTime` or `ZonedDateTime`.
 - **Unchanged:** form input values, `data-value` attributes and the `ZonedDateTime` daylight saving handling. Form values and `data-value` are ISO strings without a calendar annotation, as v2's `toString()` produced.
 
@@ -777,3 +948,4 @@ The types come from TypeScript 6's `esnext.temporal` lib: use TypeScript 6 with 
 | `value instanceof CalendarDate` | `isPlainDate(value)` from `reka-ui/date` (also `isPlainDateTime`, `isZonedDateTime`, `isPlainTime`) |
 | `isCalendarDateTime(value)` from `reka-ui/date` | `isPlainDateTime(value)` (the old name is a deprecated alias) |
 | `formatter.custom(value.toDate(tz), options)` | `formatter.custom(value, options)`: `useDateFormatter` accepts Temporal values |
+| `new DateFormatter(locale, options).format(value.toDate(tz))` | `useDateFormatter(locale).custom(value, options)`, or `value.toLocaleString(locale, options)` |

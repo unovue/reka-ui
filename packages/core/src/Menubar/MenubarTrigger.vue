@@ -35,7 +35,7 @@ defineExpose(expose)
 // The menubar's trigger collection, registered from setup (no wrapper).
 useCollectionItem(triggerElement, undefined, { key: 'Menubar' })
 
-// role/aria, `data-highlighted`/`data-state`/`data-disabled`, the `data-value`
+// role/aria, `data-highlighted`/`data-popup-open`/`data-disabled`, the `data-value`
 // selector and the pointer/keyboard handlers come from the composable;
 // the trigger is the menu's anchor.
 const trigger = createMenubarTriggerSurface(rootContext, menuContext, {

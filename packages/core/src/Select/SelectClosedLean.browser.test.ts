@@ -117,6 +117,13 @@ describe('release', () => {
     expect(alive).toBe(0)
     expect(value()).toBe('Pick')
   })
+
+  it('a null value holds nothing', async () => {
+    mountSelect(() => ['Apple', 'Banana'].map(text => item(text)), () => ({ modelValue: null }))
+    await wait()
+    expect(alive).toBe(0)
+    expect(value()).toBe('Pick')
+  })
 })
 
 describe('moves at any depth, while the lean items are mounted', () => {

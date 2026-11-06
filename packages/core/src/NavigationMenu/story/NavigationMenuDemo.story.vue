@@ -35,7 +35,7 @@ const currentTrigger = ref('')
                 Learn
                 <Icon
                   icon="radix-icons:caret-down"
-                  class="text-green10 relative top-[1px] transition-transform duration-[150ms] ease-in group-data-[state=open]:-rotate-180"
+                  class="text-green10 relative top-[1px] transition-transform duration-[150ms] ease-in group-data-[popup-open]:-rotate-180"
                 />
               </NavigationMenuTrigger>
               <NavigationMenuContent
@@ -87,7 +87,7 @@ const currentTrigger = ref('')
                 Overview
                 <Icon
                   icon="radix-icons:caret-down"
-                  class="text-green10 relative top-[1px] transition-transform duration-[150ms] ease-in group-data-[state=open]:-rotate-180"
+                  class="text-green10 relative top-[1px] transition-transform duration-[150ms] ease-in group-data-[popup-open]:-rotate-180"
                 />
               </NavigationMenuTrigger>
               <NavigationMenuContent class="data-[motion=from-start]:animate-enterFromLeft data-[motion=from-end]:animate-enterFromRight data-[motion=to-start]:animate-exitToLeft data-[motion=to-end]:animate-exitToRight absolute top-0 left-0 w-full sm:w-auto">

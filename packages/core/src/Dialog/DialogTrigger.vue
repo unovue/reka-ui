@@ -57,7 +57,7 @@ function getDetachedTrigger() {
   })
 }
 
-// aria-haspopup/aria-expanded/aria-controls/data-state + the click handler come
+// aria-haspopup/aria-expanded/aria-controls/data-popup-open + the click handler come
 // from the shared surface builder (single source with `useDialog()`); the
 // tag-dependent `type` stays in the SFC. Consumer listeners fall through as
 // `$attrs` AFTER the surface's handler, so they chain instead of clobbering it.

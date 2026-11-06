@@ -74,7 +74,7 @@ const ALIAS_SPECIFIER_RE = /(?:^|,)\s*(?!type\s)(\w+) as (\w+)/g
 const ALIAS_DESCRIPTION_OVERRIDES: Record<string, { props?: Record<string, string> }> = {
   AutocompleteItem: {
     props: {
-      value: 'The value of the item, of the root\'s item type `T` (`string` by default). Selecting the item writes `displayValue(value)` into the input, else `String(value)`.',
+      value: 'The value of the item, of the root\'s item type `T` (`string` by default). Selecting the item writes `displayValue(value)` into the input, else `String(value)`; a `null` value (the default) writes `\'\'`.',
     },
   },
 }

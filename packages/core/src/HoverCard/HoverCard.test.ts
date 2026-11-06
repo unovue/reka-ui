@@ -36,7 +36,7 @@ describe('given a default HoverCard', () => {
     it('should not open the hover card by default', async () => {
       await wrapper.find('a').trigger('pointerup', { pointerType: 'touch' })
       await sleep(100)
-      expect(wrapper.find('a').attributes('data-state')).toBe('closed')
+      expect(wrapper.find('a').attributes('data-popup-open')).toBeUndefined()
     })
   })
 
@@ -60,11 +60,11 @@ describe('given a HoverCard with enableTouch', () => {
 
     await trigger.trigger('pointerup', { pointerType: 'touch' })
     await sleep(10)
-    expect(trigger.attributes('data-state')).toBe('open')
+    expect(trigger.attributes('data-popup-open')).toBe('')
 
     await trigger.trigger('pointerup', { pointerType: 'touch' })
     await sleep(10)
-    expect(trigger.attributes('data-state')).toBe('closed')
+    expect(trigger.attributes('data-popup-open')).toBeUndefined()
   })
 
   it('should ignore non-touch pointers', async () => {
@@ -72,7 +72,7 @@ describe('given a HoverCard with enableTouch', () => {
 
     await trigger.trigger('pointerup', { pointerType: 'mouse' })
     await sleep(10)
-    expect(trigger.attributes('data-state')).toBe('closed')
+    expect(trigger.attributes('data-popup-open')).toBeUndefined()
   })
 
   it('should not reopen from a pending focus timer after closing on touch', async () => {
@@ -82,12 +82,12 @@ describe('given a HoverCard with enableTouch', () => {
     await trigger.trigger('focus')
     await trigger.trigger('pointerup', { pointerType: 'touch' })
     await sleep(10)
-    expect(trigger.attributes('data-state')).toBe('open')
+    expect(trigger.attributes('data-popup-open')).toBe('')
 
     // closing must cancel the pending open timer so it doesn't reopen
     await trigger.trigger('pointerup', { pointerType: 'touch' })
     await sleep(150)
-    expect(trigger.attributes('data-state')).toBe('closed')
+    expect(trigger.attributes('data-popup-open')).toBeUndefined()
   })
 })
 
@@ -160,7 +160,7 @@ describe('hoverCardRoot change events (v3 foundation contract)', () => {
     await nextTick()
     // Timer has not fired yet: nothing emitted, still closed.
     expect(root.emitted('beforeUpdate:open')).toBeUndefined()
-    expect(trigger().attributes('data-state')).toBe('closed')
+    expect(trigger().attributes('data-popup-open')).toBeUndefined()
 
     vi.advanceTimersByTime(1)
     await nextTick()
@@ -176,7 +176,7 @@ describe('hoverCardRoot change events (v3 foundation contract)', () => {
     expect(details.event).toBeInstanceOf(Event)
     expect(details.event?.type).toBe('pointerenter')
     expect(typeof details.cancel).toBe('function')
-    expect(trigger().attributes('data-state')).toBe('open')
+    expect(trigger().attributes('data-popup-open')).toBe('')
     expect(content().exists()).toBe(true)
   })
 
@@ -197,7 +197,7 @@ describe('hoverCardRoot change events (v3 foundation contract)', () => {
     expect(details).toMatchObject({ reason: 'trigger-leave' })
     expect(details.event?.type).toBe('pointerleave')
     expect(vm.open).toBe(false)
-    expect(trigger().attributes('data-state')).toBe('closed')
+    expect(trigger().attributes('data-popup-open')).toBeUndefined()
     expect(content().exists()).toBe(false)
   })
 
@@ -278,7 +278,7 @@ describe('hoverCardRoot change events (v3 foundation contract)', () => {
     expect(onBeforeUpdateOpen.mock.calls[0][1]).toMatchObject({ reason: 'trigger-hover', isCanceled: true })
     expect(root.emitted('update:open')).toBeUndefined()
     expect(vm.open).toBe(false)
-    expect(trigger().attributes('data-state')).toBe('closed')
+    expect(trigger().attributes('data-popup-open')).toBeUndefined()
 
     // The open was cancelled: force the model open directly, then cancel a close.
     vm.open = true
@@ -296,18 +296,18 @@ describe('hoverCardRoot change events (v3 foundation contract)', () => {
     expect(root.emitted('beforeUpdate:open')).toHaveLength(2)
     expect(root.emitted('update:open')).toBeUndefined()
     expect(vm.open).toBe(true)
-    expect(trigger().attributes('data-state')).toBe('open')
+    expect(trigger().attributes('data-popup-open')).toBe('')
     expect(content().exists()).toBe(true)
   })
 
   it('v-model:open round-trips through a wrapper component', async () => {
     const { root, vm, trigger, content } = mountHoverCard()
     expect(vm.open).toBe(false)
-    expect(trigger().attributes('data-state')).toBe('closed')
+    expect(trigger().attributes('data-popup-open')).toBeUndefined()
 
     await hoverOpen(trigger)
     expect(vm.open).toBe(true)
-    expect(trigger().attributes('data-state')).toBe('open')
+    expect(trigger().attributes('data-popup-open')).toBe('')
     expect(content().exists()).toBe(true)
 
     await trigger().trigger('blur')
@@ -315,13 +315,13 @@ describe('hoverCardRoot change events (v3 foundation contract)', () => {
     // Presence resolves the exit after its own `nextTick`; flush so the content is gone.
     await flushPromises()
     expect(vm.open).toBe(false)
-    expect(trigger().attributes('data-state')).toBe('closed')
+    expect(trigger().attributes('data-popup-open')).toBeUndefined()
     expect(content().exists()).toBe(false)
 
     // Parent-driven change: the prop wins and nothing is emitted for it.
     vm.open = true
     await nextTick()
-    expect(trigger().attributes('data-state')).toBe('open')
+    expect(trigger().attributes('data-popup-open')).toBe('')
     expect(root.emitted('update:open')).toHaveLength(2)
   })
 })

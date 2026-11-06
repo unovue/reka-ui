@@ -125,8 +125,8 @@ The button that toggles the content. By default, the `MenubarContent` will posit
 <DataAttributesTable
   :data="[
     {
-      attribute: '[data-state]',
-      values: ['open', 'closed'],
+      attribute: '[data-popup-open]',
+      values: 'Present when the menu is open',
     },
     {
       attribute: '[data-highlighted]',
@@ -324,8 +324,8 @@ An item that opens a submenu. Must be rendered inside `MenubarSub`.
 <DataAttributesTable
   :data="[
     {
-      attribute: '[data-state]',
-      values: ['open', 'closed'],
+      attribute: '[data-popup-open]',
+      values: 'Present when the submenu is open',
     },
     {
       attribute: '[data-highlighted]',

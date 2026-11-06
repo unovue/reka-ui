@@ -19,7 +19,7 @@ const rootContext = injectDrawerRootContext()
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
-// aria-haspopup/aria-expanded/aria-controls/data-state + the click handler come
+// aria-haspopup/aria-expanded/aria-controls/data-popup-open + the click handler come
 // from the shared surface builder (single source with `useDrawer()`); the
 // tag-dependent `type` stays here. Consumer listeners fall through as `$attrs`
 // and chain with the surface's handler.

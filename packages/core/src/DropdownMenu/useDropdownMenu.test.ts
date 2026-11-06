@@ -68,11 +68,11 @@ describe('useDropdownMenu — trigger surface', () => {
       'aria-controls': undefined,
       'disabled': false,
     })
-    expect(api.trigger.attrs.value['data-state']).toBe('closed')
+    expect(api.trigger.attrs.value['data-popup-open']).toBeUndefined()
     expect(api.trigger.attrs.value['data-disabled']).toBeUndefined()
     api.onOpenChange(true)
     expect(api.trigger.props.value['aria-controls']).toBe('x-content')
-    expect(api.trigger.attrs.value['data-state']).toBe('open')
+    expect(api.trigger.attrs.value['data-popup-open']).toBe('')
   })
 
   it('a left click toggles with reason trigger-press and the event', async () => {
@@ -218,7 +218,7 @@ describe('useDropdownMenu — rendered surfaces', () => {
     expect(menu.id).toBe('fixture-content')
     expect(menu.getAttribute('aria-labelledby')).toBe(trigger.id)
     expect(trigger.getAttribute('aria-controls')).toBe(menu.id)
-    expect(trigger.getAttribute('data-state')).toBe('open')
+    expect(trigger.getAttribute('data-popup-open')).toBe('')
     expect(await axe(container)).toHaveNoViolations()
   })
 })

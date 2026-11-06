@@ -18,7 +18,7 @@ import {
   SelectViewport,
 } from '..'
 
-const fruit = ref('')
+const fruit = ref<string | null>(null)
 
 const options = ['Apple', 'Banana', 'Blueberry', 'Grapes', 'Pineapple']
 const vegetables = ['Aubergine', 'Broccoli', 'Carrot', 'Courgette', 'Leek']

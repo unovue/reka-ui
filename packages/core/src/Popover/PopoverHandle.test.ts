@@ -95,10 +95,10 @@ describe('popover detached triggers (#2826)', () => {
     const b = t.byId('trigger-b')
     expect(a.getAttribute('aria-expanded')).toBe('true')
     expect(a.getAttribute('aria-controls')).toBe(t.content()!.id)
-    expect(a.getAttribute('data-state')).toBe('open')
+    expect(a.getAttribute('data-popup-open')).toBe('')
     expect(b.getAttribute('aria-expanded')).toBe('false')
     expect(b.getAttribute('aria-controls')).toBeNull()
-    expect(b.getAttribute('data-state')).toBe('closed')
+    expect(b.getAttribute('data-popup-open')).toBeNull()
   })
 
   it('moves to another trigger without closing, and the switch is cancellable', async () => {

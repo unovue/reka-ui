@@ -29,7 +29,7 @@ const rootContext = injectTooltipRootContext()
 const { forwardRef, currentElement: triggerElement, expose } = useForwardElement()
 defineExpose(expose)
 
-// aria-describedby / data-state / data-delayed / the grace-area selector and
+// aria-describedby / data-popup-open / data-delayed / the grace-area selector and
 // every pointer / focus / click listener come from the shared trigger factory
 // (single source with `useTooltip()`; called ONCE — it owns this instance's
 // pointer state). The content id is populated by the composable, so nothing is

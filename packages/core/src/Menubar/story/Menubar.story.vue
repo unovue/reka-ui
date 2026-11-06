@@ -41,7 +41,7 @@ function handleClick() {
       >
         <MenubarMenu value="file">
           <MenubarTrigger
-            class="py-2 px-3 outline-none select-none font-medium leading-none rounded text-violet11 text-[13px] flex items-center justify-between gap-[2px] data-[highlighted]:bg-violet4 data-[state=open]:bg-violet4"
+            class="py-2 px-3 outline-none select-none font-medium leading-none rounded text-violet11 text-[13px] flex items-center justify-between gap-[2px] data-[highlighted]:bg-violet4 data-[popup-open]:bg-violet4"
           >
             File
           </MenubarTrigger>
@@ -81,7 +81,7 @@ function handleClick() {
               <MenubarSeparator class="h-[1px] bg-violet6 m-[5px]" />
               <MenubarSub>
                 <MenubarSubTrigger
-                  class="group text-[13px] leading-none text-violet11 rounded flex items-center h-[25px] px-[10px] relative select-none outline-none data-[state=open]:bg-violet4 data-[state=open]:text-violet11 data-[highlighted]:bg-gradient-to-br data-[highlighted]:from-violet9 data-[highlighted]:to-violet10 data-[highlighted]:text-violet1 data-[highlighted]:data-[state=open]:text-violet1 data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none"
+                  class="group text-[13px] leading-none text-violet11 rounded flex items-center h-[25px] px-[10px] relative select-none outline-none data-[popup-open]:bg-violet4 data-[popup-open]:text-violet11 data-[highlighted]:bg-gradient-to-br data-[highlighted]:from-violet9 data-[highlighted]:to-violet10 data-[highlighted]:text-violet1 data-[highlighted]:data-[popup-open]:text-violet1 data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none"
                 >
                   Share
                   <div
@@ -130,7 +130,7 @@ function handleClick() {
 
         <MenubarMenu>
           <MenubarTrigger
-            class="py-2 px-3 outline-none select-none font-medium leading-none rounded text-violet11 text-[13px] flex items-center justify-between gap-[2px] data-[highlighted]:bg-violet4 data-[state=open]:bg-violet4"
+            class="py-2 px-3 outline-none select-none font-medium leading-none rounded text-violet11 text-[13px] flex items-center justify-between gap-[2px] data-[highlighted]:bg-violet4 data-[popup-open]:bg-violet4"
           >
             Edit
           </MenubarTrigger>
@@ -164,7 +164,7 @@ function handleClick() {
               <MenubarSeparator class="h-[1px] bg-violet6 m-[5px]" />
               <MenubarSub>
                 <MenubarSubTrigger
-                  class="group text-[13px] leading-none text-violet11 rounded flex items-center h-[25px] px-[10px] relative select-none outline-none data-[state=open]:bg-violet4 data-[state=open]:text-violet11 data-[highlighted]:bg-gradient-to-br data-[highlighted]:from-violet9 data-[highlighted]:to-violet10 data-[highlighted]:text-violet1 data-[highlighted]:data-[state=open]:text-violet1 data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none"
+                  class="group text-[13px] leading-none text-violet11 rounded flex items-center h-[25px] px-[10px] relative select-none outline-none data-[popup-open]:bg-violet4 data-[popup-open]:text-violet11 data-[highlighted]:bg-gradient-to-br data-[highlighted]:from-violet9 data-[highlighted]:to-violet10 data-[highlighted]:text-violet1 data-[highlighted]:data-[popup-open]:text-violet1 data-[disabled]:text-mauve8 data-[disabled]:pointer-events-none"
                 >
                   Find
                   <div
@@ -225,7 +225,7 @@ function handleClick() {
 
         <MenubarMenu>
           <MenubarTrigger
-            class="py-2 px-3 outline-none select-none font-medium leading-none rounded text-violet11 text-[13px] flex items-center justify-between gap-[2px] data-[highlighted]:bg-violet4 data-[state=open]:bg-violet4"
+            class="py-2 px-3 outline-none select-none font-medium leading-none rounded text-violet11 text-[13px] flex items-center justify-between gap-[2px] data-[highlighted]:bg-violet4 data-[popup-open]:bg-violet4"
           >
             View
           </MenubarTrigger>
@@ -303,7 +303,7 @@ function handleClick() {
 
         <MenubarMenu>
           <MenubarTrigger
-            class="py-2 px-3 outline-none select-none font-medium leading-none rounded text-violet11 text-[13px] flex items-center justify-between gap-[2px] data-[highlighted]:bg-violet4 data-[state=open]:bg-violet4"
+            class="py-2 px-3 outline-none select-none font-medium leading-none rounded text-violet11 text-[13px] flex items-center justify-between gap-[2px] data-[highlighted]:bg-violet4 data-[popup-open]:bg-violet4"
           >
             Profiles
           </MenubarTrigger>
