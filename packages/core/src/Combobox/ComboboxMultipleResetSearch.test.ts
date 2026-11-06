@@ -3,7 +3,7 @@
 // `resetSearchTermOnSelect` is `false` or the input text change is cancelled.
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '.'
 
 function mountCombobox(rootProps: Record<string, unknown> = {}, onBeforeText?: (...args: any[]) => void) {
@@ -100,5 +100,40 @@ describe('given a multiple Combobox filtered by typed text', () => {
     expect(wrapper.findComponent(ComboboxRoot).emitted('update:modelValue')?.at(-1)?.[0]).toEqual(['Apple'])
     expect((wrapper.find('[data-testid=input]').element as HTMLInputElement).value).toBe('Ap')
     expect(options()).toEqual(['Apple', 'Apricot'])
+  })
+})
+
+describe('given a multiple Combobox with a controlled input text', () => {
+  it('clears a filter left behind when the parent already emptied the text', async () => {
+    const text = ref('')
+    wrapper = mount(defineComponent({
+      components: { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxViewport },
+      setup: () => ({ text }),
+      template: `<ComboboxRoot multiple>
+  <ComboboxAnchor>
+    <ComboboxInput v-model="text" data-testid="input" aria-label="Fruit" />
+  </ComboboxAnchor>
+  <ComboboxPortal>
+    <ComboboxContent>
+      <ComboboxViewport>
+        <ComboboxItem value="Apple">Apple</ComboboxItem>
+        <ComboboxItem value="Apricot">Apricot</ComboboxItem>
+        <ComboboxItem value="Banana">Banana</ComboboxItem>
+      </ComboboxViewport>
+    </ComboboxContent>
+  </ComboboxPortal>
+</ComboboxRoot>`,
+    }), { attachTo: document.body }) as unknown as ReturnType<typeof mountCombobox>
+    await typeAp(wrapper)
+    // The parent resets its text; the filter still holds the typed one.
+    text.value = ''
+    await flushPromises()
+    expect(options()).toEqual(['Apple', 'Apricot'])
+
+    document.querySelector<HTMLElement>('[role=option]')!.click()
+    await flushPromises()
+
+    expect(text.value).toBe('')
+    expect(options()).toEqual(['Apple', 'Apricot', 'Banana'])
   })
 })

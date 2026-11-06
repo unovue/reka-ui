@@ -123,8 +123,10 @@ watch(rootContext.modelValue, () => {
   const reason = rootContext.lastChangeDetails.value.reason
   if (rootContext.isUserInputted.value && rootContext.multiple.value && (reason === 'item-press' || reason === 'item-keydown')) {
     // Base UI: picking an item while filtering a multiple combobox clears the
-    // text and the filter; the popup stays open. A cancelled clear keeps both.
-    if (setText('', 'input-clear'))
+    // text and the filter; the popup stays open. A cancelled clear keeps both;
+    // a text that is already empty (a controlled one the parent reset) still
+    // clears the filter.
+    if (setText('', 'input-clear') || (modelValue.value ?? '') === '')
       rootContext.filterSearch.value = ''
     return
   }
