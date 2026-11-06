@@ -24,7 +24,7 @@ export interface ComboboxContentImplProps extends PopperContentProps, Dismissabl
    */
   hideWhenEmpty?: boolean
   /**
-   * The element to focus when the content opens (Base UI `initialFocus`).
+   * The element to focus when the content opens.
    * - `undefined` (default): with the input inside the content, the input (the content itself when opened by
    *   touch, so no virtual keyboard opens); with the input outside, focus does not move.
    * - `true` / `null`: the first tabbable element in the content, else the content.
@@ -36,7 +36,7 @@ export interface ComboboxContentImplProps extends PopperContentProps, Dismissabl
    */
   initialFocus?: ComboboxFocusTarget
   /**
-   * The element to focus when the content closes (Base UI `finalFocus`).
+   * The element to focus when the content closes.
    * - `undefined` (default): `true` with the input inside the content, `false` with it outside.
    * - `true` / `null`: the trigger with the input inside the content, the input with it outside; only when focus
    *   was inside the content or lost with it.
@@ -84,7 +84,7 @@ defineOptions({
 const props = withDefaults(defineProps<ComboboxContentImplProps & { present?: boolean }>(), {
   position: 'inline',
   present: true,
-  // Not cast to `false` when absent: `undefined` picks the Base UI default.
+  // Not cast to `false` when absent: `undefined` picks the default.
   initialFocus: undefined,
   finalFocus: undefined,
 })
@@ -148,8 +148,8 @@ const popperStyle = {
 
 provideComboboxContentContext({ position })
 
-// Focus on open and close, as Base UI's `Combobox.Popup` (`initialFocus` /
-// `finalFocus`): the defaults depend on whether the input is inside the content.
+// Focus on open and close (`initialFocus` / `finalFocus`): the defaults
+// depend on whether the input is inside the content.
 const isShown = computed(() => props.present && rootContext.open.value)
 let isInputInside = false
 

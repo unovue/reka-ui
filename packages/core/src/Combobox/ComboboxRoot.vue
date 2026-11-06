@@ -41,7 +41,7 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
   triggerElement: Ref<HTMLElement | undefined>
   onTriggerElementChange: (el: HTMLElement | undefined) => void
   /**
-   * How the popup was last opened or closed (Base UI's interaction type), read by
+   * How the popup was last opened or closed (its interaction type), read by
    * the content for `initialFocus` / `finalFocus`: an open by touch focuses the
    * content rather than an input inside it, so no virtual keyboard opens.
    */

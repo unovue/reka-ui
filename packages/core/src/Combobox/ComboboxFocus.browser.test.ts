@@ -1,5 +1,5 @@
-// Where focus goes when the combobox opens and closes, in a real browser, as
-// Base UI's Combobox (`Combobox.Popup` `initialFocus` / `finalFocus`) does it:
+// Where focus goes when the combobox opens and closes, in a real browser
+// (`ComboboxContent` `initialFocus` / `finalFocus`):
 // - input outside the content: a trigger press moves focus to the input (not by
 //   touch, so no virtual keyboard opens); the content takes no focus on open and
 //   returns none on close.

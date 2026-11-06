@@ -82,7 +82,7 @@ describe('given a Combobox with unmountOnHide=false', () => {
     statefulInput.focus()
     statefulInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await vi.waitFor(() => expect(content.style.display).toBe('none'))
-    // Base UI: with the input outside the content, closing returns no focus (`finalFocus`).
+    // With the input outside the content, closing returns no focus (`finalFocus`).
     expect(document.activeElement).not.toBe(trigger.element)
 
     await trigger.trigger('click')

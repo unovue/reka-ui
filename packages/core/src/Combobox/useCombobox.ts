@@ -100,7 +100,7 @@ let comboboxCount = 0
 
 /**
  * How the popup was opened or closed, passed to an `initialFocus` / `finalFocus`
- * function (Base UI's `InteractionType`); `''` when unknown (a focus, a
+ * function; `''` when unknown (a focus, a
  * programmatic change).
  */
 export type ComboboxInteractionType = 'mouse' | 'touch' | 'pen' | 'keyboard' | ''
@@ -120,7 +120,7 @@ function getInteractionType(event?: Event): ComboboxInteractionType {
   return ''
 }
 
-/** Whether the combobox input is rendered inside its content (Base UI `inputInsidePopup`). */
+/** Whether the combobox input is rendered inside its content. */
 export function isComboboxInputInsideContent(context: ComboboxRootContext<any>) {
   const input = context.inputElement.value
   return !!input && !!getElementByIdFrom(context.parentElement.value, context.contentId)?.contains(input)
@@ -153,7 +153,7 @@ export function getComboboxTriggerSurface(
         pointerType = event.pointerType
       },
       'onMousedown': (event: MouseEvent) => {
-        // Base UI: a press moves focus to an input outside the content, and the
+        // A press moves focus to an input outside the content, and the
         // trigger does not take it. Not by touch: no virtual keyboard opens.
         // An input inside the content is focused by the content on open.
         const input = context.inputElement.value

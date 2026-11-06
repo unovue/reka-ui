@@ -675,7 +675,7 @@ import { ref } from 'vue'
 
 ### Focus management
 
-Focus follows [Base UI](https://base-ui.com/react/components/combobox), and depends on where `ComboboxInput` is:
+Where focus goes depends on where `ComboboxInput` is:
 
 - **Input outside the content** (the usual layout): a mouse or pen press on `ComboboxTrigger` moves focus to the input, and the trigger never takes it. A touch press, a keyboard press on the trigger and a programmatic open leave focus where it is, so no on-screen keyboard opens. Closing does not move focus.
 - **Input inside the content**: opening focuses the input, or the content itself when it was opened by touch. Closing returns focus to the trigger when focus was inside the content.
