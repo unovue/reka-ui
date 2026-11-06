@@ -1059,9 +1059,15 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
   // then closes it) must not outlive the open state: its release never reaches
   // the guard below, and a stale position would swallow the first stationary
   // release after the next keyboard open.
+  // Set once Tab moved focus past the trigger: closing must not refocus it.
+  let focusedOut = false
   watch(() => context.open.value, (open) => {
     if (!open)
       triggerPointerDownPosRef.value = null
+    // A reopen during the exit animation starts a new cycle: a later close
+    // must return focus to the trigger again.
+    else
+      focusedOut = false
   })
   watchEffect((cleanupFn) => {
     // A `forceMount`ed content listens only while open.
@@ -1107,7 +1113,6 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
     })
   })
 
-  let focusedOut = false
   function focusOut(backward: boolean) {
     const trigger = context.triggerElement.value
     if (!trigger)
@@ -1119,7 +1124,11 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
       const content = contentElement.value
       const candidates = getTabbableCandidates(container)
         .filter(el => el === trigger || (!content?.contains(el) && !isHidden(el, {})))
-      target = candidates[candidates.indexOf(trigger) + 1]
+      const index = candidates.indexOf(trigger)
+      // A trigger with `tabindex="-1"` is not a candidate: take the first one after it in the DOM.
+      target = index === -1
+        ? candidates.find(el => !trigger.contains(el) && !!(trigger.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING))
+        : candidates[index + 1]
     }
     focusedOut = !!target
     ;(target ?? trigger).focus({ preventScroll: !target })
@@ -1131,7 +1140,8 @@ export function useSelectContent<T extends AcceptableValue = AcceptableValue>(op
     // Tab leaves the select, as in Base UI: it closes without selecting the
     // highlighted item. Shift+Tab focuses the trigger; Tab the next tabbable
     // element after it (the content may be portaled elsewhere in the DOM).
-    if (event.key === 'Tab') {
+    // Modified Tab (Ctrl+Tab, …) is left to the browser and the application.
+    if (event.key === 'Tab' && !isModifierKey) {
       event.preventDefault()
       if (context.onOpenChange(false, 'focus-outside', event))
         focusOut(event.shiftKey)
