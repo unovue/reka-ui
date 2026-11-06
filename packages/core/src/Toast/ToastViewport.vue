@@ -73,12 +73,19 @@ onMounted(() => {
   providerContext.onViewportChange(currentElement.value)
   viewportElement.value = currentElement.value
   observer = new MutationObserver(() => {
-    viewportElement.value = unrefElement(primitiveRef as ComponentPublicInstance) as HTMLElement | undefined
+    const element = unrefElement(primitiveRef as ComponentPublicInstance)
+    // An `asChild` slot that renders nothing leaves a comment anchor, which can't hold toasts.
+    if (element instanceof HTMLElement)
+      viewportElement.value = element
   })
   observer.observe(unrefElement(branchRef)!, { childList: true })
 })
 
 onBeforeUnmount(() => observer?.disconnect())
+
+// Collapse only once closing toasts have finished animating, so the stack does not
+// shift under the pointer while a toast is dismissed.
+const pendingPointerLeave = ref(false)
 
 // Toasts teleport into and listen on `providerContext.viewport`, so keep it on the
 // current element when the element is replaced after mount.
@@ -95,12 +102,12 @@ watch(viewportElement, (element) => {
     providerContext.isClosePausedRef.value = false
   }
   providerContext.focused.value = element.contains(getActiveElement())
+  // The old element took its `pointerleave` with it. Collapse as a leave would, and a
+  // `pointermove` on the new element expands the stack again.
+  pendingPointerLeave.value = true
   providerContext.onViewportChange(element)
 }, { flush: 'post' })
 
-// Collapse only once closing toasts have finished animating, so the stack does not
-// shift under the pointer while a toast is dismissed.
-const pendingPointerLeave = ref(false)
 watch([pendingPointerLeave, providerContext.closingCount], ([pending, closingCount]) => {
   if (pending && closingCount === 0) {
     providerContext.hovering.value = false

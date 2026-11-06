@@ -285,7 +285,7 @@ describe('given a ToastViewport whose element is replaced', () => {
     },
     setup() {
       const open = ref(true)
-      const variant = ref<'a' | 'b'>('a')
+      const variant = ref<'a' | 'b' | 'none'>('a')
       return { open, variant }
     },
     render() {
@@ -300,9 +300,9 @@ describe('given a ToastViewport whose element is replaced', () => {
           this.mode === 'as'
             ? h(ToastViewport, { 'as': this.variant === 'a' ? 'ol' : 'ul', 'data-viewport': this.variant })
             : h(ToastViewport, { asChild: true }, {
-                default: () => this.variant === 'a'
-                  ? h('ol', { 'key': 'a', 'data-viewport': 'a' })
-                  : h('ol', { 'key': 'b', 'data-viewport': 'b' }),
+                default: () => this.variant === 'none'
+                  ? null
+                  : h('ol', { 'key': this.variant, 'data-viewport': this.variant }),
               }),
         ],
       })
@@ -384,6 +384,28 @@ describe('given a ToastViewport whose element is replaced', () => {
     await replaceViewport()
     await runDuration()
     expect(wrapper.vm.open).toBe(false)
+  })
+
+  it('should keep the toasts when the viewport child is removed and then rendered again', async () => {
+    const errorHandler = vi.fn()
+    wrapper.unmount()
+    wrapper = mount(ReplaceableViewport, { attachTo: document.body, global: { config: { errorHandler } } })
+    await flush()
+
+    wrapper.vm.variant = 'none'
+    await flush()
+    wrapper.vm.variant = 'b'
+    await flush()
+
+    expect(errorHandler).not.toHaveBeenCalled()
+    expect(document.querySelector('[data-viewport="b"] li')?.textContent).toContain('Saved')
+  })
+
+  it('should collapse the stack when the viewport is replaced while hovered', async () => {
+    await fireEvent.pointerMove(document.querySelector('[data-viewport="a"]')!)
+    expect(document.querySelector('[data-viewport="a"]')!.hasAttribute('data-expanded')).toBe(true)
+    await replaceViewport()
+    expect(newViewport.hasAttribute('data-expanded')).toBe(false)
   })
 
   it('should keep a window-blur pause across the replacement until the window gets focus', async () => {
