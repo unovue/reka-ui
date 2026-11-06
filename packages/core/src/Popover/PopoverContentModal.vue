@@ -1,22 +1,25 @@
 <script setup lang="ts">
 import type { PopoverContentImplEmits, PopoverContentImplProps } from './PopoverContentImpl.vue'
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useForwardExpose, useForwardPropsEmits, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import PopoverContentImpl from './PopoverContentImpl.vue'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 
-const props = defineProps<PopoverContentImplProps>()
+const props = withDefaults(defineProps<PopoverContentImplProps & { present?: boolean }>(), { present: true })
 const emits = defineEmits<PopoverContentImplEmits>()
 const rootContext = injectPopoverRootContext()
 const isRightClickOutsideRef = ref(false)
 
-useBodyScrollLock(true)
+const scrollLocked = useBodyScrollLock(props.present)
+watch(() => props.present, (present) => {
+  scrollLocked.value = present
+})
 
 const forwarded = useForwardPropsEmits(props, emits)
 
 const { forwardRef, currentElement } = useForwardExpose()
-useHideOthers(currentElement)
+useHideOthers(computed(() => props.present ? currentElement.value : undefined))
 </script>
 
 <template>

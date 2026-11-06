@@ -214,7 +214,8 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<PopperContentProps>(), {
+const props = withDefaults(defineProps<PopperContentProps & { /** Internal: kept-mounted content that is hidden should not track position. */ present?: boolean }>(), {
+  present: true,
   ...PopperContentPropsDefaultValue,
 })
 const emits = defineEmits<{
@@ -325,7 +326,7 @@ const computedMiddleware = computed(() => {
 })
 
 // If provided custom reference, it will overwrite the default anchor element
-const reference = computed(() => props.reference ?? rootContext.anchor.value)
+const reference = computed(() => props.present ? (props.reference ?? rootContext.anchor.value) : undefined)
 
 const { floatingStyles, placement, isPositioned, middlewareData, update } = useFloating(
   reference,
@@ -333,6 +334,7 @@ const { floatingStyles, placement, isPositioned, middlewareData, update } = useF
   {
     strategy: props.positionStrategy,
     placement: desiredPlacement,
+    open: () => props.present,
     whileElementsMounted: (...args) => {
       const cleanup = autoUpdate(...args, {
         layoutShift: !props.disableUpdateOnLayoutShift,
