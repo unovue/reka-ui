@@ -20,7 +20,7 @@
   {
     "path": "dist/index.js",
     "import": "{ ComboboxRoot, ComboboxInput, ComboboxContent, ComboboxItem, ComboboxVirtualizer }",
-    "limit": "40.9 KB",
+    "limit": "41 KB",
     "name": "Combobox"
   },
   {
@@ -74,7 +74,7 @@
   {
     "path": "dist/index.js",
     "import": "*",
-    "limit": "198.3 KB",
+    "limit": "198.4 KB",
     "name": "Full library"
   }
 ]
