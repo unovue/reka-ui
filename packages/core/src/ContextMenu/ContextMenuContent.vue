@@ -52,8 +52,17 @@ const rootContext = injectContextMenuRootContext()
 // is gone) re-opens the menu at the new point.
 // A right click on the backdrop while the menu stays open (a prevented
 // dismissal) must not show the native menu either (Base UI `ContextMenuTrigger`).
-useEventListener(() => currentElement.value?.ownerDocument, 'contextmenu', (event: MouseEvent) => {
-  if (getInternalBackdrop(currentElement.value)?.contains(event.target as Node))
+// Listened on the content's root node too: in a shadow root (where the backdrop
+// renders next to the content) the document only sees the host, and in a
+// closed one not even `composedPath()` reaches the backdrop from there. The
+// document still covers a backdrop moved to `<body>`.
+useEventListener(() => {
+  const root = currentElement.value?.getRootNode()
+  const doc = currentElement.value?.ownerDocument
+  return root && root !== doc ? [root, doc] : [doc]
+}, 'contextmenu', (event: Event) => {
+  const backdrop = getInternalBackdrop(currentElement.value)
+  if (backdrop && event.composedPath().includes(backdrop))
     event.preventDefault()
 })
 // Bound after the forwarded emits, so they still see a consumer's `preventDefault()`.
