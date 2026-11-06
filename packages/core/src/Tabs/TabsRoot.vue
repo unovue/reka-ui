@@ -53,7 +53,7 @@ export interface TabsRootProps<T extends StringOrNumber = StringOrNumber> extend
   activationMode?: 'automatic' | 'manual'
   /**
    * The controlled value of the tab to activate. Can be bind as `v-model`. `null` selects no tab. While it is
-   * `undefined` the tabs are uncontrolled and select the first enabled tab.
+   * `undefined` the tabs are uncontrolled: they start on `defaultValue`, or on the first enabled tab without one.
    */
   modelValue?: T | null
   /**

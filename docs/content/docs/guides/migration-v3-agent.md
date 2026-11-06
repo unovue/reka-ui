@@ -912,7 +912,7 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 ### 31. Tabs select the first tab
 
 **What changed.**
-- An uncontrolled `TabsRoot` (no `default-value` and no `v-model`, or a `v-model` that is `undefined`) selects the first enabled `TabsTrigger` in document order after mount. In v2 no tab and no panel were shown. It also moves to the first enabled tab when the selected one is removed or becomes disabled, or when `default-value` matches no trigger. An explicit `default-value` that points at a disabled tab is kept. Controlled tabs (a defined `v-model` / `:model-value`) never change by themselves.
+- A `TabsRoot` with no `default-value` that is uncontrolled (no `v-model`, or a `v-model` that is `undefined`) selects the first enabled `TabsTrigger` in document order after mount. In v2 no tab and no panel were shown. It also moves to the first enabled tab when the selected one is removed or becomes disabled, or when `default-value` matches no trigger. An explicit `default-value` that points at a disabled tab is kept. Controlled tabs (a defined `v-model` / `:model-value`) never change by themselves.
 - These automatic selections emit `update:modelValue` (and `beforeUpdate:modelValue`) with the new `TabsChangeReason` values `'initial'`, `'missing'` and `'disabled'`.
 - `default-value` and `model-value` accept `null`, which selects no tab.
 
