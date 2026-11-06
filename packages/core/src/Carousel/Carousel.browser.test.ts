@@ -96,13 +96,31 @@ describe('given a Carousel in a real browser', () => {
     await expect.poll(() => viewport.style.scrollSnapType).toBe('x mandatory')
     const box = viewport.getBoundingClientRect()
     const y = box.top + 40
-    // A long, fast drag: still one snap without `skipSnaps`.
-    await commands.mouseDrag(box.right - 10, y, box.left - 300, y, 4)
+    // A long, fast drag: still one snap without `skipSnaps`. It ends inside the
+    // test iframe: Firefox delivers no release outside it.
+    await commands.mouseDrag(box.right - 10, y, box.left - 15, y, 4)
     await expect.poll(() => scroll()).toBeCloseTo(SIZE, 0)
     await settled(scroll)
     expect(model.value).toBe(1)
     expect(reasons).toContain('drag')
     expect(viewport.style.scrollSnapType).toBe('x mandatory')
+  })
+
+  it('ends a drag whose release is never seen', async () => {
+    const { viewport, model, scroll } = mountCarousel()
+    await expect.poll(() => viewport.style.scrollSnapType).toBe('x mandatory')
+    const box = viewport.getBoundingClientRect()
+    const base = { bubbles: true, isPrimary: true, pointerId: 7, pointerType: 'mouse', clientY: box.top + 40 }
+    viewport.dispatchEvent(new PointerEvent('pointerdown', { ...base, button: 0, buttons: 1, clientX: box.left + 150 }))
+    document.dispatchEvent(new PointerEvent('pointermove', { ...base, buttons: 1, clientX: box.left + 60 }))
+    await expect.poll(() => viewport.hasAttribute('data-dragging')).toBe(true)
+    // The next move has no button down: the release happened out of sight.
+    document.dispatchEvent(new PointerEvent('pointermove', { ...base, buttons: 0, clientX: box.left + 60 }))
+    await expect.poll(() => viewport.hasAttribute('data-dragging')).toBe(false)
+    await settled(scroll)
+    expect(scroll() % SIZE).toBeCloseTo(0, 0)
+    expect(viewport.style.scrollSnapType).toBe('x mandatory')
+    expect(model.value).toBe(Math.round(scroll() / SIZE))
   })
 
   it('swallows the click that ends a drag, not a plain click', async () => {
