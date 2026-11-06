@@ -30,6 +30,11 @@ describe('given a default ConfigProvider', async () => {
 
   beforeEach(() => {
     document.body.innerHTML = ''
+    // The scroll lock restores the padding/margin it captured, but earlier cases
+    // in this file mount without unmounting, so the inline values they left behind
+    // must be cleared between cases.
+    document.body.style.paddingRight = ''
+    document.body.style.marginRight = ''
     wrapper = mount(ConfigProviderTest, { attachTo: document.body })
   })
 
@@ -63,6 +68,8 @@ describe('given a dir="rtl" ConfigProvider', async () => {
 describe('given a scrollBody ConfigProvider', async () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    document.body.style.paddingRight = ''
+    document.body.style.marginRight = ''
   })
 
   it('should set 0 padding, 0 margin body', async () => {
