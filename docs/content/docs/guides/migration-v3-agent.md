@@ -758,7 +758,7 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 
 **Verify.** In each shadow-mounted app, portalled content without an explicit target outside the shadow root renders inside the shadow root with its styles applied; dialogs trap focus and close on Escape and outside press; a combobox item can be selected with the mouse; the tests pass.
 
-### 28. Drawer contract and part names, Tree custom children, Combobox blur reset, Autocomplete item values
+### 28. Drawer contract and part names, Tree custom children, Combobox blur reset and multiple reset on select, Autocomplete item values
 
 **What changed.**
 - `DrawerRoot` follows the change-event contract: the new `beforeUpdate:open` fires before an open change and `details.cancel()` there keeps the drawer as it is; `update:open(value, details)` now fires after the change, so `details.cancel()` inside it has no effect (a development warning says so). `update:snapPoint` gains a `details` argument and the new `beforeUpdate:snapPoint` can cancel a snap; cancelling the `null` snap-point request from a swipe past the last point keeps the drawer open, and a cancelled swipe close, or one a controlled `open` ignores, restores the previous snap point. Closing resets the snap point to `defaultSnapPoint` (else the first snap point). A controlled `snapPoint` latches. `DrawerOpenChangeDetails` is a deprecated alias of `ChangeEventDetails<DrawerOpenChangeReason>`.
@@ -766,6 +766,7 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 - A `force-mount` popup returns focus to the trigger (or `finalFocus`) on close, as `DialogContent` does, while focus is still inside the popup or on `<body>`.
 - `TreeRoot` with `propagate-select` or `bubble-select` reads every level of descendants through `getChildren`; v2 read `item.children` below the first level. It also warns in development when either flag is set without `multiple`.
 - With `resetSearchTermOnBlur` (on by default for `ComboboxRoot`, off for `AutocompleteRoot`), `ComboboxRoot` and `AutocompleteRoot` drop the pending blur reset when the user types within a tick of closing, even when `beforeUpdate:open` cancels that reopen; another open request (click, focus) drops it only once the popup opens, and a controlled `open` set back to `true` keeps the text. A cancelled click or focus still resets the input.
+- In a `multiple` `ComboboxRoot`, `resetSearchTermOnSelect` (default `true`) now applies: pressing an item or pressing Enter on the highlighted one while filtering clears the input text and the filter (the input emits `''` with `reason: 'input-clear'`); the popup stays open. v2 ignored the prop in `multiple` mode and kept the typed text.
 - `AutocompleteRoot` is generic over its item value type `T` (default `string`): `displayValue: (value: T) => string`, `filter: ListboxFilterFunction<T>`, the `highlight` payload's `value: T`, exposed `highlightItem(value: T)`.
 
 **How to find it.**
@@ -775,6 +776,7 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 - `AutocompleteRoot` with a `display-value` / `filter` / `@highlight` handler and items whose `value` is not a string.
 - `highlightItem(` calls on an `AutocompleteRoot` ref, and the argument each one passes.
 - `ComboboxRoot` without `:reset-search-term-on-blur="false"` (the reset is on by default) and `AutocompleteRoot` with `reset-search-term-on-blur` / `resetSearchTermOnBlur` set, especially ones with a `@before-update:open` handler that cancels opening or a parent that reopens through `v-model:open`.
+- `ComboboxRoot` with `multiple` and without `:reset-search-term-on-select="false"`; and hand-written resets of the input text or `filterSearch` in a `watch` on a multiple combobox's value (the #2151 workaround).
 
 **Rewrite rules.**
 - A `details.cancel()` call in an `@update:open` handler on `DrawerRoot`: move that handler (or the cancelling branch) to `@before-update:open`. A controlled drawer that guarded `:open` by hand only to support cancelling can go back to `v-model:open`; *ask* if it does more.
@@ -788,8 +790,9 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 - An `AutocompleteRoot` `displayValue` / `filter` / `highlight` handler typed with `string` while items carry other values: type its parameter from the item value type.
 - A `highlightItem(value)` call: pass the same `value` the matching `AutocompleteItem` gets. Where that value is not a string and the type-check rejects it, type the root's `displayValue` or `filter` parameter from the item value type so `T` is inferred; *ask* before casting.
 - `resetSearchTermOnBlur` usage: no rewrite. Remove a hand-written workaround that restored the typed text after a quick close and reopen only after *asking*.
+- A `multiple` combobox: no rewrite. A hand-written watch that cleared the input text or `filterSearch` after a selection is now redundant; remove it. If the project relied on the text staying after a pick (picking several matches of one search), *ask*, then add `:reset-search-term-on-select="false"`.
 
-**Verify.** The type-check passes; no `DrawerHandle` import remains; a cancelled `beforeUpdate:open` keeps each drawer as it was, with `v-model:open` too; a `force-mount` drawer returns focus on close; propagated and bubbled tree selections include every level. For each `ComboboxRoot` and `AutocompleteRoot` with the blur reset on: close the popup and type straight away, and the typed text stays, also when a `beforeUpdate:open` handler cancels the reopen; close it and click the trigger with the reopen cancelled, and the input shows the selected value again. For an `AutocompleteRoot` with non-string item values: `displayValue`, `filter`, `@highlight` and `highlightItem` receive the item value unchanged, and `highlightItem(value)` highlights that item.
+**Verify.** The type-check passes; no `DrawerHandle` import remains; a cancelled `beforeUpdate:open` keeps each drawer as it was, with `v-model:open` too; a `force-mount` drawer returns focus on close; propagated and bubbled tree selections include every level. For each `ComboboxRoot` and `AutocompleteRoot` with the blur reset on: close the popup and type straight away, and the typed text stays, also when a `beforeUpdate:open` handler cancels the reopen; close it and click the trigger with the reopen cancelled, and the input shows the selected value again. For an `AutocompleteRoot` with non-string item values: `displayValue`, `filter`, `@highlight` and `highlightItem` receive the item value unchanged, and `highlightItem(value)` highlights that item. In each `multiple` combobox, type to filter and pick an item: the input empties and every item shows again, unless the root sets `:reset-search-term-on-select="false"`.
 
 ### 29. Change details coverage
 

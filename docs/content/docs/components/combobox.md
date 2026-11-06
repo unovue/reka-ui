@@ -325,6 +325,8 @@ const selectedPeople = ref(people[0])
 
 The `Combobox` component allows you to select multiple values. You can enable this by providing an array of values instead of a single value.
 
+Selecting an item while filtering clears the typed text and the filter, and the popup stays open for the next pick, as in Base UI. Set `:reset-search-term-on-select="false"` to keep the text, or cancel the `'input-clear'` change in the input's `beforeUpdate:modelValue`.
+
 ```vue line=12,17-18
 <script setup lang="ts">
 import { ComboboxRoot } from 'reka-ui'

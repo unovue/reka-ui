@@ -118,7 +118,17 @@ rootContext.onClearInput((event?: Event) => {
 })
 
 watch(rootContext.modelValue, () => {
-  if (!rootContext.isUserInputted.value && rootContext.resetSearchTermOnSelect.value) {
+  if (!rootContext.resetSearchTermOnSelect.value)
+    return
+  const reason = rootContext.lastChangeDetails.value.reason
+  if (rootContext.isUserInputted.value && rootContext.multiple.value && (reason === 'item-press' || reason === 'item-keydown')) {
+    // Base UI: picking an item while filtering a multiple combobox clears the
+    // text and the filter; the popup stays open. A cancelled clear keeps both.
+    if (setText('', 'input-clear'))
+      rootContext.filterSearch.value = ''
+    return
+  }
+  if (!rootContext.isUserInputted.value) {
     // A selection writes the selected text; a parent's value is `'none'`.
     const changeReason = rootContext.lastChangeDetails.value.reason
     resetSearchTerm(changeReason === 'clear-press'
