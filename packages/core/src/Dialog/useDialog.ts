@@ -281,8 +281,13 @@ export function useDialog<Payload = unknown>(props: UseDialogProps<Payload> = {}
   // run (they may move it); a parent-driven open is recorded by the content.
   function setState(...args: Parameters<typeof setOpenState>): boolean {
     const opening = args[0] && !open.value && typeof document !== 'undefined'
-    if (opening)
-      recordFocusBeforeOpen(context, getActiveElement(), context.contentElement.value, true)
+    if (opening) {
+      // A trigger press returns to the pressed trigger, even when it never
+      // took focus (a scripted `click()`); a detached trigger is the press's
+      // `currentTarget`.
+      const pressed = args[1] === 'trigger-press' ? args[2]?.currentTarget as HTMLElement | null | undefined : undefined
+      recordFocusBeforeOpen(context, pressed?.nodeType === 1 ? pressed : getActiveElement(), context.contentElement.value, true)
+    }
     const applied = setOpenState(...args)
     // A cancelled open leaves no record for the content to skip.
     if (opening && !applied)

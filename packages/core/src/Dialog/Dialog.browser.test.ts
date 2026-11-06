@@ -131,6 +131,18 @@ describe('given a Dialog opened programmatically, in a real browser', () => {
     wrapper.unmount()
   })
 
+  it('returns focus to the trigger when a scripted click on it opened the dialog', async () => {
+    const { wrapper, get } = mountProgrammatic()
+    get('search')!.focus()
+    // `click()` opens through the trigger without moving focus to it.
+    get('trigger')!.click()
+    await expect.poll(() => document.activeElement?.getAttribute('data-testid')).toBe('close')
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => get('content')).toBeNull()
+    await expect.poll(() => document.activeElement).toBe(get('trigger'))
+    wrapper.unmount()
+  })
+
   it('records the focus again on each open when the content stays mounted', async () => {
     const { wrapper, get, open } = mountProgrammatic({ unmountOnHide: false })
     get('search')!.focus()
