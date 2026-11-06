@@ -136,4 +136,35 @@ describe('given a multiple Combobox with a controlled input text', () => {
     expect(text.value).toBe('')
     expect(options()).toEqual(['Apple', 'Apricot', 'Banana'])
   })
+
+  it('empties the shown text when a parent keeps the text at `\'\'`', async () => {
+    wrapper = mount(defineComponent({
+      components: { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxViewport },
+      template: `<ComboboxRoot multiple>
+  <ComboboxAnchor>
+    <ComboboxInput model-value="" data-testid="input" aria-label="Fruit" />
+  </ComboboxAnchor>
+  <ComboboxPortal>
+    <ComboboxContent>
+      <ComboboxViewport>
+        <ComboboxItem value="Apple">Apple</ComboboxItem>
+        <ComboboxItem value="Apricot">Apricot</ComboboxItem>
+        <ComboboxItem value="Banana">Banana</ComboboxItem>
+      </ComboboxViewport>
+    </ComboboxContent>
+  </ComboboxPortal>
+</ComboboxRoot>`,
+    }), { attachTo: document.body }) as unknown as ReturnType<typeof mountCombobox>
+    await typeAp(wrapper)
+    const input = wrapper.find('[data-testid=input]').element as HTMLInputElement
+    // The text stays `''`, but Vue only patches the DOM back when the input
+    // re-renders: a keystroke that does not re-render it leaves the typed text.
+    input.value = 'Ap'
+
+    document.querySelector<HTMLElement>('[role=option]')!.click()
+    await flushPromises()
+
+    expect(input.value).toBe('')
+    expect(options()).toEqual(['Apple', 'Apricot', 'Banana'])
+  })
 })

@@ -125,9 +125,13 @@ watch(rootContext.modelValue, () => {
     // Base UI: picking an item while filtering a multiple combobox clears the
     // text and the filter; the popup stays open. A cancelled clear keeps both;
     // a text that is already empty (a controlled one the parent reset) still
-    // clears the filter.
-    if (setText('', 'input-clear') || (modelValue.value ?? '') === '')
+    // clears the filter, and the element when it still shows typed text.
+    if (setText('', 'input-clear') || (modelValue.value ?? '') === '') {
       rootContext.filterSearch.value = ''
+      const input = currentElement.value as HTMLInputElement | undefined
+      if (input && (modelValue.value ?? '') === '' && input.value !== '')
+        input.value = ''
+    }
     return
   }
   if (!rootContext.isUserInputted.value) {
