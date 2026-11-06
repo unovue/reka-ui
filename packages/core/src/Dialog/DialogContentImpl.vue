@@ -37,14 +37,14 @@ export interface DialogContentImplProps extends DismissableLayerProps {
 </script>
 
 <script setup lang="ts">
-import { computed, getCurrentInstance, mergeProps, onMounted } from 'vue'
+import { computed, getCurrentInstance, mergeProps, onMounted, watch } from 'vue'
 import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer } from '@/DismissableLayer/useDismissableLayer'
 import { FOCUS_SCOPE_WRAPPER, focusScopeOptions, useFocusScope } from '@/FocusScope/useFocusScope'
 import { renderAs } from '@/Primitive/renderAs'
 import { splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
 import { injectDialogRootContext } from './DialogRoot.vue'
 import { getDialogContentSurface } from './useDialog'
-import { useWarning } from './utils'
+import { recordFocusBeforeOpen, useWarning } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -102,11 +102,16 @@ const layer = useDismissableLayer(dismissableLayerOptions(contentElement, () => 
 
 onMounted(() => {
   rootContext.contentElement = contentElement
-
-  // Preserve the `DialogTrigger` element in case it was triggered programmatically
-  if (getActiveElement() !== document.body)
-    rootContext.triggerElement.value = getActiveElement() as HTMLElement
 })
+
+// Record where focus was on every open, before the content moves it: a
+// content kept mounted (`unmountOnHide: false`) sets up only once. The
+// trigger ref is left alone, so it stays the fallback (Base UI `finalFocus`).
+watch(() => rootContext.open.value, (open) => {
+  // `typeof document`: the immediate run also happens during SSR.
+  if (open && typeof document !== 'undefined')
+    recordFocusBeforeOpen(rootContext, getActiveElement(), contentElement.value)
+}, { immediate: true, flush: 'sync' })
 
 if (process.env.NODE_ENV !== 'production') {
   useWarning({
