@@ -86,6 +86,16 @@ export interface FieldControlRegistration {
   required?: () => boolean
   /** Whether a value counts as filled. Defaults to anything but `null`/`undefined`/`''`/`[]`. */
   isFilled?: (value: unknown) => boolean
+  /**
+   * Whether a value is missing for `required`, when that differs from not being filled (a Combobox's `''` is
+   * filled but submits nothing). Defaults to `!isFilled(value)`. Only used without a `validityElement`.
+   */
+  isMissing?: (value: unknown) => boolean
+  /**
+   * Whether a value differs from the field's initial one, for a control that tells empty values apart (a Combobox's
+   * `null` and `''`). Defaults to a structural comparison where `null`, `undefined` and `''` are equal.
+   */
+  isDirty?: (value: unknown, initialValue: unknown) => boolean
 }
 
 export type FieldDataAttributes = Record<`data-${'disabled' | 'valid' | 'invalid' | 'dirty' | 'touched' | 'filled' | 'focused'}`, '' | undefined>
@@ -359,7 +369,7 @@ function getValiditySource() {
     return { element: current.validityElement() ?? undefined }
   return {
     getValidity: (value: unknown) => createValidityState({
-      valueMissing: (required.value || Boolean(current.required?.())) && !isFilled(value),
+      valueMissing: (required.value || Boolean(current.required?.())) && (current.isMissing ? current.isMissing(value) : !isFilled(value)),
     }),
   }
 }
@@ -389,7 +399,8 @@ function handleControlInput(detail?: FieldControlDetail) {
   const current = resolveValue(detail)
 
   // Dirty means "differs from the initial value", so reverting a change clears it.
-  setDirty(!isEqual(current ?? '', initialValue.value ?? ''))
+  const isDirty = control.value?.isDirty
+  setDirty(isDirty ? isDirty(current, initialValue.value) : !isEqual(current ?? '', initialValue.value ?? ''))
   filled.value = isFilled(current)
 
   // Editing the field dismisses a previously shown server error for it.
