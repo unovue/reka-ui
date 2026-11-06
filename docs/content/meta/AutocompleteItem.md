@@ -29,9 +29,9 @@
   },
   {
     'name': 'value',
-    'description': '<p>The value of the item, of the root\'s item type <code>T</code> (<code>string</code> by default). Selecting the item writes <code>displayValue(value)</code> into the input, else <code>String(value)</code>.</p>\n',
+    'description': '<p>The value of the item, of the root\'s item type <code>T</code> (<code>string</code> by default). Selecting the item writes <code>displayValue(value)</code> into the input, else <code>String(value)</code>; a <code>null</code> value (the default) writes <code>\'\'</code>.</p>\n',
     'type': 'T',
-    'required': true
+    'required': false
   }
 ]" />
 
@@ -62,7 +62,7 @@
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `disabled` | When `true`, prevents the user from interacting with the item. | `boolean` | No | - |
 | `textValue` | A string representation of the item contents. If the children are not plain text, then the `textValue` prop must also be set to a plain text representation, which is used to filter the items and for typeahead. | `string` | No | - |
-| `value` | The value of the item, of the root's item type `T` (`string` by default). Selecting the item writes `displayValue(value)` into the input, else `String(value)`. | `T` | Yes | - |
+| `value` | The value of the item, of the root's item type `T` (`string` by default). Selecting the item writes `displayValue(value)` into the input, else `String(value)`; a `null` value (the default) writes `''`. | `T` | No | - |
 
 **Events**
 

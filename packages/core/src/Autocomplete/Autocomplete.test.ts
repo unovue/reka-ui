@@ -407,3 +407,30 @@ describe('given autocomplete with object item values', () => {
     wrapper.unmount()
   })
 })
+
+describe('an item without a `value`', () => {
+  it('defaults to `null` and writes no text, as Base UI', async () => {
+    document.body.innerHTML = ''
+    const text = ref('ap')
+    const wrapper = mount({
+      components: { AutocompleteRoot, AutocompleteAnchor, AutocompleteInput, AutocompleteContent, AutocompleteViewport, AutocompleteItem },
+      setup: () => ({ text }),
+      template: `
+        <AutocompleteRoot v-model="text" :filter="null" default-open>
+          <AutocompleteAnchor><AutocompleteInput aria-label="fruit" /></AutocompleteAnchor>
+          <AutocompleteContent>
+            <AutocompleteViewport>
+              <AutocompleteItem text-value="Any">Any</AutocompleteItem>
+              <AutocompleteItem value="Apple">Apple</AutocompleteItem>
+            </AutocompleteViewport>
+          </AutocompleteContent>
+        </AutocompleteRoot>
+      `,
+    }, { attachTo: document.body })
+    await nextTick()
+    await wrapper.findAll('[role=option]')[0].trigger('click')
+    await sleep(1)
+    expect(text.value).toBe('')
+    wrapper.unmount()
+  })
+})
