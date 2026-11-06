@@ -73,8 +73,14 @@
   },
   {
     "path": "dist/index.js",
+    "import": "{ CarouselRoot, CarouselViewport, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, CarouselIndicator, CarouselAutoplayToggle }",
+    "limit": "12.5 KB",
+    "name": "Carousel"
+  },
+  {
+    "path": "dist/index.js",
     "import": "*",
-    "limit": "198.1 KB",
+    "limit": "206 KB",
     "name": "Full library"
   }
 ]

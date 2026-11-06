@@ -65,6 +65,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
   const autoHeight = ref<number>()
   let rects: CarouselItemRect[] = []
   let programmaticTarget: number | undefined
+  let programmaticRetries = 0
   let inputReason: CarouselChangeReason = 'scroll'
   let rotating = false
   // Mouse and pen drag. Touch scrolls natively, except in `fade` mode where every pointer swipes.
@@ -249,6 +250,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       return
     }
     programmaticTarget = index
+    programmaticRetries = 0
     setScroll(snap.position, behavior ?? (context.reducedMotion.value ? 'instant' : 'smooth'))
   }
 
@@ -283,6 +285,14 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
 
   function settle() {
     clearScrollEndTimer()
+    // A `scrollend` left over from the drag can land during the smooth scroll it
+    // started, and Firefox then stops that scroll short of the snap: aim at it again.
+    const target = programmaticTarget === undefined ? undefined : context.snaps.value[programmaticTarget]
+    if (target && Math.abs(target.position - getScroll()) >= 1 && programmaticRetries < 2) {
+      programmaticRetries++
+      setScroll(target.position, context.reducedMotion.value ? 'instant' : 'smooth')
+      return
+    }
     programmaticTarget = undefined
     if (snapSuspended.value && !dragState && !momentumFrame && !autoScrollRunning.value)
       setScrollSnapSuspended(false)
