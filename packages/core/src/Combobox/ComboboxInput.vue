@@ -58,13 +58,16 @@ const { state: modelValue, setState: setText } = useControllableState<string, Co
 const surface = createComboboxInputSurface(rootContext, {
   modelValue,
   setText: (value, event) => {
-    const changed = setText(value, 'input-change', event)
     // Base UI: emptying the input (outside the popup) clears a single value.
-    if (!value && !modelValue.value && !rootContext.multiple.value && rootContext.modelValue.value != null
-      && !getElementByIdFrom(rootContext.parentElement.value, rootContext.contentId)?.contains(currentElement.value as Element)) {
-      rootContext.clearModelValue(event, 'input-clear')
+    // The clear runs first, decided by the typed text rather than a reread of
+    // a controlled text prop (still the old text here). A cancelled clear
+    // keeps the selection, so the text is vetoed too and the surface restores it.
+    if (!value && !rootContext.multiple.value && rootContext.modelValue.value != null
+      && !getElementByIdFrom(rootContext.parentElement.value, rootContext.contentId)?.contains(currentElement.value as Element)
+      && !rootContext.clearModelValue(event, 'input-clear')) {
+      return false
     }
-    return changed
+    return setText(value, 'input-change', event)
   },
   disabled: () => props.disabled,
   closeOnBlur: true,

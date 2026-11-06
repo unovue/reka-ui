@@ -356,11 +356,13 @@ const selectedPeople = ref([people[0], people[1]])
 
 An item can have `value=""`. Unlike in a [Select](select.md), an empty string is a value like any other: selecting it marks that item as selected, the input shows its text through `displayValue`, and inside a `Field` the field counts as filled. Inside a `multiple` array, `''` is a selected value too.
 
-To let users clear the selection from the list, add an item with a `null` value, or leave out `value`: it defaults to `null`, as in Base UI. Pressing it sets the value to `null` and empties the input (`displayValue` is not called for `null`), and that item is the selected one while the combobox is empty.
+To let users clear a single selection from the list, add an item with a `null` value, or leave out `value`: it defaults to `null`, as in Base UI. Pressing it sets the value to `null` and empties the input, and that item is the selected one while the combobox is empty. With `multiple`, `null` is an ordinary entry: pressing the item adds or removes `null` in the array instead of clearing it.
+
+The `ComboboxRoot` `displayValue` is not called for `null`. A `displayValue` on `ComboboxInput` is called with every value, `null` included, so it must handle `null` (return `''` to keep the input empty).
 
 The keyboard clears the value too, as in Base UI:
 
-- Emptying the input of a single combobox sets the value to `null` (reason `'input-clear'`). A `multiple` selection is kept.
+- Emptying the input of a single combobox sets the value to `null` (reason `'input-clear'`). A `multiple` selection is kept, and so is the value when the input is inside the popup.
 - Escape on a closed combobox sets the value to `null` (`[]` with `multiple`) and empties the input (reason `'escape-key'`). When there was a value to clear, the Escape stops there, so it does not also close a surrounding dialog. While the popup is open, Escape only closes it.
 
 Both go through `beforeUpdate:modelValue`; `details.cancel()` keeps the value (and, for Escape, the text).

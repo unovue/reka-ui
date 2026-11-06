@@ -325,6 +325,26 @@ describe('emptying the input (Base UI `input-clear`)', () => {
     await type('')
     expect(onUpdate).not.toHaveBeenCalled()
     expect(model.value).toBe('a')
+    // The selection stays, and so does its text.
+    expect(input().value).toBe('a')
+  })
+
+  it('clears with a controlled input text', async () => {
+    const model = ref<any>('a')
+    const text = ref('a')
+    const onUpdate = vi.fn((v: any) => { model.value = v })
+    const onText = vi.fn((v: string) => { text.value = v })
+    mount(defineComponent({
+      setup: () => () => h(ComboboxRoot, { 'modelValue': model.value, 'onUpdate:modelValue': onUpdate }, () => [
+        h(ComboboxAnchor, () => [h(ComboboxInput, { 'data-testid': 'input', 'modelValue': text.value, 'onUpdate:modelValue': onText })]),
+        h(ComboboxPortal, () => h(ComboboxContent, () => h(ComboboxViewport, () => items.map(o => h(ComboboxItem, { key: String(o.value), value: o.value }, () => o.text))))),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    await type('')
+    expect(onUpdate).toHaveBeenLastCalledWith(null, expect.objectContaining({ reason: 'input-clear' }))
+    expect(onText).toHaveBeenCalledWith('', expect.objectContaining({ reason: 'input-change' }))
+    expect(model.value).toBe(null)
   })
 })
 
