@@ -183,6 +183,42 @@ describe('given a Dialog opened programmatically, in a real browser', () => {
     wrapper.unmount()
   })
 
+  it('keeps the record of a second press accepted in the same task as an ignored one', async () => {
+    const open = ref(false)
+    let presses = 0
+    const Fixture = defineComponent({
+      setup() {
+        return () => h('div', [
+          h('input', { 'data-testid': 'search' }),
+          h(DialogRoot, {
+            'open': open.value,
+            'onUpdate:open': (value: boolean) => {
+              // Ignores the first press, accepts the second.
+              if (!value || ++presses > 1)
+                open.value = value
+            },
+          }, () => [
+            h(DialogTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
+            h(DialogPortal, null, () => h(DialogContent, { 'aria-describedby': undefined, 'data-testid': 'content' }, () => [
+              h(DialogTitle, null, () => 'Title'),
+              h(DialogClose, { 'data-testid': 'close' }, () => 'Close'),
+            ])),
+          ]),
+        ])
+      },
+    })
+    const wrapper = mount(Fixture, { attachTo: document.body })
+    const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
+    get('search')!.focus()
+    get('trigger')!.click()
+    get('trigger')!.click()
+    await expect.poll(() => document.activeElement?.getAttribute('data-testid')).toBe('close')
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => get('content')).toBeNull()
+    await expect.poll(() => document.activeElement).toBe(get('trigger'))
+    wrapper.unmount()
+  })
+
   it('records the focus again on each open when the content stays mounted', async () => {
     const { wrapper, get, open } = mountProgrammatic({ unmountOnHide: false })
     get('search')!.focus()
