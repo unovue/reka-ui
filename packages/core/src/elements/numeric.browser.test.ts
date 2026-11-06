@@ -61,7 +61,8 @@ describe('number field elements', () => {
     await userEvent.clear(input)
     await userEvent.type(input, '3{Enter}')
     await vi.waitFor(() => expect(input.value).toBe('3'))
-    expect(values).toEqual([6, 10, 9, 3])
+    // Clearing and typing update the value live (Base UI parity, #1720).
+    expect(values).toEqual([6, 10, 9, undefined, 3])
   })
 
   it('submits with its form and resets to its default', async () => {

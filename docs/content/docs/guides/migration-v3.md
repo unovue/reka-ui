@@ -142,7 +142,7 @@ Each family exports its reason union, for example `DialogOpenChangeReason` (`'tr
 
 The form-input families report these reasons:
 
-- `NumberFieldChangeReason`: `'increment-press' | 'decrement-press' | 'keyboard' | 'wheel' | 'blur'`. `keyboard` covers the arrow, Page and Home/End keys and Enter committing typed text; `blur` is typed text committed on blur. A held button repeats with `increment-press` / `decrement-press` and no event.
+- `NumberFieldChangeReason`: `'increment-press' | 'decrement-press' | 'keyboard' | 'wheel' | 'blur' | 'input-change' | 'input-clear'`. `keyboard` covers the arrow, Page and Home/End keys and Enter committing typed text; `blur` is typed text committed on blur; `input-change` / `input-clear` are live updates while typing (see [NumberField updates while typing](#numberfield-updates-while-typing)). A held button repeats with `increment-press` / `decrement-press` and no event.
 - `PinInputChangeReason`: `'input' | 'paste' | 'backspace-key' | 'delete-key'`. `input` also covers an IME commit and autofill.
 - `RatingChangeReason`: `'item-press'`, for a pointer or keyboard selection (both reach the rating as a click on the item) and for a clearable reset to `0`.
 - `SliderChangeReason`: `'track-press' | 'drag' | 'keyboard'`. On keyboard steps `valueCommit` still fires before `update:modelValue`; a step cancelled in `beforeUpdate:modelValue` emits no `valueCommit`.
@@ -970,3 +970,19 @@ Publishing a library or a copy-paste registry on top of Reka UI? You cannot load
 ## Select closes on Tab
 
 Pressing Tab in an open `SelectContent` now closes the select and moves focus to the next focusable element after `SelectTrigger`, as in Base UI. Shift+Tab closes it and focuses the trigger. v2 swallowed Tab, so focus stayed in the open list. In both cases the highlighted item is not selected, matching Base UI rather than the native `<select>` ([#1228](https://github.com/unovue/reka-ui/issues/1228)). `update:open` reports the new `'focus-outside'` reason, which `SelectOpenChangeReason` now includes.
+
+## NumberField updates while typing
+
+`NumberFieldRoot` now emits `update:modelValue` on each keystroke whose text parses to a new value, as Base UI's `onValueChange` does (#1720, #2103). v2 emitted only when the input was blurred or Enter was pressed. The emitted value is the one blur would commit: clamped to `min`/`max` unless `allowInvalid` is set, and snapped to `step` only when `stepSnapping` is on (the default). A keystroke that parses to the current value (`12.` after `12`) emits nothing. The typed text itself is left alone until blur, Enter or a step (arrow keys, wheel, buttons) formats it, so typing `1.` does not jump back to `1`. Emptying the input emits `undefined`. The new reasons are `'input-change'` and `'input-clear'`.
+
+For the old once-per-edit timing, listen to the new `valueCommit` event (Base UI's `onValueCommitted`). It fires on blur or Enter after typing, when a step button is released (once per press-and-hold), and together with `update:modelValue` for keyboard and wheel steps. A focus and blur without changes emits nothing.
+
+`valueCommit` reports only user edits, never a value the app sets itself, and fires once per press-and-hold where `update:modelValue` fires on every repeat. Keep a side effect on `update:modelValue` or a `watch` when it must run for programmatic changes or for each step of a held button.
+
+```vue
+<!-- v2: saved once per edit -->
+<NumberFieldRoot v-model="price" @update:model-value="save" />
+
+<!-- v3: same timing -->
+<NumberFieldRoot v-model="price" @value-commit="save" />
+```
