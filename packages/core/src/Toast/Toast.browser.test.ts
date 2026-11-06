@@ -46,4 +46,33 @@ describe('given a Toast, in a real browser', () => {
     await expect.poll(() => open.value).toBe(false)
     expect(document.activeElement).toBe(viewport)
   })
+
+  // A native radio group is one tab stop, so Tab leaves it for the next element.
+  it.each([null, 'b'])('tabs out of a radio group in a toast (checked: %s)', async (checked) => {
+    const Fixture = defineComponent({
+      setup() {
+        return () => h(ToastProvider, { duration: 60_000 }, () => [
+          h(ToastRoot, { open: true }, () => [
+            h(ToastTitle, () => 'Pick one'),
+            ...['a', 'b', 'c'].map(value => h('input', {
+              'type': 'radio',
+              'name': 'size',
+              value,
+              'checked': value === checked,
+              'aria-label': value,
+              'data-testid': value,
+            })),
+            h(ToastAction, { 'altText': 'Apply', 'data-testid': 'apply' }, () => 'Apply'),
+          ]),
+          h(ToastViewport),
+        ])
+      },
+    })
+    mount(Fixture, { attachTo: document.body })
+    await expect.poll(() => document.querySelector('[data-testid="a"]')).toBeTruthy()
+
+    document.querySelector<HTMLElement>('[data-testid="a"]')!.focus()
+    await userEvent.keyboard('{Tab}')
+    expect(document.activeElement).toBe(document.querySelector('[data-testid="apply"]'))
+  })
 })

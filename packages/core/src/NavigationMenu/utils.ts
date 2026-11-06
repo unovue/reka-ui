@@ -1,3 +1,4 @@
+import { keepRadioTabStops } from '@/FocusScope/utils'
 import { getActiveElement } from '@/shared'
 
 export type Orientation = 'vertical' | 'horizontal'
@@ -46,7 +47,7 @@ export function getTabbableCandidates(container: HTMLElement) {
   while (walker.nextNode()) nodes.push(walker.currentNode as HTMLElement)
   // we do not take into account the order of nodes with positive `tabIndex` as it
   // hinders accessibility to have tab order different from visual order.
-  return nodes
+  return keepRadioTabStops(nodes, container)
 }
 
 export function focusFirst(candidates: HTMLElement[]) {
