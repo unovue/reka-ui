@@ -31,11 +31,15 @@ import { useComboboxContentPositioning } from './useComboboxContentPositioning'
  * - `'item-press'`: an item was clicked, or Enter selected the highlighted item
  *   (Enter clicks it).
  * - `'clear-press'`: `ComboboxCancel` reset the value (`resetModelValueOnClear`).
+ * - `'input-clear'`: the user emptied the input of a single combobox, which
+ *   clears its value to `null` (Base UI).
+ * - `'escape-key'`: Escape in the input of a closed combobox cleared the value
+ *   (`null`, or `[]` when `multiple`) and the input text (Base UI).
  * - `'item-keydown'`, `'select-all'`, `'range-select'`: the Listbox selection
  *   gestures (Space on a focused item, Ctrl/Cmd+A and Shift+click or
  *   Shift+arrow in a `multiple` combobox).
  */
-export type ComboboxChangeReason = 'clear-press' | ListboxChangeReason
+export type ComboboxChangeReason = 'clear-press' | 'input-clear' | 'escape-key' | ListboxChangeReason
 
 /**
  * Why the text of `ComboboxInput` / `AutocompleteInput` changed; carried as
@@ -85,6 +89,11 @@ export type ComboboxContentState = { state: DisclosureState, empty: boolean }
 export type ComboboxItemState = ListboxItemState
 /** Semantic state of the root (`data-disabled`). */
 export type ComboboxState = ListboxState
+
+/** Whether a combobox value holds a selection, as Base UI reads it: anything but `null` (`''` included), or a non-empty array. */
+export function hasComboboxValue(value: unknown) {
+  return Array.isArray(value) ? value.length > 0 : value != null
+}
 
 /** Standalone `useComboboxRoot()` calls without a `baseId` draw `reka-combobox-<n>` from here. */
 let comboboxCount = 0
@@ -180,6 +189,8 @@ export interface ComboboxInputSurfaceOptions {
    * @defaultValue `false`
    */
   closeOnBlur?: boolean
+  /** Called for an unmodified Escape while the popup is closed (an open popup's Escape belongs to its dismissable layer). */
+  onClosedEscape?: (event: KeyboardEvent) => void
 }
 
 /**
@@ -244,6 +255,8 @@ export function createComboboxInputSurface(
     // Keys mid-composition belong to the IME (candidate navigation, commit).
     if (isComposing.value)
       return
+    if (options.onClosedEscape && event.key === 'Escape' && !context.open.value && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey)
+      return options.onClosedEscape(event)
     if (event.key === 'Enter') {
       // A `getNavigationIntent` override returning `null` opts Enter out too.
       if (context.getNavigationIntent(event) !== null)
@@ -323,7 +336,9 @@ export function createComboboxInputSurface(
 /**
  * The text a combobox input shows for its value after a selection: the input's
  * own `displayValue`, then the root's, then a single primitive value's string
- * form; empty for an object value without a resolver and for `multiple`.
+ * form; empty for `null` (the empty value), for an object value without a
+ * resolver and for `multiple`. As in Base UI, `''`, `0` and `false` are values:
+ * they go through the root's `displayValue`.
  */
 export function getComboboxInputText(
   context: ComboboxRootContext<any>,
@@ -332,7 +347,7 @@ export function getComboboxInputText(
   const value = context.modelValue.value
   if (displayValue)
     return displayValue(value)
-  if (context.multiple.value || !value || Array.isArray(value))
+  if (context.multiple.value || value == null || Array.isArray(value))
     return ''
   if (context.displayValue)
     return context.displayValue(value)
@@ -566,7 +581,7 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     setModelValue,
     selectItem: select,
     pressItem,
-    clearModelValue: event => setModelValue(listbox.context.multiple.value ? [] : props.emptyValue ?? null, 'clear-press', event),
+    clearModelValue: (event, reason = 'clear-press') => setModelValue(listbox.context.multiple.value ? [] : props.emptyValue ?? null, reason, event),
     ...positioning,
     isUserInputted,
     inputElement,

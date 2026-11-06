@@ -7,7 +7,7 @@ import type { ListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import type { ListboxFilterFunction, ListboxFilterState, ListboxNavigationIntent } from '@/Listbox/useListbox'
 import type { BaseChangeReason, By, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue } from '@/shared/types'
-import { createContext, mergeExpose, useDirection, useFormControl, useForwardElement, useId } from '@/shared'
+import { compare, createContext, mergeExpose, useDirection, useFormControl, useForwardElement, useId } from '@/shared'
 
 /**
  * The Combobox root context. It extends the Listbox root context (#2824, the
@@ -30,8 +30,8 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
    * Returns `false` when it was.
    */
   pressItem: (value: T, event?: Event) => boolean
-  /** Resets the value (`[]` when multiple) with `'clear-press'`. */
-  clearModelValue: (event?: Event) => boolean
+  /** Resets the value (`[]` when multiple) with `'clear-press'`, or the given reason. */
+  clearModelValue: (event?: Event, reason?: ComboboxChangeReason) => boolean
   onContentPositionChange: (content: symbol, position: 'inline' | 'popper') => void
   onContentPlaced: (content: symbol) => void
   onContentUnmount: (content: symbol) => void
@@ -172,7 +172,7 @@ import { provideListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
-import { useComboboxRoot } from './useCombobox'
+import { hasComboboxValue, useComboboxRoot } from './useCombobox'
 import { provideComboboxField } from './useComboboxField'
 
 defineOptions({ inheritAttrs: false })
@@ -203,6 +203,12 @@ const { forwardRef, currentElement, expose } = useForwardElement()
 const dir = useDirection(toRef(() => props.dir))
 const isFormControl = useFormControl(currentElement)
 
+function isSameValue(a: any, b: any): boolean {
+  return Array.isArray(a) && Array.isArray(b)
+    ? a.length === b.length && a.every((value, index) => isSameValue(value, b[index]))
+    : compare(a, b, props.by as By<any>)
+}
+
 // Optional Field participation: `null` outside a `FieldRoot`, so every
 // binding below is inert without a Field. The root owns the value; the input
 // (Base UI parity) carries the field's id, label and aria wiring.
@@ -217,6 +223,12 @@ const field = useFieldControl({
   // The selected value(s), not the typed text.
   getValue: () => modelValue.value,
   required: () => props.required,
+  // Base UI: a single value is filled unless `null` (`''` included), but `''`
+  // submits nothing, so `required` still reports it missing.
+  isFilled: hasComboboxValue,
+  isMissing: value => !hasComboboxValue(value) || value === '',
+  // Base UI's `isSelectedValueDirty`: `null` and `''` differ (an unset value is `null`).
+  isDirty: (value, initial) => !isSameValue(value ?? null, initial ?? null),
 })
 // Getters rather than computeds: cheap, and free for a standalone combobox.
 const resolvedDisabled = field ? () => field.disabled(props.disabled) : () => props.disabled
@@ -286,12 +298,13 @@ provideComboboxField(field, context)
         :model-value="modelValue"
       />
 
+      <!-- Base UI: a multiple combobox with any selection (`['']` included) is not missing a value. -->
       <VisuallyHiddenInput
         v-if="isFormControl && (field ? field.name(name) : name)"
         :name="(field ? field.name(name) : name)!"
         :value="modelValue"
         :disabled="resolvedDisabled()"
-        :required="field ? field.required(required) : required"
+        :required="(field ? field.required(required) : required) && !(multiple && hasComboboxValue(modelValue))"
       />
     </component>
   </PopperRoot>
