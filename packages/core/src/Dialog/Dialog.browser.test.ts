@@ -146,3 +146,37 @@ describe('given a Dialog opened programmatically, in a real browser', () => {
     wrapper.unmount()
   })
 })
+
+describe('given a Dialog whose update:open handler moves focus, in a real browser', () => {
+  it('returns focus to the element focused before the open, not the one the handler focused', async () => {
+    const Fixture = defineComponent({
+      setup() {
+        return () => h('div', [
+          h('input', { 'data-testid': 'elsewhere' }),
+          h(DialogRoot, {
+            'onUpdate:open': (value: boolean) => {
+              if (value)
+                document.querySelector<HTMLElement>('[data-testid="elsewhere"]')?.focus()
+            },
+          }, () => [
+            h(DialogTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
+            h(DialogPortal, null, () => h(DialogContent, { 'aria-describedby': undefined, 'data-testid': 'content' }, () => [
+              h(DialogTitle, null, () => 'Title'),
+              h(DialogClose, { 'data-testid': 'close' }, () => 'Close'),
+            ])),
+          ]),
+        ])
+      },
+    })
+    const wrapper = mount(Fixture, { attachTo: document.body })
+    const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
+
+    get('trigger')!.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => document.activeElement?.getAttribute('data-testid')).toBe('close')
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => get('content')).toBeNull()
+    await expect.poll(() => document.activeElement?.getAttribute('data-testid')).toBe('trigger')
+    wrapper.unmount()
+  })
+})

@@ -44,7 +44,7 @@ import { renderAs } from '@/Primitive/renderAs'
 import { splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
 import { injectDialogRootContext } from './DialogRoot.vue'
 import { getDialogContentSurface } from './useDialog'
-import { recordFocusBeforeOpen, useWarning } from './utils'
+import { endFocusRecord, recordFocusBeforeOpen, useWarning } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -111,6 +111,8 @@ watch(() => rootContext.open.value, (open) => {
   // `typeof document`: the immediate run also happens during SSR.
   if (open && typeof document !== 'undefined')
     recordFocusBeforeOpen(rootContext, getActiveElement(), contentElement.value)
+  else if (!open)
+    endFocusRecord(rootContext)
 }, { immediate: true, flush: 'sync' })
 
 if (process.env.NODE_ENV !== 'production') {

@@ -49,14 +49,26 @@ For more information, see https://www.reka-ui.com/docs/components/${componentLin
  * The element that had focus when each dialog opened, keyed by its root
  * context (kept out of the frozen `DialogRootContext` shape).
  */
-const focusedBeforeOpen = new WeakMap<object, HTMLElement>()
+const focusedBeforeOpen = new WeakMap<object, HTMLElement | null>()
+// Roots whose current open was recorded at the transition (before `update:open` ran).
+const recordedAtOpen = new WeakSet<object>()
 
-/** Records the element focused as the dialog opens (not `<body>`, not inside the content). @internal */
-export function recordFocusBeforeOpen(rootContext: object, active: Element | null, content?: HTMLElement) {
-  if (active && active !== active.ownerDocument.body && !content?.contains(active))
-    focusedBeforeOpen.set(rootContext, active as HTMLElement)
-  else
-    focusedBeforeOpen.delete(rootContext)
+/**
+ * Records the element focused as the dialog opens (not `<body>`, not inside
+ * the content). `atTransition` comes from the root's state setter, before the
+ * open is emitted; the content's own record for that open is then skipped. @internal
+ */
+export function recordFocusBeforeOpen(rootContext: object, active: Element | null, content?: HTMLElement, atTransition?: boolean) {
+  if (!atTransition && recordedAtOpen.delete(rootContext))
+    return
+  if (atTransition)
+    recordedAtOpen.add(rootContext)
+  focusedBeforeOpen.set(rootContext, active && active !== active.ownerDocument.body && !content?.contains(active) ? active as HTMLElement : null)
+}
+
+/** The open cycle ended: a later parent-driven open records afresh. @internal */
+export function endFocusRecord(rootContext: object) {
+  recordedAtOpen.delete(rootContext)
 }
 
 /**
