@@ -17,7 +17,7 @@ export interface TabsTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { mergeProps, onScopeDispose } from 'vue'
+import { mergeProps, onActivated, onDeactivated, onScopeDispose } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { injectTabsRootContext } from './TabsRoot.vue'
@@ -43,6 +43,9 @@ useTabsPartId(rootContext.customTriggerIds, () => props.value, () => props.id)
 const entry = { element: currentElement, props }
 rootContext.triggers?.add(entry)
 onScopeDispose(() => rootContext.triggers?.delete(entry))
+// A trigger cached by `KeepAlive` is out of the document while deactivated.
+onDeactivated(() => rootContext.triggers?.delete(entry))
+onActivated(() => rootContext.triggers?.add(entry))
 
 // id/aria/data-state + the mousedown/keydown/focus handlers all come from the
 // shared surface builder (single source with `useTabs()`); the roving item

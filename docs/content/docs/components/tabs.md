@@ -232,7 +232,7 @@ const tab = computed({
 
 ### Default selection
 
-Without a `defaultValue` (or a `v-model` that is `undefined`), `TabsRoot` selects the first enabled tab in document order, as Base UI does. It also moves to the first enabled tab when the selected one is removed or becomes disabled. These automatic selections emit `update:modelValue` with the reason `'initial'` (the first selection when there is no `defaultValue`), `'missing'` or `'disabled'`. A `defaultValue` that points at a disabled tab is kept until that tab has been enabled once. A controlled `v-model` keeps the value its parent gives, and `null` selects no tab:
+Without a `defaultValue` (or a `v-model` that is `undefined`), `TabsRoot` selects the first enabled tab in document order, as Base UI does. It also moves to the first enabled tab when the selected one is removed or becomes disabled. These automatic selections emit `update:modelValue` with the reason `'initial'` (the first selection when there is no `defaultValue`), `'missing'` or `'disabled'`. A `defaultValue` that points at a disabled tab is kept until that tab is enabled while selected. A controlled `v-model` keeps the value its parent gives, and `null` selects no tab:
 
 ```vue
 <template>

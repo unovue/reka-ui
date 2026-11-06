@@ -3,7 +3,7 @@
 // is removed or disabled. A controlled root keeps its value; `null` selects none.
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, KeepAlive, nextTick, ref } from 'vue'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '.'
 
 interface Tab { value: string, disabled?: boolean }
@@ -143,5 +143,40 @@ describe('given controlled Tabs', () => {
     await nextTick()
     expect(current.selected()).toBeNull()
     expect(current.emitted()).toHaveLength(0)
+  })
+})
+
+describe('given uncontrolled Tabs with a trigger in a KeepAlive branch', () => {
+  it('skips the trigger while it is deactivated and counts it again once active', async () => {
+    const showCached = ref(true)
+    const tabs = ref(['selected'])
+    const Cached = defineComponent({ name: 'Cached', setup: () => () => h(TabsTrigger, { value: 'cached' }, () => 'cached') })
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(TabsRoot, { defaultValue: 'selected' }, () => h(TabsList, () => [
+        h(KeepAlive, null, [showCached.value ? h(Cached) : null]),
+        ...tabs.value.map(value => h(TabsTrigger, { key: value, value }, () => value)),
+      ])),
+    }), { attachTo: document.body })
+    const root = wrapper.findComponent(TabsRoot)
+    const selected = () => wrapper.find('[role=tab][aria-selected=true]').exists() ? wrapper.find('[role=tab][aria-selected=true]').text() : null
+    await nextTick()
+    expect(selected()).toBe('selected')
+
+    showCached.value = false
+    await nextTick()
+    tabs.value = []
+    await nextTick()
+    await nextTick()
+    // The cached trigger is out of the document: it is no fallback.
+    expect(wrapper.findAll('[role=tab]')).toHaveLength(0)
+    expect(root.emitted('update:modelValue')).toBeUndefined()
+
+    // Active again, it is a fallback candidate again.
+    showCached.value = true
+    await nextTick()
+    await nextTick()
+    expect(selected()).toBe('cached')
+    expect(root.emitted('update:modelValue')?.at(-1)?.[0]).toBe('cached')
+    wrapper.unmount()
   })
 })

@@ -297,7 +297,8 @@ function precedes(a: HTMLElement, b: HTMLElement) {
  * Base UI's automatic selection for an uncontrolled root: with no tab selected
  * (no `defaultValue`), or with the selected tab removed or disabled, select the
  * first enabled trigger in document order. An explicit `defaultValue` pointing
- * at a disabled tab is honoured until that tab has been selectable once; `null`
+ * at a disabled tab is honoured until it is selected while enabled (Base UI
+ * clears the exemption from the selection, not from the trigger); `null`
  * selects nothing. A controlled root keeps the value its parent gives.
  *
  * @lifecycle setup
