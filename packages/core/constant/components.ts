@@ -65,6 +65,17 @@ export const components = {
     'CalendarViewTrigger',
   ] as const,
 
+  carousel: [
+    'CarouselRoot',
+    'CarouselViewport',
+    'CarouselContent',
+    'CarouselItem',
+    'CarouselPrevious',
+    'CarouselNext',
+    'CarouselIndicator',
+    'CarouselAutoplayToggle',
+  ] as const,
+
   checkbox: [
     'CheckboxGroupRoot',
     'CheckboxRoot',

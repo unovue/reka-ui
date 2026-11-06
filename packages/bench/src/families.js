@@ -112,6 +112,7 @@ export const FAMILIES = {
   Autocomplete: { n: 300, ...overlay(i => press($('.trg', i)), '[role="listbox"]') },
   Avatar: { n: 1000 },
   Calendar: { n: 30, act: i => press($('.cal-next', i)) },
+  Carousel: { n: 200, act: i => press($('.next', i)), done: i => $('[data-index="1"]', i)?.hasAttribute('data-active') },
   Checkbox: { n: 1000, act: i => press($('button', i)) },
   CheckboxGroup: { n: 300, act: i => press($('button', i)) },
   Collapsible: { n: 1000, act: i => press($('button', i)) },
