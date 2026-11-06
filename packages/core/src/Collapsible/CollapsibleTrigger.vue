@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardExpose, useId } from '@/shared'
 
 export interface CollapsibleTriggerProps extends PrimitiveProps {}
 </script>
@@ -15,6 +15,7 @@ const props = withDefaults(defineProps<CollapsibleTriggerProps>(), {
 
 useForwardExpose()
 const rootContext = injectCollapsibleRootContext()
+rootContext.contentId ||= useId(undefined, 'reka-collapsible-content')
 </script>
 
 <template>
