@@ -3,9 +3,10 @@ import type { DialogOpenChangeReason, DialogRootContext } from './DialogRoot.vue
 import type { DialogHandle } from './handle'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import type { PopupRootStore } from '@/shared/popupHandle'
-import { computed, ref, toValue } from 'vue'
-import { createPartSurface, disclosureState, setGeneratedIds, useControllableState } from '@/shared'
+import { computed, nextTick, ref, toValue } from 'vue'
+import { createPartSurface, disclosureState, getActiveElement, setGeneratedIds, useControllableState } from '@/shared'
 import { createPopupRootStore, setPopupRootStore } from '@/shared/popupHandle'
+import { endFocusRecord, recordFocusBeforeOpen } from './utils'
 
 // =============================================================================
 // Headless composable for the Dialog (overlay) family — issue #2723.
@@ -211,7 +212,7 @@ export function useDialog<Payload = unknown>(props: UseDialogProps<Payload> = {}
 
   // Every open/close path (trigger, close button, dismiss) goes through one
   // `setState` so `beforeUpdate:open` can cancel it and the details reach the consumer.
-  const { state: open, setState, lastChangeDetails, isControlled } = useControllableState<boolean, DialogOpenChangeReason>({
+  const { state: open, setState: setOpenState, lastChangeDetails, isControlled } = useControllableState<boolean, DialogOpenChangeReason>({
     prop: props.open,
     defaultValue: props.defaultOpen ?? false,
     name: 'open',
@@ -275,6 +276,27 @@ export function useDialog<Payload = unknown>(props: UseDialogProps<Payload> = {}
     get descriptionId() { return descriptionId.value },
     set descriptionId(value) { descriptionId.value = value },
     notifyOpenComplete: value => props.onOpenComplete?.(value),
+  }
+  // An open through here records where focus is before `update:open` handlers
+  // run (they may move it); a parent-driven open is recorded by the content.
+  function setState(...args: Parameters<typeof setOpenState>): boolean {
+    const opening = args[0] && !open.value && typeof document !== 'undefined'
+    if (opening) {
+      // A trigger press returns to the pressed trigger, even when it never
+      // took focus (a scripted `click()`); a detached trigger is the press's
+      // `currentTarget`.
+      const pressed = args[1] === 'trigger-press' ? args[2]?.currentTarget as HTMLElement | null | undefined : undefined
+      recordFocusBeforeOpen(context, pressed?.nodeType === 1 ? pressed : getActiveElement(), context.contentElement.value, true)
+    }
+    const applied = setOpenState(...args)
+    // A cancelled open leaves no record for the content to skip. So does an
+    // open a controlled parent has not committed by the next tick (its prop
+    // lands on that render): a later open is recorded by the content.
+    if (opening && !applied)
+      endFocusRecord(context)
+    else if (opening && !open.value)
+      nextTick(() => !open.value && endFocusRecord(context))
+    return applied
   }
   setGeneratedIds(context, { contentId: contentId.value, titleId: titleId.value, descriptionId: descriptionId.value })
   setPopupRootStore(context, handleStore)
