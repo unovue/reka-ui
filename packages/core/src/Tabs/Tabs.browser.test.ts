@@ -86,6 +86,35 @@ describe('given Tabs with the default (manual) activation, in a real browser', (
   })
 })
 
+describe('given Tabs whose changes are cancelled, in a real browser', () => {
+  it.each(['{Enter}', ' '])('asks once for %j: its keyboard click does not repeat the keydown', async (key) => {
+    document.body.innerHTML = ''
+    let calls = 0
+    mount(defineComponent({
+      setup: () => () => h(TabsRoot, {
+        'defaultValue': 'one',
+        'onBeforeUpdate:modelValue': (_value: unknown, details: { cancel: () => void }) => {
+          calls++
+          details.cancel()
+        },
+      }, () => h(TabsList, () => [
+        h(TabsTrigger, { 'value': 'one', 'data-testid': 'one' }, () => 'One'),
+        h(TabsTrigger, { 'value': 'two', 'data-testid': 'two' }, () => 'Two'),
+      ])),
+    }), { attachTo: document.body })
+    const two = document.querySelector<HTMLElement>('[data-testid="two"]')!
+    two.focus()
+
+    await userEvent.keyboard(key)
+    await new Promise(resolve => setTimeout(resolve, 20))
+    expect(calls).toBe(1)
+
+    // A later programmatic click is a new attempt.
+    two.click()
+    expect(calls).toBe(2)
+  })
+})
+
 describe('given Tabs with automatic activation, in a real browser', () => {
   it('activates a tab on press, before it is released', async () => {
     const get = mountTabs('automatic')

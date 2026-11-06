@@ -54,11 +54,11 @@ onMounted(() => {
 
 // Base UI: the trigger's `aria-controls` names the panel only while the panel
 // element is in the DOM, which with `unmountOnHide` is only while it is shown.
-watch(currentElement, (element) => {
+// A `value` change moves the registration to the new value.
+watch([currentElement, () => props.value], ([element, value], [, previous]) => {
+  rootContext.unregisterContent(previous)
   if (element)
-    rootContext.registerContent(props.value)
-  else
-    rootContext.unregisterContent(props.value)
+    rootContext.registerContent(value)
 })
 
 onBeforeUnmount(() => {

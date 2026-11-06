@@ -190,6 +190,27 @@ describe('activation (Base UI defaults, #842)', () => {
     wrapper.unmount()
   })
 
+  it('a click after a keydown that no keyboard click followed is a new attempt', async () => {
+    vi.useFakeTimers()
+    try {
+      const onBeforeUpdate = vi.fn((_value: unknown, details: { cancel: () => void }) => details.cancel())
+      const wrapper = mountTabs({ 'onBeforeUpdate:modelValue': onBeforeUpdate })
+      const t2 = wrapper.findAll('[role="tab"]')[1]
+      await t2.trigger('keydown', { key: 'Enter' })
+      await t2.trigger('keyup', { key: 'Enter' })
+      vi.runAllTimers()
+      expect(onBeforeUpdate).toHaveBeenCalledTimes(1)
+
+      await click(t2, 0)
+      expect(onBeforeUpdate).toHaveBeenCalledTimes(2)
+      expect(onBeforeUpdate.mock.calls[1][1]).toMatchObject({ reason: 'trigger-press' })
+      wrapper.unmount()
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('does not select a disabled tab on click', async () => {
     const wrapper = mount(TabsRoot, {
       props: { defaultValue: 'tab1' },
@@ -264,6 +285,28 @@ describe('content mounting (Base UI defaults, #2476)', () => {
     const [t1, t2] = wrapper.findAll('[role="tab"]')
     expect(t1.attributes('aria-controls')).toBe(p1.attributes('id'))
     expect(t2.attributes('aria-controls')).toBe(p2.attributes('id'))
+    wrapper.unmount()
+  })
+
+  it('moves aria-controls along when a rendered panel changes `value`', async () => {
+    const panelValue = ref('tab1')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(TabsRoot, { defaultValue: 'tab1', unmountOnHide: false }, () => [
+        h(TabsList, () => [
+          h(TabsTrigger, { value: 'tab1' }, () => 'Tab 1'),
+          h(TabsTrigger, { value: 'tab2' }, () => 'Tab 2'),
+        ]),
+        h(TabsContent, { value: panelValue.value }, () => 'Content'),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    const [t1, t2] = wrapper.findAll('[role="tab"]')
+    expect(t1.attributes('aria-controls')).toBe(wrapper.find('[role="tabpanel"]').attributes('id'))
+
+    panelValue.value = 'tab2'
+    await flushPromises()
+    expect(t1.attributes('aria-controls')).toBeUndefined()
+    expect(t2.attributes('aria-controls')).toBe(wrapper.find('[role="tabpanel"]').attributes('id'))
     wrapper.unmount()
   })
 

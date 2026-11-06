@@ -109,6 +109,13 @@ export function getTabsTriggerSurface(
       context.changeModelValue(toValue(value), 'trigger-keydown', event)
     }
   }
+  // The keyboard click comes during the keydown (Enter) or keyup (Space)
+  // default action. When none follows (a prevented default, a non-button
+  // trigger), the flag must not swallow a later `element.click()`.
+  const onKeyup = () => {
+    if (keyActivated)
+      setTimeout(() => keyActivated = false)
+  }
   // Automatic activation follows focus; manual mode needs a click/key.
   const onFocus = (event?: FocusEvent) => {
     if (!isSelected() && !isDisabled() && isAutomatic())
@@ -127,6 +134,7 @@ export function getTabsTriggerSurface(
         'onMousedown': onMousedown,
         'onClick': onClick,
         'onKeydown': onKeydown,
+        'onKeyup': onKeyup,
         'onFocus': onFocus,
       }
     },
