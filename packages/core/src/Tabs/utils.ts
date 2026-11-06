@@ -1,6 +1,22 @@
 import type { MaybeRefOrGetter, Ref } from 'vue'
 import type { StringOrNumber } from '@/shared/types'
-import { onScopeDispose, toValue, watch } from 'vue'
+import { getCurrentInstance, onScopeDispose, toValue, watch } from 'vue'
+
+/**
+ * Whether the current component renders inside a `KeepAlive`, so that it can
+ * be deactivated (Vue walks the same parent chain for `onDeactivated`).
+ *
+ * @lifecycle setup
+ */
+export function isInsideKeepAlive(): boolean {
+  let parent = getCurrentInstance()?.parent
+  while (parent) {
+    if ((parent.type as { __isKeepAlive?: boolean }).__isKeepAlive)
+      return true
+    parent = parent.parent
+  }
+  return false
+}
 
 export function makeTriggerId(baseId: string, value: StringOrNumber) {
   return `${baseId}-trigger-${value}`
