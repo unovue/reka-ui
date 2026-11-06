@@ -2,6 +2,7 @@ import type { MaybeElement } from '@vueuse/core'
 import type { ComponentPublicInstance } from 'vue'
 // reference: https://github.com/vuejs/rfcs/issues/258#issuecomment-1068697672
 import { unrefElement } from '@vueuse/core'
+import { isClient } from '@vueuse/shared'
 import { computed, getCurrentInstance, onUpdated, ref, triggerRef } from 'vue'
 
 export function useForwardExpose<T extends ComponentPublicInstance>() {
@@ -26,6 +27,16 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
       && ['#text', '#comment'].includes(currentRef.value.$el.nodeName)
       ? currentRef.value.$el.nextElementSibling as HTMLElement
       : unrefElement(currentRef as unknown as MaybeElement) as HTMLElement
+  }
+
+  // Template refs are never set during SSR, so nothing reads `exposed` there.
+  // Skip building it to save a getter per prop on every instance.
+  if (!isClient) {
+    return {
+      forwardRef: (ref: Element | T | null) => { currentRef.value = ref },
+      currentRef,
+      currentElement,
+    }
   }
 
   // Do give us credit if you reference our code :D
