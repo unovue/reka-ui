@@ -130,12 +130,9 @@ function releasePause(viewport: HTMLElement | undefined) {
   }
 }
 
-// A pause left over once the resume listeners are gone would keep later toasts from
-// ever starting their timers. A blur pause is kept until the window gets focus back.
-useEventListener('focus', () => {
-  if (!hasToasts.value)
-    releasePause(viewportElement.value)
-})
+// Releases a blur pause, including one left over after the last toast closed, which would
+// otherwise keep later toasts from ever starting their timers.
+useEventListener('focus', () => releasePause(viewportElement.value))
 
 watchEffect((cleanupFn) => {
   const viewport = viewportElement.value
@@ -218,7 +215,6 @@ watchEffect((cleanupFn) => {
     viewport.addEventListener('pointerleave', handlePointerLeaveResume)
     viewport.addEventListener('keydown', handleKeyDown)
     window.addEventListener('blur', handlePause)
-    window.addEventListener('focus', handleResume)
 
     cleanupFn(() => {
       viewport.removeEventListener('focusin', handlePause)
@@ -229,7 +225,6 @@ watchEffect((cleanupFn) => {
       viewport.removeEventListener('pointerleave', handlePointerLeaveResume)
       viewport.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('blur', handlePause)
-      window.removeEventListener('focus', handleResume)
       if (document.hasFocus())
         releasePause(viewport)
     })
