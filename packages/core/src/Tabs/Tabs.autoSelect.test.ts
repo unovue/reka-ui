@@ -1,4 +1,4 @@
-// #2328: as Base UI's Tabs, an uncontrolled root selects the first enabled tab
+// #2328: an uncontrolled root selects the first enabled tab
 // when there is no `defaultValue`, and falls back to it when the selected tab
 // is removed or disabled. A controlled root keeps its value; `null` selects none.
 import { flushPromises, mount } from '@vue/test-utils'
