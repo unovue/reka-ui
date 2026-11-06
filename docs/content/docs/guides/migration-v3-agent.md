@@ -959,7 +959,7 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 ### 33. NumberField updates while typing
 
 **What changed.**
-- `NumberFieldRoot` emits `update:modelValue` (and `beforeUpdate:modelValue`) on each keystroke whose text parses to a value different from the current one, with `details.reason` `'input-change'`, and `undefined` with `'input-clear'` when the input is emptied. v2 emitted only on blur or Enter. The value is the one blur would commit (clamped and snapped unless `allowInvalid`); the displayed text is formatted on blur, Enter, or a step (arrow keys, wheel, buttons).
+- `NumberFieldRoot` emits `update:modelValue` (and `beforeUpdate:modelValue`) on each keystroke whose text parses to a value different from the current one, with `details.reason` `'input-change'`, and `undefined` with `'input-clear'` when the input is emptied. v2 emitted only on blur or Enter. The value is the one blur would commit: clamped to `min`/`max` unless `allowInvalid`, and snapped to `step` only when `stepSnapping` is on (the default); the displayed text is formatted on blur, Enter, or a step (arrow keys, wheel, buttons).
 - New `valueCommit(value)` event: blur or Enter after typing, release of an increment/decrement press (once per hold), and together with `update:modelValue` for keyboard and wheel steps. `useNumberField()` takes `onValueCommit` and returns `commitValue()`.
 - `NumberFieldChangeReason` gains `'input-change' | 'input-clear'`.
 
@@ -971,6 +971,8 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 **Rewrite rules.**
 - A listener that only mirrors the value into state: leave unchanged.
 - A listener with a side effect that should run once per edit: move it to `@value-commit`. If unsure, *ask*.
+- `valueCommit` reports only user edits. A `watch` whose side effect must also run when the app sets the value itself: keep that path (keep the watcher, or run the side effect where the app assigns the value). If unsure, *ask*.
+- A side effect that must run on each step of a held increment/decrement button: keep it on `update:modelValue`, which fires on every repeat; `valueCommit` fires once on release.
 - Exhaustive switches over `NumberFieldChangeReason`: add the two new reasons.
 - Tests: expect one `update:modelValue` per keystroke that changes the parsed value (none for `12.` after `12`), or assert on `valueCommit` instead.
 

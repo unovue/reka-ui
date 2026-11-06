@@ -82,7 +82,7 @@ export interface UseNumberFieldReturn {
   increment: (multiplier?: number, reason?: Reason, event?: Event) => void
   /** One step down (or `multiplier` steps), clamped and snapped like a decrement press. */
   decrement: (multiplier?: number, reason?: Reason, event?: Event) => void
-  /** Parses typed text and commits it (clamped/snapped unless `allowInvalid`). Returns `false` when cancelled or unchanged. */
+  /** Parses typed text and commits it (clamped unless `allowInvalid`, snapped when `stepSnapping`). Returns `false` when cancelled or unchanged. */
   applyInputValue: (value: string, reason?: Reason, event?: Event) => boolean
   /** Emits `valueCommit` when a change has not been committed yet (e.g. after a button press is released). */
   commitValue: (force?: boolean) => void
@@ -311,7 +311,7 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
       inputEl.value.value = val
   }
 
-  // The value typed text commits to: clamped/snapped unless `allowInvalid`, `NaN` when it does not parse.
+  // The value typed text commits to: clamped unless `allowInvalid`, snapped when `stepSnapping`, `NaN` when it does not parse.
   function parseInputValue(val: string) {
     const parsedValue = numberParser.parse(val)
     if (isNaN(parsedValue))
