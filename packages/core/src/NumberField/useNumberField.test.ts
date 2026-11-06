@@ -480,3 +480,42 @@ describe('numberFieldRoot — live value while typing (Base UI parity, #1720)', 
     expect(onCommit).toHaveBeenCalledWith(1)
   })
 })
+
+describe('numberFieldRoot — valueCommit value', () => {
+  it('commits the applied step value of a controlled field, not the stale prop', async () => {
+    const model = ref<number | undefined>(5)
+    const onCommit = vi.fn()
+    const { getByTestId } = render(defineComponent({
+      setup() {
+        return () => h(NumberFieldRoot, {
+          'modelValue': model.value,
+          'onUpdate:modelValue': (v: number | undefined) => { model.value = v },
+          'onValueCommit': onCommit,
+        }, () => h(Reka.NumberFieldInput, { 'data-testid': 'input' }))
+      },
+    }))
+    const input = getByTestId('input') as HTMLInputElement
+    await fireEvent.keyDown(input, { key: 'ArrowUp' })
+    expect(model.value).toBe(6)
+    expect(onCommit).toHaveBeenCalledTimes(1)
+    expect(onCommit).toHaveBeenCalledWith(6)
+  })
+
+  it('a step that lands on the live value still commits the pending typed change', async () => {
+    const onCommit = vi.fn()
+    const { getByTestId } = render(defineComponent({
+      setup() {
+        return () => h(NumberFieldRoot, { defaultValue: 0, step: 2, onValueCommit: onCommit }, () => h(Reka.NumberFieldInput, { 'data-testid': 'input' }))
+      },
+    }))
+    const input = getByTestId('input') as HTMLInputElement
+    // "7" snaps to 8 live; ArrowUp from 7 lands on 8 too.
+    await fireEvent.update(input, '7')
+    expect(onCommit).not.toHaveBeenCalled()
+    await fireEvent.keyDown(input, { key: 'ArrowUp' })
+    await nextTick()
+    expect(input.value).toBe('8')
+    expect(onCommit).toHaveBeenCalledTimes(1)
+    expect(onCommit).toHaveBeenCalledWith(8)
+  })
+})

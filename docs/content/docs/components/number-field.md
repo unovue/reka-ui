@@ -204,7 +204,7 @@ The starting value is clamped to `min` and `max`, but it is not snapped to `step
 
 ### Committed value
 
-`update:modelValue` fires on every keystroke that parses as a number, with the value blur would commit (clamped and snapped). The typed text is formatted only on blur or Enter. To react once per edit, for example to save, listen to `valueCommit`: it fires on blur or Enter after typing, when an increment or decrement press is released, and with each keyboard or wheel step.
+`update:modelValue` fires on each keystroke whose text parses to a value different from the current one (typing `12.` after `12` emits nothing), with the value blur would commit (clamped and snapped). The typed text is formatted on blur, on Enter, or when a step (arrow keys, wheel, buttons) replaces it: typing `3.` and pressing Arrow Up shows `4`. To react once per edit, for example to save, listen to `valueCommit`: it fires on blur or Enter after typing, when an increment or decrement press is released, and with each keyboard or wheel step.
 
 ```vue line=4
 <template>

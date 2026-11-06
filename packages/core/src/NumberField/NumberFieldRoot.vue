@@ -46,7 +46,7 @@ export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
 export type NumberFieldRootEmits = {
   'beforeUpdate:modelValue': [val: number | undefined, details: ChangeEventDetails<NumberFieldChangeReason>]
   'update:modelValue': [val: number | undefined, details: ChangeEventDetails<NumberFieldChangeReason>]
-  /** Emitted when the user finishes a change: on blur or Enter after typing, when a held step button is released, and together with `update:modelValue` for keyboard and wheel steps. `update:modelValue` fires on every parseable keystroke. */
+  /** Emitted when the user finishes a change: on blur or Enter after typing, when a held step button is released, and together with `update:modelValue` for keyboard and wheel steps. `update:modelValue` fires on each keystroke whose parsed value differs from the current one. */
   'valueCommit': [val: number | undefined]
 }
 

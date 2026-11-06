@@ -145,29 +145,36 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
 
   // A change that has not been reported through `valueCommit` yet (Base UI's pending commit).
   let pendingCommit = false
+  // The value of the last applied change. A controlled model only reflects it after the parent
+  // re-renders, so a commit in the same tick reports this one (Base UI's `lastChangedValueRef`).
+  let lastChangedValue: number | undefined
   // The input holds text the user typed and has not committed yet. While set, model updates
   // don't overwrite the typed text (typing "1." would otherwise reformat to "1").
   const isEditing = ref(false)
 
   function change(value: number | undefined, reason: Reason, event?: Event) {
     const applied = setState(value, reason, event)
-    if (applied)
+    if (applied) {
       pendingCommit = true
+      lastChangedValue = value
+    }
     return applied
   }
 
   function commitValue(force = false) {
     if (!force && !pendingCommit)
       return
+    const value = pendingCommit ? lastChangedValue : modelValue.value
     pendingCommit = false
-    props.emit?.('valueCommit', modelValue.value)
-    props.onValueCommit?.(modelValue.value)
+    props.emit?.('valueCommit', value)
+    props.onValueCommit?.(value)
   }
 
-  // Keyboard and wheel steps are discrete, final changes: they commit right away.
+  // Keyboard and wheel steps are discrete, final changes: they commit right away, together with
+  // any typed change still pending when the step itself lands on the same value.
   function changeAndCommitStep(value: number | undefined, reason: Reason, event?: Event) {
     const applied = change(value, reason, event)
-    if (applied && (reason === 'keyboard' || reason === 'wheel'))
+    if (reason === 'keyboard' || reason === 'wheel')
       commitValue()
     return applied
   }

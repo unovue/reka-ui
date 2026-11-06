@@ -952,7 +952,7 @@ Publishing a library or a copy-paste registry on top of Reka UI? You cannot load
 
 ## NumberField updates while typing
 
-`NumberFieldRoot` now emits `update:modelValue` on every keystroke that parses as a number, as Base UI's `onValueChange` does (#1720, #2103). v2 emitted only when the input was blurred or Enter was pressed. The emitted value is the one blur would commit: clamped to `min`/`max` and snapped to `step` unless `allowInvalid` is set. The typed text itself is left alone until blur or Enter formats it, so typing `1.` does not jump back to `1`. Emptying the input emits `undefined`. The new reasons are `'input-change'` and `'input-clear'`.
+`NumberFieldRoot` now emits `update:modelValue` on each keystroke whose text parses to a new value, as Base UI's `onValueChange` does (#1720, #2103). v2 emitted only when the input was blurred or Enter was pressed. The emitted value is the one blur would commit: clamped to `min`/`max` and snapped to `step` unless `allowInvalid` is set. A keystroke that parses to the current value (`12.` after `12`) emits nothing. The typed text itself is left alone until blur, Enter or a step (arrow keys, wheel, buttons) formats it, so typing `1.` does not jump back to `1`. Emptying the input emits `undefined`. The new reasons are `'input-change'` and `'input-clear'`.
 
 For the old once-per-edit timing, listen to the new `valueCommit` event (Base UI's `onValueCommitted`). It fires on blur or Enter after typing, when a step button is released (once per press-and-hold), and together with `update:modelValue` for keyboard and wheel steps. A focus and blur without changes emits nothing.
 

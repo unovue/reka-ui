@@ -141,7 +141,7 @@
   },
   {
     'name': 'valueCommit',
-    'description': '<p>Emitted when the user finishes a change: on blur or Enter after typing, when a held step button is released, and together with <code>update:modelValue</code> for keyboard and wheel steps. <code>update:modelValue</code> fires on every parseable keystroke.</p>\n',
+    'description': '<p>Emitted when the user finishes a change: on blur or Enter after typing, when a held step button is released, and together with <code>update:modelValue</code> for keyboard and wheel steps. <code>update:modelValue</code> fires on each keystroke whose parsed value differs from the current one.</p>\n',
     'type': '[val: number | undefined]'
   }
 ]" />
@@ -198,7 +198,7 @@
 | --- | --- | --- |
 | `beforeUpdate:modelValue` | Called before the value changes; `details.cancel()` keeps the current value. | `[val: number \| undefined, details: ChangeEventDetails<NumberFieldChangeReason, Event>]` |
 | `update:modelValue` | Event handler called when the value changes. | `[val: number \| undefined, details: ChangeEventDetails<NumberFieldChangeReason, Event>]` |
-| `valueCommit` | Emitted when the user finishes a change: on blur or Enter after typing, when a held step button is released, and together with `update:modelValue` for keyboard and wheel steps. `update:modelValue` fires on every parseable keystroke. | `[val: number \| undefined]` |
+| `valueCommit` | Emitted when the user finishes a change: on blur or Enter after typing, when a held step button is released, and together with `update:modelValue` for keyboard and wheel steps. `update:modelValue` fires on each keystroke whose parsed value differs from the current one. | `[val: number \| undefined]` |
 
 **Slots**
 
