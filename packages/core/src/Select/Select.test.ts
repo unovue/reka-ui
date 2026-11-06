@@ -3,7 +3,7 @@ import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 import { handleSubmit } from '@/test'
 import { SelectContent, SelectItem, SelectItemIndicator, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '.'
 import SelectUnmountCleanup from './__test__/SelectUnmountCleanup.vue'
@@ -378,6 +378,128 @@ describe('given Select with options containing spaces', () => {
     document.activeElement!.dispatchEvent(event)
 
     expect(event.defaultPrevented).toBe(true)
+  })
+})
+
+describe('given typing on a Select trigger', () => {
+  async function mountSelect<T>(options: T[], { initialValue, label = String, withItemText = true, rootProps = {}, triggerProps = {}, itemProps = () => ({}) }: {
+    initialValue?: T
+    label?: (option: T) => string
+    withItemText?: boolean
+    rootProps?: Record<string, unknown>
+    triggerProps?: Record<string, unknown>
+    itemProps?: (option: T) => Record<string, unknown>
+  } = {}) {
+    // A shallow ref keeps object values unproxied, so their identity can be asserted.
+    const modelValue = shallowRef<T | undefined>(initialValue)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(SelectRoot, { ...rootProps, 'modelValue': modelValue.value, 'onUpdate:modelValue': (value: T) => { modelValue.value = value } }, () => [
+          h(SelectTrigger, triggerProps, () => h(SelectValue)),
+          h(SelectContent, () => h(SelectViewport, () => options.map(option =>
+            h(SelectItem, { value: option, ...itemProps(option) }, () => withItemText ? h(SelectItemText, () => label(option)) : label(option)),
+          ))),
+        ])
+      },
+    }), { attachTo: document.body })
+    await nextTick()
+    const trigger = wrapper.find('[role="combobox"]').element as HTMLElement
+    trigger.focus()
+    return { modelValue, trigger }
+  }
+
+  async function type(element: HTMLElement, ...keys: string[]) {
+    for (const key of keys) {
+      await fireEvent.keyDown(element, { key })
+      await nextTick()
+    }
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should select the item matching the typed characters without opening', async () => {
+    const { modelValue, trigger } = await mountSelect(['Apple', 'Banana', 'Blueberry'])
+    await type(trigger, 'b', 'l')
+    expect(modelValue.value).toBe('Blueberry')
+    expect(trigger.textContent).toContain('Blueberry')
+    expect(trigger.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('should cycle through items that start with a repeated letter', async () => {
+    const { modelValue, trigger } = await mountSelect(['Apple', 'Banana', 'Blueberry'])
+    await type(trigger, 'b')
+    expect(modelValue.value).toBe('Banana')
+    await type(trigger, 'b')
+    expect(modelValue.value).toBe('Blueberry')
+  })
+
+  it('should still select after the content has been opened and closed', async () => {
+    const { modelValue, trigger } = await mountSelect(['Apple', 'Pineapple'])
+    await fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false })
+    await nextTick()
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await new Promise(resolve => setTimeout(resolve))
+    await nextTick()
+    trigger.focus()
+    await type(trigger, 'p')
+    expect(modelValue.value).toBe('Pineapple')
+  })
+
+  it('should skip disabled items', async () => {
+    const { modelValue, trigger } = await mountSelect(['Apple', 'Banana', 'Blueberry'], { itemProps: option => ({ disabled: option === 'Banana' }) })
+    await type(trigger, 'b')
+    expect(modelValue.value).toBe('Blueberry')
+  })
+
+  it('should emit the item\'s own object value to a controlled Select', async () => {
+    const options = [{ id: 1, name: 'Apple' }, { id: 2, name: 'Banana' }]
+    const { modelValue, trigger } = await mountSelect(options, { initialValue: options[0], label: option => option.name, rootProps: { by: 'id' } })
+    await type(trigger, 'b')
+    expect(modelValue.value).toBe(options[1])
+  })
+
+  it('should cycle through items with the same text', async () => {
+    const options = [{ id: 1, name: 'Main St' }, { id: 2, name: 'Main St' }]
+    const { modelValue, trigger } = await mountSelect(options, { initialValue: options[0], label: option => option.name, rootProps: { by: 'id' } })
+    await type(trigger, 'm')
+    expect(modelValue.value).toBe(options[1])
+  })
+
+  it('should match an item\'s text content when it has no `SelectItemText`', async () => {
+    const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { withItemText: false })
+    await type(trigger, 'b')
+    expect(modelValue.value).toBe('Banana')
+  })
+
+  it('should not emit `update:open` when selecting while closed', async () => {
+    const onUpdateOpen = vi.fn()
+    const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { rootProps: { 'open': false, 'onUpdate:open': onUpdateOpen } })
+    await type(trigger, 'b')
+    expect(modelValue.value).toBe('Banana')
+    expect(onUpdateOpen).not.toHaveBeenCalled()
+  })
+
+  it('should not select when the Select is disabled', async () => {
+    const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { rootProps: { disabled: true }, triggerProps: { as: 'div', tabindex: 0 } })
+    await type(trigger, 'b')
+    expect(modelValue.value).toBeUndefined()
+  })
+
+  it('should not select when the Select is `multiple`', async () => {
+    const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { rootProps: { multiple: true } })
+    await type(trigger, 'b')
+    expect(modelValue.value).toBeUndefined()
+  })
+
+  it('should focus the match without selecting it while open', async () => {
+    const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { rootProps: { open: true } })
+    await new Promise(resolve => setTimeout(resolve))
+    expect(trigger.getAttribute('aria-expanded')).toBe('true')
+    await type(trigger, 'b')
+    expect(document.activeElement?.textContent).toContain('Banana')
+    expect(modelValue.value).toBeUndefined()
   })
 })
 
