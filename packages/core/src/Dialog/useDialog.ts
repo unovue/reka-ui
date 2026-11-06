@@ -3,7 +3,7 @@ import type { DialogOpenChangeReason, DialogRootContext } from './DialogRoot.vue
 import type { DialogHandle } from './handle'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import type { PopupRootStore } from '@/shared/popupHandle'
-import { computed, ref, toValue } from 'vue'
+import { computed, nextTick, ref, toValue } from 'vue'
 import { createPartSurface, disclosureState, getActiveElement, setGeneratedIds, useControllableState } from '@/shared'
 import { createPopupRootStore, setPopupRootStore } from '@/shared/popupHandle'
 import { endFocusRecord, recordFocusBeforeOpen } from './utils'
@@ -289,9 +289,13 @@ export function useDialog<Payload = unknown>(props: UseDialogProps<Payload> = {}
       recordFocusBeforeOpen(context, pressed?.nodeType === 1 ? pressed : getActiveElement(), context.contentElement.value, true)
     }
     const applied = setOpenState(...args)
-    // A cancelled open leaves no record for the content to skip.
+    // A cancelled open leaves no record for the content to skip. So does an
+    // open a controlled parent has not committed by the next tick (its prop
+    // lands on that render): a later open is recorded by the content.
     if (opening && !applied)
       endFocusRecord(context)
+    else if (opening && !open.value)
+      nextTick(() => !open.value && endFocusRecord(context))
     return applied
   }
   setGeneratedIds(context, { contentId: contentId.value, titleId: titleId.value, descriptionId: descriptionId.value })
