@@ -1,3 +1,6 @@
+import type { DrawerContentEmits, DrawerContentProps } from './DrawerContent.vue'
+import type { DrawerOverlayProps } from './DrawerOverlay.vue'
+
 export {
   default as DrawerClose,
   type DrawerCloseProps,
@@ -8,11 +11,11 @@ export {
   type DrawerContentProps,
 } from './DrawerContent.vue'
 // Base UI alias: Drawer.Popup === DrawerContent
-export {
-  default as DrawerPopup,
-  type DrawerContentEmits as DrawerPopupEmits,
-  type DrawerContentProps as DrawerPopupProps,
-} from './DrawerContent.vue'
+export { default as DrawerPopup } from './DrawerContent.vue'
+// Type aliases, not renamed re-exports: Vue's compiler-sfc cannot resolve a
+// renamed re-export in defineProps (https://github.com/vuejs/core/pull/15649).
+export type DrawerPopupEmits = DrawerContentEmits
+export type DrawerPopupProps = DrawerContentProps
 export {
   default as DrawerDescription,
   type DrawerDescriptionProps,
@@ -34,10 +37,8 @@ export {
   type DrawerOverlayProps,
 } from './DrawerOverlay.vue'
 // Base UI alias: Drawer.Backdrop === DrawerOverlay
-export {
-  default as DrawerBackdrop,
-  type DrawerOverlayProps as DrawerBackdropProps,
-} from './DrawerOverlay.vue'
+export { default as DrawerBackdrop } from './DrawerOverlay.vue'
+export type DrawerBackdropProps = DrawerOverlayProps
 export {
   default as DrawerPortal,
   type DrawerPortalProps,
