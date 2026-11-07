@@ -70,6 +70,16 @@ We would love to have your contributions! All PRs are welcome! We need help buil
 4. Open `http://localhost:6006`
 5. Run `pnpm test` to test changes
 
+## Sponsors
+
+Reka UI is free and open source, made possible by our sponsors. If your company or product depends on Reka UI (directly, or through Nuxt UI, shadcn-vue and others), please consider [sponsoring through Open Collective](https://opencollective.com/unovue) (invoices available) or [GitHub Sponsors](https://github.com/sponsors/zernonia).
+
+<p align="center">
+  <a href="https://opencollective.com/unovue">
+    <img src="https://raw.githubusercontent.com/zernonia/sponsor/main/sponsorkit/sponsors.svg" alt="Sponsors">
+  </a>
+</p>
+
 ## Credits
 
 All credits go to these open-source works and resources

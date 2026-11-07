@@ -1,4 +1,5 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
+import type { PropType } from 'vue'
 import { findByText, fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -144,6 +145,22 @@ describe('given a default Toast', () => {
     expect(text).toContain('Scheduled: Catch up')
   })
 
+  it('should expose the live region to assistive technology (not aria-hidden)', async () => {
+    await fireEvent.click(trigger.element)
+    await findByText(document.body, 'Scheduled: Catch up')
+
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    })
+
+    const liveRegion = document.querySelector('[role="alert"][aria-live]')
+    expect(liveRegion).toBeTruthy()
+
+    // A live region inside an aria-hidden subtree is ignored by screen readers,
+    // so the toast would never be announced.
+    expect(liveRegion!.closest('[aria-hidden="true"]')).toBeNull()
+  })
+
   it('should remove viewport event listeners when the toast is dismissed', async () => {
     await fireEvent.click(trigger.element)
     await findByText(document.body, 'Scheduled: Catch up')
@@ -258,5 +275,149 @@ describe('given a ToastTitle and ToastDescription outside a managed toast', () =
     expect(wrapper.vm.$.subTree.el).toBeInstanceOf(HTMLElement)
     expect(wrapper.element.outerHTML).toBe('<div class="custom" id="custom-id">Content</div>')
     wrapper.unmount()
+  })
+})
+
+describe('given a ToastViewport whose element is replaced', () => {
+  const ReplaceableViewport = defineComponent({
+    props: {
+      mode: { type: String as PropType<'asChild' | 'as'>, default: 'asChild' },
+    },
+    setup() {
+      const open = ref(true)
+      const variant = ref<'a' | 'b' | 'none'>('a')
+      return { open, variant }
+    },
+    render() {
+      return h(ToastProvider, { duration: 1000 }, {
+        default: () => [
+          h(ToastRoot, {
+            'open': this.open,
+            'onUpdate:open': (value: boolean) => {
+              this.open = value
+            },
+          }, { default: () => h(ToastDescription, null, { default: () => 'Saved' }) }),
+          this.mode === 'as'
+            ? h(ToastViewport, { 'as': this.variant === 'a' ? 'ol' : 'ul', 'data-viewport': this.variant })
+            : h(ToastViewport, { asChild: true }, {
+                default: () => this.variant === 'none'
+                  ? null
+                  : h('ol', { 'key': this.variant, 'data-viewport': this.variant }),
+              }),
+        ],
+      })
+    },
+  })
+
+  let wrapper: VueWrapper<InstanceType<typeof ReplaceableViewport>>
+  let oldViewport: HTMLElement
+  let newViewport: HTMLElement
+
+  async function flush() {
+    for (let i = 0; i < 5; i++)
+      await nextTick()
+  }
+
+  async function replaceViewport() {
+    oldViewport = document.querySelector('[data-viewport="a"]')!
+    wrapper.vm.variant = 'b'
+    await flush()
+    newViewport = document.querySelector('[data-viewport="b"]')!
+  }
+
+  async function runDuration() {
+    vi.advanceTimersByTime(1000)
+    await flush()
+  }
+
+  beforeEach(async () => {
+    vi.useFakeTimers()
+    // jsdom only reports focus once an element has been focused.
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true)
+    document.body.innerHTML = ''
+    wrapper = mount(ReplaceableViewport, { attachTo: document.body })
+    await flush()
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
+    vi.restoreAllMocks()
+    vi.useRealTimers()
+  })
+
+  it('should teleport open toasts into the current viewport', async () => {
+    expect(document.querySelector('[data-viewport="a"] li')).toBeTruthy()
+    await replaceViewport()
+    expect(newViewport).toBeTruthy()
+    expect(newViewport.querySelector('li')?.textContent).toContain('Saved')
+  })
+
+  it('should teleport open toasts into the current viewport when `as` changes', async () => {
+    wrapper.unmount()
+    wrapper = mount(ReplaceableViewport, { attachTo: document.body, props: { mode: 'as' } })
+    await flush()
+    await replaceViewport()
+    expect(newViewport.tagName).toBe('UL')
+    expect(newViewport.querySelector('li')?.textContent).toContain('Saved')
+  })
+
+  it('should pause and resume from events on the current viewport only', async () => {
+    await replaceViewport()
+
+    await fireEvent.pointerMove(oldViewport)
+    await runDuration()
+    expect(wrapper.vm.open).toBe(false)
+
+    wrapper.vm.open = true
+    await flush()
+    await fireEvent.pointerMove(newViewport)
+    await runDuration()
+    expect(wrapper.vm.open).toBe(true)
+
+    await fireEvent.pointerLeave(newViewport)
+    await runDuration()
+    expect(wrapper.vm.open).toBe(false)
+  })
+
+  it('should not leave the toast paused when the viewport is replaced while hovered', async () => {
+    await fireEvent.pointerMove(document.querySelector('[data-viewport="a"]')!)
+    await replaceViewport()
+    await runDuration()
+    expect(wrapper.vm.open).toBe(false)
+  })
+
+  it('should keep the toasts when the viewport child is removed and then rendered again', async () => {
+    const errorHandler = vi.fn()
+    wrapper.unmount()
+    wrapper = mount(ReplaceableViewport, { attachTo: document.body, global: { config: { errorHandler } } })
+    await flush()
+
+    wrapper.vm.variant = 'none'
+    await flush()
+    wrapper.vm.variant = 'b'
+    await flush()
+
+    expect(errorHandler).not.toHaveBeenCalled()
+    expect(document.querySelector('[data-viewport="b"] li')?.textContent).toContain('Saved')
+  })
+
+  it('should collapse the stack when the viewport is replaced while hovered', async () => {
+    await fireEvent.pointerMove(document.querySelector('[data-viewport="a"]')!)
+    expect(document.querySelector('[data-viewport="a"]')!.hasAttribute('data-expanded')).toBe(true)
+    await replaceViewport()
+    expect(newViewport.hasAttribute('data-expanded')).toBe(false)
+  })
+
+  it('should keep a window-blur pause across the replacement until the window gets focus', async () => {
+    vi.mocked(document.hasFocus).mockReturnValue(false)
+    window.dispatchEvent(new Event('blur'))
+    await replaceViewport()
+    await runDuration()
+    expect(wrapper.vm.open).toBe(true)
+
+    vi.mocked(document.hasFocus).mockReturnValue(true)
+    window.dispatchEvent(new Event('focus'))
+    await runDuration()
+    expect(wrapper.vm.open).toBe(false)
   })
 })
