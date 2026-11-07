@@ -69,7 +69,7 @@ Collapsible and Accordion content measure the panel into `--reka-collapsible-con
 
 Presence waits for the transitions and animations of the managed element itself (read with [`element.getAnimations()`](https://developer.mozilla.org/en-US/docs/Web/API/Element/getAnimations)), not for those of its descendants. Infinite animations are not waited for. When nothing is running, for example when a `prefers-reduced-motion` media query turns the transition off, the element unmounts right away.
 
-Everything running on the element when it closes is waited for, as in Base UI:
+Everything running on the element when it closes is waited for:
 
 - **Unrelated transitions count too.** A hover `transition: background-color 600ms` still running when the content closes delays the unmount until it ends. Scope such transitions to the hovered state, or list only the properties the enter and exit animate.
 - **There is no timeout.** A paused animation (`animation-play-state: paused`) holds the element mounted until it resumes, and browsers throttle animations in background tabs, so a close in a hidden tab completes when the tab is visible again.

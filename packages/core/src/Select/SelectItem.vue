@@ -29,7 +29,7 @@ export type SelectItemEmits<T = AcceptableValue> = {
 export interface SelectItemProps<T = AcceptableValue> extends PrimitiveProps {
   /**
    * The value given as data when submitted with a `name`. In a single select, `null` is the empty value, so pressing an
-   * item with a `null` value clears the selection, and an empty string is allowed but, as in Base UI, a selected `''`
+   * item with a `null` value clears the selection, and an empty string is allowed but a selected `''`
    * still shows the placeholder. In a `multiple` select, `null` and `''` are ordinary values that toggle in the array.
    */
   value: T

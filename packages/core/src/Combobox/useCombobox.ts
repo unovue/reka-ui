@@ -32,9 +32,9 @@ import { useComboboxContentPositioning } from './useComboboxContentPositioning'
  *   (Enter clicks it).
  * - `'clear-press'`: `ComboboxCancel` reset the value (`resetModelValueOnClear`).
  * - `'input-clear'`: the user emptied the input of a single combobox, which
- *   clears its value to `null` (Base UI).
+ *   clears its value to `null`.
  * - `'escape-key'`: Escape in the input of a closed combobox cleared the value
- *   (`null`, or `[]` when `multiple`) and the input text (Base UI).
+ *   (`null`, or `[]` when `multiple`) and the input text.
  * - `'item-keydown'`, `'select-all'`, `'range-select'`: the Listbox selection
  *   gestures (Space on a focused item, Ctrl/Cmd+A and Shift+click or
  *   Shift+arrow in a `multiple` combobox).
@@ -43,8 +43,7 @@ export type ComboboxChangeReason = 'clear-press' | 'input-clear' | 'escape-key' 
 
 /**
  * Why the text of `ComboboxInput` / `AutocompleteInput` changed; carried as
- * `details.reason` of its `update:modelValue` (#2828). Modelled on Base UI's
- * `onInputValueChange` reasons.
+ * `details.reason` of its `update:modelValue` (#2828).
  *
  * - `'input-change'`: the user typed (or an IME composition was committed).
  * - `'input-clear'`: the text was reset to `''` when the popup closed without a selection.
@@ -90,7 +89,7 @@ export type ComboboxItemState = ListboxItemState
 /** Semantic state of the root (`data-disabled`). */
 export type ComboboxState = ListboxState
 
-/** Whether a combobox value holds a selection, as Base UI reads it: anything but `null` (`''` included), or a non-empty array. */
+/** Whether a combobox value holds a selection: anything but `null` (`''` included), or a non-empty array. */
 export function hasComboboxValue(value: unknown) {
   return Array.isArray(value) ? value.length > 0 : value != null
 }
@@ -417,7 +416,7 @@ export function createComboboxInputSurface(
  * The text a combobox input shows for its value after a selection: the input's
  * own `displayValue`, then the root's, then a single primitive value's string
  * form; empty for `null` (the empty value), for an object value without a
- * resolver and for `multiple`. As in Base UI, `''`, `0` and `false` are values:
+ * resolver and for `multiple`. `''`, `0` and `false` are values:
  * they go through the root's `displayValue`.
  */
 export function getComboboxInputText(

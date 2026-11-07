@@ -28,8 +28,8 @@ function byDocumentPosition<T>(a: HarvestedItem<T>, b: HarvestedItem<T>): number
 }
 
 /**
- * The items of a closed Select (Base UI's "a closed Select renders no items",
- * without its "labels only through `items`").
+ * The items of a closed Select. A closed Select renders no items, but its
+ * labels do not have to come from `items`.
  *
  * v2 kept every item of a closed Select mounted in full in a detached
  * fragment, so `SelectValue` could show the selected text. Here the closed

@@ -74,7 +74,7 @@ export type SelectChangeReason = 'item-press' | 'item-keydown' | 'typeahead' | '
  * - `'escape-key'` / `'outside-press'`: dismissed. Releasing the pointer
  *   outside the content after dragging from the trigger is also
  *   `'outside-press'`.
- * - `'focus-outside'`: Tab or Shift+Tab moved focus out of the content (Base UI).
+ * - `'focus-outside'`: Tab or Shift+Tab moved focus out of the content.
  *   The highlighted item is not selected.
  */
 export type SelectOpenChangeReason
@@ -127,7 +127,7 @@ export interface SelectItemGroupData<T = AcceptableValue> {
 }
 
 /**
- * The root's `items` (Base UI's `Select.Root items`): the options as data. A
+ * The root's `items`: the options as data. A
  * record maps each value (a string key; a number value finds its key) to its
  * label; an array holds `{ value, label, disabled? }` options, or groups of
  * them (`{ items }`), mixed or not.
@@ -164,7 +164,7 @@ function isPrimitiveKey(value: unknown): value is string | number | bigint | boo
 /**
  * Indexes `items` for lookups matched with `by`. Plain data, no reactive
  * writes: the caller's `computed` rebuilds it when `items` changes. A record
- * matches a value by its string form, as Base UI reads `items[value]`.
+ * matches a value by its string form, as `items[value]` does.
  * @internal
  */
 export function createSelectItemsIndex<T>(items: SelectItems<T> | undefined, by: By<T> | undefined): SelectItemsIndex<T> | undefined {
@@ -847,8 +847,8 @@ export interface UseSelectValueReturn {
 
 /**
  * The displayed value. Labels resolve through the root's `displayValue`, then
- * the sticky label registry, so they survive the content closing. As in Base UI,
- * a `null` entry in `items` (`{ value: null, label: 'Select…' }`) labels the
+ * the sticky label registry, so they survive the content closing. A `null`
+ * entry in `items` (`{ value: null, label: 'Select…' }`) labels the
  * empty selection of a single select over the placeholder; the value still
  * carries `data-placeholder`.
  *

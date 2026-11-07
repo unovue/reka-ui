@@ -353,7 +353,7 @@ The handle itself holds no state. The mounted root owns it, and the root and the
 
 ### Returning focus on close
 
-On close, focus returns to the element that had focus when the dialog opened, as in Base UI. When `DialogTrigger` opened the dialog, that element is the trigger. When the dialog was opened programmatically, for example with a <kbd>Ctrl</kbd> + <kbd>K</kbd> shortcut, it is whatever was focused at that moment, such as a search input. If that element has left the DOM, or nothing was focused, focus goes to `DialogTrigger` instead. To send focus somewhere else, focus it in `@close-auto-focus` and call `event.preventDefault()`.
+On close, focus returns to the element that had focus when the dialog opened. When `DialogTrigger` opened the dialog, that element is the trigger. When the dialog was opened programmatically, for example with a <kbd>Ctrl</kbd> + <kbd>K</kbd> shortcut, it is whatever was focused at that moment, such as a search input. If that element has left the DOM, or nothing was focused, focus goes to `DialogTrigger` instead. To send focus somewhere else, focus it in `@close-auto-focus` and call `event.preventDefault()`.
 
 ```vue
 <template>

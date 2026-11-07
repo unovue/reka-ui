@@ -44,8 +44,8 @@ export const [injectMenuContentContext, provideMenuContentContext]
   = createContext<MenuContentContext>('MenuContent')
 
 /**
- * The element a modal root menu keeps interactive through its internal backdrop
- * (Base UI `MenuPositioner` cuts the trigger out of it): the DropdownMenu
+ * The element a modal root menu keeps interactive through a hole in its
+ * internal backdrop: the DropdownMenu
  * trigger, or the ContextMenu trigger area so a right-click there re-opens the
  * menu at the new point. Provided by the family's `*Content`.
  */

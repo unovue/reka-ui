@@ -85,7 +85,7 @@ export type AutocompleteRootEmits<T extends AcceptableValue = string> = {
   /**
    * Event handler called before the value (the input text) changes; call `details.cancel()` to keep the current
    * value. The value is `''` when `AutocompleteCancel` clears it. Only a controlled (`v-model`) value can be kept:
-   * an uncontrolled one ignores `cancel()`, as in Base UI.
+   * an uncontrolled one ignores `cancel()`.
    */
   'beforeUpdate:modelValue': [value: string, details: ChangeEventDetails<AutocompleteChangeReason>]
   /** Event handler called when the value (the input text) changes. The value is `''` when `AutocompleteCancel` clears it. */

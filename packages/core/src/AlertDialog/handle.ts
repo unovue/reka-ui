@@ -4,7 +4,7 @@ import { DialogHandle } from '@/Dialog/handle'
  * Controls an AlertDialog imperatively and connects detached
  * `AlertDialogTrigger`s to an `AlertDialogRoot` (#2826). The same API as
  * `DialogHandle` (`open(triggerId?)`, `openWithPayload(payload)`, `close()`,
- * `isOpen`), branded separately as in Base UI, so a plain `DialogHandle`
+ * `isOpen`), branded separately, so a plain `DialogHandle`
  * cannot be passed to an AlertDialog part by mistake.
  */
 export class AlertDialogHandle<Payload = unknown> extends DialogHandle<Payload> {

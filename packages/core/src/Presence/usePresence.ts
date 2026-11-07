@@ -3,8 +3,7 @@ import { isClient } from '@vueuse/shared'
 import { nextTick, shallowRef } from 'vue'
 
 /**
- * Where a presence-managed element is in its enter/exit lifecycle (#2827),
- * mirroring Base UI's `TransitionStatus`:
+ * Where a presence-managed element is in its enter/exit lifecycle (#2827):
  * - `'starting'`: the first frame after the element was mounted (or shown again)
  *   by an open; rendered as `data-starting-style`, so CSS transitions can start
  *   from those styles.
@@ -80,10 +79,10 @@ export function getRunningAnimations(node: Element): Animation[] {
   })
 }
 
+// Ported from Base UI's `useTransitionStatus` + `useAnimationsFinished`.
 /**
  * Mount/unmount state of a presence-managed node that waits for its CSS
- * transitions as well as its CSS animations (#2827). A port of Base UI's
- * `useTransitionStatus` + `useAnimationsFinished`:
+ * transitions as well as its CSS animations (#2827):
  * - opening an unmounted node renders it with `transitionStatus` `'starting'`
  *   for one frame, then clears it;
  * - closing sets `'ending'` and keeps the node mounted until
@@ -138,7 +137,7 @@ export class PresenceController {
    * Calls `done` once the node has no running transition or animation. A
    * rejected `finished` (an animation cancelled because a property it depends
    * on changed) re-checks instead of resolving, so a replacement transition is
-   * waited for too (Base UI's `treatAbortedAsFinished = false`).
+   * waited for too.
    */
   private whenAnimationsFinish(currentRun: number, done: () => void) {
     const element = this.node.value

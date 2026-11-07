@@ -72,7 +72,7 @@ export function endFocusRecord(rootContext: object) {
 }
 
 /**
- * Where focus returns on close (Base UI `finalFocus` default): the element
+ * Where focus returns on close (the `finalFocus` default): the element
  * focused before the dialog opened, which is the trigger when the trigger
  * opened it, else the trigger, skipping one that left the DOM. @internal
  */

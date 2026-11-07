@@ -76,10 +76,10 @@ interface BackdropPlacement {
   /**
    * The element the layer paints with: the layer, its positioning wrapper, or
    * the outermost `position: fixed` container around them (a `DialogOverlay`
-   * that wraps a scrollable `DialogContent`, a `DrawerViewport`). Base UI
-   * renders its backdrop before the positioner / viewport for the same reason:
-   * the container stays above the backdrop, so it keeps scrolling and a press
-   * on it is still the layer's own outside press.
+   * that wraps a scrollable `DialogContent`, a `DrawerViewport`). The backdrop
+   * is inserted before this element, so the container stays above the
+   * backdrop: it keeps scrolling and a press on it is still the layer's own
+   * outside press.
    */
   anchor: Element
   /**
@@ -202,8 +202,8 @@ function isNode(value: unknown): value is Node {
 
 /**
  * Whether an outside press on `target` belongs to `layer`'s own backdrop: its
- * internal backdrop or one of `backdrops` (e.g. a `DialogOverlay`). Base UI's
- * modal Dialog only closes on its owning backdrop, so a press on an element
+ * internal backdrop or one of `backdrops` (e.g. a `DialogOverlay`). A modal
+ * layer only closes on its own backdrop, so a press on an element
  * stacked above the backdrop (a third-party widget, another library's dialog)
  * leaves it open. Without any backdrop every outside press counts.
  */

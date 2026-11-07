@@ -67,7 +67,7 @@ export interface UseControllableStateOptions<T, R extends string = string> {
    * Controlled value. A getter/ref that has only ever resolved to `undefined`
    * means uncontrolled. Controlled mode **latches**: once the prop has resolved
    * to a defined value the model stays controlled, even if the prop is later
-   * cleared to `undefined` (Base UI's rule). A writable `Ref` is the model's
+   * cleared to `undefined`. A writable `Ref` is the model's
    * single store when neither `emit` nor `onUpdate` is given ("ref-owned" mode).
    */
   prop?: MaybeRefOrGetter<T | undefined>

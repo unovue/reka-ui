@@ -73,7 +73,7 @@ import {
 
 The Drawer is unstyled, so the enter/exit transitions and the swipe gesture are
 driven entirely by your CSS. The parts expose the gesture and the layout through
-CSS custom properties, the same set as Base UI. They are part of the public API:
+CSS custom properties. They are part of the public API:
 the names and units below are stable.
 
 | Variable | Set on | Value |
@@ -220,8 +220,8 @@ under 60px are treated as browser chrome rather than the keyboard.
 
 ## API Reference
 
-Every part below is supported public API, including the parts that mirror Base
-UI's Drawer for layout and nesting: `DrawerViewport`, `DrawerSwipeArea`,
+Every part below is supported public API, including the parts for layout and
+nesting: `DrawerViewport`, `DrawerSwipeArea`,
 `DrawerIndent`, `DrawerIndentBackground`, `DrawerProvider` and
 `DrawerVirtualKeyboardProvider`.
 
@@ -285,9 +285,9 @@ Contains the content to be rendered in the open drawer. Owns the swipe gesture
 and exposes the drag offset through CSS custom properties (see [Animating the
 drawer](#animating-the-drawer)).
 
-`DrawerContent` is a deprecated alias of `DrawerPopup`, kept for v3. Base UI's
-`Drawer.Content` is a different part (an inner container inside the popup), so
-the alias is removed in a future major rather than kept as a second name.
+`DrawerContent` is a deprecated alias of `DrawerPopup`, kept for v3. Use
+`DrawerPopup` in new code: the alias is removed in a future major rather than
+kept as a second name.
 
 <PresenceCallout />
 
@@ -340,8 +340,7 @@ If you want to hide the description, wrap it inside our Visually Hidden utility 
 
 A visual grab bar that hints the drawer can be dragged. It is purely
 decorative (`aria-hidden`) — the whole popup is draggable regardless. It was
-`DrawerHandle` before v3; that name is reserved for the detached-trigger handle,
-as in Base UI (`Drawer.Handle`).
+`DrawerHandle` before v3; that name is reserved for the detached-trigger handle.
 
 <!-- @include: @/meta/DrawerGrabber.md -->
 
@@ -376,8 +375,8 @@ listens on the opposite side of the Root's `swipeDirection`.
 
 ### Viewport
 
-An optional wrapper around `DrawerPopup`. Mirrors Base UI's `Drawer.Viewport`
-and carries a `data-drawer-viewport` attribute for downstream selectors.
+An optional wrapper around `DrawerPopup`. It carries a `data-drawer-viewport`
+attribute for downstream selectors.
 Required when using `VirtualKeyboardProvider`, which measures the keyboard
 against it.
 
@@ -501,8 +500,7 @@ A swipe that changes the snap point emits the cancellable
 (`details.reason` is `'swipe'`). Swiping past the last point first requests the
 `null` snap point: cancel it to keep the drawer open where it was. When the
 close that follows is cancelled, the previous snap point is restored. Closing
-the drawer resets the snap point to `defaultSnapPoint` (else the first point),
-as in Base UI.
+the drawer resets the snap point to `defaultSnapPoint` (else the first point).
 
 ```vue line=5-9
 <script setup>

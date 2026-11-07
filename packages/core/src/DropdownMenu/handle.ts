@@ -5,7 +5,7 @@ import { PopupHandle } from '@/shared/popupHandle'
  * `DropdownMenuTrigger`s (rendered anywhere, outside the Root's subtree or a
  * portal) to a `DropdownMenuRoot`. Create one with
  * `createDropdownMenuHandle()` and pass it to the `handle` prop of the Root and
- * of every Trigger (#2826). Base UI calls this `Menu.createHandle()`.
+ * of every Trigger (#2826).
  *
  * The handle holds no state of its own: the mounted Root does. Imperative
  * calls are ignored (with a dev warning) while no Root using it is mounted.

@@ -2,9 +2,9 @@
 import type { PrimitiveProps } from '@/Primitive'
 
 /**
- * The visual grab bar of the popup (decorative, `aria-hidden`). Base UI has no
- * part for it; it was `DrawerHandle`, a name kept free for the detached-trigger
- * handle (`createDrawerHandle`), as Base UI's `Drawer.Handle` is.
+ * The visual grab bar of the popup (decorative, `aria-hidden`). It was
+ * `DrawerHandle`, a name kept free for the detached-trigger handle
+ * (`createDrawerHandle`).
  */
 export interface DrawerGrabberProps extends PrimitiveProps {}
 </script>

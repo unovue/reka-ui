@@ -54,9 +54,8 @@ class CollectionRecord {
 }
 
 /**
- * The item registry of one collection provider, built like Base UI's
- * `CompositeList`: a plain set of records, no reactive Map and no effect per
- * item.
+ * The item registry of one collection provider: a plain set of records, no
+ * reactive Map and no effect per item.
  *
  * Items register in `setup` and resolve their element lazily. The DOM order is
  * built on demand (one `querySelectorAll` over the root) and cached; it is

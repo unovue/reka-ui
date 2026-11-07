@@ -19,8 +19,8 @@ interface Cell {
  * change; each one then re-evaluates and bails out, except the two that
  * changed. A keyed selector watches the source once (sync) and flips only the
  * cells of the keys that entered or left it, so a highlight move re-renders
- * exactly the old and the new item. It is the Vue form of a Base UI argument
- * selector (`store.useState('isActive', index)`), or Solid's `createSelector`.
+ * exactly the old and the new item. It is the Vue form of an argument
+ * selector, such as Solid's `createSelector`.
  *
  * A reader `hold`s its key (the cell is created then) and `release`s it when it
  * changes key or unmounts; the cell is dropped with its last holder. Object
