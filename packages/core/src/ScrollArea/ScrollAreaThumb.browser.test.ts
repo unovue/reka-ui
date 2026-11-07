@@ -1,10 +1,11 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport } from '.'
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve))
 
 describe('scroll area thumb in a real browser', () => {
   it.each(['vertical', 'horizontal'] as const)('tracks %s wheel scrolling before and after an idle period', async (orientation) => {
@@ -35,6 +36,36 @@ describe('scroll area thumb in a real browser', () => {
     }
     finally {
       wrapper.unmount()
+    }
+  })
+
+  it('stops its frame loop once wheel scrolling settles', async () => {
+    const raf = vi.spyOn(window, 'requestAnimationFrame')
+    const loopFrames = () => raf.mock.calls.filter(([callback]) => callback.name === 'loop').length
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ScrollAreaRoot, { type: 'always', style: 'width: 200px; height: 200px;' }, () => [
+        h(ScrollAreaViewport, { style: 'width: 100%; height: 100%;' }, () => h('div', { style: 'height: 2000px;' })),
+        h(ScrollAreaScrollbar, { orientation: 'vertical', style: 'width: 10px; height: 200px;' }, () => h(ScrollAreaThumb)),
+      ]),
+    }), { attachTo: document.body })
+    const viewport = wrapper.get('[data-reka-scroll-area-viewport]').element as HTMLElement
+    try {
+      await userEvent.wheel(viewport, { delta: { y: 100 }, times: 3 })
+      await expect.poll(() => viewport.scrollTop).toBeGreaterThan(0)
+      // The loop ran while scrolling, so the name filter below is not vacuous.
+      expect(loopFrames()).toBeGreaterThan(0)
+
+      // Settled: a few frames pass without the loop asking for another one.
+      await expect.poll(async () => {
+        const before = loopFrames()
+        for (let i = 0; i < 5; i++)
+          await nextFrame()
+        return loopFrames() - before
+      }, { timeout: 3000 }).toBe(0)
+    }
+    finally {
+      wrapper.unmount()
+      raf.mockRestore()
     }
   })
 })
