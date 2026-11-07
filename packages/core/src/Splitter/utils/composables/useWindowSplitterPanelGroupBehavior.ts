@@ -128,7 +128,8 @@ export function useWindowSplitterPanelGroupBehavior({
         return () => {}
 
       const onKeyDown = (event: KeyboardEvent) => {
-        if (event.defaultPrevented)
+        // A disabled handle ignores arrow keys and dragging, so it ignores Enter too.
+        if (event.defaultPrevented || handle.hasAttribute('data-disabled'))
           return
 
         switch (event.key) {

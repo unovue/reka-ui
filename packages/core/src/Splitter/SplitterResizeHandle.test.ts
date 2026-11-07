@@ -123,6 +123,43 @@ describe('resize handle keyboard behavior after remount (issue #3126)', () => {
     expect(layout.value[0]).toBe(0)
     expect(handle.attributes('aria-valuenow')).toBe('0')
   })
+
+  it('should not collapse on Enter on a disabled handle', async () => {
+    const disabled = ref(true)
+    const layout = ref<number[]>([])
+
+    const TestComponent = defineComponent({
+      components: { SplitterGroup, SplitterPanel, SplitterResizeHandle },
+      setup() {
+        return { disabled, onLayout: (val: number[]) => { layout.value = val } }
+      },
+      template: `
+        <SplitterGroup direction="horizontal" @layout="onLayout">
+          <SplitterPanel id="side" :default-size="30" collapsible :min-size="10" />
+          <SplitterResizeHandle id="handle" :disabled="disabled" />
+          <SplitterPanel id="main" />
+        </SplitterGroup>
+      `,
+    })
+
+    wrapper = mount(TestComponent, { attachTo: document.body })
+    await nextTick()
+
+    const handle = wrapper.find('#handle')
+    const pressEnter = async () => {
+      handle.element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+      await nextTick()
+    }
+
+    await pressEnter()
+    expect(layout.value[0]).toBe(30)
+
+    // Enabling the handle later makes Enter work again.
+    disabled.value = false
+    await nextTick()
+    await pressEnter()
+    expect(layout.value[0]).toBe(0)
+  })
 })
 
 // Regression test for https://github.com/unovue/reka-ui/issues/2893

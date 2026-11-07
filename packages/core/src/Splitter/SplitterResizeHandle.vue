@@ -56,7 +56,7 @@ const {
   direction,
   groupId,
   registerResizeHandle: registerResizeHandleWithParentGroup,
-  registerResizeHandleElement,
+  resizeHandleRegistration,
   startDragging,
   stopDragging,
   panelGroupElement,
@@ -66,7 +66,6 @@ const resizeHandleId = useId(props.id, 'reka-splitter-resize-handle')
 const state = ref<ResizeHandlerState>('inactive')
 const isFocused = ref(false)
 const resizeHandler = ref<ResizeHandler | null>(null)
-let unregisterResizeHandleElement: (() => void) | undefined
 const { nonce: propNonce } = toRefs(props)
 const nonce = useNonce(propNonce)
 
@@ -150,13 +149,9 @@ useWindowSplitterResizeHandlerBehavior({
 // Tell the parent group when this handle mounts or unmounts, so the
 // group-level keyboard/aria effects re-run for a handle that mounts on its
 // own after the group (e.g. with v-if). See issue #3126.
-onMounted(() => {
-  unregisterResizeHandleElement = registerResizeHandleElement()
-})
-onUnmounted(() => {
-  unregisterResizeHandleElement?.()
-  unregisterResizeHandleElement = undefined
-})
+const bumpResizeHandleRegistration = () => resizeHandleRegistration.value++
+onMounted(bumpResizeHandleRegistration)
+onUnmounted(bumpResizeHandleRegistration)
 </script>
 
 <template>
