@@ -58,6 +58,8 @@ export type PanelGroupContext = {
   stopDragging: () => void
   unregisterPanel: (panelData: PanelData) => void
   panelGroupElement: Ref<ParentNode | null>
+  /** Bumped when a resize handle mounts or unmounts, so group-level effects re-run */
+  resizeHandleRegistration: Ref<number>
 
   // Exposed function for child component
   collapsePanel: (panelData: PanelData) => void
@@ -126,6 +128,9 @@ const layout = ref<number[]>([])
 const panelIdToLastNotifiedSizeMapRef = ref<Record<string, number>>({})
 const panelSizeBeforeCollapseRef = ref<Map<string, number>>(new Map())
 const prevDeltaRef = ref<number>(0)
+// Bumped whenever a resize handle mounts or unmounts, so the group-level
+// keyboard/aria effects re-run for a handle added after the group (e.g. v-if).
+const resizeHandleRegistration = ref(0)
 
 const committedValuesRef = computed(() => ({
   autoSaveId: props.autoSaveId,
@@ -227,6 +232,7 @@ useWindowSplitterPanelGroupBehavior({
   groupId,
   layout,
   panelDataArray: eagerValuesRef.value.panelDataArray,
+  resizeHandleRegistration,
   commitLayout,
   panelGroupElement: panelGroupElementRef,
   getPanelDataWithPercentConstraints,
@@ -903,6 +909,7 @@ providePanelGroupContext({
   stopDragging,
   unregisterPanel,
   panelGroupElement: panelGroupElementRef,
+  resizeHandleRegistration,
 
   collapsePanel,
   expandPanel,

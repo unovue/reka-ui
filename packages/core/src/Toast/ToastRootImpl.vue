@@ -117,11 +117,6 @@ function handleClose(event?: PointerEvent) {
   if (isFocusInToast && isNonPointerEvent)
     providerContext.viewport.value?.focus()
 
-  if (isNonPointerEvent) {
-    // when manually close the toast, we reset isClosePausedRef
-    providerContext.isClosePausedRef.value = false
-  }
-
   emits('close')
 }
 

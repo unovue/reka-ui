@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { ref, toRefs, watch, watchEffect } from 'vue'
+import { onMounted, onUnmounted, ref, toRefs, watch, watchEffect } from 'vue'
 import { useNonce } from '@/shared/useNonce'
 import { useWindowSplitterResizeHandlerBehavior } from './utils/composables/useWindowSplitterBehavior'
 
@@ -56,6 +56,7 @@ const {
   direction,
   groupId,
   registerResizeHandle: registerResizeHandleWithParentGroup,
+  resizeHandleRegistration,
   startDragging,
   stopDragging,
   panelGroupElement,
@@ -142,7 +143,15 @@ useWindowSplitterResizeHandlerBehavior({
   resizeHandler,
   handleId: resizeHandleId,
   panelGroupElement,
+  element: currentElement,
 })
+
+// Tell the parent group when this handle mounts or unmounts, so the
+// group-level keyboard/aria effects re-run for a handle that mounts on its
+// own after the group (e.g. with v-if). See issue #3126.
+const bumpResizeHandleRegistration = () => resizeHandleRegistration.value++
+onMounted(bumpResizeHandleRegistration)
+onUnmounted(bumpResizeHandleRegistration)
 </script>
 
 <template>
