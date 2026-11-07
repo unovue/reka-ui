@@ -378,6 +378,14 @@ describe('given a tooltip trigger inside a form', () => {
     expect(wrapper.get('button').attributes('type')).toBe('submit')
   })
 
+  it('should not add a type to an asChild child', () => {
+    const wrapper = mount(() => h(TooltipProvider, null, () => h(TooltipRoot, null, () => [
+      h(TooltipTrigger, { asChild: true }, () => h('input', { 'aria-label': 'name' })),
+    ])), { attachTo: document.body })
+
+    expect(wrapper.get('input').attributes('type')).toBeUndefined()
+  })
+
   it('should not set a type when not rendered as a button', () => {
     const { trigger } = mountInForm({ as: 'span' })
 
