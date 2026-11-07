@@ -1,9 +1,10 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
+import { userEvent } from 'vitest/browser'
 import { h, nextTick } from 'vue'
 import { CheckboxGroupRoot, CheckboxRoot } from '.'
 
-async function mountForm(groupProps: { name?: string, required: boolean, defaultValue: string[] }) {
+async function mountForm(groupProps: { name?: string, required: boolean, disabled?: boolean, defaultValue: string[] }) {
   let submits = 0
   const wrapper = mount({
     render: () => h('form', {
@@ -13,7 +14,7 @@ async function mountForm(groupProps: { name?: string, required: boolean, default
       },
     }, [
       h(CheckboxGroupRoot, groupProps, () => [
-        h(CheckboxRoot, { value: 'apple' }),
+        h(CheckboxRoot, { 'value': 'apple', 'aria-label': 'apple' }),
         h(CheckboxRoot, { value: 'pear' }),
       ]),
     ]),
@@ -43,5 +44,23 @@ describe('checkboxGroup native validation', () => {
     mounted.form.requestSubmit()
     expect(mounted.getSubmits()).toBe(1)
     expect([...new FormData(mounted.form).keys()]).toEqual([])
+  })
+
+  it('submits an empty required group when the group is disabled', async () => {
+    const mounted = await mountForm({ required: true, disabled: true, defaultValue: [] })
+    wrapper = mounted.wrapper
+    mounted.form.requestSubmit()
+    expect(mounted.getSubmits()).toBe(1)
+  })
+
+  it('submits once the user checks an item in an unnamed required group', async () => {
+    const mounted = await mountForm({ required: true, defaultValue: [] })
+    wrapper = mounted.wrapper
+    mounted.form.requestSubmit()
+    expect(mounted.getSubmits()).toBe(0)
+    await userEvent.click(mounted.wrapper.get('[aria-label="apple"]').element)
+    await nextTick()
+    mounted.form.requestSubmit()
+    expect(mounted.getSubmits()).toBe(1)
   })
 })
