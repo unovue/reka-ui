@@ -156,7 +156,7 @@ type Emits = {
 
 Each family's headless composable (`useSwitch()`, `useDialog()`, …) returns `lastChangeDetails`, a read-only ref holding the details of the last change, including a cancelled one. Before the first change its `reason` is `'none'`.
 
-The components do not expose it as a slot prop, as in Base UI: listen to `update:<name>` (or `beforeUpdate:<name>`) on a component, and read `lastChangeDetails` only when you build on the composable.
+The components do not expose it as a slot prop: listen to `update:<name>` (or `beforeUpdate:<name>`) on a component, and read `lastChangeDetails` only when you build on the composable.
 
 ## Common Mistakes & Fixes
 

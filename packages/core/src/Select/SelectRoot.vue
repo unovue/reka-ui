@@ -40,7 +40,7 @@ export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
    */
   displayValue?: (value: T) => string
   /**
-   * The options as data, as in Base UI's `Select.Root items`: a record of value → label, or an array of
+   * The options as data: a record of value → label, or an array of
    * `{ value, label, disabled? }` (optionally in groups, `{ items: [...] }`). `SelectValue`, the closed trigger's
    * typeahead and the hidden native `select` then read its labels, so a selected value needs no closed render and its
    * label also renders on the server. The `SelectItem`s still render the open list; rendered items it does not list

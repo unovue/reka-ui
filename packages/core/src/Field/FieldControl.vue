@@ -14,7 +14,7 @@ export interface FieldControlProps extends PrimitiveProps {
 export type FieldControlEmits = {
   /**
    * Event handler called when the value of the control changes. `details.reason` is always `'none'` and
-   * `details.event` is the native `input` event (Base UI's `FieldControl`); there is no `beforeUpdate`.
+   * `details.event` is the native `input` event; there is no `beforeUpdate`.
    */
   'update:modelValue': [value: string, details: ChangeEventDetails<BaseChangeReason>]
 }

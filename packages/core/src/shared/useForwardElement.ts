@@ -7,8 +7,8 @@ import { isElement, resolveRefTarget, useMergedRefs } from './useMergedRefs'
  * The element-first ref/expose contract every reka part satisfies (#2808):
  * `defineExpose({ element, $el })`, both keys reading ONE reactive element ref.
  *
- * - `element` is the conformance marker `resolveRefTarget` keys on (aligned with
- *   Base UI). It is strictly an element: `null` whenever the part renders none.
+ * - `element` is the conformance marker `resolveRefTarget` keys on. It
+ *   is strictly an element: `null` whenever the part renders none.
  * - `$el` shadows Vue's builtin snapshot (exposed keys are looked up before
  *   `publicPropertiesMap`), so `partRef.value.$el` stays the familiar surface and
  *   becomes reactive — VueUse `unrefElement` and floating-ui keep working. When

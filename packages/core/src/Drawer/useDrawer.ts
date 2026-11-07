@@ -204,14 +204,14 @@ export interface UseDrawerProps {
    */
   emit?: (event: any, ...args: any[]) => void
   /**
-   * Called before an open change commits (Base UI's `onOpenChange`); calling
+   * Called before an open change commits; calling
    * `details.cancel()` keeps the current state.
    */
   onBeforeUpdate?: (value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason>) => void
   /** Called after an open change committed. */
   onUpdate?: (value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason>) => void
   /**
-   * Called before the active snap point changes (Base UI's `onSnapPointChange`);
+   * Called before the active snap point changes;
    * calling `details.cancel()` keeps the current snap point. Cancelling the
    * `null` a swipe past the last snap point requests keeps the drawer open.
    */
@@ -253,7 +253,7 @@ export interface UseDrawerReturn {
 }
 
 /**
- * Headless Drawer root. Owns the open model with Base UI's cancellable
+ * Headless Drawer root. Owns the open model with a cancellable
  * `onOpenChange(value, details)` contract, the snap-point model, the nested-
  * drawer bookkeeping and the ids, and returns the per-part surfaces.
  *
@@ -795,7 +795,7 @@ export interface UseDrawerContentModalityOptions {
   rootContext: Pick<DrawerRootContext, 'modal' | 'open' | 'triggerElement'> & Partial<Pick<DrawerRootContext, 'overlayElement'>>
   /**
    * The content element. With it, a modal drawer only dismisses on a press on
-   * its own backdrop (internal backdrop or `DrawerOverlay`), as in Base UI.
+   * its own backdrop (internal backdrop or `DrawerOverlay`).
    */
   contentElement?: MaybeRefOrGetter<HTMLElement | null | undefined>
   /**

@@ -83,7 +83,7 @@ export interface PopupRootStore<Payload = unknown> {
   openPopup: (triggerId: string | null, reason?: string, event?: Event, payload?: { value: unknown }) => boolean
   /**
    * Closes the popup. `trigger` is set only for a press on a trigger; other
-   * closes (`handle.close()`, Escape, outside press, Close parts) carry none, as in Base UI.
+   * closes (`handle.close()`, Escape, outside press, Close parts) carry none.
    */
   closePopup: (reason?: string, event?: Event, trigger?: Element) => boolean
   /** Called by the handle before a trigger unregisters (internal). */
@@ -94,7 +94,7 @@ export interface PopupRootStore<Payload = unknown> {
    * Re-derives the implicit owner after the open state or the registered
    * triggers change: a popup opened without naming a trigger (`defaultOpen`, a
    * controlled `open`) while exactly one trigger is registered belongs to that
-   * trigger (Base UI's `useImplicitActiveTrigger`). Internal.
+   * trigger. Internal.
    */
   reconcile: () => void
 }
@@ -269,13 +269,14 @@ export interface CreatePopupRootStoreOptions<Payload> {
   defaultTriggerId?: string | null
 }
 
+// The lazy store follows Base UI, which only mounts the handle machinery when a
+// handle exists (mui/base-ui#5394).
 /**
  * The Root side of a handle: which trigger owns the popup, the payload, and
  * the open/switch/close requests. Pure (no lifecycle, no `document`); the Root
  * SFC attaches it with `usePopupHandleAttachment()`.
  *
- * Most Roots never get a `handle`, so the store is lazy (Base UI only mounts
- * the handle machinery when a handle exists, mui/base-ui#5394): until a handle
+ * Most Roots never get a `handle`, so the store is lazy: until a handle
  * is set (or a handle-only method is called) it holds no computeds and no
  * refs, and its members read the values a store without a handle has.
  *

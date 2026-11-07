@@ -76,9 +76,8 @@ const currentStyle = ref<Record<string, string>>()
 /**
  * A size transition is still running: the toggle interrupted an open or a
  * close. Measuring would snap the panel to its full size, so keep it where it
- * is and let the transition retarget from there (Base UI's
- * `useCollapsiblePanel` likewise only refreshes the size variables from
- * `scrollHeight` / `scrollWidth` here).
+ * is and let the transition retarget from there; only the size variables are
+ * refreshed from `scrollHeight` / `scrollWidth`.
  */
 function isTransitionRunning(node: HTMLElement) {
   return supportsAnimations(node)

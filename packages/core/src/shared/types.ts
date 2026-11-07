@@ -83,7 +83,7 @@ interface ChangeEventDetails<Reason extends string = string, E extends Event = E
    * set only when a trigger press opens, switches or closes the popup, or the
    * handle opens it for a trigger (`handle.open(triggerId)`). It is `undefined`
    * for every other change, including `handle.close()`, Escape, outside
-   * presses, Close parts and item selection (as in Base UI).
+   * presses, Close parts and item selection.
    */
   readonly trigger?: Element
   /** Prevent the change. Synchronous; honoured only during `beforeUpdate` / `onBeforeUpdate`. */

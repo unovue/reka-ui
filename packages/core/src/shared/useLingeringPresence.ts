@@ -2,10 +2,9 @@ import { getCurrentInstance, queuePostFlushCb, shallowRef } from 'vue'
 
 /**
  * Keeps a part's `Presence` mounted only while it is shown or its exit runs:
- * a part that is not shown mounts no `Presence` (Base UI's
- * `SelectItemIndicator` returns `null`). One shown after the part mounted
- * enters with `data-starting-style`, as it did while `Presence` was always
- * mounted.
+ * a part that is not shown mounts no `Presence`. One shown after the part
+ * mounted enters with `data-starting-style`, as it did while `Presence` was
+ * always mounted.
  *
  * ```vue
  * <Presence

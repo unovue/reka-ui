@@ -78,10 +78,10 @@ function findScrollableAncestor(
   return findScrollableAncestor(el.parentElement, axis)
 }
 
+// Ported from BaseUI `useSwipeDismiss.ts:canSwipeFromScrollEdgeOnPendingMove`.
 /**
  * Returns whether the user can start a swipe dismiss from a scrollable element
  * based on the scroll position and drag direction.
- * Ported from BaseUI `useSwipeDismiss.ts:canSwipeFromScrollEdgeOnPendingMove`.
  *
  * Returns:
  *   true  → swipe is allowed (scroll is at the relevant edge)
@@ -267,10 +267,10 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     pendingSwipe = true
   }
 
+  // Ported from BaseUI `useSwipeDismiss.ts:applyDirectionalDamping`.
   /**
    * Applies sqrt-damping to any axis moving in a disallowed direction.
    * Axes moving in an allowed direction pass through linearly.
-   * Ported from BaseUI `useSwipeDismiss.ts:applyDirectionalDamping`.
    */
   function applyDirectionalDamping(deltaX: number, deltaY: number) {
     const exponent = (value: number) => (value >= 0 ? value ** 0.5 : -((Math.abs(value)) ** 0.5))

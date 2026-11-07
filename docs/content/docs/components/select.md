@@ -452,9 +452,9 @@ import './styles.css'
 
 ### Clearing the value
 
-`null` is the empty value, as in [Base UI](https://base-ui.com/react/components/select). Set `v-model` to `null` to clear the selection and show the placeholder.
+`null` is the empty value. Set `v-model` to `null` to clear the selection and show the placeholder.
 
-An item can have `value=""`. Selecting it sets the value to `''` and marks that item as selected, but, as in Base UI, an empty string still reads as no value: `data-placeholder` is set, and `SelectValue` shows the placeholder. When `items` has a `null` entry, it shows the label of the `''` entry in `items` instead, so list both: with a `null` entry and no `''` entry, a `''` value renders blank, as in Base UI. Inside a `multiple` array, `''` is a selected value like any other.
+An item can have `value=""`. Selecting it sets the value to `''` and marks that item as selected, but an empty string still reads as no value: `data-placeholder` is set, and `SelectValue` shows the placeholder. When `items` has a `null` entry, it shows the label of the `''` entry in `items` instead, so list both: with a `null` entry and no `''` entry, a `''` value renders blank. Inside a `multiple` array, `''` is a selected value like any other.
 
 To let users clear the selection from the list, add an item with a `null` value. Pressing it sets the value to `null`. List it in `items` too and `SelectValue` shows its label while the select is empty, instead of the placeholder. `data-placeholder` is still set.
 
@@ -496,7 +496,7 @@ const themes = [
 </template>
 ```
 
-In a form, `''` submits an empty string and `null` submits `nullable-value` (`""` by default). With `required`, `''` is missing a value, and so is `null` while `nullable-value` is empty; a non-empty `nullable-value` is submitted as a value and satisfies `required`. Inside a `Field`, neither `null` nor `''` counts as filled, as in Base UI. With `multiple`, `null` and `''` are ordinary values that toggle in the array and are submitted; clear a multiple select with `[]`.
+In a form, `''` submits an empty string and `null` submits `nullable-value` (`""` by default). With `required`, `''` is missing a value, and so is `null` while `nullable-value` is empty; a non-empty `nullable-value` is submitted as a value and satisfies `required`. Inside a `Field`, neither `null` nor `''` counts as filled. With `multiple`, `null` and `''` are ordinary values that toggle in the array and are submitted; clear a multiple select with `[]`.
 
 ### With separators
 
@@ -652,7 +652,7 @@ To resolve a selected value without that render, describe the options with `item
 
 ### Listing the items as data
 
-Pass the options to `items` as well as rendering them. The trigger, the typeahead on the closed trigger and the hidden native `<select>` then read the labels from `items`, so a closed select needs no items rendered to show its value. It takes the same shapes as [Base UI](https://base-ui.com/react/components/select): a record of value to label, an array of `{ value, label, disabled? }`, or an array of groups `{ label?, items }`. An item's label is the text the trigger shows and the typeahead matches; it wins over the item's `SelectItemText`, and the items are still rendered by your template.
+Pass the options to `items` as well as rendering them. The trigger, the typeahead on the closed trigger and the hidden native `<select>` then read the labels from `items`, so a closed select needs no items rendered to show its value. It takes one of three shapes: a record of value to label, an array of `{ value, label, disabled? }`, or an array of groups `{ label?, items }`. An item's label is the text the trigger shows and the typeahead matches; it wins over the item's `SelectItemText`, and the items are still rendered by your template.
 
 A typed character tries `items` first and renders nothing when that answers it, as when it jumps to another letter. It renders the items, until focus leaves the trigger, when:
 - nothing in `items` matches, or repeating a key wraps past its last match. This keeps an option only a `SelectItem` has reachable. Only the render can rule such an option out, so a wrap renders even when `items` lists every option;
