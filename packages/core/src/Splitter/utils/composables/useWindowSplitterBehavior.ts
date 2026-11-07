@@ -2,7 +2,7 @@ import type { Ref } from 'vue'
 import type { ResizeHandler } from '../types'
 import { watchEffect } from 'vue'
 import { assert } from '../assert'
-import { getResizeHandleElementIndex, getResizeHandleElementsForGroup } from '../dom'
+import { getResizeHandleElementsForGroup } from '../dom'
 
 // https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/
 
@@ -47,17 +47,16 @@ export function useWindowSplitterResizeHandlerBehavior({
           const groupId = handleElement.getAttribute('data-panel-group-id')
           assert(groupId)
 
+          // Skip disabled handles, which ignore the keyboard and pointer anyway.
           const handles = getResizeHandleElementsForGroup(
             groupId,
             _panelGroupElement,
-          )
-          const index = getResizeHandleElementIndex(
-            groupId,
-            handleId,
-            _panelGroupElement,
+          ).filter(handle => handle === handleElement || !handle.hasAttribute('data-disabled'))
+          const index = handles.findIndex(
+            handle => handle.getAttribute('data-panel-resize-handle-id') === handleId,
           )
 
-          assert(index !== null)
+          assert(index !== -1)
 
           const nextIndex = event.shiftKey
             ? index > 0
