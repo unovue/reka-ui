@@ -322,12 +322,16 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
     // snap point to the default (`defaultSnapPoint`, else the first snap
     // point), so the drawer reopens where it started. A controlled parent
     // applies the close on its next render, and may ignore it: reset only once
-    // the drawer is really closed.
+    // the drawer is really closed. The reset is requested even when it matches
+    // the current point, as `handleOpenChange` does: a controlled `snapPoint`
+    // may not have applied a request made earlier in this gesture yet (a swipe
+    // past the last point requests `null` first), so the value read here can
+    // be stale and the parent would otherwise keep `null`.
     const points = toValue(props.snapPoints)
     if (!value && points && points.length > 0) {
       const resetSnapPoint = () => {
         if (!open.value)
-          setActiveSnapPoint(props.defaultSnapPoint !== undefined ? props.defaultSnapPoint : points[0] ?? null, reason, event)
+          setSnapPoint(props.defaultSnapPoint !== undefined ? props.defaultSnapPoint : points[0] ?? null, reason, event, { force: true })
       }
       if (open.value)
         nextTick(resetSnapPoint)
