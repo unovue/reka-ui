@@ -208,12 +208,26 @@ function convertLayoutToNativeUnits(internalLayout: number[]): number[] {
   })
 }
 
+function commitLayout(nextLayout: number[]) {
+  setLayout(nextLayout)
+
+  eagerValuesRef.value.layout = nextLayout
+  emits('layout', convertLayoutToNativeUnits(nextLayout))
+
+  callPanelCallbacks(
+    eagerValuesRef.value.panelDataArray,
+    nextLayout,
+    panelIdToLastNotifiedSizeMapRef.value,
+    getGroupSizeInPixels(),
+  )
+}
+
 useWindowSplitterPanelGroupBehavior({
   eagerValuesRef,
   groupId,
   layout,
   panelDataArray: eagerValuesRef.value.panelDataArray,
-  setLayout,
+  commitLayout,
   panelGroupElement: panelGroupElementRef,
   getPanelDataWithPercentConstraints,
 })

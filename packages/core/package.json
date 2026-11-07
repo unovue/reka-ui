@@ -112,7 +112,7 @@
     "@testing-library/vue": "^8.1.0",
     "@tsconfig/node24": "^24.0.0",
     "@types/jsdom": "^30.0.0",
-    "@types/node": "^24.0.13",
+    "@types/node": "^26.6.6",
     "@vitejs/plugin-vue": "^6.0.10",
     "@vitest/browser-playwright": "^5.0.3",
     "@vitest/coverage-istanbul": "^5.0.3",
