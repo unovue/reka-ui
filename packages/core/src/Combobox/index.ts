@@ -15,6 +15,7 @@ export {
   type ComboboxContentEmits,
   type ComboboxContentProps,
 } from './ComboboxContent.vue'
+export type { ComboboxFocusTarget } from './ComboboxContentImpl.vue'
 export {
   default as ComboboxEmpty,
   type ComboboxEmptyProps,
@@ -76,6 +77,7 @@ export {
   type ComboboxContentState,
   type ComboboxInputChangeReason,
   type ComboboxInputState,
+  type ComboboxInteractionType,
   type ComboboxItemState,
   type ComboboxOpenChangeReason,
   type ComboboxState,

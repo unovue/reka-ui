@@ -99,6 +99,51 @@ export function hasComboboxValue(value: unknown) {
 let comboboxCount = 0
 
 /**
+ * How the popup was opened or closed, passed to an `initialFocus` / `finalFocus`
+ * function; `''` when unknown (a focus, a
+ * programmatic change).
+ */
+export type ComboboxInteractionType = 'mouse' | 'touch' | 'pen' | 'keyboard' | ''
+
+function getInteractionType(event?: Event): ComboboxInteractionType {
+  // A dismissal passes the layer's custom event: read the press or key behind it.
+  const original = (event as CustomEvent<{ originalEvent?: Event }> | undefined)?.detail?.originalEvent
+  if (original)
+    return getInteractionType(original)
+  if (!event)
+    return ''
+  // By type, not `instanceof`: an event from an iframe has another realm's classes.
+  if (event.type.startsWith('key') || event.type === 'input' || event.type === 'beforeinput')
+    return 'keyboard'
+  const pointerType = (event as PointerEvent).pointerType
+  if (pointerType === 'mouse' || pointerType === 'touch' || pointerType === 'pen')
+    return pointerType
+  if (event.type === 'click' || event.type.startsWith('mouse') || event.type.startsWith('pointer'))
+    return (event as MouseEvent).detail === 0 && event.type === 'click' ? 'keyboard' : 'mouse'
+  return ''
+}
+
+/** Inputs being focused by the content on close: their focus must not reopen the popup (`openOnFocus`). */
+const restoringFocus = new WeakSet<Element>()
+
+/** Focuses an element without its focus opening the popup again. */
+export function focusWithoutOpening(element: HTMLElement) {
+  restoringFocus.add(element)
+  try {
+    element.focus()
+  }
+  finally {
+    restoringFocus.delete(element)
+  }
+}
+
+/** Whether the combobox input is rendered inside its content. */
+export function isComboboxInputInsideContent(context: ComboboxRootContext<any>) {
+  const input = context.inputElement.value
+  return !!input && !!getElementByIdFrom(context.parentElement.value, context.contentId)?.contains(input)
+}
+
+/**
  * The trigger surface (`aria-haspopup`/`aria-expanded`/`aria-controls` +
  * `onClick` → toggle with `'trigger-press'`), derived from the context. The
  * tag-dependent `type` stays in the SFC.
@@ -108,6 +153,10 @@ export function getComboboxTriggerSurface(
   disabled?: MaybeRefOrGetter<boolean | undefined>,
 ): PartSurface<ComboboxTriggerState> {
   const isDisabled = computed(() => toValue(disabled) || context.disabled.value || false)
+  let pointerType: string | undefined
+  // The open state when the press began: focusing the input on mousedown can
+  // open the popup first (`openOnFocus`), and the press must not then close it.
+  let openAtPress: boolean | undefined
   return createPartSurface<ComboboxTriggerState>(
     () => ({
       'tabindex': '-1',
@@ -117,7 +166,38 @@ export function getComboboxTriggerSurface(
       'aria-controls': context.contentId,
       'disabled': isDisabled.value,
       'aria-disabled': isDisabled.value,
-      'onClick': (event: MouseEvent) => context.onOpenChange(!context.open.value, 'trigger-press', event),
+      'onPointerdown': (event: PointerEvent) => {
+        pointerType = event.pointerType
+      },
+      'onMousedown': (event: MouseEvent) => {
+        // Only the primary button presses the trigger.
+        if (event.button !== 0)
+          return
+        // A press moves focus to an input outside the content, and the
+        // trigger does not take it. Not by touch: no virtual keyboard opens.
+        // An input inside the content is focused by the content on open.
+        const input = context.inputElement.value
+        openAtPress = context.open.value
+        if (isDisabled.value || pointerType === 'touch' || !input?.isConnected || isComboboxInputInsideContent(context))
+          return
+        input.focus()
+        event.preventDefault()
+      },
+      'onClick': (event: MouseEvent) => {
+        // The pointer type of the press: not every engine gives the click one. A
+        // keyboard press (Enter / Space) is a click with no pointer before it.
+        const keyboard = event.detail === 0
+        const type = keyboard ? 'keyboard' : (pointerType as ComboboxInteractionType || 'mouse')
+        const wasOpen = keyboard ? context.open.value : (openAtPress ?? context.open.value)
+        pointerType = undefined
+        openAtPress = undefined
+        // Already toggled by its own mousedown (an `openOnFocus` open): nothing
+        // to change, and the record of that open stays.
+        if (context.open.value !== wasOpen)
+          return
+        if (context.onOpenChange(!wasOpen, 'trigger-press', event))
+          context.interactionType.value = type
+      },
     }),
     () => ({ popupOpen: context.open.value, disabled: isDisabled.value }),
   )
@@ -314,7 +394,7 @@ export function createComboboxInputSurface(
       },
       'onKeydown': onKeydown,
       'onFocus': (event: FocusEvent) => {
-        if (context.openOnFocus.value && !context.open.value)
+        if (context.openOnFocus.value && !context.open.value && !restoringFocus.has(event.currentTarget as Element))
           context.onOpenChange(true, 'input-focus', event)
       },
       'onClick': (event: MouseEvent) => {
@@ -501,6 +581,7 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
   const isUserInputted = ref(false)
   const inputElement = ref<HTMLInputElement>()
   const triggerElement = ref<HTMLElement>()
+  const interactionType = ref<ComboboxInteractionType>('')
   const bool = (source: MaybeRefOrGetter<boolean | undefined>, fallback = false) => computed(() => toValue(source) ?? fallback) as Ref<boolean>
 
   // The blur reset runs a tick after the close. A reopen inside that window
@@ -525,13 +606,13 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     if (value !== open.value && !setOpen(value, reason, event))
       return false
     clearResetSearchTermTimer()
+    interactionType.value = getInteractionType(event)
     filterSearch.value = value ? (props.openSearchTerm?.() ?? '') : ''
     if (value) {
       // make sure the DOM is ready, then highlight the selected item
       nextTick(() => {
         listbox.highlightSelected()
         isUserInputted.value = true
-        inputElement.value?.focus()
       })
     }
     else {
@@ -588,6 +669,7 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     onInputElementChange: el => inputElement.value = el,
     triggerElement,
     onTriggerElementChange: el => triggerElement.value = el,
+    interactionType,
     parentElement: computed(() => toValue(props.element) ?? undefined),
     resetSearchTermOnSelect: bool(props.resetSearchTermOnSelect, true),
     onResetSearchTerm: resetSearchTerm.on,

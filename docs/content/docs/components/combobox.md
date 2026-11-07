@@ -673,6 +673,32 @@ import { ref } from 'vue'
 
 `useComboboxRoot()` is the headless composable behind `ComboboxRoot`. It returns the same models, the search term and filter state, and the `role` / `aria-*` / `data-*` attributes for the input, trigger, content and items.
 
+### Focus management
+
+Where focus goes depends on where `ComboboxInput` is:
+
+- **Input outside the content** (the usual layout): a mouse or pen press on `ComboboxTrigger` moves focus to the input, and the trigger never takes it. A touch press, a keyboard press on the trigger and a programmatic open do not move focus to the input, so no on-screen keyboard opens (a touch press can still focus the trigger itself, as browsers do for a button). Closing does not restore focus; if focus was inside content that unmounts, it is lost with it.
+- **Input inside the content**: opening focuses the input, or the content itself when it was opened by touch. Closing returns focus to the trigger when focus was inside the content (or lost with it); focus that moved to another control outside stays there.
+
+`initialFocus` and `finalFocus` on `ComboboxContent` change what the content does: `false` leaves focus where it is, `true` uses the first tabbable element in the content on open and the trigger (input inside) or the input (input outside) on close, and an element focuses that element. A function receives how the content was opened or closed (`'mouse'`, `'touch'`, `'pen'`, `'keyboard'`, or `''` when unknown) and returns one of these; use it for an element inside the content, whose template ref is still empty when the content mounts. They do not change the trigger: with the input outside the content, a mouse press on the trigger still focuses the input. `autoFocus` on `ComboboxInput` only focuses the input when it mounts, like the native attribute, and `:initial-focus="false"` does not undo it.
+
+```vue
+<template>
+  <ComboboxRoot>
+    <ComboboxTrigger>Pick a fruit</ComboboxTrigger>
+    <ComboboxPortal>
+      <!-- keep focus on the trigger when the content opens -->
+      <ComboboxContent :initial-focus="false">
+        <ComboboxInput placeholder="Search…" />
+        <ComboboxViewport>
+          …
+        </ComboboxViewport>
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>
+</template>
+```
+
 ### Prevent select behavior
 
 By default, selecting `ComboboxItem` would close the content, and update the `modelValue` with the provided value.
