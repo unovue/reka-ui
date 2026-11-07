@@ -113,6 +113,12 @@ describe('given a Splitter with a disabled resize handle between two enabled one
 
     await userEvent.keyboard('{Shift>}{F6}{/Shift}')
     expect(document.activeElement).toBe(handle(0))
+
+    // The disabled handle is still reachable with Tab; F6 from there moves on to an enabled handle.
+    await userEvent.tab()
+    expect(document.activeElement).toBe(handle(1))
+    await userEvent.keyboard('{F6}')
+    expect(document.activeElement).toBe(handle(2))
   })
 })
 

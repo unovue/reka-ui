@@ -353,6 +353,23 @@ describe('resize handle focus', () => {
     expect(document.activeElement).toBe(handle(2))
   })
 
+  it('should move focus from a disabled handle to an enabled one on F6, without resizing on arrow keys', async () => {
+    const handle = mountSplitter([false, true, false])
+    await nextTick()
+
+    handle(1).focus()
+    const arrow = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true })
+    handle(1).dispatchEvent(arrow)
+    expect(arrow.defaultPrevented).toBe(false)
+
+    pressF6(handle(1))
+    expect(document.activeElement).toBe(handle(2))
+
+    handle(1).focus()
+    pressF6(handle(1), true)
+    expect(document.activeElement).toBe(handle(0))
+  })
+
   it('should keep focus on F6 when every other handle is disabled', async () => {
     const handle = mountSplitter([false, true])
     await nextTick()

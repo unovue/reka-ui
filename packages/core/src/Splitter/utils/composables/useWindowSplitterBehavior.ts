@@ -22,7 +22,7 @@ export function useWindowSplitterResizeHandlerBehavior({
   watchEffect((onCleanup) => {
     const _panelGroupElement = panelGroupElement.value
     const handleElement = element.value
-    if (disabled.value || resizeHandler.value === null || _panelGroupElement === null || !handleElement)
+    if (_panelGroupElement === null || !handleElement)
       return
 
     const onKeyDown = (event: KeyboardEvent) => {
@@ -36,6 +36,10 @@ export function useWindowSplitterResizeHandlerBehavior({
         case 'ArrowUp':
         case 'End':
         case 'Home': {
+          // A disabled handle stays tabbable and still takes F6, but does not resize.
+          if (disabled.value || resizeHandler.value === null)
+            break
+
           event.preventDefault()
 
           resizeHandler.value?.(event)
