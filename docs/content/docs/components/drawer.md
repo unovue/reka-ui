@@ -499,10 +499,11 @@ A swipe that changes the snap point emits the cancellable
 `beforeUpdate:snapPoint`, then `update:snapPoint`, both with a `details` object
 (`details.reason` is `'swipe'`). Swiping past the last point first requests the
 `null` snap point: cancel it to keep the drawer open where it was. When the
-close that follows is cancelled, the previous snap point is restored. Once a
-close the drawer requested takes effect, the snap point resets to
-`defaultSnapPoint` (else the first point); a parent that closes the drawer by
-setting `open` to `false` resets the snap point itself.
+close that follows is cancelled, the previous snap point is restored. When a
+close the drawer requested takes effect by the next tick, the drawer requests a
+reset to `defaultSnapPoint` (else the first point) through the same snap-point
+events. A parent that closes the drawer by setting `open` to `false`, or that
+applies a close later, resets the snap point itself.
 
 ```vue line=5-9
 <script setup>
