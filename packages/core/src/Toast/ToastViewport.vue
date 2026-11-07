@@ -21,7 +21,7 @@ export interface ToastViewportProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { onKeyStroke, unrefElement } from '@vueuse/core'
+import { onKeyStroke, unrefElement, useEventListener } from '@vueuse/core'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRefs, watch, watchEffect } from 'vue'
 import { DismissableLayerBranch } from '@/DismissableLayer'
 import { focusFirst, getTabbableCandidates } from '@/FocusScope/utils'
@@ -123,6 +123,17 @@ watch(hasToasts, (value) => {
   }
 })
 
+function releasePause(viewport: HTMLElement | undefined) {
+  if (providerContext.isClosePausedRef.value) {
+    viewport?.dispatchEvent(new CustomEvent(VIEWPORT_RESUME))
+    providerContext.isClosePausedRef.value = false
+  }
+}
+
+// Releases a blur pause, including one left over after the last toast closed, which would
+// otherwise keep later toasts from ever starting their timers.
+useEventListener('focus', () => releasePause(viewportElement.value))
+
 watchEffect((cleanupFn) => {
   const viewport = viewportElement.value
   if (hasToasts.value && viewport) {
@@ -134,13 +145,7 @@ watchEffect((cleanupFn) => {
       }
     }
 
-    const handleResume = () => {
-      if (providerContext.isClosePausedRef.value) {
-        const resumeEvent = new CustomEvent(VIEWPORT_RESUME)
-        viewport.dispatchEvent(resumeEvent)
-        providerContext.isClosePausedRef.value = false
-      }
-    }
+    const handleResume = () => releasePause(viewport)
 
     const handleFocusOutResume = (event: FocusEvent) => {
       const isFocusMovingOutside = !viewport.contains(event.relatedTarget as HTMLElement)
@@ -210,7 +215,6 @@ watchEffect((cleanupFn) => {
     viewport.addEventListener('pointerleave', handlePointerLeaveResume)
     viewport.addEventListener('keydown', handleKeyDown)
     window.addEventListener('blur', handlePause)
-    window.addEventListener('focus', handleResume)
 
     cleanupFn(() => {
       viewport.removeEventListener('focusin', handlePause)
@@ -221,7 +225,8 @@ watchEffect((cleanupFn) => {
       viewport.removeEventListener('pointerleave', handlePointerLeaveResume)
       viewport.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('blur', handlePause)
-      window.removeEventListener('focus', handleResume)
+      if (document.hasFocus())
+        releasePause(viewport)
     })
   }
 })
