@@ -227,13 +227,14 @@ describe('given a toast that opens', () => {
   afterEach(() => {
     wrapper.unmount()
     vi.useRealTimers()
+    vi.unstubAllGlobals()
   })
 
   it.each([
     ['foreground', 'assertive'],
     ['background', 'polite'],
   ] as const)('should announce a %s toast in a status region drawn before its text, and remove it after a second', async (type, politeness) => {
-    wrapper = mount(() => h(ToastProvider, null, {
+    wrapper = mount(() => h(ToastProvider, { label: 'Notice' }, {
       default: () => [
         h(ToastRoot, { open: true, type }, { default: () => h(ToastTitle, null, { default: () => 'Saved' }) }),
         h(ToastViewport),
@@ -248,6 +249,36 @@ describe('given a toast that opens', () => {
 
     vi.advanceTimersToNextFrame()
     vi.advanceTimersToNextFrame()
+    await flush()
+    expect(region!.textContent).toContain('Notice')
+    expect(region!.textContent).toContain('Saved')
+
+    vi.advanceTimersByTime(1000)
+    await flush()
+    expect(region!.isConnected).toBe(false)
+  })
+
+  it('should keep the region until its text is in, while a hidden tab holds animation frames', async () => {
+    const frames: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => frames.push(callback))
+    vi.stubGlobal('cancelAnimationFrame', () => {})
+    const runFrame = () => frames.splice(0).forEach(callback => callback(performance.now()))
+
+    wrapper = mount(() => h(ToastProvider, null, {
+      default: () => [
+        h(ToastRoot, { open: true }, { default: () => h(ToastTitle, null, { default: () => 'Saved' }) }),
+        h(ToastViewport),
+      ],
+    }), { attachTo: document.body })
+    await flush()
+    const region = document.querySelector('[role="status"]')
+
+    vi.advanceTimersByTime(1000)
+    await flush()
+    expect(region!.isConnected).toBe(true)
+
+    runFrame()
+    runFrame()
     await flush()
     expect(region!.textContent).toContain('Saved')
 

@@ -258,11 +258,11 @@ describe('useToastManager', () => {
     await flush()
 
     // Announce text renders after two animation frames.
-    await new Promise(resolve => setTimeout(resolve, 50))
-    await flush()
-    const status = document.querySelector('[role="status"]')!
-    expect(status.textContent).toContain('Saved')
-    expect(status.textContent).not.toContain('Saving')
+    await vi.waitFor(() => {
+      const status = document.querySelector('[role="status"]')!
+      expect(status.textContent).toContain('Saved')
+      expect(status.textContent).not.toContain('Saving')
+    })
   })
 
   it('renders actionProps and calls onClick', async () => {
