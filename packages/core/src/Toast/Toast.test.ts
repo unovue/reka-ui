@@ -444,6 +444,9 @@ describe('given two toasts over an open dialog', () => {
 })
 
 const PopoverInToast = defineComponent({
+  props: {
+    onToastEscapeKeyDown: Function as PropType<(event: KeyboardEvent) => void>,
+  },
   setup() {
     const open = ref({ toast: true, popover: true })
     return { open }
@@ -456,6 +459,7 @@ const PopoverInToast = defineComponent({
           'onUpdate:open': (value: boolean) => {
             this.open.toast = value
           },
+          'onEscapeKeyDown': this.onToastEscapeKeyDown,
         }, {
           default: () => h(PopoverRoot, {
             'open': this.open.popover,
@@ -477,10 +481,12 @@ const PopoverInToast = defineComponent({
 
 describe('given a toast with a popover open in it, without a portal', () => {
   let wrapper: VueWrapper<InstanceType<typeof PopoverInToast>>
+  const onToastEscapeKeyDown = vi.fn()
 
   beforeEach(() => {
     document.body.innerHTML = ''
-    wrapper = mount(PopoverInToast, { attachTo: document.body })
+    onToastEscapeKeyDown.mockClear()
+    wrapper = mount(PopoverInToast, { props: { onToastEscapeKeyDown }, attachTo: document.body })
   })
 
   afterEach(() => {
@@ -491,6 +497,7 @@ describe('given a toast with a popover open in it, without a portal', () => {
     await fireEvent.keyDown(await findByText(document.body, 'Details'), { key: 'Escape' })
 
     expect(wrapper.vm.open).toEqual({ toast: true, popover: false })
+    expect(onToastEscapeKeyDown).not.toHaveBeenCalled()
   })
 })
 

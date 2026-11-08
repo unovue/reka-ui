@@ -197,7 +197,7 @@ watch([() => props.open, duration, restartKey], () => {
 // doesn't also close the dialog or popover around it. An Escape inside a layer
 // open in the toast, such as a popover without a portal, is that layer's.
 onKeyStroke('Escape', (event) => {
-  const layer = (event.target as Element).closest('[data-dismissable-layer]')
+  const layer = (event.target as Element | null)?.closest?.('[data-dismissable-layer]')
   if (layer && currentElement.value?.contains(layer))
     return
   event.stopPropagation()
