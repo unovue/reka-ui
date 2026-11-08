@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { DialogContent, DialogRoot, DialogTitle } from '@/Dialog'
+import { PopoverContent, PopoverRoot, PopoverTrigger } from '@/Popover'
 import { ToastAction, ToastClose, ToastDescription, ToastProvider, ToastRoot, ToastTitle, ToastViewport } from '.'
 import Toast from './story/_Toast.vue'
 import { VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'
@@ -439,6 +440,57 @@ describe('given two toasts over an open dialog', () => {
     await fireEvent.keyDown(await findByText(document.body, 'Dialog'), { key: 'Escape' })
 
     expect(wrapper.vm.open).toEqual({ dialog: false, first: true, second: true })
+  })
+})
+
+const PopoverInToast = defineComponent({
+  setup() {
+    const open = ref({ toast: true, popover: true })
+    return { open }
+  },
+  render() {
+    return h(ToastProvider, null, {
+      default: () => [
+        h(ToastRoot, {
+          'open': this.open.toast,
+          'onUpdate:open': (value: boolean) => {
+            this.open.toast = value
+          },
+        }, {
+          default: () => h(PopoverRoot, {
+            'open': this.open.popover,
+            'onUpdate:open': (value: boolean) => {
+              this.open.popover = value
+            },
+          }, {
+            default: () => [
+              h(PopoverTrigger, null, { default: () => 'More' }),
+              h(PopoverContent, null, { default: () => 'Details' }),
+            ],
+          }),
+        }),
+        h(ToastViewport),
+      ],
+    })
+  },
+})
+
+describe('given a toast with a popover open in it, without a portal', () => {
+  let wrapper: VueWrapper<InstanceType<typeof PopoverInToast>>
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(PopoverInToast, { attachTo: document.body })
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
+  })
+
+  it('should close the popover, and not the toast, on Escape in the popover', async () => {
+    await fireEvent.keyDown(await findByText(document.body, 'Details'), { key: 'Escape' })
+
+    expect(wrapper.vm.open).toEqual({ toast: true, popover: false })
   })
 })
 
