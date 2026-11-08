@@ -6,7 +6,6 @@ import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { handleSubmit } from '@/test'
 import { SelectContent, SelectItem, SelectItemIndicator, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '.'
-import SelectUnmountCleanup from './__test__/SelectUnmountCleanup.vue'
 import Select from './story/_SelectTest.vue'
 
 beforeAll(() => {
@@ -381,7 +380,7 @@ describe('given Select with options containing spaces', () => {
   })
 })
 
-describe('given SelectContent cleanup', () => {
+describe('given SelectContent closing after a selection', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
     vi.useFakeTimers()
@@ -391,22 +390,113 @@ describe('given SelectContent cleanup', () => {
     vi.useRealTimers()
   })
 
-  it('should clear delayed presence updates when unmounted after closing', async () => {
-    const clearTimeoutSpy = vi.spyOn(window, 'clearTimeout')
-    const wrapper = mount(SelectUnmountCleanup, { attachTo: document.body })
+  it('shows the selected option once the menu closes, before any timer runs', async () => {
+    const wrapper = mount(Select, { attachTo: document.body, props: { defaultValue: 'Apple' } })
+    const valueBox = wrapper.find('[aria-label="Customise options"]')
 
-    await nextTick()
-    await wrapper.find('button').trigger('click')
-    await nextTick()
-
-    const timerCountAfterClose = vi.getTimerCount()
-    expect(timerCountAfterClose).toBeGreaterThan(0)
-
-    await wrapper.findAll('button')[1].trigger('click')
+    await fireEvent.pointerDown(wrapper.find('button').element, { button: 0, ctrlKey: false })
     await nextTick()
 
-    expect(clearTimeoutSpy).toHaveBeenCalled()
-    expect(vi.getTimerCount()).toBeLessThan(timerCountAfterClose)
+    const banana = wrapper.findAll('[role=option]')[1]
+    ;(banana.element as HTMLElement).focus()
+    await banana.trigger('pointerup')
+    await fireEvent.pointerUp(banana.element)
+    for (let i = 0; i < 5; i++) {
+      await nextTick()
+    }
+
+    expect(valueBox.text()).toContain('Banana')
+    expect(valueBox.text()).not.toContain('Please select a fruit')
+    expect(document.querySelector('[role="listbox"]')).toBeNull()
+  })
+})
+
+describe('given a Select value that no longer matches a mounted option', () => {
+  const placeholder = 'Pick one'
+
+  function mountControlled(initial: { value?: string, options: string[], forceMount?: boolean }) {
+    document.body.innerHTML = ''
+    const model = ref<string | undefined>(initial.value)
+    const options = ref(initial.options)
+    const Fixture = defineComponent({
+      setup() {
+        return () => h(SelectRoot, {
+          'modelValue': model.value,
+          'onUpdate:modelValue': (value: string) => {
+            model.value = value
+          },
+        }, () => [
+          h(SelectTrigger, { 'aria-label': 'Fruit' }, () => h(SelectValue, { placeholder })),
+          h(SelectPortal, null, () => h(SelectContent, { forceMount: initial.forceMount, position: 'popper' }, () => h(SelectViewport, null, () => options.value.map(fruit =>
+            h(SelectItem, { key: fruit, value: fruit }, () => h(SelectItemText, null, () => fruit)),
+          )))),
+        ])
+      },
+    })
+    const wrapper = mount(Fixture, { attachTo: document.body })
+    return {
+      wrapper,
+      model,
+      options,
+      trigger: () => document.querySelector('[role="combobox"]')!,
+    }
+  }
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('shows the placeholder when the value is cleared', async () => {
+    const { model, trigger } = mountControlled({ value: 'Apple', options: ['Apple', 'Banana'] })
+    await nextTick()
+    expect(trigger().textContent).toContain('Apple')
+
+    model.value = undefined
+    await nextTick()
+
+    expect(trigger().textContent).toContain(placeholder)
+  })
+
+  it('shows the placeholder when the value matches no option', async () => {
+    const { model, trigger } = mountControlled({ value: 'Apple', options: ['Apple', 'Banana'] })
+    await nextTick()
+
+    model.value = 'Durian'
+    await nextTick()
+
+    expect(trigger().textContent).toContain(placeholder)
+    expect(trigger().textContent).not.toContain('Apple')
+  })
+
+  it('shows the placeholder when the selected option is removed', async () => {
+    const { options, trigger } = mountControlled({ value: 'Apple', options: ['Apple', 'Banana'] })
+    await nextTick()
+    expect(trigger().textContent).toContain('Apple')
+
+    options.value = ['Banana']
+    await nextTick()
+
+    expect(trigger().textContent).toContain(placeholder)
+    expect(trigger().textContent).not.toContain('Apple')
+  })
+
+  it('keeps the selected option and the menu mounted when forceMount is set', async () => {
+    const { trigger } = mountControlled({ value: 'Apple', options: ['Apple', 'Cherry'], forceMount: true })
+    await nextTick()
+
+    await fireEvent.pointerDown(trigger(), { button: 0, ctrlKey: false })
+    await nextTick()
+    const cherry = document.querySelectorAll<HTMLElement>('[role="option"]')[1]
+    cherry.focus()
+    await fireEvent.pointerUp(cherry)
+    await fireEvent.pointerUp(cherry)
+    await nextTick()
+
+    expect(trigger().textContent).toContain('Cherry')
+    expect(trigger().textContent).not.toContain(placeholder)
+    const listbox = document.querySelector('[role="listbox"]')
+    expect(listbox).not.toBeNull()
+    expect(listbox?.getAttribute('data-state')).toBe('closed')
   })
 })
 
