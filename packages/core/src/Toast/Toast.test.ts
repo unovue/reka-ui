@@ -5,6 +5,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
+import { DialogContent, DialogRoot, DialogTitle } from '@/Dialog'
 import { ToastAction, ToastClose, ToastDescription, ToastProvider, ToastRoot, ToastTitle, ToastViewport } from '.'
 import Toast from './story/_Toast.vue'
 import { VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'
@@ -201,7 +202,7 @@ describe('given a default Toast', () => {
 
     describe('when pressing escape', () => {
       beforeEach(() => {
-        fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+        fireEvent.keyDown(closeButton, { key: 'Escape' })
       })
 
       it('should close the content', () => {
@@ -214,8 +215,7 @@ describe('given a default Toast', () => {
 const PausableToasts = defineComponent({
   setup() {
     const open = ref({ first: true, second: true })
-    const preventSecondEscape = ref(false)
-    return { open, preventSecondEscape }
+    return { open }
   },
   render() {
     const toast = (name: 'first' | 'second') => h(ToastRoot, {
@@ -223,10 +223,6 @@ const PausableToasts = defineComponent({
       'open': this.open[name],
       'onUpdate:open': (value: boolean) => {
         this.open[name] = value
-      },
-      'onEscapeKeyDown': (event: KeyboardEvent) => {
-        if (name === 'second' && this.preventSecondEscape)
-          event.preventDefault()
       },
     }, {
       default: () => [
@@ -292,7 +288,8 @@ describe('given toasts whose close timers are paused', () => {
     })
 
     it('should not leave the next toast paused after Escape', async () => {
-      await fireEvent.keyDown(document.body, { key: 'Escape' })
+      await fireEvent.keyDown(document.querySelector('[data-close="first"]')!, { key: 'Escape' })
+      await fireEvent.keyDown(document.querySelector('[data-close="second"]')!, { key: 'Escape' })
       await waitForUnmount()
       await reopenFirst()
       await runDuration()
@@ -369,9 +366,8 @@ describe('given toasts whose close timers are paused', () => {
 
   describe('when Escape closes only one of two hovered toasts', () => {
     it('should keep the other paused until the pointer leaves', async () => {
-      wrapper.vm.preventSecondEscape = true
       await fireEvent.pointerMove(viewport)
-      await fireEvent.keyDown(document.body, { key: 'Escape' })
+      await fireEvent.keyDown(document.querySelector('[data-close="first"]')!, { key: 'Escape' })
       await flush()
       expect(wrapper.vm.open).toEqual({ first: false, second: true })
 
@@ -382,6 +378,67 @@ describe('given toasts whose close timers are paused', () => {
       await runDuration()
       expect(wrapper.vm.open.second).toBe(false)
     })
+  })
+})
+
+const ToastsOverDialog = defineComponent({
+  setup() {
+    const open = ref({ dialog: true, first: true, second: true })
+    return { open }
+  },
+  render() {
+    const toast = (name: 'first' | 'second') => h(ToastRoot, {
+      'key': name,
+      'open': this.open[name],
+      'onUpdate:open': (value: boolean) => {
+        this.open[name] = value
+      },
+    }, { default: () => h(ToastDescription, null, { default: () => name }) })
+    return h(ToastProvider, null, {
+      default: () => [
+        h(DialogRoot, {
+          'modal': false,
+          'open': this.open.dialog,
+          'onUpdate:open': (value: boolean) => {
+            this.open.dialog = value
+          },
+        }, {
+          default: () => h(DialogContent, { 'aria-describedby': undefined }, {
+            default: () => h(DialogTitle, null, { default: () => 'Dialog' }),
+          }),
+        }),
+        toast('first'),
+        toast('second'),
+        h(ToastViewport),
+      ],
+    })
+  },
+})
+
+describe('given two toasts over an open dialog', () => {
+  let wrapper: VueWrapper<InstanceType<typeof ToastsOverDialog>>
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(ToastsOverDialog, { attachTo: document.body })
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
+  })
+
+  it('should close only the toast Escape is pressed in, and keep the dialog open', async () => {
+    const first = (await findByText(document.body, 'first')).closest('li')!
+    first.focus()
+    await fireEvent.keyDown(first, { key: 'Escape' })
+
+    expect(wrapper.vm.open).toEqual({ dialog: true, first: false, second: true })
+  })
+
+  it('should close the dialog, and no toast, on Escape in the dialog', async () => {
+    await fireEvent.keyDown(await findByText(document.body, 'Dialog'), { key: 'Escape' })
+
+    expect(wrapper.vm.open).toEqual({ dialog: false, first: true, second: true })
   })
 })
 

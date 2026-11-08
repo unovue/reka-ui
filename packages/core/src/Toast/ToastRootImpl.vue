@@ -193,13 +193,16 @@ watch([() => props.open, duration, restartKey], () => {
     startTimer(duration.value)
 }, { immediate: true })
 
+// Only an Escape from inside this toast closes it, and it goes no further, so it
+// doesn't also close the dialog or popover around it.
 onKeyStroke('Escape', (event) => {
+  event.stopPropagation()
   emits('escapeKeyDown', event)
   if (!event.defaultPrevented) {
     providerContext.isFocusedToastEscapeKeyDownRef.value = true
     handleClose()
   }
-})
+}, { target: currentElement })
 
 let unregisterToast: (() => void) | undefined
 onMounted(() => {
