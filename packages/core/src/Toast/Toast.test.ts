@@ -131,7 +131,7 @@ describe('given a default Toast', () => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
     })
 
-    const liveRegion = document.querySelector('[role="alert"][aria-live]')
+    const liveRegion = document.querySelector('[role="status"][aria-live]')
     expect(liveRegion).toBeTruthy()
     const text = liveRegion!.textContent ?? ''
 
@@ -153,7 +153,7 @@ describe('given a default Toast', () => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
     })
 
-    const liveRegion = document.querySelector('[role="alert"][aria-live]')
+    const liveRegion = document.querySelector('[role="status"][aria-live]')
     expect(liveRegion).toBeTruthy()
 
     // A live region inside an aria-hidden subtree is ignored by screen readers,
@@ -208,6 +208,52 @@ describe('given a default Toast', () => {
         expect(document.body.innerHTML).not.toContain(closeButton.innerHTML)
       })
     })
+  })
+})
+
+describe('given a toast that opens', () => {
+  let wrapper: VueWrapper
+
+  async function flush() {
+    for (let i = 0; i < 5; i++)
+      await nextTick()
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
+    vi.useRealTimers()
+  })
+
+  it.each([
+    ['foreground', 'assertive'],
+    ['background', 'polite'],
+  ] as const)('should announce a %s toast in a status region drawn before its text, and remove it after a second', async (type, politeness) => {
+    wrapper = mount(() => h(ToastProvider, null, {
+      default: () => [
+        h(ToastRoot, { open: true, type }, { default: () => h(ToastTitle, null, { default: () => 'Saved' }) }),
+        h(ToastViewport),
+      ],
+    }), { attachTo: document.body })
+    await flush()
+
+    // A status region reads what changes in it, not what it is created with.
+    const region = document.querySelector(`[role="status"][aria-live="${politeness}"]`)
+    expect(region).toBeTruthy()
+    expect(region!.textContent!.trim()).toBe('')
+
+    vi.advanceTimersToNextFrame()
+    vi.advanceTimersToNextFrame()
+    await flush()
+    expect(region!.textContent).toContain('Saved')
+
+    vi.advanceTimersByTime(1000)
+    await flush()
+    expect(region!.isConnected).toBe(false)
   })
 })
 

@@ -9,8 +9,9 @@ const providerContext = injectToastProviderContext()
 const isAnnounced = useTimeout(1000)
 const renderAnnounceText = ref(false)
 
-// Render text content in the next frame to ensure toast is announced in NVDA.
-// Double rAF mirrors Radix UI's `useNextFrame` behavior.
+// A status region reads changes to its content, so it renders empty and gets its
+// text in the next frame, and goes once that's announced. Double rAF mirrors
+// Radix UI's `useNextFrame` behavior.
 let raf1 = 0
 let raf2 = 0
 if (isClient) {
@@ -27,8 +28,10 @@ if (isClient) {
 </script>
 
 <template>
-  <VisuallyHidden v-if="isAnnounced || renderAnnounceText">
-    {{ providerContext.label.value }}
-    <slot />
+  <VisuallyHidden v-if="!isAnnounced">
+    <template v-if="renderAnnounceText">
+      {{ providerContext.label.value }}
+      <slot />
+    </template>
   </VisuallyHidden>
 </template>

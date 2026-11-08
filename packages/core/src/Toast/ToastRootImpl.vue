@@ -219,7 +219,7 @@ provideToastRootContext({ onClose: handleClose, toast: toRef(props, 'toast') })
   <ToastAnnounce
     v-if="announceTextContent"
     :key="toast?.updateKey ?? 0"
-    role="alert"
+    role="status"
     :aria-live="type === 'foreground' ? 'assertive' : 'polite'"
   >
     <!--
