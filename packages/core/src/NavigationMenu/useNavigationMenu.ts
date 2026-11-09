@@ -1134,7 +1134,7 @@ export interface UseNavigationMenuIndicatorOptions {
 export interface UseNavigationMenuIndicatorReturn {
   /** `true` while an item is open. */
   isVisible: ComputedRef<boolean>
-  /** `aria-hidden` + the `--reka-navigation-menu-indicator-size` / `-position` variables; `data-state`, `data-orientation`. */
+  /** `aria-hidden` + the `--reka-navigation-menu-indicator-size` / `-position` / `-cross-offset` variables; `data-state`, `data-orientation`. */
   indicator: PartSurface<NavigationMenuIndicatorState>
 }
 
@@ -1147,7 +1147,7 @@ export interface UseNavigationMenuIndicatorReturn {
  */
 export function useNavigationMenuIndicator(options: UseNavigationMenuIndicatorOptions): UseNavigationMenuIndicatorReturn {
   const { context: menuContext } = options
-  const indicatorStyle = ref<{ size: number, position: number }>()
+  const indicatorStyle = ref<{ size: number, position: number, crossOffset: number }>()
   const isHorizontal = computed(() => menuContext.orientation === 'horizontal')
   const isVisible = computed(() => !!menuContext.modelValue.value)
   const { activeTrigger } = menuContext
@@ -1157,13 +1157,22 @@ export function useNavigationMenuIndicator(options: UseNavigationMenuIndicatorOp
       return
     }
 
+    const trigger = activeTrigger.value
     indicatorStyle.value = {
       size: isHorizontal.value
-        ? activeTrigger.value.offsetWidth
-        : activeTrigger.value.offsetHeight,
+        ? trigger.offsetWidth
+        : trigger.offsetHeight,
       position: isHorizontal.value
-        ? activeTrigger.value.offsetLeft
-        : activeTrigger.value.offsetTop,
+        ? trigger.offsetLeft
+        : trigger.offsetTop,
+      // The trigger's far edge on the cross axis, so the indicator can follow a
+      // trigger on a wrapped row (or column): its bottom when horizontal, its
+      // inline-end edge measured from the inline start when vertical.
+      crossOffset: isHorizontal.value
+        ? trigger.offsetTop + trigger.offsetHeight
+        : menuContext.dir.value === 'rtl'
+          ? (trigger.offsetParent?.clientWidth ?? 0) - trigger.offsetLeft
+          : trigger.offsetLeft + trigger.offsetWidth,
     }
   }
 
@@ -1186,6 +1195,7 @@ export function useNavigationMenuIndicator(options: UseNavigationMenuIndicatorOp
           ? {
               '--reka-navigation-menu-indicator-size': `${indicatorStyle.value.size}px`,
               '--reka-navigation-menu-indicator-position': `${indicatorStyle.value.position}px`,
+              '--reka-navigation-menu-indicator-cross-offset': `${indicatorStyle.value.crossOffset}px`,
             }
           : {},
       }),
@@ -1218,7 +1228,8 @@ export interface UseNavigationMenuViewportReturn {
 /**
  * Headless NavigationMenuViewport logic: registers the viewport with the menu,
  * measures the open content and positions the viewport under the active
- * trigger (`--reka-navigation-menu-viewport-width` / `-height` / `-left` / `-top`).
+ * trigger (`--reka-navigation-menu-viewport-width` / `-height` / `-left` / `-top`
+ * / `-cross-offset`).
  *
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle setup — watchers and resize observers are bound to the calling scope.
@@ -1228,7 +1239,7 @@ export function useNavigationMenuViewport(options: UseNavigationMenuViewportOpti
   const { activeTrigger, rootNavigationMenu, modelValue } = menuContext
 
   const size = ref<{ width: number, height: number }>()
-  const position = ref<{ left: number, top: number }>()
+  const position = ref<{ left: number, top: number, crossOffset: number }>()
 
   const open = computed(() => !!menuContext.modelValue.value)
 
@@ -1323,6 +1334,14 @@ export function useNavigationMenuViewport(options: UseNavigationMenuViewportOpti
       position.value = {
         left: posLeft,
         top: posTop,
+        // The active trigger's far edge on the cross axis, from the root's start
+        // edge: its bottom when horizontal, so a wrapped row gets the viewport
+        // under it; its inline-end edge (from the inline start) when vertical.
+        crossOffset: Math.round(menuContext.orientation === 'horizontal'
+          ? rect.bottom - rootRect.top
+          : menuContext.dir.value === 'rtl'
+            ? rootRect.right - rect.left
+            : rect.right - rootRect.left),
       }
     }
   }
@@ -1356,6 +1375,7 @@ export function useNavigationMenuViewport(options: UseNavigationMenuViewportOpti
           '--reka-navigation-menu-viewport-height': size.value ? `${size.value.height}px` : undefined,
           '--reka-navigation-menu-viewport-left': position.value ? `${position.value.left}px` : undefined,
           '--reka-navigation-menu-viewport-top': position.value ? `${position.value.top}px` : undefined,
+          '--reka-navigation-menu-viewport-cross-offset': position.value ? `${position.value.crossOffset}px` : undefined,
         },
         onPointerenter: () => menuContext.onContentEnter(menuContext.modelValue.value),
         onPointerleave: whenMouse(event => menuContext.onContentLeave(event)),

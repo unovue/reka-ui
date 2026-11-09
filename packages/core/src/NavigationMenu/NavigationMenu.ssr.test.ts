@@ -37,5 +37,7 @@ describe('given an open NavigationMenu rendered on the server', () => {
     expect(html).toMatch(/id="[^"]*-trigger-one"/)
     expect(html).toMatch(/aria-controls="[^"]*-content-one"/)
     expect(html).toContain('aria-expanded="true"')
+    // Positions are measured in the browser: no size or offset variables on the server.
+    expect(html).not.toContain('--reka-navigation-menu-')
   })
 })

@@ -803,7 +803,7 @@ Two fixes in neighbouring families:
 - **Root context.** This affects custom parts built on `injectNavigationMenuContext()`:
   - `modelValue` is a read-only ref, as are `dir`, `disableClickTrigger`, `disableHoverTrigger` and `unmountOnHide`. Call `onItemSelect(value, reason?, event?)` or `onItemDismiss(reason?, event?)` instead of assigning `modelValue`. Both return `false` when the change was cancelled or did not change the value.
   - `onTriggerEnter(value, event?)`, `onTriggerLeave(event?)` and `onContentLeave(event?)` accept the native event, reported as `details.event` when the delayed change commits.
-- **New and additive:** the composables, and the `NavigationMenuContext` and `NavigationMenuItemContext` types.
+- **New and additive:** the composables, and the `NavigationMenuContext` and `NavigationMenuItemContext` types. `--reka-navigation-menu-viewport-cross-offset` and `--reka-navigation-menu-indicator-cross-offset` give the active trigger's far edge on the cross axis, for placing the viewport and indicator on a wrapped list; the existing variables keep their values.
 
 ## Toast
 
