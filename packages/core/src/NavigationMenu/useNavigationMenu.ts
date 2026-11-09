@@ -1158,6 +1158,10 @@ export function useNavigationMenuIndicator(options: UseNavigationMenuIndicatorOp
     }
 
     const trigger = activeTrigger.value
+    // Measured against the list wrapper the indicator is rendered in, not the
+    // trigger's `offsetParent`, which is its item when the item is positioned.
+    const rect = trigger.getBoundingClientRect()
+    const origin = (menuContext.indicatorTrack.value ?? trigger.offsetParent)?.getBoundingClientRect() ?? rect
     indicatorStyle.value = {
       size: isHorizontal.value
         ? trigger.offsetWidth
@@ -1168,11 +1172,11 @@ export function useNavigationMenuIndicator(options: UseNavigationMenuIndicatorOp
       // The trigger's far edge on the cross axis, so the indicator can follow a
       // trigger on a wrapped row (or column): its bottom when horizontal, its
       // inline-end edge measured from the inline start when vertical.
-      crossOffset: isHorizontal.value
-        ? trigger.offsetTop + trigger.offsetHeight
+      crossOffset: Math.round(isHorizontal.value
+        ? rect.bottom - origin.top
         : menuContext.dir.value === 'rtl'
-          ? (trigger.offsetParent?.clientWidth ?? 0) - trigger.offsetLeft
-          : trigger.offsetLeft + trigger.offsetWidth,
+          ? origin.right - rect.left
+          : rect.right - origin.left),
     }
   }
 

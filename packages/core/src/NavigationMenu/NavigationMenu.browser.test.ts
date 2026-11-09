@@ -157,8 +157,8 @@ describe('given a NavigationMenu whose list wraps', () => {
   const pick = (from: Record<string, string>, keys: Record<string, string> = {}) =>
     Object.fromEntries(Object.keys(keys).map(key => [key, from[key]]))
 
-  function mountWrapped(options: { rootTop?: number, contentHeight?: number, rootWidth?: number, orientation?: 'horizontal' | 'vertical', dir?: 'ltr' | 'rtl' } = {}) {
-    const { rootTop = 300, contentHeight = 200, rootWidth = 300, orientation = 'horizontal', dir = 'ltr' } = options
+  function mountWrapped(options: { rootTop?: number, contentHeight?: number, rootWidth?: number, orientation?: 'horizontal' | 'vertical', dir?: 'ltr' | 'rtl', itemStyle?: string } = {}) {
+    const { rootTop = 300, contentHeight = 200, rootWidth = 300, orientation = 'horizontal', dir = 'ltr', itemStyle = '' } = options
     const vertical = orientation === 'vertical'
     const value = ref('')
     const wrapper = mount(defineComponent({
@@ -173,7 +173,7 @@ describe('given a NavigationMenu whose list wraps', () => {
           h(NavigationMenuList, {
             style: `display: flex; flex-wrap: wrap; ${vertical ? 'flex-direction: column; height: 80px;' : ''} margin: 0; padding: 0; list-style: none`,
           }, () => [
-            ...['a', 'b', 'c', 'd', 'e'].map(item => h(NavigationMenuItem, { value: item }, () => [
+            ...['a', 'b', 'c', 'd', 'e'].map(item => h(NavigationMenuItem, { value: item, style: itemStyle }, () => [
               h(NavigationMenuTrigger, { 'data-testid': item, 'style': 'box-sizing: border-box; width: 100px; height: 40px' }, () => item),
               h(NavigationMenuContent, { style: `width: 150px; height: ${contentHeight}px` }, () => item),
             ])),
@@ -222,6 +222,14 @@ describe('given a NavigationMenu whose list wraps', () => {
       viewport: { 'left': '-25px', 'top': '-40px', 'width': '150px', 'height': '200px', 'cross-offset': '80px' },
       indicator: { 'size': '100px', 'position': '0px', 'cross-offset': '80px' },
     })
+  })
+
+  it('measures the indicator cross offset from the list when the items are positioned', async () => {
+    await page.viewport(1280, 800)
+    wrapped = mountWrapped({ itemStyle: 'position: relative' })
+
+    await wrapped.expectOpen('a', { indicator: { 'cross-offset': '40px' } })
+    await wrapped.expectOpen('d', { indicator: { 'cross-offset': '80px' } })
   })
 
   it('keeps the clamped top while the cross offset follows the row', async () => {
