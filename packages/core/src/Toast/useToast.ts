@@ -510,6 +510,14 @@ export function useToastSwipe(options: UseToastSwipeOptions): UseToastSwipeRetur
   }
 
   function onPointerdown(event: PointerEvent) {
+    // A swipe whose release never reached the toast (its captured child was
+    // removed): snap it back and make the text selectable before this press.
+    if (swipeDelta) {
+      swipeDelta = null
+      const toast = event.currentTarget as HTMLElement
+      setSwipeSelection(toast, false)
+      setSwipeState(toast, 'cancel')
+    }
     // `@pointerdown.left`
     if (event.button !== 0 || disabled.value)
       return
