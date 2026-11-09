@@ -7,7 +7,6 @@ import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref, Suspense, Transition } from 'vue'
 import { handleSubmit } from '@/test'
 import { SliderRoot, SliderThumb, SliderTrack } from '.'
-import SliderImpl from './SliderImpl.vue'
 import Slider from './story/_Slider.vue'
 
 // jsdom lacks ResizeObserver and pointer capture; every block below relies on these.
@@ -371,7 +370,10 @@ describe('given default Slider', () => {
       })
 
       describe('after a second pointer slides and both lift', () => {
+        const onSlideEnd = vi.fn()
         beforeEach(async () => {
+          onSlideEnd.mockClear()
+          await wrapper.setProps({ onSlideEnd } as any)
           await fireEvent.pointerDown(sliderImpl.element, { clientX: 50, pointerId: 2 })
           await fireEvent.pointerUp(sliderImpl.element, { pointerId: 1 })
           await fireEvent.pointerMove(sliderImpl.element, { clientX: 90, pointerId: 2 })
@@ -379,7 +381,7 @@ describe('given default Slider', () => {
         })
 
         it('should end the slide for each pointer', async () => {
-          expect(wrapper.findComponent(SliderImpl).emitted('slideEnd')).toHaveLength(2)
+          expect(onSlideEnd).toHaveBeenCalledTimes(2)
         })
       })
     })
