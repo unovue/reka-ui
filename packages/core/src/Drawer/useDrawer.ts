@@ -204,14 +204,14 @@ export interface UseDrawerProps {
    */
   emit?: (event: any, ...args: any[]) => void
   /**
-   * Called before an open change commits (Base UI's `onOpenChange`); calling
+   * Called before an open change commits; calling
    * `details.cancel()` keeps the current state.
    */
   onBeforeUpdate?: (value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason>) => void
   /** Called after an open change committed. */
   onUpdate?: (value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason>) => void
   /**
-   * Called before the active snap point changes (Base UI's `onSnapPointChange`);
+   * Called before the active snap point changes;
    * calling `details.cancel()` keeps the current snap point. Cancelling the
    * `null` a swipe past the last snap point requests keeps the drawer open.
    */
@@ -253,7 +253,7 @@ export interface UseDrawerReturn {
 }
 
 /**
- * Headless Drawer root. Owns the open model with Base UI's cancellable
+ * Headless Drawer root. Owns the open model with a cancellable
  * `onOpenChange(value, details)` contract, the snap-point model, the nested-
  * drawer bookkeeping and the ids, and returns the per-part surfaces.
  *
@@ -322,12 +322,16 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
     // snap point to the default (`defaultSnapPoint`, else the first snap
     // point), so the drawer reopens where it started. A controlled parent
     // applies the close on its next render, and may ignore it: reset only once
-    // the drawer is really closed.
+    // the drawer is really closed. The reset is requested even when it matches
+    // the current point, as `handleOpenChange` does: a controlled `snapPoint`
+    // may not have applied a request made earlier in this gesture yet (a swipe
+    // past the last point requests `null` first), so the value read here can
+    // be stale and the parent would otherwise keep `null`.
     const points = toValue(props.snapPoints)
     if (!value && points && points.length > 0) {
       const resetSnapPoint = () => {
         if (!open.value)
-          setActiveSnapPoint(props.defaultSnapPoint !== undefined ? props.defaultSnapPoint : points[0] ?? null, reason, event)
+          setSnapPoint(props.defaultSnapPoint !== undefined ? props.defaultSnapPoint : points[0] ?? null, reason, event, { force: true })
       }
       if (open.value)
         nextTick(resetSnapPoint)
@@ -795,7 +799,7 @@ export interface UseDrawerContentModalityOptions {
   rootContext: Pick<DrawerRootContext, 'modal' | 'open' | 'triggerElement'> & Partial<Pick<DrawerRootContext, 'overlayElement'>>
   /**
    * The content element. With it, a modal drawer only dismisses on a press on
-   * its own backdrop (internal backdrop or `DrawerOverlay`), as in Base UI.
+   * its own backdrop (internal backdrop or `DrawerOverlay`).
    */
   contentElement?: MaybeRefOrGetter<HTMLElement | null | undefined>
   /**

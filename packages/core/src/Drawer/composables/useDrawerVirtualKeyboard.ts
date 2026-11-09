@@ -257,9 +257,9 @@ export interface UseDrawerVirtualKeyboardOptions {
   nestedDrawerOpen?: MaybeRef<boolean>
 }
 
+// Ported from Base UI `DrawerVirtualKeyboardProvider`.
 /**
  * Keyboard-aware focus and scroll handling for drawers with form fields.
- * Ported from Base UI `DrawerVirtualKeyboardProvider`.
  *
  * Publishes `--drawer-keyboard-inset` — the height the keyboard covers — while
  * a field inside the drawer is focused, and keeps that field scrolled into the

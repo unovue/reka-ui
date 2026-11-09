@@ -78,7 +78,7 @@ const props = withDefaults(defineProps<DismissableLayerProps & {
   present?: boolean
   /**
    * Element left interactive through a hole in the internal backdrop while
-   * `disableOutsidePointerEvents` is on (Base UI's backdrop `cutout`), e.g. a
+   * `disableOutsidePointerEvents` is on, e.g. a
    * Combobox input or a ContextMenu trigger area. Internal plumbing.
    */
   backdropCutout?: HTMLElement | null

@@ -83,7 +83,7 @@ function getNativeErrors(element: NativeControl | undefined) {
 }
 
 /**
- * The Field validation engine, modeled on Base UI's: native constraint
+ * The Field validation engine: native constraint
  * validation plus a custom sync/async `validate()`. Custom errors are
  * installed on the native element with `setCustomValidity`, so `:invalid`
  * and `validationMessage` agree with the field. Timing (when `commit`/

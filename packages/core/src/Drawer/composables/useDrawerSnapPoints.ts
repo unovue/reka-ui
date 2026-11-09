@@ -98,8 +98,9 @@ export function useDrawerSnapPoints(options: {
     () => findActiveResolvedPoint()?.offset ?? null,
   )
 
+  // Ported from BaseUI `DrawerViewport.tsx` lines ~577-714 (snap release math).
   /**
-   * BaseUI-parity snap release math (ported from `DrawerViewport.tsx` lines ~577-714).
+   * Snap release math.
    *
    * Takes a **dismiss-signed** drag delta (positive = dismiss direction, negative =
    * open direction) and the raw velocity vector. Computes a velocity-boosted target

@@ -38,7 +38,7 @@ function getClaims(context: object, key: string) {
 
 /**
  * A part's `id` prop, mirrored into the context slot its paired element reads
- * (`aria-controls`, `aria-labelledby`, `aria-describedby`). Base UI parity: the
+ * (`aria-controls`, `aria-labelledby`, `aria-describedby`). The
  * consumer's id wins over the generated one.
  *
  * - The part renders the returned id (its own `id`, else the generated one),

@@ -66,9 +66,9 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v))
 }
 
+// Ported from BaseUI `DrawerViewport.tsx:resolveSwipeRelease` (lines 243-337).
 /**
  * Computes a 0.1 - 1.0 scalar for the `--drawer-swipe-strength` CSS var.
- * Ported from BaseUI `DrawerViewport.tsx:resolveSwipeRelease` (lines 243-337).
  *
  * The scalar is derived from how much further the drawer still has to travel
  * vs how fast the user flung it. A short remaining distance with high velocity
@@ -171,7 +171,7 @@ let drawerCssVarsRegistered = false
 
 /**
  * Removes CSS variable inheritance for high-frequency drawer swipe vars.
- * Uses proper syntax types matching BaseUI:
+ * Uses proper syntax types:
  * - Length vars (<length>) with initialValue '0px' for use in calc()/translateY()
  * - Number vars (<number>) for opacity/strength scalars
  */

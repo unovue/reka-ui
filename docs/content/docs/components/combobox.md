@@ -325,7 +325,7 @@ const selectedPeople = ref(people[0])
 
 The `Combobox` component allows you to select multiple values. You can enable this by providing an array of values instead of a single value.
 
-Selecting an item while filtering clears the typed text and the filter, and the popup stays open for the next pick, as in Base UI. Set `:reset-search-term-on-select="false"` to keep the text, or cancel the `'input-clear'` change in the input's `beforeUpdate:modelValue`.
+Selecting an item while filtering clears the typed text and the filter, and the popup stays open for the next pick. Set `:reset-search-term-on-select="false"` to keep the text, or cancel the `'input-clear'` change in the input's `beforeUpdate:modelValue`.
 
 ```vue line=12,17-18
 <script setup lang="ts">
@@ -354,15 +354,15 @@ const selectedPeople = ref([people[0], people[1]])
 
 ### Clearing the value
 
-`null` is the empty value, as in [Base UI](https://base-ui.com/react/components/combobox). Set `v-model` to `null` to clear the selection and empty the input.
+`null` is the empty value. Set `v-model` to `null` to clear the selection and empty the input.
 
 An item can have `value=""`. Unlike in a [Select](select.md), an empty string is a value like any other: selecting it marks that item as selected, the input shows its text through `displayValue`, and inside a `Field` the field counts as filled. Inside a `multiple` array, `''` is a selected value too.
 
-To let users clear a single selection from the list, add an item with a `null` value, or leave out `value`: it defaults to `null`, as in Base UI. Pressing it sets the value to `null` and empties the input, and that item is the selected one while the combobox is empty. With `multiple`, `null` is an ordinary entry: pressing the item adds or removes `null` in the array instead of clearing it.
+To let users clear a single selection from the list, add an item with a `null` value, or leave out `value`: it defaults to `null`. Pressing it sets the value to `null` and empties the input, and that item is the selected one while the combobox is empty. With `multiple`, `null` is an ordinary entry: pressing the item adds or removes `null` in the array instead of clearing it.
 
 The `ComboboxRoot` `displayValue` is not called for `null`. A `displayValue` on `ComboboxInput` is called with every value, `null` included, so it must handle `null` (return `''` to keep the input empty).
 
-The keyboard clears the value too, as in Base UI:
+The keyboard clears the value too:
 
 - Emptying the input of a single combobox sets the value to `null` (reason `'input-clear'`). A `multiple` selection is kept, and so is the value when the input is inside the popup.
 - Escape on a closed combobox sets the value to `null` (`[]` with `multiple`) and empties the input (reason `'escape-key'`). When there was a value to clear, the Escape stops there, so it does not also close a surrounding dialog. While the popup is open, Escape only closes it.
@@ -408,7 +408,7 @@ const fruits = [
 </template>
 ```
 
-In a form, `null` and `''` both submit an empty string. With `required`, both are missing a value, as in Base UI, where the hidden input carries the submitted string. With `multiple`, any selection satisfies `required`, `['']` included; `null` and `''` are ordinary values that toggle in the array, and `[]` is empty. Inside a `Field`, `null` and `''` are different values for `dirty` (an unset value counts as `null`), as in Base UI.
+In a form, `null` and `''` both submit an empty string. With `required`, both are missing a value: the hidden input carries the submitted string, which is empty for both. With `multiple`, any selection satisfies `required`, `['']` included; `null` and `''` are ordinary values that toggle in the array, and `[]` is empty. Inside a `Field`, `null` and `''` are different values for `dirty` (an unset value counts as `null`).
 
 ### Custom filtering
 
@@ -672,6 +672,32 @@ import { ref } from 'vue'
 ```
 
 `useComboboxRoot()` is the headless composable behind `ComboboxRoot`. It returns the same models, the search term and filter state, and the `role` / `aria-*` / `data-*` attributes for the input, trigger, content and items.
+
+### Focus management
+
+Where focus goes depends on where `ComboboxInput` is:
+
+- **Input outside the content** (the usual layout): a mouse or pen press on `ComboboxTrigger` moves focus to the input, and the trigger never takes it. A touch press, a keyboard press on the trigger and a programmatic open do not move focus to the input, so no on-screen keyboard opens (a touch press can still focus the trigger itself, as browsers do for a button). Closing does not restore focus; if focus was inside content that unmounts, it is lost with it.
+- **Input inside the content**: opening focuses the input, or the content itself when it was opened by touch. Closing returns focus to the trigger when focus was inside the content (or lost with it); focus that moved to another control outside stays there.
+
+`initialFocus` and `finalFocus` on `ComboboxContent` change what the content does: `false` leaves focus where it is, `true` uses the first tabbable element in the content on open and the trigger (input inside) or the input (input outside) on close, and an element focuses that element. A function receives how the content was opened or closed (`'mouse'`, `'touch'`, `'pen'`, `'keyboard'`, or `''` when unknown) and returns one of these; use it for an element inside the content, whose template ref is still empty when the content mounts. They do not change the trigger: with the input outside the content, a mouse press on the trigger still focuses the input. `autoFocus` on `ComboboxInput` only focuses the input when it mounts, like the native attribute, and `:initial-focus="false"` does not undo it.
+
+```vue
+<template>
+  <ComboboxRoot>
+    <ComboboxTrigger>Pick a fruit</ComboboxTrigger>
+    <ComboboxPortal>
+      <!-- keep focus on the trigger when the content opens -->
+      <ComboboxContent :initial-focus="false">
+        <ComboboxInput placeholder="Search…" />
+        <ComboboxViewport>
+          …
+        </ComboboxViewport>
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>
+</template>
+```
 
 ### Prevent select behavior
 

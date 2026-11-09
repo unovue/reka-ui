@@ -273,3 +273,70 @@ describe('drawer swipe dismissal', () => {
     expectSettledOpen(content)
   })
 })
+
+// A swipe past the last snap point requests `null`, then the close, which
+// requests the reset to `defaultSnapPoint`. A parent controlling `snapPoint`
+// that applies every request must end on the reset point, not on `null`.
+describe('drawer swipe close with a controlled snap point', () => {
+  function renderControlledSnap(controlOpen: boolean) {
+    const snapPoint = ref<DrawerSnapPoint | null>(1)
+    const open = ref(true)
+    const requested: (DrawerSnapPoint | null)[] = []
+    const Test = defineComponent({
+      components: { DrawerRoot, DrawerPortal, DrawerContent, DrawerTitle },
+      setup: () => ({
+        snapPoint,
+        open: controlOpen ? open : undefined,
+        onSnapPoint(value: DrawerSnapPoint | null) {
+          requested.push(value)
+          snapPoint.value = value
+        },
+        onOpen(value: boolean) {
+          open.value = value
+        },
+      }),
+      template: `
+        <DrawerRoot
+          :open="open"
+          :default-open="true"
+          :snap-points="[0.5, 1]"
+          :default-snap-point="1"
+          :snap-point="snapPoint"
+          @update:snap-point="onSnapPoint"
+          @update:open="onOpen"
+        >
+          <DrawerPortal>
+            <DrawerContent>
+              <DrawerTitle>Swipe</DrawerTitle>
+            </DrawerContent>
+          </DrawerPortal>
+        </DrawerRoot>
+      `,
+    })
+    render(Test)
+    return { snapPoint, requested }
+  }
+
+  it.each([
+    ['controlled', true],
+    ['uncontrolled', false],
+  ])('ends on the reset point with %s open', async (_label, controlOpen) => {
+    const { snapPoint, requested } = renderControlledSnap(controlOpen)
+    await nextTick()
+    await nextTick()
+    const content = findContent()!
+
+    // Release near the bottom: past the 0.5 point, nearest to closed.
+    dispatchPointer(content, 'pointerdown', 100)
+    dispatchPointer(content, 'pointermove', 120)
+    dispatchPointer(content, 'pointermove', 790)
+    dispatchPointer(content, 'pointerup', 790, 0)
+    await nextTick()
+    await nextTick()
+    await nextTick()
+
+    expect(content.getAttribute('data-state')).toBe('closed')
+    expect(requested).toEqual([null, 1])
+    expect(snapPoint.value).toBe(1)
+  })
+})

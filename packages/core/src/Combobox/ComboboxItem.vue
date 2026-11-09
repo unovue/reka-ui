@@ -11,7 +11,7 @@ export type ComboboxItemEmits<T = AcceptableValue> = ListboxItemEmits<T>
 export interface ComboboxItemProps<T = AcceptableValue> extends Omit<ListboxItemProps<T>, 'value'> {
   /**
    * The value given as data when submitted with a `name`. `null` is the empty value, so pressing an item with a `null`
-   * value clears a single selection; an item without a `value` has `null`, as in Base UI. An empty string is a value
+   * value clears a single selection; an item without a `value` has `null`. An empty string is a value
    * like any other.
    * @defaultValue `null`
    */

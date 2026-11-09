@@ -30,7 +30,7 @@ export type DrawerOpenChangeReason
     | 'close-press'
 
 /**
- * Why the active snap point changed (Base UI uses the open reasons). A swipe
+ * Why the active snap point changed; the same reasons as an open change. A swipe
  * reports `'swipe'`; the reset to the default snap point when the drawer closes
  * reports the reason of the close.
  */
@@ -66,7 +66,7 @@ export interface DrawerRootProps {
 }
 
 export type DrawerRootEmits = {
-  /** Called before the open state changes (Base UI `onOpenChange`); `details.cancel()` keeps the current state. */
+  /** Called before the open state changes; `details.cancel()` keeps the current state. */
   'beforeUpdate:open': [value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason>]
   /** Called when the open state changed. */
   'update:open': [value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason>]
@@ -77,7 +77,7 @@ export type DrawerRootEmits = {
    */
   'update:openComplete': [value: boolean]
   /**
-   * Called before the active snap point changes (Base UI `onSnapPointChange`); `details.cancel()` keeps the current
+   * Called before the active snap point changes; `details.cancel()` keeps the current
    * snap point. Cancelling the `null` a swipe past the last snap point requests keeps the drawer open.
    */
   'beforeUpdate:snapPoint': [value: DrawerSnapPoint | null, details: ChangeEventDetails<DrawerSnapPointChangeReason>]

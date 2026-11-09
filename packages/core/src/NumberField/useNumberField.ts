@@ -11,7 +11,7 @@ import { handleDecimalOperation, useNumberFormatter, useNumberParser } from './u
  * - `'keyboard'`: ArrowUp/ArrowDown, PageUp/PageDown, Home/End, or Enter committing the typed text.
  * - `'wheel'`: a wheel step on the focused input.
  * - `'blur'`: the input lost focus and committed its typed text.
- * - `'input-change'`: the user typed or pasted text that parses as a number (Base UI parity).
+ * - `'input-change'`: the user typed or pasted text that parses as a number.
  * - `'input-clear'`: the user emptied the input.
  */
 export type NumberFieldChangeReason = 'increment-press' | 'decrement-press' | 'keyboard' | 'wheel' | 'blur' | 'input-change' | 'input-clear'
@@ -59,7 +59,7 @@ export interface UseNumberFieldProps {
   /** Called after a change commits. */
   onUpdate?: (value: number | undefined, details: ChangeEventDetails<NumberFieldChangeReason>) => void
   /**
-   * Called when the user finishes a change (Base UI's `onValueCommitted`): on blur or Enter after
+   * Called when the user finishes a change: on blur or Enter after
    * typing, on release after pressing a step button, and together with the change for keyboard
    * and wheel steps.
    */
@@ -323,7 +323,7 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
   }
 
   /**
-   * Live update while typing (Base UI parity, #1720): the model follows the typed text when it
+   * Live update while typing (#1720): the model follows the typed text when it
    * parses, as the value a commit would produce, but the text itself is left alone until blur
    * or Enter formats it.
    */
