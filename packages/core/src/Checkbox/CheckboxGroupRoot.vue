@@ -2,6 +2,7 @@
 import type { Ref } from 'vue'
 import type { CheckboxGroupChangeReason } from './useCheckboxGroup'
 import type { FieldRootContext } from '@/Field/FieldRoot.vue'
+import type { PrimitiveHTMLAttributes } from '@/Primitive'
 import type { RovingFocusGroupProps } from '@/RovingFocus'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
@@ -10,7 +11,7 @@ import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { createContext, useDirection, useFormControl } from '@/shared'
 
-export interface CheckboxGroupRootProps<T = AcceptableValue> extends Pick<RovingFocusGroupProps, 'as' | 'asChild' | 'dir' | 'orientation' | 'loop'>, FormFieldProps {
+export interface CheckboxGroupRootProps<T = AcceptableValue> extends Pick<RovingFocusGroupProps, 'as' | 'asChild' | 'dir' | 'orientation' | 'loop'>, FormFieldProps, /* @vue-ignore */ PrimitiveHTMLAttributes {
   /** The value of the checkbox when it is initially rendered. Use when you do not need to control its value. */
   defaultValue?: T[]
   /** The controlled value of the checkbox. Can be binded with v-model. */

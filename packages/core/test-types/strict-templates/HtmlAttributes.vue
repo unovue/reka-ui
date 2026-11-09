@@ -4,6 +4,7 @@
 // `PrimitiveHTMLAttributes` types. Never rendered.
 import type { ListboxItemSelectEvent } from 'reka-ui'
 import {
+  CheckboxGroupRoot,
   CheckboxRoot,
   ColorSwatch,
   DateFieldRoot,
@@ -12,6 +13,7 @@ import {
   Label,
   ListboxItem,
   ListboxRoot,
+  ListboxVirtualizer,
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuRoot,
@@ -112,6 +114,20 @@ function onListboxSelect(event: ListboxItemSelectEvent<string>) {
       @click="onClick"
     />
   </ToggleGroupRoot>
+
+  <!-- Parts whose props do not build on PrimitiveProps -->
+  <CheckboxGroupRoot
+    aria-label="Toppings"
+    class="group"
+    @click="onClick"
+  />
+  <ListboxRoot>
+    <ListboxVirtualizer
+      :options="['a']"
+      aria-label="Options"
+      class="virtualizer"
+    />
+  </ListboxRoot>
 
   <!-- An emit named like a DOM event keeps the emit's payload -->
   <ListboxRoot aria-label="Fruits">

@@ -1000,7 +1000,7 @@ Anything else still falls through at runtime but is unknown to `strictTemplates`
 
 `vue-tsc` checks `data-*` attributes on components under their camelized name (`data-state` as `dataState`), which no props type can declare. Add `"dataAttributes": ["data-*"]` to `vueCompilerOptions` to skip the check for them.
 
-Props interfaces built on a Reka props type gain these attributes too, still without runtime props. In a wrapper, read an attribute that no props type declares through `useAttrs()`, not `props`. Some components do declare one as a prop, such as `id` on `CheckboxRoot`, and that one stays on `props`. A `ref()` holding such props next to VNodes can hit TypeScript's "excessively deep" error. When the initial value holds no refs (an object literal such as `{ toasts: [] }`), annotate the variable instead: `const state: Ref<State> = ref(initial)`.
+Props interfaces built on a Reka props type gain these attributes too, still without runtime props. In a wrapper, read an attribute that no props type declares through `useAttrs()`, not `props`. Some components do declare one as a prop, such as `id` on `CheckboxRoot`, and that one stays on `props`. A `ref()` holding such props next to VNodes can hit TypeScript's "excessively deep" error. When the state never holds a ref (not in the initial value, such as `{ toasts: [] }`, and not in anything assigned into it later), annotate the variable instead: `const state: Ref<State> = ref(initial)`.
 
 ## NumberField updates while typing
 

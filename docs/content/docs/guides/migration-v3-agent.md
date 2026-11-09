@@ -1038,7 +1038,7 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 - Keep them for anything outside it: other DOM listeners (`@input`, `@drag`, …) and element-specific attributes (`href`, `alt`, `type`, `name`, …). Do not add types for them. If the developer wants them gone, *ask* whether to set `checkUnknownEvents: false` / `checkUnknownProps: false`, or to move them to their own element with `as-child` or a wrapper.
 - `data-*` errors on components: add `"dataAttributes": ["data-*"]` to `vueCompilerOptions`; `vue-tsc` checks camelized `data-*` names, which no props type can declare.
 - Wrapper code reading `props.class`, `props.id` or another attribute that neither the wrapper nor the Reka props type it builds on declares as a prop (`CheckboxRootProps` declares `id`, for example): read it from `useAttrs()` instead, since it is never a runtime prop. Check the Reka component's documented props first; if unsure, *ask*.
-- A "Type instantiation is excessively deep" error on a `ref<T>(…)` whose `T` holds Reka props and VNodes: when the initial value holds no refs (an object literal such as `{ toasts: [] }`), annotate the variable instead (`const state: Ref<T> = ref(initial)`). Otherwise *ask*.
+- A "Type instantiation is excessively deep" error on a `ref<T>(…)` whose `T` holds Reka props and VNodes: when the state never holds a ref, neither in the initial value (an object literal such as `{ toasts: [] }`) nor in anything assigned into it later, annotate the variable instead (`const state: Ref<T> = ref(initial)`). Otherwise *ask*.
 
 **Verify.** The type-check passes with the removed casts; the rendered attributes are unchanged.
 
