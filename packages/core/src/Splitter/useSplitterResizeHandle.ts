@@ -145,6 +145,9 @@ export function useSplitterResizeHandle(context: PanelGroupContext, props: UseSp
   // (e.g. with v-if) is wired up too.
   const bumpResizeHandleRegistration = () => resizeHandleRegistration.value++
   watch(props.element, bumpResizeHandleRegistration)
+  // A headless caller can pass an element that is already set.
+  if (toValue(props.element))
+    bumpResizeHandleRegistration()
   onScopeDispose(bumpResizeHandleRegistration)
 
   const root = createPartSurface<SplitterResizeHandleState>(
