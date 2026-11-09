@@ -17,6 +17,6 @@ declare module 'vitest' {
 declare module 'vitest/browser' {
   interface BrowserCommands {
     wheelAt: (x: number, y: number, deltaY: number) => Promise<void>
-    mouseDrag: (fromX: number, fromY: number, toX: number, toY: number) => Promise<void>
+    mouseDrag: (fromX: number, fromY: number, toX: number, toY: number, steps?: number) => Promise<void>
   }
 }
