@@ -16,7 +16,7 @@ const props = withDefaults(defineProps<ComboboxCancelProps>(), {
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
-// Clears the input, then the value (`resetModelValueOnClear`, reason `'clear-press'`), then the search term.
+// Clears the value (reason `'clear-press'`, unless `resetModelValueOnClear` is `false`), then the input and the search term.
 const surface = getComboboxCancelSurface(injectComboboxRootContext())
 </script>
 

@@ -30,7 +30,8 @@ import { useComboboxContentPositioning } from './useComboboxContentPositioning'
  *
  * - `'item-press'`: an item was clicked, or Enter selected the highlighted item
  *   (Enter clicks it).
- * - `'clear-press'`: `ComboboxCancel` reset the value (`resetModelValueOnClear`).
+ * - `'clear-press'`: `ComboboxCancel` reset the value (the default; off with
+ *   `resetModelValueOnClear: false`).
  * - `'input-clear'`: the user emptied the input of a single combobox, which
  *   clears its value to `null`.
  * - `'escape-key'`: Escape in the input of a closed combobox cleared the value
@@ -203,14 +204,20 @@ export function getComboboxTriggerSurface(
 }
 
 /**
- * The cancel surface: clears the input (and, with `resetModelValueOnClear`,
- * the value with `'clear-press'`), then the search term.
+ * The cancel surface: clears the value with `'clear-press'` (unless
+ * `resetModelValueOnClear` is `false`), then the input, then the search term.
+ * Inert while the combobox is disabled.
  */
 export function getComboboxCancelSurface(context: ComboboxRootContext<any>): PartSurface<Record<string, never>> {
   return createPartSurface<Record<string, never>>(
     () => ({
-      tabindex: '-1',
-      onClick: (event: MouseEvent) => {
+      'tabindex': '-1',
+      'disabled': context.disabled.value,
+      'aria-disabled': context.disabled.value,
+      'onClick': (event: MouseEvent) => {
+        // `disabled` only stops a native button; guard other elements too.
+        if (context.disabled.value)
+          return
         // A cancelled value clear (`beforeUpdate:modelValue` on the root)
         // keeps everything: the value, the input text and the filter.
         if (context.resetModelValueOnClear.value) {
@@ -474,7 +481,7 @@ export interface UseComboboxRootProps<T = AcceptableValue> extends Omit<UseListb
   openOnFocus?: MaybeRefOrGetter<boolean | undefined>
   /** Open when the input is clicked. @defaultValue `false` */
   openOnClick?: MaybeRefOrGetter<boolean | undefined>
-  /** `ComboboxCancel` also clears the value. @defaultValue `false` */
+  /** `ComboboxCancel` also clears the value; `false` clears only the search text. @defaultValue `true` */
   resetModelValueOnClear?: MaybeRefOrGetter<boolean | undefined>
   /** Unmount the content when closed. @defaultValue `true` */
   unmountOnHide?: MaybeRefOrGetter<boolean | undefined>
@@ -691,7 +698,7 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     filterState: listbox.filterState,
     openOnFocus: bool(props.openOnFocus),
     openOnClick: bool(props.openOnClick),
-    resetModelValueOnClear: bool(props.resetModelValueOnClear),
+    resetModelValueOnClear: bool(props.resetModelValueOnClear, true),
     unmountOnHide: bool(props.unmountOnHide, true),
     displayValue: props.displayValue,
     notifyOpenComplete: value => props.onOpenComplete?.(value),

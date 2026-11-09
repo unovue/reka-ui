@@ -134,7 +134,7 @@ The button that toggles the Combobox Content.
 
 ### Cancel
 
-The button that clears the search term.
+The button that clears the selected value and the search term. Set `:reset-model-value-on-clear="false"` on `ComboboxRoot` to clear only the search term and keep the selection. It does nothing while the combobox is disabled.
 
 <!-- @include: @/meta/ComboboxCancel.md -->
 
@@ -362,12 +362,14 @@ To let users clear a single selection from the list, add an item with a `null` v
 
 The `ComboboxRoot` `displayValue` is not called for `null`. A `displayValue` on `ComboboxInput` is called with every value, `null` included, so it must handle `null` (return `''` to keep the input empty).
 
-The keyboard clears the value too:
+`ComboboxCancel` clears the value too: it sets it to `null` (`[]` with `multiple`) and empties the input (reason `'clear-press'`). With `:reset-model-value-on-clear="false"` it only empties the input.
+
+The keyboard clears the value as well:
 
 - Emptying the input of a single combobox sets the value to `null` (reason `'input-clear'`). A `multiple` selection is kept, and so is the value when the input is inside the popup.
 - Escape on a closed combobox sets the value to `null` (`[]` with `multiple`) and empties the input (reason `'escape-key'`). When there was a value to clear, the Escape stops there, so it does not also close a surrounding dialog. While the popup is open, Escape only closes it.
 
-Both go through `beforeUpdate:modelValue`; `details.cancel()` keeps the value (and, for Escape, the text).
+Each value change goes through `beforeUpdate:modelValue` on `ComboboxRoot`; `details.cancel()` keeps the value (and, for Escape and `ComboboxCancel`, the text). With `:reset-model-value-on-clear="false"`, `ComboboxCancel` changes no value, so the root event does not fire; cancel the `'clear-press'` change in `beforeUpdate:modelValue` on `ComboboxInput` to keep the text and the filter.
 
 ```vue line=5,7,16
 <script setup lang="ts">
@@ -659,7 +661,6 @@ import { ref } from 'vue'
 <template>
   <ComboboxRoot
     v-model="selected"
-    reset-model-value-on-clear
     @before-update:model-value="(value, details) => {
       // a required field: keep the selection when the cancel button clears it
       if (details.reason === 'clear-press')
