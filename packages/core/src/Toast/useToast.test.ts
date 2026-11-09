@@ -291,9 +291,17 @@ describe('useToast — standalone', () => {
 
   it('resets a swipe whose release never reached the toast on the next press', async () => {
     const onSwipeEnd = vi.fn(() => true)
+    const disabled = ref(false)
+    const emitted: string[] = []
     const wrapper = mount(defineComponent({
       setup() {
-        const { swipe } = useToastSwipe({ swipeDirection: 'right', swipeThreshold: 50, onSwipeEnd })
+        const { swipe } = useToastSwipe({
+          swipeDirection: 'right',
+          swipeThreshold: 50,
+          disabled,
+          onSwipeEnd,
+          emit: (name: string) => emitted.push(name),
+        })
         return () => h('div', { ...swipe.attrs.value, 'data-testid': 'toast' }, 'Saved')
       },
     }), { attachTo: document.body })
@@ -305,11 +313,21 @@ describe('useToast — standalone', () => {
     pointer('pointerdown', 0)
     pointer('pointermove', 20)
     pointer('pointermove', 80)
-    // The `pointerup` went elsewhere. The next press starts clean and selectable.
+    // The `pointerup` went elsewhere. The next press, here while swipe is
+    // disabled, cancels that swipe and leaves the text selectable.
+    disabled.value = true
+    await nextTick()
     pointer('pointerdown', 0)
+    expect(emitted).toEqual(['swipeStart', 'swipeMove', 'swipeCancel'])
     expect(toast.getAttribute('data-swipe')).toBe('cancel')
     expect(toast.style.getPropertyValue('user-select')).toBe('')
-    pointer('pointerup', 0)
+    // Re-enabled, a move does not resume from the old press position.
+    disabled.value = false
+    await nextTick()
+    pointer('pointermove', 80)
+    expect(toast.getAttribute('data-swipe')).toBe('cancel')
+    expect(toast.style.getPropertyValue('user-select')).toBe('')
+    pointer('pointerup', 80)
     expect(onSwipeEnd).not.toHaveBeenCalled()
     wrapper.unmount()
   })
