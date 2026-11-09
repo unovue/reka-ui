@@ -1,10 +1,11 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
+import type { PropType } from 'vue'
 import { findByText, fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
-import { ToastAction, ToastDescription, ToastProvider, ToastRoot, ToastTitle, ToastViewport } from '.'
+import { ToastAction, ToastClose, ToastDescription, ToastProvider, ToastRoot, ToastTitle, ToastViewport } from '.'
 import Toast from './story/_Toast.vue'
 import { VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'
 
@@ -210,6 +211,180 @@ describe('given a default Toast', () => {
   })
 })
 
+const PausableToasts = defineComponent({
+  setup() {
+    const open = ref({ first: true, second: true })
+    const preventSecondEscape = ref(false)
+    return { open, preventSecondEscape }
+  },
+  render() {
+    const toast = (name: 'first' | 'second') => h(ToastRoot, {
+      'key': name,
+      'open': this.open[name],
+      'onUpdate:open': (value: boolean) => {
+        this.open[name] = value
+      },
+      'onEscapeKeyDown': (event: KeyboardEvent) => {
+        if (name === 'second' && this.preventSecondEscape)
+          event.preventDefault()
+      },
+    }, {
+      default: () => [
+        h(ToastDescription, null, { default: () => name }),
+        h(ToastClose, { 'data-close': name }, { default: () => CLOSE_TEXT }),
+      ],
+    })
+    return h(ToastProvider, { duration: 1000 }, {
+      default: () => [toast('first'), toast('second'), h(ToastViewport)],
+    })
+  },
+})
+
+describe('given toasts whose close timers are paused', () => {
+  let wrapper: VueWrapper<InstanceType<typeof PausableToasts>>
+  let viewport: HTMLElement
+
+  async function flush() {
+    for (let i = 0; i < 5; i++)
+      await nextTick()
+  }
+
+  async function waitForUnmount(selector = 'li') {
+    for (let i = 0; i < 10 && document.querySelector(selector); i++)
+      await nextTick()
+    expect(document.querySelector(selector)).toBeNull()
+  }
+
+  async function reopenFirst() {
+    wrapper.vm.open.first = true
+    await flush()
+  }
+
+  async function runDuration() {
+    vi.advanceTimersByTime(1000)
+    await flush()
+  }
+
+  // A keyboard-activated click is a PointerEvent with an empty pointerType.
+  function keyboardClick(element: Element) {
+    const event = new MouseEvent('click', { bubbles: true })
+    Object.defineProperty(event, 'pointerType', { value: '' })
+    element.dispatchEvent(event)
+  }
+
+  beforeEach(async () => {
+    vi.useFakeTimers()
+    document.body.innerHTML = ''
+    wrapper = mount(PausableToasts, { attachTo: document.body })
+    await flush()
+    viewport = document.querySelector('ol')!
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
+    vi.restoreAllMocks()
+    vi.useRealTimers()
+  })
+
+  describe('when the last toast closes while hovered', () => {
+    beforeEach(async () => {
+      await fireEvent.pointerMove(viewport)
+    })
+
+    it('should not leave the next toast paused after Escape', async () => {
+      await fireEvent.keyDown(document.body, { key: 'Escape' })
+      await waitForUnmount()
+      await reopenFirst()
+      await runDuration()
+      expect(wrapper.vm.open.first).toBe(false)
+    })
+
+    it('should not leave the next toast paused after a mouse click on close', async () => {
+      wrapper.vm.open.second = false
+      await fireEvent.click(document.querySelector('[data-close="first"]')!)
+      await waitForUnmount()
+      await reopenFirst()
+      await runDuration()
+      expect(wrapper.vm.open.first).toBe(false)
+    })
+
+    it('should not leave the next toast paused after closing from code', async () => {
+      wrapper.vm.open = { first: false, second: false }
+      await waitForUnmount()
+      await reopenFirst()
+      await runDuration()
+      expect(wrapper.vm.open.first).toBe(false)
+    })
+  })
+
+  describe('when the last toast closes while the window is blurred', () => {
+    beforeEach(async () => {
+      vi.spyOn(document, 'hasFocus').mockReturnValue(false)
+      window.dispatchEvent(new Event('blur'))
+      wrapper.vm.open = { first: false, second: false }
+      await waitForUnmount()
+    })
+
+    function focusWindow() {
+      vi.mocked(document.hasFocus).mockReturnValue(true)
+      window.dispatchEvent(new Event('focus'))
+    }
+
+    it('should keep a toast opened while blurred paused until the window gets focus', async () => {
+      await reopenFirst()
+      await runDuration()
+      expect(wrapper.vm.open.first).toBe(true)
+
+      focusWindow()
+      await runDuration()
+      expect(wrapper.vm.open.first).toBe(false)
+    })
+
+    it('should not leave the next toast paused when the window gets focus with no toasts open', async () => {
+      focusWindow()
+      await reopenFirst()
+      await runDuration()
+      expect(wrapper.vm.open.first).toBe(false)
+    })
+  })
+
+  describe('when one of two focused toasts is closed from the keyboard', () => {
+    it('should keep the other paused until focus leaves the viewport', async () => {
+      const closeFirst = document.querySelector<HTMLElement>('[data-close="first"]')!
+      closeFirst.focus()
+      await fireEvent.focusIn(closeFirst)
+      keyboardClick(closeFirst)
+      await waitForUnmount('[data-close="first"]')
+
+      await runDuration()
+      expect(wrapper.vm.open.second).toBe(true)
+
+      const outside = document.createElement('button')
+      document.body.append(outside)
+      await fireEvent.focusOut(viewport, { relatedTarget: outside })
+      await runDuration()
+      expect(wrapper.vm.open.second).toBe(false)
+    })
+  })
+
+  describe('when Escape closes only one of two hovered toasts', () => {
+    it('should keep the other paused until the pointer leaves', async () => {
+      wrapper.vm.preventSecondEscape = true
+      await fireEvent.pointerMove(viewport)
+      await fireEvent.keyDown(document.body, { key: 'Escape' })
+      await flush()
+      expect(wrapper.vm.open).toEqual({ first: false, second: true })
+
+      await runDuration()
+      expect(wrapper.vm.open.second).toBe(true)
+
+      await fireEvent.pointerLeave(viewport)
+      await runDuration()
+      expect(wrapper.vm.open.second).toBe(false)
+    })
+  })
+})
+
 describe('given a Toast with an action', () => {
   let wrapper: VueWrapper<InstanceType<typeof ToastWithAction>>
 
@@ -274,5 +449,159 @@ describe('given a ToastTitle and ToastDescription outside a managed toast', () =
     expect(wrapper.vm.$.subTree.el).toBeInstanceOf(HTMLElement)
     expect(wrapper.element.outerHTML).toBe('<div class="custom" id="custom-id">Content</div>')
     wrapper.unmount()
+  })
+})
+
+describe('given a ToastViewport whose element is replaced', () => {
+  const ReplaceableViewport = defineComponent({
+    props: {
+      mode: { type: String as PropType<'asChild' | 'as'>, default: 'asChild' },
+      initial: { type: String as PropType<'a' | 'none'>, default: 'a' },
+    },
+    setup(props) {
+      const open = ref(true)
+      const variant = ref<'a' | 'b' | 'none'>(props.initial)
+      return { open, variant }
+    },
+    render() {
+      return h(ToastProvider, { duration: 1000 }, {
+        default: () => [
+          h(ToastRoot, {
+            'open': this.open,
+            'onUpdate:open': (value: boolean) => {
+              this.open = value
+            },
+          }, { default: () => h(ToastDescription, null, { default: () => 'Saved' }) }),
+          this.mode === 'as'
+            ? h(ToastViewport, { 'as': this.variant === 'a' ? 'ol' : 'ul', 'data-viewport': this.variant })
+            : h(ToastViewport, { asChild: true }, {
+                default: () => this.variant === 'none'
+                  ? null
+                  : h('ol', { 'key': this.variant, 'data-viewport': this.variant }),
+              }),
+        ],
+      })
+    },
+  })
+
+  let wrapper: VueWrapper<InstanceType<typeof ReplaceableViewport>>
+  let oldViewport: HTMLElement
+  let newViewport: HTMLElement
+
+  async function flush() {
+    for (let i = 0; i < 5; i++)
+      await nextTick()
+  }
+
+  async function replaceViewport() {
+    oldViewport = document.querySelector('[data-viewport="a"]')!
+    wrapper.vm.variant = 'b'
+    await flush()
+    newViewport = document.querySelector('[data-viewport="b"]')!
+  }
+
+  async function runDuration() {
+    vi.advanceTimersByTime(1000)
+    await flush()
+  }
+
+  beforeEach(async () => {
+    vi.useFakeTimers()
+    // jsdom only reports focus once an element has been focused.
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true)
+    document.body.innerHTML = ''
+    wrapper = mount(ReplaceableViewport, { attachTo: document.body })
+    await flush()
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
+    vi.restoreAllMocks()
+    vi.useRealTimers()
+  })
+
+  it('should teleport open toasts into the current viewport', async () => {
+    expect(document.querySelector('[data-viewport="a"] li')).toBeTruthy()
+    await replaceViewport()
+    expect(newViewport).toBeTruthy()
+    expect(newViewport.querySelector('li')?.textContent).toContain('Saved')
+  })
+
+  it('should teleport open toasts into the first element of a viewport that mounted empty', async () => {
+    wrapper.unmount()
+    wrapper = mount(ReplaceableViewport, { attachTo: document.body, props: { initial: 'none' } })
+    await flush()
+    wrapper.vm.variant = 'a'
+    await flush()
+    expect(document.querySelector('[data-viewport="a"] li')?.textContent).toContain('Saved')
+  })
+
+  it('should teleport open toasts into the current viewport when `as` changes', async () => {
+    wrapper.unmount()
+    wrapper = mount(ReplaceableViewport, { attachTo: document.body, props: { mode: 'as' } })
+    await flush()
+    await replaceViewport()
+    expect(newViewport.tagName).toBe('UL')
+    expect(newViewport.querySelector('li')?.textContent).toContain('Saved')
+  })
+
+  it('should pause and resume from events on the current viewport only', async () => {
+    await replaceViewport()
+
+    await fireEvent.pointerMove(oldViewport)
+    await runDuration()
+    expect(wrapper.vm.open).toBe(false)
+
+    wrapper.vm.open = true
+    await flush()
+    await fireEvent.pointerMove(newViewport)
+    await runDuration()
+    expect(wrapper.vm.open).toBe(true)
+
+    await fireEvent.pointerLeave(newViewport)
+    await runDuration()
+    expect(wrapper.vm.open).toBe(false)
+  })
+
+  it('should not leave the toast paused when the viewport is replaced while hovered', async () => {
+    await fireEvent.pointerMove(document.querySelector('[data-viewport="a"]')!)
+    await replaceViewport()
+    await runDuration()
+    expect(wrapper.vm.open).toBe(false)
+  })
+
+  it('should keep the toasts when the viewport child is removed and then rendered again', async () => {
+    const errorHandler = vi.fn()
+    wrapper.unmount()
+    wrapper = mount(ReplaceableViewport, { attachTo: document.body, global: { config: { errorHandler } } })
+    await flush()
+
+    wrapper.vm.variant = 'none'
+    await flush()
+    wrapper.vm.variant = 'b'
+    await flush()
+
+    expect(errorHandler).not.toHaveBeenCalled()
+    expect(document.querySelector('[data-viewport="b"] li')?.textContent).toContain('Saved')
+  })
+
+  it('should collapse the stack when the viewport is replaced while hovered', async () => {
+    await fireEvent.pointerMove(document.querySelector('[data-viewport="a"]')!)
+    expect(document.querySelector('[data-viewport="a"]')!.hasAttribute('data-expanded')).toBe(true)
+    await replaceViewport()
+    expect(newViewport.hasAttribute('data-expanded')).toBe(false)
+  })
+
+  it('should keep a window-blur pause across the replacement until the window gets focus', async () => {
+    vi.mocked(document.hasFocus).mockReturnValue(false)
+    window.dispatchEvent(new Event('blur'))
+    await replaceViewport()
+    await runDuration()
+    expect(wrapper.vm.open).toBe(true)
+
+    vi.mocked(document.hasFocus).mockReturnValue(true)
+    window.dispatchEvent(new Event('focus'))
+    await runDuration()
+    expect(wrapper.vm.open).toBe(false)
   })
 })

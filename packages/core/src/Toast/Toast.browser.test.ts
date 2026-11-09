@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, ref } from 'vue'
+import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from '@/Dialog'
 import { hoverForMousePointerId } from '@/test/browser'
 import { ToastAction, ToastClose, ToastDescription, ToastProvider, ToastRoot, ToastTitle, ToastViewport } from '.'
 
@@ -149,5 +150,84 @@ describe('given a swipeable Toast, in a real browser', () => {
     expect(toast()!.style.getPropertyValue('--reka-toast-swipe-end-x')).toBe('')
     expect(toast()!.getAttribute('data-state')).toBe('open')
     expect(updates).toHaveLength(0)
+  })
+})
+
+const DURATION = 300
+
+function mountToasts({ inDialog = false } = {}) {
+  const open = ref<Record<string, boolean>>({})
+  const Fixture = defineComponent({
+    setup() {
+      const toasts = () => Object.keys(open.value).map(name => h(ToastRoot, {
+        'key': name,
+        'open': open.value[name],
+        'onUpdate:open': (value: boolean) => { open.value[name] = value },
+        'style': 'height: 40px',
+      }, () => [
+        h(ToastDescription, () => name),
+        h(ToastAction, { 'altText': 'Undo', 'data-action': name }, () => 'Undo'),
+        h(ToastClose, { 'data-close': name }, () => 'x'),
+      ]))
+      const content = () => [
+        h('button', { 'data-testid': 'outside', 'style': 'margin-top: 300px' }, 'outside'),
+        h(ToastViewport, { style: 'position: fixed; top: 0; right: 0; width: 300px; list-style: none; margin: 0' }),
+      ]
+      // A modal layer mounts a backdrop below itself, so the content is positioned to stay
+      // above it, as real dialog content is.
+      const dialogContentProps = { 'aria-describedby': undefined, 'style': 'position: relative' }
+      return () => h(ToastProvider, { duration: DURATION }, () => [
+        ...toasts(),
+        inDialog
+          ? h(DialogRoot, { open: true }, () => h(DialogPortal, () => h(DialogContent, dialogContentProps, () => [h(DialogTitle, () => 'Dialog'), ...content()])))
+          : content(),
+      ])
+    },
+  })
+  mount(Fixture, { attachTo: document.body })
+  return { open }
+}
+
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
+const el = (selector: string) => document.querySelector<HTMLElement>(selector)
+
+describe('toast close pause, in a real browser', () => {
+  it.each(['action', 'close'])('starts the next toast timer after the last toast is closed by its %s button (#3154)', async (kind) => {
+    const { open } = mountToasts()
+    open.value.a = true
+    await expect.poll(() => el(`[data-${kind}="a"]`)).toBeTruthy()
+    await userEvent.click(el(`[data-${kind}="a"]`)!)
+    await expect.poll(() => el('li')).toBeNull()
+    await userEvent.hover(el('[data-testid="outside"]')!)
+
+    open.value.b = true
+    await expect.poll(() => open.value.b, { timeout: DURATION * 6 }).toBe(false)
+  })
+
+  it('resumes the other toast once the pointer leaves after one of two is closed by its action (#3154 variant)', async () => {
+    const { open } = mountToasts()
+    open.value.a = true
+    open.value.b = true
+    await expect.poll(() => el('[data-action="a"]')).toBeTruthy()
+    await userEvent.click(el('[data-action="a"]')!)
+    await expect.poll(() => el('[data-action="a"]')).toBeNull()
+    await userEvent.hover(el('[data-testid="outside"]')!)
+    await sleep(50)
+    await expect.poll(() => open.value.b, { timeout: DURATION * 6 }).toBe(false)
+  })
+
+  it('starts the next toast timer after toasts are closed inside a modal dialog (#1795)', async () => {
+    const { open } = mountToasts({ inDialog: true })
+    open.value.a = true
+    open.value.b = true
+    await expect.poll(() => el('[data-close="b"]')).toBeTruthy()
+    await userEvent.click(el('[data-close="b"]')!)
+    await expect.poll(() => el('[data-close="b"]')).toBeNull()
+    await userEvent.click(el('[data-close="a"]')!)
+    await expect.poll(() => el('li')).toBeNull()
+    await userEvent.hover(el('[data-testid="outside"]')!)
+
+    open.value.c = true
+    await expect.poll(() => open.value.c, { timeout: DURATION * 6 }).toBe(false)
   })
 })

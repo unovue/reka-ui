@@ -56,6 +56,8 @@ export type PanelGroupContext = {
   stopDragging: () => void
   unregisterPanel: (panelData: PanelData) => void
   panelGroupElement: Ref<ParentNode | null>
+  /** Bumped when a resize handle's element mounts, changes or unmounts, so group-level effects re-run */
+  resizeHandleRegistration: Ref<number>
 
   // Exposed function for child component
   collapsePanel: (panelData: PanelData) => void

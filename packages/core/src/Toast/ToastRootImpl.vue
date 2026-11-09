@@ -103,7 +103,7 @@ function handleClose(event?: Event, reason: ToastOpenChangeReason | BaseChangeRe
   const isNonPointerEvent = (event as PointerEvent | undefined)?.pointerType === ''
   const isFocusInToast = currentElement.value?.contains(getActiveElement())
 
-  // A cancelled close (`beforeUpdate:open`) leaves focus and the pause state alone.
+  // A cancelled close (`beforeUpdate:open`) leaves focus alone.
   if (!props.requestClose?.(reason, event))
     return false
 
@@ -113,10 +113,6 @@ function handleClose(event?: Event, reason: ToastOpenChangeReason | BaseChangeRe
   if (isFocusInToast && isNonPointerEvent)
     providerContext.viewport.value?.focus()
 
-  if (isNonPointerEvent) {
-    // when manually close the toast, we reset isClosePausedRef
-    providerContext.isClosePausedRef.value = false
-  }
   return true
 }
 

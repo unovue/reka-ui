@@ -17,6 +17,25 @@ export interface CollapsibleContentProps extends PrimitiveProps {
 export type CollapsibleContentEmits = {
   contentFound: [event: Event]
 }
+
+// Browsers restart a CSS animation whenever its element is inserted into the document again,
+// e.g. when a keyed list moves the Collapsible. Once the open/close animation has finished,
+// block it again (as on the initial mount) so it only replays on the next toggle, which
+// restores the original style. Deferred so Presence still reads the finished animation's
+// name in its own `animationend` handler, and skipped while another CSS animation is
+// running or paused (a running one retries on its own `animationend`). Transitions are not
+// restarted by a move, so they are ignored. Module-level, so it costs nothing per instance.
+function blockReplayedAnimation(ev: AnimationEvent) {
+  const node = ev.currentTarget as HTMLElement
+  if (ev.target !== node)
+    return
+  // A toggle before the frame starts its own animation; leave that one alone.
+  const state = node.getAttribute('data-state')
+  requestAnimationFrame(() => {
+    if (node.getAttribute('data-state') === state && !node.getAnimations?.().some(animation => 'animationName' in animation && animation.playState !== 'finished'))
+      node.style.animationName = 'none'
+  })
+}
 </script>
 
 <script setup lang="ts">
@@ -186,6 +205,7 @@ useEventListener(currentElement, 'beforematch', (ev) => {
         // `forceMount` keeps the content shown; Presence still tracks the open state
         // so `update:openComplete` is reported either way.
         hidden: getCollapsibleContentHidden(forceMount || present, rootContext.unmountOnHide.value),
+        onAnimationend: blockReplayedAnimation,
       })"
       :ref="forwardRef"
     >

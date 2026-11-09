@@ -3,7 +3,7 @@ import type { ChangeEventDetails } from '@/shared'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { sleep } from '@/test'
 import { HoverCardContent, HoverCardRoot, HoverCardTrigger } from '.'
 import HoverCard from './story/_HoverCard.vue'
@@ -323,5 +323,20 @@ describe('hoverCardRoot change events (v3 foundation contract)', () => {
     await nextTick()
     expect(trigger().attributes('data-popup-open')).toBe('')
     expect(root.emitted('update:open')).toHaveLength(2)
+  })
+})
+
+describe('given a HoverCardTrigger rendered as a button', () => {
+  function mountTrigger(triggerProps: Record<string, unknown> = {}) {
+    const wrapper = mount(() => h(HoverCardRoot, () => h(HoverCardTrigger, { as: 'button', ...triggerProps }, () => 'trigger')))
+    return wrapper.get('button')
+  }
+
+  it('should set type="button" so it does not submit a surrounding form', () => {
+    expect(mountTrigger().attributes('type')).toBe('button')
+  })
+
+  it('should keep an explicit type', () => {
+    expect(mountTrigger({ type: 'submit' }).attributes('type')).toBe('submit')
   })
 })
