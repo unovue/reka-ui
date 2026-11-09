@@ -228,8 +228,8 @@ describe('given a NavigationMenu whose list wraps', () => {
     await page.viewport(1280, 800)
     wrapped = mountWrapped({ itemStyle: 'position: relative' })
 
-    await wrapped.expectOpen('a', { indicator: { 'cross-offset': '40px' } })
-    await wrapped.expectOpen('d', { indicator: { 'cross-offset': '80px' } })
+    await wrapped.expectOpen('a', { indicator: { 'size': '100px', 'position': '0px', 'cross-offset': '40px' } })
+    await wrapped.expectOpen('d', { indicator: { 'size': '100px', 'position': '0px', 'cross-offset': '80px' } })
   })
 
   it('keeps the clamped top while the cross offset follows the row', async () => {
