@@ -4,8 +4,8 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, ref } from 'vue'
-import { hoverForMousePointerId } from '@/test/browser'
 import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from '@/Dialog'
+import { hoverForMousePointerId } from '@/test/browser'
 import { ToastAction, ToastClose, ToastDescription, ToastProvider, ToastRoot, ToastTitle, ToastViewport } from '.'
 
 function mountToast() {
@@ -150,6 +150,8 @@ describe('given a swipeable Toast, in a real browser', () => {
     expect(toast()!.style.getPropertyValue('--reka-toast-swipe-end-x')).toBe('')
     expect(toast()!.getAttribute('data-state')).toBe('open')
     expect(updates).toHaveLength(0)
+  })
+})
 
 const DURATION = 300
 
