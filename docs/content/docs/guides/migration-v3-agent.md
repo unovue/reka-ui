@@ -1024,7 +1024,7 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 ### 35. `strictTemplates` support
 
 **What changed.**
-- Component props types include, type-only (no runtime props; they still fall through), exactly: every `aria-*` attribute; `class`, `style`, `id`, `role`, `tabindex`, `title`, `lang`, `hidden`, `inert`, `draggable`, `spellcheck`, `autofocus`, `contenteditable`, `accesskey`, `enterkeyhint`, `inputmode`, `nonce`, `slot`, `part`; and the listeners `onClick`, `onDblclick`, `onContextmenu`, `onKeydown`, `onKeyup`, `onFocus`, `onBlur`, `onFocusin`, `onFocusout`, `onPointerdown`, `onPointerup`, `onPointermove`, `onPointerenter`, `onPointerleave`, `onMouseenter`, `onMouseleave`, `onMousedown`, `onMouseup`, `onTouchstart`, `onTouchend`, `onWheel`, `onScroll`, `onCopy`, `onPaste`, `onAnimationend`, `onTransitionend`. `strictTemplates`, `checkUnknownProps` and `checkUnknownEvents` accept them on every component.
+- Component props types include, type-only (no runtime props; they still fall through), exactly: every `aria-*` attribute; `class`, `style`, `id`, `role`, `tabindex`, `title`, `lang`, `hidden`, `inert`, `draggable`, `spellcheck`, `autofocus`, `contenteditable`, `accesskey`, `enterkeyhint`, `inputmode`, `nonce`, `slot`, `part`; and the listeners `onClick`, `onDblclick`, `onContextmenu`, `onKeydown`, `onKeyup`, `onFocus`, `onBlur`, `onFocusin`, `onFocusout`, `onPointerdown`, `onPointerup`, `onPointermove`, `onPointerenter`, `onPointerleave`, `onMouseenter`, `onMouseleave`, `onMousedown`, `onMouseup`, `onTouchstart`, `onTouchend`, `onWheel`, `onScroll`, `onCopy`, `onPaste`, `onAnimationend`, `onTransitionend`. `strictTemplates`, `checkUnknownProps` and `checkUnknownEvents` accept them on every component that renders an element. Components that render no element of their own (`ConfigProvider`, the providers, `*Portal`, and roots such as `DialogRoot`, `PopoverRoot`, `TooltipRoot` or `HoverCardRoot`) do not type them, since there is no element to receive them.
 - A component's own prop of the same name keeps its type; an emit keeps its payload.
 - New exported type `PrimitiveHTMLAttributes`: the set above.
 
@@ -1034,11 +1034,11 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 - `ref()` / `reactive()` holding a type that extends a Reka props type together with VNodes or components.
 
 **Rewrite rules.**
-- Remove casts and expect-error comments that only silenced an attribute or listener from the set above.
+- Remove casts and expect-error comments that only silenced an attribute or listener from the set above, on a component that renders an element. Leave the ones on renderless components.
 - Keep them for anything outside it: other DOM listeners (`@input`, `@drag`, …) and element-specific attributes (`href`, `alt`, `type`, `name`, …). Do not add types for them. If the developer wants them gone, *ask* whether to set `checkUnknownEvents: false` / `checkUnknownProps: false`, or to move them to their own element with `as-child` or a wrapper.
 - `data-*` errors on components: add `"dataAttributes": ["data-*"]` to `vueCompilerOptions`; `vue-tsc` checks camelized `data-*` names, which no props type can declare.
-- Wrapper code reading `props.class`, `props.id` or another attribute that is not declared in the wrapper's own props: read it from `useAttrs()` instead (it is never a runtime prop).
-- A "Type instantiation is excessively deep" error on a `ref<T>(…)` whose `T` holds Reka props and VNodes: annotate the variable instead (`const state: Ref<T> = ref(initial)`).
+- Wrapper code reading `props.class`, `props.id` or another attribute that neither the wrapper nor the Reka props type it builds on declares as a prop (`CheckboxRootProps` declares `id`, for example): read it from `useAttrs()` instead, since it is never a runtime prop. Check the Reka component's documented props first; if unsure, *ask*.
+- A "Type instantiation is excessively deep" error on a `ref<T>(…)` whose `T` holds Reka props and VNodes: when the initial value holds no refs (an object literal such as `{ toasts: [] }`), annotate the variable instead (`const state: Ref<T> = ref(initial)`). Otherwise *ask*.
 
 **Verify.** The type-check passes with the removed casts; the rendered attributes are unchanged.
 

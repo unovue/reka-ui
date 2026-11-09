@@ -988,7 +988,7 @@ Pressing Tab in an open `SelectContent` now closes the select and moves focus to
 
 ## `strictTemplates` support
 
-Component props now type the common attributes and listeners a part passes to its element ([#2875](https://github.com/unovue/reka-ui/issues/2875)), so `<NavigationMenuRoot aria-label="Main">` type-checks with `vueCompilerOptions.strictTemplates` (or `checkUnknownProps` / `checkUnknownEvents`). They are typed only: they are not runtime props and still fall through to the element. Exactly these are typed (the `PrimitiveHTMLAttributes` type):
+Component props now type the common attributes and listeners a part passes to its element ([#2875](https://github.com/unovue/reka-ui/issues/2875)), so `<NavigationMenuRoot aria-label="Main">` type-checks with `vueCompilerOptions.strictTemplates` (or `checkUnknownProps` / `checkUnknownEvents`). They are typed only: they are not runtime props and still fall through to the element. Components that render no element of their own (`ConfigProvider`, the providers, `*Portal`, and roots such as `DialogRoot`, `PopoverRoot`, `TooltipRoot` or `HoverCardRoot`) do not type them, since there is no element to receive them. Exactly these are typed (the `PrimitiveHTMLAttributes` type):
 
 - every `aria-*` attribute;
 - `class`, `style`, `id`, `role`, `tabindex`, `title`, `lang`, `hidden`, `inert`, `draggable`, `spellcheck`, `autofocus`, `contenteditable`, `accesskey`, `enterkeyhint`, `inputmode`, `nonce`, `slot` and `part`;
@@ -1000,7 +1000,7 @@ Anything else still falls through at runtime but is unknown to `strictTemplates`
 
 `vue-tsc` checks `data-*` attributes on components under their camelized name (`data-state` as `dataState`), which no props type can declare. Add `"dataAttributes": ["data-*"]` to `vueCompilerOptions` to skip the check for them.
 
-Props interfaces built on a Reka props type gain these attributes too, still without runtime props: read them in a wrapper through `useAttrs()`, not `props`. A `ref()` holding such props next to VNodes can hit TypeScript's "excessively deep" error; annotate the variable instead: `const state: Ref<State> = ref(initial)`.
+Props interfaces built on a Reka props type gain these attributes too, still without runtime props. In a wrapper, read an attribute that no props type declares through `useAttrs()`, not `props`. Some components do declare one as a prop, such as `id` on `CheckboxRoot`, and that one stays on `props`. A `ref()` holding such props next to VNodes can hit TypeScript's "excessively deep" error. When the initial value holds no refs (an object literal such as `{ toasts: [] }`), annotate the variable instead: `const state: Ref<State> = ref(initial)`.
 
 ## NumberField updates while typing
 
