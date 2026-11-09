@@ -56,8 +56,9 @@ describe('checkboxGroup native validation', () => {
   it('submits once the user checks an item in an unnamed required group', async () => {
     const mounted = await mountForm({ required: true, defaultValue: [] })
     wrapper = mounted.wrapper
-    mounted.form.requestSubmit()
-    expect(mounted.getSubmits()).toBe(0)
+    // checkValidity, not requestSubmit: a blocked submit opens the browser's validation popup,
+    // which in Firefox on Linux swallows the next click.
+    expect(mounted.form.checkValidity()).toBe(false)
     await userEvent.click(mounted.wrapper.get('[aria-label="apple"]').element)
     // The required hidden input goes away after the re-render; poll rather than count ticks.
     await expect.poll(() => mounted.form.checkValidity()).toBe(true)
