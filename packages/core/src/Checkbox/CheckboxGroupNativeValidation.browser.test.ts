@@ -61,7 +61,14 @@ describe('checkboxGroup native validation', () => {
     expect(mounted.form.checkValidity()).toBe(false)
     await userEvent.click(mounted.wrapper.get('[aria-label="apple"]').element)
     // The required hidden input goes away after the re-render; poll rather than count ticks.
-    await expect.poll(() => mounted.form.checkValidity()).toBe(true)
+    try {
+      await expect.poll(() => mounted.form.checkValidity()).toBe(true)
+    }
+    catch (error) {
+      const apple = mounted.wrapper.get('[aria-label="apple"]').element as HTMLElement
+      const invalid = [...mounted.form.elements].filter(el => !(el as HTMLInputElement).checkValidity()).map(el => el.outerHTML)
+      throw new Error(`DIAG ${String(error)}\nform=${mounted.form.outerHTML}\ninvalid=${JSON.stringify(invalid)}\napple=${JSON.stringify(apple.getBoundingClientRect())} at=${document.elementFromPoint(apple.getBoundingClientRect().x + 2, apple.getBoundingClientRect().y + 2)?.outerHTML}\nactive=${document.activeElement?.outerHTML}\nua=${navigator.userAgent}`)
+    }
     mounted.form.requestSubmit()
     expect(mounted.getSubmits()).toBe(1)
   })
