@@ -8,6 +8,9 @@ async function mountForm(groupProps: { name?: string, required: boolean, disable
   let submits = 0
   const wrapper = mount({
     render: () => h('form', {
+      // Cancelling `invalid` keeps the submit blocked but hides the browser's validation popup,
+      // which in Firefox on Linux outlives the test and swallows a later test's click.
+      onInvalidCapture: (event: Event) => event.preventDefault(),
       onSubmit: (event: Event) => {
         event.preventDefault()
         submits++
@@ -56,19 +59,11 @@ describe('checkboxGroup native validation', () => {
   it('submits once the user checks an item in an unnamed required group', async () => {
     const mounted = await mountForm({ required: true, defaultValue: [] })
     wrapper = mounted.wrapper
-    // checkValidity, not requestSubmit: a blocked submit opens the browser's validation popup,
-    // which in Firefox on Linux swallows the next click.
-    expect(mounted.form.checkValidity()).toBe(false)
+    mounted.form.requestSubmit()
+    expect(mounted.getSubmits()).toBe(0)
     await userEvent.click(mounted.wrapper.get('[aria-label="apple"]').element)
     // The required hidden input goes away after the re-render; poll rather than count ticks.
-    try {
-      await expect.poll(() => mounted.form.checkValidity()).toBe(true)
-    }
-    catch (error) {
-      const apple = mounted.wrapper.get('[aria-label="apple"]').element as HTMLElement
-      const invalid = [...mounted.form.elements].filter(el => !(el as HTMLInputElement).checkValidity()).map(el => el.outerHTML)
-      throw new Error(`DIAG ${String(error)}\nform=${mounted.form.outerHTML}\ninvalid=${JSON.stringify(invalid)}\napple=${JSON.stringify(apple.getBoundingClientRect())} at=${document.elementFromPoint(apple.getBoundingClientRect().x + 2, apple.getBoundingClientRect().y + 2)?.outerHTML}\nactive=${document.activeElement?.outerHTML}\nua=${navigator.userAgent}`)
-    }
+    await expect.poll(() => mounted.form.checkValidity()).toBe(true)
     mounted.form.requestSubmit()
     expect(mounted.getSubmits()).toBe(1)
   })
