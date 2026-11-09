@@ -9,7 +9,7 @@ import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 
 export type ComboboxContentImplEmits = DismissableLayerEmits
 
-export interface ComboboxContentImplProps extends PopperContentProps, DismissableLayerProps {
+export interface ComboboxContentImplProps extends PopperContentProps, Omit<DismissableLayerProps, 'dir'> {
   /**
    * The positioning mode to use, <br>
    * `inline` is the default and you can control the position using CSS. <br>

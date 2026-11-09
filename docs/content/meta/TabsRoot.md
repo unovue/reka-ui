@@ -43,7 +43,7 @@
   {
     'name': 'orientation',
     'description': '<p>The orientation the tabs are laid out.\nMainly so arrow navigation is done accordingly (left &amp; right vs. up &amp; down)</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false,
     'default': '\'horizontal\''
   },
@@ -90,7 +90,7 @@
 | `defaultValue` | The value of the tab that should be active when initially rendered. Use when you do not need to control the state of the tabs. Without it, the first enabled tab is selected; `null` selects no tab. | `null \| T` | No | - |
 | `dir` | The reading direction of the combobox when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `modelValue` | The controlled value of the tab to activate. Can be bind as `v-model`. `null` selects no tab. While it has been `undefined` since mount the tabs are uncontrolled: they start on `defaultValue` (not emitted), or on the first enabled tab without one (emitted). Once defined, it stays controlled, also when cleared to `undefined`. | `null \| T` | No | - |
-| `orientation` | The orientation the tabs are laid out. Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"vertical" \| "horizontal"` | No | `"horizontal"` |
+| `orientation` | The orientation the tabs are laid out. Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"horizontal" \| "vertical"` | No | `"horizontal"` |
 | `unmountOnHide` | When `true`, an inactive `TabsContent` is removed from the DOM, element and all. When `false`, it stays mounted with the `hidden` attribute (any `display` style you give it overrides `hidden`). | `boolean` | No | `true` |
 
 **Events**

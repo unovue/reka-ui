@@ -50,7 +50,7 @@
   {
     'name': 'orientation',
     'description': '<p>The orientation of the accordion.</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false,
     'default': '\'vertical\''
   },
@@ -104,7 +104,7 @@
 | `dir` | The reading direction of the accordion when applicable. If omitted, assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When `true`, prevents the user from interacting with the accordion and all its items | `boolean` | No | `false` |
 | `modelValue` | The controlled value of the active item(s). Use this when you need to control the state of the items. Can be binded with `v-model` | `T` | No | - |
-| `orientation` | The orientation of the accordion. | `"vertical" \| "horizontal"` | No | `"vertical"` |
+| `orientation` | The orientation of the accordion. | `"horizontal" \| "vertical"` | No | `"vertical"` |
 | `type` | Determines whether a "single" or "multiple" items can be selected at a time. This prop will overwrite the inferred type from `modelValue` and `defaultValue`. | `"single" \| "multiple"` | No | - |
 | `unmountOnHide` | When `true`, the element will be unmounted on closed state. | `boolean` | No | `true` |
 

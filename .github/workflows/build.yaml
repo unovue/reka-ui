@@ -56,6 +56,11 @@ jobs:
       - name: Test (with coverage)
         run: pnpm --filter reka-ui test:coverage
 
+      # `test-types/strict-templates`: consumer templates with `strictTemplates`, against the built `.d.ts`
+      - name: Test (types)
+        if: ${{ !cancelled() }}
+        run: pnpm --filter reka-ui test:types
+
       # The resolver and Nuxt module tests import the built `reka-ui/constant` and family entries
       - name: Test (plugins)
         if: ${{ !cancelled() }}

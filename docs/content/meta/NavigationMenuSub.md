@@ -30,7 +30,7 @@
   {
     'name': 'orientation',
     'description': '<p>The orientation of the menu.</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false,
     'default': '\'horizontal\''
   }
@@ -68,7 +68,7 @@
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultValue` | The value of the menu item that should be active when initially rendered. Use when you do not need to control the value state. | `string` | No | - |
 | `modelValue` | The controlled value of the sub menu item to activate. Can be used as `v-model`. | `string` | No | - |
-| `orientation` | The orientation of the menu. | `"vertical" \| "horizontal"` | No | `"horizontal"` |
+| `orientation` | The orientation of the menu. | `"horizontal" \| "vertical"` | No | `"horizontal"` |
 
 **Events**
 

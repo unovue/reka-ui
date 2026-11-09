@@ -66,7 +66,7 @@
   {
     'name': 'validationMode',
     'description': '<p>When the field (re-)runs validation. Takes precedence over the\n<code>validationMode</code> of an ancestor <code>FormRoot</code>.</p>\n<ul>\n<li><code>onSubmit</code>: when the form is submitted, then on every change after that.</li>\n<li><code>onBlur</code>: when the control loses focus.</li>\n<li><code>onChange</code>: on every change to the control\'s value.</li>\n</ul>\n',
-    'type': '\'onBlur\' | \'onChange\' | \'onSubmit\'',
+    'type': '\'onChange\' | \'onSubmit\' | \'onBlur\'',
     'required': false
   }
 ]" />
@@ -101,7 +101,7 @@
 | `touched` | Whether the field has been touched (its control blurred). Useful when the field state is controlled by an external library. | `boolean` | No | - |
 | `validate` | Custom validation function. Return an error message (or array of messages) when invalid, or `null`/`undefined` when valid. Receives the control's value and the values of every named field in the owning form. Can be async, but an async `validate` does not prevent form submission when `validationMode` is `onSubmit`. | `FieldValidateFn` | No | - |
 | `validationDebounceTime` | How long to wait (in ms) between `validate` calls when validating on change. | `number` | No | - |
-| `validationMode` | When the field (re-)runs validation. Takes precedence over the `validationMode` of an ancestor `FormRoot`.  `onSubmit`: when the form is submitted, then on every change after that. `onBlur`: when the control loses focus. `onChange`: on every change to the control's value. | `"onBlur" \| "onChange" \| "onSubmit"` | No | - |
+| `validationMode` | When the field (re-)runs validation. Takes precedence over the `validationMode` of an ancestor `FormRoot`.  `onSubmit`: when the form is submitted, then on every change after that. `onBlur`: when the control loses focus. `onChange`: on every change to the control's value. | `"onChange" \| "onSubmit" \| "onBlur"` | No | - |
 
 **Slots**
 

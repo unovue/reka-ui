@@ -30,7 +30,7 @@
   {
     'name': 'orientation',
     'description': '<p>The orientation of the toolbar</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false,
     'default': '\'horizontal\''
   }
@@ -47,6 +47,6 @@
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `dir` | The reading direction of the combobox when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `loop` | When `true`, keyboard navigation will loop from last tab to first, and vice versa. | `boolean` | No | - |
-| `orientation` | The orientation of the toolbar | `"vertical" \| "horizontal"` | No | `"horizontal"` |
+| `orientation` | The orientation of the toolbar | `"horizontal" \| "vertical"` | No | `"horizontal"` |
 
 </llm-only>

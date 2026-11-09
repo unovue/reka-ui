@@ -24,7 +24,7 @@
   {
     'name': 'validationMode',
     'description': '<p>When fields validate. The <code>validationMode</code> of a <code>FieldRoot</code> takes precedence over this.</p>\n<ul>\n<li><code>onSubmit</code>: when the form is submitted, then on every change after that.</li>\n<li><code>onBlur</code>: when a control loses focus.</li>\n<li><code>onChange</code>: on every change to a control\'s value.</li>\n</ul>\n',
-    'type': '\'onBlur\' | \'onChange\' | \'onSubmit\'',
+    'type': '\'onChange\' | \'onSubmit\' | \'onBlur\'',
     'required': false,
     'default': '\'onSubmit\''
   }
@@ -61,7 +61,7 @@
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"form"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `errors` | A map of field `name` to server-side error message(s). Displayed by the matching `FieldRoot`'s `FieldError` until the user edits that field, or a new value for that key is provided. | `Record<string, string \| string[]>` | No | - |
-| `validationMode` | When fields validate. The `validationMode` of a `FieldRoot` takes precedence over this.  `onSubmit`: when the form is submitted, then on every change after that. `onBlur`: when a control loses focus. `onChange`: on every change to a control's value. | `"onBlur" \| "onChange" \| "onSubmit"` | No | `"onSubmit"` |
+| `validationMode` | When fields validate. The `validationMode` of a `FieldRoot` takes precedence over this.  `onSubmit`: when the form is submitted, then on every change after that. `onBlur`: when a control loses focus. `onChange`: on every change to a control's value. | `"onChange" \| "onSubmit" \| "onBlur"` | No | `"onSubmit"` |
 
 **Events**
 

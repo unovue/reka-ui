@@ -60,7 +60,7 @@
   {
     'name': 'orientation',
     'description': '<p>The orientation of the group.\nMainly so arrow navigation is done accordingly (left &amp; right vs. up &amp; down)</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false
   },
   {
@@ -107,7 +107,7 @@
 | `max` | The maximum number of values that can be selected. Once reached, the unchecked checkboxes get `aria-disabled` but stay focusable, so consider telling users about the limit. Style them with `[aria-disabled="true"]`. | `number \| null` | No | - |
 | `modelValue` | The controlled value of the checkbox. Can be binded with v-model. | `T[]` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `orientation` | The orientation of the group. Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"vertical" \| "horizontal"` | No | - |
+| `orientation` | The orientation of the group. Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"horizontal" \| "vertical"` | No | - |
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `rovingFocus` | When `false`, navigating through the items using arrow keys will be disabled. | `boolean` | No | `true` |
 

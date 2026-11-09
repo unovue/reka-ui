@@ -1,11 +1,17 @@
 <script lang="ts">
 import type { CalendarGridData, CalendarUnit, DateValue, WeekStartsOn } from '@/date'
+import type { PrimitiveHTMLAttributes } from '@/Primitive'
 import { RangeCalendarRoot } from '..'
 import { injectDateRangePickerRootContext } from './DateRangePickerRoot.vue'
+
+/** Type-only: the attributes fall through to the root it renders. */
+interface DateRangePickerCalendarProps extends /* @vue-ignore */ PrimitiveHTMLAttributes {}
 </script>
 
 <script setup lang="ts">
 import { useForwardElement } from '@/shared'
+
+defineProps<DateRangePickerCalendarProps>()
 
 defineSlots<{
   default?: (props: {

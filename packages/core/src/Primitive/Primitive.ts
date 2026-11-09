@@ -1,4 +1,4 @@
-import type { Component, PropType } from 'vue'
+import type { Component, DefineSetupFnComponent, HTMLAttributes, PropType } from 'vue'
 import { defineComponent, getCurrentInstance, h, mergeProps, toRaw } from 'vue'
 // Direct relative import (not the `@/shared` barrel) to avoid a Primitive ↔ shared cycle.
 import { useForwardElement } from '../shared/useForwardElement'
@@ -25,7 +25,23 @@ export type AsTag
     | 'template'
     | ({} & string) // any other string
 
-export interface PrimitiveProps {
+/**
+ * `HTMLAttributes` listeners named after an event a Reka component emits
+ * (`select`, `toggle`, `change`, …). Left out so that, on a component emitting it,
+ * the emit alone types the listener: intersected with the DOM listener, its
+ * payload would type as `Event | <payload>`.
+ */
+type EmittedEventListener = 'onChange' | 'onInvalid' | 'onPause' | 'onSelect' | 'onSubmit' | 'onToggle'
+
+/**
+ * HTML attributes a component passes to its element (`id`, `class`, `aria-*`,
+ * listeners, …). Type-only: `PrimitiveProps` extends it under `@vue-ignore`, so
+ * no runtime prop is declared and the attributes still fall through. With
+ * `strictTemplates`, it lets `<DialogContent aria-label="…">` type-check.
+ */
+export interface PrimitiveHTMLAttributes extends Omit<HTMLAttributes, EmittedEventListener> {}
+
+export interface PrimitiveProps extends /* @vue-ignore */ PrimitiveHTMLAttributes {
   /**
    * Change the default rendered element for the one passed as a child, merging their props and behavior.
    *
@@ -56,7 +72,7 @@ function needsMergeProps(attrs: Record<string, unknown>): boolean {
   return false
 }
 
-export const Primitive = defineComponent({
+const PrimitiveComponent = defineComponent({
   name: 'Primitive',
   inheritAttrs: false,
   props: {
@@ -119,3 +135,9 @@ export const Primitive = defineComponent({
     }
   },
 })
+
+/**
+ * Typed with the HTML attributes it passes to its element (`PrimitiveProps`), so
+ * `<Primitive as="nav" aria-label="…">` type-checks with `strictTemplates`.
+ */
+export const Primitive = PrimitiveComponent as unknown as DefineSetupFnComponent<PrimitiveProps>

@@ -81,7 +81,7 @@ export type SelectContentImplEmits = {
   pointerDownOutside: [event: PointerDownOutsideEvent]
 }
 
-export interface SelectContentImplProps extends PopperContentProps, DismissableLayerProps {
+export interface SelectContentImplProps extends PopperContentProps, Omit<DismissableLayerProps, 'dir'> {
   /**
    *  The positioning mode to use
    *

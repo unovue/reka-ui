@@ -68,7 +68,7 @@
   {
     'name': 'selectionMode',
     'description': '<p>The type of selection that is allowed. Tags are not selectable when <code>none</code>.</p>\n',
-    'type': '\'single\' | \'multiple\' | \'none\'',
+    'type': '\'none\' | \'single\' | \'multiple\'',
     'required': false,
     'default': '\'none\''
   }
@@ -117,7 +117,7 @@
 | `escapeKeyBehavior` | Whether pressing \<kbd>Escape\</kbd> clears the selection. | `"none" \| "clearSelection"` | No | `"clearSelection"` |
 | `loop` | When `true`, keyboard navigation will loop from last tag to first, and vice versa. | `boolean` | No | `true` |
 | `modelValue` | The controlled value of the selected tag(s). Can be binded with `v-model`. An array when `selectionMode` is `multiple`. | `T \| T[]` | No | - |
-| `selectionMode` | The type of selection that is allowed. Tags are not selectable when `none`. | `"single" \| "multiple" \| "none"` | No | `"none"` |
+| `selectionMode` | The type of selection that is allowed. Tags are not selectable when `none`. | `"none" \| "single" \| "multiple"` | No | `"none"` |
 
 **Events**
 

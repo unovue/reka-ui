@@ -361,6 +361,7 @@ import type {
   PopoverRootProps,
   PopoverTriggerProps,
 } from '@/Popover'
+import type { PrimitiveHTMLAttributes } from '@/Primitive/Primitive'
 import type { ProgressIndicatorProps, ProgressRootEmits, ProgressRootProps } from '@/Progress'
 import type {
   RadioGroupIndicatorProps,
@@ -540,8 +541,17 @@ export type RekaElementEventMap<Emits> = {
   [K in keyof Emits & string as RekaEventType<K>]: EmitEvent<Emits, K>
 }
 
-/** The element's props as properties: everything but `as` / `asChild`. */
-export type RekaElementProps<Props> = Partial<Omit<Props, 'as' | 'asChild'>>
+/**
+ * HTML attribute names some components also declare as a prop of their own
+ * (`dir?: Direction`), so element props keep them.
+ */
+type OwnPropAttribute = 'color' | 'dir' | 'id' | 'part' | 'placeholder' | 'tabindex'
+
+/**
+ * The element's props as properties: everything but `as` / `asChild` and the HTML
+ * attributes `PrimitiveProps` types for templates, which `HTMLElement` already has.
+ */
+export type RekaElementProps<Props> = Partial<Omit<Props, 'as' | 'asChild' | Exclude<keyof PrimitiveHTMLAttributes, OwnPropAttribute>>>
 
 /**
  * A Reka element instance: its props as properties, and typed `addEventListener`

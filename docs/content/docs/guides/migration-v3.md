@@ -985,6 +985,15 @@ Publishing a library or a copy-paste registry on top of Reka UI? You cannot load
 
 Pressing Tab in an open `SelectContent` now closes the select and moves focus to the next focusable element after `SelectTrigger`. Shift+Tab closes it and focuses the trigger. v2 swallowed Tab, so focus stayed in the open list. In both cases the highlighted item is not selected, unlike the native `<select>` ([#1228](https://github.com/unovue/reka-ui/issues/1228)). `update:open` reports the new `'focus-outside'` reason, which `SelectOpenChangeReason` now includes.
 
+## `strictTemplates` support
+
+Component props now include the HTML attributes a part passes to its element: `id`, `class`, `style`, `role`, `tabindex`, `aria-*` and DOM listeners such as `@click` ([#2875](https://github.com/unovue/reka-ui/issues/2875)). With `vueCompilerOptions.strictTemplates` (or `checkUnknownProps` / `checkUnknownEvents`) enabled, `<NavigationMenuRoot aria-label="Main">` now type-checks. The attributes are typed only: they are not runtime props and still fall through to the element.
+
+- `vue-tsc` camelizes `data-*` attributes on components (`data-state` is checked as `dataState`), so no props type can declare them. Add `"dataAttributes": ["data-*"]` to `vueCompilerOptions` to skip the check for them.
+- Only global attributes are typed. Attributes of a specific element, such as `href` on `NavigationMenuLink` or `alt` on `AvatarImage`, stay unknown to `strictTemplates`; put them on your own element with `as-child`.
+- A listener named like an emit (`@select`, `@toggle`, `@change`, `@submit`, `@invalid`, `@pause`) is typed by the emit's payload, so it is not typed as a DOM event on any component.
+- Props interfaces built on a Reka props type gain the attributes too, still without runtime props. Read them in a wrapper through `useAttrs()`, not `props`. A `ref()` holding such props next to VNodes can hit TypeScript's "excessively deep" error; annotate it instead: `const state: Ref<State> = ref(initial)`.
+
 ## NumberField updates while typing
 
 `NumberFieldRoot` now emits `update:modelValue` on each keystroke whose text parses to a new value (#1720, #2103). v2 emitted only when the input was blurred or Enter was pressed. The emitted value is the one blur would commit: clamped to `min`/`max` unless `allowInvalid` is set, and snapped to `step` only when `stepSnapping` is on (the default). A keystroke that parses to the current value (`12.` after `12`) emits nothing. The typed text itself is left alone until blur, Enter or a step (arrow keys, wheel, buttons) formats it, so typing `1.` does not jump back to `1`. Emptying the input emits `undefined`. The new reasons are `'input-change'` and `'input-clear'`.

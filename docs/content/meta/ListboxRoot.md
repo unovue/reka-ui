@@ -84,7 +84,7 @@
   {
     'name': 'orientation',
     'description': '<p>The orientation of the listbox. &lt;br&gt;Mainly so arrow navigation is done accordingly (left &amp; right vs. up &amp; down)</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false,
     'default': '\'vertical\''
   },
@@ -159,7 +159,7 @@
 | `modelValue` | The controlled value of the listbox. Can be binded with `v-model`. | `AcceptableValue \| AcceptableValue[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `orientation` | The orientation of the listbox. \<br>Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"vertical" \| "horizontal"` | No | `"vertical"` |
+| `orientation` | The orientation of the listbox. \<br>Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"horizontal" \| "vertical"` | No | `"vertical"` |
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `selectionBehavior` | How multiple selection should behave in the collection. | `"replace" \| "toggle"` | No | `"toggle"` |
 

@@ -44,7 +44,7 @@
   {
     'name': 'orientation',
     'description': '<p>The orientation the steps are laid out.\nMainly so arrow navigation is done accordingly (left &amp; right vs. up &amp; down).</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false,
     'default': '\'horizontal\''
   }
@@ -162,7 +162,7 @@
 | `dir` | The reading direction of the combobox when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `linear` | Whether or not the steps must be completed in order. | `boolean` | No | `true` |
 | `modelValue` | The controlled value of the step to activate. Can be bound as `v-model`. | `number` | No | - |
-| `orientation` | The orientation the steps are laid out. Mainly so arrow navigation is done accordingly (left & right vs. up & down). | `"vertical" \| "horizontal"` | No | `"horizontal"` |
+| `orientation` | The orientation the steps are laid out. Mainly so arrow navigation is done accordingly (left & right vs. up & down). | `"horizontal" \| "vertical"` | No | `"horizontal"` |
 
 **Events**
 

@@ -35,7 +35,7 @@ export type TimeFieldRootContext = {
   setPlaceholder: (value: DateValue, reason?: TimeFieldChangeReason | BaseChangeReason, event?: Event) => boolean
 }
 
-export interface TimeFieldRootProps extends PrimitiveProps, FormFieldProps {
+export interface TimeFieldRootProps extends Omit<PrimitiveProps, 'placeholder'>, FormFieldProps {
   /** The default value for the calendar */
   defaultValue?: TimeValue
   /** The default placeholder date */
