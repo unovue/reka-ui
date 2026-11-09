@@ -29,8 +29,10 @@ function blockReplayedAnimation(ev: AnimationEvent) {
   const node = ev.currentTarget as HTMLElement
   if (ev.target !== node)
     return
+  // A toggle before the frame starts its own animation; leave that one alone.
+  const state = node.getAttribute('data-state')
   requestAnimationFrame(() => {
-    if (!node.getAnimations?.().some(animation => 'animationName' in animation && animation.playState !== 'finished'))
+    if (node.getAttribute('data-state') === state && !node.getAnimations?.().some(animation => 'animationName' in animation && animation.playState !== 'finished'))
       node.style.animationName = 'none'
   })
 }
