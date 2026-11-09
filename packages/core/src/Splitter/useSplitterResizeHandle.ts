@@ -3,7 +3,7 @@ import type { PanelGroupContext } from './SplitterGroup.vue'
 import type { PointerHitAreaMargins, ResizeHandlerAction } from './utils/registry'
 import type { Direction, ResizeEvent, ResizeHandler } from './utils/types'
 import type { PartSurface } from '@/shared'
-import { computed, ref, toValue, watch, watchEffect } from 'vue'
+import { computed, onScopeDispose, ref, toValue, watch, watchEffect } from 'vue'
 import { createPartSurface, isBrowser } from '@/shared'
 import { useWindowSplitterResizeHandlerBehavior } from './utils/composables/useWindowSplitterBehavior'
 import { registerResizeHandle } from './utils/registry'
@@ -55,6 +55,7 @@ export function useSplitterResizeHandle(context: PanelGroupContext, props: UseSp
     startDragging,
     stopDragging,
     panelGroupElement,
+    resizeHandleRegistration,
   } = context
 
   const resizeHandleId = props.id ?? `reka-splitter-resize-handle-${++count}`
@@ -136,7 +137,15 @@ export function useSplitterResizeHandle(context: PanelGroupContext, props: UseSp
     resizeHandler,
     handleId: resizeHandleId,
     panelGroupElement,
+    element: props.element,
   })
+
+  // The group wires aria-* and Enter onto its handles by querying the DOM. Tell it when this
+  // handle's element comes or goes, so a handle mounted on its own into a rendered group
+  // (e.g. with v-if) is wired up too.
+  const bumpResizeHandleRegistration = () => resizeHandleRegistration.value++
+  watch(props.element, bumpResizeHandleRegistration)
+  onScopeDispose(bumpResizeHandleRegistration)
 
   const root = createPartSurface<SplitterResizeHandleState>(
     () => ({

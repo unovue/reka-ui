@@ -152,6 +152,7 @@ export function useSplitter(props: UseSplitterProps): UseSplitterReturn {
   const panelIdToLastNotifiedSizeMapRef = ref<Record<string, number>>({})
   const panelSizeBeforeCollapseRef = ref<Map<string, number>>(new Map())
   const prevDeltaRef = ref<number>(0)
+  const resizeHandleRegistration = ref(0)
 
   const committedValuesRef = computed(() => ({
     autoSaveId: toValue(props.autoSaveId) ?? null,
@@ -346,6 +347,7 @@ export function useSplitter(props: UseSplitterProps): UseSplitterReturn {
     groupId,
     layout,
     panelDataArray: eagerValuesRef.value.panelDataArray,
+    resizeHandleRegistration,
     commitLayout,
     panelGroupElement: panelGroupElementRef,
     getPanelDataWithPercentConstraints,
@@ -983,6 +985,7 @@ export function useSplitter(props: UseSplitterProps): UseSplitterReturn {
     stopDragging,
     unregisterPanel,
     panelGroupElement: panelGroupElementRef,
+    resizeHandleRegistration,
 
     collapsePanel,
     expandPanel,

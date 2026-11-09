@@ -17,7 +17,7 @@ export function useWindowSplitterResizeHandlerBehavior({
   handleId: string
   resizeHandler: Ref<ResizeHandler | null>
   panelGroupElement: Ref<ParentNode | null>
-  element: Ref<HTMLElement | null>
+  element: Readonly<Ref<HTMLElement | null | undefined>>
 }): void {
   watchEffect((onCleanup) => {
     const _panelGroupElement = panelGroupElement.value
@@ -82,9 +82,5 @@ export function useWindowSplitterResizeHandlerBehavior({
     onCleanup(() => {
       handleElement.removeEventListener('keydown', onKeyDown)
     })
-  }, {
-    // After render: the handle is looked up by the attributes it renders, which a
-    // handle mounted after its group (a custom element) does not have during setup.
-    flush: 'post',
   })
 }

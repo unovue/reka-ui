@@ -16,6 +16,7 @@ export function useWindowSplitterPanelGroupBehavior({
   layout,
   panelDataArray,
   panelGroupElement,
+  resizeHandleRegistration,
   commitLayout,
   getPanelDataWithPercentConstraints,
 }: {
@@ -26,10 +27,14 @@ export function useWindowSplitterPanelGroupBehavior({
   layout: Ref<number[]>
   panelDataArray: PanelData[]
   panelGroupElement: Ref<ParentNode | null>
+  resizeHandleRegistration: Ref<number>
   commitLayout: (sizes: number[], reason: 'keyboard', event: KeyboardEvent) => void
   getPanelDataWithPercentConstraints: (groupSizeOverride?: number | null) => PanelData[] | null
 }): void {
   watchEffect((onCleanup) => {
+    // Re-run when a handle mounts on its own (e.g. with v-if), so it gets its aria-* attributes.
+    void resizeHandleRegistration.value
+
     const _panelGroupElement = panelGroupElement.value
     if (!_panelGroupElement)
       return
@@ -86,6 +91,9 @@ export function useWindowSplitterPanelGroupBehavior({
   })
 
   watchEffect((onCleanup) => {
+    // Re-run when a handle mounts on its own (e.g. with v-if), so Enter toggles collapse on it.
+    void resizeHandleRegistration.value
+
     const _panelGroupElement = panelGroupElement.value
     if (!_panelGroupElement)
       return
@@ -118,7 +126,8 @@ export function useWindowSplitterPanelGroupBehavior({
         return () => {}
 
       const onKeyDown = (event: KeyboardEvent) => {
-        if (event.defaultPrevented)
+        // A disabled handle ignores arrow keys and dragging, so it ignores Enter too.
+        if (event.defaultPrevented || handle.hasAttribute('data-disabled'))
           return
 
         switch (event.key) {
