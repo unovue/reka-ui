@@ -456,7 +456,7 @@ export interface UseToastSwipeOptions {
 }
 
 export interface UseToastSwipeReturn {
-  /** `onPointerdown` / `onPointermove` / `onPointerup` + `touch-action`. */
+  /** `onPointerdown` / `onPointermove` / `onPointerup` / `onPointercancel` + `touch-action`. */
   swipe: PartSurface<Record<string, never>>
 }
 
@@ -553,10 +553,9 @@ export function useToastSwipe(options: UseToastSwipeOptions): UseToastSwipeRetur
     }
   }
 
+  // Also the `pointercancel` handler. A cancelled pointer, or a swipe whose gesture was
+  // disabled mid-way, snaps back instead of closing.
   function onPointerup(event: PointerEvent) {
-    if (disabled.value)
-      return
-
     const delta = swipeDelta
     const target = event.target as HTMLElement
     if (target.hasPointerCapture(event.pointerId)) {
@@ -568,8 +567,9 @@ export function useToastSwipe(options: UseToastSwipeOptions): UseToastSwipeRetur
       const toast = event.currentTarget as HTMLElement
       setSwipeSelection(toast, false)
       const eventDetail = { originalEvent: event, delta }
+      const released = event.type === 'pointerup' && !disabled.value
       if (
-        isDeltaInDirection(delta, toValue(options.swipeDirection), toValue(options.swipeThreshold))
+        released && isDeltaInDirection(delta, toValue(options.swipeDirection), toValue(options.swipeThreshold))
       ) {
         if (!dispatch(TOAST_SWIPE_END, 'swipeEnd', eventDetail).defaultPrevented) {
           setSwipeState(toast, 'end', delta)
@@ -584,9 +584,11 @@ export function useToastSwipe(options: UseToastSwipeOptions): UseToastSwipeRetur
       }
       // Prevent click event from triggering on items within the toast when
       // pointer up is part of a swipe gesture
-      toast?.addEventListener('click', event => event.preventDefault(), {
-        once: true,
-      })
+      if (event.type === 'pointerup') {
+        toast?.addEventListener('click', event => event.preventDefault(), {
+          once: true,
+        })
+      }
     }
   }
 
@@ -597,6 +599,7 @@ export function useToastSwipe(options: UseToastSwipeOptions): UseToastSwipeRetur
         onPointerdown,
         onPointermove,
         onPointerup,
+        onPointercancel: onPointerup,
       }),
       () => ({}),
     ),
