@@ -127,10 +127,14 @@ describe('combobox elements', () => {
     const input = query<HTMLInputElement>('reka-combobox-input > input')
     await vi.waitFor(() => expect(input.value).toBe('APPLE'))
     const cleared: unknown[] = []
+    const values: unknown[] = []
     query('reka-combobox-input').addEventListener('update-model-value', event => cleared.push((event as CustomEvent).detail.value))
+    query('reka-combobox-root').addEventListener('update-model-value', event => values.push((event as CustomEvent).detail.value))
     await userEvent.click(query('reka-combobox-cancel'))
     await vi.waitFor(() => expect(input.value).toBe(''))
     expect(cleared).toEqual([''])
+    // The cancel button clears the selection too (`reset-model-value-on-clear` defaults to `true`).
+    expect(values).toEqual([null])
   })
 
   it('selects objects with `multiple`, compared with `by`, and submits each of them', async () => {

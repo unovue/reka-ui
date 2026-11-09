@@ -227,6 +227,10 @@ An optional indicator element that renders below the list, is used to highlight 
       cssVariable: '--reka-navigation-menu-indicator-position',
       description: 'The position of the indicator',
     },
+    {
+      cssVariable: '--reka-navigation-menu-indicator-cross-offset',
+      description: 'The far edge of the active trigger on the cross axis: its bottom in a horizontal menu, its inline-end edge (measured from the inline start) in a vertical one. Use it to follow a trigger on a wrapped row or column.',
+    },
   ]"
 />
 
@@ -260,6 +264,18 @@ An optional viewport element that is used to render active content outside of th
     {
       cssVariable: '--reka-navigation-menu-viewport-height',
       description: 'The height of the viewport when visible/hidden, computed from the active content',
+    },
+    {
+      cssVariable: '--reka-navigation-menu-viewport-left',
+      description: 'The left offset of the viewport from the root, aligned to the active trigger with the align prop and kept on screen',
+    },
+    {
+      cssVariable: '--reka-navigation-menu-viewport-top',
+      description: 'The top offset of the viewport from the root, aligned to the active trigger with the align prop and kept on screen',
+    },
+    {
+      cssVariable: '--reka-navigation-menu-viewport-cross-offset',
+      description: 'The far edge of the active trigger on the cross axis, from the root: its bottom in a horizontal menu, its inline-end edge (measured from the inline start) in a vertical one. Use it to place the viewport next to a trigger on a wrapped row or column.',
     },
   ]"
 />
@@ -390,6 +406,41 @@ import {
   width: var(--reka-navigation-menu-indicator-size);
 }
 ```
+
+### Wrapped lists
+
+When the list wraps onto several rows, place the viewport with `--reka-navigation-menu-viewport-cross-offset` instead of below the whole root, so it opens under the active trigger's row. The indicator can follow the row with `--reka-navigation-menu-indicator-cross-offset`.
+
+```css
+/* styles.css */
+.NavigationMenuRoot {
+  position: relative;
+}
+
+.NavigationMenuList {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.NavigationMenuViewport {
+  position: absolute;
+  top: var(--reka-navigation-menu-viewport-cross-offset);
+  left: var(--reka-navigation-menu-viewport-left);
+  width: var(--reka-navigation-menu-viewport-width);
+  height: var(--reka-navigation-menu-viewport-height);
+}
+
+.NavigationMenuIndicator[data-orientation="horizontal"] {
+  position: absolute;
+  left: 0;
+  top: var(--reka-navigation-menu-indicator-cross-offset);
+  height: 3px;
+  transform: translateX(var(--reka-navigation-menu-indicator-position));
+  width: var(--reka-navigation-menu-indicator-size);
+}
+```
+
+In a vertical menu, the same variables give the inline-end edge of the active trigger's column, so `left: var(--reka-navigation-menu-viewport-cross-offset)` (or `right:` with `dir="rtl"`) places the viewport beside it.
 
 ### With submenus
 

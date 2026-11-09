@@ -6,7 +6,7 @@ import ComboboxRoot from './ComboboxRoot.vue'
  * Compile-time type tests for the `ComboboxRoot` value model, validated by
  * `vue-tsc` (see `shared/useEmitAsProps.test-d.ts`).
  *
- * `ComboboxCancel` (with `resetModelValueOnClear`) clears a single combobox to
+ * `ComboboxCancel` (unless `resetModelValueOnClear` is `false`) clears a single combobox to
  * `null`, so the emits carry `T | null`. The `modelValue` / `defaultValue`
  * props must accept that `null` back, or a `v-model` bound to the emitted
  * value does not type-check. Unlike Select (which never emits `null`, see
