@@ -654,7 +654,7 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 - Toast root context (`injectToastRootContext()`): `onClose(event?, reason?)` takes an optional reason and returns a boolean. The `ToastProviderContext` settings refs are read-only, and `isFocusedToastEscapeKeyDownRef` is removed.
 - A cancelled toast timeout, or one a controlled parent ignores, restarts the timer with the full `duration`, so the toast asks again later; a cancelled swipe snaps back.
 - Toast manager: `ToastObject.onClose(details)` receives the close details (`details.reason` is a `ToastOpenChangeReason` or `'imperative-action'`). `manager.close(id)` closes a rendered toast through its `ToastRoot`: `beforeUpdate:open` (cancellable) and `update:open` fire with `'imperative-action'`.
-- New and additive: `useNavigationMenu()`, `useNavigationMenuSub()` and the NavigationMenu part composables; `useToastProvider()`, `useToastRoot()`, `useToastTimer()`, `useToastSwipe()` and `useToastViewport()`.
+- New and additive: `useNavigationMenu()`, `useNavigationMenuSub()` and the NavigationMenu part composables; `useToastProvider()`, `useToastRoot()`, `useToastTimer()`, `useToastSwipe()` and `useToastViewport()`. The `--reka-navigation-menu-viewport-cross-offset` and `--reka-navigation-menu-indicator-cross-offset` CSS variables (the active trigger's far edge on the cross axis, for wrapped lists) are new; the existing NavigationMenu variables keep their values, so no rewrite is needed.
 
 **How to find it.**
 - `injectNavigationMenuContext(` in custom parts; within them, assignments to `modelValue.value`.
