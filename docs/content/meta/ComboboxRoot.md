@@ -128,10 +128,10 @@
   },
   {
     'name': 'resetModelValueOnClear',
-    'description': '<p>When <code>true</code> the <code>modelValue</code> will be reset to <code>null</code> (or <code>[]</code> if <code>multiple</code>)</p>\n',
+    'description': '<p>Whether <code>ComboboxCancel</code> also clears the selected value, resetting <code>modelValue</code> to <code>null</code> (or <code>[]</code> if <code>multiple</code>).\nSet to <code>false</code> to clear only the search text and keep the selection.</p>\n',
     'type': 'boolean',
     'required': false,
-    'default': 'false'
+    'default': 'true'
   },
   {
     'name': 'resetSearchTermOnBlur',
@@ -229,7 +229,7 @@
 | `openOnClick` | Whether to open the combobox when the input is clicked | `boolean` | No | `false` |
 | `openOnFocus` | Whether to open the combobox when the input is focused | `boolean` | No | `false` |
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
-| `resetModelValueOnClear` | When `true` the `modelValue` will be reset to `null` (or `[]` if `multiple`) | `boolean` | No | `false` |
+| `resetModelValueOnClear` | Whether `ComboboxCancel` also clears the selected value, resetting `modelValue` to `null` (or `[]` if `multiple`). Set to `false` to clear only the search text and keep the selection. | `boolean` | No | `true` |
 | `resetSearchTermOnBlur` | Whether to reset the searchTerm when the Combobox input blurred | `boolean` | No | `true` |
 | `resetSearchTermOnSelect` | Whether to reset the searchTerm when the Combobox value is selected | `boolean` | No | `true` |
 | `unmountOnHide` | When set to `false`, the Combobox content will not be unmounted when closed, but instead hidden with CSS. \<br> Useful when you want to improve performance by not remounting the content on every open. | `boolean` | No | `true` |

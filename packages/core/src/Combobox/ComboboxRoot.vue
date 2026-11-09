@@ -153,7 +153,9 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
    */
   ignoreFilter?: boolean
   /**
-   * When `true` the `modelValue` will be reset to `null` (or `[]` if `multiple`)
+   * Whether `ComboboxCancel` also clears the selected value, resetting `modelValue` to `null` (or `[]` if `multiple`).
+   * Set to `false` to clear only the search text and keep the selection.
+   * @defaultValue true
    */
   resetModelValueOnClear?: boolean
   /**
@@ -189,7 +191,7 @@ const props = withDefaults(defineProps<ComboboxRootProps<T> & { multiple?: M }>(
   resetSearchTermOnSelect: true,
   openOnFocus: false,
   openOnClick: false,
-  resetModelValueOnClear: false,
+  resetModelValueOnClear: true,
   highlightOnHover: true,
   unmountOnHide: true,
 })

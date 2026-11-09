@@ -170,6 +170,63 @@ describe('useComboboxRoot — standalone', () => {
   })
 })
 
+describe('comboboxCancel — clears the value', () => {
+  it('clears the selected value and the input text by default', async () => {
+    const onUpdate = vi.fn()
+    const wrapper = mount(createCombobox({ 'defaultValue': 'Apple', 'onUpdate:modelValue': onUpdate }, { cancel: true }), { attachTo: document.body })
+    await settle()
+    expect(wrapper.find('input').element.value).toBe('Apple')
+    await wrapper.find('[data-testid=cancel]').trigger('click')
+    await settle()
+    expect(onUpdate).toHaveBeenCalledWith(null, expect.objectContaining({ reason: 'clear-press' }))
+    expect(wrapper.find('input').element.value).toBe('')
+    // The value is cleared too, so opening shows no selected item.
+    await wrapper.find('[data-testid=trigger]').trigger('click')
+    await settle()
+    expect(optionTexts()).toEqual(fruits)
+    expect(document.querySelector('[role=option][aria-selected=true]')).toBeNull()
+    wrapper.unmount()
+  })
+
+  it('clears a `multiple` selection to `[]` by default', async () => {
+    const onUpdate = vi.fn()
+    const wrapper = mount(createCombobox({ 'multiple': true, 'defaultValue': ['Apple', 'Cherry'], 'onUpdate:modelValue': onUpdate }, { cancel: true }), { attachTo: document.body })
+    await wrapper.find('[data-testid=cancel]').trigger('click')
+    expect(onUpdate).toHaveBeenCalledWith([], expect.objectContaining({ reason: 'clear-press' }))
+    wrapper.unmount()
+  })
+
+  it('keeps the value and clears only the text with `reset-model-value-on-clear="false"`', async () => {
+    const onUpdate = vi.fn()
+    const wrapper = mount(createCombobox({ 'defaultValue': 'Apple', 'resetModelValueOnClear': false, 'onUpdate:modelValue': onUpdate }, { cancel: true }), { attachTo: document.body })
+    await settle()
+    await wrapper.find('input').setValue('ch')
+    await settle()
+    await wrapper.find('[data-testid=cancel]').trigger('click')
+    await settle()
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(wrapper.find('input').element.value).toBe('')
+    // The popup opened by typing stays open, unfiltered, with the selection kept.
+    expect(optionTexts()).toEqual(fruits)
+    expect(document.querySelector('[role=option][aria-selected=true]')?.textContent).toBe('Apple')
+    wrapper.unmount()
+  })
+
+  it('defaults `resetModelValueOnClear` to `true` in `useComboboxRoot`', () => {
+    let api!: UseComboboxRootReturn<string>
+    let off!: UseComboboxRootReturn<string>
+    mount(defineComponent({
+      setup() {
+        api = useComboboxRoot<string>({ baseId: 'on', getItems: () => [] })
+        off = useComboboxRoot<string>({ baseId: 'off', getItems: () => [], resetModelValueOnClear: false })
+        return () => null
+      },
+    }))
+    expect(api.context.resetModelValueOnClear.value).toBe(true)
+    expect(off.context.resetModelValueOnClear.value).toBe(false)
+  })
+})
+
 describe('comboboxRoot — change details', () => {
   it('reports `item-press` for a click and for Enter, with the event', async () => {
     const onUpdate = vi.fn()
@@ -191,9 +248,9 @@ describe('comboboxRoot — change details', () => {
     wrapper.unmount()
   })
 
-  it('reports `clear-press` from ComboboxCancel with `reset-model-value-on-clear`', async () => {
+  it('reports `clear-press` from ComboboxCancel', async () => {
     const onUpdate = vi.fn()
-    const wrapper = mount(createCombobox({ 'defaultValue': 'Apple', 'resetModelValueOnClear': true, 'onUpdate:modelValue': onUpdate }, { cancel: true }), { attachTo: document.body })
+    const wrapper = mount(createCombobox({ 'defaultValue': 'Apple', 'onUpdate:modelValue': onUpdate }, { cancel: true }), { attachTo: document.body })
     await wrapper.find('[data-testid=cancel]').trigger('click')
     expect(onUpdate).toHaveBeenCalledWith(null, expect.objectContaining({ reason: 'clear-press' }))
     wrapper.unmount()
@@ -313,7 +370,6 @@ describe('comboboxRoot — cancellation', () => {
     const onUpdate = vi.fn()
     const wrapper = mount(createCombobox({
       'defaultValue': 'Apple',
-      'resetModelValueOnClear': true,
       'onBeforeUpdate:modelValue': (_: unknown, details: { cancel: () => void }) => details.cancel(),
       'onUpdate:modelValue': onUpdate,
     }, { cancel: true }), { attachTo: document.body })
