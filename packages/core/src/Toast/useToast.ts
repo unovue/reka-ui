@@ -4,7 +4,7 @@ import type { ToastProviderContext, ToastStackEntry, ToastStackState } from './T
 import type { ToastStore } from './useToastStore'
 import type { SwipeDirection, SwipeEvent } from './utils'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
-import { onKeyStroke, useRafFn } from '@vueuse/core'
+import { onKeyStroke, useEventListener, useRafFn } from '@vueuse/core'
 import { isClient } from '@vueuse/shared'
 import { computed, getCurrentScope, onMounted, onScopeDispose, ref, shallowReactive, shallowRef, toValue, watch, watchEffect } from 'vue'
 import { focusFirst, getTabbableCandidates } from '@/FocusScope/utils'
@@ -718,6 +718,17 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
   // shift under the pointer while a toast is dismissed.
   const pendingPointerLeave = ref(false)
 
+  function releasePause(viewport: HTMLElement | undefined) {
+    if (providerContext.isClosePausedRef.value) {
+      viewport?.dispatchEvent(new CustomEvent(VIEWPORT_RESUME))
+      providerContext.isClosePausedRef.value = false
+    }
+  }
+
+  // Releases a window-blur pause, including one left over after the last toast closed,
+  // which would otherwise keep later toasts from ever starting their timers.
+  useEventListener('focus', () => releasePause(viewportElement.value))
+
   // Toasts teleport into and listen on `providerContext.viewport`, so keep it on the
   // current element when the element is replaced after mount.
   watch(viewportElement, (element) => {
@@ -728,10 +739,8 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
     // The pause listeners on the old element are gone, and focus or hover inside it went
     // with it, so release its pause while the toasts still listen there. A window-blur
     // pause is kept: the window `focus` listener on the new element releases it.
-    if (providerContext.isClosePausedRef.value && document.hasFocus()) {
-      previous.dispatchEvent(new CustomEvent(VIEWPORT_RESUME))
-      providerContext.isClosePausedRef.value = false
-    }
+    if (document.hasFocus())
+      releasePause(previous)
     providerContext.focused.value = element.contains(getActiveElement())
     // The old element took its `pointerleave` with it. Collapse as a leave would, and a
     // `pointermove` on the new element expands the stack again.
@@ -777,13 +786,7 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
         }
       }
 
-      const handleResume = () => {
-        if (providerContext.isClosePausedRef.value) {
-          const resumeEvent = new CustomEvent(VIEWPORT_RESUME)
-          viewport.dispatchEvent(resumeEvent)
-          providerContext.isClosePausedRef.value = false
-        }
-      }
+      const handleResume = () => releasePause(viewport)
 
       const handleFocusOutResume = (event: FocusEvent) => {
         const isFocusMovingOutside = !viewport.contains(event.relatedTarget as HTMLElement)
@@ -853,7 +856,6 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
       viewport.addEventListener('pointerleave', handlePointerLeaveResume)
       viewport.addEventListener('keydown', handleKeyDown)
       window.addEventListener('blur', handlePause)
-      window.addEventListener('focus', handleResume)
 
       cleanupFn(() => {
         viewport.removeEventListener('focusin', handlePause)
@@ -864,7 +866,11 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
         viewport.removeEventListener('pointerleave', handlePointerLeaveResume)
         viewport.removeEventListener('keydown', handleKeyDown)
         window.removeEventListener('blur', handlePause)
-        window.removeEventListener('focus', handleResume)
+        // The listeners that would release a hover or focus pause are gone (the last toast
+        // closed, or the viewport was replaced), so release it here. A window-blur pause
+        // is kept until the window `focus` listener above releases it.
+        if (document.hasFocus())
+          releasePause(viewport)
       })
     }
   })

@@ -173,10 +173,13 @@ function mountToasts({ inDialog = false } = {}) {
         h('button', { 'data-testid': 'outside', 'style': 'margin-top: 300px' }, 'outside'),
         h(ToastViewport, { style: 'position: fixed; top: 0; right: 0; width: 300px; list-style: none; margin: 0' }),
       ]
+      // A modal layer mounts a backdrop below itself, so the content is positioned to stay
+      // above it, as real dialog content is.
+      const dialogContentProps = { 'aria-describedby': undefined, 'style': 'position: relative' }
       return () => h(ToastProvider, { duration: DURATION }, () => [
         ...toasts(),
         inDialog
-          ? h(DialogRoot, { open: true }, () => h(DialogPortal, () => h(DialogContent, { 'aria-describedby': undefined }, () => [h(DialogTitle, () => 'Dialog'), ...content()])))
+          ? h(DialogRoot, { open: true }, () => h(DialogPortal, () => h(DialogContent, dialogContentProps, () => [h(DialogTitle, () => 'Dialog'), ...content()])))
           : content(),
       ])
     },
