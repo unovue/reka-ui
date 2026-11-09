@@ -456,8 +456,15 @@ export interface UseToastSwipeOptions {
 }
 
 export interface UseToastSwipeReturn {
-  /** `onPointerdown` / `onPointermove` / `onPointerup` + `user-select` / `touch-action`. */
+  /** `onPointerdown` / `onPointermove` / `onPointerup` / `onPointercancel` + `touch-action`. */
   swipe: PartSurface<Record<string, never>>
+}
+
+// Text stays selectable, except during a swipe: from its start until the
+// pointer is released, so dragging the toast doesn't select its text. WebKit
+// honours the prefixed property only.
+function setSwipeSelection(target: HTMLElement, swiping: boolean) {
+  target.style.userSelect = target.style.webkitUserSelect = swiping ? 'none' : ''
 }
 
 function setSwipeState(target: HTMLElement, state: 'start' | 'move' | 'cancel' | 'end', delta?: { x: number, y: number }) {
@@ -485,7 +492,8 @@ function setSwipeState(target: HTMLElement, state: 'start' | 'move' | 'cancel' |
  * `swipeDirection` the toast gets `data-swipe="move"` and the
  * `--reka-toast-swipe-move-x` / `-y` variables; on release past
  * `swipeThreshold` it gets `data-swipe="end"` with `--reka-toast-swipe-end-x` /
- * `-y` and closes (reason `swipe`), otherwise `data-swipe="cancel"`.
+ * `-y` and closes (reason `swipe`), otherwise `data-swipe="cancel"`. Text stays
+ * selectable; `user-select: none` is set only while a swipe is in progress.
  *
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle pure
@@ -502,6 +510,17 @@ export function useToastSwipe(options: UseToastSwipeOptions): UseToastSwipeRetur
   }
 
   function onPointerdown(event: PointerEvent) {
+    // A swipe whose release never reached the toast (its captured child was
+    // removed): snap it back and make the text selectable before this press.
+    const delta = swipeDelta
+    if (delta) {
+      swipeDelta = null
+      pointerStart = null
+      const toast = event.currentTarget as HTMLElement
+      setSwipeSelection(toast, false)
+      if (!dispatch(TOAST_SWIPE_CANCEL, 'swipeCancel', { originalEvent: event, delta }).defaultPrevented)
+        setSwipeState(toast, 'cancel')
+    }
     // `@pointerdown.left`
     if (event.button !== 0 || disabled.value)
       return
@@ -535,6 +554,7 @@ export function useToastSwipe(options: UseToastSwipeOptions): UseToastSwipeRetur
       swipeDelta = delta
       if (!dispatch(TOAST_SWIPE_START, 'swipeStart', eventDetail).defaultPrevented)
         setSwipeState(target, 'start')
+      setSwipeSelection(target, true)
       ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
     }
     else if (Math.abs(x) > moveStartBuffer || Math.abs(y) > moveStartBuffer) {
@@ -544,10 +564,9 @@ export function useToastSwipe(options: UseToastSwipeOptions): UseToastSwipeRetur
     }
   }
 
+  // Also the `pointercancel` handler. A cancelled pointer, or a swipe whose gesture was
+  // disabled mid-way, snaps back instead of closing.
   function onPointerup(event: PointerEvent) {
-    if (disabled.value)
-      return
-
     const delta = swipeDelta
     const target = event.target as HTMLElement
     if (target.hasPointerCapture(event.pointerId)) {
@@ -557,9 +576,11 @@ export function useToastSwipe(options: UseToastSwipeOptions): UseToastSwipeRetur
     pointerStart = null
     if (delta) {
       const toast = event.currentTarget as HTMLElement
+      setSwipeSelection(toast, false)
       const eventDetail = { originalEvent: event, delta }
+      const released = event.type === 'pointerup' && !disabled.value
       if (
-        isDeltaInDirection(delta, toValue(options.swipeDirection), toValue(options.swipeThreshold))
+        released && isDeltaInDirection(delta, toValue(options.swipeDirection), toValue(options.swipeThreshold))
       ) {
         if (!dispatch(TOAST_SWIPE_END, 'swipeEnd', eventDetail).defaultPrevented) {
           setSwipeState(toast, 'end', delta)
@@ -574,19 +595,22 @@ export function useToastSwipe(options: UseToastSwipeOptions): UseToastSwipeRetur
       }
       // Prevent click event from triggering on items within the toast when
       // pointer up is part of a swipe gesture
-      toast?.addEventListener('click', event => event.preventDefault(), {
-        once: true,
-      })
+      if (event.type === 'pointerup') {
+        toast?.addEventListener('click', event => event.preventDefault(), {
+          once: true,
+        })
+      }
     }
   }
 
   return {
     swipe: createPartSurface<Record<string, never>>(
       () => ({
-        style: disabled.value ? undefined : { userSelect: 'none', touchAction: 'none' },
+        style: disabled.value ? undefined : { touchAction: 'none' },
         onPointerdown,
         onPointermove,
         onPointerup,
+        onPointercancel: onPointerup,
       }),
       () => ({}),
     ),

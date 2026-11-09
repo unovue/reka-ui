@@ -23,9 +23,10 @@ export const wheelAt: BrowserCommand<[x: number, y: number, deltaY: number]> = a
  * A real (trusted) left-button drag between two points of the test page's
  * viewport: pressed on the first point and released on the second, so
  * `mousedown` and `mouseup` land on different elements and no `click` fires.
- * `userEvent` only offers whole clicks.
+ * `userEvent` only offers whole clicks. `steps` splits the move into that many
+ * `mousemove`s, for gestures that start after a few pixels (a toast swipe).
  */
-export const mouseDrag: BrowserCommand<[fromX: number, fromY: number, toX: number, toY: number]> = async (context, fromX, fromY, toX, toY) => {
+export const mouseDrag: BrowserCommand<[fromX: number, fromY: number, toX: number, toY: number, steps?: number]> = async (context, fromX, fromY, toX, toY, steps = 1) => {
   if (context.provider.name !== 'playwright')
     throw new Error(`mouseDrag needs the playwright provider, not ${context.provider.name}`)
   const { page, iframe } = context
@@ -34,6 +35,6 @@ export const mouseDrag: BrowserCommand<[fromX: number, fromY: number, toX: numbe
     throw new Error('mouseDrag: the test iframe has no box')
   await page.mouse.move(box.x + fromX, box.y + fromY)
   await page.mouse.down()
-  await page.mouse.move(box.x + toX, box.y + toY)
+  await page.mouse.move(box.x + toX, box.y + toY, { steps })
   await page.mouse.up()
 }

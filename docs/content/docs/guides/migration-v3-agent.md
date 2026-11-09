@@ -653,8 +653,9 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 - NavigationMenu context (`injectNavigationMenuContext()`): `modelValue`, `dir`, `disableClickTrigger`, `disableHoverTrigger` and `unmountOnHide` are read-only refs; `onItemSelect(value, reason?, event?)` and `onItemDismiss(reason?, event?)` return a boolean; `onTriggerEnter`, `onTriggerLeave` and `onContentLeave` take an optional event.
 - Toast root context (`injectToastRootContext()`): `onClose(event?, reason?)` takes an optional reason and returns a boolean. The `ToastProviderContext` settings refs are read-only, and `isFocusedToastEscapeKeyDownRef` is removed.
 - A cancelled toast timeout, or one a controlled parent ignores, restarts the timer with the full `duration`, so the toast asks again later; a cancelled swipe snaps back.
+- Toast text is selectable (#2071): `ToastRoot` no longer sets an inline `user-select: none` all the time. It sets `user-select: none` (and `-webkit-user-select: none`) inline only while a swipe is in progress, and removes it on release. The `swipe` surface of `useToastSwipe()` no longer includes `userSelect`; it keeps `touchAction: 'none'`.
 - Toast manager: `ToastObject.onClose(details)` receives the close details (`details.reason` is a `ToastOpenChangeReason` or `'imperative-action'`). `manager.close(id)` closes a rendered toast through its `ToastRoot`: `beforeUpdate:open` (cancellable) and `update:open` fire with `'imperative-action'`.
-- New and additive: `useNavigationMenu()`, `useNavigationMenuSub()` and the NavigationMenu part composables; `useToastProvider()`, `useToastRoot()`, `useToastTimer()`, `useToastSwipe()` and `useToastViewport()`.
+- New and additive: `useNavigationMenu()`, `useNavigationMenuSub()` and the NavigationMenu part composables; `useToastProvider()`, `useToastRoot()`, `useToastTimer()`, `useToastSwipe()` and `useToastViewport()`. The `--reka-navigation-menu-viewport-cross-offset` and `--reka-navigation-menu-indicator-cross-offset` CSS variables (the active trigger's far edge on the cross axis, for wrapped lists) are new; the existing NavigationMenu variables keep their values, so no rewrite is needed.
 
 **How to find it.**
 - `injectNavigationMenuContext(` in custom parts; within them, assignments to `modelValue.value`.
@@ -664,6 +665,7 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 - `isFocusedToastEscapeKeyDownRef` in custom Toast parts.
 - Tests that count `update:modelValue` emits on a controlled `NavigationMenuRoot`, or `update:open` emits on a `ToastRoot` with a `toast` prop.
 - Snapshots of `NavigationMenuTrigger` rendered on the server or before mount.
+- Snapshots or tests of `ToastRoot`, or of an element bound to `useToastSwipe()`'s `swipe` surface, that expect `user-select: none` in the inline style; styles or UX that relied on toast text being unselectable.
 
 **Rewrite rules.**
 - `context.modelValue.value = x` on the NavigationMenu context: replace with `context.onItemSelect(x)` (or `context.onItemDismiss()` for `''`).
@@ -674,8 +676,10 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 - A `beforeUpdate:open` / `update:open` handler on a managed `ToastRoot` that should not react to `manager.close(id)`: skip `details.reason === 'imperative-action'`.
 - `isFocusedToastEscapeKeyDownRef`: remove the reference; nothing read it.
 - A snapshot that lacked the trigger `id` / `aria-controls`: update the snapshot.
+- A snapshot or test expecting `user-select: none` on a toast at rest: update it; the inline style now has only `touch-action: none` (plus the stacking variables).
+- A design that needs toast text to stay unselectable: add `user-select: none; -webkit-user-select: none;` to the `ToastRoot` class in CSS. Otherwise leave it; selectable text is the new default. If unsure: *ask*.
 
-**Verify.** Each navigation menu opens on hover and press and closes on Escape, outside press and link press as before; toasts time out, close, swipe away and pause on hover as before; the type-check passes.
+**Verify.** Each navigation menu opens on hover and press and closes on Escape, outside press and link press as before; toasts time out, close, swipe away and pause on hover as before, and their text can be selected; the type-check passes.
 
 ### 24. Auto-imports use per-component entry points
 
@@ -995,7 +999,29 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 
 **Verify.** The type-check passes; typing in a number field updates bound state live; side effects moved to `valueCommit` still run once per edit.
 
-### 34. `strictTemplates` support
+### 34. ComboboxCancel clears the value
+
+**What changed.**
+- `reset-model-value-on-clear` on `ComboboxRoot` defaults to `true` (v2: `false`), so `ComboboxCancel` clears the selected value as well as the input text: it emits `update:modelValue` with `null` (`[]` with `multiple`) and `details.reason === 'clear-press'`, then empties the input. v2 only emptied the input and kept the selection.
+- `useComboboxRoot()` defaults `resetModelValueOnClear` to `true` too.
+- `AutocompleteRoot` and `AutocompleteCancel` are unchanged: an autocomplete's value is its input text, which Cancel already cleared.
+- `ComboboxCancel` and `AutocompleteCancel` do nothing while the root is `disabled` (v2 still emptied the input) and render `disabled` / `aria-disabled`. No rewrite needed.
+
+**How to find it.**
+- Every `ComboboxRoot` with a `ComboboxCancel` inside it (also `Combobox.Root` / `Combobox.Cancel` in the namespaced import, and `reka-combobox-root` / `reka-combobox-cancel` custom elements). Note whether the root sets `reset-model-value-on-clear`, `:reset-model-value-on-clear` or `resetModelValueOnClear`.
+- `useComboboxRoot(` calls, and whether they pass `resetModelValueOnClear`.
+- Tests that press a `ComboboxCancel` and expect the selected value to stay, or expect no `update:modelValue` from the root.
+
+**Rewrite rules.**
+- A root that already sets `reset-model-value-on-clear` (bare, or bound to `true`): remove the attribute; it is the default.
+- A root that binds it to `false` or to a variable: leave unchanged.
+- A root with a `ComboboxCancel` and without the prop: add `:reset-model-value-on-clear="false"` when the code relies on the selection surviving the press, for example a label or comment that says the button only clears the search, a test that expects the value to stay, or a model typed so it cannot hold `null` / `[]`. Leave it unchanged when the button is labelled or documented as clearing the selection. *Ask* if you cannot tell.
+- `useComboboxRoot()` calls without `resetModelValueOnClear` whose cancel surface must keep the value: pass `resetModelValueOnClear: false`. *Ask* if you cannot tell.
+- Tests that expect the value to stay after Cancel on a root you left on the default: expect `null` (or `[]`) and a `'clear-press'` reason instead.
+
+**Verify.** The type-check passes; Cancel on each root you left on the default clears the selection and the input; Cancel on each root with `:reset-model-value-on-clear="false"` clears only the input.
+
+### 35. `strictTemplates` support
 
 **What changed.**
 - Component props types include, type-only (no runtime props; they still fall through), exactly: every `aria-*` attribute; `class`, `style`, `id`, `role`, `tabindex`, `title`, `lang`, `hidden`, `inert`, `draggable`, `spellcheck`, `autofocus`, `contenteditable`, `accesskey`, `enterkeyhint`, `inputmode`, `nonce`, `slot`, `part`; and the listeners `onClick`, `onDblclick`, `onContextmenu`, `onKeydown`, `onKeyup`, `onFocus`, `onBlur`, `onFocusin`, `onFocusout`, `onPointerdown`, `onPointerup`, `onPointermove`, `onPointerenter`, `onPointerleave`, `onMouseenter`, `onMouseleave`, `onMousedown`, `onMouseup`, `onTouchstart`, `onTouchend`, `onWheel`, `onScroll`, `onCopy`, `onPaste`, `onAnimationend`, `onTransitionend`. `strictTemplates`, `checkUnknownProps` and `checkUnknownEvents` accept them on every component.
@@ -1021,5 +1047,5 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 When you are done, give the developer:
 
 1. The list of files you changed, grouped by the section above that required the change.
-2. Every `active` / `inactive` selector, every open or closed selector you could not attribute to a popup trigger or its content, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every combobox whose app code depends on focus returning to the trigger on close with the input outside the content from section 16, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, every Splitter handler that ignores keyboard collapses, cancelled structural layout change or `v-model:layout` suggestion from section 22, every `NavigationMenuContent` double-emit compensation or focus-only `interactOutside` handler from section 23, every alias to a copy without per-component entry points from section 24, every transition on a part, hover-only transition and hand-written unmount delay from section 25, every shadow-root teleport target, document stylesheet for portalled content or shadow DOM workaround from section 27, every drawer `update:open` handler that does more than cancel, hand-written tree selection workaround or select flag without `multiple` from section 28, and every cancelling `beforeUpdate:modelValue` on an uncontrolled `AutocompleteRoot` from section 29, every kept `@internationalized/date` use, existing Temporal polyfill or TypeScript 5 project from section 30, every `TabsRoot` whose empty initial state you could not confirm, every `TabsRoot` whose reliance on automatic activation you could not confirm, and every read of an inactive `TabsContent` element from section 31, and every cast kept for an attribute or listener outside the typed set from section 34 that you left unchanged because the rule said to ask, with file and line.
+2. Every `active` / `inactive` selector, every open or closed selector you could not attribute to a popup trigger or its content, every `require()`, every hand-built month or year switcher, every color model kept as a hex string, every gradient helper call, every prop read off a part ref, every other `--scrollbar-width` use, every overlay-less modal dialog, every combobox whose app code depends on focus returning to the trigger on close with the input outside the content from section 16, every form-input context assignment from section 17, every TagsInput / Editable handler from section 18, every app reliance on a re-press emit from section 19, every date or time field under a non-Gregorian `ConfigProvider` locale and every `TimeFieldRoot` placeholder handler from section 20, every count of duplicated tree selection entries or `goToStep` onto a disabled step from section 21, every Splitter handler that ignores keyboard collapses, cancelled structural layout change or `v-model:layout` suggestion from section 22, every `NavigationMenuContent` double-emit compensation or focus-only `interactOutside` handler from section 23, every alias to a copy without per-component entry points from section 24, every transition on a part, hover-only transition and hand-written unmount delay from section 25, every shadow-root teleport target, document stylesheet for portalled content or shadow DOM workaround from section 27, every drawer `update:open` handler that does more than cancel, hand-written tree selection workaround or select flag without `multiple` from section 28, and every cancelling `beforeUpdate:modelValue` on an uncontrolled `AutocompleteRoot` from section 29, every kept `@internationalized/date` use, existing Temporal polyfill or TypeScript 5 project from section 30, every `TabsRoot` whose empty initial state you could not confirm, every `TabsRoot` whose reliance on automatic activation you could not confirm, every read of an inactive `TabsContent` element from section 31, and every `ComboboxRoot` or `useComboboxRoot()` call from section 34 whose Cancel behavior you could not confirm, and every cast kept for an attribute or listener outside the typed set from section 35, that you left unchanged because the rule said to ask, with file and line.
 3. The result of the type-check, lint and test commands, compared with the baseline you recorded at the start.

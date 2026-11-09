@@ -2,7 +2,7 @@ import type { ToastOpenChangeReason } from '.'
 import type { ChangeEventDetails } from '@/shared'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { userEvent } from 'vitest/browser'
+import { commands, userEvent } from 'vitest/browser'
 import { defineComponent, h, ref } from 'vue'
 import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from '@/Dialog'
 import { hoverForMousePointerId } from '@/test/browser'
@@ -63,7 +63,7 @@ function mountSwipeToast(onBeforeUpdate?: (value: boolean, details: Details) => 
         'style': 'width: 200px; height: 60px',
         'onBeforeUpdate:open': (value: boolean, details: Details) => onBeforeUpdate?.(value, details),
         'onUpdate:open': (_: boolean, details: Details) => updates.push(details),
-      }, () => h(ToastTitle, () => 'Swipe me')),
+      }, () => h(ToastTitle, { 'data-testid': 'title' }, () => 'Swipe me')),
       h(ToastViewport),
     ]),
   }), { attachTo: document.body })
@@ -83,8 +83,9 @@ async function swipe(target: HTMLElement, dx: number) {
   target.dispatchEvent(new PointerEvent('pointermove', { ...init, clientX: x + dx, clientY: y }))
   const moveX = target.style.getPropertyValue('--reka-toast-swipe-move-x')
   const state = target.getAttribute('data-swipe')
+  const userSelect = target.style.getPropertyValue('user-select')
   target.dispatchEvent(new PointerEvent('pointerup', { ...init, clientX: x + dx, clientY: y }))
-  return { moveX, state }
+  return { moveX, state, userSelect }
 }
 
 describe('given a Toast with a short duration, in a real browser', () => {
@@ -125,7 +126,7 @@ describe('given a swipeable Toast, in a real browser', () => {
     await expect.poll(() => toast()).toBeTruthy()
 
     const during = await swipe(toast()!, 80)
-    expect(during).toEqual({ moveX: '80px', state: 'move' })
+    expect(during).toEqual({ moveX: '80px', state: 'move', userSelect: 'none' })
     expect(toast()!.getAttribute('data-swipe')).toBe('end')
     expect(toast()!.style.getPropertyValue('--reka-toast-swipe-end-x')).toBe('80px')
     expect(updates.map(d => d.reason)).toEqual(['swipe'])
@@ -138,6 +139,7 @@ describe('given a swipeable Toast, in a real browser', () => {
 
     await swipe(toast()!, 30)
     expect(toast()!.getAttribute('data-swipe')).toBe('cancel')
+    expect(toast()!.style.getPropertyValue('user-select')).toBe('')
     expect(updates).toHaveLength(0)
   })
 
@@ -149,7 +151,80 @@ describe('given a swipeable Toast, in a real browser', () => {
     expect(toast()!.getAttribute('data-swipe')).toBe('cancel')
     expect(toast()!.style.getPropertyValue('--reka-toast-swipe-end-x')).toBe('')
     expect(toast()!.getAttribute('data-state')).toBe('open')
+    expect(toast()!.style.getPropertyValue('user-select')).toBe('')
     expect(updates).toHaveLength(0)
+  })
+})
+
+describe('given a swipeable Toast, with the real mouse', () => {
+  const selected = () => document.getSelection()?.toString() ?? ''
+
+  it('selects its text with a triple-click', async () => {
+    const { updates, toast } = mountSwipeToast()
+    await expect.poll(() => toast()).toBeTruthy()
+    document.getSelection()?.removeAllRanges()
+
+    await userEvent.tripleClick(document.querySelector<HTMLElement>('[data-testid="title"]')!)
+
+    expect(selected()).toContain('Swipe me')
+    expect(updates).toHaveLength(0)
+  })
+
+  it('selects its text with a drag that does not become a swipe', async () => {
+    const { updates, toast } = mountSwipeToast()
+    await expect.poll(() => toast()).toBeTruthy()
+    document.getSelection()?.removeAllRanges()
+    const title = document.querySelector<HTMLElement>('[data-testid="title"]')!
+    const range = document.createRange()
+    range.selectNodeContents(title)
+    const text = range.getBoundingClientRect()
+    const y = text.top + text.height / 2
+
+    // Leftwards, against the right swipe: a text selection, not a swipe.
+    await commands.mouseDrag(text.right - 1, y, text.left + 1, y, 10)
+
+    expect(selected().length).toBeGreaterThan(0)
+    expect(toast()!.hasAttribute('data-swipe')).toBe(false)
+    expect(updates).toHaveLength(0)
+  })
+
+  // The text the drag had selected when the button was released, before the toast closes.
+  async function dragAcrossTitle(dx: number) {
+    const title = document.querySelector<HTMLElement>('[data-testid="title"]')!
+    const range = document.createRange()
+    range.selectNodeContents(title)
+    const text = range.getBoundingClientRect()
+    const y = text.top + text.height / 2
+    let selectedOnRelease: string | undefined
+    const read = () => { selectedOnRelease = selected() }
+    window.addEventListener('pointerup', read, { capture: true, once: true })
+    // 2px steps: the swipe starts once the pointer has moved past its 2px buffer.
+    await commands.mouseDrag(text.left + 1, y, text.left + 1 + dx, y, dx / 2)
+    return selectedOnRelease
+  }
+
+  it('closes on a swipe without selecting its text', async () => {
+    const { updates, toast } = mountSwipeToast()
+    await expect.poll(() => toast()).toBeTruthy()
+    document.getSelection()?.removeAllRanges()
+
+    expect(await dragAcrossTitle(80)).toBe('')
+
+    await expect.poll(() => updates.map(d => d.reason)).toEqual(['swipe'])
+  })
+
+  it('snaps back on a short swipe without selecting its text, and stays selectable', async () => {
+    const { updates, toast } = mountSwipeToast()
+    await expect.poll(() => toast()).toBeTruthy()
+    document.getSelection()?.removeAllRanges()
+
+    expect(await dragAcrossTitle(30)).toBe('')
+
+    expect(toast()!.getAttribute('data-swipe')).toBe('cancel')
+    expect(toast()!.style.getPropertyValue('user-select')).toBe('')
+    expect(updates).toHaveLength(0)
+    await userEvent.tripleClick(document.querySelector<HTMLElement>('[data-testid="title"]')!)
+    expect(selected()).toContain('Swipe me')
   })
 })
 

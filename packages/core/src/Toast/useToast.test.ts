@@ -233,6 +233,130 @@ describe('useToast — standalone', () => {
     expect(wrapper.find('[data-testid="toast"]').exists()).toBe(false)
     wrapper.unmount()
   })
+
+  it('leaves the text selectable, except while a swipe is in progress', async () => {
+    const wrapper = mount(Standalone, { attachTo: document.body })
+    const toast = wrapper.get<HTMLElement>('[data-testid="toast"]').element
+    // jsdom has no pointer capture.
+    Object.assign(toast, { setPointerCapture: vi.fn(), releasePointerCapture: vi.fn(), hasPointerCapture: () => false })
+    const userSelect = () => [toast.style.getPropertyValue('user-select'), toast.style.getPropertyValue('-webkit-user-select')]
+    const pointer = (type: string, clientX: number) =>
+      toast.dispatchEvent(new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY: 0 }))
+    expect(userSelect()).toEqual(['', ''])
+
+    // Pressed, but not moved past the swipe start: still selectable.
+    pointer('pointerdown', 0)
+    pointer('pointermove', 1)
+    expect(toast.hasAttribute('data-swipe')).toBe(false)
+    expect(userSelect()).toEqual(['', ''])
+
+    pointer('pointermove', 20)
+    expect(toast.getAttribute('data-swipe')).toBe('start')
+    expect(userSelect()).toEqual(['none', 'none'])
+    pointer('pointermove', 30)
+    expect(userSelect()).toEqual(['none', 'none'])
+
+    // Released below the threshold: snaps back and is selectable again.
+    pointer('pointerup', 30)
+    expect(toast.getAttribute('data-swipe')).toBe('cancel')
+    expect(userSelect()).toEqual(['', ''])
+    wrapper.unmount()
+  })
+
+  it('snaps back and is selectable again when the swipe pointer is cancelled', async () => {
+    const onSwipeEnd = vi.fn(() => true)
+    const wrapper = mount(defineComponent({
+      setup() {
+        const { swipe } = useToastSwipe({ swipeDirection: 'right', swipeThreshold: 50, onSwipeEnd })
+        return () => h('div', { ...swipe.attrs.value, 'data-testid': 'toast' }, 'Saved')
+      },
+    }), { attachTo: document.body })
+    const toast = wrapper.get<HTMLElement>('[data-testid="toast"]').element
+    Object.assign(toast, { setPointerCapture: vi.fn(), releasePointerCapture: vi.fn(), hasPointerCapture: () => false })
+    const pointer = (type: string, clientX: number) =>
+      toast.dispatchEvent(new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY: 0 }))
+
+    pointer('pointerdown', 0)
+    pointer('pointermove', 20)
+    pointer('pointermove', 80)
+    expect(toast.style.getPropertyValue('user-select')).toBe('none')
+
+    // Past the threshold, but the browser took the pointer over: no close.
+    pointer('pointercancel', 80)
+    expect(toast.getAttribute('data-swipe')).toBe('cancel')
+    expect(toast.style.getPropertyValue('user-select')).toBe('')
+    expect(onSwipeEnd).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('resets a swipe whose release never reached the toast on the next press', async () => {
+    const onSwipeEnd = vi.fn(() => true)
+    const disabled = ref(false)
+    const emitted: string[] = []
+    const wrapper = mount(defineComponent({
+      setup() {
+        const { swipe } = useToastSwipe({
+          swipeDirection: 'right',
+          swipeThreshold: 50,
+          disabled,
+          onSwipeEnd,
+          emit: (name: string) => emitted.push(name),
+        })
+        return () => h('div', { ...swipe.attrs.value, 'data-testid': 'toast' }, 'Saved')
+      },
+    }), { attachTo: document.body })
+    const toast = wrapper.get<HTMLElement>('[data-testid="toast"]').element
+    Object.assign(toast, { setPointerCapture: vi.fn(), releasePointerCapture: vi.fn(), hasPointerCapture: () => false })
+    const pointer = (type: string, clientX: number) =>
+      toast.dispatchEvent(new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY: 0 }))
+
+    pointer('pointerdown', 0)
+    pointer('pointermove', 20)
+    pointer('pointermove', 80)
+    // The `pointerup` went elsewhere. The next press, here while swipe is
+    // disabled, cancels that swipe and leaves the text selectable.
+    disabled.value = true
+    await nextTick()
+    pointer('pointerdown', 0)
+    expect(emitted).toEqual(['swipeStart', 'swipeMove', 'swipeCancel'])
+    expect(toast.getAttribute('data-swipe')).toBe('cancel')
+    expect(toast.style.getPropertyValue('user-select')).toBe('')
+    // Re-enabled, a move does not resume from the old press position.
+    disabled.value = false
+    await nextTick()
+    pointer('pointermove', 80)
+    expect(toast.getAttribute('data-swipe')).toBe('cancel')
+    expect(toast.style.getPropertyValue('user-select')).toBe('')
+    pointer('pointerup', 80)
+    expect(onSwipeEnd).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('snaps back and is selectable again when the swipe is disabled mid-gesture', async () => {
+    const onSwipeEnd = vi.fn(() => true)
+    const disabled = ref(false)
+    const wrapper = mount(defineComponent({
+      setup() {
+        const { swipe } = useToastSwipe({ swipeDirection: 'right', swipeThreshold: 50, disabled, onSwipeEnd })
+        return () => h('div', { ...swipe.attrs.value, 'data-testid': 'toast' }, 'Saved')
+      },
+    }), { attachTo: document.body })
+    const toast = wrapper.get<HTMLElement>('[data-testid="toast"]').element
+    Object.assign(toast, { setPointerCapture: vi.fn(), releasePointerCapture: vi.fn(), hasPointerCapture: () => false })
+    const pointer = (type: string, clientX: number) =>
+      toast.dispatchEvent(new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY: 0 }))
+
+    pointer('pointerdown', 0)
+    pointer('pointermove', 20)
+    pointer('pointermove', 80)
+    disabled.value = true
+    await nextTick()
+    pointer('pointerup', 80)
+    expect(toast.getAttribute('data-swipe')).toBe('cancel')
+    expect(toast.style.getPropertyValue('user-select')).toBe('')
+    expect(onSwipeEnd).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
 })
 
 interface ToastFixtureOptions {
