@@ -4,7 +4,8 @@ import { cloneVNode, Comment, defineComponent, getCurrentInstance, mergeProps } 
 import { renderSlotFragments } from '@/shared/renderSlotFragments'
 import { useForwardElement } from '@/shared/useForwardElement'
 
-const SlotComponent = defineComponent({
+/** Typed with the HTML attributes it merges into its child, for `strictTemplates`. */
+export const Slot = defineComponent({
   name: 'PrimitiveSlot',
   inheritAttrs: false,
   // `setup()` only, as in `Primitive`: a setup-context parameter makes Vue
@@ -52,7 +53,4 @@ const SlotComponent = defineComponent({
       return children
     }
   },
-})
-
-/** Typed with the HTML attributes it merges into its child, for `strictTemplates`. */
-export const Slot = SlotComponent as unknown as DefineSetupFnComponent<PrimitiveHTMLAttributes>
+}) as unknown as DefineSetupFnComponent<PrimitiveHTMLAttributes>

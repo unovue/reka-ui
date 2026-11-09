@@ -37,7 +37,7 @@ export type TimeRangeFieldRootContext = {
   setPlaceholder: (value: DateValue, reason?: TimeRangeFieldChangeReason | BaseChangeReason, event?: Event) => boolean
 }
 
-export interface TimeRangeFieldRootProps extends Omit<PrimitiveProps, 'placeholder'>, FormFieldProps {
+export interface TimeRangeFieldRootProps extends PrimitiveProps, FormFieldProps {
   /** The default value for the field */
   defaultValue?: TimeRange
   /** The default placeholder time */

@@ -38,7 +38,7 @@ export type DateRangeFieldRootContext = {
   setPlaceholder: (value: DateValue, reason?: DateRangeFieldChangeReason | BaseChangeReason, event?: Event) => boolean
 }
 
-export interface DateRangeFieldRootProps extends Omit<PrimitiveProps, 'placeholder'>, FormFieldProps {
+export interface DateRangeFieldRootProps extends PrimitiveProps, FormFieldProps {
   /** The default value for the calendar */
   defaultValue?: DateRange
   /** The default placeholder date */

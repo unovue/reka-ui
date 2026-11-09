@@ -2,7 +2,7 @@
 import type { PrimitiveProps } from '@/Primitive'
 import type { Color } from '@/shared/color'
 
-export interface ColorSwatchProps extends Omit<PrimitiveProps, 'color'> {
+export interface ColorSwatchProps extends PrimitiveProps {
   /**
    * The color to display in the swatch as a hex string or Color object.
    * Example: `#16a372`, `#ff5733`, or `{ space: 'hsl', h: 120, s: 100, l: 50, alpha: 1 }`.

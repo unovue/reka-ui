@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Fixture for `tsconfig.json` here: every element below must type-check with
-// `strictTemplates` against the built package. Never rendered.
+// `strictTemplates` against the built package, using only attributes and listeners
+// `PrimitiveHTMLAttributes` types. Never rendered.
 import type { ListboxItemSelectEvent } from 'reka-ui'
 import {
   CheckboxRoot,
@@ -151,7 +152,9 @@ function onListboxSelect(event: ListboxItemSelectEvent<string>) {
   <!-- @vue-expect-error `dir` is `Direction` -->
   <NavigationMenuRoot dir="sideways" />
 
-  <!-- Still strict: an unknown prop is an error -->
+  <!-- Still strict: anything outside the typed set is an error -->
   <!-- @vue-expect-error not a prop or an HTML attribute -->
   <DialogContent not-an-attribute="x" />
+  <!-- @vue-expect-error `href` is an `<a>` attribute, not a global one -->
+  <NavigationMenuLink href="/docs" />
 </template>

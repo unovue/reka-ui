@@ -1,4 +1,4 @@
-import type { Component, DefineSetupFnComponent, HTMLAttributes, PropType } from 'vue'
+import type { AriaAttributes, Component, DefineSetupFnComponent, HTMLAttributes, PropType } from 'vue'
 import { defineComponent, getCurrentInstance, h, mergeProps, toRaw } from 'vue'
 // Direct relative import (not the `@/shared` barrel) to avoid a Primitive ↔ shared cycle.
 import { useForwardElement } from '../shared/useForwardElement'
@@ -25,21 +25,72 @@ export type AsTag
     | 'template'
     | ({} & string) // any other string
 
-/**
- * `HTMLAttributes` listeners named after an event a Reka component emits
- * (`select`, `toggle`, `change`, …). Left out so that, on a component emitting it,
- * the emit alone types the listener: intersected with the DOM listener, its
- * payload would type as `Event | <payload>`.
- */
-type EmittedEventListener = 'onChange' | 'onInvalid' | 'onPause' | 'onSelect' | 'onSubmit' | 'onToggle'
+/** The global HTML attributes `PrimitiveHTMLAttributes` types, besides `aria-*`. */
+type GlobalAttribute
+  = | 'class'
+    | 'style'
+    | 'id'
+    | 'role'
+    | 'tabindex'
+    | 'title'
+    | 'lang'
+    | 'hidden'
+    | 'inert'
+    | 'draggable'
+    | 'spellcheck'
+    | 'contenteditable'
+    | 'accesskey'
+    | 'enterkeyhint'
+    | 'inputmode'
+    | 'part'
 
 /**
- * HTML attributes a component passes to its element (`id`, `class`, `aria-*`,
- * listeners, …). Type-only: `PrimitiveProps` extends it under `@vue-ignore`, so
- * no runtime prop is declared and the attributes still fall through. With
- * `strictTemplates`, it lets `<DialogContent aria-label="…">` type-check.
+ * The DOM listeners `PrimitiveHTMLAttributes` types. None is named after an event a
+ * Reka component emits (`select`, `toggle`, `change`, …): intersected with the
+ * emit, the payload would type as `Event | <payload>`.
  */
-export interface PrimitiveHTMLAttributes extends Omit<HTMLAttributes, EmittedEventListener> {}
+type CommonListener
+  = | 'onClick'
+    | 'onDblclick'
+    | 'onContextmenu'
+    | 'onKeydown'
+    | 'onKeyup'
+    | 'onFocus'
+    | 'onBlur'
+    | 'onFocusin'
+    | 'onFocusout'
+    | 'onPointerdown'
+    | 'onPointerup'
+    | 'onPointermove'
+    | 'onPointerenter'
+    | 'onPointerleave'
+    | 'onMouseenter'
+    | 'onMouseleave'
+    | 'onMousedown'
+    | 'onMouseup'
+    | 'onTouchstart'
+    | 'onTouchend'
+    | 'onWheel'
+    | 'onScroll'
+    | 'onCopy'
+    | 'onPaste'
+    | 'onAnimationend'
+    | 'onTransitionend'
+
+/**
+ * HTML attributes a component passes to its element: `aria-*`, common global
+ * attributes (`class`, `style`, `id`, `role`, `tabindex`, …) and common DOM
+ * listeners (`@click`, `@keydown`, `@focus`, …). Type-only: `PrimitiveProps`
+ * extends it under `@vue-ignore`, so no runtime prop is declared and the
+ * attributes still fall through. With `strictTemplates`, it lets
+ * `<DialogContent aria-label="…">` type-check. Other attributes and listeners
+ * fall through all the same, untyped.
+ */
+export interface PrimitiveHTMLAttributes extends AriaAttributes, Pick<HTMLAttributes, GlobalAttribute | CommonListener> {
+  autofocus?: boolean | 'true' | 'false'
+  nonce?: string
+  slot?: string
+}
 
 export interface PrimitiveProps extends /* @vue-ignore */ PrimitiveHTMLAttributes {
   /**
@@ -72,7 +123,11 @@ function needsMergeProps(attrs: Record<string, unknown>): boolean {
   return false
 }
 
-const PrimitiveComponent = defineComponent({
+/**
+ * Typed with the HTML attributes it passes to its element (`PrimitiveProps`), so
+ * `<Primitive as="nav" aria-label="…">` type-checks with `strictTemplates`.
+ */
+export const Primitive = defineComponent({
   name: 'Primitive',
   inheritAttrs: false,
   props: {
@@ -134,10 +189,4 @@ const PrimitiveComponent = defineComponent({
       )
     }
   },
-})
-
-/**
- * Typed with the HTML attributes it passes to its element (`PrimitiveProps`), so
- * `<Primitive as="nav" aria-label="…">` type-checks with `strictTemplates`.
- */
-export const Primitive = PrimitiveComponent as unknown as DefineSetupFnComponent<PrimitiveProps>
+}) as unknown as DefineSetupFnComponent<PrimitiveProps>

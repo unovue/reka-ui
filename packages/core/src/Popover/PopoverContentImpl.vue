@@ -23,7 +23,7 @@ export type PopoverContentImplEmits = DismissableLayerEmits & {
   closeAutoFocus: [event: Event]
 }
 
-export interface PopoverContentImplProps extends PopperContentProps, Omit<DismissableLayerProps, 'dir'> {
+export interface PopoverContentImplProps extends PopperContentProps, DismissableLayerProps {
   /**
    * Id of the element, which the trigger's `aria-controls` points at.
    * Auto-generated when not provided.

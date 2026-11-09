@@ -543,9 +543,9 @@ export type RekaElementEventMap<Emits> = {
 
 /**
  * HTML attribute names some components also declare as a prop of their own
- * (`dir?: Direction`), so element props keep them.
+ * (`part?: SegmentPart`), so element props keep them.
  */
-type OwnPropAttribute = 'color' | 'dir' | 'id' | 'part' | 'placeholder' | 'tabindex'
+type OwnPropAttribute = 'id' | 'part' | 'tabindex'
 
 /**
  * The element's props as properties: everything but `as` / `asChild` and the HTML

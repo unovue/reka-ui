@@ -35,7 +35,7 @@ export type EditableRootContext = {
   autoResize: Ref<boolean>
 }
 
-export interface EditableRootProps extends Omit<PrimitiveProps, 'placeholder'>, FormFieldProps {
+export interface EditableRootProps extends PrimitiveProps, FormFieldProps {
   /** The default value of the editable field */
   defaultValue?: string
   /** The value of the editable field */

@@ -987,12 +987,19 @@ Pressing Tab in an open `SelectContent` now closes the select and moves focus to
 
 ## `strictTemplates` support
 
-Component props now include the HTML attributes a part passes to its element: `id`, `class`, `style`, `role`, `tabindex`, `aria-*` and DOM listeners such as `@click` ([#2875](https://github.com/unovue/reka-ui/issues/2875)). With `vueCompilerOptions.strictTemplates` (or `checkUnknownProps` / `checkUnknownEvents`) enabled, `<NavigationMenuRoot aria-label="Main">` now type-checks. The attributes are typed only: they are not runtime props and still fall through to the element.
+Component props now type the common attributes and listeners a part passes to its element ([#2875](https://github.com/unovue/reka-ui/issues/2875)), so `<NavigationMenuRoot aria-label="Main">` type-checks with `vueCompilerOptions.strictTemplates` (or `checkUnknownProps` / `checkUnknownEvents`). They are typed only: they are not runtime props and still fall through to the element. Exactly these are typed (the `PrimitiveHTMLAttributes` type):
 
-- `vue-tsc` camelizes `data-*` attributes on components (`data-state` is checked as `dataState`), so no props type can declare them. Add `"dataAttributes": ["data-*"]` to `vueCompilerOptions` to skip the check for them.
-- Only global attributes are typed. Attributes of a specific element, such as `href` on `NavigationMenuLink` or `alt` on `AvatarImage`, stay unknown to `strictTemplates`; put them on your own element with `as-child`.
-- A listener named like an emit (`@select`, `@toggle`, `@change`, `@submit`, `@invalid`, `@pause`) is typed by the emit's payload, so it is not typed as a DOM event on any component.
-- Props interfaces built on a Reka props type gain the attributes too, still without runtime props. Read them in a wrapper through `useAttrs()`, not `props`. A `ref()` holding such props next to VNodes can hit TypeScript's "excessively deep" error; annotate it instead: `const state: Ref<State> = ref(initial)`.
+- every `aria-*` attribute;
+- `class`, `style`, `id`, `role`, `tabindex`, `title`, `lang`, `hidden`, `inert`, `draggable`, `spellcheck`, `autofocus`, `contenteditable`, `accesskey`, `enterkeyhint`, `inputmode`, `nonce`, `slot` and `part`;
+- the listeners `@click`, `@dblclick`, `@contextmenu`, `@keydown`, `@keyup`, `@focus`, `@blur`, `@focusin`, `@focusout`, `@pointerdown`, `@pointerup`, `@pointermove`, `@pointerenter`, `@pointerleave`, `@mouseenter`, `@mouseleave`, `@mousedown`, `@mouseup`, `@touchstart`, `@touchend`, `@wheel`, `@scroll`, `@copy`, `@paste`, `@animationend` and `@transitionend`.
+
+A component's own prop of the same name keeps its type (`dir`, `id`, `placeholder`, …), and an emit keeps its payload (`@select`, `@toggle`, `@change`, …).
+
+Anything else still falls through at runtime but is unknown to `strictTemplates`: other DOM listeners (`@input`, `@drag`, …) and element-specific attributes (`href`, `alt`, `type`, `name`, …). For those, set `checkUnknownEvents: false` / `checkUnknownProps: false` in `vueCompilerOptions`, or render your own element with `as-child` (or a wrapper component that declares them).
+
+`vue-tsc` checks `data-*` attributes on components under their camelized name (`data-state` as `dataState`), which no props type can declare. Add `"dataAttributes": ["data-*"]` to `vueCompilerOptions` to skip the check for them.
+
+Props interfaces built on a Reka props type gain these attributes too, still without runtime props: read them in a wrapper through `useAttrs()`, not `props`. A `ref()` holding such props next to VNodes can hit TypeScript's "excessively deep" error; annotate the variable instead: `const state: Ref<State> = ref(initial)`.
 
 ## NumberField updates while typing
 

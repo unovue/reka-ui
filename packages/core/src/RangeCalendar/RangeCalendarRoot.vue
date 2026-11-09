@@ -82,7 +82,7 @@ export interface RangeCalendarRootContext {
   drillUp: (reason?: RangeCalendarChangeReason | BaseChangeReason, event?: Event) => boolean
 }
 
-export interface RangeCalendarRootProps extends Omit<PrimitiveProps, 'placeholder'> {
+export interface RangeCalendarRootProps extends PrimitiveProps {
   /** The default placeholder date */
   defaultPlaceholder?: DateValue
   /** The default value for the calendar */
