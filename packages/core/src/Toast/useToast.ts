@@ -704,6 +704,9 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
   watch(currentElement, (element) => {
     if (element)
       viewportElement.value = element
+    // An emptied `asChild` slot takes any hover or focus inside it along; keep a window-blur pause.
+    else if (viewportElement.value && document.hasFocus())
+      releasePause(viewportElement.value)
   }, { immediate: true, flush: 'post' })
 
   onKeyStroke(hotkey, () => {
@@ -733,8 +736,13 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
   // current element when the element is replaced after mount.
   watch(viewportElement, (element) => {
     const previous = providerContext.viewport.value
-    if (!element || !previous || element === previous)
+    if (!element || element === previous)
       return
+    // An `asChild` viewport that mounted empty publishes its first element here.
+    if (!previous) {
+      providerContext.onViewportChange(element)
+      return
+    }
 
     // The pause listeners on the old element are gone, and focus or hover inside it went
     // with it, so release its pause while the toasts still listen there. A window-blur

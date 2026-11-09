@@ -456,10 +456,11 @@ describe('given a ToastViewport whose element is replaced', () => {
   const ReplaceableViewport = defineComponent({
     props: {
       mode: { type: String as PropType<'asChild' | 'as'>, default: 'asChild' },
+      initial: { type: String as PropType<'a' | 'none'>, default: 'a' },
     },
-    setup() {
+    setup(props) {
       const open = ref(true)
-      const variant = ref<'a' | 'b' | 'none'>('a')
+      const variant = ref<'a' | 'b' | 'none'>(props.initial)
       return { open, variant }
     },
     render() {
@@ -524,6 +525,15 @@ describe('given a ToastViewport whose element is replaced', () => {
     await replaceViewport()
     expect(newViewport).toBeTruthy()
     expect(newViewport.querySelector('li')?.textContent).toContain('Saved')
+  })
+
+  it('should teleport open toasts into the first element of a viewport that mounted empty', async () => {
+    wrapper.unmount()
+    wrapper = mount(ReplaceableViewport, { attachTo: document.body, props: { initial: 'none' } })
+    await flush()
+    wrapper.vm.variant = 'a'
+    await flush()
+    expect(document.querySelector('[data-viewport="a"] li')?.textContent).toContain('Saved')
   })
 
   it('should teleport open toasts into the current viewport when `as` changes', async () => {
