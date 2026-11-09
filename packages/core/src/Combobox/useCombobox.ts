@@ -206,12 +206,18 @@ export function getComboboxTriggerSurface(
 /**
  * The cancel surface: clears the value with `'clear-press'` (unless
  * `resetModelValueOnClear` is `false`), then the input, then the search term.
+ * Inert while the combobox is disabled.
  */
 export function getComboboxCancelSurface(context: ComboboxRootContext<any>): PartSurface<Record<string, never>> {
   return createPartSurface<Record<string, never>>(
     () => ({
-      tabindex: '-1',
-      onClick: (event: MouseEvent) => {
+      'tabindex': '-1',
+      'disabled': context.disabled.value,
+      'aria-disabled': context.disabled.value,
+      'onClick': (event: MouseEvent) => {
+        // `disabled` only stops a native button; guard other elements too.
+        if (context.disabled.value)
+          return
         // A cancelled value clear (`beforeUpdate:modelValue` on the root)
         // keeps everything: the value, the input text and the filter.
         if (context.resetModelValueOnClear.value) {

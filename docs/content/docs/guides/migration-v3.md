@@ -1003,7 +1003,7 @@ For the old once-per-edit timing, listen to the new `valueCommit` event. It fire
 
 ## ComboboxCancel clears the value
 
-`ComboboxCancel` now clears the selected value as well as the input text: `reset-model-value-on-clear` on `ComboboxRoot` defaults to `true` (v2: `false`). Pressing it sets the value to `null` (`[]` with `multiple`) and emits `update:modelValue` with `reason: 'clear-press'`, then empties the input. In v2 it only emptied the input and kept the selection. The same default applies to `useComboboxRoot()`. `AutocompleteCancel` is unchanged: an autocomplete's value is the input text, which it already cleared.
+`ComboboxCancel` now clears the selected value as well as the input text: `reset-model-value-on-clear` on `ComboboxRoot` defaults to `true` (v2: `false`). Pressing it sets the value to `null` (`[]` with `multiple`) and emits `update:modelValue` with `reason: 'clear-press'`, then empties the input. In v2 it only emptied the input and kept the selection. The same default applies to `useComboboxRoot()`. `AutocompleteCancel` is unchanged: an autocomplete's value is the input text, which it already cleared. Both buttons now do nothing while the root is `disabled`; v2 still emptied the input.
 
 To keep the v2 behavior, set the prop to `false`:
 

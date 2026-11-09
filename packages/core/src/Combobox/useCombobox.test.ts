@@ -212,6 +212,27 @@ describe('comboboxCancel — clears the value', () => {
     wrapper.unmount()
   })
 
+  it('does nothing while the combobox is disabled, also when not rendered as a button', async () => {
+    const onUpdate = vi.fn()
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ComboboxRoot, { 'defaultValue': 'Apple', 'disabled': true, 'onUpdate:modelValue': onUpdate }, () => [
+        h(ComboboxAnchor, null, () => [
+          h(ComboboxInput, { 'aria-label': 'Fruit' }),
+          h(ComboboxCancel, { 'data-testid': 'cancel', 'as': 'span' }, () => 'Clear'),
+        ]),
+        h(ComboboxContent, null, () => h(ComboboxViewport, null, () => fruits.map(value => h(ComboboxItem, { value }, () => value)))),
+      ]),
+    }), { attachTo: document.body })
+    await settle()
+    const cancel = wrapper.find('[data-testid=cancel]')
+    expect(cancel.attributes('aria-disabled')).toBe('true')
+    await cancel.trigger('click')
+    await settle()
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(wrapper.find('input').element.value).toBe('Apple')
+    wrapper.unmount()
+  })
+
   it('defaults `resetModelValueOnClear` to `true` in `useComboboxRoot`', () => {
     let api!: UseComboboxRootReturn<string>
     let off!: UseComboboxRootReturn<string>

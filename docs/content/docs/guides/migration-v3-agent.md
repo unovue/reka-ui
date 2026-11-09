@@ -1001,6 +1001,7 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 - `reset-model-value-on-clear` on `ComboboxRoot` defaults to `true` (v2: `false`), so `ComboboxCancel` clears the selected value as well as the input text: it emits `update:modelValue` with `null` (`[]` with `multiple`) and `details.reason === 'clear-press'`, then empties the input. v2 only emptied the input and kept the selection.
 - `useComboboxRoot()` defaults `resetModelValueOnClear` to `true` too.
 - `AutocompleteRoot` and `AutocompleteCancel` are unchanged: an autocomplete's value is its input text, which Cancel already cleared.
+- `ComboboxCancel` and `AutocompleteCancel` do nothing while the root is `disabled` (v2 still emptied the input) and render `disabled` / `aria-disabled`. No rewrite needed.
 
 **How to find it.**
 - Every `ComboboxRoot` with a `ComboboxCancel` inside it (also `Combobox.Root` / `Combobox.Cancel` in the namespaced import, and `reka-combobox-root` / `reka-combobox-cancel` custom elements). Note whether the root sets `reset-model-value-on-clear`, `:reset-model-value-on-clear` or `resetModelValueOnClear`.
