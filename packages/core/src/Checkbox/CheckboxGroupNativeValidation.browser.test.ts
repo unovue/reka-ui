@@ -59,7 +59,8 @@ describe('checkboxGroup native validation', () => {
     mounted.form.requestSubmit()
     expect(mounted.getSubmits()).toBe(0)
     await userEvent.click(mounted.wrapper.get('[aria-label="apple"]').element)
-    await nextTick()
+    // The required hidden input goes away after the re-render; poll rather than count ticks.
+    await expect.poll(() => mounted.form.checkValidity()).toBe(true)
     mounted.form.requestSubmit()
     expect(mounted.getSubmits()).toBe(1)
   })
