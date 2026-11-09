@@ -49,7 +49,7 @@ watch(triggerElement, (el) => {
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps($attrs, trigger.attrs.value)"
+    v-bind="mergeProps({ type: !asChild && as === 'button' ? 'button' : undefined }, $attrs, trigger.attrs.value)"
   >
     <slot />
   </component>

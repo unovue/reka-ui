@@ -106,6 +106,9 @@ const field = useFieldControl({
 // Getters rather than computeds: cheap, and free for a standalone group.
 const resolvedName = () => field ? field.name(props.name) : props.name
 const resolvedRequired = () => field ? field.required(props.required) : props.required
+// Without a `name`, render the field only while a required group is empty, so the
+// checked values never become unnamed form fields.
+const showHiddenInput = () => isFormControl.value && (!!resolvedName() || (!!resolvedRequired() && !modelValue.value?.length))
 const disabled = field ? computed(() => field.disabled(props.disabled)) : toRef(props, 'disabled')
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
@@ -166,8 +169,8 @@ function renderAttrs(attrs: Record<string, unknown>) {
     <slot />
 
     <VisuallyHiddenInput
-      v-if="isFormControl && resolvedName()"
-      :name="resolvedName()!"
+      v-if="showHiddenInput()"
+      :name="resolvedName() ?? ''"
       :value="modelValue"
       :required="resolvedRequired()"
       :disabled="disabled"
