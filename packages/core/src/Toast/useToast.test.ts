@@ -233,6 +233,35 @@ describe('useToast — standalone', () => {
     expect(wrapper.find('[data-testid="toast"]').exists()).toBe(false)
     wrapper.unmount()
   })
+
+  it('leaves the text selectable, except while a swipe is in progress', async () => {
+    const wrapper = mount(Standalone, { attachTo: document.body })
+    const toast = wrapper.get<HTMLElement>('[data-testid="toast"]').element
+    // jsdom has no pointer capture.
+    Object.assign(toast, { setPointerCapture: vi.fn(), releasePointerCapture: vi.fn(), hasPointerCapture: () => false })
+    const userSelect = () => [toast.style.getPropertyValue('user-select'), toast.style.getPropertyValue('-webkit-user-select')]
+    const pointer = (type: string, clientX: number) =>
+      toast.dispatchEvent(new MouseEvent(type, { bubbles: true, button: 0, clientX, clientY: 0 }))
+    expect(userSelect()).toEqual(['', ''])
+
+    // Pressed, but not moved past the swipe start: still selectable.
+    pointer('pointerdown', 0)
+    pointer('pointermove', 1)
+    expect(toast.hasAttribute('data-swipe')).toBe(false)
+    expect(userSelect()).toEqual(['', ''])
+
+    pointer('pointermove', 20)
+    expect(toast.getAttribute('data-swipe')).toBe('start')
+    expect(userSelect()).toEqual(['none', 'none'])
+    pointer('pointermove', 30)
+    expect(userSelect()).toEqual(['none', 'none'])
+
+    // Released below the threshold: snaps back and is selectable again.
+    pointer('pointerup', 30)
+    expect(toast.getAttribute('data-swipe')).toBe('cancel')
+    expect(userSelect()).toEqual(['', ''])
+    wrapper.unmount()
+  })
 })
 
 interface ToastFixtureOptions {

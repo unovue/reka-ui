@@ -456,8 +456,15 @@ export interface UseToastSwipeOptions {
 }
 
 export interface UseToastSwipeReturn {
-  /** `onPointerdown` / `onPointermove` / `onPointerup` + `user-select` / `touch-action`. */
+  /** `onPointerdown` / `onPointermove` / `onPointerup` + `touch-action`. */
   swipe: PartSurface<Record<string, never>>
+}
+
+// Text stays selectable, except during a swipe: from its start until the
+// pointer is released, so dragging the toast doesn't select its text. WebKit
+// honours the prefixed property only.
+function setSwipeSelection(target: HTMLElement, swiping: boolean) {
+  target.style.userSelect = target.style.webkitUserSelect = swiping ? 'none' : ''
 }
 
 function setSwipeState(target: HTMLElement, state: 'start' | 'move' | 'cancel' | 'end', delta?: { x: number, y: number }) {
@@ -485,7 +492,8 @@ function setSwipeState(target: HTMLElement, state: 'start' | 'move' | 'cancel' |
  * `swipeDirection` the toast gets `data-swipe="move"` and the
  * `--reka-toast-swipe-move-x` / `-y` variables; on release past
  * `swipeThreshold` it gets `data-swipe="end"` with `--reka-toast-swipe-end-x` /
- * `-y` and closes (reason `swipe`), otherwise `data-swipe="cancel"`.
+ * `-y` and closes (reason `swipe`), otherwise `data-swipe="cancel"`. Text stays
+ * selectable; `user-select: none` is set only while a swipe is in progress.
  *
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle pure
@@ -535,6 +543,7 @@ export function useToastSwipe(options: UseToastSwipeOptions): UseToastSwipeRetur
       swipeDelta = delta
       if (!dispatch(TOAST_SWIPE_START, 'swipeStart', eventDetail).defaultPrevented)
         setSwipeState(target, 'start')
+      setSwipeSelection(target, true)
       ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
     }
     else if (Math.abs(x) > moveStartBuffer || Math.abs(y) > moveStartBuffer) {
@@ -557,6 +566,7 @@ export function useToastSwipe(options: UseToastSwipeOptions): UseToastSwipeRetur
     pointerStart = null
     if (delta) {
       const toast = event.currentTarget as HTMLElement
+      setSwipeSelection(toast, false)
       const eventDetail = { originalEvent: event, delta }
       if (
         isDeltaInDirection(delta, toValue(options.swipeDirection), toValue(options.swipeThreshold))
@@ -583,7 +593,7 @@ export function useToastSwipe(options: UseToastSwipeOptions): UseToastSwipeRetur
   return {
     swipe: createPartSurface<Record<string, never>>(
       () => ({
-        style: disabled.value ? undefined : { userSelect: 'none', touchAction: 'none' },
+        style: disabled.value ? undefined : { touchAction: 'none' },
         onPointerdown,
         onPointermove,
         onPointerup,

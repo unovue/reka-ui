@@ -653,6 +653,7 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 - NavigationMenu context (`injectNavigationMenuContext()`): `modelValue`, `dir`, `disableClickTrigger`, `disableHoverTrigger` and `unmountOnHide` are read-only refs; `onItemSelect(value, reason?, event?)` and `onItemDismiss(reason?, event?)` return a boolean; `onTriggerEnter`, `onTriggerLeave` and `onContentLeave` take an optional event.
 - Toast root context (`injectToastRootContext()`): `onClose(event?, reason?)` takes an optional reason and returns a boolean. The `ToastProviderContext` settings refs are read-only, and `isFocusedToastEscapeKeyDownRef` is removed.
 - A cancelled toast timeout, or one a controlled parent ignores, restarts the timer with the full `duration`, so the toast asks again later; a cancelled swipe snaps back.
+- Toast text is selectable (#2071): `ToastRoot` no longer sets an inline `user-select: none` all the time. It sets `user-select: none` (and `-webkit-user-select: none`) inline only while a swipe is in progress, and removes it on release. The `swipe` surface of `useToastSwipe()` no longer includes `userSelect`; it keeps `touchAction: 'none'`.
 - Toast manager: `ToastObject.onClose(details)` receives the close details (`details.reason` is a `ToastOpenChangeReason` or `'imperative-action'`). `manager.close(id)` closes a rendered toast through its `ToastRoot`: `beforeUpdate:open` (cancellable) and `update:open` fire with `'imperative-action'`.
 - New and additive: `useNavigationMenu()`, `useNavigationMenuSub()` and the NavigationMenu part composables; `useToastProvider()`, `useToastRoot()`, `useToastTimer()`, `useToastSwipe()` and `useToastViewport()`.
 
@@ -664,6 +665,7 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 - `isFocusedToastEscapeKeyDownRef` in custom Toast parts.
 - Tests that count `update:modelValue` emits on a controlled `NavigationMenuRoot`, or `update:open` emits on a `ToastRoot` with a `toast` prop.
 - Snapshots of `NavigationMenuTrigger` rendered on the server or before mount.
+- Snapshots or tests of `ToastRoot`, or of an element bound to `useToastSwipe()`'s `swipe` surface, that expect `user-select: none` in the inline style; styles or UX that relied on toast text being unselectable.
 
 **Rewrite rules.**
 - `context.modelValue.value = x` on the NavigationMenu context: replace with `context.onItemSelect(x)` (or `context.onItemDismiss()` for `''`).
@@ -674,8 +676,10 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 - A `beforeUpdate:open` / `update:open` handler on a managed `ToastRoot` that should not react to `manager.close(id)`: skip `details.reason === 'imperative-action'`.
 - `isFocusedToastEscapeKeyDownRef`: remove the reference; nothing read it.
 - A snapshot that lacked the trigger `id` / `aria-controls`: update the snapshot.
+- A snapshot or test expecting `user-select: none` on a toast at rest: update it; the inline style now has only `touch-action: none` (plus the stacking variables).
+- A design that needs toast text to stay unselectable: add `user-select: none; -webkit-user-select: none;` to the `ToastRoot` class in CSS. Otherwise leave it; selectable text is the new default. If unsure: *ask*.
 
-**Verify.** Each navigation menu opens on hover and press and closes on Escape, outside press and link press as before; toasts time out, close, swipe away and pause on hover as before; the type-check passes.
+**Verify.** Each navigation menu opens on hover and press and closes on Escape, outside press and link press as before; toasts time out, close, swipe away and pause on hover as before, and their text can be selected; the type-check passes.
 
 ### 24. Auto-imports use per-component entry points
 
