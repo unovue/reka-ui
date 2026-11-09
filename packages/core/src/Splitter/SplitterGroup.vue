@@ -8,7 +8,7 @@ import type { ChangeEventDetails } from '@/shared'
 import type { Direction as ReadingDirection } from '@/shared/types'
 import { createContext, useDirection, useForwardElement, useId } from '@/shared'
 
-export interface SplitterGroupProps extends PrimitiveProps {
+export interface SplitterGroupProps extends Omit<PrimitiveProps, 'id'> {
   /** Group id; falls back to `useId` when not provided. */
   id?: string | null
   /** Unique id used to auto-save group arrangement via `localStorage`. Ignored while `layout` is controlled. */

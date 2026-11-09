@@ -70,7 +70,7 @@
   {
     'name': 'orientation',
     'description': '<p>The orientation of the slider.</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false,
     'default': '\'horizontal\''
   },
@@ -138,7 +138,7 @@
 | `inverted` | Whether the slider is visually inverted. | `boolean` | No | `false` |
 | `modelValue` | The color value (controlled). A string is parsed once; emitted values are always `Color` objects. | `string \| Color` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `orientation` | The orientation of the slider. | `"vertical" \| "horizontal"` | No | `"horizontal"` |
+| `orientation` | The orientation of the slider. | `"horizontal" \| "vertical"` | No | `"horizontal"` |
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `step` | Custom step value for increment/decrement. Defaults to the channel's natural step. | `number` | No | - |
 

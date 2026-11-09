@@ -14,11 +14,9 @@
     // For now, keep it disabled...
     "skipLibCheck": true
   },
-  "vueCompilerOptions": {
-    // TODO: enable; currently makes documentation codegen not ideal and might be a too-drastic change (#2043)
-    // Necessary to allow downstream users to enable and benefit from strict typechecking features of Vue
-    // "fallthroughAttributes": true
-  },
+  // No `fallthroughAttributes`: the emitted `.d.ts` would not change. Component props
+  // accept HTML attributes for downstream `strictTemplates` through `PrimitiveProps`
+  // (type-only, see `PrimitiveHTMLAttributes`), checked by `pnpm test:types`.
   "include": [
     "env.d.ts",
     "src/**/*",

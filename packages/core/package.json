@@ -684,6 +684,7 @@
     "watch": "tsdown --watch",
     "gen:exports": "tsx scripts/sync-exports.ts",
     "type-check": "vue-tsc -p tsconfig.check.json --noEmit",
+    "test:types": "vue-tsc -p test-types/strict-templates/tsconfig.json",
     "test:run": "vitest run",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",

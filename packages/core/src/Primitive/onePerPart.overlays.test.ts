@@ -103,7 +103,7 @@ describe('one component per part: overlays', () => {
     const wrapper = mount(defineComponent({
       setup: () => () => h(PopoverRoot, () => h(PopoverTrigger, {
         'class': 'trigger',
-        'aria-expanded': 'mixed',
+        'aria-expanded': 'true',
         'data-state': 'custom',
         'data-test': 'kept',
         'onClick': () => clicks++,

@@ -35,10 +35,10 @@ defineExpose(expose)
 
 <template>
   <ListboxGroup
+    v-bind="props"
     :id="id"
     :ref="forwardRef"
     :aria-labelledby="context.labelId"
-    v-bind="props"
   >
     <slot />
   </ListboxGroup>

@@ -986,6 +986,22 @@ Publishing a library or a copy-paste registry on top of Reka UI? You cannot load
 
 Pressing Tab in an open `SelectContent` now closes the select and moves focus to the next focusable element after `SelectTrigger`. Shift+Tab closes it and focuses the trigger. v2 swallowed Tab, so focus stayed in the open list. In both cases the highlighted item is not selected, unlike the native `<select>` ([#1228](https://github.com/unovue/reka-ui/issues/1228)). `update:open` reports the new `'focus-outside'` reason, which `SelectOpenChangeReason` now includes.
 
+## `strictTemplates` support
+
+Component props now type the common attributes and listeners a part passes to its element ([#2875](https://github.com/unovue/reka-ui/issues/2875)), so `<NavigationMenuRoot aria-label="Main">` type-checks with `vueCompilerOptions.strictTemplates` (or `checkUnknownProps` / `checkUnknownEvents`). They are typed only: they are not runtime props and still fall through to the element. Components that render no element of their own (`ConfigProvider`, the providers, `*Portal`, and roots such as `DialogRoot`, `PopoverRoot`, `TooltipRoot` or `HoverCardRoot`) do not type them, since there is no element to receive them. Exactly these are typed (the `PrimitiveHTMLAttributes` type):
+
+- every `aria-*` attribute;
+- `class`, `style`, `id`, `role`, `tabindex`, `title`, `lang`, `hidden`, `inert`, `draggable`, `spellcheck`, `autofocus`, `contenteditable`, `accesskey`, `enterkeyhint`, `inputmode`, `nonce`, `slot` and `part`;
+- the listeners `@click`, `@dblclick`, `@contextmenu`, `@keydown`, `@keyup`, `@focus`, `@blur`, `@focusin`, `@focusout`, `@pointerdown`, `@pointerup`, `@pointermove`, `@pointerenter`, `@pointerleave`, `@mouseenter`, `@mouseleave`, `@mousedown`, `@mouseup`, `@touchstart`, `@touchend`, `@wheel`, `@scroll`, `@copy`, `@paste`, `@animationend` and `@transitionend`.
+
+A component's own prop of the same name keeps its type (`dir`, `id`, `placeholder`, …), and an emit keeps its payload (`@select`, `@toggle`, `@change`, …).
+
+Anything else still falls through at runtime but is unknown to `strictTemplates`: other DOM listeners (`@input`, `@drag`, …) and element-specific attributes (`href`, `alt`, `type`, `name`, …). For those, set `checkUnknownEvents: false` / `checkUnknownProps: false` in `vueCompilerOptions`, or render your own element with `as-child` (or a wrapper component that declares them).
+
+`vue-tsc` checks `data-*` attributes on components under their camelized name (`data-state` as `dataState`), which no props type can declare. Add `"dataAttributes": ["data-*"]` to `vueCompilerOptions` to skip the check for them.
+
+Props interfaces built on a Reka props type gain these attributes too, still without runtime props. In a wrapper, read an attribute that no props type declares through `useAttrs()`, not `props`. Some components do declare one as a prop, such as `id` on `CheckboxRoot`, and that one stays on `props`. A `ref()` holding such props next to VNodes can hit TypeScript's "excessively deep" error. When the state never holds a ref (not in the initial value, such as `{ toasts: [] }`, and not in anything assigned into it later), annotate the variable instead: `const state: Ref<State> = ref(initial)`.
+
 ## NumberField updates while typing
 
 `NumberFieldRoot` now emits `update:modelValue` on each keystroke whose text parses to a new value (#1720, #2103). v2 emitted only when the input was blurred or Enter was pressed. The emitted value is the one blur would commit: clamped to `min`/`max` unless `allowInvalid` is set, and snapped to `step` only when `stepSnapping` is on (the default). A keystroke that parses to the current value (`12.` after `12`) emits nothing. The typed text itself is left alone until blur, Enter or a step (arrow keys, wheel, buttons) formats it, so typing `1.` does not jump back to `1`. Emptying the input emits `undefined`. The new reasons are `'input-change'` and `'input-clear'`.

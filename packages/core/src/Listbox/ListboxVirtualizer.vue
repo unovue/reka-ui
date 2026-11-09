@@ -1,5 +1,5 @@
 <script lang="ts">
-export interface ListboxVirtualizerProps<T extends AcceptableValue = AcceptableValue> {
+export interface ListboxVirtualizerProps<T extends AcceptableValue = AcceptableValue> extends /* @vue-ignore */ PrimitiveHTMLAttributes {
   /**
    * List of items, or, with `grouped`, groups of items (`{ label, options, disabled? }`).
    * Groups are flattened to rows: a header row rendered by the `group` slot, then
@@ -21,6 +21,7 @@ export interface ListboxVirtualizerProps<T extends AcceptableValue = AcceptableV
 import type { VirtualItem, Virtualizer } from '@tanstack/vue-virtual'
 import type { Ref } from 'vue'
 import type { VirtualGroup } from './useListVirtualizer'
+import type { PrimitiveHTMLAttributes } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
 import { useParentElement } from '@vueuse/core'
 import { refAutoReset } from '@vueuse/shared'

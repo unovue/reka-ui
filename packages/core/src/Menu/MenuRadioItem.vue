@@ -49,8 +49,8 @@ defineExpose(expose)
 <template>
   <MenuItem
     :ref="forwardRef"
-    role="menuitemradio"
     v-bind="forwarded"
+    role="menuitemradio"
     :aria-checked="modelValue"
     :data-state="selectionState(modelValue)"
     @select="

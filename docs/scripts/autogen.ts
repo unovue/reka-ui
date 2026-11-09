@@ -22,6 +22,10 @@ const CODE_SPAN_SPLIT_RE = /(`[^`]*`)/
 const LT_RE = /</g
 const PIPE_RE = /\|/g
 const NEWLINE_RE = /\n/g
+// Vue's DOM types (`HTMLAttributes`), in a declaration file path.
+const VUE_DOM_TYPES_RE = /[/\\]@vue[/\\]runtime-dom[/\\]/
+// `PrimitiveHTMLAttributes`, which adds a few attributes Vue's `HTMLAttributes` lacks.
+const PRIMITIVE_FILE_RE = /[/\\]src[/\\]Primitive[/\\]Primitive\.ts$/
 
 const md = new MarkdownIt()
 md.use(transformJSDocLinks)
@@ -271,10 +275,18 @@ function stripOptionalUndefined(type: string): string {
   return kept.length ? kept.join(' | ') : type.trim()
 }
 
+function isHTMLAttribute(prop: PropertyMeta) {
+  if (prop.name === 'as' || prop.name === 'asChild')
+    return false
+  const declarations = prop.getDeclarations()
+  return declarations.length > 0 && declarations.every(({ file }) => VUE_DOM_TYPES_RE.test(file) || PRIMITIVE_FILE_RE.test(file))
+}
+
 function parseMeta(meta: ComponentMeta, getEventDescription: (name: string) => string | undefined) {
   const props = meta.props
-  // Exclude global props
-    .filter(prop => !prop.global)
+  // Exclude global props, and the HTML attributes `PrimitiveProps` types (type-only,
+  // they fall through): those declared by Vue's `HTMLAttributes` alone.
+    .filter(prop => !prop.global && !isHTMLAttribute(prop))
     .map((prop) => {
       let defaultValue = prop.default
       let type = prop.type

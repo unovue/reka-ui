@@ -108,7 +108,7 @@
   {
     'name': 'submitMode',
     'description': '<p>The submit event of the editable field</p>\n',
-    'type': '\'none\' | \'blur\' | \'enter\' | \'both\'',
+    'type': '\'none\' | \'both\' | \'enter\' | \'blur\'',
     'required': false,
     'default': '\'blur\''
   }
@@ -211,7 +211,7 @@
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | `false` |
 | `selectOnFocus` | Whether to select the text in the input when it is focused. | `boolean` | No | `false` |
 | `startWithEditMode` | Whether to start with the edit mode active | `boolean` | No | - |
-| `submitMode` | The submit event of the editable field | `"none" \| "blur" \| "enter" \| "both"` | No | `"blur"` |
+| `submitMode` | The submit event of the editable field | `"none" \| "both" \| "enter" \| "blur"` | No | `"blur"` |
 
 **Events**
 

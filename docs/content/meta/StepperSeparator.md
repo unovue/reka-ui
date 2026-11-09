@@ -24,7 +24,7 @@
   {
     'name': 'orientation',
     'description': '<p>Orientation of the component.</p>\n<p>Either <code>vertical</code> or <code>horizontal</code>. Defaults to <code>horizontal</code>.</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false
   }
 ]" />
@@ -39,6 +39,6 @@
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `decorative` | Whether or not the component is purely decorative. \<br>When `true`, accessibility-related attributes are updated so that that the rendered element is removed from the accessibility tree. | `boolean` | No | - |
-| `orientation` | Orientation of the component. Either `vertical` or `horizontal`. Defaults to `horizontal`. | `"vertical" \| "horizontal"` | No | - |
+| `orientation` | Orientation of the component. Either `vertical` or `horizontal`. Defaults to `horizontal`. | `"horizontal" \| "vertical"` | No | - |
 
 </llm-only>

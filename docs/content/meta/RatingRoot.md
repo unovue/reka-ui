@@ -73,7 +73,7 @@
   {
     'name': 'orientation',
     'description': '<p>The orientation of the component.</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false,
     'default': '\'horizontal\''
   },
@@ -136,7 +136,7 @@
 | `loop` | When `true`, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
 | `modelValue` | The controlled rating value. Can be bound with `v-model`. | `number` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `orientation` | The orientation of the component. | `"vertical" \| "horizontal"` | No | `"horizontal"` |
+| `orientation` | The orientation of the component. | `"horizontal" \| "vertical"` | No | `"horizontal"` |
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `step` | The granularity each rating item is divided into. | `1 \| 0.5 \| 0.25 \| 0.1` | No | `1` |
 

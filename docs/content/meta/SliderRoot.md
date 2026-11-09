@@ -78,7 +78,7 @@
   {
     'name': 'orientation',
     'description': '<p>The orientation of the slider.</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false,
     'default': '\'horizontal\''
   },
@@ -148,7 +148,7 @@
 | `minStepsBetweenThumbs` | The minimum permitted steps between multiple thumbs. | `number` | No | `0` |
 | `modelValue` | The controlled value of the slider. Can be bind as `v-model`. | `number[] \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `orientation` | The orientation of the slider. | `"vertical" \| "horizontal"` | No | `"horizontal"` |
+| `orientation` | The orientation of the slider. | `"horizontal" \| "vertical"` | No | `"horizontal"` |
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `step` | The stepping interval. | `number` | No | `1` |
 | `thumbAlignment` | The alignment of the slider thumb.  `contain`: thumbs will be contained within the bounds of the track. `overflow`: thumbs will not be bound by the track. No extra offset will be added. | `"contain" \| "overflow"` | No | `"contain"` |

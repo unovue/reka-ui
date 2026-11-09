@@ -67,8 +67,8 @@ defineExpose(expose)
 <template>
   <MenuItem
     :ref="forwardRef"
-    role="menuitemcheckbox"
     v-bind="forwarded"
+    role="menuitemcheckbox"
     :aria-checked="isIndeterminate(modelValue) ? 'mixed' : modelValue"
     :data-state="selectionState(modelValue)"
     @select="onSelect"
