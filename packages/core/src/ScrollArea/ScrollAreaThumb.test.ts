@@ -1,4 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
+import type { Mock } from 'vitest'
+import type { Ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
@@ -10,10 +12,10 @@ import ScrollAreaViewport from './ScrollAreaViewport.vue'
 describe('scroll area thumb frame loop', () => {
   let wrapper: VueWrapper
   let viewport: HTMLElement
-  let onThumbPositionChange: ReturnType<typeof vi.fn>
+  let onThumbPositionChange: Mock<() => void>
   let frames: Map<number, FrameRequestCallback>
   let frameId: number
-  let viewportKey: ReturnType<typeof ref<number>>
+  let viewportKey: Ref<number>
   let onViewportChange: (viewport: HTMLElement | null) => void
 
   beforeEach(async () => {
