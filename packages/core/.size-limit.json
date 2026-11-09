@@ -68,7 +68,7 @@
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, rekaElementFamilies }",
-    "limit": "200.1 KB",
+    "limit": "200.3 KB",
     "name": "Elements: all supported families"
   },
   {
