@@ -1,9 +1,8 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h } from 'vue'
-import { sleep } from '@/test'
 import ScrollAreaCorner from './ScrollAreaCorner.vue'
 import ScrollAreaRoot from './ScrollAreaRoot.vue'
 import ScrollAreaScrollbar from './ScrollAreaScrollbar.vue'
@@ -33,8 +32,13 @@ describe('given default ScrollArea', () => {
 
   describe('on hover', () => {
     beforeEach(async () => {
+      vi.useFakeTimers()
       await wrapper.trigger('pointerenter')
-      await sleep(100)
+      await vi.advanceTimersByTimeAsync(100)
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
     })
 
     it('should render scrollbar', () => {
@@ -87,9 +91,14 @@ describe('given prop:type="scroll" ScrollArea', () => {
 
   describe('on scroll', () => {
     beforeEach(async () => {
+      vi.useFakeTimers()
       Object.defineProperty(HTMLElement.prototype, 'scrollTop', { configurable: true, value: 40 })
       await wrapper.find('[data-reka-scroll-area-viewport]').trigger('scroll')
-      await sleep(10)
+      await vi.advanceTimersByTimeAsync(10)
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
     })
 
     it('should render scrollbar', () => {
@@ -143,28 +152,31 @@ describe('given prop:type="hover" ScrollArea with both scrollbars and a corner',
     Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, value: 2000 })
     Object.defineProperty(HTMLElement.prototype, 'scrollWidth', { configurable: true, value: 2000 })
 
+    // The hide delay (`scrollHideDelay`, 600 ms) is a timer: drive it.
+    vi.useFakeTimers()
     wrapper = mount(BothScrollArea, { attachTo: document.body, props: { type: 'hover' } })
   })
 
   afterEach(() => {
     globalThis.ResizeObserver = originalResizeObserver
     wrapper?.unmount()
+    vi.useRealTimers()
   })
 
   it('keeps the corner in sync with the scrollbars across repeated hover cycles', async () => {
     // 1st cycle: enter -> corner appears
     await wrapper.trigger('pointerenter')
-    await sleep(100)
+    await vi.advanceTimersByTimeAsync(100)
     expect(wrapper.find('[data-testid="corner-content"]').exists()).toBe(true)
 
     // leave -> scrollbars hide and the corner is removed alongside them
     await wrapper.trigger('pointerleave')
-    await sleep(700)
+    await vi.advanceTimersByTimeAsync(700)
     expect(wrapper.find('[data-testid="corner-content"]').exists()).toBe(false)
 
     // 2nd cycle: enter again -> corner must re-appear (regression #2669)
     await wrapper.trigger('pointerenter')
-    await sleep(100)
+    await vi.advanceTimersByTimeAsync(100)
     expect(wrapper.find('[data-testid="corner-content"]').exists()).toBe(true)
   })
 })
@@ -190,6 +202,7 @@ describe('given prop:type="always" ScrollArea thumb state', () => {
 
   afterEach(() => {
     globalThis.ResizeObserver = originalResizeObserver
+    vi.useRealTimers()
   })
 
   it.each([
@@ -199,8 +212,9 @@ describe('given prop:type="always" ScrollArea thumb state', () => {
     Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, value: content })
     Object.defineProperty(HTMLElement.prototype, 'scrollWidth', { configurable: true, value: content })
 
+    vi.useFakeTimers()
     const wrapper = mount(ScrollArea, { attachTo: document.body, props: { type: 'always' } })
-    await sleep(100)
+    await vi.advanceTimersByTimeAsync(100)
 
     expect(wrapper.find('[data-orientation="vertical"] > div').attributes('data-state')).toBe(state)
     wrapper.unmount()

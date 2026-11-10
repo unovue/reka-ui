@@ -15,7 +15,14 @@ beforeAll(() => {
   globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} } as any
 })
 enableAutoUnmount(afterEach)
-beforeEach(() => { document.body.innerHTML = '' })
+beforeEach(() => {
+  document.body.innerHTML = ''
+  // The blur reset runs on a timer after the close: drive it.
+  vi.useFakeTimers()
+})
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 interface Item { value: any, text: string }
 const items: Item[] = [{ value: null, text: 'None' }, { value: '', text: 'Empty' }, { value: 'a', text: 'Apple' }]
@@ -34,7 +41,7 @@ async function pick(text: string) {
   await open()
   option(text).click()
   await flushPromises()
-  await new Promise(r => setTimeout(r, 10))
+  await vi.advanceTimersByTimeAsync(10)
   await flushPromises()
 }
 
@@ -369,7 +376,7 @@ async function escape() {
   const stop = vi.spyOn(event, 'stopPropagation')
   input().dispatchEvent(event)
   await flushPromises()
-  await new Promise(r => setTimeout(r, 10))
+  await vi.advanceTimersByTimeAsync(10)
   await flushPromises()
   return stop
 }

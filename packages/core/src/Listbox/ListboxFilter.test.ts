@@ -1,7 +1,7 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import type { ListboxFilterFunction, ListboxFilterState } from './useListbox'
 import { mount } from '@vue/test-utils'
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { createSSRApp, defineComponent, effectScope, h, nextTick, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
@@ -430,7 +430,13 @@ describe('given a filtered Listbox driven through the context', () => {
     document.body.innerHTML = ''
   })
 
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('skips filtered-out items in typeahead', async () => {
+    // The typeahead search resets 1 s after the last key: drive that timer.
+    vi.useFakeTimers()
     const { wrapper, probe, content } = mountListbox()
     await settle()
     probe.value.context.setFilterSearch('an')
@@ -441,7 +447,7 @@ describe('given a filtered Listbox driven through the context', () => {
     // "Apple" starts with "a" but is filtered out: typeahead stays put.
     await content.trigger('keydown', { key: 'a' })
     expect(highlightedText(wrapper)).toBe('Banana')
-    await new Promise(resolve => setTimeout(resolve, 1100))
+    await vi.advanceTimersByTimeAsync(1100)
     await content.trigger('keydown', { key: 'm' })
     expect(highlightedText(wrapper)).toBe('Mango')
   })

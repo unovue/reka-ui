@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { flushPromises, mount } from '@vue/test-utils'
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, nextTick } from 'vue'
 import { CheckboxGroupRoot, CheckboxRoot } from '@/Checkbox'
@@ -239,6 +239,11 @@ describe('given a Field with a custom validate function', () => {
   })
 
   it('renders an async validation message once it resolves', async () => {
+    // The validator resolves after a timer: drive it.
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const validate = (value: unknown) =>
       new Promise<string | null>(resolve => setTimeout(resolve, 10, value ? 'Server says no' : null))
 
@@ -259,7 +264,7 @@ describe('given a Field with a custom validate function', () => {
 
     expect(wrapper.text()).not.toContain('Server says no')
 
-    await new Promise(resolve => setTimeout(resolve, 20))
+    await vi.advanceTimersByTimeAsync(20)
     await nextTick()
 
     expect(wrapper.text()).toContain('Server says no')

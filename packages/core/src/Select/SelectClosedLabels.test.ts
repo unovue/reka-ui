@@ -13,11 +13,18 @@ beforeAll(() => {
   globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} } as any
 })
 enableAutoUnmount(afterEach)
-beforeEach(() => { document.body.innerHTML = '' })
+beforeEach(() => {
+  document.body.innerHTML = ''
+  // The idle render and the 1 s typeahead reset are timers: drive them.
+  vi.useFakeTimers()
+})
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 async function settle() {
   await flushPromises()
-  await new Promise(r => setTimeout(r, 80))
+  await vi.advanceTimersByTimeAsync(80)
   await flushPromises()
 }
 const valueText = () => document.querySelector('[data-testid=value]')!.textContent

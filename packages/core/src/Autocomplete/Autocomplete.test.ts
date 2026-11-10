@@ -1,6 +1,6 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick, ref } from 'vue'
 import { handleSubmit, sleep } from '@/test'
@@ -69,6 +69,11 @@ describe('given default Autocomplete', () => {
     })
 
     it('should keep typed text as modelValue even when resetSearchTermOnBlur is true', async () => {
+      // The blur reset runs on a timer after the close: drive it.
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
       // In Autocomplete, typing immediately sets the modelValue, so reset only clears
       // the internal filter state — the input still reflects the modelValue.
       document.body.innerHTML = ''
@@ -79,7 +84,7 @@ describe('given default Autocomplete', () => {
       newInput.element.value = 'Testing'
       await newInput.trigger('input')
       await newInput.trigger('keydown', { key: 'Escape' })
-      await sleep(50)
+      await vi.advanceTimersByTimeAsync(50)
       // Input should still show the modelValue (typed text IS the value)
       expect(newInput.element.value).toBe('Testing')
     })

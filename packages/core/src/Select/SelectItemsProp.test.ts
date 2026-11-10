@@ -12,11 +12,18 @@ beforeAll(() => {
   globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} } as any
 })
 enableAutoUnmount(afterEach)
-beforeEach(() => { document.body.innerHTML = '' })
+beforeEach(() => {
+  document.body.innerHTML = ''
+  // The idle render and the 1 s typeahead reset are timers: drive them.
+  vi.useFakeTimers()
+})
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 async function settle() {
   await flushPromises()
-  await new Promise(r => setTimeout(r, 120))
+  await vi.advanceTimersByTimeAsync(120)
   await flushPromises()
 }
 const valueText = () => document.querySelector('[data-testid=value]')!.textContent
@@ -26,7 +33,7 @@ async function type(key: string) {
   trigger().focus()
   trigger().dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
   await settle()
-  await new Promise(r => setTimeout(r, 1100))
+  await vi.advanceTimersByTimeAsync(1100)
 }
 
 function make(props: () => Record<string, unknown>, children: () => { value: any, text: string }[], model = ref<any>(undefined)) {
@@ -42,7 +49,7 @@ function make(props: () => Record<string, unknown>, children: () => { value: any
   return model
 }
 
-describe('items prop', { timeout: 15000 }, () => {
+describe('items prop', () => {
   it('record shape: label, native options, typeahead', async () => {
     const model = make(() => ({ items: { a: 'Apple', b: 'Banana' } }), () => [{ value: 'a', text: 'Apple' }, { value: 'b', text: 'Banana' }], ref('a'))
     await settle()

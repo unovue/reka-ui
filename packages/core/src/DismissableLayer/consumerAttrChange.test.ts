@@ -1,5 +1,5 @@
 import { render } from '@testing-library/vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, shallowRef } from 'vue'
 import { DialogContent, DialogDescription, DialogPortal, DialogRoot, DialogTitle } from '@/Dialog'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
@@ -12,7 +12,7 @@ import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '@/Po
 // trap's discards its observer's pending records.
 
 const attr = shallowRef('a')
-const settle = () => new Promise(resolve => setTimeout(resolve, 20))
+const settle = () => vi.advanceTimersByTimeAsync(20)
 
 const parts = {
   Popover: () => h(PopoverRoot, { defaultOpen: true }, () => [
@@ -36,7 +36,13 @@ async function mountOpen(part: () => ReturnType<typeof h>) {
 const outside = () => document.querySelector('#outside') as HTMLElement
 const isOpen = () => document.querySelector('[data-test=content]')?.getAttribute('data-state') === 'open'
 
+beforeEach(() => {
+  // The outside listeners arm a macrotask after mount: drive it.
+  vi.useFakeTimers()
+})
+
 afterEach(() => {
+  vi.useRealTimers()
   vi.restoreAllMocks()
 })
 

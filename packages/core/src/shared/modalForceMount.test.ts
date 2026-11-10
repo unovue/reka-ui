@@ -26,6 +26,12 @@ enableAutoUnmount(afterEach)
 
 beforeEach(() => {
   document.body.innerHTML = ''
+  // The backdrop and the scroll lock are applied a macrotask later: drive it.
+  vi.useFakeTimers()
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 function hasBackdrop() {
@@ -38,7 +44,7 @@ function isScrollLocked() {
 
 async function settle() {
   await flushPromises()
-  await new Promise(resolve => setTimeout(resolve, 20))
+  await vi.advanceTimersByTimeAsync(20)
   await flushPromises()
 }
 
