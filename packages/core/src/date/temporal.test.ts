@@ -402,8 +402,9 @@ describe('public surface of reka-ui/date', () => {
       expect(dateEntry).not.toHaveProperty(name)
   })
 
-  it('keeps `isCalendarDateTime` as a deprecated alias', () => {
-    expect(dateEntry.isCalendarDateTime).toBe(dateEntry.isPlainDateTime)
+  it('exports `isPlainDateTime` and no `isCalendarDateTime` alias', () => {
+    expect(dateEntry.isPlainDateTime).toBeTypeOf('function')
+    expect(dateEntry).not.toHaveProperty('isCalendarDateTime')
     expect(dateEntry.isWeekend).toBeTypeOf('function')
   })
 })

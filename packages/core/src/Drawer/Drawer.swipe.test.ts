@@ -5,7 +5,7 @@ import { cleanup, render } from '@testing-library/vue'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import {
-  DrawerContent,
+  DrawerPopup,
   DrawerPortal,
   DrawerRoot,
   DrawerTitle,
@@ -114,7 +114,7 @@ function renderDrawer(options: {
   const onBeforeSnapPoint = vi.fn(options.onBeforeSnapPoint)
   const onSnapPoint = vi.fn()
   const Test = defineComponent({
-    components: { DrawerRoot, DrawerPortal, DrawerContent, DrawerTitle },
+    components: { DrawerRoot, DrawerPortal, DrawerPopup, DrawerTitle },
     setup() {
       const open = ref(true)
       function onBeforeUpdate(value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason>) {
@@ -138,9 +138,9 @@ function renderDrawer(options: {
         @update:snap-point="onSnapPoint"
       >
         <DrawerPortal>
-          <DrawerContent>
+          <DrawerPopup>
             <DrawerTitle>Swipe</DrawerTitle>
-          </DrawerContent>
+          </DrawerPopup>
         </DrawerPortal>
       </DrawerRoot>
     `,
@@ -283,7 +283,7 @@ describe('drawer swipe close with a controlled snap point', () => {
     const open = ref(true)
     const requested: (DrawerSnapPoint | null)[] = []
     const Test = defineComponent({
-      components: { DrawerRoot, DrawerPortal, DrawerContent, DrawerTitle },
+      components: { DrawerRoot, DrawerPortal, DrawerPopup, DrawerTitle },
       setup: () => ({
         snapPoint,
         open: controlOpen ? open : undefined,
@@ -306,9 +306,9 @@ describe('drawer swipe close with a controlled snap point', () => {
           @update:open="onOpen"
         >
           <DrawerPortal>
-            <DrawerContent>
+            <DrawerPopup>
               <DrawerTitle>Swipe</DrawerTitle>
-            </DrawerContent>
+            </DrawerPopup>
           </DrawerPortal>
         </DrawerRoot>
       `,

@@ -1,6 +1,6 @@
 <script setup>
 // Drawer: N instances of a typical composition (closed/default state)
-import { DrawerClose, DrawerContent, DrawerDescription, DrawerGrabber, DrawerOverlay, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from 'reka-ui'
+import { DrawerBackdrop, DrawerClose, DrawerDescription, DrawerGrabber, DrawerPopup, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from 'reka-ui'
 
 defineProps({ n: { type: Number, default: 100 } })
 </script>
@@ -16,13 +16,13 @@ defineProps({ n: { type: Number, default: 100 } })
         Open
       </DrawerTrigger>
       <DrawerPortal>
-        <DrawerOverlay />
-        <DrawerContent>
+        <DrawerBackdrop />
+        <DrawerPopup>
           <DrawerGrabber />
           <DrawerTitle>Title</DrawerTitle>
           <DrawerDescription>Description</DrawerDescription>
           <DrawerClose>Close</DrawerClose>
-        </DrawerContent>
+        </DrawerPopup>
       </DrawerPortal>
     </DrawerRoot>
   </div>

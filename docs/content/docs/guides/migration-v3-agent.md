@@ -179,13 +179,13 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 | `MonthPicker.*`, `MonthRangePicker.*`, `YearPicker.*`, `YearRangePicker.*` from `reka-ui/namespaced` | `Calendar.*`, `RangeCalendar.*` |
 | `isMonthDisabled`, `isYearDisabled` | `isDateDisabled` |
 | `isMonthUnavailable`, `isYearUnavailable` | `isDateUnavailable` |
-| `maximumMonths`, `maximumYears` | `maximumLength` |
+| `maximumDays`, `maximumMonths`, `maximumYears` | `maximumLength` |
 | `<…Cell :date="x">` | `<…Cell :value="x">` |
 | `<…CellTrigger :day="x" :month="page.value">` | `<…CellTrigger :value="x">`, and `:value="page.value"` on the enclosing `…Grid` |
 | `<MonthPickerCellTrigger :month="x">`, `<YearPickerCellTrigger :year="x">` | `<CalendarCellTrigger :value="x">` |
 | cell trigger slot props `dayValue`, `monthValue`, `yearValue` | `cellValue` |
 
-**How to find it.** Search for `MonthPicker`, `MonthRangePicker`, `YearPicker`, `YearRangePicker` (imports, templates, types, auto-import or resolver configuration), and for every `CalendarCell`, `CalendarCellTrigger`, `CalendarGrid`, `RangeCalendarCell`, `RangeCalendarCellTrigger`, `RangeCalendarGrid`, `DatePickerCell`, `DatePickerCellTrigger`, `DatePickerGrid`, `DateRangePickerCell`, `DateRangePickerCellTrigger` and `DateRangePickerGrid` in templates, including the namespaced forms (`Calendar.Cell`, …). Also search for `maximumMonths`, `maximum-months`, `maximumYears`, `maximum-years`, `dayValue`, `monthValue`, `yearValue`, `isMonth`, `isYear`, and for `data-selected`, `data-selection-start`, `data-selection-end`, `data-highlighted-start` and `data-highlighted-end` in selectors and tests.
+**How to find it.** Search for `MonthPicker`, `MonthRangePicker`, `YearPicker`, `YearRangePicker` (imports, templates, types, auto-import or resolver configuration), and for every `CalendarCell`, `CalendarCellTrigger`, `CalendarGrid`, `RangeCalendarCell`, `RangeCalendarCellTrigger`, `RangeCalendarGrid`, `DatePickerCell`, `DatePickerCellTrigger`, `DatePickerGrid`, `DateRangePickerCell`, `DateRangePickerCellTrigger` and `DateRangePickerGrid` in templates, including the namespaced forms (`Calendar.Cell`, …). Also search for `maximumDays`, `maximum-days`, `maximumMonths`, `maximum-months`, `maximumYears`, `maximum-years`, `dayValue`, `monthValue`, `yearValue`, `isMonth`, `isYear`, and for `data-selected`, `data-selection-start`, `data-selection-end`, `data-highlighted-start` and `data-highlighted-end` in selectors and tests.
 
 **Rewrite rules.**
 
@@ -209,7 +209,7 @@ Converted so far: `SwitchRoot`, `TabsRoot`, `Toggle`, `ToggleGroupRoot`, `Checkb
 
 - In existing day calendars, date pickers and date range pickers: replace `:date` on the cell and `:day` on the cell trigger with `:value`, delete `:month` from the cell trigger, and add `:value` with the same expression that `:month` had (usually `month.value`) to the enclosing grid part. Do not skip the grid: without `value` it cannot mark the days of the neighbouring months as `data-outside-view`.
 - A matcher renamed to `isDateDisabled` or `isDateUnavailable` keeps its body: in a month or year picker it is still called with a date inside the month or year being tested. Matchers are called only for cells at the `granularity`, with that unit (`'day'`, `'month'` or `'year'`) as a second argument. The views coarser than the granularity never call them: those cells are disabled only by `minValue`, `maxValue` and `disabled`. Do not add unit checks to existing matchers.
-- `maximumMonths` and `maximumYears` become `maximumLength`, counted in units of the `granularity`. `maximumDays` on a day range calendar still works as a deprecated alias; rename it to `maximumLength` as well.
+- `maximumMonths` and `maximumYears` become `maximumLength`, counted in units of the `granularity`. `maximumDays` is removed from `RangeCalendarRoot`, `DateRangePickerRoot` and `useDateRangePicker()`: rename `maximumDays` / `:maximum-days` to `maximumLength` / `:maximum-length` with the same value (a day calendar counts days).
 - `data-selected`, `data-selection-start`, `data-selection-end`, `data-highlighted-start` and `data-highlighted-end` are now present with an empty value instead of `"true"`. Presence selectors (`[data-selected]`, `data-[selected]:`) need no change. Rewrite value selectors and assertions: `[data-selected='true']` → `[data-selected]`, `toHaveAttribute('data-selected', 'true')` → `toHaveAttribute('data-selected')`.
 - `update:modelValue`, `update:placeholder` and `update:view` on `CalendarRoot` and `RangeCalendarRoot`, and `update:view` on `DatePickerRoot` and `DateRangePickerRoot`, follow section 2.
 - A `nextPage` / `prevPage` function on the root keeps working unchanged. It is used only in the `granularity` view, with that view as an extra second argument; the coarser views page by their default step.
@@ -361,7 +361,7 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 
 **What changed.**
 - Modal layers (modal `Dialog`, `AlertDialog`, `Drawer`, `Popover`, `DropdownMenu`, `ContextMenu`, an open `Select`, any content with `disableOutsidePointerEvents`) no longer set `pointer-events: none` on `<body>`. Each renders a transparent `position: fixed` `<div data-reka-internal-backdrop role="presentation">` right below itself instead, with the `z-index` of the layer (or of its positioning wrapper / fixed container). A press on it closes the layer. Page content with a lower `z-index` (a sticky header) is covered; only elements in the root stacking context with a higher `z-index` than the layer stay clickable. A non-portaled layer inside a `transform` / `filter` / `contain: paint` / `will-change: transform` / `backdrop-filter` ancestor gets its backdrop in `<body>`, with a hole over the layer.
-- A modal `Dialog` / `Drawer` closes only on a press on its internal backdrop, its `DialogOverlay` / `DrawerOverlay`, or a container around its content, not on a press on an element stacked above the backdrop.
+- A modal `Dialog` / `Drawer` closes only on a press on its internal backdrop, its `DialogOverlay` / `DrawerBackdrop`, or a container around its content, not on a press on an element stacked above the backdrop.
 - A modal `Popover` / `DropdownMenu` trigger and the `Combobox` input are cut out of the backdrop and stay interactive.
 - A modal `ContextMenu` trigger area is NOT cut out. A left click on it while the menu is open only closes the menu; it no longer reaches the trigger or its children (v2 kept `pointer-events: auto` on the trigger). A right click there closes the menu and re-opens it at the new point (`update:open` emits `false`, then `true`). `modal: false` keeps the trigger area interactive.
 - The scroll lock hides the overflow of the page's scroll container and keeps the gutter with `scrollbar-gutter: stable` (or pins `<body>`'s size and sets `data-reka-scroll-locked` on `<html>` where that is unsupported). It no longer sets `padding-right` / `margin-right` on `<body>` or `--scrollbar-width` on `<html>`, no longer intercepts `touchmove` on iOS, and applies a macrotask after the overlay opens.
@@ -373,7 +373,7 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 - `--scrollbar-width` in CSS, SCSS, Tailwind arbitrary values (`[--scrollbar-width]`, `var(--scrollbar-width)`) and inline styles.
 - `body.style.overflow`, `body.style.paddingRight`, `body.style.marginRight` in tests.
 - `scrollBody` on `ConfigProvider`.
-- Modal `DialogRoot` / `AlertDialogRoot` / `DrawerRoot` usages that render no `DialogOverlay` / `AlertDialogOverlay` / `DrawerOverlay`.
+- Modal `DialogRoot` / `AlertDialogRoot` / `DrawerRoot` usages that render no `DialogOverlay` / `AlertDialogOverlay` / `DrawerBackdrop` (v2 `DrawerOverlay`).
 - Tests that dismiss a modal dialog by firing `pointerdown` / clicking on an element other than the overlay or `document.body`.
 - `ContextMenuRoot` usages (without `:modal="false"`) whose `ContextMenuTrigger` wraps an element with its own left-click action (a link, a card), and code or tests that rely on a left click on that trigger area reaching it while the menu is open, or on `update:open` not emitting for a right click there.
 
@@ -415,7 +415,7 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 ### 16. Combobox and Autocomplete
 
 **What changed.**
-- Filtering moved onto the shared Listbox filter. `filter` on `ComboboxRoot` / `AutocompleteRoot` takes `(text, search, value) => boolean` or `null`; omitted, items match with `useFilter`'s `contains` (v2 behavior). `ignoreFilter` is a deprecated alias for `:filter="null"`.
+- Filtering moved onto the shared Listbox filter. `filter` on `ComboboxRoot` / `AutocompleteRoot` takes `(text, search, value) => boolean` or `null`; omitted, items match with `useFilter`'s `contains` (v2 behavior). `ignoreFilter` is removed (the prop on both roots and the `useComboboxRoot()` option): `:filter="null"` replaces it.
 - A `ComboboxVirtualizer` / `AutocompleteVirtualizer` now filters its `options` with the root's filter, matching `textContent(option)` or the option's string form. In v2 filtering was off in a virtualized combobox.
 - A filtered-out item stays mounted and renders nothing (v2 unmounted it).
 - The root ref's `filtered` is `{ search, active, count }` (v2: `{ count, items, groups }`).
@@ -441,7 +441,7 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 - Empty-string checks and initial values on a `ComboboxRoot` model: `grep -rnE "ref(<[^>]*>)?\\(''\\)|= ''|=== ''|!== ''|default-value=\"\"" --include='*.vue' --include='*.ts' src`. Skip `ComboboxInput` / `AutocompleteRoot` text models. Also sentinel values used as a "none" item to work around the v2 throw (`'__none__'`, `'none'`, `'all'`).
 
 **Rewrite rules.**
-- `ignore-filter` / `:ignore-filter="true"`: replace with `:filter="null"`. `:ignore-filter="flag"`: replace with `:filter="flag ? null : undefined"`.
+- `ignore-filter` / `:ignore-filter="true"`: replace with `:filter="null"`. `:ignore-filter="flag"`: replace with `:filter="flag ? null : undefined"`, or `:filter="flag ? null : myFilter"` if the root also had `:filter="myFilter"`. `:ignore-filter="false"`: delete it. Required: the prop no longer exists and would fall through as an attribute.
 - A virtualized combobox whose `options` are filtered by hand from the input text: add `:filter="null"` to its root (keeps the v2 behavior exactly). Do not remove the hand-written filtering unless the developer asks.
 - A virtualized combobox whose `options` are NOT filtered by hand: it now filters. If the options are objects and there is no `text-content`, add `:text-content` returning the option's label. *Ask* if no label property is obvious.
 - `rootRef.value.filtered.count`: leave unchanged. Reads of `filtered.items` or `filtered.groups`: *ask*; there is no per-item equivalent.
@@ -784,8 +784,8 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 ### 28. Drawer contract and part names, Tree custom children, Combobox blur reset and multiple reset on select, Autocomplete item values
 
 **What changed.**
-- `DrawerRoot` follows the change-event contract: the new `beforeUpdate:open` fires before an open change and `details.cancel()` there keeps the drawer as it is; `update:open(value, details)` now fires after the change, so `details.cancel()` inside it has no effect (a development warning says so). `update:snapPoint` gains a `details` argument and the new `beforeUpdate:snapPoint` can cancel a snap; cancelling the `null` snap-point request from a swipe past the last point keeps the drawer open, and a cancelled swipe close, or one a controlled `open` ignores, restores the previous snap point. Closing resets the snap point to `defaultSnapPoint` (else the first snap point). A controlled `snapPoint` latches. `DrawerOpenChangeDetails` is a deprecated alias of `ChangeEventDetails<DrawerOpenChangeReason>`.
-- `DrawerPopup` / `DrawerBackdrop` (and `DrawerPopupProps`, `DrawerPopupEmits`, `DrawerBackdropProps`) are the canonical names; `DrawerContent` / `DrawerOverlay` and their types are deprecated aliases. `DrawerHandle` is renamed `DrawerGrabber` (`DrawerHandleProps` → `DrawerGrabberProps`, namespaced `Drawer.Handle` → `Drawer.Grabber`, `useDrawer().handle` → `.grabber`, `DrawerHandleState` → `DrawerGrabberState`); there is no `DrawerHandle` export.
+- `DrawerRoot` follows the change-event contract: the new `beforeUpdate:open` fires before an open change and `details.cancel()` there keeps the drawer as it is; `update:open(value, details)` now fires after the change, so `details.cancel()` inside it has no effect (a development warning says so). `update:snapPoint` gains a `details` argument and the new `beforeUpdate:snapPoint` can cancel a snap; cancelling the `null` snap-point request from a swipe past the last point keeps the drawer open, and a cancelled swipe close, or one a controlled `open` ignores, restores the previous snap point. Closing resets the snap point to `defaultSnapPoint` (else the first snap point). A controlled `snapPoint` latches. `DrawerOpenChangeDetails` is removed; the type is `ChangeEventDetails<DrawerOpenChangeReason>`.
+- `DrawerPopup` / `DrawerBackdrop` (and `DrawerPopupProps`, `DrawerPopupEmits`, `DrawerBackdropProps`) replace `DrawerContent` / `DrawerOverlay` and their types, which are removed (no aliases). Props, events and markup are unchanged. `DrawerHandle` is renamed `DrawerGrabber` (`DrawerHandleProps` → `DrawerGrabberProps`, namespaced `Drawer.Handle` → `Drawer.Grabber`, `useDrawer().handle` → `.grabber`, `DrawerHandleState` → `DrawerGrabberState`); there is no `DrawerHandle` export.
 - A `force-mount` popup returns focus to the trigger (or `finalFocus`) on close, as `DialogContent` does, while focus is still inside the popup or on `<body>`.
 - `TreeRoot` with `propagate-select` or `bubble-select` reads every level of descendants through `getChildren`; v2 read `item.children` below the first level. It also warns in development when either flag is set without `multiple`.
 - With `resetSearchTermOnBlur` (on by default for `ComboboxRoot`, off for `AutocompleteRoot`), `ComboboxRoot` and `AutocompleteRoot` drop the pending blur reset when the user types within a tick of closing, even when `beforeUpdate:open` cancels that reopen; another open request (click, focus) drops it only once the popup opens, and a controlled `open` set back to `true` keeps the text. A cancelled click or focus still resets the input.
@@ -794,7 +794,7 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 
 **How to find it.**
 - `@update:open` / `@update:snap-point` handlers on `DrawerRoot`, especially ones calling `details.cancel()`; `DrawerOpenChangeDetails` imports.
-- `DrawerHandle`, `DrawerHandleProps`, `DrawerHandleState`, `Drawer.Handle`, `.handle` on a `useDrawer()` result; `DrawerContent`, `DrawerOverlay`, `DrawerContentProps`, `DrawerContentEmits`, `DrawerOverlayProps`.
+- `DrawerHandle`, `DrawerHandleProps`, `DrawerHandleState`, `Drawer.Handle`, `.handle` on a `useDrawer()` result; `DrawerContent`, `DrawerOverlay`, `DrawerContentProps`, `DrawerContentEmits`, `DrawerOverlayProps`, `Drawer.Content`, `Drawer.Overlay`.
 - `TreeRoot` with a `get-children` / `getChildren` that reads a key other than `children`, together with `propagate-select` or `bubble-select`; and either flag without `multiple`.
 - `AutocompleteRoot` with a `display-value` / `filter` / `@highlight` handler and items whose `value` is not a string.
 - `highlightItem(` calls on an `AutocompleteRoot` ref, and the argument each one passes.
@@ -805,8 +805,8 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 - A `details.cancel()` call in an `@update:open` handler on `DrawerRoot`: move that handler (or the cancelling branch) to `@before-update:open`. A controlled drawer that guarded `:open` by hand only to support cancelling can go back to `v-model:open`; *ask* if it does more.
 - An `@update:snap-point` handler that took one argument: leave it; the new second argument is optional to read.
 - `DrawerHandle` → `DrawerGrabber`, `DrawerHandleProps` → `DrawerGrabberProps`, `DrawerHandleState` → `DrawerGrabberState`, `Drawer.Handle` → `Drawer.Grabber`, `.handle` → `.grabber`. Rename CSS class names only if the project wants them to match.
-- `DrawerContent` → `DrawerPopup`, `DrawerOverlay` → `DrawerBackdrop`, and their prop/emit types likewise. Optional: the old names still work.
-- `DrawerOpenChangeDetails` → `ChangeEventDetails<DrawerOpenChangeReason>` (optional).
+- `DrawerContent` → `DrawerPopup`, `DrawerOverlay` → `DrawerBackdrop`, `DrawerContentProps` → `DrawerPopupProps`, `DrawerContentEmits` → `DrawerPopupEmits`, `DrawerOverlayProps` → `DrawerBackdropProps`, `Drawer.Content` → `Drawer.Popup`, `Drawer.Overlay` → `Drawer.Backdrop`. Required: the old names are removed. Match whole identifiers only: `DrawerContentState`, `DrawerOverlayState`, `useDrawerContent` and `UseDrawerContent*` keep their names.
+- `DrawerOpenChangeDetails` → `ChangeEventDetails<DrawerOpenChangeReason>`, importing both types from `reka-ui`. Required: the alias is removed.
 - Focus moved to the trigger by hand after closing a `force-mount` drawer: remove it.
 - Code that selected a tree's grandchildren by hand to work around `propagateSelect`: *ask* before removing it.
 - `propagate-select` / `bubble-select` without `multiple`: *ask* whether the tree should be `multiple`; otherwise remove the flag.
@@ -859,7 +859,7 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 - New values for Gregorian locales (the default placeholder, today) use the `iso8601` calendar instead of `gregory`. `calendarId` is `'iso8601'` and `era` is `undefined`. Non-Gregorian locales still get their calendar (`th-TH` → `buddhist`).
 - `era` is a lower-case Temporal era code, and `undefined` for an `iso8601` value. Changed codes: `gregory` `AD` / `BC` → `ce` / `bce`; `roc` `minguo` / `before_minguo` → `roc` / `broc`; `buddhist` `BE` → `be`, `persian` `AP` → `ap`, `islamic-*` `AH` → `ah`, `hebrew` `AM` → `am`. Japanese era names (`reiwa`, `heisei`, …) are unchanged.
 - The first day of the week comes from `Intl.Locale.prototype.getWeekInfo()`, with a CLDR table as fallback. A few regions differ from v2, for example `AE` now starts on Monday. `weekStartsOn` still overrides it.
-- `reka-ui/date`: `isCalendarDateTime` is renamed `isPlainDateTime` (the old name stays as a deprecated alias). `isWeekend`, `isPlainDate`, `isPlainTime`, `isDateValue`, `compareDateValues`, `compareDays`, `isSameDay`, `isSameMonth`, `isToday`, `today`, `getLocalTimeZone`, `toCalendar`, `toPlainDate`, `toPlainDateTime`, `toIsoString`, `startOfMonth`, `endOfMonth`, `startOfYear`, `endOfYear`, `startOfWeek`, `getDayOfWeek`, `getLocaleWeekStart`, `getFieldValue`, `setFields` and `cycleField` are new. `toDate(value, timeZone?)` keeps its signature.
+- `reka-ui/date`: `isCalendarDateTime` is renamed `isPlainDateTime` (the old name is removed). `isWeekend`, `isPlainDate`, `isPlainTime`, `isDateValue`, `compareDateValues`, `compareDays`, `isSameDay`, `isSameMonth`, `isToday`, `today`, `getLocalTimeZone`, `toCalendar`, `toPlainDate`, `toPlainDateTime`, `toIsoString`, `startOfMonth`, `endOfMonth`, `startOfYear`, `endOfYear`, `startOfWeek`, `getDayOfWeek`, `getLocaleWeekStart`, `getFieldValue`, `setFields` and `cycleField` are new. `toDate(value, timeZone?)` keeps its signature.
 - `useDateFormatter()` methods accept Temporal values (and still `Date`). A plain value is formatted from its own fields, a `ZonedDateTime` in its own zone and a non-ISO value in its calendar.
 - Unchanged: hidden form input values and `data-value` attributes are ISO strings without a calendar annotation, as v2's `toString()` produced.
 
@@ -910,7 +910,7 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 | `value.timeZone` / `value.offset` | `value.timeZoneId` / `value.offsetNanoseconds / 1e6` |
 | `value.toString()` | unchanged for ISO dates; `value.toString({ calendarName: 'never' })` (or `toIsoString(value)` from `reka-ui/date`) for the v2 string of a non-ISO date |
 | `value instanceof CalendarDate` (or any other class) | `isPlainDate(value)` / `isPlainDateTime(value)` / `isZonedDateTime(value)` / `isPlainTime(value)` from `reka-ui/date` |
-| `isCalendarDateTime(value)` from `reka-ui/date` | `isPlainDateTime(value)` (the old name still works but is deprecated) |
+| `isCalendarDateTime(value)` from `reka-ui/date` | `isPlainDateTime(value)` (`isCalendarDateTime` is removed) |
 | `new DateFormatter(locale, options).format(value.toDate(tz))` | `useDateFormatter(locale).custom(value, options)`, or `value.toLocaleString(locale, options)` |
 
 - Install a Temporal polyfill if the project runs anywhere without native Temporal (most browsers today, Node before Temporal ships): add `temporal-polyfill-lite` to `dependencies` and load it first in the app entry (`main.ts`, a Nuxt client plugin, the test setup file):
