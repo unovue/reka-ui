@@ -490,15 +490,15 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
     // Space selects the item when no search is in progress; otherwise it's part of the search.
     // Only on this menu's own items (or the content): other controls in it, and a submenu's
     // key bubbling up, keep Space as is.
-    if (event.code === 'Space') {
-      const isOnItem = target === event.currentTarget || target.hasAttribute('data-reka-collection-item')
+    const collectionItems = getItems() ?? []
+    if (event.key === ' ') {
+      const isOnItem = target === event.currentTarget || collectionItems.some(item => item.ref === target)
       if (searchRef.value === '' || !isKeyDownInside || !isOnItem)
         return
       // MenuItem skips Space during a search, so prevent the scroll here
       event.preventDefault()
     }
 
-    const collectionItems = getItems() ?? []
     if (isKeyDownInside) {
       if (event.key === 'Tab' && rootContext.modal.value)
         event.preventDefault()

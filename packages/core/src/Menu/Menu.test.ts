@@ -74,7 +74,11 @@ describe('given a default Menu', () => {
       await press(key)
     expect(document.activeElement?.textContent?.trim()).toBe('Beef')
 
-    const space = await press(' ')
+    // Matched by `key`: a virtual keyboard may report Space without `code`.
+    const space = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true })
+    document.activeElement!.dispatchEvent(space)
+    await nextTick()
+    await nextTick()
     expect(space.defaultPrevented).toBe(true)
     expect(wrapper.emitted('select')).toBeUndefined()
 
@@ -101,6 +105,8 @@ describe('given a default Menu', () => {
     item.focus()
     item.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', code: 'KeyB', bubbles: true, cancelable: true }))
     const button = document.createElement('button')
+    // Another family's roving item (e.g. a toolbar button) is not one of this menu's items.
+    button.setAttribute('data-reka-collection-item', '')
     document.querySelector('[data-reka-menu-content]')!.appendChild(button)
     button.focus()
     const space = new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true })
