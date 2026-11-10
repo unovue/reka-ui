@@ -300,13 +300,13 @@ function isTimeUnavailable(time) {
     :is-time-unavailable="isTimeUnavailable"
   >
     <div class="flex items-center gap-2">
-      <template v-for="item in segments.start" :key="item.part">
+      <template v-for="(item, index) in segments.start" :key="`start-${index}`">
         <TimeRangeFieldInput :part="item.part" type="start">
           {{ item.value }}
         </TimeRangeFieldInput>
       </template>
       <span class="mx-2">to</span>
-      <template v-for="item in segments.end" :key="item.part">
+      <template v-for="(item, index) in segments.end" :key="`end-${index}`">
         <TimeRangeFieldInput :part="item.part" type="end">
           {{ item.value }}
         </TimeRangeFieldInput>
