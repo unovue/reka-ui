@@ -560,3 +560,63 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
     warn.mockRestore()
   })
 })
+
+describe('given nested Drawers', () => {
+  const NESTED_HEIGHT = 240
+  const originalResizeObserver = globalThis.ResizeObserver
+
+  class ResizeObserverStub {
+    constructor(private cb: ResizeObserverCallback) {}
+    observe(target: Element) {
+      queueMicrotask(() => this.cb([{ target, contentRect: { height: NESTED_HEIGHT } } as unknown as ResizeObserverEntry], this as unknown as ResizeObserver))
+    }
+
+    unobserve() {}
+    disconnect() {}
+  }
+
+  const NestedDrawerTest = defineComponent({
+    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerContent, DrawerTitle, DrawerClose },
+    template: `
+      <DrawerRoot>
+        <DrawerTrigger>Open parent</DrawerTrigger>
+        <DrawerPortal>
+          <DrawerContent data-testid="parent">
+            <DrawerTitle>Parent</DrawerTitle>
+            <DrawerRoot>
+              <DrawerTrigger>Open child</DrawerTrigger>
+              <DrawerPortal>
+                <DrawerContent>
+                  <DrawerTitle>Child</DrawerTitle>
+                  <DrawerClose>Close child</DrawerClose>
+                </DrawerContent>
+              </DrawerPortal>
+            </DrawerRoot>
+          </DrawerContent>
+        </DrawerPortal>
+      </DrawerRoot>
+    `,
+  })
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    ;(globalThis as any).ResizeObserver = ResizeObserverStub
+  })
+
+  afterEach(() => {
+    ;(globalThis as any).ResizeObserver = originalResizeObserver
+  })
+
+  it('exposes the nested drawer height as `--drawer-frontmost-height` on the parent', async () => {
+    const { getByText, getByTestId } = render(NestedDrawerTest)
+    await fireEvent.click(getByText('Open parent'))
+    await fireEvent.click(await findByText(document.body, 'Open child'))
+    await new Promise(resolve => setTimeout(resolve))
+    await nextTick()
+    expect(getByTestId('parent').style.getPropertyValue('--drawer-frontmost-height')).toBe(`${NESTED_HEIGHT}px`)
+
+    await fireEvent.click(getByText('Close child'))
+    await nextTick()
+    expect(getByTestId('parent').style.getPropertyValue('--drawer-frontmost-height')).toBe('0px')
+  })
+})
