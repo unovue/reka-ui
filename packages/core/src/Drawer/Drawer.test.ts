@@ -562,13 +562,14 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
 })
 
 describe('given nested Drawers', () => {
+  const PARENT_HEIGHT = 400
   const NESTED_HEIGHT = 240
   const originalResizeObserver = globalThis.ResizeObserver
 
   class ResizeObserverStub {
     constructor(private cb: ResizeObserverCallback) {}
     observe(target: Element) {
-      queueMicrotask(() => this.cb([{ target, contentRect: { height: NESTED_HEIGHT } } as unknown as ResizeObserverEntry], this as unknown as ResizeObserver))
+      queueMicrotask(() => this.cb([{ target, contentRect: { height: (target as HTMLElement).dataset.testid === 'child' ? NESTED_HEIGHT : PARENT_HEIGHT } } as unknown as ResizeObserverEntry], this as unknown as ResizeObserver))
     }
 
     unobserve() {}
@@ -586,7 +587,7 @@ describe('given nested Drawers', () => {
             <DrawerRoot>
               <DrawerTrigger>Open child</DrawerTrigger>
               <DrawerPortal>
-                <DrawerContent>
+                <DrawerContent data-testid="child">
                   <DrawerTitle>Child</DrawerTitle>
                   <DrawerClose>Close child</DrawerClose>
                 </DrawerContent>
