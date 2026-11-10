@@ -60,6 +60,28 @@ describe('given a default Menu', () => {
       })
     })
   })
+
+  it('should append Space to an in-progress typeahead instead of selecting', async () => {
+    const press = async (key: string) => {
+      const target = document.activeElement as HTMLElement
+      const event = new KeyboardEvent('keydown', { key, code: key === ' ' ? 'Space' : `Key${key.toUpperCase()}`, bubbles: true, cancelable: true })
+      target.dispatchEvent(event)
+      await nextTick()
+      await nextTick()
+      return event
+    }
+    for (const key of 'beef')
+      await press(key)
+    expect(document.activeElement?.textContent?.trim()).toBe('Beef')
+
+    const space = await press(' ')
+    expect(space.defaultPrevented).toBe(true)
+    expect(wrapper.emitted('select')).toBeUndefined()
+
+    await press('w')
+    expect(document.activeElement?.textContent?.trim()).toBe('Beef with sauce')
+    expect(wrapper.emitted('select')).toBeUndefined()
+  })
 })
 
 describe('given a Menu with submenu', () => {

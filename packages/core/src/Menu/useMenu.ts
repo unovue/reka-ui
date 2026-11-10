@@ -407,7 +407,6 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
   const { menuContext, rootContext, contentElement, getItems } = options
   const loop = () => toValue(options.loop) ?? false
 
-  const searchRef = ref('')
   const timerRef = ref(0)
   const pointerGraceTimerRef = ref(0)
   const pointerGraceIntentRef = ref<GraceIntent | null>(null)
@@ -420,7 +419,8 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
   // A deep `ref` would unwrap `trigger` to the element, so `trigger.value` would always be `undefined`.
   const activeSubmenuContext = shallowRef<{ onOpenChange: MenuContext['onOpenChange'], trigger: Ref<HTMLElement | undefined> }>()
 
-  const { handleTypeaheadSearch } = useTypeahead()
+  // The typeahead buffer itself, so items (and Space below) see a search in progress.
+  const { search: searchRef, handleTypeaheadSearch } = useTypeahead()
 
   /**
    * The enabled items in order, from the collection's cached order instead of
@@ -487,9 +487,13 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
     if (el)
       return el?.focus()
 
-    // prevent "Space" being taken into typeahead
-    if (event.code === 'Space')
-      return
+    // Space selects the item when no search is in progress; otherwise it's part of the search
+    if (event.code === 'Space') {
+      if (searchRef.value === '')
+        return
+      // MenuItem skips Space during a search, so prevent the scroll here
+      event.preventDefault()
+    }
 
     const collectionItems = getItems() ?? []
     if (isKeyDownInside) {
