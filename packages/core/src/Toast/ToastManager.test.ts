@@ -251,6 +251,8 @@ describe('useToastManager', () => {
   })
 
   it('announces a toast again when it is updated', async () => {
+    // The announce text renders after two animation frames: drive them.
+    vi.useFakeTimers()
     const { api } = mountToaster()
     const id = api.add({ description: 'Saving…', status: 'loading' })
     await flush()
@@ -258,7 +260,7 @@ describe('useToastManager', () => {
     await flush()
 
     // Announce text renders after two animation frames.
-    await new Promise(resolve => setTimeout(resolve, 50))
+    await vi.advanceTimersByTimeAsync(50)
     await flush()
     const alert = document.querySelector('[role="alert"]')!
     expect(alert.textContent).toContain('Saved')
@@ -298,10 +300,12 @@ describe('useToastManager', () => {
   })
 
   it('uses the toast type for the announcement politeness', async () => {
+    // The announce text renders after two animation frames: drive them.
+    vi.useFakeTimers()
     const { api } = mountToaster()
     api.add({ title: 'Background sync', type: 'background' })
     await flush()
-    await new Promise(resolve => setTimeout(resolve, 50))
+    await vi.advanceTimersByTimeAsync(50)
     expect(document.querySelector('[role="alert"]')!.getAttribute('aria-live')).toBe('polite')
   })
 })
