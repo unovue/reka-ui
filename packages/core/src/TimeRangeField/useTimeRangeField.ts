@@ -74,7 +74,7 @@ export interface UseTimeRangeFieldProps {
    *
    * It is asked about both ends and, unless `allowNonContiguousRanges` is set,
    * about the times between them: every unit of the `granularity` (each minute
-   * by default), whatever the `step`, at most 1,440 times per range. A longer
+   * by default), whatever the `step`, at most 1,440 times per range between the ends. A longer
    * range is sampled at a whole multiple of the unit, so a full day at `second`
    * granularity is checked once a minute and can miss a shorter unavailable time.
    */

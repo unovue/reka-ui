@@ -272,7 +272,7 @@ function isTimeUnavailable(time) {
 
 The times between the ends are sampled, because a range holds no fixed list of times: one check for every unit of the `granularity`. By default that is each whole minute, each hour with `granularity="hour"` and each second with `granularity="second"`. The `step` prop does not change this, since a range between two stepped ends still spans the times the step skips.
 
-One range is checked at most 1,440 times. A range with more units than that is sampled at a wider interval: a full day at `second` granularity is checked once a minute, so an unavailable time shorter than a minute can be missed there. If you need an exact answer for such ranges, check the range yourself and combine the result with `isInvalid`.
+The times between the ends are checked at most 1,440 times per range, on top of the two ends. A range with more units than that is sampled at a wider interval: a full day at `second` granularity is checked once a minute, so an unavailable time shorter than a minute can be missed there. If you need an exact answer for such ranges, check the range yourself and combine the result with `isInvalid`.
 
 Set `allowNonContiguousRanges` to check only the two ends.
 
