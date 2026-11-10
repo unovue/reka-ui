@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import { CheckboxRoot } from '@/Checkbox'
@@ -101,7 +101,10 @@ describe('given a Form with server errors', () => {
 async function submit(wrapper: ReturnType<typeof mount>) {
   const event = new Event('submit', { cancelable: true })
   wrapper.find('form').element.dispatchEvent(event)
-  await new Promise(resolve => setTimeout(resolve, 0))
+  if (vi.isFakeTimers())
+    await vi.advanceTimersByTimeAsync(0)
+  else
+    await new Promise(resolve => setTimeout(resolve, 0))
   await nextTick()
   return event
 }
@@ -205,6 +208,11 @@ describe('given a Form submission', () => {
   })
 
   it('does not wait for an async validate in onSubmit mode, but shows its error once resolved', async () => {
+    // The validator resolves after a timer: drive it.
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const onSubmit = vi.fn()
     const validate = (value: unknown) =>
       new Promise<string | null>(resolve => setTimeout(resolve, 10, value === 'taken' ? 'Already taken' : null))
@@ -227,12 +235,17 @@ describe('given a Form submission', () => {
     await submit(wrapper)
     expect(onSubmit).toHaveBeenCalledTimes(1)
 
-    await new Promise(resolve => setTimeout(resolve, 20))
+    await vi.advanceTimersByTimeAsync(20)
     await nextTick()
     expect(wrapper.text()).toContain('Already taken')
   })
 
   it('keeps blocking on a previous async error while revalidation is pending outside onSubmit mode', async () => {
+    // The validator resolves after a timer: drive it.
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const onSubmit = vi.fn()
     const validate = (value: unknown) =>
       new Promise<string | null>(resolve => setTimeout(resolve, 10, value === 'taken' ? 'Already taken' : null))
@@ -253,7 +266,7 @@ describe('given a Form submission', () => {
     const input = wrapper.find('input')
     await input.setValue('taken')
     await input.trigger('blur')
-    await new Promise(resolve => setTimeout(resolve, 20))
+    await vi.advanceTimersByTimeAsync(20)
 
     await submit(wrapper)
     expect(onSubmit).not.toHaveBeenCalled()
