@@ -22,6 +22,11 @@ enableAutoUnmount(afterEach)
 
 beforeEach(() => {
   document.body.innerHTML = ''
+  // The idle render, the presence task and the 1 s typeahead reset are timers: drive them.
+  vi.useFakeTimers()
+})
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 interface Fruit { id: number, name: string }
@@ -41,7 +46,7 @@ async function close() {
   document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
   await flushPromises()
   // `SelectContent` keeps its presence for a task after closing.
-  await new Promise(resolve => setTimeout(resolve))
+  await vi.advanceTimersByTimeAsync(0)
   await flushPromises()
 }
 
@@ -52,7 +57,7 @@ async function type(key: string) {
 
 /** Waits for the idle-time render of a closed select's items (`setTimeout` in jsdom). */
 async function idle() {
-  await new Promise(resolve => setTimeout(resolve, 60))
+  await vi.advanceTimersByTimeAsync(60)
   await flushPromises()
 }
 
@@ -186,6 +191,8 @@ describe('a closed Select renders its items only when needed, lean', () => {
   })
 
   it('passes axe while closed and open', async () => {
+    // axe schedules its own timers.
+    vi.useRealTimers()
     const { wrapper } = mountSelect({ defaultValue: 'Banana' }, () => fruits)
     await flushPromises()
     expect(await axe(wrapper.element)).toHaveNoViolations()
@@ -320,7 +327,7 @@ describe('typeahead on a closed Select', () => {
     trigger().focus()
     await idle()
     expect(itemTexts).toHaveBeenCalledTimes(fruits.length * 2)
-    await new Promise(resolve => setTimeout(resolve, 1100)) // the typeahead search resets
+    await vi.advanceTimersByTimeAsync(1100) // the typeahead search resets
     await type('c')
     expect(itemTexts.mock.calls.length).toBeGreaterThan(fruits.length * 2)
     expect(valueText()).toBe('Cherry')
