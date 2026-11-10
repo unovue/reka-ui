@@ -13,6 +13,11 @@ import { pathToFileURL } from 'node:url'
 // lowercase words are taken as the tag; anything else goes to `next`.
 const WORD_TAG = /^[a-z]+(?:-[a-z]+)*$/
 
+/**
+ * The npm dist-tag `version` publishes under.
+ * @param {string} version a semver version, e.g. `3.0.0-alpha.0`
+ * @returns {string} the prerelease id, `latest` for a stable version, or `next`
+ */
 export function distTag(version) {
   // Build metadata (`+build-1`) is not part of the prerelease.
   const release = version.split('+')[0]
