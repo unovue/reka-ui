@@ -32,4 +32,18 @@ describe('normalizeColor', () => {
     expect(normalizeColor(color)).toBe(color)
     expect(normalizeColor('#000')).toEqual({ space: 'rgb', r: 0, g: 0, b: 0, alpha: 1 })
   })
+
+  it('clamps out-of-range channels', () => {
+    expect(parseColor('rgb(300, 0, 0)')).toEqual({ space: 'rgb', r: 255, g: 0, b: 0, alpha: 1 })
+    expect(parseColor('rgba(10, 20, 30, 5)')).toMatchObject({ alpha: 1 })
+    expect(parseColor('hsl(400, 150%, 50%)')).toMatchObject({ h: 360, s: 100, l: 50 })
+    expect(parseColor('hsb(10, 200%, 300%)')).toMatchObject({ s: 100, b: 100 })
+  })
+
+  it('rejects trailing or leading junk around functional notation', () => {
+    expect(isValidColor('rgb(1, 2, 3) junk')).toBe(false)
+    expect(isValidColor('xrgb(1, 2, 3)')).toBe(false)
+    expect(isValidColor('rgb(1, 2, 3)')).toBe(true)
+    expect(isValidColor('  RGB(1,2,3)  ')).toBe(true)
+  })
 })

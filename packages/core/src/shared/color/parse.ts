@@ -1,11 +1,12 @@
 import type { Color, HSBColor, HSLColor, RGBColor } from './types'
+import { clamp } from '../clamp'
 
 const HEX3_RE = /^[0-9A-F]{3}$/i
 const HEX6_RE = /^[0-9A-F]{6}$/i
 const HEX8_RE = /^[0-9A-F]{8}$/i
-const RGB_RE = /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)/
-const HSL_RE = /hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*(?:,\s*([\d.]+)\s*)?\)/
-const HSB_RE = /hs[bv]a?\(\s*([\d.]+)\s*,\s*([\d.]+)%?\s*,\s*([\d.]+)%?\s*(?:,\s*([\d.]+)\s*)?\)/
+const RGB_RE = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)$/
+const HSL_RE = /^hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*(?:,\s*([\d.]+)\s*)?\)$/
+const HSB_RE = /^hs[bv]a?\(\s*([\d.]+)\s*,\s*([\d.]+)%?\s*,\s*([\d.]+)%?\s*(?:,\s*([\d.]+)\s*)?\)$/
 
 /**
  * Parses a color string into a Color object.
@@ -85,10 +86,10 @@ function parseRgb(rgb: string): RGBColor {
 
   return {
     space: 'rgb',
-    r: parseFloat(match[1]),
-    g: parseFloat(match[2]),
-    b: parseFloat(match[3]),
-    alpha: match[4] ? parseFloat(match[4]) : 1,
+    r: clamp(parseFloat(match[1]), 0, 255),
+    g: clamp(parseFloat(match[2]), 0, 255),
+    b: clamp(parseFloat(match[3]), 0, 255),
+    alpha: match[4] ? clamp(parseFloat(match[4]), 0, 1) : 1,
   }
 }
 
@@ -100,10 +101,10 @@ function parseHsl(hsl: string): HSLColor {
 
   return {
     space: 'hsl',
-    h: parseFloat(match[1]),
-    s: parseFloat(match[2]),
-    l: parseFloat(match[3]),
-    alpha: match[4] ? parseFloat(match[4]) : 1,
+    h: clamp(parseFloat(match[1]), 0, 360),
+    s: clamp(parseFloat(match[2]), 0, 100),
+    l: clamp(parseFloat(match[3]), 0, 100),
+    alpha: match[4] ? clamp(parseFloat(match[4]), 0, 1) : 1,
   }
 }
 
@@ -115,10 +116,10 @@ function parseHsb(hsb: string): HSBColor {
 
   return {
     space: 'hsb',
-    h: parseFloat(match[1]),
-    s: parseFloat(match[2]),
-    b: parseFloat(match[3]),
-    alpha: match[4] ? parseFloat(match[4]) : 1,
+    h: clamp(parseFloat(match[1]), 0, 360),
+    s: clamp(parseFloat(match[2]), 0, 100),
+    b: clamp(parseFloat(match[3]), 0, 100),
+    alpha: match[4] ? clamp(parseFloat(match[4]), 0, 1) : 1,
   }
 }
 

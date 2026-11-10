@@ -60,4 +60,9 @@ describe('convert', () => {
     expect(colorToString(teal, 'rgb')).toBe('rgba(0, 128, 128, 0.5)')
     expect(() => colorToString(red, 'lab' as never)).toThrow()
   })
+
+  it('colorToHex never emits a malformed string for out-of-range channels', () => {
+    expect(colorToHex({ space: 'rgb', r: 300, g: -5, b: 0, alpha: 1 })).toBe('#ff0000')
+    expect(colorToHex({ space: 'rgb', r: 0, g: 0, b: 0, alpha: 5 })).toBe('#000000')
+  })
 })
