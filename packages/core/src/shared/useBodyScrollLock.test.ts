@@ -3,7 +3,6 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
 import { ConfigProvider } from '@/ConfigProvider'
-import { sleep } from '@/test'
 import { heldScrollLockConfigs, resetBodyScrollLock, SCROLL_LOCKED_ATTRIBUTE, useBodyScrollLock } from './useBodyScrollLock'
 
 // `isIOS` is read when a lock is taken; a module-level flag (not `vi.hoisted`)
@@ -24,13 +23,12 @@ const body = document.body
 
 /**
  * The lock (and unlock) is applied a macrotask after the share changes. Let Vue's
- * flush schedule that macrotask first, so a slow flush (coverage, CI load) can't
- * outlast the sleep.
+ * flush schedule that macrotask first, then run it (fake timers).
  */
 async function flush() {
   await nextTick()
   await nextTick()
-  await sleep(10)
+  await vi.advanceTimersByTimeAsync(10)
 }
 const inlineStyle = (el: HTMLElement) => el.getAttribute('style') ?? ''
 const isLocked = () => getComputedStyle(body).overflowY === 'hidden' || getComputedStyle(html).overflowY === 'hidden'
@@ -54,11 +52,13 @@ function createWrapper(initialState: boolean, scrollBody?: any) {
 }
 
 beforeEach(() => {
+  vi.useFakeTimers()
   // Inset (classic) scrollbars, 15px wide
   setViewport({ innerWidth: 1024, clientWidth: 1009 })
 })
 
 afterEach(() => {
+  vi.useRealTimers()
   resetBodyScrollLock()
   mockIsIOS = false
   vi.restoreAllMocks()
