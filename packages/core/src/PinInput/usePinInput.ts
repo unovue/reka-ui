@@ -34,6 +34,22 @@ function isPinInputValueEqual(a: PinInputModel | undefined | null, b: PinInputMo
   return a.every((value, index) => Object.is(value, b[index]))
 }
 
+/** Each registered input's `index`, so lookups go by `index` rather than by mount order. */
+const inputIndexes = new WeakMap<HTMLInputElement, MaybeRefOrGetter<number>>()
+
+/**
+ * The registered inputs ordered by their `index`: an input re-rendered with
+ * `v-if` (or rendered out of order) registers last but keeps its slot. An input
+ * registered without an `index` keeps its registration position.
+ *
+ * @internal
+ */
+export function orderInputElements(inputs: Set<HTMLInputElement>): HTMLInputElement[] {
+  const ordered = Array.from(inputs, (el, position) => ({ el, key: toValue(inputIndexes.get(el)) ?? position }))
+  ordered.sort((a, b) => a.key - b.key)
+  return ordered.map(item => item.el)
+}
+
 function removeTrailingEmptyStrings(input: PinInputModel) {
   let i = input.length - 1
   while (i >= 0 && input[i] === '') {
@@ -96,8 +112,11 @@ export interface UsePinInputReturn {
   setModelValue: (value: PinInputModel, reason?: PinInputChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Write one input's value (`''` clears it). Returns `false` when unchanged or cancelled. */
   updateModelValueAt: (index: number, value: string, reason?: PinInputChangeReason | BaseChangeReason, event?: Event) => boolean
-  /** Register an input element, in DOM order; completion counts registered inputs. */
-  registerInput: (el: HTMLInputElement) => void
+  /**
+   * Register an input element with its `index` (inputs are looked up by it;
+   * without one, by registration order); completion counts registered inputs.
+   */
+  registerInput: (el: HTMLInputElement, index?: MaybeRefOrGetter<number>) => void
   unregisterInput: (el: HTMLInputElement) => void
   lastChangeDetails: Readonly<Ref<ChangeEventDetails<PinInputChangeReason>>>
   isControlled: ComputedRef<boolean>
@@ -152,7 +171,9 @@ export function usePinInput(props: UsePinInputProps = {}): UsePinInputReturn {
   const disabled = computed(() => toValue(props.disabled) ?? false)
 
   const inputElements = ref<Set<HTMLInputElement>>(new Set())
-  function registerInput(el: HTMLInputElement) {
+  function registerInput(el: HTMLInputElement, index?: MaybeRefOrGetter<number>) {
+    if (index !== undefined)
+      inputIndexes.set(el, index)
     inputElements.value.add(el)
   }
   function unregisterInput(el: HTMLInputElement) {
@@ -259,7 +280,7 @@ export function createPinInputInputSurface(
   options: CreatePinInputInputSurfaceOptions,
 ): PinInputInputSurface {
   const index = () => toValue(options.index)
-  const inputElements = computed(() => [...context.inputElements!.value])
+  const inputElements = computed(() => orderInputElements(context.inputElements!.value))
   const currentValue = computed(() => context.currentModelValue.value[index()])
   const disabled = computed(() => (toValue(options.disabled) || context.disabled.value) ?? false)
 

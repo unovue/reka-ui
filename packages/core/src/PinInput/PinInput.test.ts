@@ -573,3 +573,44 @@ describe('given a PinInput whose empty last input is removed', () => {
     wrapper.unmount()
   })
 })
+
+describe('given PinInput inputs mounted out of index order', () => {
+  // The first input is re-rendered with `v-if`, so it mounts after its siblings.
+  async function mountRemounted() {
+    document.body.innerHTML = ''
+    const showFirst = ref(true)
+    const model = ref<string[]>([])
+    const wrapper = mount(defineComponent(() => () =>
+      h(PinInputRoot, { 'modelValue': model.value, 'onUpdate:modelValue': (value: string[]) => model.value = value }, () => [
+        showFirst.value ? h(PinInputInput, { key: 0, index: 0 }) : null,
+        h(PinInputInput, { key: 1, index: 1 }),
+        h(PinInputInput, { key: 2, index: 2 }),
+      ])), { attachTo: document.body })
+    showFirst.value = false
+    await nextTick()
+    showFirst.value = true
+    await nextTick()
+    const inputs = wrapper.findAll('input:not([aria-hidden])').map(i => i.element as HTMLInputElement)
+    return { wrapper, inputs, model }
+  }
+
+  it('moves focus to the input with the next index after typing', async () => {
+    const { wrapper, inputs } = await mountRemounted()
+    inputs[0].focus()
+    await userEvent.keyboard('a')
+    expect(document.activeElement).toBe(inputs[1])
+    wrapper.unmount()
+  })
+
+  it('fills a paste into the inputs by their index', async () => {
+    const { wrapper, inputs, model } = await mountRemounted()
+    inputs[0].focus()
+    await userEvent.paste('ab')
+    await nextTick()
+    expect(model.value).toStrictEqual(['a', 'b'])
+    expect(inputs.map(i => i.value)).toStrictEqual(['a', 'b', ''])
+    expect(document.activeElement).toBe(inputs[2])
+    expect(inputs[0].getAttribute('aria-label')).toBe('pin input 1 of 3')
+    wrapper.unmount()
+  })
+})

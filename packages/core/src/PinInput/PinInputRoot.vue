@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { ComputedRef, Ref } from 'vue'
+import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { PinInputChangeReason } from './usePinInput'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
@@ -64,7 +64,8 @@ export interface PinInputRootContext<Type extends PinInputType = 'text'> {
   disabled: Readonly<Ref<boolean>>
   isCompleted: ComputedRef<boolean>
   inputElements?: Ref<Set<HTMLInputElement>>
-  onInputElementChange: (el: HTMLInputElement) => void
+  /** Registers an input with its `index`, which orders the inputs. */
+  onInputElementChange: (el: HTMLInputElement, index?: MaybeRefOrGetter<number>) => void
   isNumericMode: ComputedRef<boolean>
   /** Replaces the whole value. Returns `false` when unchanged or cancelled. */
   setModelValue: (value: PinInputContextValue<Type>, reason?: PinInputChangeReason | BaseChangeReason, event?: Event) => boolean
@@ -89,7 +90,7 @@ import { mergeProps, useAttrs, watch } from 'vue'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
-import { usePinInput } from './usePinInput'
+import { orderInputElements, usePinInput } from './usePinInput'
 
 defineOptions({
   inheritAttrs: false,
@@ -162,7 +163,7 @@ function toFieldValue(value: unknown) {
 }
 
 function firstInput() {
-  return Array.from(context.inputElements!.value)[0]
+  return orderInputElements(context.inputElements!.value)[0]
 }
 
 // The composable owns the model (`useControllableState`), `beforeUpdate:` /
