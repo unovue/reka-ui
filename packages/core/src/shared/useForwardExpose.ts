@@ -4,6 +4,14 @@ import type { ComponentPublicInstance } from 'vue'
 import { unrefElement } from '@vueuse/core'
 import { computed, getCurrentInstance, onUpdated, ref, triggerRef } from 'vue'
 
+/**
+ * Expose this component's props and a forwarded child's public values and root node.
+ *
+ * `$el` preserves Vue's native root node. For text and comment roots,
+ * `currentElement` resolves the next element sibling for internal DOM operations.
+ *
+ * @returns An object with `forwardRef`, `currentRef`, and `currentElement`.
+ */
 export function useForwardExpose<T extends ComponentPublicInstance>() {
   const instance = getCurrentInstance()!
 
@@ -64,6 +72,14 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
   })
   instance.exposed = ret
 
+  /**
+   * Set the forwarded ref and merge the child's exposed values.
+   *
+   * Null refs and wrapped refs without an element clear forwarded state and the
+   * cached element so detached content can be collected.
+   *
+   * @param ref - The current DOM element, component instance, or null on removal.
+   */
   function forwardRef(ref: Element | T | null) {
     // A wrapped null element is still a ref clear.
     currentRef.value = ref && '$el' in ref && !ref.$el ? null : ref

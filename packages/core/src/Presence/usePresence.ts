@@ -4,6 +4,16 @@ import { isClient } from '@vueuse/shared'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useStateMachine } from '@/shared'
 
+/**
+ * Keep content mounted until its exit animation completes.
+ *
+ * The node watcher releases live computed styles, animation listeners, and
+ * pending fill-mode timers when the node changes or the component unmounts.
+ *
+ * @param present - Whether the content is requested to be present.
+ * @param node - The active content element, or undefined after removal.
+ * @returns An object containing `isPresent`, which stays true during exit animations.
+ */
 export function usePresence(
   present: Ref<boolean>,
   node: Ref<HTMLElement | undefined>,
