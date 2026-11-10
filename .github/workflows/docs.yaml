@@ -8,8 +8,14 @@ on:
     paths:
       - 'docs/**'
       - 'packages/core/src/**'
+      - packages/core/package.json
+      # Dependency, patch and setup changes can break the site build too.
+      - package.json
       - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - 'patches/**'
       - .github/workflows/docs.yaml
+      - '.github/actions/**'
 
 permissions:
   contents: read
