@@ -107,7 +107,7 @@
   {
     'name': 'beforeUpdate:modelValue',
     'description': '<p>Event handler called before the value changes; call <code>details.cancel()</code> to keep the current value. The value is an array when <code>multiple</code>, and <code>undefined</code> when a single selection is cleared.</p>\n',
-    'type': '[value: ListboxModelValue&lt;AcceptableValue, boolean&gt;, details: ChangeEventDetails&lt;ListboxChangeReason, Event&gt;]'
+    'type': '[value: ListboxModelValue&lt;AcceptableValue, M&gt;, details: ChangeEventDetails&lt;ListboxChangeReason, Event&gt;]'
   },
   {
     'name': 'entryFocus',
@@ -127,7 +127,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[value: ListboxModelValue&lt;AcceptableValue, boolean&gt;, details: ChangeEventDetails&lt;ListboxChangeReason, Event&gt;]'
+    'type': '[value: ListboxModelValue&lt;AcceptableValue, M&gt;, details: ChangeEventDetails&lt;ListboxChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -167,11 +167,11 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the value changes; call `details.cancel()` to keep the current value. The value is an array when `multiple`, and `undefined` when a single selection is cleared. | `[value: ListboxModelValue<AcceptableValue, boolean>, details: ChangeEventDetails<ListboxChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the value changes; call `details.cancel()` to keep the current value. The value is an array when `multiple`, and `undefined` when a single selection is cleared. | `[value: ListboxModelValue<AcceptableValue, M>, details: ChangeEventDetails<ListboxChangeReason, Event>]` |
 | `entryFocus` | Event handler called when container is being focused. Can be prevented. | `[event: CustomEvent<any>]` |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; } \| undefined]` |
 | `leave` | Event handler called when the mouse leave the container | `[event: Event]` |
-| `update:modelValue` | Event handler called when the value changes. | `[value: ListboxModelValue<AcceptableValue, boolean>, details: ChangeEventDetails<ListboxChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the value changes. | `[value: ListboxModelValue<AcceptableValue, M>, details: ChangeEventDetails<ListboxChangeReason, Event>]` |
 
 **Slots**
 

@@ -99,7 +99,7 @@
   {
     'name': 'beforeUpdate:modelValue',
     'description': '<p>Event handler called before the value changes; call <code>details.cancel()</code> to keep the current value. The value is an\narray when <code>multiple</code>.</p>\n',
-    'type': '[value: SelectModelValue&lt;AcceptableValue, boolean&gt;, details: ChangeEventDetails&lt;SelectChangeReason, Event&gt;]'
+    'type': '[value: SelectModelValue&lt;AcceptableValue, M&gt;, details: ChangeEventDetails&lt;SelectChangeReason, Event&gt;]'
   },
   {
     'name': 'beforeUpdate:open',
@@ -109,7 +109,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes. The value is an array when <code>multiple</code>.</p>\n',
-    'type': '[value: SelectModelValue&lt;AcceptableValue, boolean&gt;, details: ChangeEventDetails&lt;SelectChangeReason, Event&gt;]'
+    'type': '[value: SelectModelValue&lt;AcceptableValue, M&gt;, details: ChangeEventDetails&lt;SelectChangeReason, Event&gt;]'
   },
   {
     'name': 'update:open',
@@ -163,9 +163,9 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the value changes; call `details.cancel()` to keep the current value. The value is an array when `multiple`. | `[value: SelectModelValue<AcceptableValue, boolean>, details: ChangeEventDetails<SelectChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the value changes; call `details.cancel()` to keep the current value. The value is an array when `multiple`. | `[value: SelectModelValue<AcceptableValue, M>, details: ChangeEventDetails<SelectChangeReason, Event>]` |
 | `beforeUpdate:open` | Event handler called before the open state changes; call `details.cancel()` to keep it. | `[value: boolean, details: ChangeEventDetails<SelectOpenChangeReason, Event>]` |
-| `update:modelValue` | Event handler called when the value changes. The value is an array when `multiple`. | `[value: SelectModelValue<AcceptableValue, boolean>, details: ChangeEventDetails<SelectChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the value changes. The value is an array when `multiple`. | `[value: SelectModelValue<AcceptableValue, M>, details: ChangeEventDetails<SelectChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the select changes. | `[value: boolean, details: ChangeEventDetails<SelectOpenChangeReason, Event>]` |
 | `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 

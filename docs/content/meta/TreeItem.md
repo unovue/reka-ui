@@ -39,12 +39,12 @@
   {
     'name': 'select',
     'description': '<p>Event handler called when the selecting item. &lt;br&gt; It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
-    'type': '[event: SelectEvent&lt;Record&lt;string, any&gt;&gt;]'
+    'type': '[event: SelectEvent&lt;T&gt;]'
   },
   {
     'name': 'toggle',
     'description': '<p>Event handler called when the selecting item. &lt;br&gt; It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
-    'type': '[event: ToggleEvent&lt;Record&lt;string, any&gt;&gt;]'
+    'type': '[event: ToggleEvent&lt;T&gt;]'
   }
 ]" />
 
@@ -98,8 +98,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `select` | Event handler called when the selecting item. \<br> It can be prevented by calling `event.preventDefault`. | `[event: SelectEvent<Record<string, any>>]` |
-| `toggle` | Event handler called when the selecting item. \<br> It can be prevented by calling `event.preventDefault`. | `[event: ToggleEvent<Record<string, any>>]` |
+| `select` | Event handler called when the selecting item. \<br> It can be prevented by calling `event.preventDefault`. | `[event: SelectEvent<T>]` |
+| `toggle` | Event handler called when the selecting item. \<br> It can be prevented by calling `event.preventDefault`. | `[event: ToggleEvent<T>]` |
 
 **Slots**
 

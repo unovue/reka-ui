@@ -160,7 +160,7 @@
   {
     'name': 'beforeUpdate:modelValue',
     'description': '<p>Event handler called before the value changes; call <code>details.cancel()</code> to keep the current value. The value is\nan array when <code>multiple</code>, and <code>null</code> when <code>ComboboxCancel</code> clears a single selection.</p>\n',
-    'type': '[value: ComboboxModelValue&lt;AcceptableValue, boolean&gt;, details: ChangeEventDetails&lt;ComboboxChangeReason, Event&gt;]'
+    'type': '[value: ComboboxModelValue&lt;AcceptableValue, M&gt;, details: ChangeEventDetails&lt;ComboboxChangeReason, Event&gt;]'
   },
   {
     'name': 'beforeUpdate:open',
@@ -175,7 +175,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes. The value is an array when <code>multiple</code>, and <code>null</code> when\n<code>ComboboxCancel</code> clears a single selection.</p>\n',
-    'type': '[value: ComboboxModelValue&lt;AcceptableValue, boolean&gt;, details: ChangeEventDetails&lt;ComboboxChangeReason, Event&gt;]'
+    'type': '[value: ComboboxModelValue&lt;AcceptableValue, M&gt;, details: ChangeEventDetails&lt;ComboboxChangeReason, Event&gt;]'
   },
   {
     'name': 'update:open',
@@ -238,10 +238,10 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the value changes; call `details.cancel()` to keep the current value. The value is an array when `multiple`, and `null` when `ComboboxCancel` clears a single selection. | `[value: ComboboxModelValue<AcceptableValue, boolean>, details: ChangeEventDetails<ComboboxChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the value changes; call `details.cancel()` to keep the current value. The value is an array when `multiple`, and `null` when `ComboboxCancel` clears a single selection. | `[value: ComboboxModelValue<AcceptableValue, M>, details: ChangeEventDetails<ComboboxChangeReason, Event>]` |
 | `beforeUpdate:open` | Event handler called before the open state changes; call `details.cancel()` to keep it. | `[value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason, Event>]` |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; } \| undefined]` |
-| `update:modelValue` | Event handler called when the value changes. The value is an array when `multiple`, and `null` when `ComboboxCancel` clears a single selection. | `[value: ComboboxModelValue<AcceptableValue, boolean>, details: ChangeEventDetails<ComboboxChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the value changes. The value is an array when `multiple`, and `null` when `ComboboxCancel` clears a single selection. | `[value: ComboboxModelValue<AcceptableValue, M>, details: ChangeEventDetails<ComboboxChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the combobox changes. | `[value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason, Event>]` |
 | `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 
