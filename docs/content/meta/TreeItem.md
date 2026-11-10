@@ -30,7 +30,7 @@
   {
     'name': 'value',
     'description': '<p>Value given to this item</p>\n',
-    'type': 'T',
+    'type': 'Record&lt;string, any&gt;',
     'required': true
   }
 ]" />
@@ -92,7 +92,7 @@
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `disabled` | When `true`, prevents the user from interacting with the item. | `boolean` | No | - |
 | `level` | Level of depth | `number` | Yes | - |
-| `value` | Value given to this item | `T` | Yes | - |
+| `value` | Value given to this item | `Record<string, any>` | Yes | - |
 
 **Events**
 

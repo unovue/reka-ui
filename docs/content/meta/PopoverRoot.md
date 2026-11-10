@@ -18,7 +18,7 @@
   {
     'name': 'handle',
     'description': '<p>A handle from <code>createPopoverHandle()</code> that connects detached\n<code>PopoverTrigger</code>s rendered anywhere in the app. The popover anchors to,\nreturns focus to and exposes the <code>payload</code> of the trigger that opened it.</p>\n',
-    'type': 'PopoverHandle&lt;Payload&gt;',
+    'type': 'PopoverHandle&lt;unknown&gt;',
     'required': false
   },
   {
@@ -92,7 +92,7 @@
 | --- | --- | --- | --- | --- |
 | `defaultOpen` | The open state of the popover when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
 | `defaultTriggerId` | The id of the trigger that owns a popover that starts open (with `defaultOpen` and a `handle`). | `string \| null` | No | - |
-| `handle` | A handle from `createPopoverHandle()` that connects detached `PopoverTrigger`s rendered anywhere in the app. The popover anchors to, returns focus to and exposes the `payload` of the trigger that opened it. | `PopoverHandle<Payload>` | No | - |
+| `handle` | A handle from `createPopoverHandle()` that connects detached `PopoverTrigger`s rendered anywhere in the app. The popover anchors to, returns focus to and exposes the `payload` of the trigger that opened it. | `PopoverHandle<unknown>` | No | - |
 | `modal` | The modality of the popover. When `true`, page scroll is locked, the rest of the page (except the trigger) is covered by an internal backdrop that closes the popover on press, and only the popover content is visible to screen readers. | `boolean` | No | `false` |
 | `open` | The controlled open state of the popover. | `boolean` | No | - |
 | `triggerId` | The id of the trigger that owns the popover, for a controlled popover with detached triggers. Use with `open`. | `string \| null` | No | - |

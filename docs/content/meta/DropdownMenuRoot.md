@@ -23,7 +23,7 @@
   {
     'name': 'handle',
     'description': '<p>A handle from <code>createDropdownMenuHandle()</code> that connects detached\n<code>DropdownMenuTrigger</code>s rendered anywhere in the app. The menu anchors to,\nreturns focus to and exposes the <code>payload</code> of the trigger that opened it.</p>\n',
-    'type': 'DropdownMenuHandle&lt;Payload&gt;',
+    'type': 'DropdownMenuHandle&lt;unknown&gt;',
     'required': false
   },
   {
@@ -93,7 +93,7 @@
 | `defaultOpen` | The open state of the dropdown menu when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | - |
 | `defaultTriggerId` | The id of the trigger that owns a menu that starts open (with `defaultOpen` and a `handle`). | `string \| null` | No | - |
 | `dir` | The reading direction of the combobox when applicable. If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
-| `handle` | A handle from `createDropdownMenuHandle()` that connects detached `DropdownMenuTrigger`s rendered anywhere in the app. The menu anchors to, returns focus to and exposes the `payload` of the trigger that opened it. | `DropdownMenuHandle<Payload>` | No | - |
+| `handle` | A handle from `createDropdownMenuHandle()` that connects detached `DropdownMenuTrigger`s rendered anywhere in the app. The menu anchors to, returns focus to and exposes the `payload` of the trigger that opened it. | `DropdownMenuHandle<unknown>` | No | - |
 | `modal` | The modality of the dropdown menu. When `true`, page scroll is locked, the rest of the page (except the trigger) is covered by an internal backdrop that closes the menu on press, and only the menu content is visible to screen readers. | `boolean` | No | `true` |
 | `open` | The controlled open state of the menu. Can be used as `v-model:open`. | `boolean` | No | - |
 | `triggerId` | The id of the trigger that owns the menu, for a controlled menu with detached triggers. Use with `open`. | `string \| null` | No | - |

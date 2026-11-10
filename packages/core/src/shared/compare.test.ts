@@ -398,3 +398,37 @@ describe('isEqual on values ohash cannot serialize', () => {
     expect(isValueEqualOrExist([file], new File([], 'a'))).toBe(false)
   })
 })
+
+describe('isEqual with primitives', () => {
+  const pairs: [unknown, unknown, boolean][] = [
+    ['a', 'a', true],
+    ['a', 'b', false],
+    ['', '', true],
+    ['', ' ', false],
+    ['1', 1, false],
+    ['true', true, false],
+    [1, 1, true],
+    [1, 2, false],
+    [0, -0, true],
+    [Number.NaN, Number.NaN, true],
+    [1, Number.NaN, false],
+    [Infinity, -Infinity, false],
+    [true, true, true],
+    [true, false, false],
+    [false, 0, false],
+    [null, null, true],
+    [null, undefined, false],
+    [undefined, undefined, true],
+    [1n, 1n, true],
+    [1n, 1, false],
+    ['a', { a: 1 }, false],
+    [1, [1], false],
+    [{ a: 1 }, { a: 1 }, true],
+    [{ a: 1 }, { a: 2 }, false],
+    [['a'], ['a'], true],
+  ]
+
+  it.each(pairs)('isEqual(%o, %o) is %s', (a, b, expected) => {
+    expect(isEqual(a, b)).toBe(expected)
+  })
+})

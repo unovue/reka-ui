@@ -516,16 +516,16 @@ export function createTagsInputInputSurface(
     const target = event.target as HTMLInputElement
     // The key's default action has to be cancelled synchronously: a form submits
     // implicitly on `Enter` as soon as the keydown dispatch finishes, and Firefox
-    // moves focus on `Tab` before a microtask can cancel it. An empty draft keeps
+    // moves focus on `Tab` before a microtask can cancel it. An empty or blank draft keeps
     // the default (submitting the form, moving focus).
-    if (target.value && !isPreventedByOthers)
+    if (target.value.trim() && !isPreventedByOthers)
       nativePreventDefault()
 
     await nextTick()
     if (isPreventedByOthers)
       return
 
-    if (!target.value)
+    if (!target.value.trim())
       return
 
     addTypedText(target, reason, event)
@@ -579,8 +579,16 @@ export function createTagsInputInputSurface(
       return
 
     const value = clipboardData.getData('text')
+    // Blank pieces (a trailing delimiter, a paste of only spaces) are not tags,
+    // and a tag does not keep the spaces around it.
+    const delimiter = context.delimiter.value
+    const texts = (delimiter ? value.split(delimiter) : [value])
+      .map(text => text.trim())
+      .filter(Boolean)
+    if (!texts.length)
+      return
     // A paste commits every tag it adds as one change.
-    context.onAddValues(context.delimiter.value ? value.split(context.delimiter.value) : [value], 'paste', event)
+    context.onAddValues(texts, 'paste', event)
   }
 
   return createPartSurface<TagsInputInputState>(

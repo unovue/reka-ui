@@ -27,6 +27,13 @@ const VUE_DOM_TYPES_RE = /[/\\]@vue[/\\]runtime-dom[/\\]/
 // `PrimitiveHTMLAttributes`, which adds a few attributes Vue's `HTMLAttributes` lacks.
 const PRIMITIVE_FILE_RE = /[/\\]src[/\\]Primitive[/\\]Primitive\.ts$/
 
+const EXTENDS_SPLIT_RE = /\s+extends\s+/
+const EXTENDS_WORD_RE = /\sextends\s/
+const BOOLEAN_LITERAL_RE = /^(?:true|false)$/
+const NO_INFER_RE = /\bNoInfer<([^<>]+)>/g
+const PARENTHESISED_RE = /^\(.*\)$/
+const SINGLE_GROUP_RE = /^\([^()]*\)$/
+
 const md = new MarkdownIt()
 md.use(transformJSDocLinks)
 
@@ -38,14 +45,10 @@ const checkerOptions: MetaCheckerOptions = {
   // alias names like `Direction`, and slot tables are dropped). v2 expanded by
   // default; restore that so `parseTypeFromSchema` sees the enum members again.
   schema: true,
-  // KNOWN v3 LIMITATION: generic SFC params (`<script setup generic="T ...">`)
-  // are no longer instantiated to their default/constraint type. v2 resolved
-  // them (e.g. `T` -> `string | string[]`, `T[]` -> `AcceptableValue[]`); v3
-  // emits the bare `T` / `Type` / conditional type. Affects the value props of
-  // generic components (Accordion, Combobox, Listbox, Select, Tree, Checkbox,
-  // PinInput, Tabs, TagsInput, Switch). No clean fix via the public API yet
-  // (getBaseConstraintOfType / manual constraint substitution diverge from v2),
-  // so a full regen will regress those few files until upstream resolves it.
+  // vue-component-meta v3 prints the bare type parameter of a generic SFC
+  // (`<script setup generic="T ...">`). `parseMeta` substitutes each parameter
+  // with its default, else its constraint (see `readGenericParams`); conditional
+  // types are left as printed.
 }
 
 const tsconfigChecker = createChecker(
@@ -139,7 +142,7 @@ function writeComponentMeta(componentPath: string, componentName: string) {
   // description of the same emit name (e.g. ListboxRoot's `update:modelValue`
   // under AutocompleteRoot) must not replace them.
   const ownEventDescriptions = readEventDescriptions(componentPath)
-  const meta = parseMeta(tsconfigChecker.getComponentMeta(componentPath), name => ownEventDescriptions.get(name) ?? eventDescriptionMap.get(name))
+  const meta = parseMeta(tsconfigChecker.getComponentMeta(componentPath), name => ownEventDescriptions.get(name) ?? eventDescriptionMap.get(name), readGenericParams(componentPath))
   const overrides = ALIAS_DESCRIPTION_OVERRIDES[componentName]
   for (const prop of meta.props) {
     const description = overrides?.props?.[prop.name]
@@ -282,7 +285,106 @@ function isHTMLAttribute(prop: PropertyMeta) {
   return declarations.length > 0 && declarations.every(({ file }) => VUE_DOM_TYPES_RE.test(file) || PRIMITIVE_FILE_RE.test(file))
 }
 
-function parseMeta(meta: ComponentMeta, getEventDescription: (name: string) => string | undefined) {
+/** Splits on `separator` at nesting depth 0 only (`<>`, `()`, `[]`, `{}`); `=>` is not an `=`. */
+function splitTopLevel(text: string, separator: string): string[] {
+  const parts: string[] = []
+  let depth = 0
+  let start = 0
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i]
+    if (char === '=' && text[i + 1] === '>') {
+      i++
+    }
+    else if ('<([{'.includes(char)) {
+      depth++
+    }
+    else if ('>)]}'.includes(char)) {
+      depth--
+    }
+    else if (char === separator && depth === 0 && !(separator === '=' && text[i + 1] === '>')) {
+      parts.push(text.slice(start, i))
+      start = i + 1
+    }
+  }
+  parts.push(text.slice(start))
+  return parts
+}
+
+interface GenericParam {
+  shown: string
+  /** Whether `shown` is the parameter's default (else its constraint). */
+  fromDefault: boolean
+}
+
+/**
+ * The type parameters of an SFC's `<script setup generic="…">`, each mapped to
+ * what a props table should show for it: its default (`T extends X = D` → `D`),
+ * else its constraint (`T extends X` → `X`). vue-component-meta v3 prints the
+ * bare parameter name.
+ */
+function readGenericParams(componentPath: string): Map<string, GenericParam> {
+  const params = new Map<string, GenericParam>()
+  const generic = sfcParse(readFileSync(componentPath, 'utf8')).descriptor.scriptSetup?.attrs.generic
+  if (typeof generic !== 'string')
+    return params
+  for (const part of splitTopLevel(generic, ',')) {
+    const [declaration, fallback] = splitTopLevel(part, '=').map(s => s.trim())
+    const [name, constraint] = declaration.split(EXTENDS_SPLIT_RE, 2).map(s => s.trim())
+    // An unconstrained parameter defaulting to a boolean literal accepts any value:
+    // showing `true` / `false` would mislead, so it keeps its name.
+    if (!constraint && fallback && BOOLEAN_LITERAL_RE.test(fallback))
+      continue
+    const fromDefault = !!fallback && !BOOLEAN_LITERAL_RE.test(fallback)
+    const shown = fromDefault ? fallback : (constraint ?? fallback)
+    if (name && shown)
+      params.set(name, { shown, fromDefault })
+  }
+  return params
+}
+
+/** The `<…>` nesting depth at each index of `type`; the `>` of `=>` does not close one. */
+function angleDepths(type: string): number[] {
+  const depths: number[] = []
+  let depth = 0
+  for (let i = 0; i < type.length; i++) {
+    const char = type[i]
+    if (char === '<')
+      depth++
+    else if (char === '>' && type[i - 1] !== '=')
+      depth = Math.max(0, depth - 1)
+    depths.push(depth)
+  }
+  return depths
+}
+
+/**
+ * Replaces whole-word type parameter names; conditional types are left alone.
+ * A parameter with no default is not replaced inside another type's argument
+ * list: its constraint is wider than the parameter, so in `PinInputValue<Type>`
+ * it would change what the type means.
+ */
+function substituteGenericParams(type: string, params: Map<string, GenericParam>): string {
+  if (!params.size || EXTENDS_WORD_RE.test(type))
+    return type
+  let result = type.replace(NO_INFER_RE, '$1')
+  for (const [name, { shown, fromDefault }] of params) {
+    const replacement = shown.includes('|') && !PARENTHESISED_RE.test(shown) ? `(${shown})` : shown
+    const depths = fromDefault ? [] : angleDepths(result)
+    result = result.replace(new RegExp(`\\b${name}\\b`, 'g'), (match, offset: number) => depths[offset] ? match : replacement)
+  }
+  const trimmed = result.trim()
+  // A single parenthesised group needs no parentheses.
+  if (SINGLE_GROUP_RE.test(trimmed))
+    return trimmed.slice(1, -1)
+  // Substitution can repeat a member (`boolean | M` -> `boolean | boolean`).
+  const members = splitTopLevel(result, '|').map(m => m.trim())
+  const unique = [...new Set(members)]
+  if (members.length > 1 && unique.length < members.length)
+    return unique.join(' | ')
+  return result
+}
+
+function parseMeta(meta: ComponentMeta, getEventDescription: (name: string) => string | undefined, genericParams: Map<string, GenericParam>) {
   const props = meta.props
   // Exclude global props, and the HTML attributes `PrimitiveProps` types (type-only,
   // they fall through): those declared by Vue's `HTMLAttributes` alone.
@@ -301,11 +403,7 @@ function parseMeta(meta: ComponentMeta, getEventDescription: (name: string) => s
       if (!type.includes('AcceptableValue'))
         type = parseTypeFromSchema(prop.schema) || type
 
-      // ComboboxRoot types `multiple` by its `M extends boolean` generic (it
-      // narrows the `update:modelValue` payload); the bare param means nothing
-      // in a props table, so show its constraint.
-      if (name === 'multiple' && type.trim() === 'M')
-        type = 'boolean'
+      type = substituteGenericParams(type, genericParams)
 
       return ({
         name,
@@ -324,7 +422,7 @@ function parseMeta(meta: ComponentMeta, getEventDescription: (name: string) => s
         name,
         description: md.render((getEventDescription(name) ?? '').replace(/^[ \t]+/gm, '')),
         // Unlike optional props, undefined in an event payload is a value consumers can receive.
-        type: type.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+        type: substituteGenericParams(type, genericParams).replace(/</g, '&lt;').replace(/>/g, '&gt;'),
       })
     })
     .sort((a, b) => a.name.localeCompare(b.name))

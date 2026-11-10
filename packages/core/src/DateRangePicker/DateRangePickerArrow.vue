@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { PopoverArrowProps } from '..'
-import { PopoverArrow } from '..'
+import type { PopoverArrowProps } from '@/Popover'
+import { PopoverArrow } from '@/Popover'
 
 export interface DateRangePickerArrowProps extends PopoverArrowProps {}
 </script>

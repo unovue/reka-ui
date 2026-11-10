@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { RangeCalendarCellTriggerProps, RangeCalendarCellTriggerSlot } from '@/RangeCalendar/RangeCalendarCellTrigger.vue'
-import { RangeCalendarCellTrigger } from '..'
+import { RangeCalendarCellTrigger } from '@/RangeCalendar'
 
 export interface DateRangePickerCellTriggerProps extends RangeCalendarCellTriggerProps {}
 </script>

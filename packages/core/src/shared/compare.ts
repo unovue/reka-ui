@@ -75,7 +75,20 @@ export function serializeValue(value: unknown, walk?: Walk): string {
 
 /** ohash `isEqual` that never throws: both sides compared by `serializeValue`. */
 export function isEqual(a: unknown, b: unknown): boolean {
-  return a === b || serializeValue(a) === serializeValue(b)
+  if (a === b)
+    return true
+  // Two primitives of the same kind that are not `===` only still match as
+  // `NaN`/`NaN`; skip serializing both sides to find that out. This is the
+  // per-item path of the value-based groups (ToggleGroup, RadioGroup).
+  const type = typeof a
+  const typeOfB = typeof b
+  if (type === typeOfB) {
+    if (type === 'string' || type === 'boolean')
+      return false
+    if (type === 'number')
+      return Number.isNaN(a) && Number.isNaN(b)
+  }
+  return serializeValue(a) === serializeValue(b)
 }
 
 /**

@@ -1,6 +1,7 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref, ShallowRef } from 'vue'
 import type { SetStateOptions } from './useControllableState'
 import { computed, markRaw, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, shallowReactive, shallowRef, toValue, watch } from 'vue'
+import { containsComposed } from './getRootNode'
 import { getterRef } from './partSurface'
 
 // =============================================================================
@@ -450,7 +451,8 @@ function createFullPopupRootStore<Payload>(options: CreatePopupRootStoreOptions<
       if (!target)
         return false
       for (const trigger of triggers()?.values() ?? []) {
-        if (trigger.element()?.contains(target))
+        const element = trigger.element()
+        if (element && containsComposed(element, target))
           return true
       }
       return false

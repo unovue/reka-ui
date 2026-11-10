@@ -67,7 +67,7 @@ const current = ref('')
       </NavigationMenuItem>
 
       <!-- The indicator reads its own size and offset from the active trigger. -->
-      <NavigationMenuIndicator class="absolute top-full z-[100] mt-[3px] flex h-2 w-[--reka-navigation-menu-indicator-size] translate-x-[--reka-navigation-menu-indicator-position] items-end justify-center overflow-hidden transition-[width,transform] duration-200 data-[state=hidden]:opacity-0 data-[state=visible]:animate-fadeIn data-[state=hidden]:animate-fadeOut">
+      <NavigationMenuIndicator class="absolute top-full z-[100] mt-[3px] flex h-2 w-[--reka-navigation-menu-indicator-size] translate-x-[--reka-navigation-menu-indicator-position] items-end justify-center overflow-hidden transition-[width,transform] duration-200 data-[state=closed]:opacity-0 data-[state=open]:animate-fadeIn data-[state=closed]:animate-fadeOut">
         <div class="relative top-1/2 size-2.5 rotate-45 rounded-sm border border-muted bg-card" />
       </NavigationMenuIndicator>
     </NavigationMenuList>

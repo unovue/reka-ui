@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { DateFieldInputProps } from '..'
-import { DateFieldInput } from '..'
+import type { DateFieldInputProps } from '@/DateField'
+import { DateFieldInput } from '@/DateField'
 
 export interface DatePickerInputProps extends DateFieldInputProps {}
 </script>

@@ -324,6 +324,78 @@ describe('given a TagsInput with objects', async () => {
       expect(tags[3].text()).toBe('tag3')
     })
 
+    it('should not add an empty tag when pasted text ends with a delimiter', async () => {
+      const { wrapper, input } = setupDelimiter(',')
+      const user = userEvent.setup()
+      const before = wrapper.findAll('[data-reka-collection-item]').length
+
+      await user.click(input.element)
+      await user.paste('tag1,tag2,')
+
+      const tags = wrapper.findAll('[data-reka-collection-item]')
+      expect(tags.length).toBe(before + 2)
+      expect(tags[before].text()).toBe('tag1')
+      expect(tags[before + 1].text()).toBe('tag2')
+    })
+
+    it('should trim whitespace around pasted tags', async () => {
+      const { wrapper, input } = setupDelimiter(',')
+      const user = userEvent.setup()
+      const before = wrapper.findAll('[data-reka-collection-item]').length
+
+      await user.click(input.element)
+      await user.paste('tag1, tag2')
+
+      const tags = wrapper.findAll('[data-reka-collection-item]')
+      expect(tags.length).toBe(before + 2)
+      // `text()` trims, so assert on the emitted value instead
+      const emitted = wrapper.getComponent({ name: 'TagsInputRoot' }).emitted('update:modelValue') as string[][][]
+      expect(emitted.at(-1)![0].slice(-2)).toEqual(['tag1', 'tag2'])
+    })
+
+    it('should not add a tag when pasting only whitespace', async () => {
+      const { wrapper, input } = setupDelimiter(',')
+      const user = userEvent.setup()
+      const before = wrapper.findAll('[data-reka-collection-item]').length
+
+      await user.click(input.element)
+      await user.paste('   ')
+
+      expect(wrapper.findAll('[data-reka-collection-item]').length).toBe(before)
+    })
+
+    it('should not add a tag when pressing Enter with a whitespace-only draft', async () => {
+      const { wrapper, input } = setupDelimiter(',')
+      const user = userEvent.setup()
+      const before = wrapper.findAll('[data-reka-collection-item]').length
+
+      await user.type(input.element, '   {Enter}')
+
+      expect(wrapper.findAll('[data-reka-collection-item]').length).toBe(before)
+    })
+
+    it('should keep the default Enter action for a blank draft', async () => {
+      const { input } = setupDelimiter(',')
+      const user = userEvent.setup()
+
+      await user.type(input.element, '   ')
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+      input.element.dispatchEvent(event)
+
+      expect(event.defaultPrevented).toBe(false)
+    })
+
+    it('should cancel the default Enter action for a non-blank draft', async () => {
+      const { input } = setupDelimiter(',')
+      const user = userEvent.setup()
+
+      await user.type(input.element, 'tag')
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+      input.element.dispatchEvent(event)
+
+      expect(event.defaultPrevented).toBe(true)
+    })
+
     it('should add multiple tags on pasting text with multiple delimiter characters', async () => {
       const { wrapper, input } = setupDelimiter(/[ ,;]+/)
       const user = userEvent.setup()

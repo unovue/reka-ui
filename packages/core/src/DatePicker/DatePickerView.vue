@@ -1,7 +1,7 @@
 <script lang="ts">
-import type { CalendarViewProps } from '..'
+import type { CalendarViewProps } from '@/Calendar'
 import type { CalendarGridData, CalendarUnit } from '@/date'
-import { CalendarView } from '..'
+import { CalendarView } from '@/Calendar'
 
 export interface DatePickerViewProps extends CalendarViewProps {}
 

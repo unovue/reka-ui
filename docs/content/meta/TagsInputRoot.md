@@ -36,13 +36,13 @@
   {
     'name': 'convertValue',
     'description': '<p>Convert the input value to the desired type. Mandatory when using objects as values and using <code>TagsInputInput</code></p>\n',
-    'type': '((value: string) =&gt; T)',
+    'type': '((value: string) =&gt; string)',
     'required': false
   },
   {
     'name': 'defaultValue',
     'description': '<p>The value of the tags that should be added. Use when you do not need to control the state of the tags input</p>\n',
-    'type': 'T[]',
+    'type': 'string[]',
     'required': false,
     'default': '[]'
   },
@@ -68,7 +68,7 @@
   {
     'name': 'displayValue',
     'description': '<p>Display the value of the tag. Useful when you want to apply modifications to the value like adding a suffix or when using object as values</p>\n',
-    'type': '((value: T) =&gt; string)',
+    'type': '((value: string) =&gt; string)',
     'required': false,
     'default': 'value.toString()'
   },
@@ -94,7 +94,7 @@
   {
     'name': 'modelValue',
     'description': '<p>The controlled value of the tags input. Can be bind as <code>v-model</code>.</p>\n',
-    'type': 'T[] | null',
+    'type': 'string[] | null',
     'required': false
   },
   {
@@ -115,27 +115,27 @@
   {
     'name': 'addTag',
     'description': '<p>Event handler called when tag is added</p>\n',
-    'type': '[payload: T]'
+    'type': '[payload: string]'
   },
   {
     'name': 'beforeUpdate:modelValue',
     'description': '<p>Event handler called before the tags change; <code>details.cancel()</code> vetoes the change.</p>\n',
-    'type': '[payload: T[], details: ChangeEventDetails&lt;TagsInputChangeReason, Event&gt;]'
+    'type': '[payload: string[], details: ChangeEventDetails&lt;TagsInputChangeReason, Event&gt;]'
   },
   {
     'name': 'invalid',
     'description': '<p>Event handler called when the value is invalid</p>\n',
-    'type': '[payload: T]'
+    'type': '[payload: string]'
   },
   {
     'name': 'removeTag',
     'description': '<p>Event handler called when tag is removed</p>\n',
-    'type': '[payload: T]'
+    'type': '[payload: string]'
   },
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes</p>\n',
-    'type': '[payload: T[], details: ChangeEventDetails&lt;TagsInputChangeReason, Event&gt;]'
+    'type': '[payload: string[], details: ChangeEventDetails&lt;TagsInputChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -159,16 +159,16 @@
 | `addOnTab` | When `true` allow adding tags on tab keydown | `boolean` | No | - |
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `convertValue` | Convert the input value to the desired type. Mandatory when using objects as values and using `TagsInputInput` | `((value: string) => T)` | No | - |
-| `defaultValue` | The value of the tags that should be added. Use when you do not need to control the state of the tags input | `T[]` | No | `[]` |
+| `convertValue` | Convert the input value to the desired type. Mandatory when using objects as values and using `TagsInputInput` | `((value: string) => string)` | No | - |
+| `defaultValue` | The value of the tags that should be added. Use when you do not need to control the state of the tags input | `string[]` | No | `[]` |
 | `delimiter` | The character or regular expression to trigger the addition of a new tag. Also used to split tags for `@paste` event | `string \| RegExp` | No | `","` |
 | `dir` | The reading direction of the combobox when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When `true`, prevents the user from interacting with the tags input. | `boolean` | No | - |
-| `displayValue` | Display the value of the tag. Useful when you want to apply modifications to the value like adding a suffix or when using object as values | `((value: T) => string)` | No | `value.toString()` |
+| `displayValue` | Display the value of the tag. Useful when you want to apply modifications to the value like adding a suffix or when using object as values | `((value: string) => string)` | No | `value.toString()` |
 | `duplicate` | When `true`, allow duplicated tags. | `boolean` | No | - |
 | `id` |  | `string` | No | - |
 | `max` | Maximum number of tags. | `number` | No | `0` |
-| `modelValue` | The controlled value of the tags input. Can be bind as `v-model`. | `T[] \| null` | No | - |
+| `modelValue` | The controlled value of the tags input. Can be bind as `v-model`. | `string[] \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 
@@ -176,11 +176,11 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `addTag` | Event handler called when tag is added | `[payload: T]` |
-| `beforeUpdate:modelValue` | Event handler called before the tags change; `details.cancel()` vetoes the change. | `[payload: T[], details: ChangeEventDetails<TagsInputChangeReason, Event>]` |
-| `invalid` | Event handler called when the value is invalid | `[payload: T]` |
-| `removeTag` | Event handler called when tag is removed | `[payload: T]` |
-| `update:modelValue` | Event handler called when the value changes | `[payload: T[], details: ChangeEventDetails<TagsInputChangeReason, Event>]` |
+| `addTag` | Event handler called when tag is added | `[payload: string]` |
+| `beforeUpdate:modelValue` | Event handler called before the tags change; `details.cancel()` vetoes the change. | `[payload: string[], details: ChangeEventDetails<TagsInputChangeReason, Event>]` |
+| `invalid` | Event handler called when the value is invalid | `[payload: string]` |
+| `removeTag` | Event handler called when tag is removed | `[payload: string]` |
+| `update:modelValue` | Event handler called when the value changes | `[payload: string[], details: ChangeEventDetails<TagsInputChangeReason, Event>]` |
 
 **Slots**
 

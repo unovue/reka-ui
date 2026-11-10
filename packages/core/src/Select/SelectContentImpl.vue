@@ -5,6 +5,7 @@ import type { PopperContentProps } from '@/Popper'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection, useCollectionSlot } from '@/Collection'
 import {
+  containsComposed,
   createContext,
   useFocusGuards,
   useForwardElement,
@@ -171,7 +172,8 @@ function handlePointerDownOutside(event: PointerDownOutsideEvent) {
   // A press on the trigger toggles the select closed: report it as a
   // `'trigger-press'`, not a dismissal.
   const target = event.target as Node | null
-  if (target && rootContext.triggerElement.value?.contains(target)) {
+  const trigger = rootContext.triggerElement.value
+  if (trigger && containsComposed(trigger, target)) {
     event.preventDefault()
     rootContext.onOpenChange(false, 'trigger-press', event.detail.originalEvent)
   }

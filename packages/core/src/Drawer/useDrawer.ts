@@ -13,7 +13,7 @@ import { useResizeObserver } from '@vueuse/core'
 import { computed, nextTick, onMounted, onUnmounted, ref, toValue, watch } from 'vue'
 import { isOwnBackdropPress } from '@/DismissableLayer/internalBackdrop'
 import { focus } from '@/FocusScope/utils'
-import { createPartSurface, disclosureState, getActiveElement, getElementByIdFrom, isHTMLElement, setGeneratedIds, useControllableState } from '@/shared'
+import { containsComposed, createPartSurface, disclosureState, getActiveElement, getElementByIdFrom, isHTMLElement, setGeneratedIds, useControllableState } from '@/shared'
 import { useDrawerSnapPoints } from './composables/useDrawerSnapPoints'
 import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import {
@@ -901,7 +901,8 @@ export function useDrawerContentModality(options: UseDrawerContentModalityOption
           hasPointerDownOutside.value = true
       }
       const target = e.target as HTMLElement
-      if (rootContext.triggerElement.value?.contains(target))
+      const trigger = rootContext.triggerElement.value
+      if (trigger && containsComposed(trigger, target))
         e.preventDefault()
       if (e.detail.originalEvent.type === 'focusin' && hasPointerDownOutside.value)
         e.preventDefault()

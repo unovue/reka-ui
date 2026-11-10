@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { PrimitiveProps } from '..'
+import type { PrimitiveProps } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watch, watchSyncEffect } from 'vue'
 import {

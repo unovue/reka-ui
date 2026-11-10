@@ -4,7 +4,7 @@ import type { DateFieldChangeReason } from '@/DateField'
 import type { PrimitiveHTMLAttributes } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import type { SegmentPart } from '@/shared/date'
-import { DateFieldRoot } from '..'
+import { DateFieldRoot } from '@/DateField'
 import { injectDatePickerRootContext } from './DatePickerRoot.vue'
 
 /** Type-only: the attributes fall through to the root it renders. */

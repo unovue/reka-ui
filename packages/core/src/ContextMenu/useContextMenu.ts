@@ -7,7 +7,7 @@ import type { Point } from '@/Menu/utils'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import { computed, nextTick, ref, toValue, watch } from 'vue'
 import { useMenuRoot } from '@/Menu/useMenu'
-import { createPartSurface } from '@/shared'
+import { containsComposed, createPartSurface } from '@/shared'
 import { isTouchOrPen } from './utils'
 
 // =============================================================================
@@ -191,7 +191,8 @@ export function createContextMenuContentHandlers(
     onInteractOutside: (event) => {
       const originalEvent = event.detail.originalEvent as PointerEvent
       // Prevent closing when right click (button=2) on the trigger element or its descendants
-      if (originalEvent.button === 2 && context.triggerElement.value?.contains(event.target as Node))
+      const trigger = context.triggerElement.value
+      if (originalEvent.button === 2 && trigger && containsComposed(trigger, event.target as Node))
         event.preventDefault()
       if (!event.defaultPrevented && !context.modal.value)
         hasInteractedOutside = true

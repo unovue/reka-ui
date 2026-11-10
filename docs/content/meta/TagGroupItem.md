@@ -30,7 +30,7 @@
   {
     'name': 'value',
     'description': '<p>The unique value of the tag.</p>\n',
-    'type': 'T',
+    'type': 'AcceptableValue',
     'required': true
   }
 ]" />
@@ -59,7 +59,7 @@
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `disabled` | When `true`, prevents the user from interacting with the tag. | `boolean` | No | - |
 | `textValue` | A string representation of the tag's contents, used for typeahead and as the tag's accessible name. Defaults to the text of `TagGroupItemText`. | `string` | No | - |
-| `value` | The unique value of the tag. | `T` | Yes | - |
+| `value` | The unique value of the tag. | `AcceptableValue` | Yes | - |
 
 **Slots**
 
