@@ -1,5 +1,19 @@
 name: Publish Any Commit (v2)
-on: [push, pull_request]
+# `on: [push, pull_request]` ran a same-repo PR twice per push, once for each
+# event, building and publishing the same commit both times. Pull requests now
+# cover every PR branch (forks included), and push only covers the release
+# branches, which have no PR of their own.
+on:
+  push:
+    branches:
+      - v2
+      - v3
+  pull_request:
+
+# pkg-pr-new only reads the checkout; its PR comment is posted by the
+# pkg.pr.new GitHub App, not with this token.
+permissions:
+  contents: read
 
 jobs:
   build:
