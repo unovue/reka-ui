@@ -613,4 +613,28 @@ describe('given PinInput inputs mounted out of index order', () => {
     expect(inputs[0].getAttribute('aria-label')).toBe('pin input 1 of 3')
     wrapper.unmount()
   })
+
+  it('follows a live index change on mounted inputs', async () => {
+    document.body.innerHTML = ''
+    const swapped = ref(false)
+    const wrapper = mount(defineComponent(() => () =>
+      h(PinInputRoot, null, () => [
+        h(PinInputInput, { 'key': 'a', 'index': swapped.value ? 1 : 0, 'data-testid': 'a' }),
+        h(PinInputInput, { 'key': 'b', 'index': swapped.value ? 0 : 1, 'data-testid': 'b' }),
+        h(PinInputInput, { 'key': 'c', 'index': 2, 'data-testid': 'c' }),
+      ])), { attachTo: document.body })
+    const input = (id: string) => wrapper.find(`[data-testid="${id}"]`).element as HTMLInputElement
+    input('a').focus()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(document.activeElement).toBe(input('b'))
+
+    swapped.value = true
+    await nextTick()
+    input('b').focus()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(document.activeElement).toBe(input('a'))
+    await userEvent.keyboard('{ArrowRight}')
+    expect(document.activeElement).toBe(input('c'))
+    wrapper.unmount()
+  })
 })
