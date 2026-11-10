@@ -285,7 +285,7 @@ See the [virtualization guide](../guides/virtualization.md) for more general inf
 
 Unlike native HTML form controls which only allow you to provide strings as values, `reka-ui` supports binding complex objects as well.
 
-Make sure to set the `displayValue` prop to set the input value on item selection. Set it on `ComboboxRoot` or on `ComboboxInput` (the input's own prop wins).
+Make sure to set the `displayValue` prop to set the input value on item selection. Set it on `ComboboxRoot` or on `ComboboxInput` (the input's own prop wins). When you have the options as data, `items` with `by` does the same without a function (see [Listing the items as data](#listing-the-items-as-data)).
 
 ```vue line=12,17,23
 <script setup lang="ts">
@@ -317,6 +317,85 @@ const selectedPeople = ref(people[0])
         </ComboboxItem>
       </ComboboxContent>
     </ComboboxPortal>
+  </ComboboxRoot>
+</template>
+```
+
+### Listing the items as data
+
+Without `displayValue`, the input shows the selected value itself: `us`, not `United States`. Pass the options to `items` on `ComboboxRoot` as well as rendering them, and the input shows the label of the selected value instead. The label comes from the data, so it is there before the popup has ever opened, in the server-rendered HTML, and for a value whose item is filtered out or not rendered (a virtualized list, options loaded on open).
+
+`items` has the same shapes as on a [Select](select.md#listing-the-items-as-data): a record of value to label, an array of `{ value, label, disabled? }`, or an array of groups `{ label?, items }`. Object values are matched with `by`. The types are exported as `ComboboxItems`, `ComboboxItemData` and `ComboboxItemGroupData`.
+
+The items are still rendered by your template, and the rendered items make up the list:
+
+- The filter matches the text of the rendered `ComboboxItem` (its `textValue`, else its content), not the label in `items`. Keep the two the same, or typing the text the input shows may not find the item.
+- `items` adds no option to the list, and a `disabled` in `items` is not read: set `disabled` on the `ComboboxItem`.
+- A value `items` does not list shows as it does without `items`: its string form, or nothing for an object.
+- `displayValue`, on the root or on the input, wins over `items`.
+- `null` is the empty value: the input stays empty for it, also when `items` has a `null` entry.
+
+When `items` changes (labels that arrive after the value, a language switch), the input follows while it rests. Text being typed is left alone, and is reset to the new label when the popup closes.
+
+```vue line=6-10,16
+<script setup lang="ts">
+import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxViewport } from 'reka-ui'
+import { ref } from 'vue'
+
+const country = ref('us')
+const countries = [
+  { value: 'us', label: 'United States' },
+  { value: 'de', label: 'Germany' },
+  { value: 'jp', label: 'Japan' },
+]
+</script>
+
+<template>
+  <ComboboxRoot
+    v-model="country"
+    :items="countries"
+  >
+    <ComboboxAnchor>
+      <ComboboxInput placeholder="Select a country" />
+    </ComboboxAnchor>
+    <ComboboxPortal>
+      <ComboboxContent>
+        <ComboboxViewport>
+          <ComboboxItem
+            v-for="item in countries"
+            :key="item.value"
+            :value="item.value"
+            :text-value="item.label"
+          >
+            {{ item.label }}
+          </ComboboxItem>
+        </ComboboxViewport>
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>
+</template>
+```
+
+With `multiple` the input shows no selection, so the labels are given to you instead: `selectedLabels` of the root's default slot holds the text of each selected value, in the order of the value. Each text is resolved like the input's: the root's `displayValue`, then the label in `items`, then the string form of the value.
+
+```vue line=3,6,9-14
+<template>
+  <ComboboxRoot
+    v-slot="{ selectedLabels }"
+    v-model="selectedCountries"
+    multiple
+    :items="countries"
+  >
+    <ComboboxAnchor>
+      <span
+        v-for="(label, index) in selectedLabels"
+        :key="selectedCountries[index]"
+      >
+        {{ label }}
+      </span>
+      <ComboboxInput placeholder="Add a country" />
+    </ComboboxAnchor>
+    <!-- ... -->
   </ComboboxRoot>
 </template>
 ```

@@ -4,6 +4,7 @@ import type { ListboxFilterProps } from '@/Listbox'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { mergeProps, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { getElementByIdFrom, useControllableState, useForwardElement } from '@/shared'
+import { getListItemData } from '@/shared/listItems'
 
 export type ComboboxInputEmits = {
   /** Called before the input text changes; `details.cancel()` keeps the current text. */
@@ -143,9 +144,29 @@ rootContext.onClearInput((event?: Event) => {
   return setText('', 'clear-press', event) || (modelValue.value ?? '') === ''
 })
 
-watch(rootContext.modelValue, () => {
+// The `items` label of a single selection as last read by the watcher below,
+// and as last handled by it. The read follows the root's `items`, so a label
+// that arrives or changes later (items loaded after the value, a language
+// switch) updates the text of a resting input. Without `items` it reads nothing.
+let selectionText: string | undefined
+let syncedSelectionText: string | undefined
+
+watch(() => {
+  const value = rootContext.modelValue.value
+  selectionText = value == null || Array.isArray(value) ? undefined : getListItemData(rootContext, value)?.label
+  return value
+}, (value, oldValue) => {
+  // Only the label changed: the value is the one already shown.
+  const isLabelChange = selectionText !== syncedSelectionText && value === oldValue
+  syncedSelectionText = selectionText
   if (!rootContext.resetSearchTermOnSelect.value)
     return
+  if (isLabelChange) {
+    // Typed text is left alone; closing resets it to the new label.
+    if (!rootContext.isUserInputted.value)
+      resetSearchTerm('none')
+    return
+  }
   const reason = rootContext.lastChangeDetails.value.reason
   if (rootContext.isUserInputted.value && rootContext.multiple.value && (reason === 'item-press' || reason === 'item-keydown')) {
     // Base UI: picking an item while filtering a multiple combobox clears the

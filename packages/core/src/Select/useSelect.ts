@@ -5,12 +5,12 @@ import type { SelectEvent, SelectItemContext } from './SelectItem.vue'
 import type { SelectRootContext } from './SelectRoot.vue'
 import type { ListboxNavigationIntent } from '@/Listbox/useListbox'
 import type { BaseChangeReason, By, ChangeEventDetails, DisclosureState, PartSurface, SelectionState } from '@/shared'
+import type { ListItemData, ListItemGroupData, ListItems } from '@/shared/listItems'
 import type { AcceptableValue, Direction } from '@/shared/types'
 import { computed, getCurrentScope, isRef, nextTick, onBeforeUnmount, onMounted, onScopeDispose, ref, shallowRef, toValue, watch, watchEffect } from 'vue'
 import { getTabbableCandidates, isHidden } from '@/FocusScope/utils'
 import { focusFirst } from '@/Menu/utils'
 import {
-  compare,
   containsComposed,
   createLabelRegistry,
   createPartSurface,
@@ -25,6 +25,7 @@ import {
   useTypeahead,
   valueComparator,
 } from '@/shared'
+import { createListItemsIndex } from '@/shared/listItems'
 import { getterRef } from '@/shared/partSurface'
 import { SelectionSelector } from '@/shared/selectionSelector'
 import { resolveDirection } from '@/shared/useDirection'
@@ -112,19 +113,11 @@ export type SelectItemIndicatorState = { state: SelectionState }
 
 export type { SelectTypeaheadItem }
 
-/** One option of the root's `items`. */
-export interface SelectItemData<T = AcceptableValue> {
-  value: T
-  /** The text `SelectValue`, the closed trigger's typeahead and the hidden native `select` use. */
-  label: string
-  disabled?: boolean
-}
+/** One option of the root's `items`: `label` is the text `SelectValue`, the closed trigger's typeahead and the hidden native `select` use. */
+export type SelectItemData<T = AcceptableValue> = ListItemData<T>
 
 /** A group of options in the root's `items`; keys besides `items` (a `label`, say) are free. */
-export interface SelectItemGroupData<T = AcceptableValue> {
-  items: readonly SelectItemData<T>[]
-  [key: string]: unknown
-}
+export type SelectItemGroupData<T = AcceptableValue> = ListItemGroupData<T>
 
 /**
  * The root's `items`: the options as data. A
@@ -132,71 +125,7 @@ export interface SelectItemGroupData<T = AcceptableValue> {
  * label; an array holds `{ value, label, disabled? }` options, or groups of
  * them (`{ items }`), mixed or not.
  */
-export type SelectItems<T = AcceptableValue> = Readonly<Record<string, string>> | readonly SelectItemData<T>[] | readonly SelectItemGroupData<T>[]
-
-function isItemGroup(item: unknown): item is SelectItemGroupData<any> {
-  return typeof item === 'object' && item !== null && Array.isArray((item as SelectItemGroupData).items)
-}
-
-/** The options of `items`, flat and in order. @internal */
-export function normalizeSelectItems<T>(items: SelectItems<T> | undefined): SelectItemData<T>[] | undefined {
-  if (!items)
-    return undefined
-  if (!Array.isArray(items))
-    return Object.keys(items).map(value => ({ value: value as T, label: (items as Record<string, string>)[value] }))
-  return (items as readonly (SelectItemData<T> | SelectItemGroupData<T>)[])
-    .flatMap(entry => isItemGroup(entry) ? entry.items as readonly SelectItemData<T>[] : [entry])
-}
-
-/** `items`, flat, with a lookup by value. @internal */
-export interface SelectItemsIndex<T> {
-  list: SelectItemData<T>[]
-  get: (value: T) => SelectItemData<T> | undefined
-  /** A record: its values are its (string) keys. */
-  record: boolean
-}
-
-function isPrimitiveKey(value: unknown): value is string | number | bigint | boolean {
-  const type = typeof value
-  return type === 'string' || type === 'number' || type === 'bigint' || type === 'boolean'
-}
-
-/**
- * Indexes `items` for lookups matched with `by`. Plain data, no reactive
- * writes: the caller's `computed` rebuilds it when `items` changes. A record
- * matches a value by its string form, as `items[value]` does.
- * @internal
- */
-export function createSelectItemsIndex<T>(items: SelectItems<T> | undefined, by: By<T> | undefined): SelectItemsIndex<T> | undefined {
-  const list = normalizeSelectItems(items)
-  if (!list)
-    return undefined
-  const isRecord = !Array.isArray(items)
-  const keyOf = (value: unknown): unknown => {
-    if (typeof by === 'function')
-      return undefined
-    if (isRecord)
-      return isPrimitiveKey(value) ? String(value) : undefined
-    const key = typeof by === 'string' && value !== null && typeof value === 'object' ? (value as Record<string, unknown>)[by] : value
-    return isPrimitiveKey(key) ? key : undefined
-  }
-  const index = new Map<unknown, SelectItemData<T>>()
-  for (const item of list) {
-    const key = keyOf(item.value)
-    if (key !== undefined && !index.has(key))
-      index.set(key, item)
-  }
-  return {
-    list,
-    record: isRecord,
-    get: (value) => {
-      const key = keyOf(value)
-      if (key !== undefined)
-        return index.get(key)
-      return list.find(item => compare(item.value, value, by))
-    },
-  }
-}
+export type SelectItems<T = AcceptableValue> = ListItems<T>
 
 const NAVIGATION_KEYS: Record<string, SelectNavigationIntent> = {
   ArrowUp: 'prev',
@@ -361,7 +290,7 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
   const displayValue = computed(() => isRef(props.displayValue) ? props.displayValue.value : props.displayValue)
   // `items`, flat and indexed by value (matched with `by`): a plain lookup,
   // rebuilt when `items` changes.
-  const itemsIndex = computed(() => createSelectItemsIndex(toValue(props.items), props.by))
+  const itemsIndex = computed(() => createListItemsIndex(toValue(props.items), props.by))
   const items = computed(() => itemsIndex.value?.list)
   const getItemData = (value: T) => itemsIndex.value?.get(value)
   // What the rendered `SelectItem` of each `items` entry registered: its

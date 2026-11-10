@@ -1,11 +1,12 @@
 <script lang="ts">
 import type { EventHookOn } from '@vueuse/core'
-import type { ComputedRef, Ref } from 'vue'
-import type { ComboboxChangeReason, ComboboxInteractionType, ComboboxOpenChangeReason } from './useCombobox'
+import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { ComboboxChangeReason, ComboboxInteractionType, ComboboxItems, ComboboxOpenChangeReason } from './useCombobox'
 import type { ListboxRootProps } from '@/Listbox'
 import type { ListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import type { ListboxFilterFunction, ListboxFilterState, ListboxNavigationIntent } from '@/Listbox/useListbox'
 import type { BaseChangeReason, By, ChangeEventDetails } from '@/shared'
+import type { ListItemsIndex } from '@/shared/listItems'
 import type { AcceptableValue } from '@/shared/types'
 import { compare, createContext, mergeExpose, useDirection, useFormControl, useForwardElement, useId } from '@/shared'
 
@@ -68,6 +69,10 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
   unmountOnHide: Ref<boolean>
   /** The root's `displayValue` resolver, if any. */
   displayValue?: (value: T) => string
+  /** The root's `items`, if any. Read through `getComboboxInputText` / `getComboboxSelectedLabels`. */
+  items?: MaybeRefOrGetter<ComboboxItems<T> | undefined>
+  /** The index of `items`, created by the first lookup that finds `items` set. @internal */
+  itemsIndex?: ComputedRef<ListItemsIndex<T> | undefined>
   /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
   notifyOpenComplete?: (value: boolean) => void
 }
@@ -169,6 +174,14 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
    * of its own. Without either, a primitive value shows as its string form and an object value as an empty input.
    */
   displayValue?: (value: T) => string
+  /**
+   * The options as data, in the shape `SelectRoot` takes: a record of value → label, or an array of
+   * `{ value, label, disabled? }` (optionally in groups, `{ items: [...] }`). The input shows the label of the selected
+   * value from it, and `selectedLabels` of the default slot lists the label of each selected value, so neither needs a
+   * rendered item: they are right before the first open and on the server. `displayValue` wins over it. The
+   * `ComboboxItem`s still render the list and are what the filter matches; a value it does not list shows as without it.
+   */
+  items?: ComboboxItems<T>
 }
 </script>
 
@@ -180,7 +193,7 @@ import { provideListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
-import { hasComboboxValue, useComboboxRoot } from './useCombobox'
+import { getComboboxSelectedLabels, hasComboboxValue, useComboboxRoot } from './useCombobox'
 import { provideComboboxField } from './useComboboxField'
 
 defineOptions({ inheritAttrs: false })
@@ -203,6 +216,11 @@ defineSlots<{
     open: boolean
     /** Current active value */
     modelValue: ComboboxModelValue<T, M>
+    /**
+     * The text of each selected value, in order: the root's `displayValue`, then its label in `items`, then the string
+     * form of a primitive value.
+     */
+    selectedLabels: string[]
   }) => any
 }>()
 
@@ -263,6 +281,7 @@ const combobox = useComboboxRoot<AcceptableValue>({
   resetModelValueOnClear: () => props.resetModelValueOnClear,
   unmountOnHide: () => props.unmountOnHide,
   displayValue: props.displayValue && (value => props.displayValue!(value as T)),
+  items: () => props.items as ComboboxItems<AcceptableValue> | undefined,
   getItems,
   getItem,
   element: currentElement,
@@ -304,6 +323,7 @@ provideComboboxField(field, context)
       <slot
         :open="open"
         :model-value="modelValue"
+        :selected-labels="getComboboxSelectedLabels(context)"
       />
 
       <!-- Base UI: a multiple combobox with any selection (`['']` included) is not missing a value. -->
