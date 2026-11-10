@@ -60,6 +60,60 @@ describe('given a default Menu', () => {
       })
     })
   })
+
+  it('should append Space to an in-progress typeahead instead of selecting', async () => {
+    const press = async (key: string) => {
+      const target = document.activeElement as HTMLElement
+      const event = new KeyboardEvent('keydown', { key, code: key === ' ' ? 'Space' : `Key${key.toUpperCase()}`, bubbles: true, cancelable: true })
+      target.dispatchEvent(event)
+      await nextTick()
+      await nextTick()
+      return event
+    }
+    for (const key of 'beef')
+      await press(key)
+    expect(document.activeElement?.textContent?.trim()).toBe('Beef')
+
+    // Matched by `key`: a virtual keyboard may report Space without `code`.
+    const space = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true })
+    document.activeElement!.dispatchEvent(space)
+    await nextTick()
+    await nextTick()
+    expect(space.defaultPrevented).toBe(true)
+    expect(wrapper.emitted('select')).toBeUndefined()
+
+    await press('w')
+    expect(document.activeElement?.textContent?.trim()).toBe('Beef with sauce')
+    expect(wrapper.emitted('select')).toBeUndefined()
+  })
+
+  it('should leave Space to a text field in the menu while a search is in progress', async () => {
+    const item = (await findAllByRole(document.body, 'menuitem'))[0]
+    item.focus()
+    item.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', code: 'KeyB', bubbles: true, cancelable: true }))
+    const field = document.createElement('input')
+    document.querySelector('[data-reka-menu-content]')!.appendChild(field)
+    field.focus()
+    const space = new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true })
+    field.dispatchEvent(space)
+    expect(space.defaultPrevented).toBe(false)
+    field.remove()
+  })
+
+  it('should leave Space to a button in the menu while a search is in progress', async () => {
+    const item = (await findAllByRole(document.body, 'menuitem'))[0]
+    item.focus()
+    item.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', code: 'KeyB', bubbles: true, cancelable: true }))
+    const button = document.createElement('button')
+    // Another family's roving item (e.g. a toolbar button) is not one of this menu's items.
+    button.setAttribute('data-reka-collection-item', '')
+    document.querySelector('[data-reka-menu-content]')!.appendChild(button)
+    button.focus()
+    const space = new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true })
+    button.dispatchEvent(space)
+    expect(space.defaultPrevented).toBe(false)
+    button.remove()
+  })
 })
 
 describe('given a Menu with submenu', () => {

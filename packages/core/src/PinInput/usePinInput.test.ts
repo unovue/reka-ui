@@ -3,10 +3,10 @@ import { render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, effectScope, h, nextTick, onMounted, ref } from 'vue'
+import { computed, defineComponent, effectScope, h, nextTick, onMounted, ref } from 'vue'
 import { PinInputInput, PinInputRoot } from '.'
 import * as Reka from '../index'
-import { usePinInput } from './usePinInput'
+import { orderInputElements, usePinInput } from './usePinInput'
 
 function scoped<T>(fn: () => T): T {
   return effectScope().run(fn)!
@@ -87,6 +87,36 @@ describe('usePinInput — model', () => {
     await nextTick()
     expect(p.isCompleted.value).toBe(true)
     expect(onComplete).toHaveBeenCalledWith(['1', '2'])
+  })
+
+  it('orders registered inputs by index, and forgets the index on a registration without one', () => {
+    const p = scoped(() => usePinInput())
+    const [a, b, c] = ['a', 'b', 'c'].map(id => Object.assign(document.createElement('input'), { id }))
+    const order = () => orderInputElements(p.context.inputElements!.value).map(el => el.id)
+    p.registerInput(c, 9)
+    p.registerInput(a, 0)
+    p.registerInput(b, () => 1)
+    expect(order()).toEqual(['a', 'b', 'c'])
+
+    p.unregisterInput(c)
+    p.registerInput(c)
+    // Registered without an index, `c` falls back to its registration position.
+    p.unregisterInput(a)
+    p.registerInput(a, 5)
+    expect(order()).toEqual(['b', 'c', 'a'])
+  })
+
+  it('re-orders an input re-registered with another index without unregistering it', () => {
+    const p = scoped(() => usePinInput())
+    const [a, b] = ['a', 'b'].map(id => Object.assign(document.createElement('input'), { id }))
+    p.registerInput(a, 0)
+    p.registerInput(b, 1)
+    const surface = p.createInputSurface({ index: 0 })
+    expect(surface.attrs.value['aria-label']).toBe('pin input 1 of 2')
+    const ordered = computed(() => orderInputElements(p.context.inputElements!.value).map(el => el.id))
+    expect(ordered.value).toEqual(['a', 'b'])
+    p.registerInput(a, 2)
+    expect(ordered.value).toEqual(['b', 'a'])
   })
 
   it('root surface carries dir and complete/disabled state as data-*', () => {
