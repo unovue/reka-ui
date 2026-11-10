@@ -312,6 +312,20 @@ describe('timeField', () => {
     expect(input).toHaveAttribute('data-invalid', '')
   })
 
+  it('displays data-invalid when an unavailable time lies between the ends', async () => {
+    const isTimeUnavailable = (date: any) => date.hour === 12
+    const { input, rerender } = setup({
+      timeRangeFieldProps: { modelValue: time, locale: 'en-GB', isTimeUnavailable },
+    })
+    expect(input).toHaveAttribute('data-invalid', '')
+
+    await rerender({ timeRangeFieldProps: { modelValue: time, locale: 'en-GB', isTimeUnavailable, allowNonContiguousRanges: true } })
+    expect(input).not.toHaveAttribute('data-invalid')
+
+    await rerender({ timeRangeFieldProps: { modelValue: { start: new Temporal.PlainTime(13), end: time.end }, locale: 'en-GB', isTimeUnavailable } })
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
   it('focuses first segment on label click', async () => {
     const { user, label, start } = setup({
       timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },

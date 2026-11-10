@@ -70,8 +70,15 @@ export interface TimeRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   id?: string
   /** The reading direction of the time field when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
   dir?: Direction
-  /** A function that returns whether or not a time is unavailable */
+  /**
+   * A function that returns whether or not a time is unavailable. The range is invalid when either end is unavailable,
+   * or, unless `allowNonContiguousRanges` is set, when a time between them is: every unit of the `granularity` is checked
+   * (each minute by default), whatever the `step`.
+   * A range of more than 1,440 units is sampled at a wider interval, so it can miss an unavailable time shorter than that interval.
+   */
   isTimeUnavailable?: Matcher
+  /** When combined with `isTimeUnavailable`, determines whether non-contiguous ranges, i.e. ranges containing unavailable times, are valid. The two ends are always checked. */
+  allowNonContiguousRanges?: boolean
 }
 
 export type TimeRangeFieldRootEmits = {
@@ -111,6 +118,7 @@ const props = withDefaults(defineProps<TimeRangeFieldRootProps>(), {
   readonly: false,
   placeholder: undefined,
   isTimeUnavailable: undefined,
+  allowNonContiguousRanges: false,
   stepSnapping: false,
 })
 const emits = defineEmits<TimeRangeFieldRootEmits>()
@@ -176,6 +184,7 @@ const { root, context, modelValue, segments, isInvalid, segmentElements, setFocu
   disabled,
   readonly: () => props.readonly,
   isTimeUnavailable: computed(() => props.isTimeUnavailable),
+  allowNonContiguousRanges: () => props.allowNonContiguousRanges,
   parentElement,
   emit: emits,
   onUpdate: pendingInput?.record,
