@@ -2,8 +2,8 @@
 
 name: Release
 
-permissions:
-  contents: write
+# Each job declares what it needs; nothing is granted workflow-wide.
+permissions: {}
 
 on:
   push:
@@ -14,19 +14,22 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      # changelogithub creates the GitHub release.
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
-
-      - uses: actions/checkout@v7
         with:
+          # The changelog is built from the commits since the previous tag.
           fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 18.x
+          node-version: 22
 
-      - run: npx changelogithub
+      # Pinned: this runs with a write token, so it must not float to whatever npm serves.
+      - run: npx changelogithub@15.0.5
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
