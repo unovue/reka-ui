@@ -157,9 +157,9 @@ describe('given a controlled control in a form', () => {
   it('emits its `defaultValue` and lets the parent decide', async () => {
     const model = ref(false)
     const apply = ref(false)
-    const onUpdate = vi.fn((value: boolean) => {
+    const onUpdate = vi.fn((value: unknown) => {
       if (apply.value)
-        model.value = value
+        model.value = value as boolean
     })
     const { form, checked } = mountForm(() => h('form', h(SwitchRoot, { 'data-testid': 'checkbox', 'defaultValue': true, 'modelValue': model.value, 'onUpdate:modelValue': onUpdate })))
     expect(checked()).toBe('false')
@@ -178,7 +178,7 @@ describe('given a controlled control in a form', () => {
 
   it('emits the empty value without a `defaultValue`', async () => {
     const model = ref(true)
-    const { form, checked } = mountForm(() => h('form', h(SwitchRoot, { 'data-testid': 'checkbox', 'modelValue': model.value, 'onUpdate:modelValue': (value: boolean) => { model.value = value } })))
+    const { form, checked } = mountForm(() => h('form', h(SwitchRoot, { 'data-testid': 'checkbox', 'modelValue': model.value, 'onUpdate:modelValue': (value: unknown) => { model.value = value as boolean } })))
     expect(checked()).toBe('true')
 
     form.reset()
