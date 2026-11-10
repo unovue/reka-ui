@@ -36,7 +36,7 @@ const filteredVege = computed(() => vegetables.filter(i => contains(i.name, sear
       <ComboboxRoot
         v-model="v1"
         by="name"
-        ignore-filter
+        :filter="null"
       >
         <ComboboxAnchor class="min-w-[160px] inline-flex items-center justify-between rounded px-[15px] text-[13px] leading-none h-[35px] gap-[5px] bg-white text-grass11 shadow-[0_2px_10px] shadow-black/10 hover:bg-mauve3 focus:shadow-[0_0_0_2px] focus:shadow-black data-[placeholder]:text-grass9 outline-none">
           <ComboboxInput
@@ -89,7 +89,7 @@ const filteredVege = computed(() => vegetables.filter(i => contains(i.name, sear
       <ComboboxRoot
         v-model="v2"
         by="name"
-        ignore-filter
+        :filter="null"
       >
         <ComboboxAnchor class="min-w-[160px] inline-flex items-center justify-between rounded px-[15px] text-[13px] leading-none h-[35px] gap-[5px] bg-white text-grass11 shadow-[0_2px_10px] shadow-black/10 hover:bg-mauve3 focus:shadow-[0_0_0_2px] focus:shadow-black data-[placeholder]:text-grass9 outline-none">
           <ComboboxInput

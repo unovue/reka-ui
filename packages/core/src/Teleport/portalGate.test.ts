@@ -6,7 +6,7 @@ import { CheckboxIndicator, CheckboxRoot } from '@/Checkbox'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot } from '@/Combobox'
 import { ContextMenuContent, ContextMenuItem, ContextMenuPortal, ContextMenuRoot, ContextMenuTrigger } from '@/ContextMenu'
 import { DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from '@/Dialog'
-import { DrawerContent, DrawerOverlay, DrawerPortal, DrawerRoot, DrawerTitle } from '@/Drawer'
+import { DrawerBackdrop, DrawerPopup, DrawerPortal, DrawerRoot, DrawerTitle } from '@/Drawer'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/DropdownMenu'
 import { HoverCardContent, HoverCardPortal, HoverCardRoot, HoverCardTrigger } from '@/HoverCard'
 import { MenubarContent, MenubarItem, MenubarMenu, MenubarPortal, MenubarRoot, MenubarTrigger } from '@/Menubar'
@@ -47,8 +47,8 @@ const components = {
   DialogRoot,
   DialogTitle,
   DialogTrigger,
-  DrawerContent,
-  DrawerOverlay,
+  DrawerPopup,
+  DrawerBackdrop,
   DrawerPortal,
   DrawerRoot,
   DrawerTitle,
@@ -101,7 +101,7 @@ const families: Record<string, string> = {
   Tooltip: `<TooltipProvider><TooltipRoot v-model:open="open"><TooltipTrigger>t</TooltipTrigger>
     <TooltipPortal><TooltipContent data-testid="content">c</TooltipContent></TooltipPortal></TooltipRoot></TooltipProvider>`,
   Drawer: `<DrawerRoot v-model:open="open">
-    <DrawerPortal><DrawerOverlay /><DrawerContent data-testid="content"><DrawerTitle>t</DrawerTitle></DrawerContent></DrawerPortal></DrawerRoot>`,
+    <DrawerPortal><DrawerBackdrop /><DrawerPopup data-testid="content"><DrawerTitle>t</DrawerTitle></DrawerPopup></DrawerPortal></DrawerRoot>`,
   Combobox: `<ComboboxRoot v-model:open="open"><ComboboxAnchor><ComboboxInput /></ComboboxAnchor>
     <ComboboxPortal><ComboboxContent data-testid="content"><ComboboxItem value="a">a</ComboboxItem></ComboboxContent></ComboboxPortal></ComboboxRoot>`,
 }

@@ -443,18 +443,15 @@ describe('comboboxRoot — filter', () => {
     await wrapper.find('input').setValue('xyz')
     await settle()
     expect(optionTexts()).toEqual(fruits)
+    expect(document.body.textContent).not.toContain('Nothing')
     wrapper.unmount()
   })
 
-  it('treats the deprecated `ignore-filter` as `:filter="null"`, over a custom filter', async () => {
-    const filter = vi.fn(() => false)
-    const wrapper = mount(createCombobox({ ignoreFilter: true, filter }), { attachTo: document.body })
-    await wrapper.find('input').setValue('xyz')
-    await settle()
-    expect(optionTexts()).toEqual(fruits)
-    expect(filter).not.toHaveBeenCalled()
-    expect(document.body.textContent).not.toContain('Nothing')
-    wrapper.unmount()
+  it('has no `ignoreFilter` prop on the roots', () => {
+    expect((ComboboxRoot as any).props).toHaveProperty('filter')
+    expect((ComboboxRoot as any).props).not.toHaveProperty('ignoreFilter')
+    expect((AutocompleteRoot as any).props).toHaveProperty('filter')
+    expect((AutocompleteRoot as any).props).not.toHaveProperty('ignoreFilter')
   })
 
   it('hides a group none of whose items match', async () => {
@@ -542,8 +539,8 @@ describe('comboboxRoot — filter with ComboboxVirtualizer', () => {
     wrapper.unmount()
   })
 
-  it('leaves `options` untouched with `ignore-filter`', async () => {
-    const wrapper = mountVirtual({ ignoreFilter: true })
+  it('leaves `options` untouched with `:filter="null"`', async () => {
+    const wrapper = mountVirtual({ filter: null })
     await flushPromises()
     await wrapper.find('input').setValue('match')
     await flushPromises()
@@ -864,14 +861,14 @@ describe('autocompleteRoot — change details', () => {
     wrapper.unmount()
   })
 
-  it('filters with `filter` and treats `ignore-filter` as `:filter="null"`', async () => {
+  it('filters with `filter` and turns filtering off with `:filter="null"`', async () => {
     let wrapper: VueWrapper = mount(createAutocomplete({ filter: (text: string, search: string) => text.endsWith(search) }), { attachTo: document.body })
     await wrapper.find('input').setValue('rry')
     await settle()
     expect(optionTexts()).toEqual(['Blueberry', 'Cherry'])
     wrapper.unmount()
 
-    wrapper = mount(createAutocomplete({ ignoreFilter: true }), { attachTo: document.body })
+    wrapper = mount(createAutocomplete({ filter: null }), { attachTo: document.body })
     await wrapper.find('input').setValue('rry')
     await settle()
     expect(optionTexts()).toEqual(fruits)

@@ -65,7 +65,6 @@ export interface UseDateRangePickerProps {
   preventDeselect?: MaybeRefOrGetter<boolean | undefined>
   allowNonContiguousRanges?: MaybeRefOrGetter<boolean | undefined>
   fixedDate?: MaybeRefOrGetter<'start' | 'end' | undefined>
-  maximumDays?: MaybeRefOrGetter<number | undefined>
   maximumLength?: MaybeRefOrGetter<number | undefined>
   yearsPerPage?: MaybeRefOrGetter<number | undefined>
   columns?: MaybeRefOrGetter<number | undefined>
@@ -280,7 +279,6 @@ export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDate
     dir,
     allowNonContiguousRanges: getterRef(() => toValue(props.allowNonContiguousRanges) ?? false),
     fixedDate: getterRef(() => toValue(props.fixedDate)),
-    maximumDays: getterRef(() => toValue(props.maximumDays)),
     maximumLength: getterRef(() => toValue(props.maximumLength)),
     step: getterRef(() => toValue(props.step)),
     stepSnapping: getterRef(() => toValue(props.stepSnapping) ?? false),

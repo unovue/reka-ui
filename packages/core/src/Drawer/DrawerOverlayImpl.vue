@@ -20,7 +20,7 @@ defineExpose(expose)
 
 // BaseUI parity: a press on the backdrop dismisses a modal drawer, a press on
 // anything stacked above it does not (#2822). The page scroll lock follows
-// `modal` and lives in `DrawerContent`.
+// `modal` and lives in `DrawerPopup`.
 watch([currentElement, () => rootContext.open.value], ([element, open], _, onCleanup) => {
   if (!element || !open)
     return

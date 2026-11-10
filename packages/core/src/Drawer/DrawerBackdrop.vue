@@ -7,8 +7,6 @@ export interface DrawerBackdropProps extends DrawerOverlayImplProps {
   /** Render even when inside a nested drawer. @default false */
   forceRender?: boolean
 }
-/** @deprecated Use `DrawerBackdropProps`; `DrawerOverlay` is a deprecated alias of `DrawerBackdrop`. */
-export type DrawerOverlayProps = DrawerBackdropProps
 </script>
 
 <script setup lang="ts">
