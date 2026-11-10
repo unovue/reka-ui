@@ -60,6 +60,11 @@ describe('attribute and event mapping', () => {
     const sideOffset = { kind: 'number', attribute: 'side-offset' } as const
     expect(parseAttribute(sideOffset, '8')).toBe(8)
     expect(parseAttribute(sideOffset, 'x')).toBeUndefined()
+    // An empty attribute (`max=""`) is unset, not `Number('') === 0`.
+    expect(parseAttribute(sideOffset, '')).toBeUndefined()
+    expect(parseAttribute(sideOffset, '   ')).toBeUndefined()
+    expect(parseAttribute(sideOffset, '0')).toBe(0)
+    expect(parseAttribute(sideOffset, ' 8 ')).toBe(8)
     expect(parseAttribute({ kind: 'string', attribute: 'value' }, 'a')).toBe('a')
   })
 
