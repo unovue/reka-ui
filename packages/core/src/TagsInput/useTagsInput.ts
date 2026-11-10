@@ -525,7 +525,7 @@ export function createTagsInputInputSurface(
     if (isPreventedByOthers)
       return
 
-    if (!target.value)
+    if (!target.value.trim())
       return
 
     addTypedText(target, reason, event)
@@ -579,8 +579,16 @@ export function createTagsInputInputSurface(
       return
 
     const value = clipboardData.getData('text')
+    // Blank pieces (a trailing delimiter, a paste of only spaces) are not tags,
+    // and a tag does not keep the spaces around it.
+    const delimiter = context.delimiter.value
+    const texts = (delimiter ? value.split(delimiter) : [value])
+      .map(text => text.trim())
+      .filter(Boolean)
+    if (!texts.length)
+      return
     // A paste commits every tag it adds as one change.
-    context.onAddValues(context.delimiter.value ? value.split(context.delimiter.value) : [value], 'paste', event)
+    context.onAddValues(texts, 'paste', event)
   }
 
   return createPartSurface<TagsInputInputState>(
