@@ -474,10 +474,11 @@ export function getComboboxInputText(
  * Reactive when read inside an effect.
  */
 export function getComboboxSelectedLabels<T = AcceptableValue>(context: ComboboxRootContext<T>): string[] {
+  // Only the value is read, so a root without a selection tracks nothing more than it did.
   const value = context.modelValue.value
   if (Array.isArray(value))
     return value.map(entry => getComboboxValueText(context, entry))
-  return context.multiple.value || value == null ? [] : [getComboboxValueText(context, value)]
+  return value == null ? [] : [getComboboxValueText(context, value)]
 }
 
 export interface UseComboboxRootProps<T = AcceptableValue> extends Omit<UseListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'filter' | 'filterSearch' | 'highlightScroll' | 'modelValue' | 'defaultValue'> {
