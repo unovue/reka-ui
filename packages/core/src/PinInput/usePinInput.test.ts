@@ -89,6 +89,24 @@ describe('usePinInput — model', () => {
     expect(onComplete).toHaveBeenCalledWith(['1', '2'])
   })
 
+  it('orders registered inputs by index, and forgets the index on a registration without one', async () => {
+    const { orderInputElements } = await import('./usePinInput')
+    const p = scoped(() => usePinInput())
+    const [a, b, c] = ['a', 'b', 'c'].map(id => Object.assign(document.createElement('input'), { id }))
+    const order = () => orderInputElements(p.context.inputElements!.value).map(el => el.id)
+    p.registerInput(c, 9)
+    p.registerInput(a, 0)
+    p.registerInput(b, () => 1)
+    expect(order()).toEqual(['a', 'b', 'c'])
+
+    p.unregisterInput(c)
+    p.registerInput(c)
+    // Registered without an index, `c` falls back to its registration position.
+    p.unregisterInput(a)
+    p.registerInput(a, 5)
+    expect(order()).toEqual(['b', 'c', 'a'])
+  })
+
   it('root surface carries dir and complete/disabled state as data-*', () => {
     const p = scoped(() => usePinInput({ disabled: true, dir: 'rtl' }))
     expect(p.root.props.value).toEqual({ dir: 'rtl' })

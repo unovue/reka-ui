@@ -174,6 +174,8 @@ export function usePinInput(props: UsePinInputProps = {}): UsePinInputReturn {
   function registerInput(el: HTMLInputElement, index?: MaybeRefOrGetter<number>) {
     if (index !== undefined)
       inputIndexes.set(el, index)
+    else
+      inputIndexes.delete(el)
     inputElements.value.add(el)
   }
   function unregisterInput(el: HTMLInputElement) {
