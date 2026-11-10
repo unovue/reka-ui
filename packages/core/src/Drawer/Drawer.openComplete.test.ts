@@ -2,14 +2,14 @@
 import { fireEvent, render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
-import { DrawerClose, DrawerContent, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from '.'
+import { DrawerClose, DrawerPopup, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from '.'
 
 function drawer(rootProps: Record<string, unknown> = {}, contentProps: Record<string, unknown> = {}) {
   return defineComponent({
     setup() {
       return () => h(DrawerRoot, rootProps, () => [
         h(DrawerTrigger, null, () => 'Open'),
-        h(DrawerPortal, null, () => h(DrawerContent, { 'aria-describedby': undefined, ...contentProps }, () => [
+        h(DrawerPortal, null, () => h(DrawerPopup, { 'aria-describedby': undefined, ...contentProps }, () => [
           h(DrawerTitle, null, () => 'Title'),
           h(DrawerClose, null, () => 'Close'),
         ])),

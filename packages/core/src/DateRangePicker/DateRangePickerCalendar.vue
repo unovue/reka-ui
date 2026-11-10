@@ -64,7 +64,6 @@ defineExpose(expose)
       maxValue: rootContext.maxValue.value,
       dir: rootContext.dir.value,
       fixedDate: rootContext.fixedDate.value,
-      maximumDays: rootContext.maximumDays?.value,
       maximumLength: rootContext.maximumLength?.value,
       maxView: rootContext.maxView.value,
       yearsPerPage: rootContext.yearsPerPage.value,

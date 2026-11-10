@@ -36,9 +36,6 @@ export type DrawerOpenChangeReason
  */
 export type DrawerSnapPointChangeReason = DrawerOpenChangeReason
 
-/** @deprecated Use `ChangeEventDetails<DrawerOpenChangeReason>`. */
-export type DrawerOpenChangeDetails = ChangeEventDetails<DrawerOpenChangeReason>
-
 export interface DrawerRootProps {
   /** v-model:open */
   open?: boolean
@@ -119,7 +116,7 @@ export interface DrawerRootContext {
   triggerElement: Ref<HTMLElement | undefined>
   contentElement: Ref<HTMLElement | undefined>
   viewportElement: Ref<HTMLElement | undefined>
-  /** The mounted `DrawerOverlay` element; a press on it dismisses a modal drawer. */
+  /** The mounted `DrawerBackdrop` element; a press on it dismisses a modal drawer. */
   overlayElement: Ref<HTMLElement | undefined>
   contentId: string
   titleId: string
@@ -194,7 +191,7 @@ watch(open, (isOpen) => {
   }
 }, { immediate: true })
 
-// `update:openComplete` is emitted once `DrawerContent`'s `Presence` reports
+// `update:openComplete` is emitted once `DrawerPopup`'s `Presence` reports
 // that the popup's enter/exit transitions and animations finished (#2827).
 
 onUnmounted(() => {

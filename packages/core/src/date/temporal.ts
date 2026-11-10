@@ -35,9 +35,6 @@ export function isPlainTime(value: unknown): value is Temporal.PlainTime {
   return brand(value) === '[object Temporal.PlainTime]'
 }
 
-/** @deprecated Use `isPlainDateTime`: `CalendarDateTime` is `Temporal.PlainDateTime` in v3. */
-export const isCalendarDateTime = isPlainDateTime
-
 /** `true` for the three Temporal types a `DateValue` can be. */
 export function isDateValue(value: unknown): value is DateValue {
   return isPlainDate(value) || isPlainDateTime(value) || isZonedDateTime(value)

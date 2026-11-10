@@ -1,18 +1,11 @@
 export {
+  default as DrawerBackdrop,
+  type DrawerBackdropProps,
+} from './DrawerBackdrop.vue'
+export {
   default as DrawerClose,
   type DrawerCloseProps,
 } from './DrawerClose.vue'
-// `DrawerPopup` is the canonical name (Base UI `Drawer.Popup`). `DrawerContent`
-// is a deprecated alias of it; Base UI's own `Drawer.Content` is a different,
-// inner part that reka does not ship, so the alias goes in v4.
-export {
-  default as DrawerContent,
-  type DrawerContentEmits,
-  type DrawerContentProps,
-  default as DrawerPopup,
-  type DrawerPopupEmits,
-  type DrawerPopupProps,
-} from './DrawerContent.vue'
 export {
   default as DrawerDescription,
   type DrawerDescriptionProps,
@@ -31,14 +24,11 @@ export {
   default as DrawerIndentBackground,
   type DrawerIndentBackgroundProps,
 } from './DrawerIndentBackground.vue'
-// `DrawerBackdrop` is the canonical name (Base UI `Drawer.Backdrop`);
-// `DrawerOverlay` is a deprecated alias of it.
 export {
-  default as DrawerBackdrop,
-  type DrawerBackdropProps,
-  default as DrawerOverlay,
-  type DrawerOverlayProps,
-} from './DrawerOverlay.vue'
+  default as DrawerPopup,
+  type DrawerPopupEmits,
+  type DrawerPopupProps,
+} from './DrawerPopup.vue'
 export {
   default as DrawerPortal,
   type DrawerPortalProps,
@@ -48,7 +38,6 @@ export {
 } from './DrawerProvider.vue'
 export {
   type DrawerModal,
-  type DrawerOpenChangeDetails,
   type DrawerOpenChangeReason,
   default as DrawerRoot,
   type DrawerRootEmits,

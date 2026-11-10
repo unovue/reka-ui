@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot } from '@/Combobox'
 import { DialogContent, DialogDescription, DialogRoot, DialogTitle } from '@/Dialog'
-import { DrawerContent, DrawerDescription, DrawerRoot, DrawerTitle } from '@/Drawer'
+import { DrawerDescription, DrawerPopup, DrawerRoot, DrawerTitle } from '@/Drawer'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
 import { HoverCardContent, HoverCardRoot, HoverCardTrigger } from '@/HoverCard'
 import { NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuRoot, NavigationMenuTrigger } from '@/NavigationMenu'
@@ -30,7 +30,7 @@ const families: Record<string, [Family, string[]]> = {
     setup: () => () => h(DialogRoot, { 'open': open.value, 'unmountOnHide': false, 'onUpdate:open': (v: boolean) => (open.value = v) }, () => h(DialogContent, attrs, () => [h(DialogTitle, () => 'T'), h(DialogDescription, () => 'D'), h('button', 'in')])),
   }), ['open', 'mount', 'mountOnce', '--esc', 'esc', 'escOnce', 'dismiss', 'dismiss', 'dismissOnce', '--esc', 'esc', 'dismiss', 'dismiss', 'close', 'unmount', 'unmountOnce']],
   Drawer: [(open, attrs) => defineComponent({
-    setup: () => () => h(DrawerRoot, { 'open': open.value, 'onUpdate:open': (v: boolean) => (open.value = v) }, () => h(DrawerContent, attrs, () => [h(DrawerTitle, () => 'T'), h(DrawerDescription, () => 'D'), h('button', 'in')])),
+    setup: () => () => h(DrawerRoot, { 'open': open.value, 'onUpdate:open': (v: boolean) => (open.value = v) }, () => h(DrawerPopup, attrs, () => [h(DrawerTitle, () => 'T'), h(DrawerDescription, () => 'D'), h('button', 'in')])),
   }), ['open', 'mount', 'mountOnce', '--esc', 'esc', 'escOnce', 'dismiss', 'dismiss', 'dismissOnce', 'close', 'unmount', 'unmountOnce', 'open', 'mount', 'mountOnce', '--esc', 'esc', 'dismiss', 'dismiss', 'dismissOnce', 'close', 'unmount', 'unmountOnce']],
   Popover: [(open, attrs) => defineComponent({
     setup: () => () => h(PopoverRoot, { 'open': open.value, 'onUpdate:open': (v: boolean) => (open.value = v) }, () => [h(PopoverTrigger, () => 'T'), h(PopoverContent, attrs, () => h('button', 'in'))]),

@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
-import { DrawerClose, DrawerContent, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from '.'
+import { DrawerClose, DrawerPopup, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from '.'
 
 const STYLE_ID = 'drawer-browser-test-style'
 const mounted: { unmount: () => void }[] = []
@@ -20,7 +20,7 @@ function mountDrawer(contentProps: Record<string, unknown> = {}) {
     setup() {
       return () => h(DrawerRoot, { 'onUpdate:openComplete': onOpenComplete }, () => [
         h(DrawerTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
-        h(DrawerPortal, null, () => h(DrawerContent, {
+        h(DrawerPortal, null, () => h(DrawerPopup, {
           'class': 'popup',
           'data-testid': 'content',
           // Above the internal backdrop, as a styled drawer is.

@@ -2,10 +2,10 @@ import { cleanup, fireEvent, render } from '@testing-library/vue'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import {
+  DrawerBackdrop,
   DrawerClose,
-  DrawerContent,
   DrawerGrabber,
-  DrawerOverlay,
+  DrawerPopup,
   DrawerPortal,
   DrawerRoot,
   DrawerTitle,
@@ -172,7 +172,7 @@ function getSwipeMovementY(el: HTMLElement) {
 }
 
 const SnapDrawer = defineComponent({
-  components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerOverlay, DrawerContent, DrawerGrabber, DrawerTitle, DrawerClose },
+  components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerBackdrop, DrawerPopup, DrawerGrabber, DrawerTitle, DrawerClose },
   props: {
     defaultOpen: { type: Boolean, default: false },
     defaultSnapPoint: { type: [Number, String, null] as any, default: 0.5 },
@@ -190,12 +190,12 @@ const SnapDrawer = defineComponent({
     >
       <DrawerTrigger>Open</DrawerTrigger>
       <DrawerPortal>
-        <DrawerOverlay />
-        <DrawerContent>
+        <DrawerBackdrop />
+        <DrawerPopup>
           <DrawerGrabber />
           <DrawerTitle>Snap Drawer</DrawerTitle>
           <DrawerClose>Close</DrawerClose>
-        </DrawerContent>
+        </DrawerPopup>
       </DrawerPortal>
     </DrawerRoot>
   `,
