@@ -148,6 +148,9 @@ async function onOpenChange(val: boolean) {
   }
   else {
     isUserInputted.value = false
+    // With `unmountOnHide: false` the items stay connected, so Enter would select the highlighted one while closed
+    if (primitiveElement.value)
+      primitiveElement.value.highlightedElement = null
     setTimeout(() => {
       if (!val && props.resetSearchTermOnBlur)
         resetSearchTerm.trigger()

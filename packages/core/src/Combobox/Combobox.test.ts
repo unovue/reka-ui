@@ -90,6 +90,20 @@ describe('given a Combobox with unmountOnHide=false', () => {
     expect((document.querySelector('[data-testid="option-state"]') as HTMLInputElement).value).toBe('preserved')
   })
 
+  it('does not select the last highlighted item on Enter while closed', async () => {
+    const input = wrapper.find('[data-testid="persistent-input"]')
+    const root = wrapper.findComponent(ComboboxRoot)
+
+    await input.trigger('keydown', { key: 'ArrowDown' })
+    await vi.waitFor(() => expect(document.querySelector('[data-highlighted]')).not.toBeNull())
+
+    await input.trigger('keydown', { key: 'Escape' })
+    await vi.waitFor(() => expect(input.attributes('aria-expanded')).toBe('false'))
+    await input.trigger('keydown', { key: 'Enter' })
+
+    expect(root.emitted('update:modelValue')).toBeUndefined()
+  })
+
   it('does not activate focus or dismissal behavior while closed', async () => {
     const onEscapeKeyDown = vi.fn()
     const onInteractOutside = vi.fn()
