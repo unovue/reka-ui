@@ -40,10 +40,11 @@ defineSlots<{
 // former `useVModel`: a filter bound at mount emits on every input (even an
 // unchanged text) and reads `''` once the binding is cleared.
 const controlled = props.modelValue !== undefined
-const { state: modelValue, setState: setModelValue } = useControllableState<string>({
+const { state: modelValue, setState: setModelValue } = useControllableState<string | undefined>({
   prop: () => props.modelValue === undefined && controlled ? '' : props.modelValue,
   defaultValue: '',
-  onUpdate: value => emits('update:modelValue', value),
+  // Typed `string | undefined` for the slot, as before; only strings are written.
+  onUpdate: value => emits('update:modelValue', value as string),
   isEqual: controlled ? () => false : undefined,
 })
 
