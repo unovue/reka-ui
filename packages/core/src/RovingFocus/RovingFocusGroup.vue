@@ -4,7 +4,7 @@ import type {
   Orientation,
 } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
-import { mergeExpose, useForwardElement } from '@/shared'
+import { mergeExpose, useControllableState, useForwardElement } from '@/shared'
 
 export interface RovingFocusGroupProps extends PrimitiveProps {
   /**
@@ -44,8 +44,7 @@ export { injectRovingFocusGroupContext, provideRovingFocusGroupContext } from '.
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
-import { mergeProps } from 'vue'
+import { computed, mergeProps } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusGroup } from './useRovingFocusGroup'
 
@@ -62,9 +61,20 @@ const props = withDefaults(defineProps<RovingFocusGroupProps>(), {
 })
 const emits = defineEmits<RovingFocusGroupEmits>()
 
-const currentTabStopId = useVModel(props, 'currentTabStopId', emits, {
+// A single-argument `update:currentTabStopId`. As with the former `useVModel`:
+// a group bound at mount emits on every item focus (even the current tab stop)
+// and falls back to `defaultCurrentTabStopId` once the binding is cleared.
+const controlled = props.currentTabStopId !== undefined
+const { state, setState } = useControllableState<string | null | undefined>({
+  prop: () => props.currentTabStopId === undefined && controlled ? props.defaultCurrentTabStopId : props.currentTabStopId,
   defaultValue: props.defaultCurrentTabStopId,
-  passive: (props.currentTabStopId === undefined) as false,
+  onUpdate: value => emits('update:currentTabStopId', value),
+  isEqual: controlled ? () => false : undefined,
+})
+// `useRovingFocusGroup` writes the tab stop on item focus.
+const currentTabStopId = computed({
+  get: () => state.value,
+  set: value => setState(value),
 })
 
 const { forwardRef, currentElement, expose } = useForwardElement()
