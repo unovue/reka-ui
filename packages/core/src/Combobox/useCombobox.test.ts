@@ -2,7 +2,7 @@ import type { VueWrapper } from '@vue/test-utils'
 import type { UseComboboxRootProps, UseComboboxRootReturn } from './useCombobox'
 import type { ListboxFilterItem } from '@/Listbox/useListbox'
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
@@ -642,12 +642,17 @@ describe('comboboxInput — change details', () => {
   const reasons = (fn: ReturnType<typeof vi.fn>) => fn.mock.calls.map(call => [call[0], call[1].reason])
 
   it('reports `input-change`, `item-press` and `clear-press`', async () => {
+    // The blur reset runs on a timer after the close: drive it.
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const onInput = vi.fn()
     const wrapper = mount(createWithInput({}, { 'onUpdate:modelValue': onInput }), { attachTo: document.body })
     await wrapper.find('input').setValue('bl')
     await settle()
     ;(document.querySelector('[role=option]') as HTMLElement).click()
-    await sleep(10)
+    await vi.advanceTimersByTimeAsync(10)
     await settle()
     await wrapper.find('[data-testid=cancel]').trigger('click')
     expect(reasons(onInput)).toEqual([
@@ -660,24 +665,34 @@ describe('comboboxInput — change details', () => {
   })
 
   it('reports `escape-key` when Escape closes the popup and resets the text', async () => {
+    // The blur reset runs on a timer after the close: drive it.
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const onInput = vi.fn()
     const wrapper = mount(createWithInput({}, { 'onUpdate:modelValue': onInput }), { attachTo: document.body })
     await wrapper.find('input').setValue('ch')
     await settle()
     keydown(wrapper.find('input').element, 'Escape')
-    await sleep(10)
+    await vi.advanceTimersByTimeAsync(10)
     await settle()
     expect(reasons(onInput)).toEqual([['ch', 'input-change'], ['', 'escape-key']])
     wrapper.unmount()
   })
 
   it('reports `input-clear` when another close resets the text to empty', async () => {
+    // The blur reset runs on a timer after the close: drive it.
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const onInput = vi.fn()
     const wrapper = mount(createWithInput({}, { 'onUpdate:modelValue': onInput }), { attachTo: document.body })
     await wrapper.find('input').setValue('ch')
     await settle()
     await wrapper.find('[data-testid=trigger]').trigger('click')
-    await sleep(10)
+    await vi.advanceTimersByTimeAsync(10)
     await settle()
     expect(reasons(onInput)).toEqual([['ch', 'input-change'], ['', 'input-clear']])
     wrapper.unmount()

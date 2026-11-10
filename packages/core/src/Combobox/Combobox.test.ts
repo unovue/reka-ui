@@ -1,6 +1,6 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { handleSubmit, sleep } from '@/test'
@@ -273,11 +273,16 @@ describe('given default Combobox', () => {
 
     // #2789: the reset runs a tick after the close; a reopen inside that tick cancels it.
     it('should keep text typed into a popup reopened before the reset runs', async () => {
+      // The blur reset runs on a timer after the close: drive it.
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
       const input = wrapper.find('input')
       await input.trigger('keydown', { key: 'Escape' })
       input.element.value = 'Ban'
       await input.trigger('input')
-      await sleep(10)
+      await vi.advanceTimersByTimeAsync(10)
       expect(wrapper.find('[role=listbox]').exists()).toBe(true)
       expect(input.element.value).toBe('Ban')
     })
@@ -1793,6 +1798,11 @@ describe('combobox blur reset with a cancelled reopen', () => {
   })
 
   it('keeps text typed right after Escape when the reopen is cancelled', async () => {
+    // The blur reset runs on a timer after the close: drive it.
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const wrapper = mount(Host, { attachTo: document.body })
     const input = wrapper.find('input')
     await wrapper.find('[data-testid=trigger]').trigger('click')
@@ -1801,13 +1811,18 @@ describe('combobox blur reset with a cancelled reopen', () => {
     await input.trigger('keydown', { key: 'Escape' })
     input.element.value = 'Ban'
     await input.trigger('input')
-    await sleep(10)
+    await vi.advanceTimersByTimeAsync(10)
     await nextTick()
     expect(input.element.value).toBe('Ban')
     wrapper.unmount()
   })
 
   it('still restores the selected value when a trigger reopen is cancelled', async () => {
+    // The blur reset runs on a timer after the close: drive it.
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const wrapper = mount(Host, { attachTo: document.body })
     const input = wrapper.find('input')
     await wrapper.find('[data-testid=trigger]').trigger('click')
@@ -1818,7 +1833,7 @@ describe('combobox blur reset with a cancelled reopen', () => {
     ;(wrapper.vm as unknown as { allowOpen: boolean }).allowOpen = false
     await input.trigger('keydown', { key: 'Escape' })
     await wrapper.find('[data-testid=trigger]').trigger('click')
-    await sleep(10)
+    await vi.advanceTimersByTimeAsync(10)
     await nextTick()
     expect(wrapper.find('[role=listbox]').exists()).toBe(false)
     expect(input.element.value).toBe('Apple')
@@ -1853,6 +1868,11 @@ describe('combobox blur reset with a controlled reopen', () => {
   })
 
   it('keeps the input text when the parent reopens before the reset runs', async () => {
+    // The blur reset runs on a timer after the close: drive it.
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const wrapper = mount(Host, { attachTo: document.body })
     const vm = wrapper.vm as unknown as { open: boolean }
     const input = wrapper.find('input')
@@ -1864,7 +1884,7 @@ describe('combobox blur reset with a controlled reopen', () => {
     await input.trigger('keydown', { key: 'Escape' })
     expect(vm.open).toBe(false)
     vm.open = true
-    await sleep(10)
+    await vi.advanceTimersByTimeAsync(10)
     await nextTick()
     expect(vm.open).toBe(true)
     expect(input.element.value).toBe('Ban')
