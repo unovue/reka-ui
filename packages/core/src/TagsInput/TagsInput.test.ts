@@ -348,7 +348,9 @@ describe('given a TagsInput with objects', async () => {
 
       const tags = wrapper.findAll('[data-reka-collection-item]')
       expect(tags.length).toBe(before + 2)
-      expect(tags[before + 1].text()).toBe('tag2')
+      // `text()` trims, so assert on the emitted value instead
+      const emitted = wrapper.getComponent({ name: 'TagsInputRoot' }).emitted('update:modelValue') as string[][][]
+      expect(emitted.at(-1)![0].slice(-2)).toEqual(['tag1', 'tag2'])
     })
 
     it('should not add a tag when pasting only whitespace', async () => {
