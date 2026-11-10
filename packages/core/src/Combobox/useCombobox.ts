@@ -471,8 +471,6 @@ export interface UseComboboxRootProps<T = AcceptableValue> extends Omit<UseListb
    * which would be mistaken for the filter itself.
    */
   filter?: ListboxFilterFunction<T> | null | Ref<ListboxFilterFunction<T> | null | undefined>
-  /** @deprecated Use `filter: null`. When `true`, client filtering is off whatever `filter` says. */
-  ignoreFilter?: MaybeRefOrGetter<boolean | undefined>
   /** Reset the input text when the combobox closes. @defaultValue `true` */
   resetSearchTermOnBlur?: MaybeRefOrGetter<boolean | undefined>
   /** Reset the input text when a value is selected. @defaultValue `true` */
@@ -555,8 +553,6 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
   const baseId = props.baseId ?? `reka-combobox-${++comboboxCount}`
   const { contains } = useFilter({ sensitivity: 'base' })
   const filter = computed(() => {
-    if (toValue(props.ignoreFilter))
-      return null
     const value = isRef(props.filter) ? props.filter.value : props.filter
     return value === undefined ? contains : value
   })

@@ -12,8 +12,8 @@ import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { getDrawerViewportSurface } from './useDrawer'
 
 /**
- * Optional wrapper around `DrawerContent`. It has no gestures (they live on
- * `DrawerContent` / `DrawerContentImpl`), so this is a passthrough that
+ * Optional wrapper around `DrawerPopup`. It has no gestures (they live on
+ * `DrawerPopup` / `DrawerContentImpl`), so this is a passthrough that
  * carries the `data-drawer-viewport` attribute for downstream selectors and
  * registers itself as the measurement root for `DrawerVirtualKeyboardProvider`.
  */

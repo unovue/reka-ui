@@ -7,7 +7,7 @@ export interface SelectTriggerProps extends PopperAnchorProps {
 </script>
 
 <script setup lang="ts">
-import { mergeProps, onBeforeUnmount, onMounted, useAttrs, watchPostEffect } from 'vue'
+import { mergeProps, onBeforeUnmount, watchPostEffect } from 'vue'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { injectPopperRootContext } from '@/Popper/PopperRoot.vue'
 import { renderAs } from '@/Primitive/renderAs'
@@ -33,73 +33,64 @@ const { trigger } = useSelectTrigger({
   disabled: () => props.disabled,
 })
 
-onMounted(() => {
-  rootContext.onTriggerChange(triggerElement.value)
-})
-
 // The positioning anchor: what `PopperAnchor` did, without its components.
+// Both follow the element (an `as` change replaces it), so the root, and a
+// Field focusing its control, always reach the rendered trigger.
 const popperRootContext = injectPopperRootContext()
 watchPostEffect(() => {
+  rootContext.onTriggerChange(triggerElement.value)
   popperRootContext.onAnchorChange(props.reference ?? triggerElement.value)
 })
+// An unmounted trigger must not stay the element the root (and a Field
+// focusing its control) reaches, nor the anchor. Only what this trigger still
+// owns is cleared: a trigger that replaced it keeps its references.
+onBeforeUnmount(() => {
+  const element = triggerElement.value
+  if (rootContext.triggerElement.value === element)
+    rootContext.onTriggerChange(undefined)
+  if (popperRootContext.anchor.value === (props.reference ?? element))
+    popperRootContext.onAnchorChange(undefined)
+})
 
-// Optional Field participation — the trigger is the combobox's focusable
-// element, so it (not SelectRoot) owns id/aria-describedby/aria-invalid and
-// focus-state reporting. The Select's field is `null` outside a `FieldRoot`
-// (and inside another control of it), so all of this is inert when
-// there is no ancestor Field: `resolvedId`/`mergedDescribedBy` fall back to
-// whatever the consumer already passed (or nothing), unchanged.
-const fieldContext = injectSelectFieldContext(null)
-const attrs = useAttrs()
-// `attrs` isn't reactive, so these are read during render rather than cached
-// in a `computed`. Consumer values are merged (ids) or win (`id`,
-// `aria-invalid`) — read explicitly rather than relying on attrs-merge order
-// through the `PopperAnchor`/`asChild` layering.
-function getResolvedId() {
-  return (attrs.id as string | undefined) ?? fieldContext?.fieldId.value
-}
-function getFieldAttrs() {
-  const mergeIds = (consumerValue: unknown, fieldValue: string | undefined) =>
-    [consumerValue as string | undefined, fieldValue].filter(Boolean).join(' ') || undefined
-  return {
-    ...fieldContext?.dataAttributes.value,
-    'id': getResolvedId(),
-    'aria-labelledby': mergeIds(attrs['aria-labelledby'], fieldContext?.labelId.value),
-    'aria-describedby': mergeIds(attrs['aria-describedby'], fieldContext?.describedBy.value),
-    'aria-invalid': attrs['aria-invalid'] ?? (fieldContext?.invalid.value || undefined),
-  }
+// Optional Field participation: the root is the field's control, and the
+// trigger, its focusable element, carries the field's id, label and aria
+// wiring and reports focus. The Select's binding is `null` outside a
+// `FieldRoot` (and inside another control of it), so all of this is inert
+// without a Field: the consumer's attributes pass through unchanged.
+const field = injectSelectFieldContext(null)
+
+// `$attrs` isn't reactive, so the Field's wiring is read during render. Its
+// state attributes and id merge over the consumer's attributes (a consumer
+// `id` wins, and its aria ids are merged) and under the trigger's own.
+function renderAttrs(attrs: Record<string, unknown>) {
+  const own = { onFocusin: focusWithin?.onFocusin, onFocusout: focusWithin?.onFocusout, type: props.as === 'button' ? 'button' : undefined }
+  if (!field)
+    return mergeProps(attrs, trigger.attrs.value, own)
+  return mergeProps(
+    attrs,
+    {
+      ...field.dataAttributes(),
+      id: (attrs.id as string | undefined) ?? field.context.fieldId.value,
+      ...field.ariaAttrs(attrs, !!trigger.attrs.value.disabled),
+    },
+    trigger.attrs.value,
+    own,
+  )
 }
 
 // Focus moving from the trigger into the (portaled) content keeps the field
 // focused, so opening the popup doesn't touch it; it's touched once focus
 // leaves both, as in Base UI.
-const focusWithin = useFieldFocusWithin(
-  fieldContext
-    ? { onFocus: () => fieldContext.handleControlFocus(), onBlur: () => fieldContext.handleControlBlur(), context: fieldContext }
-    : null,
-  triggerElement,
-  {
-    elements: () => [getElementByIdFrom(triggerElement.value, rootContext.contentId)],
-    open: () => rootContext.open.value,
-  },
-)
-
-let unregisterControl: (() => void) | undefined
-onMounted(() => {
-  unregisterControl = fieldContext?.registerControl({
-    id: getResolvedId,
-    element: () => triggerElement.value,
-    getValue: () => rootContext.modelValue.value,
-    required: () => Boolean(rootContext.required.value),
-  })
+const focusWithin = useFieldFocusWithin(field, triggerElement, {
+  elements: () => [getElementByIdFrom(triggerElement.value, rootContext.contentId)],
+  open: () => rootContext.open.value,
 })
-onBeforeUnmount(() => unregisterControl?.())
 </script>
 
 <template>
   <component
     :is="renderAs(as, asChild)"
-    v-bind="mergeProps($attrs, getFieldAttrs(), trigger.attrs.value, { onFocusin: focusWithin?.onFocusin, onFocusout: focusWithin?.onFocusout, type: as === 'button' ? 'button' : undefined })"
+    v-bind="renderAttrs($attrs)"
     :ref="forwardRef"
   >
     <slot />

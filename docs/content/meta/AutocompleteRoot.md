@@ -65,12 +65,6 @@
     'default': 'true'
   },
   {
-    'name': 'ignoreFilter',
-    'description': '<p>Deprecated alias for <code>:filter=&quot;null&quot;</code>: when <code>true</code>, turns client filtering off. Wins over <code>filter</code>.</p>\n',
-    'type': 'boolean',
-    'required': false
-  },
-  {
     'name': 'loop',
     'description': '<p>When <code>true</code>, keyboard navigation will loop from last item to first, and vice versa.</p>\n',
     'type': 'boolean',
@@ -186,7 +180,6 @@
 | `filter` | Whether an item matches the typed text: called as `filter(text, search, value)` with the item's `textValue` (or its text content). Omitted, items are matched with `useFilter`'s `contains` (base sensitivity). `null` turns client filtering off: filter the items yourself, or on a server. | `ListboxFilterFunction<string> \| null` | No | - |
 | `getNavigationIntent` | Resolves what a keydown in the input means for keyboard navigation. Return `undefined` to fall back to the default mapping, `null` to opt the key out (for Enter this also skips the selection), or `'select'` to select the highlighted item as Enter does. A `'next'` or `'prev'` intent also opens a closed popup. Unmodified printable keys, ArrowLeft and ArrowRight always stay text input. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null \| undefined)` | No | - |
 | `highlightOnHover` | When `true`, hover over item will trigger highlight | `boolean` | No | `true` |
-| `ignoreFilter` | Deprecated alias for `:filter="null"`: when `true`, turns client filtering off. Wins over `filter`. | `boolean` | No | - |
 | `loop` | When `true`, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
 | `modelValue` | The controlled value of the Autocomplete (the input text). Can be bound with `v-model`. | `string` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |

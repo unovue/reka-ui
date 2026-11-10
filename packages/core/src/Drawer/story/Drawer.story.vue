@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import {
+  DrawerBackdrop,
   DrawerClose,
-  DrawerContent,
   DrawerDescription,
   DrawerGrabber,
   DrawerIndent,
   DrawerIndentBackground,
-  DrawerOverlay,
+  DrawerPopup,
   DrawerPortal,
   DrawerProvider,
   DrawerRoot,
@@ -94,8 +94,8 @@ const navLinks = [
           Bottom Drawer
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="drawer-overlay" />
-          <DrawerContent class="drawer-content-bottom">
+          <DrawerBackdrop class="drawer-overlay" />
+          <DrawerPopup class="drawer-content-bottom">
             <DrawerGrabber class="drawer-handle" />
             <div class="p-6">
               <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
@@ -110,7 +110,7 @@ const navLinks = [
                 </DrawerClose>
               </div>
             </div>
-          </DrawerContent>
+          </DrawerPopup>
         </DrawerPortal>
       </DrawerRoot>
     </Variant>
@@ -124,8 +124,8 @@ const navLinks = [
           Top Drawer
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="drawer-overlay" />
-          <DrawerContent class="drawer-content-top">
+          <DrawerBackdrop class="drawer-overlay" />
+          <DrawerPopup class="drawer-content-top">
             <div class="p-6">
               <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                 Top Drawer
@@ -140,7 +140,7 @@ const navLinks = [
               </div>
             </div>
             <DrawerGrabber class="drawer-handle drawer-handle-bottom" />
-          </DrawerContent>
+          </DrawerPopup>
         </DrawerPortal>
       </DrawerRoot>
     </Variant>
@@ -154,8 +154,8 @@ const navLinks = [
           Left Drawer
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="drawer-overlay" />
-          <DrawerContent class="drawer-content-left">
+          <DrawerBackdrop class="drawer-overlay" />
+          <DrawerPopup class="drawer-content-left">
             <div class="p-6">
               <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                 Left Drawer
@@ -169,7 +169,7 @@ const navLinks = [
                 </DrawerClose>
               </div>
             </div>
-          </DrawerContent>
+          </DrawerPopup>
         </DrawerPortal>
       </DrawerRoot>
     </Variant>
@@ -183,8 +183,8 @@ const navLinks = [
           Right Drawer
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="drawer-overlay" />
-          <DrawerContent class="drawer-content-right">
+          <DrawerBackdrop class="drawer-overlay" />
+          <DrawerPopup class="drawer-content-right">
             <div class="p-6">
               <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
                 Right Drawer
@@ -198,7 +198,7 @@ const navLinks = [
                 </DrawerClose>
               </div>
             </div>
-          </DrawerContent>
+          </DrawerPopup>
         </DrawerPortal>
       </DrawerRoot>
     </Variant>
@@ -213,8 +213,8 @@ const navLinks = [
           Open Snap Drawer
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="drawer-overlay" />
-          <DrawerContent class="drawer-content-snap">
+          <DrawerBackdrop class="drawer-overlay" />
+          <DrawerPopup class="drawer-content-snap">
             <DrawerGrabber class="drawer-handle drawer-snap-handle" />
             <div class="drawer-snap-scroll">
               <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
@@ -246,7 +246,7 @@ const navLinks = [
                 </DrawerClose>
               </div>
             </div>
-          </DrawerContent>
+          </DrawerPopup>
         </DrawerPortal>
       </DrawerRoot>
     </Variant>
@@ -264,7 +264,7 @@ const navLinks = [
             Open Non-modal Drawer
           </DrawerTrigger>
           <DrawerPortal>
-            <DrawerContent class="drawer-content-bottom drawer-content-nonmodal">
+            <DrawerPopup class="drawer-content-bottom drawer-content-nonmodal">
               <DrawerGrabber class="drawer-handle" />
               <div class="p-6">
                 <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
@@ -279,7 +279,7 @@ const navLinks = [
                   </DrawerClose>
                 </div>
               </div>
-            </DrawerContent>
+            </DrawerPopup>
           </DrawerPortal>
         </DrawerRoot>
       </div>
@@ -296,8 +296,8 @@ const navLinks = [
           </DrawerTrigger>
           <DrawerSwipeArea class="fixed bottom-0 left-0 right-0 h-8 bg-gray-200/50" />
           <DrawerPortal>
-            <DrawerOverlay class="drawer-overlay" />
-            <DrawerContent class="drawer-content-bottom">
+            <DrawerBackdrop class="drawer-overlay" />
+            <DrawerPopup class="drawer-content-bottom">
               <DrawerGrabber class="drawer-handle" />
               <div class="p-6">
                 <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
@@ -312,7 +312,7 @@ const navLinks = [
                   </DrawerClose>
                 </div>
               </div>
-            </DrawerContent>
+            </DrawerPopup>
           </DrawerPortal>
         </DrawerRoot>
       </div>
@@ -324,8 +324,8 @@ const navLinks = [
           Open Outer Drawer
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="drawer-overlay" />
-          <DrawerContent class="drawer-content-bottom">
+          <DrawerBackdrop class="drawer-overlay" />
+          <DrawerPopup class="drawer-content-bottom">
             <DrawerGrabber class="drawer-handle" />
             <div class="p-6">
               <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
@@ -340,8 +340,8 @@ const navLinks = [
                     Open Inner Drawer
                   </DrawerTrigger>
                   <DrawerPortal>
-                    <DrawerOverlay class="drawer-overlay" />
-                    <DrawerContent class="drawer-content-bottom drawer-content-inner">
+                    <DrawerBackdrop class="drawer-overlay" />
+                    <DrawerPopup class="drawer-content-bottom drawer-content-inner">
                       <DrawerGrabber class="drawer-handle" />
                       <div class="p-6">
                         <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
@@ -356,12 +356,12 @@ const navLinks = [
                           </DrawerClose>
                         </div>
                       </div>
-                    </DrawerContent>
+                    </DrawerPopup>
                   </DrawerPortal>
                 </DrawerRoot>
               </div>
             </div>
-          </DrawerContent>
+          </DrawerPopup>
         </DrawerPortal>
       </DrawerRoot>
     </Variant>
@@ -380,8 +380,8 @@ const navLinks = [
                   Open with Indent
                 </DrawerTrigger>
                 <DrawerPortal>
-                  <DrawerOverlay class="drawer-overlay" />
-                  <DrawerContent class="drawer-content-bottom">
+                  <DrawerBackdrop class="drawer-overlay" />
+                  <DrawerPopup class="drawer-content-bottom">
                     <DrawerGrabber class="drawer-handle" />
                     <div class="p-6">
                       <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
@@ -396,7 +396,7 @@ const navLinks = [
                         </DrawerClose>
                       </div>
                     </div>
-                  </DrawerContent>
+                  </DrawerPopup>
                 </DrawerPortal>
               </DrawerRoot>
             </div>
@@ -418,8 +418,8 @@ const navLinks = [
           Open action sheet
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="drawer-overlay" />
-          <DrawerContent class="drawer-content-uncontained">
+          <DrawerBackdrop class="drawer-overlay" />
+          <DrawerPopup class="drawer-content-uncontained">
             <div class="uncontained-surface">
               <DrawerTitle class="visually-hidden">
                 Profile actions
@@ -467,7 +467,7 @@ const navLinks = [
                 Block User
               </button>
             </div>
-          </DrawerContent>
+          </DrawerPopup>
         </DrawerPortal>
       </DrawerRoot>
     </Variant>
@@ -478,8 +478,8 @@ const navLinks = [
           Open Navigation
         </DrawerTrigger>
         <DrawerPortal>
-          <DrawerOverlay class="drawer-overlay" />
-          <DrawerContent class="drawer-content-bottom drawer-content-fullheight">
+          <DrawerBackdrop class="drawer-overlay" />
+          <DrawerPopup class="drawer-content-bottom drawer-content-fullheight">
             <DrawerGrabber class="drawer-handle" />
             <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
               <DrawerTitle class="text-lg font-semibold text-gray-900">
@@ -505,7 +505,7 @@ const navLinks = [
                 </li>
               </ul>
             </nav>
-          </DrawerContent>
+          </DrawerPopup>
         </DrawerPortal>
       </DrawerRoot>
     </Variant>
@@ -516,9 +516,9 @@ const navLinks = [
             Open Form
           </DrawerTrigger>
           <DrawerPortal>
-            <DrawerOverlay class="drawer-overlay" />
+            <DrawerBackdrop class="drawer-overlay" />
             <DrawerViewport class="keyboard-viewport">
-              <DrawerContent class="drawer-content-keyboard">
+              <DrawerPopup class="drawer-content-keyboard">
                 <DrawerGrabber class="drawer-handle" />
                 <div class="border-b border-gray-200 px-6 py-4">
                   <DrawerTitle class="text-lg font-semibold text-gray-900">
@@ -556,7 +556,7 @@ const navLinks = [
                     Send
                   </DrawerClose>
                 </div>
-              </DrawerContent>
+              </DrawerPopup>
             </DrawerViewport>
           </DrawerPortal>
         </DrawerVirtualKeyboardProvider>

@@ -28,7 +28,7 @@ const trigger = getDrawerTriggerSurface(rootContext)
 // Keep triggerElement in sync with the rendered element — useForwardElement's
 // currentElement is a reactive computed ref, and v-if / conditional rendering
 // can swap the underlying DOM node, so a one-shot onMounted assignment would
-// go stale and break finalFocus restoration in DrawerContent.
+// go stale and break finalFocus restoration in DrawerPopup.
 watch(currentElement, (el) => {
   rootContext.triggerElement.value = el
 }, { immediate: true })

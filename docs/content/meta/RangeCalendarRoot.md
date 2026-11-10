@@ -126,12 +126,6 @@
     'required': false
   },
   {
-    'name': 'maximumDays',
-    'description': '<p>The maximum number of days in the range (inclusive). Alias of <code>maximumLength</code> for day ranges.</p>\n',
-    'type': 'number',
-    'required': false
-  },
-  {
     'name': 'maximumLength',
     'description': '<p>The maximum length of the range (inclusive), counted in units of <code>granularity</code>: days, months or years.</p>\n',
     'type': 'number',
@@ -353,7 +347,6 @@
 | `isDateHighlightable` | A function that returns whether or not a date is highlightable | `Matcher` | No | - |
 | `isDateUnavailable` | A function that returns whether or not a date is unavailable. Called only for cells at the `granularity` (with that unit as its second argument); the coarser navigation views apply only `minValue`, `maxValue` and `disabled`. | `Matcher` | No | - |
 | `locale` | The locale to use for formatting dates | `string` | No | - |
-| `maximumDays` | The maximum number of days in the range (inclusive). Alias of `maximumLength` for day ranges. | `number` | No | - |
 | `maximumLength` | The maximum length of the range (inclusive), counted in units of `granularity`: days, months or years. | `number` | No | - |
 | `maxValue` | The maximum date that can be selected | `DateValue` | No | - |
 | `maxView` | The coarsest view `RangeCalendarViewTrigger` can switch to. | `"day" \| "month" \| "year"` | No | `"year"` |
