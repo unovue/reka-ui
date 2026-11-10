@@ -36,7 +36,9 @@ describe('normalizeColor', () => {
   it('clamps out-of-range channels', () => {
     expect(parseColor('rgb(300, 0, 0)')).toEqual({ space: 'rgb', r: 255, g: 0, b: 0, alpha: 1 })
     expect(parseColor('rgba(10, 20, 30, 5)')).toMatchObject({ alpha: 1 })
-    expect(parseColor('hsl(400, 150%, 50%)')).toMatchObject({ h: 360, s: 100, l: 50 })
+    expect(parseColor('hsl(400, 150%, 50%)')).toMatchObject({ h: 40, s: 100, l: 50 })
+    expect(parseColor('hsl(360, 100%, 50%)')).toMatchObject({ h: 360 })
+    expect(parseColor('hsb(725, 50%, 50%)')).toMatchObject({ h: 5 })
     expect(parseColor('hsb(10, 200%, 300%)')).toMatchObject({ s: 100, b: 100 })
   })
 

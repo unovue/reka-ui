@@ -8,6 +8,11 @@ const RGB_RE = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.
 const HSL_RE = /^hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*(?:,\s*([\d.]+)\s*)?\)$/
 const HSB_RE = /^hs[bv]a?\(\s*([\d.]+)\s*,\s*([\d.]+)%?\s*,\s*([\d.]+)%?\s*(?:,\s*([\d.]+)\s*)?\)$/
 
+/** Hue is an angle: 400 is 40. 360 itself is kept, as the hue channel's range allows it. */
+function wrapHue(hue: number): number {
+  return hue > 360 ? hue % 360 : hue
+}
+
 /**
  * Parses a color string into a Color object.
  * Supports hex (#rrggbb, #rgb), rgb(), hsl(), and hsb()/hsv() formats.
@@ -101,7 +106,7 @@ function parseHsl(hsl: string): HSLColor {
 
   return {
     space: 'hsl',
-    h: clamp(parseFloat(match[1]), 0, 360),
+    h: wrapHue(parseFloat(match[1])),
     s: clamp(parseFloat(match[2]), 0, 100),
     l: clamp(parseFloat(match[3]), 0, 100),
     alpha: match[4] ? clamp(parseFloat(match[4]), 0, 1) : 1,
@@ -116,7 +121,7 @@ function parseHsb(hsb: string): HSBColor {
 
   return {
     space: 'hsb',
-    h: clamp(parseFloat(match[1]), 0, 360),
+    h: wrapHue(parseFloat(match[1])),
     s: clamp(parseFloat(match[2]), 0, 100),
     b: clamp(parseFloat(match[3]), 0, 100),
     alpha: match[4] ? clamp(parseFloat(match[4]), 0, 1) : 1,
