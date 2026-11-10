@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { CalendarGridData, CalendarUnit, DateValue, WeekStartsOn } from '@/date'
 import type { PrimitiveHTMLAttributes } from '@/Primitive'
-import { CalendarRoot } from '..'
+import { CalendarRoot } from '@/Calendar'
 import { injectDatePickerRootContext } from './DatePickerRoot.vue'
 
 /** Type-only: the attributes fall through to the root it renders. */

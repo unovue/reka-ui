@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { PopoverAnchorProps } from '..'
-import { PopoverAnchor } from '..'
+import type { PopoverAnchorProps } from '@/Popover'
+import { PopoverAnchor } from '@/Popover'
 
 export interface DateRangePickerAnchorProps extends PopoverAnchorProps {}
 </script>

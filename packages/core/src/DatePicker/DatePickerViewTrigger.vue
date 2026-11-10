@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { CalendarViewTriggerProps, CalendarViewTriggerSlot } from '..'
-import { CalendarViewTrigger } from '..'
+import type { CalendarViewTriggerProps, CalendarViewTriggerSlot } from '@/Calendar'
+import { CalendarViewTrigger } from '@/Calendar'
 
 export interface DatePickerViewTriggerProps extends CalendarViewTriggerProps {}
 </script>

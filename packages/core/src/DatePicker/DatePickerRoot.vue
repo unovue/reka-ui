@@ -1,8 +1,10 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
-import type { CalendarChangeReason, CalendarModelValue, CalendarRootProps, DateFieldRoot, DateFieldRootProps, PopoverOpenChangeReason, PopoverRootProps } from '..'
 import type { DatePickerChangeReason } from './useDatePicker'
+import type { CalendarChangeReason, CalendarModelValue, CalendarRootProps } from '@/Calendar'
 import type { CalendarUnit, DateValue, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
+import type { DateFieldRoot, DateFieldRootProps } from '@/DateField'
+import type { PopoverOpenChangeReason, PopoverRootProps } from '@/Popover'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'

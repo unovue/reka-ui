@@ -1,8 +1,9 @@
 <script lang="ts">
-import type { PopoverContentEmits, PopoverContentProps, PopoverPortalProps } from '..'
+import type { PopoverContentEmits, PopoverContentProps, PopoverPortalProps } from '@/Popover'
 import { computed } from 'vue'
+import { PopoverContent, PopoverPortal } from '@/Popover'
+import { useForwardElement, useForwardPropsEmits } from '@/shared'
 import { handleCalendarInitialFocus } from '@/shared/date'
-import { PopoverContent, PopoverPortal, useForwardPropsEmits } from '..'
 
 export interface DatePickerContentProps extends PopoverContentProps {
   /**
@@ -15,7 +16,6 @@ export type DatePickerContentEmits = PopoverContentEmits
 
 <script setup lang="ts">
 import { injectFieldForControl, provideFieldControlOwner } from '@/Field/useFieldControl'
-import { useForwardElement } from '@/shared'
 
 const props = defineProps<DatePickerContentProps>()
 const emits = defineEmits<DatePickerContentEmits>()

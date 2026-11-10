@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { CalendarHeadingProps } from '..'
-import { CalendarHeading } from '..'
+import type { CalendarHeadingProps } from '@/Calendar'
+import { CalendarHeading } from '@/Calendar'
 
 export interface DatePickerHeadingProps extends CalendarHeadingProps {}
 </script>

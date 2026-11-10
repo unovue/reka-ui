@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { CalendarGridBodyProps } from '..'
-import { CalendarGridBody } from '..'
+import type { CalendarGridBodyProps } from '@/Calendar'
+import { CalendarGridBody } from '@/Calendar'
 
 export interface DatePickerGridBodyProps extends CalendarGridBodyProps {}
 </script>
