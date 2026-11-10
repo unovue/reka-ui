@@ -487,10 +487,12 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
     if (el)
       return el?.focus()
 
-    // Space selects the item when no search is in progress; otherwise it's part of the search
-    // (a text field, or a submenu's key bubbling up, keeps Space as is)
+    // Space selects the item when no search is in progress; otherwise it's part of the search.
+    // Only on this menu's own items (or the content): other controls in it, and a submenu's
+    // key bubbling up, keep Space as is.
     if (event.code === 'Space') {
-      if (searchRef.value === '' || !isKeyDownInside || isKeyDownInTextField)
+      const isOnItem = target === event.currentTarget || target.hasAttribute('data-reka-collection-item')
+      if (searchRef.value === '' || !isKeyDownInside || !isOnItem)
         return
       // MenuItem skips Space during a search, so prevent the scroll here
       event.preventDefault()

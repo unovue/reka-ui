@@ -95,6 +95,19 @@ describe('given a default Menu', () => {
     expect(space.defaultPrevented).toBe(false)
     field.remove()
   })
+
+  it('should leave Space to a button in the menu while a search is in progress', async () => {
+    const item = (await findAllByRole(document.body, 'menuitem'))[0]
+    item.focus()
+    item.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', code: 'KeyB', bubbles: true, cancelable: true }))
+    const button = document.createElement('button')
+    document.querySelector('[data-reka-menu-content]')!.appendChild(button)
+    button.focus()
+    const space = new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true })
+    button.dispatchEvent(space)
+    expect(space.defaultPrevented).toBe(false)
+    button.remove()
+  })
 })
 
 describe('given a Menu with submenu', () => {
