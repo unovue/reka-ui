@@ -7,7 +7,7 @@ export interface SelectTriggerProps extends PopperAnchorProps {
 </script>
 
 <script setup lang="ts">
-import { mergeProps, watchPostEffect } from 'vue'
+import { mergeProps, onBeforeUnmount, watchPostEffect } from 'vue'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { injectPopperRootContext } from '@/Popper/PopperRoot.vue'
 import { renderAs } from '@/Primitive/renderAs'
@@ -40,6 +40,16 @@ const popperRootContext = injectPopperRootContext()
 watchPostEffect(() => {
   rootContext.onTriggerChange(triggerElement.value)
   popperRootContext.onAnchorChange(props.reference ?? triggerElement.value)
+})
+// An unmounted trigger must not stay the element the root (and a Field
+// focusing its control) reaches, nor the anchor. Only what this trigger still
+// owns is cleared: a trigger that replaced it keeps its references.
+onBeforeUnmount(() => {
+  const element = triggerElement.value
+  if (rootContext.triggerElement.value === element)
+    rootContext.onTriggerChange(undefined)
+  if (popperRootContext.anchor.value === (props.reference ?? element))
+    popperRootContext.onAnchorChange(undefined)
 })
 
 // Optional Field participation: the root is the field's control, and the

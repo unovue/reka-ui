@@ -3,8 +3,9 @@ import { fireEvent } from '@testing-library/vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
-import { FieldLabel, FieldRoot } from '@/Field'
+import { FieldControl, FieldLabel, FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
+import { PopperRoot } from '@/Popper'
 import { describeFieldControlContract, providedContext } from '@/test/fieldControlContract'
 import { SelectContent, SelectItem, SelectPortal, SelectRoot, SelectTrigger, SelectViewport } from '.'
 
@@ -159,6 +160,113 @@ describe('given a Select and a Field', () => {
     await nextTick()
     expect(wrapper.find('label').attributes('for')).toBe(trigger(wrapper).id)
     expect(field().attributes('data-dirty')).toBeUndefined()
+    wrapper.unmount()
+  })
+})
+
+describe('given a Select whose trigger unmounts', () => {
+  const rootTrigger = (wrapper: VueWrapper) => providedContext<{ triggerElement: { value: HTMLElement | undefined } }>(wrapper, SelectRoot, 'onTriggerChange').triggerElement.value
+
+  const anchor = (wrapper: VueWrapper) => providedContext<{ anchor: { value: unknown } }>(wrapper, PopperRoot, 'onAnchorChange').anchor.value
+
+  for (const selectFirst of [true, false]) {
+    it(`an invalid submit focuses a mounted control, not the removed trigger (select ${selectFirst ? 'before' : 'after'} it)`, async () => {
+      const onFormSubmit = vi.fn()
+      const Harness = defineComponent({
+        props: { show: { type: Boolean, default: true } },
+        setup: props => () => {
+          const select = h(FieldRoot, { name: 'fruit', required: true }, () => [
+            h(FieldLabel, () => 'Fruit'),
+            h(SelectRoot, {}, () => props.show ? h(SelectTrigger, { 'data-testid': 'trigger', 'id': 'own-id' }, () => 'Fruit') : null),
+          ])
+          const text = h(FieldRoot, { name: 'name', required: true }, () => h(FieldControl, { 'data-testid': 'text' }))
+          return h(FormRoot, { onFormSubmit }, () => [...(selectFirst ? [select, text] : [text, select]), h('button', { type: 'submit' }, 'Submit')])
+        },
+      })
+      const wrapper = mount(Harness, { attachTo: document.body })
+      await nextTick()
+      expect(wrapper.find('label').attributes('for')).toBe('own-id')
+
+      await wrapper.setProps({ show: false })
+      await nextTick()
+      expect(rootTrigger(wrapper)).toBeUndefined()
+      expect(anchor(wrapper)).toBeUndefined()
+      // As for a Select that never had a trigger: the field's own id.
+      expect(wrapper.find('label').attributes('for')).not.toBe('own-id')
+
+      await wrapper.find('button[type="submit"]').trigger('submit')
+      await nextTick()
+      expect(onFormSubmit).not.toHaveBeenCalled()
+      expect(document.activeElement).toBe(wrapper.find('[data-testid="text"]').element)
+      wrapper.unmount()
+    })
+  }
+
+  it('keeps its native select in a form, as a Select that never had a trigger does', async () => {
+    const Harness = defineComponent({
+      props: { show: { type: Boolean, default: true } },
+      setup: props => () => h('form', [
+        h(SelectRoot, { name: 'fruit', defaultValue: 'Apple' }, () => props.show ? h(SelectTrigger, { 'data-testid': 'trigger' }, () => 'Fruit') : null),
+      ]),
+    })
+    const wrapper = mount(Harness, { attachTo: document.body })
+    await nextTick()
+    expect(wrapper.find('select[name="fruit"]').exists()).toBe(true)
+    await wrapper.setProps({ show: false })
+    await nextTick()
+    expect(wrapper.find('select[name="fruit"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('a trigger that replaces it in the same tick becomes the root\'s trigger', async () => {
+    const onFormSubmit = vi.fn()
+    const Harness = defineComponent({
+      props: { second: Boolean },
+      setup: props => () => h(FormRoot, { onFormSubmit }, () => [
+        h(FieldRoot, { name: 'fruit', required: true }, () => [
+          h(FieldLabel, () => 'Fruit'),
+          h(SelectRoot, {}, () => props.second
+            ? h(SelectTrigger, { 'key': 'b', 'data-testid': 'b' }, () => 'B')
+            : h(SelectTrigger, { 'key': 'a', 'data-testid': 'a' }, () => 'A')),
+        ]),
+        h('button', { type: 'submit' }, 'Submit'),
+      ]),
+    })
+    const wrapper = mount(Harness, { attachTo: document.body })
+    await nextTick()
+    expect(rootTrigger(wrapper)).toBe(wrapper.find('[data-testid="a"]').element)
+
+    await wrapper.setProps({ second: true })
+    await nextTick()
+    const b = wrapper.find('[data-testid="b"]').element
+    expect(rootTrigger(wrapper)).toBe(b)
+    expect(anchor(wrapper)).toBe(b)
+    await wrapper.find('button[type="submit"]').trigger('submit')
+    await nextTick()
+    expect(document.activeElement).toBe(b)
+    expect(wrapper.find('label').attributes('for')).toBe(b.id)
+    wrapper.unmount()
+  })
+
+  it('does not clear a trigger that took its place in an earlier tick', async () => {
+    const Harness = defineComponent({
+      props: { first: { type: Boolean, default: true }, second: Boolean },
+      setup: props => () => h(FieldRoot, { name: 'fruit' }, () => h(SelectRoot, {}, () => [
+        props.first ? h(SelectTrigger, { 'key': 'a', 'data-testid': 'a' }, () => 'A') : null,
+        props.second ? h(SelectTrigger, { 'key': 'b', 'data-testid': 'b' }, () => 'B') : null,
+      ])),
+    })
+    const wrapper = mount(Harness, { attachTo: document.body })
+    await nextTick()
+    await wrapper.setProps({ second: true })
+    await nextTick()
+    const b = wrapper.find('[data-testid="b"]').element
+    expect(rootTrigger(wrapper)).toBe(b)
+
+    await wrapper.setProps({ first: false })
+    await nextTick()
+    expect(rootTrigger(wrapper)).toBe(b)
+    expect(anchor(wrapper)).toBe(b)
     wrapper.unmount()
   })
 })
