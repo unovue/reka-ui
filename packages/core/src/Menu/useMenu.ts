@@ -488,8 +488,9 @@ export function useMenuContent(options: UseMenuContentOptions): UseMenuContentRe
       return el?.focus()
 
     // Space selects the item when no search is in progress; otherwise it's part of the search
+    // (a text field, or a submenu's key bubbling up, keeps Space as is)
     if (event.code === 'Space') {
-      if (searchRef.value === '')
+      if (searchRef.value === '' || !isKeyDownInside || isKeyDownInTextField)
         return
       // MenuItem skips Space during a search, so prevent the scroll here
       event.preventDefault()

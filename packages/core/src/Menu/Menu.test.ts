@@ -82,6 +82,19 @@ describe('given a default Menu', () => {
     expect(document.activeElement?.textContent?.trim()).toBe('Beef with sauce')
     expect(wrapper.emitted('select')).toBeUndefined()
   })
+
+  it('should leave Space to a text field in the menu while a search is in progress', async () => {
+    const item = (await findAllByRole(document.body, 'menuitem'))[0]
+    item.focus()
+    item.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', code: 'KeyB', bubbles: true, cancelable: true }))
+    const field = document.createElement('input')
+    document.querySelector('[data-reka-menu-content]')!.appendChild(field)
+    field.focus()
+    const space = new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true })
+    field.dispatchEvent(space)
+    expect(space.defaultPrevented).toBe(false)
+    field.remove()
+  })
 })
 
 describe('given a Menu with submenu', () => {
