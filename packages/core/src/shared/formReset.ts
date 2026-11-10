@@ -124,3 +124,23 @@ export function provideFormResetOwner(handler: FormResetHandler) {
 export function injectFormResetOwner(): FormResetHandler | undefined {
   return inject(FORM_RESET_OWNER, undefined)
 }
+
+const FORM_RESET_DEFAULT: InjectionKey<unknown> = Symbol('FormResetDefault')
+
+/**
+ * Hands a root's `defaultValue` to the part that renders its controlled field
+ * (a picker's `Field`), which passes it on as that field's `defaultValue`: a
+ * form reset then puts the field back to it, and the field's change reaches
+ * the root like any other. Provided rather than added to the root context:
+ * the picker contexts are dictionary-mode objects (they hold accessors), and
+ * one more key doubled the table of `DatePickerRoot`'s, 0.9 KB a picker.
+ * @internal
+ */
+export function provideFormResetDefault(value: unknown) {
+  provide(FORM_RESET_DEFAULT, value)
+}
+
+/** The `defaultValue` of the root this part renders the field of. @internal */
+export function injectFormResetDefault<T>(): T | undefined {
+  return inject(FORM_RESET_DEFAULT, undefined) as T | undefined
+}

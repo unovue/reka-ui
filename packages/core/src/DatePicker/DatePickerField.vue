@@ -14,6 +14,7 @@ interface DatePickerFieldProps extends /* @vue-ignore */ PrimitiveHTMLAttributes
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 import { useForwardElement } from '@/shared'
+import { injectFormResetDefault } from '@/shared/formReset'
 
 defineProps<DatePickerFieldProps>()
 
@@ -27,6 +28,7 @@ defineSlots<{
 }>()
 
 const rootContext = injectDatePickerRootContext()
+const defaultValue = injectFormResetDefault<DateValue>()
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
@@ -49,7 +51,7 @@ function setFieldRef(el: Element | ComponentPublicInstance | null) {
     v-slot="{ segments, modelValue }"
     :ref="setFieldRef"
     :model-value="rootContext.modelValue.value ?? null"
-    :default-value="rootContext.defaultValue"
+    :default-value="defaultValue"
     :placeholder="rootContext.placeholder.value"
     v-bind="{
       id: rootContext.id.value,

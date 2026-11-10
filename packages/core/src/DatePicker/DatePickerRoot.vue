@@ -56,8 +56,6 @@ export type DatePickerRootContext = {
   setPlaceholder: (value: DateValue, reason?: DatePickerChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Bound to the field's `beforeUpdate:modelValue`: runs the picker's change inside it, and cancels the field's when the picker's is cancelled. */
   onFieldBeforeUpdate: (value: DateValue | undefined, details: ChangeEventDetails<DatePickerChangeReason>) => void
-  /** The initial value, which the field goes back to on a native reset of the owning form. */
-  defaultValue: DateValue | undefined
   /** Bound to the calendar's `beforeUpdate:modelValue`. */
   onCalendarBeforeUpdate: (value: CalendarModelValue, details: ChangeEventDetails<CalendarChangeReason>) => void
   /** Bound to the calendar's `update:placeholder`. */
@@ -127,6 +125,7 @@ import { providePopoverRootContext } from '@/Popover/PopoverRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { isEqual } from '@/shared/compare'
 import { isSegmentFieldChange } from '@/shared/date/segmentField'
+import { provideFormResetDefault } from '@/shared/formReset'
 import { useDatePicker } from './useDatePicker'
 
 defineOptions({
@@ -244,6 +243,8 @@ if (fieldContext) {
 
 providePopoverRootContext(popover.context)
 provideDatePickerRootContext(context)
+// The field goes back to it on a native reset of the owning form.
+provideFormResetDefault(props.defaultValue)
 </script>
 
 <template>

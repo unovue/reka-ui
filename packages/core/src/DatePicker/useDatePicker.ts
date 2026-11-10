@@ -283,7 +283,6 @@ export function useDatePicker(props: UseDatePickerProps = {}): UseDatePickerRetu
     setModelValue,
     setPlaceholder,
     onFieldBeforeUpdate,
-    defaultValue: props.defaultValue,
     onCalendarBeforeUpdate,
     onCalendarPlaceholderChange,
   }

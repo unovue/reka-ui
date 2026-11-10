@@ -293,7 +293,6 @@ export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDate
     setModelValue,
     setPlaceholder,
     onFieldBeforeUpdate,
-    defaultValue: props.defaultValue,
     onCalendarBeforeUpdate,
     onCalendarPlaceholderChange,
   }
