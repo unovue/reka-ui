@@ -310,14 +310,20 @@ function splitTopLevel(text: string, separator: string): string[] {
   return parts
 }
 
+interface GenericParam {
+  shown: string
+  /** Whether `shown` is the parameter's default (else its constraint). */
+  fromDefault: boolean
+}
+
 /**
  * The type parameters of an SFC's `<script setup generic="…">`, each mapped to
  * what a props table should show for it: its default (`T extends X = D` → `D`),
  * else its constraint (`T extends X` → `X`). vue-component-meta v3 prints the
  * bare parameter name.
  */
-function readGenericParams(componentPath: string): Map<string, string> {
-  const params = new Map<string, string>()
+function readGenericParams(componentPath: string): Map<string, GenericParam> {
+  const params = new Map<string, GenericParam>()
   const generic = sfcParse(readFileSync(componentPath, 'utf8')).descriptor.scriptSetup?.attrs.generic
   if (typeof generic !== 'string')
     return params
@@ -328,20 +334,44 @@ function readGenericParams(componentPath: string): Map<string, string> {
     // showing `true` / `false` would mislead, so it keeps its name.
     if (!constraint && fallback && BOOLEAN_LITERAL_RE.test(fallback))
       continue
-    const shown = (fallback && !BOOLEAN_LITERAL_RE.test(fallback)) ? fallback : (constraint ?? fallback)
+    const fromDefault = !!fallback && !BOOLEAN_LITERAL_RE.test(fallback)
+    const shown = fromDefault ? fallback : (constraint ?? fallback)
     if (name && shown)
-      params.set(name, shown)
+      params.set(name, { shown, fromDefault })
   }
   return params
 }
 
-/** Replaces whole-word type parameter names; conditional types are left alone. */
-function substituteGenericParams(type: string, params: Map<string, string>): string {
+/** The `<…>` nesting depth at each index of `type`; the `>` of `=>` does not close one. */
+function angleDepths(type: string): number[] {
+  const depths: number[] = []
+  let depth = 0
+  for (let i = 0; i < type.length; i++) {
+    const char = type[i]
+    if (char === '<')
+      depth++
+    else if (char === '>' && type[i - 1] !== '=')
+      depth = Math.max(0, depth - 1)
+    depths.push(depth)
+  }
+  return depths
+}
+
+/**
+ * Replaces whole-word type parameter names; conditional types are left alone.
+ * A parameter with no default is not replaced inside another type's argument
+ * list: its constraint is wider than the parameter, so in `PinInputValue<Type>`
+ * it would change what the type means.
+ */
+function substituteGenericParams(type: string, params: Map<string, GenericParam>): string {
   if (!params.size || EXTENDS_WORD_RE.test(type))
     return type
   let result = type.replace(NO_INFER_RE, '$1')
-  for (const [name, shown] of params)
-    result = result.replace(new RegExp(`\\b${name}\\b`, 'g'), shown.includes('|') && !PARENTHESISED_RE.test(shown) ? `(${shown})` : shown)
+  for (const [name, { shown, fromDefault }] of params) {
+    const replacement = shown.includes('|') && !PARENTHESISED_RE.test(shown) ? `(${shown})` : shown
+    const depths = fromDefault ? [] : angleDepths(result)
+    result = result.replace(new RegExp(`\\b${name}\\b`, 'g'), (match, offset: number) => depths[offset] ? match : replacement)
+  }
   const trimmed = result.trim()
   // A single parenthesised group needs no parentheses.
   if (SINGLE_GROUP_RE.test(trimmed))
@@ -354,7 +384,7 @@ function substituteGenericParams(type: string, params: Map<string, string>): str
   return result
 }
 
-function parseMeta(meta: ComponentMeta, getEventDescription: (name: string) => string | undefined, genericParams: Map<string, string>) {
+function parseMeta(meta: ComponentMeta, getEventDescription: (name: string) => string | undefined, genericParams: Map<string, GenericParam>) {
   const props = meta.props
   // Exclude global props, and the HTML attributes `PrimitiveProps` types (type-only,
   // they fall through): those declared by Vue's `HTMLAttributes` alone.
