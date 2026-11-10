@@ -14,13 +14,13 @@
   {
     "path": "dist/index.js",
     "import": "{ SelectRoot, SelectTrigger, SelectContent, SelectItem, SelectViewport, SelectPortal }",
-    "limit": "37.4 KB",
+    "limit": "37.5 KB",
     "name": "Select"
   },
   {
     "path": "dist/index.js",
     "import": "{ ComboboxRoot, ComboboxInput, ComboboxContent, ComboboxItem, ComboboxVirtualizer }",
-    "limit": "42 KB",
+    "limit": "42.1 KB",
     "name": "Combobox"
   },
   {
@@ -62,19 +62,19 @@
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, dialogElements }",
-    "limit": "27.3 KB",
+    "limit": "27.2 KB",
     "name": "Elements: Dialog"
   },
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, rekaElementFamilies }",
-    "limit": "201.3 KB",
+    "limit": "201.5 KB",
     "name": "Elements: all supported families"
   },
   {
     "path": "dist/index.js",
     "import": "*",
-    "limit": "201.5 KB",
+    "limit": "201.8 KB",
     "name": "Full library"
   }
 ]

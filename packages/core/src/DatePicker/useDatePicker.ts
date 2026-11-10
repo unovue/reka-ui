@@ -12,7 +12,6 @@ import { compareDateValues, getWeekStartsOn, isPlainDate, isSameDateSelection, i
 import { usePopover } from '@/Popover/usePopover'
 import { getterRef, useControllableState } from '@/shared'
 import { bridgeChange, getDefaultDate, isSameTemporalValue } from '@/shared/date'
-import { resetControllableState } from '@/shared/useControllableState'
 import { resolveDirection } from '@/shared/useDirection'
 
 /**
@@ -284,7 +283,7 @@ export function useDatePicker(props: UseDatePickerProps = {}): UseDatePickerRetu
     setModelValue,
     setPlaceholder,
     onFieldBeforeUpdate,
-    onFormReset: (event) => { resetControllableState(isControlled, event) },
+    defaultValue: props.defaultValue,
     onCalendarBeforeUpdate,
     onCalendarPlaceholderChange,
   }

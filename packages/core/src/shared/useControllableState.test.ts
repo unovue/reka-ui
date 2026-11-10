@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { computed, isRef, ref, watchEffect } from 'vue'
+import { computed, isRef, ref, toRaw, watchEffect } from 'vue'
 import { createChangeEventDetails, resetControllableState, useControllableState } from './useControllableState'
 
 describe('createChangeEventDetails', () => {
@@ -407,5 +407,57 @@ describe('resetControllableState', () => {
     setState([3])
     resetControllableState(isControlled)
     expect(state.value).toEqual([1])
+  })
+
+  it('hands out a copy of an array default, so mutating what it emitted leaves the default alone', () => {
+    const defaults = ['a']
+    const bound = ref<string[]>(['a', 'b'])
+    const { isControlled } = useControllableState<string[]>({
+      prop: () => bound.value,
+      defaultValue: defaults,
+      onUpdate: (value) => { bound.value = value },
+    })
+
+    resetControllableState(isControlled)
+    expect(bound.value).toEqual(['a'])
+    expect(bound.value).not.toBe(defaults)
+
+    // The parent mutates its bound array in place, then resets again.
+    bound.value.push('c')
+    expect(defaults).toEqual(['a'])
+    resetControllableState(isControlled)
+    expect(bound.value).toEqual(['a'])
+  })
+
+  it('stores a copy of an array default in an uncontrolled model, and stays a no-op once reset', () => {
+    const defaults = ['a']
+    const onUpdate = vi.fn()
+    const { state, setState, isControlled } = useControllableState<string[]>({ defaultValue: defaults, onUpdate })
+    setState(['b'])
+    resetControllableState(isControlled)
+    expect(toRaw(state.value)).not.toBe(defaults)
+    state.value.push('c')
+    expect(defaults).toEqual(['a'])
+
+    resetControllableState(isControlled)
+    expect(state.value).toEqual(['a'])
+    onUpdate.mockClear()
+    expect(resetControllableState(isControlled)).toBe(false)
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+
+  it('copies a plain object default, and passes other objects as they are', () => {
+    const range = { start: 1, end: 2 }
+    const date = new Date(0)
+    const seen: unknown[] = []
+    const plain = useControllableState<{ start: number, end: number }>({ prop: () => ({ start: 5, end: 6 }), defaultValue: range, onUpdate: value => seen.push(value) })
+    const instance = useControllableState<Date>({ prop: () => new Date(1), defaultValue: date, onUpdate: value => seen.push(value) })
+
+    resetControllableState(plain.isControlled)
+    resetControllableState(instance.isControlled)
+
+    expect(seen[0]).toEqual(range)
+    expect(seen[0]).not.toBe(range)
+    expect(seen[1]).toBe(date)
   })
 })

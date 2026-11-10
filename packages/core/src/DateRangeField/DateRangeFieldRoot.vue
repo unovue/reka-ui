@@ -99,7 +99,7 @@ import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { isEqual } from '@/shared/compare'
 import { initializeSegmentValues, toRangeFormValue } from '@/shared/date'
-import { formResetBinder, injectFormResetOwner } from '@/shared/formReset'
+import { formResetBinder } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useDateRangeField } from './useDateRangeField'
@@ -220,14 +220,9 @@ function getRootAttrs() {
 provideDateRangeFieldRootContext(context)
 
 // A native reset of the owning form puts the value back to `defaultValue`, and
-// drops segments typed without completing a value. Inside a picker the value
-// is the picker's, which resets it.
-const formResetOwner = injectFormResetOwner()
+// drops segments typed without completing a value.
 function onFormReset(event: Event) {
-  if (formResetOwner)
-    formResetOwner(event)
-  else
-    resetControllableState(isControlled, event)
+  resetControllableState(isControlled, event)
   if (!modelValue.value?.start)
     segmentValues.start.value = initializeSegmentValues(granularity.value)
   if (!modelValue.value?.end)

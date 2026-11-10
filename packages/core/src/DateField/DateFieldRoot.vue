@@ -95,7 +95,7 @@ import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { isEqual } from '@/shared/compare'
-import { formResetBinder, injectFormResetOwner } from '@/shared/formReset'
+import { formResetBinder } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useDateField } from './useDateField'
@@ -252,14 +252,9 @@ if (field) {
 provideDateFieldRootContext(context)
 
 // A native reset of the owning form puts the value back to `defaultValue`, and
-// drops segments typed without completing a value. Inside a picker the value
-// is the picker's, which resets it.
-const formResetOwner = injectFormResetOwner()
+// drops segments typed without completing a value.
 function onFormReset(event: Event) {
-  if (formResetOwner)
-    formResetOwner(event)
-  else
-    resetControllableState(isControlled, event)
+  resetControllableState(isControlled, event)
   if (!modelValue.value)
     segmentValues.value = initializeSegmentValues(granularity.value)
 }

@@ -67,7 +67,7 @@ function listen(target: EventTarget | null | undefined) {
   target.addEventListener('reset', handleFormReset)
 }
 
-function bind(element: Element | null, handler: FormResetHandler, registry: WeakMap<Element, FormResetHandler>) {
+function bind(element: Element | null | undefined, handler: FormResetHandler, registry: WeakMap<Element, FormResetHandler>) {
   if (element?.nodeType !== 1)
     return
   registry.set(element, handler)
@@ -96,6 +96,16 @@ function bind(element: Element | null, handler: FormResetHandler, registry: Weak
  */
 export function formResetBinder(handler: FormResetHandler | null | undefined, field = false): ((vnode: VNode) => void) | undefined {
   return handler ? vnode => bind(vnode.el as Element | null, handler, field ? fields : controls) : undefined
+}
+
+/**
+ * Binds `element` as a control (see `formResetBinder`), for a part that
+ * already follows its element in an effect. Does nothing without either.
+ * @internal
+ */
+export function bindFormReset(element: Element | null | undefined, handler: FormResetHandler | null | undefined) {
+  if (handler)
+    bind(element, handler, controls)
 }
 
 const FORM_RESET_OWNER: InjectionKey<FormResetHandler> = Symbol('FormResetOwner')

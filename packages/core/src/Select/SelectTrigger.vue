@@ -12,7 +12,7 @@ import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { injectPopperRootContext } from '@/Popper/PopperRoot.vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { getElementByIdFrom, useForwardElement } from '@/shared'
-import { formResetBinder, injectFormResetOwner } from '@/shared/formReset'
+import { bindFormReset, injectFormResetOwner } from '@/shared/formReset'
 import { injectSelectFieldContext, injectSelectRootContext } from './SelectRoot.vue'
 import { useSelectTrigger } from './useSelect'
 
@@ -26,7 +26,7 @@ const props = withDefaults(defineProps<SelectTriggerProps>(), {
   as: 'button',
 })
 const rootContext = injectSelectRootContext()
-// The root's form reset, bound on the trigger: the root renders no element.
+// The root's form reset (see the effect below).
 const onFormReset = injectFormResetOwner()
 const { forwardRef, currentElement: triggerElement, expose } = useForwardElement()
 defineExpose(expose)
@@ -43,6 +43,8 @@ const popperRootContext = injectPopperRootContext()
 watchPostEffect(() => {
   rootContext.onTriggerChange(triggerElement.value)
   popperRootContext.onAnchorChange(props.reference ?? triggerElement.value)
+  // The root renders no element: its form reset is bound on the trigger.
+  bindFormReset(triggerElement.value, onFormReset)
 })
 // An unmounted trigger must not stay the element the root (and a Field
 // focusing its control) reaches, nor the anchor. Only what this trigger still
@@ -88,8 +90,6 @@ const focusWithin = useFieldFocusWithin(field, triggerElement, {
   elements: () => [getElementByIdFrom(triggerElement.value, rootContext.contentId)],
   open: () => rootContext.open.value,
 })
-
-const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -97,7 +97,6 @@ const bindFormReset = formResetBinder(onFormReset)
     :is="renderAs(as, asChild)"
     v-bind="renderAttrs($attrs)"
     :ref="forwardRef"
-    @vue:mounted="bindFormReset"
   >
     <slot />
   </component>
