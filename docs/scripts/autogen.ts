@@ -324,6 +324,10 @@ function readGenericParams(componentPath: string): Map<string, string> {
   for (const part of splitTopLevel(generic, ',')) {
     const [declaration, fallback] = splitTopLevel(part, '=').map(s => s.trim())
     const [name, constraint] = declaration.split(EXTENDS_SPLIT_RE, 2).map(s => s.trim())
+    // An unconstrained parameter defaulting to a boolean literal accepts any value:
+    // showing `true` / `false` would mislead, so it keeps its name.
+    if (!constraint && fallback && BOOLEAN_LITERAL_RE.test(fallback))
+      continue
     const shown = (fallback && !BOOLEAN_LITERAL_RE.test(fallback)) ? fallback : (constraint ?? fallback)
     if (name && shown)
       params.set(name, shown)
@@ -342,6 +346,11 @@ function substituteGenericParams(type: string, params: Map<string, string>): str
   // A single parenthesised group needs no parentheses.
   if (SINGLE_GROUP_RE.test(trimmed))
     return trimmed.slice(1, -1)
+  // Substitution can repeat a member (`boolean | M` -> `boolean | boolean`).
+  const members = splitTopLevel(result, '|').map(m => m.trim())
+  const unique = [...new Set(members)]
+  if (members.length > 1 && unique.length < members.length)
+    return unique.join(' | ')
   return result
 }
 
