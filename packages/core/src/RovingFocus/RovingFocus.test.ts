@@ -291,3 +291,110 @@ describe('test RovingFocus delegated keyboard handling', () => {
     target.remove()
   })
 })
+
+describe('given a RovingFocusGroup `currentTabStopId` model', () => {
+  const ids = ['a', 'b', 'c']
+  const Fixture = defineComponent({
+    props: { groupProps: { type: Object, default: () => ({}) } },
+    setup: props => () => h(RovingFocusGroup, props.groupProps, () =>
+      ids.map(id => h(RovingFocusItem, { 'tabStopId': id, 'as': 'button', 'data-id': id }, () => id))),
+  })
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function tabStops(wrapper: ReturnType<typeof mount>) {
+    return wrapper.findAll('button').filter(b => b.attributes('tabindex') === '0').map(b => b.attributes('data-id'))
+  }
+
+  async function focusItem(wrapper: ReturnType<typeof mount>, id: string) {
+    const button = wrapper.find(`[data-id="${id}"]`).element as HTMLElement
+    button.blur()
+    button.focus()
+    await nextTick()
+  }
+
+  it('uncontrolled: starts from `defaultCurrentTabStopId` and moves the tab stop on focus', async () => {
+    const wrapper = mount(Fixture, { props: { groupProps: { defaultCurrentTabStopId: 'b' } }, attachTo: document.body })
+    await nextTick()
+    expect(tabStops(wrapper)).toEqual(['b'])
+    await focusItem(wrapper, 'c')
+    expect(tabStops(wrapper)).toEqual(['c'])
+    const group = wrapper.findComponent(RovingFocusGroup)
+    expect(group.emitted('update:currentTabStopId')).toEqual([['c']])
+    expect(group.emitted('beforeUpdate:currentTabStopId')).toBeUndefined()
+  })
+
+  it('uncontrolled: does not emit when the same item is focused again', async () => {
+    const wrapper = mount(Fixture, { props: { groupProps: { defaultCurrentTabStopId: 'b' } }, attachTo: document.body })
+    await nextTick()
+    await focusItem(wrapper, 'b')
+    await focusItem(wrapper, 'c')
+    await focusItem(wrapper, 'c')
+    expect(wrapper.findComponent(RovingFocusGroup).emitted('update:currentTabStopId')).toEqual([['c']])
+  })
+
+  it('uncontrolled: follows a `currentTabStopId` the parent sets later', async () => {
+    const wrapper = mount(Fixture, { props: { groupProps: { defaultCurrentTabStopId: 'b' } }, attachTo: document.body })
+    await nextTick()
+    await wrapper.setProps({ groupProps: { defaultCurrentTabStopId: 'b', currentTabStopId: 'a' } })
+    expect(tabStops(wrapper)).toEqual(['a'])
+  })
+
+  it('controlled: reflects the prop over `defaultCurrentTabStopId` and emits without moving', async () => {
+    const wrapper = mount(Fixture, { props: { groupProps: { currentTabStopId: 'a', defaultCurrentTabStopId: 'b' } }, attachTo: document.body })
+    await nextTick()
+    expect(tabStops(wrapper)).toEqual(['a'])
+    await focusItem(wrapper, 'c')
+    const group = wrapper.findComponent(RovingFocusGroup)
+    expect(group.emitted('update:currentTabStopId')).toEqual([['c']])
+    expect(group.emitted('beforeUpdate:currentTabStopId')).toBeUndefined()
+    expect(tabStops(wrapper)).toEqual(['a'])
+    await wrapper.setProps({ groupProps: { currentTabStopId: 'c' } })
+    expect(tabStops(wrapper)).toEqual(['c'])
+  })
+
+  it('controlled: emits each time an item is focused, even the current tab stop', async () => {
+    const wrapper = mount(Fixture, { props: { groupProps: { currentTabStopId: 'a' } }, attachTo: document.body })
+    await nextTick()
+    await focusItem(wrapper, 'a')
+    await focusItem(wrapper, 'a')
+    expect(wrapper.findComponent(RovingFocusGroup).emitted('update:currentTabStopId')).toEqual([['a'], ['a']])
+  })
+
+  it('controlled: falls back to `defaultCurrentTabStopId` once the binding is cleared', async () => {
+    const wrapper = mount(Fixture, { props: { groupProps: { currentTabStopId: 'a', defaultCurrentTabStopId: 'b' } }, attachTo: document.body })
+    await nextTick()
+    await wrapper.setProps({ groupProps: { defaultCurrentTabStopId: 'b' } })
+    expect(tabStops(wrapper)).toEqual(['b'])
+    // Still controlled: focus emits without moving the tab stop.
+    await focusItem(wrapper, 'c')
+    expect(wrapper.findComponent(RovingFocusGroup).emitted('update:currentTabStopId')).toEqual([['c']])
+    expect(tabStops(wrapper)).toEqual(['b'])
+  })
+
+  it('controlled `null`: stays controlled and emits the focused item', async () => {
+    const wrapper = mount(Fixture, { props: { groupProps: { currentTabStopId: null, defaultCurrentTabStopId: 'b' } }, attachTo: document.body })
+    await nextTick()
+    expect(tabStops(wrapper)).toEqual([])
+    await focusItem(wrapper, 'c')
+    expect(wrapper.findComponent(RovingFocusGroup).emitted('update:currentTabStopId')).toEqual([['c']])
+    expect(tabStops(wrapper)).toEqual([])
+  })
+
+  it('v-model: focus updates the bound id, and the bound id moves the tab stop', async () => {
+    const stop = ref<string | null | undefined>('a')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(RovingFocusGroup, { 'currentTabStopId': stop.value, 'onUpdate:currentTabStopId': (v: string | null | undefined) => { stop.value = v } }, () =>
+        ids.map(id => h(RovingFocusItem, { 'tabStopId': id, 'as': 'button', 'data-id': id }, () => id))),
+    }), { attachTo: document.body })
+    await nextTick()
+    await focusItem(wrapper as any, 'b')
+    expect(stop.value).toBe('b')
+    expect(tabStops(wrapper as any)).toEqual(['b'])
+    stop.value = 'c'
+    await nextTick()
+    expect(tabStops(wrapper as any)).toEqual(['c'])
+  })
+})
