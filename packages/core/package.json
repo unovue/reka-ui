@@ -692,7 +692,7 @@
     "test:browser:all": "BROWSER_ENGINES=chromium,firefox,webkit vitest run --config vitest.browser.config.ts",
     "test-update": "vitest -u",
     "bench": "vitest bench --run",
-    "pub:release": "npm publish --access public --provenance",
+    "pub:release": "npm publish --access public --provenance --tag \"$(node scripts/npm-dist-tag.mjs)\"",
     "size": "size-limit"
   },
   "peerDependencies": {
