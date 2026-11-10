@@ -3,6 +3,13 @@
 <llm-exclude>
 <PropsTable :data="[
   {
+    'name': 'allowNonContiguousRanges',
+    'description': '<p>When combined with <code>isTimeUnavailable</code>, determines whether non-contiguous ranges, i.e. ranges containing unavailable times, are valid. The two ends are always checked.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
+  },
+  {
     'name': 'as',
     'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
@@ -66,7 +73,7 @@
   },
   {
     'name': 'isTimeUnavailable',
-    'description': '<p>A function that returns whether or not a time is unavailable</p>\n',
+    'description': '<p>A function that returns whether or not a time is unavailable. The range is invalid when either end is unavailable,\nor, unless <code>allowNonContiguousRanges</code> is set, when a time between them is: every unit of the <code>granularity</code> is checked\n(each minute by default), whatever the <code>step</code>.\nA range of more than 1,440 units is sampled at a wider interval, so it can miss an unavailable time shorter than that interval.</p>\n',
     'type': 'Matcher',
     'required': false
   },
@@ -190,6 +197,7 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
+| `allowNonContiguousRanges` | When combined with `isTimeUnavailable`, determines whether non-contiguous ranges, i.e. ranges containing unavailable times, are valid. The two ends are always checked. | `boolean` | No | `false` |
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultPlaceholder` | The default placeholder time | `TimeValue` | No | - |
@@ -200,7 +208,7 @@
 | `hideTimeZone` | Whether or not to hide the time zone segment of the field | `boolean` | No | - |
 | `hourCycle` | The hour cycle used for formatting times. Defaults to the local preference | `12 \| 24` | No | - |
 | `id` | Id of the element | `string` | No | - |
-| `isTimeUnavailable` | A function that returns whether or not a time is unavailable | `Matcher` | No | - |
+| `isTimeUnavailable` | A function that returns whether or not a time is unavailable. The range is invalid when either end is unavailable, or, unless `allowNonContiguousRanges` is set, when a time between them is: every unit of the `granularity` is checked (each minute by default), whatever the `step`. A range of more than 1,440 units is sampled at a wider interval, so it can miss an unavailable time shorter than that interval. | `Matcher` | No | - |
 | `locale` | The locale to use for formatting times | `string` | No | - |
 | `maxValue` | The maximum time that can be selected | `TimeValue` | No | - |
 | `minValue` | The minimum time that can be selected | `TimeValue` | No | - |
