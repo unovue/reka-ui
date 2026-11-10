@@ -1,11 +1,10 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useVModel } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watch, watchSyncEffect } from 'vue'
 import {
   usePrimitiveElement,
 } from '@/Primitive'
-import { useComposing } from '@/shared'
+import { useComposing, useControllableState } from '@/shared'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 
 export interface ListboxFilterProps extends PrimitiveProps {
@@ -37,9 +36,15 @@ defineSlots<{
   }) => any
 }>()
 
-const modelValue = useVModel(props, 'modelValue', emits, {
+// A single-argument `update:modelValue`, like `<input v-model>`. As with the
+// former `useVModel`: a filter bound at mount emits on every input (even an
+// unchanged text) and reads `''` once the binding is cleared.
+const controlled = props.modelValue !== undefined
+const { state: modelValue, setState: setModelValue } = useControllableState<string>({
+  prop: () => props.modelValue === undefined && controlled ? '' : props.modelValue,
   defaultValue: '',
-  passive: (props.modelValue === undefined) as false,
+  onUpdate: value => emits('update:modelValue', value),
+  isEqual: controlled ? () => false : undefined,
 })
 
 const rootContext = injectListboxRootContext()
@@ -72,7 +77,7 @@ onUnmounted(() => {
 })
 
 const { isComposing, shouldDeferInput, handleCompositionStart, handleCompositionUpdate, handleCompositionEnd } = useComposing((event) => {
-  modelValue.value = (event.target as HTMLInputElement).value
+  setModelValue((event.target as HTMLInputElement).value)
   rootContext.onCompositionEnd()
   rootContext.highlightFirstItem()
 })
@@ -85,7 +90,7 @@ function onCompositionStart() {
 function handleInput(event: InputEvent) {
   if (shouldDeferInput.value)
     return
-  modelValue.value = (event.target as HTMLInputElement).value
+  setModelValue((event.target as HTMLInputElement).value)
   rootContext.highlightFirstItem()
 }
 
