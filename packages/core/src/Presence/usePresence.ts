@@ -8,7 +8,7 @@ export function usePresence(
   present: Ref<boolean>,
   node: Ref<HTMLElement | undefined>,
 ) {
-  const stylesRef = ref<CSSStyleDeclaration>({} as any)
+  const stylesRef = ref<CSSStyleDeclaration>()
   const prevAnimationNameRef = ref<string>('none')
   const prevPresentRef = ref(present)
   const initialState = present.value ? 'mounted' : 'unmounted'
@@ -139,12 +139,21 @@ export function usePresence(
 
   const watcher = watch(
     node,
-    (newNode, oldNode) => {
+    (newNode, _, onCleanup) => {
       if (newNode) {
         stylesRef.value = getComputedStyle(newNode)
         newNode.addEventListener('animationstart', handleAnimationStart)
         newNode.addEventListener('animationcancel', handleAnimationEnd)
         newNode.addEventListener('animationend', handleAnimationEnd)
+        onCleanup(() => {
+          // Computed styles are live and retain their element.
+          stylesRef.value = undefined
+          if (timeoutId !== undefined)
+            ownerWindow?.clearTimeout(timeoutId)
+          newNode.removeEventListener('animationstart', handleAnimationStart)
+          newNode.removeEventListener('animationcancel', handleAnimationEnd)
+          newNode.removeEventListener('animationend', handleAnimationEnd)
+        })
         if (isEnterPending) {
           isEnterPending = false
           dispatchEnter()
@@ -154,12 +163,6 @@ export function usePresence(
         // Transition to the unmounted state if the node is removed prematurely.
         // We avoid doing so during cleanup as the node may change but still exist.
         dispatch('ANIMATION_END')
-
-        if (timeoutId !== undefined)
-          ownerWindow?.clearTimeout(timeoutId)
-        oldNode?.removeEventListener('animationstart', handleAnimationStart)
-        oldNode?.removeEventListener('animationcancel', handleAnimationEnd)
-        oldNode?.removeEventListener('animationend', handleAnimationEnd)
       }
     },
     { immediate: true },
@@ -174,11 +177,6 @@ export function usePresence(
   onUnmounted(() => {
     watcher()
     stateWatcher()
-    if (node.value) {
-      node.value.removeEventListener('animationstart', handleAnimationStart)
-      node.value.removeEventListener('animationcancel', handleAnimationEnd)
-      node.value.removeEventListener('animationend', handleAnimationEnd)
-    }
     if (timeoutId !== undefined)
       ownerWindow?.clearTimeout(timeoutId)
   })
