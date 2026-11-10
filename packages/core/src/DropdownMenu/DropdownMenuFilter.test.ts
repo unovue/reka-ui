@@ -396,6 +396,28 @@ describe('given a DropdownMenuFilter model', () => {
     expect(document.querySelector('[data-testid=text]')?.textContent).toBe('""')
   })
 
+  it('bound after mount: reads an empty text once the binding is cleared', async () => {
+    document.body.innerHTML = ''
+    const text = ref<string | undefined>(undefined)
+    wrapper = mount(defineComponent({
+      setup: () => () => h(DropdownMenuRoot, { open: true }, () => [
+        h(DropdownMenuTrigger, () => 'Open'),
+        h(DropdownMenuContent, () => [
+          h(DropdownMenuFilter, { modelValue: text.value, as: 'div' }, {
+            default: ({ modelValue }: { modelValue: unknown }) => h('span', { 'data-testid': 'text' }, JSON.stringify(modelValue ?? null)),
+          }),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    text.value = 'ne'
+    await nextTick()
+    expect(document.querySelector('[data-testid=text]')?.textContent).toBe('"ne"')
+    text.value = undefined
+    await nextTick()
+    expect(document.querySelector('[data-testid=text]')?.textContent).toBe('""')
+  })
+
   it('v-model: typing and Escape update the bound value', async () => {
     document.body.innerHTML = ''
     const text = ref('ne')

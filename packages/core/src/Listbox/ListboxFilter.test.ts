@@ -761,6 +761,25 @@ describe('given a ListboxFilter model', () => {
     expect(wrapper.find('[data-testid=text]').text()).toBe('""')
   })
 
+  it('bound after mount: reads an empty text once the binding is cleared', async () => {
+    document.body.innerHTML = ''
+    const text = ref<string | undefined>(undefined)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ListboxRoot, () => [
+        h(ListboxFilter, { modelValue: text.value, as: 'div' }, {
+          default: ({ modelValue }: { modelValue: unknown }) => h('span', { 'data-testid': 'text' }, JSON.stringify(modelValue ?? null)),
+        }),
+      ]),
+    }), { attachTo: document.body })
+    await settle()
+    text.value = 'an'
+    await settle()
+    expect(wrapper.find('[data-testid=text]').text()).toBe('"an"')
+    text.value = undefined
+    await settle()
+    expect(wrapper.find('[data-testid=text]').text()).toBe('""')
+  })
+
   it('v-model: typing updates the bound value and the filter', async () => {
     document.body.innerHTML = ''
     const text = ref('ch')
