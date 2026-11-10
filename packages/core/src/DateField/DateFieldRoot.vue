@@ -88,6 +88,7 @@ export const [injectDateFieldRootContext, provideDateFieldRootContext]
 
 <script setup lang="ts">
 import { computed, mergeProps, ref, toRefs, useAttrs, watch } from 'vue'
+import { isZonedDateTime, toIsoString } from '@/date/temporal'
 import { createPendingFieldInput } from '@/Field/pendingFieldInput'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
@@ -219,7 +220,12 @@ function getRootAttrs() {
 const nativeInputId = computed(() => field ? field.id() : props.id)
 
 // The hidden native input mirrors the value along with `required`/`min`/`max`,
-// so its `ValidityState` drives the field's constraint validation.
+// so its `ValidityState` drives the field's constraint validation. A native
+// `date` / `datetime-local` input holds a wall-clock value only, so for a
+// zoned value it keeps validating but gives its `name` to a second,
+// `type="hidden"` input that submits the full ISO string with the offset and
+// the time zone, as each end of `DateRangeFieldRoot` does. Only one of the two
+// is ever named.
 const nativeInput = ref<InstanceType<typeof VisuallyHidden>>()
 
 // Touched once focus leaves the whole group (and a composing picker's
@@ -270,7 +276,7 @@ defineExpose(mergeExpose(expose, {
       aria-hidden="true"
       tabindex="-1"
       :value="inputValue"
-      :name="resolvedName"
+      :name="isZonedDateTime(modelValue) ? undefined : resolvedName"
       :disabled="disabled"
       :required="resolvedRequired"
       :max="inputMaxValue"
@@ -278,5 +284,12 @@ defineExpose(mergeExpose(expose, {
       :step="granularity === 'second' ? 1 : undefined"
       @focus="focusFirstSegment"
     />
+    <input
+      v-if="resolvedName && isZonedDateTime(modelValue)"
+      type="hidden"
+      :value="toIsoString(modelValue)"
+      :name="resolvedName"
+      :disabled="disabled"
+    >
   </component>
 </template>

@@ -184,7 +184,7 @@ const latest = today().subtract({ years: 18 })
 
 ### In a form
 
-Inside a [`FieldRoot`](field) the date field takes the field's `name`, `required` and `disabled`, `FieldLabel` labels it, and an incomplete date counts as missing (`valueMissing`). Inside a [`FormRoot`](form), `formSubmit` receives the Temporal value. A date field with a `name` also renders a hidden input holding the value as an ISO string, for native form submission. See [Forms and validation](/docs/guides/forms).
+Inside a [`FieldRoot`](field) the date field takes the field's `name`, `required` and `disabled`, `FieldLabel` labels it, and an incomplete date counts as missing (`valueMissing`). Inside a [`FormRoot`](form), `formSubmit` receives the Temporal value. A date field with a `name` also renders a hidden input holding the value as an ISO string, for native form submission. A `Temporal.ZonedDateTime` value is submitted with its offset and time zone (`2026-11-30T23:59:00-05:00[America/New_York]`). See [Forms and validation](/docs/guides/forms).
 
 ```vue
 <template>
