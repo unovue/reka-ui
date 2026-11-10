@@ -6,6 +6,34 @@ import { defineComponent, h, nextTick, ref, Transition } from 'vue'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '.'
 import Popover from './story/_Popover.vue'
 
+describe('given a Popover root that stays mounted', () => {
+  it.each([true, false])('should release the forwarded content element with modal=%s', async (modal) => {
+    const open = ref(false)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(PopoverRoot, { open: open.value, modal }, () => [
+        h(PopoverTrigger, () => 'Open'),
+        h(PopoverPortal, null, () => h(PopoverContent, () => 'Content')),
+      ]),
+    }), { attachTo: document.body })
+
+    for (let cycle = 0; cycle < 2; cycle++) {
+      open.value = true
+      await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull())
+      const content = wrapper.getComponent(PopoverContent)
+      const exposed = content.vm.$.exposed!
+      expect(exposed.$el.contains(document.querySelector('[role="dialog"]'))).toBe(true)
+
+      open.value = false
+      await flushPromises()
+      expect(document.querySelector('[role="dialog"]')).toBeNull()
+      expect(content.vm.$.isUnmounted).toBe(false)
+      expect(exposed.$el.nodeType).toBe(Node.COMMENT_NODE)
+    }
+
+    wrapper.unmount()
+  })
+})
+
 describe('given default Popover', () => {
   let wrapper: VueWrapper<InstanceType<typeof Popover>>
 

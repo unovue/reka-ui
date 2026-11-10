@@ -53,39 +53,42 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
     }
   }
 
-  // retrieve original first root element
+  // Fall back to the root element when no ref is forwarded.
   Object.defineProperty(ret, '$el', {
     enumerable: true,
     configurable: true,
-    get: () => instance.vnode.el,
+    get: () => {
+      const ref = currentRef.value
+      return ref ? (ref instanceof Element ? ref : ref.$el) : instance.vnode.el
+    },
   })
   instance.exposed = ret
 
   function forwardRef(ref: Element | T | null) {
     currentRef.value = ref
 
-    if (!ref)
+    if (!ref) {
+      instance.exposed = ret
+      // Drop the cached element even if currentElement is no longer read.
+      void currentElement.value
       return
-
-    // retrieve the forwarded element
-    Object.defineProperty(ret, '$el', {
-      enumerable: true,
-      configurable: true,
-      get: () => (ref instanceof Element ? ref : ref.$el),
-    })
+    }
 
     // ref not is Element
     // and `useForwardExpose.test.ts > useForwardRef > should forward plain DOM element ref - 2` Passing in `$el`
     if (!(ref instanceof Element) && !Object.hasOwn(ref, '$el')) {
       // Retrieves the `exposed` data that has not been unwrapped by `vue` from `$.exposed`.
       const childExposed = ref.$.exposed
-      const merged = Object.assign({}, ret)
+      const merged = Object.defineProperties({}, Object.getOwnPropertyDescriptors(ret))
 
       for (const key in childExposed) {
         Object.defineProperty(merged, key, {
           enumerable: true,
           configurable: true,
-          get: () => childExposed[key],
+          get: () => {
+            const forwarded = currentRef.value
+            return forwarded instanceof Element ? undefined : forwarded?.$?.exposed?.[key]
+          },
         })
       }
 
