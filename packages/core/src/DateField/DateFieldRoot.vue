@@ -6,7 +6,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails, DateStep, Formatter } from '@/shared'
 import type { Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { createContext, isNullish, mergeExpose, useDirection, useLocale } from '@/shared'
+import { createContext, mergeExpose, useDirection, useLocale } from '@/shared'
 import { getInputType, normalizeInputValue } from '@/shared/date'
 
 export type DateFieldRootContext = {
@@ -87,9 +87,9 @@ export const [injectDateFieldRootContext, provideDateFieldRootContext]
 </script>
 
 <script setup lang="ts">
-import { computed, mergeProps, onBeforeUnmount, onMounted, ref, toRefs, useAttrs, watch } from 'vue'
+import { computed, mergeProps, ref, toRefs, useAttrs, watch } from 'vue'
 import { createPendingFieldInput } from '@/Field/pendingFieldInput'
-import { claimFieldControl } from '@/Field/useFieldControl'
+import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
@@ -130,10 +130,17 @@ const dir = useDirection(propDir)
 // inert — and byte-for-byte identical to before — when there is no Field.
 // Field's `name` takes precedence over the local prop; `required`/`disabled`
 // apply when set on either.
-const fieldContext = claimFieldControl()
-const disabled = computed(() => Boolean(props.disabled || fieldContext?.disabled.value))
-const resolvedName = computed(() => fieldContext?.name.value ?? props.name)
-const resolvedRequired = computed(() => (fieldContext ? (props.required || fieldContext.required.value) : props.required))
+const field = useFieldControl({
+  id: () => props.id,
+  // The first segment (not the group container, which isn't itself
+  // focusable), so `FormRoot` can move focus into the field on an invalid submit.
+  element: () => Array.from(segmentElements.value)[0],
+  getValue: () => modelValue.value,
+  validityElement: () => nativeInput.value?.$el as HTMLInputElement | undefined,
+})
+const disabled = computed(() => field ? field.disabled(props.disabled) : Boolean(props.disabled))
+const resolvedName = computed(() => field ? field.name(props.name) : props.name)
+const resolvedRequired = computed(() => field ? field.required(props.required) : props.required)
 
 const { primitiveElement, currentElement: parentElement, expose } = usePrimitiveElement()
 
@@ -142,7 +149,7 @@ const { primitiveElement, currentElement: parentElement, expose } = usePrimitive
 // The user's segment edits, decided by reason when they commit: a parent's
 // change (e.g. a reset) or a programmatic `setModelValue` isn't recorded, and
 // a user edit stays one wherever focus goes next. Only in a Field.
-const pendingInput = fieldContext ? createPendingFieldInput<unknown>() : undefined
+const pendingInput = field ? createPendingFieldInput<unknown>() : undefined
 
 const {
   root,
@@ -195,59 +202,40 @@ const attrs = useAttrs()
 // surface comes after the consumer's attrs (its role / aria-disabled / data-*
 // win, as before) and its keydown handler chains with theirs.
 function getRootAttrs() {
-  const mergeIds = (consumerValue: unknown, fieldValue: string | undefined) =>
-    [consumerValue as string | undefined, fieldValue].filter(Boolean).join(' ') || undefined
+  if (!field)
+    return mergeProps(attrs, root.attrs.value)
   return mergeProps(
-    fieldContext?.dataAttributes.value ?? {},
+    field.dataAttributes(),
     attrs,
-    {
-      'aria-labelledby': mergeIds(attrs['aria-labelledby'], fieldContext?.labelId.value),
-      'aria-describedby': mergeIds(attrs['aria-describedby'], fieldContext?.describedBy.value),
-      'aria-invalid': attrs['aria-invalid'] ?? (fieldContext?.invalid.value || undefined),
-    },
+    { ...field.ariaAttrs(attrs, disabled.value) },
     root.attrs.value,
     // The Field's own invalid state also marks the group.
-    { 'data-invalid': isInvalid.value || fieldContext?.invalid.value ? '' : undefined },
+    { 'data-invalid': isInvalid.value || field.context.invalid.value ? '' : undefined },
   )
 }
 
 // The hidden input takes the field's id, so `FieldLabel`'s `for` lands on it
 // and its focus handler moves focus into the first segment.
-const nativeInputId = computed(() => props.id ?? fieldContext?.fieldId.value)
+const nativeInputId = computed(() => field ? field.id() : props.id)
 
 // The hidden native input mirrors the value along with `required`/`min`/`max`,
 // so its `ValidityState` drives the field's constraint validation.
 const nativeInput = ref<InstanceType<typeof VisuallyHidden>>()
 
-let unregisterControl: (() => void) | undefined
-onMounted(() => {
-  unregisterControl = fieldContext?.registerControl({
-    id: () => nativeInputId.value,
-    // The first segment (not the group container, which isn't itself
-    // focusable), so `FormRoot` can move focus into the field on an invalid submit.
-    element: () => Array.from(segmentElements.value)[0],
-    getValue: () => modelValue.value,
-    validityElement: () => nativeInput.value?.$el as HTMLInputElement | undefined,
-  })
-})
-onBeforeUnmount(() => unregisterControl?.())
-
 // Touched once focus leaves the whole group (and a composing picker's
 // trigger and calendar), not when it moves between segments.
-const focusWithin = useFieldFocusWithin(fieldContext
-  ? { onFocus: () => fieldContext.handleControlFocus(), onBlur: () => fieldContext.handleControlBlur(), context: fieldContext }
-  : null, parentElement)
+const focusWithin = useFieldFocusWithin(field, parentElement)
 
 // The user's recorded edit, once it arrives, is input; anything else is
 // programmatic, which updates `filled` but isn't dirtying. Flushed after
 // render so the hidden input's validity reflects the new value.
-if (fieldContext) {
+if (field) {
   watch(modelValue, (value) => {
     const pending = pendingInput!.take()
     if (pending && isEqual(pending.value, value))
-      fieldContext.handleControlInput({ value })
+      field.input(value)
     else
-      fieldContext.reportControlState({ filled: !isNullish(value) })
+      field.sync(value)
   }, { flush: 'post' })
 }
 
