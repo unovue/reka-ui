@@ -62,7 +62,7 @@ export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
 import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { RovingFocusGroup } from '@/RovingFocus'
-import { vFormReset } from '@/shared/formReset'
+import { formResetBinder } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useCheckboxGroup } from './useCheckboxGroup'
@@ -164,14 +164,16 @@ function renderAttrs(attrs: Record<string, unknown>) {
     },
   ))
 }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
   <component
     :is="rovingFocus ? RovingFocusGroup : renderAs(as, asChild)"
     ref="primitiveElement"
-    v-form-reset="onFormReset"
     v-bind="renderAttrs($attrs)"
+    @vue:mounted="bindFormReset"
   >
     <slot />
 

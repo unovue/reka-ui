@@ -12,7 +12,7 @@ import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { injectPopperRootContext } from '@/Popper/PopperRoot.vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { getElementByIdFrom, useForwardElement } from '@/shared'
-import { injectFormResetOwner, vFormReset } from '@/shared/formReset'
+import { formResetBinder, injectFormResetOwner } from '@/shared/formReset'
 import { injectSelectFieldContext, injectSelectRootContext } from './SelectRoot.vue'
 import { useSelectTrigger } from './useSelect'
 
@@ -88,6 +88,8 @@ const focusWithin = useFieldFocusWithin(field, triggerElement, {
   elements: () => [getElementByIdFrom(triggerElement.value, rootContext.contentId)],
   open: () => rootContext.open.value,
 })
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -95,7 +97,7 @@ const focusWithin = useFieldFocusWithin(field, triggerElement, {
     :is="renderAs(as, asChild)"
     v-bind="renderAttrs($attrs)"
     :ref="forwardRef"
-    v-form-reset="onFormReset"
+    @vue:mounted="bindFormReset"
   >
     <slot />
   </component>

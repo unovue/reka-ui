@@ -332,7 +332,10 @@ provideSelectRootContext(context)
 
 // A native reset of the owning form puts the value back to `defaultValue`. The
 // root renders no element: `SelectTrigger` binds it.
-provideFormResetOwner((event: Event) => { resetControllableState(select.isControlled, event) })
+// Read off the composable's return here: a closure over that object would keep
+// all of it alive for the life of the component.
+const { isControlled } = select
+provideFormResetOwner((event: Event) => { resetControllableState(isControlled, event) })
 </script>
 
 <template>

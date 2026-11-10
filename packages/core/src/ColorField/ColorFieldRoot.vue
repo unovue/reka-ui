@@ -88,7 +88,7 @@ import { mergeProps, shallowRef, watch } from 'vue'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
 import { colorToString } from '@/shared/color'
-import { vFormReset } from '@/shared/formReset'
+import { formResetBinder } from '@/shared/formReset'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useColorField } from './useColorField'
 
@@ -148,14 +148,16 @@ if (field) {
   provideColorFieldFieldControl({ binding: field, input: fieldInput! })
   watch(color, value => field.sync(value))
 }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-form-reset="onFormReset"
     v-bind="field ? mergeProps(field.dataAttributes(), root.attrs.value) : root.attrs.value"
+    @vue:mounted="bindFormReset"
   >
     <slot />
 

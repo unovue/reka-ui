@@ -34,7 +34,7 @@ export interface ToggleProps extends PrimitiveProps, FormFieldProps {
 import { computed, mergeProps, useAttrs, watch } from 'vue'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
-import { vFormReset } from '@/shared/formReset'
+import { formResetBinder } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
 import { useTogglePressed } from './useTogglePressed'
 
@@ -134,15 +134,17 @@ function renderAttrs(attrs: Record<string, unknown>) {
     { id: field.id(), ...field.ariaAttrs(attrs, disabled.value), onFocus: field.onFocus, onBlur: field.onBlur },
   ))
 }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
   <component
     :is="renderAs(as, props.asChild)"
     :ref="forwardRef"
-    v-form-reset="onFormReset"
     :type="as === 'button' ? 'button' : undefined"
     v-bind="renderAttrs($attrs)"
+    @vue:mounted="bindFormReset"
     @click="root.props.value.onClick"
   >
     <slot

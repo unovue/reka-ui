@@ -52,7 +52,7 @@ import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusGroup } from '@/RovingFocus/useRovingFocusGroup'
-import { vFormReset } from '@/shared/formReset'
+import { formResetBinder } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useRadioGroup } from './useRadioGroup'
@@ -164,14 +164,16 @@ function renderAttrs(attrs: Record<string, unknown>) {
     { id: field.id(), ...field.ariaAttrs(attrs, disabled.value), onFocusin: focusWithin!.onFocusin, onFocusout: focusWithin!.onFocusout },
   ))
 }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-form-reset="onFormReset"
     v-bind="renderAttrs($attrs)"
+    @vue:mounted="bindFormReset"
   >
     <slot :model-value="modelValue" />
 

@@ -50,7 +50,7 @@ import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { Slot } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { RovingFocusGroup } from '@/RovingFocus'
-import { vFormReset } from '@/shared/formReset'
+import { formResetBinder } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
 import { useToggleGroup } from './useToggleGroup'
 
@@ -144,6 +144,8 @@ function renderAttrs(attrs: Record<string, unknown>) {
     { id: field.id(), ...field.ariaAttrs(attrs, resolvedDisabled()), onFocusin: focusWithin!.onFocusin, onFocusout: focusWithin!.onFocusout },
   ), Object.keys(attrs))
 }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -154,8 +156,8 @@ function renderAttrs(attrs: Record<string, unknown>) {
     <component
       :is="renderAs(as, asChild)"
       :ref="forwardRef"
-      v-form-reset="onFormReset"
       v-bind="renderAttrs($attrs)"
+      @vue:mounted="bindFormReset"
     >
       <slot :model-value="modelValue" />
 

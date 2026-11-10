@@ -54,7 +54,7 @@ import { useFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { isEqual } from '@/shared/compare'
-import { vFormReset } from '@/shared/formReset'
+import { formResetBinder } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useCheckbox } from './useCheckbox'
@@ -193,14 +193,16 @@ function renderAttrs() {
 // (a consumer `@click` observes the pre-toggle model). `mergeProps` keeps
 // exactly that order; the explicit bindings that follow it in the template win
 // over all of them, as they did before.
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-form-reset="onFormReset"
     v-bind="renderAttrs()"
+    @vue:mounted="bindFormReset"
   >
     <slot
       :model-value="modelValue"

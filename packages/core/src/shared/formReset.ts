@@ -1,4 +1,4 @@
-import type { InjectionKey, ObjectDirective } from 'vue'
+import type { InjectionKey, VNode } from 'vue'
 import { inject, provide } from 'vue'
 
 /** Called with the native `reset` event of the form the element is associated with. */
@@ -67,17 +67,10 @@ function listen(target: EventTarget | null | undefined) {
   target.addEventListener('reset', handleFormReset)
 }
 
-function bind(element: Element, { value, arg }: { value: FormResetHandler | null | undefined, arg?: string }) {
-  if (element.nodeType !== 1)
+function bind(element: Element | null, handler: FormResetHandler, registry: WeakMap<Element, FormResetHandler>) {
+  if (element?.nodeType !== 1)
     return
-  const registry = arg === 'field' ? fields : controls
-  if (registry.get(element) === value)
-    return
-  if (!value) {
-    registry.delete(element)
-    return
-  }
-  registry.set(element, value)
+  registry.set(element, handler)
   // `reset` does not cross a shadow root, and never reaches the window from a
   // tree that is not in the document.
   listen(element.ownerDocument.defaultView)
@@ -87,22 +80,22 @@ function bind(element: Element, { value, arg }: { value: FormResetHandler | null
 }
 
 /**
- * Binds an element to the native reset of the form it belongs to: the handler
+ * Binds an element to the native reset of the form it belongs to: `handler`
  * runs when that form is reset and the `reset` event was not prevented. One
  * delegated listener per document serves every bound element, and nothing
  * runs on the server.
  *
- * - `v-form-reset="handler"`: a form control. Controls rendered inside its
- *   element are left to it.
- * - `v-form-reset:field="handler"`: a wrapper whose own state resets with the
- *   form (`FieldRoot`); the controls inside it are still reset.
+ * Returns the `onVnodeMounted` hook for the element (`@vue:mounted`), or
+ * `undefined` for a falsy handler. A vnode hook rather than a directive:
+ * `withDirectives` builds the component's expose proxy, some 0.4 KB a control.
  *
- * A falsy handler binds nothing.
+ * - A control (the default): controls rendered inside its element are left to it.
+ * - `field`: a wrapper whose own state resets with the form (`FieldRoot`); the
+ *   controls inside it are still reset.
  * @internal
  */
-export const vFormReset: ObjectDirective<Element, FormResetHandler | null | undefined> = {
-  mounted: bind,
-  updated: bind,
+export function formResetBinder(handler: FormResetHandler | null | undefined, field = false): ((vnode: VNode) => void) | undefined {
+  return handler ? vnode => bind(vnode.el as Element | null, handler, field ? fields : controls) : undefined
 }
 
 const FORM_RESET_OWNER: InjectionKey<FormResetHandler> = Symbol('FormResetOwner')

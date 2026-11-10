@@ -97,7 +97,7 @@ import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { isEqual } from '@/shared/compare'
 import { initializeTimeSegmentValues } from '@/shared/date'
-import { vFormReset } from '@/shared/formReset'
+import { formResetBinder } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useTimeField } from './useTimeField'
@@ -231,6 +231,8 @@ defineExpose(mergeExpose(expose, {
   /** Records `el` as the focused segment for keyboard navigation. It does not move focus; call `el.focus()` for that. */
   setFocusedElement,
 }))
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -238,7 +240,7 @@ defineExpose(mergeExpose(expose, {
     :is="renderAs(as, asChild)"
     v-bind="getRootAttrs()"
     ref="primitiveElement"
-    v-form-reset="onFormReset"
+    @vue:mounted="bindFormReset"
   >
     <slot
       :model-value="modelValue"

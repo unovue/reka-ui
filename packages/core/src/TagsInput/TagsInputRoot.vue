@@ -113,7 +113,7 @@ import { useCollection, useCollectionSlot } from '@/Collection'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
-import { vFormReset } from '@/shared/formReset'
+import { formResetBinder } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useTagsInput } from './useTagsInput'
@@ -213,6 +213,8 @@ const focusWithin = useFieldFocusWithin(field && {
   }),
 }, currentElement as Ref<HTMLElement | undefined>)
 const fieldFocusHandlers = focusWithin && { onFocusin: focusWithin.onFocusin, onFocusout: focusWithin.onFocusout }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -220,7 +222,7 @@ const fieldFocusHandlers = focusWithin && { onFocusin: focusWithin.onFocusin, on
     :is="renderAs(as, asChild)"
     v-bind="fieldFocusHandlers ? mergeProps($attrs, root.attrs.value, fieldFocusHandlers) : mergeProps($attrs, root.attrs.value)"
     :ref="forwardRef"
-    v-form-reset="onFormReset"
+    @vue:mounted="bindFormReset"
   >
     <slot :model-value="modelValue" />
 

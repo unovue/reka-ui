@@ -163,7 +163,7 @@ import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRef, watch } f
 import { injectFormRootContext } from '@/Form/FormRoot.vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { isEqual } from '@/shared/compare'
-import { vFormReset } from '@/shared/formReset'
+import { formResetBinder } from '@/shared/formReset'
 import { provideFieldRootContext } from './fieldRootContext'
 import { createValidityState, useFieldValidation } from './useFieldValidation'
 
@@ -520,14 +520,16 @@ provideFieldRootContext({
   validate,
   resetField,
 })
+
+const bindFormReset = formResetBinder(resetField, true)
 </script>
 
 <template>
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-form-reset:field="resetField"
     v-bind="dataAttributes"
+    @vue:mounted="bindFormReset"
   >
     <slot
       :invalid="invalid"

@@ -86,7 +86,7 @@ import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { colorToString } from '@/shared/color'
-import { vFormReset } from '@/shared/formReset'
+import { formResetBinder } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useColorArea } from './useColorArea'
@@ -153,14 +153,16 @@ if (field)
 // field is focused while focus is on either axis, and blurred once it leaves.
 const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
 const fieldAttrs = focusWithin && { onFocusin: focusWithin.onFocusin, onFocusout: focusWithin.onFocusout }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-form-reset="onFormReset"
     v-bind="field ? field.fillDataAttributes(mergeProps(root.attrs.value, fieldAttrs!)) : root.attrs.value"
+    @vue:mounted="bindFormReset"
   >
     <slot :style="areaStyles" />
 

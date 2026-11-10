@@ -94,7 +94,7 @@ import { mergeProps, ref, toRef, watch } from 'vue'
 import { createPendingFieldInput } from '@/Field/pendingFieldInput'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
-import { vFormReset } from '@/shared/formReset'
+import { formResetBinder } from '@/shared/formReset'
 import { VisuallyHidden, VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useNumberField } from './useNumberField'
 
@@ -181,6 +181,8 @@ if (field) {
 function focusInput() {
   context.inputEl.value?.focus()
 }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -188,7 +190,7 @@ function focusInput() {
     :is="renderAs(as, asChild)"
     v-bind="field ? mergeProps(field.dataAttributes(), $attrs, root.attrs.value) : mergeProps($attrs, root.attrs.value)"
     :ref="forwardRef"
-    v-form-reset="onFormReset"
+    @vue:mounted="bindFormReset"
   >
     <slot
       :model-value="modelValue"

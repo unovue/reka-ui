@@ -165,7 +165,7 @@ import { useCollection } from '@/Collection'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
-import { vFormReset } from '@/shared/formReset'
+import { formResetBinder } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useListboxRoot } from './useListbox'
@@ -267,7 +267,10 @@ defineExpose(mergeExpose(expose, {
 provideListboxRootContext(context)
 
 // A native reset of the owning form puts the value back to `defaultValue`.
-function onFormReset(event: Event) { resetControllableState(listbox.isControlled, event) }
+// Read off the composable's return here: a closure over that object would keep
+// all of it alive for the life of the component.
+const { isControlled } = listbox
+function onFormReset(event: Event) { resetControllableState(isControlled, event) }
 if (field)
   provideListboxFieldContext({ field, contentElement: fieldContent! })
 // Only shadow an ancestor listbox's wiring; otherwise providing nothing already reads as `null`.
@@ -281,14 +284,16 @@ if (field)
 // an item, a `ListboxFilter`), and blurred once it leaves.
 const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
 const fieldFocusHandlers = focusWithin && { onFocusin: focusWithin.onFocusin, onFocusout: focusWithin.onFocusout }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
   <component
     :is="renderAs(as, asChild)"
     ref="primitiveElement"
-    v-form-reset="onFormReset"
     v-bind="fieldFocusHandlers ? mergeProps(root.attrs.value, fieldFocusHandlers) : root.attrs.value"
+    @vue:mounted="bindFormReset"
   >
     <slot :model-value="modelValue" />
 

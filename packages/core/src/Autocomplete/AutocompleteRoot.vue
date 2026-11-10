@@ -116,7 +116,7 @@ import { useFieldControl } from '@/Field/useFieldControl'
 import { provideListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { renderAs } from '@/Primitive/renderAs'
-import { vFormReset } from '@/shared/formReset'
+import { formResetBinder } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
@@ -239,6 +239,8 @@ provideAutocompleteRootContext({
   modelValue,
   onModelValueChange: (value, reason, event) => combobox.setModelValue(value, reason, event),
 })
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -246,8 +248,8 @@ provideAutocompleteRootContext({
     <component
       :is="renderAs(as, asChild)"
       :ref="forwardRef"
-      v-form-reset="onFormReset"
       v-bind="mergeProps(root.attrs.value, $attrs)"
+      @vue:mounted="bindFormReset"
     >
       <slot
         :open="open"

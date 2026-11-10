@@ -1,13 +1,13 @@
 import type { VNode } from 'vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createSSRApp, h, nextTick, ref, withDirectives } from 'vue'
+import { createSSRApp, h, nextTick, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { CheckboxGroupRoot, CheckboxRoot } from '@/Checkbox'
 import { FieldRoot } from '@/Field'
 import { FormRoot } from '@/Form'
 import { SwitchRoot } from '@/Switch'
-import { vFormReset } from './formReset'
+import { formResetBinder } from './formReset'
 
 // The delegated `reset` listener and the controls bound to it, in jsdom: what a
 // reset does to the model (uncontrolled, controlled, cancelled) and to a Field.
@@ -249,34 +249,35 @@ describe('given a control in a `FieldRoot`', () => {
   })
 })
 
-describe('vFormReset', () => {
-  it('follows the bound handler, and binds nothing for a falsy one', async () => {
-    const first = vi.fn()
-    const second = vi.fn()
-    const handler = ref<((event: Event) => void) | undefined>(first)
-    const { form } = mountForm(() => h('form', withDirectives(h('div'), [[vFormReset, handler.value]])))
+describe('formResetBinder', () => {
+  it('binds the element it is mounted on, and nothing for a falsy handler', () => {
+    const handler = vi.fn()
+    expect(formResetBinder(undefined)).toBeUndefined()
+    const { form } = mountForm(() => h('form', h('div', { onVnodeMounted: formResetBinder(handler) })))
 
     form.reset()
-    expect(first).toHaveBeenCalledTimes(1)
 
-    handler.value = second
+    expect(handler).toHaveBeenCalledTimes(1)
+    expect(handler.mock.calls[0][0].type).toBe('reset')
+  })
+
+  it('binds the element that replaces it', async () => {
+    const handler = vi.fn()
+    const tag = ref('div')
+    const bind = formResetBinder(handler)
+    const { form } = mountForm(() => h('form', h(tag.value, { key: tag.value, onVnodeMounted: bind })))
+    tag.value = 'span'
     await nextTick()
-    form.reset()
-    expect(first).toHaveBeenCalledTimes(1)
-    expect(second).toHaveBeenCalledTimes(1)
 
-    handler.value = undefined
-    await nextTick()
     form.reset()
-    expect(second).toHaveBeenCalledTimes(1)
+
+    expect(handler).toHaveBeenCalledTimes(1)
   })
 
   it('leaves what is inside a control to that control, but looks inside a field', () => {
     const calls: string[] = []
-    const bind = (name: string, arg?: string) => [[vFormReset, () => calls.push(name), arg]] as any
-    const { form } = mountForm(() => h('form', [
-      withDirectives(h('div', withDirectives(h('div', withDirectives(h('span'), bind('nested'))), bind('control'))), bind('field', 'field')),
-    ]))
+    const bind = (name: string, field?: boolean) => ({ onVnodeMounted: formResetBinder(() => calls.push(name), field) })
+    const { form } = mountForm(() => h('form', h('div', bind('field', true), h('div', bind('control'), h('span', bind('nested'))))))
 
     form.reset()
 

@@ -90,7 +90,7 @@ import { mergeProps, useAttrs, watch } from 'vue'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
-import { vFormReset } from '@/shared/formReset'
+import { formResetBinder } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
 import { orderInputElements, usePinInput } from './usePinInput'
 
@@ -223,6 +223,8 @@ function getRootAttrs() {
     { onFocusin: focusWithin!.onFocusin, onFocusout: focusWithin!.onFocusout },
   )
 }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -230,7 +232,7 @@ function getRootAttrs() {
     :is="renderAs(as, asChild)"
     v-bind="getRootAttrs()"
     :ref="forwardRef"
-    v-form-reset="onFormReset"
+    @vue:mounted="bindFormReset"
   >
     <slot :model-value="modelValue" />
 

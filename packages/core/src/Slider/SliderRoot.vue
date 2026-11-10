@@ -75,7 +75,7 @@ import { computed, getCurrentInstance, mergeProps, useAttrs, watch } from 'vue'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
-import { injectFormResetOwner, vFormReset } from '@/shared/formReset'
+import { formResetBinder, injectFormResetOwner } from '@/shared/formReset'
 import { createWrapperEmit, splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -233,6 +233,8 @@ function elementProps(consumerAttrs: Record<string, unknown>) {
   )
   return field ? field.fillDataAttributes(merged) : merged
 }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -240,8 +242,8 @@ function elementProps(consumerAttrs: Record<string, unknown>) {
     :is="renderAs(as, asChild)"
     :key="orientation === 'horizontal' ? 'horizontal' : 'vertical'"
     :ref="forwardRef"
-    v-form-reset="onFormReset"
     v-bind="elementProps($attrs)"
+    @vue:mounted="bindFormReset"
   >
     <slot :model-value="modelValue ?? null" />
 

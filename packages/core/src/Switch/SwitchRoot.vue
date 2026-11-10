@@ -47,7 +47,7 @@ export const [injectSwitchRootContext, provideSwitchRootContext]
 import { computed, mergeProps, watch } from 'vue'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
-import { vFormReset } from '@/shared/formReset'
+import { formResetBinder } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useSwitch } from './useSwitch'
@@ -147,6 +147,8 @@ function renderAttrs(attrs: Record<string, unknown>) {
     { ...field.ariaAttrs(attrs, disabled.value), onFocus: field.onFocus, onBlur: field.onBlur },
   ))
 }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -154,10 +156,10 @@ function renderAttrs(attrs: Record<string, unknown>) {
     :is="renderAs(as, asChild)"
     :id="resolvedId()"
     :ref="forwardRef"
-    v-form-reset="onFormReset"
     :type="as === 'button' ? 'button' : undefined"
     :aria-label="$attrs['aria-label'] || ariaLabel"
     v-bind="renderAttrs($attrs)"
+    @vue:mounted="bindFormReset"
     @click="root.props.value.onClick"
     @keydown="root.props.value.onKeydown"
   >
