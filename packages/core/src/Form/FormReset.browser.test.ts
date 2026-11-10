@@ -209,6 +209,43 @@ describe.each([
   })
 })
 
+// The time fields have no such state: every key they accept commits a value.
+describe.each(['DateField', 'DateRangeField', 'DatePicker', 'DateRangePicker'])('given a %s with a segment typed into but not committed', (name) => {
+  const item = formResetCases.find(item => item.name === name)!
+
+  // A leading zero waits for a second digit: the segment shows it, the value stays.
+  it.each([
+    ['uncontrolled', {}],
+    ['controlled', { controlled: true }],
+  ])('shows its default in every segment again when the form is reset (%s)', async (_, { controlled }: { controlled?: boolean }) => {
+    const model = ref<unknown>(item.defaultValue)
+    const { events, ...listeners } = recorder()
+    const { form, data } = mountForm(() => h('form', [item.render({
+      'name': 'field',
+      'defaultValue': item.defaultValue,
+      ...(controlled ? { modelValue: model.value } : {}),
+      'onUpdate:modelValue': (value: unknown, details: { reason: string, event?: Event }) => {
+        listeners['onUpdate:modelValue'](value, details)
+        model.value = value
+      },
+    })]))
+    await settle()
+    form.querySelector<HTMLElement>('[role="spinbutton"]')!.focus()
+    await userEvent.keyboard('0')
+    await settle()
+    expect(item.display(form)).not.toBe(item.defaultDisplay)
+    expect(data()).toEqual(item.defaultData)
+
+    form.reset()
+    await settle()
+
+    expect(item.display(form)).toBe(item.defaultDisplay)
+    expect(data()).toEqual(item.defaultData)
+    // The value never left its default.
+    expect(events).toEqual([])
+  })
+})
+
 describe('given a form reset that a listener prevents', () => {
   const checkbox = (form: ParentNode) => form.querySelector('[role="checkbox"]')!
 

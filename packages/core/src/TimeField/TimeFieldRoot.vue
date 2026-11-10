@@ -96,7 +96,6 @@ import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { isEqual } from '@/shared/compare'
-import { initializeTimeSegmentValues } from '@/shared/date'
 import { formResetBinder } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHidden } from '@/VisuallyHidden'
@@ -161,7 +160,7 @@ const resolvedRequired = () => field ? field.required(props.required) : props.re
 // a user edit stays one wherever focus goes next. Only in a Field.
 const pendingInput = field ? createPendingFieldInput<unknown>() : undefined
 
-const { root, context, modelValue, segments, isInvalid, segmentElements, setFocusedElement, focusFirstSegment, segmentValues, granularity, isControlled } = useTimeField({
+const { root, context, modelValue, segments, isInvalid, segmentElements, setFocusedElement, focusFirstSegment, resetSegments, isControlled } = useTimeField({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   placeholder: () => props.placeholder,
@@ -220,11 +219,11 @@ function getRootAttrs() {
 provideTimeFieldRootContext(context)
 
 // A native reset of the owning form puts the value back to `defaultValue`, and
-// drops segments typed without completing a value.
+// drops segments typed without completing a value: the model may not move
+// (it already holds the default), so the segments are put back here.
 function onFormReset(event: Event) {
   resetControllableState(isControlled, event)
-  if (!modelValue.value)
-    segmentValues.value = initializeTimeSegmentValues(granularity.value)
+  resetSegments()
 }
 
 defineExpose(mergeExpose(expose, {

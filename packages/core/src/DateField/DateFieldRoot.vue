@@ -7,7 +7,7 @@ import type { BaseChangeReason, ChangeEventDetails, DateStep, Formatter } from '
 import type { Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { createContext, mergeExpose, useDirection, useLocale } from '@/shared'
-import { getInputType, initializeSegmentValues, normalizeInputValue } from '@/shared/date'
+import { getInputType, normalizeInputValue } from '@/shared/date'
 
 export type DateFieldRootContext = {
   locale: Ref<string>
@@ -164,7 +164,7 @@ const {
   segmentElements,
   setFocusedElement,
   focusFirstSegment,
-  segmentValues,
+  resetSegments,
   isControlled,
 } = useDateField({
   modelValue: () => props.modelValue,
@@ -252,11 +252,11 @@ if (field) {
 provideDateFieldRootContext(context)
 
 // A native reset of the owning form puts the value back to `defaultValue`, and
-// drops segments typed without completing a value.
+// drops segments typed without completing a value: the model may not move
+// (it already holds the default), so the segments are put back here.
 function onFormReset(event: Event) {
   resetControllableState(isControlled, event)
-  if (!modelValue.value)
-    segmentValues.value = initializeSegmentValues(granularity.value)
+  resetSegments()
 }
 
 defineExpose(mergeExpose(expose, {

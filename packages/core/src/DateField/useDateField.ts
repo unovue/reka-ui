@@ -89,6 +89,12 @@ export interface UseDateFieldReturn {
   /** The editable segments only. */
   editableSegments: ComputedRef<SegmentContents>
   segmentValues: Ref<SegmentValueObj>
+  /**
+   * Shows the current value in every segment again (the empty segments without one), dropping what was typed
+   * without completing a value. A form reset calls it: the model may already hold its default, so nothing else
+   * would put the segments back.
+   */
+  resetSegments: () => void
   isInvalid: ComputedRef<boolean>
   /** Request a value change. Returns `false` when unchanged or cancelled. */
   setModelValue: (value: DateValue | undefined, reason?: DateFieldChangeReason | BaseChangeReason, event?: Event) => boolean
@@ -253,6 +259,11 @@ export function useDateField(props: UseDateFieldProps = {}): UseDateFieldReturn 
     }
   })
 
+  function resetSegments() {
+    const value = modelValue.value
+    segmentValues.value = value ? { ...syncSegmentValues({ value, formatter }) } : { ...initialSegments }
+  }
+
   const context: DateFieldRootContext = {
     get isDateUnavailable() {
       return isDateUnavailable.value
@@ -291,6 +302,7 @@ export function useDateField(props: UseDateFieldProps = {}): UseDateFieldReturn 
     segments,
     editableSegments: editable,
     segmentValues,
+    resetSegments,
     isInvalid,
     setModelValue,
     setPlaceholder,

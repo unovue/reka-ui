@@ -88,6 +88,12 @@ export interface UseDateRangeFieldReturn {
   segments: ComputedRef<Record<DateRangeType, SegmentContents>>
   editableSegments: ComputedRef<Record<DateRangeType, SegmentContents>>
   segmentValues: Record<DateRangeType, Ref<SegmentValueObj>>
+  /**
+   * Shows the current value in every segment again (the empty segments without one), dropping what was typed
+   * without completing a value. A form reset calls it: the model may already hold its default, so nothing else
+   * would put the segments back.
+   */
+  resetSegments: () => void
   isInvalid: ComputedRef<boolean>
   setModelValue: (value: DateRange, reason?: DateRangeFieldChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Change one end of the range, keeping the other. */
@@ -251,12 +257,17 @@ export function useDateRangeField(props: UseDateRangeFieldProps = {}): UseDateRa
     return setPlaceholderState(value, reason, event)
   }
 
-  function syncSegments(type: DateRangeType, value: DateValue | undefined) {
+  function syncSegments(type: DateRangeType, value: DateValue | undefined, force = false) {
     if (value)
       segmentValues[type].value = { ...syncSegmentValues({ value, formatter }) }
     // If segment has null value, means that user modified it, thus do not reset the segmentValues
-    else if (Object.values(segmentValues[type].value).every(segment => segment !== null))
+    else if (force || Object.values(segmentValues[type].value).every(segment => segment !== null))
       segmentValues[type].value = { ...initialSegments }
+  }
+
+  function resetSegments() {
+    syncSegments('start', startValue.value, true)
+    syncSegments('end', endValue.value, true)
   }
 
   // A cancelled commit rolls back only the model: the segments keep what the
@@ -332,6 +343,7 @@ export function useDateRangeField(props: UseDateRangeFieldProps = {}): UseDateRa
     segments,
     editableSegments: editable,
     segmentValues,
+    resetSegments,
     isInvalid,
     setModelValue,
     setRangeValue,
