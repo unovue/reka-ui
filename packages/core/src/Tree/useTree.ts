@@ -525,7 +525,7 @@ export function useTree<T extends Record<string, any> = Record<string, any>>(pro
     return setExpandedState(value, reason, event)
   }
 
-  /** The `useSelectionBehavior` rules, computed into a new value instead of written. */
+  /** The toggle/replace selection rules, computed into a new value instead of written. */
   function nextSelection(current: T | T[] | undefined, val: T, condition: (existing: T | undefined) => boolean): { value: T | T[] | undefined, anchor: boolean } {
     // multiple select
     if (multiple.value && Array.isArray(current)) {
