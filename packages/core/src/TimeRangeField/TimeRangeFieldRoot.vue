@@ -72,7 +72,8 @@ export interface TimeRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   dir?: Direction
   /**
    * A function that returns whether or not a time is unavailable. The range is invalid when either end is unavailable,
-   * or when a time between them is: every `step` of the `granularity` is checked (each minute by default), at most 1,440 times per range.
+   * or when a time between them is: every unit of the `granularity` is checked (each minute by default), whatever the `step`.
+   * A range of more than 1,440 units is sampled at a wider interval, so it can miss an unavailable time shorter than that interval.
    */
   isTimeUnavailable?: Matcher
   /** When combined with `isTimeUnavailable`, determines whether non-contiguous ranges, i.e. ranges containing unavailable times, are valid. The two ends are always checked. */

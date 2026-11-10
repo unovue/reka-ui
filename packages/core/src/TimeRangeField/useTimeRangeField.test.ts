@@ -207,17 +207,19 @@ describe('useTimeRangeField', () => {
       expect(invalid({ defaultValue: fullDay, granularity: 'second', isTimeUnavailable: at(12, 30, 30) })).toBe(false)
     })
 
-    it('samples on the step grid, counted from midnight', () => {
-      const value = { start: t(9, 7), end: t(10, 7) }
+    it('checks every unit of the granularity, whatever the step', () => {
+      const value = { start: t(9, 7), end: t(9, 11) }
       const seen: string[] = []
       const record = (d: any) => {
         seen.push(d.toPlainTime().toString({ smallestUnit: 'minute' }))
         return false
       }
       expect(invalid({ defaultValue: value, step: { minute: 15 }, isTimeUnavailable: record })).toBe(false)
-      expect(seen).toEqual(['09:07', '10:07', '09:15', '09:30', '09:45', '10:00'])
-      expect(invalid({ defaultValue: value, step: { minute: 15 }, isTimeUnavailable: at(9, 30) })).toBe(true)
-      expect(invalid({ defaultValue: value, step: { minute: 15 }, isTimeUnavailable: at(9, 20) })).toBe(false)
+      expect(seen).toEqual(['09:07', '09:11', '09:08', '09:09', '09:10'])
+      // A time the step skips is still inside the range.
+      const stepped = { start: t(9), end: t(9, 30) }
+      expect(invalid({ defaultValue: stepped, step: { minute: 30 }, isTimeUnavailable: at(9, 20) })).toBe(true)
+      expect(invalid({ defaultValue: stepped, step: { minute: 30 }, isTimeUnavailable: at(9, 40) })).toBe(false)
     })
 
     it('caps a range of date-times spanning several days', () => {

@@ -270,7 +270,9 @@ function isTimeUnavailable(time) {
 
 `isTimeUnavailable` is checked for both ends and for the times between them, so a range that spans an unavailable time is invalid even when it starts and ends on available ones. The root renders `data-invalid` and passes `isInvalid` to its slot.
 
-The times between the ends are sampled, because a range holds no fixed list of times: one check for every `step` of the `granularity`, counted from midnight. By default that is each whole minute, each hour with `granularity="hour"` and each second with `granularity="second"`; with `:step="{ minute: 15 }"` it is `:00`, `:15`, `:30` and `:45`. One range is checked at most 1,440 times. A longer run of steps is sampled at a whole multiple of the step, so a full day at `second` granularity is checked once a minute. Write the matcher over spans of time (`hour === 12`) and not over a single instant, so every sample inside the span matches.
+The times between the ends are sampled, because a range holds no fixed list of times: one check for every unit of the `granularity`. By default that is each whole minute, each hour with `granularity="hour"` and each second with `granularity="second"`. The `step` prop does not change this, since a range between two stepped ends still spans the times the step skips.
+
+One range is checked at most 1,440 times. A range with more units than that is sampled at a wider interval: a full day at `second` granularity is checked once a minute, so an unavailable time shorter than a minute can be missed there. If you need an exact answer for such ranges, check the range yourself and combine the result with `isInvalid`.
 
 Set `allowNonContiguousRanges` to check only the two ends.
 
@@ -293,21 +295,25 @@ function isTimeUnavailable(time) {
 
 <template>
   <TimeRangeFieldRoot
-    v-slot="{ isInvalid }"
+    v-slot="{ segments, isInvalid }"
     v-model="timeRange"
     :is-time-unavailable="isTimeUnavailable"
   >
     <div class="flex items-center gap-2">
-      <TimeRangeFieldInput part="hour" type="start" />
-      <span>:</span>
-      <TimeRangeFieldInput part="minute" type="start" />
+      <template v-for="item in segments.start" :key="item.part">
+        <TimeRangeFieldInput :part="item.part" type="start">
+          {{ item.value }}
+        </TimeRangeFieldInput>
+      </template>
       <span class="mx-2">to</span>
-      <TimeRangeFieldInput part="hour" type="end" />
-      <span>:</span>
-      <TimeRangeFieldInput part="minute" type="end" />
+      <template v-for="item in segments.end" :key="item.part">
+        <TimeRangeFieldInput :part="item.part" type="end">
+          {{ item.value }}
+        </TimeRangeFieldInput>
+      </template>
     </div>
     <p v-if="isInvalid" class="text-red-500 text-sm mt-1">
-      The range includes a time that is unavailable
+      Choose a range that ends after it starts and avoids unavailable times
     </p>
   </TimeRangeFieldRoot>
 </template>

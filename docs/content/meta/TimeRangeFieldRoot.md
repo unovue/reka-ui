@@ -73,7 +73,7 @@
   },
   {
     'name': 'isTimeUnavailable',
-    'description': '<p>A function that returns whether or not a time is unavailable. The range is invalid when either end is unavailable,\nor when a time between them is: every <code>step</code> of the <code>granularity</code> is checked (each minute by default), at most 1,440 times per range.</p>\n',
+    'description': '<p>A function that returns whether or not a time is unavailable. The range is invalid when either end is unavailable,\nor when a time between them is: every unit of the <code>granularity</code> is checked (each minute by default), whatever the <code>step</code>.\nA range of more than 1,440 units is sampled at a wider interval, so it can miss an unavailable time shorter than that interval.</p>\n',
     'type': 'Matcher',
     'required': false
   },
@@ -208,7 +208,7 @@
 | `hideTimeZone` | Whether or not to hide the time zone segment of the field | `boolean` | No | - |
 | `hourCycle` | The hour cycle used for formatting times. Defaults to the local preference | `12 \| 24` | No | - |
 | `id` | Id of the element | `string` | No | - |
-| `isTimeUnavailable` | A function that returns whether or not a time is unavailable. The range is invalid when either end is unavailable, or when a time between them is: every `step` of the `granularity` is checked (each minute by default), at most 1,440 times per range. | `Matcher` | No | - |
+| `isTimeUnavailable` | A function that returns whether or not a time is unavailable. The range is invalid when either end is unavailable, or when a time between them is: every unit of the `granularity` is checked (each minute by default), whatever the `step`. A range of more than 1,440 units is sampled at a wider interval, so it can miss an unavailable time shorter than that interval. | `Matcher` | No | - |
 | `locale` | The locale to use for formatting times | `string` | No | - |
 | `maxValue` | The maximum time that can be selected | `TimeValue` | No | - |
 | `minValue` | The minimum time that can be selected | `TimeValue` | No | - |
