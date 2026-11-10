@@ -233,6 +233,14 @@ export function useFocusScope(options: UseFocusScopeOptions) {
 
   // Unmount: the unmount auto-focus, focus back, out of the stack.
   function teardown(container: HTMLElement) {
+    // Not present (kept mounted while closed, e.g. a Dialog with
+    // `unmountOnHide: false`): its close already ran when `present` turned
+    // false, so there is no auto-focus to fire and no focus to give back.
+    if (present() === false) {
+      focusScopesStack.remove(focusScope)
+      return
+    }
+
     const previouslyFocusedElement = restoreFocusTo
     const unmountEvent = new CustomEvent(AUTOFOCUS_ON_UNMOUNT, EVENT_OPTIONS)
     const unmountEventHandler = (ev: Event) => {
