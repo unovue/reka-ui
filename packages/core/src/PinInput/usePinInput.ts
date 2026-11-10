@@ -2,7 +2,7 @@ import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { PinInputContextValue, PinInputRootContext, PinInputType } from './PinInputRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Direction } from '@/shared/types'
-import { computed, nextTick, ref, shallowRef, toValue, watch } from 'vue'
+import { computed, nextTick, ref, shallowRef, toValue, triggerRef, watch } from 'vue'
 import { createPartSurface, getActiveElement, useArrowNavigation, useComposing, useControllableState } from '@/shared'
 import { resolveDirection } from '@/shared/useDirection'
 
@@ -172,11 +172,15 @@ export function usePinInput(props: UsePinInputProps = {}): UsePinInputReturn {
 
   const inputElements = ref<Set<HTMLInputElement>>(new Set())
   function registerInput(el: HTMLInputElement, index?: MaybeRefOrGetter<number>) {
+    // Re-registering a member with another index doesn't change the Set, so re-order explicitly.
+    const reorder = inputIndexes.get(el) !== index && inputElements.value.has(el)
     if (index !== undefined)
       inputIndexes.set(el, index)
     else
       inputIndexes.delete(el)
     inputElements.value.add(el)
+    if (reorder)
+      triggerRef(inputElements)
   }
   function unregisterInput(el: HTMLInputElement) {
     inputElements.value.delete(el)
