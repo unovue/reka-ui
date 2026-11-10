@@ -92,7 +92,7 @@ describe('field validation: debounce', () => {
   })
 
   it('waits for the debounce time', async () => {
-    const validate = vi.fn(() => 'Nope')
+    const validate = vi.fn((_value: unknown) => 'Nope')
     const wrapper = mountField({ validate, debounce: 200 })
     await wrapper.find('input').setValue('a')
     expect(validate).not.toHaveBeenCalled()
@@ -108,7 +108,7 @@ describe('field validation: debounce', () => {
   })
 
   it('restarts on each change and validates the latest value', async () => {
-    const validate = vi.fn(() => 'Nope')
+    const validate = vi.fn((_value: unknown) => 'Nope')
     const wrapper = mountField({ validate, debounce: 200 })
     const input = wrapper.find('input')
     await input.setValue('a')
@@ -123,7 +123,7 @@ describe('field validation: debounce', () => {
   })
 
   it('an empty value is validated at once', async () => {
-    const validate = vi.fn(() => 'Nope')
+    const validate = vi.fn((_value: unknown) => 'Nope')
     const wrapper = mountField({ validate, debounce: 200 })
     const input = wrapper.find('input')
     await input.setValue('a')
@@ -135,7 +135,7 @@ describe('field validation: debounce', () => {
   })
 
   it('a pending debounce does not fire after unmount', async () => {
-    const validate = vi.fn(() => 'Nope')
+    const validate = vi.fn((_value: unknown) => 'Nope')
     const wrapper = mountField({ validate, debounce: 200 })
     await wrapper.find('input').setValue('a')
     wrapper.unmount()
