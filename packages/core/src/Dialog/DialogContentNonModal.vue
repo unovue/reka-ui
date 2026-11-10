@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DialogContentImplEmits, DialogContentImplProps } from './DialogContentImpl.vue'
 import { computed, ref, watch } from 'vue'
-import { useEmitAsProps, useForwardElement } from '@/shared'
+import { containsComposed, useEmitAsProps, useForwardElement } from '@/shared'
 import { getPopupRootStore } from '@/shared/popupHandle'
 import DialogContentImpl from './DialogContentImpl.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
@@ -68,7 +68,8 @@ watch(() => props.present, (isPresent, wasPresent) => {
       // As the trigger is already setup to close, without doing so would
       // cause it to close and immediately open.
       const target = event.target as HTMLElement;
-      const targetIsTrigger = rootContext.triggerElement.value?.contains(target);
+      const trigger = rootContext.triggerElement.value;
+      const targetIsTrigger = !!trigger && containsComposed(trigger, target);
       if (targetIsTrigger) event.preventDefault();
 
       // Another detached trigger of the same handle: its click moves the open

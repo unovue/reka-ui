@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { PopoverContentImplEmits, PopoverContentImplProps } from './PopoverContentImpl.vue'
 import { computed, ref, watch } from 'vue'
-import { useForwardElement, useForwardPropsEmits, useHideOthers } from '@/shared'
+import { containsComposed, useForwardElement, useForwardPropsEmits, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import PopoverContentImpl from './PopoverContentImpl.vue'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
@@ -48,7 +48,8 @@ useHideOthers(computed(() => rootContext.open.value ? currentElement.value : und
         // The trigger stays interactive through the backdrop (Base UI cuts it
         // out) and already toggles the popover closed; dismissing here too
         // would close it and immediately reopen it.
-        if (rootContext.triggerElement.value?.contains(event.target as Node)) event.preventDefault();
+        const trigger = rootContext.triggerElement.value;
+        if (trigger && containsComposed(trigger, event.target as Node)) event.preventDefault();
       }
     "
     @focus-outside.prevent
