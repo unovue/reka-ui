@@ -110,7 +110,7 @@ primitiveComponents.forEach((componentPath) => {
 // 3. A part exported under another name gets a meta file per alias, so its
 // page includes tables under its own part names: a family re-exporting another
 // family's parts (`ComboboxItem as AutocompleteItem` from '@/Combobox'), or a
-// second name for an SFC (`default as DrawerPopup` from './DrawerContent.vue').
+// second name for an SFC (`default as Other` from './Part.vue').
 fg.sync(['src/*/index.ts'], { cwd: coreDir, absolute: true }).forEach((indexPath) => {
   const source = readFileSync(indexPath, 'utf8')
   for (const [, specifiers, from] of source.matchAll(EXPORT_BLOCK_RE)) {

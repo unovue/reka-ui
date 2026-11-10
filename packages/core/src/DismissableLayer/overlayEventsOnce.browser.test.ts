@@ -7,7 +7,7 @@ import { AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDia
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxViewport } from '@/Combobox'
 import { ContextMenuContent, ContextMenuItem, ContextMenuPortal, ContextMenuRoot, ContextMenuTrigger } from '@/ContextMenu'
 import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from '@/Dialog'
-import { DrawerContent, DrawerPortal, DrawerRoot, DrawerTitle } from '@/Drawer'
+import { DrawerPopup, DrawerPortal, DrawerRoot, DrawerTitle } from '@/Drawer'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
 import { HoverCardContent, HoverCardPortal, HoverCardRoot, HoverCardTrigger } from '@/HoverCard'
 import { MenubarContent, MenubarItem, MenubarMenu, MenubarPortal, MenubarRoot, MenubarTrigger } from '@/Menubar'
@@ -52,7 +52,7 @@ const families: Record<string, Family> = {
   },
   'Drawer': {
     closeAutoFocus: false,
-    render: (open, on) => h(DrawerRoot, controlled(open), () => h(DrawerPortal, () => content(DrawerContent, { ...on, 'aria-describedby': undefined }, () => [h(DrawerTitle, () => 'Title'), h('button', 'In')]))),
+    render: (open, on) => h(DrawerRoot, controlled(open), () => h(DrawerPortal, () => content(DrawerPopup, { ...on, 'aria-describedby': undefined }, () => [h(DrawerTitle, () => 'Title'), h('button', 'In')]))),
   },
   'Popover modal': {
     closeAutoFocus: true,

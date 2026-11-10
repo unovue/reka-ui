@@ -58,11 +58,6 @@ export interface AutocompleteRootProps<T extends AcceptableValue = string> exten
    * filtering off: filter the items yourself, or on a server.
    */
   filter?: ListboxFilterFunction<T> | null
-  /**
-   * Deprecated alias for `:filter="null"`: when `true`, turns client filtering off. Wins over `filter`.
-   * @deprecated Use `:filter="null"`.
-   */
-  ignoreFilter?: boolean
   /** When `true`, hover over item will trigger highlight */
   highlightOnHover?: boolean
   /** When `true`, keyboard navigation will loop from last item to first, and vice versa. */
@@ -184,7 +179,6 @@ const combobox = useComboboxRoot<AcceptableValue>({
   loop: () => props.loop,
   getNavigationIntent: event => props.getNavigationIntent?.(event),
   filter: toRef(() => props.filter) as Ref<ListboxFilterFunction<AcceptableValue> | null | undefined>,
-  ignoreFilter: () => props.ignoreFilter,
   open: () => props.open,
   defaultOpen: props.defaultOpen,
   baseId: useId(undefined, 'reka-autocomplete'),

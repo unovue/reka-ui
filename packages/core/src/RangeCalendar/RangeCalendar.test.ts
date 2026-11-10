@@ -6,6 +6,7 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { effectScope, nextTick, shallowRef } from 'vue'
+import { DateRangePickerRoot } from '@/DateRangePicker'
 import { useTestKbd } from '@/shared'
 import { RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot } from '..'
 import RangeCalendar from './story/_RangeCalendar.vue'
@@ -245,11 +246,11 @@ describe('rangeCalendar', () => {
     expect(endValue).toHaveTextContent(String(calendarDateRange.end.day))
   })
 
-  it('caps highlighted range to maximumDays (forward)', async () => {
+  it('caps highlighted range to maximumLength (forward)', async () => {
     const { getByTestId, calendar, user } = setup({
       calendarProps: {
         placeholder: new Temporal.PlainDate(1980, 1, 20),
-        maximumDays: 5,
+        maximumLength: 5,
       },
     })
 
@@ -265,11 +266,11 @@ describe('rangeCalendar', () => {
     expect(getByTestId('date-1-25')).not.toHaveAttribute('data-highlighted')
   })
 
-  it('caps highlighted range to maximumDays (backward)', async () => {
+  it('caps highlighted range to maximumLength (backward)', async () => {
     const { getByTestId, calendar, user } = setup({
       calendarProps: {
         placeholder: new Temporal.PlainDate(1980, 1, 20),
-        maximumDays: 5,
+        maximumLength: 5,
       },
     })
 
@@ -1451,12 +1452,19 @@ describe('numberOfMonths > 1', () => {
   })
 })
 
-describe('handles maximumDays', () => {
+describe('handles maximumLength', () => {
+  it('has no `maximumDays` prop', () => {
+    expect((RangeCalendarRoot as any).props).toHaveProperty('maximumLength')
+    expect((RangeCalendarRoot as any).props).not.toHaveProperty('maximumDays')
+    expect((DateRangePickerRoot as any).props).toHaveProperty('maximumLength')
+    expect((DateRangePickerRoot as any).props).not.toHaveProperty('maximumDays')
+  })
+
   it('limits the maximum number of days that can be selected', async () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         placeholder: new Temporal.PlainDate(1980, 1, 15),
-        maximumDays: 5,
+        maximumLength: 5,
       },
     })
 
@@ -1488,12 +1496,12 @@ describe('handles maximumDays', () => {
     const { getByTestId, user, rerender } = setup({
       calendarProps: {
         placeholder: new Temporal.PlainDate(1980, 1, 10),
-        maximumDays: 3,
+        maximumLength: 3,
       },
-      emits: { 'onUpdate:modelValue': data => rerender({ calendarProps: { placeholder: new Temporal.PlainDate(1980, 1, 10), maximumDays: 3, modelValue: data } }) },
+      emits: { 'onUpdate:modelValue': data => rerender({ calendarProps: { placeholder: new Temporal.PlainDate(1980, 1, 10), maximumLength: 3, modelValue: data } }) },
     })
 
-    // No dates should be disabled due to maximumDays
+    // No dates should be disabled due to maximumLength
     expect(getByTestId('date-1-14')).not.toHaveAttribute('aria-disabled', 'true')
     expect(getByTestId('date-1-20')).not.toHaveAttribute('aria-disabled', 'true')
 
@@ -1527,7 +1535,7 @@ describe('handles maximumDays', () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         placeholder: new Temporal.PlainDate(1980, 1, 15),
-        maximumDays: 4,
+        maximumLength: 4,
       },
     })
     const startDay = getByTestId('date-1-15')
@@ -1543,11 +1551,11 @@ describe('handles maximumDays', () => {
     expect(beyondMaximumDay).not.toHaveAttribute('data-highlighted')
   })
 
-  it('keeps backward highlight and disabled boundaries coherent with maximumDays', async () => {
+  it('keeps backward highlight and disabled boundaries coherent with maximumLength', async () => {
     const { getByTestId, user } = setup({
       calendarProps: {
         placeholder: new Temporal.PlainDate(1980, 1, 10),
-        maximumDays: 3,
+        maximumLength: 3,
       },
     })
 

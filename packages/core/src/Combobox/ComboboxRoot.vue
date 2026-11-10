@@ -57,7 +57,7 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
   onClearInput: (handler: (event?: Event) => boolean | void) => void
   /** The details of the last value change (or cancelled attempt). */
   lastChangeDetails: Readonly<Ref<ChangeEventDetails<ComboboxChangeReason>>>
-  /** The resolved filter: `null` while client filtering is off (`filter: null` or `ignoreFilter`). */
+  /** The resolved filter: `null` while client filtering is off (`filter: null`). */
   filter: ComputedRef<ListboxFilterFunction<T> | null>
   /** The search term the filter runs against. */
   filterSearch: Ref<string>
@@ -152,11 +152,6 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
    * `contains` (base sensitivity). `null` turns client filtering off: filter the items yourself, or on a server.
    */
   filter?: ListboxFilterFunction<T> | null
-  /**
-   * Deprecated alias for `:filter="null"`: when `true`, turns client filtering off. Wins over `filter`.
-   * @deprecated Use `:filter="null"`.
-   */
-  ignoreFilter?: boolean
   /**
    * Whether `ComboboxCancel` also clears the selected value, resetting `modelValue` to `null` (or `[]` if `multiple`).
    * Set to `false` to clear only the search text and keep the selection.
@@ -270,7 +265,6 @@ const combobox = useComboboxRoot<AcceptableValue>({
   by: props.by as By<AcceptableValue> | undefined,
   getNavigationIntent: event => props.getNavigationIntent?.(event),
   filter: toRef(() => props.filter) as Ref<ListboxFilterFunction<AcceptableValue> | null | undefined>,
-  ignoreFilter: () => props.ignoreFilter,
   open: () => props.open,
   defaultOpen: props.defaultOpen,
   baseId: useId(undefined, 'reka-combobox'),

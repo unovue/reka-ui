@@ -19,10 +19,6 @@ export interface DrawerPopupProps extends Omit<DrawerContentImplProps, 'trapFocu
    */
   id?: string
 }
-/** @deprecated Use `DrawerPopupEmits`; `DrawerContent` is a deprecated alias of `DrawerPopup`. */
-export type DrawerContentEmits = DrawerPopupEmits
-/** @deprecated Use `DrawerPopupProps`; `DrawerContent` is a deprecated alias of `DrawerPopup`. */
-export type DrawerContentProps = DrawerPopupProps
 </script>
 
 <script setup lang="ts">
@@ -79,7 +75,7 @@ const shouldHideOthers = computed(() => isFullModal.value && rootContext.open.va
 useHideOthers(shouldHideOthers)
 
 // BaseUI parity (`useDialogRoot`): only a fully modal drawer locks page scroll,
-// with or without a `DrawerOverlay`; `'trap-focus'` leaves the page scrollable.
+// with or without a `DrawerBackdrop`; `'trap-focus'` leaves the page scrollable.
 const scrollLocked = useBodyScrollLock(isFullModal.value && rootContext.open.value)
 watch(() => isFullModal.value && rootContext.open.value, (locked) => {
   scrollLocked.value = locked

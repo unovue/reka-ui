@@ -5,7 +5,7 @@ import { defineComponent, h, nextTick } from 'vue'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot } from '@/Combobox'
 import { ContextMenuRoot, ContextMenuTrigger } from '@/ContextMenu'
 import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogRoot, DialogTitle, DialogTrigger } from '@/Dialog'
-import { DrawerClose, DrawerContent, DrawerDescription, DrawerRoot, DrawerTitle, DrawerTrigger } from '@/Drawer'
+import { DrawerClose, DrawerDescription, DrawerPopup, DrawerRoot, DrawerTitle, DrawerTrigger } from '@/Drawer'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
 import { HoverCardContent, HoverCardRoot, HoverCardTrigger } from '@/HoverCard'
 import { MenubarContent, MenubarItem, MenubarMenu, MenubarRoot, MenubarTrigger } from '@/Menubar'
@@ -26,7 +26,7 @@ const compositions: Record<string, () => VNodeChild> = {
   ]),
   Drawer: () => h(DrawerRoot, { defaultOpen: true }, () => [
     h(DrawerTrigger, () => 'Open'),
-    h(DrawerContent, () => [h(DrawerTitle, () => 'T'), h(DrawerDescription, () => 'D'), h(DrawerClose, () => 'x')]),
+    h(DrawerPopup, () => [h(DrawerTitle, () => 'T'), h(DrawerDescription, () => 'D'), h(DrawerClose, () => 'x')]),
   ]),
   Popover: () => h(PopoverRoot, { defaultOpen: true }, () => [
     h(PopoverAnchor),

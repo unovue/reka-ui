@@ -522,7 +522,7 @@ const { startsWith } = useFilter({ sensitivity: 'base' })
 </template>
 ```
 
-To filter the items yourself (or on a server), set `:filter="null"` and render the filtered list. `ignore-filter` still works as an alias for `:filter="null"`, but it is deprecated.
+To filter the items yourself (or on a server), set `:filter="null"` and render the filtered list.
 
 ```vue line=15,16,22,28
 <script setup lang="ts">
@@ -990,4 +990,4 @@ const props = defineProps<ComboboxItemProps>()
 
 ## Headless composable
 
-`useComboboxRoot` builds on the Listbox model: it adds the open state (`open`, `onOpenChange()`), the search term and its filtering (`filter`, `ignoreFilter`, `filterSearch`), the reset rules (`resetSearchTermOnBlur`, `resetSearchTermOnSelect`, `resetModelValueOnClear`), and the `root`, `listbox`, `trigger`, `cancel` and `content` [part surfaces](/docs/guides/composables#part-surfaces) with `createInputSurface()` for the input. Positioning, the portal and dismissal stay in the components. It registers watchers, so call it inside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).
+`useComboboxRoot` builds on the Listbox model: it adds the open state (`open`, `onOpenChange()`), the search term and its filtering (`filter`, `filterSearch`), the reset rules (`resetSearchTermOnBlur`, `resetSearchTermOnSelect`, `resetModelValueOnClear`), and the `root`, `listbox`, `trigger`, `cancel` and `content` [part surfaces](/docs/guides/composables#part-surfaces) with `createInputSurface()` for the input. Positioning, the portal and dismissal stay in the components. It registers watchers, so call it inside `setup()`. The composable is experimental; see [Headless composables](/docs/guides/composables).

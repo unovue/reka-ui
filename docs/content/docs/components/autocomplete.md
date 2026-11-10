@@ -312,7 +312,7 @@ const fruits = ['Apple', 'Banana', 'Orange', 'Grapes', 'Pineapple']
 
 ### Custom filtering
 
-Items are matched against the typed text with `useFilter`'s `contains` (case and accent insensitive). Pass a `filter(text, search, value)` function to change how they match, or `:filter="null"` to filter the items yourself, for example on a server. `ignore-filter` is a deprecated alias for `:filter="null"`.
+Items are matched against the typed text with `useFilter`'s `contains` (case and accent insensitive). Pass a `filter(text, search, value)` function to change how they match, or `:filter="null"` to filter the items yourself, for example on a server.
 
 ```vue
 <script setup lang="ts">

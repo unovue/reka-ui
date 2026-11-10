@@ -188,8 +188,6 @@ export interface UseDrawerProps {
    * the model's single store (written back).
    */
   snapPoint?: MaybeRefOrGetter<DrawerSnapPoint | null | undefined>
-  /** @deprecated Use `snapPoint`; a writable ref here is written back as before. */
-  activeSnapPoint?: Ref<DrawerSnapPoint | null | undefined>
   /** Initial snap point when uncontrolled. @defaultValue `null` */
   defaultSnapPoint?: DrawerSnapPoint | null
   /**
@@ -221,7 +219,7 @@ export interface UseDrawerProps {
   /**
    * Called once the popup's open (`true`) or close (`false`) transitions and
    * animations have finished (`update:openComplete`), reported by
-   * `DrawerContent`'s `Presence` through `context.notifyOpenComplete`.
+   * `DrawerPopup`'s `Presence` through `context.notifyOpenComplete`.
    */
   onOpenComplete?: (value: boolean) => void
   /** The parent drawer's context, for nested drawers. */
@@ -287,7 +285,7 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
 
   // Base UI's `onSnapPointChange(snapPoint, eventDetails)` is cancellable too.
   const { state: activeSnapPoint, setState: setSnapPoint } = useControllableState<DrawerSnapPoint | null | undefined, DrawerSnapPointChangeReason>({
-    prop: props.snapPoint ?? props.activeSnapPoint,
+    prop: props.snapPoint,
     defaultValue: props.defaultSnapPoint ?? null,
     name: 'snapPoint',
     emit: props.emit,
@@ -773,7 +771,7 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
     onMounted(() => {
       if (!getElementByIdFrom(currentElement.value, rootContext.titleId)) {
         console.warn(
-          `Warning: \`DrawerContent\` requires a \`DrawerTitle\` for accessibility.`,
+          `Warning: \`DrawerPopup\` requires a \`DrawerTitle\` for accessibility.`,
         )
       }
     })
@@ -792,14 +790,14 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
 }
 
 // -----------------------------------------------------------------------------
-// useDrawerContentModality — DrawerContent's modality tiers and final focus
+// useDrawerContentModality — DrawerPopup's modality tiers and final focus
 // -----------------------------------------------------------------------------
 
 export interface UseDrawerContentModalityOptions {
   rootContext: Pick<DrawerRootContext, 'modal' | 'open' | 'triggerElement'> & Partial<Pick<DrawerRootContext, 'overlayElement'>>
   /**
    * The content element. With it, a modal drawer only dismisses on a press on
-   * its own backdrop (internal backdrop or `DrawerOverlay`).
+   * its own backdrop (internal backdrop or `DrawerBackdrop`).
    */
   contentElement?: MaybeRefOrGetter<HTMLElement | null | undefined>
   /**
@@ -836,7 +834,7 @@ export interface UseDrawerContentModalityReturn {
 }
 
 /**
- * The modality tiers of `DrawerContent` (`true` / `'trap-focus'` / `false`) and
+ * The modality tiers of `DrawerPopup` (`true` / `'trap-focus'` / `false`) and
  * their focus-return and outside-interaction handlers. Refs and closures only.
  *
  * @experimental Signatures may change in 3.x minors.

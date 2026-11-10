@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
-import { DrawerClose, DrawerContent, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from '.'
+import { DrawerClose, DrawerPopup, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from '.'
 
 const mounted: { unmount: () => void }[] = []
 let style: HTMLStyleElement | undefined
@@ -26,7 +26,7 @@ describe('drawerRoot openComplete with an infinite popup animation', () => {
     const Fixture = defineComponent({
       setup: () => () => h(DrawerRoot, { 'onUpdate:openComplete': onOpenComplete }, () => [
         h(DrawerTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
-        h(DrawerPortal, null, () => h(DrawerContent, { 'class': 'popup', 'style': 'position:fixed;left:0;right:0;bottom:0;z-index:1;background:white;outline:2px solid transparent', 'aria-describedby': undefined }, () => [
+        h(DrawerPortal, null, () => h(DrawerPopup, { 'class': 'popup', 'style': 'position:fixed;left:0;right:0;bottom:0;z-index:1;background:white;outline:2px solid transparent', 'aria-describedby': undefined }, () => [
           h(DrawerTitle, null, () => 'Title'),
           h(DrawerClose, null, () => 'Close'),
         ])),

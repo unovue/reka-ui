@@ -1,12 +1,12 @@
 <script lang="ts">
 import type { TeleportProps } from '@/Teleport'
-import DrawerContent from './DrawerContent.vue'
-import DrawerOverlay from './DrawerOverlay.vue'
+import DrawerBackdrop from './DrawerBackdrop.vue'
+import DrawerPopup from './DrawerPopup.vue'
 
 export interface DrawerPortalProps extends TeleportProps {}
 
 // The parts that render nothing while the popup is closed (see `createPortalGate`).
-const gatedParts = [DrawerOverlay, DrawerContent]
+const gatedParts = [DrawerBackdrop, DrawerPopup]
 </script>
 
 <script setup lang="ts">
