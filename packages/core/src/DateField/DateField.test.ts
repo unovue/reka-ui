@@ -110,6 +110,35 @@ describe('dateField', async () => {
     expect(getByTestId('minute')).toHaveTextContent(String(calendarDateTime.minute))
   })
 
+  it('submits a `ZonedDateTime` with its offset and time zone from one named input', async () => {
+    const { container } = setup({
+      dateFieldProps: { modelValue: zonedDateTime, name: 'date', required: true, minValue: zonedDateTime },
+    })
+
+    const named = container.querySelectorAll<HTMLInputElement>('input[name="date"]')
+    expect(named).toHaveLength(1)
+    expect(named[0].type).toBe('hidden')
+    expect(named[0].value).toBe('1980-01-20T12:30:00-05:00[America/New_York]')
+
+    // The native input keeps the constraints, without a name.
+    const native = container.querySelector<HTMLInputElement>('input[type="datetime-local"]')!
+    expect(native.hasAttribute('name')).toBe(false)
+    expect(native.required).toBe(true)
+    expect(native.min).toBe('1980-01-20T12:30')
+    expect(native.value).toBe('1980-01-20T12:30')
+  })
+
+  it('names the native input for a plain value', async () => {
+    const { container } = setup({
+      dateFieldProps: { modelValue: calendarDateTime, name: 'date' },
+    })
+
+    const named = container.querySelectorAll<HTMLInputElement>('input[name="date"]')
+    expect(named).toHaveLength(1)
+    expect(named[0].type).toBe('datetime-local')
+    expect(container.querySelector('input[type="hidden"]')).toBeNull()
+  })
+
   it('populates segment with value - `ZonedDateTime`', async () => {
     const { month, day, year, getByTestId } = setup({
       dateFieldProps: { modelValue: zonedDateTime },
