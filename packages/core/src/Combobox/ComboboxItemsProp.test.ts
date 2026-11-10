@@ -212,6 +212,70 @@ describe('given a Combobox with `items`', () => {
     expect(onValue).not.toHaveBeenCalled()
   })
 
+  it('keeps typed text that a close retained when `items` is replaced', async () => {
+    const items = ref<{ value: string, label: string }[]>([{ value: 'a', label: 'Apple' }])
+    const onText = vi.fn()
+    const { wrapper } = make(() => ({ items: items.value, resetSearchTermOnBlur: false }), { model: ref('a'), inputProps: { 'onUpdate:modelValue': onText } })
+    await settle()
+    expect(input().value).toBe('Apple')
+    await wrapper.find('[data-testid=input]').setValue('Ban')
+    await settle()
+    await wrapper.find('[data-testid=input]').trigger('keydown', { key: 'Escape' })
+    await settle()
+    expect(options()).toEqual([])
+    expect(input().value).toBe('Ban')
+    onText.mockClear()
+
+    // The same label in a new array.
+    items.value = [{ value: 'a', label: 'Apple' }]
+    await settle()
+    expect(input().value).toBe('Ban')
+    // Another option added in place.
+    items.value.push({ value: 'c', label: 'Cherry' })
+    await settle()
+    expect(input().value).toBe('Ban')
+    // A new label: the input does not show the selection, so there is nothing to follow.
+    items.value = [{ value: 'a', label: 'Pomme' }]
+    await settle()
+    expect(input().value).toBe('Ban')
+    expect(onText).not.toHaveBeenCalled()
+  })
+
+  it('writes nothing when `items` is replaced by an equal list while the input rests', async () => {
+    const items = ref([{ value: 'a', label: 'Apple' }])
+    const onText = vi.fn()
+    const onValue = vi.fn()
+    make(() => ({ 'items': items.value, 'onUpdate:modelValue': onValue }), { inputProps: { 'onUpdate:modelValue': onText } })
+    await settle()
+    await pick('Apple')
+    onText.mockClear()
+    onValue.mockClear()
+    const setValue = vi.spyOn(input(), 'value', 'set')
+    items.value = [{ value: 'a', label: 'Apple' }]
+    await settle()
+    expect(input().value).toBe('Apple')
+    expect(onText).not.toHaveBeenCalled()
+    expect(onValue).not.toHaveBeenCalled()
+    expect(setValue).not.toHaveBeenCalled()
+  })
+
+  it('shows a label that arrives after the value, when `items` was not set at first', async () => {
+    const items = ref<Record<string, string> | undefined>(undefined)
+    const onText = vi.fn()
+    make(() => ({ items: items.value }), { model: ref('a'), inputProps: { 'onUpdate:modelValue': onText } })
+    await settle()
+    expect(input().value).toBe('a')
+    onText.mockClear()
+    items.value = { a: 'Apple' }
+    await settle()
+    expect(input().value).toBe('Apple')
+    expect(onText).toHaveBeenCalledTimes(1)
+    expect(onText).toHaveBeenLastCalledWith('Apple', expect.objectContaining({ reason: 'none' }))
+    items.value = { a: 'Pomme' }
+    await settle()
+    expect(input().value).toBe('Pomme')
+  })
+
   it('hydrates the server-rendered label without a mismatch', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const component = fixture(() => ({ defaultValue: 'b', items: fruits }))

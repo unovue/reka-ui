@@ -2,9 +2,8 @@
 import type { ComboboxInputChangeReason, ComboboxOpenChangeReason } from './useCombobox'
 import type { ListboxFilterProps } from '@/Listbox'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { mergeProps, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { getCurrentScope, mergeProps, nextTick, onMounted, onUnmounted, toValue, watch } from 'vue'
 import { getElementByIdFrom, useControllableState, useForwardElement } from '@/shared'
-import { getListItemData } from '@/shared/listItems'
 
 export type ComboboxInputEmits = {
   /** Called before the input text changes; `details.cancel()` keeps the current text. */
@@ -120,8 +119,14 @@ if (fieldContext) {
   }, { flush: 'post' })
 }
 
+// The selection the text was last reset to, and the text it had.
+let shownValue: unknown
+let shownText: string | undefined
+
 function resetSearchTerm(reason: ComboboxInputChangeReason | BaseChangeReason) {
-  setText(getComboboxInputText(rootContext, props.displayValue), reason)
+  shownValue = rootContext.modelValue.value
+  shownText = getComboboxInputText(rootContext, props.displayValue)
+  setText(shownText, reason)
   nextTick(() => {
     // The text can be unchanged while the DOM still shows typed text (a
     // controlled text the parent kept): patch the element back.
@@ -144,29 +149,45 @@ rootContext.onClearInput((event?: Event) => {
   return setText('', 'clear-press', event) || (modelValue.value ?? '') === ''
 })
 
-// The `items` label of a single selection as last read by the watcher below,
-// and as last handled by it. The read follows the root's `items`, so a label
-// that arrives or changes later (items loaded after the value, a language
-// switch) updates the text of a resting input. Without `items` it reads nothing.
-let selectionText: string | undefined
-let syncedSelectionText: string | undefined
+// `items` on the root as last read by the watcher below, and as last handled by
+// it; and whether the watcher of the selection text was created.
+const scope = getCurrentScope()
+let itemsSeen: unknown
+let lastItems: unknown
+let isWatchingSelectionText = false
 
 watch(() => {
-  const value = rootContext.modelValue.value
-  selectionText = value == null || Array.isArray(value) ? undefined : getListItemData(rootContext, value)?.label
-  return value
+  // Only whether `items` is set and which object it is. Its content is read by
+  // the watcher created below.
+  itemsSeen = toValue(rootContext.items)
+  return rootContext.modelValue.value
 }, (value, oldValue) => {
-  // Only the label changed: the value is the one already shown.
-  const isLabelChange = selectionText !== syncedSelectionText && value === oldValue
-  syncedSelectionText = selectionText
+  if (itemsSeen !== lastItems) {
+    lastItems = itemsSeen
+    if (itemsSeen !== undefined && !isWatchingSelectionText) {
+      isWatchingSelectionText = true
+      // With `items`, a label that arrives or changes later (items loaded after
+      // the value, a language switch) updates the text, but only where the
+      // input still shows the text of the same selection: typed text is left
+      // alone, also text a close retained (`resetSearchTermOnBlur` off). It
+      // runs when the text changes, so `items` replaced or extended with the
+      // same label does nothing. Created with the first `items`, so that a
+      // root without `items` has no watcher for it.
+      scope?.run(() => watch(() => getComboboxInputText(rootContext, props.displayValue), (text) => {
+        if (rootContext.resetSearchTermOnSelect.value && !rootContext.isUserInputted.value
+          && shownText !== undefined && shownText !== text
+          && shownValue === rootContext.modelValue.value && shownText === (modelValue.value ?? '')) {
+          resetSearchTerm('none')
+        }
+      }, { immediate: true }))
+    }
+    // `items` was set or replaced under the same selection: there is no
+    // selection change to handle. Not on the first run, which has no text yet.
+    if (value === oldValue && shownText !== undefined)
+      return
+  }
   if (!rootContext.resetSearchTermOnSelect.value)
     return
-  if (isLabelChange) {
-    // Typed text is left alone; closing resets it to the new label.
-    if (!rootContext.isUserInputted.value)
-      resetSearchTerm('none')
-    return
-  }
   const reason = rootContext.lastChangeDetails.value.reason
   if (rootContext.isUserInputted.value && rootContext.multiple.value && (reason === 'item-press' || reason === 'item-keydown')) {
     // Base UI: picking an item while filtering a multiple combobox clears the
