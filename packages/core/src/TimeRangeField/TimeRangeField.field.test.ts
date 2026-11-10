@@ -93,6 +93,41 @@ describe('given a Field-wrapped TimeRangeField', () => {
     wrapper.unmount()
   })
 
+  it('marks the group and the segments invalid for an unavailable time between the ends, as for an unavailable end', async () => {
+    const isTimeUnavailable = (date: any) => date.hour === 12
+    const states: boolean[] = []
+    const mountRange = (end: string) => mount(defineComponent({
+      setup: () => () => h(FieldRoot, { name: 'range' }, () => h(TimeRangeFieldRoot, {
+        locale: 'en-US',
+        hourCycle: 24,
+        isTimeUnavailable,
+        defaultValue: { start: Temporal.PlainTime.from('09:00'), end: Temporal.PlainTime.from(end) },
+      }, {
+        default: ({ segments, isInvalid }: { segments: Record<'start' | 'end', Segment[]>, isInvalid: boolean }) => {
+          states.push(isInvalid)
+          return segments.start.map(item => h(TimeRangeFieldInput, { 'key': item.part, 'part': item.part as any, 'type': 'start', 'data-segment': `start-${item.part}` }, () => item.value))
+        },
+      })),
+    }), { attachTo: document.body })
+
+    for (const end of ['17:00', '12:00']) {
+      states.length = 0
+      const wrapper = mountRange(end)
+      await nextTick()
+      expect(states.at(-1)).toBe(true)
+      expect(wrapper.find('[role="group"]').attributes('data-invalid')).toBe('')
+      expect(segment(wrapper, 'start-hour').getAttribute('aria-invalid')).toBe('true')
+      wrapper.unmount()
+    }
+
+    states.length = 0
+    const valid = mountRange('11:00')
+    await nextTick()
+    expect(states.at(-1)).toBe(false)
+    expect(valid.find('[role="group"]').attributes('data-invalid')).toBeUndefined()
+    valid.unmount()
+  })
+
   it('takes required and disabled from the field', async () => {
     const { wrapper } = mountField({ required: true, disabled: true })
     await nextTick()
