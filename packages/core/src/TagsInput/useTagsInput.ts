@@ -516,9 +516,9 @@ export function createTagsInputInputSurface(
     const target = event.target as HTMLInputElement
     // The key's default action has to be cancelled synchronously: a form submits
     // implicitly on `Enter` as soon as the keydown dispatch finishes, and Firefox
-    // moves focus on `Tab` before a microtask can cancel it. An empty draft keeps
+    // moves focus on `Tab` before a microtask can cancel it. An empty or blank draft keeps
     // the default (submitting the form, moving focus).
-    if (target.value && !isPreventedByOthers)
+    if (target.value.trim() && !isPreventedByOthers)
       nativePreventDefault()
 
     await nextTick()

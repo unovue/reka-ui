@@ -374,6 +374,28 @@ describe('given a TagsInput with objects', async () => {
       expect(wrapper.findAll('[data-reka-collection-item]').length).toBe(before)
     })
 
+    it('should keep the default Enter action for a blank draft', async () => {
+      const { input } = setupDelimiter(',')
+      const user = userEvent.setup()
+
+      await user.type(input.element, '   ')
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+      input.element.dispatchEvent(event)
+
+      expect(event.defaultPrevented).toBe(false)
+    })
+
+    it('should cancel the default Enter action for a non-blank draft', async () => {
+      const { input } = setupDelimiter(',')
+      const user = userEvent.setup()
+
+      await user.type(input.element, 'tag')
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+      input.element.dispatchEvent(event)
+
+      expect(event.defaultPrevented).toBe(true)
+    })
+
     it('should add multiple tags on pasting text with multiple delimiter characters', async () => {
       const { wrapper, input } = setupDelimiter(/[ ,;]+/)
       const user = userEvent.setup()
