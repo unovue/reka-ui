@@ -121,7 +121,7 @@ export const [injectDatePickerRootContext, provideDatePickerRootContext]
 <script setup lang="ts">
 import { computed, toRefs, watch } from 'vue'
 import { createPendingFieldInput } from '@/Field/pendingFieldInput'
-import { injectFieldForControl } from '@/Field/useFieldControl'
+import { injectFieldForControl } from '@/Field/useFieldBinding'
 import { provideFieldFocusExtension } from '@/Field/useFieldFocusWithin'
 import { providePopoverRootContext } from '@/Popover/PopoverRoot.vue'
 import { PopperRoot } from '@/Popper'

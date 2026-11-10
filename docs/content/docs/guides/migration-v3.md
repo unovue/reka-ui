@@ -1065,4 +1065,4 @@ To keep a value through a reset, cancel the change:
 />
 ```
 
-Custom parts: `FormRootContext.registerField()` no longer takes a `resetField` callback. A `FieldRoot` resets itself with the form.
+`useForm().reset()` resets the form natively, so it follows the same rules. A control of your own built with `useFieldControl()` is not reset for you; see [Resetting](./forms#resetting).

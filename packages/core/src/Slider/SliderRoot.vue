@@ -72,7 +72,7 @@ export const [injectSliderRootContext, provideSliderRootContext]
 
 <script setup lang="ts">
 import { computed, getCurrentInstance, mergeProps, useAttrs, watch } from 'vue'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { formResetBinder, injectFormResetOwner } from '@/shared/formReset'
@@ -122,7 +122,7 @@ useCollectionSlot(currentElement)
 const inheritedField = injectSliderFieldContext(null)
 const ownField = inheritedField
   ? null
-  : useFieldControl({
+  : useFieldBinding({
       // The first thumb renders its own `id`, else the field's.
       id: () => context.thumbElements.value[0]?.id || undefined,
       element: () => context.thumbElements.value[0],

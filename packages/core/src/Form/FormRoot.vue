@@ -44,6 +44,8 @@ export interface FormRegisteredField {
   invalid: ComputedRef<boolean>
   getValue: () => unknown
   getControlElement: () => HTMLElement | undefined
+  /** Clears the field's state, for a `FormRoot` that is not a `<form>` (see `reset`). */
+  resetField: () => void
 }
 
 export interface FormRootContext {
@@ -53,6 +55,10 @@ export interface FormRootContext {
   submitCount: Ref<number>
   /** The values of every named field. */
   getValues: () => Record<string, unknown>
+  /** Validates every field, or only the field with the given `name`. Returns whether they're all valid. */
+  validate: (fieldName?: string) => boolean
+  /** Resets the form as a `type="reset"` button does. Rendered as another element, clears the fields' state only. */
+  reset: () => void
   registerField: (field: FormRegisteredField) => () => void
 }
 
@@ -166,11 +172,26 @@ function handleSubmit(event: Event) {
   }
 }
 
+// A real form is reset natively: the `reset` event reaches the delegated
+// listener (`shared/formReset`), which resets every Reka control of the form
+// and every `FieldRoot`, unless the event is prevented. Rendered as another
+// element there is no native reset, so only the fields' state is cleared and
+// the values stay.
+function reset() {
+  const element = expose.element.value
+  if (element instanceof HTMLFormElement)
+    element.reset()
+  else
+    fields.forEach(field => field.resetField())
+}
+
 provideFormRootContext({
   serverErrors,
   validationMode,
   submitCount,
   getValues,
+  validate,
+  reset,
   registerField,
 })
 </script>

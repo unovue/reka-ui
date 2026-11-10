@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref, ShallowRef } from 'vue'
 import type { SelectClosedItems } from './closedItems'
 import type { SelectChangeReason, SelectItemData, SelectItems, SelectModelValue, SelectNavigationIntent, SelectOpenChangeReason, SelectTypeaheadItem } from './useSelect'
-import type { FieldControlBinding } from '@/Field/useFieldControl'
+import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { BaseChangeReason, By, ChangeEventDetails, LabelRegistry } from '@/shared'
 import type { SelectionSelector } from '@/shared/selectionSelector'
 import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
@@ -149,7 +149,7 @@ export const [injectSelectFieldContext, provideSelectFieldContext]
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false">
 import { computed, onBeforeUnmount, onMounted, toRef, watch } from 'vue'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { PopperRoot } from '@/Popper'
 import { provideFormResetOwner } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
@@ -182,7 +182,7 @@ defineSlots<{
 // control; `SelectTrigger` (the focusable element) carries the field's id,
 // label and aria wiring, and reports focus. Field's `name` takes precedence
 // over the local prop; `required`/`disabled` apply when set on either.
-const field = useFieldControl({
+const field = useFieldBinding({
   // Getters read bindings that are retained anyway, not the composable's
   // return object: capturing it in a closure would keep it alive per instance.
   // The trigger's own `id` (else the field's, which the trigger then renders).

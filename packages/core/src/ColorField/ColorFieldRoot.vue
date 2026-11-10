@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ComputedRef, Ref, ShallowRef } from 'vue'
 import type { ColorFieldChangeReason } from './useColorField'
-import type { FieldControlBinding } from '@/Field/useFieldControl'
+import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
@@ -85,7 +85,7 @@ export const [injectColorFieldFieldControl, provideColorFieldFieldControl]
 
 <script setup lang="ts">
 import { mergeProps, shallowRef, watch } from 'vue'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { renderAs } from '@/Primitive/renderAs'
 import { colorToString } from '@/shared/color'
 import { formResetBinder } from '@/shared/formReset'
@@ -113,7 +113,7 @@ const isFormControl = useFormControl(currentElement)
 // holds a color, so `required` never fails.
 // The ref is only created inside a Field, so a standalone field allocates nothing.
 let fieldInput: ColorFieldFieldControl['input'] | undefined
-const field = useFieldControl({
+const field = useFieldBinding({
   id: () => fieldInput?.value?.id(),
   element: () => fieldInput?.value?.element(),
   getValue: () => color.value,

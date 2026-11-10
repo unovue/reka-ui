@@ -90,7 +90,7 @@ export const [injectDateFieldRootContext, provideDateFieldRootContext]
 import { computed, mergeProps, ref, toRefs, useAttrs, watch } from 'vue'
 import { isZonedDateTime, toIsoString } from '@/date/temporal'
 import { createPendingFieldInput } from '@/Field/pendingFieldInput'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
@@ -133,7 +133,7 @@ const dir = useDirection(propDir)
 // inert — and byte-for-byte identical to before — when there is no Field.
 // Field's `name` takes precedence over the local prop; `required`/`disabled`
 // apply when set on either.
-const field = useFieldControl({
+const field = useFieldBinding({
   id: () => props.id,
   // The first segment (not the group container, which isn't itself
   // focusable), so `FormRoot` can move focus into the field on an invalid submit.

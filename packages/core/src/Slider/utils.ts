@@ -1,5 +1,5 @@
 import type { ComputedRef } from 'vue'
-import type { FieldControlBinding } from '@/Field/useFieldControl'
+import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import { clamp, createContext } from '@/shared'
 
 export function getNextSortedValues(prevValues: number[] = [], nextValue: number, atIndex: number) {

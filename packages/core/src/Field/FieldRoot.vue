@@ -484,6 +484,7 @@ onMounted(() => {
     invalid,
     getValue: () => resolveValue(),
     getControlElement: () => control.value?.element() ?? undefined,
+    resetField,
   })
 })
 onBeforeUnmount(() => unregisterFromForm?.())

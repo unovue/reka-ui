@@ -63,7 +63,7 @@ export const [injectColorSliderRootContext, provideColorSliderRootContext]
 
 <script setup lang="ts">
 import { mergeProps, watch } from 'vue'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { colorToString } from '@/shared/color'
 import { provideFormResetOwner } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
@@ -95,7 +95,7 @@ const dir = useDirection(() => props.dir)
 // and registers it; the inner `SliderRoot` and `SliderThumb` render the
 // field's state, focus, id and aria wiring through the binding handed down.
 const thumbElement = () => (currentElement.value as HTMLElement | undefined)?.querySelector<HTMLElement>('[role="slider"]') ?? undefined
-const field = useFieldControl({
+const field = useFieldBinding({
   // The thumb renders its own `id`, else the field's.
   id: () => thumbElement()?.id || undefined,
   element: thumbElement,

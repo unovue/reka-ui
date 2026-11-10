@@ -1,13 +1,15 @@
 import type { VNode } from 'vue'
 import type { FormResetCase } from './__test__/formResetCases'
+import type { UseFormReturn } from './useForm'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
-import { h, nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { CheckboxRoot } from '@/Checkbox'
 import { FieldRoot } from '@/Field'
 import { formResetCases } from './__test__/formResetCases'
 import FormRoot from './FormRoot.vue'
+import { useForm } from './useForm'
 
 // A native form reset in a real browser: the `reset` event, then the browser
 // resetting the native controls of the form. jsdom dispatches the event too
@@ -228,6 +230,36 @@ describe('given a form reset that a listener prevents', () => {
     finally {
       document.removeEventListener('reset', prevent)
     }
+  })
+})
+
+describe('given `useForm().reset()` in a `FormRoot`', () => {
+  it('resets a Reka control once and leaves its field pristine', async () => {
+    let form!: UseFormReturn
+    const Probe = defineComponent(() => {
+      form = useForm()
+      return () => null
+    })
+    const { events, ...listeners } = recorder()
+    const mounted = mountForm(() => h(FormRoot, () => [
+      h(FieldRoot, { 'data-testid': 'field' }, () => h(CheckboxRoot, { name: 'field', defaultValue: true, ...listeners })),
+      h(Probe),
+    ]))
+    const field = mounted.form.querySelector('[data-testid="field"]')!
+    await settle()
+    await userEvent.click(mounted.form.querySelector('[role="checkbox"]')!)
+    await settle()
+    expect(field.hasAttribute('data-dirty')).toBe(true)
+    events.length = 0
+
+    form.reset()
+    await settle()
+
+    expect(mounted.form.querySelector('[role="checkbox"]')!.getAttribute('aria-checked')).toBe('true')
+    expect(mounted.data()).toEqual([['field', 'on']])
+    expect(events.map(({ reason, type }) => ({ reason, type }))).toEqual([{ reason: 'none', type: 'reset' }])
+    expect(field.hasAttribute('data-dirty')).toBe(false)
+    expect(field.hasAttribute('data-touched')).toBe(false)
   })
 })
 

@@ -45,7 +45,7 @@ export const [injectToggleGroupRootContext, provideToggleGroupRootContext]
 
 <script setup lang="ts">
 import { mergeProps, useAttrs, watch } from 'vue'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { Slot } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
@@ -92,7 +92,7 @@ function getFocusTarget() {
 // Optional Field participation: `null` outside a `FieldRoot`, so every
 // binding below is inert without a Field. The group is the field's control:
 // it takes the field's id and aria wiring, and its items don't.
-const field = useFieldControl({
+const field = useFieldBinding({
   id: () => attrs.id as string | undefined,
   element: getFocusTarget,
   getValue: () => modelValue.value,

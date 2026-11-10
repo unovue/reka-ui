@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ComputedRef, CSSProperties, Ref } from 'vue'
 import type { ColorAreaAxis, ColorAreaChangeReason } from './useColorArea'
-import type { FieldControlBinding } from '@/Field/useFieldControl'
+import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
@@ -82,7 +82,7 @@ export const [injectColorAreaFieldContext, provideColorAreaFieldContext]
 
 <script setup lang="ts">
 import { mergeProps, watch } from 'vue'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { colorToString } from '@/shared/color'
@@ -116,7 +116,7 @@ const dir = useDirection(() => props.dir)
 
 // Optional Field participation: `null` outside a `FieldRoot`, so every
 // binding below is inert without a Field.
-const field = useFieldControl({
+const field = useFieldBinding({
   // The x input renders its own `id`, else the field's.
   id: () => context.xInputRef.value?.id || undefined,
   element: () => context.xInputRef.value ?? context.thumbRef.value,

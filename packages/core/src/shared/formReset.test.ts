@@ -1,11 +1,12 @@
 import type { VNode } from 'vue'
+import type { UseFormReturn } from '@/Form'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createSSRApp, h, nextTick, ref } from 'vue'
+import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { CheckboxGroupRoot, CheckboxRoot } from '@/Checkbox'
 import { FieldRoot } from '@/Field'
-import { FormRoot } from '@/Form'
+import { FormRoot, useForm } from '@/Form'
 import { SwitchRoot } from '@/Switch'
 import { formResetBinder } from './formReset'
 
@@ -246,6 +247,77 @@ describe('given a control in a `FieldRoot`', () => {
     await afterReset()
 
     expect(fieldState(form)).toEqual(['dirty'])
+  })
+})
+
+describe('given `useForm().reset()`', () => {
+  function mountWithForm(rootProps: Record<string, unknown>, onUpdate: (value: unknown) => void) {
+    let form!: UseFormReturn
+    const Probe = defineComponent(() => {
+      form = useForm()
+      return () => null
+    })
+    wrapper = mount({
+      render: () => h(FormRoot, rootProps, () => [
+        h(FieldRoot, { 'data-testid': 'field' }, () => h(CheckboxRoot, { 'data-testid': 'checkbox', 'defaultValue': true, 'onUpdate:modelValue': onUpdate })),
+        h(Probe),
+      ]),
+    }, { attachTo: document.body })
+    const root = wrapper.element as HTMLElement
+    const checkbox = root.querySelector<HTMLElement>('[data-testid="checkbox"]')!
+    const state = () => ['dirty', 'touched', 'filled'].filter(name => root.querySelector('[data-testid="field"]')!.hasAttribute(`data-${name}`))
+    return { form, checkbox, state }
+  }
+
+  it('resets the values once, through the native reset, and leaves the fields pristine', async () => {
+    const onUpdate = vi.fn()
+    const { form, checkbox, state } = mountWithForm({}, onUpdate)
+    await nextTick()
+    checkbox.click()
+    await nextTick()
+    expect(state()).toEqual(['dirty'])
+    onUpdate.mockClear()
+
+    form.reset()
+    await afterReset()
+
+    expect(checkbox.getAttribute('aria-checked')).toBe('true')
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+    expect(onUpdate).toHaveBeenLastCalledWith(true, expect.objectContaining({ reason: 'none' }))
+    expect(state()).toEqual(['filled'])
+  })
+
+  it('keeps the values and the field state when the `reset` event is prevented', async () => {
+    const onUpdate = vi.fn()
+    const { form, checkbox, state } = mountWithForm({ onReset: (event: Event) => event.preventDefault() }, onUpdate)
+    await nextTick()
+    checkbox.click()
+    await nextTick()
+    onUpdate.mockClear()
+
+    form.reset()
+    await afterReset()
+
+    expect(checkbox.getAttribute('aria-checked')).toBe('false')
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(state()).toEqual(['dirty'])
+  })
+
+  it('only clears the field state when the `FormRoot` is not a form', async () => {
+    const onUpdate = vi.fn()
+    const { form, checkbox, state } = mountWithForm({ as: 'div' }, onUpdate)
+    await nextTick()
+    checkbox.click()
+    await nextTick()
+    expect(state()).toEqual(['dirty'])
+    onUpdate.mockClear()
+
+    form.reset()
+    await afterReset()
+
+    expect(checkbox.getAttribute('aria-checked')).toBe('false')
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(state()).toEqual([])
   })
 })
 

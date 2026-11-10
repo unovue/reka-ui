@@ -2,7 +2,7 @@
 import type { EventHook } from '@vueuse/core'
 import type { ComputedRef, Ref, ShallowRef } from 'vue'
 import type { ListboxChangeReason, ListboxFilterFunction, ListboxFilterItem, ListboxHighlightScroll, ListboxLabelRegistry, ListboxNavigationIntent, ListboxVirtualKeydown } from './useListbox'
-import type { FieldControlBinding } from '@/Field/useFieldControl'
+import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
@@ -162,7 +162,7 @@ export type ListboxRootEmits<T = AcceptableValue, M extends boolean = boolean> =
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false">
 import { mergeProps, ref, shallowRef, toRef, toRefs, watch } from 'vue'
 import { useCollection } from '@/Collection'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { formResetBinder } from '@/shared/formReset'
@@ -207,7 +207,7 @@ const isFormControl = useFormControl(currentElement)
 // `ListboxContent` carries the field's id, label and aria wiring.
 // The ref is only created inside a Field, so a standalone listbox allocates nothing.
 let fieldContent: ShallowRef<HTMLElement | undefined> | undefined
-const field = useFieldControl({
+const field = useFieldBinding({
   // Getters read bindings that are retained anyway, not the composable's
   // return object: capturing it in a closure would keep it alive per instance.
   // The content renders its own `id`, else the field's.

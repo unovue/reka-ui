@@ -129,6 +129,25 @@ Set `validation-mode` on `FormRoot` to change when every field inside it validat
 </template>
 ```
 
+## Composables
+
+### useForm
+
+Reads and drives the enclosing `FormRoot` from script. Call it inside `setup()`, in a component rendered inside the form; it throws outside one. Like the other [composables](/docs/guides/composables), it is experimental. See [Forms and validation](/docs/guides/forms#reading-a-field-or-a-form-from-script) for an example.
+
+```ts
+import { useForm } from 'reka-ui'
+
+const { getValues, validate, reset, submitCount } = useForm()
+```
+
+| Returns | Type | Description |
+|---|---|---|
+| `getValues` | `() => Record<string, unknown>` | The current value of every named field, keyed by `name`: the object `formSubmit` receives. Read when called. |
+| `validate` | `(name?: string) => boolean` | Validates every field now, or only the field with that `name`. Returns whether they are all valid. |
+| `reset` | `() => void` | Resets the form as a `type="reset"` button does: every control returns to its default value and every field's state is cleared. In a `FormRoot` rendered as another element, only the fields' state is cleared. |
+| `submitCount` | `ComputedRef<number>` | How many times the form has been submitted, blocked submissions included. |
+
 ## Accessibility
 
 Renders a native `form` element. Focus moves to the first invalid field's control when a submit is blocked, so keyboard and screen-reader users land directly on the field that needs attention.
