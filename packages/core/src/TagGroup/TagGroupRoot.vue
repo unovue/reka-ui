@@ -79,7 +79,7 @@ export const [injectTagGroupRootContext, provideTagGroupRootContext]
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { getCurrentInstance, mergeProps, onMounted, ref } from 'vue'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusGroup } from '@/RovingFocus/useRovingFocusGroup'
 import { useTagGroup } from './useTagGroup'
@@ -116,7 +116,7 @@ const instance = getCurrentInstance()
 // describes and disables it, and focuses a tag for its label, and that is all.
 // It takes no id, name or `required` from the field, and reports no focus or
 // value changes to it.
-const field = useFieldControl({
+const field = useFieldBinding({
   element: () => getFocusTarget(),
   getValue: () => modelValue.value,
 })

@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref, ShallowRef } from 'vue'
 import type { TagsInputChangeReason } from './useTagsInput'
-import type { FieldControlBinding } from '@/Field/useFieldControl'
+import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
@@ -110,7 +110,7 @@ function resolveFieldInput(element: HTMLElement | undefined) {
 <script setup lang="ts" generic="T extends AcceptableInputValue = string">
 import { mergeProps, nextTick, shallowRef, watch } from 'vue'
 import { useCollection, useCollectionSlot } from '@/Collection'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -151,7 +151,7 @@ useCollectionSlot(currentElement)
 // binding below is inert without a Field. The root owns the tags;
 // `TagsInputInput` carries the field's id, label and aria wiring.
 const fieldInput = shallowRef<HTMLElement>()
-const field = useFieldControl({
+const field = useFieldBinding({
   // The input renders `id` (or its own), else the field's.
   id: () => resolveFieldInput(fieldInput.value)?.id || props.id,
   element: () => resolveFieldInput(fieldInput.value),

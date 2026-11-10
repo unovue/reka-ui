@@ -50,7 +50,7 @@ export const [injectCheckboxRootContext, provideCheckboxRootContext]
 
 <script setup lang="ts" generic="TrueValue = true, FalseValue = false">
 import { computed, mergeProps, useAttrs, watch } from 'vue'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { isEqual } from '@/shared/compare'
@@ -91,7 +91,7 @@ const checkboxGroupContext = injectCheckboxGroupRootContext(null)
 // (it would be duplicated) or acts as its control. In a group that is the
 // field's control (`groupField`), the checkbox only reads the field, and the
 // group reports focus, marking the field touched once focus leaves all of it.
-const field = useFieldControl({
+const field = useFieldBinding({
   id: () => props.id,
   element: () => currentElement.value as HTMLElement | undefined,
   getValue: () => checkboxState.value,

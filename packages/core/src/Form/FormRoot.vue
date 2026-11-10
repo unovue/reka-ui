@@ -54,6 +54,10 @@ export interface FormRootContext {
   submitCount: Ref<number>
   /** The values of every named field. */
   getValues: () => Record<string, unknown>
+  /** Validates every field, or only the field with the given `name`. Returns whether they're all valid. */
+  validate: (fieldName?: string) => boolean
+  /** Resets the form as a `type="reset"` button does. */
+  reset: () => void
   registerField: (field: FormRegisteredField) => () => void
 }
 
@@ -171,11 +175,24 @@ function handleReset() {
   fields.forEach(field => field.resetField())
 }
 
+// The native reset restores the controls' default values and fires the
+// `reset` event handled above. Rendered as another element, only the fields'
+// state is reset.
+function reset() {
+  const element = expose.element.value
+  if (element instanceof HTMLFormElement)
+    element.reset()
+  else
+    handleReset()
+}
+
 provideFormRootContext({
   serverErrors,
   validationMode,
   submitCount,
   getValues,
+  validate,
+  reset,
   registerField,
 })
 </script>

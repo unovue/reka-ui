@@ -25,7 +25,7 @@ import { computed, onBeforeUnmount, onMounted, useAttrs, watch } from 'vue'
 import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
 import { createChangeEventDetails, useForwardElement } from '@/shared'
 import { injectFieldRootContext } from './FieldRoot.vue'
-import { provideFieldControlOwner } from './useFieldControl'
+import { provideFieldControlOwner } from './useFieldBinding'
 
 defineOptions({
   inheritAttrs: false,

@@ -15,7 +15,7 @@ export type DateRangePickerContentEmits = PopoverContentEmits
 </script>
 
 <script setup lang="ts">
-import { injectFieldForControl, provideFieldControlOwner } from '@/Field/useFieldControl'
+import { injectFieldForControl, provideFieldControlOwner } from '@/Field/useFieldBinding'
 
 const props = defineProps<DateRangePickerContentProps>()
 const emits = defineEmits<DateRangePickerContentEmits>()

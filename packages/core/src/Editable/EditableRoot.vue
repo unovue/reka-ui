@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref, ShallowRef } from 'vue'
 import type { EditableChangeReason } from './useEditable'
-import type { FieldControlBinding } from '@/Field/useFieldControl'
+import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { Direction, FormFieldProps } from '@/shared/types'
@@ -94,7 +94,7 @@ export const [injectEditableFieldControl, provideEditableFieldControl]
 import { mergeProps, ref, shallowRef, watch } from 'vue'
 import { useFocusOutside, usePointerDownOutside } from '@/DismissableLayer'
 import { createPendingFieldInput } from '@/Field/pendingFieldInput'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { Primitive } from '@/Primitive'
 import { VisuallyHidden, VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -148,7 +148,7 @@ const isFormControl = useFormControl(currentElement)
 const nativeInput = ref<InstanceType<typeof VisuallyHidden>>()
 // Created only inside a Field, so a standalone editable doesn't allocate it.
 let previewElement: EditableFieldControl['preview'] | undefined
-const field = useFieldControl({
+const field = useFieldBinding({
   id: () => props.id,
   element: () => (isEditing.value ? context.inputRef.value : previewElement?.value) ?? context.inputRef.value,
   getValue: () => modelValue.value,

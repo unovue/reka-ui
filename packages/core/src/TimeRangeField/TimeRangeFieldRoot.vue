@@ -99,7 +99,7 @@ export const [injectTimeRangeFieldRootContext, provideTimeRangeFieldRootContext]
 <script setup lang="ts">
 import { computed, mergeProps, toRefs, useAttrs, watch } from 'vue'
 import { createPendingFieldInput } from '@/Field/pendingFieldInput'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
@@ -146,7 +146,7 @@ const { primitiveElement, currentElement: parentElement, expose } = usePrimitive
 // label/description wiring. The field's value is the range object, and a
 // required range needs both ends: the hidden input can't express that, so
 // `valueMissing` comes from `isFilled` instead of its `ValidityState`.
-const field = useFieldControl({
+const field = useFieldBinding({
   id: () => props.id,
   // The first segment (the group isn't itself focusable), so `FormRoot` can
   // move focus into the field on an invalid submit.

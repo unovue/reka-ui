@@ -32,7 +32,7 @@ export interface ToggleProps extends PrimitiveProps, FormFieldProps {
 
 <script setup lang="ts">
 import { computed, mergeProps, useAttrs, watch } from 'vue'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { renderAs } from '@/Primitive/renderAs'
 import { useTogglePressed } from './useTogglePressed'
 
@@ -74,7 +74,7 @@ const attrs = useAttrs()
 // one item of the group's value: the group is the field's control.
 const field = toggleGroupContext
   ? null
-  : useFieldControl({
+  : useFieldBinding({
       id: () => attrs.id as string | undefined,
       element: () => currentElement.value as HTMLElement | undefined,
       getValue: () => pressed.value,

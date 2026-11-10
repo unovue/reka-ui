@@ -112,7 +112,7 @@ import { useCollection } from '@/Collection'
 import { provideComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
 import { useComboboxRoot } from '@/Combobox/useCombobox'
 import { provideComboboxField } from '@/Combobox/useComboboxField'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { provideListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { renderAs } from '@/Primitive/renderAs'
@@ -146,7 +146,7 @@ const isFormControl = useFormControl(currentElement)
 // Optional Field participation: `null` outside a `FieldRoot`, so every
 // binding below is inert without a Field. The root owns the value; the input
 // (Base UI parity) carries the field's id, label and aria wiring.
-const field = useFieldControl({
+const field = useFieldBinding({
   // Getters read bindings that are retained anyway, not the composable's
   // return object: capturing it in a closure would keep it alive per instance.
   // The input renders its own `id`, else the field's.
