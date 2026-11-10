@@ -14,6 +14,13 @@ export interface UseFieldControlOptions extends Omit<FieldControlRegistration, '
    * @defaultValue `() => true`
    */
   participates?: () => boolean
+  /**
+   * The field a group this part belongs to is the control of, which the part
+   * can't bind to itself (the group owns it). The part then only reads the
+   * field: its name, disabled, required, state and aria attributes. It never
+   * participates, and reports nothing: the group reports focus and changes.
+   */
+  groupField?: FieldRootContext | null
 }
 
 export interface FieldControlAriaAttrs {
@@ -65,6 +72,8 @@ export interface FieldControlBinding {
 // The field whose control an ancestor component already is.
 const FIELD_CONTROL_OWNER: InjectionKey<FieldRootContext> = Symbol('FieldControlOwner')
 
+const never = () => false
+
 function mergeIds(consumerValue: unknown, fieldValue: string | undefined) {
   return [consumerValue as string | undefined, fieldValue].filter(Boolean).join(' ') || undefined
 }
@@ -72,7 +81,7 @@ function mergeIds(consumerValue: unknown, fieldValue: string | undefined) {
 /**
  * The ancestor `FieldRoot` a control may bind to: `null` outside a Field, and
  * inside another control of the same field (which owns it). Doesn't claim the
- * field; see `claimFieldControl`.
+ * field for the component's descendants; see `provideFieldControlOwner`.
  * @internal
  */
 export function injectFieldForControl(): FieldRootContext | null {
@@ -92,30 +101,24 @@ export function provideFieldControlOwner(context: FieldRootContext | null) {
 }
 
 /**
- * The ancestor `FieldRoot` this component is the control of (see
- * `injectFieldForControl`), claimed for its descendants. For a control that
- * binds to the field itself rather than through `useFieldControl`.
- * @internal
- */
-export function claimFieldControl(): FieldRootContext | null {
-  const context = injectFieldForControl()
-  provideFieldControlOwner(context)
-  return context
-}
-
-/**
  * Optional participation of a Reka control in an ancestor `FieldRoot`.
  * Returns `null` outside a Field, creating no reactive state, so a standalone
  * control pays nothing for it. Also `null` inside another control of the
  * same field (e.g. a `TagsInput` composed into a `Combobox`): the outer
- * control owns the field.
+ * control owns the field. The one exception is a part given its group's
+ * field (`groupField`), which reads it.
  */
 export function useFieldControl(options: UseFieldControlOptions): FieldControlBinding | null {
-  const context = claimFieldControl()
+  // The field this component is the control of, claimed for its descendants.
+  const ownField = injectFieldForControl()
+  provideFieldControlOwner(ownField)
+  const context = ownField ?? options.groupField
   if (!context)
     return null
 
-  const { id: ownId, participates = () => true, ...registration } = options
+  const { id: ownId, participates: ownParticipates = () => true, groupField: _groupField, ...registration } = options
+  // A part reading its group's field is never that field's control.
+  const participates = ownField ? ownParticipates : never
   const isFilled = (value: unknown) => registration.isFilled
     ? registration.isFilled(value)
     : Array.isArray(value) ? value.length > 0 : value !== undefined && value !== null && value !== ''
@@ -161,10 +164,13 @@ export function useFieldControl(options: UseFieldControlOptions): FieldControlBi
     }),
     onFocus: () => {
       hasFocus = true
-      context.handleControlFocus()
+      if (ownField)
+        context.handleControlFocus()
     },
     onBlur: () => {
       hasFocus = false
+      if (!ownField)
+        return
       if (isControl)
         context.handleControlBlur()
       else
