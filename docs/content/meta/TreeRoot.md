@@ -85,7 +85,7 @@
   {
     'name': 'multiple',
     'description': '<p>Whether multiple options can be selected or not.</p>\n',
-    'type': 'boolean | boolean',
+    'type': 'boolean',
     'required': false
   },
   {
@@ -164,7 +164,7 @@
 | `items` | List of items | `Record<string, any>[]` | No | - |
 | `loop` | When `true`, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
 | `modelValue` | The controlled value of the tree. Can be binded with `v-model`. | `(M extends true ? U[] : U)` | No | - |
-| `multiple` | Whether multiple options can be selected or not. | `boolean \| boolean` | No | - |
+| `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `propagateSelect` | When `true`, selecting parent will select the descendants. Requires `multiple` to be `true`. | `boolean` | No | - |
 | `selectionBehavior` | How multiple selection should behave in the collection. | `"replace" \| "toggle"` | No | `"toggle"` |
 
