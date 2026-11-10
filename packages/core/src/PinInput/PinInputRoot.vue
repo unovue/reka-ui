@@ -87,7 +87,7 @@ export const [injectPinInputFieldSlots, providePinInputFieldSlots]
 
 <script setup lang="ts" generic="Type extends PinInputType">
 import { mergeProps, useAttrs, watch } from 'vue'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { orderInputElements, usePinInput } from './usePinInput'
@@ -120,7 +120,7 @@ const dir = useDirection(() => props.dir)
 // The value collected is the model array, as `update:modelValue` emits it,
 // without trailing empty entries (see `toFieldValue`). A required pin input
 // needs every input filled, and only then is it filled.
-const field = useFieldControl({
+const field = useFieldBinding({
   id: () => props.id,
   element: () => firstInput(),
   getValue: () => toFieldValue(modelValue.value),

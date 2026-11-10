@@ -1,5 +1,5 @@
 import type { ComboboxRootContext } from './ComboboxRoot.vue'
-import type { FieldControlBinding } from '@/Field/useFieldControl'
+import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import { mergeProps, nextTick, onBeforeUnmount, watch } from 'vue'
 import { createContext, getActiveElement, getElementByIdFrom } from '@/shared'
 

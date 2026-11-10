@@ -1,6 +1,6 @@
 import type { InjectionKey, Ref } from 'vue'
 import type { FieldRootContext } from './FieldRoot.vue'
-import type { FieldControlBinding } from './useFieldControl'
+import type { FieldControlBinding } from './useFieldBinding'
 import { inject, nextTick, provide, watch } from 'vue'
 import { getActiveElement } from '@/shared'
 

@@ -45,7 +45,7 @@ export const [injectSwitchRootContext, provideSwitchRootContext]
 
 <script setup lang="ts" generic="TrueValue = true, FalseValue = false">
 import { computed, mergeProps, watch } from 'vue'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { renderAs } from '@/Primitive/renderAs'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useSwitch } from './useSwitch'
@@ -79,7 +79,7 @@ const isFormControl = useFormControl(currentElement)
 
 // Optional Field participation: `null` outside a `FieldRoot`, so every
 // binding below is inert without a Field.
-const field = useFieldControl({
+const field = useFieldBinding({
   id: () => props.id,
   element: () => currentElement.value as HTMLElement | undefined,
   getValue: () => checked.value,

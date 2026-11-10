@@ -75,7 +75,7 @@ describe('given a Field-wrapped TimeField', () => {
     const wrapper = mountField({}, { 'id': 'own', 'name': 'own-name', 'aria-invalid': 'false' })
     await nextTick()
     expect(wrapper.find('label').attributes('for')).toBe('own')
-    // As with every `useFieldControl` participant, the field's name wins.
+    // As with every `useFieldBinding` participant, the field's name wins.
     expect(wrapper.find('#own').attributes('name')).toBe('time')
     expect(wrapper.find('[role="group"]').attributes('aria-invalid')).toBe('false')
     wrapper.unmount()

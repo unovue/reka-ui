@@ -59,7 +59,7 @@ export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -98,7 +98,7 @@ function getFocusTarget() {
 // Optional Field participation: `null` outside a `FieldRoot`, so every
 // binding below is inert without a Field. The group is the field's control:
 // it takes the field's id and label, and its checkboxes don't register.
-const field = useFieldControl({
+const field = useFieldBinding({
   id: () => attrs.id as string | undefined,
   element: getFocusTarget,
   getValue: () => modelValue.value,

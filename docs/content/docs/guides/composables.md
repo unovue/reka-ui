@@ -143,6 +143,8 @@ A composable is reactive state plus attributes. Anything that needs a mounted el
 - **Lists** (`useTabs`, `useToolbar`, `useRadioGroup`, …) give you selection and ARIA. Arrow-key navigation comes from [RovingFocusGroup](../utilities/roving-focus).
 - **Form controls** don't render the hidden native input that the components add for form submission. Render your own `<input type="hidden">`, or use the component.
 
+Field and Form are the exception to this shape. `FieldRoot` and `FormRoot` have no headless counterpart: [`useFieldControl()`](./forms#your-own-control) makes your own control the control of a field, and [`useField()` and `useForm()`](./forms#reading-a-field-or-a-form-from-script) read and drive the enclosing root.
+
 The family pages say which pieces their composable leaves out, for example the [Select](../components/select#headless-composables) and [Navigation Menu](../components/navigation-menu#headless-composables) pages.
 
 ## Calling a composable
@@ -151,7 +153,7 @@ Most root composables are pure: they create computed state only, use no lifecycl
 
 | Pure, callable anywhere | Call inside `setup()` |
 |---|---|
-| `useAccordion`, `useAlertDialog`, `useCheckbox`, `useCheckboxGroup`, `useCollapsible`, `useDialog`, `useDrawer`, `useHoverCard`, `useNumberField`, `usePagination`, `usePopover`, `useRadioGroup`, `useRating`, `useSelectRoot`, `useSlider`, `useSwitch`, `useTabs`, `useTagGroup`, `useTagsInput`, `useTogglePressed`, `useToggleGroup`, `useToolbar`, `useTree`, `useAvatar`, `useToastSwipe`, the Color composables except `useColorField` | `useCalendar`, `useRangeCalendar`, `useDateField`, `useDateRangeField`, `useTimeField`, `useTimeRangeField`, `useDatePicker`, `useDateRangePicker`, `useColorField`, `useComboboxRoot`, `useDropdownMenu`, `useListboxRoot`, `useEditable`, `usePinInput`, `useStepper`, `useSplitter` and its parts, `useAvatarImage`, `useAvatarFallback`, `useSelectContent`, `useSelectItemText`, `useToastProvider`, `useToastRoot`, `useToastTimer`, `useToastViewport` |
+| `useAccordion`, `useAlertDialog`, `useCheckbox`, `useCheckboxGroup`, `useCollapsible`, `useDialog`, `useDrawer`, `useHoverCard`, `useNumberField`, `usePagination`, `usePopover`, `useRadioGroup`, `useRating`, `useSelectRoot`, `useSlider`, `useSwitch`, `useTabs`, `useTagGroup`, `useTagsInput`, `useTogglePressed`, `useToggleGroup`, `useToolbar`, `useTree`, `useAvatar`, `useToastSwipe`, the Color composables except `useColorField` | `useCalendar`, `useRangeCalendar`, `useDateField`, `useDateRangeField`, `useTimeField`, `useTimeRangeField`, `useDatePicker`, `useDateRangePicker`, `useColorField`, `useComboboxRoot`, `useDropdownMenu`, `useListboxRoot`, `useEditable`, `usePinInput`, `useStepper`, `useSplitter` and its parts, `useAvatarImage`, `useAvatarFallback`, `useSelectContent`, `useSelectItemText`, `useToastProvider`, `useToastRoot`, `useToastTimer`, `useToastViewport`, `useFieldControl`, `useField`, `useForm` |
 
 ### Ids and server rendering
 

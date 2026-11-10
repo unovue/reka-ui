@@ -6,3 +6,7 @@ export {
   type FormRootProps,
   injectFormRootContext,
 } from './FormRoot.vue'
+export {
+  useForm,
+  type UseFormReturn,
+} from './useForm'
