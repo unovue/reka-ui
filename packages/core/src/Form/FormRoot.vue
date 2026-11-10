@@ -44,7 +44,6 @@ export interface FormRegisteredField {
   invalid: ComputedRef<boolean>
   getValue: () => unknown
   getControlElement: () => HTMLElement | undefined
-  resetField: () => void
 }
 
 export interface FormRootContext {
@@ -167,10 +166,6 @@ function handleSubmit(event: Event) {
   }
 }
 
-function handleReset() {
-  fields.forEach(field => field.resetField())
-}
-
 provideFormRootContext({
   serverErrors,
   validationMode,
@@ -186,7 +181,6 @@ provideFormRootContext({
     :ref="forwardRef"
     novalidate
     @submit="handleSubmit"
-    @reset="handleReset"
   >
     <slot />
   </component>

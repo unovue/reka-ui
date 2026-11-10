@@ -47,6 +47,8 @@ export const [injectSwitchRootContext, provideSwitchRootContext]
 import { computed, mergeProps, watch } from 'vue'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
+import { vFormReset } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useSwitch } from './useSwitch'
 
@@ -99,7 +101,7 @@ const ariaLabel = computed(() => resolvedId() && currentElement.value ? (getRoot
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
 // composable's `useControllableState` (`modelValue === undefined` → uncontrolled).
-const { modelValue, checked, disabled, root, context } = useSwitch<TrueValue | FalseValue>({
+const { modelValue, checked, disabled, root, context, isControlled } = useSwitch<TrueValue | FalseValue>({
   modelValue: () => props.modelValue as TrueValue | FalseValue | undefined,
   defaultValue: props.defaultValue,
   emit,
@@ -115,6 +117,9 @@ const { modelValue, checked, disabled, root, context } = useSwitch<TrueValue | F
 })
 
 provideSwitchRootContext(context)
+
+// A native reset of the owning form puts the value back to `defaultValue`.
+function onFormReset(event: Event) { resetControllableState(isControlled, event) }
 
 if (field)
   watch(checked, value => field.sync(value))
@@ -149,6 +154,7 @@ function renderAttrs(attrs: Record<string, unknown>) {
     :is="renderAs(as, asChild)"
     :id="resolvedId()"
     :ref="forwardRef"
+    v-form-reset="onFormReset"
     :type="as === 'button' ? 'button' : undefined"
     :aria-label="$attrs['aria-label'] || ariaLabel"
     v-bind="renderAttrs($attrs)"

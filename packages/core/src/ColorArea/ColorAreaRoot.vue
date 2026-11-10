@@ -86,6 +86,8 @@ import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { colorToString } from '@/shared/color'
+import { vFormReset } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useColorArea } from './useColorArea'
 
@@ -123,7 +125,7 @@ const field = useFieldControl({
   required: () => props.required,
 })
 
-const { root, context, areaStyles, xValue, yValue, color } = useColorArea({
+const { root, context, areaStyles, xValue, yValue, color, isControlled } = useColorArea({
   colorSpace: () => props.colorSpace,
   xChannel: () => props.xChannel,
   yChannel: () => props.yChannel,
@@ -141,6 +143,9 @@ const { root, context, areaStyles, xValue, yValue, color } = useColorArea({
 provideColorAreaRootContext(context)
 provideColorAreaFieldContext(field)
 
+// A native reset of the owning form puts the value back to `defaultValue`.
+function onFormReset(event: Event) { resetControllableState(isControlled, event) }
+
 if (field)
   watch(color, value => field.sync(value))
 
@@ -154,6 +159,7 @@ const fieldAttrs = focusWithin && { onFocusin: focusWithin.onFocusin, onFocusout
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
+    v-form-reset="onFormReset"
     v-bind="field ? field.fillDataAttributes(mergeProps(root.attrs.value, fieldAttrs!)) : root.attrs.value"
   >
     <slot :style="areaStyles" />

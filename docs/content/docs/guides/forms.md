@@ -194,7 +194,57 @@ Pass the errors the server returned as `errors`, keyed by field `name`. Each one
 
 ### Resetting
 
-A native `type="reset"` button resets every field inside a `FormRoot` to its initial value and clears its validation state.
+A native reset, from a `type="reset"` button or `form.reset()`, puts every Reka UI control of the form back to its `defaultValue`, the way a native input goes back to its default. A control without a `defaultValue` goes back to its empty value. Every `FieldRoot` in the form clears its touched, dirty and validation state, and `filled` follows the value the reset left. This works in a plain `<form>` too, with or without a `FieldRoot`.
+
+```vue
+<template>
+  <form>
+    <SwitchRoot name="newsletter" default-value>
+      <SwitchThumb />
+    </SwitchRoot>
+    <SliderRoot name="volume" :default-value="[50]">
+      <SliderTrack><SliderRange /></SliderTrack>
+      <SliderThumb />
+    </SliderRoot>
+    <button type="reset">
+      Reset
+    </button>
+  </form>
+</template>
+```
+
+The reset is a change like any other. It emits `update:modelValue` with `details.reason === 'none'` and the native `reset` event as `details.event`, only when the value differs from the default, and `beforeUpdate:modelValue` can cancel it:
+
+```vue
+<script setup lang="ts">
+import type { ChangeEventDetails } from 'reka-ui'
+
+function keepOnReset(value: boolean, details: ChangeEventDetails) {
+  if (details.event?.type === 'reset')
+    details.cancel()
+}
+</script>
+
+<template>
+  <SwitchRoot default-value @before-update:model-value="keepOnReset" />
+</template>
+```
+
+A control bound with `v-model` receives the default through `update:modelValue`, so the bound state is what changes. Pass `default-value` next to `v-model` to choose the value a reset restores; without it the control asks for its empty value, the one an uncontrolled control starts with.
+
+```vue
+<template>
+  <!-- A reset sets `plan` to 'free' -->
+  <RadioGroupRoot v-model="plan" default-value="free" />
+</template>
+```
+
+The rules follow the native ones:
+
+- Every Reka UI form control inside the form is reset, named or not, and disabled or not. A control inside another control, such as the checkboxes of a `CheckboxGroupRoot`, is reset by the outer one.
+- A control whose root is a `<button>` (Checkbox, Switch, Toggle) follows that button's `form` attribute: outside the form and naming it, it is reset with it; inside the form and naming another one, it is not.
+- Calling `preventDefault()` on the `reset` event keeps every value and every field's state.
+- Text typed into a control but not committed is dropped: a `ComboboxInput` shows the selected value again, and a date or time field loses the segments typed without completing a value.
 
 ## Validating from code
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { computed, isRef, ref, watchEffect } from 'vue'
-import { createChangeEventDetails, useControllableState } from './useControllableState'
+import { createChangeEventDetails, resetControllableState, useControllableState } from './useControllableState'
 
 describe('createChangeEventDetails', () => {
   it('starts un-cancelled with the given reason/event', () => {
@@ -337,5 +337,75 @@ describe('setState options (#2826)', () => {
       expect(setState(['b'])).toBe(true)
       expect(state.value).toEqual(['b'])
     })
+  })
+})
+
+describe('resetControllableState', () => {
+  it('puts an uncontrolled model back to its default, as a `none` change with the event', () => {
+    const emit = vi.fn()
+    const { state, setState, isControlled } = useControllableState<string>({ defaultValue: 'a', name: 'modelValue', emit })
+    setState('b')
+    emit.mockClear()
+    const event = new Event('reset')
+
+    expect(resetControllableState(isControlled, event)).toBe(true)
+
+    expect(state.value).toBe('a')
+    expect(emit.mock.calls.map(call => call[0])).toEqual(['beforeUpdate:modelValue', 'update:modelValue'])
+    expect(emit.mock.calls[1][1]).toBe('a')
+    expect(emit.mock.calls[1][2]).toMatchObject({ reason: 'none', event })
+  })
+
+  it('does nothing when the model already holds its default', () => {
+    const emit = vi.fn()
+    const { isControlled } = useControllableState<string[]>({ defaultValue: () => ['a'], name: 'modelValue', emit })
+    expect(resetControllableState(isControlled)).toBe(false)
+    expect(emit).not.toHaveBeenCalled()
+  })
+
+  it('only emits the default for a controlled model', () => {
+    const prop = ref<string | undefined>('b')
+    const emit = vi.fn()
+    const { state, isControlled } = useControllableState<string | undefined>({ prop: () => prop.value, defaultValue: 'a', name: 'modelValue', emit })
+
+    expect(resetControllableState(isControlled)).toBe(true)
+
+    expect(state.value).toBe('b')
+    expect(emit).toHaveBeenLastCalledWith('update:modelValue', 'a', expect.objectContaining({ reason: 'none' }))
+  })
+
+  it('emits the empty value for a controlled model without a default', () => {
+    const emit = vi.fn()
+    const { isControlled } = useControllableState<string | undefined>({ prop: () => 'b', name: 'modelValue', emit })
+    resetControllableState(isControlled)
+    expect(emit).toHaveBeenLastCalledWith('update:modelValue', undefined, expect.anything())
+  })
+
+  it('is cancelled by `beforeUpdate`', () => {
+    const onUpdate = vi.fn()
+    const { state, setState, isControlled } = useControllableState<string>({
+      defaultValue: 'a',
+      onBeforeUpdate: (_, details) => {
+        if (details.reason === 'none')
+          details.cancel()
+      },
+      onUpdate,
+    })
+    setState('b')
+    onUpdate.mockClear()
+
+    expect(resetControllableState(isControlled, new Event('reset'))).toBe(false)
+
+    expect(state.value).toBe('b')
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+
+  it('still knows the default after the model was read and written', () => {
+    const { state, setState, isControlled } = useControllableState<number[]>({ defaultValue: [1] })
+    expect(state.value).toEqual([1])
+    setState([2])
+    setState([3])
+    resetControllableState(isControlled)
+    expect(state.value).toEqual([1])
   })
 })

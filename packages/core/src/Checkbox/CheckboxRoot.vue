@@ -54,6 +54,8 @@ import { useFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { isEqual } from '@/shared/compare'
+import { vFormReset } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useCheckbox } from './useCheckbox'
 
@@ -111,7 +113,7 @@ const resolvedRequired = () => field ? field.required(props.required) : props.re
 // Group membership (checked state + press toggling, the group's `max`) lives
 // there too, keyed on the injected group context. `disabled` is the explicit
 // one (prop, group or Field): natively disabled and unfocusable.
-const { modelValue, checkedState: checkboxState, disabled, root, context } = useCheckbox<TrueValue | FalseValue>({
+const { modelValue, checkedState: checkboxState, disabled, root, context, isControlled } = useCheckbox<TrueValue | FalseValue>({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   emit: emits,
@@ -133,6 +135,10 @@ const { modelValue, checkedState: checkboxState, disabled, root, context } = use
 // on every change.
 if (field && !checkboxGroupContext)
   watch(checkboxState, state => field.sync(state))
+
+// A native reset of the owning form puts the value back to `defaultValue`. A
+// checkbox in a group is reset by the group.
+const onFormReset = checkboxGroupContext ? undefined : (event: Event) => { resetControllableState(isControlled, event) }
 
 const isFormControl = useFormControl(currentElement)
 // The hidden form input is rendered as a sibling (not nested) of the interactive
@@ -193,6 +199,7 @@ function renderAttrs() {
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
+    v-form-reset="onFormReset"
     v-bind="renderAttrs()"
   >
     <slot

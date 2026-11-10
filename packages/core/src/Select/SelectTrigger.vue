@@ -12,6 +12,7 @@ import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { injectPopperRootContext } from '@/Popper/PopperRoot.vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { getElementByIdFrom, useForwardElement } from '@/shared'
+import { injectFormResetOwner, vFormReset } from '@/shared/formReset'
 import { injectSelectFieldContext, injectSelectRootContext } from './SelectRoot.vue'
 import { useSelectTrigger } from './useSelect'
 
@@ -25,6 +26,8 @@ const props = withDefaults(defineProps<SelectTriggerProps>(), {
   as: 'button',
 })
 const rootContext = injectSelectRootContext()
+// The root's form reset, bound on the trigger: the root renders no element.
+const onFormReset = injectFormResetOwner()
 const { forwardRef, currentElement: triggerElement, expose } = useForwardElement()
 defineExpose(expose)
 
@@ -92,6 +95,7 @@ const focusWithin = useFieldFocusWithin(field, triggerElement, {
     :is="renderAs(as, asChild)"
     v-bind="renderAttrs($attrs)"
     :ref="forwardRef"
+    v-form-reset="onFormReset"
   >
     <slot />
   </component>

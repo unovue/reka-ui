@@ -113,6 +113,8 @@ import { useCollection, useCollectionSlot } from '@/Collection'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
+import { vFormReset } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useTagsInput } from './useTagsInput'
 
@@ -165,7 +167,7 @@ const resolvedDisabled = () => field ? field.disabled(props.disabled) : props.di
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
 // composable's `useControllableState` (`modelValue === undefined` → uncontrolled).
-const { modelValue, root, context } = useTagsInput<T>({
+const { modelValue, root, context, isControlled } = useTagsInput<T>({
   // Getters, so a later `convertValue` / `displayValue` prop change is picked up.
   get convertValue() { return props.convertValue },
   displayValue: (value: T) => props.displayValue(value),
@@ -192,6 +194,9 @@ const { modelValue, root, context } = useTagsInput<T>({
 provideTagsInputRootContext(context as unknown as TagsInputRootContext)
 provideTagsInputFieldContext(field ? { field, inputElement: fieldInput } : null)
 
+// A native reset of the owning form puts the value back to `defaultValue`.
+function onFormReset(event: Event) { resetControllableState(isControlled, event) }
+
 if (field)
   watch(modelValue, value => field.sync(value))
 
@@ -215,6 +220,7 @@ const fieldFocusHandlers = focusWithin && { onFocusin: focusWithin.onFocusin, on
     :is="renderAs(as, asChild)"
     v-bind="fieldFocusHandlers ? mergeProps($attrs, root.attrs.value, fieldFocusHandlers) : mergeProps($attrs, root.attrs.value)"
     :ref="forwardRef"
+    v-form-reset="onFormReset"
   >
     <slot :model-value="modelValue" />
 

@@ -13,6 +13,7 @@ import { isSameRange } from '@/DateRangeField/useDateRangeField'
 import { usePopover } from '@/Popover/usePopover'
 import { getterRef, useControllableState } from '@/shared'
 import { bridgeChange, getDefaultDate, isSameTemporalValue } from '@/shared/date'
+import { resetControllableState } from '@/shared/useControllableState'
 import { resolveDirection } from '@/shared/useDirection'
 
 /**
@@ -293,6 +294,7 @@ export function useDateRangePicker(props: UseDateRangePickerProps = {}): UseDate
     setModelValue,
     setPlaceholder,
     onFieldBeforeUpdate,
+    onFormReset: (event) => { resetControllableState(isControlled, event) },
     onCalendarBeforeUpdate,
     onCalendarPlaceholderChange,
   }

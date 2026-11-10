@@ -97,6 +97,8 @@ import { createPendingFieldInput } from '@/Field/pendingFieldInput'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { Primitive } from '@/Primitive'
+import { vFormReset } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHidden, VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useEditable } from './useEditable'
 
@@ -159,7 +161,7 @@ if (field)
 const resolvedName = field ? () => field.name(props.name) : () => props.name
 const resolvedDisabled = field ? () => field.disabled(props.disabled) : () => props.disabled
 
-const { modelValue, isEditing, isEmpty, edit, cancel, submit, dismiss, root, context } = useEditable({
+const { modelValue, isEditing, isEmpty, edit, cancel, submit, dismiss, root, context, isControlled } = useEditable({
   modelValue: () => props.modelValue,
   defaultValue: () => props.defaultValue,
   placeholder: () => props.placeholder,
@@ -248,12 +250,20 @@ defineExpose(mergeExpose(expose, {
 }))
 
 provideEditableRootContext(context)
+
+// A native reset of the owning form puts the value back to `defaultValue`,
+// and a draft being edited back to the value.
+function onFormReset(event: Event) {
+  resetControllableState(isControlled, event)
+  context.inputValue.value = modelValue.value
+}
 </script>
 
 <template>
   <Primitive
     v-bind="getRootAttrs($attrs)"
     :ref="forwardRef"
+    v-form-reset="onFormReset"
     :as="as"
     :as-child="asChild"
     data-dismissable-layer

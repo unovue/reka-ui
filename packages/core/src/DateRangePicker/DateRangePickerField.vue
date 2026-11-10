@@ -14,6 +14,7 @@ interface DateRangePickerFieldProps extends /* @vue-ignore */ PrimitiveHTMLAttri
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 import { useForwardElement } from '@/shared'
+import { provideFormResetOwner } from '@/shared/formReset'
 
 defineProps<DateRangePickerFieldProps>()
 
@@ -27,6 +28,9 @@ defineSlots<{
 }>()
 
 const rootContext = injectDateRangePickerRootContext()
+
+// The field it renders binds the picker's form reset: the picker owns the value.
+provideFormResetOwner(rootContext.onFormReset)
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)

@@ -1045,6 +1045,33 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 
 **Verify.** The type-check passes with the removed casts; the rendered attributes are unchanged.
 
+### 36. Form reset restores Reka UI controls
+
+**What changed.**
+- A native form reset (`<button type="reset">`, `<input type="reset">`, `form.reset()`) puts every Reka UI form control of that form back to its `defaultValue`, or to its empty value without one. v2 left the value, the display and the submitted data unchanged; inside a `FormRoot` it only cleared each `FieldRoot`'s touched, dirty and validation state.
+- Affected roots: `CheckboxRoot`, `CheckboxGroupRoot`, `SwitchRoot`, `RadioGroupRoot`, `Toggle`, `ToggleGroupRoot`, `SliderRoot`, `NumberFieldRoot`, `PinInputRoot`, `TagsInputRoot`, `SelectRoot`, `ComboboxRoot`, `AutocompleteRoot`, `ListboxRoot`, `EditableRoot`, `DateFieldRoot`, `TimeFieldRoot`, `DateRangeFieldRoot`, `TimeRangeFieldRoot`, `DatePickerRoot`, `DateRangePickerRoot`, `ColorFieldRoot`, `ColorAreaRoot`, `ColorSliderRoot`. They reset with or without a `name`, and while disabled.
+- A controlled root (`v-model` / `modelValue`) emits `update:modelValue` with its `defaultValue`, or with its empty value when it has none: the value an uncontrolled root starts with, for example `false` for `SwitchRoot`, `[]` for `CheckboxGroupRoot` and `undefined` for `RadioGroupRoot`.
+- The change has `details.reason === 'none'` and `details.event.type === 'reset'`. `beforeUpdate:modelValue` can cancel it. Nothing is emitted when the value already equals the default.
+- A `FieldRoot` clears its state on a reset in a plain `<form>` too. A prevented `reset` event (`preventDefault()`) keeps the values and the `FieldRoot` state; in v2 a `FormRoot` cleared the field state anyway.
+- `FormRootContext.registerField()` no longer takes `resetField`.
+
+**How to find it.**
+- Reset triggers: `grep -rnE "type=\"reset\"|\.reset\(\)|@reset|onReset" --include='*.vue' --include='*.ts' --include='*.tsx' src`.
+- For each one, the Reka UI roots listed above inside the same `<form>` or `FormRoot`.
+- Hand-written workarounds that restored Reka UI values after a reset (a `@reset` handler that assigns the bound refs).
+- Calls to `registerField(` from `injectFormRootContext()`.
+
+**Rewrite rules.**
+- An uncontrolled root (`default-value`, no `v-model`): no rewrite.
+- A controlled root in a form that can be reset, without `default-value`: *ask* which value a reset should restore, then add `default-value` (or `:default-value`) with it. Without it the bound state receives the empty value.
+- A controlled root whose bound type cannot hold the empty value the reset emits (for example `ref<string>` on a `RadioGroupRoot`): add `default-value`, or widen the type.
+- A root that must keep its value through a reset (for example a view toggle that lives inside a `<form>`): add `@before-update:model-value="(value, details) => details.event?.type === 'reset' && details.cancel()"`, or move it out of the form. *Ask* if you cannot tell whether it is form data.
+- A `@reset` handler that only re-assigns the default values of Reka UI controls: remove those assignments once each root has the matching `default-value`. Keep the rest of the handler.
+- `registerField({ ..., resetField })`: remove the `resetField` property.
+- Tests that expect a Reka UI control to keep its value after a reset: expect the default instead.
+
+**Verify.** The type-check passes; in each form with a reset trigger, change every Reka UI control, reset, and each one shows and submits its default; a control you gave a cancelling `beforeUpdate:modelValue` keeps its value.
+
 ### Report
 
 When you are done, give the developer:

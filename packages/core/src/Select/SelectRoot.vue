@@ -151,6 +151,8 @@ export const [injectSelectFieldContext, provideSelectFieldContext]
 import { computed, onBeforeUnmount, onMounted, toRef, watch } from 'vue'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { PopperRoot } from '@/Popper'
+import { provideFormResetOwner } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import BubbleSelect from './BubbleSelect.vue'
 import { useSelectRoot } from './useSelect'
 
@@ -327,6 +329,10 @@ const nativeOptions = computed(() => {
 // event `BubbleSelect` dispatches for that change.
 
 provideSelectRootContext(context)
+
+// A native reset of the owning form puts the value back to `defaultValue`. The
+// root renders no element: `SelectTrigger` binds it.
+provideFormResetOwner((event: Event) => { resetControllableState(select.isControlled, event) })
 </script>
 
 <template>

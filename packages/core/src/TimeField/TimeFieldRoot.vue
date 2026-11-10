@@ -96,6 +96,9 @@ import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { isEqual } from '@/shared/compare'
+import { initializeTimeSegmentValues } from '@/shared/date'
+import { vFormReset } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useTimeField } from './useTimeField'
 
@@ -158,7 +161,7 @@ const resolvedRequired = () => field ? field.required(props.required) : props.re
 // a user edit stays one wherever focus goes next. Only in a Field.
 const pendingInput = field ? createPendingFieldInput<unknown>() : undefined
 
-const { root, context, modelValue, segments, isInvalid, segmentElements, setFocusedElement, focusFirstSegment } = useTimeField({
+const { root, context, modelValue, segments, isInvalid, segmentElements, setFocusedElement, focusFirstSegment, segmentValues, granularity, isControlled } = useTimeField({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   placeholder: () => props.placeholder,
@@ -216,6 +219,14 @@ function getRootAttrs() {
 
 provideTimeFieldRootContext(context)
 
+// A native reset of the owning form puts the value back to `defaultValue`, and
+// drops segments typed without completing a value.
+function onFormReset(event: Event) {
+  resetControllableState(isControlled, event)
+  if (!modelValue.value)
+    segmentValues.value = initializeTimeSegmentValues(granularity.value)
+}
+
 defineExpose(mergeExpose(expose, {
   /** Records `el` as the focused segment for keyboard navigation. It does not move focus; call `el.focus()` for that. */
   setFocusedElement,
@@ -227,6 +238,7 @@ defineExpose(mergeExpose(expose, {
     :is="renderAs(as, asChild)"
     v-bind="getRootAttrs()"
     ref="primitiveElement"
+    v-form-reset="onFormReset"
   >
     <slot
       :model-value="modelValue"

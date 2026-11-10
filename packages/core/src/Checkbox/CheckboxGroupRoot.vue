@@ -62,6 +62,8 @@ export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
 import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { RovingFocusGroup } from '@/RovingFocus'
+import { vFormReset } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useCheckboxGroup } from './useCheckboxGroup'
 
@@ -114,7 +116,7 @@ const disabled = field ? computed(() => field.disabled(props.disabled)) : toRef(
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
 // composable's `useControllableState` (`modelValue === undefined` → uncontrolled).
-const { modelValue, context } = useCheckboxGroup<T>({
+const { modelValue, context, isControlled } = useCheckboxGroup<T>({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   emit: emits,
@@ -129,6 +131,9 @@ const { modelValue, context } = useCheckboxGroup<T>({
 
 if (field)
   watch(modelValue, value => field.sync(value))
+
+// A native reset of the owning form puts the value back to `defaultValue`.
+function onFormReset(event: Event) { resetControllableState(isControlled, event) }
 
 // Touched once focus leaves the whole group, not on every checkbox-to-checkbox move.
 const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
@@ -165,6 +170,7 @@ function renderAttrs(attrs: Record<string, unknown>) {
   <component
     :is="rovingFocus ? RovingFocusGroup : renderAs(as, asChild)"
     ref="primitiveElement"
+    v-form-reset="onFormReset"
     v-bind="renderAttrs($attrs)"
   >
     <slot />

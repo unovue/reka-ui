@@ -165,6 +165,8 @@ import { useCollection } from '@/Collection'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
+import { vFormReset } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useListboxRoot } from './useListbox'
 
@@ -263,6 +265,9 @@ defineExpose(mergeExpose(expose, {
 }))
 
 provideListboxRootContext(context)
+
+// A native reset of the owning form puts the value back to `defaultValue`.
+function onFormReset(event: Event) { resetControllableState(listbox.isControlled, event) }
 if (field)
   provideListboxFieldContext({ field, contentElement: fieldContent! })
 // Only shadow an ancestor listbox's wiring; otherwise providing nothing already reads as `null`.
@@ -282,6 +287,7 @@ const fieldFocusHandlers = focusWithin && { onFocusin: focusWithin.onFocusin, on
   <component
     :is="renderAs(as, asChild)"
     ref="primitiveElement"
+    v-form-reset="onFormReset"
     v-bind="fieldFocusHandlers ? mergeProps(root.attrs.value, fieldFocusHandlers) : root.attrs.value"
   >
     <slot :model-value="modelValue" />

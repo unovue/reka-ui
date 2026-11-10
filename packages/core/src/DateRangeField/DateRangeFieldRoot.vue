@@ -98,7 +98,9 @@ import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { isEqual } from '@/shared/compare'
-import { toRangeFormValue } from '@/shared/date'
+import { initializeSegmentValues, toRangeFormValue } from '@/shared/date'
+import { injectFormResetOwner, vFormReset } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useDateRangeField } from './useDateRangeField'
 
@@ -159,7 +161,7 @@ const resolvedRequired = () => field ? field.required(props.required) : props.re
 // a user edit stays one wherever focus goes next. Only in a Field.
 const pendingInput = field ? createPendingFieldInput<unknown>() : undefined
 
-const { root, context, modelValue, segments, isInvalid, segmentElements, setFocusedElement, focusFirstSegment } = useDateRangeField({
+const { root, context, modelValue, segments, isInvalid, segmentElements, setFocusedElement, focusFirstSegment, segmentValues, granularity, isControlled } = useDateRangeField({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   placeholder: () => props.placeholder,
@@ -217,6 +219,21 @@ function getRootAttrs() {
 
 provideDateRangeFieldRootContext(context)
 
+// A native reset of the owning form puts the value back to `defaultValue`, and
+// drops segments typed without completing a value. Inside a picker the value
+// is the picker's, which resets it.
+const formResetOwner = injectFormResetOwner()
+function onFormReset(event: Event) {
+  if (formResetOwner)
+    formResetOwner(event)
+  else
+    resetControllableState(isControlled, event)
+  if (!modelValue.value?.start)
+    segmentValues.start.value = initializeSegmentValues(granularity.value)
+  if (!modelValue.value?.end)
+    segmentValues.end.value = initializeSegmentValues(granularity.value)
+}
+
 defineExpose(mergeExpose(expose, {
   /** Records `el` as the focused segment for keyboard navigation. It does not move focus; call `el.focus()` for that. */
   setFocusedElement,
@@ -228,6 +245,7 @@ defineExpose(mergeExpose(expose, {
     :is="renderAs(as, asChild)"
     v-bind="getRootAttrs()"
     ref="primitiveElement"
+    v-form-reset="onFormReset"
   >
     <slot
       :model-value="modelValue"

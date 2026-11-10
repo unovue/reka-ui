@@ -3,6 +3,7 @@ import type { NumberFieldRootContext } from './NumberFieldRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import { computed, mergeProps, ref, shallowRef, toValue, watch } from 'vue'
 import { clamp, createPartSurface, getActiveElement, getterRef, isNullish, snapValueToStep, useComposing, useControllableState } from '@/shared'
+import { resetControllableState } from '@/shared/useControllableState'
 import { handleDecimalOperation, useNumberFormatter, useNumberParser } from './utils'
 
 /**
@@ -78,6 +79,12 @@ export interface UseNumberFieldReturn {
   lastChangeDetails: Readonly<Ref<ChangeEventDetails<NumberFieldChangeReason>>>
   /** Writes the model as given (no clamping). Returns `false` when unchanged or cancelled. */
   setModelValue: (value: number | undefined, reason?: Reason, event?: Event) => boolean
+  /**
+   * Puts the value back to `defaultValue` and drops text typed without committing, as a native form reset does.
+   * A change like any other (cancellable, emitted when controlled), with `reason: 'none'`. Returns `false` when
+   * unchanged or cancelled.
+   */
+  resetValue: (event?: Event) => boolean
   /** One step up (or `multiplier` steps), clamped and snapped like an increment press. */
   increment: (multiplier?: number, reason?: Reason, event?: Event) => void
   /** One step down (or `multiplier` steps), clamped and snapped like a decrement press. */
@@ -357,6 +364,12 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
     return applied
   }
 
+  function resetValue(event?: Event) {
+    // The text follows the model again, whether or not the model moves.
+    isEditing.value = false
+    return resetControllableState(isControlled, event)
+  }
+
   // A writable view for the context: custom parts that assign `modelValue.value`
   // (v2) still go through `setState`, so `beforeUpdate` can cancel them.
   const contextModelValue = computed<number | undefined>({
@@ -416,6 +429,7 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
     isControlled,
     lastChangeDetails,
     setModelValue,
+    resetValue,
     increment: handleIncrease,
     decrement: handleDecrease,
     applyInputValue,

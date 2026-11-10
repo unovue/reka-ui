@@ -96,10 +96,12 @@ describe('a DateField inside a Field, edited in a real browser', () => {
     await nextTick()
     await expect.poll(() => t.dirty()).toBe(false)
 
-    // The baseline survives the reset: a later edit, and an edit back to it, still compare.
+    // The reset put the value back to the baseline, which survives it: a later
+    // edit, and an edit back to it, still compare.
+    expect(t.segment('month').textContent).toBe('1')
     await userEvent.keyboard('{ArrowUp}')
     await expect.poll(() => t.dirty()).toBe(true)
-    await userEvent.keyboard('{ArrowDown}{ArrowDown}')
+    await userEvent.keyboard('{ArrowDown}')
     await expect.poll(() => t.dirty()).toBe(false)
     expect(t.errors).toEqual([])
   })

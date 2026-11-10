@@ -151,7 +151,7 @@ export interface FieldRootContext {
   handleControlInput: (detail?: FieldControlDetail) => void
   /** Runs validation immediately regardless of `validationMode`. Returns whether the field is valid. */
   validate: () => boolean
-  /** Clears touched/dirty/filled/errors/validity — used on native `<form>` reset. */
+  /** Clears touched/dirty/filled/errors/validity. Runs when the owning `<form>` is reset. */
   resetField: () => void
 }
 
@@ -163,6 +163,7 @@ import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRef, watch } f
 import { injectFormRootContext } from '@/Form/FormRoot.vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { isEqual } from '@/shared/compare'
+import { vFormReset } from '@/shared/formReset'
 import { provideFieldRootContext } from './fieldRootContext'
 import { createValidityState, useFieldValidation } from './useFieldValidation'
 
@@ -466,7 +467,9 @@ function resetField() {
   clearedServerError.value = true
   lastReportedValue.value = undefined
   resetValidation()
-  // A native reset restores default values after the `reset` event.
+  // The browser restores a native control's default value after the `reset`
+  // event, and a controlled Reka control gets its value on the parent's next
+  // render.
   setTimeout(() => {
     if (control.value)
       filled.value = isFilled(control.value.getValue())
@@ -481,7 +484,6 @@ onMounted(() => {
     invalid,
     getValue: () => resolveValue(),
     getControlElement: () => control.value?.element() ?? undefined,
-    resetField,
   })
 })
 onBeforeUnmount(() => unregisterFromForm?.())
@@ -524,6 +526,7 @@ provideFieldRootContext({
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
+    v-form-reset:field="resetField"
     v-bind="dataAttributes"
   >
     <slot

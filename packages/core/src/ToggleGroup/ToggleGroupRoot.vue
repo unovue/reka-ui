@@ -50,6 +50,8 @@ import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { Slot } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { RovingFocusGroup } from '@/RovingFocus'
+import { vFormReset } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { useToggleGroup } from './useToggleGroup'
 
 // A group switching `rovingFocus` swaps the template's wrapper, which re-mounts
@@ -103,7 +105,7 @@ const resolvedName = () => field ? field.name(props.name) : props.name
 const resolvedRequired = () => field ? field.required(props.required) : props.required
 const resolvedDisabled = () => field ? field.disabled(props.disabled) : props.disabled
 
-const { modelValue, root, context } = useToggleGroup({
+const { modelValue, root, context, isControlled } = useToggleGroup({
   type: () => props.type,
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
@@ -121,6 +123,9 @@ const { modelValue, root, context } = useToggleGroup({
 const isFormControl = useFormControl(currentElement)
 
 provideToggleGroupRootContext(context)
+
+// A native reset of the owning form puts the value back to `defaultValue`.
+function onFormReset(event: Event) { resetControllableState(isControlled, event) }
 
 if (field)
   watch(modelValue, value => field.sync(value))
@@ -149,6 +154,7 @@ function renderAttrs(attrs: Record<string, unknown>) {
     <component
       :is="renderAs(as, asChild)"
       :ref="forwardRef"
+      v-form-reset="onFormReset"
       v-bind="renderAttrs($attrs)"
     >
       <slot :model-value="modelValue" />

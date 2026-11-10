@@ -88,6 +88,7 @@ import { mergeProps, shallowRef, watch } from 'vue'
 import { useFieldControl } from '@/Field/useFieldControl'
 import { renderAs } from '@/Primitive/renderAs'
 import { colorToString } from '@/shared/color'
+import { vFormReset } from '@/shared/formReset'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useColorField } from './useColorField'
 
@@ -121,7 +122,7 @@ const field = useFieldControl({
 if (field)
   fieldInput = shallowRef()
 
-const { root, context, color, disabled } = useColorField({
+const { root, context, color, disabled, resetValue } = useColorField({
   colorSpace: () => props.colorSpace,
   channel: () => props.channel,
   disabled: () => field ? field.disabled(props.disabled) : props.disabled,
@@ -140,6 +141,9 @@ const { root, context, color, disabled } = useColorField({
 
 provideColorFieldRootContext(context)
 
+// A native reset of the owning form puts the value back to `defaultValue`.
+function onFormReset(event: Event) { resetValue(event) }
+
 if (field) {
   provideColorFieldFieldControl({ binding: field, input: fieldInput! })
   watch(color, value => field.sync(value))
@@ -150,6 +154,7 @@ if (field) {
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
+    v-form-reset="onFormReset"
     v-bind="field ? mergeProps(field.dataAttributes(), root.attrs.value) : root.attrs.value"
   >
     <slot />

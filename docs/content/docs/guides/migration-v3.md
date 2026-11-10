@@ -1034,3 +1034,34 @@ To keep the v2 behavior, set the prop to `false`:
 ```
 
 `reset-model-value-on-clear` (or `:reset-model-value-on-clear="true"`) is now the default and can be removed. To keep the value for one press only, cancel the `'clear-press'` change in `beforeUpdate:modelValue`; that keeps the input text too. A model bound to the root must accept `null` (or `[]`), which the `null` changes in [Combobox and Autocomplete roots](#combobox-and-autocomplete-roots) already require.
+
+## Form reset restores Reka UI controls
+
+A native form reset (a `type="reset"` button, or `form.reset()`) now puts every Reka UI form control of that form back to its `defaultValue`, or to its empty value when it has none. In v2 a reset left them as they were: the value, what the control showed and what the form submitted all stayed, because the hidden input each control renders always carried the current value as its default. Inside a `FormRoot`, v2 cleared each `FieldRoot`'s touched, dirty and validation state, and still kept the values.
+
+The controls are Checkbox, CheckboxGroup, Switch, RadioGroup, Toggle, ToggleGroup, Slider, NumberField, PinInput, TagsInput, Select, Combobox, Autocomplete, Listbox, Editable, DateField, TimeField, DateRangeField, TimeRangeField, DatePicker, DateRangePicker, ColorField, ColorArea and ColorSlider. They reset whether or not they have a `name`, in a plain `<form>` as well as in a `FormRoot`.
+
+- **Uncontrolled** (`default-value`): the value goes back to the default.
+- **Controlled** (`v-model`): the control emits `update:modelValue` with its `defaultValue`, or with its empty value when it has none (the value an uncontrolled control starts with, such as `false` for a Switch or `undefined` for a RadioGroup), so the bound state changes. Pass `default-value` next to `v-model` to choose what a reset restores.
+- The change carries `details.reason === 'none'` and the `reset` event as `details.event`. `beforeUpdate:modelValue` can cancel it. Nothing is emitted when the value already equals the default.
+- A `FieldRoot` clears its state on a reset in a plain `<form>` too, not only in a `FormRoot`.
+- `preventDefault()` on the `reset` event now also keeps the `FieldRoot` state. In v2 a `FormRoot` cleared it even when the reset was prevented.
+
+```vue
+<!-- v2: a reset left `plan` on the option the user picked -->
+<RadioGroupRoot v-model="plan" name="plan" />
+
+<!-- v3: a reset emits `undefined`. Give it the value to go back to -->
+<RadioGroupRoot v-model="plan" name="plan" default-value="free" />
+```
+
+To keep a value through a reset, cancel the change:
+
+```vue
+<SwitchRoot
+  v-model="darkMode"
+  @before-update:model-value="(value, details) => details.event?.type === 'reset' && details.cancel()"
+/>
+```
+
+Custom parts: `FormRootContext.registerField()` no longer takes a `resetField` callback. A `FieldRoot` resets itself with the form.

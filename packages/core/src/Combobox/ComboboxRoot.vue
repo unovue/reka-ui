@@ -174,6 +174,8 @@ import { useFieldControl } from '@/Field/useFieldControl'
 import { provideListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { renderAs } from '@/Primitive/renderAs'
+import { vFormReset } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { hasComboboxValue, useComboboxRoot } from './useCombobox'
 import { provideComboboxField } from './useComboboxField'
@@ -286,6 +288,13 @@ defineExpose(mergeExpose(expose, {
 provideListboxRootContext(context)
 provideComboboxRootContext(context)
 provideComboboxField(field, context)
+
+// A native reset of the owning form puts the value back to `defaultValue`,
+// and the input's text back to that value's.
+function onFormReset(event: Event) {
+  resetControllableState(combobox.isControlled, event)
+  combobox.resetSearchTerm('none')
+}
 </script>
 
 <template>
@@ -293,6 +302,7 @@ provideComboboxField(field, context)
     <component
       :is="renderAs(as, asChild)"
       :ref="forwardRef"
+      v-form-reset="onFormReset"
       v-bind="mergeProps(root.attrs.value, $attrs)"
     >
       <slot

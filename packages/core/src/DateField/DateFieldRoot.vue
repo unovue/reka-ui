@@ -7,7 +7,7 @@ import type { BaseChangeReason, ChangeEventDetails, DateStep, Formatter } from '
 import type { Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { createContext, mergeExpose, useDirection, useLocale } from '@/shared'
-import { getInputType, normalizeInputValue } from '@/shared/date'
+import { getInputType, initializeSegmentValues, normalizeInputValue } from '@/shared/date'
 
 export type DateFieldRootContext = {
   locale: Ref<string>
@@ -95,6 +95,8 @@ import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { isEqual } from '@/shared/compare'
+import { injectFormResetOwner, vFormReset } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useDateField } from './useDateField'
 
@@ -162,6 +164,8 @@ const {
   segmentElements,
   setFocusedElement,
   focusFirstSegment,
+  segmentValues,
+  isControlled,
 } = useDateField({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
@@ -247,6 +251,19 @@ if (field) {
 
 provideDateFieldRootContext(context)
 
+// A native reset of the owning form puts the value back to `defaultValue`, and
+// drops segments typed without completing a value. Inside a picker the value
+// is the picker's, which resets it.
+const formResetOwner = injectFormResetOwner()
+function onFormReset(event: Event) {
+  if (formResetOwner)
+    formResetOwner(event)
+  else
+    resetControllableState(isControlled, event)
+  if (!modelValue.value)
+    segmentValues.value = initializeSegmentValues(granularity.value)
+}
+
 defineExpose(mergeExpose(expose, {
   /** Records `el` as the focused segment for keyboard navigation. It does not move focus; call `el.focus()` for that. */
   setFocusedElement,
@@ -258,6 +275,7 @@ defineExpose(mergeExpose(expose, {
     :is="renderAs(as, asChild)"
     v-bind="getRootAttrs()"
     ref="primitiveElement"
+    v-form-reset="onFormReset"
     @focusin="focusWithin?.onFocusin"
     @focusout="focusWithin?.onFocusout"
   >
