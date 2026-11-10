@@ -6,6 +6,41 @@ import { Primitive } from '../Primitive'
 import { useForwardExpose } from './useForwardExpose'
 
 describe('useForwardRef', async () => {
+  it.each([null, undefined])('should fall back to the root when a forwarded $el becomes %s', async (emptyElement) => {
+    let forwarded!: ReturnType<typeof useForwardExpose>
+    const show = ref(true)
+    const wrapper = mount(defineComponent({
+      setup() {
+        forwarded = useForwardExpose()
+        return () => h('div', show.value
+          ? [h('span', { ref: element => forwarded.forwardRef({ $el: element ?? emptyElement } as any) }, 'Child')]
+          : [])
+      },
+    }))
+
+    try {
+      await nextTick()
+      const root = wrapper.get('div').element
+      const exposed = wrapper.vm.$.exposed!
+      expect(exposed.$el).toBe(wrapper.get('span').element)
+      expect(forwarded.currentElement.value).toBe(wrapper.get('span').element)
+
+      show.value = false
+      await nextTick()
+      expect(exposed.$el).toBe(root)
+      expect(forwarded.currentRef.value).toBeNull()
+      expect(forwarded.currentElement.value).toBeNull()
+
+      show.value = true
+      await nextTick()
+      expect(exposed.$el).toBe(wrapper.get('span').element)
+      expect(forwarded.currentElement.value).toBe(wrapper.get('span').element)
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
   it('should safely read cached child exposures after forwarding a $el-only ref', async () => {
     const showComponent = ref(true)
     const Child = defineComponent({

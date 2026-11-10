@@ -65,9 +65,10 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
   instance.exposed = ret
 
   function forwardRef(ref: Element | T | null) {
-    currentRef.value = ref
+    // A wrapped null element is still a ref clear.
+    currentRef.value = ref && '$el' in ref && !ref.$el ? null : ref
 
-    if (!ref) {
+    if (!ref || !currentRef.value) {
       instance.exposed = ret
       // Drop the cached element even if currentElement is no longer read.
       void currentElement.value
