@@ -266,6 +266,53 @@ function isTimeUnavailable(time) {
 </template>
 ```
 
+### Unavailable Times Inside the Range
+
+`isTimeUnavailable` is checked for both ends and for the times between them, so a range that spans an unavailable time is invalid even when it starts and ends on available ones. The root renders `data-invalid` and passes `isInvalid` to its slot.
+
+The times between the ends are sampled, because a range holds no fixed list of times: one check for every `step` of the `granularity`, counted from midnight. By default that is each whole minute, each hour with `granularity="hour"` and each second with `granularity="second"`; with `:step="{ minute: 15 }"` it is `:00`, `:15`, `:30` and `:45`. One range is checked at most 1,440 times. A longer run of steps is sampled at a whole multiple of the step, so a full day at `second` granularity is checked once a minute. Write the matcher over spans of time (`hour === 12`) and not over a single instant, so every sample inside the span matches.
+
+Set `allowNonContiguousRanges` to check only the two ends.
+
+```vue
+<script setup>
+import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+// 09:00 to 17:00 spans the lunch break, so the range is invalid.
+const timeRange = ref({
+  start: new Temporal.PlainTime(9, 0),
+  end: new Temporal.PlainTime(17, 0)
+})
+
+// Closed from 12:00 to 13:00
+function isTimeUnavailable(time) {
+  return time.hour === 12
+}
+</script>
+
+<template>
+  <TimeRangeFieldRoot
+    v-slot="{ isInvalid }"
+    v-model="timeRange"
+    :is-time-unavailable="isTimeUnavailable"
+  >
+    <div class="flex items-center gap-2">
+      <TimeRangeFieldInput part="hour" type="start" />
+      <span>:</span>
+      <TimeRangeFieldInput part="minute" type="start" />
+      <span class="mx-2">to</span>
+      <TimeRangeFieldInput part="hour" type="end" />
+      <span>:</span>
+      <TimeRangeFieldInput part="minute" type="end" />
+    </div>
+    <p v-if="isInvalid" class="text-red-500 text-sm mt-1">
+      The range includes a time that is unavailable
+    </p>
+  </TimeRangeFieldRoot>
+</template>
+```
+
 ### With Different Granularity
 
 ```vue
