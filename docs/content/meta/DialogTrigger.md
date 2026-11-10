@@ -18,7 +18,7 @@
   {
     'name': 'handle',
     'description': '<p>A handle from <code>createDialogHandle()</code> that connects this trigger to a\n<code>DialogRoot</code> rendered elsewhere (outside this trigger\'s tree or portal).</p>\n',
-    'type': 'DialogHandle&lt;Payload&gt;',
+    'type': 'DialogHandle&lt;unknown&gt;',
     'required': false
   },
   {
@@ -30,7 +30,7 @@
   {
     'name': 'payload',
     'description': '<p>Passed to the Root\'s default slot while this trigger owns the dialog. Requires a <code>handle</code>.</p>\n',
-    'type': 'Payload',
+    'type': 'unknown',
     'required': false
   }
 ]" />
@@ -44,8 +44,8 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"button"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `handle` | A handle from `createDialogHandle()` that connects this trigger to a `DialogRoot` rendered elsewhere (outside this trigger's tree or portal). | `DialogHandle<Payload>` | No | - |
+| `handle` | A handle from `createDialogHandle()` that connects this trigger to a `DialogRoot` rendered elsewhere (outside this trigger's tree or portal). | `DialogHandle<unknown>` | No | - |
 | `id` | Id of the element. With a `handle`, also the id the Root's `triggerId` refers to. | `string` | No | - |
-| `payload` | Passed to the Root's default slot while this trigger owns the dialog. Requires a `handle`. | `Payload` | No | - |
+| `payload` | Passed to the Root's default slot while this trigger owns the dialog. Requires a `handle`. | `unknown` | No | - |
 
 </llm-only>

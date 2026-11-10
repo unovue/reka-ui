@@ -18,7 +18,7 @@
   {
     'name': 'defaultValue',
     'description': '<p>The state of the switch when it is initially rendered. Use when you do not need to control its state.</p>\n',
-    'type': 'NoInfer&lt;TrueValue | FalseValue&gt;',
+    'type': 'true | false',
     'required': false
   },
   {
@@ -30,7 +30,7 @@
   {
     'name': 'falseValue',
     'description': '<p>The value used when the switch is off. Defaults to <code>false</code>.</p>\n',
-    'type': 'FalseValue',
+    'type': 'false',
     'required': false,
     'default': '(() => false) as unknown as undefined'
   },
@@ -43,7 +43,7 @@
   {
     'name': 'modelValue',
     'description': '<p>The controlled state of the switch. Can be bind as <code>v-model</code>.</p>\n',
-    'type': 'null | NoInfer&lt;TrueValue | FalseValue&gt;',
+    'type': 'null | true | false',
     'required': false
   },
   {
@@ -61,7 +61,7 @@
   {
     'name': 'trueValue',
     'description': '<p>The value used when the switch is on. Defaults to <code>true</code>.</p>\n',
-    'type': 'TrueValue',
+    'type': 'true',
     'required': false,
     'default': '(() => true) as unknown as undefined'
   },
@@ -78,12 +78,12 @@
   {
     'name': 'beforeUpdate:modelValue',
     'description': '<p>Event handler called before the value of the switch changes; <code>details.cancel()</code> vetoes the change.</p>\n',
-    'type': '[payload: TrueValue | FalseValue, details: ChangeEventDetails&lt;SwitchChangeReason, Event&gt;]'
+    'type': '[payload: true | false, details: ChangeEventDetails&lt;SwitchChangeReason, Event&gt;]'
   },
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value of the switch changes.</p>\n',
-    'type': '[payload: TrueValue | FalseValue, details: ChangeEventDetails&lt;SwitchChangeReason, Event&gt;]'
+    'type': '[payload: true | false, details: ChangeEventDetails&lt;SwitchChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -109,22 +109,22 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"button"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `defaultValue` | The state of the switch when it is initially rendered. Use when you do not need to control its state. | `NoInfer<TrueValue \| FalseValue>` | No | - |
+| `defaultValue` | The state of the switch when it is initially rendered. Use when you do not need to control its state. | `true \| false` | No | - |
 | `disabled` | When `true`, prevents the user from interacting with the switch. | `boolean` | No | - |
-| `falseValue` | The value used when the switch is off. Defaults to `false`. | `FalseValue` | No | `(() => false) as unknown as undefined` |
+| `falseValue` | The value used when the switch is off. Defaults to `false`. | `false` | No | `(() => false) as unknown as undefined` |
 | `id` |  | `string` | No | - |
-| `modelValue` | The controlled state of the switch. Can be bind as `v-model`. | `null \| NoInfer<TrueValue \| FalseValue>` | No | - |
+| `modelValue` | The controlled state of the switch. Can be bind as `v-model`. | `null \| true \| false` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
-| `trueValue` | The value used when the switch is on. Defaults to `true`. | `TrueValue` | No | `(() => true) as unknown as undefined` |
+| `trueValue` | The value used when the switch is on. Defaults to `true`. | `true` | No | `(() => true) as unknown as undefined` |
 | `value` | The value given as data when submitted with a `name`. | `string` | No | `"on"` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the value of the switch changes; `details.cancel()` vetoes the change. | `[payload: TrueValue \| FalseValue, details: ChangeEventDetails<SwitchChangeReason, Event>]` |
-| `update:modelValue` | Event handler called when the value of the switch changes. | `[payload: TrueValue \| FalseValue, details: ChangeEventDetails<SwitchChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the value of the switch changes; `details.cancel()` vetoes the change. | `[payload: true \| false, details: ChangeEventDetails<SwitchChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the value of the switch changes. | `[payload: true \| false, details: ChangeEventDetails<SwitchChangeReason, Event>]` |
 
 **Slots**
 

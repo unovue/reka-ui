@@ -17,7 +17,7 @@
   {
     'name': 'options',
     'description': '<p>List of items, or, with <code>grouped</code>, groups of items (<code>{ label, options, disabled? }</code>).\nEach option is the <code>value</code> of the <code>SelectItem</code> the default slot renders.</p>\n',
-    'type': 'T[] | VirtualGroup&lt;T&gt;[]',
+    'type': 'AcceptableValue[] | VirtualGroup&lt;AcceptableValue&gt;[]',
     'required': true
   },
   {
@@ -29,7 +29,7 @@
   {
     'name': 'textContent',
     'description': '<p>Text content for each item, used by typeahead (open, and on the closed trigger). Required for object options;\nprimitive options otherwise use their string form. <code>SelectValue</code> always shows the <code>SelectItemText</code> of the\nselected item, rendered or not.</p>\n',
-    'type': '((option: T) =&gt; string)',
+    'type': '((option: AcceptableValue) =&gt; string)',
     'required': false
   }
 ]" />
@@ -61,9 +61,9 @@
 | --- | --- | --- | --- | --- |
 | `estimateSize` | Estimated size (in px) of each item. A function receives the row index (group header rows included). | `number \| ((index: number) => number)` | No | - |
 | `grouped` | When `true`, `options` holds groups (`VirtualGroup`) rather than options. | `boolean` | No | - |
-| `options` | List of items, or, with `grouped`, groups of items (`{ label, options, disabled? }`). Each option is the `value` of the `SelectItem` the default slot renders. | `T[] \| VirtualGroup<T>[]` | Yes | - |
+| `options` | List of items, or, with `grouped`, groups of items (`{ label, options, disabled? }`). Each option is the `value` of the `SelectItem` the default slot renders. | `AcceptableValue[] \| VirtualGroup<AcceptableValue>[]` | Yes | - |
 | `overscan` | Number of items rendered outside the visible area | `number` | No | - |
-| `textContent` | Text content for each item, used by typeahead (open, and on the closed trigger). Required for object options; primitive options otherwise use their string form. `SelectValue` always shows the `SelectItemText` of the selected item, rendered or not. | `((option: T) => string)` | No | - |
+| `textContent` | Text content for each item, used by typeahead (open, and on the closed trigger). Required for object options; primitive options otherwise use their string form. `SelectValue` always shows the `SelectItemText` of the selected item, rendered or not. | `((option: AcceptableValue) => string)` | No | - |
 
 **Slots**
 

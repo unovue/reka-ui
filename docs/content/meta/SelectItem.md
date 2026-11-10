@@ -39,7 +39,7 @@
   {
     'name': 'select',
     'description': '<p>Event handler called when the selecting item. &lt;br&gt; It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
-    'type': '[event: SelectEvent&lt;T&gt;]'
+    'type': '[event: SelectEvent&lt;AcceptableValue&gt;]'
   }
 ]" />
 
@@ -68,7 +68,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `select` | Event handler called when the selecting item. \<br> It can be prevented by calling `event.preventDefault`. | `[event: SelectEvent<T>]` |
+| `select` | Event handler called when the selecting item. \<br> It can be prevented by calling `event.preventDefault`. | `[event: SelectEvent<AcceptableValue>]` |
 
 **Slots**
 

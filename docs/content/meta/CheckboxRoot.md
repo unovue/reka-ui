@@ -18,7 +18,7 @@
   {
     'name': 'defaultValue',
     'description': '<p>The value of the checkbox when it is initially rendered. Use when you do not need to control its value.</p>\n',
-    'type': '\'indeterminate\' | NoInfer&lt;TrueValue | FalseValue&gt;',
+    'type': '\'indeterminate\' | true | false',
     'required': false
   },
   {
@@ -30,7 +30,7 @@
   {
     'name': 'falseValue',
     'description': '<p>The value used when the checkbox is unchecked. Defaults to <code>false</code>.</p>\n',
-    'type': 'FalseValue',
+    'type': 'false',
     'required': false,
     'default': '(() => false) as unknown as undefined'
   },
@@ -43,7 +43,7 @@
   {
     'name': 'modelValue',
     'description': '<p>The controlled value of the checkbox. Can be binded with v-model.</p>\n',
-    'type': '\'indeterminate\' | NoInfer&lt;TrueValue | FalseValue&gt; | null',
+    'type': '\'indeterminate\' | true | false | null',
     'required': false
   },
   {
@@ -61,7 +61,7 @@
   {
     'name': 'trueValue',
     'description': '<p>The value used when the checkbox is checked. Defaults to <code>true</code>.</p>\n',
-    'type': 'TrueValue',
+    'type': 'true',
     'required': false,
     'default': '(() => true) as unknown as undefined'
   },
@@ -78,12 +78,12 @@
   {
     'name': 'beforeUpdate:modelValue',
     'description': '<p>Event handler called before the value of the checkbox changes; <code>details.cancel()</code> vetoes the change.</p>\n',
-    'type': '[value: TrueValue | FalseValue | \'indeterminate\', details: ChangeEventDetails&lt;\'trigger-press\', Event&gt;]'
+    'type': '[value: true | false | \'indeterminate\', details: ChangeEventDetails&lt;\'trigger-press\', Event&gt;]'
   },
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value of the checkbox changes.</p>\n',
-    'type': '[value: TrueValue | FalseValue | \'indeterminate\', details: ChangeEventDetails&lt;\'trigger-press\', Event&gt;]'
+    'type': '[value: true | false | \'indeterminate\', details: ChangeEventDetails&lt;\'trigger-press\', Event&gt;]'
   }
 ]" />
 
@@ -109,22 +109,22 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"button"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `defaultValue` | The value of the checkbox when it is initially rendered. Use when you do not need to control its value. | `"indeterminate" \| NoInfer<TrueValue \| FalseValue>` | No | - |
+| `defaultValue` | The value of the checkbox when it is initially rendered. Use when you do not need to control its value. | `"indeterminate" \| true \| false` | No | - |
 | `disabled` | When `true`, prevents the user from interacting with the checkbox | `boolean` | No | - |
-| `falseValue` | The value used when the checkbox is unchecked. Defaults to `false`. | `FalseValue` | No | `(() => false) as unknown as undefined` |
+| `falseValue` | The value used when the checkbox is unchecked. Defaults to `false`. | `false` | No | `(() => false) as unknown as undefined` |
 | `id` | Id of the element | `string` | No | - |
-| `modelValue` | The controlled value of the checkbox. Can be binded with v-model. | `"indeterminate" \| NoInfer<TrueValue \| FalseValue> \| null` | No | - |
+| `modelValue` | The controlled value of the checkbox. Can be binded with v-model. | `"indeterminate" \| true \| false \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
-| `trueValue` | The value used when the checkbox is checked. Defaults to `true`. | `TrueValue` | No | `(() => true) as unknown as undefined` |
+| `trueValue` | The value used when the checkbox is checked. Defaults to `true`. | `true` | No | `(() => true) as unknown as undefined` |
 | `value` | The value given as data when submitted with a `name`. | `AcceptableValue` | No | `"on"` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the value of the checkbox changes; `details.cancel()` vetoes the change. | `[value: TrueValue \| FalseValue \| "indeterminate", details: ChangeEventDetails<"trigger-press", Event>]` |
-| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: TrueValue \| FalseValue \| "indeterminate", details: ChangeEventDetails<"trigger-press", Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the value of the checkbox changes; `details.cancel()` vetoes the change. | `[value: true \| false \| "indeterminate", details: ChangeEventDetails<"trigger-press", Event>]` |
+| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: true \| false \| "indeterminate", details: ChangeEventDetails<"trigger-press", Event>]` |
 
 **Slots**
 

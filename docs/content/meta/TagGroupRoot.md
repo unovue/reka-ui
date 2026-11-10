@@ -18,13 +18,13 @@
   {
     'name': 'by',
     'description': '<p>Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared.</p>\n',
-    'type': 'string | ((a: T, b: T) =&gt; boolean)',
+    'type': 'string | ((a: AcceptableValue, b: AcceptableValue) =&gt; boolean)',
     'required': false
   },
   {
     'name': 'defaultValue',
     'description': '<p>The value of the selected tag(s) when initially rendered. Use when you do not need to control the selection.</p>\n',
-    'type': 'T | T[]',
+    'type': 'AcceptableValue | AcceptableValue[]',
     'required': false
   },
   {
@@ -62,7 +62,7 @@
   {
     'name': 'modelValue',
     'description': '<p>The controlled value of the selected tag(s). Can be binded with <code>v-model</code>. An array when <code>selectionMode</code> is <code>multiple</code>.</p>\n',
-    'type': 'T | T[]',
+    'type': 'AcceptableValue | AcceptableValue[]',
     'required': false
   },
   {
@@ -78,17 +78,17 @@
   {
     'name': 'beforeUpdate:modelValue',
     'description': '<p>Event handler called before the selection changes; <code>details.cancel()</code> vetoes the change.</p>\n',
-    'type': '[value: T | T[] | undefined, details: ChangeEventDetails&lt;TagGroupChangeReason, Event&gt;]'
+    'type': '[value: AcceptableValue | AcceptableValue[] | undefined, details: ChangeEventDetails&lt;TagGroupChangeReason, Event&gt;]'
   },
   {
     'name': 'remove',
     'description': '<p>Event handler called when the user removes tags, with the values to remove.\nTags are only removable when this event has a listener; remove the values from your own list to remove the tags.</p>\n',
-    'type': '[values: T[]]'
+    'type': '[values: AcceptableValue[]]'
   },
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the selection changes.</p>\n',
-    'type': '[value: T | T[] | undefined, details: ChangeEventDetails&lt;TagGroupChangeReason, Event&gt;]'
+    'type': '[value: AcceptableValue | AcceptableValue[] | undefined, details: ChangeEventDetails&lt;TagGroupChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -109,23 +109,23 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. | `string \| ((a: T, b: T) => boolean)` | No | - |
-| `defaultValue` | The value of the selected tag(s) when initially rendered. Use when you do not need to control the selection. | `T \| T[]` | No | - |
+| `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. | `string \| ((a: AcceptableValue, b: AcceptableValue) => boolean)` | No | - |
+| `defaultValue` | The value of the selected tag(s) when initially rendered. Use when you do not need to control the selection. | `AcceptableValue \| AcceptableValue[]` | No | - |
 | `dir` | The reading direction of the tag group when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When `true`, prevents the user from interacting with the tag group and all its tags. | `boolean` | No | - |
 | `disallowEmptySelection` | When `true`, the user cannot deselect the last selected tag. | `boolean` | No | - |
 | `escapeKeyBehavior` | Whether pressing \<kbd>Escape\</kbd> clears the selection. | `"none" \| "clearSelection"` | No | `"clearSelection"` |
 | `loop` | When `true`, keyboard navigation will loop from last tag to first, and vice versa. | `boolean` | No | `true` |
-| `modelValue` | The controlled value of the selected tag(s). Can be binded with `v-model`. An array when `selectionMode` is `multiple`. | `T \| T[]` | No | - |
+| `modelValue` | The controlled value of the selected tag(s). Can be binded with `v-model`. An array when `selectionMode` is `multiple`. | `AcceptableValue \| AcceptableValue[]` | No | - |
 | `selectionMode` | The type of selection that is allowed. Tags are not selectable when `none`. | `"none" \| "single" \| "multiple"` | No | `"none"` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the selection changes; `details.cancel()` vetoes the change. | `[value: T \| T[] \| undefined, details: ChangeEventDetails<TagGroupChangeReason, Event>]` |
-| `remove` | Event handler called when the user removes tags, with the values to remove. Tags are only removable when this event has a listener; remove the values from your own list to remove the tags. | `[values: T[]]` |
-| `update:modelValue` | Event handler called when the selection changes. | `[value: T \| T[] \| undefined, details: ChangeEventDetails<TagGroupChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the selection changes; `details.cancel()` vetoes the change. | `[value: AcceptableValue \| AcceptableValue[] \| undefined, details: ChangeEventDetails<TagGroupChangeReason, Event>]` |
+| `remove` | Event handler called when the user removes tags, with the values to remove. Tags are only removable when this event has a listener; remove the values from your own list to remove the tags. | `[values: AcceptableValue[]]` |
+| `update:modelValue` | Event handler called when the selection changes. | `[value: AcceptableValue \| AcceptableValue[] \| undefined, details: ChangeEventDetails<TagGroupChangeReason, Event>]` |
 
 **Slots**
 

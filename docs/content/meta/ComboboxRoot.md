@@ -18,7 +18,7 @@
   {
     'name': 'by',
     'description': '<p>Use this to compare objects by a particular field, or pass your own comparison function for complete control over how values are compared (a function runs for every value, strings included). Read once at setup: changing it after mount has no effect.</p>\n',
-    'type': 'string | ((a: T, b: T) =&gt; boolean)',
+    'type': 'string | ((a: AcceptableValue, b: AcceptableValue) =&gt; boolean)',
     'required': false
   },
   {
@@ -30,7 +30,7 @@
   {
     'name': 'defaultValue',
     'description': '<p>The value of the Combobox when initially rendered. Use when you do not need to control the state of the Combobox.</p>\n',
-    'type': 'T | T[] | null',
+    'type': 'AcceptableValue | AcceptableValue[] | null',
     'required': false
   },
   {
@@ -48,13 +48,13 @@
   {
     'name': 'displayValue',
     'description': '<p>The text the input shows for the selected value of a single combobox, when <code>ComboboxInput</code> has no <code>displayValue</code>\nof its own. Without either, a primitive value shows as its string form and an object value as an empty input.</p>\n',
-    'type': '((value: T) =&gt; string)',
+    'type': '((value: AcceptableValue) =&gt; string)',
     'required': false
   },
   {
     'name': 'filter',
     'description': '<p>Whether an item matches the search term: called as <code>filter(text, search, value)</code> with the item\'s <code>textValue</code> (or\nits text content; in a <code>ComboboxVirtualizer</code>, <code>textContent(option)</code>). Omitted, items are matched with <code>useFilter</code>\'s\n<code>contains</code> (base sensitivity). <code>null</code> turns client filtering off: filter the items yourself, or on a server.</p>\n',
-    'type': 'ListboxFilterFunction&lt;T&gt; | null',
+    'type': 'ListboxFilterFunction&lt;AcceptableValue&gt; | null',
     'required': false
   },
   {
@@ -85,7 +85,7 @@
   {
     'name': 'modelValue',
     'description': '<p>The controlled value of the Combobox. Can be binded with <code>v-model</code>. An array when <code>multiple</code>; <code>null</code> is an empty\nsingle selection, the value <code>ComboboxCancel</code> emits when it clears one.</p>\n',
-    'type': 'T | T[] | null',
+    'type': 'AcceptableValue | AcceptableValue[] | null',
     'required': false
   },
   {
@@ -160,7 +160,7 @@
   {
     'name': 'beforeUpdate:modelValue',
     'description': '<p>Event handler called before the value changes; call <code>details.cancel()</code> to keep the current value. The value is\nan array when <code>multiple</code>, and <code>null</code> when <code>ComboboxCancel</code> clears a single selection.</p>\n',
-    'type': '[value: ComboboxModelValue&lt;T, M&gt;, details: ChangeEventDetails&lt;ComboboxChangeReason, Event&gt;]'
+    'type': '[value: ComboboxModelValue&lt;AcceptableValue, boolean&gt;, details: ChangeEventDetails&lt;ComboboxChangeReason, Event&gt;]'
   },
   {
     'name': 'beforeUpdate:open',
@@ -170,12 +170,12 @@
   {
     'name': 'highlight',
     'description': '<p>Event handler when highlighted element changes.</p>\n',
-    'type': '[payload: { ref: HTMLElement; value: T; } | undefined]'
+    'type': '[payload: { ref: HTMLElement; value: AcceptableValue; } | undefined]'
   },
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes. The value is an array when <code>multiple</code>, and <code>null</code> when\n<code>ComboboxCancel</code> clears a single selection.</p>\n',
-    'type': '[value: ComboboxModelValue&lt;T, M&gt;, details: ChangeEventDetails&lt;ComboboxChangeReason, Event&gt;]'
+    'type': '[value: ComboboxModelValue&lt;AcceptableValue, boolean&gt;, details: ChangeEventDetails&lt;ComboboxChangeReason, Event&gt;]'
   },
   {
     'name': 'update:open',
@@ -211,18 +211,18 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how values are compared (a function runs for every value, strings included). Read once at setup: changing it after mount has no effect. | `string \| ((a: T, b: T) => boolean)` | No | - |
+| `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how values are compared (a function runs for every value, strings included). Read once at setup: changing it after mount has no effect. | `string \| ((a: AcceptableValue, b: AcceptableValue) => boolean)` | No | - |
 | `defaultOpen` | The open state of the combobox when it is initially rendered. \<br> Use when you do not need to control its open state. | `boolean` | No | - |
-| `defaultValue` | The value of the Combobox when initially rendered. Use when you do not need to control the state of the Combobox. | `T \| T[] \| null` | No | - |
+| `defaultValue` | The value of the Combobox when initially rendered. Use when you do not need to control the state of the Combobox. | `AcceptableValue \| AcceptableValue[] \| null` | No | - |
 | `dir` | The reading direction of the listbox when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When `true`, prevents the user from interacting with listbox | `boolean` | No | - |
-| `displayValue` | The text the input shows for the selected value of a single combobox, when `ComboboxInput` has no `displayValue` of its own. Without either, a primitive value shows as its string form and an object value as an empty input. | `((value: T) => string)` | No | - |
-| `filter` | Whether an item matches the search term: called as `filter(text, search, value)` with the item's `textValue` (or its text content; in a `ComboboxVirtualizer`, `textContent(option)`). Omitted, items are matched with `useFilter`'s `contains` (base sensitivity). `null` turns client filtering off: filter the items yourself, or on a server. | `ListboxFilterFunction<T> \| null` | No | - |
+| `displayValue` | The text the input shows for the selected value of a single combobox, when `ComboboxInput` has no `displayValue` of its own. Without either, a primitive value shows as its string form and an object value as an empty input. | `((value: AcceptableValue) => string)` | No | - |
+| `filter` | Whether an item matches the search term: called as `filter(text, search, value)` with the item's `textValue` (or its text content; in a `ComboboxVirtualizer`, `textContent(option)`). Omitted, items are matched with `useFilter`'s `contains` (base sensitivity). `null` turns client filtering off: filter the items yourself, or on a server. | `ListboxFilterFunction<AcceptableValue> \| null` | No | - |
 | `getNavigationIntent` | Resolves what a keydown in the input means for keyboard navigation. Return `undefined` to fall back to the default mapping, `null` to opt the key out (for Enter this also skips the selection), or `'select'` to select the highlighted item as Enter does. A `'next'` or `'prev'` intent also opens a closed popup. Unmodified printable keys, ArrowLeft and ArrowRight always stay text input. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null \| undefined)` | No | - |
 | `highlightOnHover` | When `true`, hover over item will trigger highlight | `boolean` | No | `true` |
 | `ignoreFilter` | Deprecated alias for `:filter="null"`: when `true`, turns client filtering off. Wins over `filter`. | `boolean` | No | - |
 | `loop` | When `true`, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
-| `modelValue` | The controlled value of the Combobox. Can be binded with `v-model`. An array when `multiple`; `null` is an empty single selection, the value `ComboboxCancel` emits when it clears one. | `T \| T[] \| null` | No | - |
+| `modelValue` | The controlled value of the Combobox. Can be binded with `v-model`. An array when `multiple`; `null` is an empty single selection, the value `ComboboxCancel` emits when it clears one. | `AcceptableValue \| AcceptableValue[] \| null` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `open` | The controlled open state of the Combobox. Can be binded with `v-model:open`. | `boolean` | No | - |
@@ -238,10 +238,10 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the value changes; call `details.cancel()` to keep the current value. The value is an array when `multiple`, and `null` when `ComboboxCancel` clears a single selection. | `[value: ComboboxModelValue<T, M>, details: ChangeEventDetails<ComboboxChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the value changes; call `details.cancel()` to keep the current value. The value is an array when `multiple`, and `null` when `ComboboxCancel` clears a single selection. | `[value: ComboboxModelValue<AcceptableValue, boolean>, details: ChangeEventDetails<ComboboxChangeReason, Event>]` |
 | `beforeUpdate:open` | Event handler called before the open state changes; call `details.cancel()` to keep it. | `[value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason, Event>]` |
-| `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: T; } \| undefined]` |
-| `update:modelValue` | Event handler called when the value changes. The value is an array when `multiple`, and `null` when `ComboboxCancel` clears a single selection. | `[value: ComboboxModelValue<T, M>, details: ChangeEventDetails<ComboboxChangeReason, Event>]` |
+| `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; } \| undefined]` |
+| `update:modelValue` | Event handler called when the value changes. The value is an array when `multiple`, and `null` when `ComboboxCancel` clears a single selection. | `[value: ComboboxModelValue<AcceptableValue, boolean>, details: ChangeEventDetails<ComboboxChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the combobox changes. | `[value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason, Event>]` |
 | `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 
