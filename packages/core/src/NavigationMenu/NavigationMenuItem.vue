@@ -36,6 +36,7 @@ import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import {
   focusFirst,
   getTabbableCandidates,
+  getTabbableNodes,
   makeContentId,
   removeFromTabOrder,
 } from './utils'
@@ -71,7 +72,9 @@ async function handleContentEntry(side = 'start') {
 function handleContentExit() {
   const el = document.getElementById(contentId)
   if (el) {
-    const candidates = getTabbableCandidates(el)
+    // Every radio, not only each group's tab stop: with the stop taken out of the tab
+    // order, the browser makes the other radios of its group tab stops.
+    const candidates = getTabbableNodes(el)
     if (candidates.length)
       restoreContentTabOrderRef = removeFromTabOrder(candidates)
   }

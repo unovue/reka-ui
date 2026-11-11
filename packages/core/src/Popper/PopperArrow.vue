@@ -18,7 +18,7 @@ import type { ComponentPublicInstance } from 'vue'
 import { computed } from 'vue'
 import { useForwardExpose } from '@/shared'
 import Arrow from '@/shared/component/Arrow.vue'
-import { injectPopperContentContext } from './PopperContent.vue'
+import { injectPopperContentContext } from './PopperContentContext'
 
 defineOptions({
   inheritAttrs: false,

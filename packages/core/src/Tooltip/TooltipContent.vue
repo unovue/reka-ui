@@ -1,5 +1,15 @@
 <script lang="ts">
 import type { TooltipContentImplEmits, TooltipContentImplProps } from './TooltipContentImpl.vue'
+import { defineAsyncComponent } from 'vue'
+
+const TooltipContentImpl = defineAsyncComponent({
+  loader: () => import('./TooltipContentImpl.vue'),
+  suspensible: false,
+})
+const TooltipContentHoverable = defineAsyncComponent({
+  loader: () => import('./TooltipContentHoverable.vue'),
+  suspensible: false,
+})
 
 export type TooltipContentEmits = TooltipContentImplEmits
 
@@ -15,8 +25,6 @@ export interface TooltipContentProps extends TooltipContentImplProps {
 <script setup lang="ts">
 import { Presence } from '@/Presence'
 import { useForwardExpose, useForwardPropsEmits } from '@/shared'
-import TooltipContentHoverable from './TooltipContentHoverable.vue'
-import TooltipContentImpl from './TooltipContentImpl.vue'
 import { injectTooltipRootContext } from './TooltipRoot.vue'
 
 const props = defineProps<TooltipContentProps>()

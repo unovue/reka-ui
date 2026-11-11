@@ -107,6 +107,8 @@ const isFormControl = useFormControl(currentElement)
     type="checkbox"
     :name="name"
     :value="modelValue"
+    :checked="!!modelValue"
+    :disabled="disabled"
     :required="required"
     v-bind="scopeIdAttrs"
   />
