@@ -2,7 +2,7 @@ import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, inject, nextTick, ref, shallowRef } from 'vue'
+import { defineComponent, h, inject, nextTick, reactive, ref, shallowRef } from 'vue'
 import { handleSubmit, sleep } from '@/test'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport, ComboboxVirtualizer } from '.'
 import Combobox from './story/_Combobox.vue'
@@ -737,6 +737,22 @@ describe('given a virtualized Combobox', () => {
       await flush()
 
       expect(wrapper.findAll('[role=option]')).toHaveLength(0)
+      expect(input.attributes('aria-activedescendant')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('should remove the highlight when the parent removes its option in place', async () => {
+      shown.value = reactive(options.slice())
+      const wrapper = mountOpenCombobox()
+      await flush()
+      const input = wrapper.find('input')
+      expect(wrapper.find('[data-highlighted]').text()).toBe('Item 0')
+
+      shown.value.splice(0, 1)
+      await flush()
+
+      expect(wrapper.find('[data-index="0"]').text()).toBe('Item 1')
+      expect(wrapper.find('[data-highlighted]').exists()).toBe(false)
       expect(input.attributes('aria-activedescendant')).toBeUndefined()
       wrapper.unmount()
     })
