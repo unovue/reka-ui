@@ -189,7 +189,9 @@ watch(contentElement, (el) => {
 
 onBeforeUnmount(() => {
   // Clear before a replacement registers its content, as the watcher stops on unmount.
-  menuContext.onContentChange(undefined)
+  // Another content may have registered since, so only clear our own registration.
+  if (menuContext.content.value === contentElement.value)
+    menuContext.onContentChange(undefined)
   window.clearTimeout(timerRef.value)
 })
 

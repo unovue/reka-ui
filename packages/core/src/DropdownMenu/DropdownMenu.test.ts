@@ -86,6 +86,74 @@ describe('given a DropdownMenu root that stays mounted', () => {
     }
   })
 
+  it('should keep the registered submenu content when an older one unmounts', async () => {
+    let menuContext!: ReturnType<typeof injectMenuContext>
+    const ContextProbe = defineComponent({
+      setup() {
+        menuContext = injectMenuContext()
+        return () => null
+      },
+    })
+    const showFirst = ref(true)
+    const showSecond = ref(false)
+    const wrapper = mount(defineComponent({
+      components: {
+        ContextProbe,
+        DropdownMenuRoot,
+        DropdownMenuTrigger,
+        DropdownMenuContent,
+        DropdownMenuSub,
+        DropdownMenuSubTrigger,
+        DropdownMenuSubContent,
+        DropdownMenuItem,
+      },
+      setup: () => ({ showFirst, showSecond }),
+      template: `<DropdownMenuRoot :open="true">
+        <DropdownMenuTrigger>Open</DropdownMenuTrigger>
+        <DropdownMenuContent @close-auto-focus.prevent>
+          <DropdownMenuSub :open="true">
+            <ContextProbe />
+            <DropdownMenuSubTrigger data-testid="sub-trigger">Submenu</DropdownMenuSubTrigger>
+            <DropdownMenuSubContent v-if="showFirst" data-testid="first-content">
+              <DropdownMenuItem>First Item</DropdownMenuItem>
+            </DropdownMenuSubContent>
+            <DropdownMenuSubContent v-if="showSecond" data-testid="second-content">
+              <DropdownMenuItem>Second Item</DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        </DropdownMenuContent>
+      </DropdownMenuRoot>`,
+    }), { attachTo: document.body })
+
+    try {
+      await flushPromises()
+      expect(menuContext.content.value).toBe(wrapper.get('[data-testid="first-content"]').element)
+
+      showSecond.value = true
+      await flushPromises()
+      const second = wrapper.get('[data-testid="second-content"]').element
+      expect(menuContext.content.value).toBe(second)
+
+      showFirst.value = false
+      await flushPromises()
+      expect(wrapper.find('[data-testid="first-content"]').exists()).toBe(false)
+      expect(menuContext.content.value).toBe(second)
+
+      const trigger = wrapper.get<HTMLElement>('[data-testid="sub-trigger"]')
+      trigger.element.focus()
+      expect(document.activeElement).toBe(trigger.element)
+      await trigger.trigger('keydown', { key: 'ArrowRight' })
+      expect(second.contains(document.activeElement)).toBe(true)
+
+      showSecond.value = false
+      await flushPromises()
+      expect(menuContext.content.value).toBeUndefined()
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
   it.each([true, false])('should release closed content with modal=%s', async (modal) => {
     let menuContext!: ReturnType<typeof injectMenuContext>
     const ContextProbe = defineComponent({
