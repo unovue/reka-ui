@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { findByText, fireEvent, render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import {
   DrawerClose,
   DrawerContent,
@@ -15,6 +15,7 @@ import {
   DrawerTrigger,
   DrawerViewport,
   DrawerVirtualKeyboardProvider,
+  injectDrawerRootContext,
 } from '.'
 
 const OPEN_TEXT = 'Open Drawer'
@@ -679,5 +680,59 @@ describe('given nested Drawers', () => {
     await fireEvent.click(getByText('Open parent'))
     await nextTick()
     expect(getByTestId('parent').style.getPropertyValue('--drawer-frontmost-height')).toBe(`${PARENT_HEIGHT}px`)
+  })
+})
+
+describe('given a Drawer root that stays mounted', () => {
+  function renderDrawer(contentProps: Record<string, unknown> = {}) {
+    let rootContext!: ReturnType<typeof injectDrawerRootContext>
+    const ContextProbe = defineComponent({
+      setup() {
+        rootContext = injectDrawerRootContext()
+        return () => null
+      },
+    })
+    const open = ref(false)
+    const result = render(defineComponent({
+      setup: () => () => h(DrawerRoot, { open: open.value }, () => [
+        h(ContextProbe),
+        h(DrawerTrigger, () => OPEN_TEXT),
+        h(DrawerContent, contentProps, () => [h(DrawerTitle, () => TITLE_TEXT), h(DrawerDescription, () => 'Description text')]),
+      ]),
+    }))
+    return { ...result, open, context: () => rootContext }
+  }
+
+  it('should release the closed content element', async () => {
+    const { open, context, unmount } = renderDrawer()
+
+    for (let cycle = 0; cycle < 2; cycle++) {
+      open.value = true
+      await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull())
+      expect(context().contentElement.value).toBe(document.querySelector('[role="dialog"]'))
+
+      open.value = false
+      await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeNull())
+      expect(context().contentElement.value).toBeUndefined()
+    }
+
+    unmount()
+  })
+
+  it('should keep a force-mounted content element registered while closed', async () => {
+    const { open, context, unmount } = renderDrawer({ forceMount: true })
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull())
+    const content = document.querySelector('[role="dialog"]')
+    expect(context().contentElement.value).toBe(content)
+
+    open.value = true
+    await nextTick()
+    open.value = false
+    await nextTick()
+    await nextTick()
+    expect(document.querySelector('[role="dialog"]')).toBe(content)
+    expect(context().contentElement.value).toBe(content)
+
+    unmount()
   })
 })

@@ -6,7 +6,7 @@ export interface AlertDialogCancelProps extends DialogCloseProps {}
 </script>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onBeforeUnmount, onMounted } from 'vue'
 import { DialogClose } from '@/Dialog'
 import { injectAlertDialogContentContext } from './AlertDialogContent.vue'
 
@@ -16,6 +16,10 @@ const { forwardRef, currentElement } = useForwardExpose()
 
 onMounted(() => {
   contentContext.onCancelElementChange(currentElement.value)
+})
+// `AlertDialogContent` stays mounted while closed, so it must not keep this element.
+onBeforeUnmount(() => {
+  contentContext.onCancelElementChange(undefined)
 })
 </script>
 
