@@ -111,6 +111,17 @@ watch(() => rootContext.frontmostHeight.value, (h) => {
   currentElement.value?.style.setProperty(DRAWER_CSS_VARS.frontmostHeight, `${h}px`)
 })
 
+// Report the frontmost height up the stack: this drawer's own height, or the
+// one its own nested drawer reported. Report 0 once it closes or unmounts, so
+// the parent falls back to its own height.
+watch(
+  [() => rootContext.open.value, () => rootContext.frontmostHeight.value],
+  ([isOpen, frontmostHeight]) => {
+    rootContext.notifyParentFrontmostHeight?.(isOpen ? frontmostHeight : 0)
+  },
+  { immediate: true },
+)
+
 // Swipe directions: when snap points exist, allow both dismiss AND expand directions
 const hasSnapPoints = computed(() => (rootContext.snapPoints.value?.length ?? 0) > 0)
 const swipeDirections = computed<SwipeDirection[]>(() => {
@@ -353,6 +364,15 @@ onMounted(() => {
   if (rootContext.open.value)
     listenForOpenComplete(true)
 
+  // Initial frontmost height. Required on reopen, when the height is already
+  // known from a previous open and the lazy watcher would never fire.
+  if (rootContext.frontmostHeight.value > 0) {
+    currentElement.value?.style.setProperty(
+      DRAWER_CSS_VARS.frontmostHeight,
+      `${rootContext.frontmostHeight.value}px`,
+    )
+  }
+
   // Initial nested-drawer count
   currentElement.value?.style.setProperty(
     DRAWER_CSS_VARS.nestedDrawers,
@@ -372,6 +392,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   rootContext.notifyParentHasNestedDrawer?.(false)
+  rootContext.notifyParentFrontmostHeight?.(0)
   unsubscribeNestedProgress?.()
   clearOpenCompleteListener()
 })
