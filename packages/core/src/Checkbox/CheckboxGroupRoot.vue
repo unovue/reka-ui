@@ -60,6 +60,10 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
 }) as Ref<T[]>
 
+// Without a `name`, render the field only while a required group is empty, so the
+// checked values never become unnamed form fields.
+const showHiddenInput = computed(() => isFormControl.value && (!!props.name || (props.required && !modelValue.value?.length)))
+
 const rovingFocusProps = computed(() => {
   return rovingFocus.value ? { loop: props.loop, dir: dir.value, orientation: props.orientation } : {}
 })
@@ -83,10 +87,11 @@ provideCheckboxGroupRootContext({
     <slot />
 
     <VisuallyHiddenInput
-      v-if="isFormControl && name"
-      :name="name"
+      v-if="showHiddenInput"
+      :name="name ?? ''"
       :value="modelValue"
       :required="required"
+      :disabled="disabled"
     />
   </component>
 </template>

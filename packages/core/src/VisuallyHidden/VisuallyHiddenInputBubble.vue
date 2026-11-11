@@ -33,7 +33,10 @@ watch(valueState, (cur, prev) => {
 
   const input = currentElement.value as HTMLInputElement
   const inputProto = window.HTMLInputElement.prototype
-  const descriptor = Object.getOwnPropertyDescriptor(inputProto, 'value') as PropertyDescriptor
+  // A checkable input changes its `checked` state; writing the state to `value`
+  // would replace the value the form submits.
+  const property = props.checked === undefined ? 'value' : 'checked'
+  const descriptor = Object.getOwnPropertyDescriptor(inputProto, property) as PropertyDescriptor
   const setValue = descriptor.set
   if (setValue && cur !== prev) {
     const inputEvent = new Event('input', { bubbles: true })
@@ -42,7 +45,7 @@ watch(valueState, (cur, prev) => {
     input.dispatchEvent(inputEvent)
     input.dispatchEvent(changeEvent)
   }
-})
+}, { flush: 'post' })
 </script>
 
 <template>

@@ -28,7 +28,7 @@ const useBodyLockStackCount = createSharedComposable(() => {
     scrollBody: ref(true),
   })
 
-  let stopTouchMoveListener: Fn | null = null
+  let stopTouchListeners: Fn | null = null
 
   const resetBodyStyle = () => {
     document.body.style.paddingRight = ''
@@ -37,7 +37,7 @@ const useBodyLockStackCount = createSharedComposable(() => {
     releaseBodyPointerEvents(document, pointerEventsOwner)
     document.documentElement.style.removeProperty('--scrollbar-width')
     document.body.style.overflow = initialOverflow.value ?? ''
-    isIOS && stopTouchMoveListener?.()
+    isIOS && stopTouchListeners?.()
 
     initialOverflow.value = undefined
   }
@@ -75,12 +75,43 @@ const useBodyLockStackCount = createSharedComposable(() => {
     }
 
     if (isIOS) {
-      stopTouchMoveListener = useEventListener(
+      let touchStart: { identifier: number, x: number, y: number } | undefined
+
+      // Only `touchmove` cancels, so gesture tracking stays passive and never delays scrolling.
+      const stopTrackingListener = useEventListener(
+        document,
+        ['touchstart', 'touchend', 'touchcancel'],
+        (e: TouchEvent) => {
+          const touch = e.touches[0]
+          touchStart = e.type === 'touchstart' && e.touches.length === 1
+            ? { identifier: touch.identifier, x: touch.clientX, y: touch.clientY }
+            : undefined
+        },
+        { passive: true },
+      )
+
+      const stopTouchMoveListener = useEventListener(
         document,
         'touchmove',
-        (e: TouchEvent) => preventDefault(e),
+        (e: TouchEvent) => {
+          const touch = e.touches[0]
+          // iOS can report subpixel coordinate noise as a move; cancelling it suppresses the tap's click.
+          if (touchStart && e.touches.length === 1 && touch.identifier === touchStart.identifier
+            && Math.hypot(touch.clientX - touchStart.x, touch.clientY - touchStart.y) <= 0.01) {
+            return
+          }
+
+          // Once the gesture moves, returning to its origin must not make it a tap again.
+          touchStart = undefined
+          preventDefault(e)
+        },
         { passive: false },
       )
+
+      stopTouchListeners = () => {
+        stopTrackingListener()
+        stopTouchMoveListener()
+      }
     }
 
     nextTick(() => {
