@@ -91,6 +91,8 @@ function isSameRadioGroup(a: Element | null, b: Element | null) {
  * none is checked. The other radios still report `tabIndex` 0, so drop them from `candidates`.
  * Only a checked radio that is itself a visible candidate counts, so a group whose checked
  * radio can't be tabbed to (or sits outside the container) keeps its other radios.
+ * The focused radio is kept even when it is not its group's tab stop (it can be focused
+ * from script), so that Tab is worked out from where focus actually is.
  */
 export function keepRadioTabStops(candidates: HTMLElement[], container: HTMLElement) {
   const checkedRadios = candidates.filter((candidate): candidate is HTMLInputElement =>
@@ -98,27 +100,33 @@ export function keepRadioTabStops(candidates: HTMLElement[], container: HTMLElem
   )
   if (!checkedRadios.length)
     return candidates
+  const focusedElement = getActiveElement()
   return candidates.filter(candidate =>
-    !isRadioInput(candidate) || checkedRadios.includes(candidate)
+    !isRadioInput(candidate) || candidate === focusedElement || checkedRadios.includes(candidate)
     || !checkedRadios.some(checked => isSameRadioGroup(checked, candidate)),
   )
 }
 
 /**
  * Returns the tab stops that follow `element` in `candidates`, which are given in tabbing order.
- * Tab never stays inside a native radio group, and enters a group with nothing checked at
- * its first radio in tabbing order, so the other radios of a group are not tab stops. A
- * radio that is not a candidate itself is placed at the radio of its group that is.
+ * A native radio group is entered at its checked radio or, with nothing checked, at its first
+ * radio in tabbing order that can be seen. Its other radios are not tab stops, so Tab from a
+ * radio never lands on an unchecked radio of the same group. A radio that is not a candidate
+ * itself (e.g. `tabindex="-1"`) is placed at the radio of its group that is.
  */
 export function getTabStopsAfter(candidates: HTMLElement[], element: Element | null) {
   let index = candidates.indexOf(element as HTMLElement)
   if (index === -1)
     index = candidates.findIndex(candidate => isSameRadioGroup(candidate, element))
-  const groups: HTMLInputElement[] = []
+  // Starting with the focused radio leaves out the unchecked radios of its group on both sides of it.
+  const groups: Element[] = isRadioInput(element) ? [element] : []
   return candidates.filter((candidate, i) => {
     if (!isRadioInput(candidate) || candidate.name === '')
       return i > index
-    if (groups.some(radio => isSameRadioGroup(radio, candidate)))
+    // A hidden radio can't take focus, so it must not stand in for the radios of its group that can.
+    if (isHidden(candidate, {}))
+      return false
+    if (!candidate.checked && groups.some(radio => isSameRadioGroup(radio, candidate)))
       return false
     groups.push(candidate)
     return i > index

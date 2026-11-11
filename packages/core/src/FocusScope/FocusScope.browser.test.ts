@@ -2,7 +2,7 @@ import type { VNode } from 'vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, vShow, withDirectives } from 'vue'
 import { FocusScope } from '.'
 import { getTabbableCandidates } from './utils'
 
@@ -172,6 +172,76 @@ describe('given a trapped FocusScope with a native radio group, in a real browse
     expect(document.activeElement).toBe(get('q'))
     await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
     expect(document.activeElement).toBe(get('middle'))
+  })
+})
+
+// A radio that is not rendered can't take focus, so the group's tab stop is its first radio
+// (in tabbing order) that is.
+describe('given a trapped FocusScope with a partly hidden radio group, in a real browser', () => {
+  it('reaches the group with Tab when its first radio has visibility: hidden', async () => {
+    const get = mountChildren(() => [button('button'), radio('size', 'a', { style: 'visibility: hidden' }), radio('size', 'b')])
+    await expect.poll(() => document.activeElement).toBe(get('button'))
+
+    await userEvent.keyboard('{Tab}')
+    expect(document.activeElement).toBe(get('b'))
+    await userEvent.keyboard('{Tab}')
+    expect(document.activeElement).toBe(get('button'))
+  })
+
+  it('reaches the group with Tab when its first radio is hidden by v-show', async () => {
+    const get = mountChildren(() => [
+      button('button'),
+      withDirectives(radio('size', 'a'), [[vShow, false]]),
+      radio('size', 'b'),
+      radio('size', 'c'),
+    ])
+    await expect.poll(() => document.activeElement).toBe(get('button'))
+
+    await userEvent.keyboard('{Tab}')
+    expect(document.activeElement).toBe(get('b'))
+    await userEvent.keyboard('{Tab}')
+    expect(document.activeElement).toBe(get('button'))
+  })
+
+  it('reaches the group with Shift+Tab when its last radio has display: none', async () => {
+    const get = mountChildren(() => [radio('size', 'a'), radio('size', 'b'), radio('size', 'c', { style: 'display: none' }), button('button')])
+    await expect.poll(() => document.activeElement).toBe(get('a'))
+
+    await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+    expect(document.activeElement).toBe(get('button'))
+    await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+    expect([get('a'), get('b')]).toContain(document.activeElement)
+    await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+    expect(document.activeElement).toBe(get('button'))
+  })
+})
+
+// Script can focus a radio that is not its group's tab stop. Tab then moves on from that radio.
+describe('given a trapped FocusScope with focus on an unchecked radio of a checked group, in a real browser', () => {
+  const children = () => [button('1'), radio('size', 'a'), button('2'), radio('size', 'c', { checked: true })]
+
+  it('moves Tab to the element after the focused radio', async () => {
+    const get = mountChildren(children)
+    await expect.poll(() => document.activeElement).toBe(get('1'))
+
+    get('a')!.focus()
+    await userEvent.keyboard('{Tab}')
+    expect(document.activeElement).toBe(get('2'))
+    await userEvent.keyboard('{Tab}')
+    expect(document.activeElement).toBe(get('c'))
+    await userEvent.keyboard('{Tab}')
+    expect(document.activeElement).toBe(get('1'))
+  })
+
+  it('moves Shift+Tab to the element before the focused radio', async () => {
+    const get = mountChildren(children)
+    await expect.poll(() => document.activeElement).toBe(get('1'))
+
+    get('a')!.focus()
+    await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+    expect(document.activeElement).toBe(get('1'))
+    await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+    expect(document.activeElement).toBe(get('c'))
   })
 })
 
