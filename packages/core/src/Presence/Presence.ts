@@ -82,6 +82,10 @@ export default defineComponent({
         return h(slots.default({ present: isPresent.value })[0] as VNode, {
           ref: (v) => {
             const el = unrefElement(v as HTMLElement)
+            if (!el) {
+              node.value = undefined
+              return el
+            }
             if (typeof el?.hasAttribute === 'undefined')
               return el
 

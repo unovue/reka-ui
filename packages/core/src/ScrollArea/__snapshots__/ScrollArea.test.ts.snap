@@ -21,7 +21,7 @@ exports[`given default ScrollArea > on hover > should render scrollbar 1`] = `
     }
   </style>
   <div style="position: absolute; top: 0px; right: 0px; bottom: var(--reka-scroll-area-corner-height); --reka-scroll-area-thumb-height: 18px;" data-scrollbarimpl="" data-orientation="vertical" data-state="visible">
-    <div data-state="visible" style="width: var(--reka-scroll-area-thumb-width); height: var(--reka-scroll-area-thumb-height);"></div>
+    <div data-state="hidden" style="width: var(--reka-scroll-area-thumb-width); height: var(--reka-scroll-area-thumb-height);"></div>
   </div>
   <!--v-if-->
 </div>"
@@ -73,7 +73,7 @@ exports[`given prop:type="always" ScrollArea > should render content and scrollb
     }
   </style>
   <div style="position: absolute; top: 0px; right: 0px; bottom: var(--reka-scroll-area-corner-height); --reka-scroll-area-thumb-height: 18px;" data-scrollbarimpl="" data-orientation="vertical" data-state="visible">
-    <div data-state="visible" style="width: var(--reka-scroll-area-thumb-width); height: var(--reka-scroll-area-thumb-height);"></div>
+    <div data-state="hidden" style="width: var(--reka-scroll-area-thumb-width); height: var(--reka-scroll-area-thumb-height);"></div>
   </div>
   <!--v-if-->
 </div>"
@@ -100,7 +100,7 @@ exports[`given prop:type="scroll" ScrollArea > on scroll > should render scrollb
     }
   </style>
   <div style="position: absolute; top: 0px; right: 0px; bottom: var(--reka-scroll-area-corner-height); --reka-scroll-area-thumb-height: 18px;" data-scrollbarimpl="" data-orientation="vertical" data-state="visible">
-    <div data-state="visible" style="width: var(--reka-scroll-area-thumb-width); height: var(--reka-scroll-area-thumb-height);"></div>
+    <div data-state="hidden" style="width: var(--reka-scroll-area-thumb-width); height: var(--reka-scroll-area-thumb-height);"></div>
   </div>
   <!--v-if-->
 </div>"
