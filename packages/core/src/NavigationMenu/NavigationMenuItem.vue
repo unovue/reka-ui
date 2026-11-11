@@ -36,6 +36,7 @@ import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import {
   focusFirst,
   getTabbableCandidates,
+  getTabbableNodes,
   makeContentId,
   removeFromTabOrder,
 } from './utils'
@@ -71,13 +72,15 @@ async function handleContentEntry(side = 'start') {
 function handleContentExit() {
   const el = document.getElementById(contentId)
   if (el) {
-    const candidates = getTabbableCandidates(el)
+    // Every radio, not only each group's tab stop: with the stop taken out of the tab
+    // order, the browser makes the other radios of its group tab stops.
+    const candidates = getTabbableNodes(el)
     if (candidates.length)
       restoreContentTabOrderRef = removeFromTabOrder(candidates)
   }
 }
 
-provideNavigationMenuItemContext({
+const itemContext = provideNavigationMenuItemContext({
   value,
   contentId,
   triggerRef,
@@ -91,12 +94,20 @@ provideNavigationMenuItemContext({
 
 function handleClose() {
   context.onItemDismiss()
-  triggerRef.value?.focus()
+  itemContext.triggerRef.value?.focus()
 }
 
 function handleKeydown(ev: KeyboardEvent) {
   const currentFocus = getActiveElement() as HTMLElement
-  if (ev.keyCode === 32 || ev.key === 'Enter') {
+  if (ev.keyCode === 32) {
+    // Only the trigger of this item toggles; links and nested items keep their own behaviour.
+    // `NavigationMenuTrigger` replaces `itemContext.triggerRef` with its element ref on mount.
+    if (ev.target !== itemContext.triggerRef.value)
+      return
+    if (ev.repeat) {
+      ev.preventDefault()
+      return
+    }
     if (context.modelValue.value === value) {
       handleClose()
       ev.preventDefault()

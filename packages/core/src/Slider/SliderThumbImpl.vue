@@ -42,12 +42,27 @@ const thumbInBoundsOffset = computed(() => {
 })
 
 const isMounted = useMounted()
+// Keep the mounted element: the template ref is already null by the time `onUnmounted` runs.
+let mountedThumb: HTMLElement | undefined
 onMounted(() => {
-  rootContext.thumbElements.value.push(thumbElement.value)
+  mountedThumb = thumbElement.value
+  const thumbs = rootContext.thumbElements.value
+  // Insert in DOM order: thumb indexes come from the collection, so a reinserted thumb must not land at the end.
+  const next = thumbs.findIndex(thumb => mountedThumb!.compareDocumentPosition(thumb) & Node.DOCUMENT_POSITION_FOLLOWING)
+  thumbs.splice(next === -1 ? thumbs.length : next, 0, mountedThumb)
 })
 onUnmounted(() => {
-  const i = rootContext.thumbElements.value.findIndex(i => i === thumbElement.value) ?? -1
-  rootContext.thumbElements.value.splice(i, 1)
+  const thumbs = rootContext.thumbElements.value
+  const i = thumbs.indexOf(mountedThumb!)
+  mountedThumb = undefined
+  if (i === -1)
+    return
+  thumbs.splice(i, 1)
+  // Keep the active index pointing at the same thumb, or at a thumb that still exists.
+  const active = rootContext.valueIndexToChangeRef
+  if (i < active.value)
+    active.value--
+  active.value = Math.min(active.value, Math.max(thumbs.length - 1, 0))
 })
 </script>
 

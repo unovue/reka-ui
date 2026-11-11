@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { findByText, fireEvent, render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import {
   DrawerClose,
   DrawerContent,
@@ -15,6 +15,7 @@ import {
   DrawerTrigger,
   DrawerViewport,
   DrawerVirtualKeyboardProvider,
+  injectDrawerRootContext,
 } from '.'
 
 const OPEN_TEXT = 'Open Drawer'
@@ -558,5 +559,180 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
 
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('requires a `DrawerViewport`'))
     warn.mockRestore()
+  })
+})
+
+describe('update:openComplete', () => {
+  const DrawerWithOpenComplete = defineComponent({
+    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerContent, DrawerTitle, DrawerClose },
+    props: {
+      onOpenComplete: { type: Function, required: true },
+    },
+    template: `
+      <DrawerRoot @update:open-complete="onOpenComplete">
+        <DrawerTrigger>Open</DrawerTrigger>
+        <DrawerPortal>
+          <DrawerContent>
+            <DrawerTitle>T</DrawerTitle>
+            <DrawerClose>Close</DrawerClose>
+          </DrawerContent>
+        </DrawerPortal>
+      </DrawerRoot>
+    `,
+  })
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('emits true once the enter animation ends', async () => {
+    const onOpenComplete = vi.fn()
+    const { getByText, getByRole } = render(DrawerWithOpenComplete, { props: { onOpenComplete } })
+    await fireEvent.click(getByText('Open'))
+    await nextTick()
+    expect(onOpenComplete).not.toHaveBeenCalled()
+
+    getByRole('dialog').dispatchEvent(new Event('animationend'))
+    expect(onOpenComplete).toHaveBeenCalledTimes(1)
+    expect(onOpenComplete).toHaveBeenCalledWith(true)
+  })
+})
+
+describe('given nested Drawers', () => {
+  const PARENT_HEIGHT = 400
+  const NESTED_HEIGHT = 240
+
+  class ResizeObserverStub {
+    constructor(private cb: ResizeObserverCallback) {}
+    observe(target: Element) {
+      queueMicrotask(() => this.cb([{ target, contentRect: { height: (target as HTMLElement).dataset.testid === 'child' ? NESTED_HEIGHT : PARENT_HEIGHT } } as unknown as ResizeObserverEntry], this as unknown as ResizeObserver))
+    }
+
+    unobserve() {}
+    disconnect() {}
+  }
+
+  const NestedDrawerTest = defineComponent({
+    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerContent, DrawerTitle, DrawerClose },
+    template: `
+      <DrawerRoot>
+        <DrawerTrigger>Open parent</DrawerTrigger>
+        <DrawerPortal>
+          <DrawerContent data-testid="parent">
+            <DrawerTitle>Parent</DrawerTitle>
+            <DrawerClose>Close parent</DrawerClose>
+            <DrawerRoot>
+              <DrawerTrigger>Open child</DrawerTrigger>
+              <DrawerPortal>
+                <DrawerContent data-testid="child">
+                  <DrawerTitle>Child</DrawerTitle>
+                  <DrawerClose>Close child</DrawerClose>
+                </DrawerContent>
+              </DrawerPortal>
+            </DrawerRoot>
+          </DrawerContent>
+        </DrawerPortal>
+      </DrawerRoot>
+    `,
+  })
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.stubGlobal('ResizeObserver', ResizeObserverStub)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('exposes the nested drawer height as `--drawer-frontmost-height` on the parent', async () => {
+    const { getByText, getByTestId } = render(NestedDrawerTest)
+    await fireEvent.click(getByText('Open parent'))
+    await fireEvent.click(await findByText(document.body, 'Open child'))
+    await new Promise(resolve => setTimeout(resolve))
+    await nextTick()
+    expect(getByTestId('parent').style.getPropertyValue('--drawer-frontmost-height')).toBe(`${NESTED_HEIGHT}px`)
+  })
+
+  it('falls back to its own height, never `0px`, once the nested drawer closes', async () => {
+    const { getByText, getByTestId } = render(NestedDrawerTest)
+    await fireEvent.click(getByText('Open parent'))
+    await fireEvent.click(await findByText(document.body, 'Open child'))
+    await new Promise(resolve => setTimeout(resolve))
+    await nextTick()
+
+    await fireEvent.click(getByText('Close child'))
+    await nextTick()
+    const frontmostHeight = getByTestId('parent').style.getPropertyValue('--drawer-frontmost-height')
+    expect(frontmostHeight).not.toBe('0px')
+    expect(frontmostHeight).toBe(`${PARENT_HEIGHT}px`)
+  })
+
+  it('exposes its own height while no nested drawer is open, also after reopening', async () => {
+    const { getByText, getByTestId } = render(NestedDrawerTest)
+    await fireEvent.click(getByText('Open parent'))
+    await new Promise(resolve => setTimeout(resolve))
+    await nextTick()
+    expect(getByTestId('parent').style.getPropertyValue('--drawer-frontmost-height')).toBe(`${PARENT_HEIGHT}px`)
+
+    await fireEvent.click(getByText('Close parent'))
+    await nextTick()
+    await fireEvent.click(getByText('Open parent'))
+    await nextTick()
+    expect(getByTestId('parent').style.getPropertyValue('--drawer-frontmost-height')).toBe(`${PARENT_HEIGHT}px`)
+  })
+})
+
+describe('given a Drawer root that stays mounted', () => {
+  function renderDrawer(contentProps: Record<string, unknown> = {}) {
+    let rootContext!: ReturnType<typeof injectDrawerRootContext>
+    const ContextProbe = defineComponent({
+      setup() {
+        rootContext = injectDrawerRootContext()
+        return () => null
+      },
+    })
+    const open = ref(false)
+    const result = render(defineComponent({
+      setup: () => () => h(DrawerRoot, { open: open.value }, () => [
+        h(ContextProbe),
+        h(DrawerTrigger, () => OPEN_TEXT),
+        h(DrawerContent, contentProps, () => [h(DrawerTitle, () => TITLE_TEXT), h(DrawerDescription, () => 'Description text')]),
+      ]),
+    }))
+    return { ...result, open, context: () => rootContext }
+  }
+
+  it('should release the closed content element', async () => {
+    const { open, context, unmount } = renderDrawer()
+
+    for (let cycle = 0; cycle < 2; cycle++) {
+      open.value = true
+      await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull())
+      expect(context().contentElement.value).toBe(document.querySelector('[role="dialog"]'))
+
+      open.value = false
+      await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeNull())
+      expect(context().contentElement.value).toBeUndefined()
+    }
+
+    unmount()
+  })
+
+  it('should keep a force-mounted content element registered while closed', async () => {
+    const { open, context, unmount } = renderDrawer({ forceMount: true })
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull())
+    const content = document.querySelector('[role="dialog"]')
+    expect(context().contentElement.value).toBe(content)
+
+    open.value = true
+    await nextTick()
+    open.value = false
+    await nextTick()
+    await nextTick()
+    expect(document.querySelector('[role="dialog"]')).toBe(content)
+    expect(context().contentElement.value).toBe(content)
+
+    unmount()
   })
 })

@@ -93,7 +93,7 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import type { EventHookOn } from '@vueuse/core'
 import { createEventHook, useVModel } from '@vueuse/core'
-import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs } from 'vue'
+import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 import { ListboxRoot } from '@/Listbox'
 import { PopperRoot } from '@/Popper'
 import { useComboboxContentPositioning } from './useComboboxContentPositioning'
@@ -135,13 +135,18 @@ const open = useVModel(props, 'open', emits, {
   passive: (props.open === undefined) as false,
 }) as Ref<boolean>
 
+// `true` while `onOpenChange` is opening the list and will highlight the selected item itself
+let isOpeningInternally = false
+
 async function onOpenChange(val: boolean) {
+  isOpeningInternally = val
   open.value = val
   filterSearch.value = ''
 
   if (val) {
     // make sure dom is ready then only highlight the selected
     await nextTick()
+    isOpeningInternally = false
     primitiveElement.value?.highlightSelected()
     isUserInputted.value = true
     inputElement.value?.focus()
@@ -163,6 +168,23 @@ const triggerElement = ref<HTMLElement>()
 
 const highlightedElement = computed(() => primitiveElement.value?.highlightedElement ?? undefined)
 const contentPositioning = useComboboxContentPositioning(open)
+
+watch([open, highlightedElement], ([isOpen], [wasOpen]) => {
+  const listbox = primitiveElement.value
+  if (!listbox)
+    return
+
+  if (!isOpen) {
+    // Items that stay mounted while closed (`unmountOnHide: false`) are still connected,
+    // so Enter would select the highlighted one. Nothing is highlighted while closed.
+    if (highlightedElement.value)
+      listbox.highlightedElement = null
+  }
+  // Opened by the parent through `open`: bring back the highlight those items lost while closed.
+  else if (!wasOpen && !isOpeningInternally && !highlightedElement.value && listbox.getItems().length) {
+    listbox.highlightSelected()
+  }
+})
 
 const allItems = ref<Map<string, string>>(new Map())
 const allGroups = ref<Map<string, Set<string>>>(new Map())

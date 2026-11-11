@@ -156,6 +156,7 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
       :aria-controls="contentId"
       :as-child="props.asChild"
       :as="as"
+      :type="as === 'button' ? 'button' : undefined"
       v-bind="$attrs"
       @pointerenter="handlePointerEnter"
       @pointermove="handlePointerMove"
@@ -174,7 +175,7 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
       @focus="handleVisuallyHiddenFocus"
     />
     <span
-      v-if="menuContext.viewport"
+      v-if="menuContext.viewport.value"
       :aria-owns="contentId"
     />
   </template>

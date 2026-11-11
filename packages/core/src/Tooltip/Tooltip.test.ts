@@ -2,7 +2,7 @@ import type { VueWrapper } from '@vue/test-utils'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 import { injectPopperRootContext } from '@/Popper'
 import Tooltip from './stories/_Tooltip.vue'
 import TooltipContent from './TooltipContent.vue'
@@ -40,12 +40,13 @@ describe('given default Tooltip', () => {
     expect(await axe(wrapper.element)).toHaveNoViolations()
 
     await wrapper.find('button').trigger('focus')
+    await vi.waitFor(() => expect(document.body.innerHTML).toContain('Add to library'))
     expect(await axe(document.body)).toHaveNoViolations()
   })
 
   it('should open when focus', async () => {
     await wrapper.find('button').trigger('focus')
-    expect(document.body.innerHTML).toContain('Add to library')
+    await vi.waitFor(() => expect(document.body.innerHTML).toContain('Add to library'))
   })
 
   describe('after focusing out', () => {
@@ -70,7 +71,7 @@ describe('given default Tooltip', () => {
 
   it('should close when another tooltip broadcasts that it opened', async () => {
     await wrapper.find('button').trigger('focus')
-    expect(document.body.innerHTML).toContain('Add to library')
+    await vi.waitFor(() => expect(document.body.innerHTML).toContain('Add to library'))
 
     document.dispatchEvent(new CustomEvent(TOOLTIP_OPEN))
     await flushPromises()
@@ -109,7 +110,7 @@ describe('given tooltip within TooltipProvider', () => {
 
     expect(tooltipContentImpl.props('content')).toBe(undefined)
 
-    expect(tooltipContentImpl.html()).toContain('data-side="top"')
+    await vi.waitFor(() => expect(tooltipContentImpl.html()).toContain('data-side="top"'))
 
     await wrapper.setProps({
       tooltipProvider: {
@@ -176,7 +177,7 @@ describe('given a tooltip trigger whose element is replaced after mount', () => 
 
   it('should still close on pointerleave after the trigger element is replaced', async () => {
     await wrapper.find('button').trigger('focus')
-    expect(document.body.innerHTML).toContain('tooltip content')
+    await vi.waitFor(() => expect(document.body.innerHTML).toContain('tooltip content'))
 
     wrapper.vm.tag = 'a'
     await flushPromises()
@@ -194,6 +195,7 @@ describe('given a tooltip trigger whose element is replaced after mount', () => 
 
   it('should stop listening on the replaced trigger element', async () => {
     await wrapper.find('button').trigger('focus')
+    await vi.waitFor(() => expect(document.body.innerHTML).toContain('tooltip content'))
     const replacedTrigger = wrapper.find('button').element as HTMLElement
 
     wrapper.vm.tag = 'a'
@@ -262,7 +264,7 @@ describe('given stacked tooltips whose content covers another trigger', () => {
     document.body.innerHTML = ''
     wrapper = mount(StackedTooltips, { attachTo: document.body })
     await wrapper.find('[data-testid="trigger-2"]').trigger('focus')
-    expect(getContent()).not.toBeNull()
+    await vi.waitFor(() => expect(getContent()).not.toBeNull())
   })
 
   afterEach(async () => {
@@ -328,5 +330,65 @@ describe('given stacked tooltips whose content covers another trigger', () => {
 
     await expect(pointerMove(content)).resolves.not.toThrow()
     expect(getContent()).not.toBeNull()
+  })
+})
+
+describe('given a tooltip trigger inside a form', () => {
+  function mountInForm(triggerProps: Record<string, unknown> = {}) {
+    const onSubmit = vi.fn((event: Event) => event.preventDefault())
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h('form', { onSubmit }, [
+          h(TooltipProvider, null, () => h(TooltipRoot, null, () => [
+            h(TooltipTrigger, { 'data-testid': 'trigger', ...triggerProps }, () => 'trigger'),
+          ])),
+        ])
+      },
+    }), { attachTo: document.body })
+    return { onSubmit, trigger: wrapper.get('[data-testid="trigger"]') }
+  }
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should not submit the form when the trigger is clicked', async () => {
+    const { trigger, onSubmit } = mountInForm()
+
+    expect(trigger.attributes('type')).toBe('button')
+    await trigger.trigger('click')
+
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('should keep an explicit type', async () => {
+    const { trigger, onSubmit } = mountInForm({ type: 'submit' })
+
+    expect(trigger.attributes('type')).toBe('submit')
+    await trigger.trigger('click')
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+  })
+
+  it('should keep the type of an asChild button', () => {
+    const wrapper = mount(() => h(TooltipProvider, null, () => h(TooltipRoot, null, () => [
+      h(TooltipTrigger, { asChild: true }, () => h('button', { type: 'submit' }, 'save')),
+    ])), { attachTo: document.body })
+
+    expect(wrapper.get('button').attributes('type')).toBe('submit')
+  })
+
+  it('should not add a type to an asChild child', () => {
+    const wrapper = mount(() => h(TooltipProvider, null, () => h(TooltipRoot, null, () => [
+      h(TooltipTrigger, { asChild: true }, () => h('input', { 'aria-label': 'name' })),
+    ])), { attachTo: document.body })
+
+    expect(wrapper.get('input').attributes('type')).toBeUndefined()
+  })
+
+  it('should not set a type when not rendered as a button', () => {
+    const { trigger } = mountInForm({ as: 'span' })
+
+    expect(trigger.attributes('type')).toBeUndefined()
   })
 })
