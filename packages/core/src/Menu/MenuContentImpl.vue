@@ -377,6 +377,7 @@ provideMenuContentContext({
       >
         <PopperContent
           :ref="forwardRef"
+          scope="menu"
           role="menu"
           :as="as"
           :as-child="asChild"
