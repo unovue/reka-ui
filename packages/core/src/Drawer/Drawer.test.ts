@@ -600,7 +600,6 @@ describe('update:openComplete', () => {
 describe('given nested Drawers', () => {
   const PARENT_HEIGHT = 400
   const NESTED_HEIGHT = 240
-  const originalResizeObserver = globalThis.ResizeObserver
 
   class ResizeObserverStub {
     constructor(private cb: ResizeObserverCallback) {}
@@ -620,6 +619,7 @@ describe('given nested Drawers', () => {
         <DrawerPortal>
           <DrawerContent data-testid="parent">
             <DrawerTitle>Parent</DrawerTitle>
+            <DrawerClose>Close parent</DrawerClose>
             <DrawerRoot>
               <DrawerTrigger>Open child</DrawerTrigger>
               <DrawerPortal>
@@ -637,11 +637,11 @@ describe('given nested Drawers', () => {
 
   beforeEach(() => {
     document.body.innerHTML = ''
-    ;(globalThis as any).ResizeObserver = ResizeObserverStub
+    vi.stubGlobal('ResizeObserver', ResizeObserverStub)
   })
 
   afterEach(() => {
-    ;(globalThis as any).ResizeObserver = originalResizeObserver
+    vi.unstubAllGlobals()
   })
 
   it('exposes the nested drawer height as `--drawer-frontmost-height` on the parent', async () => {
@@ -651,9 +651,33 @@ describe('given nested Drawers', () => {
     await new Promise(resolve => setTimeout(resolve))
     await nextTick()
     expect(getByTestId('parent').style.getPropertyValue('--drawer-frontmost-height')).toBe(`${NESTED_HEIGHT}px`)
+  })
+
+  it('falls back to its own height, never `0px`, once the nested drawer closes', async () => {
+    const { getByText, getByTestId } = render(NestedDrawerTest)
+    await fireEvent.click(getByText('Open parent'))
+    await fireEvent.click(await findByText(document.body, 'Open child'))
+    await new Promise(resolve => setTimeout(resolve))
+    await nextTick()
 
     await fireEvent.click(getByText('Close child'))
     await nextTick()
-    expect(getByTestId('parent').style.getPropertyValue('--drawer-frontmost-height')).toBe('0px')
+    const frontmostHeight = getByTestId('parent').style.getPropertyValue('--drawer-frontmost-height')
+    expect(frontmostHeight).not.toBe('0px')
+    expect(frontmostHeight).toBe(`${PARENT_HEIGHT}px`)
+  })
+
+  it('exposes its own height while no nested drawer is open, also after reopening', async () => {
+    const { getByText, getByTestId } = render(NestedDrawerTest)
+    await fireEvent.click(getByText('Open parent'))
+    await new Promise(resolve => setTimeout(resolve))
+    await nextTick()
+    expect(getByTestId('parent').style.getPropertyValue('--drawer-frontmost-height')).toBe(`${PARENT_HEIGHT}px`)
+
+    await fireEvent.click(getByText('Close parent'))
+    await nextTick()
+    await fireEvent.click(getByText('Open parent'))
+    await nextTick()
+    expect(getByTestId('parent').style.getPropertyValue('--drawer-frontmost-height')).toBe(`${PARENT_HEIGHT}px`)
   })
 })

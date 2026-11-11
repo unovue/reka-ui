@@ -112,11 +112,12 @@ watch(() => rootContext.frontmostHeight.value, (h) => {
 })
 
 // Report the frontmost height up the stack: this drawer's own height, or the
-// one its own nested drawer reported. Reset to 0 once it closes or unmounts.
+// one its own nested drawer reported. Report 0 once it closes or unmounts, so
+// the parent falls back to its own height.
 watch(
-  [() => rootContext.open.value, () => rootContext.popupHeight.value, () => rootContext.frontmostHeight.value],
-  ([isOpen, popupHeight, frontmostHeight]) => {
-    rootContext.notifyParentFrontmostHeight?.(isOpen ? (frontmostHeight || popupHeight) : 0)
+  [() => rootContext.open.value, () => rootContext.frontmostHeight.value],
+  ([isOpen, frontmostHeight]) => {
+    rootContext.notifyParentFrontmostHeight?.(isOpen ? frontmostHeight : 0)
   },
   { immediate: true },
 )
@@ -362,6 +363,15 @@ onMounted(() => {
   // the opening and the enter animation has to be listened for here.
   if (rootContext.open.value)
     listenForOpenComplete(true)
+
+  // Initial frontmost height. Required on reopen, when the height is already
+  // known from a previous open and the lazy watcher would never fire.
+  if (rootContext.frontmostHeight.value > 0) {
+    currentElement.value?.style.setProperty(
+      DRAWER_CSS_VARS.frontmostHeight,
+      `${rootContext.frontmostHeight.value}px`,
+    )
+  }
 
   // Initial nested-drawer count
   currentElement.value?.style.setProperty(
