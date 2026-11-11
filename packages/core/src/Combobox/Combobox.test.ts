@@ -712,9 +712,9 @@ describe('given a virtualized Combobox', () => {
     wrapper.unmount()
   })
 
-  it('should remove aria-activedescendant when the options become empty', async () => {
+  describe('when the options change', () => {
     const shown = shallowRef(options)
-    const wrapper = mount(defineComponent({
+    const mountOpenCombobox = () => mount(defineComponent({
       setup: () => () => h(ComboboxRoot, { open: true, ignoreFilter: true }, () => [
         h(ComboboxAnchor, null, () => h(ComboboxInput)),
         h(ComboboxContent, null, () => h(ComboboxViewport, { style: 'height: 200px; overflow: auto' }, () => h(ComboboxVirtualizer, { options: shown.value, estimateSize: 25 }, {
@@ -722,17 +722,39 @@ describe('given a virtualized Combobox', () => {
         }))),
       ]),
     }), { attachTo: document.body })
-    await flush()
-    const input = wrapper.find('input')
-    expect(input.attributes('aria-activedescendant')).toBeTruthy()
 
-    shown.value = []
-    await flush()
+    beforeEach(() => {
+      shown.value = options
+    })
 
-    expect(wrapper.findAll('[role=option]')).toHaveLength(0)
-    expect(input.attributes('aria-activedescendant')).toBeUndefined()
+    it('should remove aria-activedescendant when the options become empty', async () => {
+      const wrapper = mountOpenCombobox()
+      await flush()
+      const input = wrapper.find('input')
+      expect(input.attributes('aria-activedescendant')).toBeTruthy()
 
-    wrapper.unmount()
+      shown.value = []
+      await flush()
+
+      expect(wrapper.findAll('[role=option]')).toHaveLength(0)
+      expect(input.attributes('aria-activedescendant')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('should remove the highlight when its option leaves and its row stays for another option', async () => {
+      const wrapper = mountOpenCombobox()
+      await flush()
+      const input = wrapper.find('input')
+      expect(wrapper.find('[data-highlighted]').text()).toBe('Item 0')
+
+      shown.value = options.slice(1)
+      await flush()
+
+      expect(wrapper.find('[data-index="0"]').text()).toBe('Item 1')
+      expect(wrapper.find('[data-highlighted]').exists()).toBe(false)
+      expect(input.attributes('aria-activedescendant')).toBeUndefined()
+      wrapper.unmount()
+    })
   })
 })
 

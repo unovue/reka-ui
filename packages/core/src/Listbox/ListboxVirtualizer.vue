@@ -18,7 +18,7 @@ import type { AcceptableValue } from '@/shared/types'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { useParentElement } from '@vueuse/core'
 import { refAutoReset } from '@vueuse/shared'
-import { cloneVNode, computed, Fragment, useSlots } from 'vue'
+import { cloneVNode, computed, Fragment, useSlots, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
 import { findValuesBetween, getActiveElement } from '@/shared'
@@ -74,6 +74,15 @@ const virtualizer = useVirtualizer(
     overscan: props.overscan ?? 12,
   },
 )
+
+// A row has its index as its key, so the row of a removed option stays for another option.
+// The highlight leaves with its option.
+watch(() => props.options, (options) => {
+  const element = rootContext.highlightedElement.value
+  const highlighted = element && getItems(true).find(item => item.ref === element)
+  if (highlighted && !options.some(option => compare(option, highlighted.value, rootContext.by)))
+    rootContext.highlightedElement.value = null
+})
 
 const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map((item) => {
   const defaultNode = slots.default!({

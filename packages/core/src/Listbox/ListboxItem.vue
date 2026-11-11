@@ -57,8 +57,9 @@ const isSelected = computed(() => valueComparator(rootContext.modelValue.value, 
 const disabled = computed(() => rootContext.disabled.value || props.disabled)
 
 // `aria-activedescendant` names the highlighted item. An item that leaves the document releases the highlight.
+// A virtualized list unmounts rows as it scrolls, so `ListboxVirtualizer` owns the highlight there.
 onBeforeUnmount(() => {
-  if (rootContext.highlightedElement.value === currentElement.value)
+  if (!rootContext.isVirtual.value && rootContext.highlightedElement.value === currentElement.value)
     rootContext.highlightedElement.value = null
 })
 
