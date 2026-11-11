@@ -107,9 +107,13 @@ function updateAnnouncement() {
   const orderedItems = [...totalStepperItems.value]
     .sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
   const step = orderedItems.findIndex(item => stepperItemValues.get(item)?.() === modelValue.value) + 1
-  announcement.value = step && props.announce !== false
-    ? props.announce?.(step, orderedItems.length) ?? `Step ${step} of ${orderedItems.length}`
-    : ''
+  if (!step || props.announce === false) {
+    announcement.value = ''
+    return
+  }
+  // Anything that is not a function (e.g. a bare `announce` attribute cast to `true`) uses the default text.
+  const custom = typeof props.announce === 'function' ? props.announce(step, orderedItems.length) : undefined
+  announcement.value = custom ?? `Step ${step} of ${orderedItems.length}`
 }
 
 watchPostEffect(updateAnnouncement)

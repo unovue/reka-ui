@@ -92,6 +92,16 @@ describe('stepper announcements', () => {
     expect(queryByRole('status')).toBeNull()
   })
 
+  it('falls back to the default announcement when announce is not a function', async () => {
+    // A bare `<StepperRoot announce>` attribute is cast to `true` at runtime.
+    const { getByRole, current } = setup([0, 1, 2], { announce: true as unknown as StepperRootProps['announce'] })
+    await nextTick()
+    expect(getByRole('status')).toHaveTextContent('Step 1 of 3')
+    current.value = 1
+    await nextTick()
+    expect(getByRole('status')).toHaveTextContent('Step 2 of 3')
+  })
+
   it('does not announce an absent step or an empty stepper', async () => {
     const { getByRole, current, steps } = setup([0, 1])
     current.value = 99
