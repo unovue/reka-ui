@@ -15,7 +15,7 @@ export interface ListboxVirtualizerProps<T extends AcceptableValue = AcceptableV
 import type { VirtualItem, Virtualizer } from '@tanstack/vue-virtual'
 import type { Ref, VNode } from 'vue'
 import type { AcceptableValue } from '@/shared/types'
-import { useVirtualizer } from '@tanstack/vue-virtual'
+import { defaultRangeExtractor, useVirtualizer } from '@tanstack/vue-virtual'
 import { useParentElement } from '@vueuse/core'
 import { refAutoReset } from '@vueuse/shared'
 import { cloneVNode, computed, Fragment, useSlots } from 'vue'
@@ -72,6 +72,19 @@ const virtualizer = useVirtualizer(
     },
     getScrollElement() { return parentEl.value },
     overscan: props.overscan ?? 12,
+    // The highlight is the DOM node of a row, and the virtualizer removes the node of a row that
+    // leaves the rendered window. The highlighted row remains mounted, with its adjacent rows,
+    // because the arrow keys move the highlight to the next mounted row.
+    rangeExtractor(range) {
+      const indexes = defaultRangeExtractor(range)
+      const highlighted = rootContext.highlightedElement.value
+      const highlightedIndex = highlighted?.isConnected ? Number(highlighted.dataset.index) : Number.NaN
+      if (Number.isNaN(highlightedIndex))
+        return indexes
+
+      const highlightedIndexes = defaultRangeExtractor({ ...range, startIndex: highlightedIndex, endIndex: highlightedIndex, overscan: 1 })
+      return [...new Set([...highlightedIndexes, ...indexes])].sort((a, b) => a - b)
+    },
   },
 )
 
