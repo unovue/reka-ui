@@ -94,6 +94,7 @@ describe('given a Select used with a real pointer, in a real browser', () => {
   } = {}) {
     const modelValue = ref<string | string[] | undefined>(options.modelValue)
     const selects: string[] = []
+    const originalEvents: (PointerEvent | KeyboardEvent)[] = []
     const itemClicks: string[] = []
     let behindClicks = 0
 
@@ -121,7 +122,10 @@ describe('given a Select used with a real pointer, in a real browser', () => {
                   'as': options.itemAs,
                   'data-testid': value,
                   'style': 'display: block; width: 100%; height: 36px',
-                  'onSelect': () => selects.push(value),
+                  'onSelect': (event: CustomEvent<{ originalEvent: PointerEvent | KeyboardEvent }>) => {
+                    selects.push(value)
+                    originalEvents.push(event.detail.originalEvent)
+                  },
                   'onClick': () => itemClicks.push(value),
                 }, () => h(SelectItemText, () => value)),
               )))),
@@ -130,7 +134,7 @@ describe('given a Select used with a real pointer, in a real browser', () => {
       },
     }), { attachTo: document.body })
 
-    return { modelValue, selects, itemClicks, getBehindClicks: () => behindClicks }
+    return { modelValue, selects, originalEvents, itemClicks, getBehindClicks: () => behindClicks }
   }
 
   const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
@@ -188,7 +192,7 @@ describe('given a Select used with a real pointer, in a real browser', () => {
 
   describe('when tapping an item', () => {
     it('selects it once and closes', async () => {
-      const { modelValue, selects } = mountPointerSelect({ position: 'popper', rootProps: { defaultOpen: true } })
+      const { modelValue, selects, originalEvents } = mountPointerSelect({ position: 'popper', rootProps: { defaultOpen: true } })
       await opened()
 
       await tap(get('banana')!)
@@ -196,6 +200,8 @@ describe('given a Select used with a real pointer, in a real browser', () => {
       await expect.poll(() => modelValue.value).toBe('banana')
       await expect.poll(isOpen).toBe(false)
       expect(selects).toEqual(['banana'])
+      // The tap's own `pointerup`, as when the `pointerup` itself selected
+      expect(originalEvents.map(event => [event.type, (event as PointerEvent).pointerType])).toEqual([['pointerup', 'touch']])
     })
 
     it('toggles it once when `multiple`', async () => {

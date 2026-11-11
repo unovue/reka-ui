@@ -16,7 +16,7 @@ interface SelectItemContext<T = AcceptableValue> {
 export const [injectSelectItemContext, provideSelectItemContext]
   = createContext<SelectItemContext>('SelectItem')
 
-export type SelectEvent<T> = CustomEvent<{ originalEvent: PointerEvent | MouseEvent | KeyboardEvent, value?: T }>
+export type SelectEvent<T> = CustomEvent<{ originalEvent: PointerEvent | KeyboardEvent, value?: T }>
 
 export type SelectItemEmits<T = AcceptableValue> = {
   /** Event handler called when the selecting item. <br> It can be prevented by calling `event.preventDefault`. */
@@ -73,7 +73,7 @@ const textId = useId(undefined, 'reka-select-item-text')
 
 const SELECT_SELECT = 'select.select'
 
-async function handleSelectCustomEvent(ev: MouseEvent | KeyboardEvent) {
+async function handleSelectCustomEvent(ev: PointerEvent | KeyboardEvent) {
   if (ev.defaultPrevented || disabled.value)
     return
 
@@ -106,12 +106,15 @@ function isTouch(event: PointerEvent) {
 // `pointerup`, so the `click` that ends that same tap can land on an item that was just
 // rendered under the finger; only a tap that started here may select.
 let touchPressStarted = false
+// That tap's `pointerup`, handed to `select` as the `originalEvent` just as when it selected itself.
+let tapPointerUp: PointerEvent | undefined
 // Whether a selection key is held. An item rendered as a native button turns that key into a
 // `click` of its own, which must not select a second time.
 let isSelectionKeyDown = false
 
 function handlePointerDown(event: PointerEvent) {
   touchPressStarted = isTouch(event)
+  tapPointerUp = undefined
   if (!touchPressStarted)
     (event.currentTarget as HTMLElement).focus({ preventScroll: true })
 }
@@ -119,15 +122,22 @@ function handlePointerDown(event: PointerEvent) {
 function handlePointerUp(event: PointerEvent) {
   if (!isTouch(event))
     handleSelectCustomEvent(event)
+  else if (touchPressStarted)
+    tapPointerUp = event
 }
 
 function handleClick(event: MouseEvent) {
   const startedOnItem = touchPressStarted
+  const pointerUp = tapPointerUp
   touchPressStarted = false
+  tapPointerUp = undefined
+  if (event.defaultPrevented)
+    return
   // A click that no pointer produced (`detail` is 0), e.g. from assistive technology
   const isVirtualClick = event.detail === 0 && !isSelectionKeyDown
+  // Browsers dispatch `click` as a `PointerEvent`; it stands in when there was no `pointerup`.
   if (startedOnItem || isVirtualClick)
-    handleSelectCustomEvent(event)
+    handleSelectCustomEvent(pointerUp ?? event as PointerEvent)
 }
 
 function handleKeyUp() {
