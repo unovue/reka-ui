@@ -65,6 +65,12 @@
     'required': false
   },
   {
+    'name': 'keepValueOnUnparsableInput',
+    'description': '<p>When <code>true</code>, committing text that cannot be parsed as a number (e.g. a lone <code>.</code> or <code>-</code>) keeps the current value and restores its formatted text, instead of clearing the value. Empty or whitespace-only input still clears the value.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'locale',
     'description': '<p>The locale to use for formatting and currencies</p>\n',
     'type': 'string',
@@ -171,6 +177,7 @@
 | `formatOptions` | Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user. | `Intl.NumberFormatOptions` | No | - |
 | `id` | Id of the element | `string` | No | - |
 | `invertWheelChange` | When true, inverts the direction of the wheel change. | `boolean` | No | - |
+| `keepValueOnUnparsableInput` | When true, committing text that cannot be parsed as a number (e.g. a lone . or -) keeps the current value and restores its formatted text, instead of clearing the value. Empty or whitespace-only input still clears the value. | `boolean` | No | - |
 | `locale` | The locale to use for formatting and currencies | `string` | No | - |
 | `max` | The largest value allowed for the input. | `number` | No | - |
 | `min` | The smallest value allowed for the input. | `number` | No | - |
