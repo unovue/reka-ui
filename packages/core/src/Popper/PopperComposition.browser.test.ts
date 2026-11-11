@@ -29,6 +29,15 @@ const families = {
   Autocomplete: { FloatingRoot: AutocompleteRoot, FloatingTrigger: AutocompleteTrigger, FloatingPortal: AutocompletePortal, FloatingContent: AutocompleteContent, FloatingAnchor: AutocompleteAnchor, contentProps: { position: 'popper' } },
 } satisfies Record<string, FloatingFamily>
 
+/**
+ * Mount a floating family sharing its trigger with a nested tooltip.
+ *
+ * @param family The floating component family to exercise.
+ * @param order The trigger nesting order, or a custom PopoverAnchor composition.
+ * @param options The controlled open state and whether content also nests in TooltipRoot.
+ * @param options.open Keep the floating family at this controlled open state when supplied.
+ * @param options.contentInsideTooltip Render the floating content inside TooltipRoot.
+ */
 function mountComposition(
   family: keyof typeof families,
   order: 'tooltip-first' | 'floating-first' | 'anchor',
@@ -39,11 +48,13 @@ function mountComposition(
 
   mount(defineComponent({
     setup() {
+      /** Render the trigger with the explicit anchor required by Combobox and Autocomplete. */
       function floatingTrigger() {
         const button = () => h(FloatingTrigger, triggerProps, () => 'Open')
         return FloatingAnchor ? h(FloatingAnchor, { asChild: true }, button) : button()
       }
 
+      /** Compose the triggers in the requested order, optionally inside a custom PopoverAnchor. */
       function trigger() {
         if (order === 'floating-first')
           return h(FloatingTrigger, { asChild: true }, () => h(TooltipTrigger, triggerProps, () => 'Open'))
@@ -74,6 +85,11 @@ function mountComposition(
   }), { attachTo: document.body })
 }
 
+/**
+ * Wait for the fixture's content to sit eight pixels below its shared trigger.
+ *
+ * @param clickTrigger Whether to click first; disable for fixtures already controlled open.
+ */
 async function expectPositioned(clickTrigger = true) {
   const trigger = document.querySelector<HTMLElement>('[data-testid="trigger"]')!
   if (clickTrigger)

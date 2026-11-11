@@ -8,6 +8,12 @@ import { injectPopperRootContext } from './PopperRootContext'
 
 enableAutoUnmount(afterEach)
 
+/**
+ * Create a test component exposing the anchor resolved from its ancestors.
+ *
+ * @param scope The family to probe, or omit to inspect the nearest root.
+ * @returns A component whose exposed anchor can be asserted after mounting.
+ */
 function createProbe(scope?: PopperScope) {
   return defineComponent({
     setup() {
