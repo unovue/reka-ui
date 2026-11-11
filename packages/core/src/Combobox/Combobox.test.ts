@@ -780,6 +780,42 @@ describe('given a virtualized Combobox', () => {
       wrapper.unmount()
     })
 
+    async function scrollAway(wrapper: VueWrapper) {
+      const viewport = wrapper.find('[data-reka-combobox-viewport]').element
+      viewport.scrollTop = 2000
+      viewport.dispatchEvent(new Event('scroll'))
+      await flush()
+      expect(wrapper.findAll('[role=option]').some(row => row.text() === 'Item 0')).toBe(false)
+    }
+
+    it('should keep the highlight when scrolling unmounts its row', async () => {
+      const wrapper = mountOpenCombobox()
+      await flush()
+      const input = wrapper.find('input')
+      const highlightedId = input.attributes('aria-activedescendant')
+      expect(highlightedId).toBeTruthy()
+
+      await scrollAway(wrapper)
+
+      expect(input.attributes('aria-activedescendant')).toBe(highlightedId)
+      wrapper.unmount()
+    })
+
+    it('should remove the highlight when the parent removes its option while its row is unmounted', async () => {
+      shown.value = reactive(options.slice())
+      const wrapper = mountOpenCombobox()
+      await flush()
+      const input = wrapper.find('input')
+      expect(input.attributes('aria-activedescendant')).toBeTruthy()
+
+      await scrollAway(wrapper)
+      shown.value.splice(0, 1)
+      await flush()
+
+      expect(input.attributes('aria-activedescendant')).toBeUndefined()
+      wrapper.unmount()
+    })
+
     it('should remove the highlight when its option leaves and its row stays for another option', async () => {
       const wrapper = mountOpenCombobox()
       await flush()
