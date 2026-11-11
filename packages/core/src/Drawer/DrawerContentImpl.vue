@@ -111,6 +111,17 @@ watch(() => rootContext.frontmostHeight.value, (h) => {
   currentElement.value?.style.setProperty(DRAWER_CSS_VARS.frontmostHeight, `${h}px`)
 })
 
+// Report the frontmost height up the stack: this drawer's own height, or the
+// one its own nested drawer reported. Report 0 once it closes or unmounts, so
+// the parent falls back to its own height.
+watch(
+  [() => rootContext.open.value, () => rootContext.frontmostHeight.value],
+  ([isOpen, frontmostHeight]) => {
+    rootContext.notifyParentFrontmostHeight?.(isOpen ? frontmostHeight : 0)
+  },
+  { immediate: true },
+)
+
 // Swipe directions: when snap points exist, allow both dismiss AND expand directions
 const hasSnapPoints = computed(() => (rootContext.snapPoints.value?.length ?? 0) > 0)
 const swipeDirections = computed<SwipeDirection[]>(() => {
@@ -293,7 +304,7 @@ function clearOpenCompleteListener() {
   openCompleteCleanup = undefined
 }
 
-watch(() => rootContext.open.value, (isOpen) => {
+function listenForOpenComplete(isOpen: boolean) {
   clearOpenCompleteListener()
   const el = currentElement.value
   if (!el) {
@@ -314,7 +325,9 @@ watch(() => rootContext.open.value, (isOpen) => {
     el.removeEventListener('transitionend', handler)
     el.removeEventListener('animationend', handler)
   }
-})
+}
+
+watch(() => rootContext.open.value, listenForOpenComplete)
 
 // Data attributes
 const dataAttributes = computed(() => {
@@ -346,6 +359,20 @@ onMounted(() => {
   rootContext.contentElement.value = currentElement.value
   rootContext.notifyParentHasNestedDrawer?.(true)
 
+  // The content mounts already open, so the `open` watcher above never sees
+  // the opening and the enter animation has to be listened for here.
+  if (rootContext.open.value)
+    listenForOpenComplete(true)
+
+  // Initial frontmost height. Required on reopen, when the height is already
+  // known from a previous open and the lazy watcher would never fire.
+  if (rootContext.frontmostHeight.value > 0) {
+    currentElement.value?.style.setProperty(
+      DRAWER_CSS_VARS.frontmostHeight,
+      `${rootContext.frontmostHeight.value}px`,
+    )
+  }
+
   // Initial nested-drawer count
   currentElement.value?.style.setProperty(
     DRAWER_CSS_VARS.nestedDrawers,
@@ -365,6 +392,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   rootContext.notifyParentHasNestedDrawer?.(false)
+  rootContext.notifyParentFrontmostHeight?.(0)
   unsubscribeNestedProgress?.()
   clearOpenCompleteListener()
 })
