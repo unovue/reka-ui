@@ -148,7 +148,9 @@ onMounted(() => {
 
 provideSelectItemContext({
   value: props.value,
-  disabled,
+  // The item's own state only: `SelectItemText` registers the native `<option>` once on mount,
+  // so the root's `disabled` must not leak in (the native `<select>` already carries it).
+  disabled: computed(() => Boolean(props.disabled)),
   textId,
   isSelected,
   onItemTextChange: (node) => {
