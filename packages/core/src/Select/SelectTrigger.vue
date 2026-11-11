@@ -80,14 +80,15 @@ const { getItems } = useCollection()
 const { search, handleTypeaheadSearch, findTypeaheadMatch, resetTypeahead } = useTypeahead()
 
 // A closed select has no item to focus, so the match is selected instead, as in
-// a native select. The collection is reactive, so `toRaw` returns the item's own
-// value rather than a proxy of it.
-function selectTypeaheadMatch(key: string) {
+// a native select. The item selects itself, so its `select` event can still
+// prevent it. The collection is reactive, so `toRaw` reads the item's own value
+// rather than a proxy of it.
+function selectTypeaheadMatch(event: KeyboardEvent) {
   const items = getItems()
   const selectedItem = items.find(item => valueComparator(rootContext.modelValue.value, toRaw(item.value).value, rootContext.by))
-  const match = findTypeaheadMatch(key, items, selectedItem)
+  const match = findTypeaheadMatch(event.key, items, selectedItem)
   if (match && !isDisabled.value && !rootContext.multiple.value)
-    rootContext.onValueChange(toRaw(match.value).value)
+    toRaw(match.value).typeaheadSelect(event)
 }
 function handleOpen() {
   if (!isDisabled.value) {
@@ -188,7 +189,7 @@ function onTriggerKeyDown(event: KeyboardEvent) {
     if (rootContext.open.value)
       handleTypeaheadSearch(event.key, getItems())
     else
-      selectTypeaheadMatch(event.key)
+      selectTypeaheadMatch(event)
   }
   if (isTypingAhead && event.key === ' ')
     return

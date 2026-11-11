@@ -564,6 +564,31 @@ describe('given typing on a Select trigger', () => {
     expect(onUpdateOpen).not.toHaveBeenCalled()
   })
 
+  it('should emit the matched item\'s `select` once, with the key event', async () => {
+    const onSelect = vi.fn()
+    const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { itemProps: option => ({ onSelect: (event: CustomEvent) => onSelect(option, event) }) })
+    await type(trigger, 'b')
+    expect(modelValue.value).toBe('Banana')
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    const [option, event] = onSelect.mock.calls[0]
+    expect(option).toBe('Banana')
+    expect(event.detail.value).toBe('Banana')
+    expect(event.detail.originalEvent).toBeInstanceOf(KeyboardEvent)
+  })
+
+  it('should not select an item whose `select` is prevented', async () => {
+    const onUpdateOpen = vi.fn()
+    const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], {
+      initialValue: 'Apple',
+      rootProps: { 'onUpdate:open': onUpdateOpen },
+      itemProps: option => option === 'Banana' ? { onSelect: (event: Event) => event.preventDefault() } : {},
+    })
+    await type(trigger, 'b')
+    expect(modelValue.value).toBe('Apple')
+    expect(trigger.textContent).toContain('Apple')
+    expect(onUpdateOpen).not.toHaveBeenCalled()
+  })
+
   it('should not select when the Select is disabled', async () => {
     const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { rootProps: { disabled: true }, triggerProps: { as: 'div', tabindex: 0 } })
     await type(trigger, 'b')
