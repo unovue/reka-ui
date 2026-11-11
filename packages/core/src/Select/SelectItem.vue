@@ -96,43 +96,62 @@ async function handleSelect(ev: SelectEvent<T>) {
   }
 }
 
-// Touch and pen select on `click`: iOS Safari fires `pointerup` on whatever item ends up
-// under the finger once a scroll through the list stops, while a `click` never follows a scroll.
-// A mouse keeps selecting on `pointerup` so it can press the trigger, move down the list and
-// release over an item. `click` has no pointer type, so the last pointer event decides.
-function isTouchPointer(pointerType: string) {
-  return pointerType === 'touch' || pointerType === 'pen'
+// Touch selects on `click`: iOS Safari fires `pointerup` on whatever item ends up under the
+// finger once a scroll through the list stops, while a `click` never follows a scroll.
+// Mouse and pen keep selecting on `pointerup`, so they can press the trigger, move down the
+// list and release over an item.
+function isTouch(event: PointerEvent) {
+  return event.pointerType === 'touch'
 }
 
-// `true` until a mouse is seen, so a click without pointer events (assistive tech) still selects.
-let selectsOnClick = true
+// Whether a touch press began on this item. The trigger opens the content on a touch
+// `pointerup`, so the `click` that ends that same tap can land on an item that was just
+// rendered under the finger; only a tap that started here may select.
+let touchPressStarted = false
+// Whether a selection key is held. An item rendered as a native button turns that key into a
+// `click` of its own, which must not select a second time.
+let isSelectionKeyDown = false
 
 function handlePointerDown(event: PointerEvent) {
-  selectsOnClick = isTouchPointer(event.pointerType)
-  if (!selectsOnClick)
+  touchPressStarted = isTouch(event)
+  if (!touchPressStarted)
     (event.currentTarget as HTMLElement).focus({ preventScroll: true })
 }
 
 function handlePointerUp(event: PointerEvent) {
-  if (!isTouchPointer(event.pointerType))
+  if (!isTouch(event))
     handleSelectCustomEvent(event)
 }
 
 function handleClick(event: MouseEvent) {
-  if (selectsOnClick)
+  const startedOnItem = touchPressStarted
+  touchPressStarted = false
+  // A click that no pointer produced (`detail` is 0), e.g. from assistive technology
+  const isVirtualClick = event.detail === 0 && !isSelectionKeyDown
+  if (startedOnItem || isVirtualClick)
     handleSelectCustomEvent(event)
+}
+
+function handleKeyUp() {
+  // The `click` a native button makes from Space comes right after `keyup`
+  setTimeout(() => {
+    isSelectionKeyDown = false
+  })
+}
+
+function handleBlur() {
+  isFocused.value = false
+  isSelectionKeyDown = false
 }
 
 async function handlePointerMove(event: PointerEvent) {
   await nextTick()
   if (event.defaultPrevented)
     return
-  // Remember the pointer type when sliding over to this item from another one
-  selectsOnClick = isTouchPointer(event.pointerType)
   if (disabled.value) {
     contentContext.onItemLeave?.()
   }
-  else if (!selectsOnClick) {
+  else if (!isTouch(event)) {
     // even though safari doesn't support this option, it's acceptable
     // as it only means it might scroll a few pixels when using the pointer.
     (event.currentTarget as HTMLElement | null)?.focus({ preventScroll: true })
@@ -148,6 +167,8 @@ async function handlePointerLeave(event: PointerEvent) {
 }
 
 async function handleKeyDown(event: KeyboardEvent) {
+  if (SELECTION_KEYS.includes(event.key))
+    isSelectionKeyDown = true
   await nextTick()
   if (event.defaultPrevented)
     return
@@ -203,13 +224,14 @@ provideSelectItemContext({
       :as="as"
       :as-child="asChild"
       @focus="isFocused = true"
-      @blur="isFocused = false"
+      @blur="handleBlur"
       @click="handleClick"
       @pointerup="handlePointerUp"
       @pointerdown="handlePointerDown"
       @pointermove="handlePointerMove"
       @pointerleave="handlePointerLeave"
       @keydown="handleKeyDown"
+      @keyup="handleKeyUp"
     >
       <slot :selected="isSelected" />
     </Primitive>

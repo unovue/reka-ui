@@ -198,19 +198,40 @@ describe('given default Select', () => {
         const selection = wrapper.findAll('[role=option]')[1]
         await fireEvent.pointerDown(selection.element, { pointerType: 'touch' })
         await fireEvent.pointerUp(selection.element, { pointerType: 'touch' })
-        await fireEvent.click(selection.element)
+        // A real tap's click has `detail: 1`
+        await fireEvent.click(selection.element, { detail: 1 })
+
+        await vi.waitFor(() => expect(valueBox.html()).toContain('Banana'))
+        // The content unmounts a macrotask after the selection
+        await vi.waitFor(() => expect(wrapper.find('[role=group]').exists()).toBeFalsy())
+      })
+
+      it('should not select on a click that did not start on the item', async () => {
+        // Tapping the trigger opens the content, and that tap's click can land on an item
+        const selection = wrapper.findAll('[role=option]')[1]
+        await fireEvent.click(selection.element, { detail: 1 })
+        await nextTick()
         await nextTick()
 
-        expect(valueBox.html()).toContain('Banana')
-        expect(wrapper.find('[role=group]').exists()).toBeFalsy()
+        expect(valueBox.html()).not.toContain('Banana')
+        expect(wrapper.find('[role=group]').exists()).toBeTruthy()
+      })
+
+      it('should select on a pen pointerup', async () => {
+        const selection = wrapper.findAll('[role=option]')[1]
+        // Needs 2 pointerup because SelectContentImpl prevents accidental pointerup's
+        await fireEvent.pointerUp(selection.element, { pointerType: 'pen' })
+        await fireEvent.pointerUp(selection.element, { pointerType: 'pen' })
+
+        await vi.waitFor(() => expect(valueBox.html()).toContain('Banana'))
       })
 
       it('should select on a click without pointer events', async () => {
+        // Assistive technology activates with a click that no pointer produced (`detail: 0`)
         const selection = wrapper.findAll('[role=option]')[1]
         await fireEvent.click(selection.element)
-        await nextTick()
 
-        expect(valueBox.html()).toContain('Banana')
+        await vi.waitFor(() => expect(valueBox.html()).toContain('Banana'))
       })
 
       it('should not highlight items a finger scrolls across', async () => {
