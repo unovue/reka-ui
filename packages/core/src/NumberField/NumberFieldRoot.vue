@@ -19,6 +19,8 @@ export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   stepSnapping?: boolean
   /** When `true`, a typed value is kept as-is even if invalid (out of `min`/`max` range or off the step grid); step interactions still clamp and snap. The field does not flag the value as invalid (no `aria-invalid`/`data-invalid`), so validating and surfacing the error is up to the consumer. */
   allowInvalid?: boolean
+  /** When `true`, committing text that cannot be parsed as a number (e.g. a lone `.` or `-`) keeps the current value and restores its formatted text, instead of clearing the value. Empty or whitespace-only input still clears the value. */
+  keepValueOnUnparsableInput?: boolean
   /** When `true`, the input will be focused when the value changes. */
   focusOnChange?: boolean
   /** Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user. */
@@ -88,7 +90,7 @@ const props = withDefaults(defineProps<NumberFieldRootProps>(), {
   focusOnChange: true,
 })
 const emits = defineEmits<NumberFieldRootEmits>()
-const { disabled, readonly, disableWheelChange, invertWheelChange, min, max, step, stepSnapping, allowInvalid, formatOptions, id, locale: propLocale, startingValue } = toRefs(props)
+const { disabled, readonly, disableWheelChange, invertWheelChange, min, max, step, stepSnapping, allowInvalid, keepValueOnUnparsableInput, formatOptions, id, locale: propLocale, startingValue } = toRefs(props)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue,
@@ -231,23 +233,26 @@ function clampInputValue(val: number) {
 }
 
 function applyInputValue(val: string) {
-  // Set to empty state if input value is empty
-  if (!val.length) {
-    modelValue.value = undefined
-    return setInputValue(val)
-  }
-
   const parsedValue = numberParser.parse(val)
-  // if it failed to parse (e.g. a lone "." or "-"), keep the current number and reset input to its formatted version
-  if (isNaN(parsedValue))
-    return setInputValue(textValue.value)
-
-  if (allowInvalid.value)
+  if (isNaN(parsedValue)) {
+    // Text that cannot be parsed clears the value, unless `keepValueOnUnparsableInput` asks to keep it.
+    // Empty or whitespace-only input always clears.
+    if (!keepValueOnUnparsableInput.value || !val.trim().length)
+      modelValue.value = undefined
+  }
+  else if (allowInvalid.value) {
     // Keep the typed value as-is, only normalize formatting precision
     modelValue.value = numberParser.parse(numberFormatter.format(parsedValue))
-  else
+  }
+  else {
     modelValue.value = clampInputValue(parsedValue)
+  }
 
+  // Set to empty state if input value is empty
+  if (!val.length)
+    return setInputValue(val)
+
+  // Otherwise show the formatted version of the current number (empty when there is none)
   return setInputValue(textValue.value)
 }
 

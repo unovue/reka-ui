@@ -4,10 +4,10 @@ import { fireEvent, render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { useKbd } from '@/shared'
 import { handleSubmit } from '@/test'
-import NumberFieldRoot from './NumberFieldRoot.vue'
+import { NumberFieldIncrement, NumberFieldInput, NumberFieldRoot } from '.'
 import NumberField from './story/_NumberField.vue'
 
 function setup(props?: NumberFieldRootProps) {
@@ -724,40 +724,140 @@ describe('numberField', () => {
     })
   })
 
-  describe('given an unparseable input value', () => {
-    it.each(['.', '-'])('should keep the current value when committing "%s"', async (text) => {
-      const { user, input, increment } = setup({ defaultValue: 5 })
+  describe('given committed input that cannot be parsed', () => {
+    // Mounts the parts under a real `v-model`, and records every `update:modelValue`.
+    function setupModel(props: NumberFieldRootProps = {}, initial: number | null = 5) {
+      const model = ref<number | undefined>(initial ?? undefined)
+      const emitted: (number | undefined)[] = []
+      const view = render(defineComponent({
+        setup: () => () => h(NumberFieldRoot, {
+          ...props,
+          'modelValue': model.value,
+          'onUpdate:modelValue': (value: number | undefined) => {
+            emitted.push(value)
+            model.value = value
+          },
+        }, () => [h(NumberFieldInput), h(NumberFieldIncrement, () => '+')]),
+      }))
+      const input = view.getByRole('spinbutton') as HTMLInputElement
+      const commit = async (text: string, how: 'enter' | 'blur') => {
+        input.focus()
+        await fireEvent.update(input, text)
+        if (how === 'enter')
+          await fireEvent.keyDown(input, { key: kbd.ENTER })
+        else
+          await fireEvent.blur(input)
+        await nextTick()
+      }
+      return { ...view, input, model, emitted, commit }
+    }
 
-      await user.clear(input)
-      await user.type(input, `${text}{Enter}`)
-      expect(input.value).toBe('5')
+    const ways = ['enter', 'blur'] as const
+    const cases = ways.flatMap(how => ['.', '-', 'abc', '1.2.3'].map(text => [text, how] as const))
 
-      await user.click(increment)
-      expect(input.value).toBe('6')
+    describe('by default', () => {
+      it.each(cases)('should clear the value when committing "%s" with %s', async (text, how) => {
+        const { input, model, emitted, commit } = setupModel()
+        await commit(text, how)
+        expect(model.value).toBeUndefined()
+        expect(emitted).toEqual([undefined])
+        expect(input.value).toBe('')
+      })
+
+      it.each(ways)('should clear the value when committing leftover currency text with %s', async (how) => {
+        const { input, emitted, commit } = setupModel({ formatOptions: { style: 'currency', currency: 'USD' } })
+        expect(input.value).toBe('$5.00')
+        await commit('$', how)
+        expect(emitted).toEqual([undefined])
+        expect(input.value).toBe('')
+      })
+
+      it.each(ways)('should clear the value when committing whitespace with %s', async (how) => {
+        const { input, emitted, commit } = setupModel()
+        await commit(' ', how)
+        expect(emitted).toEqual([undefined])
+        expect(input.value).toBe('')
+      })
     })
 
-    it('should not emit when controlled', async () => {
-      const wrapper = mount(NumberField, { props: { modelValue: 5 }, attachTo: document.body })
-      const input = wrapper.find('input').element
+    describe('with keepValueOnUnparsableInput', () => {
+      const keep = { keepValueOnUnparsableInput: true }
 
-      await userEvent.clear(input)
-      await userEvent.type(input, '.{Enter}')
+      it.each(cases)('should keep the value and not emit when committing "%s" with %s', async (text, how) => {
+        const { input, model, emitted, commit } = setupModel(keep)
+        await commit(text, how)
+        expect(model.value).toBe(5)
+        expect(emitted).toEqual([])
+        expect(input.value).toBe('5')
+      })
 
-      expect(wrapper.findComponent(NumberFieldRoot).emitted('update:modelValue')).toBeUndefined()
-      expect(input.value).toBe('5')
-      wrapper.unmount()
-    })
+      it('should restore the formatted text of an uncontrolled value and keep stepping from it', async () => {
+        const { user, input, increment } = setup({ defaultValue: 5, ...keep })
+        await user.clear(input)
+        await user.type(input, '.{Enter}')
+        expect(input.value).toBe('5')
+        await user.click(increment)
+        expect(input.value).toBe('6')
+      })
 
-    it('should still emit undefined when the input is cleared', async () => {
-      const wrapper = mount(NumberField, { props: { modelValue: 5 }, attachTo: document.body })
-      const input = wrapper.find('input').element
+      it.each([
+        ['de-DE', ',', '5'],
+        ['ar-EG', '٫', '٥'],
+      ])('should keep the value for a lone decimal separator in %s', async (locale, text, formatted) => {
+        const { input, model, emitted, commit } = setupModel({ ...keep, locale })
+        await commit(text, 'enter')
+        expect(model.value).toBe(5)
+        expect(emitted).toEqual([])
+        expect(input.value).toBe(formatted)
+      })
 
-      await userEvent.clear(input)
-      await userEvent.type(input, '{Enter}')
+      it.each([
+        ['de-DE', '1.234', 1234, '1.234'],
+        ['ar-EG', '١٢٣', 123, '١٢٣'],
+        ['zh-CN-u-nu-hanidec', '一二三', 123, '一二三'],
+      ])('should still parse localized input in %s', async (locale, text, value, formatted) => {
+        const { input, model, emitted, commit } = setupModel({ ...keep, locale })
+        await commit(text, 'enter')
+        expect(model.value).toBe(value)
+        expect(emitted).toEqual([value])
+        expect(input.value).toBe(formatted)
+      })
 
-      expect(wrapper.findComponent(NumberFieldRoot).emitted('update:modelValue')).toEqual([[undefined]])
-      expect(input.value).toBe('')
-      wrapper.unmount()
+      it.each(ways)('should keep the value for leftover currency or unit text with %s', async (how) => {
+        const currency = setupModel({ ...keep, formatOptions: { style: 'currency', currency: 'USD' } })
+        await currency.commit('$', how)
+        expect(currency.emitted).toEqual([])
+        expect(currency.input.value).toBe('$5.00')
+        currency.unmount()
+
+        const unit = setupModel({ ...keep, formatOptions: { style: 'unit', unit: 'kilometer' } })
+        await unit.commit(' km', how)
+        expect(unit.emitted).toEqual([])
+        expect(unit.input.value).toBe('5 km')
+      })
+
+      it.each(ways.flatMap(how => ['', ' ', '   '].map(text => [JSON.stringify(text), text, how] as const)))('should still clear the value when committing %s with %s', async (_label, text, how) => {
+        const { input, model, emitted, commit } = setupModel({ ...keep, formatOptions: { style: 'currency', currency: 'USD' } })
+        await commit(text, how)
+        expect(model.value).toBeUndefined()
+        expect(emitted).toEqual([undefined])
+        expect(input.value).toBe('')
+      })
+
+      it('should still clamp parsable input to min and max', async () => {
+        const { input, model, commit } = setupModel({ ...keep, min: 0, max: 10 })
+        await commit('999', 'enter')
+        expect(model.value).toBe(10)
+        expect(input.value).toBe('10')
+      })
+
+      it('should leave an empty field empty', async () => {
+        const { input, model, emitted, commit } = setupModel(keep, null)
+        await commit('.', 'enter')
+        expect(model.value).toBeUndefined()
+        expect(emitted).toEqual([])
+        expect(input.value).toBe('')
+      })
     })
   })
 
