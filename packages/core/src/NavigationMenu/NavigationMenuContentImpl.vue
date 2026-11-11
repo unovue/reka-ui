@@ -17,6 +17,7 @@ export interface NavigationMenuContentImplProps extends DismissableLayerProps {}
 <script setup lang="ts">
 import { computed, ref, watchEffect } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
+import { getTabStopsAfter } from '@/FocusScope/utils'
 import { getActiveElement, useArrowNavigation, useForwardExpose } from '@/shared'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
@@ -149,13 +150,11 @@ function handleKeydown(ev: KeyboardEvent) {
 
   if (isTabKey) {
     const focusedElement = getActiveElement()
-    const index = candidates.findIndex(
-      candidate => candidate === focusedElement,
-    )
     const isMovingBackwards = ev.shiftKey
-    const nextCandidates = isMovingBackwards
-      ? candidates.slice(0, index).reverse()
-      : candidates.slice(index + 1, candidates.length)
+    const nextCandidates = getTabStopsAfter(
+      isMovingBackwards ? [...candidates].reverse() : candidates,
+      focusedElement,
+    )
 
     if (focusFirst(nextCandidates)) {
       // prevent browser tab keydown because we've handled focus
