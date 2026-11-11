@@ -75,9 +75,9 @@ const virtualizer = useVirtualizer(
   },
 )
 
-// A row has its index as its key, so the row of a removed option stays for another option.
-// The highlight leaves with its option.
-watch([() => props.options, () => props.options.length], ([options]) => {
+// A row has its index as its key, so the row of a removed or replaced option stays for another option.
+// The highlight leaves with its option. The copy makes an in-place change of the array run the watcher.
+watch(() => props.options.slice(), (options) => {
   const element = rootContext.highlightedElement.value
   const highlighted = element && getItems(true).find(item => item.ref === element)
   if (highlighted && !options.some(option => compare(option, highlighted.value, rootContext.by)))

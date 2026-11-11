@@ -764,6 +764,22 @@ describe('given a virtualized Combobox', () => {
       wrapper.unmount()
     })
 
+    it('should remove the highlight when the parent replaces its option in place', async () => {
+      shown.value = reactive(options.slice())
+      const wrapper = mountOpenCombobox()
+      await flush()
+      const input = wrapper.find('input')
+      expect(wrapper.find('[data-highlighted]').text()).toBe('Item 0')
+
+      shown.value[0] = { label: 'Other', value: 100 }
+      await flush()
+
+      expect(wrapper.find('[data-index="0"]').text()).toBe('Other')
+      expect(wrapper.find('[data-highlighted]').exists()).toBe(false)
+      expect(input.attributes('aria-activedescendant')).toBeUndefined()
+      wrapper.unmount()
+    })
+
     it('should remove the highlight when its option leaves and its row stays for another option', async () => {
       const wrapper = mountOpenCombobox()
       await flush()
