@@ -2,7 +2,7 @@ import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, inject, nextTick, ref } from 'vue'
 import { handleSubmit, sleep } from '@/test'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport, ComboboxVirtualizer } from '.'
 import Combobox from './story/_Combobox.vue'
@@ -1781,5 +1781,60 @@ describe('given a Combobox with `loop`', () => {
     await input.trigger('keydown', { key: 'End' })
     await input.trigger('keydown', { key: 'ArrowDown' })
     expect(highlighted()).toBe('Cherry')
+  })
+})
+
+describe('given a Combobox root that stays mounted', () => {
+  function mountCombobox(rootProps: Record<string, unknown> = {}) {
+    let collection!: { collectionRef: { value: HTMLElement | undefined } }
+    const CollectionProbe = defineComponent({
+      setup() {
+        collection = inject('CollectionProvider')!
+        return () => null
+      },
+    })
+    const open = ref(false)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ComboboxRoot, { open: open.value, ...rootProps }, () => [
+        h(CollectionProbe),
+        h(ComboboxAnchor, () => h(ComboboxInput, { 'aria-label': 'Food' })),
+        h(ComboboxContent, () => h(ComboboxViewport, () => ['Apple', 'Banana'].map(value =>
+          h(ComboboxItem, { key: value, value }, () => value)))),
+      ]),
+    }), { attachTo: document.body })
+    return { wrapper, open, collection: () => collection }
+  }
+
+  it('should release the closed content from the collection', async () => {
+    const { wrapper, open, collection } = mountCombobox()
+
+    for (let cycle = 0; cycle < 2; cycle++) {
+      open.value = true
+      await flushPromises()
+      expect(collection().collectionRef.value).toBe(wrapper.get('[role="listbox"]').element)
+      expect(wrapper.findAll('[role="option"]')).toHaveLength(2)
+
+      open.value = false
+      await flushPromises()
+      expect(wrapper.find('[role="listbox"]').exists()).toBe(false)
+      expect(collection().collectionRef.value).toBeUndefined()
+    }
+
+    wrapper.unmount()
+  })
+
+  it('should keep the collection element while content stays mounted', async () => {
+    const { wrapper, open, collection } = mountCombobox({ unmountOnHide: false })
+    open.value = true
+    await flushPromises()
+    const content = wrapper.get('[role="listbox"]').element
+    expect(collection().collectionRef.value).toBe(content)
+
+    open.value = false
+    await flushPromises()
+    expect(wrapper.get('[role="listbox"]').element).toBe(content)
+    expect(collection().collectionRef.value).toBe(content)
+
+    wrapper.unmount()
   })
 })

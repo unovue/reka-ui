@@ -1,9 +1,9 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { fireEvent } from '@testing-library/vue'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, inject, nextTick, ref } from 'vue'
 import { handleSubmit } from '@/test'
 import { SelectContent, SelectItem, SelectItemIndicator, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '.'
 import SelectUnmountCleanup from './__test__/SelectUnmountCleanup.vue'
@@ -800,5 +800,41 @@ describe('given SelectTrigger with consumer event listeners', () => {
     await fireEvent.keyDown(trigger, { key: 'Shift' })
     await fireEvent.keyDown(trigger, { key: ' ' })
     expect(open.value).toBe(true)
+  })
+})
+
+describe('given a Select root that stays mounted', () => {
+  it.each(['item-aligned', 'popper'] as const)('should release the closed content from the collection with position=%s', async (position) => {
+    let collection!: { collectionRef: { value: HTMLElement | undefined } }
+    const CollectionProbe = defineComponent({
+      setup() {
+        collection = inject('CollectionProvider')!
+        return () => null
+      },
+    })
+    const open = ref(false)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(SelectRoot, { open: open.value }, () => [
+        h(CollectionProbe),
+        h(SelectTrigger, { 'aria-label': 'Food' }, () => h(SelectValue, { placeholder: 'Pick' })),
+        h(SelectContent, { position }, () => h(SelectViewport, () => ['Apple', 'Banana'].map(value =>
+          h(SelectItem, { key: value, value }, () => h(SelectItemText, () => value))))),
+      ]),
+    }), { attachTo: document.body })
+
+    for (let cycle = 0; cycle < 2; cycle++) {
+      open.value = true
+      await vi.waitFor(() => expect(wrapper.find('[role="listbox"]').exists()).toBe(true))
+      await flushPromises()
+      expect(collection.collectionRef.value?.contains(wrapper.get('[role="listbox"]').element)).toBe(true)
+      expect(wrapper.findAll('[role="option"]')).toHaveLength(2)
+
+      open.value = false
+      await vi.waitFor(() => expect(wrapper.find('[role="listbox"]').exists()).toBe(false))
+      await flushPromises()
+      expect(collection.collectionRef.value).toBeUndefined()
+    }
+
+    wrapper.unmount()
   })
 })

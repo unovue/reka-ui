@@ -6,6 +6,57 @@ import { Presence } from '.'
 
 const CONTENT = 'Content'
 
+describe('given a Presence that stays mounted after closing', () => {
+  it('should remove animation listeners from each unmounted child', async () => {
+    const present = ref(true)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(Presence, { present: present.value }, () => h('div', CONTENT)),
+    }))
+    await flushPromises()
+
+    for (let cycle = 0; cycle < 2; cycle++) {
+      const element = wrapper.get('div').element
+      const removeEventListener = vi.spyOn(element, 'removeEventListener')
+      present.value = false
+      await flushPromises()
+
+      expect(wrapper.find('div').exists()).toBe(false)
+      for (const event of ['animationstart', 'animationcancel', 'animationend'])
+        expect(removeEventListener).toHaveBeenCalledWith(event, expect.any(Function))
+
+      removeEventListener.mockRestore()
+      present.value = true
+      await flushPromises()
+      expect(wrapper.get('div').element).not.toBe(element)
+    }
+
+    wrapper.unmount()
+  })
+
+  it('should clean up listeners when the child element is replaced', async () => {
+    const tag = ref('div')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(Presence, { present: true }, () => h(tag.value, CONTENT)),
+    }))
+    await nextTick()
+    const element = wrapper.get('div').element
+    const removeEventListener = vi.spyOn(element, 'removeEventListener')
+
+    tag.value = 'span'
+    await nextTick()
+    expect(wrapper.get('span').text()).toBe(CONTENT)
+    for (const event of ['animationstart', 'animationcancel', 'animationend'])
+      expect(removeEventListener).toHaveBeenCalledWith(event, expect.any(Function))
+
+    removeEventListener.mockRestore()
+    const removeReplacementListener = vi.spyOn(wrapper.get('span').element, 'removeEventListener')
+    wrapper.unmount()
+    for (const event of ['animationstart', 'animationcancel', 'animationend'])
+      expect(removeReplacementListener).toHaveBeenCalledWith(event, expect.any(Function))
+    removeReplacementListener.mockRestore()
+  })
+})
+
 describe('given a default Presence', () => {
   const wrapper = mount(defineComponent({
     components: { Presence },
