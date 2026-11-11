@@ -570,6 +570,13 @@ describe('given an open Combobox whose options leave the document', () => {
     expect(document.querySelectorAll('[role="option"]')).toHaveLength(2)
     expect(input.attributes('aria-activedescendant')).toBeUndefined()
   })
+
+  it('should remove aria-activedescendant when the parent replaces the options with as many others', async () => {
+    await wrapper.setProps({ options: ['Date', 'Elderberry', 'Fig'] })
+
+    expect(document.querySelectorAll('[role="option"]')).toHaveLength(3)
+    expect(input.attributes('aria-activedescendant')).toBeUndefined()
+  })
 })
 
 describe('given a Combobox with multiple prop', async () => {
