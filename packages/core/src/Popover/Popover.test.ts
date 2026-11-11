@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref, Transition } from 'vue'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '.'
@@ -101,6 +101,8 @@ describe('given a Popover with a consumer id on the trigger (#3059)', () => {
       },
     })
     const wrapper = mount(Harness, { attachTo: document.body })
+    // Unmount even when an assertion fails, so a failure cannot leak into later tests.
+    onTestFinished(() => wrapper.unmount())
     await flushPromises()
 
     const trigger = wrapper.get('button')
@@ -111,7 +113,6 @@ describe('given a Popover with a consumer id on the trigger (#3059)', () => {
 
     const content = document.querySelector('[role="dialog"]')!
     expect(content.getAttribute('aria-labelledby')).toBe('my-trigger')
-    wrapper.unmount()
   })
 })
 
@@ -134,6 +135,8 @@ describe('given a Popover with an id only on the asChild trigger element', () =>
       },
     })
     const wrapper = mount(Harness, { attachTo: document.body })
+    // Unmount even when an assertion fails, so a failure cannot leak into later tests.
+    onTestFinished(() => wrapper.unmount())
     await flushPromises()
 
     const trigger = wrapper.get('button')
@@ -144,7 +147,6 @@ describe('given a Popover with an id only on the asChild trigger element', () =>
 
     const content = document.querySelector('[role="dialog"]')!
     expect(content.getAttribute('aria-labelledby')).toBe('child-trigger')
-    wrapper.unmount()
   })
 })
 

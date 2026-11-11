@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import type { StringOrNumber } from '@/shared/types'
-import { useForwardExpose } from '@/shared'
+import { useForwardExpose, useTriggerId } from '@/shared'
 
 export interface TabsTriggerProps extends PrimitiveProps {
   /** A unique value that associates the trigger with a content. */
@@ -12,7 +12,7 @@ export interface TabsTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
 import { injectTabsRootContext } from './TabsRoot.vue'
@@ -23,10 +23,24 @@ const props = withDefaults(defineProps<TabsTriggerProps>(), {
   as: 'button',
 })
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectTabsRootContext()
 
-const triggerId = computed(() => makeTriggerId(rootContext.baseId, props.value))
+const triggerId = computed(() => rootContext.triggerIds.value.get(props.value) ?? makeTriggerId(rootContext.baseId, props.value))
+// Only an id that differs from the generated one is registered, under the value the
+// trigger was created with.
+const registeredValue = props.value
+useTriggerId({
+  get triggerId() {
+    return triggerId.value
+  },
+  set triggerId(id) {
+    rootContext.triggerIds.value.set(registeredValue, id)
+  },
+}, currentElement)
+onBeforeUnmount(() => {
+  rootContext.triggerIds.value.delete(registeredValue)
+})
 const contentId = computed(() => rootContext.contentIds.value.has(props.value) ? makeContentId(rootContext.baseId, props.value) : undefined)
 
 const isSelected = computed(() => props.value === rootContext.modelValue.value)
