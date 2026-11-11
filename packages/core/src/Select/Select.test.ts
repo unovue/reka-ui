@@ -944,17 +944,28 @@ describe('given a Select root that stays mounted', () => {
       ]),
     }), { attachTo: document.body })
 
+    // Every open content element the collection has pointed at. None may come back.
+    const openContents: HTMLElement[] = []
+
     for (let cycle = 0; cycle < 2; cycle++) {
       open.value = true
       await vi.waitFor(() => expect(wrapper.find('[role="listbox"]').exists()).toBe(true))
       await flushPromises()
-      expect(collection.collectionRef.value?.contains(wrapper.get('[role="listbox"]').element)).toBe(true)
+      const openContent = collection.collectionRef.value!
+      expect(openContent.contains(wrapper.get('[role="listbox"]').element)).toBe(true)
+      expect(openContents).not.toContain(openContent)
       expect(wrapper.findAll('[role="option"]')).toHaveLength(2)
+      openContents.push(openContent)
 
       open.value = false
       await vi.waitFor(() => expect(wrapper.find('[role="listbox"]').exists()).toBe(false))
       await flushPromises()
-      expect(collection.collectionRef.value).toBeUndefined()
+      // While closed the collection is the detached fragment that the trigger's typeahead
+      // reads its items from, never the content that was just removed from the document.
+      const closedCollection = collection.collectionRef.value
+      expect(openContents).not.toContain(closedCollection)
+      expect(closedCollection?.isConnected).toBe(false)
+      expect(openContents.some(content => closedCollection?.contains(content) || content.contains(closedCollection!))).toBe(false)
     }
 
     wrapper.unmount()
