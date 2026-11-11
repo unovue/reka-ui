@@ -77,7 +77,7 @@ const virtualizer = useVirtualizer(
 
 // A row has its index as its key, so the row of a removed or replaced option stays for another option.
 // The highlight leaves with its option. The copy makes an in-place change of the array run the watcher.
-// Scrolling removes the collection entry of a row that leaves the window, so the option is kept here.
+// A row that scrolls out of the window loses its collection entry, so the highlighted option is kept here.
 let highlightedOption: { value: T } | undefined
 watch(rootContext.highlightedElement, (element) => {
   highlightedOption = element ? getItems(true).find(item => item.ref === element) : undefined

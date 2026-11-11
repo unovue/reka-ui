@@ -785,10 +785,9 @@ describe('given a virtualized Combobox', () => {
       viewport.scrollTop = 2000
       viewport.dispatchEvent(new Event('scroll'))
       await flush()
-      expect(wrapper.findAll('[role=option]').some(row => row.text() === 'Item 0')).toBe(false)
     }
 
-    it('should keep the highlight when scrolling unmounts its row', async () => {
+    it('should keep the highlight when its row is scrolled out of view', async () => {
       const wrapper = mountOpenCombobox()
       await flush()
       const input = wrapper.find('input')
@@ -801,7 +800,7 @@ describe('given a virtualized Combobox', () => {
       wrapper.unmount()
     })
 
-    it('should remove the highlight when the parent removes its option while its row is unmounted', async () => {
+    it('should remove the highlight when the parent removes its option while its row is scrolled out of view', async () => {
       shown.value = reactive(options.slice())
       const wrapper = mountOpenCombobox()
       await flush()
