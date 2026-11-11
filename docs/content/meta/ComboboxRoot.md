@@ -47,7 +47,7 @@
   },
   {
     'name': 'displayValue',
-    'description': '<p>The text the input shows for the selected value of a single combobox, when <code>ComboboxInput</code> has no <code>displayValue</code>\nof its own. Without either, a primitive value shows as its string form and an object value as an empty input.</p>\n',
+    'description': '<p>The text the input shows for the selected value of a single combobox, when <code>ComboboxInput</code> has no <code>displayValue</code>\nof its own. Without either, the text comes from <code>items</code>, then from the <code>label</code> key of an object value; a primitive\nvalue shows as its string form and any other object value as an empty input.</p>\n',
     'type': '((value: AcceptableValue) =&gt; string)',
     'required': false
   },
@@ -72,8 +72,8 @@
   },
   {
     'name': 'items',
-    'description': '<p>The options as data, in the shape <code>SelectRoot</code> takes: a record of value → label, or an array of\n<code>{ value, label, disabled? }</code> (optionally in groups, <code>{ items: [...] }</code>). The input shows the label of the selected\nvalue from it, and <code>selectedLabels</code> of the default slot lists the label of each selected value, so neither needs a\nrendered item: they are right before the first open and on the server. <code>displayValue</code> wins over it. The\n<code>ComboboxItem</code>s still render the list and are what the filter matches; a value it does not list shows as without it.</p>\n',
-    'type': 'ComboboxItems&lt;AcceptableValue&gt;',
+    'description': '<p>The items as data: an array of items, an array of groups of them (<code>{ items: [...] }</code>), or a collection made with\n<code>createComboboxItems()</code>. It is where the label of the selected value comes from, so the input and <code>ComboboxValue</code>\nneed no rendered item: they are right before the first open and on the server. A collection resolves a value (an\nid) to its label; in an array, <code>by</code> matches an object value to its item, whose <code>label</code> is shown. <code>displayValue</code>\nwins over it. The <code>ComboboxItem</code>s still render the list and are what the filter matches.</p>\n',
+    'type': 'readonly T[] | readonly ComboboxItemGroup&lt;T&gt;[] | ComboboxItemCollection&lt;T, AcceptableValue&gt;',
     'required': false
   },
   {
@@ -199,11 +199,6 @@
     'name': 'modelValue',
     'description': '<p>Current active value</p>\n',
     'type': 'ComboboxModelValue&lt;T, M&gt;'
-  },
-  {
-    'name': 'selectedLabels',
-    'description': '<p>The text of each selected value, in order: the root\'s <code>displayValue</code>, then its label in <code>items</code>, then the string\nform of a primitive value.</p>\n',
-    'type': 'string[]'
   }
 ]" />
 </llm-exclude>
@@ -221,11 +216,11 @@
 | `defaultValue` | The value of the Combobox when initially rendered. Use when you do not need to control the state of the Combobox. | `AcceptableValue \| AcceptableValue[] \| null` | No | - |
 | `dir` | The reading direction of the listbox when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When `true`, prevents the user from interacting with listbox | `boolean` | No | - |
-| `displayValue` | The text the input shows for the selected value of a single combobox, when `ComboboxInput` has no `displayValue` of its own. Without either, a primitive value shows as its string form and an object value as an empty input. | `((value: AcceptableValue) => string)` | No | - |
+| `displayValue` | The text the input shows for the selected value of a single combobox, when `ComboboxInput` has no `displayValue` of its own. Without either, the text comes from `items`, then from the `label` key of an object value; a primitive value shows as its string form and any other object value as an empty input. | `((value: AcceptableValue) => string)` | No | - |
 | `filter` | Whether an item matches the search term: called as `filter(text, search, value)` with the item's `textValue` (or its text content; in a `ComboboxVirtualizer`, `textContent(option)`). Omitted, items are matched with `useFilter`'s `contains` (base sensitivity). `null` turns client filtering off: filter the items yourself, or on a server. | `ListboxFilterFunction<AcceptableValue> \| null` | No | - |
 | `getNavigationIntent` | Resolves what a keydown in the input means for keyboard navigation. Return `undefined` to fall back to the default mapping, `null` to opt the key out (for Enter this also skips the selection), or `'select'` to select the highlighted item as Enter does. A `'next'` or `'prev'` intent also opens a closed popup. Unmodified printable keys, ArrowLeft and ArrowRight always stay text input. | `((event: KeyboardEvent) => ListboxNavigationIntent \| null \| undefined)` | No | - |
 | `highlightOnHover` | When `true`, hover over item will trigger highlight | `boolean` | No | `true` |
-| `items` | The options as data, in the shape `SelectRoot` takes: a record of value → label, or an array of `{ value, label, disabled? }` (optionally in groups, `{ items: [...] }`). The input shows the label of the selected value from it, and `selectedLabels` of the default slot lists the label of each selected value, so neither needs a rendered item: they are right before the first open and on the server. `displayValue` wins over it. The `ComboboxItem`s still render the list and are what the filter matches; a value it does not list shows as without it. | `ComboboxItems<AcceptableValue>` | No | - |
+| `items` | The items as data: an array of items, an array of groups of them (`{ items: [...] }`), or a collection made with `createComboboxItems()`. It is where the label of the selected value comes from, so the input and `ComboboxValue` need no rendered item: they are right before the first open and on the server. A collection resolves a value (an id) to its label; in an array, `by` matches an object value to its item, whose `label` is shown. `displayValue` wins over it. The `ComboboxItem`s still render the list and are what the filter matches. | `readonly T[] \| readonly ComboboxItemGroup<T>[] \| ComboboxItemCollection<T, AcceptableValue>` | No | - |
 | `loop` | When `true`, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
 | `modelValue` | The controlled value of the Combobox. Can be binded with `v-model`. An array when `multiple`; `null` is an empty single selection, the value `ComboboxCancel` emits when it clears one. | `AcceptableValue \| AcceptableValue[] \| null` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
@@ -256,6 +251,5 @@
 | --- | --- | --- |
 | `open` | Current open state | `boolean` |
 | `modelValue` | Current active value | `ComboboxModelValue<T, M>` |
-| `selectedLabels` | The text of each selected value, in order: the root's `displayValue`, then its label in `items`, then the string form of a primitive value. | `string[]` |
 
 </llm-only>
