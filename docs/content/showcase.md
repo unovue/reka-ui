@@ -90,6 +90,16 @@ projects:
     url: https://github.com/madebyzan/knovum
     image: https://raw.githubusercontent.com/madebyzan/knovum/main/docs/assets/readme/social-preview.jpg
 
+  - title: Article Banner
+    description: Free blog banner and Open Graph image maker that runs in the browser.
+    url: https://articlebanner.com/
+    image: https://articlebanner.com/article-banner.png
+
+  - title: JavaScript Quiz
+    description: Free JavaScript quiz with multiple choice questions and an explanation for every answer.
+    url: https://javascriptquiz.com/
+    image: https://javascriptquiz.com/og-image.png
+
 starters:
   - title: shadcn-docs
     description: A Nuxt content docs theme built with `shadcn-vue`
