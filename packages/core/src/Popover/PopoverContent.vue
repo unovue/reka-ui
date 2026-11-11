@@ -3,6 +3,16 @@ import type {
   PopoverContentImplEmits,
   PopoverContentImplProps,
 } from './PopoverContentImpl.vue'
+import { defineAsyncComponent } from 'vue'
+
+const PopoverContentModal = defineAsyncComponent({
+  loader: () => import('./PopoverContentModal.vue'),
+  suspensible: false,
+})
+const PopoverContentNonModal = defineAsyncComponent({
+  loader: () => import('./PopoverContentNonModal.vue'),
+  suspensible: false,
+})
 
 export type PopoverContentEmits = PopoverContentImplEmits
 
@@ -18,8 +28,6 @@ export interface PopoverContentProps extends PopoverContentImplProps {
 <script setup lang="ts">
 import { Presence } from '@/Presence'
 import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
-import PopoverContentModal from './PopoverContentModal.vue'
-import PopoverContentNonModal from './PopoverContentNonModal.vue'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 
 const props = defineProps<PopoverContentProps>()

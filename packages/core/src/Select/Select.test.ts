@@ -1,12 +1,13 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { fireEvent } from '@testing-library/vue'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, inject, nextTick, ref } from 'vue'
 import { handleSubmit } from '@/test'
 import { SelectContent, SelectItem, SelectItemIndicator, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '.'
 import SelectUnmountCleanup from './__test__/SelectUnmountCleanup.vue'
+import { injectSelectContentContext } from './SelectContentImpl.vue'
 import Select from './story/_SelectTest.vue'
 
 beforeAll(() => {
@@ -27,6 +28,27 @@ describe('given default Select', () => {
     document.body.innerHTML = ''
     wrapper = mount(Select, { attachTo: document.body })
     valueBox = wrapper.find('[aria-label="Customise options"]')
+  })
+
+  it('disables options when the select becomes disabled while open', async () => {
+    wrapper.unmount()
+    wrapper = mount(Select, { attachTo: document.body, props: { disabled: false } })
+    await fireEvent.pointerDown(wrapper.find('button').element, { button: 0, ctrlKey: false })
+    await nextTick()
+    const option = wrapper.findAll('[role=option]')[1]
+
+    await wrapper.setProps({ disabled: true })
+    await nextTick()
+    expect(option.attributes('aria-disabled')).toBe('true')
+    await option.trigger('pointerup')
+    await option.trigger('keydown', { key: 'Enter' })
+    await nextTick()
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+
+    await wrapper.setProps({ disabled: false })
+    await option.trigger('pointerup')
+    await nextTick()
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['Banana'])
   })
 
   it('should pass axe accessibility tests', async () => {
@@ -179,6 +201,67 @@ describe('given default Select', () => {
           const selection = wrapper.findAll('[role=option]')[1]
           expect(selection.html()).toContain('svg')
         })
+      })
+    })
+
+    describe('touch interop', () => {
+      it('should not select the item a touch scroll ends on', async () => {
+        const selection = wrapper.findAll('[role=option]')[1]
+        await fireEvent.pointerDown(selection.element, { pointerType: 'touch' })
+        // iOS Safari fires pointerup on the item under the finger when the scroll stops, but no click follows
+        await fireEvent.pointerUp(selection.element, { pointerType: 'touch' })
+        await nextTick()
+
+        expect(valueBox.html()).not.toContain('Banana')
+        expect(wrapper.find('[role=group]').exists()).toBeTruthy()
+      })
+
+      it('should select on the click that follows a tap', async () => {
+        const selection = wrapper.findAll('[role=option]')[1]
+        await fireEvent.pointerDown(selection.element, { pointerType: 'touch' })
+        await fireEvent.pointerUp(selection.element, { pointerType: 'touch' })
+        // A real tap's click has `detail: 1`
+        await fireEvent.click(selection.element, { detail: 1 })
+
+        await vi.waitFor(() => expect(valueBox.html()).toContain('Banana'))
+        // The content unmounts a macrotask after the selection
+        await vi.waitFor(() => expect(wrapper.find('[role=group]').exists()).toBeFalsy())
+      })
+
+      it('should not select on a click that did not start on the item', async () => {
+        // Tapping the trigger opens the content, and that tap's click can land on an item
+        const selection = wrapper.findAll('[role=option]')[1]
+        await fireEvent.click(selection.element, { detail: 1 })
+        await nextTick()
+        await nextTick()
+
+        expect(valueBox.html()).not.toContain('Banana')
+        expect(wrapper.find('[role=group]').exists()).toBeTruthy()
+      })
+
+      it('should select on a pen pointerup', async () => {
+        const selection = wrapper.findAll('[role=option]')[1]
+        // Needs 2 pointerup because SelectContentImpl prevents accidental pointerup's
+        await fireEvent.pointerUp(selection.element, { pointerType: 'pen' })
+        await fireEvent.pointerUp(selection.element, { pointerType: 'pen' })
+
+        await vi.waitFor(() => expect(valueBox.html()).toContain('Banana'))
+      })
+
+      it('should select on a click without pointer events', async () => {
+        // Assistive technology activates with a click that no pointer produced (`detail: 0`)
+        const selection = wrapper.findAll('[role=option]')[1]
+        await fireEvent.click(selection.element)
+
+        await vi.waitFor(() => expect(valueBox.html()).toContain('Banana'))
+      })
+
+      it('should not highlight items a finger scrolls across', async () => {
+        const selection = wrapper.findAll('[role=option]')[1]
+        await fireEvent.pointerMove(selection.element, { pointerType: 'touch' })
+        await nextTick()
+
+        expect(selection.attributes('data-highlighted')).toBeUndefined()
       })
     })
   })
@@ -479,6 +562,34 @@ describe('given Select in a form', async () => {
   })
 })
 
+describe('given an initially disabled, open Select', () => {
+  it('keeps a fallback item for positioning and scrolling after enabling', async () => {
+    const disabled = ref(true)
+    const ContentProbe = defineComponent({
+      setup() {
+        const context = injectSelectContentContext()
+        return () => h('span', { 'data-testid': 'scroll-item' }, context.selectedItem?.value?.textContent)
+      },
+    })
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(SelectRoot, { open: true, disabled: disabled.value }, () =>
+          h(SelectContent, { position: 'popper' }, () => [
+            h(SelectViewport, () => ['Apple', 'Orange'].map(value =>
+              h(SelectItem, { value }, () => h(SelectItemText, () => value)),
+            )),
+            h(ContentProbe),
+          ]))
+      },
+    }), { attachTo: document.body })
+    await nextTick()
+    disabled.value = false
+    await nextTick()
+    expect(wrapper.get('[data-testid="scroll-item"]').text()).toBe('Apple')
+    wrapper.unmount()
+  })
+})
+
 describe('given SelectItem slot props and SelectItemIndicator', () => {
   function mountSelect(forceMount = false) {
     const modelValue = ref('a')
@@ -689,5 +800,41 @@ describe('given SelectTrigger with consumer event listeners', () => {
     await fireEvent.keyDown(trigger, { key: 'Shift' })
     await fireEvent.keyDown(trigger, { key: ' ' })
     expect(open.value).toBe(true)
+  })
+})
+
+describe('given a Select root that stays mounted', () => {
+  it.each(['item-aligned', 'popper'] as const)('should release the closed content from the collection with position=%s', async (position) => {
+    let collection!: { collectionRef: { value: HTMLElement | undefined } }
+    const CollectionProbe = defineComponent({
+      setup() {
+        collection = inject('CollectionProvider')!
+        return () => null
+      },
+    })
+    const open = ref(false)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(SelectRoot, { open: open.value }, () => [
+        h(CollectionProbe),
+        h(SelectTrigger, { 'aria-label': 'Food' }, () => h(SelectValue, { placeholder: 'Pick' })),
+        h(SelectContent, { position }, () => h(SelectViewport, () => ['Apple', 'Banana'].map(value =>
+          h(SelectItem, { key: value, value }, () => h(SelectItemText, () => value))))),
+      ]),
+    }), { attachTo: document.body })
+
+    for (let cycle = 0; cycle < 2; cycle++) {
+      open.value = true
+      await vi.waitFor(() => expect(wrapper.find('[role="listbox"]').exists()).toBe(true))
+      await flushPromises()
+      expect(collection.collectionRef.value?.contains(wrapper.get('[role="listbox"]').element)).toBe(true)
+      expect(wrapper.findAll('[role="option"]')).toHaveLength(2)
+
+      open.value = false
+      await vi.waitFor(() => expect(wrapper.find('[role="listbox"]').exists()).toBe(false))
+      await flushPromises()
+      expect(collection.collectionRef.value).toBeUndefined()
+    }
+
+    wrapper.unmount()
   })
 })

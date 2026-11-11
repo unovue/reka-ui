@@ -21,10 +21,10 @@ export interface ToastViewportProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { onKeyStroke, unrefElement } from '@vueuse/core'
-import { computed, onMounted, ref, toRefs, watch, watchEffect } from 'vue'
+import { onKeyStroke, unrefElement, useEventListener } from '@vueuse/core'
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRefs, watch, watchEffect } from 'vue'
 import { DismissableLayerBranch } from '@/DismissableLayer'
-import { focusFirst, getTabbableCandidates } from '@/FocusScope/utils'
+import { focusFirst, getTabbableCandidates, getTabStopsAfter } from '@/FocusScope/utils'
 import { Primitive } from '@/Primitive'
 import FocusProxy from './FocusProxy.vue'
 import { injectToastProviderContext } from './ToastProvider.vue'
@@ -52,17 +52,62 @@ const KEY_RE = /Key/g
 const DIGIT_RE = /Digit/g
 const hotkeyMessage = computed(() => hotkey.value.join('+').replace(KEY_RE, '').replace(DIGIT_RE, ''))
 
+// `currentElement` re-resolves only when this component updates. An `asChild` child that
+// the parent swaps (e.g. with `v-if`) re-renders only the slot, so the element is re-read
+// whenever the children of the branch element change instead.
+const branchRef = ref<ComponentPublicInstance>()
+let primitiveRef: Element | ComponentPublicInstance | null = null
+const viewportElement = shallowRef<HTMLElement>()
+let observer: MutationObserver | undefined
+
+function forwardPrimitiveRef(ref: Element | ComponentPublicInstance | null) {
+  primitiveRef = ref
+  forwardRef(ref)
+}
+
 onKeyStroke(hotkey.value, () => {
-  currentElement.value.focus()
+  viewportElement.value?.focus()
 })
 
 onMounted(() => {
   providerContext.onViewportChange(currentElement.value)
+  viewportElement.value = currentElement.value
+  observer = new MutationObserver(() => {
+    const element = unrefElement(primitiveRef as ComponentPublicInstance)
+    // An `asChild` slot that renders nothing leaves a comment anchor, which can't hold toasts.
+    if (element instanceof HTMLElement)
+      viewportElement.value = element
+  })
+  observer.observe(unrefElement(branchRef)!, { childList: true })
 })
+
+onBeforeUnmount(() => observer?.disconnect())
 
 // Collapse only once closing toasts have finished animating, so the stack does not
 // shift under the pointer while a toast is dismissed.
 const pendingPointerLeave = ref(false)
+
+// Toasts teleport into and listen on `providerContext.viewport`, so keep it on the
+// current element when the element is replaced after mount.
+watch(viewportElement, (element) => {
+  const previous = providerContext.viewport.value
+  if (!element || !previous || element === previous)
+    return
+
+  // The pause listeners on the old element are gone, and focus or hover inside it went
+  // with it, so release its pause while the toasts still listen there. A window-blur
+  // pause is kept: the window `focus` listener on the new element releases it.
+  if (providerContext.isClosePausedRef.value && document.hasFocus()) {
+    previous.dispatchEvent(new CustomEvent(VIEWPORT_RESUME))
+    providerContext.isClosePausedRef.value = false
+  }
+  providerContext.focused.value = element.contains(getActiveElement())
+  // The old element took its `pointerleave` with it. Collapse as a leave would, and a
+  // `pointermove` on the new element expands the stack again.
+  pendingPointerLeave.value = true
+  providerContext.onViewportChange(element)
+}, { flush: 'post' })
+
 watch([pendingPointerLeave, providerContext.closingCount], ([pending, closingCount]) => {
   if (pending && closingCount === 0) {
     providerContext.hovering.value = false
@@ -78,8 +123,19 @@ watch(hasToasts, (value) => {
   }
 })
 
+function releasePause(viewport: HTMLElement | undefined) {
+  if (providerContext.isClosePausedRef.value) {
+    viewport?.dispatchEvent(new CustomEvent(VIEWPORT_RESUME))
+    providerContext.isClosePausedRef.value = false
+  }
+}
+
+// Releases a blur pause, including one left over after the last toast closed, which would
+// otherwise keep later toasts from ever starting their timers.
+useEventListener('focus', () => releasePause(viewportElement.value))
+
 watchEffect((cleanupFn) => {
-  const viewport = currentElement.value
+  const viewport = viewportElement.value
   if (hasToasts.value && viewport) {
     const handlePause = () => {
       if (!providerContext.isClosePausedRef.value) {
@@ -89,13 +145,7 @@ watchEffect((cleanupFn) => {
       }
     }
 
-    const handleResume = () => {
-      if (providerContext.isClosePausedRef.value) {
-        const resumeEvent = new CustomEvent(VIEWPORT_RESUME)
-        viewport.dispatchEvent(resumeEvent)
-        providerContext.isClosePausedRef.value = false
-      }
-    }
+    const handleResume = () => releasePause(viewport)
 
     const handleFocusOutResume = (event: FocusEvent) => {
       const isFocusMovingOutside = !viewport.contains(event.relatedTarget as HTMLElement)
@@ -142,8 +192,7 @@ watchEffect((cleanupFn) => {
 
         const tabbingDirection = isTabbingBackwards ? 'backwards' : 'forwards'
         const sortedCandidates = getSortedTabbableCandidates({ tabbingDirection })
-        const index = sortedCandidates.findIndex(candidate => candidate === focusedElement)
-        if (focusFirst(sortedCandidates.slice(index + 1))) {
+        if (focusFirst(getTabStopsAfter(sortedCandidates, focusedElement))) {
           event.preventDefault()
         }
         else {
@@ -165,7 +214,6 @@ watchEffect((cleanupFn) => {
     viewport.addEventListener('pointerleave', handlePointerLeaveResume)
     viewport.addEventListener('keydown', handleKeyDown)
     window.addEventListener('blur', handlePause)
-    window.addEventListener('focus', handleResume)
 
     cleanupFn(() => {
       viewport.removeEventListener('focusin', handlePause)
@@ -176,7 +224,8 @@ watchEffect((cleanupFn) => {
       viewport.removeEventListener('pointerleave', handlePointerLeaveResume)
       viewport.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('blur', handlePause)
-      window.removeEventListener('focus', handleResume)
+      if (document.hasFocus())
+        releasePause(viewport)
     })
   }
 })
@@ -197,6 +246,7 @@ function getSortedTabbableCandidates({ tabbingDirection }: { tabbingDirection: '
 
 <template>
   <DismissableLayerBranch
+    ref="branchRef"
     role="region"
     :aria-label="typeof label === 'string' ? label.replace('{hotkey}', hotkeyMessage) : label(hotkeyMessage)"
     tabindex="-1"
@@ -222,7 +272,7 @@ function getSortedTabbableCandidates({ tabbingDirection }: { tabbingDirection: '
     />
     <CollectionSlot>
       <Primitive
-        :ref="forwardRef"
+        :ref="forwardPrimitiveRef"
         tabindex="-1"
         :as="as"
         :as-child="asChild"

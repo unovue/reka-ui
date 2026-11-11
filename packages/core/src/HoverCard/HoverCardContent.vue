@@ -1,5 +1,11 @@
 <script lang="ts">
 import type { HoverCardContentImplEmits, HoverCardContentImplProps } from './HoverCardContentImpl.vue'
+import { defineAsyncComponent } from 'vue'
+
+const HoverCardContentImpl = defineAsyncComponent({
+  loader: () => import('./HoverCardContentImpl.vue'),
+  suspensible: false,
+})
 
 export type HoverCardContentEmits = HoverCardContentImplEmits
 
@@ -15,7 +21,6 @@ export interface HoverCardContentProps extends HoverCardContentImplProps {
 <script setup lang="ts">
 import { Presence } from '@/Presence'
 import { useForwardExpose, useForwardPropsEmits } from '@/shared'
-import HoverCardContentImpl from './HoverCardContentImpl.vue'
 import { injectHoverCardRootContext } from './HoverCardRoot.vue'
 import { excludeTouch } from './utils'
 

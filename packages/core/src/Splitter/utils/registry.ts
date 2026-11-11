@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 import type { Direction, ResizeEvent } from './types'
+import { isElement } from '@/shared'
 import { getResizeEventCoordinates } from './events'
 import { intersects } from './rects'
 import { compare } from './stackingOrder'
@@ -176,12 +177,17 @@ function recalculateIntersectingHandles({
 }) {
   intersectingHandles.splice(0)
 
-  let targetElement: HTMLElement | null = null
-  if (target instanceof HTMLElement)
-    targetElement = target
+  // Any element, SVG included: an icon above a handle covers it as much as a DIV does
+  const targetElement = isElement(target) ? target : null
 
   registeredResizeHandlers.forEach((data) => {
     const { element: dragHandleElement, hitAreaMargins } = data
+
+    // A handle in another document (an iframe or a popup window) lays out in another viewport,
+    // so the pointer's coordinates say nothing about it, and the stacking order of the two
+    // documents cannot be compared
+    if (targetElement !== null && dragHandleElement.ownerDocument !== targetElement.ownerDocument)
+      return
 
     const dragHandleRect = dragHandleElement.getBoundingClientRect()
     const { bottom, left, right, top } = dragHandleRect
@@ -219,7 +225,7 @@ function recalculateIntersectingHandles({
         // It's not enough to compare only the target
         // The target might be a small element inside of a larger container
         // (For example, a SPAN or a DIV inside of a larger modal dialog)
-        let currentElement: HTMLElement | null = targetElement
+        let currentElement: Element | null = targetElement
         let didIntersect = false
         while (currentElement) {
           if (currentElement.contains(dragHandleElement)) {
