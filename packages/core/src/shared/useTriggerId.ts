@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import { onMounted, ref, useAttrs } from 'vue'
+import { onBeforeUpdate, onMounted, onUpdated, ref, useAttrs } from 'vue'
 
 /**
  * Backs the given string properties of a context object with refs, so the context
@@ -24,25 +24,34 @@ export function defineReactiveIds<T extends object, K extends keyof T>(context: 
  *
  * - An `id` the consumer passes to the trigger wins.
  * - Otherwise the id already on the context is kept, or `generate` fills it.
- * - Once mounted, the id the element really rendered wins: with `asChild`, an `id`
- *   on the child element overrides the one passed down.
- *
- * The consumer id is read once, during setup.
+ * - Once mounted, and after every update, the id the element really rendered wins:
+ *   with `asChild`, an `id` on the child element overrides the one passed down, and a
+ *   consumer `id` that changes after mount is picked up.
  */
 export function useTriggerId(
   context: { triggerId: string },
   element: Readonly<Ref<HTMLElement | undefined>>,
   generate?: () => string,
 ) {
-  const consumerId = useAttrs().id
+  const attrs = useAttrs()
+  let consumerId = attrs.id
   if (typeof consumerId === 'string' && consumerId)
     context.triggerId = consumerId
   else if (!context.triggerId && generate)
     context.triggerId = generate()
 
-  onMounted(() => {
+  onBeforeUpdate(() => {
+    if (attrs.id === consumerId)
+      return
+    consumerId = attrs.id
+    if (typeof consumerId === 'string' && consumerId)
+      context.triggerId = consumerId
+  })
+  const syncRendered = () => {
     const renderedId = element.value?.id
     if (renderedId && renderedId !== context.triggerId)
       context.triggerId = renderedId
-  })
+  }
+  onMounted(syncRendered)
+  onUpdated(syncRendered)
 }

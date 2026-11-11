@@ -12,7 +12,7 @@ export interface TabsTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount } from 'vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
 import { injectTabsRootContext } from './TabsRoot.vue'
@@ -27,19 +27,32 @@ const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectTabsRootContext()
 
 const triggerId = computed(() => rootContext.triggerIds.value.get(props.value) ?? makeTriggerId(rootContext.baseId, props.value))
-// Only an id that differs from the generated one is registered, under the value the
-// trigger was created with.
-const registeredValue = props.value
+// Only an id that differs from the generated one is registered, under the trigger's
+// current value.
+let registeredValue: StringOrNumber | undefined
 useTriggerId({
   get triggerId() {
     return triggerId.value
   },
   set triggerId(id) {
-    rootContext.triggerIds.value.set(registeredValue, id)
+    if (registeredValue !== undefined && registeredValue !== props.value)
+      rootContext.triggerIds.value.delete(registeredValue)
+    registeredValue = props.value
+    rootContext.triggerIds.value.set(props.value, id)
   },
 }, currentElement)
-onBeforeUnmount(() => {
+watch(() => props.value, (value) => {
+  if (registeredValue === undefined || registeredValue === value)
+    return
+  const id = rootContext.triggerIds.value.get(registeredValue)
   rootContext.triggerIds.value.delete(registeredValue)
+  registeredValue = value
+  if (id)
+    rootContext.triggerIds.value.set(value, id)
+}, { flush: 'sync' })
+onBeforeUnmount(() => {
+  if (registeredValue !== undefined)
+    rootContext.triggerIds.value.delete(registeredValue)
 })
 const contentId = computed(() => rootContext.contentIds.value.has(props.value) ? makeContentId(rootContext.baseId, props.value) : undefined)
 

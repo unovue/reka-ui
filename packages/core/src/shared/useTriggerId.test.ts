@@ -2,7 +2,7 @@ import type { Component, VNode } from 'vue'
 import { renderToString } from '@vue/server-renderer'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createSSRApp, defineComponent, h } from 'vue'
+import { createSSRApp, defineComponent, h, ref } from 'vue'
 import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger } from '@/Accordion'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/DropdownMenu'
 import { MenubarContent, MenubarItem, MenubarMenu, MenubarPortal, MenubarRoot, MenubarSub, MenubarSubContent, MenubarSubTrigger, MenubarTrigger } from '@/Menubar'
@@ -131,6 +131,42 @@ describe('trigger ids', () => {
       await vi.waitFor(() => expect(getContent()!.getAttribute('aria-labelledby')).toBe(trigger.id))
       expect(document.getElementById(getContent()!.getAttribute('aria-labelledby')!)).toBe(trigger)
     })
+  })
+
+  describe.each(Object.entries(families))('given a %s whose trigger id changes after mount', (_, family) => {
+    it('should keep the content labelled by the new id', async () => {
+      const id = ref('first-id')
+      const wrapper = mount(defineComponent({
+        render: () => family.render((component, props) => h(component, { 'id': id.value, 'data-testid': 'trigger', ...props }, () => 'Trigger')),
+      }), { attachTo: document.body })
+      unmount = () => wrapper.unmount()
+      await vi.waitFor(() => expect(getContent()).not.toBeNull())
+      await flushPromises()
+
+      id.value = 'second-id'
+      await flushPromises()
+
+      expect(getTrigger()!.id).toBe('second-id')
+      await vi.waitFor(() => expect(getContent()!.getAttribute('aria-labelledby')).toBe('second-id'))
+    })
+  })
+
+  it('should move a custom Tabs trigger id to the trigger\'s new value', async () => {
+    const value = ref('a')
+    const wrapper = mount(defineComponent({
+      render: () => h(TabsRoot, { modelValue: value.value }, () => [
+        h(TabsList, () => h(TabsTrigger, { 'id': 'custom-id', 'value': value.value, 'data-testid': 'trigger' }, () => 'Trigger')),
+        h(TabsContent, { value: value.value, ...content }, () => 'Content'),
+      ]),
+    }), { attachTo: document.body })
+    unmount = () => wrapper.unmount()
+    await flushPromises()
+
+    value.value = 'b'
+    await flushPromises()
+
+    expect(getTrigger()!.id).toBe('custom-id')
+    expect(getContent()!.getAttribute('aria-labelledby')).toBe('custom-id')
   })
 
   describe.each(['Accordion', 'Tabs'])('given a server-rendered %s with an id on the trigger', (name) => {
