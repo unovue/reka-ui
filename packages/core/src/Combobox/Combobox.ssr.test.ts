@@ -3,24 +3,28 @@
 import { renderToString } from '@vue/server-renderer'
 import { describe, expect, it } from 'vitest'
 import { createSSRApp, defineComponent, h } from 'vue'
-import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxViewport } from '.'
+import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxValue, ComboboxViewport, createComboboxItems } from '.'
 
-const fruits = [{ value: 'a', label: 'Apple' }, { value: 'b', label: 'Banana' }]
+const data = [{ id: 'a', name: 'Apple' }, { id: 'b', name: 'Banana' }]
+interface Fruit { id: string, name: string }
+const options = { getValue: (fruit: Fruit) => fruit.id, getLabel: (fruit: Fruit) => fruit.name }
+const fruits = createComboboxItems(data, options)
 
-function fixture(rootProps: Record<string, unknown>) {
+function fixture(rootProps: Record<string, unknown>, valueProps: Record<string, unknown> | null = null) {
   return defineComponent({
-    setup: () => () => h(ComboboxRoot, rootProps, {
-      default: ({ selectedLabels }: { selectedLabels: string[] }) => [
-        h('ul', selectedLabels.map(label => h('li', `chip:${label}`))),
-        h(ComboboxAnchor, () => h(ComboboxInput)),
-        h(ComboboxPortal, () => h(ComboboxContent, () => h(ComboboxViewport, () =>
-          fruits.map(fruit => h(ComboboxItem, { value: fruit.value }, () => fruit.label))))),
-      ],
-    }),
+    setup: () => () => h(ComboboxRoot, rootProps, () => [
+      h('p', h(ComboboxValue, valueProps)),
+      h('ul', h(ComboboxValue, null, {
+        default: ({ selectedLabels }: { selectedLabels: string[] }) => selectedLabels.map(label => h('li', `chip:${label}`)),
+      })),
+      h(ComboboxAnchor, () => h(ComboboxInput)),
+      h(ComboboxPortal, () => h(ComboboxContent, () => h(ComboboxViewport, () =>
+        data.map(fruit => h(ComboboxItem, { value: fruit.id }, () => fruit.name))))),
+    ]),
   })
 }
 
-const render = (rootProps: Record<string, unknown>) => renderToString(createSSRApp(fixture(rootProps)))
+const render = (rootProps: Record<string, unknown>, valueProps?: Record<string, unknown>) => renderToString(createSSRApp(fixture(rootProps, valueProps)))
 
 describe('given a closed Combobox on the server', () => {
   it('has no document to read', () => {
@@ -39,13 +43,24 @@ describe('given a closed Combobox on the server', () => {
     expect(html).not.toContain('role="option"')
   })
 
-  it('renders the label from a record and from groups', async () => {
-    expect(await render({ defaultValue: 'b', items: { a: 'Apple', b: 'Banana' } })).toContain('value="Banana"')
-    expect(await render({ defaultValue: 'b', items: [{ label: 'Fruits', items: fruits }] })).toContain('value="Banana"')
+  it('renders the label from a grouped collection', async () => {
+    const items = createComboboxItems([{ label: 'Fruits', items: data }], options)
+    expect(await render({ defaultValue: 'b', items })).toContain('value="Banana"')
   })
 
-  it('renders the labels of a multiple selection through `selectedLabels`', async () => {
+  it('renders the `label` key of an object value, and the label of the item `by` matches', async () => {
+    expect(await render({ defaultValue: { id: 2, label: 'Two' } })).toContain('value="Two"')
+    expect(await render({ defaultValue: { id: 2 }, by: 'id', items: [{ id: 2, label: 'Two' }] })).toContain('value="Two"')
+  })
+
+  it('renders the text of `ComboboxValue`: the label, or the placeholder', async () => {
+    expect(await render({ defaultValue: 'b', items: fruits })).toContain('<p><!--[-->Banana<!--]--></p>')
+    expect(await render({ items: fruits }, { placeholder: 'Pick a fruit' })).toContain('<p><!--[-->Pick a fruit<!--]--></p>')
+  })
+
+  it('renders the labels of a multiple selection through `ComboboxValue`', async () => {
     const html = await render({ defaultValue: ['b', 'a'], multiple: true, items: fruits })
+    expect(html).toContain('<p><!--[-->Banana, Apple<!--]--></p>')
     expect(html).toContain('<li>chip:Banana</li><li>chip:Apple</li>')
   })
 })

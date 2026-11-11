@@ -1,11 +1,8 @@
-import type { ComputedRef, MaybeRefOrGetter } from 'vue'
 import type { By } from './compare'
 import type { AcceptableValue } from './types'
-import { computed, toValue } from 'vue'
 import { compare } from './compare'
 
-// The `items` prop of Select and Combobox: the options as data, next to the
-// rendered items. One shape for every family that takes it.
+// The `items` prop of Select: the options as data, next to the rendered items.
 
 /** One option of a root's `items`. */
 export interface ListItemData<T = AcceptableValue> {
@@ -91,28 +88,4 @@ export function createListItemsIndex<T>(items: ListItems<T> | undefined, by: By<
       return list.find(item => compare(item.value, value, by))
     },
   }
-}
-
-/**
- * What a root that reads `items` on demand keeps: the prop, `by`, and the
- * index, which is only created by the first lookup that finds `items` set.
- * @internal
- */
-export interface ListItemsSource<T> {
-  items?: MaybeRefOrGetter<ListItems<T> | undefined>
-  by?: By<T>
-  /** @internal */
-  itemsIndex?: ComputedRef<ListItemsIndex<T> | undefined>
-}
-
-/**
- * The `items` entry of `value`, or `undefined` when `items` is not set or does
- * not list it. Reactive: a caller inside an effect follows `items`. A root
- * without `items` holds no index and no `computed`.
- * @internal
- */
-export function getListItemData<T>(source: ListItemsSource<T>, value: T): ListItemData<T> | undefined {
-  if (source.items === undefined || toValue(source.items) === undefined)
-    return undefined
-  return (source.itemsIndex ??= computed(() => createListItemsIndex(toValue(source.items), source.by))).value?.get(value)
 }

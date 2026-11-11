@@ -1,13 +1,14 @@
-// The `items` prop: the options as data, in the shape `SelectRoot` takes. It
-// labels the selected value where no rendered item can (before the first open,
-// filtered out, not rendered); the rendered items stay the list.
+// The `items` prop: the items as data (an array, groups, or a
+// `createComboboxItems()` collection). It labels the selected value where no
+// rendered item can (before the first open, filtered out, not rendered); the
+// rendered items stay the list.
 import type { Ref } from 'vue'
 import type { ComboboxRootContext } from '.'
 import { renderToString } from '@vue/server-renderer'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
-import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport, injectComboboxRootContext } from '.'
+import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxValue, ComboboxViewport, createComboboxItems, injectComboboxRootContext } from '.'
 
 beforeAll(() => {
   window.HTMLElement.prototype.scrollIntoView = vi.fn()
@@ -61,8 +62,11 @@ function fixture(props: () => Record<string, unknown>, options: { children?: () 
       ...(model ? { 'modelValue': model.value, 'onUpdate:modelValue': (value: any) => { model.value = value } } : {}),
       ...props(),
     }, {
-      default: ({ selectedLabels }: { selectedLabels: string[] }) => [
-        selectedLabels.map(label => h('span', { 'data-testid': 'chip' }, label)),
+      default: (slotProps: Record<string, unknown>) => [
+        h('output', { 'data-testid': 'root-slot' }, Object.keys(slotProps).sort().join(',')),
+        h(ComboboxValue, null, {
+          default: ({ selectedLabels }: { selectedLabels: string[] }) => selectedLabels.map(label => h('span', { 'data-testid': 'chip' }, label)),
+        }),
         h(Probe),
         h(ComboboxAnchor, () => [
           h(ComboboxInput, { 'data-testid': 'input', ...options.inputProps }),
@@ -81,7 +85,15 @@ function make(props: () => Record<string, unknown>, options: Parameters<typeof f
   return { model, wrapper }
 }
 
-const fruits = [{ value: 'a', label: 'Apple' }, { value: 'b', label: 'Banana' }]
+interface Fruit { id: string, name: string }
+const fruitData: Fruit[] = [{ id: 'a', name: 'Apple' }, { id: 'b', name: 'Banana' }]
+const collect = (data: Fruit[] | { items: Fruit[] }[]) => createComboboxItems(data, { getValue: fruit => fruit.id, getLabel: fruit => fruit.name })
+const fruits = collect(fruitData)
+
+interface Option { id: number, label: string }
+const one: Option = { id: 1, label: 'One' }
+const two: Option = { id: 2, label: 'Two' }
+const objectChildren = () => [{ value: one, text: 'One' }, { value: two, text: 'Two' }]
 
 describe('given a Combobox without `items`', () => {
   it('shows the value itself in the input, as before', async () => {
@@ -99,15 +111,59 @@ describe('given a Combobox without `items`', () => {
     expect(context.itemsIndex).toBeUndefined()
   })
 
-  it('does not resolve an object value', async () => {
+  it('does not resolve an object value without a `label`', async () => {
     make(() => ({}), { model: ref({ id: 1 }), children: () => [] })
     await settle()
     expect(input().value).toBe('')
     expect(chips()).toEqual([''])
   })
+
+  it('shows the `label` key of an object value', async () => {
+    const { model } = make(() => ({}), { model: ref<any>(two), children: objectChildren })
+    await settle()
+    expect(options()).toEqual([])
+    expect(input().value).toBe('Two')
+    expect(chips()).toEqual(['Two'])
+    await pick('One')
+    expect(model.value).toEqual(one)
+    expect(input().value).toBe('One')
+    // A label that is not a string shows as its string form; `null` is no label.
+    model.value = { id: 3, label: 3 }
+    await settle()
+    expect(input().value).toBe('3')
+    model.value = { id: 4, label: null }
+    await settle()
+    expect(input().value).toBe('')
+  })
+
+  it('follows the `label` of the selected object when it is changed in place', async () => {
+    const model = ref<any>({ id: 1, label: 'One' })
+    make(() => ({}), { model, children: () => [] })
+    await settle()
+    model.value.label = 'Uno'
+    await settle()
+    expect(input().value).toBe('Uno')
+  })
+
+  it('lets `displayValue` win over the `label` key, on the root and on the input', async () => {
+    make(() => ({ displayValue: (value: Option) => `root:${value.id}` }), { model: ref(two), children: () => [] })
+    await settle()
+    expect(input().value).toBe('root:2')
+    expect(chips()).toEqual(['root:2'])
+    document.body.innerHTML = ''
+    make(() => ({ displayValue: (value: Option) => `root:${value.id}` }), { model: ref(two), children: () => [], inputProps: { displayValue: (value: Option) => `input:${value.id}` } })
+    await settle()
+    expect(input().value).toBe('input:2')
+  })
+
+  it('does not pass `selectedLabels` to the root slot', async () => {
+    make(() => ({ items: fruits }), { model: ref('b') })
+    await settle()
+    expect(document.querySelector('[data-testid=root-slot]')!.textContent).toBe('modelValue,open')
+  })
 })
 
-describe('given a Combobox with `items`', () => {
+describe('given a Combobox with a `createComboboxItems()` collection', () => {
   it('shows the selected label before the list has ever rendered', async () => {
     make(() => ({ items: fruits }), { model: ref('b') })
     await settle()
@@ -116,30 +172,23 @@ describe('given a Combobox with `items`', () => {
     expect(chips()).toEqual(['Banana'])
   })
 
-  it('takes a record of value to label, also for a number value', async () => {
-    const { model } = make(() => ({ items: { 1: 'One', 2: 'Two' } }), { model: ref<any>(2), children: () => [] })
+  it('resolves number values, and not their string form', async () => {
+    const items = createComboboxItems([{ id: 1, name: 'One' }, { id: 2, name: 'Two' }], { getValue: item => item.id, getLabel: item => item.name })
+    const { model } = make(() => ({ items }), { model: ref<any>(2), children: () => [] })
     await settle()
     expect(input().value).toBe('Two')
     model.value = '1'
     await settle()
-    expect(input().value).toBe('One')
+    expect(input().value).toBe('1')
   })
 
-  it('takes groups, alone or mixed with plain options', async () => {
-    const items = [{ value: 'a', label: 'Apple' }, { label: 'Vegetables', items: [{ value: 'c', label: 'Carrot' }] }]
-    const { model } = make(() => ({ items }), { model: ref('c'), children: () => [] })
+  it('takes groups', async () => {
+    const { model } = make(() => ({ items: collect([{ items: [{ id: 'a', name: 'Apple' }] }, { items: [{ id: 'c', name: 'Carrot' }] }]) }), { model: ref('c'), children: () => [] })
     await settle()
     expect(input().value).toBe('Carrot')
     model.value = 'a'
     await settle()
     expect(input().value).toBe('Apple')
-  })
-
-  it('matches object values with `by`', async () => {
-    const items = [{ value: { id: 1 }, label: 'One' }, { value: { id: 2 }, label: 'Two' }]
-    make(() => ({ items, by: 'id' }), { model: ref({ id: 2, extra: true }), children: () => [] })
-    await settle()
-    expect(input().value).toBe('Two')
   })
 
   it('shows the label of a picked item and of a value set by the parent', async () => {
@@ -165,29 +214,29 @@ describe('given a Combobox with `items`', () => {
     expect(input().value).toBe('input:b')
   })
 
-  it('keeps the input empty for `null`, also when `items` lists it', async () => {
-    make(() => ({ items: [{ value: null, label: 'None' }, ...fruits] }), { model: ref(null) })
+  it('keeps the input empty for `null`', async () => {
+    make(() => ({ items: fruits }), { model: ref(null) })
     await settle()
     expect(input().value).toBe('')
     expect(chips()).toEqual([])
   })
 
   it('follows `items` while the input rests, and leaves typed text alone', async () => {
-    const items = ref<Record<string, string>>({})
-    const { wrapper } = make(() => ({ items: items.value }), { model: ref('a') })
+    const data = ref<Fruit[]>([])
+    const { wrapper } = make(() => ({ items: collect(data.value) }), { model: ref('a') })
     await settle()
-    // Not listed yet (labels still loading): the value itself, as without `items`.
+    // Not listed yet (items still loading): the value itself, as without `items`.
     expect(input().value).toBe('a')
-    items.value = { a: 'Apple' }
+    data.value = [{ id: 'a', name: 'Apple' }]
     await settle()
     expect(input().value).toBe('Apple')
-    items.value.a = 'Pomme'
+    data.value[0].name = 'Pomme'
     await settle()
     expect(input().value).toBe('Pomme')
 
     await wrapper.find('[data-testid=input]').setValue('Ban')
     await settle()
-    items.value = { a: 'Apfel' }
+    data.value = [{ id: 'a', name: 'Apfel' }]
     await settle()
     expect(input().value).toBe('Ban')
     // Closing without a pick resets the text to the label of the value.
@@ -197,15 +246,15 @@ describe('given a Combobox with `items`', () => {
   })
 
   it('reports a label change as `none`, with no value change', async () => {
-    const items = ref<Record<string, string>>({ a: 'Apple' })
+    const data = ref<Fruit[]>([{ id: 'a', name: 'Apple' }])
     const onText = vi.fn()
     const onValue = vi.fn()
-    make(() => ({ 'items': items.value, 'onUpdate:modelValue': onValue }), { inputProps: { 'onUpdate:modelValue': onText } })
+    make(() => ({ 'items': collect(data.value), 'onUpdate:modelValue': onValue }), { inputProps: { 'onUpdate:modelValue': onText } })
     await settle()
     await pick('Apple')
     onText.mockClear()
     onValue.mockClear()
-    items.value = { a: 'Pomme' }
+    data.value = [{ id: 'a', name: 'Pomme' }]
     await settle()
     expect(onText).toHaveBeenCalledTimes(1)
     expect(onText).toHaveBeenLastCalledWith('Pomme', expect.objectContaining({ reason: 'none' }))
@@ -213,9 +262,9 @@ describe('given a Combobox with `items`', () => {
   })
 
   it('keeps typed text that a close retained when `items` is replaced', async () => {
-    const items = ref<{ value: string, label: string }[]>([{ value: 'a', label: 'Apple' }])
+    const data = ref<Fruit[]>([{ id: 'a', name: 'Apple' }])
     const onText = vi.fn()
-    const { wrapper } = make(() => ({ items: items.value, resetSearchTermOnBlur: false }), { model: ref('a'), inputProps: { 'onUpdate:modelValue': onText } })
+    const { wrapper } = make(() => ({ items: collect(data.value), resetSearchTermOnBlur: false }), { model: ref('a'), inputProps: { 'onUpdate:modelValue': onText } })
     await settle()
     expect(input().value).toBe('Apple')
     await wrapper.find('[data-testid=input]').setValue('Ban')
@@ -227,31 +276,31 @@ describe('given a Combobox with `items`', () => {
     onText.mockClear()
 
     // The same label in a new array.
-    items.value = [{ value: 'a', label: 'Apple' }]
+    data.value = [{ id: 'a', name: 'Apple' }]
     await settle()
     expect(input().value).toBe('Ban')
-    // Another option added in place.
-    items.value.push({ value: 'c', label: 'Cherry' })
+    // Another item added in place.
+    data.value.push({ id: 'c', name: 'Cherry' })
     await settle()
     expect(input().value).toBe('Ban')
     // A new label: the input does not show the selection, so there is nothing to follow.
-    items.value = [{ value: 'a', label: 'Pomme' }]
+    data.value = [{ id: 'a', name: 'Pomme' }]
     await settle()
     expect(input().value).toBe('Ban')
     expect(onText).not.toHaveBeenCalled()
   })
 
-  it('writes nothing when `items` is replaced by an equal list while the input rests', async () => {
-    const items = ref([{ value: 'a', label: 'Apple' }])
+  it('writes nothing when `items` is replaced by an equal collection while the input rests', async () => {
+    const data = ref<Fruit[]>([{ id: 'a', name: 'Apple' }])
     const onText = vi.fn()
     const onValue = vi.fn()
-    make(() => ({ 'items': items.value, 'onUpdate:modelValue': onValue }), { inputProps: { 'onUpdate:modelValue': onText } })
+    make(() => ({ 'items': collect(data.value), 'onUpdate:modelValue': onValue }), { inputProps: { 'onUpdate:modelValue': onText } })
     await settle()
     await pick('Apple')
     onText.mockClear()
     onValue.mockClear()
     const setValue = vi.spyOn(input(), 'value', 'set')
-    items.value = [{ value: 'a', label: 'Apple' }]
+    data.value = [{ id: 'a', name: 'Apple' }]
     await settle()
     expect(input().value).toBe('Apple')
     expect(onText).not.toHaveBeenCalled()
@@ -260,18 +309,18 @@ describe('given a Combobox with `items`', () => {
   })
 
   it('shows a label that arrives after the value, when `items` was not set at first', async () => {
-    const items = ref<Record<string, string> | undefined>(undefined)
+    const data = ref<Fruit[] | undefined>(undefined)
     const onText = vi.fn()
-    make(() => ({ items: items.value }), { model: ref('a'), inputProps: { 'onUpdate:modelValue': onText } })
+    make(() => ({ items: data.value && collect(data.value) }), { model: ref('a'), inputProps: { 'onUpdate:modelValue': onText } })
     await settle()
     expect(input().value).toBe('a')
     onText.mockClear()
-    items.value = { a: 'Apple' }
+    data.value = [{ id: 'a', name: 'Apple' }]
     await settle()
     expect(input().value).toBe('Apple')
     expect(onText).toHaveBeenCalledTimes(1)
     expect(onText).toHaveBeenLastCalledWith('Apple', expect.objectContaining({ reason: 'none' }))
-    items.value = { a: 'Pomme' }
+    data.value = [{ id: 'a', name: 'Pomme' }]
     await settle()
     expect(input().value).toBe('Pomme')
   })
@@ -293,9 +342,68 @@ describe('given a Combobox with `items`', () => {
   })
 })
 
+describe('given a Combobox with an array of `items`', () => {
+  it('does not resolve a primitive value to the label of a `{ value, label }` item in the input', async () => {
+    make(() => ({ items: [{ value: 'a', label: 'Apple' }, { value: 'b', label: 'Banana' }] }), { model: ref('b') })
+    await settle()
+    expect(input().value).toBe('b')
+  })
+
+  it('shows the label of the item that `by` matches to an object value', async () => {
+    const items = [{ id: 1, label: 'One' }, { id: 2, label: 'Two' }]
+    const { model } = make(() => ({ items, by: 'id' }), { model: ref<any>({ id: 2 }), children: () => [] })
+    await settle()
+    expect(input().value).toBe('Two')
+    // The item's label, not the one the value carries.
+    model.value = { id: 1, label: 'Stale' }
+    await settle()
+    expect(input().value).toBe('One')
+    // Not listed: the value's own label.
+    model.value = { id: 9, label: 'Nine' }
+    await settle()
+    expect(input().value).toBe('Nine')
+  })
+
+  it('matches with a `by` function, and through groups', async () => {
+    const items = [{ label: 'Low', items: [{ id: 1, label: 'One' }] }, { label: 'High', items: [{ id: 2, label: 'Two' }] }]
+    make(() => ({ items, by: (a: Option, b: Option) => a.id === b.id }), { model: ref<any>({ id: 2 }), children: () => [] })
+    await settle()
+    expect(input().value).toBe('Two')
+  })
+
+  it('follows a label that changes in `items` for the same selection', async () => {
+    const items = ref([{ id: 1, label: 'One' }])
+    const onText = vi.fn()
+    make(() => ({ items: items.value, by: 'id' }), { model: ref<any>({ id: 1, label: 'One' }), children: () => [], inputProps: { 'onUpdate:modelValue': onText } })
+    await settle()
+    expect(input().value).toBe('One')
+    onText.mockClear()
+    items.value = [{ id: 1, label: 'Uno' }]
+    await settle()
+    expect(input().value).toBe('Uno')
+    expect(onText).toHaveBeenLastCalledWith('Uno', expect.objectContaining({ reason: 'none' }))
+  })
+
+  it('takes plain strings, which are their own text', async () => {
+    make(() => ({ items: ['a', 'b'] }), { model: ref('b') })
+    await settle()
+    expect(input().value).toBe('b')
+    expect(chips()).toEqual(['b'])
+  })
+
+  it('ignores a record, which is not a shape of `items`', async () => {
+    make(() => ({ items: { a: 'Apple' } }), { model: ref('a') })
+    await settle()
+    expect(input().value).toBe('a')
+    expect(chips()).toEqual(['a'])
+  })
+})
+
 describe('given `items` and rendered items that disagree', () => {
+  const data = (entries: Record<string, string>) => collect(Object.entries(entries).map(([id, name]) => ({ id, name })))
+
   it('shows the `items` label in the input, and the item keeps its own text in the list', async () => {
-    const { model } = make(() => ({ items: { a: 'Apple (data)' } }))
+    const { model } = make(() => ({ items: data({ a: 'Apple (data)' }) }))
     await settle()
     await pick('Apple')
     expect(model.value).toBe('a')
@@ -305,7 +413,7 @@ describe('given `items` and rendered items that disagree', () => {
   })
 
   it('filters by the text of the rendered items, not by the `items` labels', async () => {
-    const { wrapper } = make(() => ({ items: { a: 'Zebra', b: 'Banana' } }))
+    const { wrapper } = make(() => ({ items: data({ a: 'Zebra', b: 'Banana' }) }))
     await settle()
     await wrapper.find('[data-testid=input]').setValue('Zeb')
     await settle()
@@ -316,7 +424,7 @@ describe('given `items` and rendered items that disagree', () => {
   })
 
   it('shows a rendered item that `items` does not list as without `items`', async () => {
-    const { model } = make(() => ({ items: { a: 'Apple' } }))
+    const { model } = make(() => ({ items: data({ a: 'Apple' }) }))
     await settle()
     await pick('Banana')
     expect(model.value).toBe('b')
@@ -324,52 +432,11 @@ describe('given `items` and rendered items that disagree', () => {
   })
 
   it('labels a value that no item renders', async () => {
-    make(() => ({ items: { a: 'Apple', z: 'Zucchini' } }), { model: ref('z') })
+    make(() => ({ items: data({ a: 'Apple', z: 'Zucchini' }) }), { model: ref('z') })
     await settle()
     expect(input().value).toBe('Zucchini')
     await open()
     expect(options()).toEqual(['Apple', 'Banana'])
     expect(input().value).toBe('Zucchini')
-  })
-
-  it('ignores `disabled` in `items`: the rendered item decides', async () => {
-    const { model } = make(() => ({ items: [{ value: 'a', label: 'Apple', disabled: true }] }))
-    await settle()
-    await pick('Apple')
-    expect(model.value).toBe('a')
-  })
-})
-
-describe('given a multiple Combobox with `items`', () => {
-  it('lists the label of each selected value in `selectedLabels`, in the order of the value', async () => {
-    const { model } = make(() => ({ items: fruits, multiple: true }), { model: ref(['b', 'a']) })
-    await settle()
-    expect(options()).toEqual([])
-    expect(chips()).toEqual(['Banana', 'Apple'])
-    expect(input().value).toBe('')
-    model.value = ['a']
-    await settle()
-    expect(chips()).toEqual(['Apple'])
-  })
-
-  it('adds the label of a picked item, and the string form of a value `items` does not list', async () => {
-    const { model } = make(() => ({ items: { a: 'Apple (data)' }, multiple: true }), { model: ref<string[]>([]) })
-    await settle()
-    await open()
-    option('Apple').click()
-    await settle()
-    option('Banana').click()
-    await settle()
-    expect(model.value).toEqual(['a', 'b'])
-    expect(chips()).toEqual(['Apple (data)', 'b'])
-  })
-
-  it('follows `items`', async () => {
-    const items = ref<Record<string, string>>({ a: 'Apple' })
-    make(() => ({ items: items.value, multiple: true }), { model: ref(['a']) })
-    await settle()
-    items.value = { a: 'Pomme' }
-    await settle()
-    expect(chips()).toEqual(['Pomme'])
   })
 })

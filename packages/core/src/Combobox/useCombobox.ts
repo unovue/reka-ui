@@ -1,14 +1,14 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { ComboboxItems } from './comboboxItems'
 import type { ComboboxRootContext } from './ComboboxRoot.vue'
 import type { ListboxChangeReason, ListboxFilterFunction, ListboxItemState, ListboxState, UseListboxRootProps, UseListboxRootReturn } from '@/Listbox/useListbox'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
-import type { ListItemData, ListItemGroupData, ListItems } from '@/shared/listItems'
 import type { AcceptableValue } from '@/shared/types'
 import { createEventHook, tryOnScopeDispose } from '@vueuse/core'
 import { computed, isRef, nextTick, ref, toValue } from 'vue'
 import { useListboxRoot } from '@/Listbox/useListbox'
 import { createPartSurface, disclosureState, getActiveElement, getElementByIdFrom, useComposing, useControllableState, useFilter } from '@/shared'
-import { getListItemData } from '@/shared/listItems'
+import { getComboboxItemLabel } from './comboboxItems'
 import { useComboboxContentPositioning } from './useComboboxContentPositioning'
 
 // =============================================================================
@@ -91,20 +91,6 @@ export type ComboboxContentState = { state: DisclosureState, empty: boolean }
 export type ComboboxItemState = ListboxItemState
 /** Semantic state of the root (`data-disabled`). */
 export type ComboboxState = ListboxState
-
-/** One option of the root's `items`: `label` is the text the input shows for the value. */
-export type ComboboxItemData<T = AcceptableValue> = ListItemData<T>
-
-/** A group of options in the root's `items`; keys besides `items` (a `label`, say) are free. */
-export type ComboboxItemGroupData<T = AcceptableValue> = ListItemGroupData<T>
-
-/**
- * The root's `items`: the options as data, in the shape `SelectRoot` takes. A
- * record maps each value (a string key; a number value finds its key) to its
- * label; an array holds `{ value, label, disabled? }` options, or groups of
- * them (`{ items }`), mixed or not.
- */
-export type ComboboxItems<T = AcceptableValue> = ListItems<T>
 
 /** Whether a combobox value holds a selection: anything but `null` (`''` included), or a non-empty array. */
 export function hasComboboxValue(value: unknown) {
@@ -437,22 +423,23 @@ export function createComboboxInputSurface(
 
 /**
  * The text of one selected value: the root's `displayValue` (not called for
- * `null`), then its label in the root's `items`, then a primitive value's
- * string form; empty for `null` and for an object value neither resolves.
+ * `null`), then its label in the root's `items`, then the `label` key of an
+ * object value, then a primitive value's string form; empty for `null` and for
+ * an object value nothing resolves.
  */
-function getComboboxValueText(context: ComboboxRootContext<any>, value: unknown): string {
+function getComboboxValueText(context: ComboboxRootContext<any>, value: unknown, byValue?: boolean): string {
   if (value != null && context.displayValue)
     return context.displayValue(value)
-  return getListItemData(context, value)?.label ?? (value == null || typeof value === 'object' ? '' : String(value))
+  return value == null ? '' : getComboboxItemLabel(context, value, byValue) ?? (typeof value === 'object' ? '' : String(value))
 }
 
 /**
  * The text a combobox input shows for its value after a selection: the input's
  * own `displayValue`, then the root's, then the value's label in the root's
- * `items`, then a single primitive value's string form; empty for `null` (the
- * empty value), for an object value nothing resolves and for `multiple`.
- * `''`, `0` and `false` are values: they go through the root's `displayValue`
- * and `items`.
+ * `items`, then the `label` key of an object value, then a single primitive
+ * value's string form; empty for `null` (the empty value), for an object value
+ * nothing resolves and for `multiple`. `''`, `0` and `false` are values: they
+ * go through the root's `displayValue` and `items`.
  */
 export function getComboboxInputText(
   context: ComboboxRootContext<any>,
@@ -461,22 +448,21 @@ export function getComboboxInputText(
   const value = context.modelValue.value
   if (displayValue)
     return displayValue(value)
-  if (context.multiple.value || value == null || Array.isArray(value))
+  if (context.multiple.value || Array.isArray(value))
     return ''
   return getComboboxValueText(context, value)
 }
 
 /**
- * The text of each selected value, in the order of the value: the root's
- * `displayValue`, then the value's label in the root's `items`, then a
- * primitive value's string form (an object value nothing resolves is `''`).
- * A single combobox has one entry, or none while it is empty (`null`).
- * Reactive when read inside an effect.
+ * The text of each selected value, in the order of the value, as
+ * `ComboboxValue` shows it: the text the input would show for it, and a
+ * primitive value also finds its label among `{ value, label }` items. A
+ * single combobox has one entry, or none while it is empty (`null`). Reactive
+ * when read inside an effect.
  */
-export function getComboboxSelectedLabels<T = AcceptableValue>(context: ComboboxRootContext<T>): string[] {
-  // Only the value is read, so a root without a selection tracks nothing more than it did.
+export function getComboboxSelectedLabels(context: ComboboxRootContext<any>): string[] {
   const value = context.modelValue.value
-  return (Array.isArray(value) ? value : value == null ? [] : [value]).map(entry => getComboboxValueText(context, entry))
+  return (Array.isArray(value) ? value : value == null ? [] : [value]).map(entry => getComboboxValueText(context, entry, true))
 }
 
 export interface UseComboboxRootProps<T = AcceptableValue> extends Omit<UseListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'filter' | 'filterSearch' | 'highlightScroll' | 'modelValue' | 'defaultValue'> {
@@ -527,13 +513,15 @@ export interface UseComboboxRootProps<T = AcceptableValue> extends Omit<UseListb
   /** Resolves the text the input shows for a selected value (single selection). */
   displayValue?: (value: T) => string
   /**
-   * The options as data (a record of value → label, or `{ value, label,
-   * disabled? }` options, optionally in `{ items }` groups), in the shape
-   * `useSelectRoot` takes. The input shows the label of the selected value
-   * from it (after `displayValue`), so the text needs no rendered item; the
-   * rendered items still make up the list and its filtering.
+   * The items as data: an array of items, an array of groups of them
+   * (`{ items }`), or a `createComboboxItems()` collection. A label source: the
+   * input shows the label of the selected value from it (after `displayValue`),
+   * so the text needs no rendered item. A collection resolves a value (an id)
+   * to its label; in an array, `by` matches an object value to its item and the
+   * item's `label` key is the text. The rendered items still make up the list
+   * and its filtering.
    */
-  items?: MaybeRefOrGetter<ComboboxItems<T> | undefined>
+  items?: MaybeRefOrGetter<ComboboxItems<any, T> | undefined>
   /**
    * What a selected item writes into the model (single selection). Defaults to
    * the item's value; Autocomplete, whose model is the input text, maps it

@@ -108,6 +108,7 @@ export const components = {
   combobox: [
     'ComboboxRoot',
     'ComboboxInput',
+    'ComboboxValue',
     'ComboboxAnchor',
     'ComboboxEmpty',
     'ComboboxTrigger',

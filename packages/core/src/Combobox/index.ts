@@ -41,6 +41,13 @@ export {
   type ComboboxItemIndicatorProps,
 } from './ComboboxItemIndicator.vue'
 export {
+  type ComboboxItemCollection,
+  type ComboboxItemGroup,
+  type ComboboxItems,
+  createComboboxItems,
+  type CreateComboboxItemsOptions,
+} from './comboboxItems'
+export {
   default as ComboboxLabel,
   type ComboboxLabelProps,
 } from './ComboboxLabel.vue'
@@ -65,6 +72,10 @@ export {
   type ComboboxTriggerProps,
 } from './ComboboxTrigger.vue'
 export {
+  default as ComboboxValue,
+  type ComboboxValueProps,
+} from './ComboboxValue.vue'
+export {
   default as ComboboxViewport,
   type ComboboxViewportProps,
 } from './ComboboxViewport.vue'
@@ -78,9 +89,6 @@ export {
   type ComboboxInputChangeReason,
   type ComboboxInputState,
   type ComboboxInteractionType,
-  type ComboboxItemData,
-  type ComboboxItemGroupData,
-  type ComboboxItems,
   type ComboboxItemState,
   type ComboboxOpenChangeReason,
   type ComboboxState,

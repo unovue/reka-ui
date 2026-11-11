@@ -55,6 +55,7 @@ import {
   ComboboxRoot,
   ComboboxSeparator,
   ComboboxTrigger,
+  ComboboxValue,
   ComboboxViewport,
 } from 'reka-ui'
 </script>
@@ -206,6 +207,12 @@ The component that pops out when the combobox is open.
   ]"
 />
 
+### Value
+
+The text of the selected value: its label, the labels of a `multiple` selection joined with a comma, or the `placeholder` while nothing is selected. It renders no element, so it can go inside the trigger or wrap the input. See [Showing the selected value](#showing-the-selected-value).
+
+<!-- @include: @/meta/ComboboxValue.md -->
+
 ### Viewport
 
 The scrolling viewport that contains all of the items.
@@ -285,7 +292,7 @@ See the [virtualization guide](../guides/virtualization.md) for more general inf
 
 Unlike native HTML form controls which only allow you to provide strings as values, `reka-ui` supports binding complex objects as well.
 
-Make sure to set the `displayValue` prop to set the input value on item selection. Set it on `ComboboxRoot` or on `ComboboxInput` (the input's own prop wins). When you have the options as data, `items` with `by` does the same without a function (see [Listing the items as data](#listing-the-items-as-data)).
+Set the `displayValue` prop to choose the text the input shows for the selected object. Set it on `ComboboxRoot` or on `ComboboxInput` (the input's own prop wins). Without it, an object with a `label` key shows that label, and any other object shows nothing. To keep ids in the model and still show a label, see [Listing the items as data](#listing-the-items-as-data).
 
 ```vue line=12,17,23
 <script setup lang="ts">
@@ -323,37 +330,36 @@ const selectedPeople = ref(people[0])
 
 ### Listing the items as data
 
-Without `displayValue`, the input shows the selected value itself: `us`, not `United States`. Pass the options to `items` on `ComboboxRoot` as well as rendering them, and the input shows the label of the selected value instead. The label comes from the data, so it is there before the popup has ever opened, in the server-rendered HTML, and for a value whose item is filtered out or not rendered (a virtualized list, options loaded on open).
+Without `displayValue`, the input shows the selected value itself: `us`, not `United States`. Pass your data to `items` on `ComboboxRoot` as well as rendering it, and the label of the selected value comes from the data. It is there before the popup has ever opened, in the server-rendered HTML, and for a value whose item is filtered out or not rendered (a virtualized list, options loaded on open).
 
-`items` has the same shapes as on a [Select](select.md#listing-the-items-as-data): a record of value to label, an array of `{ value, label, disabled? }`, or an array of groups `{ label?, items }`. Object values are matched with `by`. The types are exported as `ComboboxItems`, `ComboboxItemData` and `ComboboxItemGroupData`.
+`items` takes one of three shapes:
 
-The items are still rendered by your template, and the rendered items make up the list:
+- A collection made with `createComboboxItems(data, { getValue, getLabel })`, for a model that holds ids. `getValue` derives the value an item is selected as (a string, number, bigint or boolean) and `getLabel` its text. `data` can be items of any shape.
+- An array of items, for a model that holds the items themselves. An object value shows its `label` key. With `by`, the value is matched to its item in `items` and that item's `label` is shown, so a value that only carries an id (`{ id: 2 }`) or an outdated label still shows the current one.
+- An array of groups, `{ items: [...] }` with any other keys you like, in either of the two forms above.
 
-- The filter matches the text of the rendered `ComboboxItem` (its `textValue`, else its content), not the label in `items`. Keep the two the same, or typing the text the input shows may not find the item.
-- `items` adds no option to the list, and a `disabled` in `items` is not read: set `disabled` on the `ComboboxItem`.
-- A value `items` does not list shows as it does without `items`: its string form, or nothing for an object.
-- `displayValue`, on the root or on the input, wins over `items`.
-- `null` is the empty value: the input stays empty for it, also when `items` has a `null` entry.
-
-When `items` changes (labels that arrive after the value, a language switch), the input follows while it rests. Text being typed is left alone, and is reset to the new label when the popup closes.
-
-```vue line=6-10,16
+```vue line=11-14,21
 <script setup lang="ts">
-import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxViewport } from 'reka-ui'
+import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxViewport, createComboboxItems } from 'reka-ui'
 import { ref } from 'vue'
 
 const country = ref('us')
 const countries = [
-  { value: 'us', label: 'United States' },
-  { value: 'de', label: 'Germany' },
-  { value: 'jp', label: 'Japan' },
+  { code: 'us', name: 'United States' },
+  { code: 'de', name: 'Germany' },
+  { code: 'jp', name: 'Japan' },
 ]
+const items = createComboboxItems(countries, {
+  getValue: country => country.code,
+  getLabel: country => country.name,
+})
 </script>
 
 <template>
+  <!-- The input shows "United States"; the model stays 'us'. -->
   <ComboboxRoot
     v-model="country"
-    :items="countries"
+    :items="items"
   >
     <ComboboxAnchor>
       <ComboboxInput placeholder="Select a country" />
@@ -363,11 +369,11 @@ const countries = [
         <ComboboxViewport>
           <ComboboxItem
             v-for="item in countries"
-            :key="item.value"
-            :value="item.value"
-            :text-value="item.label"
+            :key="item.code"
+            :value="item.code"
+            :text-value="item.name"
           >
-            {{ item.label }}
+            {{ item.name }}
           </ComboboxItem>
         </ComboboxViewport>
       </ComboboxContent>
@@ -376,24 +382,80 @@ const countries = [
 </template>
 ```
 
-With `multiple` the input shows no selection, so the labels are given to you instead: `selectedLabels` of the root's default slot holds the text of each selected value, in the order of the value. Each text is resolved like the input's: the root's `displayValue`, then the label in `items`, then the string form of the value.
+The items are still rendered by your template, and the rendered items make up the list:
 
-```vue line=3,6,9-14
+- The filter matches the text of the rendered `ComboboxItem` (its `textValue`, else its content), not the label from `items`. Keep the two the same, or typing the text the input shows may not find the item.
+- `items` adds no option to the list.
+- A value `items` does not list shows as it does without `items`: the `label` key of an object, the string form of a primitive, or nothing.
+- In the input, an id is resolved to a label by a collection only. An array of `{ value, label }` items does not label a model that holds the `value`: wrap it in `createComboboxItems`.
+- `displayValue`, on the root or on the input, wins over `items`.
+- `null` is the empty value: the input stays empty for it.
+
+When `items` changes (data that arrives after the value, a language switch), the input follows while it rests. Text being typed is left alone, and is reset to the new label when the popup closes. Build the collection in a `computed` when its data is reactive.
+
+The types are exported as `ComboboxItemCollection`, `ComboboxItemGroup` and `ComboboxItems`.
+
+### Showing the selected value
+
+`ComboboxValue` renders the text of the selection anywhere inside the root: the label of the selected value, or the labels joined with a comma when `multiple`, and its `placeholder` while nothing is selected. It renders no element of its own.
+
+```vue line=3-5
+<template>
+  <ComboboxRoot v-model="country" :items="items">
+    <ComboboxTrigger>
+      <ComboboxValue placeholder="Select a country" />
+    </ComboboxTrigger>
+    <ComboboxPortal>
+      <ComboboxContent>
+        <ComboboxInput placeholder="Search" />
+        <!-- ... -->
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>
+</template>
+```
+
+Each label is resolved like the text of the input: the root's `displayValue`, then the label from `items`, then the `label` key of an object value, then the string form of the value. `ComboboxValue` also finds a primitive value among `{ value, label }` items.
+
+With `multiple` the input shows no selection. The default slot of `ComboboxValue` gives you `modelValue` and `selectedLabels`, the text of each selected value in the order of the value, to render the selection yourself. Compose a [Tags Input](tags-input.md) inside it for removable chips:
+
+```vue line=12,19,25
+<script setup lang="ts">
+import { ComboboxAnchor, ComboboxInput, ComboboxRoot, ComboboxValue, TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+const selectedCountries = ref(['us', 'jp'])
+</script>
+
 <template>
   <ComboboxRoot
-    v-slot="{ selectedLabels }"
     v-model="selectedCountries"
     multiple
-    :items="countries"
+    :items="items"
   >
     <ComboboxAnchor>
-      <span
-        v-for="(label, index) in selectedLabels"
-        :key="selectedCountries[index]"
-      >
-        {{ label }}
-      </span>
-      <ComboboxInput placeholder="Add a country" />
+      <ComboboxValue v-slot="{ selectedLabels }">
+        <TagsInputRoot
+          v-model="selectedCountries"
+          delimiter=""
+        >
+          <TagsInputItem
+            v-for="(code, index) in selectedCountries"
+            :key="code"
+            :value="code"
+          >
+            <TagsInputItemText>{{ selectedLabels[index] }}</TagsInputItemText>
+            <TagsInputItemDelete />
+          </TagsInputItem>
+
+          <ComboboxInput as-child>
+            <TagsInputInput
+              placeholder="Add a country"
+              @keydown.enter.prevent
+            />
+          </ComboboxInput>
+        </TagsInputRoot>
+      </ComboboxValue>
     </ComboboxAnchor>
     <!-- ... -->
   </ComboboxRoot>
