@@ -72,7 +72,8 @@ describe('given a Toast, in a real browser', () => {
     mount(Fixture, { attachTo: document.body })
     await expect.poll(() => document.querySelector('[data-testid="a"]')).toBeTruthy()
 
-    document.querySelector<HTMLElement>('[data-testid="a"]')!.focus()
+    // Start from the group's tab stop: Tab from an unchecked radio stops at the checked one first.
+    document.querySelector<HTMLElement>(`[data-testid="${checked ?? 'a'}"]`)!.focus()
     await userEvent.keyboard('{Tab}')
     expect(document.activeElement).toBe(document.querySelector('[data-testid="apply"]'))
   })
