@@ -174,6 +174,8 @@ import { useFieldBinding } from '@/Field/useFieldBinding'
 import { provideListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { renderAs } from '@/Primitive/renderAs'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { hasComboboxValue, useComboboxRoot } from './useCombobox'
 import { provideComboboxField } from './useComboboxField'
@@ -286,6 +288,18 @@ defineExpose(mergeExpose(expose, {
 provideListboxRootContext(context)
 provideComboboxRootContext(context)
 provideComboboxField(field, context)
+
+// A native reset of the owning form puts the value back to `defaultValue`,
+// and the input's text back to that value's.
+// Read off the composable's return here: a closure over that object would keep
+// all of it alive for the life of the component.
+const { isControlled, resetSearchTerm } = combobox
+function onFormReset(event: Event) {
+  resetControllableState(isControlled, event)
+  resetSearchTerm('none')
+}
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -294,6 +308,7 @@ provideComboboxField(field, context)
       :is="renderAs(as, asChild)"
       :ref="forwardRef"
       v-bind="mergeProps(root.attrs.value, $attrs)"
+      @vue:mounted="bindFormReset"
     >
       <slot
         :open="open"

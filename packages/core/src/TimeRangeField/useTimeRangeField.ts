@@ -100,6 +100,12 @@ export interface UseTimeRangeFieldReturn {
   segments: ComputedRef<Record<DateRangeType, SegmentContents>>
   editableSegments: ComputedRef<Record<DateRangeType, SegmentContents>>
   segmentValues: Record<DateRangeType, Ref<SegmentValueObj>>
+  /**
+   * Shows the current value in every segment again (the empty segments without one), dropping what was typed
+   * without completing a value. A form reset calls it: the model may already hold its default, so nothing else
+   * would put the segments back.
+   */
+  resetSegments: () => void
   isInvalid: ComputedRef<boolean>
   setModelValue: (value: TimeRange, reason?: TimeRangeFieldChangeReason | BaseChangeReason, event?: Event) => boolean
   setPlaceholder: (value: TimeValue, reason?: TimeRangeFieldChangeReason | BaseChangeReason, event?: Event) => boolean
@@ -284,12 +290,17 @@ export function useTimeRangeField(props: UseTimeRangeFieldProps = {}): UseTimeRa
     return setPlaceholderState(value, reason, event)
   }
 
-  function syncSegments(type: DateRangeType, value: DateValue | undefined) {
+  function syncSegments(type: DateRangeType, value: DateValue | undefined, force = false) {
     if (value)
       segmentValues[type].value = { ...syncSegmentValues({ value, formatter }) }
     // If segment has null value, means that user modified it, thus do not reset the segmentValues
-    else if (Object.values(segmentValues[type].value).every(segment => segment !== null))
+    else if (force || Object.values(segmentValues[type].value).every(segment => segment !== null))
       segmentValues[type].value = { ...initialSegments }
+  }
+
+  function resetSegments() {
+    syncSegments('start', convertedStart.value, true)
+    syncSegments('end', convertedEnd.value, true)
   }
 
   // A cancelled commit rolls back only the model: the segments keep what the
@@ -366,6 +377,7 @@ export function useTimeRangeField(props: UseTimeRangeFieldProps = {}): UseTimeRa
     segments,
     editableSegments: editable,
     segmentValues,
+    resetSegments,
     isInvalid,
     setModelValue,
     setPlaceholder,

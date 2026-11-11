@@ -151,6 +151,8 @@ export const [injectSelectFieldContext, provideSelectFieldContext]
 import { computed, onBeforeUnmount, onMounted, toRef, watch } from 'vue'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { PopperRoot } from '@/Popper'
+import { provideFormResetOwner } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import BubbleSelect from './BubbleSelect.vue'
 import { useSelectRoot } from './useSelect'
 
@@ -327,6 +329,13 @@ const nativeOptions = computed(() => {
 // event `BubbleSelect` dispatches for that change.
 
 provideSelectRootContext(context)
+
+// A native reset of the owning form puts the value back to `defaultValue`. The
+// root renders no element: `SelectTrigger` binds it.
+// Read off the composable's return here: a closure over that object would keep
+// all of it alive for the life of the component.
+const { isControlled } = select
+provideFormResetOwner((event: Event) => { resetControllableState(isControlled, event) })
 </script>
 
 <template>

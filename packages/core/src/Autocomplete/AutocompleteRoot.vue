@@ -116,6 +116,8 @@ import { useFieldBinding } from '@/Field/useFieldBinding'
 import { provideListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { renderAs } from '@/Primitive/renderAs'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
 defineOptions({ inheritAttrs: false })
@@ -230,10 +232,15 @@ defineExpose(mergeExpose(expose, {
 provideListboxRootContext(context)
 provideComboboxRootContext(context)
 provideComboboxField(field, context)
+
+// A native reset of the owning form puts the value back to `defaultValue`.
+function onFormReset(event: Event) { resetControllableState(combobox.isControlled, event) }
 provideAutocompleteRootContext({
   modelValue,
   onModelValueChange: (value, reason, event) => combobox.setModelValue(value, reason, event),
 })
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -242,6 +249,7 @@ provideAutocompleteRootContext({
       :is="renderAs(as, asChild)"
       :ref="forwardRef"
       v-bind="mergeProps(root.attrs.value, $attrs)"
+      @vue:mounted="bindFormReset"
     >
       <slot
         :open="open"

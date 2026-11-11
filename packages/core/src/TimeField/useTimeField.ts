@@ -113,6 +113,12 @@ export interface UseTimeFieldReturn {
   segments: ComputedRef<SegmentContents>
   editableSegments: ComputedRef<SegmentContents>
   segmentValues: Ref<SegmentValueObj>
+  /**
+   * Shows the current value in every segment again (the empty segments without one), dropping what was typed
+   * without completing a value. A form reset calls it: the model may already hold its default, so nothing else
+   * would put the segments back.
+   */
+  resetSegments: () => void
   isInvalid: ComputedRef<boolean>
   setModelValue: (value: TimeValue | undefined, reason?: TimeFieldChangeReason | BaseChangeReason, event?: Event) => boolean
   setPlaceholder: (value: TimeValue, reason?: TimeFieldChangeReason | BaseChangeReason, event?: Event) => boolean
@@ -285,6 +291,11 @@ export function useTimeField(props: UseTimeFieldProps = {}): UseTimeFieldReturn 
     }
   })
 
+  function resetSegments() {
+    const value = convertedModelValue.value
+    segmentValues.value = value ? { ...syncTimeSegmentValues({ value, formatter }) } : { ...initialSegments }
+  }
+
   const context: TimeFieldRootContext = {
     locale,
     modelValue: computed({
@@ -320,6 +331,7 @@ export function useTimeField(props: UseTimeFieldProps = {}): UseTimeFieldReturn 
     segments,
     editableSegments: editable,
     segmentValues,
+    resetSegments,
     isInvalid,
     setModelValue,
     setPlaceholder,

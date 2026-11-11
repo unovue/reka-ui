@@ -65,6 +65,8 @@ export const [injectColorSliderRootContext, provideColorSliderRootContext]
 import { mergeProps, watch } from 'vue'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { colorToString } from '@/shared/color'
+import { provideFormResetOwner } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { SliderRoot } from '@/Slider'
 import { provideSliderFieldContext } from '@/Slider/utils'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -105,7 +107,7 @@ const field = useFieldBinding({
 const resolvedName = () => field ? field.name(props.name) : props.name
 const resolvedRequired = () => field ? field.required(props.required) : props.required
 
-const { sliderProps, context, color, disabled } = useColorSlider({
+const { sliderProps, context, color, disabled, isControlled } = useColorSlider({
   orientation: () => props.orientation,
   dir: () => dir.value,
   disabled: () => field ? field.disabled(props.disabled) : props.disabled,
@@ -123,6 +125,9 @@ const { sliderProps, context, color, disabled } = useColorSlider({
 })
 
 provideColorSliderRootContext(context)
+// A native reset of the owning form puts the value back to `defaultValue`.
+// The inner `SliderRoot` binds it on the element they share.
+provideFormResetOwner((event: Event) => { resetControllableState(isControlled, event) })
 if (field) {
   provideSliderFieldContext(field)
   watch(color, value => field.sync(value))

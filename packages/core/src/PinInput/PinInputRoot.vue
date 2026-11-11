@@ -90,6 +90,8 @@ import { mergeProps, useAttrs, watch } from 'vue'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { orderInputElements, usePinInput } from './usePinInput'
 
 defineOptions({
@@ -169,7 +171,7 @@ function firstInput() {
 // The composable owns the model (`useControllableState`), `beforeUpdate:` /
 // `update:` and the `complete` watcher; the shell keeps `dir` resolution and
 // the hidden form input.
-const { modelValue: model, currentModelValue, root, context } = usePinInput({
+const { modelValue: model, currentModelValue, root, context, isControlled } = usePinInput({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   type: () => props.type,
@@ -187,6 +189,9 @@ const { modelValue: model, currentModelValue, root, context } = usePinInput({
 const modelValue = model as unknown as Readonly<Ref<PinInputValue<Type>>>
 
 providePinInputRootContext(context)
+
+// A native reset of the owning form puts the value back to `defaultValue`.
+function onFormReset(event: Event) { resetControllableState(isControlled, event) }
 
 // Touched once focus leaves the whole group, not when it moves between inputs.
 const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
@@ -218,6 +223,8 @@ function getRootAttrs() {
     { onFocusin: focusWithin!.onFocusin, onFocusout: focusWithin!.onFocusout },
   )
 }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -225,6 +232,7 @@ function getRootAttrs() {
     :is="renderAs(as, asChild)"
     v-bind="getRootAttrs()"
     :ref="forwardRef"
+    @vue:mounted="bindFormReset"
   >
     <slot :model-value="modelValue" />
 

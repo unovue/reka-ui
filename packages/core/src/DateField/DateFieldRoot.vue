@@ -95,6 +95,8 @@ import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { isEqual } from '@/shared/compare'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useDateField } from './useDateField'
 
@@ -162,6 +164,8 @@ const {
   segmentElements,
   setFocusedElement,
   focusFirstSegment,
+  resetSegments,
+  isControlled,
 } = useDateField({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
@@ -247,10 +251,20 @@ if (field) {
 
 provideDateFieldRootContext(context)
 
+// A native reset of the owning form puts the value back to `defaultValue`, and
+// drops segments typed without completing a value: the model may not move
+// (it already holds the default), so the segments are put back here.
+function onFormReset(event: Event) {
+  resetControllableState(isControlled, event)
+  resetSegments()
+}
+
 defineExpose(mergeExpose(expose, {
   /** Records `el` as the focused segment for keyboard navigation. It does not move focus; call `el.focus()` for that. */
   setFocusedElement,
 }))
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -258,6 +272,7 @@ defineExpose(mergeExpose(expose, {
     :is="renderAs(as, asChild)"
     v-bind="getRootAttrs()"
     ref="primitiveElement"
+    @vue:mounted="bindFormReset"
     @focusin="focusWithin?.onFocusin"
     @focusout="focusWithin?.onFocusout"
   >

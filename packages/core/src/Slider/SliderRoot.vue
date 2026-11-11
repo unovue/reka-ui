@@ -75,7 +75,9 @@ import { computed, getCurrentInstance, mergeProps, useAttrs, watch } from 'vue'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
+import { formResetBinder, injectFormResetOwner } from '@/shared/formReset'
 import { createWrapperEmit, splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useSlider } from './useSlider'
 import { useSliderPointer } from './useSliderPointer'
@@ -136,7 +138,7 @@ const resolvedDisabled = () => ownField ? ownField.disabled(props.disabled) : pr
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` / `valueCommit` emits
 // live in the composable (`modelValue === undefined` → uncontrolled).
-const { modelValue, root, orientation: orientationGeometry, startSlide, moveSlide, endSlide, context } = useSlider({
+const { modelValue, root, orientation: orientationGeometry, startSlide, moveSlide, endSlide, context, isControlled } = useSlider({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   disabled: resolvedDisabled,
@@ -157,6 +159,10 @@ const { modelValue, root, orientation: orientationGeometry, startSlide, moveSlid
 
 provideSliderRootContext(context)
 provideSliderFieldContext(field)
+
+// A native reset of the owning form puts the value back to `defaultValue`.
+// Inside a color slider the reset is the color slider's, which owns the value.
+const onFormReset = injectFormResetOwner() ?? ((event: Event) => { resetControllableState(isControlled, event) })
 
 if (ownField)
   watch(modelValue, value => ownField.sync(value))
@@ -227,6 +233,8 @@ function elementProps(consumerAttrs: Record<string, unknown>) {
   )
   return field ? field.fillDataAttributes(merged) : merged
 }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -235,6 +243,7 @@ function elementProps(consumerAttrs: Record<string, unknown>) {
     :key="orientation === 'horizontal' ? 'horizontal' : 'vertical'"
     :ref="forwardRef"
     v-bind="elementProps($attrs)"
+    @vue:mounted="bindFormReset"
   >
     <slot :model-value="modelValue ?? null" />
 

@@ -15,7 +15,11 @@ export interface UseFormReturn {
    * whatever the validation mode. Returns whether they are all valid.
    */
   validate: (name?: string) => boolean
-  /** Resets the form as a `type="reset"` button does: every native control returns to its default value, and every field's touched, dirty and validation state is cleared. */
+  /**
+   * Resets the form as a `type="reset"` button does: every native and Reka UI control returns to its default
+   * value, and every field's touched, dirty and validation state is cleared. In a `FormRoot` rendered as another
+   * element there is no native reset, and only the fields' state is cleared.
+   */
   reset: () => void
 }
 

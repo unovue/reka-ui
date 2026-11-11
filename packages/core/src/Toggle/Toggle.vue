@@ -34,6 +34,8 @@ export interface ToggleProps extends PrimitiveProps, FormFieldProps {
 import { computed, mergeProps, useAttrs, watch } from 'vue'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { renderAs } from '@/Primitive/renderAs'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { useTogglePressed } from './useTogglePressed'
 
 defineOptions({
@@ -89,7 +91,7 @@ const resolvedRequired = () => field ? field.required(props.required) : props.re
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
 // composable's `useControllableState` (`modelValue === undefined` → uncontrolled;
 // `null` is controlled and reads through, exactly as `useVModel` did).
-const { modelValue, pressed, disabled, root } = useTogglePressed({
+const { modelValue, pressed, disabled, root, isControlled } = useTogglePressed({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   disabled: () => field ? field.disabled(props.disabled) : props.disabled,
@@ -104,6 +106,10 @@ if (field)
   watch(pressed, value => field.sync(value))
 
 const isFormControl = useFormControl(currentElement)
+
+// A native reset of the owning form puts the value back to `defaultValue`. A
+// toggle in a group is reset by the group.
+const onFormReset = toggleGroupContext ? undefined : (event: Event) => { resetControllableState(isControlled, event) }
 
 // Listener order is part of the v2 contract: `v-bind="$attrs"` sat AFTER the
 // `aria-*` / `data-*` / `disabled` bindings (a consumer attribute wins) but
@@ -128,6 +134,8 @@ function renderAttrs(attrs: Record<string, unknown>) {
     { id: field.id(), ...field.ariaAttrs(attrs, disabled.value), onFocus: field.onFocus, onBlur: field.onBlur },
   ))
 }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -136,6 +144,7 @@ function renderAttrs(attrs: Record<string, unknown>) {
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
     v-bind="renderAttrs($attrs)"
+    @vue:mounted="bindFormReset"
     @click="root.props.value.onClick"
   >
     <slot

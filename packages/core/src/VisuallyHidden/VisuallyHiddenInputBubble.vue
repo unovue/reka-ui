@@ -41,7 +41,9 @@ watch(valueState, (cur, prev) => {
   if (setValue && cur !== prev) {
     const inputEvent = new Event('input', { bubbles: true })
     const changeEvent = new Event('change', { bubbles: true })
-    setValue.call(input, cur)
+    // A nullish value is the empty string, as Vue renders it: the native setter
+    // would write `'undefined'`.
+    setValue.call(input, property === 'value' ? cur ?? '' : cur)
     input.dispatchEvent(inputEvent)
     input.dispatchEvent(changeEvent)
   }

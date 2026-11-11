@@ -125,6 +125,7 @@ import { providePopoverRootContext } from '@/Popover/PopoverRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { isEqual } from '@/shared/compare'
 import { isSegmentFieldChange } from '@/shared/date/segmentField'
+import { provideFormResetDefault } from '@/shared/formReset'
 import { useDatePicker } from './useDatePicker'
 
 defineOptions({
@@ -242,6 +243,8 @@ if (fieldContext) {
 
 providePopoverRootContext(popover.context)
 provideDatePickerRootContext(context)
+// The field goes back to it on a native reset of the owning form.
+provideFormResetDefault(props.defaultValue)
 </script>
 
 <template>

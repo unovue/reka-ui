@@ -94,6 +94,7 @@ import { mergeProps, ref, toRef, watch } from 'vue'
 import { createPendingFieldInput } from '@/Field/pendingFieldInput'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { renderAs } from '@/Primitive/renderAs'
+import { formResetBinder } from '@/shared/formReset'
 import { VisuallyHidden, VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useNumberField } from './useNumberField'
 
@@ -139,7 +140,7 @@ const resolvedRequired = () => field ? field.required(props.required) : props.re
 // input has updated. Only in a Field.
 const pendingInput = field ? createPendingFieldInput<number | undefined>() : undefined
 
-const { modelValue, textValue, readonly, disabled, root, context } = useNumberField({
+const { modelValue, textValue, readonly, disabled, root, context, resetValue } = useNumberField({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   min: () => props.min,
@@ -162,6 +163,9 @@ const { modelValue, textValue, readonly, disabled, root, context } = useNumberFi
 
 provideNumberFieldRootContext(context)
 
+// A native reset of the owning form puts the value back to `defaultValue`.
+function onFormReset(event: Event) { resetValue(event) }
+
 if (field) {
   provideNumberFieldFieldControl(field)
   // Flushed after render, so the hidden input's validity reflects the new value.
@@ -177,6 +181,8 @@ if (field) {
 function focusInput() {
   context.inputEl.value?.focus()
 }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -184,6 +190,7 @@ function focusInput() {
     :is="renderAs(as, asChild)"
     v-bind="field ? mergeProps(field.dataAttributes(), $attrs, root.attrs.value) : mergeProps($attrs, root.attrs.value)"
     :ref="forwardRef"
+    @vue:mounted="bindFormReset"
   >
     <slot
       :model-value="modelValue"

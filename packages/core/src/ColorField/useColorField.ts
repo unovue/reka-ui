@@ -6,6 +6,7 @@ import { computed, ref, toValue, watch } from 'vue'
 import { createPartSurface, snapValueToStep, useComposing, useControllableState } from '@/shared'
 import { colorToHex, convertToRgb, convertToSpace, getChannelColorSpace, getChannelRange, getChannelValue, isEqualColor, isValidColor, normalizeColor, parseColor, setChannelValue } from '@/shared/color'
 import { createChangeEndTracker } from '@/shared/color/changeEnd'
+import { resetControllableState } from '@/shared/useControllableState'
 
 type Inputs = Pick<ColorFieldRootProps, 'colorSpace' | 'channel' | 'disabled' | 'readonly' | 'disableWheelChange' | 'placeholder' | 'step' | 'modelValue' | 'defaultValue'>
 export type ColorFieldChangeReason = 'keyboard' | 'wheel' | 'blur'
@@ -33,6 +34,12 @@ export interface UseColorFieldReturn {
   readonly isControlled: ComputedRef<boolean>
   readonly lastChangeDetails: Readonly<Ref<ChangeEventDetails<ColorFieldChangeReason>>>
   setColor: (color: Color, reason?: ColorFieldChangeReason | BaseChangeReason, event?: Event) => boolean
+  /**
+   * Puts the value back to `defaultValue` and drops text typed without committing, as a native form reset does.
+   * A change like any other (cancellable, emitted when controlled), with `reason: 'none'`. Returns `false` when
+   * unchanged or cancelled.
+   */
+  resetValue: (event?: Event) => boolean
   readonly root: PartSurface<ColorFieldRootState>
   readonly context: { readonly [K in keyof ColorFieldRootContext]: ColorFieldRootContext[K] extends Ref ? Readonly<ColorFieldRootContext[K]> : ColorFieldRootContext[K] }
   readonly inputValue: ComputedRef<string>
@@ -256,6 +263,15 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
       increment(event)
   }
 
+  function resetValue(event?: Event) {
+    isEditing.value = false
+    isInvalid.value = false
+    const changed = resetControllableState(isControlled, event)
+    // The text shows the value again, whether or not the value moved.
+    resetInput()
+    return changed
+  }
+
   const context: ColorFieldRootContext = {
     color,
     inputValue,
@@ -283,6 +299,7 @@ export function useColorField(props: UseColorFieldProps = {}): UseColorFieldRetu
     color,
     disabled,
     setColor,
+    resetValue,
     lastChangeDetails,
     isControlled,
     root,

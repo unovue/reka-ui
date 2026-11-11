@@ -97,6 +97,8 @@ import { createPendingFieldInput } from '@/Field/pendingFieldInput'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { Primitive } from '@/Primitive'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHidden, VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useEditable } from './useEditable'
 
@@ -159,7 +161,7 @@ if (field)
 const resolvedName = field ? () => field.name(props.name) : () => props.name
 const resolvedDisabled = field ? () => field.disabled(props.disabled) : () => props.disabled
 
-const { modelValue, isEditing, isEmpty, edit, cancel, submit, dismiss, root, context } = useEditable({
+const { modelValue, isEditing, isEmpty, edit, cancel, submit, dismiss, root, context, isControlled } = useEditable({
   modelValue: () => props.modelValue,
   defaultValue: () => props.defaultValue,
   placeholder: () => props.placeholder,
@@ -248,6 +250,15 @@ defineExpose(mergeExpose(expose, {
 }))
 
 provideEditableRootContext(context)
+
+// A native reset of the owning form puts the value back to `defaultValue`,
+// and a draft being edited back to the value.
+function onFormReset(event: Event) {
+  resetControllableState(isControlled, event)
+  context.inputValue.value = modelValue.value
+}
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -257,6 +268,7 @@ provideEditableRootContext(context)
     :as="as"
     :as-child="asChild"
     data-dismissable-layer
+    @vue:mounted="bindFormReset"
     @pointerdown.capture="pointerDownOutside.onPointerDownCapture"
   >
     <slot

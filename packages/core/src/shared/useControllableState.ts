@@ -131,12 +131,15 @@ class ControllableModel<T, R extends string> {
   internal: Ref<T> | undefined = undefined
   details: ChangeEventDetails<R> = getInitialDetails()
   detailsRef: ShallowRef<ChangeEventDetails<R>> | undefined = undefined
+  /** The model's `setState`, for `resetControllableState`. */
+  set: ((value: T, reason?: R | BaseChangeReason, event?: Event) => boolean) | undefined = undefined
 
   constructor(
     readonly prop: MaybeRefOrGetter<T | undefined>,
     readonly refOwned: boolean,
     public everDefined: boolean,
-    public initial: T | undefined,
+    /** The value an uncontrolled model starts from, and a form reset returns to. */
+    readonly initial: T | undefined,
   ) {}
 
   /** `isControlled`. */
@@ -157,11 +160,7 @@ class ControllableModel<T, R extends string> {
 
   /** The uncontrolled value (deep, `useVModel` parity), created on first use. */
   get store(): Ref<T> {
-    if (!this.internal) {
-      this.internal = ref(this.initial) as Ref<T>
-      this.initial = undefined
-    }
-    return this.internal
+    return this.internal ??= ref(this.initial) as Ref<T>
   }
 
   read(): T {
@@ -260,10 +259,59 @@ export function useControllableState<T, R extends string = string>(
     return true
   }
 
+  model.set = setState
+
   return {
     state,
     setState,
     lastChangeDetails: new LastChangeDetailsRef(model) as unknown as Readonly<Ref<ChangeEventDetails<R>>>,
     isControlled: model as unknown as ComputedRef<boolean>,
   }
+}
+
+/** An array or plain object: what a consumer may mutate in place, and what a spread copies faithfully. */
+function isCopyable(value: unknown): value is unknown[] | Record<string, unknown> {
+  if (Array.isArray(value))
+    return true
+  if (value === null || typeof value !== 'object')
+    return false
+  const proto = Object.getPrototypeOf(value)
+  return proto === Object.prototype || proto === null
+}
+
+function isShallowEqual(a: unknown[] | Record<string, unknown>, b: unknown): boolean {
+  if (!isCopyable(b) || Array.isArray(a) !== Array.isArray(b))
+    return false
+  const keys = Object.keys(a)
+  return keys.length === Object.keys(b).length
+    && keys.every(key => Object.is((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key]))
+}
+
+/**
+ * Puts a model back to the value it started from (its `defaultValue`), as a
+ * native form reset does for a native control. It is a change like any other:
+ * `beforeUpdate:<name>` can cancel it, a controlled model only emits
+ * `update:<name>` with that value, and nothing happens when the model already
+ * holds it. The details carry `reason: 'none'` and the `reset` event.
+ *
+ * An array or plain-object default is handed out as a shallow copy: the value
+ * goes to the consumer (or into the store), who may mutate it in place, and
+ * the default must survive that for the next reset. Other objects (a Temporal
+ * value) are immutable or not ours to copy, and are passed as they are.
+ *
+ * Takes the model's `isControlled` ref, which every family composable returns.
+ * @internal
+ */
+export function resetControllableState(isControlled: ComputedRef<boolean>, event?: Event): boolean {
+  const model = isControlled as unknown as ControllableModel<unknown, string>
+  if (!model.set)
+    return false
+  const initial = model.initial
+  if (!isCopyable(initial))
+    return model.set(initial, 'none', event)
+  // A copy is never the object the model holds, so a model whose `isEqual` is
+  // identity would see a change on every reset: compare the contents first.
+  if (isShallowEqual(initial, toRaw(model.read())))
+    return false
+  return model.set(Array.isArray(initial) ? initial.slice() : { ...initial }, 'none', event)
 }
