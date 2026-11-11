@@ -70,4 +70,45 @@ describe('given an open NavigationMenu, in a real browser', () => {
     await userEvent.keyboard('{Tab}')
     expect(document.activeElement).toBe(document.querySelector('[data-testid="link"]'))
   })
+
+  // Leaving the content takes all of it out of the tab order. With its checked radio out,
+  // the browser would otherwise make the group's unchecked radios tab stops.
+  it('takes every radio out of the tab order when focus leaves the content, and restores it', async () => {
+    const Fixture = defineComponent({
+      setup() {
+        return () => h('div', [
+          h(NavigationMenuRoot, { modelValue: 'one' }, () => h(NavigationMenuList, () => [
+            h(NavigationMenuItem, { value: 'one' }, () => [
+              h(NavigationMenuTrigger, () => 'One'),
+              h(NavigationMenuContent, () => [
+                ...['a', 'b', 'c'].map(value => h('input', {
+                  'type': 'radio',
+                  'name': 'size',
+                  value,
+                  'checked': value === 'b',
+                  'aria-label': value,
+                  'data-testid': value,
+                })),
+                h(NavigationMenuLink, { 'href': '#link', 'data-testid': 'link' }, () => 'Link'),
+              ]),
+            ]),
+          ])),
+          h('button', { 'type': 'button', 'data-testid': 'outside' }, 'Outside'),
+        ])
+      },
+    })
+    mount(Fixture, { attachTo: document.body })
+    await expect.poll(() => document.querySelector('[data-testid="link"]')).toBeTruthy()
+    const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)!
+
+    get('link').focus()
+    get('outside').focus()
+    await expect.poll(() => get('link').tabIndex).toBe(-1)
+    expect(['a', 'b', 'c'].map(id => get(id).tabIndex)).toEqual([-1, -1, -1])
+
+    // Coming back restores all of it.
+    await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+    expect(document.activeElement).toBe(get('link'))
+    expect(['a', 'b', 'c', 'link'].map(id => get(id).tabIndex)).toEqual([0, 0, 0, 0])
+  })
 })
