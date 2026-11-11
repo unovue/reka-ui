@@ -51,6 +51,7 @@ watch(valueState, (cur, prev) => {
 <template>
   <VisuallyHidden
     ref="primitiveElement"
+    :aria-label="feature === 'fully-hidden' ? name : undefined"
     v-bind="{ ...props, ...$attrs }"
     as="input"
   />
