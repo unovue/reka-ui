@@ -133,7 +133,7 @@ describe('given a default Toast', () => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
     })
 
-    const liveRegion = document.querySelector('[role="status"][aria-live]')
+    const liveRegion = document.querySelector('[role="alert"][aria-live]')
     expect(liveRegion).toBeTruthy()
     const text = liveRegion!.textContent ?? ''
 
@@ -155,7 +155,7 @@ describe('given a default Toast', () => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
     })
 
-    const liveRegion = document.querySelector('[role="status"][aria-live]')
+    const liveRegion = document.querySelector('[role="alert"][aria-live]')
     expect(liveRegion).toBeTruthy()
 
     // A live region inside an aria-hidden subtree is ignored by screen readers,
@@ -221,6 +221,19 @@ describe('given a toast that opens', () => {
       await nextTick()
   }
 
+  function mountToast(type: 'foreground' | 'background') {
+    wrapper = mount(() => h(ToastProvider, { label: 'Notice' }, {
+      default: () => [
+        h(ToastRoot, { open: true, type, duration: Number.POSITIVE_INFINITY }, {
+          default: () => h(ToastTitle, null, { default: () => 'Saved' }),
+        }),
+        h(ToastViewport),
+      ],
+    }), { attachTo: document.body })
+  }
+
+  const announcers = () => [...document.querySelectorAll('[role="alert"], [role="status"]')]
+
   beforeEach(() => {
     vi.useFakeTimers()
     document.body.innerHTML = ''
@@ -232,61 +245,86 @@ describe('given a toast that opens', () => {
     vi.unstubAllGlobals()
   })
 
-  it.each([
-    ['foreground', 'assertive'],
-    ['background', 'polite'],
-  ] as const)('should announce a %s toast in a status region drawn before its text, and remove it after a second', async (type, politeness) => {
-    wrapper = mount(() => h(ToastProvider, { label: 'Notice' }, {
-      default: () => [
-        h(ToastRoot, { open: true, type }, { default: () => h(ToastTitle, null, { default: () => 'Saved' }) }),
-        h(ToastViewport),
-      ],
-    }), { attachTo: document.body })
+  it('should announce a foreground toast in an alert added with its text, and keep it while the toast is open', async () => {
+    mountToast('foreground')
     await flush()
-
-    // A status region reads what changes in it, not what it is created with.
-    const region = document.querySelector(`[role="status"][aria-live="${politeness}"]`)
-    expect(region).toBeTruthy()
-    expect(region!.textContent!.trim()).toBe('')
+    // An alert is read when it is added, so it is not added before its text.
+    expect(announcers()).toEqual([])
 
     vi.advanceTimersToNextFrame()
     vi.advanceTimersToNextFrame()
     await flush()
-    expect(region!.textContent).toContain('Notice')
-    expect(region!.textContent).toContain('Saved')
+    expect(announcers()).toHaveLength(1)
+    const [alert] = announcers()
+    expect(alert.getAttribute('role')).toBe('alert')
+    expect(alert.getAttribute('aria-live')).toBe('assertive')
+    expect(alert.getAttribute('aria-atomic')).toBe('true')
+    expect(alert.textContent!.replace(/\s+/g, ' ').trim()).toBe('Notice Saved')
 
-    vi.advanceTimersByTime(1000)
+    vi.advanceTimersByTime(5000)
     await flush()
-    expect(region!.isConnected).toBe(false)
+    expect(announcers()).toEqual([alert])
+    expect(alert.isConnected).toBe(true)
+    // Once in the toast, once in its alert.
+    expect(document.body.textContent!.match(/Saved/g)).toHaveLength(2)
   })
 
-  it('should keep the region until its text is in, while a hidden tab holds animation frames', async () => {
-    const frames: FrameRequestCallback[] = []
-    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => frames.push(callback))
-    vi.stubGlobal('cancelAnimationFrame', () => {})
-    const runFrame = () => frames.splice(0).forEach(callback => callback(performance.now()))
+  it('should announce a background toast in a polite status region added before its text, and never in an alert', async () => {
+    mountToast('background')
+    await flush()
+    // A status region reads what changes in it, not what it is added with.
+    expect(announcers()).toHaveLength(1)
+    const [status] = announcers()
+    expect(status.getAttribute('role')).toBe('status')
+    expect(status.getAttribute('aria-live')).toBe('polite')
+    expect(status.getAttribute('aria-atomic')).toBe('true')
+    expect(status.textContent!.trim()).toBe('')
 
+    vi.advanceTimersToNextFrame()
+    vi.advanceTimersToNextFrame()
+    await flush()
+    expect(status.textContent!.replace(/\s+/g, ' ').trim()).toBe('Notice Saved')
+
+    vi.advanceTimersByTime(5000)
+    await flush()
+    expect(announcers()).toEqual([status])
+    expect(status.isConnected).toBe(true)
+    expect(document.querySelector('[role="alert"]')).toBeNull()
+    // Once in the toast, once in its status region.
+    expect(document.body.textContent!.match(/Saved/g)).toHaveLength(2)
+  })
+
+  it('should remove the announcement with the toast', async () => {
+    const open = ref(true)
     wrapper = mount(() => h(ToastProvider, null, {
       default: () => [
-        h(ToastRoot, { open: true }, { default: () => h(ToastTitle, null, { default: () => 'Saved' }) }),
+        h(ToastRoot, { open: open.value, type: 'background' }, { default: () => h(ToastTitle, null, { default: () => 'Saved' }) }),
         h(ToastViewport),
       ],
     }), { attachTo: document.body })
     await flush()
-    const region = document.querySelector('[role="status"]')
+    expect(announcers()).toHaveLength(1)
 
-    vi.advanceTimersByTime(1000)
+    open.value = false
     await flush()
-    expect(region!.isConnected).toBe(true)
+    expect(announcers()).toEqual([])
+  })
 
-    runFrame()
-    runFrame()
-    await flush()
-    expect(region!.textContent).toContain('Saved')
+  it.each(['foreground', 'background'] as const)('should announce a %s toast after a second while a hidden tab holds animation frames', async (type) => {
+    vi.stubGlobal('requestAnimationFrame', () => 0)
+    vi.stubGlobal('cancelAnimationFrame', () => {})
 
-    vi.advanceTimersByTime(1000)
+    mountToast(type)
     await flush()
-    expect(region!.isConnected).toBe(false)
+    vi.advanceTimersByTime(999)
+    await flush()
+    expect(announcers().map(announcer => announcer.textContent!.trim()).join('')).toBe('')
+
+    vi.advanceTimersByTime(1)
+    await flush()
+    expect(announcers()).toHaveLength(1)
+    expect(announcers()[0].getAttribute('role')).toBe(type === 'foreground' ? 'alert' : 'status')
+    expect(announcers()[0].textContent).toContain('Saved')
   })
 })
 
