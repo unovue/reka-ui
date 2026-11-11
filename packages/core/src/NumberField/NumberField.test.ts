@@ -859,6 +859,58 @@ describe('numberField', () => {
         expect(input.value).toBe('')
       })
     })
+
+    // The number parser reads empty and numeral-free percent text as zero rather than as unparsable.
+    describe('with percent formatting', () => {
+      const percent = { step: 0.01, formatOptions: { style: 'percent' } } as const
+      const keep = { ...percent, keepValueOnUnparsableInput: true }
+      const blank = ways.flatMap(how => ['', ' '].map(text => [JSON.stringify(text), text, how] as const))
+
+      it.each(blank)('should clear the value by default when committing %s with %s', async (_label, text, how) => {
+        const { input, model, emitted, commit } = setupModel(percent, 0.5)
+        expect(input.value).toBe('50%')
+        await commit(text, how)
+        expect(model.value).toBeUndefined()
+        expect(emitted).toEqual([undefined])
+        expect(input.value).toBe('')
+      })
+
+      it.each(blank)('should clear the value with keepValueOnUnparsableInput when committing %s with %s', async (_label, text, how) => {
+        const { input, model, emitted, commit } = setupModel(keep, 0.5)
+        await commit(text, how)
+        expect(model.value).toBeUndefined()
+        expect(emitted).toEqual([undefined])
+        expect(input.value).toBe('')
+      })
+
+      it.each(ways.flatMap(how => ['%', ' %', '.', '-', '-%'].map(text => [text, how] as const)))('should keep the value with keepValueOnUnparsableInput when committing "%s" with %s', async (text, how) => {
+        const { input, model, emitted, commit } = setupModel(keep, 0.5)
+        await commit(text, how)
+        expect(model.value).toBe(0.5)
+        expect(emitted).toEqual([])
+        expect(input.value).toBe('50%')
+      })
+
+      it.each([
+        ['en-US', '0%', 0],
+        ['en-US', '٢٥', 0.25],
+        ['ar-EG', '٢٥', 0.25],
+        ['zh-CN-u-nu-hanidec', '二五', 0.25],
+        ['hi-IN-u-nu-deva', '२५', 0.25],
+      ])('should still parse numerals with keepValueOnUnparsableInput in %s ("%s")', async (locale, text, value) => {
+        const { model, emitted, commit } = setupModel({ ...keep, locale }, 0.5)
+        await commit(text, 'enter')
+        expect(model.value).toBe(value)
+        expect(emitted).toEqual([value])
+      })
+
+      it('should keep reading numeral-free text as zero by default', async () => {
+        const { model, emitted, commit } = setupModel(percent, 0.5)
+        await commit('%', 'enter')
+        expect(model.value).toBe(0)
+        expect(emitted).toEqual([0])
+      })
+    })
   })
 
   describe('given focusOnChange prop', () => {

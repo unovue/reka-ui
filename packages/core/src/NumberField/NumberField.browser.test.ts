@@ -134,4 +134,42 @@ describe('numberField committed text in a real browser', () => {
       expect(input.value).toBe('')
     })
   })
+
+  describe('with percent formatting', () => {
+    const percent = { formatOptions: { style: 'percent' } } as const
+
+    it.each([
+      ['by default', 'Enter', percent],
+      ['by default', 'blur', percent],
+      ['with keepValueOnUnparsableInput', 'Enter', { ...percent, keepValueOnUnparsableInput: true }],
+      ['with keepValueOnUnparsableInput', 'blur', { ...percent, keepValueOnUnparsableInput: true }],
+    ] as const)('clears the value %s when the emptied input is committed with %s', async (_mode, how, props) => {
+      const { input, outside, model, emitted, rerender, type } = mountNumberField(props, 0.5)
+      expect(input.value).toBe('50%')
+      await type('')
+      if (how === 'Enter')
+        await userEvent.keyboard('{Enter}')
+      else
+        await userEvent.click(outside)
+      expect(model.value).toBeUndefined()
+      expect(emitted).toEqual([undefined])
+
+      await rerender()
+      expect(input.value).toBe('')
+    })
+
+    it.each(['Enter', 'blur'] as const)('keeps the value with keepValueOnUnparsableInput when a lone percent sign is committed with %s', async (how) => {
+      const { input, outside, model, emitted, rerender, type } = mountNumberField({ ...percent, keepValueOnUnparsableInput: true }, 0.5)
+      await type('%')
+      if (how === 'Enter')
+        await userEvent.keyboard('{Enter}')
+      else
+        await userEvent.click(outside)
+      expect(model.value).toBe(0.5)
+      expect(emitted).toEqual([])
+
+      await rerender()
+      expect(input.value).toBe('50%')
+    })
+  })
 })
