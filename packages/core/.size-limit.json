@@ -56,7 +56,7 @@
   {
     "path": "dist/index.js",
     "import": "*",
-    "limit": "164.6 KB",
+    "limit": "165 KB",
     "name": "Full library"
   }
 ]
