@@ -42,7 +42,7 @@ interface ComboboxItemCollectionData<I, T> extends CreateComboboxItemsOptions<I,
 
 /**
  * Describes items of any shape for the root's `items`: `getValue` derives the
- * value an item is selected as (a string, number, bigint or boolean, an id
+ * value an item is selected as (a string, number or bigint, an id
  * usually) and `getLabel` its text. The model then holds the derived values,
  * and the input shows the label of the selected one. `data` is an array of
  * items or of groups of them (`{ items }`).
@@ -55,7 +55,7 @@ interface ComboboxItemCollectionData<I, T> extends CreateComboboxItemsOptions<I,
  * })
  * ```
  */
-export function createComboboxItems<I, T extends string | number | bigint | boolean>(
+export function createComboboxItems<I, T extends string | number | bigint>(
   data: readonly I[] | readonly ComboboxItemGroup<I>[],
   options: CreateComboboxItemsOptions<I, T>,
 ): ComboboxItemCollection<I, T> {

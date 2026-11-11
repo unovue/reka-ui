@@ -63,6 +63,9 @@ export function collectionItems() {
     h(ComboboxRoot<number, true, User>, { items: grouped, multiple: true, modelValue: [1] }),
     // @ts-expect-error the collection's values are numbers, not strings
     h(ComboboxRoot<string, false, User>, { items }),
+    // @ts-expect-error a boolean is not a value the root or an item can hold
+    createComboboxItems(users, { getValue: user => user.id > 1, getLabel: user => user.name }),
+    createComboboxItems(users, { getValue: user => BigInt(user.id), getLabel: user => user.name }),
   ]
 }
 
