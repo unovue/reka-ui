@@ -355,8 +355,11 @@ watch(() => rootContext.nestedOpenDrawerCount.value, (n) => {
 // `DrawerPopup.tsx` (useIsoLayoutEffect subscribing to nestedSwipeProgressStore).
 let unsubscribeNestedProgress: (() => void) | undefined
 
+let registeredElement: HTMLElement | undefined
+
 onMounted(() => {
-  rootContext.contentElement.value = currentElement.value
+  registeredElement = currentElement.value
+  rootContext.contentElement.value = registeredElement
   rootContext.notifyParentHasNestedDrawer?.(true)
 
   // The content mounts already open, so the `open` watcher above never sees
@@ -391,6 +394,10 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // Release the element so the root, which stays mounted, does not keep it after close.
+  if (rootContext.contentElement.value === registeredElement)
+    rootContext.contentElement.value = undefined
+  registeredElement = undefined
   rootContext.notifyParentHasNestedDrawer?.(false)
   rootContext.notifyParentFrontmostHeight?.(0)
   unsubscribeNestedProgress?.()
