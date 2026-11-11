@@ -4,7 +4,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { axe } from 'vitest-axe'
 import { defineComponent, h, inject, nextTick, ref, shallowRef } from 'vue'
 import { handleSubmit, sleep } from '@/test'
-import { ComboboxAnchor, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport, ComboboxVirtualizer } from '.'
+import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport, ComboboxVirtualizer } from '.'
 import Combobox from './story/_Combobox.vue'
 import ComboboxObject from './story/_ComboboxObject.vue'
 import ComboboxTagsInput from './story/_ComboboxTagsInput.vue'
@@ -521,7 +521,7 @@ describe('given default Combobox', () => {
 
 describe('given an open Combobox whose options leave the document', () => {
   const Fixture = defineComponent({
-    components: { ComboboxAnchor, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxRoot, ComboboxViewport },
+    components: { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot, ComboboxViewport },
     props: {
       options: { type: Array as () => string[], default: () => ['Apple', 'Banana', 'Cherry'] },
     },
@@ -529,7 +529,6 @@ describe('given an open Combobox whose options leave the document', () => {
   <ComboboxAnchor><ComboboxInput data-testid="input" /></ComboboxAnchor>
   <ComboboxContent>
     <ComboboxViewport>
-      <ComboboxEmpty>No options</ComboboxEmpty>
       <ComboboxItem v-for="option in options" :key="option" :value="option">{{ option }}</ComboboxItem>
     </ComboboxViewport>
   </ComboboxContent>

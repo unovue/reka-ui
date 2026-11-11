@@ -97,7 +97,7 @@ describe('given default Autocomplete', () => {
       expect(input.attributes('aria-activedescendant')).toBeTruthy()
       input.element.value = 'zzz'
       await input.trigger('input')
-      await vi.waitFor(() => expect(document.querySelector('[role="option"]')).toBeNull())
+      await vi.waitFor(() => expect(wrapper.find('[role=listbox]').attributes('data-empty')).toBeDefined())
       expect(input.attributes('aria-activedescendant')).toBeUndefined()
     })
 
