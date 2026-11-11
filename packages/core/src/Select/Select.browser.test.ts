@@ -5,6 +5,74 @@ import { cdp, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { SelectContent, SelectItem, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '.'
 
+function mountSelect(initiallyDisabled: boolean) {
+  document.body.innerHTML = ''
+  const disabled = ref(initiallyDisabled)
+  const modelValue = ref('apple')
+  const Fixture = defineComponent({
+    setup() {
+      return () => h('form', [
+        h(SelectRoot, {
+          'name': 'fruit',
+          'disabled': disabled.value,
+          'modelValue': modelValue.value,
+          'onUpdate:modelValue': (value: string) => modelValue.value = value,
+        }, () => [
+          h(SelectTrigger, { 'data-testid': 'trigger' }, () => h(SelectValue)),
+          h(SelectPortal, () => h(SelectContent, { position: 'popper' }, () =>
+            h(SelectViewport, () => ['apple', 'orange'].map(value =>
+              h(SelectItem, { value, 'data-testid': value }, () => h(SelectItemText, () => value)),
+            )))),
+        ]),
+      ])
+    },
+  })
+  mount(Fixture, { attachTo: document.body })
+  return {
+    disabled,
+    modelValue,
+    get: (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`),
+    formEntries: () => Array.from(new FormData(document.querySelector('form')!).entries()),
+  }
+}
+
+describe('given a Select whose root is disabled, in a real browser', () => {
+  // A browser leaves a selected `<option disabled>` out of the form data; jsdom does not, so only this catches it.
+  it('submits its value once enabled, without ever being opened', async () => {
+    const { disabled, formEntries } = mountSelect(true)
+    await expect.poll(() => document.querySelector('select option[value="apple"]')).not.toBeNull()
+    expect(formEntries()).toEqual([])
+
+    disabled.value = false
+
+    await expect.poll(() => document.querySelector('select')?.disabled).toBe(false)
+    expect(document.querySelector<HTMLOptionElement>('select option[value="apple"]')?.disabled).toBe(false)
+    expect(formEntries()).toEqual([['fruit', 'apple']])
+  })
+
+  it('blocks selection when disabled while open, and selects again once enabled', async () => {
+    const { disabled, modelValue, get } = mountSelect(false)
+
+    await userEvent.click(get('trigger')!)
+    await expect.poll(() => get('orange')).not.toBeNull()
+
+    disabled.value = true
+    await expect.poll(() => get('orange')?.getAttribute('aria-disabled')).toBe('true')
+    expect(get('orange')?.hasAttribute('data-disabled')).toBe(true)
+
+    // `force` skips the actionability check, which would otherwise wait on the `aria-disabled` item.
+    await userEvent.click(get('orange')!, { force: true })
+    await userEvent.keyboard('{Enter}')
+    expect(modelValue.value).toBe('apple')
+    expect(get('orange')).not.toBeNull()
+
+    disabled.value = false
+    await expect.poll(() => get('orange')?.getAttribute('aria-disabled')).toBeNull()
+    await userEvent.click(get('orange')!)
+    await expect.poll(() => modelValue.value).toBe('orange')
+  })
+})
+
 // jsdom has no touch input and never follows a tap with a `click`, so which element a tap's
 // events land on can only be checked with real (CDP) pointer input.
 describe('given a Select used with a real pointer, in a real browser', () => {
@@ -17,7 +85,7 @@ describe('given a Select used with a real pointer, in a real browser', () => {
     document.body.innerHTML = ''
   })
 
-  function mountSelect(options: {
+  function mountPointerSelect(options: {
     rootProps?: Record<string, unknown>
     position?: 'item-aligned' | 'popper'
     modelValue?: string | string[]
@@ -106,7 +174,7 @@ describe('given a Select used with a real pointer, in a real browser', () => {
       ['without a value', undefined],
       ['with a value', 'cherry'],
     ])('opens and stays open without selecting, %s', async (_label, initial) => {
-      const { modelValue, selects, itemClicks } = mountSelect({ modelValue: initial })
+      const { modelValue, selects, itemClicks } = mountPointerSelect({ modelValue: initial })
 
       await tap(get('trigger')!)
       await expect.poll(() => itemClicks.length).toBe(1)
@@ -120,7 +188,7 @@ describe('given a Select used with a real pointer, in a real browser', () => {
 
   describe('when tapping an item', () => {
     it('selects it once and closes', async () => {
-      const { modelValue, selects } = mountSelect({ position: 'popper', rootProps: { defaultOpen: true } })
+      const { modelValue, selects } = mountPointerSelect({ position: 'popper', rootProps: { defaultOpen: true } })
       await opened()
 
       await tap(get('banana')!)
@@ -131,7 +199,7 @@ describe('given a Select used with a real pointer, in a real browser', () => {
     })
 
     it('toggles it once when `multiple`', async () => {
-      const { modelValue, selects, itemClicks } = mountSelect({ position: 'popper', modelValue: [], rootProps: { defaultOpen: true, multiple: true } })
+      const { modelValue, selects, itemClicks } = mountPointerSelect({ position: 'popper', modelValue: [], rootProps: { defaultOpen: true, multiple: true } })
       await opened()
 
       await tap(get('banana')!)
@@ -145,7 +213,7 @@ describe('given a Select used with a real pointer, in a real browser', () => {
 
     // https://github.com/unovue/reka-ui/issues/578
     it('does not click the element behind the menu once it closes', async () => {
-      const { modelValue, getBehindClicks } = mountSelect({ position: 'popper', behind: true, rootProps: { defaultOpen: true } })
+      const { modelValue, getBehindClicks } = mountPointerSelect({ position: 'popper', behind: true, rootProps: { defaultOpen: true } })
       await opened()
       const point = centerOf(get('banana')!)
 
@@ -162,7 +230,7 @@ describe('given a Select used with a real pointer, in a real browser', () => {
 
   describe('when pressing the trigger, dragging onto an item and releasing', () => {
     it.each(['mouse', 'pen'])('selects the item with a %s', async (pointerType) => {
-      const { modelValue, selects } = mountSelect({ position: 'popper' })
+      const { modelValue, selects } = mountPointerSelect({ position: 'popper' })
       const press = centerOf(get('trigger')!)
 
       await send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...press, pointerType })
@@ -182,7 +250,7 @@ describe('given a Select used with a real pointer, in a real browser', () => {
 
   describe('when clicking an item with a mouse', () => {
     it('toggles it once when `multiple`', async () => {
-      const { modelValue, selects, itemClicks } = mountSelect({ position: 'popper', modelValue: [], rootProps: { defaultOpen: true, multiple: true } })
+      const { modelValue, selects, itemClicks } = mountPointerSelect({ position: 'popper', modelValue: [], rootProps: { defaultOpen: true, multiple: true } })
       await opened()
 
       await userEvent.click(get('banana')!)
@@ -197,7 +265,7 @@ describe('given a Select used with a real pointer, in a real browser', () => {
   describe('when an item is rendered as a button', () => {
     // A native button turns Enter and Space into a `click` of its own.
     it.each(['{Enter}', ' '])('toggles it once with the key "%s" when `multiple`', async (key) => {
-      const { modelValue, selects } = mountSelect({ position: 'popper', itemAs: 'button', modelValue: [], rootProps: { defaultOpen: true, multiple: true } })
+      const { modelValue, selects } = mountPointerSelect({ position: 'popper', itemAs: 'button', modelValue: [], rootProps: { defaultOpen: true, multiple: true } })
       await opened()
       get('banana')!.focus()
 
