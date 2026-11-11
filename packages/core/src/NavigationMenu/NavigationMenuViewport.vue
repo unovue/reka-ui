@@ -64,15 +64,17 @@ watch([modelValue, open], () => {
 }, { immediate: true })
 
 function updatePosition() {
-  if (content.value && activeTrigger.value && rootNavigationMenu.value
-    && rootSize?.target === rootNavigationMenu.value && rootSize.width && rootSize.height) {
+  if (content.value && activeTrigger.value && rootNavigationMenu.value) {
     const bodyWidth = document.documentElement.offsetWidth
     const bodyHeight = document.documentElement.offsetHeight
     const rootRect = rootNavigationMenu.value.getBoundingClientRect()
     // Rectangles include transforms; ResizeObserver border boxes retain the
     // fractional, untransformed layout size (unlike offsetWidth/offsetHeight).
-    const scaleX = rootRect.width / rootSize.width || 1
-    const scaleY = rootRect.height / rootSize.height || 1
+    // A root without a box on an axis (`display: contents`, zero width or height) is
+    // never measured, or measures 0: there is no scale to read, so assume none.
+    const layoutSize = rootSize?.target === rootNavigationMenu.value ? rootSize : undefined
+    const scaleX = (layoutSize?.width && rootRect.width / layoutSize.width) || 1
+    const scaleY = (layoutSize?.height && rootRect.height / layoutSize.height) || 1
     const rect = activeTrigger.value.getBoundingClientRect()
     const { offsetWidth, offsetHeight } = content.value
 

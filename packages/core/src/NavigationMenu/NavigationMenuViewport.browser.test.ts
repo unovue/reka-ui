@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { userEvent } from 'vitest/browser'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { page, userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { NavigationMenuContent, NavigationMenuItem, NavigationMenuList, NavigationMenuRoot, NavigationMenuTrigger, NavigationMenuViewport } from '.'
 
@@ -35,6 +35,13 @@ function mountMenu({ scale = '1', align = 'center', vertical = false, panelSize 
 }
 
 describe('navigationMenuViewport positioning in a real browser', () => {
+  // The fixtures place menus up to 430px from the left edge and scale them up to 1.5x, so
+  // they need more room than the default test frame. Restore it for the files that follow.
+  let frameSize: [number, number]
+  beforeAll(async () => {
+    frameSize = [window.innerWidth, window.innerHeight]
+    await page.viewport(1180, 757)
+  })
   let bodyHeight: string
   beforeEach(() => {
     bodyHeight = document.body.style.height
@@ -42,6 +49,9 @@ describe('navigationMenuViewport positioning in a real browser', () => {
   })
   afterEach(() => {
     document.body.style.height = bodyHeight
+  })
+  afterAll(async () => {
+    await page.viewport(...frameSize)
   })
 
   const alignments = ['start', 'center', 'end'] as const
@@ -126,6 +136,28 @@ describe('navigationMenuViewport positioning in a real browser', () => {
       // instead of hiding a whole-pixel error behind a loose visual tolerance.
       return actual - expected
     }).toBe(0)
+  })
+
+  // Such a root has no size to derive a scale from; the position must still be set.
+  const sizelessRoots = ['display: contents;', 'width: 0;', 'height: 0;'].flatMap(rootStyle =>
+    [false, true].map(vertical => ({ rootStyle, vertical })),
+  )
+
+  it.each(sizelessRoots)('positions the viewport for a root with "$rootStyle", vertical=$vertical', async ({ rootStyle, vertical }) => {
+    const { get, open } = mountMenu({ rootStyle, vertical })
+    await open('two')
+    await expect.poll(() => {
+      const rootRect = get('root').getBoundingClientRect()
+      const trigger = get('two').getBoundingClientRect()
+      const viewport = get('viewport')
+      return [
+        viewport.style.getPropertyValue('--reka-navigation-menu-viewport-left'),
+        viewport.style.getPropertyValue('--reka-navigation-menu-viewport-top'),
+      ].join(',') === [
+        `${Math.round(trigger.left - rootRect.left + trigger.width / 2 - 60)}px`,
+        `${Math.round(trigger.top - rootRect.top + trigger.height / 2 - 60)}px`,
+      ].join(',')
+    }).toBe(true)
   })
 
   it.each(['content-box', 'border-box'])('measures the fractional %s border box after a resize', async (boxSizing) => {
