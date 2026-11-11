@@ -59,9 +59,11 @@ export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { RovingFocusGroup } from '@/RovingFocus'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useCheckboxGroup } from './useCheckboxGroup'
 
@@ -98,7 +100,7 @@ function getFocusTarget() {
 // Optional Field participation: `null` outside a `FieldRoot`, so every
 // binding below is inert without a Field. The group is the field's control:
 // it takes the field's id and label, and its checkboxes don't register.
-const field = useFieldControl({
+const field = useFieldBinding({
   id: () => attrs.id as string | undefined,
   element: getFocusTarget,
   getValue: () => modelValue.value,
@@ -114,7 +116,7 @@ const disabled = field ? computed(() => field.disabled(props.disabled)) : toRef(
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
 // composable's `useControllableState` (`modelValue === undefined` → uncontrolled).
-const { modelValue, context } = useCheckboxGroup<T>({
+const { modelValue, context, isControlled } = useCheckboxGroup<T>({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   emit: emits,
@@ -129,6 +131,9 @@ const { modelValue, context } = useCheckboxGroup<T>({
 
 if (field)
   watch(modelValue, value => field.sync(value))
+
+// A native reset of the owning form puts the value back to `defaultValue`.
+function onFormReset(event: Event) { resetControllableState(isControlled, event) }
 
 // Touched once focus leaves the whole group, not on every checkbox-to-checkbox move.
 const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
@@ -159,6 +164,8 @@ function renderAttrs(attrs: Record<string, unknown>) {
     },
   ))
 }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -166,6 +173,7 @@ function renderAttrs(attrs: Record<string, unknown>) {
     :is="rovingFocus ? RovingFocusGroup : renderAs(as, asChild)"
     ref="primitiveElement"
     v-bind="renderAttrs($attrs)"
+    @vue:mounted="bindFormReset"
   >
     <slot />
 

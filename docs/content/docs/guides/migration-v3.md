@@ -733,6 +733,7 @@ What changed:
 - **`TimeFieldRoot` emits a time placeholder** when its placeholder is a time (a `Temporal.PlainTime`, see [Temporal instead of `@internationalized/date`](#temporal-instead-of-internationalized-date)). v2 converted it to a `CalendarDateTime` before emitting `update:placeholder`.
 - **Root contexts.** On the field and picker root contexts, `modelValue` and `placeholder` (and `startValue` / `endValue` on the range field contexts) are writable computeds: assigning them still works and reports `'imperative-action'`. New on every context: `setModelValue(value, reason?, event?)` and `setPlaceholder(value, reason?, event?)`, plus `setRangeValue(type, value, reason?, event?)` on the range field contexts. Each returns `false` when the change was cancelled or did not change the value. On the picker contexts, `onDateChange` and `onPlaceholderChange` take the same optional reason and event and return a boolean, and `onStartValueChange(date, details?)` takes the calendar's details.
 - **Segment attributes.** The time zone segment renders `data-readonly=""` instead of `data-readonly="true"`. Select it with `[data-readonly]`.
+- **`TimeRangeFieldRoot` checks `isTimeUnavailable` between the two ends.** v2 asked the matcher about the start and the end only, so a range from 09:00 to 17:00 was valid with a matcher that blocks 12:00 to 13:00. It is now invalid (`isInvalid`, `data-invalid`). The times between the ends are checked at every unit of the `granularity` (each minute by default), whatever the `step`; a range of more than 1,440 units is sampled at a wider interval; see [Unavailable times inside the range](../components/time-range-field#unavailable-times-inside-the-range). Set `allowNonContiguousRanges` on the root (or pass it to `useTimeRangeField()`) to keep checking the two ends only.
 - **A zoned `DateFieldRoot` submits its offset and time zone.** With a `name` and a `Temporal.ZonedDateTime` value, `DateFieldRoot` (and `DatePickerRoot`, which renders one) submits the full ISO string, `2026-11-30T23:59:00-05:00[America/New_York]`, at any `granularity`. v2 submitted the wall-clock value only (`2026-11-30T23:59`, or `2026-11-30` with `granularity="day"`), so the server could not tell which instant was meant. This is the string each end of a `DateRangeFieldRoot` already submits. Parse it with `Temporal.ZonedDateTime.from(value)`; for `new Date()` or a parser that rejects the bracketed zone, cut the annotation first (`value.replace(/\[.*\]$/, '')`). The value is carried by a second, `type="hidden"` input that holds the `name` while the value is zoned; the native `date` / `datetime-local` input stays, without a `name`, and still enforces `required`, `min-value` and `max-value`. Plain `Temporal.PlainDate` and `Temporal.PlainDateTime` values submit what they did in v2.
 - **The default placeholder of `DateFieldRoot`, `DateRangeFieldRoot`, `DatePickerRoot` and `DateRangePickerRoot` uses the `ConfigProvider` locale** when the root has no `locale` prop and no `placeholder`. v2 built it from the prop alone. The placeholder carries the locale's calendar system, and typed values are built from it, so under `<ConfigProvider locale="th-TH">` (or `fa-IR`, `ar-SA`, and other locales with a non-Gregorian default) a field emits dates in that calendar: a Buddhist `Temporal.PlainDate` whose `.year` is 2567 for 2024, and the year segment is typed in that calendar too. This matches passing the same `locale` to the field directly. To keep Gregorian values, pass an ISO `placeholder` (`Temporal.Now.plainDateISO()`) or `locale="en-US"`, or convert with `value.withCalendar('iso8601')`. `TimeFieldRoot` and `TimeRangeFieldRoot` are unaffected: their default placeholder is a `Temporal.PlainTime`, which has no calendar, and a `PlainDateTime` or `ZonedDateTime` placeholder or model keeps the calendar it was created with.
 
@@ -1034,3 +1035,34 @@ To keep the v2 behavior, set the prop to `false`:
 ```
 
 `reset-model-value-on-clear` (or `:reset-model-value-on-clear="true"`) is now the default and can be removed. To keep the value for one press only, cancel the `'clear-press'` change in `beforeUpdate:modelValue`; that keeps the input text too. A model bound to the root must accept `null` (or `[]`), which the `null` changes in [Combobox and Autocomplete roots](#combobox-and-autocomplete-roots) already require.
+
+## Form reset restores Reka UI controls
+
+A native form reset (a `type="reset"` button, or `form.reset()`) now puts every Reka UI form control of that form back to its `defaultValue`, or to its empty value when it has none. In v2 a reset left them as they were: the value, what the control showed and what the form submitted all stayed, because the hidden input each control renders always carried the current value as its default. Inside a `FormRoot`, v2 cleared each `FieldRoot`'s touched, dirty and validation state, and still kept the values.
+
+The controls are Checkbox, CheckboxGroup, Switch, RadioGroup, Toggle, ToggleGroup, Slider, NumberField, PinInput, TagsInput, Select, Combobox, Autocomplete, Listbox, Editable, DateField, TimeField, DateRangeField, TimeRangeField, DatePicker, DateRangePicker, ColorField, ColorArea and ColorSlider. They reset whether or not they have a `name`, in a plain `<form>` as well as in a `FormRoot`.
+
+- **Uncontrolled** (`default-value`): the value goes back to the default.
+- **Controlled** (`v-model`): the control emits `update:modelValue` with its `defaultValue`, or with its empty value when it has none (the value an uncontrolled control starts with, such as `false` for a Switch or `undefined` for a RadioGroup), so the bound state changes. Pass `default-value` next to `v-model` to choose what a reset restores.
+- The change carries `details.reason === 'none'` and the `reset` event as `details.event`. `beforeUpdate:modelValue` can cancel it. Nothing is emitted when the value already equals the default.
+- A `FieldRoot` clears its state on a reset in a plain `<form>` too, not only in a `FormRoot`.
+- `preventDefault()` on the `reset` event now also keeps the `FieldRoot` state. In v2 a `FormRoot` cleared it even when the reset was prevented.
+
+```vue
+<!-- v2: a reset left `plan` on the option the user picked -->
+<RadioGroupRoot v-model="plan" name="plan" />
+
+<!-- v3: a reset emits `undefined`. Give it the value to go back to -->
+<RadioGroupRoot v-model="plan" name="plan" default-value="free" />
+```
+
+To keep a value through a reset, cancel the change:
+
+```vue
+<SwitchRoot
+  v-model="darkMode"
+  @before-update:model-value="(value, details) => details.event?.type === 'reset' && details.cancel()"
+/>
+```
+
+`useForm().reset()` resets the form natively, so it follows the same rules. A control of your own built with `useFieldControl()` is not reset for you; see [Resetting](./forms#resetting).

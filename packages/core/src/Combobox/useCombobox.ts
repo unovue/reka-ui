@@ -568,6 +568,8 @@ export interface UseComboboxRootReturn<T = AcceptableValue> extends Pick<UseList
   lastOpenChangeDetails: Readonly<Ref<ChangeEventDetails<ComboboxOpenChangeReason>>>
   /** The search term the filter runs against (writable). */
   filterSearch: Ref<string>
+  /** Puts the input's text back to the text of the current value, dropping what was typed. */
+  resetSearchTerm: (reason?: ComboboxOpenChangeReason | BaseChangeReason) => void
   /** The root surface: `dir`, the highlight release on pointer leave / focus out. */
   root: PartSurface<ComboboxState>
   /** The `role="listbox"` surface. */
@@ -764,6 +766,7 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     highlightSelected: listbox.highlightSelected,
     labels: listbox.labels,
     filterSearch,
+    resetSearchTerm: resetSearchTerm.trigger,
     filterState: listbox.filterState,
     isControlled: listbox.isControlled,
     lastChangeDetails: listbox.lastChangeDetails,

@@ -6,8 +6,9 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { DateStep, HourCycle, SegmentContents, SegmentFieldRootState, SegmentFieldSegmentState, SegmentPart, SegmentValueObj, TimeGranularity, TimeRange, TimeValue } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, unref, watch } from 'vue'
-import { areAllDaysBetweenValid, isBefore, isBeforeOrSame } from '@/date'
+import { isBefore, isBeforeOrSame } from '@/date'
 import { assertTemporal } from '@/date/runtime'
+import { compareDateValues, isZonedDateTime, toPlainDateTime } from '@/date/temporal'
 import { isSameRange } from '@/DateRangeField/useDateRangeField'
 import { useControllableState, useDateFormatter } from '@/shared'
 import {
@@ -68,8 +69,22 @@ export interface UseTimeRangeFieldProps {
   maxValue?: MaybeRefOrGetter<TimeValue | undefined>
   disabled?: MaybeRefOrGetter<boolean | undefined>
   readonly?: MaybeRefOrGetter<boolean | undefined>
-  /** Receives each end as a date-time (a `PlainTime` is placed on today's date). A plain function or a ref to one. */
+  /**
+   * Receives a time as a date-time (a `PlainTime` is placed on today's date). A plain function or a ref to one.
+   *
+   * It is asked about both ends and, unless `allowNonContiguousRanges` is set,
+   * about the times between them: every unit of the `granularity` (each minute
+   * by default), whatever the `step`, at most 1,440 times per range between the ends. A longer
+   * range is sampled at a whole multiple of the unit, so a full day at `second`
+   * granularity is checked once a minute and can miss a shorter unavailable time.
+   */
   isTimeUnavailable?: MaybeRef<Matcher | undefined>
+  /**
+   * When combined with `isTimeUnavailable`, whether the range may contain
+   * unavailable times between its ends. The ends themselves are always checked.
+   * @default false
+   */
+  allowNonContiguousRanges?: MaybeRefOrGetter<boolean | undefined>
   parentElement?: Ref<HTMLElement | undefined>
   emit?: (event: any, ...args: any[]) => void
   onBeforeUpdate?: (value: TimeRange, details: ChangeEventDetails<TimeRangeFieldChangeReason>) => void
@@ -85,6 +100,12 @@ export interface UseTimeRangeFieldReturn {
   segments: ComputedRef<Record<DateRangeType, SegmentContents>>
   editableSegments: ComputedRef<Record<DateRangeType, SegmentContents>>
   segmentValues: Record<DateRangeType, Ref<SegmentValueObj>>
+  /**
+   * Shows the current value in every segment again (the empty segments without one), dropping what was typed
+   * without completing a value. A form reset calls it: the model may already hold its default, so nothing else
+   * would put the segments back.
+   */
+  resetSegments: () => void
   isInvalid: ComputedRef<boolean>
   setModelValue: (value: TimeRange, reason?: TimeRangeFieldChangeReason | BaseChangeReason, event?: Event) => boolean
   setPlaceholder: (value: TimeValue, reason?: TimeRangeFieldChangeReason | BaseChangeReason, event?: Event) => boolean
@@ -118,6 +139,34 @@ export function createTimeRangeFieldInputSurface(
       'data-reka-time-range-field-segment-type': toValue(type),
     }),
   })
+}
+
+/** The most times one range asks `isTimeUnavailable` about between its ends: a full day of minutes. */
+const MAX_SAMPLES_BETWEEN = 1440
+
+/**
+ * Whether a time strictly between `start` and `end` is unavailable. The times
+ * asked about lie on a grid counted from midnight of `start`'s day: every
+ * unit of `granularity`, widened to a whole multiple of that when the range
+ * holds more than `MAX_SAMPLES_BETWEEN` of them. `step` is not used: a range
+ * between two stepped ends still spans the times the step skips.
+ */
+function hasUnavailableTimeBetween(start: DateValue, end: DateValue, isUnavailable: Matcher, granularity: TimeGranularity) {
+  // Both ends carry a time. A zoned start is measured against a zoned end only.
+  const first = (isZonedDateTime(end) ? start : toPlainDateTime(start)) as Temporal.PlainDateTime
+  const span = first.until(end as Temporal.PlainDateTime, { largestUnit: 'second' }).seconds
+  const base = granularity === 'hour' ? 3600 : granularity === 'minute' ? 60 : 1
+  const interval = base * Math.max(1, Math.ceil(span / base / MAX_SAMPLES_BETWEEN))
+
+  let current = first
+    .with({ millisecond: 0, microsecond: 0, nanosecond: 0 })
+    .add({ seconds: interval - (first.hour * 3600 + first.minute * 60 + first.second) % interval })
+  while (compareDateValues(current, end) < 0) {
+    if (isUnavailable(current))
+      return true
+    current = current.add({ seconds: interval })
+  }
+  return false
 }
 
 /**
@@ -196,9 +245,11 @@ export function useTimeRangeField(props: UseTimeRangeFieldProps = {}): UseTimeRa
       return false
     if (!isBeforeOrSame(start, end))
       return true
-    if (isTimeUnavailable.value !== undefined && !areAllDaysBetweenValid(start, end, isTimeUnavailable.value, undefined))
-      return true
-    return false
+    // Sampled last and only for a complete, ordered range with a matcher: see `isTimeUnavailable`.
+    const matcher = isTimeUnavailable.value
+    if (matcher === undefined || toValue(props.allowNonContiguousRanges))
+      return false
+    return hasUnavailableTimeBetween(start, end, matcher, granularity.value)
   })
 
   const initialSegments = initializeTimeSegmentValues(granularity.value)
@@ -239,12 +290,17 @@ export function useTimeRangeField(props: UseTimeRangeFieldProps = {}): UseTimeRa
     return setPlaceholderState(value, reason, event)
   }
 
-  function syncSegments(type: DateRangeType, value: DateValue | undefined) {
+  function syncSegments(type: DateRangeType, value: DateValue | undefined, force = false) {
     if (value)
       segmentValues[type].value = { ...syncSegmentValues({ value, formatter }) }
     // If segment has null value, means that user modified it, thus do not reset the segmentValues
-    else if (Object.values(segmentValues[type].value).every(segment => segment !== null))
+    else if (force || Object.values(segmentValues[type].value).every(segment => segment !== null))
       segmentValues[type].value = { ...initialSegments }
+  }
+
+  function resetSegments() {
+    syncSegments('start', convertedStart.value, true)
+    syncSegments('end', convertedEnd.value, true)
   }
 
   // A cancelled commit rolls back only the model: the segments keep what the
@@ -321,6 +377,7 @@ export function useTimeRangeField(props: UseTimeRangeFieldProps = {}): UseTimeRa
     segments,
     editableSegments: editable,
     segmentValues,
+    resetSegments,
     isInvalid,
     setModelValue,
     setPlaceholder,

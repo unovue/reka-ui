@@ -129,12 +129,13 @@ export const [injectDateRangePickerRootContext, provideDateRangePickerRootContex
 <script setup lang="ts">
 import { computed, toRefs, watch } from 'vue'
 import { createPendingFieldInput } from '@/Field/pendingFieldInput'
-import { injectFieldForControl } from '@/Field/useFieldControl'
+import { injectFieldForControl } from '@/Field/useFieldBinding'
 import { provideFieldFocusExtension } from '@/Field/useFieldFocusWithin'
 import { providePopoverRootContext } from '@/Popover/PopoverRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { isEqual } from '@/shared/compare'
 import { isSegmentFieldChange } from '@/shared/date/segmentField'
+import { provideFormResetDefault } from '@/shared/formReset'
 import { useDateRangePicker } from './useDateRangePicker'
 
 defineOptions({
@@ -267,6 +268,8 @@ if (fieldContext) {
 
 providePopoverRootContext(popover.context)
 provideDateRangePickerRootContext(context)
+// The field goes back to it on a native reset of the owning form.
+provideFormResetDefault(props.defaultValue)
 </script>
 
 <template>

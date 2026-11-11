@@ -122,6 +122,130 @@ For a button control such as `SelectTrigger`, `SwitchRoot` or `Toggle`, a native
 
 After choosing Weekly, `save` receives `{ newsletter: false, frequency: 'weekly' }`; submitting with no frequency chosen shows the error and focuses the first radio.
 
+## Your own control
+
+`useFieldControl()` makes a component of yours the field's control, the way the Reka UI controls are. Use it for a control that `FieldControl` doesn't fit: a native input whose value you transform, a `contenteditable` editor, or a wrapper around a third-party widget.
+
+Give it the control's current `value` and the `element` that takes focus, and pass on the control's own `id`, `name`, `disabled` and `required`. It returns:
+
+- `control`, a [part surface](./composables#part-surfaces) to bind on the element: the `id` the label points at, `aria-labelledby`, `aria-describedby`, `aria-invalid`, the focus and blur handlers, and the field's `data-*` state attributes.
+- `name`, `disabled` and `required`, resolved against the field: the field's `name` wins, and `disabled` and `required` apply when set on either.
+- `input(value)`, which you call when the user changes the value. The field then becomes dirty, validates when its mode asks for it, and drops a server error.
+
+A change of `value` that comes without an `input()` call, such as the parent setting the model, only updates the field's `filled` state.
+
+```vue
+<!-- SlugInput.vue -->
+<script setup lang="ts">
+import { useFieldControl } from 'reka-ui'
+import { useTemplateRef } from 'vue'
+
+const props = defineProps<{ id?: string, name?: string, disabled?: boolean, required?: boolean }>()
+const model = defineModel<string>({ default: '' })
+
+const element = useTemplateRef('element')
+const { control, name, disabled, required, input } = useFieldControl({
+  value: model,
+  element,
+  validityElement: element,
+  id: () => props.id,
+  name: () => props.name,
+  disabled: () => props.disabled,
+  required: () => props.required,
+})
+
+function onInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  target.value = target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+  model.value = target.value
+  input(target.value)
+}
+</script>
+
+<template>
+  <input
+    ref="element"
+    v-bind="control.attrs.value"
+    :name="name"
+    :disabled="disabled"
+    :required="required"
+    :value="model"
+    @input="onInput"
+  >
+</template>
+```
+
+```vue
+<template>
+  <FieldRoot name="slug" required>
+    <FieldLabel>Slug</FieldLabel>
+    <SlugInput v-model="slug" />
+    <FieldError match="valueMissing">
+      Enter a slug.
+    </FieldError>
+  </FieldRoot>
+</template>
+```
+
+`validityElement` names a native `input`, `textarea` or `select` whose constraint validation (`required`, `pattern`, `min`, …) decides the field's validity. A control without one has a single built-in constraint, `required`, which fails while the value is not filled. Pass `isFilled` when an empty value is something other than `null`, `undefined`, `''` or an empty array. Such a control also renders its own disabled and required semantics, and a hidden input when it should take part in a native submission:
+
+```vue
+<!-- NoteEditor.vue -->
+<script setup lang="ts">
+import { useFieldControl } from 'reka-ui'
+import { onMounted, useTemplateRef, watch } from 'vue'
+
+const props = defineProps<{ name?: string, disabled?: boolean, required?: boolean }>()
+const model = defineModel<string>({ default: '' })
+
+const element = useTemplateRef('element')
+const { control, name, disabled, required, input } = useFieldControl({
+  value: model,
+  element,
+  name: () => props.name,
+  disabled: () => props.disabled,
+  required: () => props.required,
+  isFilled: value => value.trim() !== '',
+})
+
+// The element owns its text while the user types; write only what came from outside.
+function render() {
+  if (element.value && element.value.textContent !== model.value)
+    element.value.textContent = model.value
+}
+onMounted(render)
+watch(model, render)
+
+function onInput() {
+  model.value = element.value?.textContent ?? ''
+  input(model.value)
+}
+</script>
+
+<template>
+  <div
+    ref="element"
+    role="textbox"
+    aria-multiline="true"
+    :contenteditable="!disabled"
+    :tabindex="disabled ? undefined : 0"
+    :aria-disabled="disabled || undefined"
+    :aria-required="required || undefined"
+    v-bind="control.attrs.value"
+    @input="onInput"
+  />
+  <input
+    v-if="name"
+    type="hidden"
+    :name="name"
+    :value="model"
+    :disabled="disabled"
+  >
+</template>
+```
+
+Outside a `FieldRoot` the composable returns the control's own `id`, `name`, `disabled` and `required` and no field wiring, so the same component works on its own. A Reka UI control rendered inside your control leaves the field to it. Call `useFieldControl()` inside `setup()`. Like the other [composables](./composables), it is experimental.
+
 ## Custom validation
 
 Pass `validate` to a `FieldRoot`. It receives the control's value and, inside a `FormRoot`, the values of every named field, so one field can depend on another. Return a message, several messages, or `null` when the value is valid. It may be async: an async result shows once it resolves but doesn't hold back a submission in `onSubmit` mode.
@@ -194,11 +318,127 @@ Pass the errors the server returned as `errors`, keyed by field `name`. Each one
 
 ### Resetting
 
-A native `type="reset"` button resets every field inside a `FormRoot` to its initial value and clears its validation state.
+A native reset, from a `type="reset"` button or `form.reset()`, puts every Reka UI control of the form back to its `defaultValue`, the way a native input goes back to its default. A control without a `defaultValue` goes back to its empty value. Every `FieldRoot` in the form clears its touched, dirty and validation state, and `filled` follows the value the reset left. This works in a plain `<form>` too, with or without a `FieldRoot`.
+
+```vue
+<template>
+  <form>
+    <SwitchRoot name="newsletter" default-value>
+      <SwitchThumb />
+    </SwitchRoot>
+    <SliderRoot name="volume" :default-value="[50]">
+      <SliderTrack><SliderRange /></SliderTrack>
+      <SliderThumb />
+    </SliderRoot>
+    <button type="reset">
+      Reset
+    </button>
+  </form>
+</template>
+```
+
+The reset is a change like any other. It emits `update:modelValue` with `details.reason === 'none'` and the native `reset` event as `details.event`, only when the value differs from the default, and `beforeUpdate:modelValue` can cancel it:
+
+```vue
+<script setup lang="ts">
+import type { ChangeEventDetails } from 'reka-ui'
+
+function keepOnReset(value: boolean, details: ChangeEventDetails) {
+  if (details.event?.type === 'reset')
+    details.cancel()
+}
+</script>
+
+<template>
+  <SwitchRoot default-value @before-update:model-value="keepOnReset" />
+</template>
+```
+
+A control bound with `v-model` receives the default through `update:modelValue`, so the bound state is what changes. Pass `default-value` next to `v-model` to choose the value a reset restores; without it the control asks for its empty value, the one an uncontrolled control starts with.
+
+```vue
+<template>
+  <!-- A reset sets `plan` to 'free' -->
+  <RadioGroupRoot v-model="plan" default-value="free" />
+</template>
+```
+
+The rules follow the native ones:
+
+- Every Reka UI form control inside the form is reset, named or not, and disabled or not. A control inside another control, such as the checkboxes of a `CheckboxGroupRoot`, is reset by the outer one.
+- A control whose root is a `<button>` (Checkbox, Switch, Toggle) follows that button's `form` attribute: outside the form and naming it, it is reset with it; inside the form and naming another one, it is not.
+- Calling `preventDefault()` on the `reset` event keeps every value and every field's state.
+- Text typed into a control but not committed is dropped: a `ComboboxInput` shows the selected value again, and a date or time field loses the segments typed without completing a value.
+
+There are three ways to reset, and they differ in what they touch:
+
+| | Values | Field state |
+| --- | --- | --- |
+| A native reset: a `type="reset"` button, `form.reset()`, or `useForm().reset()` in a `FormRoot` that renders a `<form>` | Back to the defaults | Cleared, for every field of the form |
+| `useForm().reset()` in a `FormRoot` rendered as another element | Kept | Cleared, for every field of the `FormRoot` |
+| `useField().reset()` | Kept | Cleared, for that field |
+
+Only a native reset changes values. A control of your own built with [`useFieldControl()`](#your-own-control) is not a Reka UI control: a native element inside it resets natively, and state it keeps itself is yours to put back. Its `FieldRoot` still clears its state.
+
+```ts
+// In the custom control: put the value back when its form is reset.
+onMounted(() => {
+  element.value?.closest('form')?.addEventListener('reset', () => { model.value = '' })
+})
+```
 
 ## Validating from code
 
 Both roots expose `validate()` through a template ref. `formRef.value.validate()` validates every field, `formRef.value.validate('email')` one of them, and `fieldRef.value.validate()` its own field, regardless of the validation mode. Each returns whether the fields are valid. Use it, for example, to check the fields of one step of a multi-step form before moving to the next.
+
+## Reading a field or a form from script
+
+A component rendered inside a `FieldRoot` reads and drives that field with `useField()`. It returns the field's state as read-only refs (`invalid`, `touched`, `dirty`, `filled`, `focused`, `errors`, `validity`, and the `name`, `disabled` and `required` props) and three actions: `validate()`, `reset()`, which clears the touched, dirty and validation state and leaves the value alone, and `focus()`, which focuses the control.
+
+```vue
+<!-- FieldStatus.vue -->
+<script setup lang="ts">
+import { useField } from 'reka-ui'
+
+const field = useField()
+</script>
+
+<template>
+  <span v-if="field.invalid.value">
+    {{ field.errors.value[0] }}
+    <button type="button" @click="field.validate()">
+      Check again
+    </button>
+  </span>
+  <span v-else-if="field.dirty.value && field.validity.value.valid">Looks good</span>
+</template>
+```
+
+Inside a `FormRoot`, `useForm()` returns `getValues()` (the object `formSubmit` receives, read when you call it), `validate(name?)`, `submitCount` and `reset()`, which does what a `type="reset"` button does: it resets the `<form>` natively, so [the rules above](#resetting) apply. In a `FormRoot` rendered as another element there is no native reset, and `reset()` only clears the fields' state.
+
+```vue
+<!-- FormActions.vue -->
+<script setup lang="ts">
+import { useForm } from 'reka-ui'
+
+const form = useForm()
+
+function saveDraft() {
+  localStorage.setItem('draft', JSON.stringify(form.getValues()))
+}
+</script>
+
+<template>
+  <button type="button" @click="saveDraft">
+    Save draft
+  </button>
+  <button type="submit">
+    {{ form.submitCount.value > 0 ? 'Try again' : 'Create' }}
+  </button>
+</template>
+```
+
+Both throw when there is no enclosing root, and both are called inside `setup()`. The component that renders the root itself uses the template ref instead.
 
 ## With a schema library
 

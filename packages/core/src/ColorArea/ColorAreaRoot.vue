@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ComputedRef, CSSProperties, Ref } from 'vue'
 import type { ColorAreaAxis, ColorAreaChangeReason } from './useColorArea'
-import type { FieldControlBinding } from '@/Field/useFieldControl'
+import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
@@ -82,10 +82,12 @@ export const [injectColorAreaFieldContext, provideColorAreaFieldContext]
 
 <script setup lang="ts">
 import { mergeProps, watch } from 'vue'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { colorToString } from '@/shared/color'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useColorArea } from './useColorArea'
 
@@ -114,7 +116,7 @@ const dir = useDirection(() => props.dir)
 
 // Optional Field participation: `null` outside a `FieldRoot`, so every
 // binding below is inert without a Field.
-const field = useFieldControl({
+const field = useFieldBinding({
   // The x input renders its own `id`, else the field's.
   id: () => context.xInputRef.value?.id || undefined,
   element: () => context.xInputRef.value ?? context.thumbRef.value,
@@ -123,7 +125,7 @@ const field = useFieldControl({
   required: () => props.required,
 })
 
-const { root, context, areaStyles, xValue, yValue, color } = useColorArea({
+const { root, context, areaStyles, xValue, yValue, color, isControlled } = useColorArea({
   colorSpace: () => props.colorSpace,
   xChannel: () => props.xChannel,
   yChannel: () => props.yChannel,
@@ -141,6 +143,9 @@ const { root, context, areaStyles, xValue, yValue, color } = useColorArea({
 provideColorAreaRootContext(context)
 provideColorAreaFieldContext(field)
 
+// A native reset of the owning form puts the value back to `defaultValue`.
+function onFormReset(event: Event) { resetControllableState(isControlled, event) }
+
 if (field)
   watch(color, value => field.sync(value))
 
@@ -148,6 +153,8 @@ if (field)
 // field is focused while focus is on either axis, and blurred once it leaves.
 const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
 const fieldAttrs = focusWithin && { onFocusin: focusWithin.onFocusin, onFocusout: focusWithin.onFocusout }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -155,6 +162,7 @@ const fieldAttrs = focusWithin && { onFocusin: focusWithin.onFocusin, onFocusout
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
     v-bind="field ? field.fillDataAttributes(mergeProps(root.attrs.value, fieldAttrs!)) : root.attrs.value"
+    @vue:mounted="bindFormReset"
   >
     <slot :style="areaStyles" />
 

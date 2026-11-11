@@ -183,10 +183,12 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false">
 import { mergeProps, toRef, watch } from 'vue'
 import { useCollection } from '@/Collection'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { provideListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { renderAs } from '@/Primitive/renderAs'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { getComboboxSelectedLabels, hasComboboxValue, useComboboxRoot } from './useCombobox'
 import { provideComboboxField } from './useComboboxField'
@@ -233,7 +235,7 @@ function isSameValue(a: any, b: any): boolean {
 // Optional Field participation: `null` outside a `FieldRoot`, so every
 // binding below is inert without a Field. The root owns the value; the input
 // (Base UI parity) carries the field's id, label and aria wiring.
-const field = useFieldControl({
+const field = useFieldBinding({
   // Getters read bindings that are retained anyway, not the composable's
   // return object: capturing it in a closure would keep it alive per instance.
   // The element the field focuses, so `FieldLabel`'s `for` and `focusControl()`
@@ -305,6 +307,18 @@ defineExpose(mergeExpose(expose, {
 provideListboxRootContext(context)
 provideComboboxRootContext(context)
 provideComboboxField(field, context)
+
+// A native reset of the owning form puts the value back to `defaultValue`,
+// and the input's text back to that value's.
+// Read off the composable's return here: a closure over that object would keep
+// all of it alive for the life of the component.
+const { isControlled, resetSearchTerm } = combobox
+function onFormReset(event: Event) {
+  resetControllableState(isControlled, event)
+  resetSearchTerm('none')
+}
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -313,6 +327,7 @@ provideComboboxField(field, context)
       :is="renderAs(as, asChild)"
       :ref="forwardRef"
       v-bind="mergeProps(root.attrs.value, $attrs)"
+      @vue:mounted="bindFormReset"
     >
       <slot
         :open="open"

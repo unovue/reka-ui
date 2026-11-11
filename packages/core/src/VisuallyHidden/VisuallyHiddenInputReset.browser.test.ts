@@ -52,7 +52,7 @@ describe('hidden inputs of a form with a native reset', () => {
     expect(mounted.data()).toEqual(before)
   })
 
-  it('still submits a changed state after a native reset', async () => {
+  it('resets a changed state with the form, and submits what is shown', async () => {
     mounted = mountForm({ checked: false })
     await nextTick()
     await nextTick()
@@ -69,17 +69,16 @@ describe('hidden inputs of a form with a native reset', () => {
     await expect.poll(() => checkbox().getAttribute('aria-checked')).toBe('true')
     await expect.poll(() => switchEl().getAttribute('aria-checked')).toBe('true')
     await expect.poll(() => slider().getAttribute('aria-valuenow')).toBe('51')
-
-    const before = mounted.data()
-    expect(before).toEqual({ 'agree': 'on', 'news': 'on', 'volume[0]': '51' })
+    expect(mounted.data()).toEqual({ 'agree': 'on', 'news': 'on', 'volume[0]': '51' })
 
     mounted.form.reset()
     await new Promise(r => setTimeout(r, 50))
     await nextTick()
 
-    expect(checkbox().getAttribute('aria-checked')).toBe('true')
-    expect(switchEl().getAttribute('aria-checked')).toBe('true')
-    expect(slider().getAttribute('aria-valuenow')).toBe('51')
-    expect(mounted.data()).toEqual(before)
+    // The controls go back to their defaults, and the hidden inputs with them.
+    expect(checkbox().getAttribute('aria-checked')).toBe('false')
+    expect(switchEl().getAttribute('aria-checked')).toBe('false')
+    expect(slider().getAttribute('aria-valuenow')).toBe('50')
+    expect(mounted.data()).toEqual({ 'volume[0]': '50' })
   })
 })

@@ -27,6 +27,16 @@ export {
 } from './FieldRoot.vue'
 export { default as FieldValidity } from './FieldValidity.vue'
 export {
+  useField,
+  type UseFieldReturn,
+} from './useField'
+export {
+  type FieldControlState,
+  useFieldControl,
+  type UseFieldControlProps,
+  type UseFieldControlReturn,
+} from './useFieldControl'
+export {
   createValidityState,
   type FieldValidateFn,
   type FieldValidateResult,

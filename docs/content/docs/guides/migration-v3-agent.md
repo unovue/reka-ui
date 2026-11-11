@@ -555,6 +555,7 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 - The time zone segment renders `data-readonly=""` (v2: `data-readonly="true"`).
 - A `DateFieldRoot` or `DatePickerRoot` with a `name` and a `Temporal.ZonedDateTime` value submits the full ISO string with the offset and the time zone (`2026-11-30T23:59:00-05:00[America/New_York]`) at any `granularity`; v2 submitted the wall-clock value (`2026-11-30T23:59`, or `2026-11-30` with `granularity="day"`). A second `type="hidden"` input carries the `name` and the value while the value is zoned; the native `date` / `datetime-local` input stays without a `name` and keeps validating. Plain date and date-time values, the range fields and the time fields submit what they did.
 - `DateFieldRoot`, `DateRangeFieldRoot`, `DatePickerRoot` and `DateRangePickerRoot`: without a `locale` prop and a `placeholder`, the default placeholder uses the `ConfigProvider` locale, including its calendar system: under a `th-TH`, `fa-IR`, `ar-SA` (or other non-Gregorian) `ConfigProvider` the emitted values are in that calendar, and `.year` is that calendar's year. `TimeFieldRoot` and `TimeRangeFieldRoot` are unaffected: their default placeholder is a `Temporal.PlainTime`, and a `PlainDateTime` or `ZonedDateTime` placeholder or model keeps the calendar it was created with.
+- `TimeRangeFieldRoot` / `useTimeRangeField()` with `isTimeUnavailable`: the range is also invalid when a time between its ends is unavailable (v2: only the ends were checked). Checked at every unit of the `granularity` (each minute by default), whatever the `step`; a range of more than 1,440 units is sampled at a wider interval. `allowNonContiguousRanges` (new, default `false`) restores the ends-only check.
 - Rendered attributes can come in a different order; update snapshots.
 - Additive: `isTimeUnavailable` on `TimeFieldRoot`; `stepSnapping` on `DateRangeFieldRoot`, `TimeRangeFieldRoot` and `DateRangePickerRoot`; `stepSnapping` on the picker roots now reaches the field; `useDateField()`, `useTimeField()`, `useDateRangeField()`, `useTimeRangeField()`, `useDatePicker()`, `useDateRangePicker()`.
 
@@ -568,6 +569,7 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 - A `name` on a `DateFieldRoot` or `DatePickerRoot` whose value is zoned (`ZonedDateTime`, `now(`, `parseZonedDateTime(`, `toZoned(`, `Temporal.Now.zonedDateTimeISO(`), together with the code that reads that form field: a server action or API route, `new FormData(`, `formData.get(`, and tests that query `input[name="…"]`.
 - A `ConfigProvider` with a `locale` whose default calendar is not Gregorian (`th`, `fa`, `ar-SA`, …) above a date or time field or picker that has no `locale` and no `placeholder` prop, and code that reads `.year`, compares, stores or serializes the field's values.
 - `is-date-unavailable` / `isDateUnavailable` on `TimeFieldRoot` (it was never applied there).
+- `is-time-unavailable` / `isTimeUnavailable` on `TimeRangeFieldRoot` or in a `useTimeRangeField()` call.
 
 **Rewrite rules.**
 - Wrapper emit types: add a `details` argument typed with the root's own union, imported from `reka-ui`: `ChangeEventDetails<DateFieldChangeReason>` on `DateFieldRoot`, `TimeFieldChangeReason` on `TimeFieldRoot`, `DateRangeFieldChangeReason` on `DateRangeFieldRoot`, `TimeRangeFieldChangeReason` on `TimeRangeFieldRoot`, `DatePickerChangeReason` on `DatePickerRoot` and `DateRangePickerChangeReason` on `DateRangePickerRoot`, for both `update:modelValue` and `update:placeholder` (for example `[date: DateRange]` on `DateRangeFieldRoot` becomes `[date: DateRange, details: ChangeEventDetails<DateRangeFieldChangeReason>]`). `'update:startValue': [date: DateValue | undefined]` gets `details: ChangeEventDetails<RangeCalendarChangeReason>` on both `RangeCalendarRoot` and `DateRangePickerRoot`.
@@ -580,6 +582,7 @@ One case breaks: a wrapper that already passed its own `filter` prop down to `Li
 - A field under a non-Gregorian `ConfigProvider` locale whose values are consumed as Gregorian (stored, sent to an API, compared with `.year`): *ask* the developer. If they want Gregorian values, bind a `placeholder` created in `<script setup>` with `Temporal.Now.plainDateISO()` (or add `locale="en-US"`) to the root, or convert with `value.withCalendar('iso8601')`.
 - A `beforeUpdate:modelValue` guard on a field: leave it. A cancelled typed change keeps the typed segments, so the user can keep typing to an accepted value.
 - `isDateUnavailable` on `TimeFieldRoot`: rename to `isTimeUnavailable` (it receives a date-time). It now applies, so *ask* before keeping it if the matcher's result was never tested.
+- `isTimeUnavailable` on `TimeRangeFieldRoot`: leave it. A range that spans an unavailable time is now invalid, which is usually what the matcher meant. Add `allow-non-contiguous-ranges` only if the developer confirms that such ranges must stay valid; *ask*.
 - Do not add `stepSnapping` or `beforeUpdate:*` handlers on your own.
 
 **Verify.** The type-check passes. Typing in each field and picking a day in each picker still updates the bound model, a cleared field reads as empty, and tests that assert on `update:*` payloads of these roots pass.
@@ -1044,6 +1047,33 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 - A "Type instantiation is excessively deep" error on a `ref<T>(…)` whose `T` holds Reka props and VNodes: when the state never holds a ref, neither in the initial value (an object literal such as `{ toasts: [] }`) nor in anything assigned into it later, annotate the variable instead (`const state: Ref<T> = ref(initial)`). Otherwise *ask*.
 
 **Verify.** The type-check passes with the removed casts; the rendered attributes are unchanged.
+
+### 36. Form reset restores Reka UI controls
+
+**What changed.**
+- A native form reset (`<button type="reset">`, `<input type="reset">`, `form.reset()`) puts every Reka UI form control of that form back to its `defaultValue`, or to its empty value without one. v2 left the value, the display and the submitted data unchanged; inside a `FormRoot` it only cleared each `FieldRoot`'s touched, dirty and validation state.
+- Affected roots: `CheckboxRoot`, `CheckboxGroupRoot`, `SwitchRoot`, `RadioGroupRoot`, `Toggle`, `ToggleGroupRoot`, `SliderRoot`, `NumberFieldRoot`, `PinInputRoot`, `TagsInputRoot`, `SelectRoot`, `ComboboxRoot`, `AutocompleteRoot`, `ListboxRoot`, `EditableRoot`, `DateFieldRoot`, `TimeFieldRoot`, `DateRangeFieldRoot`, `TimeRangeFieldRoot`, `DatePickerRoot`, `DateRangePickerRoot`, `ColorFieldRoot`, `ColorAreaRoot`, `ColorSliderRoot`. They reset with or without a `name`, and while disabled.
+- A controlled root (`v-model` / `modelValue`) emits `update:modelValue` with its `defaultValue`, or with its empty value when it has none: the value an uncontrolled root starts with, for example `false` for `SwitchRoot`, `[]` for `CheckboxGroupRoot` and `undefined` for `RadioGroupRoot`.
+- The change has `details.reason === 'none'` and `details.event.type === 'reset'`. `beforeUpdate:modelValue` can cancel it. Nothing is emitted when the value already equals the default.
+- A `FieldRoot` clears its state on a reset in a plain `<form>` too. A prevented `reset` event (`preventDefault()`) keeps the values and the `FieldRoot` state; in v2 a `FormRoot` cleared the field state anyway.
+- `useForm().reset()` resets the form natively and follows the same rules. In a `FormRoot` rendered as another element it only clears the fields' state. A custom control built with `useFieldControl()` is not reset for the app.
+
+**How to find it.**
+- Reset triggers: `grep -rnE "type=\"reset\"|\.reset\(\)|@reset|onReset" --include='*.vue' --include='*.ts' --include='*.tsx' src`.
+- For each one, the Reka UI roots listed above inside the same `<form>` or `FormRoot`.
+- Hand-written workarounds that restored Reka UI values after a reset (a `@reset` handler that assigns the bound refs).
+- Custom controls built with `useFieldControl(` that keep their own value and sit in a form that can be reset.
+
+**Rewrite rules.**
+- An uncontrolled root (`default-value`, no `v-model`): no rewrite.
+- A controlled root in a form that can be reset, without `default-value`: *ask* which value a reset should restore, then add `default-value` (or `:default-value`) with it. Without it the bound state receives the empty value.
+- A controlled root whose bound type cannot hold the empty value the reset emits (for example `ref<string>` on a `RadioGroupRoot`): add `default-value`, or widen the type.
+- A root that must keep its value through a reset (for example a view toggle that lives inside a `<form>`): add `@before-update:model-value="(value, details) => details.event?.type === 'reset' && details.cancel()"`, or move it out of the form. *Ask* if you cannot tell whether it is form data.
+- A `@reset` handler that only re-assigns the default values of Reka UI controls: remove those assignments once each root has the matching `default-value`. Keep the rest of the handler.
+- A custom control that keeps its own value: add a `reset` listener on its form that puts the value back (`element.closest('form')?.addEventListener('reset', ...)` in `onMounted`), unless the value lives in a native element inside it, which the browser resets.
+- Tests that expect a Reka UI control to keep its value after a reset: expect the default instead.
+
+**Verify.** The type-check passes; in each form with a reset trigger, change every Reka UI control, reset, and each one shows and submits its default; a control you gave a cancelling `beforeUpdate:modelValue` keeps its value.
 
 ### Report
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref, ShallowRef } from 'vue'
 import type { TagsInputChangeReason } from './useTagsInput'
-import type { FieldControlBinding } from '@/Field/useFieldControl'
+import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
@@ -110,9 +110,11 @@ function resolveFieldInput(element: HTMLElement | undefined) {
 <script setup lang="ts" generic="T extends AcceptableInputValue = string">
 import { mergeProps, nextTick, shallowRef, watch } from 'vue'
 import { useCollection, useCollectionSlot } from '@/Collection'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useTagsInput } from './useTagsInput'
 
@@ -151,7 +153,7 @@ useCollectionSlot(currentElement)
 // binding below is inert without a Field. The root owns the tags;
 // `TagsInputInput` carries the field's id, label and aria wiring.
 const fieldInput = shallowRef<HTMLElement>()
-const field = useFieldControl({
+const field = useFieldBinding({
   // The input renders `id` (or its own), else the field's.
   id: () => resolveFieldInput(fieldInput.value)?.id || props.id,
   element: () => resolveFieldInput(fieldInput.value),
@@ -165,7 +167,7 @@ const resolvedDisabled = () => field ? field.disabled(props.disabled) : props.di
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
 // composable's `useControllableState` (`modelValue === undefined` → uncontrolled).
-const { modelValue, root, context } = useTagsInput<T>({
+const { modelValue, root, context, isControlled } = useTagsInput<T>({
   // Getters, so a later `convertValue` / `displayValue` prop change is picked up.
   get convertValue() { return props.convertValue },
   displayValue: (value: T) => props.displayValue(value),
@@ -192,6 +194,9 @@ const { modelValue, root, context } = useTagsInput<T>({
 provideTagsInputRootContext(context as unknown as TagsInputRootContext)
 provideTagsInputFieldContext(field ? { field, inputElement: fieldInput } : null)
 
+// A native reset of the owning form puts the value back to `defaultValue`.
+function onFormReset(event: Event) { resetControllableState(isControlled, event) }
+
 if (field)
   watch(modelValue, value => field.sync(value))
 
@@ -208,6 +213,8 @@ const focusWithin = useFieldFocusWithin(field && {
   }),
 }, currentElement as Ref<HTMLElement | undefined>)
 const fieldFocusHandlers = focusWithin && { onFocusin: focusWithin.onFocusin, onFocusout: focusWithin.onFocusout }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -215,6 +222,7 @@ const fieldFocusHandlers = focusWithin && { onFocusin: focusWithin.onFocusin, on
     :is="renderAs(as, asChild)"
     v-bind="fieldFocusHandlers ? mergeProps($attrs, root.attrs.value, fieldFocusHandlers) : mergeProps($attrs, root.attrs.value)"
     :ref="forwardRef"
+    @vue:mounted="bindFormReset"
   >
     <slot :model-value="modelValue" />
 

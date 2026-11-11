@@ -78,8 +78,8 @@ export const [injectTagGroupRootContext, provideTagGroupRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { getCurrentInstance, mergeProps, onBeforeUnmount, onMounted, ref } from 'vue'
-import { claimFieldControl } from '@/Field/useFieldControl'
+import { getCurrentInstance, mergeProps, onMounted, ref } from 'vue'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusGroup } from '@/RovingFocus/useRovingFocusGroup'
 import { useTagGroup } from './useTagGroup'
@@ -112,8 +112,14 @@ const instance = getCurrentInstance()
 
 // Optional Field participation: `null` outside a `FieldRoot` (and inside
 // another control of the field, which owns it), so every binding below is
-// inert without a Field.
-const fieldContext = claimFieldControl()
+// inert without a Field. A tag group is not a form control: the field labels,
+// describes and disables it, and focuses a tag for its label, and that is all.
+// It takes no id, name or `required` from the field, and reports no focus or
+// value changes to it.
+const field = useFieldBinding({
+  element: () => getFocusTarget(),
+  getValue: () => modelValue.value,
+})
 
 // Tags register during their setup, which happens while this component
 // renders, so the group reads "empty" only once mounted.
@@ -128,7 +134,7 @@ const { modelValue, root, context, getFocusTarget } = useTagGroup<T>({
   selectionMode: () => props.selectionMode,
   disallowEmptySelection: () => props.disallowEmptySelection,
   escapeKeyBehavior: () => props.escapeKeyBehavior,
-  disabled: () => Boolean(props.disabled || fieldContext?.disabled.value),
+  disabled: () => field ? field.disabled(props.disabled) : Boolean(props.disabled),
   dir,
   by: () => props.by,
   // Tags are removable only when the consumer listens to `remove`, as there is
@@ -138,19 +144,6 @@ const { modelValue, root, context, getFocusTarget } = useTagGroup<T>({
   rootElement: currentElement,
   emit: emits,
 })
-
-function mergeIds(consumerValue: unknown, fieldValue: string | undefined) {
-  return [consumerValue as string | undefined, fieldValue].filter(Boolean).join(' ') || undefined
-}
-
-let unregisterControl: (() => void) | undefined
-onMounted(() => {
-  unregisterControl = fieldContext?.registerControl({
-    element: getFocusTarget,
-    getValue: () => modelValue.value,
-  })
-})
-onBeforeUnmount(() => unregisterControl?.())
 
 provideTagGroupRootContext(context as unknown as TagGroupRootContext)
 
@@ -162,15 +155,25 @@ const roving = useRovingFocusGroup({
   loop: () => props.loop,
   currentTabStopId: context.currentTabStopId,
 })
+
+// `$attrs` isn't reactive, so the Field's wiring is read during render: its
+// label and description ids, merged with the consumer's.
+function renderAttrs(attrs: Record<string, unknown>) {
+  const merged = mergeProps(roving.consumerAttrs(attrs), roving.attrs(), root.attrs.value)
+  if (field) {
+    const aria = field.ariaAttrs(attrs)
+    merged['aria-labelledby'] = aria['aria-labelledby']
+    merged['aria-describedby'] = aria['aria-describedby']
+  }
+  return merged
+}
 </script>
 
 <template>
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps(roving.consumerAttrs($attrs), roving.attrs(), root.attrs.value)"
-    :aria-labelledby="mergeIds($attrs['aria-labelledby'], fieldContext?.labelId.value)"
-    :aria-describedby="mergeIds($attrs['aria-describedby'], fieldContext?.describedBy.value)"
+    v-bind="renderAttrs($attrs)"
   >
     <slot :model-value="modelValue" />
   </component>

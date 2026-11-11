@@ -90,11 +90,13 @@ export const [injectDateFieldRootContext, provideDateFieldRootContext]
 import { computed, mergeProps, ref, toRefs, useAttrs, watch } from 'vue'
 import { isZonedDateTime, toIsoString } from '@/date/temporal'
 import { createPendingFieldInput } from '@/Field/pendingFieldInput'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { isEqual } from '@/shared/compare'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useDateField } from './useDateField'
 
@@ -131,7 +133,7 @@ const dir = useDirection(propDir)
 // inert — and byte-for-byte identical to before — when there is no Field.
 // Field's `name` takes precedence over the local prop; `required`/`disabled`
 // apply when set on either.
-const field = useFieldControl({
+const field = useFieldBinding({
   id: () => props.id,
   // The first segment (not the group container, which isn't itself
   // focusable), so `FormRoot` can move focus into the field on an invalid submit.
@@ -162,6 +164,8 @@ const {
   segmentElements,
   setFocusedElement,
   focusFirstSegment,
+  resetSegments,
+  isControlled,
 } = useDateField({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
@@ -247,10 +251,20 @@ if (field) {
 
 provideDateFieldRootContext(context)
 
+// A native reset of the owning form puts the value back to `defaultValue`, and
+// drops segments typed without completing a value: the model may not move
+// (it already holds the default), so the segments are put back here.
+function onFormReset(event: Event) {
+  resetControllableState(isControlled, event)
+  resetSegments()
+}
+
 defineExpose(mergeExpose(expose, {
   /** Records `el` as the focused segment for keyboard navigation. It does not move focus; call `el.focus()` for that. */
   setFocusedElement,
 }))
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -258,6 +272,7 @@ defineExpose(mergeExpose(expose, {
     :is="renderAs(as, asChild)"
     v-bind="getRootAttrs()"
     ref="primitiveElement"
+    @vue:mounted="bindFormReset"
     @focusin="focusWithin?.onFocusin"
     @focusout="focusWithin?.onFocusout"
   >
