@@ -87,4 +87,31 @@ describe('given an AlertDialog root that stays mounted', () => {
 
     wrapper.unmount()
   })
+
+  it('should keep the registered cancel element when another cancel button unmounts', async () => {
+    const showExtra = ref(true)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(AlertDialogRoot, { open: true }, () => [
+        h(AlertDialogTrigger, () => 'Open'),
+        h(AlertDialogContent, () => [
+          h(AlertDialogTitle, () => 'Title'),
+          h(AlertDialogDescription, () => 'Description'),
+          showExtra.value ? h(AlertDialogCancel, { 'data-testid': 'extra' }, () => 'Dismiss') : null,
+          h(AlertDialogCancel, { 'data-testid': 'cancel' }, () => 'Cancel'),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+    await flushPromises()
+    const content = wrapper.getComponent(AlertDialogContent)
+    const cancelElement = () => (content.vm.$ as any).setupState.cancelElement as HTMLElement | undefined
+    const cancel = wrapper.get('[data-testid="cancel"]').element
+    expect(cancelElement()).toBe(cancel)
+
+    showExtra.value = false
+    await flushPromises()
+    expect(wrapper.find('[data-testid="extra"]').exists()).toBe(false)
+    expect(cancelElement()).toBe(cancel)
+
+    wrapper.unmount()
+  })
 })
