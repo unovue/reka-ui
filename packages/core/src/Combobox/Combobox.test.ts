@@ -2,9 +2,9 @@ import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, inject, nextTick, ref } from 'vue'
+import { defineComponent, h, inject, nextTick, ref, shallowRef } from 'vue'
 import { handleSubmit, sleep } from '@/test'
-import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport, ComboboxVirtualizer } from '.'
+import { ComboboxAnchor, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport, ComboboxVirtualizer } from '.'
 import Combobox from './story/_Combobox.vue'
 import ComboboxObject from './story/_ComboboxObject.vue'
 import ComboboxTagsInput from './story/_ComboboxTagsInput.vue'
@@ -519,6 +519,60 @@ describe('given default Combobox', () => {
   })
 })
 
+describe('given an open Combobox whose options leave the document', () => {
+  const Fixture = defineComponent({
+    components: { ComboboxAnchor, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxRoot, ComboboxViewport },
+    props: {
+      options: { type: Array as () => string[], default: () => ['Apple', 'Banana', 'Cherry'] },
+    },
+    template: `<ComboboxRoot>
+  <ComboboxAnchor><ComboboxInput data-testid="input" /></ComboboxAnchor>
+  <ComboboxContent>
+    <ComboboxViewport>
+      <ComboboxEmpty>No options</ComboboxEmpty>
+      <ComboboxItem v-for="option in options" :key="option" :value="option">{{ option }}</ComboboxItem>
+    </ComboboxViewport>
+  </ComboboxContent>
+</ComboboxRoot>`,
+  })
+
+  let wrapper: VueWrapper<InstanceType<typeof Fixture>>
+  let input: DOMWrapper<HTMLInputElement>
+  const highlightedOption = () => {
+    const id = input.attributes('aria-activedescendant')
+    return id ? document.getElementById(id) : null
+  }
+
+  beforeEach(async () => {
+    document.body.innerHTML = ''
+    window.HTMLElement.prototype.scrollIntoView = vi.fn()
+    wrapper = mount(Fixture, { attachTo: document.body })
+    input = wrapper.find('[data-testid="input"]')
+    await input.trigger('keydown', { key: 'ArrowDown' })
+    await vi.waitFor(() => expect(highlightedOption()?.textContent).toBe('Apple'))
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
+  })
+
+  it('should remove aria-activedescendant when the term matches no option, and highlight a match after it', async () => {
+    await input.setValue('zzz')
+    await vi.waitFor(() => expect(document.querySelector('[role="option"]')).toBeNull())
+    expect(input.attributes('aria-activedescendant')).toBeUndefined()
+
+    await input.setValue('ban')
+    await vi.waitFor(() => expect(highlightedOption()?.textContent).toBe('Banana'))
+  })
+
+  it('should remove aria-activedescendant when the parent removes the highlighted option', async () => {
+    await wrapper.setProps({ options: ['Banana', 'Cherry'] })
+
+    expect(document.querySelectorAll('[role="option"]')).toHaveLength(2)
+    expect(input.attributes('aria-activedescendant')).toBeUndefined()
+  })
+})
+
 describe('given a Combobox with multiple prop', async () => {
   let wrapper: VueWrapper<InstanceType<typeof Combobox>>
   let valueBox: DOMWrapper<HTMLInputElement>
@@ -655,6 +709,29 @@ describe('given a virtualized Combobox', () => {
     expect(wrapper.emitted('update:modelValue')).toBeFalsy() // event handled internally
     // verify item state changed: the clicked item should be checked
     expect(items[0].attributes('data-state')).toBe('checked')
+
+    wrapper.unmount()
+  })
+
+  it('should remove aria-activedescendant when the options become empty', async () => {
+    const shown = shallowRef(options)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ComboboxRoot, { open: true, ignoreFilter: true }, () => [
+        h(ComboboxAnchor, null, () => h(ComboboxInput)),
+        h(ComboboxContent, null, () => h(ComboboxViewport, { style: 'height: 200px; overflow: auto' }, () => h(ComboboxVirtualizer, { options: shown.value, estimateSize: 25 }, {
+          default: ({ option }: any) => h(ComboboxItem, { value: option }, () => option.label),
+        }))),
+      ]),
+    }), { attachTo: document.body })
+    await flush()
+    const input = wrapper.find('input')
+    expect(input.attributes('aria-activedescendant')).toBeTruthy()
+
+    shown.value = []
+    await flush()
+
+    expect(wrapper.findAll('[role=option]')).toHaveLength(0)
+    expect(input.attributes('aria-activedescendant')).toBeUndefined()
 
     wrapper.unmount()
   })

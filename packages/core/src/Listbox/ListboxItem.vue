@@ -28,7 +28,7 @@ export const [injectListboxItemContext, provideListboxItemContext]
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '..'
 import type { AcceptableValue } from '@/shared/types'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '..'
 import { injectListboxRootContext } from './ListboxRoot.vue'
@@ -55,6 +55,12 @@ const isHighlighted = computed(() => currentElement.value != null && currentElem
 const isSelected = computed(() => valueComparator(rootContext.modelValue.value, props.value, rootContext.by))
 
 const disabled = computed(() => rootContext.disabled.value || props.disabled)
+
+// `aria-activedescendant` names the highlighted item. An item that leaves the document releases the highlight.
+onBeforeUnmount(() => {
+  if (rootContext.highlightedElement.value === currentElement.value)
+    rootContext.highlightedElement.value = null
+})
 
 async function handleSelect(ev: SelectEvent<T>) {
   emits('select', ev)

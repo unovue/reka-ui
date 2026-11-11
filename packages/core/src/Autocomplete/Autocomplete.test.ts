@@ -92,6 +92,15 @@ describe('given default Autocomplete', () => {
       expect(input.attributes('aria-activedescendant')).toBeUndefined()
     })
 
+    it('should remove aria-activedescendant when the typed text matches no option', async () => {
+      await input.trigger('keydown', { key: 'ArrowDown' })
+      expect(input.attributes('aria-activedescendant')).toBeTruthy()
+      input.element.value = 'zzz'
+      await input.trigger('input')
+      await vi.waitFor(() => expect(document.querySelector('[role="option"]')).toBeNull())
+      expect(input.attributes('aria-activedescendant')).toBeUndefined()
+    })
+
     describe('after selecting a value', () => {
       beforeEach(async () => {
         const selection = items[1]
