@@ -54,7 +54,7 @@ export function getTabbableCandidates(container: HTMLElement) {
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, {
     acceptNode: (node: any) => {
       const isHiddenInput = node.tagName === 'INPUT' && node.type === 'hidden'
-      if (node.disabled || node.hidden || isHiddenInput)
+      if (isDisabled(node) || node.hidden || isHiddenInput)
         return NodeFilter.FILTER_SKIP
       // `.tabIndex` is not the same as the `tabindex` attribute. It works on the
       // runtime's understanding of tabbability, so this automatically accounts
@@ -74,6 +74,14 @@ export function getTabbableCandidates(container: HTMLElement) {
       return -1
     return a.tabIndex - b.tabIndex
   })
+}
+
+/**
+ * Whether a control is disabled, by its own `disabled` or by a `<fieldset disabled>` around it.
+ * The `disabled` property does not report the latter, and such a control keeps `tabIndex` 0.
+ */
+export function isDisabled(node: any): boolean {
+  return !!node.disabled || node.matches(':disabled')
 }
 
 function isRadioInput(node: Element | null): node is HTMLInputElement {

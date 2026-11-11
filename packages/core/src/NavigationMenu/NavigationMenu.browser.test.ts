@@ -111,4 +111,29 @@ describe('given an open NavigationMenu, in a real browser', () => {
     expect(document.activeElement).toBe(get('link'))
     expect(['a', 'b', 'c', 'link'].map(id => get(id).tabIndex)).toEqual([0, 0, 0, 0])
   })
+
+  // A radio inside `<fieldset disabled>` can't take focus, so it is not its group's tab stop.
+  it('enters the content at an enabled radio when the checked radio of its group is in a disabled fieldset', async () => {
+    const Fixture = defineComponent({
+      setup() {
+        return () => h(NavigationMenuRoot, { modelValue: 'one' }, () => h(NavigationMenuList, () => [
+          h(NavigationMenuItem, { value: 'one' }, () => [
+            h(NavigationMenuTrigger, { 'data-testid': 'trigger' }, () => 'One'),
+            h(NavigationMenuContent, () => [
+              h('fieldset', { disabled: true }, [
+                h('input', { 'type': 'radio', 'name': 'size', 'value': 'a', 'checked': true, 'aria-label': 'a' }),
+              ]),
+              h('input', { 'type': 'radio', 'name': 'size', 'value': 'b', 'aria-label': 'b', 'data-testid': 'b' }),
+            ]),
+          ]),
+        ]))
+      },
+    })
+    mount(Fixture, { attachTo: document.body })
+    await expect.poll(() => document.querySelector('[data-testid="b"]')).toBeTruthy()
+
+    document.querySelector<HTMLElement>('[data-testid="trigger"]')!.focus()
+    await userEvent.keyboard('{ArrowDown}')
+    expect(document.activeElement).toBe(document.querySelector('[data-testid="b"]'))
+  })
 })
