@@ -560,3 +560,39 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
     warn.mockRestore()
   })
 })
+
+describe('update:openComplete', () => {
+  const DrawerWithOpenComplete = defineComponent({
+    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerContent, DrawerTitle, DrawerClose },
+    props: {
+      onOpenComplete: { type: Function, required: true },
+    },
+    template: `
+      <DrawerRoot @update:open-complete="onOpenComplete">
+        <DrawerTrigger>Open</DrawerTrigger>
+        <DrawerPortal>
+          <DrawerContent>
+            <DrawerTitle>T</DrawerTitle>
+            <DrawerClose>Close</DrawerClose>
+          </DrawerContent>
+        </DrawerPortal>
+      </DrawerRoot>
+    `,
+  })
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('emits true once the enter animation ends', async () => {
+    const onOpenComplete = vi.fn()
+    const { getByText, getByRole } = render(DrawerWithOpenComplete, { props: { onOpenComplete } })
+    await fireEvent.click(getByText('Open'))
+    await nextTick()
+    expect(onOpenComplete).not.toHaveBeenCalled()
+
+    getByRole('dialog').dispatchEvent(new Event('animationend'))
+    expect(onOpenComplete).toHaveBeenCalledTimes(1)
+    expect(onOpenComplete).toHaveBeenCalledWith(true)
+  })
+})
