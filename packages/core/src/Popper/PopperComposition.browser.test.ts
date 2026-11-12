@@ -128,6 +128,12 @@ describe('floating triggers inside TooltipRoot', () => {
     await expectPositioned(false)
   })
 
+  it.each(Object.keys(families) as Array<keyof typeof families>)('positions %s when only the anchor is inside TooltipRoot', async (family) => {
+    mountComposition(family, 'tooltip-first', { open: true })
+
+    await expectPositioned(false)
+  })
+
   it('positions a tooltip whose trigger and content are inside PopoverRoot', async () => {
     mount(() => h('div', { style: 'padding: 200px' }, [
       h(TooltipProvider, null, () => h(TooltipRoot, { open: true }, () => h(PopoverRoot, null, () => [
@@ -143,23 +149,31 @@ describe('floating triggers inside TooltipRoot', () => {
     await expectPositioned(false)
   })
 
-  it('positions a submenu whose trigger is inside TooltipRoot', async () => {
+  it.each([
+    ['inside', true],
+    ['outside', false],
+  ] as const)('positions a submenu whose trigger is inside TooltipRoot and content is %s it', async (_, contentInsideTooltip) => {
+    const subContent = () => h(DropdownMenuPortal, null, () => h(DropdownMenuSubContent, {
+      'data-testid': 'content',
+      'sideOffset': 8,
+      'avoidCollisions': false,
+      'style': 'width: 100px; height: 50px',
+    }, () => 'Submenu content'))
+
     mount(() => h('div', { style: 'padding: 200px' }, [
       h(TooltipProvider, null, () => h(DropdownMenuRoot, { open: true, modal: false }, () => [
         h(DropdownMenuTrigger, null, () => 'Open'),
         h(DropdownMenuPortal, null, () => h(DropdownMenuContent, null, () =>
-          h(DropdownMenuSub, { open: true }, () => h(TooltipRoot, null, () => [
-            h(TooltipTrigger, { asChild: true }, () => h(DropdownMenuSubTrigger, {
-              'data-testid': 'trigger',
-              'style': 'width: 100px; height: 30px',
-            }, () => 'Submenu')),
-            h(DropdownMenuPortal, null, () => h(DropdownMenuSubContent, {
-              'data-testid': 'content',
-              'sideOffset': 8,
-              'avoidCollisions': false,
-              'style': 'width: 100px; height: 50px',
-            }, () => 'Submenu content')),
-          ])))),
+          h(DropdownMenuSub, { open: true }, () => [
+            h(TooltipRoot, null, () => [
+              h(TooltipTrigger, { asChild: true }, () => h(DropdownMenuSubTrigger, {
+                'data-testid': 'trigger',
+                'style': 'width: 100px; height: 30px',
+              }, () => 'Submenu')),
+              contentInsideTooltip ? subContent() : null,
+            ]),
+            contentInsideTooltip ? null : subContent(),
+          ]))),
       ])),
     ]), { attachTo: document.body })
 
