@@ -1,3 +1,5 @@
+import type { SelectEvent } from './utils'
+
 export {
   default as RadioGroupIndicator,
   type RadioGroupIndicatorProps,
@@ -14,6 +16,4 @@ export {
   type RadioGroupRootEmits,
   type RadioGroupRootProps,
 } from './RadioGroupRoot.vue'
-export {
-  type SelectEvent as RadioGroupItemSelectEvent,
-} from './utils'
+export type RadioGroupItemSelectEvent = SelectEvent

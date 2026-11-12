@@ -1,5 +1,5 @@
 <script lang="ts">
-import { useForwardExpose, useId } from '@/shared'
+import { useForwardExpose, useId, useRenderedContentId } from '@/shared'
 
 export type TooltipTriggerDataState
   = | 'closed'
@@ -26,6 +26,7 @@ const rootContext = injectTooltipRootContext()
 const providerContext = injectTooltipProviderContext()
 
 rootContext.contentId ||= useId(undefined, 'reka-tooltip-content')
+const contentId = useRenderedContentId(rootContext)
 
 const { forwardRef, currentElement: triggerElement } = useForwardExpose()
 
@@ -102,17 +103,19 @@ function handleClick() {
 
 <template>
   <PopperAnchor
+    scope="tooltip"
     as-child
     :reference="reference ?? triggerElement"
   >
     <Primitive
       :ref="forwardRef"
       :aria-describedby="
-        rootContext.open.value ? rootContext.contentId : undefined
+        rootContext.open.value ? contentId : undefined
       "
       :data-state="rootContext.stateAttribute.value"
       :as="as"
       :as-child="props.asChild"
+      :type="$attrs.type ?? (!props.asChild && as === 'button' ? 'button' : undefined)"
       data-grace-area-trigger
       v-on="tooltipListeners"
     >

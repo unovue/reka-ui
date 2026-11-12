@@ -556,6 +556,25 @@ Customise the duration of a toast to override the provider value.
 </template>
 ```
 
+### Pausing the timer
+
+Toasts stop counting down while the pointer is over the viewport, while keyboard focus is inside it, and while the window is not focused. The hover and window pauses can each be turned off on `ToastProvider`:
+
+- `disableHoverPause` keeps the timer running while the pointer is over the viewport.
+- `disableWindowBlurPause` keeps the timer running while the window is not focused.
+
+Keyboard focus inside the viewport always pauses the toasts, and so does a press or swipe on a toast, so a toast never closes while it is being used. Neither can be turned off.
+
+Without the hover pause, a toast can disappear while a pointer user is still reading it. Keep it to short status toasts that have no actions.
+
+```vue line=2
+<template>
+  <ToastProvider disable-hover-pause disable-window-blur-pause>
+    <Toaster />
+  </ToastProvider>
+</template>
+```
+
 ### Duplicate toasts
 
 When a toast must appear every time a user clicks a button, use state to render multiple instances of the same toast (see below). Alternatively, you can abstract the parts to create your own [imperative API](/docs/components/toast#imperative-api).

@@ -63,10 +63,7 @@ watchEffect(() => {
   if (!modelValue.value)
     return
 
-  const items = getItems().map(i => i.ref)
-  activeTrigger.value = items.find(item =>
-    item.id.includes(modelValue.value),
-  )
+  activeTrigger.value = getItems().find(item => item.value === modelValue.value)?.ref
 })
 
 provideNavigationMenuContext({

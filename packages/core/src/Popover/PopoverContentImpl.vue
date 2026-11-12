@@ -35,16 +35,18 @@ interface PopoverContentImplPrivateProps extends PopoverContentImplProps {
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { PopperContent } from '@/Popper'
-import { useFocusGuards, useForwardExpose, useForwardProps } from '@/shared'
+import { useContentId, useContentMounted, useFocusGuards, useForwardExpose, useForwardProps } from '@/shared'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 
 const props = defineProps<PopoverContentImplPrivateProps>()
 const emits = defineEmits<PopoverContentImplEmits>()
 
 const forwarded = useForwardProps(reactiveOmit(props, 'trapFocus', 'disableOutsidePointerEvents'))
-const { forwardRef } = useForwardExpose()
+const { forwardRef, currentElement } = useForwardExpose()
 
 const rootContext = injectPopoverRootContext()
+useContentId(rootContext, currentElement)
+useContentMounted(rootContext)
 useFocusGuards()
 </script>
 
@@ -69,6 +71,7 @@ useFocusGuards()
         v-bind="forwarded"
         :id="rootContext.contentId"
         :ref="forwardRef"
+        scope="popover"
         :data-state="rootContext.open.value ? 'open' : 'closed'"
         :aria-labelledby="rootContext.triggerId"
         :style="{

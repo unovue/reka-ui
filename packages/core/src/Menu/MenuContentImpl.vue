@@ -16,6 +16,7 @@ import {
   createContext,
   getActiveElement,
   useArrowNavigation,
+  useContentMounted,
   useFocusGuards,
   useForwardExpose,
   useTypeahead,
@@ -92,7 +93,7 @@ export interface MenuRootContentTypeProps
 
 <script setup lang="ts">
 import {
-  onUnmounted,
+  onBeforeUnmount,
   ref,
   shallowRef,
   toRefs,
@@ -120,6 +121,8 @@ const props = withDefaults(defineProps<MenuContentImplProps>(), {
 })
 const emits = defineEmits<MenuContentImplPrivateEmits>()
 const menuContext = injectMenuContext()
+// Lets the trigger of this menu know that its content is in the document.
+useContentMounted(menuContext)
 const rootContext = injectMenuRootContext()
 
 const { trapFocus, disableOutsidePointerEvents, loop } = toRefs(props)
@@ -187,7 +190,11 @@ watch(contentElement, (el) => {
   menuContext!.onContentChange(el)
 })
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
+  // Clear before a replacement registers its content, as the watcher stops on unmount.
+  // Another content may have registered since, so only clear our own registration.
+  if (menuContext.content.value === contentElement.value)
+    menuContext.onContentChange(undefined)
   window.clearTimeout(timerRef.value)
 })
 
@@ -373,6 +380,7 @@ provideMenuContentContext({
       >
         <PopperContent
           :ref="forwardRef"
+          scope="menu"
           role="menu"
           :as="as"
           :as-child="asChild"
@@ -380,17 +388,23 @@ provideMenuContentContext({
           data-reka-menu-content
           :data-state="getOpenState(menuContext.open.value)"
           :dir="rootContext.dir.value"
+          :memo-dependencies="memoDependencies"
           :side="side"
           :side-offset="sideOffset"
+          :side-flip="sideFlip"
+          :fallback-axis-side-direction="fallbackAxisSideDirection"
           :align="align"
           :align-offset="alignOffset"
+          :align-flip="alignFlip"
           :avoid-collisions="avoidCollisions"
           :collision-boundary="collisionBoundary"
           :collision-padding="collisionPadding"
           :arrow-padding="arrowPadding"
+          :hide-shifted-arrow="hideShiftedArrow"
           :prioritize-position="prioritizePosition"
           :position-strategy="positionStrategy"
           :update-position-strategy="updatePositionStrategy"
+          :disable-update-on-layout-shift="disableUpdateOnLayoutShift"
           :sticky="sticky"
           :hide-when-detached="hideWhenDetached"
           :reference="reference"

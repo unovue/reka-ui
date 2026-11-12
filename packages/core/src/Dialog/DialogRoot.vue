@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import { createContext } from '@/shared'
+import { createContext, defineReactiveIds } from '@/shared'
 
 export interface DialogRootProps {
   /** The controlled open state of the dialog. Can be binded as `v-model:open`. */
@@ -77,7 +77,7 @@ const triggerElement = ref<HTMLElement>()
 const contentElement = ref<HTMLElement>()
 const { modal, unmountOnHide } = toRefs(props)
 
-provideDialogRootContext({
+provideDialogRootContext(defineReactiveIds({
   open,
   modal,
   unmountOnHide,
@@ -95,7 +95,7 @@ provideDialogRootContext({
   descriptionId: '',
   triggerElement,
   contentElement,
-})
+}, ['contentId']))
 </script>
 
 <template>

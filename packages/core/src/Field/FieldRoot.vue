@@ -52,7 +52,7 @@ export interface FieldRootProps extends PrimitiveProps {
   validationDebounceTime?: number
 }
 
-export type FieldRootEmits = object
+export type FieldRootEmits = {}
 
 /**
  * Optional override passed to `handleControlBlur`/`handleControlInput`, for a

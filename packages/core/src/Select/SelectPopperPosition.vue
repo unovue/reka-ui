@@ -18,6 +18,7 @@ const forwarded = useForwardProps(props)
 
 <template>
   <PopperContent
+    scope="select"
     v-bind="forwarded"
     :style="{
       // Ensure border-box for floating-ui calculations

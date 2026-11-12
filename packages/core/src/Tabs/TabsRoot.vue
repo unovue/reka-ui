@@ -17,6 +17,10 @@ export interface TabsRootContext {
   contentIds: Ref<Set<StringOrNumber>>
   registerContent: (value: StringOrNumber) => void
   unregisterContent: (value: StringOrNumber) => void
+  /** Ids of triggers that render an id other than the generated one, by tab value. */
+  triggerIds: Ref<Map<StringOrNumber, string>>
+  /** Ids of contents that render an id other than the generated one, by tab value. */
+  renderedContentIds: Ref<Map<StringOrNumber, string>>
 }
 
 export interface TabsRootProps<T extends StringOrNumber = StringOrNumber> extends PrimitiveProps {
@@ -86,6 +90,8 @@ const modelValue = useVModel<TabsRootProps<T>, 'modelValue', 'update:modelValue'
 
 const tabsList = ref<HTMLElement>()
 const contentIds = shallowRef<Set<StringOrNumber>>(new Set())
+const triggerIds = ref(new Map<StringOrNumber, string>())
+const renderedContentIds = ref(new Map<StringOrNumber, string>())
 
 provideTabsRootContext({
   modelValue,
@@ -107,6 +113,8 @@ provideTabsRootContext({
     newSet.delete(value)
     contentIds.value = newSet
   },
+  triggerIds,
+  renderedContentIds,
 })
 </script>
 

@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { DismissableLayerEmits, DismissableLayerProps } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 
-import { createContext, getActiveElement, useFocusGuards, useForwardExpose, useForwardProps, useHideOthers } from '@/shared'
+import { createContext, getActiveElement, useContentId, useContentMounted, useFocusGuards, useForwardExpose, useForwardProps, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 
 export type ComboboxContentImplEmits = DismissableLayerEmits
@@ -57,6 +57,8 @@ const isEmpty = computed(() => rootContext.ignoreFilter.value
 )
 
 const { forwardRef, currentElement } = useForwardExpose()
+useContentId(rootContext, currentElement)
+useContentMounted(rootContext)
 const scrollLocked = useBodyScrollLock(props.present && props.bodyLock)
 watch([() => props.present, () => props.bodyLock], ([present, bodyLock]) => scrollLocked.value = present && bodyLock)
 useFocusGuards()
@@ -94,7 +96,7 @@ provideComboboxContentContext({ position })
 const isInputWithinContent = ref(false)
 onMounted(() => {
   if (rootContext.inputElement.value) {
-    isInputWithinContent.value = currentElement.value.contains(rootContext.inputElement.value)
+    isInputWithinContent.value = currentElement.value?.contains(rootContext.inputElement.value) ?? false
     if (props.present && isInputWithinContent.value) {
       rootContext.inputElement.value.focus()
     }
@@ -106,7 +108,7 @@ watch(() => props.present, async (isPresent, wasPresent) => {
     return
 
   const activeElement = getActiveElement()
-  if (!activeElement || !currentElement.value.contains(activeElement))
+  if (!activeElement || !currentElement.value?.contains(activeElement))
     return
 
   await nextTick()
@@ -170,6 +172,7 @@ const popperContentEvents = {
           v-bind="{ ...$attrs, ...forwardedProps }"
           :id="rootContext.contentId"
           :ref="forwardRef"
+          :scope="position === 'popper' ? 'combobox' : undefined"
           :memo-dependencies="position === 'popper'
             ? [rootContext.filterSearch.value, rootContext.filterState.value]
             : undefined"
