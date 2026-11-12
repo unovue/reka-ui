@@ -178,10 +178,9 @@ export function usePresence(
     { immediate: true },
   )
 
-  const stateWatcher = watch(state, () => {
-    const currentAnimationName = getAnimationName(node.value)
-    prevAnimationNameRef.value
-      = state.value === 'mounted' ? currentAnimationName : 'none'
+  const stateWatcher = watch(state, (value) => {
+    // Read styles only when the name is kept: a read while siblings unmount forces a style recalculation each.
+    prevAnimationNameRef.value = value === 'mounted' ? getAnimationName(node.value) : 'none'
   })
 
   onUnmounted(() => {
