@@ -58,7 +58,6 @@ const value = useId(props.value)
 const triggerRef = ref<HTMLElement>()
 const focusProxyRef = ref<HTMLElement>()
 
-
 let restoreContentTabOrderRef: () => void = () => ({})
 
 const wasEscapeCloseRef = ref(false)
