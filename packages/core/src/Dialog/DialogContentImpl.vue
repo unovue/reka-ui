@@ -3,7 +3,7 @@ import type {
   DismissableLayerEmits,
   DismissableLayerProps,
 } from '@/DismissableLayer'
-import { getActiveElement, useForwardExpose, useId } from '@/shared'
+import { getActiveElement, useContentId, useContentMounted, useForwardExpose, useId } from '@/shared'
 
 export type DialogContentImplEmits = DismissableLayerEmits & {
   /**
@@ -52,6 +52,8 @@ const emits = defineEmits<DialogContentImplEmits>()
 const rootContext = injectDialogRootContext()
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
 
+useContentId(rootContext, contentElement)
+useContentMounted(rootContext)
 rootContext.titleId ||= useId(undefined, 'reka-dialog-title')
 rootContext.descriptionId ||= useId(undefined, 'reka-dialog-description')
 

@@ -16,6 +16,7 @@ import {
   createContext,
   getActiveElement,
   useArrowNavigation,
+  useContentMounted,
   useFocusGuards,
   useForwardExpose,
   useTypeahead,
@@ -120,6 +121,8 @@ const props = withDefaults(defineProps<MenuContentImplProps>(), {
 })
 const emits = defineEmits<MenuContentImplPrivateEmits>()
 const menuContext = injectMenuContext()
+// Lets the trigger of this menu know that its content is in the document.
+useContentMounted(menuContext)
 const rootContext = injectMenuRootContext()
 
 const { trapFocus, disableOutsidePointerEvents, loop } = toRefs(props)

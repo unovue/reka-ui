@@ -7,7 +7,7 @@ export interface DialogTriggerProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose, useId } from '@/shared'
+import { useForwardExpose, useId, useRenderedContentId } from '@/shared'
 import { injectDialogRootContext } from './DialogRoot.vue'
 
 const props = withDefaults(defineProps<DialogTriggerProps>(), {
@@ -17,6 +17,7 @@ const rootContext = injectDialogRootContext()
 const { forwardRef, currentElement } = useForwardExpose()
 
 rootContext.contentId ||= useId(undefined, 'reka-dialog-content')
+const contentId = useRenderedContentId(rootContext)
 onMounted(() => {
   rootContext.triggerElement.value = currentElement.value
 })
@@ -29,7 +30,7 @@ onMounted(() => {
     :type="as === 'button' ? 'button' : undefined"
     aria-haspopup="dialog"
     :aria-expanded="rootContext.open.value || false"
-    :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
+    :aria-controls="rootContext.open.value ? contentId : undefined"
     :data-state="rootContext.open.value ? 'open' : 'closed'"
     @click="rootContext.onOpenToggle"
   >

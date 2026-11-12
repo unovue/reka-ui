@@ -2,7 +2,7 @@
 import type { ComponentPublicInstance } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { useForwardExpose, useTriggerId } from '@/shared'
+import { useForwardExpose, useRenderedContentId, useTriggerId } from '@/shared'
 
 export interface NavigationMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -34,10 +34,8 @@ const itemContext = injectNavigationMenuItemContext()
 
 const { CollectionItem } = useCollection({ key: 'NavigationMenu' })
 const { forwardRef, currentElement: triggerElement } = useForwardExpose()
-// Set once mounted, so that it is patched onto a hydrated trigger rather than left as
-// the server rendered it: the content may render an id the server did not.
-const isMounted = ref(false)
-const contentId = computed(() => isMounted.value ? itemContext.contentId : undefined)
+// Only while the content is mounted: a closed item renders none without `forceMount`.
+const contentId = useRenderedContentId(itemContext)
 
 const hasPointerMoveOpenedRef = refAutoReset(false, 300)
 const wasClickCloseRef = ref(false)
@@ -48,7 +46,6 @@ useTriggerId(itemContext, triggerElement)
 
 onMounted(() => {
   itemContext.triggerRef = triggerElement
-  isMounted.value = true
 })
 
 function handlePointerEnter() {

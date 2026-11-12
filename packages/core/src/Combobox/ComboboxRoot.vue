@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { ListboxRootProps } from '@/Listbox'
 import type { AcceptableValue, GenericComponentInstance } from '@/shared/types'
 import { usePrimitiveElement } from '@/Primitive'
-import { createContext, useDirection, useFilter } from '@/shared'
+import { createContext, defineReactiveIds, useDirection, useFilter } from '@/shared'
 
 type ComboboxRootContext<T> = {
   modelValue: Ref<T | Array<T>>
@@ -253,7 +253,7 @@ defineExpose({
   highlightSelected: primitiveElement.value?.highlightSelected,
 })
 
-provideComboboxRootContext({
+provideComboboxRootContext(defineReactiveIds({
   modelValue,
   multiple,
   disabled,
@@ -280,7 +280,7 @@ provideComboboxRootContext({
   openOnClick,
   resetModelValueOnClear,
   unmountOnHide,
-})
+}, ['contentId']))
 </script>
 
 <template>

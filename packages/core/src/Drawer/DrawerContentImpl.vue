@@ -35,7 +35,7 @@ import { computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { focus } from '@/FocusScope/utils'
-import { isHTMLElement, useForwardExpose } from '@/shared'
+import { isHTMLElement, useContentId, useContentMounted, useForwardExpose } from '@/shared'
 import { useDrawerSnapPoints } from './composables/useDrawerSnapPoints'
 import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
@@ -49,6 +49,8 @@ const emits = defineEmits<DrawerContentImplEmits>()
 
 const rootContext = injectDrawerRootContext()
 const { forwardRef, currentElement } = useForwardExpose()
+useContentId(rootContext, currentElement)
+useContentMounted(rootContext)
 
 registerDrawerCssProperties()
 
