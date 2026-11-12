@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 import { DrawerClose, DrawerPopup, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from '.'
 
 const STYLE_ID = 'drawer-browser-test-style'
@@ -192,5 +192,49 @@ describe('given nested Drawers, in a real browser', () => {
     await userEvent.click(get('trigger')!)
     await expect.poll(() => get('content')).not.toBeNull()
     expect(frontmostHeight()).toBe(ownHeight)
+  })
+
+  it('keeps the height of a nested drawer that opened while its sibling was animating out', async () => {
+    addStyle(NESTED_STYLES)
+    const openFirst = ref(false)
+    const openSecond = ref(false)
+    const nested = (id: string, open: typeof openFirst, height: number) => h(DrawerRoot, { open: open.value }, () => [
+      h(DrawerPortal, null, () => [
+        h(DrawerPopup, { 'data-testid': id, 'class': 'drawer', 'style': `height: ${height}px;`, 'aria-describedby': undefined }, () => [
+          h(DrawerTitle, null, () => id),
+        ]),
+      ]),
+    ])
+    const Fixture = defineComponent({
+      setup() {
+        return () => h(DrawerRoot, { defaultOpen: true }, () => [
+          h(DrawerPortal, null, () => [
+            h(DrawerPopup, { 'data-testid': 'parent', 'class': 'drawer stack', 'aria-describedby': undefined }, () => [
+              h(DrawerTitle, null, () => 'Parent'),
+              h('div', { style: 'height: 400px;' }),
+              nested('first', openFirst, 240),
+              nested('second', openSecond, 160),
+            ]),
+          ]),
+        ])
+      },
+    })
+    mounted.push(mount(Fixture, { attachTo: document.body }))
+    const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
+    const frontmostHeight = () => get('parent')?.style.getPropertyValue('--drawer-frontmost-height')
+
+    openFirst.value = true
+    await expect.poll(frontmostHeight).toBe('240px')
+
+    openFirst.value = false
+    openSecond.value = true
+    await expect.poll(frontmostHeight).toBe('160px')
+    // The first drawer is still animating out.
+    expect(get('first')?.getAttribute('data-state')).toBe('closed')
+
+    await expect.poll(() => get('first')).toBeNull()
+    await new Promise(resolve => requestAnimationFrame(resolve))
+    expect(frontmostHeight()).toBe('160px')
+    expect(Math.round(get('parent')!.getBoundingClientRect().height)).toBe(160)
   })
 })
