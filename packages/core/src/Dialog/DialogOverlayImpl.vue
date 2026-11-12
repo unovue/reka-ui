@@ -5,7 +5,7 @@ export interface DialogOverlayImplProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { watch } from 'vue'
+import { onBeforeUnmount, watch } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
@@ -17,7 +17,12 @@ const props = withDefaults(defineProps<DialogOverlayImplProps & { present?: bool
 const rootContext = injectDialogRootContext()
 
 const scrollLocked = useBodyScrollLock(props.present)
-watch(() => props.present, val => scrollLocked.value = val)
+// The modal content reads this to hold the lock for as long as it is still animating out.
+watch(() => props.present, (val) => {
+  scrollLocked.value = val
+  rootContext.overlayPresent.value = val
+}, { immediate: true })
+onBeforeUnmount(() => rootContext.overlayPresent.value = false)
 
 useForwardExpose()
 </script>
