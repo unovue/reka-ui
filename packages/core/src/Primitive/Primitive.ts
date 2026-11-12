@@ -39,6 +39,22 @@ export interface PrimitiveProps {
 // For self closing tags, don't provide default slots because of hydration issue
 const SELF_CLOSING_TAGS = ['area', 'img', 'input']
 
+// A plain object with a `template` string and no render function, directly or through
+// `extends` / `mixins`, would be compiled at render time. Components from the app always
+// carry a `render`, `ssrRender` or `setup` function.
+function isTemplateObject(value: unknown): boolean {
+  if (!value || typeof value !== 'object')
+    return false
+
+  const component = value as Record<string, any>
+  if (typeof component.render === 'function' || typeof component.ssrRender === 'function' || typeof component.setup === 'function')
+    return false
+
+  return typeof component.template === 'string'
+    || isTemplateObject(component.extends)
+    || (Array.isArray(component.mixins) && component.mixins.some(isTemplateObject))
+}
+
 export const Primitive = defineComponent({
   name: 'Primitive',
   inheritAttrs: false,
@@ -59,7 +75,7 @@ export const Primitive = defineComponent({
       return () => h(asTag, attrs)
 
     if (asTag !== 'template')
-      return () => h(props.as, attrs, { default: slots.default })
+      return () => h(isTemplateObject(props.as) ? 'div' : props.as, attrs, { default: slots.default })
 
     return () => h(Slot, attrs, { default: slots.default })
   },

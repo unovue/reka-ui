@@ -266,4 +266,14 @@ describe('test Primitive functionalities', () => {
       expect(element.attributes('class')).toBe('parent-class child-class')
     })
   })
+
+  it('should not render a plain object without a render function', () => {
+    const wrapper = mount(Primitive, {
+      props: {
+        as: { template: '<b>{{ 7 * 191 }}</b>' },
+      },
+    })
+    expect(wrapper.html()).not.toContain('1337')
+    expect(wrapper.find('div').exists()).toBe(true)
+  })
 })
