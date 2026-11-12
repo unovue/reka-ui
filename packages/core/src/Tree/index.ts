@@ -1,10 +1,12 @@
+import type { SelectEvent, ToggleEvent } from './TreeItem.vue'
+
 export {
   default as TreeItem,
   type TreeItemEmits,
   type TreeItemProps,
-  type SelectEvent as TreeItemSelectEvent,
-  type ToggleEvent as TreeItemToggleEvent,
 } from './TreeItem.vue'
+export type TreeItemSelectEvent<T> = SelectEvent<T>
+export type TreeItemToggleEvent<T> = ToggleEvent<T>
 export {
   type FlattenedItem,
   injectTreeRootContext,
