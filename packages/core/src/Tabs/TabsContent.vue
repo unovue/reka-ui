@@ -15,18 +15,18 @@ export interface TabsContentProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
 import { injectTabsRootContext } from './TabsRoot.vue'
-import { makeContentId, makeTriggerId } from './utils'
+import { makeContentId, makeTriggerId, useTabsPartId } from './utils'
 
 const props = defineProps<TabsContentProps>()
 
-const { forwardRef } = useForwardExpose()
+const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectTabsRootContext()
 const triggerId = computed(() => rootContext.triggerIds.value.get(props.value) ?? makeTriggerId(rootContext.baseId, props.value))
-const contentId = computed(() => makeContentId(rootContext.baseId, props.value))
+const contentId = useTabsPartId(rootContext.renderedContentIds, props, currentElement, () => makeContentId(rootContext.baseId, props.value))
 
 const isSelected = computed(() => props.value === rootContext.modelValue.value)
 
@@ -37,6 +37,11 @@ onMounted(() => {
   requestAnimationFrame(() => {
     isMountAnimationPreventedRef.value = false
   })
+})
+
+watch(() => props.value, (value, oldValue) => {
+  rootContext.unregisterContent(oldValue)
+  rootContext.registerContent(value)
 })
 
 onBeforeUnmount(() => {

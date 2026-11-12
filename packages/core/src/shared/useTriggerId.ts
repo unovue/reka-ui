@@ -55,3 +55,23 @@ export function useTriggerId(
   onMounted(syncRendered)
   onUpdated(syncRendered)
 }
+
+/**
+ * The content-side counterpart of `useTriggerId`: resolves the id a content renders and
+ * stores it on `context.contentId`, which the related trigger reads for `aria-controls`.
+ * An element hydrated from server HTML keeps the id of the server render, which wins
+ * here over an id the client generated differently.
+ */
+export function useContentId(
+  context: { contentId: string },
+  element: Readonly<Ref<HTMLElement | undefined>>,
+) {
+  useTriggerId({
+    get triggerId() {
+      return context.contentId
+    },
+    set triggerId(id) {
+      context.contentId = id
+    },
+  }, element)
+}

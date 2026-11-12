@@ -15,6 +15,7 @@ export interface NavigationMenuItemProps extends PrimitiveProps {
 
 export type NavigationMenuItemContext = {
   value: string
+  /** The id the content renders. Read by the trigger for `aria-controls`. */
   contentId: string
   /** The id the trigger renders. Read by the content for `aria-labelledby`. */
   triggerId: string
@@ -57,13 +58,11 @@ const value = useId(props.value)
 const triggerRef = ref<HTMLElement>()
 const focusProxyRef = ref<HTMLElement>()
 
-const contentId = makeContentId(context.baseId, value)
-
 let restoreContentTabOrderRef: () => void = () => ({})
 
 const wasEscapeCloseRef = ref(false)
 async function handleContentEntry(side = 'start') {
-  const el = document.getElementById(contentId)
+  const el = document.getElementById(itemContext.contentId)
   if (el) {
     restoreContentTabOrderRef()
     const candidates = getTabbableCandidates(el)
@@ -73,7 +72,7 @@ async function handleContentEntry(side = 'start') {
 }
 
 function handleContentExit() {
-  const el = document.getElementById(contentId)
+  const el = document.getElementById(itemContext.contentId)
   if (el) {
     // Every radio, not only each group's tab stop: with the stop taken out of the tab
     // order, the browser makes the other radios of its group tab stops.
@@ -85,7 +84,7 @@ function handleContentExit() {
 
 const itemContext = provideNavigationMenuItemContext(defineReactiveIds({
   value,
-  contentId,
+  contentId: makeContentId(context.baseId, value),
   triggerId: makeTriggerId(context.baseId, value),
   triggerRef,
   focusProxyRef,
@@ -94,7 +93,7 @@ const itemContext = provideNavigationMenuItemContext(defineReactiveIds({
   onFocusProxyEnter: handleContentEntry,
   onContentFocusOutside: handleContentExit,
   onRootContentClose: handleContentExit,
-}, ['triggerId']))
+}, ['triggerId', 'contentId']))
 
 function handleClose() {
   context.onItemDismiss()
