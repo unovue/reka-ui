@@ -35,6 +35,7 @@ defineProps<{
           </MenuSubTrigger>
           <MenuPortal disabled>
             <MenuSubContent>
+              <input aria-label="Sub input">
               <MenuItem>
                 Sub Item 1
               </MenuItem>

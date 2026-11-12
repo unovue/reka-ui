@@ -4,14 +4,13 @@ import type {
   Placement,
   ReferenceElement,
 } from '@floating-ui/vue'
-import type { Ref } from 'vue'
 import type {
   Align,
   Side,
 } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Direction } from '@/shared/types'
-import { createContext, useDirection, useForwardExpose, useSize } from '@/shared'
+import { useDirection, useForwardExpose, useSize } from '@/shared'
 
 export const PopperContentPropsDefaultValue = {
   side: 'bottom' as Side,
@@ -185,20 +184,10 @@ export interface PopperContentProps extends PrimitiveProps {
    */
   dir?: Direction
 }
-
-export interface PopperContentContext {
-  placedSide: Ref<Side>
-  onArrowChange: (arrow: HTMLElement | undefined) => void
-  arrowX?: Ref<number>
-  arrowY?: Ref<number>
-  shouldHideArrow: Ref<boolean>
-}
-
-export const [injectPopperContentContext, providePopperContentContext]
-  = createContext<PopperContentContext>('PopperContent')
 </script>
 
 <script setup lang="ts">
+import type { PopperScope } from './PopperRootContext'
 import {
   autoUpdate,
   flip,
@@ -214,7 +203,8 @@ import { computed, ref, watchEffect, watchPostEffect } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
-import { injectPopperRootContext } from './PopperRoot.vue'
+import { providePopperContentContext } from './PopperContentContext'
+import { injectPopperRootContext } from './PopperRootContext'
 import {
   getSideAndAlignFromPlacement,
   isNotNull,
@@ -225,14 +215,14 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<PopperContentProps>(), {
+const props = withDefaults(defineProps<PopperContentProps & { scope?: PopperScope }>(), {
   ...PopperContentPropsDefaultValue,
 })
 const emits = defineEmits<{
   placed: [void]
 }>()
 
-const rootContext = injectPopperRootContext()
+const rootContext = injectPopperRootContext(props.scope)
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
 const dir = useDirection(computed(() => props.dir))
 

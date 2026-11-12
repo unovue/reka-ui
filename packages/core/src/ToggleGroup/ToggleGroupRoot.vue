@@ -97,6 +97,7 @@ provideToggleGroupRootContext({
         v-if="isFormControl && name"
         :name="name"
         :required="required"
+        :disabled="disabled"
         :value="modelValue"
       />
     </Primitive>

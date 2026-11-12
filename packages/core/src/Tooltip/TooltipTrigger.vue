@@ -102,6 +102,7 @@ function handleClick() {
 
 <template>
   <PopperAnchor
+    scope="tooltip"
     as-child
     :reference="reference ?? triggerElement"
   >
@@ -113,6 +114,7 @@ function handleClick() {
       :data-state="rootContext.stateAttribute.value"
       :as="as"
       :as-child="props.asChild"
+      :type="$attrs.type ?? (!props.asChild && as === 'button' ? 'button' : undefined)"
       data-grace-area-trigger
       v-on="tooltipListeners"
     >

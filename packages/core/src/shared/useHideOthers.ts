@@ -11,7 +11,14 @@ import { onUnmounted, watch } from 'vue'
  * to hide other elements when it is clicked or focused.
  */
 export function useHideOthers(target: MaybeElementRef) {
-  let undo: ReturnType<typeof hideOthers>
+  let undo: ReturnType<typeof hideOthers> | undefined
+
+  function release() {
+    undo?.()
+    // A retained component instance must not keep the hidden elements alive.
+    undo = undefined
+  }
+
   watch(() => unrefElement(target), (el) => {
     // disable hideOthers on test mode
     if (import.meta.env.MODE === 'test')
@@ -23,14 +30,10 @@ export function useHideOthers(target: MaybeElementRef) {
       isInsideClosedPopover = !!el?.closest('[popover]:not(:popover-open)')
     }
     catch {}
+    release()
     if (el && !isInsideClosedPopover)
       undo = hideOthers(el)
-    else if (undo)
-      undo()
   })
 
-  onUnmounted(() => {
-    if (undo)
-      undo()
-  })
+  onUnmounted(release)
 }
