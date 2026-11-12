@@ -38,7 +38,7 @@ const menuContext = injectNavigationMenuContext()
 const itemContext = injectNavigationMenuItemContext()
 
 useContentId(itemContext, currentElement)
-useContentMounted(itemContext)
+useContentMounted(itemContext, currentElement)
 
 const prevMotionAttributeRef = ref<MotionAttribute | null>(null)
 const motionAttribute = computed(() => {

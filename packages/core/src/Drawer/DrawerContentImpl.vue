@@ -50,7 +50,7 @@ const emits = defineEmits<DrawerContentImplEmits>()
 const rootContext = injectDrawerRootContext()
 const { forwardRef, currentElement } = useForwardExpose()
 useContentId(rootContext, currentElement)
-useContentMounted(rootContext)
+useContentMounted(rootContext, currentElement)
 
 registerDrawerCssProperties()
 

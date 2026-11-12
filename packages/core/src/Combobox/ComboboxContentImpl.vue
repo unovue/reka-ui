@@ -58,7 +58,7 @@ const isEmpty = computed(() => rootContext.ignoreFilter.value
 
 const { forwardRef, currentElement } = useForwardExpose()
 useContentId(rootContext, currentElement)
-useContentMounted(rootContext)
+useContentMounted(rootContext, currentElement)
 const scrollLocked = useBodyScrollLock(props.present && props.bodyLock)
 watch([() => props.present, () => props.bodyLock], ([present, bodyLock]) => scrollLocked.value = present && bodyLock)
 useFocusGuards()

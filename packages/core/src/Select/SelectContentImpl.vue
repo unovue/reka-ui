@@ -121,7 +121,7 @@ const { CollectionSlot, getItems } = useCollection()
 const content = ref<HTMLElement>()
 useHideOthers(content)
 useContentId(rootContext, content)
-useContentMounted(rootContext)
+useContentMounted(rootContext, content)
 
 const { search, handleTypeaheadSearch } = useTypeahead()
 

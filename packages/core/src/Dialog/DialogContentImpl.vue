@@ -53,7 +53,7 @@ const rootContext = injectDialogRootContext()
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
 
 useContentId(rootContext, contentElement)
-useContentMounted(rootContext)
+useContentMounted(rootContext, contentElement)
 rootContext.titleId ||= useId(undefined, 'reka-dialog-title')
 rootContext.descriptionId ||= useId(undefined, 'reka-dialog-description')
 
