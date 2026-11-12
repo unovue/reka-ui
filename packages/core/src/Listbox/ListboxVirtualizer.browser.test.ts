@@ -121,6 +121,31 @@ describe('given a virtualized Listbox whose options change, in a real browser', 
     expect(selected.value).toBeUndefined()
   })
 
+  it.each([
+    { order: 'before', focusFirst: true },
+    { order: 'after', focusFirst: false },
+  ])('does not restore the highlight when the focus leaves the list $order the options change, in the same tick', async ({ focusFirst }) => {
+    const outside = document.createElement('button')
+    try {
+      const { shown } = mountListbox(options)
+      document.body.append(outside)
+      await highlightWithArrowDown('Option 5', 5)
+
+      if (focusFirst)
+        outside.focus()
+      shown.value = options.slice(3)
+      if (!focusFirst)
+        outside.focus()
+      await settle()
+
+      expect(document.activeElement).toBe(outside)
+      expect(highlight()).toEqual({ highlighted: [], focused: null, tabStop: [] })
+    }
+    finally {
+      outside.remove()
+    }
+  })
+
   it('keeps the highlight on its option when the options are replaced while its row is out of view', async () => {
     const { shown, selected } = mountListbox(options)
     await highlightWithArrowDown('Option 5', 5)

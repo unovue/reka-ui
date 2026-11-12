@@ -132,6 +132,10 @@ watch(() => props.options.slice(), (options) => {
       return
 
     movedIndex = undefined
+    // The highlight was cleared or changed after the move was queued, for example when the focus left the list.
+    if (rootContext.highlightedElement.value !== element)
+      return
+
     const row = parentEl.value?.querySelector<HTMLElement>(`[data-index="${index}"]`)
     if (!row) {
       rootContext.highlightedElement.value = null

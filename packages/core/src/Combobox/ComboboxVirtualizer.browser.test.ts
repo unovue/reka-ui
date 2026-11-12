@@ -206,6 +206,31 @@ describe('given a virtualized Combobox whose options change, in a real browser',
     expect(selected.value).toBeUndefined()
   })
 
+  it.each([
+    { order: 'before', focusFirst: true },
+    { order: 'after', focusFirst: false },
+  ])('does not restore the highlight when the focus leaves the input $order the options change, in the same tick', async ({ focusFirst }) => {
+    const outside = document.createElement('button')
+    document.body.append(outside)
+    try {
+      const { shown } = mountOptionsCombobox(options)
+      await highlightWithArrowDown('Option 5', 5)
+
+      if (focusFirst)
+        outside.focus()
+      shown.value = options.slice(3)
+      if (!focusFirst)
+        outside.focus()
+      await settle()
+
+      expect(document.activeElement).toBe(outside)
+      expect(highlight()).toEqual({ activedescendant: null, highlighted: [] })
+    }
+    finally {
+      outside.remove()
+    }
+  })
+
   describe('while the highlighted row is kept mounted out of view', () => {
     async function highlightThenScrollAway() {
       const fixture = mountOptionsCombobox(options)
