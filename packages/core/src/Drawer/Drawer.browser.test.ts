@@ -34,6 +34,53 @@ describe('given nested Drawers, in a real browser', () => {
     cleanup = undefined
   })
 
+  it('keeps the height of a nested drawer that opened while its sibling was animating out', async () => {
+    const style = document.createElement('style')
+    style.textContent = STYLES
+    document.head.appendChild(style)
+
+    const nested = (id: string, open: boolean, height: number) => h(DrawerRoot, { open }, () => [
+      h(DrawerPortal, null, () => [
+        h(DrawerContent, { 'data-testid': id, 'class': 'drawer', 'style': `height: ${height}px;` }, () => [
+          h(DrawerTitle, null, () => id),
+        ]),
+      ]),
+    ])
+    const Fixture = defineComponent({
+      props: { openFirst: Boolean, openSecond: Boolean },
+      setup(props) {
+        return () => h(DrawerRoot, { defaultOpen: true }, () => [
+          h(DrawerPortal, null, () => [
+            h(DrawerContent, { 'data-testid': 'parent', 'class': 'drawer stack' }, () => [
+              h(DrawerTitle, null, () => 'Parent'),
+              h('div', { style: 'height: 400px;' }),
+              nested('first', props.openFirst, 240),
+              nested('second', props.openSecond, 160),
+            ]),
+          ]),
+        ])
+      },
+    })
+    const wrapper = mount(Fixture, { attachTo: document.body })
+    cleanup = () => {
+      wrapper.unmount()
+      style.remove()
+    }
+
+    await wrapper.setProps({ openFirst: true })
+    await expect.poll(() => cssVar('parent', '--drawer-frontmost-height')).toBe('240px')
+
+    await wrapper.setProps({ openFirst: false, openSecond: true })
+    await expect.poll(() => cssVar('parent', '--drawer-frontmost-height')).toBe('160px')
+    // The first drawer is still animating out.
+    expect(get('first')?.getAttribute('data-state')).toBe('closed')
+
+    await expect.poll(() => get('first')).toBeNull()
+    await new Promise(resolve => requestAnimationFrame(resolve))
+    expect(cssVar('parent', '--drawer-frontmost-height')).toBe('160px')
+    expect(renderedHeight('parent')).toBeCloseTo(160, 0)
+  })
+
   it('keeps the parent at its own height while the nested drawer animates out', async () => {
     const style = document.createElement('style')
     style.textContent = STYLES
