@@ -34,6 +34,8 @@ export interface DialogRootContext {
   onOpenToggle: () => void
   triggerElement: Ref<HTMLElement | undefined>
   contentElement: Ref<HTMLElement | undefined>
+  /** Whether a `DialogOverlay` is present, which is what locks body scroll. */
+  overlayPresent: Ref<boolean>
   contentId: string
   titleId: string
   descriptionId: string
@@ -75,6 +77,7 @@ const open = useVModel(props, 'open', emit, {
 
 const triggerElement = ref<HTMLElement>()
 const contentElement = ref<HTMLElement>()
+const overlayPresent = ref(false)
 const { modal, unmountOnHide } = toRefs(props)
 
 provideDialogRootContext(defineReactiveIds({
@@ -95,6 +98,7 @@ provideDialogRootContext(defineReactiveIds({
   descriptionId: '',
   triggerElement,
   contentElement,
+  overlayPresent,
 }, ['contentId']))
 </script>
 
