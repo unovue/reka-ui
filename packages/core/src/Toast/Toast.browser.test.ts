@@ -133,6 +133,7 @@ function mountToasts({ inDialog = false } = {}) {
         'onPause': () => events.value[name].push('pause'),
         'onResume': () => events.value[name].push('resume'),
         'style': 'height: 40px',
+        'data-toast': name,
       }, () => [
         h(ToastDescription, () => name),
         h(ToastAction, { 'altText': 'Undo', 'data-action': name }, () => 'Undo'),
@@ -170,6 +171,26 @@ describe('toast close pause, in a real browser', () => {
     await expect.poll(() => el(`[data-${kind}="a"]`)).toBeTruthy()
     await userEvent.click(el(`[data-${kind}="a"]`)!)
     await expect.poll(() => el('li')).toBeNull()
+    await userEvent.hover(el('[data-testid="outside"]')!)
+
+    show('b', DURATION)
+    await expect.poll(() => open.value.b, CLOSES).toBe(false)
+  })
+
+  // No event tells the viewport that a toast went away under the pointer: it stops
+  // listening with its last toast, and the hover pause has to be released right there.
+  it('starts the next toast timer after the last toast is closed from code while hovered', async () => {
+    const { open, events, show } = mountToasts()
+    // The pause is only released while the document has focus, as it does for someone using the page.
+    el('[data-testid="outside"]')!.focus()
+    show('a', HOLD)
+    await expect.poll(() => el('[data-toast="a"]')).toBeTruthy()
+    await userEvent.hover(el('[data-toast="a"]')!)
+    await expect.poll(() => events.value.a).toEqual(['pause'])
+
+    open.value.a = false
+    await expect.poll(() => el('li')).toBeNull()
+    // Off the viewport, so the next toast is not paused by the pointer resting where it shows up.
     await userEvent.hover(el('[data-testid="outside"]')!)
 
     show('b', DURATION)
