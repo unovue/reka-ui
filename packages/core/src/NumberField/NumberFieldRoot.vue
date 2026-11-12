@@ -238,8 +238,8 @@ const NUMERAL_REGEX = /[\p{Decimal_Number}〇一二三四五六七八九]/u
 function applyInputValue(val: string) {
   const isBlank = !val.trim().length
   // The parser reads empty and numeral-free percent text (``, `%`, `-`) as zero, so both are decided before parsing:
-  // blank input always clears, and `keepValueOnUnparsableInput` treats text without any numeral as unparsable.
-  const isUnparsable = isBlank || (keepValueOnUnparsableInput.value && !NUMERAL_REGEX.test(val))
+  // text without any numeral is unparsable.
+  const isUnparsable = isBlank || !NUMERAL_REGEX.test(val)
   const parsedValue = isUnparsable ? Number.NaN : numberParser.parse(val)
   if (isNaN(parsedValue)) {
     // Text that cannot be parsed clears the value, unless `keepValueOnUnparsableInput` asks to keep it.
