@@ -285,6 +285,17 @@ describe('popover opened from its anchor', () => {
     wrapper.unmount()
   })
 
+  it('moves focus into the content when a trigger inside the anchor opens it', async () => {
+    const { wrapper } = await openFrom('<PopoverAnchor><input /><PopoverTrigger id="anchor-trigger">open</PopoverTrigger></PopoverAnchor>')
+    const trigger = document.getElementById('anchor-trigger') as HTMLButtonElement
+    trigger.focus()
+    trigger.click()
+    await flushPromises()
+    await new Promise(resolve => setTimeout(resolve))
+    expect(document.activeElement?.closest('[role="dialog"]')).not.toBeNull()
+    wrapper.unmount()
+  })
+
   it('still moves focus into the content when opened from the trigger', async () => {
     const { wrapper } = await openFrom('<PopoverAnchor><span>anchor</span></PopoverAnchor><PopoverTrigger>open</PopoverTrigger>')
     await wrapper.find('button').trigger('click')

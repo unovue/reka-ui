@@ -27,9 +27,12 @@ defineExpose(expose)
     :disable-outside-pointer-events="false"
     @open-auto-focus="
       (event) => {
-        // Focus already in the anchor (an input that opens the popover as you type) stays there.
+        // Focus already in the anchor (an input that opens the popover as you type) stays there,
+        // unless it is on a trigger inside the anchor, which opens the popover like any trigger.
         const anchor = rootContext.anchorElement.value;
-        if (anchor && containsComposed(anchor, getActiveElement(anchor)))
+        const active = anchor && getActiveElement(anchor);
+        const trigger = rootContext.triggerElement.value;
+        if (active && containsComposed(anchor, active) && !(trigger && containsComposed(trigger, active)))
           event.preventDefault();
       }
     "
