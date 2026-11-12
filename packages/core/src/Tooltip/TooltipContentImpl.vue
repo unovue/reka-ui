@@ -18,6 +18,7 @@ export interface TooltipContentImplProps
     PopperContentProps,
     | 'side'
     | 'sideOffset'
+    | 'fallbackAxisSideDirection'
     | 'align'
     | 'alignOffset'
     | 'avoidCollisions'
@@ -76,8 +77,7 @@ const popperContentProps = computed(() => {
     arrowPadding: 0,
     sticky: 'partial',
     hideWhenDetached: false,
-    fallbackAxisSideDirection: 'start' as const,
-  } satisfies TooltipContentImplProps & { fallbackAxisSideDirection: 'start' })
+  } satisfies TooltipContentImplProps)
 })
 
 onMounted(() => {

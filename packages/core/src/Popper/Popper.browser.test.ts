@@ -1,99 +1,119 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
-import TooltipContent from '@/Tooltip/TooltipContent.vue'
-import TooltipPortal from '@/Tooltip/TooltipPortal.vue'
-import TooltipProvider from '@/Tooltip/TooltipProvider.vue'
-import TooltipRoot from '@/Tooltip/TooltipRoot.vue'
-import TooltipTrigger from '@/Tooltip/TooltipTrigger.vue'
+import { DropdownMenuContent, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
+import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '@/Popover'
+import { TooltipContent, TooltipPortal, TooltipProvider, TooltipRoot, TooltipTrigger } from '@/Tooltip'
 import PopperAnchor from './PopperAnchor.vue'
 import PopperContent from './PopperContent.vue'
 import PopperRoot from './PopperRoot.vue'
 
-const TooltipWithConstrainedBoundary = defineComponent({
-  setup() {
-    const boundary = ref<HTMLElement>()
+// A full-width anchor inside a 240px boundary: 160px content fits neither on the
+// right nor on the left of it, but fits above and below.
+const boundaryStyle = 'position: fixed; top: 100px; left: 100px; width: 240px; height: 240px'
+const anchorStyle = 'position: absolute; top: 100px; left: 0; width: 100%; height: 20px; padding: 0; border: 0'
+const contentStyle = 'box-sizing: border-box; width: 160px; height: 40px'
+const POLL = { timeout: 5000 }
 
-    return () => h('div', {
-      'ref': boundary,
-      'data-testid': 'boundary',
-      'style': 'position: fixed; top: 100px; left: 100px; width: 240px; height: 240px',
-    }, [
-      h(TooltipProvider, null, {
-        default: () => h(TooltipRoot, { defaultOpen: true }, {
-          default: () => [
-            h(TooltipTrigger, {
-              style: 'position: absolute; top: 100px; left: 0; width: 100%; height: 20px',
-            }, () => 'Full-width trigger'),
-            h(TooltipPortal, null, {
-              default: () => h(TooltipContent, {
-                'data-testid': 'tooltip',
-                'side': 'right',
-                'sideOffset': 8,
-                'collisionBoundary': boundary.value,
-                'style': 'box-sizing: border-box; width: 160px; height: 40px',
-              }, () => 'Tooltip'),
-            }),
-          ],
-        }),
-      }),
-    ])
-  },
-})
+type Family = 'Tooltip' | 'Popover' | 'DropdownMenu' | 'Popper'
 
-describe('popper browser positioning', () => {
-  it('tries perpendicular sides when neither side of the preferred axis fits', async () => {
-    const wrapper = mount(TooltipWithConstrainedBoundary, { attachTo: document.body })
-    const boundary = wrapper.get('[data-testid="boundary"]').element
-    await vi.waitFor(() => {
-      const tooltip = document.querySelector<HTMLElement>('[data-testid="tooltip"]')
-      expect(tooltip).not.toBeNull()
-      expect(tooltip?.dataset.side).toBe('top')
+/**
+ * Mount `side="right"` content of the given family against the full-width anchor.
+ */
+function mountConstrained(family: Family, contentProps: Record<string, unknown> = {}) {
+  return mount(defineComponent({
+    setup() {
+      const boundary = ref<HTMLElement>()
+      const content = () => ({
+        'data-testid': 'content',
+        'side': 'right',
+        'sideOffset': 8,
+        'collisionBoundary': boundary.value,
+        'style': contentStyle,
+        ...contentProps,
+      })
+
+      const families: Record<Family, () => any> = {
+        Tooltip: () => h(TooltipProvider, null, () => h(TooltipRoot, { open: true }, () => [
+          h(TooltipTrigger, { 'data-testid': 'anchor', 'style': anchorStyle }, () => 'Anchor'),
+          h(TooltipPortal, null, () => h(TooltipContent, content(), () => 'Content')),
+        ])),
+        Popover: () => h(PopoverRoot, { open: true }, () => [
+          h(PopoverTrigger, { 'data-testid': 'anchor', 'style': anchorStyle }, () => 'Anchor'),
+          h(PopoverPortal, null, () => h(PopoverContent, content(), () => 'Content')),
+        ]),
+        DropdownMenu: () => h(DropdownMenuRoot, { open: true, modal: false }, () => [
+          h(DropdownMenuTrigger, { 'data-testid': 'anchor', 'style': anchorStyle }, () => 'Anchor'),
+          h(DropdownMenuPortal, null, () => h(DropdownMenuContent, content(), () => 'Content')),
+        ]),
+        Popper: () => h(PopperRoot, null, () => [
+          h(PopperAnchor, { 'data-testid': 'anchor', 'style': anchorStyle }, () => 'Anchor'),
+          h(PopperContent, content(), () => 'Content'),
+        ]),
+      }
+
+      return () => h('div', { 'ref': boundary, 'data-testid': 'boundary', 'style': boundaryStyle }, [families[family]()])
+    },
+  }), { attachTo: document.body })
+}
+
+const getContent = () => document.querySelector<HTMLElement>('[data-testid="content"]')
+const getRect = (testId: string) => document.querySelector<HTMLElement>(`[data-testid="${testId}"]`)!.getBoundingClientRect()
+
+/** Wait until the content is positioned (the wrapper leaves its offscreen starting transform). */
+async function waitForPlaced() {
+  await expect.poll(() => {
+    const wrapper = getContent()?.closest<HTMLElement>('[data-reka-popper-content-wrapper]')
+    return !!wrapper && !wrapper.style.transform.includes('-200%')
+  }, POLL).toBe(true)
+}
+
+describe('popper perpendicular-side fallback', () => {
+  describe.each(['Tooltip', 'Popover', 'DropdownMenu', 'Popper'] as const)('%s', (family) => {
+    it('stays on the preferred axis by default when neither side of it fits', async () => {
+      mountConstrained(family)
+      await waitForPlaced()
+
+      // Give a late re-placement the chance to happen before asserting it did not.
+      await new Promise(resolve => setTimeout(resolve, 100))
+      expect(getContent()!.dataset.side).toBe('right')
+      expect(Math.round(getRect('content').left - getRect('anchor').right)).toBe(8)
     })
 
-    const tooltip = document.querySelector<HTMLElement>('[data-testid="tooltip"]')!
-    const boundaryRect = boundary.getBoundingClientRect()
-    const tooltipRect = tooltip.getBoundingClientRect()
-    expect(tooltipRect.left).toBeGreaterThanOrEqual(boundaryRect.left)
-    expect(tooltipRect.right).toBeLessThanOrEqual(boundaryRect.right)
-    expect(tooltipRect.top).toBeGreaterThanOrEqual(boundaryRect.top)
-    expect(tooltipRect.bottom).toBeLessThanOrEqual(boundaryRect.bottom)
-    wrapper.unmount()
+    it('moves to a perpendicular side that fits when fallbackAxisSideDirection is set', async () => {
+      mountConstrained(family, { fallbackAxisSideDirection: 'start' })
+
+      await expect.poll(() => getContent()?.dataset.side, POLL).toBe('top')
+
+      const boundary = getRect('boundary')
+      const content = getRect('content')
+      expect(Math.round(getRect('anchor').top - content.bottom)).toBe(8)
+      expect(content.left).toBeGreaterThanOrEqual(boundary.left)
+      expect(content.right).toBeLessThanOrEqual(boundary.right)
+      expect(content.top).toBeGreaterThanOrEqual(boundary.top)
+      expect(content.bottom).toBeLessThanOrEqual(boundary.bottom)
+    })
   })
 
-  it('keeps perpendicular-side fallback disabled for other Popper consumers', async () => {
-    const PopperWithConstrainedBoundary = defineComponent({
-      setup() {
-        const boundary = ref<HTMLElement>()
+  it('tries the bottom side first with fallbackAxisSideDirection="end"', async () => {
+    mountConstrained('Tooltip', { fallbackAxisSideDirection: 'end' })
 
-        return () => h('div', {
-          ref: boundary,
-          style: 'position: fixed; top: 100px; left: 100px; width: 240px; height: 240px',
-        }, [
-          h(PopperRoot, null, {
-            default: () => [
-              h(PopperAnchor, {
-                style: 'position: absolute; top: 100px; left: 0; width: 100%; height: 20px',
-              }, () => 'Full-width anchor'),
-              h(PopperContent, {
-                'data-testid': 'popper-content',
-                'side': 'right',
-                'sideOffset': 8,
-                'collisionBoundary': boundary.value,
-                'style': 'box-sizing: border-box; width: 160px; height: 40px',
-              }, () => 'Popper content'),
-            ],
-          }),
-        ])
-      },
-    })
+    await expect.poll(() => getContent()?.dataset.side, POLL).toBe('bottom')
+  })
 
-    const wrapper = mount(PopperWithConstrainedBoundary, { attachTo: document.body })
-    await vi.waitFor(() => {
-      const content = document.querySelector<HTMLElement>('[data-testid="popper-content"]')
-      expect(content).not.toBeNull()
-      expect(content?.dataset.side).toMatch(/^(left|right)$/)
-    })
-    wrapper.unmount()
+  it('does not apply when sideFlip is disabled', async () => {
+    mountConstrained('Popover', { fallbackAxisSideDirection: 'start', sideFlip: false })
+    await waitForPlaced()
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+    expect(getContent()!.dataset.side).toBe('right')
+  })
+
+  it('does not apply when avoidCollisions is disabled', async () => {
+    mountConstrained('Tooltip', { fallbackAxisSideDirection: 'start', avoidCollisions: false })
+    await waitForPlaced()
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+    expect(getContent()!.dataset.side).toBe('right')
   })
 })
