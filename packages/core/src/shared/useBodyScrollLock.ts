@@ -4,7 +4,6 @@ import {
   useEventListener,
 } from '@vueuse/core'
 import { isClient, isIOS, tryOnBeforeUnmount } from '@vueuse/shared'
-import { defu } from 'defu'
 import { computed, nextTick, ref, watch } from 'vue'
 import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
 import { acquireBodyPointerEvents, releaseBodyPointerEvents } from './bodyPointerEvents'
@@ -15,6 +14,8 @@ const pointerEventsOwner = Symbol('useBodyScrollLock')
 const useBodyLockStackCount = createSharedComposable(() => {
   const map = ref<Map<string, boolean>>(new Map())
   const initialOverflow = ref<string | undefined>()
+  // The inline values the lock overwrites, put back as they were on release.
+  let initialInlineStyle: { paddingRight: string, marginRight: string } | undefined
 
   const locked = computed(() => {
     for (const value of map.value.values()) {
@@ -31,8 +32,11 @@ const useBodyLockStackCount = createSharedComposable(() => {
   let stopTouchListeners: Fn | null = null
 
   const resetBodyStyle = () => {
-    document.body.style.paddingRight = ''
-    document.body.style.marginRight = ''
+    if (initialInlineStyle) {
+      document.body.style.paddingRight = initialInlineStyle.paddingRight
+      document.body.style.marginRight = initialInlineStyle.marginRight
+      initialInlineStyle = undefined
+    }
     // Only restored once no `DismissableLayer` still holds it either (#2784)
     releaseBodyPointerEvents(document, pointerEventsOwner)
     document.documentElement.style.removeProperty('--scrollbar-width')
@@ -56,20 +60,28 @@ const useBodyLockStackCount = createSharedComposable(() => {
       initialOverflow.value = document.body.style.overflow
 
     const verticalScrollbarWidth = window.innerWidth - document.documentElement.clientWidth
-    const defaultConfig = { padding: verticalScrollbarWidth, margin: 0 }
-
-    const config = context.scrollBody?.value
-      ? typeof context.scrollBody.value === 'object'
-        ? defu({
-            padding: context.scrollBody.value.padding === true ? verticalScrollbarWidth : context.scrollBody.value.padding,
-            margin: context.scrollBody.value.margin === true ? verticalScrollbarWidth : context.scrollBody.value.margin,
-          }, defaultConfig)
-        : defaultConfig
-      : ({ padding: 0, margin: 0 })
 
     if (verticalScrollbarWidth > 0) {
-      document.body.style.paddingRight = typeof config.padding === 'number' ? `${config.padding}px` : String(config.padding)
-      document.body.style.marginRight = typeof config.margin === 'number' ? `${config.margin}px` : String(config.margin)
+      const { style } = document.body
+      initialInlineStyle ??= { paddingRight: style.paddingRight, marginRight: style.marginRight }
+
+      // `false` leaves both alone. Otherwise the padding makes up for the scrollbar by default,
+      // and the margin is only written when asked for.
+      const scrollBody = context.scrollBody?.value
+      if (scrollBody) {
+        const { padding = true, margin = false } = typeof scrollBody === 'object' ? scrollBody : {}
+        const computedStyle = getComputedStyle(document.body)
+        // `true` adds the scrollbar width to what the body already has; a value is used as written.
+        const resolve = (value: boolean | number | string, existing: string) => value === true
+          ? `${(Number.parseFloat(existing) || 0) + verticalScrollbarWidth}px`
+          : typeof value === 'number' ? `${value}px` : String(value)
+        const paddingRight = padding === false ? undefined : resolve(padding, computedStyle.paddingRight)
+        const marginRight = margin === false ? undefined : resolve(margin, computedStyle.marginRight)
+        if (paddingRight !== undefined)
+          style.paddingRight = paddingRight
+        if (marginRight !== undefined)
+          style.marginRight = marginRight
+      }
       document.documentElement.style.setProperty('--scrollbar-width', `${verticalScrollbarWidth}px`)
       document.body.style.overflow = 'hidden'
     }
