@@ -60,7 +60,7 @@ function handleInput(event: Event) {
 <template>
   <VisuallyHidden
     as-child
-    :aria-label="name"
+    :aria-label="name || undefined"
   >
     <select
       ref="selectElement"
