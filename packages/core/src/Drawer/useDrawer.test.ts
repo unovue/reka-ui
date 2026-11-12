@@ -140,6 +140,24 @@ describe('useDrawer — state', () => {
     child.context.onNestedSwipeProgressChange(0.4)
     expect(set).toHaveBeenCalledWith({ swipeProgress: 0.4 })
   })
+
+  it('tracks the frontmost height: its own, the nested one while reported, then its own again', () => {
+    const parent = useDrawer()
+    const child = useDrawer({ parentContext: parent.context })
+    expect(parent.context.frontmostHeight.value).toBe(0)
+
+    parent.context.onPopupHeightChange(400)
+    expect(parent.context.frontmostHeight.value).toBe(400)
+
+    child.context.notifyParentFrontmostHeight?.(240)
+    expect(parent.context.frontmostHeight.value).toBe(240)
+    // Its own height changing does not take over while a nested drawer is frontmost.
+    parent.context.onPopupHeightChange(420)
+    expect(parent.context.frontmostHeight.value).toBe(240)
+
+    child.context.notifyParentFrontmostHeight?.(0)
+    expect(parent.context.frontmostHeight.value).toBe(420)
+  })
 })
 
 describe('useDrawer — ids and surfaces', () => {

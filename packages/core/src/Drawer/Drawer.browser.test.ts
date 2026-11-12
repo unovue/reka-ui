@@ -88,3 +88,109 @@ describe('given a Drawer, in a real browser', () => {
     await expect.poll(() => document.activeElement).toBe(get('trigger'))
   })
 })
+
+const BLEED = 48
+const EXIT_DURATION = 600
+
+// A stacked layout: while a nested drawer is open, the parent takes the
+// frontmost drawer's height (plus a bleed) instead of its own.
+const NESTED_STYLES = `
+@keyframes nested-in { from { transform: translateY(100%) } to { transform: translateY(0) } }
+@keyframes nested-out { from { transform: translateY(0) } to { transform: translateY(100%) } }
+.drawer { position: fixed; bottom: 0; left: 0; width: 300px; z-index: 1; background: white; }
+.drawer[data-state="open"] { animation: nested-in 50ms linear; }
+.drawer[data-state="closed"] { animation: nested-out ${EXIT_DURATION}ms linear; }
+.stack {
+  --stack-height: max(0px, calc(var(--drawer-frontmost-height, var(--drawer-height)) - ${BLEED}px));
+  height: var(--drawer-height, auto);
+}
+.stack[data-nested-drawer-open] { height: calc(var(--stack-height) + ${BLEED}px); overflow: hidden; }
+`
+
+describe('given nested Drawers, in a real browser', () => {
+  afterEach(() => {
+    document.getElementById(STYLE_ID)?.remove()
+    mounted.splice(0).forEach(wrapper => wrapper.unmount())
+  })
+
+  it('sizes the parent to the nested drawer, and to itself while the nested drawer animates out', async () => {
+    addStyle(NESTED_STYLES)
+    const Fixture = defineComponent({
+      setup() {
+        return () => h(DrawerRoot, null, () => [
+          h(DrawerTrigger, { 'data-testid': 'parent-trigger' }, () => 'Open parent'),
+          h(DrawerPortal, null, () => [
+            h(DrawerPopup, { 'data-testid': 'parent', 'class': 'drawer stack', 'aria-describedby': undefined }, () => [
+              h(DrawerTitle, null, () => 'Parent'),
+              h('div', { style: 'height: 400px;' }),
+              h(DrawerRoot, null, () => [
+                h(DrawerTrigger, { 'data-testid': 'child-trigger' }, () => 'Open child'),
+                h(DrawerPortal, null, () => [
+                  h(DrawerPopup, { 'data-testid': 'child', 'class': 'drawer', 'style': 'height: 240px;', 'aria-describedby': undefined }, () => [
+                    h(DrawerTitle, null, () => 'Child'),
+                    h(DrawerClose, { 'data-testid': 'child-close' }, () => 'Close child'),
+                  ]),
+                ]),
+              ]),
+            ]),
+          ]),
+        ])
+      },
+    })
+    mounted.push(mount(Fixture, { attachTo: document.body }))
+    const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
+    const heightVar = (id: string) => get(id)?.style.getPropertyValue('--drawer-height')
+    // The parent's `--drawer-frontmost-height` and the height it renders at.
+    const measure = () => ({
+      frontmostHeight: get('parent')!.style.getPropertyValue('--drawer-frontmost-height'),
+      renderedHeight: Math.round(get('parent')!.getBoundingClientRect().height),
+    })
+    const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve))
+
+    await userEvent.click(get('parent-trigger')!)
+    await expect.poll(() => heightVar('parent')).toMatch(/px$/)
+    await nextFrame()
+    const ownHeight = heightVar('parent')!
+    const own = { frontmostHeight: ownHeight, renderedHeight: Math.round(Number.parseFloat(ownHeight)) }
+    expect(own.renderedHeight).toBeGreaterThan(400)
+    const parentOnly = measure()
+
+    await userEvent.click(get('child-trigger')!)
+    await expect.poll(() => heightVar('child')).toBe('240px')
+    await nextFrame()
+    const childOpen = measure()
+
+    await userEvent.click(get('child-close')!)
+    // The nested drawer is still mounted and animating out.
+    expect(get('child')?.getAttribute('data-state')).toBe('closed')
+    expect(get('parent')!.hasAttribute('data-nested-drawer-open')).toBe(true)
+    const childAnimatingOut = measure()
+
+    await expect.poll(() => get('child')).toBeNull()
+    const childGone = measure()
+
+    expect({ parentOnly, childOpen, childAnimatingOut, childGone }).toEqual({
+      parentOnly: own,
+      childOpen: { frontmostHeight: '240px', renderedHeight: 240 },
+      childAnimatingOut: own,
+      childGone: own,
+    })
+  })
+
+  it('exposes its own height again when the parent reopens', async () => {
+    addStyle(NESTED_STYLES)
+    const { get } = mountDrawer({ class: 'drawer stack' })
+    const frontmostHeight = () => get('content')?.style.getPropertyValue('--drawer-frontmost-height')
+
+    await userEvent.click(get('trigger')!)
+    await expect.poll(() => get('content')?.style.getPropertyValue('--drawer-height')).toMatch(/px$/)
+    const ownHeight = get('content')!.style.getPropertyValue('--drawer-height')
+    await expect.poll(frontmostHeight).toBe(ownHeight)
+
+    await userEvent.click(get('close')!)
+    await expect.poll(() => get('content')).toBeNull()
+    await userEvent.click(get('trigger')!)
+    await expect.poll(() => get('content')).not.toBeNull()
+    expect(frontmostHeight()).toBe(ownHeight)
+  })
+})
