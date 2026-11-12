@@ -104,10 +104,8 @@ watch(viewportElement, (element) => {
   // The pause listeners on the old element are gone, and focus or hover inside it went
   // with it, so release its pause while the toasts still listen there. A window-blur
   // pause is kept: the window `focus` listener on the new element releases it.
-  if (providerContext.isClosePausedRef.value && document.hasFocus()) {
-    previous.dispatchEvent(new CustomEvent(VIEWPORT_RESUME))
-    providerContext.isClosePausedRef.value = false
-  }
+  if (!isPausedByWindowBlur())
+    releasePause(previous)
   providerContext.focused.value = element.contains(getActiveElement())
   // The old element took its `pointerleave` with it. Collapse as a leave would, and a
   // `pointermove` on the new element expands the stack again.
@@ -142,6 +140,13 @@ function releasePause(viewport: HTMLElement | undefined) {
     viewport?.dispatchEvent(new CustomEvent(VIEWPORT_RESUME))
     providerContext.isClosePausedRef.value = false
   }
+}
+
+// Whether a pause that has lost its other reasons still holds because the window is
+// blurred. Asked of the document, not of `windowBlurred`: a window that never had focus
+// has not sent a `blur` either.
+function isPausedByWindowBlur() {
+  return !providerContext.disableWindowBlurPause.value && !document.hasFocus()
 }
 
 // Releases a blur pause, including one left over after the last toast closed, which would
@@ -291,7 +296,7 @@ watchEffect((cleanupFn) => {
       window.removeEventListener('pointercancel', handlePointerUp)
       window.removeEventListener('blur', handleWindowBlur)
       isPressed = false
-      if (document.hasFocus())
+      if (!isPausedByWindowBlur())
         releasePause(viewport)
     })
   }

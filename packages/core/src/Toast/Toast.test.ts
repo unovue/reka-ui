@@ -418,6 +418,33 @@ describe('toastProvider pause options', () => {
 
     expect(open.value).toBe(true)
   })
+
+  it.each([
+    { disableWindowBlurPause: true, shouldStayOpen: false },
+    { disableWindowBlurPause: false, shouldStayOpen: true },
+  ])('should leave the next toast paused when the last toast closes while focused in a blurred window with $disableWindowBlurPause: $shouldStayOpen', async ({ disableWindowBlurPause, shouldStayOpen }) => {
+    const hasFocus = vi.spyOn(document, 'hasFocus')
+    const { open, viewport } = mountToast({ disableWindowBlurPause })
+    await nextTick()
+
+    const action = viewport().querySelector('button')!
+    action.focus()
+    hasFocus.mockReturnValue(false)
+    await fireEvent.focusOut(action)
+    await fireEvent.blur(window)
+
+    // Closed from code, and another toast is shown while the window is still blurred.
+    open.value = false
+    for (let i = 0; i < 10 && document.querySelector('li'); i++)
+      await nextTick()
+    expect(document.querySelector('li')).toBeNull()
+    open.value = true
+    await nextTick()
+    await runDuration()
+
+    expect(open.value).toBe(shouldStayOpen)
+    hasFocus.mockRestore()
+  })
 })
 
 const PausableToasts = defineComponent({

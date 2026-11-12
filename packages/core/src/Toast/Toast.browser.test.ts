@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
-import { userEvent } from 'vitest/browser'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { cdp, userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from '@/Dialog'
 import { ToastAction, ToastClose, ToastDescription, ToastProvider, ToastRoot, ToastTitle, ToastViewport } from '.'
@@ -232,12 +232,15 @@ describe('toast close pause, in a real browser', () => {
 function mountPausableToast(providerProps: { disableHoverPause?: boolean, disableWindowBlurPause?: boolean } = {}) {
   const open = ref(true)
   const duration = ref(HOLD)
+  const events: string[] = []
   const Fixture = defineComponent({
     setup() {
       return () => h(ToastProvider, { duration: duration.value, ...providerProps }, () => [
         h(ToastRoot, {
           'open': open.value,
           'onUpdate:open': (value: boolean) => { open.value = value },
+          'onPause': () => events.push('pause'),
+          'onResume': () => events.push('resume'),
           'style': 'height: 40px',
           'data-testid': 'toast',
         }, () => [
@@ -257,7 +260,7 @@ function mountPausableToast(providerProps: { disableHoverPause?: boolean, disabl
     duration.value = DURATION
     await nextTick()
   }
-  return { open, startCountdown }
+  return { open, events, startCountdown }
 }
 
 describe('toast pause options, in a real browser', () => {
@@ -335,5 +338,141 @@ describe('toast pause options, in a real browser', () => {
     window.dispatchEvent(new Event('blur'))
     await startCountdown()
     await expect.poll(() => open.value, CLOSES).toBe(false)
+  })
+})
+
+// The window blur above is a dispatched event, which leaves the document focused. Here
+// the window really loses focus, so the browser itself blurs the focused element and the
+// window, and `document.hasFocus()` turns false.
+//
+// A headless page counts as focused whatever happens to its window, because the browser
+// provider turns on the focus emulation of DevTools for it. The setting is one flag on
+// the page that the last caller wins, so turning it on and off again from the session of
+// the test leaves it off. Minimizing the window then takes the focus away, and restoring
+// it gives the focus back.
+const send = (method: string, params: Record<string, unknown> = {}) => (cdp() as any).send(method, params)
+
+async function setFocusEmulation(enabled: boolean) {
+  await send('Emulation.setFocusEmulationEnabled', { enabled: !enabled })
+  await send('Emulation.setFocusEmulationEnabled', { enabled })
+}
+
+async function setWindowFocused(focused: boolean) {
+  const changed = new Promise(resolve => window.addEventListener(focused ? 'focus' : 'blur', resolve, { once: true }))
+  const { windowId } = await send('Browser.getWindowForTarget')
+  await send('Browser.setWindowBounds', { windowId, bounds: { windowState: focused ? 'normal' : 'minimized' } })
+  await changed
+}
+
+describe('toast window blur pause, when the window really loses focus', () => {
+  beforeEach(() => setFocusEmulation(false))
+
+  afterEach(async () => {
+    if (!document.hasFocus())
+      await setWindowFocused(true)
+    await setFocusEmulation(true)
+  })
+
+  it('pauses while the window is blurred by default, and closes once it is focused again', async () => {
+    const { open, events, startCountdown } = mountPausableToast()
+    await expect.poll(() => el('[data-testid="outside"]')).toBeTruthy()
+    el('[data-testid="outside"]')!.focus()
+
+    await setWindowFocused(false)
+    expect(document.hasFocus()).toBe(false)
+    expect(events).toEqual(['pause'])
+    await startCountdown()
+
+    await setWindowFocused(true)
+    expect(events).toEqual(['pause', 'resume'])
+    await expect.poll(() => open.value, CLOSES).toBe(false)
+  })
+
+  it('keeps a toast with a focused action paused across a window blur by default', async () => {
+    const { open, events, startCountdown } = mountPausableToast()
+    await expect.poll(() => el('[data-action]')).toBeTruthy()
+    el('[data-action]')!.focus()
+    expect(events).toEqual(['pause'])
+
+    // The blur of the action ends the focus pause, and the blur of the window pauses again.
+    await setWindowFocused(false)
+    expect(events).toEqual(['pause', 'resume', 'pause'])
+    await startCountdown()
+
+    // The window gets its focus first, which resumes, and then the action, which pauses.
+    await setWindowFocused(true)
+    expect(events).toEqual(['pause', 'resume', 'pause', 'resume', 'pause'])
+    expect(document.activeElement).toBe(el('[data-action]'))
+    expect(open.value).toBe(true)
+
+    el('[data-testid="outside"]')!.focus()
+    await expect.poll(() => open.value, CLOSES).toBe(false)
+  })
+
+  it('keeps a toast with a focused action paused by focus while the window is blurred and the blur pause is off', async () => {
+    const { open, events, startCountdown } = mountPausableToast({ disableWindowBlurPause: true })
+    await expect.poll(() => el('[data-action]')).toBeTruthy()
+    const action = el('[data-action]')!
+    action.focus()
+    expect(events).toEqual(['pause'])
+
+    // What the viewport goes by to tell a window blur from focus that moves elsewhere.
+    const focusOut: Record<string, unknown> = {}
+    action.addEventListener('focusout', (event) => {
+      Object.assign(focusOut, {
+        relatedTarget: event.relatedTarget,
+        isActiveElement: document.activeElement === action,
+        hasFocus: document.hasFocus(),
+      })
+    }, { once: true })
+
+    await setWindowFocused(false)
+    expect(focusOut).toEqual({ relatedTarget: null, isActiveElement: true, hasFocus: false })
+    expect(document.activeElement).toBe(action)
+    expect(events).toEqual(['pause'])
+    await startCountdown()
+    expect(events).toEqual(['pause'])
+    expect(open.value).toBe(true)
+
+    await setWindowFocused(true)
+    expect(document.activeElement).toBe(action)
+    // The window gets its focus first, which resumes, and then the action, which pauses.
+    expect(events).toEqual(['pause', 'resume', 'pause'])
+    expect(open.value).toBe(true)
+
+    el('[data-testid="outside"]')!.focus()
+    await expect.poll(() => open.value, CLOSES).toBe(false)
+  })
+
+  it('closes on time while the window is blurred when the blur pause is off and focus is outside the toasts', async () => {
+    const { open, events, startCountdown } = mountPausableToast({ disableWindowBlurPause: true })
+    await expect.poll(() => el('[data-testid="outside"]')).toBeTruthy()
+    el('[data-testid="outside"]')!.focus()
+
+    await setWindowFocused(false)
+    expect(events).toEqual([])
+    await startCountdown()
+    await expect.poll(() => open.value, CLOSES).toBe(false)
+    expect(document.hasFocus()).toBe(false)
+  })
+
+  // With the action focused the toasts are paused when the window blurs, and with the
+  // last toast gone nothing is left to resume them. A pause that only a window blur would
+  // justify must not outlive the toast when the blur pause is off.
+  it('starts the next toast timer when the last toast closes in a blurred window and the blur pause is off', async () => {
+    const { open, events, startCountdown } = mountPausableToast({ disableWindowBlurPause: true })
+    await expect.poll(() => el('[data-action]')).toBeTruthy()
+    el('[data-action]')!.focus()
+    await setWindowFocused(false)
+    expect(events).toEqual(['pause'])
+
+    open.value = false
+    await expect.poll(() => el('li')).toBeNull()
+    await startCountdown()
+    open.value = true
+    await expect.poll(() => el('li')).toBeTruthy()
+
+    await expect.poll(() => open.value, CLOSES).toBe(false)
+    expect(document.hasFocus()).toBe(false)
   })
 })
