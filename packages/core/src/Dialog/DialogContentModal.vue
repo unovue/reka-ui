@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DialogContentImplEmits, DialogContentImplProps } from './DialogContentImpl.vue'
 import { computed, watch } from 'vue'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { useEmitAsProps, useForwardExpose, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import DialogContentImpl from './DialogContentImpl.vue'
@@ -59,7 +60,8 @@ watch(() => props.present, (isPresent, wasPresent) => {
       (event) => {
         if (!event.defaultPrevented) {
           event.preventDefault();
-          rootContext.triggerElement.value?.focus();
+          // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
+          if (!hasFocusLeftScope(event.target)) rootContext.triggerElement.value?.focus();
         }
       }
     "

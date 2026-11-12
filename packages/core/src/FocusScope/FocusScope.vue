@@ -1,6 +1,9 @@
 <script lang="ts">
+import type { FocusScopeNode } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import { getActiveElement, useForwardExpose } from '@/shared'
+
+const FOCUS_SCOPE_NODE_KEY = Symbol('FocusScopeNode')
 
 export type FocusScopeEmits = {
   /**
@@ -45,7 +48,7 @@ export interface FocusScopeProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { isClient } from '@vueuse/shared'
-import { nextTick, reactive, ref, watch, watchEffect } from 'vue'
+import { inject, nextTick, provide, reactive, ref, watch, watchEffect } from 'vue'
 import { Primitive } from '@/Primitive'
 import { createFocusScopesStack } from './stack'
 import {
@@ -56,9 +59,11 @@ import {
   findVisible,
   focus,
   focusFirst,
+  focusScopeNodes,
   getTabbableCandidates,
   getTabbableEdges,
   getTabStopsAfter,
+  hasFocusLeftScope,
 } from './utils'
 
 const props = withDefaults(defineProps<FocusScopeProps>(), {
@@ -77,6 +82,14 @@ const emits = defineEmits<FocusScopeEmits>()
 const { currentRef, currentElement } = useForwardExpose()
 const lastFocusedElementRef = ref<HTMLElement | null>(null)
 const focusScopesStack = createFocusScopesStack()
+
+// Lets `hasFocusLeftScope` tell the scopes nested in this one from unrelated ones.
+const scopeNode: FocusScopeNode = { parent: inject<FocusScopeNode | undefined>(FOCUS_SCOPE_NODE_KEY, undefined) }
+provide(FOCUS_SCOPE_NODE_KEY, scopeNode)
+watch(currentElement, (container) => {
+  if (container)
+    focusScopeNodes.set(container, scopeNode)
+}, { immediate: true })
 
 const focusScope = reactive({
   paused: false,
@@ -255,6 +268,7 @@ watchEffect(async (cleanupFn) => {
       emits('unmountAutoFocus', ev)
     }
     container.addEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)
+    scopeNode.unmounting = true
     container.dispatchEvent(unmountEvent)
 
     // Signal that blur events fired below are system-initiated (focus trap
@@ -262,7 +276,9 @@ watchEffect(async (cleanupFn) => {
     container.setAttribute('data-focus-scope-unmounting', '')
 
     setTimeout(() => {
-      if (!unmountEvent.defaultPrevented)
+      // Focus goes back to where it was, unless something else took it meanwhile, e.g. a
+      // layer opened by the click that closed this one.
+      if (!unmountEvent.defaultPrevented && !hasFocusLeftScope(container))
         focus(previouslyFocusedElement ?? document.body, { select: true })
 
       // we need to remove the listener after we `dispatchEvent`
@@ -270,6 +286,7 @@ watchEffect(async (cleanupFn) => {
 
       focusScopesStack.remove(focusScope)
       container.removeAttribute('data-focus-scope-unmounting')
+      scopeNode.unmounting = false
     }, 0)
   })
 })

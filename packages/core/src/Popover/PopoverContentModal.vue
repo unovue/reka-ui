@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { PopoverContentImplEmits, PopoverContentImplProps } from './PopoverContentImpl.vue'
 import { ref } from 'vue'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { useForwardExpose, useForwardPropsEmits, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import PopoverContentImpl from './PopoverContentImpl.vue'
@@ -29,7 +30,8 @@ useHideOthers(currentElement)
       (event) => {
         emits('closeAutoFocus', event);
 
-        if (!isRightClickOutsideRef) rootContext.triggerElement.value?.focus();
+        // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
+        if (!isRightClickOutsideRef && !hasFocusLeftScope(event.target)) rootContext.triggerElement.value?.focus();
       }
     "
     @pointer-down-outside="

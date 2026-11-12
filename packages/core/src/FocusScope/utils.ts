@@ -6,6 +6,59 @@ export const EVENT_OPTIONS = { bubbles: false, cancelable: true }
 
 type FocusableTarget = HTMLElement | { focus: () => void }
 
+/**
+ * A scope's place among the mounted scopes, by the component tree. A nested scope is usually
+ * teleported (a submenu, a Select inside a Dialog), so the DOM alone cannot tell it from an
+ * unrelated one.
+ */
+export interface FocusScopeNode {
+  /** The scope this one is nested in, if any. */
+  parent?: FocusScopeNode
+  /** Set while the scope's unmount auto-focus is being handled. */
+  unmounting?: boolean
+}
+
+export const focusScopeNodes = new WeakMap<Element, FocusScopeNode>()
+
+/**
+ * Whether focus has moved on from a scope that is unmounting, given by its container (the
+ * target of its unmount auto-focus event; read it while the event is dispatched). Focus is
+ * then on an element that is neither in that scope nor in a scope nested in it: something
+ * else took it while the scope was closing, typically another layer opened by the same
+ * interaction, and returning focus to the trigger would take it back from there.
+ *
+ * Focus that was merely dropped (on `body`, as when the focused element is removed) has not
+ * moved on. Nor does it count while a scope around this one is unmounting with it: focus is
+ * then wherever that scope's own handler has just put it.
+ */
+export function hasFocusLeftScope(container: EventTarget | null): boolean {
+  // Not an `instanceof` check, which an element of another realm (an iframe) would fail
+  const ownerDocument = (container as Element | null)?.ownerDocument
+  if (!ownerDocument)
+    return false
+  const scope = focusScopeNodes.get(container as Element)
+  for (let parent = scope?.parent; parent; parent = parent.parent) {
+    if (parent.unmounting)
+      return false
+  }
+
+  let activeElement = ownerDocument.activeElement
+  while (activeElement?.shadowRoot?.activeElement)
+    activeElement = activeElement.shadowRoot.activeElement
+  if (!activeElement || activeElement === ownerDocument.body || activeElement === ownerDocument.documentElement)
+    return false
+
+  for (let node: Element | null = activeElement; node; node = node.parentElement ?? ((node.getRootNode() as ShadowRoot).host as Element | undefined) ?? null) {
+    if (node === container)
+      return false
+    for (let nested = focusScopeNodes.get(node); nested; nested = nested.parent) {
+      if (nested === scope)
+        return false
+    }
+  }
+  return true
+}
+
 /** Like `Node.contains`, but crosses shadow boundaries by walking up through host elements. */
 export function containsComposed(container: Node, node: Node | null): boolean {
   let current: Node | null = node
