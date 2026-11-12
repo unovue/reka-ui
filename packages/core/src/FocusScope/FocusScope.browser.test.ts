@@ -245,6 +245,54 @@ describe('given a trapped FocusScope with focus on an unchecked radio of a check
   })
 })
 
+// A control inside `<fieldset disabled>` can't take focus, but its own `disabled` stays false.
+describe('given a trapped FocusScope with a disabled fieldset, in a real browser', () => {
+  const disabledFieldset = (children: VNode[]) => h('fieldset', { disabled: true }, children)
+
+  it('reaches an enabled radio with Shift+Tab when the checked radio of its group is in the fieldset', async () => {
+    const get = mountChildren(() => [button('button'), disabledFieldset([radio('size', 'a', { checked: true })]), radio('size', 'b')])
+    await expect.poll(() => document.activeElement).toBe(get('button'))
+
+    await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+    expect(document.activeElement).toBe(get('b'))
+    await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+    expect(document.activeElement).toBe(get('button'))
+  })
+
+  it('focuses the enabled radio on mount and wraps Tab back to it', async () => {
+    const get = mountChildren(() => [disabledFieldset([radio('size', 'a', { checked: true })]), radio('size', 'b'), button('button')])
+    await expect.poll(() => document.activeElement).toBe(get('b'))
+
+    await userEvent.keyboard('{Tab}')
+    expect(document.activeElement).toBe(get('button'))
+    await userEvent.keyboard('{Tab}')
+    expect(document.activeElement).toBe(get('b'))
+  })
+
+  it('wraps Tab from the last enabled element before a button in the fieldset', async () => {
+    const get = mountChildren(() => [button('1'), button('2'), disabledFieldset([button('disabled')])])
+    await expect.poll(() => document.activeElement).toBe(get('1'))
+
+    await userEvent.keyboard('{Tab}')
+    expect(document.activeElement).toBe(get('2'))
+    await userEvent.keyboard('{Tab}')
+    expect(document.activeElement).toBe(get('1'))
+    await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+    expect(document.activeElement).toBe(get('2'))
+  })
+
+  // Controls in the first legend of a disabled fieldset stay enabled.
+  it('keeps a checked radio in the first legend of the fieldset as its group\'s tab stop', async () => {
+    const get = mountChildren(() => [button('button'), disabledFieldset([h('legend', [radio('size', 'a', { checked: true })])]), radio('size', 'b')])
+    await expect.poll(() => document.activeElement).toBe(get('button'))
+
+    await userEvent.keyboard('{Tab}')
+    expect(document.activeElement).toBe(get('a'))
+    await userEvent.keyboard('{Tab}')
+    expect(document.activeElement).toBe(get('button'))
+  })
+})
+
 describe('getTabbableCandidates with native radio groups, in a real browser', () => {
   it('keeps the unchecked radios when the checked one is not tabbable', async () => {
     const get = mountChildren(() => [
