@@ -780,6 +780,22 @@ describe('given a virtualized Combobox', () => {
       wrapper.unmount()
     })
 
+    it('should move the highlight with its option when the parent inserts an option before it', async () => {
+      const wrapper = mountOpenCombobox()
+      await flush()
+      const input = wrapper.find('input')
+      expect(wrapper.find('[data-highlighted]').text()).toBe('Item 0')
+
+      shown.value = [{ label: 'Other', value: 100 }, ...options]
+      await flush()
+
+      const highlighted = wrapper.findAll('[data-highlighted]')
+      expect(highlighted.map(row => row.text())).toEqual(['Item 0'])
+      expect(highlighted[0].attributes('data-index')).toBe('1')
+      expect(input.attributes('aria-activedescendant')).toBe(highlighted[0].attributes('id'))
+      wrapper.unmount()
+    })
+
     async function scrollAway(wrapper: VueWrapper) {
       const viewport = wrapper.find('[data-reka-combobox-viewport]').element
       viewport.scrollTop = 2000
