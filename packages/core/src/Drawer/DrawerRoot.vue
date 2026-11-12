@@ -55,8 +55,9 @@ export interface DrawerRootProps {
 export type DrawerRootEmits = {
   'update:open': [value: boolean, details: DrawerOpenChangeDetails]
   /**
-   * Event handler called after any animations complete when the drawer is opened or closed.
-   * Emits `true` once the drawer has finished opening and `false` once it has finished closing.
+   * Emitted with `true` once the drawer has finished opening and `false` once it has finished closing:
+   * when the animations and transitions running on the popup have ended, or when its content unmounts.
+   * Animations that never end are not waited for.
    */
   'update:openComplete': [value: boolean]
   'update:snapPoint': [value: DrawerSnapPoint | null]
