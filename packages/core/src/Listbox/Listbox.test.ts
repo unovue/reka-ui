@@ -2,7 +2,7 @@ import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { useKbd } from '@/shared'
 import { handleSubmit } from '@/test'
 import { ListboxContent, ListboxFilter, ListboxItem, ListboxItemIndicator, ListboxRoot, ListboxVirtualizer } from '.'
@@ -735,6 +735,58 @@ describe('given ListboxItem with reactive fallthrough attrs', () => {
     finally {
       window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
     }
+  })
+})
+
+describe('given a Listbox whose highlighted item leaves the document', () => {
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  const Fixture = defineComponent({
+    props: {
+      options: { type: Array as () => string[], default: () => ['Apple', 'Banana', 'Cherry'] },
+      withFilter: Boolean,
+    },
+    setup(props) {
+      const search = ref('')
+      const items = computed(() => props.options.filter(item => item.toLowerCase().includes(search.value.toLowerCase())))
+      return () => h(ListboxRoot, null, () => [
+        props.withFilter
+          ? h(ListboxFilter, { 'data-testid': 'filter', 'modelValue': search.value, 'onUpdate:modelValue': (value: string) => search.value = value })
+          : null,
+        h(ListboxContent, { 'data-testid': 'content' }, () => items.value.map(item => h(ListboxItem, { key: item, value: item }, () => item))),
+      ])
+    },
+  })
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should remove aria-activedescendant when the filter term matches no item', async () => {
+    const wrapper = mount(Fixture, { attachTo: document.body, props: { withFilter: true } })
+    const filter = wrapper.find('[data-testid="filter"]')
+    await filter.trigger('keydown', { key: 'ArrowDown' })
+    expect(filter.attributes('aria-activedescendant')).toBeTruthy()
+
+    await filter.setValue('zzz')
+    await nextTick()
+
+    expect(wrapper.findAll('[role="option"]')).toHaveLength(0)
+    expect(filter.attributes('aria-activedescendant')).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it('should keep the content in the tab order when the highlighted item is removed', async () => {
+    const wrapper = mount(Fixture, { attachTo: document.body })
+    const content = wrapper.find('[data-testid="content"]')
+    await content.trigger('focus')
+    expect(content.attributes('tabindex')).toBe('-1')
+    expect(wrapper.find('[role="option"]').attributes('tabindex')).toBe('0')
+
+    await wrapper.setProps({ options: ['Banana', 'Cherry'] })
+
+    expect(content.attributes('tabindex')).toBe('0')
+    wrapper.unmount()
   })
 })
 

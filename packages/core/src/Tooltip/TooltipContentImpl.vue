@@ -108,6 +108,7 @@ onMounted(() => {
   >
     <PopperContent
       :ref="forwardRef"
+      scope="tooltip"
       :data-state="rootContext.stateAttribute.value"
       v-bind="{ ...$attrs, ...popperContentProps }"
       :style="{

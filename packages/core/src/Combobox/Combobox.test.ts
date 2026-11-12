@@ -2,7 +2,7 @@ import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, inject, nextTick, ref } from 'vue'
+import { defineComponent, h, inject, nextTick, reactive, ref, shallowRef } from 'vue'
 import { handleSubmit, sleep } from '@/test'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport, ComboboxVirtualizer } from '.'
 import Combobox from './story/_Combobox.vue'
@@ -519,6 +519,66 @@ describe('given default Combobox', () => {
   })
 })
 
+describe('given an open Combobox whose options leave the document', () => {
+  const Fixture = defineComponent({
+    components: { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot, ComboboxViewport },
+    props: {
+      options: { type: Array as () => string[], default: () => ['Apple', 'Banana', 'Cherry'] },
+    },
+    template: `<ComboboxRoot>
+  <ComboboxAnchor><ComboboxInput data-testid="input" /></ComboboxAnchor>
+  <ComboboxContent>
+    <ComboboxViewport>
+      <ComboboxItem v-for="option in options" :key="option" :value="option">{{ option }}</ComboboxItem>
+    </ComboboxViewport>
+  </ComboboxContent>
+</ComboboxRoot>`,
+  })
+
+  let wrapper: VueWrapper<InstanceType<typeof Fixture>>
+  let input: DOMWrapper<HTMLInputElement>
+  const highlightedOption = () => {
+    const id = input.attributes('aria-activedescendant')
+    return id ? document.getElementById(id) : null
+  }
+
+  beforeEach(async () => {
+    document.body.innerHTML = ''
+    window.HTMLElement.prototype.scrollIntoView = vi.fn()
+    wrapper = mount(Fixture, { attachTo: document.body })
+    input = wrapper.find('[data-testid="input"]')
+    await input.trigger('keydown', { key: 'ArrowDown' })
+    await vi.waitFor(() => expect(highlightedOption()?.textContent).toBe('Apple'))
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
+  })
+
+  it('should remove aria-activedescendant when the term matches no option, and highlight a match after it', async () => {
+    await input.setValue('zzz')
+    await vi.waitFor(() => expect(document.querySelector('[role="option"]')).toBeNull())
+    expect(input.attributes('aria-activedescendant')).toBeUndefined()
+
+    await input.setValue('ban')
+    await vi.waitFor(() => expect(highlightedOption()?.textContent).toBe('Banana'))
+  })
+
+  it('should remove aria-activedescendant when the parent removes the highlighted option', async () => {
+    await wrapper.setProps({ options: ['Banana', 'Cherry'] })
+
+    expect(document.querySelectorAll('[role="option"]')).toHaveLength(2)
+    expect(input.attributes('aria-activedescendant')).toBeUndefined()
+  })
+
+  it('should remove aria-activedescendant when the parent replaces the options with as many others', async () => {
+    await wrapper.setProps({ options: ['Date', 'Elderberry', 'Fig'] })
+
+    expect(document.querySelectorAll('[role="option"]')).toHaveLength(3)
+    expect(input.attributes('aria-activedescendant')).toBeUndefined()
+  })
+})
+
 describe('given a Combobox with multiple prop', async () => {
   let wrapper: VueWrapper<InstanceType<typeof Combobox>>
   let valueBox: DOMWrapper<HTMLInputElement>
@@ -657,6 +717,118 @@ describe('given a virtualized Combobox', () => {
     expect(items[0].attributes('data-state')).toBe('checked')
 
     wrapper.unmount()
+  })
+
+  describe('when the options change', () => {
+    const shown = shallowRef(options)
+    const mountOpenCombobox = () => mount(defineComponent({
+      setup: () => () => h(ComboboxRoot, { open: true, ignoreFilter: true }, () => [
+        h(ComboboxAnchor, null, () => h(ComboboxInput)),
+        h(ComboboxContent, null, () => h(ComboboxViewport, { style: 'height: 200px; overflow: auto' }, () => h(ComboboxVirtualizer, { options: shown.value, estimateSize: 25 }, {
+          default: ({ option }: any) => h(ComboboxItem, { value: option }, () => option.label),
+        }))),
+      ]),
+    }), { attachTo: document.body })
+
+    beforeEach(() => {
+      shown.value = options
+    })
+
+    it('should remove aria-activedescendant when the options become empty', async () => {
+      const wrapper = mountOpenCombobox()
+      await flush()
+      const input = wrapper.find('input')
+      expect(input.attributes('aria-activedescendant')).toBeTruthy()
+
+      shown.value = []
+      await flush()
+
+      expect(wrapper.findAll('[role=option]')).toHaveLength(0)
+      expect(input.attributes('aria-activedescendant')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('should remove the highlight when the parent removes its option in place', async () => {
+      shown.value = reactive(options.slice())
+      const wrapper = mountOpenCombobox()
+      await flush()
+      const input = wrapper.find('input')
+      expect(wrapper.find('[data-highlighted]').text()).toBe('Item 0')
+
+      shown.value.splice(0, 1)
+      await flush()
+
+      expect(wrapper.find('[data-index="0"]').text()).toBe('Item 1')
+      expect(wrapper.find('[data-highlighted]').exists()).toBe(false)
+      expect(input.attributes('aria-activedescendant')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('should remove the highlight when the parent replaces its option in place', async () => {
+      shown.value = reactive(options.slice())
+      const wrapper = mountOpenCombobox()
+      await flush()
+      const input = wrapper.find('input')
+      expect(wrapper.find('[data-highlighted]').text()).toBe('Item 0')
+
+      shown.value[0] = { label: 'Other', value: 100 }
+      await flush()
+
+      expect(wrapper.find('[data-index="0"]').text()).toBe('Other')
+      expect(wrapper.find('[data-highlighted]').exists()).toBe(false)
+      expect(input.attributes('aria-activedescendant')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    async function scrollAway(wrapper: VueWrapper) {
+      const viewport = wrapper.find('[data-reka-combobox-viewport]').element
+      viewport.scrollTop = 2000
+      viewport.dispatchEvent(new Event('scroll'))
+      await flush()
+    }
+
+    it('should keep the highlight when its row is scrolled out of view', async () => {
+      const wrapper = mountOpenCombobox()
+      await flush()
+      const input = wrapper.find('input')
+      const highlightedId = input.attributes('aria-activedescendant')
+      expect(highlightedId).toBeTruthy()
+
+      await scrollAway(wrapper)
+
+      expect(input.attributes('aria-activedescendant')).toBe(highlightedId)
+      wrapper.unmount()
+    })
+
+    it('should remove the highlight when the parent removes its option while its row is scrolled out of view', async () => {
+      shown.value = reactive(options.slice())
+      const wrapper = mountOpenCombobox()
+      await flush()
+      const input = wrapper.find('input')
+      expect(input.attributes('aria-activedescendant')).toBeTruthy()
+
+      await scrollAway(wrapper)
+      shown.value.splice(0, 1)
+      await flush()
+
+      expect(input.attributes('aria-activedescendant')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('should remove the highlight when its option leaves and its row stays for another option', async () => {
+      const wrapper = mountOpenCombobox()
+      await flush()
+      const input = wrapper.find('input')
+      expect(wrapper.find('[data-highlighted]').text()).toBe('Item 0')
+
+      shown.value = options.slice(1)
+      await flush()
+
+      expect(wrapper.find('[data-index="0"]').text()).toBe('Item 1')
+      expect(wrapper.find('[data-highlighted]').exists()).toBe(false)
+      expect(input.attributes('aria-activedescendant')).toBeUndefined()
+      wrapper.unmount()
+    })
   })
 })
 

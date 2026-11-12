@@ -69,6 +69,7 @@ useFocusGuards()
         v-bind="forwarded"
         :id="rootContext.contentId"
         :ref="forwardRef"
+        scope="popover"
         :data-state="rootContext.open.value ? 'open' : 'closed'"
         :aria-labelledby="rootContext.triggerId"
         :style="{
