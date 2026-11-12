@@ -21,7 +21,7 @@ import { Presence } from '@/Presence'
 import {
   Primitive,
 } from '@/Primitive'
-import { useForwardExpose, useId } from '@/shared'
+import { useContentId, useForwardExpose, useId } from '@/shared'
 import { injectCollapsibleRootContext } from './CollapsibleRoot.vue'
 
 defineOptions({
@@ -36,6 +36,7 @@ rootContext.contentId ||= useId(undefined, 'reka-collapsible-content')
 
 const presentRef = ref<InstanceType<typeof Presence>>()
 const { forwardRef, currentElement } = useForwardExpose()
+useContentId(rootContext, currentElement)
 
 const width = ref(0)
 const height = ref(0)
@@ -83,6 +84,23 @@ onMounted(() => {
   requestAnimationFrame(() => {
     isMountAnimationPrevented.value = false
   })
+})
+
+// Browsers restart a CSS animation whenever its element is inserted into the document again,
+// e.g. when a keyed list moves the Collapsible. Once the open/close animation has finished,
+// block it again (as on the initial mount) so it only replays on the next toggle, which
+// restores the original style above. Deferred so Presence still reads the finished
+// animation's name in its own `animationend` handler, and skipped while another CSS animation is
+// running or paused (a running one retries on its own `animationend`). Transitions are not
+// restarted by a move, so they are ignored.
+useEventListener(currentElement, 'animationend', (ev) => {
+  const node = currentElement.value!
+  if (ev.target === node) {
+    requestAnimationFrame(() => {
+      if (!node.getAnimations?.().some(animation => 'animationName' in animation && animation.playState !== 'finished'))
+        node.style.animationName = 'none'
+    })
+  }
 })
 
 useEventListener(currentElement, 'beforematch', (ev) => {

@@ -58,6 +58,12 @@
     'required': false
   },
   {
+    'name': 'fallbackAxisSideDirection',
+    'description': '<p>Whether to also try the perpendicular sides when neither the preferred\nside nor its opposite fits within the boundary, and which of them to try first.\nFor <code>side=&quot;left&quot;</code> or <code>&quot;right&quot;</code>, <code>start</code> tries top then bottom and <code>end</code> tries\nbottom then top. For <code>side=&quot;top&quot;</code> or <code>&quot;bottom&quot;</code>, <code>start</code> tries left then right\nand <code>end</code> tries right then left (mirrored in RTL).\n<code>none</code> keeps the content on the axis of the preferred side.</p>\n<p>Only applies when <code>avoidCollisions</code> and <code>sideFlip</code> are enabled.</p>\n',
+    'type': '\'none\' | \'start\' | \'end\'',
+    'required': false
+  },
+  {
     'name': 'forceMount',
     'description': '<p>Used to force mounting when more control is needed. Useful when\ncontrolling animation with Vue animation libraries.</p>\n',
     'type': 'boolean',
@@ -77,7 +83,7 @@
   },
   {
     'name': 'side',
-    'description': '<p>The preferred side of the trigger to render against when open.\nWill be reversed when collisions occur and avoidCollisions\nis enabled.</p>\n',
+    'description': '<p>The preferred side of the trigger to render against when open.\nWill be reversed when collisions occur and <code>avoidCollisions</code>\nis enabled. If the opposite side collides as well, the content\nstays on this axis unless <code>fallbackAxisSideDirection</code> is set.</p>\n',
     'type': '\'top\' | \'right\' | \'bottom\' | \'left\'',
     'required': false
   },
@@ -130,10 +136,11 @@
 | `avoidCollisions` | When true, overrides the side and align preferences to prevent collisions with boundary edges. | `boolean` | No | - |
 | `collisionBoundary` | The element used as the collision boundary. By default this is the viewport, though you can provide additional element(s) to be included in this check. | `Element \| (Element \| null)[] \| null` | No | - |
 | `collisionPadding` | The distance in pixels from the boundary edges where collision detection should occur. Accepts a number (same for all sides), or a partial padding object, for example: { top: 20, left: 20 }. | `number \| Partial<Record<"top" \| "right" \| "bottom" \| "left", number>>` | No | - |
+| `fallbackAxisSideDirection` | Whether to also try the perpendicular sides when neither the preferred side nor its opposite fits within the boundary, and which of them to try first. For side="left" or "right", start tries top then bottom and end tries bottom then top. For side="top" or "bottom", start tries left then right and end tries right then left (mirrored in RTL). none keeps the content on the axis of the preferred side. Only applies when avoidCollisions and sideFlip are enabled. | `"none" \| "start" \| "end"` | No | - |
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
 | `hideWhenDetached` | Whether to hide the content when the trigger becomes fully occluded. | `boolean` | No | - |
 | `positionStrategy` | The type of CSS position property to use. | `"fixed" \| "absolute"` | No | - |
-| `side` | The preferred side of the trigger to render against when open. Will be reversed when collisions occur and avoidCollisions is enabled. | `"top" \| "right" \| "bottom" \| "left"` | No | - |
+| `side` | The preferred side of the trigger to render against when open. Will be reversed when collisions occur and avoidCollisions is enabled. If the opposite side collides as well, the content stays on this axis unless fallbackAxisSideDirection is set. | `"top" \| "right" \| "bottom" \| "left"` | No | - |
 | `sideOffset` | The distance in pixels from the trigger. | `number` | No | - |
 | `sticky` | The sticky behavior on the align axis. partial will keep the content in the boundary as long as the trigger is at least partially in the boundary whilst "always" will keep the content in the boundary regardless. | `"partial" \| "always"` | No | - |
 | `updatePositionStrategy` | Strategy to update the position of the floating element on every animation frame. | `"always" \| "optimized"` | No | - |

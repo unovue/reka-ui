@@ -3,6 +3,12 @@
 <llm-exclude>
 <PropsTable :data="[
   {
+    'name': 'announce',
+    'description': '<p>Customize the live announcement using the active step\'s one-based position and total. Set to <code>false</code> to disable the built-in live region.</p>\n',
+    'type': 'false | ((step: number, total: number) =&gt; string)',
+    'required': false
+  },
+  {
     'name': 'as',
     'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
@@ -151,6 +157,7 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
+| `announce` | Customize the live announcement using the active step's one-based position and total. Set to false to disable the built-in live region. | `false \| ((step: number, total: number) => string)` | No | - |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultValue` | The value of the step that should be active when initially rendered. Use when you do not need to control the state of the steps. | `number` | No | `1` |

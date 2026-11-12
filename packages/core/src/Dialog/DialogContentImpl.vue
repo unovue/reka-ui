@@ -3,7 +3,7 @@ import type {
   DismissableLayerEmits,
   DismissableLayerProps,
 } from '@/DismissableLayer'
-import { getActiveElement, useForwardExpose, useId } from '@/shared'
+import { getActiveElement, useContentId, useContentMounted, useForwardExpose, useId } from '@/shared'
 
 export type DialogContentImplEmits = DismissableLayerEmits & {
   /**
@@ -34,7 +34,7 @@ export interface DialogContentImplProps extends DismissableLayerProps {
 </script>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted, shallowRef } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { getOpenState } from '@/Menu/utils'
@@ -52,6 +52,8 @@ const emits = defineEmits<DialogContentImplEmits>()
 const rootContext = injectDialogRootContext()
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
 
+useContentId(rootContext, contentElement)
+useContentMounted(rootContext)
 rootContext.titleId ||= useId(undefined, 'reka-dialog-title')
 rootContext.descriptionId ||= useId(undefined, 'reka-dialog-description')
 
@@ -61,6 +63,13 @@ onMounted(() => {
   // Preserve the `DialogTrigger` element in case it was triggered programmatically
   if (getActiveElement() !== document.body)
     rootContext.triggerElement.value = getActiveElement() as HTMLElement
+})
+
+// The root outlives this content, so hand it back an empty ref: the computed above
+// keeps this instance (and its detached element) reachable for as long as it is stored.
+onUnmounted(() => {
+  if (rootContext.contentElement === contentElement)
+    rootContext.contentElement = shallowRef()
 })
 
 if (process.env.NODE_ENV !== 'production') {

@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose, useId } from '@/shared'
+import { useForwardExpose, useId, useRenderedContentId, useTriggerId } from '@/shared'
 
 export interface DropdownMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -10,7 +10,7 @@ export interface DropdownMenuTriggerProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { nextTick, onMounted } from 'vue'
-import { MenuAnchor } from '@/Menu'
+import { injectMenuContext, MenuAnchor } from '@/Menu'
 import {
   Primitive,
 } from '@/Primitive'
@@ -28,7 +28,8 @@ onMounted(() => {
   rootContext.triggerElement = triggerElement
 })
 
-rootContext.triggerId ||= useId(undefined, 'reka-dropdown-menu-trigger')
+useTriggerId(rootContext, triggerElement, () => useId(undefined, 'reka-dropdown-menu-trigger'))
+const contentId = useRenderedContentId(rootContext, injectMenuContext())
 </script>
 
 <template>
@@ -41,7 +42,7 @@ rootContext.triggerId ||= useId(undefined, 'reka-dropdown-menu-trigger')
       :as="as"
       aria-haspopup="menu"
       :aria-expanded="rootContext.open.value"
-      :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
+      :aria-controls="rootContext.open.value ? contentId : undefined"
       :data-disabled="disabled ? '' : undefined"
       :disabled="disabled"
       :data-state="rootContext.open.value ? 'open' : 'closed'"

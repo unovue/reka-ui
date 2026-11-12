@@ -366,3 +366,15 @@ describe('timeField', () => {
     expect(end.hour).toHaveFocus()
   })
 })
+
+describe('hidden input value', () => {
+  it.each([
+    { label: 'no value', modelValue: undefined, expected: '' },
+    { label: 'only a start', modelValue: { start: time.start, end: undefined }, expected: '' },
+    { label: 'only an end', modelValue: { start: undefined, end: time.end }, expected: '' },
+    { label: 'a complete range', modelValue: time, expected: '09:15:29 - 17:45:00' },
+  ])('is "$expected" for $label', ({ modelValue, expected }) => {
+    const { container } = setup({ timeRangeFieldProps: { modelValue, name: 'range' } })
+    expect(container.querySelector('input')).toHaveValue(expected)
+  })
+})

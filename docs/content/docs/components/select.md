@@ -97,6 +97,8 @@ import {
 
 Contains all the parts of a Select
 
+When used in a form with a `name`, Select renders a hidden native select for submission and autofill. This hidden control uses the field name as its default label. [Label the visible trigger](#labelling) separately.
+
 <!-- @include: @/meta/SelectRoot.md -->
 
 ### Trigger

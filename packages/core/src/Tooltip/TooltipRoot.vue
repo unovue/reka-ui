@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import { createContext, useForwardExpose } from '@/shared'
+import { createContext, defineReactiveIds, useForwardExpose } from '@/shared'
 
 export interface TooltipRootProps {
   /**
@@ -152,7 +152,7 @@ function handleDelayedOpen() {
   startTimer()
 }
 
-provideTooltipRootContext({
+provideTooltipRootContext(defineReactiveIds({
   contentId: '',
   open,
   stateAttribute,
@@ -180,11 +180,11 @@ provideTooltipRootContext({
   disableClosingTrigger,
   disabled: disableTooltip,
   ignoreNonKeyboardFocus,
-})
+}, ['contentId']))
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="tooltip">
     <slot :open="open" />
   </PopperRoot>
 </template>
