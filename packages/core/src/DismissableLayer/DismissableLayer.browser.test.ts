@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { cdp, userEvent } from 'vitest/browser'
 import { defineComponent, h, ref } from 'vue'
+import { DialogContent, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from '@/Dialog'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
 import { PopoverClose, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '@/Popover'
 import { SelectContent, SelectItem, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '@/Select'
@@ -241,6 +242,62 @@ describe('closing a layer together with one nested in it', () => {
     await expect.poll(() => get('second-content')).toBeNull()
     await afterFrames()
     expect(isOpen.value).toBe(false)
+    expect(get('first-content')).toBeNull()
+  })
+
+  // The outer layer and the Select open inside it unmount in one pass, after another layer has
+  // taken focus. Neither may take it back: the Select's trigger is on its way out with the
+  // outer layer, so focus would be dropped on `body` with the other layer still open.
+  it.each<[string, 'popover' | 'dialog', boolean]>([
+    ['non-modal Popover', 'popover', false],
+    ['modal Popover', 'popover', true],
+    ['non-modal Dialog', 'dialog', false],
+    ['modal Dialog', 'dialog', true],
+  ])('leaves focus in another layer when a %s closes with a Select open inside it', async (_label, outer, modal) => {
+    const isOuterOpen = ref(false)
+    const isOtherOpen = ref(false)
+    const otherValue = ref<string>()
+    const onOuterCloseAutoFocus = vi.fn()
+    const outerRoot = () => ({ modal, 'open': isOuterOpen.value, 'onUpdate:open': (value: boolean) => isOuterOpen.value = value })
+    const outerContent = { 'data-testid': 'first-content', 'onCloseAutoFocus': onOuterCloseAutoFocus }
+    const nested = () => select('second', { 'data-testid': 'second-trigger', 'aria-label': 'second' })
+    mount(defineComponent({
+      setup: () => () => h('div', [
+        outer === 'popover'
+          ? h(PopoverRoot, outerRoot(), () => [
+              h(PopoverTrigger, triggerProps('first', 0, false), () => 'first'),
+              h(PopoverPortal, () => h(PopoverContent, outerContent, () => nested())),
+            ])
+          : h(DialogRoot, outerRoot(), () => [
+              h(DialogTrigger, triggerProps('first', 0, false), () => 'first'),
+              h(DialogPortal, () => h(DialogContent, { ...outerContent, 'aria-describedby': undefined }, () => [h(DialogTitle, () => 'first'), nested()])),
+            ]),
+        select('third', triggerProps('third', 1, false), {
+          'open': isOtherOpen.value,
+          'onUpdate:open': (value: boolean) => isOtherOpen.value = value,
+          'modelValue': otherValue.value,
+          'onUpdate:modelValue': (value: string) => otherValue.value = value,
+        }),
+      ]),
+    }), { attachTo: document.body })
+    await open('first')
+    await open('second')
+    isOtherOpen.value = true
+    await expect.poll(() => isFocusWithin('third-content')).toBe(true)
+
+    isOuterOpen.value = false
+
+    await expect.poll(() => get('first-content')).toBeNull()
+    expect(get('second-content')).toBeNull()
+    await expect.poll(() => onOuterCloseAutoFocus.mock.calls.length).toBeGreaterThan(0)
+    await afterTimers()
+    expect(isFocusWithin('third-content')).toBe(true)
+
+    await userEvent.keyboard('{ArrowDown}')
+    await expect.poll(() => document.activeElement).toBe(get('third-two'))
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => otherValue.value).toBe('two')
+    await expect.poll(() => document.activeElement).toBe(get('third-trigger'))
     expect(get('first-content')).toBeNull()
   })
 })

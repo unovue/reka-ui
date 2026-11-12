@@ -14,8 +14,11 @@ type FocusableTarget = HTMLElement | { focus: () => void }
 export interface FocusScopeNode {
   /** The scope this one is nested in, if any. */
   parent?: FocusScopeNode
-  /** Set while the scope's unmount auto-focus is being handled. */
-  unmounting?: boolean
+  /**
+   * Set while the scope's unmount auto-focus is being handled: whether focus had left the
+   * scope before any of its handlers ran.
+   */
+  focusLeftAtUnmount?: boolean
 }
 
 export const focusScopeNodes = new WeakMap<Element, FocusScopeNode>()
@@ -28,8 +31,8 @@ export const focusScopeNodes = new WeakMap<Element, FocusScopeNode>()
  * interaction, and returning focus to the trigger would take it back from there.
  *
  * Focus that was merely dropped (on `body`, as when the focused element is removed) has not
- * moved on. Nor does it count while a scope around this one is unmounting with it: focus is
- * then wherever that scope's own handler has just put it.
+ * moved on. While a scope around this one is unmounting with it, focus is wherever that
+ * scope's own handler has just put it, so the answer is the one that scope got beforehand.
  */
 export function hasFocusLeftScope(container: EventTarget | null): boolean {
   // Not an `instanceof` check, which an element of another realm (an iframe) would fail
@@ -38,8 +41,8 @@ export function hasFocusLeftScope(container: EventTarget | null): boolean {
     return false
   const scope = focusScopeNodes.get(container as Element)
   for (let parent = scope?.parent; parent; parent = parent.parent) {
-    if (parent.unmounting)
-      return false
+    if (parent.focusLeftAtUnmount !== undefined)
+      return parent.focusLeftAtUnmount
   }
 
   let activeElement = ownerDocument.activeElement

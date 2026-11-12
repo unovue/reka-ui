@@ -268,7 +268,7 @@ watchEffect(async (cleanupFn) => {
       emits('unmountAutoFocus', ev)
     }
     container.addEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)
-    scopeNode.unmounting = true
+    scopeNode.focusLeftAtUnmount = hasFocusLeftScope(container)
     container.dispatchEvent(unmountEvent)
 
     // Signal that blur events fired below are system-initiated (focus trap
@@ -286,7 +286,7 @@ watchEffect(async (cleanupFn) => {
 
       focusScopesStack.remove(focusScope)
       container.removeAttribute('data-focus-scope-unmounting')
-      scopeNode.unmounting = false
+      scopeNode.focusLeftAtUnmount = undefined
     }, 0)
   })
 })
