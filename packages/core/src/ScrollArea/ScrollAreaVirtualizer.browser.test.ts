@@ -172,3 +172,128 @@ describe('given an inline estimateSize callback with measured rows, in a real br
     expect(firstRowTop()).toBe(top)
   })
 })
+
+describe.each(['vertical', 'horizontal'] as const)('given a focused control in a %s virtualized ScrollArea, in a real browser', (orientation) => {
+  const horizontal = orientation === 'horizontal'
+  const SIZE = 40
+  const scrollOffset = () => horizontal ? viewport().scrollLeft : viewport().scrollTop
+  const scrollTo = (offset: number) => viewport().scrollTo(horizontal ? { left: offset } : { top: offset })
+  const control = (index: number) => document.querySelector<HTMLElement>(`[data-index="${index}"] button`)
+  const focusedText = () => document.activeElement?.textContent
+
+  function mountList() {
+    mount(defineComponent({
+      setup: () => () => h('div', [
+        h('button', { 'data-testid': 'before' }, 'Before'),
+        h(ScrollAreaRoot, { style: 'width: 300px; height: 200px;' }, () => [
+          h(ScrollAreaViewport, { style: 'width: 100%; height: 100%;' }, () => h(ScrollAreaVirtualizer, {
+            options,
+            horizontal,
+            estimateSize: SIZE,
+            overscan: 2,
+          }, {
+            default: ({ option }: { option: string }) => h('div', { style: horizontal ? `width: ${SIZE}px; height: 60px;` : `height: ${SIZE}px;` }, h('button', option)),
+          })),
+          h(ScrollAreaScrollbar, { orientation }),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+  }
+
+  // 300px / 40px or 200px / 40px rows in view, and 2 rows of overscan on each side
+  const inView = horizontal ? 8 : 5
+  const windowAt = (first: number) => Array.from({ length: inView + 4 }, (_, index) => first - 2 + index)
+
+  async function focusRowAndScrollAway() {
+    mountList()
+    await expect.poll(() => control(5)).not.toBeNull()
+    const focused = control(5)!
+    await userEvent.click(focused)
+    expect(document.activeElement).toBe(focused)
+
+    scrollTo(500 * SIZE)
+    await expect.poll(() => renderedIndexes().includes(500)).toBe(true)
+    await settle()
+    return focused
+  }
+
+  it('keeps the row of the focused control mounted, at its position, after it scrolls far out of view', async () => {
+    const total = () => viewport()[horizontal ? 'scrollWidth' : 'scrollHeight']
+    const focused = await focusRowAndScrollAway()
+
+    expect(focused.isConnected).toBe(true)
+    expect(document.activeElement).toBe(focused)
+    // The focused row and the rows next to it, then the rows of the window.
+    expect(renderedIndexes()).toEqual([4, 5, 6, ...windowAt(500)])
+    expect(total()).toBe(options.length * SIZE)
+
+    // The kept row is where row 5 belongs: 495 rows before the first row in view.
+    const row = focused.parentElement!.getBoundingClientRect()
+    const firstInView = document.querySelector<HTMLElement>('[data-index="500"]')!.getBoundingClientRect()
+    expect(horizontal ? firstInView.left - row.left : firstInView.top - row.top).toBe(495 * SIZE)
+  })
+
+  it('moves the focus to the next row and scrolls it into view on Tab', async () => {
+    await focusRowAndScrollAway()
+
+    await userEvent.tab()
+    expect(focusedText()).toBe('Item 6')
+    await expect.poll(() => scrollOffset()).toBeLessThan(10 * SIZE)
+    await settle()
+
+    const bounds = viewport().getBoundingClientRect()
+    const rect = document.activeElement!.getBoundingClientRect()
+    expect(horizontal ? rect.left >= bounds.left && rect.right <= bounds.right : rect.top >= bounds.top && rect.bottom <= bounds.bottom).toBe(true)
+    // The rows of the window that was left are released.
+    expect(renderedIndexes().includes(500)).toBe(false)
+  })
+
+  it('moves the focus to the previous row and scrolls it into view on Shift+Tab', async () => {
+    await focusRowAndScrollAway()
+
+    await userEvent.tab({ shift: true })
+    expect(focusedText()).toBe('Item 4')
+    await expect.poll(() => scrollOffset()).toBeLessThan(10 * SIZE)
+    await settle()
+
+    const bounds = viewport().getBoundingClientRect()
+    const rect = document.activeElement!.getBoundingClientRect()
+    expect(horizontal ? rect.left >= bounds.left && rect.right <= bounds.right : rect.top >= bounds.top && rect.bottom <= bounds.bottom).toBe(true)
+  })
+
+  it('releases the kept rows once the focus leaves the list', async () => {
+    const focused = await focusRowAndScrollAway()
+    expect(renderedIndexes()).toEqual([4, 5, 6, ...windowAt(500)])
+
+    document.querySelector<HTMLElement>('[data-testid=before]')!.focus()
+    await expect.poll(() => renderedIndexes()).toEqual(windowAt(500))
+    expect(focused.isConnected).toBe(false)
+  })
+
+  it('keeps the row while the element is still the active element, as when the window loses the focus', async () => {
+    const focused = await focusRowAndScrollAway()
+
+    // A window that loses the focus sends `focusout` without a related target, and the active element stays.
+    focused.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    scrollTo(600 * SIZE)
+    await expect.poll(() => renderedIndexes().includes(600)).toBe(true)
+    await settle()
+
+    expect(renderedIndexes()).toEqual([4, 5, 6, ...windowAt(600)])
+    expect(document.activeElement).toBe(focused)
+  })
+
+  it('keeps the row for the control that takes the focus next', async () => {
+    await focusRowAndScrollAway()
+
+    const next = control(503)!
+    await userEvent.click(next)
+    await expect.poll(() => renderedIndexes()).toEqual(windowAt(500))
+
+    scrollTo(0)
+    await expect.poll(() => renderedIndexes().includes(0)).toBe(true)
+    await settle()
+    expect(renderedIndexes()).toEqual([0, 1, 2, 3, 4, 5, 6, ...(horizontal ? [7, 8, 9] : []), 502, 503, 504])
+    expect(document.activeElement).toBe(next)
+  })
+})

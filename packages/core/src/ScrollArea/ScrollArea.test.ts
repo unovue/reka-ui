@@ -180,6 +180,37 @@ describe('given a virtualized ScrollArea', () => {
     expect(wrapper.find('[data-reka-virtualizer]').attributes('style')).toContain('height: 5000px')
   })
 
+  it('keeps the row of the focused element in the rendered range and releases it on blur', async () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ScrollAreaRoot, null, {
+        default: () => h(ScrollAreaViewport, { style: 'width: 200px; height: 200px' }, {
+          default: () => h(ScrollAreaVirtualizer, { options, estimateSize: 25, overscan: 1 }, {
+            default: ({ option }: any) => h('div', { 'data-testid': 'item' }, h('button', option)),
+          }),
+        }),
+      }),
+    }), { attachTo: document.body })
+    await flush()
+    const indexes = () => wrapper.findAll('[data-testid="item"]').map(item => Number(item.attributes('data-index')))
+    expect(indexes()).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8])
+
+    const button = wrapper.find('[data-index="2"] button').element as HTMLButtonElement
+    button.focus()
+    const viewport = wrapper.find('[data-reka-scroll-area-viewport]').element as HTMLElement
+    viewport.scrollTop = 1000
+    await wrapper.find('[data-reka-scroll-area-viewport]').trigger('scroll')
+    await flush()
+
+    expect(indexes()).toEqual([1, 2, 3, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48])
+    expect(document.activeElement).toBe(button)
+    expect(wrapper.find('[data-index="2"]').attributes('style')).toContain('translateY(50px)')
+    expect(wrapper.find('[data-reka-virtualizer]').attributes('style')).toContain('height: 2500px')
+
+    button.blur()
+    await flush()
+    expect(indexes()).toEqual([39, 40, 41, 42, 43, 44, 45, 46, 47, 48])
+  })
+
   it('updates when the default slot is added or removed', async () => {
     const wrapper = mount(VirtualScrollArea, { attachTo: document.body, props: { withSlot: false } })
     await flush()

@@ -18,11 +18,11 @@ export interface ScrollAreaVirtualizerProps<T = any> {
 </script>
 
 <script setup lang="ts" generic="T = any">
-import type { VirtualItem, Virtualizer } from '@tanstack/vue-virtual'
-import { useVirtualizer } from '@tanstack/vue-virtual'
+import type { Range, VirtualItem, Virtualizer } from '@tanstack/vue-virtual'
+import { defaultRangeExtractor, useVirtualizer } from '@tanstack/vue-virtual'
 import { useResizeObserver } from '@vueuse/core'
-import { cloneVNode, computed, ref, useSlots, watch } from 'vue'
-import { renderSlotFragments, useForwardExpose } from '@/shared'
+import { cloneVNode, computed, ref, shallowRef, useSlots, watch } from 'vue'
+import { getActiveElement, renderSlotFragments, useForwardExpose } from '@/shared'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 
 const props = defineProps<ScrollAreaVirtualizerProps<T>>()
@@ -42,6 +42,8 @@ const isRtl = computed(() => rootContext.dir.value === 'rtl')
 // Distance between the start of the viewport's scrollable content and this element,
 // so content rendered before the virtualizer doesn't shift the visible range.
 const scrollMargin = ref(0)
+// The index of the row that contains the focused element.
+const focusedIndex = shallowRef<number>()
 
 const virtualizer = useVirtualizer({
   get count() { return props.options.length },
@@ -64,6 +66,28 @@ const virtualizer = useVirtualizer({
       [horizontal ? 'left' : 'top']: horizontal && isRtl ? -toOffset : toOffset,
       behavior,
     })
+  },
+  // The virtualizer removes a row that leaves the rendered window, and the focus of an element
+  // in that row would go to the body. The row that has the focus remains mounted, with its
+  // adjacent rows, because Tab moves the focus to the next mounted row.
+  // The virtualizer extracts the range again only for a new range, count or extractor,
+  // so a change of the focused row gives it a new extractor.
+  get rangeExtractor() {
+    const index = focusedIndex.value
+    if (index === undefined)
+      return defaultRangeExtractor
+
+    return (range: Range) => {
+      const indexes = defaultRangeExtractor(range)
+      if (index >= range.count)
+        return indexes
+
+      const kept = defaultRangeExtractor({ ...range, startIndex: index, endIndex: index, overscan: 1 })
+      if (indexes.length && kept[0] >= indexes[0] && kept.at(-1)! <= indexes.at(-1)!)
+        return indexes
+
+      return [...new Set([...kept, ...indexes])].sort((a, b) => a - b)
+    }
   },
 })
 
@@ -100,6 +124,23 @@ useResizeObserver(rootContext.content, updateScrollMargin)
 // A callback is not watched: an inline one is a new function on every render of the parent,
 // and measuring again discards the sizes collected through `measureElement`.
 watch(() => typeof props.estimateSize === 'number' ? props.estimateSize : undefined, () => virtualizer.value.measure())
+
+function handleFocusIn(event: FocusEvent) {
+  const container = currentElement.value
+  let row = event.target as HTMLElement | null
+  while (row && row.parentElement !== container)
+    row = row.parentElement
+
+  const index = Number(row?.dataset.index)
+  focusedIndex.value = Number.isNaN(index) ? undefined : index
+}
+
+function handleFocusOut(event: FocusEvent) {
+  const container = currentElement.value
+  // The focused element remains the active element while the window does not have the focus.
+  if (!container?.contains(event.relatedTarget as Node | null) && !container?.contains(getActiveElement()))
+    focusedIndex.value = undefined
+}
 
 // not a computed: slots aren't reactive, so a replaced slot would keep rendering the cached nodes
 function getVirtualizedItems() {
@@ -148,6 +189,8 @@ function getVirtualizedItems() {
       width: horizontal ? `${virtualizer.getTotalSize()}px` : '100%',
       height: horizontal ? undefined : `${virtualizer.getTotalSize()}px`,
     }"
+    @focusin="handleFocusIn"
+    @focusout="handleFocusOut"
   >
     <component
       :is="is"
