@@ -159,16 +159,48 @@ describe('useBodyScrollLock, in a real browser', () => {
     expect(measure()).toEqual(before)
   })
 
-  it('adds the scrollbar gap to the margin with scrollBody { margin: true }', async () => {
+  it.each<{ scrollBody: ScrollBodyOption }>([
+    { scrollBody: { margin: true } },
+    { scrollBody: { padding: false, margin: true } },
+  ])('makes up for the scrollbar once, in the margin, with scrollBody $scrollBody', async ({ scrollBody }) => {
     styleBody({ css: 'body { padding-right: 40px }', inline: 'margin-right: 24px;' })
-    const setLocked = mountLockers({ padding: false, margin: true })
+    const setLocked = mountLockers(scrollBody)
     const before = measure()
 
     await setLocked(0, true)
     const locked = measure()
     expect(locked).toMatchObject({ paddingRight: '40px', marginRight: `${24 + GAP}px` })
+    expect(locked.inline).not.toContain('padding')
     expect(locked.left).toBe(before.left)
     expect(locked.right).toBe(before.right - GAP)
+
+    await setLocked(0, false)
+    expect(measure()).toEqual(before)
+  })
+
+  it('still adds the scrollbar gap to the padding when scrollBody only gives a margin value', async () => {
+    styleBody({ css: 'body { padding-right: 40px }', inline: 'margin-right: 24px;' })
+    const setLocked = mountLockers({ margin: 30 })
+    const before = measure()
+
+    await setLocked(0, true)
+    const locked = measure()
+    expect(locked).toMatchObject({ paddingRight: `${40 + GAP}px`, marginRight: '30px' })
+    expect(locked.right).toBe(before.right - 6 - GAP)
+
+    await setLocked(0, false)
+    expect(measure()).toEqual(before)
+  })
+
+  it('adds the scrollbar gap to both when scrollBody asks for the padding and the margin', async () => {
+    styleBody({ css: 'body { padding-right: 40px }', inline: 'margin-right: 24px;' })
+    const setLocked = mountLockers({ padding: true, margin: true })
+    const before = measure()
+
+    await setLocked(0, true)
+    const locked = measure()
+    expect(locked).toMatchObject({ paddingRight: `${40 + GAP}px`, marginRight: `${24 + GAP}px` })
+    expect(locked.right).toBe(before.right - GAP * 2)
 
     await setLocked(0, false)
     expect(measure()).toEqual(before)

@@ -66,10 +66,12 @@ const useBodyLockStackCount = createSharedComposable(() => {
       initialInlineStyle ??= { paddingRight: style.paddingRight, marginRight: style.marginRight }
 
       // `false` leaves both alone. Otherwise the padding makes up for the scrollbar by default,
-      // and the margin is only written when asked for.
+      // and the margin is only written when asked for. `margin: true` on its own leaves
+      // the padding out, so that the scrollbar is made up for once rather than twice.
       const scrollBody = context.scrollBody?.value
       if (scrollBody) {
-        const { padding = true, margin = false } = typeof scrollBody === 'object' ? scrollBody : {}
+        const option = typeof scrollBody === 'object' ? scrollBody : {}
+        const { padding = option.margin !== true, margin = false } = option
         const computedStyle = getComputedStyle(document.body)
         // `true` adds the scrollbar width to what the body already has; a value is used as written.
         const resolve = (value: boolean | number | string, existing: string) => value === true
