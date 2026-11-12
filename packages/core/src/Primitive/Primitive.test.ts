@@ -285,4 +285,12 @@ describe('test Primitive functionalities', () => {
     })
     expect(wrapper.html()).not.toContain('1337')
   })
+
+  it('should not render a script or iframe element', () => {
+    for (const as of ['script', 'iframe', 'IFRAME']) {
+      const wrapper = mount(Primitive, { props: { as }, slots: { default: 'alert(1)' } })
+      expect(wrapper.html()).not.toMatch(/<(script|iframe)/i)
+      expect(wrapper.find('div').exists()).toBe(true)
+    }
+  })
 })

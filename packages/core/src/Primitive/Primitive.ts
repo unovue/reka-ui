@@ -60,6 +60,15 @@ function isTemplateObject(value: unknown): boolean {
     || (Array.isArray(component.mixins) && component.mixins.some(isTemplateObject))
 }
 
+// Elements that run or load code from their content or attributes (`srcdoc`, `data`, …)
+const UNSAFE_TAGS = ['script', 'style', 'iframe', 'frame', 'frameset', 'object', 'embed', 'applet', 'base', 'link', 'meta', 'noscript']
+
+function isUnsafeAs(value: unknown): boolean {
+  if (typeof value === 'string')
+    return UNSAFE_TAGS.includes(value.trim().toLowerCase())
+  return isTemplateObject(value)
+}
+
 export const Primitive = defineComponent({
   name: 'Primitive',
   inheritAttrs: false,
@@ -80,7 +89,7 @@ export const Primitive = defineComponent({
       return () => h(asTag, attrs)
 
     if (asTag !== 'template')
-      return () => h(isTemplateObject(props.as) ? 'div' : props.as, attrs, { default: slots.default })
+      return () => h(isUnsafeAs(props.as) ? 'div' : props.as, attrs, { default: slots.default })
 
     return () => h(Slot, attrs, { default: slots.default })
   },
