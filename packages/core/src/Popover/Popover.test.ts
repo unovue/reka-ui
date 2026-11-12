@@ -190,6 +190,134 @@ describe('given a Popover whose content has no tabbable children (#2803)', () =>
   })
 })
 
+describe('given a Popover with content event listeners', () => {
+  type CloseBy = 'Escape' | 'outside click' | 'trigger click'
+
+  function setup(modal: boolean, onCloseAutoFocus?: (event: Event) => void) {
+    const counts = { openAutoFocus: 0, closeAutoFocus: 0, escapeKeyDown: 0, pointerDownOutside: 0, interactOutside: 0, focusOutside: 0 }
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('div', [
+        h('button', { id: 'elsewhere' }, 'Elsewhere'),
+        h(PopoverRoot, { modal }, () => [
+          h(PopoverTrigger, { id: 'trigger' }, () => 'Open'),
+          h(PopoverPortal, null, () => h(PopoverContent, {
+            onOpenAutoFocus: () => counts.openAutoFocus++,
+            onCloseAutoFocus: (event: Event) => {
+              counts.closeAutoFocus++
+              onCloseAutoFocus?.(event)
+            },
+            onEscapeKeyDown: () => counts.escapeKeyDown++,
+            onPointerDownOutside: () => counts.pointerDownOutside++,
+            onInteractOutside: () => counts.interactOutside++,
+            onFocusOutside: () => counts.focusOutside++,
+          }, () => h('input', { id: 'inside' }))),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+    // Unmount even when an assertion fails, so a failure cannot leak into later tests.
+    onTestFinished(() => wrapper.unmount())
+    return { wrapper, counts }
+  }
+
+  async function open(wrapper: VueWrapper) {
+    const trigger = wrapper.get('#trigger')
+    ;(trigger.element as HTMLElement).focus()
+    await trigger.trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull())
+    await flushPromises()
+  }
+
+  async function close(wrapper: VueWrapper, by: CloseBy) {
+    if (by === 'Escape') {
+      document.querySelector('[role="dialog"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    }
+    else if (by === 'outside click') {
+      // The outside pointerdown listener is registered on the next macrotask
+      await new Promise(resolve => setTimeout(resolve))
+      document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }))
+    }
+    else {
+      await wrapper.get('#trigger').trigger('click')
+    }
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeNull())
+    await flushPromises()
+  }
+
+  const cases = [true, false].flatMap(modal =>
+    (['Escape', 'outside click', 'trigger click'] as CloseBy[])
+      // A modal popover makes everything outside inert, so its trigger cannot be clicked
+      .filter(by => !(modal && by === 'trigger click'))
+      .map(by => ({ modal, by })),
+  )
+
+  it.each(cases)('should emit each auto focus event once per open and close with modal=$modal closing by $by', async ({ modal, by }) => {
+    const { wrapper, counts } = setup(modal)
+
+    for (let cycle = 1; cycle <= 2; cycle++) {
+      await open(wrapper)
+      expect(counts.openAutoFocus).toBe(cycle)
+      expect(counts.closeAutoFocus).toBe(cycle - 1)
+
+      await close(wrapper, by)
+      expect(counts.openAutoFocus).toBe(cycle)
+      expect(counts.closeAutoFocus).toBe(cycle)
+    }
+  })
+
+  it.each([true, false])('should emit each dismiss event once with modal=%s', async (modal) => {
+    const { wrapper, counts } = setup(modal)
+
+    await open(wrapper)
+    await close(wrapper, 'outside click')
+    expect(counts).toMatchObject({ pointerDownOutside: 1, interactOutside: 1, escapeKeyDown: 0 })
+
+    await open(wrapper)
+    await close(wrapper, 'Escape')
+    expect(counts).toMatchObject({ pointerDownOutside: 1, interactOutside: 1, escapeKeyDown: 1 })
+  })
+
+  it.each([true, false])('should return focus to the trigger on close with modal=%s', async (modal) => {
+    const { wrapper } = setup(modal)
+
+    await open(wrapper)
+    await close(wrapper, 'Escape')
+    expect(document.activeElement).toBe(wrapper.get('#trigger').element)
+  })
+
+  it.each([true, false])('should not return focus to the trigger when closeAutoFocus is prevented with modal=%s', async (modal) => {
+    const { wrapper, counts } = setup(modal, (event) => {
+      event.preventDefault()
+      document.getElementById('elsewhere')!.focus()
+    })
+
+    await open(wrapper)
+    await close(wrapper, 'Escape')
+    expect(counts.closeAutoFocus).toBe(1)
+    expect(document.activeElement).toBe(document.getElementById('elsewhere'))
+  })
+
+  // A modal popover returns focus to its trigger unless focus has already moved elsewhere,
+  // so preventing the event alone is only covered for the non-modal one.
+  it('should leave focus alone when closeAutoFocus is only prevented with modal=false', async () => {
+    const { wrapper, counts } = setup(false, event => event.preventDefault())
+
+    await open(wrapper)
+    expect(document.activeElement).toBe(document.getElementById('inside'))
+    await close(wrapper, 'Escape')
+    expect(counts.closeAutoFocus).toBe(1)
+    expect(document.activeElement).not.toBe(wrapper.get('#trigger').element)
+  })
+
+  it.each([true, false])('should emit closeAutoFocus once when an open content is unmounted with modal=%s', async (modal) => {
+    const { wrapper, counts } = setup(modal)
+
+    await open(wrapper)
+    wrapper.unmount()
+    await flushPromises()
+    expect(counts.closeAutoFocus).toBe(1)
+  })
+})
+
 describe('given a Popover content wrapped in a Vue Transition', () => {
   afterEach(() => {
     vi.doUnmock('./PopoverContentNonModal.vue')
