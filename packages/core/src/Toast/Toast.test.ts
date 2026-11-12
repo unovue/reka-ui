@@ -213,6 +213,121 @@ describe('given a default Toast', () => {
   })
 })
 
+describe('given a toast that opens', () => {
+  let wrapper: VueWrapper
+
+  async function flush() {
+    for (let i = 0; i < 5; i++)
+      await nextTick()
+  }
+
+  function mountToast(type: 'foreground' | 'background') {
+    wrapper = mount(() => h(ToastProvider, { label: 'Notice' }, {
+      default: () => [
+        h(ToastRoot, { open: true, type, duration: Number.POSITIVE_INFINITY }, {
+          default: () => h(ToastTitle, null, { default: () => 'Saved' }),
+        }),
+        h(ToastViewport),
+      ],
+    }), { attachTo: document.body })
+  }
+
+  const announcers = () => [...document.querySelectorAll('[role="alert"], [role="status"]')]
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  it('should announce a foreground toast in an alert added with its text, and keep it while the toast is open', async () => {
+    mountToast('foreground')
+    await flush()
+    // An alert is read when it is added, so it is not added before its text.
+    expect(announcers()).toEqual([])
+
+    vi.advanceTimersToNextFrame()
+    vi.advanceTimersToNextFrame()
+    await flush()
+    expect(announcers()).toHaveLength(1)
+    const [alert] = announcers()
+    expect(alert.getAttribute('role')).toBe('alert')
+    expect(alert.getAttribute('aria-live')).toBe('assertive')
+    expect(alert.getAttribute('aria-atomic')).toBe('true')
+    expect(alert.textContent!.replace(/\s+/g, ' ').trim()).toBe('Notice Saved')
+
+    vi.advanceTimersByTime(5000)
+    await flush()
+    expect(announcers()).toEqual([alert])
+    expect(alert.isConnected).toBe(true)
+    // Once in the toast, once in its alert.
+    expect(document.body.textContent!.match(/Saved/g)).toHaveLength(2)
+  })
+
+  it('should announce a background toast in a polite status region added before its text, and never in an alert', async () => {
+    mountToast('background')
+    await flush()
+    // A status region reads what changes in it, not what it is added with.
+    expect(announcers()).toHaveLength(1)
+    const [status] = announcers()
+    expect(status.getAttribute('role')).toBe('status')
+    expect(status.getAttribute('aria-live')).toBe('polite')
+    expect(status.getAttribute('aria-atomic')).toBe('true')
+    expect(status.textContent!.trim()).toBe('')
+
+    vi.advanceTimersToNextFrame()
+    vi.advanceTimersToNextFrame()
+    await flush()
+    expect(status.textContent!.replace(/\s+/g, ' ').trim()).toBe('Notice Saved')
+
+    vi.advanceTimersByTime(5000)
+    await flush()
+    expect(announcers()).toEqual([status])
+    expect(status.isConnected).toBe(true)
+    expect(document.querySelector('[role="alert"]')).toBeNull()
+    // Once in the toast, once in its status region.
+    expect(document.body.textContent!.match(/Saved/g)).toHaveLength(2)
+  })
+
+  it('should remove the announcement with the toast', async () => {
+    const open = ref(true)
+    wrapper = mount(() => h(ToastProvider, null, {
+      default: () => [
+        h(ToastRoot, { open: open.value, type: 'background' }, { default: () => h(ToastTitle, null, { default: () => 'Saved' }) }),
+        h(ToastViewport),
+      ],
+    }), { attachTo: document.body })
+    await flush()
+    expect(announcers()).toHaveLength(1)
+
+    open.value = false
+    await flush()
+    expect(announcers()).toEqual([])
+  })
+
+  it.each(['foreground', 'background'] as const)('should announce a %s toast after a second while a hidden tab holds animation frames', async (type) => {
+    vi.stubGlobal('requestAnimationFrame', () => 0)
+    vi.stubGlobal('cancelAnimationFrame', () => {})
+
+    mountToast(type)
+    await flush()
+    vi.advanceTimersByTime(999)
+    await flush()
+    expect(announcers().map(announcer => announcer.textContent!.trim()).join('')).toBe('')
+
+    vi.advanceTimersByTime(1)
+    await flush()
+    expect(announcers()).toHaveLength(1)
+    expect(announcers()[0].getAttribute('role')).toBe(type === 'foreground' ? 'alert' : 'status')
+    expect(announcers()[0].textContent).toContain('Saved')
+  })
+})
+
 const PausableToasts = defineComponent({
   setup() {
     const open = ref({ first: true, second: true })

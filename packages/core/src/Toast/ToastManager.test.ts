@@ -258,11 +258,11 @@ describe('useToastManager', () => {
     await flush()
 
     // Announce text renders after two animation frames.
-    await new Promise(resolve => setTimeout(resolve, 50))
-    await flush()
-    const alert = document.querySelector('[role="alert"]')!
-    expect(alert.textContent).toContain('Saved')
-    expect(alert.textContent).not.toContain('Saving')
+    await vi.waitFor(() => {
+      const alert = document.querySelector('[role="alert"]')!
+      expect(alert.textContent).toContain('Saved')
+      expect(alert.textContent).not.toContain('Saving')
+    })
   })
 
   it('renders actionProps and calls onClick', async () => {
@@ -301,8 +301,12 @@ describe('useToastManager', () => {
     const { api } = mountToaster()
     api.add({ title: 'Background sync', type: 'background' })
     await flush()
-    await new Promise(resolve => setTimeout(resolve, 50))
-    expect(document.querySelector('[role="alert"]')!.getAttribute('aria-live')).toBe('polite')
+    await vi.waitFor(() => {
+      const status = document.querySelector('[role="status"]')!
+      expect(status.getAttribute('aria-live')).toBe('polite')
+      expect(status.textContent).toContain('Background sync')
+    })
+    expect(document.querySelector('[role="alert"]')).toBeNull()
   })
 })
 

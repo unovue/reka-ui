@@ -226,8 +226,7 @@ provideToastRootContext({ onClose: handleClose, toast: toRef(props, 'toast') })
   <ToastAnnounce
     v-if="announceTextContent"
     :key="toast?.updateKey ?? 0"
-    role="alert"
-    :aria-live="type === 'foreground' ? 'assertive' : 'polite'"
+    :type="type === 'foreground' ? 'foreground' : 'background'"
   >
     <!--
       Render each chunk as its own text node so screen readers get the
