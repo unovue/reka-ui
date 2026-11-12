@@ -18,7 +18,7 @@ export interface NavigationMenuContentImplProps extends DismissableLayerProps {}
 import { computed, ref, watchEffect } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { getTabStopsAfter } from '@/FocusScope/utils'
-import { getActiveElement, useArrowNavigation, useForwardExpose } from '@/shared'
+import { getActiveElement, useArrowNavigation, useContentId, useForwardExpose } from '@/shared'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import {
@@ -26,7 +26,6 @@ import {
   focusFirst,
   getOpenState,
   getTabbableCandidates,
-  makeContentId,
 } from './utils'
 
 const props = defineProps<NavigationMenuContentImplProps>()
@@ -38,7 +37,7 @@ const { forwardRef, currentElement } = useForwardExpose()
 const menuContext = injectNavigationMenuContext()
 const itemContext = injectNavigationMenuItemContext()
 
-const contentId = makeContentId(menuContext.baseId, itemContext.value)
+useContentId(itemContext, currentElement)
 
 const prevMotionAttributeRef = ref<MotionAttribute | null>(null)
 const motionAttribute = computed(() => {
@@ -190,7 +189,7 @@ function handleDismiss() {
 
 <template>
   <DismissableLayer
-    :id="contentId"
+    :id="itemContext.contentId"
     :ref="forwardRef"
     :aria-labelledby="itemContext.triggerId"
     :data-motion="motionAttribute"

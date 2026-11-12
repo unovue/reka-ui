@@ -19,7 +19,7 @@ import {
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { getOpenState, makeContentId } from './utils'
+import { getOpenState } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -34,8 +34,10 @@ const itemContext = injectNavigationMenuItemContext()
 
 const { CollectionItem } = useCollection({ key: 'NavigationMenu' })
 const { forwardRef, currentElement: triggerElement } = useForwardExpose()
-const triggerId = ref('')
-const contentId = ref('')
+// Set once mounted, so that it is patched onto a hydrated trigger rather than left as
+// the server rendered it: the content may render an id the server did not.
+const isMounted = ref(false)
+const contentId = computed(() => isMounted.value ? itemContext.contentId : undefined)
 
 const hasPointerMoveOpenedRef = refAutoReset(false, 300)
 const wasClickCloseRef = ref(false)
@@ -46,8 +48,7 @@ useTriggerId(itemContext, triggerElement)
 
 onMounted(() => {
   itemContext.triggerRef = triggerElement
-  triggerId.value = itemContext.triggerId
-  contentId.value = makeContentId(menuContext.baseId, itemContext.value)
+  isMounted.value = true
 })
 
 function handlePointerEnter() {
@@ -148,7 +149,7 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
 <template>
   <CollectionItem :value="itemContext.value">
     <Primitive
-      :id="triggerId"
+      :id="itemContext.triggerId"
       :ref="forwardRef"
       :disabled="disabled"
       :data-disabled="disabled ? '' : undefined"
