@@ -60,8 +60,9 @@ function isTemplateObject(value: unknown): boolean {
     || (Array.isArray(component.mixins) && component.mixins.some(isTemplateObject))
 }
 
-// Elements that run or load code from their content or attributes (`srcdoc`, `data`, …)
-const UNSAFE_TAGS = ['script', 'style', 'iframe', 'frame', 'frameset', 'object', 'embed', 'applet', 'base', 'link', 'meta', 'noscript']
+// Elements that run or load code from their content or attributes (`srcdoc`, `data`, …).
+// `style` stays allowed, the viewports render their own `<style>` through `Primitive`.
+const UNSAFE_TAGS = ['script', 'iframe', 'frame', 'frameset', 'object', 'embed', 'applet', 'base', 'link', 'meta', 'noscript']
 
 function isUnsafeAs(value: unknown): boolean {
   if (typeof value === 'string')
