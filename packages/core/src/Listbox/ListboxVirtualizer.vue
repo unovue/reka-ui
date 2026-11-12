@@ -12,13 +12,13 @@ export interface ListboxVirtualizerProps<T extends AcceptableValue = AcceptableV
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import type { VirtualItem, Virtualizer } from '@tanstack/vue-virtual'
+import type { Range, VirtualItem, Virtualizer } from '@tanstack/vue-virtual'
 import type { Ref, VNode } from 'vue'
 import type { AcceptableValue } from '@/shared/types'
 import { defaultRangeExtractor, useVirtualizer } from '@tanstack/vue-virtual'
 import { useParentElement } from '@vueuse/core'
 import { refAutoReset } from '@vueuse/shared'
-import { cloneVNode, computed, Fragment, useSlots, watch } from 'vue'
+import { cloneVNode, computed, Fragment, nextTick, shallowRef, useSlots, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
 import { findValuesBetween, getActiveElement } from '@/shared'
@@ -58,6 +58,10 @@ const padding = computed(() => {
   }
 })
 
+// The index the highlighted option moved to in `options`, until its row there has the highlight.
+let movedIndex: number | undefined
+const movedVersion = shallowRef(0)
+
 const virtualizer = useVirtualizer(
   {
     get scrollPaddingStart() { return padding.value.start },
@@ -75,29 +79,68 @@ const virtualizer = useVirtualizer(
     // The highlight is the DOM node of a row, and the virtualizer removes the node of a row that
     // leaves the rendered window. The highlighted row remains mounted, with its adjacent rows,
     // because the arrow keys move the highlight to the next mounted row.
-    rangeExtractor(range) {
-      const indexes = defaultRangeExtractor(range)
-      const highlighted = rootContext.highlightedElement.value
-      const highlightedIndex = highlighted?.isConnected ? Number(highlighted.dataset.index) : Number.NaN
-      if (Number.isNaN(highlightedIndex))
-        return indexes
+    // The virtualizer extracts the range again only for a new range, count or extractor.
+    // Reading the version here gives it a new extractor when the highlighted option moves.
+    get rangeExtractor() {
+      void movedVersion.value
+      return (range: Range) => {
+        const indexes = defaultRangeExtractor(range)
+        const highlighted = rootContext.highlightedElement.value
+        const highlightedIndex = movedIndex ?? (highlighted?.isConnected ? Number(highlighted.dataset.index) : Number.NaN)
+        if (Number.isNaN(highlightedIndex))
+          return indexes
 
-      const highlightedIndexes = defaultRangeExtractor({ ...range, startIndex: highlightedIndex, endIndex: highlightedIndex, overscan: 1 })
-      return [...new Set([...highlightedIndexes, ...indexes])].sort((a, b) => a - b)
+        const highlightedIndexes = defaultRangeExtractor({ ...range, startIndex: highlightedIndex, endIndex: highlightedIndex, overscan: 1 })
+        return [...new Set([...highlightedIndexes, ...indexes])].sort((a, b) => a - b)
+      }
     },
   },
 )
 
-// A row has its index as its key, so the row of a removed or replaced option stays for another option.
-// The highlight leaves with its option. The copy makes an in-place change of the array run the watcher.
+// A row has its index as its key, so the row of a removed, moved or replaced option stays for another option.
+// The highlight belongs to its option: it follows the option to its new row, and leaves when the option does.
 // A row that scrolls out of the window loses its collection entry, so the highlighted option is kept here.
 let highlightedOption: { value: T } | undefined
 watch(rootContext.highlightedElement, (element) => {
   highlightedOption = element ? getItems(true).find(item => item.ref === element) : undefined
 })
+// The copy makes an in-place change of the array run the watcher.
 watch(() => props.options.slice(), (options) => {
-  if (highlightedOption && !options.some(option => compare(option, highlightedOption!.value, rootContext.by)))
+  if (!highlightedOption)
+    return
+
+  const { value } = highlightedOption
+  const element = rootContext.highlightedElement.value
+  const currentIndex = movedIndex ?? Number(element?.dataset.index)
+  if (compare(options[currentIndex], value, rootContext.by))
+    return
+
+  const index = options.findIndex(option => compare(option, value, rootContext.by))
+  if (index === -1) {
+    movedIndex = undefined
     rootContext.highlightedElement.value = null
+    return
+  }
+
+  // The row of the new index is mounted in the coming render, and then takes the highlight.
+  // The focus goes with it when the previous row has it, without scrolling the list.
+  const hadFocus = !!element?.contains(getActiveElement())
+  movedIndex = index
+  movedVersion.value++
+  nextTick(() => {
+    if (movedIndex !== index)
+      return
+
+    movedIndex = undefined
+    const row = parentEl.value?.querySelector<HTMLElement>(`[data-index="${index}"]`)
+    if (!row) {
+      rootContext.highlightedElement.value = null
+      return
+    }
+    rootContext.changeHighlight(row, false, false)
+    if (hadFocus)
+      row.focus({ preventScroll: true })
+  })
 })
 
 const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map((item) => {
