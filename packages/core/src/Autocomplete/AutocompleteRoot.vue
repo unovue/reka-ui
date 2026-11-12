@@ -5,7 +5,7 @@ import type { Direction, GenericComponentInstance } from '@/shared/types'
 import { provideComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
 import { useComboboxContentPositioning } from '@/Combobox/useComboboxContentPositioning'
 import { usePrimitiveElement } from '@/Primitive'
-import { createContext, useDirection, useFilter } from '@/shared'
+import { createContext, defineReactiveIds, useDirection, useFilter } from '@/shared'
 
 export interface AutocompleteRootProps extends PrimitiveProps {
   /** The controlled value of the Autocomplete (the input text). Can be bound with `v-model`. */
@@ -216,7 +216,7 @@ defineExpose({
 })
 
 // Provide the Combobox context so all Combobox sub-components work inside Autocomplete
-provideComboboxRootContext({
+provideComboboxRootContext(defineReactiveIds({
   modelValue: contextModelValue as any,
   multiple: ref(false),
   disabled,
@@ -243,7 +243,7 @@ provideComboboxRootContext({
   openOnClick,
   resetModelValueOnClear: ref(true),
   unmountOnHide: ref(true),
-})
+}, ['contentId']))
 
 // Provide autocomplete-specific context
 provideAutocompleteRootContext({
@@ -252,7 +252,7 @@ provideAutocompleteRootContext({
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="combobox">
     <ListboxRoot
       ref="primitiveElement"
       v-bind="$attrs"

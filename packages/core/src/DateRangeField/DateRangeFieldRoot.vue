@@ -273,6 +273,13 @@ watch(modelValue, (_modelValue) => {
   }
 })
 
+// The value the hidden native input submits. Only a complete range is a value:
+// while either end is missing it stays empty, so `required` reports `valueMissing`.
+const inputValue = computed(() => {
+  const { start, end } = modelValue.value ?? {}
+  return start && end ? `${start.toString()} - ${end.toString()}` : ''
+})
+
 watch([startValue, locale], ([_startValue]) => {
   if (_startValue !== undefined) {
     startSegmentValues.value = { ...syncSegmentValues({ value: _startValue, formatter }) }
@@ -385,7 +392,7 @@ defineExpose({
       feature="focusable"
       aria-hidden="true"
       tabindex="-1"
-      :value="`${modelValue?.start?.toString()} - ${modelValue?.end?.toString()}`"
+      :value="inputValue"
       :name="name"
       :disabled="disabled"
       :required="required"

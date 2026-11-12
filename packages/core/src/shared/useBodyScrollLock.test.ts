@@ -12,12 +12,16 @@ function createWrapper(initialState: boolean) {
   }, { attachTo: document.body })
 }
 
+// The `scrollBody` option the mocked ConfigProvider hands back. Tests flip it to
+// exercise an explicit padding/margin override instead of the default gap.
+const scrollBodyOption = ref<boolean | { padding?: number | string | boolean, margin?: number | string | boolean }>(true)
+
 vi.mock('@/ConfigProvider/ConfigProvider.vue', async () => {
   return {
     injectConfigProviderContext: () => {
       return {
         dir: ref('ltr'),
-        scrollBody: ref(true),
+        scrollBody: scrollBodyOption,
       }
     },
   }
@@ -30,6 +34,9 @@ describe('useBodyScrollLock', () => {
 
   beforeEach(() => {
     document.body.style.overflow = ''
+    document.body.style.paddingRight = ''
+    document.body.style.marginRight = ''
+    scrollBodyOption.value = true
     vi.resetModules()
   })
 
@@ -121,5 +128,199 @@ describe('useBodyScrollLock', () => {
     locked.value = false
     await nextTick()
     expect(document.body.style.overflow).toBe('scroll')
+  })
+
+  it('should add the scrollbar gap to the existing padding and restore it afterwards', async () => {
+    document.body.style.paddingRight = '40px'
+    document.body.style.marginRight = '24px'
+
+    const locked = useBodyScrollLock()
+    await nextTick()
+
+    locked.value = true
+    await nextTick()
+    // The scrollbar gap (10px here) is added on top of the existing padding and
+    // the existing margin is left untouched.
+    expect(document.body.style.paddingRight).toBe('50px')
+    expect(document.body.style.marginRight).toBe('24px')
+
+    locked.value = false
+    await nextTick()
+    // The original values come back, they are not erased.
+    expect(document.body.style.paddingRight).toBe('40px')
+    expect(document.body.style.marginRight).toBe('24px')
+  })
+
+  it('should respect an explicit padding override even when it equals the scrollbar width', async () => {
+    // The resolved value (10) is indistinguishable from the default gap, but this
+    // is an explicit override and must replace, not stack, the existing padding.
+    document.body.style.paddingRight = '40px'
+    scrollBodyOption.value = { padding: 10, margin: 0 }
+
+    const locked = useBodyScrollLock()
+    await nextTick()
+
+    locked.value = true
+    await nextTick()
+    expect(document.body.style.paddingRight).toBe('10px')
+
+    locked.value = false
+    await nextTick()
+    expect(document.body.style.paddingRight).toBe('40px')
+  })
+
+  it('should leave the padding and margin alone when scrollBody is false', async () => {
+    document.body.style.paddingRight = '40px'
+    document.body.style.marginRight = '24px'
+    scrollBodyOption.value = false
+
+    const locked = useBodyScrollLock()
+    await nextTick()
+
+    locked.value = true
+    await nextTick()
+    expect(document.body.style.overflow).toBe('hidden')
+    expect(document.body.style.paddingRight).toBe('40px')
+    expect(document.body.style.marginRight).toBe('24px')
+
+    locked.value = false
+    await nextTick()
+    expect(document.body.style.paddingRight).toBe('40px')
+    expect(document.body.style.marginRight).toBe('24px')
+  })
+
+  it('should not write a margin unless scrollBody asks for one', async () => {
+    const locked = useBodyScrollLock()
+    await nextTick()
+
+    locked.value = true
+    await nextTick()
+    expect(document.body.style.paddingRight).toBe('10px')
+    expect(document.body.style.marginRight).toBe('')
+
+    locked.value = false
+    await nextTick()
+    expect(document.body.style.paddingRight).toBe('')
+  })
+
+  it.each([
+    { option: {}, padding: '50px', margin: '24px' },
+    { option: { padding: true }, padding: '50px', margin: '24px' },
+    { option: { padding: false }, padding: '40px', margin: '24px' },
+    { option: { padding: 5 }, padding: '5px', margin: '24px' },
+    { option: { margin: false }, padding: '50px', margin: '24px' },
+    // `margin: true` on its own makes up for the scrollbar once, so the padding is not touched.
+    { option: { margin: true }, padding: '40px', margin: '34px' },
+    { option: { padding: undefined, margin: true }, padding: '40px', margin: '34px' },
+    // A margin value is a custom margin, and the padding still makes up for the scrollbar.
+    { option: { margin: 5 }, padding: '50px', margin: '5px' },
+    { option: { margin: '1rem' }, padding: '50px', margin: '1rem' },
+    { option: { margin: 0 }, padding: '50px', margin: '0px' },
+    // An explicit padding is always respected.
+    { option: { padding: false, margin: true }, padding: '40px', margin: '34px' },
+    { option: { padding: true, margin: true }, padding: '50px', margin: '34px' },
+    { option: { padding: true, margin: 5 }, padding: '50px', margin: '5px' },
+    { option: { padding: true, margin: false }, padding: '50px', margin: '24px' },
+    { option: { padding: false, margin: false }, padding: '40px', margin: '24px' },
+    { option: { padding: '1rem', margin: 5 }, padding: '1rem', margin: '5px' },
+  ])('should add the scrollbar gap for `true` and apply values as written: $option', async ({ option, padding, margin }) => {
+    document.body.style.paddingRight = '40px'
+    document.body.style.marginRight = '24px'
+    scrollBodyOption.value = option
+
+    const locked = useBodyScrollLock()
+    await nextTick()
+
+    locked.value = true
+    await nextTick()
+    try {
+      expect(document.body.style.paddingRight).toBe(padding)
+      expect(document.body.style.marginRight).toBe(margin)
+    }
+    finally {
+      // Released even on a failure, as the lock is shared with the tests that follow.
+      locked.value = false
+      await nextTick()
+    }
+    expect(document.body.style.paddingRight).toBe('40px')
+    expect(document.body.style.marginRight).toBe('24px')
+  })
+
+  it('should keep the padding another scroll lock left on the body', async () => {
+    // With the scrollbar already hidden by someone else there is no gap to make up for.
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 190 })
+    document.body.style.paddingRight = '35px'
+
+    try {
+      const locked = useBodyScrollLock()
+      await nextTick()
+
+      locked.value = true
+      await nextTick()
+      locked.value = false
+      await nextTick()
+      expect(document.body.style.paddingRight).toBe('35px')
+    }
+    finally {
+      Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 200 })
+    }
+  })
+
+  it('should honor an explicit scrollBody.margin of 0', async () => {
+    // An explicit `margin: 0` is a real request to zero the margin, so the
+    // pre-existing inline margin must not be kept in the non-default branch.
+    document.body.style.marginRight = '24px'
+    scrollBodyOption.value = { padding: 0, margin: 0 }
+
+    const locked = useBodyScrollLock()
+    await nextTick()
+
+    locked.value = true
+    await nextTick()
+    expect(document.body.style.marginRight).toBe('0px')
+
+    locked.value = false
+    await nextTick()
+    expect(document.body.style.marginRight).toBe('24px')
+  })
+
+  it('should account for stylesheet-set padding, not just inline padding', async () => {
+    // A stylesheet rule never shows up in `body.style`, so the gap must be
+    // computed from the resolved style (#2800).
+    const style = document.createElement('style')
+    style.textContent = 'body { padding-right: 40px; }'
+    document.head.appendChild(style)
+
+    // Delegate to the real `getComputedStyle` and only override `paddingRight`
+    // for the body. Returning a bare object would silently break the moment the
+    // lock (or anything else on this path) reads a different property.
+    const realGetComputedStyle = window.getComputedStyle.bind(window)
+    vi.spyOn(window, 'getComputedStyle').mockImplementation((el: Element) => {
+      const computed = realGetComputedStyle(el)
+      if (el !== document.body)
+        return computed
+      return new Proxy(computed, {
+        get: (target, prop) =>
+          prop === 'paddingRight' ? '40px' : Reflect.get(target, prop),
+      })
+    })
+
+    try {
+      const locked = useBodyScrollLock()
+      await nextTick()
+
+      locked.value = true
+      await nextTick()
+      expect(document.body.style.paddingRight).toBe('50px')
+
+      locked.value = false
+      await nextTick()
+      // Nothing inline was set before the lock, so it is cleared again.
+      expect(document.body.style.paddingRight).toBe('')
+    }
+    finally {
+      vi.restoreAllMocks()
+      style.remove()
+    }
   })
 })

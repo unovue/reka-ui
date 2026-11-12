@@ -14,7 +14,7 @@ const props = defineProps<SliderHorizontalProps>()
 const emits = defineEmits<SliderOrientationPrivateEmits>()
 const { max, min, dir, inverted } = toRefs(props)
 
-const { forwardRef, currentElement: sliderElement } = useForwardExpose()
+const { forwardRef } = useForwardExpose()
 const rootContext = injectSliderRootContext()
 
 const offsetPosition = ref<number>()
@@ -22,7 +22,9 @@ const rectRef = ref<DOMRect>()
 const isSlidingFromLeft = computed(() => (dir?.value !== 'rtl' && !inverted.value) || (dir?.value !== 'ltr' && inverted.value))
 
 function getValueFromPointerEvent(event: PointerEvent, slideStart?: boolean) {
-  const rect = rectRef.value || sliderElement.value!.getBoundingClientRect()
+  // Read the rect from the listening element, not the template ref: during an out-in leave the ref is
+  // already null while the element is still in the DOM and receiving pointer events.
+  const rect = rectRef.value || (event.currentTarget as HTMLElement).getBoundingClientRect()
 
   // Get the currently active thumb element
   const thumb = [...rootContext.thumbElements.value][rootContext.valueIndexToChangeRef.value]

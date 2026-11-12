@@ -9,6 +9,8 @@ import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
 import {
   createContext,
+  useContentId,
+  useContentMounted,
   useFocusGuards,
   useForwardProps,
   useHideOthers,
@@ -117,6 +119,8 @@ const { CollectionSlot, getItems } = useCollection()
 
 const content = ref<HTMLElement>()
 useHideOthers(content)
+useContentId(rootContext, content)
+useContentMounted(rootContext)
 
 const { search, handleTypeaheadSearch } = useTypeahead()
 

@@ -35,10 +35,10 @@ export function isAcceptableSegmentKey(key: string) {
   return false
 }
 
-export function getSegmentElements(parentElement: HTMLElement): Element[] {
-  return Array.from(parentElement.querySelectorAll('[data-reka-date-field-segment]')).filter(item => item.getAttribute('data-reka-date-field-segment') !== 'literal')
+export function getSegmentElements(parentElement: HTMLElement | undefined): Element[] {
+  return Array.from(parentElement?.querySelectorAll('[data-reka-date-field-segment]') ?? []).filter(item => item.getAttribute('data-reka-date-field-segment') !== 'literal')
 }
 
-export function getTimeFieldSegmentElements(parentElement: HTMLElement): Element[] {
-  return Array.from(parentElement.querySelectorAll('[data-reka-time-field-segment]')).filter(item => item.getAttribute('data-reka-time-field-segment') !== 'literal')
+export function getTimeFieldSegmentElements(parentElement: HTMLElement | undefined): Element[] {
+  return Array.from(parentElement?.querySelectorAll('[data-reka-time-field-segment]') ?? []).filter(item => item.getAttribute('data-reka-time-field-segment') !== 'literal')
 }

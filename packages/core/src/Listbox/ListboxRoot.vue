@@ -3,7 +3,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
 import { usePrimitiveElement } from '@/Primitive'
 import { getFocusIntent } from '@/RovingFocus/utils'
-import { createContext, findValuesBetween, useDirection, useFormControl, useKbd, useTypeahead } from '@/shared'
+import { createContext, findValuesBetween, getActiveElement, useDirection, useFormControl, useKbd, useTypeahead } from '@/shared'
 import { Primitive } from '..'
 
 type ListboxRootContext<T> = {
@@ -294,6 +294,16 @@ function onLeave(event: Event) {
   emits('leave', event)
 }
 
+async function onFocusOut(event: FocusEvent) {
+  const target = (event.relatedTarget || event.target) as HTMLElement | null
+  await nextTick()
+  const root = currentElement.value
+  // A removed row loses the focus without a related target. The focus did not leave when a
+  // virtualized list has given it to the new row of the highlighted option by now.
+  if (highlightedElement.value && root && !root.contains(target) && !root.contains(getActiveElement()))
+    onLeave(event)
+}
+
 function onEnter(event: Event) {
   const entryFocusEvent = new CustomEvent('listbox.entryFocus', { bubbles: false, cancelable: true })
   event.currentTarget?.dispatchEvent(entryFocusEvent)
@@ -483,13 +493,7 @@ provideListboxRootContext({
     :dir="dir"
     :data-disabled="disabled ? '' : undefined"
     @pointerleave="onLeave"
-    @focusout="async (event: FocusEvent) => {
-      const target = (event.relatedTarget || event.target) as HTMLElement | null
-      await nextTick()
-      if (highlightedElement && currentElement && !currentElement.contains(target)) {
-        onLeave(event)
-      }
-    }"
+    @focusout="onFocusOut"
   >
     <slot :model-value="modelValue" />
 

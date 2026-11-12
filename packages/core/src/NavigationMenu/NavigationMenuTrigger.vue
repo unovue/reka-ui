@@ -2,7 +2,7 @@
 import type { ComponentPublicInstance } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { useForwardExpose } from '@/shared'
+import { useForwardExpose, useRenderedContentId, useTriggerId } from '@/shared'
 
 export interface NavigationMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -19,7 +19,7 @@ import {
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { getOpenState, makeContentId, makeTriggerId } from './utils'
+import { getOpenState } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -34,18 +34,18 @@ const itemContext = injectNavigationMenuItemContext()
 
 const { CollectionItem } = useCollection({ key: 'NavigationMenu' })
 const { forwardRef, currentElement: triggerElement } = useForwardExpose()
-const triggerId = ref('')
-const contentId = ref('')
+// Only while the content is mounted: a closed item renders none without `forceMount`.
+const contentId = useRenderedContentId(itemContext)
 
 const hasPointerMoveOpenedRef = refAutoReset(false, 300)
 const wasClickCloseRef = ref(false)
 
 const open = computed(() => itemContext.value === menuContext.modelValue.value)
 
+useTriggerId(itemContext, triggerElement)
+
 onMounted(() => {
   itemContext.triggerRef = triggerElement
-  triggerId.value = makeTriggerId(menuContext.baseId, itemContext.value)
-  contentId.value = makeContentId(menuContext.baseId, itemContext.value)
 })
 
 function handlePointerEnter() {
@@ -144,9 +144,9 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
 </script>
 
 <template>
-  <CollectionItem>
+  <CollectionItem :value="itemContext.value">
     <Primitive
-      :id="triggerId"
+      :id="itemContext.triggerId"
       :ref="forwardRef"
       :disabled="disabled"
       :data-disabled="disabled ? '' : undefined"
@@ -156,6 +156,7 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
       :aria-controls="contentId"
       :as-child="props.asChild"
       :as="as"
+      :type="as === 'button' ? 'button' : undefined"
       v-bind="$attrs"
       @pointerenter="handlePointerEnter"
       @pointermove="handlePointerMove"

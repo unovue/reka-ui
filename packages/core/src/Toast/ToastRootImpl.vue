@@ -117,11 +117,6 @@ function handleClose(event?: PointerEvent) {
   if (isFocusInToast && isNonPointerEvent)
     providerContext.viewport.value?.focus()
 
-  if (isNonPointerEvent) {
-    // when manually close the toast, we reset isClosePausedRef
-    providerContext.isClosePausedRef.value = false
-  }
-
   emits('close')
 }
 
@@ -198,13 +193,20 @@ watch([() => props.open, duration, restartKey], () => {
     startTimer(duration.value)
 }, { immediate: true })
 
+// Only an Escape from inside this toast closes it, and it goes no further, so it
+// doesn't also close the dialog or popover around it. An Escape inside a layer
+// open in the toast, such as a popover without a portal, is that layer's.
 onKeyStroke('Escape', (event) => {
+  const layer = (event.target as Element | null)?.closest?.('[data-dismissable-layer]')
+  if (layer && currentElement.value?.contains(layer))
+    return
+  event.stopPropagation()
   emits('escapeKeyDown', event)
   if (!event.defaultPrevented) {
     providerContext.isFocusedToastEscapeKeyDownRef.value = true
     handleClose()
   }
-})
+}, { target: currentElement })
 
 let unregisterToast: (() => void) | undefined
 onMounted(() => {

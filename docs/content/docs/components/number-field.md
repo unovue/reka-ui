@@ -202,6 +202,24 @@ The starting value is clamped to `min` and `max`, but it is not snapped to `step
 </template>
 ```
 
+### Keeping the value on unparsable input
+
+By default, committing text that cannot be parsed as a number (pressing <kbd>Enter</kbd> or leaving the field with a lone `.` or `-`, for example) clears the value and emits `undefined`.
+
+Use `keepValueOnUnparsableInput` to keep the current value instead. The input goes back to the formatted value and `update:modelValue` is not emitted.
+
+```vue line=3
+<template>
+  <NumberFieldRoot
+    keep-value-on-unparsable-input
+  >
+    …
+  </NumberFieldRoot>
+</template>
+```
+
+Empty or whitespace-only input still clears the value. Text with no digits left, such as the `$` of a currency field, counts as unparsable and keeps the value, so delete all the text to clear the field.
+
 ## Accessibility
 
 Adheres to the [Spinbutton WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton).

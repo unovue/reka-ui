@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import { createContext, useForwardExpose, useId } from '@/shared'
+import { createContext, defineReactiveIds, useForwardExpose, useId } from '@/shared'
 
 export interface MenubarMenuProps {
   /**
@@ -44,13 +44,13 @@ watch(open, () => {
     wasKeyboardTriggerOpenRef.value = false
 })
 
-provideMenubarMenuContext({
+provideMenubarMenuContext(defineReactiveIds({
   value,
   triggerElement,
   triggerId: value,
   contentId: '',
   wasKeyboardTriggerOpenRef,
-})
+}, ['triggerId', 'contentId']))
 </script>
 
 <template>
