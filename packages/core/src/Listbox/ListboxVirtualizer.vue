@@ -18,7 +18,7 @@ import type { AcceptableValue } from '@/shared/types'
 import { defaultRangeExtractor, useVirtualizer } from '@tanstack/vue-virtual'
 import { useParentElement } from '@vueuse/core'
 import { refAutoReset } from '@vueuse/shared'
-import { cloneVNode, computed, Fragment, useSlots } from 'vue'
+import { cloneVNode, computed, Fragment, useSlots, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
 import { findValuesBetween, getActiveElement } from '@/shared'
@@ -87,6 +87,18 @@ const virtualizer = useVirtualizer(
     },
   },
 )
+
+// A row has its index as its key, so the row of a removed or replaced option stays for another option.
+// The highlight leaves with its option. The copy makes an in-place change of the array run the watcher.
+// A row that scrolls out of the window loses its collection entry, so the highlighted option is kept here.
+let highlightedOption: { value: T } | undefined
+watch(rootContext.highlightedElement, (element) => {
+  highlightedOption = element ? getItems(true).find(item => item.ref === element) : undefined
+})
+watch(() => props.options.slice(), (options) => {
+  if (highlightedOption && !options.some(option => compare(option, highlightedOption!.value, rootContext.by)))
+    rootContext.highlightedElement.value = null
+})
 
 const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map((item) => {
   const defaultNode = slots.default!({
