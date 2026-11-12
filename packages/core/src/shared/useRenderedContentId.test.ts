@@ -4,7 +4,7 @@ import { renderToString } from '@vue/server-renderer'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { createSSRApp, defineComponent, h, KeepAlive, ref, useId } from 'vue'
+import { createSSRApp, defineComponent, h, KeepAlive, ref, Transition, useId } from 'vue'
 import { AlertDialogContent, AlertDialogDescription, AlertDialogPortal, AlertDialogRoot, AlertDialogTitle, AlertDialogTrigger } from '@/AlertDialog'
 import { AutocompleteAnchor, AutocompleteContent, AutocompleteInput, AutocompleteItem, AutocompletePortal, AutocompleteRoot, AutocompleteTrigger, AutocompleteViewport } from '@/Autocomplete'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '@/Combobox'
@@ -45,6 +45,13 @@ interface OverlayFamily {
   /** Whether the family renders without a portal, so that the server HTML holds the content. */
   inline?: boolean
 }
+
+/** A single element for a `Transition` to act on, whatever the content renders as its root. */
+const TransitionTarget = defineComponent({
+  setup(_, { slots }) {
+    return () => h('div', slots.default?.())
+  },
+})
 
 function identity(content: VNode) {
   return content
@@ -469,6 +476,54 @@ describe.each(Object.entries(overlayFamilies))('%s', (_name, family) => {
     wrapper.unmount()
   })
 
+  // The content then mounts into the detached container that KeepAlive stores it in.
+  it.runIf(!family.teleportsItself)('renders no reference when the content is opened while KeepAlive holds it deactivated', async () => {
+    const isActive = ref(true)
+    const open = ref(true)
+    const wrap = (content: VNode) => h(KeepAlive, () => isActive.value ? content : null)
+    const wrapper = mount(createFixture(family.render, open, 0, undefined, wrap), { attachTo: document.body })
+    await expectReferences(document.body, family, family.references)
+
+    isActive.value = false
+    await expectReferences(document.body, family, closed)
+    open.value = false
+    await new Promise(resolve => setTimeout(resolve, 50))
+    open.value = true
+    await new Promise(resolve => setTimeout(resolve, 50))
+    await expectReferences(document.body, family, closed)
+
+    isActive.value = true
+    await expectReferences(document.body, family, family.references)
+    wrapper.unmount()
+  })
+
+  // A leave transition keeps the element in the document after the content is deactivated,
+  // and KeepAlive only stores it away once the transition is done.
+  it.runIf(!family.teleportsItself)('keeps the reference during a leave transition around KeepAlive, and drops it once the element is stored away', async () => {
+    const isActive = ref(true)
+    let finishLeave: (() => void) | undefined
+    // Array children, which the Transition evaluates itself: it then renders again on the
+    // switch and puts its hooks on the vnode that KeepAlive holds.
+    const wrap = (content: VNode) => h(Transition, {
+      css: false,
+      onLeave: (_el: Element, done: () => void) => { finishLeave = done },
+    }, () => h(KeepAlive, null, [isActive.value ? h(TransitionTarget, () => content) : h(TransitionTarget, { key: 'other' })]))
+    // The test utils replace Transition with a stub that does not transition.
+    const wrapper = mount(createFixture(family.render, ref(true), 0, undefined, wrap), { attachTo: document.body, global: { stubs: { transition: false } } })
+    await expectReferences(document.body, family, family.references)
+
+    isActive.value = false
+    await vi.waitFor(() => expect(finishLeave).toBeDefined())
+    await expectReferences(document.body, family, family.references)
+
+    finishLeave!()
+    await expectReferences(document.body, family, closed)
+
+    isActive.value = true
+    await expectReferences(document.body, family, family.references)
+    wrapper.unmount()
+  })
+
   it.runIf(family.teleportsItself)('keeps the reference while KeepAlive holds the content deactivated with its element in the document', async () => {
     const isActive = ref(true)
     const wrap = (content: VNode) => h(KeepAlive, () => isActive.value ? content : null)
@@ -478,6 +533,11 @@ describe.each(Object.entries(overlayFamilies))('%s', (_name, family) => {
     isActive.value = false
     await new Promise(resolve => setTimeout(resolve, 50))
     await expectReferences(document.body, family, family.references)
+
+    isActive.value = true
+    await new Promise(resolve => setTimeout(resolve, 50))
+    await expectReferences(document.body, family, family.references)
+    expect(console.error).not.toHaveBeenCalled()
     wrapper.unmount()
   })
 

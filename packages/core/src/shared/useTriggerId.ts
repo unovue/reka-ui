@@ -131,26 +131,45 @@ export function useContentMounted(key: object, element: Readonly<Ref<HTMLElement
     isCounted = value
     count.value += value ? 1 : -1
   }
-  const isRendered = () => !!element.value?.parentNode
+
+  // Whether `KeepAlive` holds the caller deactivated. A deactivated element is kept in a
+  // detached container, where it still has a parent, so it only counts while it is in
+  // the document: teleported content stays there, and so does content that a transition
+  // around the `KeepAlive` is still leaving.
+  let isDeactivated = false
+  const isRendered = () => {
+    const el = element.value
+    return !!el && (isDeactivated ? el.isConnected : !!el.parentNode)
+  }
 
   // An `asChild` content takes its element from a slot, which adds and removes the
   // element without updating the caller, so `element` is not told. The node the element
   // is a child of is watched instead. Once the element is gone from it, the caller
   // renders again on every change there, which is what makes `element` resolve anew.
+  // A deactivated element leaves the document with whichever ancestor `KeepAlive` stores
+  // away, so the whole document is watched for as long as such an element stays in it.
   let observer: MutationObserver | undefined
   let parent: Node | null | undefined
   const observe = () => {
     observer ??= new MutationObserver(() => {
       if (!isRendered()) {
         setCounted(false)
-        instance.proxy?.$forceUpdate()
+        if (isDeactivated)
+          observer!.disconnect()
+        else
+          instance.proxy?.$forceUpdate()
       }
       // Moved, as a teleported content is when its target changes.
-      else if (element.value!.parentNode !== parent) {
+      else if (!isDeactivated && element.value!.parentNode !== parent) {
         observe()
       }
     })
     observer.disconnect()
+    if (isDeactivated) {
+      if (isCounted)
+        observer.observe(element.value!.getRootNode(), { childList: true, subtree: true })
+      return
+    }
     parent = element.value?.parentNode
     // Without an element, it would be added in place of the node the caller rendered, or inside it.
     const root = instance.vnode.el as Node | null
@@ -164,13 +183,21 @@ export function useContentMounted(key: object, element: Readonly<Ref<HTMLElement
     observe()
   }
 
-  onBeforeMount(() => setCounted(true))
+  onBeforeMount(() => {
+    // A content can mount while an ancestor is deactivated, which no hook reports.
+    for (let parent = instance.parent; parent && !isDeactivated; parent = parent.parent)
+      isDeactivated = !!(parent as { isDeactivated?: boolean }).isDeactivated
+    setCounted(!isDeactivated)
+  })
   onMounted(syncElement)
   watch(element, syncElement, { flush: 'post' })
-  onActivated(syncElement)
+  onActivated(() => {
+    isDeactivated = false
+    syncElement()
+  })
   onDeactivated(() => {
-    observer?.disconnect()
-    setCounted(!!element.value?.isConnected)
+    isDeactivated = true
+    syncElement()
   })
   onBeforeUnmount(() => {
     observer?.disconnect()
