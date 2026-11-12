@@ -30,7 +30,7 @@ export interface ConfigProviderProps {
    * How the body makes up for the scrollbar while scroll is locked. This will be inherited by the related primitives.
    * `true` adds the scrollbar width to the body's right padding, and `false` leaves its padding and margin alone.
    * An object sets `padding` and `margin` separately: `true` adds the scrollbar width to the existing value,
-   * a number is in px, and a string is used as written.
+   * a number is in px, and a string is used as written. With only `margin: true`, the margin makes up for the scrollbar and the padding is left alone.
    * @type boolean | ScrollBodyOption
    */
   scrollBody?: boolean | ScrollBodyOption

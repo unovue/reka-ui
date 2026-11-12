@@ -29,7 +29,8 @@ interface SingleOrMultipleProps<T = AcceptableValue | AcceptableValue[]> {
  * What to set on the body's right padding and margin while scroll is locked.
  * `true` adds the scrollbar width to the value the body already has,
  * a number is in px, a string is used as written, and `false` leaves the property alone.
- * `padding` defaults to `true` and `margin` to `false`.
+ * `margin` defaults to `false`. `padding` defaults to `true`, or to `false` when `margin` is `true`,
+ * so that `{ margin: true }` makes up for the scrollbar once.
  */
 type ScrollBodyOption = {
   padding?: boolean | number | string
