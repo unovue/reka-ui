@@ -44,7 +44,7 @@ describe('useHideOthers cleanup', () => {
     const background = createBackground()
     const { target, wrapper } = mountTarget()
     await nextTick()
-    expect(background.deref()?.getAttribute('aria-hidden')).toBe('true')
+    await expect.poll(() => background.deref()?.getAttribute('aria-hidden')).toBe('true')
 
     if (cleanup === 'target cleared')
       target.value = undefined
@@ -68,7 +68,7 @@ describe('useHideOthers cleanup', () => {
     const { target, wrapper } = mountTarget()
     const element = target.value
     await nextTick()
-    expect(background.deref()?.getAttribute('aria-hidden')).toBe('true')
+    await expect.poll(() => background.deref()?.getAttribute('aria-hidden')).toBe('true')
 
     target.value = undefined
     await nextTick()
@@ -76,7 +76,7 @@ describe('useHideOthers cleanup', () => {
 
     target.value = element
     await nextTick()
-    expect(background.deref()?.getAttribute('aria-hidden')).toBe('true')
+    await expect.poll(() => background.deref()?.getAttribute('aria-hidden')).toBe('true')
 
     wrapper.unmount()
     expect(background.deref()?.hasAttribute('aria-hidden')).toBe(false)
@@ -89,11 +89,11 @@ describe('useHideOthers cleanup', () => {
     document.body.append(nextTarget)
     onTestFinished(() => nextTarget.remove())
     await nextTick()
-    expect(background.deref()?.getAttribute('aria-hidden')).toBe('true')
+    await expect.poll(() => background.deref()?.getAttribute('aria-hidden')).toBe('true')
 
     target.value = nextTarget
     await nextTick()
-    expect(background.deref()?.getAttribute('aria-hidden')).toBe('true')
+    await expect.poll(() => background.deref()?.getAttribute('aria-hidden')).toBe('true')
     expect(nextTarget.hasAttribute('aria-hidden')).toBe(false)
 
     wrapper.unmount()
@@ -106,6 +106,7 @@ describe('useHideOthers cleanup', () => {
     await nextTick()
     const second = mountTarget()
     await nextTick()
+    await expect.poll(() => background.deref()?.getAttribute('aria-hidden')).toBe('true')
 
     first.target.value = undefined
     await nextTick()
@@ -115,6 +116,20 @@ describe('useHideOthers cleanup', () => {
     expect(background.deref()?.getAttribute('aria-hidden')).toBe('true')
 
     second.wrapper.unmount()
+    expect(background.deref()?.hasAttribute('aria-hidden')).toBe(false)
+  })
+
+  it.each(['target cleared', 'unmounted'] as const)('cancels pending hiding after %s', async (cleanup) => {
+    const background = createBackground()
+    const { target, wrapper } = mountTarget()
+    // Close after rendering but before the deferred hide can run.
+    await nextTick()
+    if (cleanup === 'target cleared')
+      target.value = undefined
+    else
+      wrapper.unmount()
+    await nextTick()
+    await nextTick()
     expect(background.deref()?.hasAttribute('aria-hidden')).toBe(false)
   })
 })
