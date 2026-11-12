@@ -50,6 +50,11 @@ function isTemplateObject(value: unknown): boolean {
   if (typeof component.render === 'function' || typeof component.ssrRender === 'function' || typeof component.setup === 'function')
     return false
 
+  // A plain VNode or built-in marker would render its `type` and `props` as is.
+  // The built-ins themselves carry functions (`process`), plain data never does.
+  if ((component.__v_isVNode || component.__isTeleport || component.__isSuspense || component.__isKeepAlive) && !Object.values(component).some(item => typeof item === 'function'))
+    return true
+
   return typeof component.template === 'string'
     || isTemplateObject(component.extends)
     || (Array.isArray(component.mixins) && component.mixins.some(isTemplateObject))

@@ -276,4 +276,13 @@ describe('test Primitive functionalities', () => {
     expect(wrapper.html()).not.toContain('1337')
     expect(wrapper.find('div').exists()).toBe(true)
   })
+
+  it('should not render a plain VNode object', () => {
+    const wrapper = mount(Primitive, {
+      props: {
+        as: { __v_isVNode: true, type: 'i', props: { innerHTML: '1337' }, shapeFlag: 1, children: null },
+      },
+    })
+    expect(wrapper.html()).not.toContain('1337')
+  })
 })
