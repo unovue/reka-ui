@@ -282,3 +282,100 @@ describe('given a Presence with an async child', () => {
     wrapper.unmount()
   })
 })
+
+describe('given a Presence whose exit animation races with rendering', () => {
+  const template = (key = '') => `<Presence :present="open">
+    <div
+      ${key}
+      data-testid="animated"
+      :data-state="open ? 'open' : 'closed'"
+      @leave="events.push('leave')"
+      @after-leave="events.push('after-leave')"
+    />
+  </Presence>`
+
+  // Render flush, the present watcher's nextTick, then the state watcher.
+  async function flushPresence() {
+    await nextTick()
+    await nextTick()
+    await nextTick()
+  }
+
+  function mockLiveAnimationStyles() {
+    const styles = new WeakMap<Element, CSSStyleDeclaration>()
+    return vi.spyOn(globalThis, 'getComputedStyle').mockImplementation((element) => {
+      let style = styles.get(element)
+      if (!style) {
+        style = {
+          get animationName() {
+            return (element as HTMLElement).dataset.state === 'closed' ? 'fadeOut' : 'fadeIn'
+          },
+          get display() {
+            return 'block'
+          },
+        } as CSSStyleDeclaration
+        styles.set(element, style)
+      }
+      return style
+    })
+  }
+
+  async function expectExitAnimationToComplete(wrapper: ReturnType<typeof mount>, events: string[]) {
+    const element = wrapper.find('[data-testid="animated"]')
+    expect(element.exists()).toBe(true)
+    expect(events).toEqual(['leave'])
+
+    const animationEnd = new Event('animationend')
+    Object.defineProperty(animationEnd, 'animationName', { value: 'fadeOut' })
+    element.element.dispatchEvent(animationEnd)
+    await flushPresence()
+
+    expect(wrapper.find('[data-testid="animated"]').exists()).toBe(false)
+    expect(events).toEqual(['leave', 'after-leave'])
+  }
+
+  it('should keep the exit animation when present becomes false before the mount flush', async () => {
+    const open = ref(true)
+    const events: string[] = []
+    const getComputedStyleSpy = mockLiveAnimationStyles()
+    const wrapper = mount(defineComponent({
+      components: { Presence },
+      setup: () => ({ events, open }),
+      template: template(),
+    }))
+
+    try {
+      open.value = false
+      await flushPresence()
+      await expectExitAnimationToComplete(wrapper, events)
+    }
+    finally {
+      wrapper.unmount()
+      getComputedStyleSpy.mockRestore()
+    }
+  })
+
+  it('should keep the exit animation when the child root is replaced while closing', async () => {
+    const open = ref(true)
+    const events: string[] = []
+    const getComputedStyleSpy = mockLiveAnimationStyles()
+    const wrapper = mount(defineComponent({
+      components: { Presence },
+      setup: () => ({ events, open }),
+      template: template(`:key="open ? 'open' : 'closed'"`),
+    }))
+
+    try {
+      await flushPresence()
+      events.length = 0
+
+      open.value = false
+      await flushPresence()
+      await expectExitAnimationToComplete(wrapper, events)
+    }
+    finally {
+      wrapper.unmount()
+      getComputedStyleSpy.mockRestore()
+    }
+  })
+})
