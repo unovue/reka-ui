@@ -170,6 +170,7 @@ const popperContentEvents = {
           v-bind="{ ...$attrs, ...forwardedProps }"
           :id="rootContext.contentId"
           :ref="forwardRef"
+          :scope="position === 'popper' ? 'combobox' : undefined"
           :memo-dependencies="position === 'popper'
             ? [rootContext.filterSearch.value, rootContext.filterState.value]
             : undefined"

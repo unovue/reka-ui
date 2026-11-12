@@ -88,7 +88,7 @@ providePopoverRootContext(defineReactiveIds({
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="popover">
     <slot
       :open="open"
       :close="() => open = false"
