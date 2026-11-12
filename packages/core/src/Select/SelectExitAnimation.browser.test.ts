@@ -91,9 +91,10 @@ describe('given a Select whose content animates with CSS, in a real browser', ()
       // Let the open animation finish, so the exit starts from rest.
       await wait(DURATION + 50)
 
+      // Taken before closing: the exit animation cannot have started any earlier than this.
+      const closedAt = performance.now()
       await closers[closer]()
       await expect.poll(() => open.value).toBe(false)
-      const closedAt = performance.now()
 
       await expect.poll(() => element.getAttribute('data-state')).toBe('closed')
       await wait(DURATION / 4)
