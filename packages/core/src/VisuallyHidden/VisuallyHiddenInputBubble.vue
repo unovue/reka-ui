@@ -41,7 +41,10 @@ watch(valueState, (cur, prev) => {
   if (setValue && cur !== prev) {
     const inputEvent = new Event('input', { bubbles: true })
     const changeEvent = new Event('change', { bubbles: true })
-    setValue.call(input, cur)
+    // The native `value` setter empties the input for `null`, but writes the string
+    // "undefined" for `undefined`. The form would submit that string, and it would
+    // satisfy `required`. An empty value is an empty input, as when it is first rendered.
+    setValue.call(input, cur ?? '')
     input.dispatchEvent(inputEvent)
     input.dispatchEvent(changeEvent)
   }
