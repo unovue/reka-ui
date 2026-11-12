@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DialogContentImplEmits, DialogContentImplProps } from './DialogContentImpl.vue'
 import { computed, ref, watch } from 'vue'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { useEmitAsProps, useForwardExpose } from '@/shared'
 import DialogContentImpl from './DialogContentImpl.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
@@ -42,7 +43,8 @@ watch(() => props.present, (isPresent, wasPresent) => {
     @close-auto-focus="
       (event) => {
         if (!event.defaultPrevented) {
-          if (!hasInteractedOutsideRef) rootContext.triggerElement.value?.focus();
+          // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
+          if (!hasInteractedOutsideRef && !hasFocusLeftScope(event.target)) rootContext.triggerElement.value?.focus();
           // Always prevent auto focus because we either focus manually or want user agent focus
           event.preventDefault();
         }

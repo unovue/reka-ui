@@ -11,6 +11,7 @@ export interface DropdownMenuContentProps extends MenuContentProps {}
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { injectMenuContext, MenuContent } from '@/Menu'
 import { omitEntryFocusListener } from '@/Menu/utils'
 import { useContentId, useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
@@ -33,8 +34,11 @@ function handleCloseAutoFocus(event: Event) {
   if (event.defaultPrevented)
     return
   if (!hasInteractedOutsideRef.value) {
+    const scope = event.target
     setTimeout(() => {
-      rootContext.triggerElement.value?.focus()
+      // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
+      if (!hasFocusLeftScope(scope))
+        rootContext.triggerElement.value?.focus()
     }, 0)
   }
   hasInteractedOutsideRef.value = false

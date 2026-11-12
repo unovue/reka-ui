@@ -409,4 +409,64 @@ describe('focusScope', () => {
       expect(rendered.getByTestId('form-input')).toHaveFocus()
     })
   })
+
+  describe('given a FocusScope that unmounts', () => {
+    const Unmounting = defineComponent({
+      components: { FocusScope },
+      props: { open: Boolean },
+      emits: ['unmountAutoFocus'],
+      template: `
+        <button data-testid="before">before</button>
+        <button data-testid="elsewhere">elsewhere</button>
+        <FocusScope v-if="open" @unmount-auto-focus="$emit('unmountAutoFocus', $event)">
+          <input data-testid="inside">
+        </FocusScope>
+      `,
+    })
+
+    async function setup(onUnmountAutoFocus = vi.fn((event: Event) => event.defaultPrevented)) {
+      const rendered = render(Unmounting, { props: { open: false, onUnmountAutoFocus }, attachTo: document.body })
+      rendered.getByTestId('before').focus()
+      await rendered.rerender({ open: true })
+      await vi.waitFor(() => expect(rendered.getByTestId('inside')).toHaveFocus())
+      return { rendered, onUnmountAutoFocus }
+    }
+
+    /** The unmount auto-focus is deferred by a timer; one queued after it runs after it. */
+    const afterUnmountAutoFocus = () => new Promise(resolve => setTimeout(resolve))
+
+    it('should return focus to the element focused before it mounted', async () => {
+      const { rendered, onUnmountAutoFocus } = await setup()
+
+      await rendered.rerender({ open: false })
+      await afterUnmountAutoFocus()
+
+      expect(rendered.getByTestId('before')).toHaveFocus()
+      expect(onUnmountAutoFocus).toHaveBeenCalledTimes(1)
+    })
+
+    it('should leave focus where it has moved to outside the scope, and still emit `unmountAutoFocus`', async () => {
+      const { rendered, onUnmountAutoFocus } = await setup()
+      rendered.getByTestId('elsewhere').focus()
+
+      await rendered.rerender({ open: false })
+      await afterUnmountAutoFocus()
+
+      expect(rendered.getByTestId('elsewhere')).toHaveFocus()
+      expect(onUnmountAutoFocus).toHaveBeenCalledTimes(1)
+      expect(onUnmountAutoFocus).toHaveReturnedWith(false)
+    })
+
+    it('should leave focus to a handler that prevents `unmountAutoFocus`', async () => {
+      const { rendered } = await setup(vi.fn((event: Event) => {
+        event.preventDefault()
+        return true
+      }))
+
+      await rendered.rerender({ open: false })
+      await afterUnmountAutoFocus()
+
+      expect(document.body).toHaveFocus()
+    })
+  })
 })
