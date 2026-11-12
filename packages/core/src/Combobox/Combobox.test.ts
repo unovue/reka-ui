@@ -829,6 +829,28 @@ describe('given a virtualized Combobox', () => {
       expect(input.attributes('aria-activedescendant')).toBeUndefined()
       wrapper.unmount()
     })
+
+    it.each([
+      { removals: 'one removal', steps: [[1, 2]] },
+      { removals: 'two removals', steps: [[1, 3], [1, 2]] },
+    ])('should remove the highlight when its option moves to another row after $removals', async ({ steps }) => {
+      shown.value = options.slice(0, 3)
+      const wrapper = mountOpenCombobox()
+      await flush()
+      const input = wrapper.find('input')
+      await input.trigger('keydown', { key: 'ArrowDown' })
+      expect(wrapper.find('[data-highlighted]').text()).toBe('Item 1')
+
+      for (const [start, end] of steps) {
+        shown.value = options.slice(start, end)
+        await flush()
+
+        expect(wrapper.findAll('[role=option]')).toHaveLength(end - start)
+        expect(wrapper.find('[data-highlighted]').exists()).toBe(false)
+        expect(input.attributes('aria-activedescendant')).toBeUndefined()
+      }
+      wrapper.unmount()
+    })
   })
 })
 
