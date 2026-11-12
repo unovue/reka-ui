@@ -242,6 +242,7 @@ provideComboboxRootContext(defineReactiveIds({
   openOnFocus,
   openOnClick,
   resetModelValueOnClear: ref(true),
+  getClearValue: () => null,
   unmountOnHide: ref(true),
 }, ['contentId']))
 
