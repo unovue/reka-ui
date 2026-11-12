@@ -94,6 +94,19 @@ async function handleSelect(ev: SelectEvent<T>) {
   }
 }
 
+// A match typed on the closed trigger: nothing is open to close, so only the value changes.
+// It still goes through `select`, so a handler that prevents it keeps the item unselected.
+function handleTypeaheadSelect(originalEvent: KeyboardEvent) {
+  if (disabled.value)
+    return
+
+  handleAndDispatchCustomEvent(SELECT_SELECT, (ev: SelectEvent<T>) => {
+    emits('select', ev)
+    if (!ev.defaultPrevented)
+      rootContext.onValueChange(props.value)
+  }, { originalEvent, value: props.value as T })
+}
+
 // Touch selects on `click`: iOS Safari fires `pointerup` on whatever item ends up under the
 // finger once a scroll through the list stops, while a `click` never follows a scroll.
 // Mouse and pen keep selecting on `pointerup`, so they can press the trigger, move down the
@@ -220,7 +233,7 @@ provideSelectItemContext({
 </script>
 
 <template>
-  <CollectionItem :value="{ textValue }">
+  <CollectionItem :value="{ textValue, value, typeaheadSelect: handleTypeaheadSelect }">
     <Primitive
       :ref="forwardRef"
       role="option"
