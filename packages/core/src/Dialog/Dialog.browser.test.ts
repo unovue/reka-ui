@@ -129,14 +129,26 @@ describe('given a modal Dialog with an exit animation, in a real browser', () =>
   const LOCKED = { overflow: 'hidden', paddingRight: `${GAP}px`, scrollbarWidth: `${GAP}px` }
   const UNLOCKED = { overflow: '', paddingRight: '', scrollbarWidth: '' }
 
-  /** Every value the body `overflow` goes through from here on, so that a brief unlock cannot be missed. */
+  /**
+   * Every value the body `overflow` goes through from here on. The observer is only told after
+   * the script that wrote the style has finished, so an unlock that is undone in the same turn
+   * never shows in the live style. Each record carries the style it replaced, and those are read too.
+   */
   function recordOverflow() {
     const values = [document.body.style.overflow]
-    observer = new MutationObserver(() => {
-      if (document.body.style.overflow !== values.at(-1))
-        values.push(document.body.style.overflow)
+    const previous = document.createElement('div')
+    const push = (value: string) => {
+      if (value !== values.at(-1))
+        values.push(value)
+    }
+    observer = new MutationObserver((records) => {
+      for (const record of records) {
+        previous.setAttribute('style', record.oldValue ?? '')
+        push(previous.style.overflow)
+      }
+      push(document.body.style.overflow)
     })
-    observer.observe(document.body, { attributes: true, attributeFilter: ['style'] })
+    observer.observe(document.body, { attributes: true, attributeFilter: ['style'], attributeOldValue: true })
     return values
   }
 
@@ -244,6 +256,43 @@ describe('given a modal Dialog with an exit animation, in a real browser', () =>
     finishExit('content')
     await expect.poll(lock).toEqual(UNLOCKED)
     expect(overflow).toEqual(['hidden', ''])
+  })
+
+  it('gives body scroll back when the dialog is reopened during its exit without its overlay', async () => {
+    const { open, overlay } = await mountOpenDialog({ contentExit: true })
+    const overflow = recordOverflow()
+
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => exiting('content')).toBe(true)
+    expect(get('content-overlay')).toBeNull()
+    expect(lock()).toEqual(LOCKED)
+
+    overlay.value = false
+    open.value = true
+    await expect.poll(() => get('content')?.dataset.state).toBe('open')
+    await expect.poll(() => exiting('content')).toBe(false)
+    expect(get('content-overlay')).toBeNull()
+    expect(lock()).toEqual(UNLOCKED)
+    expect(overflow).toEqual(['hidden', ''])
+  })
+
+  it('locks body scroll when an overlay is given to an open dialog', async () => {
+    const { overlay } = await mountOpenDialog({ overlay: false, contentExit: true })
+    expect(lock()).toEqual(UNLOCKED)
+    const overflow = recordOverflow()
+
+    overlay.value = true
+    await expect.poll(() => get('content-overlay')).not.toBeNull()
+    expect(lock()).toEqual(LOCKED)
+
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => exiting('content')).toBe(true)
+    expect(get('content-overlay')).toBeNull()
+    expect(lock()).toEqual(LOCKED)
+
+    finishExit('content')
+    await expect.poll(lock).toEqual(UNLOCKED)
+    expect(overflow).toEqual(['', 'hidden', ''])
   })
 
   it('keeps the outer lock when a nested dialog has finished its exit', async () => {
