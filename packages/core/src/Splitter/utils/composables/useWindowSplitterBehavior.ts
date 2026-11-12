@@ -22,7 +22,7 @@ export function useWindowSplitterResizeHandlerBehavior({
   watchEffect((onCleanup) => {
     const _panelGroupElement = panelGroupElement.value
     const handleElement = element.value
-    if (_panelGroupElement === null || !handleElement)
+    if (!_panelGroupElement || !handleElement)
       return
 
     const onKeyDown = (event: KeyboardEvent) => {

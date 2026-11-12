@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from '.'
+import { useWindowSplitterResizeHandlerBehavior } from './utils/composables/useWindowSplitterBehavior'
 
 // Regression test for https://github.com/unovue/reka-ui/issues/3126
 // A handle mounted into a group that is already in the page (e.g. with v-if)
@@ -392,5 +393,22 @@ describe('resize handle focus', () => {
     handle(0).blur()
     await nextTick()
     expect(handle(0).hasAttribute('data-resize-handle-active')).toBe(false)
+  })
+})
+
+describe('resize handle keyboard behavior without a group element', () => {
+  it.each([null, undefined])('should not handle keys while the group element is %s', (groupElement) => {
+    const handle = document.createElement('div')
+    useWindowSplitterResizeHandlerBehavior({
+      disabled: ref(false),
+      handleId: 'handle',
+      resizeHandler: ref(null),
+      panelGroupElement: ref(groupElement) as any,
+      element: ref(handle),
+    })
+
+    const event = new KeyboardEvent('keydown', { key: 'F6', cancelable: true })
+    handle.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
   })
 })

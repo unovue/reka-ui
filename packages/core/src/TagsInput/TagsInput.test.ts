@@ -482,3 +482,25 @@ describe('given TagsInput inside a form', () => {
     wrapper.unmount()
   })
 })
+
+describe('given a TagsInputInput rendered as-child without an element', () => {
+  it('should not auto focus an unrelated input that follows it', async () => {
+    vi.useFakeTimers()
+    const wrapper = mount(defineComponent({
+      components: { TagsInputInput, TagsInputRoot },
+      template: `<TagsInputRoot :model-value="[]">
+        <TagsInputInput as-child auto-focus><template v-if="false"><input /></template></TagsInputInput><input data-testid="outsider" />
+      </TagsInputRoot>`,
+    }), { attachTo: document.body })
+
+    try {
+      await flushPromises()
+      vi.runAllTimers()
+      expect(document.activeElement).not.toBe(wrapper.get('[data-testid="outsider"]').element)
+    }
+    finally {
+      vi.useRealTimers()
+      wrapper.unmount()
+    }
+  })
+})

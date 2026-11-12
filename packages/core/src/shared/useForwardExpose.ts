@@ -1,15 +1,14 @@
-import type { MaybeElement } from '@vueuse/core'
 import type { ComponentPublicInstance } from 'vue'
 // reference: https://github.com/vuejs/rfcs/issues/258#issuecomment-1068697672
-import { unrefElement } from '@vueuse/core'
 import { isClient } from '@vueuse/shared'
 import { computed, getCurrentInstance, onUpdated, ref, triggerRef } from 'vue'
+import { resolveElement } from './resolveElement'
 
 /**
  * Expose this component's props and a forwarded child's public values and root node.
  *
  * `$el` preserves Vue's native root node. For text and comment roots,
- * `currentElement` resolves the next element sibling for internal DOM operations.
+ * `currentElement` resolves the first element inside the forwarded child, or `undefined`.
  *
  * @returns An object with `forwardRef`, `currentRef`, and `currentElement`.
  */
@@ -29,12 +28,7 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
   })
 
   function resolveCurrentElement() {
-    // $el could be text/comment for non-single root normal or text root, thus we retrieve the nextElementSibling
-    return currentRef.value
-      && '$el' in currentRef.value
-      && ['#text', '#comment'].includes(currentRef.value.$el.nodeName)
-      ? currentRef.value.$el.nextElementSibling as HTMLElement
-      : unrefElement(currentRef as unknown as MaybeElement) as HTMLElement
+    return resolveElement(currentRef.value)
   }
 
   // Template refs are never set during SSR, so nothing reads `exposed` there.
