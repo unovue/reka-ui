@@ -48,7 +48,7 @@ describe('given a default ConfigProvider', async () => {
 
   it('should add scrollBody\'s css to body', () => {
     expect(document.body.style.paddingRight).toBe('10px')
-    expect(document.body.style.marginRight).toBe('0px')
+    expect(document.body.style.marginRight).toBe('')
     expect(document.body.style.overflow).toBe('hidden')
     expect(document.documentElement.style.getPropertyValue('--scrollbar-width')).toBe('10px')
   })
@@ -72,21 +72,24 @@ describe('given a scrollBody ConfigProvider', async () => {
     document.body.style.marginRight = ''
   })
 
-  it('should set 0 padding, 0 margin body', async () => {
+  it('should leave the body padding and margin alone when false', async () => {
+    document.body.style.paddingRight = '40px'
+    document.body.style.marginRight = '24px'
     mount(ConfigProviderTest, { props: { scrollBody: false }, attachTo: document.body })
     await nextTick()
-    expect(document.body.style.paddingRight).toBe('0px')
-    expect(document.body.style.marginRight).toBe('0px')
+    expect(document.body.style.overflow).toBe('hidden')
+    expect(document.body.style.paddingRight).toBe('40px')
+    expect(document.body.style.marginRight).toBe('24px')
   })
 
-  it('should set 0 padding body', async () => {
+  it('should set the given padding and leave the margin alone', async () => {
     mount(ConfigProviderTest, { props: { scrollBody: { padding: 20 } }, attachTo: document.body })
     await nextTick()
     expect(document.body.style.paddingRight).toBe('20px')
-    expect(document.body.style.marginRight).toBe('0px')
+    expect(document.body.style.marginRight).toBe('')
   })
 
-  it('should set 0 margin body', async () => {
+  it('should set the given margin and padding', async () => {
     mount(ConfigProviderTest, { props: { scrollBody: { margin: 20, padding: 0 } }, attachTo: document.body })
     await nextTick()
     expect(document.body.style.paddingRight).toBe('0px')

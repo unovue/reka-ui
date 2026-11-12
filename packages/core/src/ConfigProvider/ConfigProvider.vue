@@ -27,7 +27,10 @@ export interface ConfigProviderProps {
    */
   locale?: string
   /**
-   * The global scroll body behavior of your application. This will be inherited by the related primitives.
+   * How the body makes up for the scrollbar while scroll is locked. This will be inherited by the related primitives.
+   * `true` adds the scrollbar width to the body's right padding, and `false` leaves its padding and margin alone.
+   * An object sets `padding` and `margin` separately: `true` adds the scrollbar width to the existing value,
+   * a number is in px, and a string is used as written.
    * @type boolean | ScrollBodyOption
    */
   scrollBody?: boolean | ScrollBodyOption

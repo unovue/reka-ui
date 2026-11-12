@@ -24,7 +24,7 @@
   },
   {
     'name': 'scrollBody',
-    'description': '<p>The global scroll body behavior of your application. This will be inherited by the related primitives.</p>\n',
+    'description': '<p>How the body makes up for the scrollbar while scroll is locked. This will be inherited by the related primitives.\n<code>true</code> adds the scrollbar width to the body\'s right padding, and <code>false</code> leaves its padding and margin alone.\nAn object sets <code>padding</code> and <code>margin</code> separately: <code>true</code> adds the scrollbar width to the existing value,\na number is in px, and a string is used as written.</p>\n',
     'type': 'boolean | ScrollBodyOption',
     'required': false,
     'default': 'true'
@@ -53,7 +53,7 @@
 | `dir` | The global reading direction of your application. This will be inherited by all primitives. | `"ltr" \| "rtl"` | No | `"ltr"` |
 | `locale` | The global locale of your application. This will be inherited by all primitives. | `string` | No | `"en"` |
 | `nonce` | The global nonce value of your application. This will be inherited by the related primitives. | `string` | No | - |
-| `scrollBody` | The global scroll body behavior of your application. This will be inherited by the related primitives. | `boolean \| ScrollBodyOption` | No | `true` |
+| `scrollBody` | How the body makes up for the scrollbar while scroll is locked. This will be inherited by the related primitives. true adds the scrollbar width to the body's right padding, and false leaves its padding and margin alone. An object sets padding and margin separately: true adds the scrollbar width to the existing value, a number is in px, and a string is used as written. | `boolean \| ScrollBodyOption` | No | `true` |
 | `teleportTo` | The global default teleport target for all portalled primitives (e.g. Dialog, Popover, Tooltip). Individual *Portal components can still override this via their own to prop. Useful when rendering inside a custom element / shadow DOM. | `string \| HTMLElement` | No | - |
 | `useId` | The global useId injection as a workaround for preventing hydration issue. | `(() => string)` | No | - |
 
