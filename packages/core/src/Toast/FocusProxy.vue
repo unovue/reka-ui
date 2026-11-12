@@ -3,7 +3,7 @@ import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectToastProviderContext } from './ToastProvider.vue'
 
 const emits = defineEmits<{
-  focusFromOutsideViewport: [void]
+  focusFromOutsideViewport: []
 }>()
 
 const providerContext = injectToastProviderContext()
