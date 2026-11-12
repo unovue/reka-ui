@@ -585,16 +585,71 @@ describe('update:openComplete', () => {
     document.body.innerHTML = ''
   })
 
+  afterEach(() => {
+    delete (HTMLElement.prototype as Partial<HTMLElement>).getAnimations
+  })
+
+  const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve))
+
+  // jsdom has no `getAnimations`: stub one animation whose end the test controls.
+  function stubAnimation() {
+    let finish!: () => void
+    const finished = new Promise<void>(resolve => finish = resolve)
+    HTMLElement.prototype.getAnimations = () => [
+      { effect: { getTiming: () => ({ duration: 100, iterations: 1 }) }, finished } as unknown as Animation,
+    ]
+    return { finish }
+  }
+
   it('emits true once the enter animation ends', async () => {
+    const enter = stubAnimation()
     const onOpenComplete = vi.fn()
-    const { getByText, getByRole } = render(DrawerWithOpenComplete, { props: { onOpenComplete } })
+    const { getByText } = render(DrawerWithOpenComplete, { props: { onOpenComplete } })
     await fireEvent.click(getByText('Open'))
+    await nextFrame()
     await nextTick()
     expect(onOpenComplete).not.toHaveBeenCalled()
 
-    getByRole('dialog').dispatchEvent(new Event('animationend'))
-    expect(onOpenComplete).toHaveBeenCalledTimes(1)
-    expect(onOpenComplete).toHaveBeenCalledWith(true)
+    enter.finish()
+    await vi.waitFor(() => expect(onOpenComplete.mock.calls).toEqual([[true]]))
+  })
+
+  it('emits nothing for an opening that is interrupted by a close', async () => {
+    stubAnimation()
+    const onOpenComplete = vi.fn()
+    const { getByText } = render(DrawerWithOpenComplete, { props: { onOpenComplete } })
+    await fireEvent.click(getByText('Open'))
+    await nextFrame()
+    await fireEvent.click(getByText('Close'))
+    await nextFrame()
+    await nextTick()
+
+    expect(onOpenComplete.mock.calls).toEqual([[false]])
+  })
+
+  it('emits true and then false when there is no animation to wait for', async () => {
+    const onOpenComplete = vi.fn()
+    const { getByText, queryByRole } = render(DrawerWithOpenComplete, { props: { onOpenComplete } })
+    await fireEvent.click(getByText('Open'))
+    await nextTick()
+    expect(onOpenComplete.mock.calls).toEqual([[true]])
+
+    await fireEvent.click(getByText('Close'))
+    await nextTick()
+    await nextTick()
+    expect(queryByRole('dialog')).toBeNull()
+    expect(onOpenComplete.mock.calls).toEqual([[true], [false]])
+  })
+
+  it('emits nothing when the root unmounts', async () => {
+    const onOpenComplete = vi.fn()
+    const { getByText, unmount } = render(DrawerWithOpenComplete, { props: { onOpenComplete } })
+    await fireEvent.click(getByText('Open'))
+    await nextTick()
+    unmount()
+    await nextTick()
+
+    expect(onOpenComplete.mock.calls).toEqual([[true]])
   })
 })
 
