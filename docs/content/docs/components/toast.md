@@ -21,6 +21,8 @@ A succinct message that is displayed temporarily.
     'Supports closing via swipe gesture.',
     'Exposes CSS variables for swipe gesture animations.',
     'Can be controlled or uncontrolled.',
+    'Add, update and close toasts from anywhere with a toast manager.',
+    'Supports stacking, toast limits and anchoring toasts to an element.',
   ]"
 />
 
@@ -67,6 +69,24 @@ The fixed area where toasts appear. Users can jump to the viewport by pressing a
 
 <!-- @include: @/meta/ToastViewport.md -->
 
+<DataAttributesTable
+  :data="[
+    {
+      attribute: '[data-expanded]',
+      values: 'Present while the pointer is over the viewport or focus is inside it.',
+    },
+  ]"
+/>
+
+<CssVariablesTable
+  :data="[
+    {
+      cssVariable: '--reka-toast-frontmost-height',
+      description: 'The natural height of the newest open toast, in pixels.',
+    },
+  ]"
+/>
+
 ### Root
 
 The toast that automatically closes. It should not be held open to [acquire a user response](/docs/components/toast#action).
@@ -88,6 +108,18 @@ The toast that automatically closes. It should not be held open to [acquire a us
     {
       attribute: '[data-swipe-direction]',
       values: ['up', 'down', 'left', 'right'],
+    },
+    {
+      attribute: '[data-status]',
+      values: 'The status of a toast from the toast manager, e.g. loading, success or error.',
+    },
+    {
+      attribute: '[data-expanded]',
+      values: 'Present while the viewport is expanded.',
+    },
+    {
+      attribute: '[data-limited]',
+      values: 'Present when the toast exceeds the limit of ToastProvider. The toast is also inert.',
     },
   ]"
 />
@@ -111,6 +143,20 @@ The toast that automatically closes. It should not be held open to [acquire a us
       cssVariable: '--reka-toast-swipe-end-y',
       description:
         'The offset end position of the toast after vertically swiping',
+    },
+    {
+      cssVariable: '--reka-toast-index',
+      description:
+        'The position of the toast in the stack. The newest open toast is 0.',
+    },
+    {
+      cssVariable: '--reka-toast-offset-y',
+      description:
+        'The sum of the heights of the newer open toasts, in pixels. Use it to lay out an expanded stack.',
+    },
+    {
+      cssVariable: '--reka-toast-height',
+      description: 'The natural height of the toast, in pixels.',
     },
   ]"
 />
@@ -139,6 +185,20 @@ An action that is safe to ignore to ensure users are not expected to complete ta
 
 When obtaining a user response is necessary, portal an ["AlertDialog"](/docs/components/alert-dialog) styled as a toast into the viewport instead.
 
+By default, clicking `ToastAction` dismisses the toast. Set `closeOnClick` to `false` when the action should run while keeping the toast visible.
+
+```vue
+<template>
+  <ToastAction
+    alt-text="Retry sending the message"
+    :close-on-click="false"
+    @click="retry"
+  >
+    Retry
+  </ToastAction>
+</template>
+```
+
 <!-- @include: @/meta/ToastAction.md -->
 
 ### Close
@@ -147,7 +207,329 @@ A button that allows users to dismiss the toast before its duration has elapsed.
 
 <!-- @include: @/meta/ToastClose.md -->
 
+### Positioner
+
+Positions a toast against an anchor element. Wrap `ToastRoot` in it to show a toast next to the element it relates to. Any prop that is not set falls back to `toast.positionerProps`.
+
+<!-- @include: @/meta/ToastPositioner.md -->
+
+<DataAttributesTable
+  :data="[
+    {
+      attribute: '[data-side]',
+      values: ['left', 'right', 'bottom', 'top'],
+    },
+    {
+      attribute: '[data-align]',
+      values: ['start', 'end', 'center'],
+    },
+  ]"
+/>
+
+### Arrow
+
+An optional arrow element to render alongside an anchored toast. Must be rendered inside `ToastPositioner`.
+
+<!-- @include: @/meta/ToastArrow.md -->
+
+### useToastManager
+
+Returns the toasts of the nearest `ToastProvider`, newest first, and the methods to manage them. It must be called inside `ToastProvider`.
+
+<PropsTable
+  :data="[
+    {
+      name: 'toasts',
+      description: 'The toasts, newest first. Closed toasts stay in the list until their exit animation ends.',
+      type: 'Ref&lt;ToastObject[]&gt;',
+    },
+    {
+      name: 'add',
+      description: 'Adds a toast and returns its id. Adding a toast with the id of an open toast updates it and restarts its timer.',
+      type: '(options: ToastAddOptions) =&gt; string',
+    },
+    {
+      name: 'update',
+      description: 'Updates an open toast with new options, or with a function of the previous toast.',
+      type: '(id: string, updates: ToastUpdateOptions | ((prev: ToastObject) =&gt; ToastUpdateOptions)) =&gt; void',
+    },
+    {
+      name: 'close',
+      description: 'Closes the toast with the given id, or every toast when no id is given.',
+      type: '(id?: string) =&gt; void',
+    },
+    {
+      name: 'promise',
+      description: 'Shows a loading toast that turns into a success or error toast when the promise settles. Returns the promise.',
+      type: '(promise: Promise&lt;T&gt;, options: ToastPromiseOptions&lt;T&gt;) =&gt; Promise&lt;T&gt;',
+    },
+  ]"
+/>
+
+The options of a toast:
+
+<PropsTable
+  :data="[
+    {
+      name: 'id',
+      description: 'The unique identifier. Generated when not given.',
+      type: 'string',
+    },
+    {
+      name: 'title',
+      description: 'Rendered by ToastTitle when it has no slot content.',
+      type: 'string',
+    },
+    {
+      name: 'description',
+      description: 'Rendered by ToastDescription when it has no slot content.',
+      type: 'string',
+    },
+    {
+      name: 'type',
+      description: 'The sensitivity for accessibility purposes. Overrides the type prop of ToastRoot.',
+      type: '\'foreground\' | \'background\'',
+    },
+    {
+      name: 'status',
+      description: 'Exposed as data-status. loading toasts are never dismissed automatically.',
+      type: '\'loading\' | \'success\' | \'error\' | string',
+    },
+    {
+      name: 'duration',
+      description: 'Time in milliseconds before the toast closes. 0 or Infinity keeps it open. Overrides the duration of ToastRoot and ToastProvider.',
+      type: 'number',
+    },
+    {
+      name: 'actionProps',
+      description: 'Renders ToastAction with this label. altText is required; closeOnClick defaults to true.',
+      type: '{ label?: string, altText: string, closeOnClick?: boolean, onClick?: (event: MouseEvent) =&gt; void }',
+    },
+    {
+      name: 'positionerProps',
+      description: 'Props for ToastPositioner, including the anchor element.',
+      type: 'ToastPositionerOptions',
+    },
+    {
+      name: 'data',
+      description: 'Custom data for your own rendering.',
+      type: 'Data',
+    },
+    {
+      name: 'onClose',
+      description: 'Called when the toast closes.',
+      type: '() =&gt; void',
+    },
+    {
+      name: 'onRemove',
+      description: 'Called when the toast is removed from the list, after its exit animation.',
+      type: '() =&gt; void',
+    },
+  ]"
+/>
+
+Each toast in `toasts` also has `open` and an `updateKey` that increments whenever it is updated or added again.
+
+### createToastManager
+
+Creates a manager that adds toasts from anywhere, including outside components, such as in API clients or stores. Pass it to the `toastManager` prop of `ToastProvider`. It has the same `add`, `update`, `close` and `promise` methods as `useToastManager`, but not the `toasts` list.
+
+Toasts added on the client before a `ToastProvider` has mounted are shown once it mounts. Toasts added during server-side rendering are dropped.
+
 ## Examples
+
+### Toast manager
+
+Render the toasts of `useToastManager()` in one place, and add toasts with it from any component inside `ToastProvider`. Pass each toast to `ToastRoot`; `ToastTitle`, `ToastDescription` and `ToastAction` render the toast's content when they have no slot content.
+
+```vue
+<!-- Toaster.vue -->
+<script setup lang="ts">
+import { ToastAction, ToastClose, ToastDescription, ToastRoot, ToastTitle, ToastViewport, useToastManager } from 'reka-ui'
+
+const { toasts } = useToastManager()
+</script>
+
+<template>
+  <ToastRoot
+    v-for="toast in toasts"
+    :key="toast.id"
+    :toast="toast"
+  >
+    <ToastTitle />
+    <ToastDescription />
+    <ToastAction />
+    <ToastClose>Dismiss</ToastClose>
+  </ToastRoot>
+  <ToastViewport />
+</template>
+```
+
+```vue
+<!-- App.vue -->
+<template>
+  <ToastProvider>
+    <SaveButton />
+    <Toaster />
+  </ToastProvider>
+</template>
+```
+
+```vue
+<!-- SaveButton.vue -->
+<script setup lang="ts">
+import { useToastManager } from 'reka-ui'
+
+const toast = useToastManager()
+
+function save() {
+  toast.add({
+    title: 'Saved',
+    description: 'Your changes have been saved.',
+    actionProps: { label: 'Undo', altText: 'Undo save', onClick: undo },
+  })
+}
+</script>
+```
+
+A closed toast is removed from `toasts` once its exit animation ends.
+
+### Global manager
+
+Create a manager with `createToastManager()` to add toasts from outside components. Because it holds no state itself, it is safe to create at module level, including with SSR.
+
+```ts
+// toast.ts
+import { createToastManager } from 'reka-ui'
+
+export const toast = createToastManager()
+```
+
+```vue
+<!-- App.vue -->
+<script setup lang="ts">
+import { toast } from './toast'
+</script>
+
+<template>
+  <ToastProvider :toast-manager="toast">
+    <RouterView />
+    <Toaster />
+  </ToastProvider>
+</template>
+```
+
+```ts
+// api.ts
+import { toast } from './toast'
+
+export async function fetchJson(url: string) {
+  const response = await fetch(url)
+  if (!response.ok)
+    toast.add({ title: 'Request failed', description: response.statusText })
+  return response.json()
+}
+```
+
+### Promise
+
+`promise()` shows a toast with `status: 'loading'`, which does not close by itself, then updates it to `success` or `error` when the promise settles. Style each state with `data-status`.
+
+```ts
+toast.promise(saveDocument(), {
+  loading: 'Saving…',
+  success: doc => `Saved ${doc.name}`,
+  error: error => ({ title: 'Could not save', description: error.message }),
+})
+```
+
+### Updating and deduplicating toasts
+
+Keep the id returned by `add()` to update the toast later. Adding a toast with the id of a toast that is still open updates it in place and restarts its timer, instead of showing a duplicate.
+
+```ts
+const id = toast.add({ title: 'Uploading…', duration: 0 })
+toast.update(id, prev => ({ title: 'Uploaded', duration: 3000 }))
+
+// Only one "Offline" toast, however often this runs.
+toast.add({ id: 'offline', title: 'You are offline' })
+```
+
+### Stacking toasts
+
+Set `limit` on `ToastProvider` to cap the number of toasts shown. Older toasts beyond the limit get `data-limited` and `inert` so you can hide them. Each toast exposes `--reka-toast-index`, `--reka-toast-offset-y` and `--reka-toast-height`, and the viewport exposes `--reka-toast-frontmost-height` and `data-expanded`, to build a stack that expands on hover or focus.
+
+```vue line=2
+<template>
+  <ToastProvider :limit="3">
+    <Toaster />
+  </ToastProvider>
+</template>
+```
+
+```css
+.ToastRoot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 100%;
+  transition: transform 300ms, opacity 300ms, height 300ms;
+  /* Collapsed: each toast peeks out behind the newer one */
+  height: var(--reka-toast-frontmost-height);
+  transform: translateY(calc(var(--reka-toast-index) * -12px)) scale(calc(1 - var(--reka-toast-index) * 0.05));
+  z-index: calc(1000 - var(--reka-toast-index));
+}
+.ToastViewport[data-expanded] .ToastRoot {
+  height: var(--reka-toast-height);
+  transform: translateY(calc(var(--reka-toast-offset-y) * -1 - var(--reka-toast-index) * 12px));
+}
+.ToastRoot[data-limited] {
+  opacity: 0;
+}
+```
+
+### Anchored toasts
+
+Wrap `ToastRoot` in `ToastPositioner` to show a toast next to an element, such as a "Copied" toast by a copy button. Pass the anchor element with `positionerProps` when adding the toast. Use a separate `ToastProvider` for anchored toasts, so they do not stack with the others.
+
+```vue
+<!-- AnchoredToaster.vue -->
+<script setup lang="ts">
+import { ToastArrow, ToastPositioner, ToastRoot, ToastTitle, ToastViewport, useToastManager } from 'reka-ui'
+
+const { toasts } = useToastManager()
+</script>
+
+<template>
+  <ToastViewport as="div">
+    <ToastPositioner
+      v-for="toast in toasts"
+      :key="toast.id"
+      :toast="toast"
+      :side-offset="8"
+    >
+      <ToastRoot
+        :toast="toast"
+        as="div"
+      >
+        <ToastTitle />
+        <ToastArrow />
+      </ToastRoot>
+    </ToastPositioner>
+  </ToastViewport>
+</template>
+```
+
+```ts
+function copy(event: MouseEvent) {
+  navigator.clipboard.writeText(text)
+  anchoredToast.add({
+    title: 'Copied',
+    duration: 1500,
+    positionerProps: { anchor: event.currentTarget as HTMLElement },
+  })
+}
+```
 
 ### Custom hotkey
 
@@ -325,16 +707,14 @@ When providing an icon (or font icon), remember to label it correctly for screen
       keys: ['Space'],
       description: `
         <span>
-          When focus is on a <Code>ToastAction</Code> or
-          <Code>ToastClose</Code>, closes the toast
+          When focus is on a <Code>ToastAction</Code>, closes the toast when <Code>closeOnClick</Code> is <Code>true</Code>. When focus is on <Code>ToastClose</Code>, closes the toast.
         </span>`
     },
     {
       keys: ['Enter'],
       description: `
         <span>
-          When focus is on a <Code>ToastAction</Code> or
-          <Code>ToastClose</Code>, closes the toast
+          When focus is on a <Code>ToastAction</Code>, closes the toast when <Code>closeOnClick</Code> is <Code>true</Code>. When focus is on <Code>ToastClose</Code>, closes the toast.
         </span>`
     },
     {
@@ -408,7 +788,7 @@ defineProps<{
 
 ### Imperative API
 
-Create your own imperative API to allow [toast duplication](/docs/components/toast#duplicate-toasts) if preferred.
+To add toasts by calling a function, use the [toast manager](/docs/components/toast#toast-manager). The pattern below shows a single toast component instead.
 
 #### Usage
 

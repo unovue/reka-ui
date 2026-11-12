@@ -42,6 +42,14 @@
     'type': '[event: Event]'
   }
 ]" />
+
+<SlotsTable :data="[
+  {
+    'name': 'checked',
+    'description': '<p>Current checked state</p>\n',
+    'type': 'boolean'
+  }
+]" />
 </llm-exclude>
 
 <llm-only>
@@ -61,5 +69,11 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `select` | Event handler called when the user selects an item (via mouse or keyboard). <br> Calling event.preventDefault in this handler will prevent the menu from closing when selecting that item. | `[event: Event]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `checked` | Current checked state | `boolean` |
 
 </llm-only>

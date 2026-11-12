@@ -1,3 +1,4 @@
+import { isDisabled, keepRadioTabStops } from '@/FocusScope/utils'
 import { getActiveElement } from '@/shared'
 
 export type Orientation = 'vertical' | 'horizontal'
@@ -29,11 +30,19 @@ export const EVENT_ROOT_CONTENT_DISMISS = 'navigationMenu.rootContentDismiss'
  * Credit: https://github.com/discord/focus-layers/blob/master/src/util/wrapFocus.tsx#L1
  */
 export function getTabbableCandidates(container: HTMLElement) {
+  return keepRadioTabStops(getTabbableNodes(container), container)
+}
+
+/**
+ * Like `getTabbableCandidates`, but with every radio of a native radio group and not only
+ * its tab stop. Which radio that is changes once one of them leaves the tab order.
+ */
+export function getTabbableNodes(container: HTMLElement) {
   const nodes: HTMLElement[] = []
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, {
     acceptNode: (node: any) => {
       const isHiddenInput = node.tagName === 'INPUT' && node.type === 'hidden'
-      if (node.disabled || node.hidden || isHiddenInput)
+      if (isDisabled(node) || node.hidden || isHiddenInput)
         return NodeFilter.FILTER_SKIP
       // `.tabIndex` is not the same as the `tabindex` attribute. It works on the
       // runtime's understanding of tabbability, so this automatically accounts

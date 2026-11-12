@@ -47,6 +47,19 @@
     'type': '[payload: boolean]'
   }
 ]" />
+
+<SlotsTable :data="[
+  {
+    'name': 'checked',
+    'description': '<p>Current checked state</p>\n',
+    'type': 'false | true | \'indeterminate\''
+  },
+  {
+    'name': 'modelValue',
+    'description': '<p>Current modelValue state</p>\n',
+    'type': 'CheckedState'
+  }
+]" />
 </llm-exclude>
 
 <llm-only>
@@ -67,5 +80,12 @@
 | --- | --- | --- |
 | `select` | Event handler called when the user selects an item (via mouse or keyboard). <br> Calling event.preventDefault in this handler will prevent the menu from closing when selecting that item. | `[event: Event]` |
 | `update:modelValue` | Event handler called when the value changes. | `[payload: boolean]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `checked` | Current checked state | `false \| true \| "indeterminate"` |
+| `modelValue` | Current modelValue state | `CheckedState` |
 
 </llm-only>

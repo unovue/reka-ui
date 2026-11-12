@@ -30,6 +30,13 @@ const props = defineProps<ColorSwatchPickerItemProps>()
 
 const emits = defineEmits<ColorSwatchPickerItemEmits>()
 
+defineSlots<{
+  default?: (props: {
+    /** Whether the item is currently selected */
+    selected: boolean
+  }) => any
+}>()
+
 const { value } = toRefs(props)
 
 const forwarded = useForwardPropsEmits(props, emits)
@@ -50,11 +57,12 @@ provideColorSwatchPickerItemContext({
 
 <template>
   <ListboxItem
+    v-slot="slotProps"
     v-bind="forwarded"
     :aria-label="colorLabel"
     :data-color="value"
     :style="{ '--reka-color-swatch-picker-item-color': value }"
   >
-    <slot />
+    <slot v-bind="slotProps" />
   </ListboxItem>
 </template>

@@ -2,10 +2,12 @@ import type { NumberFieldRootProps } from './NumberFieldRoot.vue'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { useKbd } from '@/shared'
 import { handleSubmit } from '@/test'
+import { NumberFieldIncrement, NumberFieldInput, NumberFieldRoot } from '.'
 import NumberField from './story/_NumberField.vue'
 
 function setup(props?: NumberFieldRootProps) {
@@ -21,6 +23,28 @@ function setup(props?: NumberFieldRootProps) {
 }
 
 const kbd = useKbd()
+
+async function dispatchPointerEvent(
+  target: EventTarget,
+  type: 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel',
+  init: MouseEventInit & { pointerId?: number, pointerType?: string } = {},
+) {
+  await nextTick()
+  const event = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    button: 0,
+    ...init,
+  })
+  Object.defineProperties(event, {
+    pointerId: { value: init.pointerId ?? 1 },
+    pointerType: { value: init.pointerType ?? 'touch' },
+  })
+  target.dispatchEvent(event)
+  await nextTick()
+  return event
+}
+
 describe('numberField', () => {
   beforeEach(() => {
     // @ts-expect-error aXe throwing error complaining getComputedStyle
@@ -28,6 +52,10 @@ describe('numberField', () => {
       display: '',
     })
     document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('should pass axe accessibility tests', async () => {
@@ -89,6 +117,174 @@ describe('numberField', () => {
     expect(input.value).toBe('3')
     await userEvent.click(decrement)
     expect(input.value).toBe('0')
+  })
+
+  describe('with startingValue', () => {
+    it('should start at starting value on increment/decrement, when no value present', async () => {
+      const { input, increment, decrement } = setup({ startingValue: 40, stepSnapping: true })
+      expect(input.value).toBe('')
+
+      await userEvent.click(increment)
+      expect(input.value).toBe('40')
+      await userEvent.click(increment)
+      expect(input.value).toBe('41')
+
+      await userEvent.clear(input)
+      await userEvent.click(decrement)
+      expect(input.value).toBe('40')
+      await userEvent.click(decrement)
+      expect(input.value).toBe('39')
+    })
+
+    it('should not snap the starting value to the step grid', async () => {
+      const { input, increment, decrement } = setup({ step: 3, startingValue: 40, stepSnapping: true })
+
+      await userEvent.click(increment)
+      expect(input.value).toBe('40')
+      // the next tick aligns to the grid in the requested direction
+      await userEvent.click(increment)
+      expect(input.value).toBe('42')
+
+      await userEvent.clear(input)
+      await userEvent.click(decrement)
+      expect(input.value).toBe('40')
+      await userEvent.click(decrement)
+      expect(input.value).toBe('39')
+    })
+
+    it('should clamp the starting value to max', async () => {
+      const { input, increment } = setup({ min: 0, max: 20, startingValue: 40, stepSnapping: true })
+
+      await userEvent.click(increment)
+      expect(input.value).toBe('20')
+    })
+
+    it('should clamp the starting value to min', async () => {
+      const { input, decrement } = setup({ min: 10, max: 20, startingValue: 4, stepSnapping: true })
+
+      await userEvent.click(decrement)
+      expect(input.value).toBe('10')
+    })
+
+    it('should fall back to min when no starting value is given', async () => {
+      const { input, increment } = setup({ min: 5, stepSnapping: true })
+
+      await userEvent.click(increment)
+      expect(input.value).toBe('5')
+    })
+  })
+
+  describe('with pointer hold controls', () => {
+    it('should preserve immediate mouse activation', async () => {
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      const pointerDown = await dispatchPointerEvent(increment, 'pointerdown', { pointerType: 'mouse' })
+      expect(pointerDown.defaultPrevented).toBe(true)
+      expect(input.value).toBe('1')
+
+      await dispatchPointerEvent(window, 'pointerup', { pointerType: 'mouse' })
+      expect(input.value).toBe('1')
+    })
+
+    it('should activate a touch tap on release', async () => {
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      const pointerDown = await dispatchPointerEvent(increment, 'pointerdown')
+      expect(pointerDown.defaultPrevented).toBe(true)
+      expect(input.value).toBe('0')
+
+      await dispatchPointerEvent(window, 'pointerup')
+      expect(input.value).toBe('1')
+    })
+
+    it('should ignore a touch press while disabled', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0, disabled: true })
+
+      await dispatchPointerEvent(increment, 'pointerdown')
+      expect(increment).not.toHaveAttribute('data-pressed')
+
+      await vi.advanceTimersByTimeAsync(500)
+      await dispatchPointerEvent(window, 'pointerup')
+      expect(input.value).toBe('0')
+    })
+
+    it('should cancel a touch press when movement exceeds the tolerance', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      await dispatchPointerEvent(increment, 'pointerdown', { clientX: 10, clientY: 10 })
+      await dispatchPointerEvent(window, 'pointermove', { clientX: 21, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(500)
+      await dispatchPointerEvent(window, 'pointerup', { clientX: 21, clientY: 10 })
+
+      expect(input.value).toBe('0')
+    })
+
+    it('should repeat a stationary touch press after the hold delay', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      await dispatchPointerEvent(increment, 'pointerdown')
+      await vi.advanceTimersByTimeAsync(399)
+      expect(input.value).toBe('0')
+
+      await vi.advanceTimersByTimeAsync(1)
+      await nextTick()
+      expect(input.value).toBe('1')
+
+      await vi.advanceTimersByTimeAsync(60)
+      await nextTick()
+      expect(input.value).toBe('2')
+
+      await dispatchPointerEvent(window, 'pointerup')
+      await vi.advanceTimersByTimeAsync(60)
+      expect(input.value).toBe('2')
+    })
+
+    it('should stop an active touch hold when movement exceeds the tolerance', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      await dispatchPointerEvent(increment, 'pointerdown', { clientX: 10, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(400)
+      await nextTick()
+      expect(input.value).toBe('1')
+
+      await dispatchPointerEvent(window, 'pointermove', { clientX: 21, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(120)
+      expect(input.value).toBe('1')
+    })
+
+    it('should tolerate minor movement after a touch hold starts', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      await dispatchPointerEvent(increment, 'pointerdown', { clientX: 10, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(400)
+      await nextTick()
+      expect(input.value).toBe('1')
+
+      await dispatchPointerEvent(window, 'pointermove', { clientX: 15, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(60)
+      await nextTick()
+      expect(input.value).toBe('2')
+
+      await dispatchPointerEvent(window, 'pointerup', { clientX: 15, clientY: 10 })
+      await vi.advanceTimersByTimeAsync(60)
+      expect(input.value).toBe('2')
+    })
+
+    it('should cancel a touch press on pointercancel', async () => {
+      vi.useFakeTimers()
+      const { input, increment } = setup({ defaultValue: 0 })
+
+      await dispatchPointerEvent(increment, 'pointerdown')
+      await dispatchPointerEvent(window, 'pointercancel')
+      await vi.advanceTimersByTimeAsync(500)
+
+      expect(input.value).toBe('0')
+    })
   })
 
   it('should increase and decrease based on keyboard navigation on input', async () => {
@@ -384,6 +580,109 @@ describe('numberField', () => {
     })
   })
 
+  describe('given allowInvalid prop', async () => {
+    it('should keep a typed value above max without clamping', async () => {
+      const { input } = setup({ max: 10, allowInvalid: true })
+
+      input.value = '50'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      expect(input.value).toBe('50')
+    })
+
+    it('should keep a typed value below min without clamping', async () => {
+      const { input } = setup({ min: 5, allowInvalid: true })
+
+      input.value = '1'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      expect(input.value).toBe('1')
+    })
+
+    it('should keep an off-grid typed value without snapping', async () => {
+      const { input } = setup({ step: 1, stepSnapping: true, allowInvalid: true })
+
+      input.value = '2.5'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      expect(input.value).toBe('2.5')
+    })
+
+    it('should still clamp and snap a typed value when allowInvalid is false', async () => {
+      const { input } = setup({ max: 10 })
+
+      input.value = '50'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      expect(input.value).toBe('10')
+    })
+
+    it('should still clamp step interactions even when allowInvalid is true', async () => {
+      const { input, decrement } = setup({ max: 10, allowInvalid: true })
+
+      input.value = '50'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      expect(input.value).toBe('50')
+      await userEvent.click(decrement) // stepping clamps back into range
+      expect(input.value).toBe('10')
+    })
+
+    it('should not step against the requested direction when the value is out of range', async () => {
+      const { input } = setup({ min: 0, max: 10, allowInvalid: true })
+
+      input.value = '50'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      await fireEvent.keyDown(input, { key: kbd.ARROW_UP })
+      expect(input.value).toBe('50')
+      input.focus()
+      await fireEvent.wheel(input, { deltaY: 10 })
+      expect(input.value).toBe('50')
+      await fireEvent.keyDown(input, { key: kbd.ARROW_DOWN })
+      expect(input.value).toBe('10')
+
+      input.value = '-5'
+      await fireEvent.keyDown(input, { key: kbd.ENTER })
+      await fireEvent.keyDown(input, { key: kbd.ARROW_DOWN })
+      expect(input.value).toBe('-5')
+      await fireEvent.keyDown(input, { key: kbd.ARROW_UP })
+      expect(input.value).toBe('0')
+    })
+
+    // The tests above assign `input.value` directly, which bypasses the `beforeinput` guard.
+    // These type key by key so the guard is actually exercised.
+    describe('when typing key by key', () => {
+      it('should allow typing a negative value below a non-negative min', async () => {
+        const { user, input } = setup({ min: 0, allowInvalid: true })
+
+        await user.type(input, '-5')
+        expect(input.value).toBe('-5')
+
+        await user.tab()
+        expect(input.value).toBe('-5')
+      })
+
+      it('should allow typing a value above max', async () => {
+        const { user, input } = setup({ max: 10, allowInvalid: true })
+
+        await user.type(input, '50')
+        expect(input.value).toBe('50')
+
+        await user.tab()
+        expect(input.value).toBe('50')
+      })
+
+      it('should still reject non-numeric characters', async () => {
+        const { user, input } = setup({ allowInvalid: true })
+
+        await user.type(input, '1a2')
+        expect(input.value).toBe('12')
+      })
+
+      it('should block the minus sign when allowInvalid is false and min is non-negative', async () => {
+        const { user, input } = setup({ min: 0 })
+
+        await user.type(input, '-5')
+        expect(input.value).toBe('5')
+      })
+    })
+  })
+
   describe('given setting the input value manually', async () => {
     it('should it increase/decrease the value appropriately', async () => {
       const { input, increment, decrement } = setup({ defaultValue: 6 })
@@ -422,6 +721,209 @@ describe('numberField', () => {
       expect(input.value).toBe('7')
       await fireEvent.keyDown(input, { key: kbd.ENTER })
       expect(input.value).toBe('EUR 7.00')
+    })
+  })
+
+  describe('given committed input that cannot be parsed', () => {
+    // Mounts the parts under a real `v-model`, and records every `update:modelValue`.
+    function setupModel(props: NumberFieldRootProps = {}, initial: number | null = 5) {
+      const model = ref<number | undefined>(initial ?? undefined)
+      const emitted: (number | undefined)[] = []
+      const view = render(defineComponent({
+        setup: () => () => h(NumberFieldRoot, {
+          ...props,
+          'modelValue': model.value,
+          'onUpdate:modelValue': (value: number | undefined) => {
+            emitted.push(value)
+            model.value = value
+          },
+        }, () => [h(NumberFieldInput), h(NumberFieldIncrement, () => '+')]),
+      }))
+      const input = view.getByRole('spinbutton') as HTMLInputElement
+      const commit = async (text: string, how: 'enter' | 'blur') => {
+        input.focus()
+        await fireEvent.update(input, text)
+        if (how === 'enter')
+          await fireEvent.keyDown(input, { key: kbd.ENTER })
+        else
+          await fireEvent.blur(input)
+        await nextTick()
+      }
+      return { ...view, input, model, emitted, commit }
+    }
+
+    const ways = ['enter', 'blur'] as const
+    const cases = ways.flatMap(how => ['.', '-', 'abc', '1.2.3'].map(text => [text, how] as const))
+
+    describe('by default', () => {
+      it.each(cases)('should clear the value when committing "%s" with %s', async (text, how) => {
+        const { input, model, emitted, commit } = setupModel()
+        await commit(text, how)
+        expect(model.value).toBeUndefined()
+        expect(emitted).toEqual([undefined])
+        expect(input.value).toBe('')
+      })
+
+      it.each(ways)('should clear the value when committing leftover currency text with %s', async (how) => {
+        const { input, emitted, commit } = setupModel({ formatOptions: { style: 'currency', currency: 'USD' } })
+        expect(input.value).toBe('$5.00')
+        await commit('$', how)
+        expect(emitted).toEqual([undefined])
+        expect(input.value).toBe('')
+      })
+
+      it.each(ways)('should clear the value when committing whitespace with %s', async (how) => {
+        const { input, emitted, commit } = setupModel()
+        await commit(' ', how)
+        expect(emitted).toEqual([undefined])
+        expect(input.value).toBe('')
+      })
+    })
+
+    describe('with keepValueOnUnparsableInput', () => {
+      const keep = { keepValueOnUnparsableInput: true }
+
+      it.each(cases)('should keep the value and not emit when committing "%s" with %s', async (text, how) => {
+        const { input, model, emitted, commit } = setupModel(keep)
+        await commit(text, how)
+        expect(model.value).toBe(5)
+        expect(emitted).toEqual([])
+        expect(input.value).toBe('5')
+      })
+
+      it('should restore the formatted text of an uncontrolled value and keep stepping from it', async () => {
+        const { user, input, increment } = setup({ defaultValue: 5, ...keep })
+        await user.clear(input)
+        await user.type(input, '.{Enter}')
+        expect(input.value).toBe('5')
+        await user.click(increment)
+        expect(input.value).toBe('6')
+      })
+
+      it.each([
+        ['de-DE', ',', '5'],
+        ['ar-EG', '٫', '٥'],
+      ])('should keep the value for a lone decimal separator in %s', async (locale, text, formatted) => {
+        const { input, model, emitted, commit } = setupModel({ ...keep, locale })
+        await commit(text, 'enter')
+        expect(model.value).toBe(5)
+        expect(emitted).toEqual([])
+        expect(input.value).toBe(formatted)
+      })
+
+      it.each([
+        ['de-DE', '1.234', 1234, '1.234'],
+        ['ar-EG', '١٢٣', 123, '١٢٣'],
+        ['zh-CN-u-nu-hanidec', '一二三', 123, '一二三'],
+      ])('should still parse localized input in %s', async (locale, text, value, formatted) => {
+        const { input, model, emitted, commit } = setupModel({ ...keep, locale })
+        await commit(text, 'enter')
+        expect(model.value).toBe(value)
+        expect(emitted).toEqual([value])
+        expect(input.value).toBe(formatted)
+      })
+
+      it.each(ways)('should keep the value for leftover currency or unit text with %s', async (how) => {
+        const currency = setupModel({ ...keep, formatOptions: { style: 'currency', currency: 'USD' } })
+        await currency.commit('$', how)
+        expect(currency.emitted).toEqual([])
+        expect(currency.input.value).toBe('$5.00')
+        currency.unmount()
+
+        const unit = setupModel({ ...keep, formatOptions: { style: 'unit', unit: 'kilometer' } })
+        await unit.commit(' km', how)
+        expect(unit.emitted).toEqual([])
+        expect(unit.input.value).toBe('5 km')
+      })
+
+      it.each(ways.flatMap(how => ['', ' ', '   '].map(text => [JSON.stringify(text), text, how] as const)))('should still clear the value when committing %s with %s', async (_label, text, how) => {
+        const { input, model, emitted, commit } = setupModel({ ...keep, formatOptions: { style: 'currency', currency: 'USD' } })
+        await commit(text, how)
+        expect(model.value).toBeUndefined()
+        expect(emitted).toEqual([undefined])
+        expect(input.value).toBe('')
+      })
+
+      it('should still clamp parsable input to min and max', async () => {
+        const { input, model, commit } = setupModel({ ...keep, min: 0, max: 10 })
+        await commit('999', 'enter')
+        expect(model.value).toBe(10)
+        expect(input.value).toBe('10')
+      })
+
+      it('should leave an empty field empty', async () => {
+        const { input, model, emitted, commit } = setupModel(keep, null)
+        await commit('.', 'enter')
+        expect(model.value).toBeUndefined()
+        expect(emitted).toEqual([])
+        expect(input.value).toBe('')
+      })
+    })
+
+    // The number parser reads empty and numeral-free percent text as zero rather than as unparsable.
+    describe('with percent formatting', () => {
+      const percent = { step: 0.01, formatOptions: { style: 'percent' } } as const
+      const keep = { ...percent, keepValueOnUnparsableInput: true }
+      const blank = ways.flatMap(how => ['', ' '].map(text => [JSON.stringify(text), text, how] as const))
+
+      it.each(blank)('should clear the value by default when committing %s with %s', async (_label, text, how) => {
+        const { input, model, emitted, commit } = setupModel(percent, 0.5)
+        expect(input.value).toBe('50%')
+        await commit(text, how)
+        expect(model.value).toBeUndefined()
+        expect(emitted).toEqual([undefined])
+        expect(input.value).toBe('')
+      })
+
+      it.each(blank)('should clear the value with keepValueOnUnparsableInput when committing %s with %s', async (_label, text, how) => {
+        const { input, model, emitted, commit } = setupModel(keep, 0.5)
+        await commit(text, how)
+        expect(model.value).toBeUndefined()
+        expect(emitted).toEqual([undefined])
+        expect(input.value).toBe('')
+      })
+
+      it.each(ways.flatMap(how => ['%', ' %', '.', '-', '-%'].map(text => [text, how] as const)))('should keep the value with keepValueOnUnparsableInput when committing "%s" with %s', async (text, how) => {
+        const { input, model, emitted, commit } = setupModel(keep, 0.5)
+        await commit(text, how)
+        expect(model.value).toBe(0.5)
+        expect(emitted).toEqual([])
+        expect(input.value).toBe('50%')
+      })
+
+      it.each([
+        ['en-US', '0%', 0],
+        ['en-US', '٢٥', 0.25],
+        ['ar-EG', '٢٥', 0.25],
+        ['zh-CN-u-nu-hanidec', '二五', 0.25],
+        ['hi-IN-u-nu-deva', '२५', 0.25],
+      ])('should still parse numerals with keepValueOnUnparsableInput in %s ("%s")', async (locale, text, value) => {
+        const { model, emitted, commit } = setupModel({ ...keep, locale }, 0.5)
+        await commit(text, 'enter')
+        expect(model.value).toBe(value)
+        expect(emitted).toEqual([value])
+      })
+
+      it.each(ways.flatMap(how => ['%', ' %', '.', '-', '-%'].map(text => [text, how] as const)))('should clear the value by default when committing "%s" with %s', async (text, how) => {
+        const { input, model, emitted, commit } = setupModel(percent, 0.5)
+        await commit(text, how)
+        expect(model.value).toBeUndefined()
+        expect(emitted).toEqual([undefined])
+        expect(input.value).toBe('')
+      })
+
+      it.each([
+        ['en-US', '0%', 0],
+        ['en-US', '٢٥', 0.25],
+        ['ar-EG', '٢٥', 0.25],
+        ['zh-CN-u-nu-hanidec', '二五', 0.25],
+        ['hi-IN-u-nu-deva', '२५', 0.25],
+      ])('should still parse numerals by default in %s ("%s")', async (locale, text, value) => {
+        const { model, emitted, commit } = setupModel({ ...percent, locale }, 0.5)
+        await commit(text, 'enter')
+        expect(model.value).toBe(value)
+        expect(emitted).toEqual([value])
+      })
     })
   })
 
@@ -472,8 +974,8 @@ describe('given checkbox in a form', async () => {
     })
 
     it('should trigger submit once', () => {
-      expect(handleSubmit).toHaveBeenCalledTimes(2)
-      expect(handleSubmit.mock.results[1].value).toStrictEqual({ test: '6' })
+      expect(handleSubmit).toHaveBeenCalledTimes(1)
+      expect(handleSubmit.mock.results[0].value).toStrictEqual({ test: '6' })
     })
   })
 })

@@ -1,11 +1,151 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { computed, defineComponent, Fragment, h, ref, watchPostEffect } from 'vue'
+import { computed, defineComponent, Fragment, h, nextTick, ref, watchPostEffect } from 'vue'
 
 import { Primitive } from '../Primitive'
 import { useForwardExpose } from './useForwardExpose'
 
 describe('useForwardRef', async () => {
+  it.each([null, undefined])('should fall back to the root when a forwarded $el becomes %s', async (emptyElement) => {
+    let forwarded!: ReturnType<typeof useForwardExpose>
+    const show = ref(true)
+    const wrapper = mount(defineComponent({
+      setup() {
+        forwarded = useForwardExpose()
+        return () => h('div', show.value
+          ? [h('span', { ref: element => forwarded.forwardRef({ $el: element ?? emptyElement } as any) }, 'Child')]
+          : [])
+      },
+    }))
+
+    try {
+      await nextTick()
+      const root = wrapper.get('div').element
+      const exposed = wrapper.vm.$.exposed!
+      expect(exposed.$el).toBe(wrapper.get('span').element)
+      expect(forwarded.currentElement.value).toBe(wrapper.get('span').element)
+
+      show.value = false
+      await nextTick()
+      expect(exposed.$el).toBe(root)
+      expect(forwarded.currentRef.value).toBeNull()
+      expect(forwarded.currentElement.value).toBeNull()
+
+      show.value = true
+      await nextTick()
+      expect(exposed.$el).toBe(wrapper.get('span').element)
+      expect(forwarded.currentElement.value).toBe(wrapper.get('span').element)
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('should safely read cached child exposures after forwarding a $el-only ref', async () => {
+    const showComponent = ref(true)
+    const Child = defineComponent({
+      setup(_, { expose }) {
+        expose({ childValue: 'child' })
+        return () => h('span', 'Child')
+      },
+    })
+    const wrapper = mount(defineComponent({
+      setup() {
+        const { forwardRef } = useForwardExpose()
+        return () => h('div', showComponent.value
+          ? [h(Child, { ref: forwardRef })]
+          : [h('button', { ref: element => forwardRef({ $el: element } as any) }, 'Replacement')])
+      },
+    }))
+
+    try {
+      await nextTick()
+      const exposed = wrapper.vm.$.exposed!
+      expect(exposed.childValue).toBe('child')
+
+      showComponent.value = false
+      await nextTick()
+      expect(exposed.$el).toBe(wrapper.get('button').element)
+      expect(() => exposed.childValue).not.toThrow()
+      expect(exposed.childValue).toBeUndefined()
+
+      showComponent.value = true
+      await nextTick()
+      expect(exposed.$el).toBe(wrapper.get('span').element)
+      expect(exposed.childValue).toBe('child')
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it.each(['element', 'component'])('should release a forwarded %s when its child unmounts', async (kind) => {
+    const show = ref(true)
+    let forwarded!: ReturnType<typeof useForwardExpose>
+    const Child = defineComponent({
+      setup(_, { expose }) {
+        const element = ref<HTMLElement>()
+        expose({ element })
+        return () => h('span', { ref: element }, 'Child')
+      },
+    })
+    const wrapper = mount(defineComponent({
+      setup() {
+        forwarded = useForwardExpose()
+        return () => h('div', {}, show.value
+          ? [h(kind === 'element' ? 'span' : Child, { ref: forwarded.forwardRef })]
+          : [])
+      },
+    }))
+    await nextTick()
+
+    const element = wrapper.get('span').element
+    const rootElement = wrapper.get('div').element
+    const exposed = wrapper.vm.$.exposed!
+    expect(forwarded.currentElement.value).toBe(element)
+    expect(exposed.$el).toBe(element)
+
+    show.value = false
+    await nextTick()
+
+    expect(wrapper.vm.$.exposed!.$el).toBe(rootElement)
+    expect(exposed.$el).toBe(rootElement)
+    expect(exposed.element).toBeUndefined()
+    expect(forwarded.currentRef.value).toBeNull()
+    expect(forwarded.currentElement.value).toBeNull()
+
+    show.value = true
+    await nextTick()
+
+    expect(forwarded.currentElement.value).toBe(wrapper.get('span').element)
+    expect(wrapper.vm.$.exposed!.$el).toBe(wrapper.get('span').element)
+    expect(wrapper.get('span').element).not.toBe(element)
+    wrapper.unmount()
+  })
+
+  it('should keep parent props reactive when merging a child expose', async () => {
+    const Child = defineComponent({
+      setup(_, { expose }) {
+        expose({ childValue: 'child' })
+        return () => h('span')
+      },
+    })
+    const wrapper = mount(defineComponent({
+      props: { label: String },
+      setup() {
+        const { forwardRef } = useForwardExpose()
+        return () => h(Child, { ref: forwardRef })
+      },
+    }), { props: { label: 'before' } })
+    await nextTick()
+
+    const exposed = wrapper.vm.$.exposed!
+    expect(exposed.label).toBe('before')
+    await wrapper.setProps({ label: 'after' })
+    expect(exposed.label).toBe('after')
+    wrapper.unmount()
+  })
+
   it('should forward plain DOM element ref', async () => {
     const comp = defineComponent({
       setup() {

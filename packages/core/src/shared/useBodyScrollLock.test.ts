@@ -12,18 +12,18 @@ function createWrapper(initialState: boolean) {
   }, { attachTo: document.body })
 }
 
-describe('useBodyScrollLock', () => {
-  vi.mock('@/ConfigProvider/ConfigProvider.vue', async () => {
-    return {
-      injectConfigProviderContext: () => {
-        return {
-          dir: ref('ltr'),
-          scrollBody: ref(true),
-        }
-      },
-    }
-  })
+vi.mock('@/ConfigProvider/ConfigProvider.vue', async () => {
+  return {
+    injectConfigProviderContext: () => {
+      return {
+        dir: ref('ltr'),
+        scrollBody: ref(true),
+      }
+    },
+  }
+})
 
+describe('useBodyScrollLock', () => {
   Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 200 })
   Object.defineProperty(document, 'clientWidth', { writable: true, configurable: true, value: 190 })
   Object.defineProperty(document.documentElement, 'clientWidth', { writable: true, configurable: true, value: 190 })

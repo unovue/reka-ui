@@ -1,10 +1,12 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import userEvent from '@testing-library/user-event'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import PinInput from './story/_PinInput.vue'
+
+const originalGetComputedStyle = window.getComputedStyle
 
 describe('given default PinInput', () => {
   // @ts-expect-error aXe throwing error complaining getComputedStyle
@@ -334,6 +336,22 @@ describe('give PinInput type=number', async () => {
     })
   })
 
+  describe('after clearing a middle input', () => {
+    beforeEach(async () => {
+      await userEvent.keyboard('12345')
+      inputs[2].element.focus()
+      await inputs[2].trigger('keydown', { key: 'Backspace' })
+    })
+
+    it('should clear only the targeted box', () => {
+      expect(inputs.map(i => i.element.value)).toStrictEqual(['1', '2', '', '4', '5'])
+    })
+
+    it('should emit \'update:modelValue\' with an explicit undefined at the gap', () => {
+      expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toStrictEqual([1, 2, undefined, 4, 5])
+    })
+  })
+
   describe('after user input numeric word consisting only of zeros', () => {
     beforeEach(async () => {
       await userEvent.keyboard('00000')
@@ -456,20 +474,84 @@ describe('handle IME composition', () => {
 })
 
 describe('give OTP PinInput', () => {
-  // @ts-expect-error aXe throwing error complaining getComputedStyle
-  window.getComputedStyle = () => {}
   let wrapper: VueWrapper<InstanceType<typeof PinInput>>
   let inputs: DOMWrapper<HTMLInputElement>[] = []
 
   beforeEach(() => {
+    // `userEvent.tab()` / `userEvent.click()` need the real `getComputedStyle`
+    window.getComputedStyle = originalGetComputedStyle
     document.body.innerHTML = ''
     wrapper = mount(PinInput, { attachTo: document.body, props: { otp: true } })
     inputs = wrapper.find('div').findAll('input:not([aria-hidden])')
     inputs[0].element.focus()
   })
 
-  it('should disable later inputs if there are empty inputs before them', async () => {
-    inputs[1].element.focus()
+  afterEach(() => {
+    // @ts-expect-error aXe throwing error complaining getComputedStyle
+    window.getComputedStyle = () => {}
+  })
+
+  it('should redirect focus to the first empty input when focused from outside', async () => {
+    inputs[0].element.blur()
+    inputs[2].element.focus()
+    expect(document.activeElement).toBe(inputs[0].element)
+  })
+
+  it('should redirect a click on a later input to the first empty input', async () => {
+    await userEvent.click(inputs[2].element)
+    expect(document.activeElement).toBe(inputs[0].element)
+
+    await userEvent.keyboard('1')
+    expect(document.activeElement).toBe(inputs[1].element)
+    await userEvent.click(inputs[3].element)
+    expect(document.activeElement).toBe(inputs[1].element)
+  })
+
+  it('should allow focusing a later input when all inputs before it are filled', async () => {
+    await userEvent.keyboard('12')
+    expect(document.activeElement).toBe(inputs[2].element)
+
+    await userEvent.click(inputs[1].element)
+    expect(document.activeElement).toBe(inputs[1].element)
+    await userEvent.click(inputs[2].element)
+    expect(document.activeElement).toBe(inputs[2].element)
+  })
+
+  it('should not move past the first empty input with arrow keys', async () => {
+    await userEvent.keyboard('{ArrowRight}')
+    expect(document.activeElement).toBe(inputs[0].element)
+    await userEvent.keyboard('{End}')
+    expect(document.activeElement).toBe(inputs[0].element)
+
+    await userEvent.keyboard('12')
+    expect(document.activeElement).toBe(inputs[2].element)
+    await userEvent.keyboard('{ArrowRight}')
+    expect(document.activeElement).toBe(inputs[2].element)
+    await userEvent.keyboard('{ArrowLeft}{ArrowLeft}')
+    expect(document.activeElement).toBe(inputs[0].element)
+    await userEvent.keyboard('{End}')
+    expect(document.activeElement).toBe(inputs[2].element)
+  })
+
+  it('should not trap `Tab` navigation inside the inputs', async () => {
+    await userEvent.tab()
+    expect(document.activeElement).toBe(inputs[1].element)
+    await userEvent.tab()
+    expect(document.activeElement).toBe(inputs[2].element)
+    await userEvent.tab()
+    await userEvent.tab()
+    expect(document.activeElement).toBe(inputs[4].element)
+    await userEvent.tab()
+    expect(inputs.some(i => i.element === document.activeElement)).toBe(false)
+  })
+
+  it('should allow `Shift+Tab` navigation through the inputs', async () => {
+    await userEvent.tab()
+    await userEvent.tab()
+    expect(document.activeElement).toBe(inputs[2].element)
+    await userEvent.tab({ shift: true })
+    expect(document.activeElement).toBe(inputs[1].element)
+    await userEvent.tab({ shift: true })
     expect(document.activeElement).toBe(inputs[0].element)
   })
 })

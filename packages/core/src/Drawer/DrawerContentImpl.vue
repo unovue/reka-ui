@@ -31,16 +31,20 @@ export interface DrawerContentImplProps extends DismissableLayerProps {
 <script setup lang="ts">
 import type { SwipeDirection } from './utils'
 import { useResizeObserver } from '@vueuse/core'
-import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
-import { useForwardExpose } from '@/shared'
+import { focus } from '@/FocusScope/utils'
+import { isHTMLElement, useForwardExpose } from '@/shared'
 import { useDrawerSnapPoints } from './composables/useDrawerSnapPoints'
 import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { computeSwipeReleaseScalar, DRAWER_CSS_VARS, getDisplacement, registerDrawerCssProperties } from './utils'
 
-const props = defineProps<DrawerContentImplProps>()
+const props = withDefaults(defineProps<DrawerContentImplProps>(), {
+  initialFocus: true,
+  finalFocus: true,
+})
 const emits = defineEmits<DrawerContentImplEmits>()
 
 const rootContext = injectDrawerRootContext()
@@ -56,7 +60,7 @@ const { activeSnapPointOffset, snapToNearest } = useDrawerSnapPoints({
   viewportRef: currentElement,
   onSnapPointChange: (point) => {
     if (point === null)
-      rootContext.onOpenChange(false)
+      rootContext.onOpenChange(false, 'swipe')
     else
       rootContext.setActiveSnapPoint(point)
   },
@@ -107,6 +111,17 @@ watch(() => rootContext.frontmostHeight.value, (h) => {
   currentElement.value?.style.setProperty(DRAWER_CSS_VARS.frontmostHeight, `${h}px`)
 })
 
+// Report the frontmost height up the stack: this drawer's own height, or the
+// one its own nested drawer reported. Report 0 once it closes or unmounts, so
+// the parent falls back to its own height.
+watch(
+  [() => rootContext.open.value, () => rootContext.frontmostHeight.value],
+  ([isOpen, frontmostHeight]) => {
+    rootContext.notifyParentFrontmostHeight?.(isOpen ? frontmostHeight : 0)
+  },
+  { immediate: true },
+)
+
 // Swipe directions: when snap points exist, allow both dismiss AND expand directions
 const hasSnapPoints = computed(() => (rootContext.snapPoints.value?.length ?? 0) > 0)
 const swipeDirections = computed<SwipeDirection[]>(() => {
@@ -124,7 +139,7 @@ const swipeDirections = computed<SwipeDirection[]>(() => {
 let lastRawDelta = { x: 0, y: 0 }
 
 // Swipe dismiss
-const { isSwiping, dragOffset } = useSwipeDismiss({
+const { isSwiping, dragOffset, restore: restoreSwipe } = useSwipeDismiss({
   enabled: computed(() => rootContext.open.value),
   elementRef: currentElement,
   directions: swipeDirections,
@@ -132,12 +147,20 @@ const { isSwiping, dragOffset } = useSwipeDismiss({
     x: DRAWER_CSS_VARS.swipeMovementX,
     y: DRAWER_CSS_VARS.swipeMovementY,
   },
+  ignoreSelectorWhenTouch: false,
   canStart: () => !rootContext.nestedSwiping.value,
   onDismiss() {
-    if (!hasSnapPoints.value) {
-      rootContext.onOpenChange(false, 'swipe')
-    }
     // With snap points, onRelease handles snapping
+    if (hasSnapPoints.value)
+      return
+    if (!rootContext.onOpenChange(false, 'swipe'))
+      return false
+    // BaseUI parity: a controlled parent may ignore `update:open`. Its `open`
+    // prop settles by the next tick; if it is still open, undo the dismissal.
+    nextTick(() => {
+      if (rootContext.open.value)
+        restoreSwipe()
+    })
   },
   onRelease(velocity) {
     // Write the `--drawer-swipe-strength` CSS var so consumer transitions can
@@ -255,6 +278,19 @@ function onInteractOutside(event: any) {
   emits('interactOutside', event)
 }
 
+function onMountAutoFocus(event: Event) {
+  emits('openAutoFocus', event)
+  if (event.defaultPrevented)
+    return
+  if (props.initialFocus === false) {
+    event.preventDefault()
+  }
+  else if (isHTMLElement(props.initialFocus)) {
+    event.preventDefault()
+    focus(props.initialFocus, { select: true })
+  }
+}
+
 // --- update:openComplete wiring ---
 // Fire `update:openComplete` on the popup's own transitionend/animationend,
 // not on a microtask — consumers rely on this marker to know the enter/exit
@@ -268,7 +304,7 @@ function clearOpenCompleteListener() {
   openCompleteCleanup = undefined
 }
 
-watch(() => rootContext.open.value, (isOpen) => {
+function listenForOpenComplete(isOpen: boolean) {
   clearOpenCompleteListener()
   const el = currentElement.value
   if (!el) {
@@ -289,7 +325,9 @@ watch(() => rootContext.open.value, (isOpen) => {
     el.removeEventListener('transitionend', handler)
     el.removeEventListener('animationend', handler)
   }
-})
+}
+
+watch(() => rootContext.open.value, listenForOpenComplete)
 
 // Data attributes
 const dataAttributes = computed(() => {
@@ -317,9 +355,26 @@ watch(() => rootContext.nestedOpenDrawerCount.value, (n) => {
 // `DrawerPopup.tsx` (useIsoLayoutEffect subscribing to nestedSwipeProgressStore).
 let unsubscribeNestedProgress: (() => void) | undefined
 
+let registeredElement: HTMLElement | undefined
+
 onMounted(() => {
-  rootContext.contentElement.value = currentElement.value
+  registeredElement = currentElement.value
+  rootContext.contentElement.value = registeredElement
   rootContext.notifyParentHasNestedDrawer?.(true)
+
+  // The content mounts already open, so the `open` watcher above never sees
+  // the opening and the enter animation has to be listened for here.
+  if (rootContext.open.value)
+    listenForOpenComplete(true)
+
+  // Initial frontmost height. Required on reopen, when the height is already
+  // known from a previous open and the lazy watcher would never fire.
+  if (rootContext.frontmostHeight.value > 0) {
+    currentElement.value?.style.setProperty(
+      DRAWER_CSS_VARS.frontmostHeight,
+      `${rootContext.frontmostHeight.value}px`,
+    )
+  }
 
   // Initial nested-drawer count
   currentElement.value?.style.setProperty(
@@ -339,7 +394,12 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // Release the element so the root, which stays mounted, does not keep it after close.
+  if (rootContext.contentElement.value === registeredElement)
+    rootContext.contentElement.value = undefined
+  registeredElement = undefined
   rootContext.notifyParentHasNestedDrawer?.(false)
+  rootContext.notifyParentFrontmostHeight?.(0)
   unsubscribeNestedProgress?.()
   clearOpenCompleteListener()
 })
@@ -361,7 +421,7 @@ if (process.env.NODE_ENV !== 'production') {
     as-child
     loop
     :trapped="props.trapFocus"
-    @mount-auto-focus="emits('openAutoFocus', $event)"
+    @mount-auto-focus="onMountAutoFocus"
     @unmount-auto-focus="emits('closeAutoFocus', $event)"
   >
     <DismissableLayer

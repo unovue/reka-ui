@@ -17,8 +17,15 @@ export interface UseSwipeDismissOptions {
   movementCssVars: { x: string, y: string }
   swipeThreshold?: number | ((opts: { element: HTMLElement, direction: SwipeDirection }) => number)
   ignoreScrollableAncestors?: boolean
+  /**
+   * When `false`, touch swipes may start on the interactive elements
+   * (buttons, links, labels, fields) that mouse and pen swipes skip.
+   * @default true
+   */
+  ignoreSelectorWhenTouch?: boolean
   canStart?: () => boolean
-  onDismiss?: () => void
+  /** Return `false` when the dismissal was rejected, so the element settles back. */
+  onDismiss?: () => boolean | void
   onProgress?: (progress: number, details?: SwipeProgressDetails) => void
   onCancel?: () => void
   onSwipeStart?: () => void
@@ -35,9 +42,20 @@ export interface UseSwipeDismissOptions {
 const DEFAULT_SWIPE_THRESHOLD = 40
 const REVERSE_CANCEL_THRESHOLD = 10
 const MIN_DRAG_THRESHOLD = 1
+// Travel an axis must cover from the touch origin to claim the gesture, and the
+// margin the cross axis must beat the drawer axis by to win it.
+const AXIS_LOCK_SLOP = 6
+const AXIS_LOCK_BIAS = 2
 const MIN_RELEASE_VELOCITY_DURATION_MS = 16
 const MAX_RELEASE_VELOCITY_AGE_MS = 80
 const DEFAULT_IGNORE_SELECTOR = 'button,a,input,select,textarea,label,[role="button"]'
+// Opts an element out of swipe dismissal for every input type. Ported from
+// Base UI's `data-base-ui-swipe-ignore`.
+const SWIPE_IGNORE_SELECTOR = '[data-reka-swipe-ignore]'
+
+function isRangeInput(target: EventTarget): boolean {
+  return (target as Element).tagName === 'INPUT' && (target as HTMLInputElement).type === 'range'
+}
 
 function findScrollableAncestor(
   el: Element | null,
@@ -116,6 +134,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     movementCssVars,
     swipeThreshold: swipeThresholdProp,
     canStart,
+    ignoreSelectorWhenTouch = true,
     onDismiss,
     onProgress,
     onCancel,
@@ -131,6 +150,14 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
   const allowLeft = computed(() => toValue(directions).includes('left'))
   const allowRight = computed(() => toValue(directions).includes('right'))
 
+  // The axis the drawer dismisses along, or `null` when both axes are
+  // dismissable and there is no cross axis to yield native scrolling to.
+  const drawerAxis = computed<'vertical' | 'horizontal' | null>(() => {
+    if (hasVertical.value === hasHorizontal.value)
+      return null
+    return hasVertical.value ? 'vertical' : 'horizontal'
+  })
+
   const isSwiping = ref(false)
   const swipeDirection = ref<SwipeDirection | undefined>(undefined)
   const dragOffset = ref({ x: 0, y: 0 })
@@ -145,6 +172,10 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
   let pendingSwipeStartPos: { x: number, y: number } | null = null
   let swipeFromScrollable = false
   let scrollableAncestor: HTMLElement | null = null
+  // Cross-axis arbitration state (touch only), reset per gesture.
+  let crossAxisScrollable: HTMLElement | null = null
+  let drawerAxisAttributed = false
+  let preserveNativeCrossAxisScroll = false
   let elementSize = { width: 0, height: 0 }
   let swipeProgress = 0
   let lastDragSample: { x: number, y: number, time: number } | null = null
@@ -214,6 +245,9 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     resetGestureState()
     swipeFromScrollable = false
     scrollableAncestor = null
+    crossAxisScrollable = null
+    drawerAxisAttributed = false
+    preserveNativeCrossAxisScroll = false
     activePointerId = null
     pointerStarted = false
   }
@@ -254,6 +288,52 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       ? dampAxis(deltaY, allowUp.value, allowDown.value)
       : exponent(deltaY)
     return { x: newDx, y: newDy }
+  }
+
+  /**
+   * Arbitrates a touchmove between the drawer swipe and a native scroll on the
+   * cross axis. Returns `true` when the move must be left alone — the cross axis
+   * already won the gesture, or neither axis has passed the slop yet.
+   */
+  function shouldYieldTouchMove(e: TouchEvent, pos: { x: number, y: number }): boolean {
+    if (preserveNativeCrossAxisScroll)
+      return true
+
+    // Attribution happens once per gesture: the slop is measured from the touch
+    // origin, which is never re-baselined, so re-arbitrating mid-drag would
+    // freeze the drawer and drop `preventDefault()`.
+    if (drawerAxisAttributed || !crossAxisScrollable || !drawerAxis.value)
+      return false
+
+    // The browser has already committed the gesture to a native scroll.
+    if (!e.cancelable) {
+      preserveNativeCrossAxisScroll = true
+      return true
+    }
+
+    const isVerticalDrawerAxis = drawerAxis.value === 'vertical'
+    const drawerAxisDelta = isVerticalDrawerAxis ? pos.y - dragStartPos.y : pos.x - dragStartPos.x
+    const crossAxisDelta = isVerticalDrawerAxis ? pos.x - dragStartPos.x : pos.y - dragStartPos.y
+    const absDrawerAxisDelta = Math.abs(drawerAxisDelta)
+    const absCrossAxisDelta = Math.abs(crossAxisDelta)
+
+    if (
+      absCrossAxisDelta >= AXIS_LOCK_SLOP
+      && absCrossAxisDelta > absDrawerAxisDelta + AXIS_LOCK_BIAS
+    ) {
+      preserveNativeCrossAxisScroll = true
+      return true
+    }
+
+    if (absDrawerAxisDelta >= AXIS_LOCK_SLOP) {
+      drawerAxisAttributed = true
+      return false
+    }
+
+    // Unattributed. Leave the event alone: on iOS, `preventDefault()` on the
+    // first cancelable touchmove cancels native scrolling for the whole gesture,
+    // locking out a cross-axis scroll that only passes the slop on a later move.
+    return true
   }
 
   function processMove(el: HTMLElement, pos: { x: number, y: number }, time: number) {
@@ -376,6 +456,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     // would otherwise set a stray `data-swipe-dismissed` on a drawer that
     // actually snapped to a point, or clear CSS vars onRelease already wrote.
     const releaseHandled = onRelease?.(velocity) === true
+    let dismissed = false
 
     if (!releaseHandled) {
       const velInDirection = getDisplacement(
@@ -386,13 +467,13 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       const shouldDismiss = !cancelledSwipe
         && (displacement >= threshold || velInDirection > 0.3)
 
-      if (shouldDismiss) {
+      if (shouldDismiss && onDismiss?.() !== false) {
         // BaseUI parity: on dismiss, keep the drag transform in place so the
         // close animation runs smoothly from the dragged position. Clearing the
         // CSS vars here would cause a one-frame snap-back to resting before the
         // closing transition begins (visible as a flicker).
         el.setAttribute('data-swipe-dismissed', '')
-        onDismiss?.()
+        dismissed = true
       }
       else {
         // On cancel, reset the drag transform so the drawer animates back to rest.
@@ -400,6 +481,11 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
         onCancel?.()
       }
     }
+
+    // BaseUI parity (`settleInPlace`): a drawer that stays open settles back to
+    // rest, so drop the published progress along with the drag transform.
+    if (!dismissed)
+      onProgress?.(0)
 
     reset()
   }
@@ -417,7 +503,7 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       return
 
     const target = e.target as HTMLElement
-    if (target?.closest(DEFAULT_IGNORE_SELECTOR))
+    if (target?.closest(`${DEFAULT_IGNORE_SELECTOR},${SWIPE_IGNORE_SELECTOR}`))
       return
 
     const el = elementRef.value
@@ -489,12 +575,26 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       return
 
     const target = e.target as HTMLElement
-    if (target?.closest(DEFAULT_IGNORE_SELECTOR))
+    if (target?.closest(SWIPE_IGNORE_SELECTOR))
       return
+    // A tap that stays under the drag threshold still clicks, so touch can
+    // start a swipe on buttons and links; a range input's thumb drag cannot
+    // be told apart from a swipe, so it keeps the gesture.
+    if (ignoreSelectorWhenTouch
+      ? target?.closest(DEFAULT_IGNORE_SELECTOR)
+      : e.composedPath().some(isRangeInput)) {
+      return
+    }
 
     const el = elementRef.value
     if (!el)
       return
+
+    // A gesture whose end we never saw would otherwise leak its verdict into
+    // this one, permanently muting the swipe.
+    crossAxisScrollable = null
+    drawerAxisAttributed = false
+    preserveNativeCrossAxisScroll = false
 
     if (!options.ignoreScrollableAncestors) {
       const axis = hasVertical.value ? 'vertical' : 'horizontal'
@@ -503,6 +603,15 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
         swipeFromScrollable = true
         scrollableAncestor = scrollable
       }
+    }
+
+    // The scroller on the axis the drawer does NOT dismiss along, so
+    // `shouldYieldTouchMove` can hand the gesture to it. Deliberately not gated
+    // on `ignoreScrollableAncestors`: that option is about starting a swipe from
+    // inside a scroller on the dismiss axis.
+    if (drawerAxis.value) {
+      const crossAxis = drawerAxis.value === 'vertical' ? 'horizontal' : 'vertical'
+      crossAxisScrollable = findScrollableAncestor(target, crossAxis)
     }
 
     const t = e.touches[0]
@@ -521,6 +630,10 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
       return
 
     const pos = { x: t.clientX, y: t.clientY }
+
+    // Bailing here leaves the move untouched, so the browser can scroll natively.
+    if (shouldYieldTouchMove(e, pos))
+      return
 
     if (swipeFromScrollable && pendingSwipe && scrollableAncestor) {
       const dx = pos.x - dragStartPos.x
@@ -618,9 +731,24 @@ export function useSwipeDismiss(options: UseSwipeDismissOptions) {
     reset()
   })
 
+  /**
+   * Undoes a dismissal that did not take effect, e.g. a controlled `open` the
+   * parent never updated. The element animates back to rest.
+   */
+  function restore() {
+    const el = elementRef.value
+    if (!el?.hasAttribute('data-swipe-dismissed'))
+      return
+    el.removeAttribute('data-swipe-dismissed')
+    clearCssVars(el)
+    onProgress?.(0)
+    onCancel?.()
+  }
+
   return {
     isSwiping,
     swipeDirection,
     dragOffset,
+    restore,
   }
 }

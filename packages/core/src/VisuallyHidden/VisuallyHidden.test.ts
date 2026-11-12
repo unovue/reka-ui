@@ -1,5 +1,7 @@
+import { getByRole } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { defineComponent, h } from 'vue'
 import VisuallyHidden from './VisuallyHidden.vue'
 
 describe('given default VisuallyHidden', () => {
@@ -25,6 +27,18 @@ describe('given default VisuallyHidden', () => {
     expect(wrapper.text()).toBe('Hidden label text')
     wrapper.unmount()
   })
+
+  it('labels its parent with the hidden text', () => {
+    // The documented use case: `<button><Icon /><VisuallyHidden>Settings</VisuallyHidden></button>`.
+    // Hidden text must contribute to the accessible name, which it cannot do
+    // if it is aria-hidden.
+    document.body.innerHTML = ''
+    const wrapper = mount(defineComponent({
+      render: () => h('button', [h('svg'), h(VisuallyHidden, () => 'Settings')]),
+    }), { attachTo: document.body })
+    expect(getByRole(document.body, 'button', { name: 'Settings' })).toBeTruthy()
+    wrapper.unmount()
+  })
 })
 
 describe('given feature="focusable" (default)', () => {
@@ -42,8 +56,12 @@ describe('given feature="focusable" (default)', () => {
     wrapper.unmount()
   })
 
-  it('sets aria-hidden="true"', () => {
-    expect(wrapper.attributes('aria-hidden')).toBe('true')
+  it('does not set aria-hidden', () => {
+    // `focusable` content must stay in the accessibility tree: it is used for
+    // screen-reader-only text (which must be announced) and for tabbable focus
+    // sentinels (a tabbable element must not be aria-hidden, per axe
+    // `aria-hidden-focus`).
+    expect(wrapper.attributes('aria-hidden')).toBeUndefined()
   })
 
   it('does not set tabindex', () => {

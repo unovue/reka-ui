@@ -152,6 +152,66 @@ left:
 @keyframes slideIn { from { translate: calc(-100% + var(--bleed)) 0; } }
 ```
 
+## Soft keyboard
+
+On mobile the software keyboard slides over the bottom of the viewport without
+resizing it, so a bottom-anchored drawer — and the field the user just tapped —
+end up underneath it.
+
+Wrap the drawer in `DrawerVirtualKeyboardProvider` to make it react. It requires
+a `DrawerViewport` around `DrawerContent`: the viewport is the measurement root
+and hosts the keyboard variable, which inherits into the popup and everything in
+it.
+
+```vue
+<template>
+  <DrawerRoot>
+    <DrawerVirtualKeyboardProvider>
+      <DrawerTrigger />
+      <DrawerPortal>
+        <DrawerOverlay />
+        <DrawerViewport>
+          <DrawerContent>
+            <input>
+          </DrawerContent>
+        </DrawerViewport>
+      </DrawerPortal>
+    </DrawerVirtualKeyboardProvider>
+  </DrawerRoot>
+</template>
+```
+
+While a field inside the drawer is focused, the provider scrolls it into the band
+left visible above the keyboard and publishes the keyboard's height as
+`--drawer-keyboard-inset` on the viewport.
+
+- **Keep the popup frame stable** — put header and footer content outside a plain
+  scrollable body so only the body moves.
+- **Lift a pinned footer** — offset it by `var(--drawer-keyboard-inset, 0px)`,
+  either as padding or as part of its height.
+- **Always include the `0px` fallback** — the variable is only set while the
+  keyboard is aligned, so a bare `var(--drawer-keyboard-inset)` is invalid before
+  the first alignment and after cleanup.
+
+```css
+.DrawerFooter {
+  padding-bottom: calc(1rem + var(--drawer-keyboard-inset, 0px));
+}
+```
+
+To lift the whole sheet instead, give up the keyboard's height so its top stays
+on screen:
+
+```css
+.DrawerContent {
+  height: calc(90dvh - var(--drawer-keyboard-inset, 0px));
+  max-height: calc(90dvh - var(--drawer-keyboard-inset, 0px));
+}
+```
+
+Alignment is suspended while the viewport is pinch-zoomed, and viewport changes
+under 60px are treated as browser chrome rather than the keyboard.
+
 ## API Reference
 
 ### Root
@@ -299,11 +359,19 @@ listens on the opposite side of the Root's `swipeDirection`.
 
 ### Viewport
 
-An optional scrollable wrapper for the drawer content. Mirrors Base UI's
-`Drawer.Viewport` and carries a `data-drawer-viewport` attribute for downstream
-selectors.
+An optional wrapper around `DrawerContent`. Mirrors Base UI's `Drawer.Viewport`
+and carries a `data-drawer-viewport` attribute for downstream selectors.
+Required when using `VirtualKeyboardProvider`, which measures the keyboard
+against it.
 
 <!-- @include: @/meta/DrawerViewport.md -->
+
+### VirtualKeyboardProvider
+
+Makes the drawer react to the software keyboard: it keeps the focused field
+visible and exposes `--drawer-keyboard-inset` on `DrawerViewport`, which it
+requires (see [Soft keyboard](#soft-keyboard)). Takes no props and renders no
+markup of its own.
 
 ### Indent
 
@@ -384,6 +452,27 @@ the edge the drawer attaches to and the direction users swipe to dismiss it.
 @keyframes slideOutRight { to { translate: 100% 0; } }
 ```
 
+### Where a swipe can start
+
+A touch swipe can start anywhere on the drawer, including on buttons, links and
+labels. A tap that doesn't move past the drag threshold still registers as a
+click. Mouse and pen swipes skip interactive elements so that clicks and text
+selection keep working.
+
+Add `data-reka-swipe-ignore` to an element to stop swipes from starting on it
+with any input type. Use it for controls that handle their own drag gestures.
+
+```vue line=4
+<template>
+  <DrawerContent>
+    <nav>...</nav>
+    <div data-reka-swipe-ignore>
+      <!-- A carousel, map, or signature pad -->
+    </div>
+  </DrawerContent>
+</template>
+```
+
 ### Snap points
 
 Provide `snapPoints` to give the drawer intermediate resting positions. Each point
@@ -441,7 +530,7 @@ triggered the change — useful for distinguishing a deliberate close from a swi
 import { DrawerContent, DrawerOverlay, DrawerPortal, DrawerRoot, DrawerTrigger } from 'reka-ui'
 
 function onOpenChange(open, details) {
-  if (!open && details?.reason === 'swipe') {
+  if (!open && details.reason === 'swipe') {
     // user flicked the drawer away
   }
 }
@@ -460,6 +549,65 @@ function onOpenChange(open, details) {
 
 Possible reasons are `swipe`, `escape-key`, `outside-press`, `click`, `cancel`,
 `trigger-press` and `close-press`.
+
+### Preventing the drawer from closing
+
+Call `details.cancel()` in `update:open` to keep the drawer in its current
+state. This works for every reason, including a swipe: the drawer settles back
+open, or back to its snap point.
+
+```vue line=5-8
+<script setup>
+import { DrawerContent, DrawerOverlay, DrawerPortal, DrawerRoot, DrawerTrigger } from 'reka-ui'
+
+function onOpenChange(open, details) {
+  if (!open && hasUnsavedChanges()) {
+    details.cancel()
+    showDiscardConfirmation()
+  }
+}
+</script>
+
+<template>
+  <DrawerRoot @update:open="onOpenChange">
+    <DrawerTrigger>Open</DrawerTrigger>
+    <DrawerPortal>
+      <DrawerOverlay />
+      <DrawerContent>...</DrawerContent>
+    </DrawerPortal>
+  </DrawerRoot>
+</template>
+```
+
+`v-model:open` always writes the new value, even after `details.cancel()`. To
+guard a controlled drawer, bind `:open` and update your state only when the
+change wasn't canceled:
+
+```vue line=5-12
+<script setup>
+import { ref } from 'vue'
+
+const open = ref(false)
+
+function onOpenChange(value, details) {
+  if (!value && hasUnsavedChanges()) {
+    details.cancel()
+    showDiscardConfirmation()
+    return
+  }
+  open.value = value
+}
+</script>
+
+<template>
+  <DrawerRoot :open="open" @update:open="onOpenChange">
+    ...
+  </DrawerRoot>
+</template>
+```
+
+A controlled drawer that leaves `open` unchanged also settles back after a
+swipe.
 
 ### Close using slot props
 

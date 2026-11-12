@@ -2,7 +2,7 @@
 import type { ComponentPublicInstance } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { useForwardExpose } from '@/shared'
+import { useForwardExpose, useTriggerId } from '@/shared'
 
 export interface NavigationMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -19,7 +19,7 @@ import {
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { getOpenState, makeContentId, makeTriggerId } from './utils'
+import { getOpenState, makeContentId } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -42,9 +42,11 @@ const wasClickCloseRef = ref(false)
 
 const open = computed(() => itemContext.value === menuContext.modelValue.value)
 
+useTriggerId(itemContext, triggerElement)
+
 onMounted(() => {
   itemContext.triggerRef = triggerElement
-  triggerId.value = makeTriggerId(menuContext.baseId, itemContext.value)
+  triggerId.value = itemContext.triggerId
   contentId.value = makeContentId(menuContext.baseId, itemContext.value)
 })
 
@@ -57,7 +59,7 @@ function handlePointerEnter() {
 }
 
 function handlePointerMove(ev: PointerEvent) {
-  if (menuContext.disableHoverTrigger.value)
+  if (ev.defaultPrevented || menuContext.disableHoverTrigger.value)
     return
 
   if (ev.pointerType === 'mouse') {
@@ -88,6 +90,8 @@ function handlePointerLeave(ev: PointerEvent) {
 }
 
 function handleClick(event: MouseEvent | PointerEvent) {
+  if (event.defaultPrevented)
+    return
   if (
     (!('pointerType' in event) || event.pointerType === 'mouse')
     && menuContext.disableClickTrigger.value
@@ -107,6 +111,8 @@ function handleClick(event: MouseEvent | PointerEvent) {
 }
 
 function handleKeydown(ev: KeyboardEvent) {
+  if (ev.defaultPrevented)
+    return
   const verticalEntryKey = menuContext.dir.value === 'rtl' ? 'ArrowLeft' : 'ArrowRight'
   const entryKey = { horizontal: 'ArrowDown', vertical: verticalEntryKey }[
     menuContext.orientation
@@ -140,7 +146,7 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
 </script>
 
 <template>
-  <CollectionItem>
+  <CollectionItem :value="itemContext.value">
     <Primitive
       :id="triggerId"
       :ref="forwardRef"
@@ -152,6 +158,7 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
       :aria-controls="contentId"
       :as-child="props.asChild"
       :as="as"
+      :type="as === 'button' ? 'button' : undefined"
       v-bind="$attrs"
       @pointerenter="handlePointerEnter"
       @pointermove="handlePointerMove"
@@ -166,12 +173,11 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
   <template v-if="open">
     <VisuallyHidden
       :ref="setFocusProxyRef"
-      aria-hidden="true"
       :tabindex="0"
       @focus="handleVisuallyHiddenFocus"
     />
     <span
-      v-if="menuContext.viewport"
+      v-if="menuContext.viewport.value"
       :aria-owns="contentId"
     />
   </template>

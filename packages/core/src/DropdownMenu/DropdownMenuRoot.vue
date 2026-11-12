@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { Direction } from '../shared/types'
 import type { MenuEmits, MenuProps } from '@/Menu'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
+import { createContext, defineReactiveIds, useDirection, useForwardExpose } from '@/shared'
 
 export interface DropdownMenuRootProps extends MenuProps {
   /** The open state of the dropdown menu when it is initially rendered. Use when you do not need to control its open state. */
@@ -53,7 +53,7 @@ const triggerElement = ref<HTMLElement>()
 
 const { modal, dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
-provideDropdownMenuRootContext({
+provideDropdownMenuRootContext(defineReactiveIds({
   open,
   onOpenChange: (value) => {
     open.value = value
@@ -66,7 +66,7 @@ provideDropdownMenuRootContext({
   contentId: '',
   modal,
   dir,
-})
+}, ['triggerId', 'contentId']))
 </script>
 
 <template>

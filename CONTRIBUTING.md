@@ -67,6 +67,7 @@ All commands run from the repo root.
 | Tests (watch) | `pnpm test` |
 | Tests (one-shot) | `pnpm --filter reka-ui exec vitest run [path]` |
 | Test coverage | `pnpm --filter reka-ui test:coverage` |
+| Browser tests | `pnpm test:browser` |
 | Lint / auto-fix | `pnpm lint` / `pnpm lint:fix` |
 | Stories | `pnpm story:dev` |
 | Docs dev | `pnpm --filter reka-ui build && pnpm docs:install && pnpm docs:dev` |
@@ -116,6 +117,13 @@ complete example to read alongside this section.
   don't need to repeat that per test.
 - New components and composables should ship with colocated tests, including an
   axe check for anything that renders.
+- **Browser tests** (`<Name>.browser.test.ts`, also colocated) run in headless
+  Chromium through Vitest browser mode and Playwright. Use them for behaviour
+  jsdom cannot represent: native focus order (`Tab`), form submission, the
+  default action of a key press, and layout or positioning. Drive them with
+  `userEvent` from `vitest/browser`, which sends trusted events. Run
+  `pnpm test:browser`; the first time, install the browser with
+  `pnpm --filter reka-ui exec playwright install chromium`.
 
 ## Documentation
 

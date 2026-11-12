@@ -7,7 +7,10 @@ import { isClient, isIOS, tryOnBeforeUnmount } from '@vueuse/shared'
 import { defu } from 'defu'
 import { computed, nextTick, ref, watch } from 'vue'
 import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
-import { context as dismissableLayerContext } from '@/DismissableLayer/context'
+import { acquireBodyPointerEvents, releaseBodyPointerEvents } from './bodyPointerEvents'
+
+// The whole lock stack holds a single share of the body pointer-events owner.
+const pointerEventsOwner = Symbol('useBodyScrollLock')
 
 const useBodyLockStackCount = createSharedComposable(() => {
   const map = ref<Map<string, boolean>>(new Map())
@@ -25,21 +28,16 @@ const useBodyLockStackCount = createSharedComposable(() => {
     scrollBody: ref(true),
   })
 
-  let stopTouchMoveListener: Fn | null = null
+  let stopTouchListeners: Fn | null = null
 
   const resetBodyStyle = () => {
     document.body.style.paddingRight = ''
     document.body.style.marginRight = ''
-    // A mounted `DismissableLayer` with `disableOutsidePointerEvents` may
-    // still own the body pointer-events lock (e.g. a modal Dialog rendered
-    // without the Overlay that would hold a scroll lock). Clearing it here
-    // would make everything behind that layer clickable again (#2784); the
-    // layer restores it once its last disabling layer is gone.
-    if (dismissableLayerContext.layersWithOutsidePointerEventsDisabled.size === 0)
-      document.body.style.pointerEvents = ''
+    // Only restored once no `DismissableLayer` still holds it either (#2784)
+    releaseBodyPointerEvents(document, pointerEventsOwner)
     document.documentElement.style.removeProperty('--scrollbar-width')
     document.body.style.overflow = initialOverflow.value ?? ''
-    isIOS && stopTouchMoveListener?.()
+    isIOS && stopTouchListeners?.()
 
     initialOverflow.value = undefined
   }
@@ -77,19 +75,49 @@ const useBodyLockStackCount = createSharedComposable(() => {
     }
 
     if (isIOS) {
-      stopTouchMoveListener = useEventListener(
+      let touchStart: { identifier: number, x: number, y: number } | undefined
+
+      // Only `touchmove` cancels, so gesture tracking stays passive and never delays scrolling.
+      const stopTrackingListener = useEventListener(
+        document,
+        ['touchstart', 'touchend', 'touchcancel'],
+        (e: TouchEvent) => {
+          const touch = e.touches[0]
+          touchStart = e.type === 'touchstart' && e.touches.length === 1
+            ? { identifier: touch.identifier, x: touch.clientX, y: touch.clientY }
+            : undefined
+        },
+        { passive: true },
+      )
+
+      const stopTouchMoveListener = useEventListener(
         document,
         'touchmove',
-        (e: TouchEvent) => preventDefault(e),
+        (e: TouchEvent) => {
+          const touch = e.touches[0]
+          // iOS can report subpixel coordinate noise as a move; cancelling it suppresses the tap's click.
+          if (touchStart && e.touches.length === 1 && touch.identifier === touchStart.identifier
+            && Math.hypot(touch.clientX - touchStart.x, touch.clientY - touchStart.y) <= 0.01) {
+            return
+          }
+
+          // Once the gesture moves, returning to its origin must not make it a tap again.
+          touchStart = undefined
+          preventDefault(e)
+        },
         { passive: false },
       )
+
+      stopTouchListeners = () => {
+        stopTrackingListener()
+        stopTouchMoveListener()
+      }
     }
 
-    // let dismissibleLayer set previous pointerEvent first
     nextTick(() => {
       if (!locked.value)
         return
-      document.body.style.pointerEvents = 'none'
+      acquireBodyPointerEvents(document, pointerEventsOwner)
       document.body.style.overflow = 'hidden'
     })
   }, { immediate: true, flush: 'sync' })

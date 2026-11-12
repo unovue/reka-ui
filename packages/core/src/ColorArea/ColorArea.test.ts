@@ -1,4 +1,5 @@
 import type { VueWrapper } from '@vue/test-utils'
+import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -93,7 +94,7 @@ describe('colorArea pointer interaction', () => {
 
     expect(document.activeElement).not.toBe(thumb.element)
 
-    await area.trigger('pointerdown', {
+    await fireEvent.pointerDown(area.element, {
       clientX: 100,
       clientY: 100,
       pointerId: 1,
@@ -119,7 +120,7 @@ describe('colorArea pointer interaction', () => {
     const area = wrapper.find('[role="application"]')
     const thumb = wrapper.find('[role="slider"]')
 
-    await area.trigger('pointerdown', {
+    await fireEvent.pointerDown(area.element, {
       clientX: 100,
       clientY: 100,
       pointerId: 1,

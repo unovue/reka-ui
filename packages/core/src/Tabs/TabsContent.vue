@@ -15,7 +15,7 @@ export interface TabsContentProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
 import { injectTabsRootContext } from './TabsRoot.vue'
@@ -23,9 +23,9 @@ import { makeContentId, makeTriggerId } from './utils'
 
 const props = defineProps<TabsContentProps>()
 
-const { forwardRef, currentElement } = useForwardExpose()
+const { forwardRef } = useForwardExpose()
 const rootContext = injectTabsRootContext()
-const triggerId = computed(() => makeTriggerId(rootContext.baseId, props.value))
+const triggerId = computed(() => rootContext.triggerIds.value.get(props.value) ?? makeTriggerId(rootContext.baseId, props.value))
 const contentId = computed(() => makeContentId(rootContext.baseId, props.value))
 
 const isSelected = computed(() => props.value === rootContext.modelValue.value)
@@ -33,19 +33,7 @@ const isSelected = computed(() => props.value === rootContext.modelValue.value)
 const isMountAnimationPreventedRef = ref(isSelected.value)
 
 onMounted(() => {
-  // The rendered element keeps the id from the SSR pass, which can differ from
-  // contentId when useId diverges between server and client.
-  watch(
-    [() => props.value, () => currentElement.value?.id || contentId.value],
-    ([value, id], old) => {
-      const oldValue = old?.[0]
-      if (oldValue !== undefined && oldValue !== value)
-        rootContext.unregisterContent(oldValue)
-      rootContext.registerContent(value, id)
-    },
-    { immediate: true, flush: 'post' },
-  )
-
+  rootContext.registerContent(props.value)
   requestAnimationFrame(() => {
     isMountAnimationPreventedRef.value = false
   })

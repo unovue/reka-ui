@@ -14,9 +14,11 @@ export interface TabsRootContext {
   activationMode: 'automatic' | 'manual'
   baseId: string
   tabsList: Ref<HTMLElement | undefined>
-  contentIds: Ref<Map<StringOrNumber, string>>
-  registerContent: (value: StringOrNumber, id: string) => void
+  contentIds: Ref<Set<StringOrNumber>>
+  registerContent: (value: StringOrNumber) => void
   unregisterContent: (value: StringOrNumber) => void
+  /** Ids of triggers that render an id other than the generated one, by tab value. */
+  triggerIds: Ref<Map<StringOrNumber, string>>
 }
 
 export interface TabsRootProps<T extends StringOrNumber = StringOrNumber> extends PrimitiveProps {
@@ -85,7 +87,8 @@ const modelValue = useVModel<TabsRootProps<T>, 'modelValue', 'update:modelValue'
 })
 
 const tabsList = ref<HTMLElement>()
-const contentIds = shallowRef<Map<StringOrNumber, string>>(new Map())
+const contentIds = shallowRef<Set<StringOrNumber>>(new Set())
+const triggerIds = ref(new Map<StringOrNumber, string>())
 
 provideTabsRootContext({
   modelValue,
@@ -99,14 +102,15 @@ provideTabsRootContext({
   baseId: useId(undefined, 'reka-tabs'),
   tabsList,
   contentIds,
-  registerContent: (value: StringOrNumber, id: string) => {
-    contentIds.value = new Map(contentIds.value).set(value, id)
+  registerContent: (value: StringOrNumber) => {
+    contentIds.value = new Set([...contentIds.value, value])
   },
   unregisterContent: (value: StringOrNumber) => {
-    const newMap = new Map(contentIds.value)
-    newMap.delete(value)
-    contentIds.value = newMap
+    const newSet = new Set(contentIds.value)
+    newSet.delete(value)
+    contentIds.value = newSet
   },
+  triggerIds,
 })
 </script>
 

@@ -3,7 +3,7 @@ import type { DateFields, DateValue, TimeFields } from '@internationalized/date'
 import type { DatePickerRootProps } from './DatePickerRoot.vue'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { ConfigProvider } from '@/ConfigProvider'
@@ -79,6 +79,18 @@ describe('datePicker', async () => {
     expect(getByTestId('minute')).toHaveTextContent(String(zonedDateTime.minute))
     expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
     expect(getByTestId('timeZoneName')).toHaveTextContent('EST')
+  })
+
+  it('syncs a same-day time zone change from `modelValue`', async () => {
+    const { getByTestId, rerender } = setup({
+      datePickerProps: { modelValue: zonedDateTime },
+    })
+    expect(getByTestId('timeZoneName')).toHaveTextContent('EST')
+
+    await rerender({
+      datePickerProps: { modelValue: toZoned(calendarDateTime, 'Asia/Tokyo') },
+    })
+    expect(getByTestId('timeZoneName')).toHaveTextContent('GMT+9')
   })
 
   it('focuses first segment on label click', async () => {
@@ -243,7 +255,7 @@ describe('datePicker', async () => {
     const { user, trigger, getByTestId } = setup()
 
     await user.click(trigger)
-    const calendar = getByTestId('calendar')
+    const calendar = await screen.findByTestId('calendar')
     const targetCell = calendar.querySelector('div[data-reka-calendar-cell-trigger]:not([data-outside-view])')!
 
     await user.click(targetCell)
@@ -384,7 +396,7 @@ describe('datePicker', async () => {
 
     await user.click(trigger)
 
-    const popoverContent = getByTestId('popover-content')
+    const popoverContent = await screen.findByTestId('popover-content')
     expect(popoverContent).toBeVisible()
 
     const day = getByTestId('date-1-1')
@@ -402,7 +414,7 @@ describe('datePicker', async () => {
 
     await user.click(trigger)
 
-    const popoverContent = getByTestId('popover-content')
+    const popoverContent = await screen.findByTestId('popover-content')
     expect(popoverContent).toBeVisible()
 
     const day = getByTestId('date-1-1')
@@ -428,7 +440,7 @@ describe('datePicker', async () => {
       const trigger = getByTestId('trigger')
       await user.click(trigger)
 
-      const heading = getByTestId('heading')
+      const heading = await screen.findByTestId('heading')
       // German locale should display month name in German (e.g., "Januar" not "January")
       expect(heading).toHaveTextContent('Januar')
     })
@@ -450,7 +462,7 @@ describe('datePicker', async () => {
       const trigger = getByTestId('trigger')
       await user.click(trigger)
 
-      const heading = getByTestId('heading')
+      const heading = await screen.findByTestId('heading')
       // Even though ConfigProvider sets 'de', explicit prop should use 'en-US'
       expect(heading).toHaveTextContent('January')
     })
@@ -462,11 +474,63 @@ describe('datePicker', async () => {
 
       await user.click(trigger)
 
-      const heading = getByTestId('heading')
+      const heading = await screen.findByTestId('heading')
       // Should use browser default locale (typically 'en' in test environment)
       // January 1980 should be displayed
       expect(heading).toHaveTextContent('January')
       expect(heading).toHaveTextContent('1980')
+    })
+
+    it('keeps the visible month when modelValue is a new object for the same day', async () => {
+      const selected = new CalendarDate(1980, 1, 20)
+      const { user, trigger, getByTestId, rerender } = setup({
+        datePickerProps: { modelValue: selected, closeOnSelect: true },
+      })
+
+      await user.click(trigger)
+
+      const heading = await screen.findByTestId('heading')
+      expect(heading).toHaveTextContent('January 1980')
+      await user.click(getByTestId('next-button'))
+      expect(heading).toHaveTextContent('February 1980')
+
+      await rerender({
+        datePickerProps: { modelValue: selected.copy(), closeOnSelect: true },
+      })
+
+      expect(heading).toHaveTextContent('February 1980')
+      expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    })
+
+    it('keeps the popover open when modelValue changes time on the same day', async () => {
+      const { user, trigger, getByTestId, rerender } = setup({
+        datePickerProps: { modelValue: calendarDateTime, closeOnSelect: true },
+      })
+
+      await user.click(trigger)
+      expect(trigger).toHaveAttribute('aria-expanded', 'true')
+
+      await rerender({
+        datePickerProps: { modelValue: calendarDateTime.set({ hour: 15 }), closeOnSelect: true },
+      })
+
+      expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    })
+
+    it('moves the visible month when the selected day changes', async () => {
+      const { user, trigger, getByTestId, rerender } = setup({
+        datePickerProps: { modelValue: new CalendarDate(1980, 1, 20) },
+      })
+
+      await user.click(trigger)
+      await user.click(await screen.findByTestId('next-button'))
+      expect(getByTestId('heading')).toHaveTextContent('February 1980')
+
+      await rerender({
+        datePickerProps: { modelValue: new CalendarDate(1980, 9, 23) },
+      })
+
+      expect(getByTestId('heading')).toHaveTextContent('September 1980')
     })
   })
 })
