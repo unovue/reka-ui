@@ -904,11 +904,25 @@ describe('numberField', () => {
         expect(emitted).toEqual([value])
       })
 
-      it('should keep reading numeral-free text as zero by default', async () => {
-        const { model, emitted, commit } = setupModel(percent, 0.5)
-        await commit('%', 'enter')
-        expect(model.value).toBe(0)
-        expect(emitted).toEqual([0])
+      it.each(ways.flatMap(how => ['%', ' %', '.', '-', '-%'].map(text => [text, how] as const)))('should clear the value by default when committing "%s" with %s', async (text, how) => {
+        const { input, model, emitted, commit } = setupModel(percent, 0.5)
+        await commit(text, how)
+        expect(model.value).toBeUndefined()
+        expect(emitted).toEqual([undefined])
+        expect(input.value).toBe('')
+      })
+
+      it.each([
+        ['en-US', '0%', 0],
+        ['en-US', '٢٥', 0.25],
+        ['ar-EG', '٢٥', 0.25],
+        ['zh-CN-u-nu-hanidec', '二五', 0.25],
+        ['hi-IN-u-nu-deva', '२५', 0.25],
+      ])('should still parse numerals by default in %s ("%s")', async (locale, text, value) => {
+        const { model, emitted, commit } = setupModel({ ...percent, locale }, 0.5)
+        await commit(text, 'enter')
+        expect(model.value).toBe(value)
+        expect(emitted).toEqual([value])
       })
     })
   })
