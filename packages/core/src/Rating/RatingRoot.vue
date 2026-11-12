@@ -80,14 +80,14 @@ const { modelValue, items, root, context } = useRating({
 provideRatingRootContext(context)
 
 const radioGroupProps = reactiveOmit(props, 'length', 'clearable', 'hoverable', 'step', 'modelValue', 'defaultValue')
+
+// The radio group mirrors the rating's model (`null` while unset, so it is
+// controlled from the start): a cancelled or cleared rating never leaves a
+// radio checked on its own. Kept out of the template: a comment before the
+// root makes it a fragment in production, which drops fallthrough attributes.
 </script>
 
 <template>
-  <!--
-    The radio group mirrors the rating's model (`null` while unset, so it is
-    controlled from the start): a cancelled or cleared rating never leaves a
-    radio checked on its own.
-  -->
   <RadioGroupRoot
     :ref="forwardRef"
     v-bind="radioGroupProps"
