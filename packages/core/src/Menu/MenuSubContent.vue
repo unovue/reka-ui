@@ -38,14 +38,15 @@ const parentContentContext = injectMenuContentContext()
 
 const { forwardRef, currentElement: subContentElement, expose } = useForwardElement()
 defineExpose(expose)
+
+// `appear`: a submenu that is already open when its parent menu opens is
+// created open, and enters from `data-starting-style` with its parent
+// (Base UI's `animateInitialOpen`, #2827). Kept out of the template: a comment
+// before the root makes it a fragment in production, which drops fallthrough
+// attributes.
 </script>
 
 <template>
-  <!--
-    `appear`: a submenu that is already open when its parent menu opens is
-    created open, and enters from `data-starting-style` with its parent
-    (Base UI's `animateInitialOpen`, #2827).
-  -->
   <Presence
     :present="menuContext.open.value"
     :force-mount="forceMount"
