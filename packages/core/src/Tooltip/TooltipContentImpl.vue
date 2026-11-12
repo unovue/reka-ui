@@ -18,6 +18,7 @@ export interface TooltipContentImplProps
     PopperContentProps,
     | 'side'
     | 'sideOffset'
+    | 'fallbackAxisSideDirection'
     | 'align'
     | 'alignOffset'
     | 'avoidCollisions'

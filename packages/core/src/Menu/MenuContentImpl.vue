@@ -387,6 +387,7 @@ provideMenuContentContext({
           :dir="rootContext.dir.value"
           :side="side"
           :side-offset="sideOffset"
+          :fallback-axis-side-direction="fallbackAxisSideDirection"
           :align="align"
           :align-offset="alignOffset"
           :avoid-collisions="avoidCollisions"

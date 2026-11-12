@@ -16,6 +16,7 @@ export const PopperContentPropsDefaultValue = {
   side: 'bottom' as Side,
   sideOffset: 0,
   sideFlip: true,
+  fallbackAxisSideDirection: 'none' as 'none' | 'start' | 'end',
   align: 'center' as Align,
   alignOffset: 0,
   alignFlip: true,
@@ -39,8 +40,9 @@ export interface PopperContentProps extends PrimitiveProps {
 
   /**
    * The preferred side of the trigger to render against when open.
-   * Will be reversed when collisions occur and avoidCollisions
-   * is enabled.
+   * Will be reversed when collisions occur and `avoidCollisions`
+   * is enabled. If the opposite side collides as well, the content
+   * stays on this axis unless `fallbackAxisSideDirection` is set.
    *
    * @defaultValue "bottom"
    */
@@ -55,10 +57,25 @@ export interface PopperContentProps extends PrimitiveProps {
 
   /**
    * Flip to the opposite side when colliding with boundary.
+   * Only the opposite side is tried, unless `fallbackAxisSideDirection` is set.
    *
    * @defaultValue true
    */
   sideFlip?: boolean
+
+  /**
+   * Whether to also try the perpendicular sides when neither the preferred
+   * side nor its opposite fits within the boundary, and which of them to try first.
+   * For `side="left"` or `"right"`, `start` tries top then bottom and `end` tries
+   * bottom then top. For `side="top"` or `"bottom"`, `start` tries left then right
+   * and `end` tries right then left (mirrored in RTL).
+   * `none` keeps the content on the axis of the preferred side.
+   *
+   * Only applies when `avoidCollisions` and `sideFlip` are enabled.
+   *
+   * @defaultValue "none"
+   */
+  fallbackAxisSideDirection?: 'none' | 'start' | 'end'
 
   /**
    * The preferred alignment against the trigger.
@@ -262,6 +279,7 @@ const flipOptions = computed(() => {
   return {
     mainAxis: props.sideFlip,
     crossAxis: props.alignFlip,
+    fallbackAxisSideDirection: props.sideFlip ? props.fallbackAxisSideDirection : 'none',
   }
 })
 
