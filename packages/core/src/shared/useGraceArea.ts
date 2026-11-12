@@ -36,15 +36,17 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
 
   watchEffect((cleanupFn) => {
     if (triggerElement.value && containerElement.value) {
-      const handleTriggerLeave = (event: PointerEvent) => handleCreateGraceArea(event, containerElement.value)
-      const handleContentLeave = (event: PointerEvent) => handleCreateGraceArea(event, triggerElement.value)
+      const trigger = triggerElement.value
+      const container = containerElement.value
+      const handleTriggerLeave = (event: PointerEvent) => handleCreateGraceArea(event, container)
+      const handleContentLeave = (event: PointerEvent) => handleCreateGraceArea(event, trigger)
 
-      triggerElement.value.addEventListener('pointerleave', handleTriggerLeave)
-      containerElement.value.addEventListener('pointerleave', handleContentLeave)
+      trigger.addEventListener('pointerleave', handleTriggerLeave)
+      container.addEventListener('pointerleave', handleContentLeave)
 
       cleanupFn(() => {
-        triggerElement.value?.removeEventListener('pointerleave', handleTriggerLeave)
-        containerElement.value?.removeEventListener('pointerleave', handleContentLeave)
+        trigger.removeEventListener('pointerleave', handleTriggerLeave)
+        container.removeEventListener('pointerleave', handleContentLeave)
       })
     }
   })
@@ -69,9 +71,10 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
           pointerExit.trigger()
         }
       }
-      triggerElement.value?.ownerDocument.addEventListener('pointermove', handleTrackPointerGrace)
+      const ownerDocument = triggerElement.value?.ownerDocument
+      ownerDocument?.addEventListener('pointermove', handleTrackPointerGrace)
 
-      cleanupFn(() => triggerElement.value?.ownerDocument.removeEventListener('pointermove', handleTrackPointerGrace))
+      cleanupFn(() => ownerDocument?.removeEventListener('pointermove', handleTrackPointerGrace))
     }
   })
 

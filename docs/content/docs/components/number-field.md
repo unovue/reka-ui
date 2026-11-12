@@ -186,6 +186,40 @@ If you need to allow the user to change the currency, you should include a separ
 </template>
 ```
 
+### Starting value
+
+By default, the first increment or decrement on an empty field sets it to `min`, or `0` when `min` is not set. Use `startingValue` to start from a more useful number instead, such as the current price of a stock.
+
+The starting value is clamped to `min` and `max`, but it is not snapped to `step`.
+
+```vue line=3
+<template>
+  <NumberFieldRoot
+    :starting-value="600"
+  >
+    …
+  </NumberFieldRoot>
+</template>
+```
+
+### Keeping the value on unparsable input
+
+By default, committing text that cannot be parsed as a number (pressing <kbd>Enter</kbd> or leaving the field with a lone `.` or `-`, for example) clears the value and emits `undefined`.
+
+Use `keepValueOnUnparsableInput` to keep the current value instead. The input goes back to the formatted value and `update:modelValue` is not emitted.
+
+```vue line=3
+<template>
+  <NumberFieldRoot
+    keep-value-on-unparsable-input
+  >
+    …
+  </NumberFieldRoot>
+</template>
+```
+
+Empty or whitespace-only input still clears the value. Text with no digits left, such as the `$` of a currency field, counts as unparsable and keeps the value, so delete all the text to clear the field.
+
 ## Accessibility
 
 Adheres to the [Spinbutton WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton).

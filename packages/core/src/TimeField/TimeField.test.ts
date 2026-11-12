@@ -1424,3 +1424,36 @@ describe('useDateField – time segment characterization tests (coverage gaps)',
     })
   })
 })
+
+/**
+ * `TimeField` resolves its day period through the same shared helper as
+ * `DateField`, so it regressed in exactly the same locales.
+ *
+ * @see https://github.com/unovue/reka-ui/issues/2956
+ */
+describe('timeField dayPeriod across locales', () => {
+  const afternoon = new CalendarDateTime(2024, 1, 20, 15, 30)
+  const locales = ['en-US', 'es-ES', 'ja-JP', 'zh-CN', 'ko-KR']
+
+  it.each(locales)('shows PM for an afternoon value in %s', async (locale) => {
+    const { getByTestId } = setup({ timeFieldProps: { modelValue: afternoon, locale, hourCycle: 12 } })
+    expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+  })
+
+  it.each(locales)('keeps the afternoon when the hour is retyped in %s', async (locale) => {
+    const { getByTestId, user, rerender } = setup({
+      timeFieldProps: { modelValue: afternoon, locale, hourCycle: 12 },
+      emits: {
+        'onUpdate:modelValue': (data: TimeValue) => {
+          return rerender({ timeFieldProps: { modelValue: data, locale, hourCycle: 12 } })
+        },
+      },
+    })
+
+    await user.click(getByTestId('hour'))
+    await user.keyboard('{3}')
+
+    expect(getByTestId('value').textContent).toBe(afternoon.set({ hour: 15 }).toString())
+    expect(getByTestId('dayPeriod')).toHaveTextContent('PM')
+  })
+})

@@ -10,7 +10,7 @@ export interface DatePickerContentProps extends PopoverContentProps {
    */
   portal?: PopoverPortalProps
 }
-export interface DatePickerContentEmits extends PopoverContentEmits {}
+export type DatePickerContentEmits = PopoverContentEmits
 </script>
 
 <script setup lang="ts">

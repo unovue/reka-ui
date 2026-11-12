@@ -165,6 +165,11 @@
     'type': '[event: PointerDownOutsideEvent | FocusOutsideEvent]'
   },
   {
+    'name': 'openAutoFocus',
+    'description': '<p>Event handler called when auto-focusing on open.\nCan be prevented.</p>\n',
+    'type': '[event: Event]'
+  },
+  {
     'name': 'pointerDownOutside',
     'description': '<p>Event handler called when a <code>pointerdown</code> event happens outside of the <code>DismissableLayer</code>.\nCan be prevented.</p>\n',
     'type': '[event: PointerDownOutsideEvent]'
@@ -210,6 +215,7 @@
 | `escapeKeyDown` | Event handler called when the escape key is down. Can be prevented. | `[event: KeyboardEvent]` |
 | `focusOutside` | Event handler called when the focus moves outside of the DismissableLayer. Can be prevented. | `[event: FocusOutsideEvent]` |
 | `interactOutside` | Event handler called when an interaction happens outside the DismissableLayer. Specifically, when a pointerdown event happens outside or focus moves outside of it. Can be prevented. | `[event: PointerDownOutsideEvent \| FocusOutsideEvent]` |
+| `openAutoFocus` | Event handler called when auto-focusing on open. Can be prevented. | `[event: Event]` |
 | `pointerDownOutside` | Event handler called when a pointerdown event happens outside of the DismissableLayer. Can be prevented. | `[event: PointerDownOutsideEvent]` |
 
 </llm-only>

@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { useForwardExpose } from '@/shared'
+import { useForwardExpose, useTriggerId } from '@/shared'
 
 export interface MenubarTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -32,6 +32,8 @@ const isFocused = ref(false)
 
 const open = computed(() => rootContext.modelValue.value === menuContext.value)
 
+useTriggerId(menuContext, triggerElement)
+
 onMounted(() => {
   menuContext.triggerElement = triggerElement
 })
@@ -61,6 +63,7 @@ onMounted(() => {
           :disabled="disabled"
           :data-value="menuContext.value"
           @pointerdown="(event: PointerEvent) => {
+            if (event.defaultPrevented) return;
             // only call handler if it's the left button (mousedown gets triggered by all mouse buttons)
             // but not when the control key is pressed (avoiding MacOS right click)
             if (!disabled && event.button === 0 && event.ctrlKey === false) {
@@ -78,7 +81,7 @@ onMounted(() => {
             }
           }"
           @keydown.enter.space.arrow-down="(event: KeyboardEvent) => {
-            if (disabled) return;
+            if (disabled || event.defaultPrevented) return;
             if (['Enter', ' '].includes(event.key)) rootContext.onMenuToggle(menuContext.value);
             if (event.key === 'ArrowDown') rootContext.onMenuOpen(menuContext.value);
             // prevent keydown from scrolling window / first focused item to execute

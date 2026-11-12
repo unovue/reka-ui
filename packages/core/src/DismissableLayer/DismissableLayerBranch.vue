@@ -13,11 +13,19 @@ import { context } from './context'
 const props = defineProps<DismissableLayerBranchProps>()
 
 const { forwardRef, currentElement } = useForwardExpose()
+
+let registeredElement: HTMLElement | null = null
+
 onMounted(() => {
-  context.branches.add(currentElement.value)
+  registeredElement = currentElement.value
+  if (registeredElement)
+    context.branches.add(registeredElement)
 })
 onUnmounted(() => {
-  context.branches.delete(currentElement.value)
+  if (registeredElement) {
+    context.branches.delete(registeredElement)
+    registeredElement = null
+  }
 })
 </script>
 
