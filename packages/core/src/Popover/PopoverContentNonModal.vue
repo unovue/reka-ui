@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { PopoverContentImplEmits, PopoverContentImplProps } from './PopoverContentImpl.vue'
 import { ref } from 'vue'
-import { containsComposed, useForwardElement, useForwardPropsEmits } from '@/shared'
+import { containsComposed, getActiveElement, useForwardElement, useForwardPropsEmits } from '@/shared'
 import { getPopupRootStore } from '@/shared/popupHandle'
 import PopoverContentImpl from './PopoverContentImpl.vue'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
@@ -25,6 +25,14 @@ defineExpose(expose)
     v-bind="forwarded"
     :trap-focus="false"
     :disable-outside-pointer-events="false"
+    @open-auto-focus="
+      (event) => {
+        // Focus already in the anchor (an input that opens the popover as you type) stays there.
+        const anchor = rootContext.anchorElement.value;
+        if (anchor && containsComposed(anchor, getActiveElement(anchor)))
+          event.preventDefault();
+      }
+    "
     @close-auto-focus="
       (event) => {
         if (!event.defaultPrevented) {
