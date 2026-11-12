@@ -68,8 +68,9 @@ const ariaLabel = computed(() => props.ariaLabel || currentElement.value?.textCo
 
 // The element the trigger is described by.
 const description = ref<ComponentPublicInstance>()
-useContentElement(rootContext, computed(() => resolveElement(description.value)))
-useContentMounted(rootContext)
+const descriptionElement = computed(() => resolveElement(description.value))
+useContentElement(rootContext, descriptionElement)
+useContentMounted(rootContext, descriptionElement)
 
 const popperContentProps = computed(() => {
   const { ariaLabel: _, ...restProps } = props

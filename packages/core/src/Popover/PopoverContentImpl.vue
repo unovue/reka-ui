@@ -46,7 +46,7 @@ const { forwardRef, currentElement } = useForwardExpose()
 
 const rootContext = injectPopoverRootContext()
 useContentId(rootContext, currentElement)
-useContentMounted(rootContext)
+useContentMounted(rootContext, currentElement)
 useFocusGuards()
 </script>
 

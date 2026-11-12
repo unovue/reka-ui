@@ -1,10 +1,10 @@
-import type { Ref, VNode } from 'vue'
+import type { Component, Ref, VNode } from 'vue'
 import { CalendarDate } from '@internationalized/date'
 import { renderToString } from '@vue/server-renderer'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { createSSRApp, defineComponent, h, ref, useId } from 'vue'
+import { createSSRApp, defineComponent, h, KeepAlive, ref, useId } from 'vue'
 import { AlertDialogContent, AlertDialogDescription, AlertDialogPortal, AlertDialogRoot, AlertDialogTitle, AlertDialogTrigger } from '@/AlertDialog'
 import { AutocompleteAnchor, AutocompleteContent, AutocompleteInput, AutocompleteItem, AutocompletePortal, AutocompleteRoot, AutocompleteTrigger, AutocompleteViewport } from '@/Autocomplete'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '@/Combobox'
@@ -22,8 +22,11 @@ import { SelectContent, SelectItem, SelectItemText, SelectPortal, SelectRoot, Se
 import { TooltipContent, TooltipPortal, TooltipProvider, TooltipRoot, TooltipTrigger } from '@/Tooltip'
 
 interface OverlayFamily {
-  /** `open` is toggled by the test; `contentProps` are spread on the content. */
-  render: (open: Ref<boolean>, contentProps?: Record<string, unknown>) => VNode
+  /**
+   * `open` is toggled by the test; `contentProps` are spread on the content; `wrap`
+   * receives the content vnode and returns what is rendered in its place.
+   */
+  render: (open: Ref<boolean>, contentProps?: Record<string, unknown>, wrap?: (content: VNode) => VNode) => VNode
   /** The id reference the trigger carries while its content is rendered. */
   attribute: 'aria-controls' | 'aria-describedby'
   /** How many elements carry `attribute` while open. */
@@ -32,8 +35,19 @@ interface OverlayFamily {
   closedReferences?: number
   /** Whether an `id` passed to the content lands on the element the trigger references. */
   consumerId?: boolean
+  /** Whether an `asChild` content with an empty slot leaves the trigger nothing to reference. */
+  emptyAsChild?: boolean
+  /**
+   * Whether the content teleports itself rather than being placed in a portal. `KeepAlive`
+   * leaves a teleported element in the document, so the reference stays resolvable.
+   */
+  teleportsItself?: boolean
   /** Whether the family renders without a portal, so that the server HTML holds the content. */
   inline?: boolean
+}
+
+function identity(content: VNode) {
+  return content
 }
 
 function openProps(open: Ref<boolean>) {
@@ -53,92 +67,106 @@ const overlayFamilies: Record<string, OverlayFamily> = {
   'Dialog': {
     attribute: 'aria-controls',
     references: 1,
-    render: (open, contentProps) => h(DialogRoot, openProps(open), () => [
+    render: (open, contentProps, wrap = identity) => h(DialogRoot, openProps(open), () => [
       h(DialogTrigger, () => 'Trigger'),
-      h(DialogPortal, () => h(DialogContent, contentProps, () => [h(DialogTitle, () => 'Title'), h(DialogDescription, () => 'Description')])),
+      h(DialogPortal, () => wrap(h(DialogContent, contentProps, () => [h(DialogTitle, () => 'Title'), h(DialogDescription, () => 'Description')]))),
     ]),
   },
   'Dialog (inline)': {
     attribute: 'aria-controls',
     references: 1,
     inline: true,
-    render: (open, contentProps) => h(DialogRoot, openProps(open), () => [
+    render: (open, contentProps, wrap = identity) => h(DialogRoot, openProps(open), () => [
       h(DialogTrigger, () => 'Trigger'),
-      h(DialogContent, contentProps, () => [h(DialogTitle, () => 'Title'), h(DialogDescription, () => 'Description')]),
+      wrap(h(DialogContent, contentProps, () => [h(DialogTitle, () => 'Title'), h(DialogDescription, () => 'Description')])),
     ]),
   },
   'AlertDialog': {
     attribute: 'aria-controls',
     references: 1,
-    render: (open, contentProps) => h(AlertDialogRoot, openProps(open), () => [
+    render: (open, contentProps, wrap = identity) => h(AlertDialogRoot, openProps(open), () => [
       h(AlertDialogTrigger, () => 'Trigger'),
-      h(AlertDialogPortal, () => h(AlertDialogContent, contentProps, () => [h(AlertDialogTitle, () => 'Title'), h(AlertDialogDescription, () => 'Description')])),
+      h(AlertDialogPortal, () => wrap(h(AlertDialogContent, contentProps, () => [h(AlertDialogTitle, () => 'Title'), h(AlertDialogDescription, () => 'Description')]))),
     ]),
   },
   'Drawer': {
     attribute: 'aria-controls',
     references: 1,
-    render: (open, contentProps) => h(DrawerRoot, openProps(open), () => [
+    render: (open, contentProps, wrap = identity) => h(DrawerRoot, openProps(open), () => [
       h(DrawerTrigger, () => 'Trigger'),
-      h(DrawerPortal, () => h(DrawerContent, contentProps, () => [h(DrawerTitle, () => 'Title'), h(DrawerDescription, () => 'Description')])),
+      h(DrawerPortal, () => wrap(h(DrawerContent, contentProps, () => [h(DrawerTitle, () => 'Title'), h(DrawerDescription, () => 'Description')]))),
     ]),
   },
   'Popover': {
     attribute: 'aria-controls',
     references: 1,
-    render: (open, contentProps) => h(PopoverRoot, openProps(open), () => [
+    render: (open, contentProps, wrap = identity) => h(PopoverRoot, openProps(open), () => [
       h(PopoverTrigger, () => 'Trigger'),
-      h(PopoverPortal, () => h(PopoverContent, contentProps, () => 'Content')),
+      h(PopoverPortal, () => wrap(h(PopoverContent, contentProps, () => 'Content'))),
     ]),
   },
   'Popover (inline)': {
     attribute: 'aria-controls',
     references: 1,
     inline: true,
-    render: (open, contentProps) => h(PopoverRoot, openProps(open), () => [
+    render: (open, contentProps, wrap = identity) => h(PopoverRoot, openProps(open), () => [
       h(PopoverTrigger, () => 'Trigger'),
-      h(PopoverContent, contentProps, () => 'Content'),
+      wrap(h(PopoverContent, contentProps, () => 'Content')),
     ]),
   },
   'DatePicker': {
     attribute: 'aria-controls',
     references: 1,
-    render: (open, contentProps) => h(DatePickerRoot, { ...openProps(open), modelValue: date }, () => [
+    teleportsItself: true,
+    render: (open, contentProps, wrap = identity) => h(DatePickerRoot, { ...openProps(open), modelValue: date }, () => [
       h(DatePickerField, null, { default: ({ segments }: { segments: { part: string, value: string }[] }) => [
         ...segments.map(segment => h(DatePickerInput, { key: segment.part, part: segment.part as 'day' }, () => segment.value)),
         h(DatePickerTrigger, () => 'Trigger'),
       ] }),
-      h(DatePickerContent, contentProps, () => 'Content'),
+      wrap(h(DatePickerContent, contentProps, () => 'Content')),
     ]),
   },
   'DateRangePicker': {
     attribute: 'aria-controls',
     references: 1,
-    render: (open, contentProps) => h(DateRangePickerRoot, { ...openProps(open), modelValue: { start: date, end: date.add({ days: 2 }) } }, () => [
+    teleportsItself: true,
+    render: (open, contentProps, wrap = identity) => h(DateRangePickerRoot, { ...openProps(open), modelValue: { start: date, end: date.add({ days: 2 }) } }, () => [
       h(DateRangePickerField, null, { default: ({ segments }: { segments: Record<'start' | 'end', { part: string, value: string }[]> }) => [
         ...(['start', 'end'] as const).flatMap(type => segments[type].map(segment =>
           h(DateRangePickerInput, { key: `${type}-${segment.part}`, part: segment.part as 'day', type }, () => segment.value))),
         h(DateRangePickerTrigger, () => 'Trigger'),
       ] }),
-      h(DateRangePickerContent, contentProps, () => 'Content'),
+      wrap(h(DateRangePickerContent, contentProps, () => 'Content')),
     ]),
   },
   'Select': {
     attribute: 'aria-controls',
     references: 1,
-    render: (open, contentProps) => h(SelectRoot, openProps(open), () => [
+    // In this position the content renders its own element, whatever `asChild` says.
+    emptyAsChild: false,
+    render: (open, contentProps, wrap = identity) => h(SelectRoot, openProps(open), () => [
       h(SelectTrigger, { 'aria-label': 'Fruit' }, () => h(SelectValue, { placeholder: 'Pick' })),
-      h(SelectPortal, () => h(SelectContent, contentProps, () => h(SelectViewport, () => [
+      h(SelectPortal, () => wrap(h(SelectContent, contentProps, () => h(SelectViewport, () => [
         h(SelectItem, { value: 'apple' }, () => h(SelectItemText, () => 'Apple')),
-      ]))),
+      ])))),
+    ]),
+  },
+  'Select (popper)': {
+    attribute: 'aria-controls',
+    references: 1,
+    render: (open, contentProps, wrap = identity) => h(SelectRoot, openProps(open), () => [
+      h(SelectTrigger, { 'aria-label': 'Fruit' }, () => h(SelectValue, { placeholder: 'Pick' })),
+      h(SelectPortal, () => wrap(h(SelectContent, { position: 'popper', ...contentProps }, () => h(SelectViewport, () => [
+        h(SelectItem, { value: 'apple' }, () => h(SelectItemText, () => 'Apple')),
+      ])))),
     ]),
   },
   'DropdownMenu': {
     attribute: 'aria-controls',
     references: 1,
-    render: (open, contentProps) => h(DropdownMenuRoot, openProps(open), () => [
+    render: (open, contentProps, wrap = identity) => h(DropdownMenuRoot, openProps(open), () => [
       h(DropdownMenuTrigger, () => 'Trigger'),
-      h(DropdownMenuPortal, () => h(DropdownMenuContent, contentProps, () => h(DropdownMenuItem, () => 'Item'))),
+      h(DropdownMenuPortal, () => wrap(h(DropdownMenuContent, contentProps, () => h(DropdownMenuItem, () => 'Item')))),
     ]),
   },
   'DropdownMenu sub-trigger': {
@@ -146,37 +174,38 @@ const overlayFamilies: Record<string, OverlayFamily> = {
     // The menu stays open, and its trigger keeps its reference: `open` toggles the submenu.
     references: 2,
     closedReferences: 1,
-    render: (open, contentProps) => h(DropdownMenuRoot, { open: true }, () => [
+    render: (open, contentProps, wrap = identity) => h(DropdownMenuRoot, { open: true }, () => [
       h(DropdownMenuTrigger, () => 'Trigger'),
       h(DropdownMenuPortal, () => h(DropdownMenuContent, () => h(DropdownMenuSub, { open: open.value }, () => [
         h(DropdownMenuSubTrigger, () => 'More'),
-        h(DropdownMenuPortal, () => h(DropdownMenuSubContent, contentProps, () => h(DropdownMenuItem, () => 'Sub item'))),
+        h(DropdownMenuPortal, () => wrap(h(DropdownMenuSubContent, contentProps, () => h(DropdownMenuItem, () => 'Sub item')))),
       ]))),
     ]),
   },
   'Menubar': {
     attribute: 'aria-controls',
     references: 1,
-    render: (open, contentProps) => h(MenubarRoot, selection(open), () => h(MenubarMenu, { value: 'a' }, () => [
+    render: (open, contentProps, wrap = identity) => h(MenubarRoot, selection(open), () => h(MenubarMenu, { value: 'a' }, () => [
       h(MenubarTrigger, () => 'Trigger'),
-      h(MenubarPortal, () => h(MenubarContent, contentProps, () => h(MenubarItem, () => 'Item'))),
+      h(MenubarPortal, () => wrap(h(MenubarContent, contentProps, () => h(MenubarItem, () => 'Item')))),
     ])),
   },
   'NavigationMenu': {
     attribute: 'aria-controls',
     references: 1,
     inline: true,
-    render: (open, contentProps) => h(NavigationMenuRoot, selection(open), () => h(NavigationMenuList, () => [
-      h(NavigationMenuItem, { value: 'a' }, () => [h(NavigationMenuTrigger, () => 'A'), h(NavigationMenuContent, contentProps, () => 'Content A')]),
+    render: (open, contentProps, wrap = identity) => h(NavigationMenuRoot, selection(open), () => h(NavigationMenuList, () => [
+      h(NavigationMenuItem, { value: 'a' }, () => [h(NavigationMenuTrigger, () => 'A'), wrap(h(NavigationMenuContent, contentProps, () => 'Content A'))]),
       h(NavigationMenuItem, { value: 'b' }, () => [h(NavigationMenuTrigger, () => 'B'), h(NavigationMenuContent, () => 'Content B')]),
     ])),
   },
   'NavigationMenu (viewport)': {
     attribute: 'aria-controls',
     references: 1,
-    render: (open, contentProps) => h(NavigationMenuRoot, selection(open), () => [
+    teleportsItself: true,
+    render: (open, contentProps, wrap = identity) => h(NavigationMenuRoot, selection(open), () => [
       h(NavigationMenuList, () => [
-        h(NavigationMenuItem, { value: 'a' }, () => [h(NavigationMenuTrigger, () => 'A'), h(NavigationMenuContent, contentProps, () => 'Content A')]),
+        h(NavigationMenuItem, { value: 'a' }, () => [h(NavigationMenuTrigger, () => 'A'), wrap(h(NavigationMenuContent, contentProps, () => 'Content A'))]),
         h(NavigationMenuItem, { value: 'b' }, () => [h(NavigationMenuTrigger, () => 'B'), h(NavigationMenuContent, () => 'Content B')]),
       ]),
       h(NavigationMenuViewport),
@@ -186,17 +215,37 @@ const overlayFamilies: Record<string, OverlayFamily> = {
     attribute: 'aria-controls',
     // The input and the trigger.
     references: 2,
-    render: (open, contentProps) => h(ComboboxRoot, openProps(open), () => [
+    // In this position the content renders its own element, whatever `asChild` says.
+    emptyAsChild: false,
+    render: (open, contentProps, wrap = identity) => h(ComboboxRoot, openProps(open), () => [
       h(ComboboxAnchor, () => [h(ComboboxInput, { 'aria-label': 'Fruit' }), h(ComboboxTrigger, () => 'Toggle')]),
-      h(ComboboxPortal, () => h(ComboboxContent, contentProps, () => h(ComboboxViewport, () => h(ComboboxItem, { value: 'apple' }, () => 'Apple')))),
+      h(ComboboxPortal, () => wrap(h(ComboboxContent, contentProps, () => h(ComboboxViewport, () => h(ComboboxItem, { value: 'apple' }, () => 'Apple'))))),
+    ]),
+  },
+  'Combobox (popper)': {
+    attribute: 'aria-controls',
+    references: 2,
+    render: (open, contentProps, wrap = identity) => h(ComboboxRoot, openProps(open), () => [
+      h(ComboboxAnchor, () => [h(ComboboxInput, { 'aria-label': 'Fruit' }), h(ComboboxTrigger, () => 'Toggle')]),
+      h(ComboboxPortal, () => wrap(h(ComboboxContent, { position: 'popper', ...contentProps }, () => h(ComboboxViewport, () => h(ComboboxItem, { value: 'apple' }, () => 'Apple'))))),
     ]),
   },
   'Autocomplete': {
     attribute: 'aria-controls',
     references: 2,
-    render: (open, contentProps) => h(AutocompleteRoot, openProps(open), () => [
+    // In this position the content renders its own element, whatever `asChild` says.
+    emptyAsChild: false,
+    render: (open, contentProps, wrap = identity) => h(AutocompleteRoot, openProps(open), () => [
       h(AutocompleteAnchor, () => [h(AutocompleteInput, { 'aria-label': 'Fruit' }), h(AutocompleteTrigger, () => 'Toggle')]),
-      h(AutocompletePortal, () => h(AutocompleteContent, contentProps, () => h(AutocompleteViewport, () => h(AutocompleteItem, { value: 'apple' }, () => 'Apple')))),
+      h(AutocompletePortal, () => wrap(h(AutocompleteContent, contentProps, () => h(AutocompleteViewport, () => h(AutocompleteItem, { value: 'apple' }, () => 'Apple'))))),
+    ]),
+  },
+  'Autocomplete (popper)': {
+    attribute: 'aria-controls',
+    references: 2,
+    render: (open, contentProps, wrap = identity) => h(AutocompleteRoot, openProps(open), () => [
+      h(AutocompleteAnchor, () => [h(AutocompleteInput, { 'aria-label': 'Fruit' }), h(AutocompleteTrigger, () => 'Toggle')]),
+      h(AutocompletePortal, () => wrap(h(AutocompleteContent, { position: 'popper', ...contentProps }, () => h(AutocompleteViewport, () => h(AutocompleteItem, { value: 'apple' }, () => 'Apple'))))),
     ]),
   },
   'Tooltip': {
@@ -204,9 +253,11 @@ const overlayFamilies: Record<string, OverlayFamily> = {
     references: 1,
     // The trigger is described by a visually hidden copy of the content, which keeps its generated id.
     consumerId: false,
-    render: (open, contentProps) => h(TooltipProvider, () => h(TooltipRoot, openProps(open), () => [
+    // The copy is rendered whatever the slot holds, so the reference stays.
+    emptyAsChild: false,
+    render: (open, contentProps, wrap = identity) => h(TooltipProvider, () => h(TooltipRoot, openProps(open), () => [
       h(TooltipTrigger, () => 'Trigger'),
-      h(TooltipPortal, () => h(TooltipContent, contentProps, () => 'Content')),
+      h(TooltipPortal, () => wrap(h(TooltipContent, contentProps, () => 'Content'))),
     ])),
   },
 }
@@ -228,12 +279,12 @@ const ID_REFERENCES = ['aria-controls', 'aria-owns', 'aria-describedby', 'aria-l
 
 // `usedIds` stands for whatever else consumed ids before the family rendered: when the
 // server and the client disagree on it, every generated id differs between the two.
-function createFixture(render: OverlayFamily['render'], open: Ref<boolean>, usedIds = 0, contentProps?: Ref<Record<string, unknown>>) {
+function createFixture(render: OverlayFamily['render'], open: Ref<boolean>, usedIds = 0, contentProps?: Ref<Record<string, unknown>>, wrap?: (content: VNode) => VNode) {
   return defineComponent({
     setup() {
       for (let i = 0; i < usedIds; i++)
         useId()
-      return () => render(open, contentProps?.value)
+      return () => render(open, contentProps?.value, wrap)
     },
   })
 }
@@ -252,14 +303,23 @@ function references(root: ParentNode) {
  * every id reference in it to be resolvable. The content of some families is loaded
  * asynchronously the first time it opens, hence the wait.
  */
-async function expectReferences(root: ParentNode, family: OverlayFamily, count: number) {
+async function expectReferences(root: ParentNode, family: OverlayFamily, count: number, attributes = ID_REFERENCES) {
   await vi.waitFor(() => {
     expect(references(root).filter(reference => reference.attribute === family.attribute)).toHaveLength(count)
   }, { timeout: 2000 })
   // Let the content that was just added or removed settle.
   await new Promise(resolve => setTimeout(resolve, 20))
-  expect(references(root).filter(reference => !reference.resolves)).toEqual([])
+  expect(references(root).filter(reference => attributes.includes(reference.attribute) && !reference.resolves)).toEqual([])
   expect(references(root).filter(reference => reference.attribute === family.attribute)).toHaveLength(count)
+}
+
+/**
+ * The same for a content whose slot the test replaced: only the reference from the
+ * trigger is looked at, since the replaced slot leaves out the parts that the content
+ * itself refers to, such as a title.
+ */
+function expectTriggerReferences(root: ParentNode, family: OverlayFamily, count: number) {
+  return expectReferences(root, family, count, [family.attribute])
 }
 
 globalThis.ResizeObserver = class ResizeObserver {
@@ -369,6 +429,55 @@ describe.each(Object.entries(overlayFamilies))('%s', (_name, family) => {
     await vi.waitFor(() => expect(targets()).toContain('changed-content'))
     await expectReferences(document.body, family, family.references)
     expect(document.getElementById('changed-content')).not.toBeNull()
+    wrapper.unmount()
+  })
+
+  it.runIf(family.emptyAsChild !== false)('drops the reference while an as-child content renders no element', async () => {
+    const hasElement = ref(true)
+    const wrap = (content: VNode) => h(content.type as Component, { ...content.props, asChild: true }, () => hasElement.value ? h('div', 'Child') : null)
+    const wrapper = mount(createFixture(family.render, ref(true), 0, undefined, wrap), { attachTo: document.body })
+    await expectTriggerReferences(document.body, family, family.references)
+
+    hasElement.value = false
+    await expectTriggerReferences(document.body, family, closed)
+
+    hasElement.value = true
+    await expectTriggerReferences(document.body, family, family.references)
+    wrapper.unmount()
+  })
+
+  it.runIf(family.emptyAsChild !== false)('renders no reference when an as-child content mounts without an element', async () => {
+    const wrap = (content: VNode) => h(content.type as Component, { ...content.props, asChild: true }, () => null)
+    const wrapper = mount(createFixture(family.render, ref(true), 0, undefined, wrap), { attachTo: document.body })
+
+    await new Promise(resolve => setTimeout(resolve, 50))
+    await expectTriggerReferences(document.body, family, closed)
+    wrapper.unmount()
+  })
+
+  it.runIf(!family.teleportsItself)('drops the reference while KeepAlive holds the content deactivated', async () => {
+    const isActive = ref(true)
+    const wrap = (content: VNode) => h(KeepAlive, () => isActive.value ? content : null)
+    const wrapper = mount(createFixture(family.render, ref(true), 0, undefined, wrap), { attachTo: document.body })
+    await expectReferences(document.body, family, family.references)
+
+    isActive.value = false
+    await expectReferences(document.body, family, closed)
+
+    isActive.value = true
+    await expectReferences(document.body, family, family.references)
+    wrapper.unmount()
+  })
+
+  it.runIf(family.teleportsItself)('keeps the reference while KeepAlive holds the content deactivated with its element in the document', async () => {
+    const isActive = ref(true)
+    const wrap = (content: VNode) => h(KeepAlive, () => isActive.value ? content : null)
+    const wrapper = mount(createFixture(family.render, ref(true), 0, undefined, wrap), { attachTo: document.body })
+    await expectReferences(document.body, family, family.references)
+
+    isActive.value = false
+    await new Promise(resolve => setTimeout(resolve, 50))
+    await expectReferences(document.body, family, family.references)
     wrapper.unmount()
   })
 

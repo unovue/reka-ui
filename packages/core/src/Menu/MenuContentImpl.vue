@@ -121,8 +121,6 @@ const props = withDefaults(defineProps<MenuContentImplProps>(), {
 })
 const emits = defineEmits<MenuContentImplPrivateEmits>()
 const menuContext = injectMenuContext()
-// Lets the trigger of this menu know that its content is in the document.
-useContentMounted(menuContext)
 const rootContext = injectMenuRootContext()
 
 const { trapFocus, disableOutsidePointerEvents, loop } = toRefs(props)
@@ -140,6 +138,8 @@ const currentItemId = ref<string | null>(null)
 
 const rovingFocusGroupRef = ref<InstanceType<typeof RovingFocusGroup>>()
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
+// Lets the trigger of this menu know that its content is in the document.
+useContentMounted(menuContext, contentElement)
 const { handleTypeaheadSearch } = useTypeahead()
 
 const highlightedElement = ref<HTMLElement>()

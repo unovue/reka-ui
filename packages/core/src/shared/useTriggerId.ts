@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
-import { computed, onBeforeMount, onBeforeUnmount, onBeforeUpdate, onMounted, onUpdated, ref, useAttrs, watch } from 'vue'
+import { computed, getCurrentInstance, onActivated, onBeforeMount, onBeforeUnmount, onBeforeUpdate, onDeactivated, onMounted, onUpdated, ref, useAttrs, watch } from 'vue'
 
-// How many content elements are mounted for a context. Kept beside the context rather
+// How many content elements are rendered for a context. Kept beside the context rather
 // than on it, so the context types stay as they are.
 const mountedContents = new WeakMap<object, Ref<number>>()
 
@@ -106,31 +106,81 @@ export function useContentElement(
 }
 
 /**
- * Records that a content element is mounted for as long as the calling component is,
- * which `useRenderedContentId` reads on the trigger side. `key` is an object both sides
- * share: the context that holds `contentId`, unless the trigger passes another one.
+ * Records that the calling content has rendered `element`, which `useRenderedContentId`
+ * reads on the trigger side. `key` is an object both sides share: the context that holds
+ * `contentId`, unless the trigger passes another one.
  *
- * The count changes right before the caller mounts and unmounts, not in `onMounted`: the
- * trigger then updates in the same pass that adds or removes the content. A write from a
- * mounted hook would re-render the trigger in a second pass, which reorders whatever
- * else waits on `nextTick` around an opening content, such as moving focus into it.
+ * A mounted content counts while its element is rendered. It stops counting while it
+ * renders none (an `asChild` content whose slot is empty) and while `KeepAlive` holds it
+ * deactivated, unless its element stayed in the document, as teleported content does.
+ *
+ * The count first changes right before the caller mounts and unmounts, not in
+ * `onMounted`: the trigger then updates in the same pass that adds or removes the
+ * content. A write from a mounted hook would re-render the trigger in a second pass,
+ * which reorders whatever else waits on `nextTick` around an opening content, such as
+ * moving focus into it. The later checks only write when the content turns out to have
+ * no element, or gains or loses it while mounted.
  */
-export function useContentMounted(key: object) {
+export function useContentMounted(key: object, element: Readonly<Ref<HTMLElement | undefined>>) {
   const count = useMountedContents(key)
+  const instance = getCurrentInstance()!
   let isCounted = false
-  onBeforeMount(() => {
-    isCounted = true
-    count.value++
+  const setCounted = (value: boolean) => {
+    if (value === isCounted)
+      return
+    isCounted = value
+    count.value += value ? 1 : -1
+  }
+  const isRendered = () => !!element.value?.parentNode
+
+  // An `asChild` content takes its element from a slot, which adds and removes the
+  // element without updating the caller, so `element` is not told. The node the element
+  // is a child of is watched instead. Once the element is gone from it, the caller
+  // renders again on every change there, which is what makes `element` resolve anew.
+  let observer: MutationObserver | undefined
+  let parent: Node | null | undefined
+  const observe = () => {
+    observer ??= new MutationObserver(() => {
+      if (!isRendered()) {
+        setCounted(false)
+        instance.proxy?.$forceUpdate()
+      }
+      // Moved, as a teleported content is when its target changes.
+      else if (element.value!.parentNode !== parent) {
+        observe()
+      }
+    })
+    observer.disconnect()
+    parent = element.value?.parentNode
+    // Without an element, it would be added in place of the node the caller rendered, or inside it.
+    const root = instance.vnode.el as Node | null
+    for (const node of parent ? [parent] : [root, root?.parentNode]) {
+      if (node)
+        observer.observe(node, { childList: true })
+    }
+  }
+  const syncElement = () => {
+    setCounted(isRendered())
+    observe()
+  }
+
+  onBeforeMount(() => setCounted(true))
+  onMounted(syncElement)
+  watch(element, syncElement, { flush: 'post' })
+  onActivated(syncElement)
+  onDeactivated(() => {
+    observer?.disconnect()
+    setCounted(!!element.value?.isConnected)
   })
   onBeforeUnmount(() => {
-    if (isCounted)
-      count.value--
+    observer?.disconnect()
+    setCounted(false)
   })
 }
 
 /**
  * The id a trigger may reference (`aria-controls`, `aria-describedby`): the id the
- * content rendered, while a content element is mounted. `undefined` otherwise, which
+ * content rendered, while a content has its element rendered. `undefined` otherwise, which
  * includes the server render and the first render of a hydrating trigger, so that the
  * reference is patched onto the trigger once the content exists instead of being left
  * as the server wrote it. Needs `useContentMounted` on the content side.
