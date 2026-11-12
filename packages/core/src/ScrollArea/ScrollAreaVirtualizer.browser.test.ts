@@ -2,7 +2,7 @@ import type { Virtualizer } from '@tanstack/vue-virtual'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport, ScrollAreaVirtualizer } from '.'
 
 const options = Array.from({ length: 1000 }, (_, index) => `Item ${index}`)
@@ -125,5 +125,50 @@ describe('vertical ScrollArea virtualization in a real browser', () => {
     virtualizer.scrollToIndex(items.length - 1)
     await expect.poll(() => viewport().scrollTop).toBe(viewport().scrollHeight - viewport().clientHeight)
     await expect.poll(() => renderedIndexes().at(-1)).toBe(items.length - 1)
+  })
+})
+
+describe('given an inline estimateSize callback with measured rows, in a real browser', () => {
+  it('keeps the scroll position and the first visible row when the parent renders again', async () => {
+    const renders = ref(0)
+    // Rows are 30px to 90px tall, far from the estimate, so a reset of the measured sizes moves them.
+    const heightOf = (index: number) => 30 + (index % 4) * 20
+    mount(defineComponent({
+      setup: () => () => h(ScrollAreaRoot, { style: 'width: 300px; height: 320px;' }, () => [
+        h('output', { 'data-testid': 'renders' }, renders.value),
+        h(ScrollAreaViewport, { style: 'width: 100%; height: 100%;' }, () => h(ScrollAreaVirtualizer, {
+          options,
+          // a new function on each render of the parent
+          estimateSize: () => 20,
+        }, {
+          default: ({ option, virtualizer, virtualItem }: { option: string, virtualizer: Virtualizer<HTMLElement, Element>, virtualItem: { index: number } }) =>
+            h('div', { ref: element => virtualizer.measureElement(element as Element | null), style: `height: ${heightOf(virtualItem.index)}px;` }, option),
+        })),
+        h(ScrollAreaScrollbar, { orientation: 'vertical' }),
+      ]),
+    }), { attachTo: document.body })
+    await expect.poll(() => renderedIndexes().length).toBeGreaterThan(0)
+
+    // Scroll in steps so that every row above the position is measured.
+    for (let step = 0; step < 25; step++) {
+      viewport().scrollBy({ top: 200 })
+      await settle()
+    }
+    await settle()
+    const scrollTop = viewport().scrollTop
+    const first = firstVisibleIndex()
+    expect(scrollTop).toBe(5000)
+    expect(first).toBeGreaterThan(50)
+    const firstRowTop = () => document.querySelector<HTMLElement>(`[data-index="${first}"]`)?.getBoundingClientRect().top
+    const top = firstRowTop()
+
+    renders.value++
+    await expect.poll(() => document.querySelector('[data-testid=renders]')!.textContent).toBe('1')
+    await settle()
+    await settle()
+
+    expect(viewport().scrollTop).toBe(scrollTop)
+    expect(firstVisibleIndex()).toBe(first)
+    expect(firstRowTop()).toBe(top)
   })
 })

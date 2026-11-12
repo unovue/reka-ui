@@ -162,12 +162,20 @@ describe('given a virtualized ScrollArea', () => {
     expect(wrapper.find('[data-reka-virtualizer]').attributes('style')).toContain('height: 500px')
   })
 
-  it('remeasures when the estimateSize callback changes', async () => {
+  it('keeps the measured sizes when the estimateSize callback is replaced, until measure() is called', async () => {
     const wrapper = mount(VirtualScrollArea, { attachTo: document.body, props: { estimateSize: () => 25 } })
     await flush()
+    const { virtualizer } = wrapper.findComponent(ScrollAreaVirtualizer).vm
+    const measure = vi.spyOn(virtualizer, 'measure')
     expect(wrapper.find('[data-reka-virtualizer]').attributes('style')).toContain('height: 2500px')
 
+    // an inline callback is a new function on every render of the parent
     await wrapper.setProps({ estimateSize: () => 50 })
+    await flush()
+    expect(measure).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-reka-virtualizer]').attributes('style')).toContain('height: 2500px')
+
+    virtualizer.measure()
     await flush()
     expect(wrapper.find('[data-reka-virtualizer]').attributes('style')).toContain('height: 5000px')
   })

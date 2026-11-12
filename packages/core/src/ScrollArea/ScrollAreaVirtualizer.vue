@@ -4,7 +4,13 @@ export interface ScrollAreaVirtualizerProps<T = any> {
   options: T[]
   /** Number of items rendered outside the visible area */
   overscan?: number
-  /** Estimated size (in px) of each item */
+  /**
+   * Estimated size (in px) of each item.
+   *
+   * A change of a numeric estimate measures the items again. A callback is not watched,
+   * as an inline callback is a new function on every render: when its results change,
+   * call `virtualizer.measure()` on the exposed instance.
+   */
   estimateSize?: number | ((index: number) => number)
   /** Whether to virtualize items horizontally. */
   horizontal?: boolean
@@ -90,8 +96,10 @@ function updateScrollMargin() {
 watch([rootContext.viewport, currentElement, () => props.horizontal, isRtl], updateScrollMargin, { flush: 'post', immediate: true })
 useResizeObserver(rootContext.content, updateScrollMargin)
 
-// the estimated sizes are cached, so they need to be measured again
-watch(() => props.estimateSize, () => virtualizer.value.measure())
+// The estimated sizes are cached, so a new numeric estimate needs the items measured again.
+// A callback is not watched: an inline one is a new function on every render of the parent,
+// and measuring again discards the sizes collected through `measureElement`.
+watch(() => typeof props.estimateSize === 'number' ? props.estimateSize : undefined, () => virtualizer.value.measure())
 
 // not a computed: slots aren't reactive, so a replaced slot would keep rendering the cached nodes
 function getVirtualizedItems() {

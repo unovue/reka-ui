@@ -4,7 +4,7 @@
 <PropsTable :data="[
   {
     'name': 'estimateSize',
-    'description': '<p>Estimated size (in px) of each item</p>\n',
+    'description': '<p>Estimated size (in px) of each item.</p>\n<p>A change of a numeric estimate measures the items again. A callback is not watched,\nas an inline callback is a new function on every render: when its results change,\ncall <code>virtualizer.measure()</code> on the exposed instance.</p>\n',
     'type': 'number | ((index: number) =&gt; number)',
     'required': false
   },
@@ -53,7 +53,7 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `estimateSize` | Estimated size (in px) of each item | `number \| ((index: number) => number)` | No | - |
+| `estimateSize` | Estimated size (in px) of each item. A change of a numeric estimate measures the items again. A callback is not watched, as an inline callback is a new function on every render: when its results change, call virtualizer.measure() on the exposed instance. | `number \| ((index: number) => number)` | No | - |
 | `horizontal` | Whether to virtualize items horizontally. | `boolean` | No | - |
 | `options` | List of items | `T` | Yes | - |
 | `overscan` | Number of items rendered outside the visible area | `number` | No | - |
