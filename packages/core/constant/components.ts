@@ -416,6 +416,7 @@ export const components = {
   scrollArea: [
     'ScrollAreaRoot',
     'ScrollAreaViewport',
+    'ScrollAreaVirtualizer',
     'ScrollAreaScrollbar',
     'ScrollAreaThumb',
     'ScrollAreaCorner',
