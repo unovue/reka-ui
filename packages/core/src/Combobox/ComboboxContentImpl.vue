@@ -94,7 +94,7 @@ provideComboboxContentContext({ position })
 const isInputWithinContent = ref(false)
 onMounted(() => {
   if (rootContext.inputElement.value) {
-    isInputWithinContent.value = currentElement.value.contains(rootContext.inputElement.value)
+    isInputWithinContent.value = currentElement.value?.contains(rootContext.inputElement.value) ?? false
     if (props.present && isInputWithinContent.value) {
       rootContext.inputElement.value.focus()
     }
@@ -106,7 +106,7 @@ watch(() => props.present, async (isPresent, wasPresent) => {
     return
 
   const activeElement = getActiveElement()
-  if (!activeElement || !currentElement.value.contains(activeElement))
+  if (!activeElement || !currentElement.value?.contains(activeElement))
     return
 
   await nextTick()

@@ -29,12 +29,18 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
   })
 
   function resolveCurrentElement() {
-    // $el could be text/comment for non-single root normal or text root, thus we retrieve the nextElementSibling
-    return currentRef.value
-      && '$el' in currentRef.value
-      && ['#text', '#comment'].includes(currentRef.value.$el.nodeName)
-      ? currentRef.value.$el.nextElementSibling as HTMLElement
-      : unrefElement(currentRef as unknown as MaybeElement) as HTMLElement
+    const el = currentRef.value
+    // $el is a text/comment node for a fragment, text or comment root. Use the next
+    // element only when it sits before the end anchor of the forwarded component's fragment.
+    if (el && '$el' in el && ['#text', '#comment'].includes(el.$el.nodeName)) {
+      let vnode = el.$.subTree
+      while (vnode.component)
+        vnode = vnode.component.subTree
+      const next = el.$el.nextElementSibling as HTMLElement
+      // 4: Node.DOCUMENT_POSITION_FOLLOWING
+      return (vnode.anchor && next && next.compareDocumentPosition(vnode.anchor as Node) & 4 ? next : undefined) as HTMLElement
+    }
+    return unrefElement(currentRef as unknown as MaybeElement) as HTMLElement
   }
 
   // Template refs are never set during SSR, so nothing reads `exposed` there.

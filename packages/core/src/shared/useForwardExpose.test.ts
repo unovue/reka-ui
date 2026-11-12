@@ -463,3 +463,84 @@ describe('useForwardRef', async () => {
     expect(renderNode).toBe('span')
   })
 })
+
+describe('given a forwarded child without a single element root', () => {
+  const COMMENT_ROOT = `<div v-if="false" />`
+  const TEXT_ROOT = `just text`
+
+  /** Forward `child` and render an unrelated element right after it, unless `alone`. */
+  async function resolveCurrentElement(child: any, alone = false) {
+    let forwarded!: ReturnType<typeof useForwardExpose>
+    const wrapper = mount(defineComponent({
+      setup() {
+        forwarded = useForwardExpose()
+        return () => [
+          h(child, { ref: forwarded.forwardRef }),
+          alone ? null : h('div', { id: 'outsider' }),
+        ]
+      },
+    }))
+    await flushPromises()
+    if (!alone)
+      expect(wrapper.find('#outsider').exists()).toBe(true)
+    return forwarded.currentElement.value
+  }
+
+  it.each([
+    ['text', TEXT_ROOT],
+    ['comment', COMMENT_ROOT],
+  ])('should resolve undefined for a %s root when nothing is forwarded', async (_, template) => {
+    let forwarded!: ReturnType<typeof useForwardExpose>
+    mount(defineComponent({
+      setup() {
+        forwarded = useForwardExpose()
+        return {}
+      },
+      template,
+    }))
+    await flushPromises()
+    expect(forwarded.currentElement.value).toBeUndefined()
+  })
+
+  it.each([
+    ['comment root', COMMENT_ROOT],
+    ['text root', TEXT_ROOT],
+    ['fragment of comments', `<!-- a --><!-- b -->`],
+  ])('should not resolve to an element outside a %s', async (_, template) => {
+    expect(await resolveCurrentElement(defineComponent({ template }))).toBeUndefined()
+  })
+
+  it.each([
+    ['comment root', COMMENT_ROOT],
+    ['text root', TEXT_ROOT],
+  ])('should resolve undefined for a %s with no following element', async (_, template) => {
+    expect(await resolveCurrentElement(defineComponent({ template }), true)).toBeUndefined()
+  })
+
+  it('should resolve the first element of a fragment that starts with text', async () => {
+    const Child = defineComponent({ template: `leading text <button id="own">ok</button>` })
+    const element = await resolveCurrentElement(Child)
+    expect(element).toBeInstanceOf(HTMLButtonElement)
+    expect(element.id).toBe('own')
+  })
+
+  it('should resolve through a component that wraps a fragment', async () => {
+    const Frag = defineComponent({ template: `leading <button id="own">ok</button>` })
+    const Hoc = defineComponent({ components: { Frag }, template: `<Frag />` })
+    expect((await resolveCurrentElement(Hoc))?.id).toBe('own')
+  })
+
+  it('should resolve Primitive as-child with a v-if comment before the element', async () => {
+    const Inner = defineComponent({
+      components: { Primitive },
+      template: `<Primitive as-child><template v-if="false"><i /></template><button id="own">b</button></Primitive>`,
+    })
+    expect((await resolveCurrentElement(Inner))?.id).toBe('own')
+  })
+
+  it('should not resolve to an element outside a component that wraps a comment root', async () => {
+    const Empty = defineComponent({ template: COMMENT_ROOT })
+    const Hoc = defineComponent({ components: { Empty }, template: `<Empty />` })
+    expect(await resolveCurrentElement(Hoc)).toBeUndefined()
+  })
+})
