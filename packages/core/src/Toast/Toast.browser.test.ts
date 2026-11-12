@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, ref } from 'vue'
 import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from '@/Dialog'
@@ -184,5 +184,94 @@ describe('toast close pause, in a real browser', () => {
 
     open.value.c = true
     await expect.poll(() => open.value.c, { timeout: DURATION * 6 }).toBe(false)
+  })
+})
+
+function mountPausableToast(providerProps: { disableHoverPause?: boolean, disableWindowBlurPause?: boolean } = {}) {
+  const open = ref(true)
+  const Fixture = defineComponent({
+    setup() {
+      return () => h(ToastProvider, { duration: DURATION, ...providerProps }, () => [
+        h(ToastRoot, {
+          'open': open.value,
+          'onUpdate:open': (value: boolean) => { open.value = value },
+          'style': 'height: 40px',
+          'data-testid': 'toast',
+        }, () => [
+          h(ToastDescription, () => 'Saved'),
+          h(ToastAction, { 'altText': 'Undo', 'data-action': '' }, () => 'Undo'),
+        ]),
+        h('button', { 'data-testid': 'outside', 'style': 'margin-top: 300px' }, 'outside'),
+        h(ToastViewport, { style: 'position: fixed; top: 0; right: 0; width: 300px; list-style: none; margin: 0; padding: 0' }),
+      ])
+    },
+  })
+  mount(Fixture, { attachTo: document.body })
+  return { open }
+}
+
+describe('toast pause options, in a real browser', () => {
+  afterEach(async () => {
+    window.dispatchEvent(new Event('focus'))
+    await userEvent.unhover(document.body)
+  })
+
+  it('pauses while hovered by default', async () => {
+    const { open } = mountPausableToast()
+    await expect.poll(() => el('[data-testid="toast"]')).toBeTruthy()
+    await userEvent.hover(el('[data-testid="toast"]')!)
+    await sleep(DURATION * 3)
+    expect(open.value).toBe(true)
+  })
+
+  it('closes on time while hovered when the hover pause is off', async () => {
+    const { open } = mountPausableToast({ disableHoverPause: true })
+    await expect.poll(() => el('[data-testid="toast"]')).toBeTruthy()
+    await userEvent.hover(el('[data-testid="toast"]')!)
+    await expect.poll(() => open.value, { timeout: DURATION * 4 }).toBe(false)
+  })
+
+  it('stays open while its action is focused with both pauses off, and closes once focus leaves', async () => {
+    const { open } = mountPausableToast({ disableHoverPause: true, disableWindowBlurPause: true })
+    await expect.poll(() => el('[data-action]')).toBeTruthy()
+    el('[data-action]')!.focus()
+    await userEvent.hover(el('[data-testid="toast"]')!)
+    await sleep(DURATION * 3)
+    expect(open.value).toBe(true)
+    expect(document.activeElement).toBe(el('[data-action]'))
+
+    el('[data-testid="outside"]')!.focus()
+    await expect.poll(() => open.value, { timeout: DURATION * 4 }).toBe(false)
+  })
+
+  it('stays open during a swipe when the hover pause is off, and closes after the swipe is let go', async () => {
+    const { open } = mountPausableToast({ disableHoverPause: true })
+    await expect.poll(() => el('[data-testid="toast"]')).toBeTruthy()
+    const toast = el('[data-testid="toast"]')!
+    const { left, top } = toast.getBoundingClientRect()
+    const init = { bubbles: true, pointerId: 1, pointerType: 'touch', button: 0, isPrimary: true, clientY: top + 20 }
+    toast.dispatchEvent(new PointerEvent('pointerdown', { ...init, clientX: left + 20 }))
+    toast.dispatchEvent(new PointerEvent('pointermove', { ...init, clientX: left + 40 }))
+    await sleep(DURATION * 3)
+    expect(open.value).toBe(true)
+
+    // Let go before the swipe threshold, so only the timer can close the toast.
+    toast.dispatchEvent(new PointerEvent('pointerup', { ...init, clientX: left + 40 }))
+    await expect.poll(() => open.value, { timeout: DURATION * 4 }).toBe(false)
+  })
+
+  it('pauses while the window is blurred by default', async () => {
+    const { open } = mountPausableToast()
+    await expect.poll(() => el('[data-testid="toast"]')).toBeTruthy()
+    window.dispatchEvent(new Event('blur'))
+    await sleep(DURATION * 3)
+    expect(open.value).toBe(true)
+  })
+
+  it('closes on time while the window is blurred when the blur pause is off', async () => {
+    const { open } = mountPausableToast({ disableWindowBlurPause: true })
+    await expect.poll(() => el('[data-testid="toast"]')).toBeTruthy()
+    window.dispatchEvent(new Event('blur'))
+    await expect.poll(() => open.value, { timeout: DURATION * 4 }).toBe(false)
   })
 })
