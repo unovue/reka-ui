@@ -12,7 +12,8 @@ type ToastProviderContext = {
   disableSwipe: Ref<boolean>
   swipeDirection: Ref<SwipeDirection>
   swipeThreshold: Ref<number>
-  pauseOnInteraction: Ref<boolean>
+  disableHoverPause: Ref<boolean>
+  disableWindowBlurPause: Ref<boolean>
   toastCount: Ref<number>
   viewport: Ref<HTMLElement | undefined>
   onViewportChange: (viewport: HTMLElement) => void
@@ -76,10 +77,20 @@ export interface ToastProviderProps {
    */
   swipeThreshold?: number
   /**
-   * Whether to pause the toast duration while the viewport is hovered, focused, or the window is blurred.
-   * @defaultValue true
+   * When `true`, toasts keep counting down while the pointer is over the viewport, so a toast
+   * can close while a pointer user is still reading it. Best kept to short status toasts
+   * without actions. Keyboard focus inside the viewport and a press or swipe on a toast
+   * always pause the toasts.
+   * @defaultValue false
    */
-  pauseOnInteraction?: boolean
+  disableHoverPause?: boolean
+  /**
+   * When `true`, toasts keep counting down while the window is not focused, so a toast can
+   * close before the user comes back to the page. Keyboard focus inside the viewport still
+   * pauses the toasts until the window is focused again.
+   * @defaultValue false
+   */
+  disableWindowBlurPause?: boolean
   /**
    * The maximum number of toasts shown at once. Older toasts beyond the limit get
    * `data-limited` and `inert` rather than being removed, so they can be hidden or animated.
@@ -111,9 +122,8 @@ const props = withDefaults(defineProps<ToastProviderProps>(), {
   duration: 5000,
   swipeDirection: 'right',
   swipeThreshold: 50,
-  pauseOnInteraction: true,
 })
-const { label, duration, disableSwipe, swipeDirection, swipeThreshold, pauseOnInteraction } = toRefs(props)
+const { label, duration, disableSwipe, swipeDirection, swipeThreshold, disableHoverPause, disableWindowBlurPause } = toRefs(props)
 useCollection({ isProvider: true })
 
 const viewport = ref<HTMLElement>()
@@ -177,7 +187,8 @@ provideToastProviderContext({
   disableSwipe,
   swipeDirection,
   swipeThreshold,
-  pauseOnInteraction,
+  disableHoverPause,
+  disableWindowBlurPause,
   toastCount,
   viewport,
   onViewportChange(el) {

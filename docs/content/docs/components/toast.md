@@ -16,7 +16,7 @@ A succinct message that is displayed temporarily.
 <Highlights
   :features="[
     'Automatically closes.',
-    'Pauses closing on hover, focus and window blur by default.',
+    'Pauses closing on hover, focus and window blur.',
     'Supports hotkey to jump to toast viewport.',
     'Supports closing via swipe gesture.',
     'Exposes CSS variables for swipe gesture animations.',
@@ -556,13 +556,20 @@ Customise the duration of a toast to override the provider value.
 </template>
 ```
 
-### Pause on interaction
+### Pausing the timer
 
-By default, the timeout pauses while the toast viewport is hovered or focused, or while the window is blurred. Set `pauseOnInteraction` to `false` to keep the timeout running during these interactions.
+Toasts stop counting down while the pointer is over the viewport, while keyboard focus is inside it, and while the window is not focused. The hover and window pauses can each be turned off on `ToastProvider`:
 
-```vue
+- `disableHoverPause` keeps the timer running while the pointer is over the viewport.
+- `disableWindowBlurPause` keeps the timer running while the window is not focused.
+
+Keyboard focus inside the viewport always pauses the toasts, and so does a press or swipe on a toast, so a toast never closes while it is being used. Neither can be turned off.
+
+Without the hover pause, a toast can disappear while a pointer user is still reading it. Keep it to short status toasts that have no actions.
+
+```vue line=2
 <template>
-  <ToastProvider :pause-on-interaction="false">
+  <ToastProvider disable-hover-pause disable-window-blur-pause>
     <Toaster />
   </ToastProvider>
 </template>

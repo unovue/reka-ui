@@ -48,6 +48,9 @@ const hasToasts = computed(() => providerContext.toastCount.value > 0)
 const headFocusProxyRef = ref<HTMLElement>()
 const tailFocusProxyRef = ref<HTMLElement>()
 const windowBlurred = ref(false)
+// A press on a toast, tracked only while the hover pause is off: it then has to hold the
+// pause itself, so a toast is not closed in the middle of a press or a swipe.
+let isPressed = false
 
 const KEY_RE = /Key/g
 const DIGIT_RE = /Digit/g
@@ -145,31 +148,65 @@ useEventListener('focus', () => {
   releasePause(viewportElement.value)
 })
 
-watch(providerContext.pauseOnInteraction, (pauseOnInteraction) => {
-  if (!pauseOnInteraction)
-    releasePause(viewportElement.value)
-  else if (hasToasts.value && (providerContext.hovering.value || providerContext.focused.value || windowBlurred.value))
+// Focus inside the viewport and a press on a toast always pause. Hover and window blur
+// pause unless turned off.
+function shouldPause() {
+  const { focused, hovering, disableHoverPause, disableWindowBlurPause } = providerContext
+  return focused.value
+    || isPressed
+    || (!disableHoverPause.value && hovering.value && !pendingPointerLeave.value)
+    || (!disableWindowBlurPause.value && windowBlurred.value)
+}
+
+// Applies an option that changes in the middle of an interaction.
+watch([providerContext.disableHoverPause, providerContext.disableWindowBlurPause], () => {
+  if (!hasToasts.value)
+    return
+  if (shouldPause())
     pause(viewportElement.value)
+  else
+    releasePause(viewportElement.value)
 })
 
 watchEffect((cleanupFn) => {
   const viewport = viewportElement.value
   if (hasToasts.value && viewport) {
-    const handlePauseIfEnabled = () => {
-      if (providerContext.pauseOnInteraction.value)
+    const handlePause = () => pause(viewport)
+
+    const handlePointerMovePause = () => {
+      if (!providerContext.disableHoverPause.value)
         pause(viewport)
     }
 
     const handleWindowBlur = () => {
       windowBlurred.value = true
-      handlePauseIfEnabled()
+      if (!providerContext.disableWindowBlurPause.value)
+        pause(viewport)
     }
 
     const handleResume = () => releasePause(viewport)
 
+    const handlePointerDown = () => {
+      if (providerContext.disableHoverPause.value) {
+        isPressed = true
+        pause(viewport)
+      }
+    }
+
+    const handlePointerUp = () => {
+      if (isPressed) {
+        isPressed = false
+        if (!shouldPause())
+          handleResume()
+      }
+    }
+
     const handleFocusOutResume = (event: FocusEvent) => {
       const isFocusMovingOutside = !viewport.contains(event.relatedTarget as HTMLElement)
-      if (isFocusMovingOutside) {
+      // The window losing focus leaves the active element where it is. Without the blur
+      // pause, the focus pause has to hold until the window is back.
+      const isWindowBlur = providerContext.disableWindowBlurPause.value && viewport.contains(getActiveElement())
+      if (isFocusMovingOutside && !isWindowBlur) {
         providerContext.focused.value = false
         handleResume()
       }
@@ -178,7 +215,7 @@ watchEffect((cleanupFn) => {
     const handlePointerLeaveResume = () => {
       pendingPointerLeave.value = true
       const isFocusInside = viewport.contains(getActiveElement())
-      if (!isFocusInside)
+      if (!isFocusInside && !isPressed)
         handleResume()
     }
 
@@ -226,24 +263,31 @@ watchEffect((cleanupFn) => {
       }
     }
 
-    viewport.addEventListener('focusin', handlePauseIfEnabled)
+    viewport.addEventListener('focusin', handlePause)
     viewport.addEventListener('focusin', handleFocusInExpand)
     viewport.addEventListener('focusout', handleFocusOutResume)
-    viewport.addEventListener('pointermove', handlePauseIfEnabled)
+    viewport.addEventListener('pointermove', handlePointerMovePause)
     viewport.addEventListener('pointermove', handlePointerMoveExpand)
     viewport.addEventListener('pointerleave', handlePointerLeaveResume)
     viewport.addEventListener('keydown', handleKeyDown)
+    viewport.addEventListener('pointerdown', handlePointerDown)
+    window.addEventListener('pointerup', handlePointerUp)
+    window.addEventListener('pointercancel', handlePointerUp)
     window.addEventListener('blur', handleWindowBlur)
 
     cleanupFn(() => {
-      viewport.removeEventListener('focusin', handlePauseIfEnabled)
+      viewport.removeEventListener('focusin', handlePause)
       viewport.removeEventListener('focusin', handleFocusInExpand)
       viewport.removeEventListener('focusout', handleFocusOutResume)
-      viewport.removeEventListener('pointermove', handlePauseIfEnabled)
+      viewport.removeEventListener('pointermove', handlePointerMovePause)
       viewport.removeEventListener('pointermove', handlePointerMoveExpand)
       viewport.removeEventListener('pointerleave', handlePointerLeaveResume)
       viewport.removeEventListener('keydown', handleKeyDown)
+      viewport.removeEventListener('pointerdown', handlePointerDown)
+      window.removeEventListener('pointerup', handlePointerUp)
+      window.removeEventListener('pointercancel', handlePointerUp)
       window.removeEventListener('blur', handleWindowBlur)
+      isPressed = false
       if (document.hasFocus())
         releasePause(viewport)
     })

@@ -217,64 +217,85 @@ describe('given a default Toast', () => {
   })
 })
 
-describe('toastProvider pauseOnInteraction', () => {
-  afterEach(() => {
-    vi.useRealTimers()
-  })
+describe('toastProvider pause options', () => {
+  type PauseOptions = { disableHoverPause?: boolean, disableWindowBlurPause?: boolean }
+  type Interaction = 'pointermove' | 'focusin' | 'window blur'
 
-  it.each([
-    { pauseOnInteraction: undefined, interaction: 'pointermove', shouldPause: true },
-    { pauseOnInteraction: false, interaction: 'pointermove', shouldPause: false },
-    { pauseOnInteraction: undefined, interaction: 'focusin', shouldPause: true },
-    { pauseOnInteraction: false, interaction: 'focusin', shouldPause: false },
-    { pauseOnInteraction: undefined, interaction: 'window blur', shouldPause: true },
-    { pauseOnInteraction: false, interaction: 'window blur', shouldPause: false },
-  ])('should apply pauseOnInteraction to $interaction', async ({ pauseOnInteraction, interaction, shouldPause }) => {
-    vi.useFakeTimers()
+  let wrapper: VueWrapper | undefined
 
+  function mountToast(initial: PauseOptions = {}, duration = 1000) {
     const open = ref(true)
-    const providerProps = pauseOnInteraction === undefined ? {} : { pauseOnInteraction }
-    const wrapper = mount(defineComponent({
+    const options = ref(initial)
+    wrapper = mount(defineComponent({
       setup() {
-        return () => h(ToastProvider, { duration: 1000, ...providerProps }, () => [
+        return () => h(ToastProvider, { duration, ...options.value }, () => [
           h(ToastRoot, {
             'open': open.value,
             'onUpdate:open': (value: boolean) => {
               open.value = value
             },
-          }, () => h(ToastDescription, null, () => 'Timeout toast')),
+          }, () => [
+            h(ToastDescription, null, () => 'Timeout toast'),
+            h(ToastAction, { altText: 'Undo' }, () => 'Undo'),
+          ]),
           h(ToastViewport),
         ])
       },
     }), { attachTo: document.body })
+    return { open, options, viewport: () => wrapper!.find<HTMLElement>('ol').element }
+  }
 
-    try {
-      await nextTick()
+  async function interact(interaction: Interaction, viewport: HTMLElement) {
+    if (interaction === 'pointermove')
+      await fireEvent.pointerMove(viewport)
+    else if (interaction === 'focusin')
+      await fireEvent.focusIn(viewport)
+    else
+      await fireEvent.blur(window)
+  }
 
-      const viewport = wrapper.find<HTMLElement>('ol').element
-      if (interaction === 'pointermove')
-        await fireEvent.pointerMove(viewport)
-      else if (interaction === 'focusin')
-        await fireEvent.focusIn(viewport)
-      else
-        await fireEvent.blur(window)
+  async function runDuration(ms = 1000) {
+    vi.advanceTimersByTime(ms)
+    await nextTick()
+  }
 
-      vi.advanceTimersByTime(1000)
-      await nextTick()
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
 
-      expect(open.value).toBe(shouldPause)
-    }
-    finally {
-      wrapper.unmount()
-    }
+  afterEach(() => {
+    wrapper?.unmount()
+    wrapper = undefined
+    vi.useRealTimers()
+  })
+
+  it.each<{ options: PauseOptions, interaction: Interaction, shouldPause: boolean }>([
+    { options: {}, interaction: 'pointermove', shouldPause: true },
+    { options: {}, interaction: 'focusin', shouldPause: true },
+    { options: {}, interaction: 'window blur', shouldPause: true },
+    { options: { disableHoverPause: true }, interaction: 'pointermove', shouldPause: false },
+    { options: { disableHoverPause: true }, interaction: 'focusin', shouldPause: true },
+    { options: { disableHoverPause: true }, interaction: 'window blur', shouldPause: true },
+    { options: { disableWindowBlurPause: true }, interaction: 'pointermove', shouldPause: true },
+    { options: { disableWindowBlurPause: true }, interaction: 'focusin', shouldPause: true },
+    { options: { disableWindowBlurPause: true }, interaction: 'window blur', shouldPause: false },
+    { options: { disableHoverPause: true, disableWindowBlurPause: true }, interaction: 'pointermove', shouldPause: false },
+    { options: { disableHoverPause: true, disableWindowBlurPause: true }, interaction: 'focusin', shouldPause: true },
+    { options: { disableHoverPause: true, disableWindowBlurPause: true }, interaction: 'window blur', shouldPause: false },
+  ])('should pause on $interaction with $options: $shouldPause', async ({ options, interaction, shouldPause }) => {
+    const { open, viewport } = mountToast(options)
+    await nextTick()
+
+    await interact(interaction, viewport())
+    await runDuration()
+
+    expect(open.value).toBe(shouldPause)
   })
 
   it('should resume when the pointer leaves while another toast is closing', async () => {
-    vi.useFakeTimers()
-
     const openA = ref(true)
     const openB = ref(true)
-    const wrapper = mount(defineComponent({
+    wrapper = mount(defineComponent({
       setup() {
         return () => h(ToastProvider, { duration: 1000 }, () => [
           h(ToastRoot, {
@@ -295,68 +316,107 @@ describe('toastProvider pauseOnInteraction', () => {
         ])
       },
     }), { attachTo: document.body })
+    await nextTick()
 
-    try {
-      await nextTick()
+    const viewport = wrapper.find<HTMLElement>('ol').element
+    await fireEvent.pointerMove(viewport)
+    openA.value = false
+    await nextTick()
+    await fireEvent.pointerLeave(viewport)
 
-      const viewport = wrapper.find<HTMLElement>('ol').element
-      await fireEvent.pointerMove(viewport)
-      openA.value = false
-      await nextTick()
-      await fireEvent.pointerLeave(viewport)
+    await runDuration(1500)
 
-      vi.advanceTimersByTime(1500)
-      await nextTick()
-
-      expect(openB.value).toBe(false)
-    }
-    finally {
-      wrapper.unmount()
-    }
+    expect(openB.value).toBe(false)
   })
 
-  it.each(['pointermove', 'focusin', 'window blur'])('should pause when enabled during a %s interaction', async (interaction) => {
-    vi.useFakeTimers()
+  it.each<{ option: keyof PauseOptions, interaction: Interaction }>([
+    { option: 'disableHoverPause', interaction: 'pointermove' },
+    { option: 'disableWindowBlurPause', interaction: 'window blur' },
+  ])('should pause when $option is turned off during a $interaction interaction', async ({ option, interaction }) => {
+    const { open, options, viewport } = mountToast({ [option]: true })
+    await nextTick()
 
-    const open = ref(true)
-    const pauseOnInteraction = ref(false)
-    const wrapper = mount(defineComponent({
-      setup() {
-        return () => h(ToastProvider, { duration: 1000, pauseOnInteraction: pauseOnInteraction.value }, () => [
-          h(ToastRoot, {
-            'open': open.value,
-            'onUpdate:open': (value: boolean) => {
-              open.value = value
-            },
-          }, () => h(ToastDescription, null, () => 'Timeout toast')),
-          h(ToastViewport),
-        ])
-      },
-    }), { attachTo: document.body })
+    await interact(interaction, viewport())
+    await runDuration(500)
+    options.value = { [option]: false }
+    await nextTick()
+    await runDuration(1000)
 
-    try {
-      await nextTick()
+    expect(open.value).toBe(true)
+  })
 
-      const viewport = wrapper.find<HTMLElement>('ol').element
-      if (interaction === 'pointermove')
-        await fireEvent.pointerMove(viewport)
-      else if (interaction === 'focusin')
-        await fireEvent.focusIn(viewport)
-      else
-        await fireEvent.blur(window)
+  it.each<{ option: keyof PauseOptions, interaction: Interaction }>([
+    { option: 'disableHoverPause', interaction: 'pointermove' },
+    { option: 'disableWindowBlurPause', interaction: 'window blur' },
+  ])('should resume when $option is turned on during a $interaction interaction', async ({ option, interaction }) => {
+    const { open, options, viewport } = mountToast()
+    await nextTick()
 
-      vi.advanceTimersByTime(500)
-      pauseOnInteraction.value = true
-      await nextTick()
+    await interact(interaction, viewport())
+    await runDuration()
+    expect(open.value).toBe(true)
 
-      vi.advanceTimersByTime(500)
-      await nextTick()
+    options.value = { [option]: true }
+    await nextTick()
+    await runDuration()
 
-      expect(open.value).toBe(true)
-    }
-    finally {
-      wrapper.unmount()
-    }
+    expect(open.value).toBe(false)
+  })
+
+  it('should stay paused by focus when both options are turned on while focused and hovered', async () => {
+    const { open, options, viewport } = mountToast()
+    await nextTick()
+
+    await fireEvent.focusIn(viewport())
+    await fireEvent.pointerMove(viewport())
+    options.value = { disableHoverPause: true, disableWindowBlurPause: true }
+    await nextTick()
+    await runDuration()
+
+    expect(open.value).toBe(true)
+  })
+
+  it('should still expand on hover and focus when the hover pause is off', async () => {
+    const { viewport } = mountToast({ disableHoverPause: true, disableWindowBlurPause: true }, 100000)
+    await nextTick()
+    expect(viewport().hasAttribute('data-expanded')).toBe(false)
+
+    await fireEvent.pointerMove(viewport())
+    expect(viewport().hasAttribute('data-expanded')).toBe(true)
+
+    await fireEvent.pointerLeave(viewport())
+    expect(viewport().hasAttribute('data-expanded')).toBe(false)
+
+    await fireEvent.focusIn(viewport())
+    expect(viewport().hasAttribute('data-expanded')).toBe(true)
+  })
+
+  it('should pause while a toast is pressed when the hover pause is off', async () => {
+    const { open, viewport } = mountToast({ disableHoverPause: true })
+    await nextTick()
+
+    await fireEvent.pointerDown(viewport().querySelector('li')!)
+    await fireEvent.pointerMove(viewport())
+    await runDuration()
+    expect(open.value).toBe(true)
+
+    await fireEvent.pointerUp(window)
+    await runDuration()
+    expect(open.value).toBe(false)
+  })
+
+  it('should keep a focused toast paused when the window loses focus and the blur pause is off', async () => {
+    const { open, viewport } = mountToast({ disableWindowBlurPause: true })
+    await nextTick()
+
+    // The window losing focus fires `focusout` without moving the active element.
+    const action = viewport().querySelector('button')!
+    action.focus()
+    await fireEvent.focusOut(action)
+    await fireEvent.blur(window)
+    await runDuration()
+
+    expect(open.value).toBe(true)
   })
 })
 
