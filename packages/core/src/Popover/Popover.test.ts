@@ -1,10 +1,38 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref, Transition } from 'vue'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '.'
 import Popover from './story/_Popover.vue'
+
+describe('given a Popover root that stays mounted', () => {
+  it.each([true, false])('should release the forwarded content element with modal=%s', async (modal) => {
+    const open = ref(false)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(PopoverRoot, { open: open.value, modal }, () => [
+        h(PopoverTrigger, () => 'Open'),
+        h(PopoverPortal, null, () => h(PopoverContent, () => 'Content')),
+      ]),
+    }), { attachTo: document.body })
+
+    for (let cycle = 0; cycle < 2; cycle++) {
+      open.value = true
+      await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull())
+      const content = wrapper.getComponent(PopoverContent)
+      const exposed = content.vm.$.exposed!
+      expect(exposed.$el.contains(document.querySelector('[role="dialog"]'))).toBe(true)
+
+      open.value = false
+      await flushPromises()
+      expect(document.querySelector('[role="dialog"]')).toBeNull()
+      expect(content.vm.$.isUnmounted).toBe(false)
+      expect(exposed.$el.nodeType).toBe(Node.COMMENT_NODE)
+    }
+
+    wrapper.unmount()
+  })
+})
 
 describe('given default Popover', () => {
   let wrapper: VueWrapper<InstanceType<typeof Popover>>
@@ -34,13 +62,13 @@ describe('given default Popover', () => {
     trigger.element.click()
     await nextTick()
 
-    expect(document.getElementById(trigger.attributes('aria-controls')!)).not.toBeNull()
+    await vi.waitFor(() => expect(document.getElementById(trigger.attributes('aria-controls')!)).not.toBeNull())
   })
 
   describe('after opening popover', async () => {
     beforeEach(async () => {
       wrapper.find('button').element.click()
-      await nextTick()
+      await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull())
     })
 
     it('should pass axe accessibility tests', async () => {
@@ -53,6 +81,72 @@ describe('given default Popover', () => {
         },
       })).toHaveNoViolations()
     })
+  })
+})
+
+describe('given a Popover with a consumer id on the trigger (#3059)', () => {
+  it('renders the consumer id on the trigger and points content aria-labelledby at it', async () => {
+    const Harness = defineComponent({
+      render() {
+        return h(PopoverRoot, null, {
+          default: () => [
+            h(PopoverTrigger, { id: 'my-trigger' }, { default: () => 'open me' }),
+            h(PopoverPortal, null, {
+              default: () => [
+                h(PopoverContent, null, { default: () => h('div', 'hello') }),
+              ],
+            }),
+          ],
+        })
+      },
+    })
+    const wrapper = mount(Harness, { attachTo: document.body })
+    // Unmount even when an assertion fails, so a failure cannot leak into later tests.
+    onTestFinished(() => wrapper.unmount())
+    await flushPromises()
+
+    const trigger = wrapper.get('button')
+    expect(trigger.attributes('id')).toBe('my-trigger')
+
+    await trigger.trigger('click')
+    await flushPromises()
+
+    const content = document.querySelector('[role="dialog"]')!
+    expect(content.getAttribute('aria-labelledby')).toBe('my-trigger')
+  })
+})
+
+describe('given a Popover with an id only on the asChild trigger element', () => {
+  it('points content aria-labelledby at the id the trigger actually renders', async () => {
+    const Harness = defineComponent({
+      render() {
+        return h(PopoverRoot, null, {
+          default: () => [
+            h(PopoverTrigger, { asChild: true }, {
+              default: () => h('button', { id: 'child-trigger' }, 'open me'),
+            }),
+            h(PopoverPortal, null, {
+              default: () => [
+                h(PopoverContent, null, { default: () => h('div', 'hello') }),
+              ],
+            }),
+          ],
+        })
+      },
+    })
+    const wrapper = mount(Harness, { attachTo: document.body })
+    // Unmount even when an assertion fails, so a failure cannot leak into later tests.
+    onTestFinished(() => wrapper.unmount())
+    await flushPromises()
+
+    const trigger = wrapper.get('button')
+    expect(trigger.attributes('id')).toBe('child-trigger')
+
+    await trigger.trigger('click')
+    await flushPromises()
+
+    const content = document.querySelector('[role="dialog"]')!
+    expect(content.getAttribute('aria-labelledby')).toBe('child-trigger')
   })
 })
 
@@ -76,6 +170,7 @@ describe('given a Popover whose content has no tabbable children (#2803)', () =>
     const wrapper = mount(Harness, { attachTo: document.body })
     await flushPromises()
     await wrapper.get('button').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('[data-reka-popper-content-wrapper]')).not.toBeNull())
     await flushPromises()
 
     // `FocusScope` is rendered `asChild`, so its container resolves to the
@@ -91,6 +186,49 @@ describe('given a Popover whose content has no tabbable children (#2803)', () =>
 
     expect(openLog).toEqual([true])
     expect(wrapper.get('button').attributes('aria-expanded')).toBe('true')
+    wrapper.unmount()
+  })
+})
+
+describe('given a Popover content wrapped in a Vue Transition', () => {
+  afterEach(() => {
+    vi.doUnmock('./PopoverContentNonModal.vue')
+  })
+
+  it('should run the enter and leave hooks on the content element when it opens cold', async () => {
+    let releaseContent!: () => void
+    const contentGate = new Promise<void>((resolve) => {
+      releaseContent = resolve
+    })
+    vi.resetModules()
+    vi.doMock('./PopoverContentNonModal.vue', async (importOriginal) => {
+      await contentGate
+      return importOriginal()
+    })
+    const { PopoverContent, PopoverRoot, PopoverTrigger } = await import('.')
+
+    const open = ref(false)
+    const onEnter = vi.fn((_el: Element, done: () => void) => done())
+    const onLeave = vi.fn((_el: Element, done: () => void) => done())
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(PopoverRoot, { open: open.value }, () => [
+        h(PopoverTrigger, () => 'Trigger'),
+        h(Transition, { onEnter, onLeave }, () => h(PopoverContent, () => 'Content')),
+      ]),
+    }), { attachTo: document.body, global: { stubs: { transition: false } } })
+
+    open.value = true
+    await flushPromises()
+    expect(onEnter).not.toHaveBeenCalled()
+
+    releaseContent()
+    await vi.waitFor(() => expect(onEnter).toHaveBeenCalledOnce())
+    expect(onEnter.mock.calls[0][0].querySelector('[role="dialog"]')).not.toBeNull()
+
+    open.value = false
+    await vi.waitFor(() => expect(onLeave).toHaveBeenCalledOnce())
+    expect(onLeave.mock.calls[0][0].querySelector('[role="dialog"]')).not.toBeNull()
+
     wrapper.unmount()
   })
 })

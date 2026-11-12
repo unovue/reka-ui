@@ -25,7 +25,7 @@ const props = defineProps<TabsContentProps>()
 
 const { forwardRef } = useForwardExpose()
 const rootContext = injectTabsRootContext()
-const triggerId = computed(() => makeTriggerId(rootContext.baseId, props.value))
+const triggerId = computed(() => rootContext.triggerIds.value.get(props.value) ?? makeTriggerId(rootContext.baseId, props.value))
 const contentId = computed(() => makeContentId(rootContext.baseId, props.value))
 
 const isSelected = computed(() => props.value === rootContext.modelValue.value)

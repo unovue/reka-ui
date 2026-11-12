@@ -2,7 +2,7 @@
 import type { ComponentPublicInstance } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { useForwardExpose } from '@/shared'
+import { useForwardExpose, useTriggerId } from '@/shared'
 
 export interface NavigationMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -19,7 +19,7 @@ import {
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { getOpenState, makeContentId, makeTriggerId } from './utils'
+import { getOpenState, makeContentId } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -42,9 +42,11 @@ const wasClickCloseRef = ref(false)
 
 const open = computed(() => itemContext.value === menuContext.modelValue.value)
 
+useTriggerId(itemContext, triggerElement)
+
 onMounted(() => {
   itemContext.triggerRef = triggerElement
-  triggerId.value = makeTriggerId(menuContext.baseId, itemContext.value)
+  triggerId.value = itemContext.triggerId
   contentId.value = makeContentId(menuContext.baseId, itemContext.value)
 })
 
@@ -144,7 +146,7 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
 </script>
 
 <template>
-  <CollectionItem>
+  <CollectionItem :value="itemContext.value">
     <Primitive
       :id="triggerId"
       :ref="forwardRef"
@@ -156,6 +158,7 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
       :aria-controls="contentId"
       :as-child="props.asChild"
       :as="as"
+      :type="as === 'button' ? 'button' : undefined"
       v-bind="$attrs"
       @pointerenter="handlePointerEnter"
       @pointermove="handlePointerMove"
@@ -174,7 +177,7 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
       @focus="handleVisuallyHiddenFocus"
     />
     <span
-      v-if="menuContext.viewport"
+      v-if="menuContext.viewport.value"
       :aria-owns="contentId"
     />
   </template>
