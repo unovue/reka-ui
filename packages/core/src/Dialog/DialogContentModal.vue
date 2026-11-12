@@ -2,6 +2,7 @@
 import type { DialogContentImplEmits, DialogContentImplProps } from './DialogContentImpl.vue'
 import { computed, watch } from 'vue'
 import { useEmitAsProps, useForwardExpose, useHideOthers } from '@/shared'
+import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import DialogContentImpl from './DialogContentImpl.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
 
@@ -11,6 +12,20 @@ const props = withDefaults(defineProps<DialogContentImplProps & { present: boole
 const emits = defineEmits<DialogContentImplEmits>()
 
 const rootContext = injectDialogRootContext()
+
+// The overlay is what locks body scroll, and without one the page stays scrollable. Its lock
+// ends when it unmounts, which is right away if it has no exit animation of its own, so the
+// content takes a share of that lock and keeps it until it has finished leaving as well.
+const scrollLocked = useBodyScrollLock(false)
+watch([() => props.present, rootContext.overlayPresent], ([present, overlayPresent], previous) => {
+  if (!present)
+    scrollLocked.value = false
+  else if (overlayPresent)
+    scrollLocked.value = true
+  // An overlay taken away while the dialog stays open gives the scroll back.
+  else if (previous?.[1] && rootContext.open.value)
+    scrollLocked.value = false
+}, { immediate: true })
 
 const emitsAsProps = useEmitAsProps(emits)
 
