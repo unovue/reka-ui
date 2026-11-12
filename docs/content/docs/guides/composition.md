@@ -75,3 +75,5 @@ import MyButton from from "@/components/MyButton.vue"
   </DialogRoot>
 </template>
 ```
+
+You can also compose `TooltipTrigger` with `PopoverTrigger` or `DropdownMenuTrigger` on the same button. Keep each content part inside its corresponding root; the floating content will be positioned relative to the shared trigger.
