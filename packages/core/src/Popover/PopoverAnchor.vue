@@ -6,7 +6,7 @@ export interface PopoverAnchorProps extends PopperAnchorProps {}
 </script>
 
 <script setup lang="ts">
-import { onBeforeMount, onUnmounted } from 'vue'
+import { onBeforeMount, onUnmounted, watchEffect } from 'vue'
 import { usePopperAnchor } from '@/Popper/usePopperAnchor'
 import { renderAs } from '@/Primitive/renderAs'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
@@ -21,8 +21,12 @@ const rootContext = injectPopoverRootContext()
 onBeforeMount(() => {
   rootContext.hasCustomAnchor.value = true
 })
+watchEffect(() => {
+  rootContext.anchorElement.value = currentElement.value as HTMLElement | undefined
+})
 onUnmounted(() => {
   rootContext.hasCustomAnchor.value = false
+  rootContext.anchorElement.value = undefined
 })
 </script>
 

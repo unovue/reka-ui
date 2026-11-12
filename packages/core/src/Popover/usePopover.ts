@@ -188,6 +188,7 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
   })
   const modal = computed<boolean>(() => toValue(props.modal) ?? false)
   const hasCustomAnchor = ref(false)
+  const anchorElement = ref<HTMLElement>()
 
   // Writable: a `PopoverTrigger` / `PopoverContent` `id` replaces the generated
   // one here, so the content's `aria-labelledby` and the trigger's
@@ -241,6 +242,7 @@ export function usePopover<Payload = unknown>(props: UsePopoverProps<Payload> = 
     onOpenChange,
     onOpenToggle,
     hasCustomAnchor,
+    anchorElement,
     notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
   setGeneratedIds(context, { contentId: contentId.value })
