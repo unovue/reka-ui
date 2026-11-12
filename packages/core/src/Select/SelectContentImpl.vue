@@ -12,6 +12,7 @@ import {
   useContentId,
   useContentMounted,
   useFocusGuards,
+  useForwardExpose,
   useForwardProps,
   useHideOthers,
   useTypeahead,
@@ -119,6 +120,9 @@ useBodyScrollLock(props.bodyLock)
 const { CollectionSlot, getItems } = useCollection()
 
 const content = ref<HTMLElement>()
+// The item-aligned position renders a wrapper around the content. Expose the content as `$el`,
+// so that `Presence` watches the element that carries the exit animation.
+const { forwardRef } = useForwardExpose()
 useHideOthers(content)
 useContentId(rootContext, content)
 useContentMounted(rootContext, content)
@@ -326,6 +330,7 @@ provideSelectContentContext({
           :id="rootContext.contentId"
           :ref="
             (vnode: Element | ComponentPublicInstance | null) => {
+              forwardRef(vnode)
               if (!vnode) return undefined
               const el = unrefElement(vnode as ComponentPublicInstance) as HTMLElement | undefined
               // special case for PopperContent
