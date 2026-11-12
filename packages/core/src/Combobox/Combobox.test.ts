@@ -2010,3 +2010,19 @@ describe('given a Combobox root that stays mounted', () => {
     wrapper.unmount()
   })
 })
+
+describe('given a ComboboxItem rendered as-child without an element', () => {
+  it('should mount without reading text from a missing element', async () => {
+    const wrapper = mount(defineComponent({
+      components: { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot, ComboboxViewport },
+      template: `<ComboboxRoot :default-open="true">
+        <ComboboxAnchor><ComboboxInput /></ComboboxAnchor>
+        <ComboboxContent><ComboboxViewport><ComboboxItem as-child value="a"><template v-if="false"><div /></template></ComboboxItem></ComboboxViewport></ComboboxContent>
+      </ComboboxRoot>`,
+    }), { attachTo: document.body })
+
+    await flushPromises()
+    expect(wrapper.find('input').exists()).toBe(true)
+    wrapper.unmount()
+  })
+})

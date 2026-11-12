@@ -1,15 +1,14 @@
-import type { MaybeElement } from '@vueuse/core'
 import type { ComponentPublicInstance } from 'vue'
 // reference: https://github.com/vuejs/rfcs/issues/258#issuecomment-1068697672
-import { unrefElement } from '@vueuse/core'
 import { isClient } from '@vueuse/shared'
 import { computed, getCurrentInstance, onUpdated, ref, triggerRef } from 'vue'
+import { resolveElement } from './resolveElement'
 
 /**
  * Expose this component's props and a forwarded child's public values and root node.
  *
  * `$el` preserves Vue's native root node. For text and comment roots,
- * `currentElement` resolves the next element sibling for internal DOM operations.
+ * `currentElement` resolves the first element inside the forwarded child, or `undefined`.
  *
  * @returns An object with `forwardRef`, `currentRef`, and `currentElement`.
  */
@@ -29,18 +28,7 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
   })
 
   function resolveCurrentElement() {
-    const el = currentRef.value
-    // $el is a text/comment node for a fragment, text or comment root. Use the next
-    // element only when it sits before the end anchor of the forwarded component's fragment.
-    if (el && '$el' in el && ['#text', '#comment'].includes(el.$el.nodeName)) {
-      let vnode = el.$.subTree
-      while (vnode.component)
-        vnode = vnode.component.subTree
-      const next = el.$el.nextElementSibling as HTMLElement
-      // 4: Node.DOCUMENT_POSITION_FOLLOWING
-      return (vnode.anchor && next && next.compareDocumentPosition(vnode.anchor as Node) & 4 ? next : undefined) as HTMLElement
-    }
-    return unrefElement(currentRef as unknown as MaybeElement) as HTMLElement
+    return resolveElement(currentRef.value)
   }
 
   // Template refs are never set during SSR, so nothing reads `exposed` there.
