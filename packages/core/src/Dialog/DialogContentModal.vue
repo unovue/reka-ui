@@ -17,15 +17,16 @@ const rootContext = injectDialogRootContext()
 // ends when it unmounts, which is right away if it has no exit animation of its own, so the
 // content takes a share of that lock and keeps it until it has finished leaving as well.
 const scrollLocked = useBodyScrollLock(false)
-watch([() => props.present, rootContext.overlayPresent], ([present, overlayPresent], previous) => {
+// Read after rendering, so that a dialog reopened during its exit has its overlay back by then.
+watch([() => props.present, rootContext.overlayPresent, rootContext.open], ([present, overlayPresent, open]) => {
   if (!present)
     scrollLocked.value = false
   else if (overlayPresent)
     scrollLocked.value = true
-  // An overlay taken away while the dialog stays open gives the scroll back.
-  else if (previous?.[1] && rootContext.open.value)
+  // An open dialog without an overlay never holds the lock. A closing one keeps what it has.
+  else if (open)
     scrollLocked.value = false
-}, { immediate: true })
+}, { immediate: true, flush: 'post' })
 
 const emitsAsProps = useEmitAsProps(emits)
 
