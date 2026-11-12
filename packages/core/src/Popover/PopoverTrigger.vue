@@ -29,6 +29,7 @@ onMounted(() => {
 <template>
   <component
     :is="rootContext.hasCustomAnchor.value ? Primitive : PopperAnchor"
+    :scope="rootContext.hasCustomAnchor.value ? undefined : 'popover'"
     as-child
   >
     <Primitive
