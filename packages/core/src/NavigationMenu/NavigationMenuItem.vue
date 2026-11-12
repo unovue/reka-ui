@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { createContext, getActiveElement, useArrowNavigation, useForwardExpose, useId } from '@/shared'
+import { createContext, defineReactiveIds, getActiveElement, useArrowNavigation, useForwardExpose, useId } from '@/shared'
 
 export interface NavigationMenuItemProps extends PrimitiveProps {
   /**
@@ -16,6 +16,8 @@ export interface NavigationMenuItemProps extends PrimitiveProps {
 export type NavigationMenuItemContext = {
   value: string
   contentId: string
+  /** The id the trigger renders. Read by the content for `aria-labelledby`. */
+  triggerId: string
   triggerRef: Ref<HTMLElement | undefined>
   focusProxyRef: Ref<HTMLElement | undefined>
   wasEscapeCloseRef: Ref<boolean>
@@ -38,6 +40,7 @@ import {
   getTabbableCandidates,
   getTabbableNodes,
   makeContentId,
+  makeTriggerId,
   removeFromTabOrder,
 } from './utils'
 
@@ -80,9 +83,10 @@ function handleContentExit() {
   }
 }
 
-const itemContext = provideNavigationMenuItemContext({
+const itemContext = provideNavigationMenuItemContext(defineReactiveIds({
   value,
   contentId,
+  triggerId: makeTriggerId(context.baseId, value),
   triggerRef,
   focusProxyRef,
   wasEscapeCloseRef,
@@ -90,7 +94,7 @@ const itemContext = provideNavigationMenuItemContext({
   onFocusProxyEnter: handleContentEntry,
   onContentFocusOutside: handleContentExit,
   onRootContentClose: handleContentExit,
-})
+}, ['triggerId']))
 
 function handleClose() {
   context.onItemDismiss()

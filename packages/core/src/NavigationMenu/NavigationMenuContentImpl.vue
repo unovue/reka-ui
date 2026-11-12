@@ -27,7 +27,6 @@ import {
   getOpenState,
   getTabbableCandidates,
   makeContentId,
-  makeTriggerId,
 } from './utils'
 
 const props = defineProps<NavigationMenuContentImplProps>()
@@ -39,12 +38,11 @@ const { forwardRef, currentElement } = useForwardExpose()
 const menuContext = injectNavigationMenuContext()
 const itemContext = injectNavigationMenuItemContext()
 
-const triggerId = makeTriggerId(menuContext.baseId, itemContext.value)
 const contentId = makeContentId(menuContext.baseId, itemContext.value)
 
 const prevMotionAttributeRef = ref<MotionAttribute | null>(null)
 const motionAttribute = computed(() => {
-  const values = getItems().map(i => i.ref.id.split('trigger-')[1])
+  const values = getItems().map(i => i.value)
   if (menuContext.dir.value === 'rtl')
     values.reverse()
   const index = values.indexOf(menuContext.modelValue.value)
@@ -194,7 +192,7 @@ function handleDismiss() {
   <DismissableLayer
     :id="contentId"
     :ref="forwardRef"
-    :aria-labelledby="triggerId"
+    :aria-labelledby="itemContext.triggerId"
     :data-motion="motionAttribute"
     :data-state="getOpenState(menuContext.modelValue.value === itemContext.value)"
     :data-orientation="menuContext.orientation"
