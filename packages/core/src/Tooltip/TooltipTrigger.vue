@@ -1,5 +1,5 @@
 <script lang="ts">
-import { useForwardExpose, useId } from '@/shared'
+import { useForwardExpose, useId, useRenderedContentId } from '@/shared'
 
 export type TooltipTriggerDataState
   = | 'closed'
@@ -26,6 +26,7 @@ const rootContext = injectTooltipRootContext()
 const providerContext = injectTooltipProviderContext()
 
 rootContext.contentId ||= useId(undefined, 'reka-tooltip-content')
+const contentId = useRenderedContentId(rootContext)
 
 const { forwardRef, currentElement: triggerElement } = useForwardExpose()
 
@@ -109,7 +110,7 @@ function handleClick() {
     <Primitive
       :ref="forwardRef"
       :aria-describedby="
-        rootContext.open.value ? rootContext.contentId : undefined
+        rootContext.open.value ? contentId : undefined
       "
       :data-state="rootContext.stateAttribute.value"
       :as="as"

@@ -84,7 +84,7 @@ providePopoverRootContext(defineReactiveIds({
   },
   triggerElement,
   hasCustomAnchor,
-}, ['triggerId']))
+}, ['triggerId', 'contentId']))
 </script>
 
 <template>

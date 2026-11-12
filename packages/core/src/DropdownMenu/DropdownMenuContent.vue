@@ -11,9 +11,9 @@ export interface DropdownMenuContentProps extends MenuContentProps {}
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { MenuContent } from '@/Menu'
+import { injectMenuContext, MenuContent } from '@/Menu'
 import { omitEntryFocusListener } from '@/Menu/utils'
-import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
+import { useContentId, useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
 import { injectDropdownMenuRootContext } from './DropdownMenuRoot.vue'
 
 defineOptions({
@@ -44,6 +44,7 @@ function handleCloseAutoFocus(event: Event) {
 }
 
 rootContext.contentId ||= useId(undefined, 'reka-dropdown-menu-content')
+useContentId(rootContext, injectMenuContext().content)
 </script>
 
 <template>

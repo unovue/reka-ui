@@ -1,5 +1,18 @@
 import type { Ref } from 'vue'
-import { onBeforeUpdate, onMounted, onUpdated, ref, useAttrs } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, onBeforeUpdate, onMounted, onUpdated, ref, useAttrs, watch } from 'vue'
+
+// How many content elements are mounted for a context. Kept beside the context rather
+// than on it, so the context types stay as they are.
+const mountedContents = new WeakMap<object, Ref<number>>()
+
+function useMountedContents(context: object) {
+  let count = mountedContents.get(context)
+  if (!count) {
+    count = ref(0)
+    mountedContents.set(context, count)
+  }
+  return count
+}
 
 /**
  * Backs the given string properties of a context object with refs, so the context
@@ -74,4 +87,55 @@ export function useContentId(
       context.contentId = id
     },
   }, element)
+  useContentElement(context, element)
+}
+
+/**
+ * Keeps `context.contentId` on the id `element` rendered, for an element that comes and
+ * goes while the caller stays mounted. Part of `useContentId`; called on its own when
+ * the element that carries the id is not the one the caller's own `id` attribute lands on.
+ */
+export function useContentElement(
+  context: { contentId: string },
+  element: Readonly<Ref<HTMLElement | undefined>>,
+) {
+  watch(element, (el) => {
+    if (el?.id && el.id !== context.contentId)
+      context.contentId = el.id
+  }, { flush: 'post' })
+}
+
+/**
+ * Records that a content element is mounted for as long as the calling component is,
+ * which `useRenderedContentId` reads on the trigger side. `key` is an object both sides
+ * share: the context that holds `contentId`, unless the trigger passes another one.
+ *
+ * The count changes right before the caller mounts and unmounts, not in `onMounted`: the
+ * trigger then updates in the same pass that adds or removes the content. A write from a
+ * mounted hook would re-render the trigger in a second pass, which reorders whatever
+ * else waits on `nextTick` around an opening content, such as moving focus into it.
+ */
+export function useContentMounted(key: object) {
+  const count = useMountedContents(key)
+  let isCounted = false
+  onBeforeMount(() => {
+    isCounted = true
+    count.value++
+  })
+  onBeforeUnmount(() => {
+    if (isCounted)
+      count.value--
+  })
+}
+
+/**
+ * The id a trigger may reference (`aria-controls`, `aria-describedby`): the id the
+ * content rendered, while a content element is mounted. `undefined` otherwise, which
+ * includes the server render and the first render of a hydrating trigger, so that the
+ * reference is patched onto the trigger once the content exists instead of being left
+ * as the server wrote it. Needs `useContentMounted` on the content side.
+ */
+export function useRenderedContentId(context: { contentId: string }, key: object = context) {
+  const count = useMountedContents(key)
+  return computed(() => (count.value > 0 && context.contentId) || undefined)
 }

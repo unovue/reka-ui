@@ -12,7 +12,7 @@ import { computed, onBeforeUnmount, onMounted, toRaw, useAttrs } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose, useId, useTypeahead } from '@/shared'
+import { useForwardExpose, useId, useRenderedContentId, useTypeahead } from '@/shared'
 import {
   injectSelectRootContext,
 } from './SelectRoot.vue'
@@ -27,6 +27,7 @@ const { forwardRef, currentElement: triggerElement } = useForwardExpose()
 const isDisabled = computed(() => rootContext.disabled?.value || props.disabled)
 
 rootContext.contentId ||= useId(undefined, 'reka-select-content')
+const contentId = useRenderedContentId(rootContext)
 onMounted(() => {
   rootContext.onTriggerChange(triggerElement.value)
 })
@@ -212,7 +213,7 @@ function onTriggerKeyDown(event: KeyboardEvent) {
       :ref="forwardRef"
       role="combobox"
       :type="as === 'button' ? 'button' : undefined"
-      :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
+      :aria-controls="rootContext.open.value ? contentId : undefined"
       :aria-expanded="rootContext.open.value || false"
       :aria-required="rootContext.required?.value"
       aria-autocomplete="none"

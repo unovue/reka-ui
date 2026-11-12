@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { useForwardExpose, useTriggerId } from '@/shared'
+import { useForwardExpose, useRenderedContentId, useTriggerId } from '@/shared'
 
 export interface MenubarTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -11,7 +11,7 @@ export interface MenubarTriggerProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { MenuAnchor } from '@/Menu'
+import { injectMenuContext, MenuAnchor } from '@/Menu'
 import {
   Primitive,
 } from '@/Primitive'
@@ -33,6 +33,7 @@ const isFocused = ref(false)
 const open = computed(() => rootContext.modelValue.value === menuContext.value)
 
 useTriggerId(menuContext, triggerElement)
+const contentId = useRenderedContentId(menuContext, injectMenuContext())
 
 onMounted(() => {
   menuContext.triggerElement = triggerElement
@@ -56,7 +57,7 @@ onMounted(() => {
           role="menuitem"
           aria-haspopup="menu"
           :aria-expanded="open"
-          :aria-controls="open ? menuContext.contentId : undefined"
+          :aria-controls="open ? contentId : undefined"
           :data-highlighted="isFocused ? '' : undefined"
           :data-state="open ? 'open' : 'closed'"
           :data-disabled="disabled ? '' : undefined"

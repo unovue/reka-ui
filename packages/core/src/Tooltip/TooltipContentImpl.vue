@@ -1,8 +1,10 @@
 <script lang="ts">
+import type { ComponentPublicInstance } from 'vue'
 import type { PopperContentProps } from '@/Popper'
 import type { PrimitiveProps } from '@/Primitive'
 import { defu } from 'defu'
-import { useForwardExpose } from '@/shared'
+import { useContentElement, useContentMounted, useForwardExpose } from '@/shared'
+import { resolveElement } from '@/shared/resolveElement'
 import { injectTooltipProviderContext } from './TooltipProvider.vue'
 
 export type TooltipContentImplEmits = {
@@ -44,7 +46,7 @@ export interface TooltipContentImplProps
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { PopperContent } from '@/Popper'
 import { VisuallyHidden } from '@/VisuallyHidden'
@@ -63,6 +65,11 @@ const providerContext = injectTooltipProviderContext()
 
 const { forwardRef, currentElement } = useForwardExpose()
 const ariaLabel = computed(() => props.ariaLabel || currentElement.value?.textContent)
+
+// The element the trigger is described by.
+const description = ref<ComponentPublicInstance>()
+useContentElement(rootContext, computed(() => resolveElement(description.value)))
+useContentMounted(rootContext)
 
 const popperContentProps = computed(() => {
   const { ariaLabel: _, ...restProps } = props
@@ -122,6 +129,7 @@ onMounted(() => {
       <slot />
       <VisuallyHidden
         :id="rootContext.contentId"
+        ref="description"
         role="tooltip"
       >
         {{ ariaLabel }}

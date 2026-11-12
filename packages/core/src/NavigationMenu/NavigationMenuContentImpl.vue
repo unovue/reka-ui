@@ -18,7 +18,7 @@ export interface NavigationMenuContentImplProps extends DismissableLayerProps {}
 import { computed, ref, watchEffect } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { getTabStopsAfter } from '@/FocusScope/utils'
-import { getActiveElement, useArrowNavigation, useContentId, useForwardExpose } from '@/shared'
+import { getActiveElement, useArrowNavigation, useContentId, useContentMounted, useForwardExpose } from '@/shared'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import {
@@ -38,6 +38,7 @@ const menuContext = injectNavigationMenuContext()
 const itemContext = injectNavigationMenuItemContext()
 
 useContentId(itemContext, currentElement)
+useContentMounted(itemContext)
 
 const prevMotionAttributeRef = ref<MotionAttribute | null>(null)
 const motionAttribute = computed(() => {
