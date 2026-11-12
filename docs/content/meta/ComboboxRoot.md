@@ -23,8 +23,8 @@
   },
   {
     'name': 'clearValue',
-    'description': '<p>The value to set the <code>modelValue</code> to when the combobox is cleared\nand <code>resetModelValueOnClear</code> is <code>true</code>. When not provided, defaults to\n<code>null</code> for single select or <code>[]</code> for multiple select. Explicitly passing\n<code>undefined</code> clears a single selection to <code>undefined</code>.</p>\n',
-    'type': 'T',
+    'description': '<p>A function returning the value the <code>modelValue</code> is reset to when the combobox is cleared\nand <code>resetModelValueOnClear</code> is <code>true</code>, e.g. <code>() =&gt; undefined</code>. &lt;br&gt;\nWhen omitted, the <code>modelValue</code> is reset to <code>null</code> (or <code>[]</code> if <code>multiple</code>). &lt;br&gt;\nIf <code>multiple</code>, return the array to reset to: any other result is ignored and <code>[]</code> is used.</p>\n<p>A controlled combobox that is also given a <code>defaultValue</code> falls back to that default\nwhenever its <code>modelValue</code> is <code>undefined</code>, so do not combine the two when clearing to <code>undefined</code>.</p>\n',
+    'type': '(() =&gt; ClearValue)',
     'required': false
   },
   {
@@ -116,7 +116,7 @@
   },
   {
     'name': 'resetModelValueOnClear',
-    'description': '<p>When <code>true</code> the <code>modelValue</code> will be reset to <code>null</code> (or <code>[]</code> if <code>multiple</code>)</p>\n',
+    'description': '<p>When <code>true</code> the <code>modelValue</code> will be reset to <code>null</code> (or <code>[]</code> if <code>multiple</code>). &lt;br&gt;\nUse <code>clearValue</code> to reset to another value.</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'false'
@@ -153,7 +153,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[value: T]'
+    'type': '[value: T | ClearValue]'
   },
   {
     'name': 'update:open',
@@ -185,7 +185,7 @@
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. | `string \| ((a: T, b: T) => boolean)` | No | - |
-| `clearValue` | The value to set the modelValue to when the combobox is cleared and resetModelValueOnClear is true. When not provided, defaults to null for single select or [] for multiple select. Explicitly passing undefined clears a single selection to undefined. | `T` | No | - |
+| `clearValue` | A function returning the value the modelValue is reset to when the combobox is cleared and resetModelValueOnClear is true, e.g. () => undefined. <br> When omitted, the modelValue is reset to null (or [] if multiple). <br> If multiple, return the array to reset to: any other result is ignored and [] is used. A controlled combobox that is also given a defaultValue falls back to that default whenever its modelValue is undefined, so do not combine the two when clearing to undefined. | `(() => ClearValue)` | No | - |
 | `defaultOpen` | The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. | `boolean` | No | - |
 | `defaultValue` | The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox | `T \| T[]` | No | - |
 | `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
@@ -200,7 +200,7 @@
 | `openOnClick` | Whether to open the combobox when the input is clicked | `boolean` | No | `false` |
 | `openOnFocus` | Whether to open the combobox when the input is focused | `boolean` | No | `false` |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
-| `resetModelValueOnClear` | When true the modelValue will be reset to null (or [] if multiple) | `boolean` | No | `false` |
+| `resetModelValueOnClear` | When true the modelValue will be reset to null (or [] if multiple). <br> Use clearValue to reset to another value. | `boolean` | No | `false` |
 | `resetSearchTermOnBlur` | Whether to reset the searchTerm when the Combobox input blurred | `boolean` | No | `true` |
 | `resetSearchTermOnSelect` | Whether to reset the searchTerm when the Combobox value is selected | `boolean` | No | `true` |
 | `unmountOnHide` | When set to false, the Combobox content will not be unmounted when closed, but instead hidden with CSS. <br> Useful when you want to improve performance by not remounting the content on every open. | `boolean` | No | `true` |
@@ -210,7 +210,7 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: T; }]` |
-| `update:modelValue` | Event handler called when the value changes. | `[value: T]` |
+| `update:modelValue` | Event handler called when the value changes. | `[value: T \| ClearValue]` |
 | `update:open` | Event handler called when the open state of the combobox changes. | `[value: boolean]` |
 
 **Slots**

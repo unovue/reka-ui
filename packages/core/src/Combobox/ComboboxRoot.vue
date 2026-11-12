@@ -33,23 +33,24 @@ type ComboboxRootContext<T> = {
   openOnFocus: Ref<boolean>
   openOnClick: Ref<boolean>
   resetModelValueOnClear: Ref<boolean>
-  getClearValue: () => T | null | undefined
+  /** The value `ComboboxCancel` resets the model to when `resetModelValueOnClear` is `true`. */
+  getClearValue: () => T | Array<T> | null | undefined
   unmountOnHide: Ref<boolean>
 }
 
 export const [injectComboboxRootContext, provideComboboxRootContext]
   = createContext<ComboboxRootContext<AcceptableValue>>('ComboboxRoot')
 
-export type ComboboxRootEmits<T = AcceptableValue> = {
+export type ComboboxRootEmits<T = AcceptableValue, ClearValue = never> = {
   /** Event handler called when the value changes. */
-  'update:modelValue': [value: T]
+  'update:modelValue': [value: T | ClearValue]
   /** Event handler when highlighted element changes. */
   'highlight': [payload: { ref: HTMLElement, value: T } | undefined]
   /** Event handler called when the open state of the combobox changes. */
   'update:open': [value: boolean]
 }
 
-export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior'> {
+export interface ComboboxRootProps<T = AcceptableValue, ClearValue = any> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior'> {
   /** The controlled open state of the Combobox. Can be binded with `v-model:open`. */
   open?: boolean
   /** The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. */
@@ -79,16 +80,20 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
    */
   ignoreFilter?: boolean
   /**
-   * When `true` the `modelValue` will be reset to `null` (or `[]` if `multiple`)
+   * When `true` the `modelValue` will be reset to `null` (or `[]` if `multiple`). <br>
+   * Use `clearValue` to reset to another value.
    */
   resetModelValueOnClear?: boolean
   /**
-   * The value to set the `modelValue` to when the combobox is cleared
-   * and `resetModelValueOnClear` is `true`. When not provided, defaults to
-   * `null` for single select or `[]` for multiple select. Explicitly passing
-   * `undefined` clears a single selection to `undefined`.
+   * A function returning the value the `modelValue` is reset to when the combobox is cleared
+   * and `resetModelValueOnClear` is `true`, e.g. `() => undefined`. <br>
+   * When omitted, the `modelValue` is reset to `null` (or `[]` if `multiple`). <br>
+   * If `multiple`, return the array to reset to: any other result is ignored and `[]` is used.
+   *
+   * A controlled combobox that is also given a `defaultValue` falls back to that default
+   * whenever its `modelValue` is `undefined`, so do not combine the two when clearing to `undefined`.
    */
-  clearValue?: T
+  clearValue?: () => ClearValue
   /**
    * When set to `false`, the Combobox content will not be unmounted when closed, but instead hidden with CSS. <br>
    * Useful when you want to improve performance by not remounting the content on every open.
@@ -98,7 +103,7 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
 }
 </script>
 
-<script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
+<script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, ClearValue extends T | Array<T> | null | undefined = never">
 import type { EventHookOn } from '@vueuse/core'
 import { createEventHook, useVModel } from '@vueuse/core'
 import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs, watch } from 'vue'
@@ -106,7 +111,7 @@ import { ListboxRoot } from '@/Listbox'
 import { PopperRoot } from '@/Popper'
 import { useComboboxContentPositioning } from './useComboboxContentPositioning'
 
-const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
+const props = withDefaults(defineProps<ComboboxRootProps<T, ClearValue>>(), {
   open: undefined,
   resetSearchTermOnBlur: true,
   resetSearchTermOnSelect: true,
@@ -116,7 +121,7 @@ const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
   highlightOnHover: true,
   unmountOnHide: true,
 })
-const emits = defineEmits<ComboboxRootEmits<T>>()
+const emits = defineEmits<ComboboxRootEmits<T, ClearValue>>()
 
 defineSlots<{
   default?: (props: {
@@ -132,7 +137,7 @@ const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, 
 
 const dir = useDirection(propDir)
 
-const modelValue = useVModel(props as ComboboxRootProps<T>, 'modelValue', emits, {
+const modelValue = useVModel(props as ComboboxRootProps<T, ClearValue>, 'modelValue', emits, {
   defaultValue: props.defaultValue ?? (multiple.value ? [] : undefined),
   passive: (props.modelValue === undefined) as false,
   deep: true,
@@ -244,6 +249,14 @@ const filterState = computed<{
   }
 })
 
+function getClearValue() {
+  const clearValue = props.clearValue ? props.clearValue() : null
+  // A multiple combobox always holds an array, whatever the function returns.
+  if (multiple.value)
+    return Array.isArray(clearValue) ? clearValue : []
+  return clearValue
+}
+
 const inst = getCurrentInstance()
 onMounted(() => {
   if (inst?.exposed) {
@@ -287,10 +300,7 @@ provideComboboxRootContext(defineReactiveIds({
   openOnFocus,
   openOnClick,
   resetModelValueOnClear,
-  getClearValue: () => {
-    const rawProps = inst?.vnode.props
-    return rawProps && ('clearValue' in rawProps || 'clear-value' in rawProps) ? props.clearValue : null
-  },
+  getClearValue,
   unmountOnHide,
 }, ['contentId']))
 </script>
