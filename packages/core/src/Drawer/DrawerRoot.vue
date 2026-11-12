@@ -54,6 +54,10 @@ export interface DrawerRootProps {
 
 export type DrawerRootEmits = {
   'update:open': [value: boolean, details: DrawerOpenChangeDetails]
+  /**
+   * Event handler called after any animations complete when the drawer is opened or closed.
+   * Emits `true` once the drawer has finished opening and `false` once it has finished closing.
+   */
   'update:openComplete': [value: boolean]
   'update:snapPoint': [value: DrawerSnapPoint | null]
 }
@@ -101,7 +105,7 @@ export const [injectDrawerRootContext, provideDrawerRootContext]
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { computed, onUnmounted, ref, toRefs, watch } from 'vue'
+import { computed, onBeforeUnmount, onUnmounted, ref, toRefs, watch } from 'vue'
 import { injectDrawerProviderContext } from './DrawerProvider.vue'
 import { createNestedSwipeProgressStore } from './utils'
 
@@ -148,6 +152,7 @@ const isSwiping = ref(false)
 const nestedSwipeProgressStore = createNestedSwipeProgressStore()
 // Whether a nested drawer currently reports a height, i.e. is the frontmost one.
 let isNestedDrawerOpen = false
+let isUnmounting = false
 
 // Optional parent context for nested drawer support
 const parentContext = injectDrawerRootContext(null)
@@ -176,7 +181,9 @@ provideDrawerRootContext({
   onOpenChange: handleOpenChange,
   onOpenToggle: handleOpenToggle,
   notifyOpenComplete(value) {
-    emit('update:openComplete', value)
+    // A drawer that is being removed altogether has not completed a close.
+    if (!isUnmounting)
+      emit('update:openComplete', value)
   },
   setActiveSnapPoint(point) { activeSnapPoint.value = point },
   onPopupHeightChange(h) {
@@ -264,9 +271,13 @@ watch(open, (isOpen) => {
   }
 }, { immediate: true })
 
-// `update:openComplete` is emitted by DrawerContentImpl after the popup's
-// enter/exit transition actually finishes (via transitionend/animationend on
-// the popup element). DrawerRoot just exposes the notify hook through context.
+// `update:openComplete` is emitted by DrawerContentImpl once the popup's
+// animations have finished. DrawerRoot just exposes the notify hook through context.
+
+// Runs before the content unmounts, unlike `onUnmounted`.
+onBeforeUnmount(() => {
+  isUnmounting = true
+})
 
 onUnmounted(() => {
   providerContext?.removeDrawer(contentId)

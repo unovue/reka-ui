@@ -64,7 +64,7 @@
   },
   {
     'name': 'update:openComplete',
-    'description': '',
+    'description': '<p>Event handler called after any animations complete when the drawer is opened or closed.\nEmits <code>true</code> once the drawer has finished opening and <code>false</code> once it has finished closing.</p>\n',
     'type': '[value: boolean]'
   },
   {
@@ -108,7 +108,7 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `update:open` | Event handler called when the open state of the dialog changes. | `[value: boolean, details: DrawerOpenChangeDetails]` |
-| `update:openComplete` |  | `[value: boolean]` |
+| `update:openComplete` | Event handler called after any animations complete when the drawer is opened or closed. Emits true once the drawer has finished opening and false once it has finished closing. | `[value: boolean]` |
 | `update:snapPoint` |  | `[value: DrawerSnapPoint \| null]` |
 
 **Slots**
