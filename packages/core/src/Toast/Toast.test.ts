@@ -918,3 +918,39 @@ describe('given a ToastViewport whose element is replaced', () => {
     expect(wrapper.vm.open).toBe(false)
   })
 })
+
+describe('given a ToastViewport hotkey', () => {
+  let wrapper: VueWrapper
+
+  function mountViewport(hotkey?: string[]) {
+    document.body.innerHTML = ''
+    wrapper = mount(defineComponent({
+      render: () => h(ToastProvider, null, {
+        default: () => h(ToastViewport, { hotkey }),
+      }),
+    }), { attachTo: document.body })
+    return document.querySelector('ol')!
+  }
+
+  afterEach(() => {
+    wrapper.unmount()
+  })
+
+  it('should focus the viewport on F8 by default', async () => {
+    const viewport = mountViewport()
+    await fireEvent.keyDown(window, { key: 'F8', code: 'F8' })
+    expect(document.activeElement).toBe(viewport)
+  })
+
+  it('should focus the viewport only when the whole modifier combination is pressed', async () => {
+    const viewport = mountViewport(['altKey', 'KeyT'])
+
+    await fireEvent.keyDown(window, { key: 'Alt', code: 'AltLeft', altKey: true })
+    expect(document.activeElement).not.toBe(viewport)
+    await fireEvent.keyDown(window, { key: 't', code: 'KeyT' })
+    expect(document.activeElement).not.toBe(viewport)
+
+    await fireEvent.keyDown(window, { key: '†', code: 'KeyT', altKey: true })
+    expect(document.activeElement).toBe(viewport)
+  })
+})

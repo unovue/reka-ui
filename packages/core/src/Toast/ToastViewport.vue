@@ -21,7 +21,7 @@ export interface ToastViewportProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { onKeyStroke, unrefElement, useEventListener } from '@vueuse/core'
+import { unrefElement, useEventListener } from '@vueuse/core'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRefs, watch, watchEffect } from 'vue'
 import { DismissableLayerBranch } from '@/DismissableLayer'
 import { focusFirst, getTabbableCandidates, getTabStopsAfter } from '@/FocusScope/utils'
@@ -69,8 +69,11 @@ function forwardPrimitiveRef(ref: Element | ComponentPublicInstance | null) {
   forwardRef(ref)
 }
 
-onKeyStroke(hotkey.value, () => {
-  viewportElement.value?.focus()
+useEventListener('keydown', (event: KeyboardEvent) => {
+  const isHotkeyPressed = hotkey.value.length !== 0
+    && hotkey.value.every(key => event[key as keyof KeyboardEvent] || event.code === key)
+  if (isHotkeyPressed)
+    viewportElement.value?.focus()
 })
 
 onMounted(() => {
