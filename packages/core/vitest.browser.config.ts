@@ -2,6 +2,7 @@ import { resolve } from 'node:path'
 import vue from '@vitejs/plugin-vue'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
+import { mouseDrag, wheelAt } from './vitest.browser.commands'
 
 // Runs `*.browser.test.ts` in a real browser, for behaviour jsdom cannot
 // represent: trusted key events, native focus order, form submission and layout.
@@ -24,6 +25,7 @@ export default defineConfig({
       provider: playwright(),
       instances: [{ browser: 'chromium' }],
       screenshotFailures: false,
+      commands: { mouseDrag, wheelAt },
     },
   },
 })
