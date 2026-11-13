@@ -122,13 +122,15 @@ describe('given a Carousel in a real browser', () => {
   it('swallows the click that ends a drag, not a plain click', async () => {
     const clicks: string[] = []
     const { viewport, get, scroll } = mountCarousel()
-    get('item-0').querySelector('button')!.addEventListener('click', () => clicks.push('click'))
+    // On the document: the drag's click lands on the viewport, whose capture listener stops it.
+    document.addEventListener('click', () => clicks.push('click'))
     await expect.poll(() => viewport.style.scrollSnapType).toBe('x mandatory')
     const box = get('item-0').getBoundingClientRect()
     await commands.mouseDrag(box.left + 150, box.top + 20, box.left + 20, box.top + 20, 10)
     await settled(scroll)
     expect(clicks).toEqual([])
     await userEvent.click(get('item-1').querySelector('button')!)
+    expect(clicks).toEqual(['click'])
   })
 
   it('keeps a short, slow drag on the current snap', async () => {
@@ -173,6 +175,17 @@ describe('given a Carousel in a real browser', () => {
     await expect.poll(() => visibleItem()).toBe(0)
     // DOM order, and so tab order, is unchanged.
     expect(Array.from(document.querySelectorAll('[data-index]'), el => el.getAttribute('data-index'))).toEqual(['0', '1', '2', '3', '4'])
+  })
+
+  it('falls back to no loop when a group has no room on each side', async () => {
+    // 5 slides of 100 in 200, moved 2 at a time: a hidden group of 200 does not fit on both sides.
+    document.body.innerHTML = ''
+    const { get, model } = mountCarousel({ count: 5, itemSize: 100, props: { loop: true, slidesToScroll: 2 } })
+    await expect.poll(() => get('prev').hasAttribute('disabled')).toBe(true)
+    await userEvent.click(get('next'))
+    await userEvent.click(get('next'))
+    await expect.poll(() => model.value).toBe(2)
+    expect(get('next').hasAttribute('disabled')).toBe(true)
   })
 
   it('falls back to no loop when the slides are too few to wrap', async () => {

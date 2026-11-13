@@ -303,8 +303,9 @@ export function useCarouselContext(
   const groupSize = computed(() => getFixedGroupSize(options.value.slidesToScroll))
   // Until the track is measured (on the server, before hydration, in jsdom), every group of `slidesToScroll` items is a snap.
   const fallbackSnaps = computed<CarouselSnap[]>(() => {
-    // Before the slides mount (on the server, in the first render), `itemCount` stands in for them.
-    const count = items.value.length || itemCount.value
+    // Before the slides mount (on the server, in the first render), `itemCount` stands in for them;
+    // once mounted the slides count, even when none are left.
+    const count = mounted.value ? items.value.length : (items.value.length || itemCount.value)
     const indices = Array.from({ length: count }, (_, i) => i)
     return chunk(indices, groupSize.value).map(group => ({ position: 0, items: group }))
   })

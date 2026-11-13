@@ -122,6 +122,14 @@ describe('getSnapsByPosition', () => {
   it('orders the snap indices visually', () => {
     expect(getSnapsByPosition([300, 0, 100].map(position => ({ position, items: [] })))).toEqual([1, 2, 0])
   })
+
+  it('orders a looping track\'s clamped snaps by their unclamped offset', () => {
+    // Rotated around group [2, 3]: items 1, 2, 3, 4, 0 laid out from 0, so groups start at 400, 100 and 300.
+    const rotated = [400, 0, 100, 200, 300].map(start => ({ start, size: 100 }))
+    const { snaps } = computeSnaps({ items: rotated, baseItems: track(5), viewportSize: 300, maxScroll: 200, align: 'start', slidesToScroll: 2, containScroll: 'trimSnaps', loop: true })
+    expect(snaps.map(s => s.position)).toEqual([200, 100, 200])
+    expect(getSnapsByPosition(snaps)).toEqual([1, 2, 0])
+  })
 })
 
 describe('getItemsInView', () => {
@@ -153,6 +161,15 @@ describe('getItemSnapStyles', () => {
 
   it('centers an even group with a scroll margin on its first item', () => {
     expect(getItemSnapStyles(2, [[0, 1]], 'center', track(2), 300)).toEqual([{ align: 'start', margin: 50 }, {}])
+  })
+
+  it('centers a measured odd group as a whole, whatever the size of its middle item', () => {
+    const rects = [{ start: 0, size: 50 }, { start: 50, size: 50 }, { start: 100, size: 200 }]
+    expect(getItemSnapStyles(3, [[0, 1, 2]], 'center', rects, 400)).toEqual([{ align: 'start', margin: 50 }, {}, {}])
+  })
+
+  it('centers the middle item of a group wider than the viewport', () => {
+    expect(getItemSnapStyles(3, [[0, 1, 2]], 'center', track(3, 200), 300)).toEqual([{}, { align: 'center' }, {}])
   })
 })
 

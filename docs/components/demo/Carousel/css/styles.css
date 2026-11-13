@@ -57,6 +57,10 @@ button {
 .CarouselButton:hover {
   background-color: var(--mauve-2);
 }
+.CarouselButton:focus-visible,
+.CarouselIndicator:focus-visible {
+  box-shadow: 0 0 0 2px black;
+}
 .CarouselButton:disabled {
   opacity: 0.5;
 }

@@ -13,6 +13,7 @@ import {
   getNearestSnapIndex,
   getSnapsByPosition,
   getUnrotatedRects,
+  groupItems,
 } from './utils'
 
 /** Travel before a mouse or pen press becomes a drag. */
@@ -41,7 +42,9 @@ function sameValues<T>(a: T[] | undefined, b: T[] | undefined) {
 }
 
 function sameSnaps(a: CarouselSnap[] | undefined, b: CarouselSnap[]) {
-  return !!a && a.length === b.length && a.every((snap, i) => Math.abs(snap.position - b[i].position) < 0.5 && sameValues(snap.items, b[i].items))
+  return !!a && a.length === b.length && a.every((snap, i) => Math.abs(snap.position - b[i].position) < 0.5
+    && Math.abs((snap.offset ?? 0) - (b[i].offset ?? 0)) < 0.5
+    && sameValues(snap.items, b[i].items))
 }
 
 /**
@@ -195,9 +198,12 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     const unrotated = getUnrotatedRects(rects)
     const lastRect = unrotated.at(-1)
     const trackSize = lastRect ? lastRect.start + lastRect.size - unrotated[0].start : 0
-    const largestItem = Math.max(...rects.map(r => r.size))
-    // A loop needs a hidden slide on each side of the view to scroll into.
-    const loopFits = items.length > 1 && trackSize - viewportSize >= 2 * largestItem - 1
+    // A loop needs a hidden group of slides on each side of the view to scroll into.
+    const largestGroup = Math.max(...groupItems(unrotated, viewportSize, options.slidesToScroll).map((group) => {
+      const last = unrotated[group.at(-1)!]
+      return last.start + last.size - unrotated[group[0]].start
+    }))
+    const loopFits = items.length > 1 && trackSize - viewportSize >= 2 * largestGroup - 1
     const loopActive = options.loop && loopFits
     const unpadded = loopActive ? rects : rects.map(r => ({ start: r.start - spacing.start, size: r.size }))
     // Where the first item rests: below 0 with a negative margin on the content (the
@@ -633,10 +639,11 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     // A wheel that only scrolls the page over the carousel is not an interaction with it.
     if (!pages && !scrollsTrack)
       return
-    context.reportInteraction()
-    interrupt()
-    if (!pages)
+    if (!pages) {
+      context.reportInteraction()
+      interrupt()
       return
+    }
     const delta = fade.value
       ? (Math.abs(event.deltaX) > Math.abs(event.deltaY) ? (rtl.value ? -event.deltaX : event.deltaX) : event.deltaY)
       : (vertical.value ? event.deltaX : event.deltaY)
@@ -654,6 +661,8 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     if (!can && !wheelLocked)
       return
     event.preventDefault()
+    context.reportInteraction()
+    interrupt()
     if (wheelLocked)
       return
     wheelDelta += delta

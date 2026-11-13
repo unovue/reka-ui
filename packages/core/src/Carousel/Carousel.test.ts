@@ -1,11 +1,14 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { renderToString } from '@vue/server-renderer'
-import { mount } from '@vue/test-utils'
+import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
 import { CarouselAutoplayToggle, CarouselContent, CarouselIndicator, CarouselItem, CarouselNext, CarouselPrevious, CarouselRoot, CarouselViewport } from '.'
 import Carousel from './story/_Carousel.vue'
+
+// Every mounted carousel keeps its timers and document listeners until it unmounts.
+enableAutoUnmount(afterEach)
 
 function mountCarousel(props: Record<string, unknown> = {}) {
   document.body.innerHTML = ''
@@ -328,6 +331,22 @@ describe('given a Carousel with autoplay', () => {
     }
   })
 
+  it('leaves autoplay running when the page gets the wheel at an end', async () => {
+    const wrapper = mountCarousel({ autoplay: { delay: 1000 }, wheel: true, defaultValue: 4 })
+    await nextTick()
+    const viewport = wrapper.find('[tabindex="0"]').element
+    const event = new WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true })
+    viewport.dispatchEvent(event)
+    await nextTick()
+    expect(event.defaultPrevented).toBe(false)
+    expect(wrapper.emitted('update:playing')).toBeUndefined()
+    const back = new WheelEvent('wheel', { deltaY: -100, bubbles: true, cancelable: true })
+    viewport.dispatchEvent(back)
+    await nextTick()
+    expect(back.defaultPrevented).toBe(true)
+    expect(lastEmit(wrapper, 'update:playing')).toEqual([false])
+  })
+
   it('ignores a wheel that only scrolls the page', async () => {
     const wrapper = mountCarousel({ autoplay: { delay: 1000 } })
     await nextTick()
@@ -395,7 +414,6 @@ describe('given a Carousel with translated labels', () => {
     expect(wrapper.find('[aria-label="Ir a 1"]').exists()).toBe(true)
     await wrapper.find('[data-state="playing"]').trigger('click')
     expect(wrapper.find('[data-state="paused"]').attributes('aria-label')).toBe('Iniciar')
-    wrapper.unmount()
   })
 })
 
@@ -420,7 +438,28 @@ describe('given a Carousel whose slides change', () => {
     await nextTick()
     await nextTick()
     expect(order()).toEqual(['c:1 of 4', 'a:2 of 4', 'b:3 of 4', 'd:4 of 4'])
-    wrapper.unmount()
+  })
+})
+
+describe('given a Carousel that loses every slide', () => {
+  it('counts no snaps, whatever itemCount says', async () => {
+    const slides = ref([1, 2, 3])
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(CarouselRoot, { 'aria-label': 'Empty', 'itemCount': 3 }, {
+        default: ({ snapCount }: { snapCount: number }) => [
+          h('output', snapCount),
+          h(CarouselViewport, () => h(CarouselContent, () => slides.value.map(i => h(CarouselItem, { key: i }, () => `Slide ${i}`)))),
+          h(CarouselNext),
+        ],
+      }),
+    }), { attachTo: document.body })
+    await nextTick()
+    expect(wrapper.find('output').text()).toBe('3')
+    slides.value = []
+    await nextTick()
+    await nextTick()
+    expect(wrapper.find('output').text()).toBe('0')
+    expect(wrapper.find('[aria-label="Next slide"]').attributes('disabled')).toBeDefined()
   })
 })
 
@@ -450,7 +489,6 @@ describe('given a Carousel that loses slides', () => {
       expect(wrapper.find('[data-index="1"]').attributes('inert')).toBeUndefined()
       expect((wrapper.find('[data-index="1"]').element as HTMLElement).style.opacity).toBe('1')
     }
-    wrapper.unmount()
   })
 })
 

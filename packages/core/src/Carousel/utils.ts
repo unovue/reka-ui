@@ -20,6 +20,11 @@ export interface CarouselItemRect {
 export interface CarouselSnap {
   position: number
   items: number[]
+  /**
+   * A looping track's position before clamping to the scroll range. Snaps near the
+   * ends can clamp to the same position; this keeps their visual order.
+   */
+  offset?: number
 }
 
 /** The scroll-snap styles the native scroller needs on one item. */
@@ -144,7 +149,7 @@ export function computeSnaps(options: ComputeSnapsOptions): ComputeSnapsResult {
   const clamped = raw.map(position => Math.min(Math.max(position, 0), maxScroll))
   const spacing = { start: 0, end: 0 }
   if (loop || containScroll === 'keepSnaps')
-    return { groups, spacing, snaps: groups.map((group, i) => ({ position: clamped[i], items: [...group] })) }
+    return { groups, spacing, snaps: groups.map((group, i) => ({ position: clamped[i], items: [...group], ...(loop ? { offset: raw[i] } : {}) })) }
 
   const snaps: CarouselSnap[] = []
   clamped.forEach((position, i) => {
@@ -177,7 +182,8 @@ export function getNearestSnapIndex(position: number, snaps: CarouselSnap[]): nu
  * this list rather than `index + 1`.
  */
 export function getSnapsByPosition(snaps: CarouselSnap[]): number[] {
-  return snaps.map((_, i) => i).sort((a, b) => snaps[a].position - snaps[b].position)
+  const at = (i: number) => snaps[i].offset ?? snaps[i].position
+  return snaps.map((_, i) => i).sort((a, b) => at(a) - at(b))
 }
 
 /** Whether each item shows at least `threshold` (0 to 1) of its size in the viewport. */
@@ -220,17 +226,16 @@ export function getItemSnapStyles(
     else if (align === 'end') {
       styles[group.at(-1)!] = { align: 'end' }
     }
-    else if (group.length % 2 === 1) {
-      styles[group[(group.length - 1) / 2]] = { align: 'center' }
-    }
-    else if (rects && viewportSize !== undefined) {
-      const { start, end } = getGroupExtent(rects, group)
-      // `rects` must be the unrotated layout: only the group's length matters.
-      const margin = (viewportSize - (end - start - gutter)) / 2
-      styles[group[0]] = margin >= 0 ? { align: 'start', margin } : { align: 'center' }
-    }
     else {
-      styles[group[0]] = { align: 'center' }
+      // Measured and fitting in the viewport, a group centers as a whole: its first
+      // item snaps to `start`, shifted by half the free space. A middle item only
+      // matches that when the group's items share a size.
+      const extent = rects && getGroupExtent(rects, group)
+      const margin = extent && viewportSize !== undefined ? (viewportSize - (extent.end - extent.start - gutter)) / 2 : -1
+      if (margin >= 0)
+        styles[group[0]] = { align: 'start', margin }
+      else
+        styles[group[Math.floor((group.length - 1) / 2)]] = { align: 'center' }
     }
   }
   return styles
