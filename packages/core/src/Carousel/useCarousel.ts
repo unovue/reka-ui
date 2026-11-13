@@ -4,7 +4,7 @@ import type { CarouselSurface } from './surface'
 import type { CarouselItemSnapStyle, CarouselSnap } from './utils'
 import type { DataOrientation, Direction } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
-import { computed, nextTick, ref, shallowRef, toValue } from 'vue'
+import { computed, nextTick, ref, shallowRef, toValue, watch } from 'vue'
 import { chunk } from '@/shared'
 import { compareDocumentOrder } from './dom'
 import { createSurface } from './surface'
@@ -345,6 +345,13 @@ export function useCarouselContext(
     }
     return true
   }
+
+  // Fewer snaps (slides removed, a resize, a `fade` or unmeasured track): rest on the last one.
+  // Once mounted only: before, the slides are still registering.
+  watch(snapCount, (count) => {
+    if (mounted.value && count > 0 && modelValue.value >= count)
+      changeModelValue(count - 1)
+  })
 
   function scrollStep(step: 1 | -1) {
     const target = getStepTarget(requested ?? modelValue.value, snaps.value, measured.value, loopActive.value, step)

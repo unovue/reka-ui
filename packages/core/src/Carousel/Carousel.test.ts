@@ -424,6 +424,36 @@ describe('given a Carousel whose slides change', () => {
   })
 })
 
+describe('given a Carousel that loses slides', () => {
+  it.each([false, true])('moves the current index onto the last remaining snap (fade: %s)', async (fade) => {
+    const slides = ref([1, 2, 3, 4, 5, 6])
+    const updates: number[] = []
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(CarouselRoot, { 'aria-label': 'Shrinking', fade, 'defaultValue': 5, 'onUpdate:modelValue': (value: number) => updates.push(value) }, () => [
+        h(CarouselViewport, () => h(CarouselContent, () =>
+          slides.value.map(i => h(CarouselItem, { key: i }, () => `Slide ${i}`)))),
+        h(CarouselPrevious),
+        h(CarouselNext),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    expect(wrapper.find('[data-index="5"]').attributes('data-active')).toBe('')
+
+    slides.value = [1, 2]
+    await nextTick()
+    await nextTick()
+    expect(updates).toEqual([1])
+    expect(wrapper.find('[data-index="1"]').attributes('data-active')).toBe('')
+    expect(wrapper.find('[aria-label="Previous slide"]').attributes('disabled')).toBeUndefined()
+    expect(wrapper.find('[aria-label="Next slide"]').attributes('disabled')).toBeDefined()
+    if (fade) {
+      expect(wrapper.find('[data-index="1"]').attributes('inert')).toBeUndefined()
+      expect((wrapper.find('[data-index="1"]').element as HTMLElement).style.opacity).toBe('1')
+    }
+    wrapper.unmount()
+  })
+})
+
 describe('given a Carousel rendered on the server', () => {
   const Fixture = defineComponent({
     props: { fade: Boolean, defaultValue: Number },

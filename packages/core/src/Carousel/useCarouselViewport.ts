@@ -238,9 +238,6 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     if (JSON.stringify(styles) !== JSON.stringify(context.itemStyles.value))
       context.itemStyles.value = styles
 
-    // Fewer snaps after a resize: rest on the last one.
-    if (context.modelValue.value >= result.snaps.length)
-      context.changeModelValue(result.snaps.length - 1)
     updateInView()
     updateAutoHeight()
     // Laid out for the first time, or again after `display: none` reset the scroll: show the current snap.
