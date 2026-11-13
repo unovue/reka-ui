@@ -4,7 +4,7 @@ import type { CarouselSurface } from './surface'
 import type { CarouselItemSnapStyle, CarouselSnap } from './utils'
 import type { DataOrientation, Direction } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
-import { computed, ref, shallowRef, toValue } from 'vue'
+import { computed, nextTick, ref, shallowRef, toValue } from 'vue'
 import { chunk } from '@/shared'
 import { compareDocumentOrder } from './dom'
 import { createSurface } from './surface'
@@ -330,17 +330,24 @@ export function useCarouselContext(
     return index % size === leader ? { align } : {}
   }
 
+  // The index a controlled parent hasn't written back yet: a second step in the
+  // same tick starts from it, instead of repeating the first one.
+  let requested: number | undefined
   /** Returns `false` when the index is unchanged or out of range. */
   function changeModelValue(index: number) {
     const count = snapCount.value
-    if ((count > 0 && (index < 0 || index >= count)) || index === modelValue.value)
+    if ((count > 0 && (index < 0 || index >= count)) || index === (requested ?? modelValue.value))
       return false
     modelValue.value = index
+    if (modelValue.value !== index) {
+      requested = index
+      nextTick(() => requested = undefined)
+    }
     return true
   }
 
   function scrollStep(step: 1 | -1) {
-    const target = getStepTarget(modelValue.value, snaps.value, measured.value, loopActive.value, step)
+    const target = getStepTarget(requested ?? modelValue.value, snaps.value, measured.value, loopActive.value, step)
     return target === undefined ? false : changeModelValue(target)
   }
 

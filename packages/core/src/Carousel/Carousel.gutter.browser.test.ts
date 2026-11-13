@@ -19,7 +19,7 @@ interface GutterOptions {
  * The shadcn-vue and Nuxt UI gutter: a negative start margin on the content and
  * the same start padding on each item, sized with `flex-basis`.
  */
-function mountGutter({ basis = 1, gutter = GUTTER, count = 5, props = {} }: GutterOptions = {}) {
+function mountGutter({ basis = 1, gutter = GUTTER, count = 5, props = {}, controlled = false }: GutterOptions & { controlled?: boolean } = {}) {
   document.body.innerHTML = ''
   const vertical = props.orientation === 'vertical'
   const rtl = props.dir === 'rtl'
@@ -28,6 +28,7 @@ function mountGutter({ basis = 1, gutter = GUTTER, count = 5, props = {} }: Gutt
     setup: () => () => h(CarouselRoot, {
       'aria-label': 'Gutter',
       ...props,
+      ...(controlled ? { modelValue: model.value } : {}),
       'style': vertical ? { width: '200px' } : { width: `${VIEW}px`, margin: '20px' },
       'onUpdate:modelValue': (value: number) => model.value = value,
     }, () => [
@@ -175,6 +176,32 @@ describe('given a Carousel spaced with item padding and a negative content margi
     await settled(scroll)
     expect(model.value).toBe(0)
     expect(offset(0)).toBeCloseTo(0, 0)
+  })
+
+  it.each([
+    { controlled: false, gap: 0 },
+    { controlled: true, gap: 0 },
+    { controlled: false, gap: 1 },
+    { controlled: true, gap: 1 },
+  ])('lands on the target snap after a burst of steps in a loop (%j)', async ({ controlled, gap }) => {
+    const { get, viewport, model, offset, scroll } = mountGutter({ basis: 1 / 2, count: 6, controlled, props: { loop: true, align: 'center' } })
+    await measured(viewport)
+    await expect.poll(() => viewport.querySelector<HTMLElement>('[data-index="0"]')!.style.order).not.toBe('')
+    await settled(scroll)
+    const slide = (VIEW + GUTTER) / 2 - GUTTER
+    const centered = (VIEW - slide) / 2
+    expect(offset(0)).toBeCloseTo(centered, 0)
+    for (const [steps, target] of [[2, 2], [2, 4], [1, 5], [3, 2]] as const) {
+      // `gap`: clicks in separate tasks, before the first smooth scroll has moved.
+      for (let i = 0; i < steps; i++) {
+        get('next').click()
+        if (gap)
+          await new Promise(resolve => setTimeout(resolve, gap))
+      }
+      await settled(scroll)
+      expect(model.value).toBe(target)
+      expect(offset(target)).toBeCloseTo(centered, 0)
+    }
   })
 
   it('lines up in RTL with the gutter on the inline start', async () => {

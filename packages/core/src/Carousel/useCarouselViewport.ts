@@ -31,8 +31,8 @@ const MOMENTUM_DECAY = 0.996
 /** Accumulated wheel delta that pages once, and the quiet time (ms) that ends a wheel gesture. */
 const WHEEL_PAGE_DELTA = 30
 const WHEEL_GESTURE_GAP = 180
-/** How long (ms) a programmatic smooth scroll may take before a settle stops waiting for it. */
-const PROGRAMMATIC_SCROLL_TIMEOUT = 1500
+/** How many times a settle aims again at a programmatic target the scroll stopped short of. */
+const PROGRAMMATIC_SCROLL_RETRIES = 2
 /** Fallback for engines without `scrollend`. */
 const SCROLL_END_DELAY = 120
 
@@ -66,7 +66,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
   const autoHeight = ref<number>()
   let rects: CarouselItemRect[] = []
   let programmaticTarget: number | undefined
-  let programmaticSince = 0
+  let programmaticRetries = 0
   // Mouse and pen drag. Touch scrolls natively, except in `fade` mode where every pointer swipes.
   interface DragState {
     pointerId: number
@@ -281,7 +281,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       return
     }
     programmaticTarget = index
-    programmaticSince = performance.now()
+    programmaticRetries = 0
     setScroll(snap.position, behavior ?? (context.reducedMotion.value ? 'instant' : 'smooth'))
   }
 
@@ -298,8 +298,8 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
    *
    * After a scroll settles it never runs under a programmatic scroll, which
    * would land on a moved item. `force` is for a programmatic step about to
-   * start: it rotates around the step's target first, so a burst of steps never
-   * runs past the end of the reordered track.
+   * start, which rotates first (see the `modelValue` watcher), so a burst of
+   * steps never runs past the end of the reordered track.
    */
   async function rotate(target = context.modelValue.value, force = false) {
     const el = element.value
@@ -335,11 +335,17 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
 
   function settle() {
     clearScrollEndTimer()
-    // The `scrollend` of an earlier instant scroll (a loop reorder) can arrive while
-    // a smooth scroll is still on its way: wait for that one, unless it was dropped.
+    // A programmatic scroll that stopped short: the `scrollend` of an earlier
+    // instant scroll (a loop reorder) arrived while it was on its way, or the
+    // browser dropped it after that instant scroll. Aim at the target again,
+    // smoothly (harmless if it is still running), then instantly.
     const target = programmaticTarget === undefined ? undefined : context.snaps.value[programmaticTarget]
-    if (target && Math.abs(target.position - getScroll()) >= 1 && performance.now() - programmaticSince < PROGRAMMATIC_SCROLL_TIMEOUT)
+    if (target && Math.abs(target.position - getScroll()) >= 1) {
+      const instant = programmaticRetries >= PROGRAMMATIC_SCROLL_RETRIES || context.reducedMotion.value
+      programmaticRetries++
+      setScroll(target.position, instant ? 'instant' : 'smooth')
       return
+    }
     programmaticTarget = undefined
     if (snapSuspended.value && !dragState && !momentumFrame && !autoScrollRunning.value)
       setScrollSnapSuspended(false)
@@ -750,9 +756,16 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       scrollToSnap(value)
       return
     }
-    // Reorder around the target first: a burst of steps would otherwise run past the reordered window.
+    // Reorder first, so a burst of steps never runs past the reordered window. The
+    // middle of the way from the snap on screen to the target goes to the middle of
+    // the track: both stay clear of its ends, where a centered snap would be clamped.
     programmaticTarget = value
-    rotate(value, true).then(() => {
+    const count = context.snapCount.value
+    const onScreen = getNearestSnapIndex(getScroll(), context.snaps.value)
+    let distance = (value - onScreen + count) % count
+    if (distance > count / 2)
+      distance -= count
+    rotate((onScreen + Math.trunc(distance / 2) + count) % count, true).then(() => {
       if (context.modelValue.value === value)
         scrollToSnap(value)
     })
