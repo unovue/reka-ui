@@ -389,6 +389,35 @@ describe('given a Carousel with autoplay', () => {
   })
 })
 
+describe('given a Carousel with translated labels', () => {
+  it('lets every attribute override the English default', async () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(CarouselRoot, { 'aria-label': 'Galerie', 'aria-roledescription': 'carrousel', 'autoplay': true }, {
+        default: ({ playing }: { playing: boolean }) => [
+          h(CarouselAutoplayToggle, { 'aria-label': playing ? 'Arrêter' : 'Démarrer' }),
+          h(CarouselViewport, () => h(CarouselContent, () =>
+            [1, 2].map(i => h(CarouselItem, { 'key': i, 'aria-roledescription': 'diapositive', 'aria-label': `${i} sur 2` }, () => `Slide ${i}`)))),
+          h(CarouselPrevious, { 'aria-label': 'Précédente' }),
+          h(CarouselNext, { 'aria-label': 'Suivante' }),
+          h(CarouselIndicator, { 'index': 0, 'aria-label': 'Aller à 1' }),
+        ],
+      }),
+    }), { attachTo: document.body })
+    await nextTick()
+    expect(wrapper.attributes('aria-roledescription')).toBe('carrousel')
+    expect(wrapper.find('[data-state="playing"]').attributes('aria-label')).toBe('Arrêter')
+    const item = wrapper.find('[data-index="0"]')
+    expect(item.attributes('aria-roledescription')).toBe('diapositive')
+    expect(item.attributes('aria-label')).toBe('1 sur 2')
+    expect(wrapper.find('[aria-label="Précédente"]').exists()).toBe(true)
+    expect(wrapper.find('[aria-label="Suivante"]').exists()).toBe(true)
+    expect(wrapper.find('[aria-label="Aller à 1"]').exists()).toBe(true)
+    await wrapper.find('[data-state="playing"]').trigger('click')
+    expect(wrapper.find('[data-state="paused"]').attributes('aria-label')).toBe('Démarrer')
+    wrapper.unmount()
+  })
+})
+
 describe('given a Carousel whose slides change', () => {
   it('follows the DOM order when keyed slides are reordered or added', async () => {
     const slides = ref(['a', 'b', 'c'])

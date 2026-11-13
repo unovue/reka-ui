@@ -78,7 +78,7 @@ import {
 
 `CarouselViewport` is a real scroll container with CSS scroll snapping, and `CarouselContent` is the track inside it. Before hydration the browser already scrolls it with touch, a trackpad or the keyboard, and snaps to the slides. Once mounted, the carousel measures the track, adds mouse and pen dragging, the controls and the options below, and keeps `v-model` in sync with the scroll position.
 
-The parts set the layout styles they need inline: the overflow and snapping on the viewport, `display: flex` on the content and `flex-shrink: 0` on the items. Give the items their size yourself, for example `flex-basis: 100%` for one slide per view or `33.333%` for three. Use padding on the items, and a negative margin on the content, to space them.
+The parts set the layout styles they need inline: the overflow and snapping on the viewport, `display: flex` on the content and `flex-shrink: 0` on the items. Give the items their size yourself, for example `flex-basis: 100%` for one slide per view or `33.333%` for three. To space them, put a start padding on the items and the same negative start margin on the content, for example `ps-4` and `-ms-4`, or `pt-4` and `-mt-4` when vertical. The carousel measures where the first slide rests and rests every snap at that offset, so the gutter lines up on every slide. Before hydration the browser snaps to the item edges, so the slides sit one gutter off until the track is measured.
 
 `v-model` is the index of the current **snap**, not of a slide. With one slide per snap they are the same. With `slidesToScroll`, or when `containScroll` merges the snaps at the end of the track, there are fewer snaps than slides: render the indicators from the `snapCount` slot prop.
 
@@ -87,6 +87,10 @@ The parts set the layout styles they need inline: the overflow and snapping on t
 The server renders a working scroller: before hydration, visitors can already swipe, scroll with a trackpad or the keyboard, and land on a snap. The current slide has `data-active`, and with `fade` the other slides are hidden. Where the browser supports `scroll-initial-target`, the track opens on `defaultValue`; elsewhere it scrolls there on hydration. If a visitor scrolls before hydration, the carousel keeps that place and `v-model` follows it.
 
 The slides register once they mount, so on the server `snapCount` is `0`, Previous/Next are disabled and the slides have no "2 of 5" label. Pass `itemCount` with the number of slides to render the indicators, the controls and the labels on the server too. Until the track is measured, every group of `slidesToScroll` slides counts as one snap.
+
+### Wrapping the parts
+
+`CarouselRoot` declares `draggable` and `defaultPlaying` with a `true` default and `playing` with an `undefined` one. A component that wraps it and redeclares these props needs the same defaults in its `withDefaults`, or Vue casts the absent booleans to `false`, which turns dragging and rotation off and makes `playing` controlled.
 
 ## API Reference
 
@@ -462,6 +466,36 @@ Rotation follows the pattern: it pauses on hover, stops for good when keyboard f
     },
   ]"
 />
+
+### Labels
+
+The labels are in English. Pass your own as attributes: `aria-roledescription` on `CarouselRoot` and `CarouselItem`, and `aria-label` on `CarouselItem`, `CarouselPrevious`, `CarouselNext`, `CarouselIndicator` and `CarouselAutoplayToggle`, whose label follows the `playing` slot prop of the root. The item label is its position, built from the `v-for` index and the number of slides.
+
+```vue
+<template>
+  <CarouselRoot
+    v-slot="{ playing }"
+    :aria-label="t('carousel.label')"
+    :aria-roledescription="t('carousel.roledescription')"
+  >
+    <CarouselAutoplayToggle :aria-label="playing ? t('carousel.stop') : t('carousel.start')" />
+    <CarouselViewport>
+      <CarouselContent>
+        <CarouselItem
+          v-for="(slide, index) in slides"
+          :key="slide.id"
+          :aria-roledescription="t('carousel.slide')"
+          :aria-label="t('carousel.position', { index: index + 1, total: slides.length })"
+        >
+          ...
+        </CarouselItem>
+      </CarouselContent>
+    </CarouselViewport>
+    <CarouselPrevious :aria-label="t('carousel.previous')" />
+    <CarouselNext :aria-label="t('carousel.next')" />
+  </CarouselRoot>
+</template>
+```
 
 In a right-to-left layout (`dir="rtl"` on `CarouselRoot`, or on a [`ConfigProvider`](/docs/utilities/config-provider)), `ArrowLeft` goes to the next snap and `ArrowRight` to the previous one. See [Internationalization](/docs/guides/i18n#what-changes-in-rtl).
 

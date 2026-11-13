@@ -262,13 +262,21 @@ export function getCarouselContentSurface(context: CarouselRootContext): PartSur
   )
 }
 
-function snapStyle(style: CarouselItemSnapStyle | undefined, vertical: boolean, skipSnaps: boolean) {
+/**
+ * The native snap of one item. `inset` is where the first item rests (see the
+ * viewport's `measure`): a `scroll-margin` of `inset` on the start side and its
+ * opposite on the end side moves the item's snap area by the same amount, so a
+ * native scroll lands where the measured snaps do.
+ */
+function snapStyle(style: CarouselItemSnapStyle | undefined, vertical: boolean, skipSnaps: boolean, inset: number) {
   if (!style?.align)
     return { scrollSnapAlign: 'none' }
+  const start = (style.margin ?? 0) + inset
   return {
     scrollSnapAlign: style.align,
     scrollSnapStop: skipSnaps ? undefined : 'always',
-    [vertical ? 'scrollMarginTop' : 'scrollMarginInlineStart']: style.margin ? `${style.margin}px` : undefined,
+    [vertical ? 'scrollMarginTop' : 'scrollMarginInlineStart']: start ? `${start}px` : undefined,
+    [vertical ? 'scrollMarginBottom' : 'scrollMarginInlineEnd']: inset ? `${-inset}px` : undefined,
   }
 }
 
@@ -333,7 +341,7 @@ export function getCarouselItemSurface(context: CarouselRootContext, element: Re
           : {
               flexShrink: 0,
               order,
-              ...snapStyle(context.measured.value ? context.itemStyles.value[i] : context.getFallbackItemStyle(i), vertical, context.options.value.skipSnaps),
+              ...snapStyle(context.measured.value ? context.itemStyles.value[i] : context.getFallbackItemStyle(i), vertical, context.options.value.skipSnaps, context.measured.value ? context.snapInset.value : 0),
               // Before hydration, start on `defaultValue` where the browser supports it.
               scrollInitialTarget: !context.mounted.value && i === context.fallbackStartItem.value && i > 0 ? 'nearest' : undefined,
             }),
@@ -490,6 +498,7 @@ export function useCarousel(props: UseCarouselProps = {}): UseCarouselReturn {
     getFallbackItemStyle,
     fallbackStartItem,
     spacing: shallowRef({ start: 0, end: 0 }),
+    snapInset: shallowRef(0),
     loopOrder: shallowRef(),
     loopActive,
     loopFits,

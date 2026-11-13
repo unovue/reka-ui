@@ -67,6 +67,8 @@ export interface CarouselRootContext {
   fallbackStartItem: ComputedRef<number>
   /** Space `containScroll: false` adds at the ends of the track. */
   spacing: ShallowRef<{ start: number, end: number }>
+  /** Where the first item rests in the viewport, measured: every snap rests its items at the same offset. */
+  snapInset: ShallowRef<number>
   /** CSS `order` by DOM index while a loop is rotated. */
   loopOrder: ShallowRef<number[] | undefined>
   /** `loop` is set and the track is long enough to wrap. */

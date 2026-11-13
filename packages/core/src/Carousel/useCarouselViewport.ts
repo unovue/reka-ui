@@ -32,6 +32,8 @@ const MOMENTUM_DECAY = 0.996
 /** Accumulated wheel delta that pages once, and the quiet time (ms) that ends a wheel gesture. */
 const WHEEL_PAGE_DELTA = 30
 const WHEEL_GESTURE_GAP = 180
+/** How long (ms) a programmatic smooth scroll may take before a settle stops waiting for it. */
+const PROGRAMMATIC_SCROLL_TIMEOUT = 1500
 /** Fallback for engines without `scrollend`. */
 const SCROLL_END_DELAY = 120
 
@@ -65,8 +67,8 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
   const autoHeight = ref<number>()
   let rects: CarouselItemRect[] = []
   let programmaticTarget: number | undefined
+  let programmaticSince = 0
   let inputReason: CarouselChangeReason = 'scroll'
-  let rotating = false
   // Mouse and pen drag. Touch scrolls natively, except in `fade` mode where every pointer swipes.
   interface DragState {
     pointerId: number
@@ -199,10 +201,16 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     // A loop needs a hidden slide on each side of the view to scroll into.
     const loopFits = items.length > 1 && trackSize - viewportSize >= 2 * largestItem - 1
     const loopActive = options.loop && loopFits
-    const base = loopActive ? rects : rects.map(r => ({ start: r.start - spacing.start, size: r.size }))
+    const unpadded = loopActive ? rects : rects.map(r => ({ start: r.start - spacing.start, size: r.size }))
+    // Where the first item rests: below 0 with a negative margin on the content (the
+    // item padding and content margin gutter), above it with padding. Every snap rests
+    // its items at the same offset, so the gutter lines up on every slide.
+    const inset = Math.min(...unpadded.map(r => r.start))
+    const base = unpadded.map(r => ({ start: r.start - inset, size: r.size }))
+    const baseUnrotated = unrotated.map(r => ({ start: r.start - inset, size: r.size }))
     const result = computeSnaps({
       items: base,
-      baseItems: loopActive ? unrotated : undefined,
+      baseItems: loopActive ? baseUnrotated : undefined,
       viewportSize,
       maxScroll: getScrollSize(el) - spacing.start - spacing.end - viewportSize,
       align: options.align,
@@ -223,7 +231,9 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       context.spacing.value = result.spacing
     if (!sameSnaps(context.measuredSnaps.value, result.snaps))
       context.measuredSnaps.value = result.snaps
-    const styles = getItemSnapStyles(items.length, result.groups, options.align, loopActive ? unrotated : base, viewportSize)
+    if (context.snapInset.value !== inset)
+      context.snapInset.value = inset
+    const styles = getItemSnapStyles(items.length, result.groups, options.align, loopActive ? baseUnrotated : base, viewportSize)
     if (JSON.stringify(styles) !== JSON.stringify(context.itemStyles.value))
       context.itemStyles.value = styles
 
@@ -270,6 +280,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       return
     }
     programmaticTarget = index
+    programmaticSince = performance.now()
     setScroll(snap.position, behavior ?? (context.reducedMotion.value ? 'instant' : 'smooth'))
   }
 
@@ -278,32 +289,56 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
    * items with CSS `order`, then shifts the scroll position by the distance the
    * current item moved, so nothing visibly jumps.
    */
-  async function rotate() {
+  let pendingRotation: Promise<void> | undefined
+  /**
+   * Keeps a snap (the current one by default) in the middle of a looping track
+   * by reordering the items with CSS `order`, then shifts the scroll position by
+   * the distance the slide on screen moved, so nothing visibly jumps.
+   *
+   * After a scroll settles it never runs under a programmatic scroll, which
+   * would land on a moved item. `force` is for a programmatic step about to
+   * start: it rotates around the step's target first, so a burst of steps never
+   * runs past the end of the reordered track.
+   */
+  async function rotate(target = context.modelValue.value, force = false) {
     const el = element.value
-    // Never under a running smooth scroll: it would land on a moved item.
-    if (!el || rotating || !context.loopActive.value || programmaticTarget !== undefined)
+    if (!el || !context.loopActive.value)
       return
-    const group = context.snaps.value[context.modelValue.value]?.items
+    if (pendingRotation) {
+      if (!force)
+        return
+      await pendingRotation
+    }
+    if (!force && programmaticTarget !== undefined)
+      return
+    const snaps = context.snaps.value
+    const group = snaps[target]?.items
     if (!group?.length)
       return
-    const anchor = group[0]
-    const order = getLoopOrder(context.items.value.length, anchor, group.length)
+    const order = getLoopOrder(context.items.value.length, group[0], group.length)
     if (sameValues(context.loopOrder.value, order))
       return
-    const anchorItem = context.items.value[anchor]
-    rotating = true
-    const before = measureItem(el, anchorItem).start - getScroll(el)
-    context.loopOrder.value = order
-    await nextTick()
-    const after = measureItem(el, anchorItem).start - getScroll(el)
-    if (Math.abs(after - before) >= 0.5)
-      setScroll(getScroll(el) + after - before, 'instant')
-    rotating = false
-    measure()
+    const onScreen = context.items.value[snaps[getNearestSnapIndex(getScroll(el), snaps)]?.items[0] ?? group[0]]
+    const run = async () => {
+      const before = measureItem(el, onScreen).start - getScroll(el)
+      context.loopOrder.value = order
+      await nextTick()
+      const after = measureItem(el, onScreen).start - getScroll(el)
+      if (Math.abs(after - before) >= 0.5)
+        setScroll(getScroll(el) + after - before, 'instant')
+      measure()
+    }
+    pendingRotation = run().finally(() => pendingRotation = undefined)
+    await pendingRotation
   }
 
   function settle() {
     clearScrollEndTimer()
+    // The `scrollend` of an earlier instant scroll (a loop reorder) can arrive while
+    // a smooth scroll is still on its way: wait for that one, unless it was dropped.
+    const target = programmaticTarget === undefined ? undefined : context.snaps.value[programmaticTarget]
+    if (target && Math.abs(target.position - getScroll()) >= 1 && performance.now() - programmaticSince < PROGRAMMATIC_SCROLL_TIMEOUT)
+      return
     programmaticTarget = undefined
     if (snapSuspended.value && !dragState && !momentumFrame && !autoScrollRunning.value)
       setScrollSnapSuspended(false)
@@ -717,7 +752,16 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     // Already there by a user scroll; a running programmatic scroll towards another snap still has to turn.
     if (programmaticTarget === undefined && getNearestSnapIndex(getScroll(), context.snaps.value) === value)
       return
-    scrollToSnap(value)
+    if (!context.loopActive.value) {
+      scrollToSnap(value)
+      return
+    }
+    // Reorder around the target first: a burst of steps would otherwise run past the reordered window.
+    programmaticTarget = value
+    rotate(value, true).then(() => {
+      if (context.modelValue.value === value)
+        scrollToSnap(value)
+    })
   }, { flush: 'post' })
 
   let resizeObserver: ResizeObserver | undefined
@@ -729,7 +773,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       return
     measureFrame = getOwnerWindow(el).requestAnimationFrame(() => {
       measureFrame = 0
-      if (!rotating)
+      if (!pendingRotation)
         measure()
     })
   }
