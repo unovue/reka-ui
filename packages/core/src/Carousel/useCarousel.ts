@@ -264,19 +264,22 @@ export function getCarouselContentSurface(context: CarouselRootContext): PartSur
 
 /**
  * The native snap of one item. `inset` is where the first item rests (see the
- * viewport's `measure`): a `scroll-margin` of `inset` on the start side and its
- * opposite on the end side moves the item's snap area by the same amount, so a
- * native scroll lands where the measured snaps do.
+ * viewport's `measure`): a `scroll-margin` of `inset` on the start side, and its
+ * opposite on the end side when it is positive, makes the item's snap area the
+ * one the measured snaps align, so a native scroll lands on the same position.
  */
 function snapStyle(style: CarouselItemSnapStyle | undefined, vertical: boolean, skipSnaps: boolean, inset: number) {
   if (!style?.align)
     return { scrollSnapAlign: 'none' }
   const start = (style.margin ?? 0) + inset
+  // A gutter (negative inset) only trims the start of the snap area to the item's content;
+  // a positive inset (content padding) moves the whole area, keeping that space on every snap.
+  const end = inset > 0 ? -inset : 0
   return {
     scrollSnapAlign: style.align,
     scrollSnapStop: skipSnaps ? undefined : 'always',
     [vertical ? 'scrollMarginTop' : 'scrollMarginInlineStart']: start ? `${start}px` : undefined,
-    [vertical ? 'scrollMarginBottom' : 'scrollMarginInlineEnd']: inset ? `${-inset}px` : undefined,
+    [vertical ? 'scrollMarginBottom' : 'scrollMarginInlineEnd']: end ? `${end}px` : undefined,
   }
 }
 

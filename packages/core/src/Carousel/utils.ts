@@ -34,11 +34,16 @@ export function getFixedGroupSize(slidesToScroll: CarouselSlidesToScroll): numbe
   return typeof slidesToScroll === 'number' && slidesToScroll >= 1 ? Math.floor(slidesToScroll) : 1
 }
 
-/** Splits the items into the groups one navigation step moves by. */
+/**
+ * Splits the items into the groups one navigation step moves by. `gutter` is
+ * the start padding each item spaces itself with (see `computeSnaps`): a group
+ * fits when its content does.
+ */
 export function groupItems(
   items: CarouselItemRect[],
   viewportSize: number,
   slidesToScroll: CarouselSlidesToScroll,
+  gutter = 0,
 ): number[][] {
   const groups: number[][] = []
   if (slidesToScroll !== 'auto')
@@ -47,7 +52,7 @@ export function groupItems(
   let group: number[] = []
   let groupStart = 0
   items.forEach((item, index) => {
-    if (group.length && item.start + item.size - groupStart > viewportSize + 1) {
+    if (group.length && item.start + item.size - gutter - groupStart > viewportSize + 1) {
       groups.push(group)
       group = []
     }
@@ -77,8 +82,10 @@ function getAlignedExtent(items: CarouselItemRect[], base: CarouselItemRect[], g
   return { start, end: start + extent.end - extent.start }
 }
 
-function alignGroup(items: CarouselItemRect[], base: CarouselItemRect[], group: number[], viewportSize: number, align: CarouselAlign) {
-  const { start, end } = getAlignedExtent(items, base, group)
+function alignGroup(items: CarouselItemRect[], base: CarouselItemRect[], group: number[], viewportSize: number, align: CarouselAlign, gutter: number) {
+  const extent = getAlignedExtent(items, base, group)
+  const { start } = extent
+  const end = extent.end - gutter
   if (align === 'start')
     return start
   if (align === 'end')
@@ -98,6 +105,13 @@ export interface ComputeSnapsOptions {
   containScroll: CarouselContainScroll
   /** A looping track never trims: every group keeps a snap. */
   loop?: boolean
+  /**
+   * The start padding each item spaces itself with, matched by a negative start
+   * margin on the content. `items` start after it (where the item's content
+   * starts), so aligning a group aligns its content: the gutter acts as a gap.
+   * @defaultValue 0
+   */
+  gutter?: number
 }
 
 export interface ComputeSnapsResult {
@@ -112,8 +126,9 @@ export interface ComputeSnapsResult {
 export function computeSnaps(options: ComputeSnapsOptions): ComputeSnapsResult {
   const { items, viewportSize, align, slidesToScroll, containScroll, loop } = options
   const base = options.baseItems ?? items
-  const groups = groupItems(base, viewportSize, slidesToScroll)
-  const raw = groups.map(group => alignGroup(items, base, group, viewportSize, align))
+  const gutter = options.gutter ?? 0
+  const groups = groupItems(base, viewportSize, slidesToScroll, gutter)
+  const raw = groups.map(group => alignGroup(items, base, group, viewportSize, align, gutter))
 
   if (!loop && containScroll === false) {
     const start = Math.max(0, -Math.min(0, ...raw))
@@ -193,6 +208,7 @@ export function getItemSnapStyles(
   align: CarouselAlign,
   rects?: CarouselItemRect[],
   viewportSize?: number,
+  gutter = 0,
 ): CarouselItemSnapStyle[] {
   const styles: CarouselItemSnapStyle[] = Array.from({ length: itemCount }, () => ({}))
   for (const group of groups) {
@@ -210,7 +226,7 @@ export function getItemSnapStyles(
     else if (rects && viewportSize !== undefined) {
       const { start, end } = getGroupExtent(rects, group)
       // `rects` must be the unrotated layout: only the group's length matters.
-      const margin = (viewportSize - (end - start)) / 2
+      const margin = (viewportSize - (end - start - gutter)) / 2
       styles[group[0]] = margin >= 0 ? { align: 'start', margin } : { align: 'center' }
     }
     else {

@@ -76,6 +76,26 @@ describe('computeSnaps', () => {
     expect(snaps).toHaveLength(5)
   })
 
+  it('aligns the content of items spaced with a gutter', () => {
+    // Items of 336 with a 16 start padding, measured from where their content starts.
+    const items = track(5, 336).map(r => ({ start: r.start, size: r.size }))
+    const gutterBase = { ...base, viewportSize: 320, maxScroll: 336 * 5 - 16 - 320 }
+    expect(positions({ ...gutterBase, items, gutter: 16 })).toEqual([0, 336, 672, 1008, 1344])
+    expect(positions({ ...gutterBase, align: 'center', items, gutter: 16 })).toEqual([0, 336, 672, 1008, 1344])
+    expect(positions({ ...gutterBase, align: 'end', items, gutter: 16 })).toEqual([0, 336, 672, 1008, 1344])
+  })
+
+  it('centers the content of several items per view spaced with a gutter', () => {
+    // 6 items of 112 (96 of content and a 16 gutter) in 320: 4 snaps.
+    const items = track(6, 112)
+    const snaps = positions({ ...base, align: 'center', viewportSize: 320, maxScroll: 112 * 6 - 16 - 320, items, gutter: 16 })
+    expect(snaps).toEqual([0, 112, 224, 336])
+  })
+
+  it('groups items by their content with auto and a gutter', () => {
+    expect(groupItems(track(6, 112), 320, 'auto', 16)).toEqual([[0, 1, 2], [3, 4, 5]])
+  })
+
   it('measures a group wrapped by a loop rotation by its unrotated length', () => {
     // Rotated so item 4 comes first: items 4, 0, 1, 2, 3.
     const rotated = [100, 200, 300, 400, 0].map(start => ({ start, size: 100 }))

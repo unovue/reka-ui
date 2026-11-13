@@ -99,17 +99,45 @@ describe('given a Carousel spaced with item padding and a negative content margi
     expect(offset(1)).toBeCloseTo(0, 0)
   })
 
-  it('rests every slide at the first one\'s offset with align center', async () => {
+  it('centers the slide content, not the gutter, with align center', async () => {
     const { get, viewport, offset, scroll } = mountGutter({ props: { align: 'center' } })
     await measured(viewport)
     await settled(scroll)
-    const rest = offset(0)
+    expect(offset(0)).toBeCloseTo(0, 0)
     await userEvent.click(get('next'))
     await settled(scroll)
-    expect(offset(1)).toBeCloseTo(rest, 0)
+    expect(offset(1)).toBeCloseTo(0, 0)
     viewport.scrollBy({ left: VIEW * 0.6, behavior: 'instant' })
     await settled(scroll)
-    expect(offset(2)).toBeCloseTo(rest, 0)
+    expect(offset(2)).toBeCloseTo(0, 0)
+  })
+
+  it('centers the content of three per view with align center', async () => {
+    const { get, viewport, model, offset, scroll } = mountGutter({ basis: 1 / 3, count: 6, props: { align: 'center' } })
+    await measured(viewport)
+    const slide = (VIEW + GUTTER) / 3 - GUTTER
+    await userEvent.click(get('next'))
+    await settled(scroll)
+    expect(model.value).toBe(1)
+    expect(offset(2)).toBeCloseTo((VIEW - slide) / 2, 0)
+    viewport.scrollBy({ left: (VIEW + GUTTER) / 3, behavior: 'instant' })
+    await settled(scroll)
+    expect(offset(3)).toBeCloseTo((VIEW - slide) / 2, 0)
+    expect(model.value).toBe(2)
+    // 6 items, 3 visible, centered: 4 snaps once the ends are trimmed.
+    await userEvent.click(get('next'))
+    await settled(scroll)
+    expect(model.value).toBe(3)
+    expect(get('next').hasAttribute('disabled')).toBe(true)
+  })
+
+  it('ends the slide content flush with the viewport with align end', async () => {
+    const { get, viewport, offset, scroll } = mountGutter({ basis: 1 / 2, props: { align: 'end' } })
+    await measured(viewport)
+    const slide = (VIEW + GUTTER) / 2 - GUTTER
+    await userEvent.click(get('next'))
+    await settled(scroll)
+    expect(offset(2) + slide).toBeCloseTo(VIEW, 0)
   })
 
   it('trims the end snaps with three per view', async () => {

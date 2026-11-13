@@ -206,6 +206,8 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     // item padding and content margin gutter), above it with padding. Every snap rests
     // its items at the same offset, so the gutter lines up on every slide.
     const inset = Math.min(...unpadded.map(r => r.start))
+    // A negative inset is the gutter: the item padding the content margin hides.
+    const gutter = Math.max(0, -inset)
     const base = unpadded.map(r => ({ start: r.start - inset, size: r.size }))
     const baseUnrotated = unrotated.map(r => ({ start: r.start - inset, size: r.size }))
     const result = computeSnaps({
@@ -217,6 +219,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       slidesToScroll: options.slidesToScroll,
       containScroll: options.containScroll,
       loop: loopActive,
+      gutter,
     })
 
     context.loopFits.value = loopFits
@@ -233,7 +236,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       context.measuredSnaps.value = result.snaps
     if (context.snapInset.value !== inset)
       context.snapInset.value = inset
-    const styles = getItemSnapStyles(items.length, result.groups, options.align, loopActive ? baseUnrotated : base, viewportSize)
+    const styles = getItemSnapStyles(items.length, result.groups, options.align, loopActive ? baseUnrotated : base, viewportSize, gutter)
     if (JSON.stringify(styles) !== JSON.stringify(context.itemStyles.value))
       context.itemStyles.value = styles
 
