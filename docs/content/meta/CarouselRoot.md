@@ -115,7 +115,7 @@
   {
     'name': 'orientation',
     'description': '<p>The axis the slides are laid out and scroll along.</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false,
     'default': '\'horizontal\''
   },
@@ -246,7 +246,7 @@
 | `itemCount` | The number of slides. Only needed on the server, to render `snapCount`, the indicators, the enabled Previous/Next and the slide labels before hydration: the slides register once mounted, and their count wins from then on. | `number` | No | - |
 | `loop` | When `true`, the last slide is followed by the first one, and vice versa. Falls back to `false` when the slides are too few to wrap. | `boolean` | No | - |
 | `modelValue` | The controlled index of the current snap. Can be bound as `v-model`. | `number` | No | - |
-| `orientation` | The axis the slides are laid out and scroll along. | `"vertical" \| "horizontal"` | No | `"horizontal"` |
+| `orientation` | The axis the slides are laid out and scroll along. | `"horizontal" \| "vertical"` | No | `"horizontal"` |
 | `playing` | The controlled rotation state of `autoplay` or `autoScroll`. Can be bound as `v-model:playing`. | `boolean` | No | - |
 | `skipSnaps` | When `true`, a fast gesture can move past several snaps. When `false`, one gesture moves one snap. | `boolean` | No | - |
 | `slidesToScroll` | How many slides one navigation step moves. `'auto'` moves as many as fit in the viewport. | `number \| "auto"` | No | `1` |
