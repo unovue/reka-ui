@@ -93,12 +93,14 @@ export const [injectDateRangeFieldRootContext, provideDateRangeFieldRootContext]
 <script setup lang="ts">
 import { computed, mergeProps, toRefs, useAttrs, watch } from 'vue'
 import { createPendingFieldInput } from '@/Field/pendingFieldInput'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { isEqual } from '@/shared/compare'
 import { toRangeFormValue } from '@/shared/date'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useDateRangeField } from './useDateRangeField'
 
@@ -138,7 +140,7 @@ const { primitiveElement, currentElement: parentElement, expose } = usePrimitive
 // label/description wiring. The field's value is the range object, and a
 // required range needs both ends: the hidden input can't express that, so
 // `valueMissing` comes from `isFilled` instead of its `ValidityState`.
-const field = useFieldControl({
+const field = useFieldBinding({
   id: () => props.id,
   // The first segment (the group isn't itself focusable), so `FormRoot` can
   // move focus into the field on an invalid submit.
@@ -159,7 +161,7 @@ const resolvedRequired = () => field ? field.required(props.required) : props.re
 // a user edit stays one wherever focus goes next. Only in a Field.
 const pendingInput = field ? createPendingFieldInput<unknown>() : undefined
 
-const { root, context, modelValue, segments, isInvalid, segmentElements, setFocusedElement, focusFirstSegment } = useDateRangeField({
+const { root, context, modelValue, segments, isInvalid, segmentElements, setFocusedElement, focusFirstSegment, resetSegments, isControlled } = useDateRangeField({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   placeholder: () => props.placeholder,
@@ -217,10 +219,20 @@ function getRootAttrs() {
 
 provideDateRangeFieldRootContext(context)
 
+// A native reset of the owning form puts the value back to `defaultValue`, and
+// drops segments typed without completing a value: the model may not move
+// (it already holds the default), so the segments are put back here.
+function onFormReset(event: Event) {
+  resetControllableState(isControlled, event)
+  resetSegments()
+}
+
 defineExpose(mergeExpose(expose, {
   /** Records `el` as the focused segment for keyboard navigation. It does not move focus; call `el.focus()` for that. */
   setFocusedElement,
 }))
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -228,6 +240,7 @@ defineExpose(mergeExpose(expose, {
     :is="renderAs(as, asChild)"
     v-bind="getRootAttrs()"
     ref="primitiveElement"
+    @vue:mounted="bindFormReset"
   >
     <slot
       :model-value="modelValue"

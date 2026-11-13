@@ -64,7 +64,7 @@ function setFocusProxyRef(node: Element | ComponentPublicInstance | null) {
 <template>
   <component
     :is="renderAs(as, props.asChild)"
-    v-bind="mergeProps(COLLECTION_ITEM_ATTRS, getTriggerAttrs())"
+    v-bind="mergeProps(COLLECTION_ITEM_ATTRS, { type: as === 'button' ? 'button' : undefined }, getTriggerAttrs())"
     :ref="forwardRef"
   >
     <slot />

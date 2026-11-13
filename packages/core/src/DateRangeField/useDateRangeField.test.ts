@@ -165,6 +165,14 @@ describe('useDateRangeField', () => {
     })
   })
 
+  it('does not flag a single-day range when the following day is unavailable', () => {
+    withScope(() => {
+      const day = new Temporal.PlainDate(2024, 1, 20)
+      const api = useDateRangeField({ defaultValue: { start: day, end: day }, isDateUnavailable: (d: any) => d.day === 21, locale: 'en-US' })
+      expect(api.isInvalid.value).toBe(false)
+    })
+  })
+
   it('orders segments by locale and follows the hour cycle', async () => {
     const locale = ref('en-US')
     const api = withScope(() => useDateRangeField({ defaultValue: range, locale }))

@@ -1,7 +1,7 @@
 import { fireEvent, render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
-import { DrawerClose, DrawerContent, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from '.'
+import { DrawerClose, DrawerPopup, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from '.'
 
 function drawer(rootProps: Record<string, unknown> = {}, contentProps: Record<string, unknown> = {}) {
   return defineComponent({
@@ -10,7 +10,7 @@ function drawer(rootProps: Record<string, unknown> = {}, contentProps: Record<st
         h('button', { 'data-testid': 'outside' }, 'Outside'),
         h(DrawerRoot, rootProps, () => [
           h(DrawerTrigger, null, () => 'Open'),
-          h(DrawerPortal, null, () => h(DrawerContent, { 'aria-describedby': undefined, ...contentProps }, () => [
+          h(DrawerPortal, null, () => h(DrawerPopup, { 'aria-describedby': undefined, ...contentProps }, () => [
             h(DrawerTitle, null, () => 'Title'),
             h(DrawerClose, null, () => 'Close'),
           ])),
@@ -123,7 +123,7 @@ describe('drawerContent forceMount focus return (#2789)', () => {
           h('input', { 'data-testid': 'search', 'aria-label': 'search' }),
           h(DrawerRoot, { 'open': this.open, 'modal': false, 'onUpdate:open': (v: boolean) => { this.open = v } }, () => [
             h(DrawerTrigger, null, () => 'Open'),
-            h(DrawerPortal, null, () => h(DrawerContent, { 'forceMount': true, 'aria-describedby': undefined }, () => h(DrawerTitle, null, () => 'Title'))),
+            h(DrawerPortal, null, () => h(DrawerPopup, { 'forceMount': true, 'aria-describedby': undefined }, () => h(DrawerTitle, null, () => 'Title'))),
           ]),
         ])
       },

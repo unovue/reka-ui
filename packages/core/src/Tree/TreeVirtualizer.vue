@@ -1,5 +1,7 @@
 <script lang="ts">
-export interface TreeVirtualizerProps {
+import type { PrimitiveHTMLAttributes } from '@/Primitive'
+
+export interface TreeVirtualizerProps extends /* @vue-ignore */ PrimitiveHTMLAttributes {
   /** Number of items rendered outside the visible area */
   overscan?: number
   /** Estimated size (in px) of each item */

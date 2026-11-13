@@ -3,7 +3,7 @@ import type { ChangeEventDetails } from '@/shared'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { injectPopperRootContext } from '@/Popper'
 import { TooltipContent, TooltipPortal, TooltipProvider, TooltipRoot, TooltipTrigger } from '.'
 import Tooltip from './stories/_Tooltip.vue'
@@ -645,5 +645,65 @@ describe('given stacked tooltips whose content covers another trigger', () => {
 
     await expect(pointerMove(content)).resolves.not.toThrow()
     expect(getContent()).not.toBeNull()
+  })
+})
+
+describe('given a tooltip trigger inside a form', () => {
+  function mountInForm(triggerProps: Record<string, unknown> = {}) {
+    const onSubmit = vi.fn((event: Event) => event.preventDefault())
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h('form', { onSubmit }, [
+          h(TooltipProvider, null, () => h(TooltipRoot, null, () => [
+            h(TooltipTrigger, { 'data-testid': 'trigger', ...triggerProps }, () => 'trigger'),
+          ])),
+        ])
+      },
+    }), { attachTo: document.body })
+    return { onSubmit, trigger: wrapper.get('[data-testid="trigger"]') }
+  }
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should not submit the form when the trigger is clicked', async () => {
+    const { trigger, onSubmit } = mountInForm()
+
+    expect(trigger.attributes('type')).toBe('button')
+    await trigger.trigger('click')
+
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('should keep an explicit type', async () => {
+    const { trigger, onSubmit } = mountInForm({ type: 'submit' })
+
+    expect(trigger.attributes('type')).toBe('submit')
+    await trigger.trigger('click')
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+  })
+
+  it('should keep the type of an asChild button', () => {
+    const wrapper = mount(() => h(TooltipProvider, null, () => h(TooltipRoot, null, () => [
+      h(TooltipTrigger, { asChild: true }, () => h('button', { type: 'submit' }, 'save')),
+    ])), { attachTo: document.body })
+
+    expect(wrapper.get('button').attributes('type')).toBe('submit')
+  })
+
+  it('should not add a type to an asChild child', () => {
+    const wrapper = mount(() => h(TooltipProvider, null, () => h(TooltipRoot, null, () => [
+      h(TooltipTrigger, { asChild: true }, () => h('input', { 'aria-label': 'name' })),
+    ])), { attachTo: document.body })
+
+    expect(wrapper.get('input').attributes('type')).toBeUndefined()
+  })
+
+  it('should not set a type when not rendered as a button', () => {
+    const { trigger } = mountInForm({ as: 'span' })
+
+    expect(trigger.attributes('type')).toBeUndefined()
   })
 })

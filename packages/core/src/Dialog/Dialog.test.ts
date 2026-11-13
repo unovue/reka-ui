@@ -312,10 +312,13 @@ describe('given a Dialog with forceMount', () => {
   afterEach(() => {
     wrapper?.unmount()
     resetBodyScrollLock()
+    vi.useRealTimers()
   })
 
   it('should emit openAutoFocus on every open, not only the first', async () => {
     document.body.innerHTML = ''
+    // The mount auto-focus and the scroll lock are deferred to timers: drive them.
+    vi.useFakeTimers()
     const onOpenAutoFocus = vi.fn()
     wrapper = mount(ForceMountDialog, { attachTo: document.body, props: { onOpenAutoFocus } })
     const trigger = wrapper.find('button')
@@ -323,10 +326,10 @@ describe('given a Dialog with forceMount', () => {
     // Force-mounted but closed: the dialog must not grab focus or lock the body
     // on mount. `FocusScope` dispatches its mount auto-focus a few ticks in, so
     // a bare `nextTick()` here would pass even when it does fire.
-    await sleep(100)
+    await vi.advanceTimersByTimeAsync(100)
     expect(onOpenAutoFocus).toHaveBeenCalledTimes(0)
     expect(document.activeElement).toBe(document.body)
-    await sleep(10)
+    await vi.advanceTimersByTimeAsync(10)
     expect(document.body.style.overflowY).not.toBe('hidden')
 
     await fireEvent.click(trigger.element)

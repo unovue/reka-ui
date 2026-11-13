@@ -22,13 +22,13 @@ useDrawerVirtualKeyboard({
 })
 
 if (process.env.NODE_ENV !== 'production') {
-  // `DrawerContent` registers on mount, after the `DrawerViewport` wrapping it
+  // `DrawerPopup` registers on mount, after the `DrawerViewport` wrapping it
   // (if any) has registered in the same flush. Checking on `open` instead would
   // run before a portal that renders its children only after its own mount.
   watch(rootContext.contentElement, (content) => {
     if (content && !rootContext.viewportElement.value) {
       console.warn(
-        `Warning: \`DrawerVirtualKeyboardProvider\` requires a \`DrawerViewport\` around \`DrawerContent\`.`,
+        `Warning: \`DrawerVirtualKeyboardProvider\` requires a \`DrawerViewport\` around \`DrawerPopup\`.`,
       )
     }
   }, { immediate: true, flush: 'post' })

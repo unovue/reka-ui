@@ -4,9 +4,9 @@ import type { ToastProviderContext, ToastStackEntry, ToastStackState } from './T
 import type { ToastStore } from './useToastStore'
 import type { SwipeDirection, SwipeEvent } from './utils'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
-import { onKeyStroke, useRafFn } from '@vueuse/core'
+import { onKeyStroke, useEventListener, useRafFn } from '@vueuse/core'
 import { isClient } from '@vueuse/shared'
-import { computed, getCurrentScope, onMounted, onScopeDispose, ref, shallowReactive, toValue, watch, watchEffect } from 'vue'
+import { computed, getCurrentScope, onMounted, onScopeDispose, ref, shallowReactive, shallowRef, toValue, watch, watchEffect } from 'vue'
 import { focusFirst, getTabbableCandidates } from '@/FocusScope/utils'
 import { createPartSurface, disclosureState, getActiveElement, useControllableState } from '@/shared'
 import { TOAST_MANAGER_SUBSCRIBE } from './createToastManager'
@@ -456,8 +456,15 @@ export interface UseToastSwipeOptions {
 }
 
 export interface UseToastSwipeReturn {
-  /** `onPointerdown` / `onPointermove` / `onPointerup` + `user-select` / `touch-action`. */
+  /** `onPointerdown` / `onPointermove` / `onPointerup` / `onPointercancel` + `touch-action`. */
   swipe: PartSurface<Record<string, never>>
+}
+
+// Text stays selectable, except during a swipe: from its start until the
+// pointer is released, so dragging the toast doesn't select its text. WebKit
+// honours the prefixed property only.
+function setSwipeSelection(target: HTMLElement, swiping: boolean) {
+  target.style.userSelect = target.style.webkitUserSelect = swiping ? 'none' : ''
 }
 
 function setSwipeState(target: HTMLElement, state: 'start' | 'move' | 'cancel' | 'end', delta?: { x: number, y: number }) {
@@ -485,7 +492,8 @@ function setSwipeState(target: HTMLElement, state: 'start' | 'move' | 'cancel' |
  * `swipeDirection` the toast gets `data-swipe="move"` and the
  * `--reka-toast-swipe-move-x` / `-y` variables; on release past
  * `swipeThreshold` it gets `data-swipe="end"` with `--reka-toast-swipe-end-x` /
- * `-y` and closes (reason `swipe`), otherwise `data-swipe="cancel"`.
+ * `-y` and closes (reason `swipe`), otherwise `data-swipe="cancel"`. Text stays
+ * selectable; `user-select: none` is set only while a swipe is in progress.
  *
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle pure
@@ -502,6 +510,17 @@ export function useToastSwipe(options: UseToastSwipeOptions): UseToastSwipeRetur
   }
 
   function onPointerdown(event: PointerEvent) {
+    // A swipe whose release never reached the toast (its captured child was
+    // removed): snap it back and make the text selectable before this press.
+    const delta = swipeDelta
+    if (delta) {
+      swipeDelta = null
+      pointerStart = null
+      const toast = event.currentTarget as HTMLElement
+      setSwipeSelection(toast, false)
+      if (!dispatch(TOAST_SWIPE_CANCEL, 'swipeCancel', { originalEvent: event, delta }).defaultPrevented)
+        setSwipeState(toast, 'cancel')
+    }
     // `@pointerdown.left`
     if (event.button !== 0 || disabled.value)
       return
@@ -535,6 +554,7 @@ export function useToastSwipe(options: UseToastSwipeOptions): UseToastSwipeRetur
       swipeDelta = delta
       if (!dispatch(TOAST_SWIPE_START, 'swipeStart', eventDetail).defaultPrevented)
         setSwipeState(target, 'start')
+      setSwipeSelection(target, true)
       ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
     }
     else if (Math.abs(x) > moveStartBuffer || Math.abs(y) > moveStartBuffer) {
@@ -544,10 +564,9 @@ export function useToastSwipe(options: UseToastSwipeOptions): UseToastSwipeRetur
     }
   }
 
+  // Also the `pointercancel` handler. A cancelled pointer, or a swipe whose gesture was
+  // disabled mid-way, snaps back instead of closing.
   function onPointerup(event: PointerEvent) {
-    if (disabled.value)
-      return
-
     const delta = swipeDelta
     const target = event.target as HTMLElement
     if (target.hasPointerCapture(event.pointerId)) {
@@ -557,9 +576,11 @@ export function useToastSwipe(options: UseToastSwipeOptions): UseToastSwipeRetur
     pointerStart = null
     if (delta) {
       const toast = event.currentTarget as HTMLElement
+      setSwipeSelection(toast, false)
       const eventDetail = { originalEvent: event, delta }
+      const released = event.type === 'pointerup' && !disabled.value
       if (
-        isDeltaInDirection(delta, toValue(options.swipeDirection), toValue(options.swipeThreshold))
+        released && isDeltaInDirection(delta, toValue(options.swipeDirection), toValue(options.swipeThreshold))
       ) {
         if (!dispatch(TOAST_SWIPE_END, 'swipeEnd', eventDetail).defaultPrevented) {
           setSwipeState(toast, 'end', delta)
@@ -574,19 +595,22 @@ export function useToastSwipe(options: UseToastSwipeOptions): UseToastSwipeRetur
       }
       // Prevent click event from triggering on items within the toast when
       // pointer up is part of a swipe gesture
-      toast?.addEventListener('click', event => event.preventDefault(), {
-        once: true,
-      })
+      if (event.type === 'pointerup') {
+        toast?.addEventListener('click', event => event.preventDefault(), {
+          once: true,
+        })
+      }
     }
   }
 
   return {
     swipe: createPartSurface<Record<string, never>>(
       () => ({
-        style: disabled.value ? undefined : { userSelect: 'none', touchAction: 'none' },
+        style: disabled.value ? undefined : { touchAction: 'none' },
         onPointerdown,
         onPointermove,
         onPointerup,
+        onPointercancel: onPointerup,
       }),
       () => ({}),
     ),
@@ -696,8 +720,21 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
     return typeof value === 'string' ? value.replace('{hotkey}', hotkeyMessage) : value(hotkeyMessage)
   })
 
+  // The element toasts teleport into and the pause listeners live on. It follows the
+  // rendered element when it is replaced (an `asChild` child swapped with `v-if`, or a
+  // changed `as`), but keeps the last one while an `asChild` slot renders nothing, so
+  // toasts always have an element to teleport into.
+  const viewportElement = shallowRef<HTMLElement>()
+  watch(currentElement, (element) => {
+    if (element)
+      viewportElement.value = element
+    // An emptied `asChild` slot takes any hover or focus inside it along; keep a window-blur pause.
+    else if (viewportElement.value && document.hasFocus())
+      releasePause(viewportElement.value)
+  }, { immediate: true, flush: 'post' })
+
   onKeyStroke(hotkey, () => {
-    currentElement.value?.focus()
+    viewportElement.value?.focus()
   })
 
   onMounted(() => {
@@ -707,6 +744,41 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
   // Collapse only once closing toasts have finished animating, so the stack does not
   // shift under the pointer while a toast is dismissed.
   const pendingPointerLeave = ref(false)
+
+  function releasePause(viewport: HTMLElement | undefined) {
+    if (providerContext.isClosePausedRef.value) {
+      viewport?.dispatchEvent(new CustomEvent(VIEWPORT_RESUME))
+      providerContext.isClosePausedRef.value = false
+    }
+  }
+
+  // Releases a window-blur pause, including one left over after the last toast closed,
+  // which would otherwise keep later toasts from ever starting their timers.
+  useEventListener('focus', () => releasePause(viewportElement.value))
+
+  // Toasts teleport into and listen on `providerContext.viewport`, so keep it on the
+  // current element when the element is replaced after mount.
+  watch(viewportElement, (element) => {
+    const previous = providerContext.viewport.value
+    if (!element || element === previous)
+      return
+    // An `asChild` viewport that mounted empty publishes its first element here.
+    if (!previous) {
+      providerContext.onViewportChange(element)
+      return
+    }
+
+    // The pause listeners on the old element are gone, and focus or hover inside it went
+    // with it, so release its pause while the toasts still listen there. A window-blur
+    // pause is kept: the window `focus` listener on the new element releases it.
+    if (document.hasFocus())
+      releasePause(previous)
+    providerContext.focused.value = element.contains(getActiveElement())
+    // The old element took its `pointerleave` with it. Collapse as a leave would, and a
+    // `pointermove` on the new element expands the stack again.
+    pendingPointerLeave.value = true
+    providerContext.onViewportChange(element)
+  }, { flush: 'post' })
   watch([pendingPointerLeave, providerContext.closingCount], ([pending, closingCount]) => {
     if (pending && closingCount === 0) {
       providerContext.hovering.value = false
@@ -736,7 +808,7 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
   }
 
   watchEffect((cleanupFn) => {
-    const viewport = currentElement.value
+    const viewport = viewportElement.value
     if (hasToasts.value && viewport) {
       const handlePause = () => {
         if (!providerContext.isClosePausedRef.value) {
@@ -746,13 +818,7 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
         }
       }
 
-      const handleResume = () => {
-        if (providerContext.isClosePausedRef.value) {
-          const resumeEvent = new CustomEvent(VIEWPORT_RESUME)
-          viewport.dispatchEvent(resumeEvent)
-          providerContext.isClosePausedRef.value = false
-        }
-      }
+      const handleResume = () => releasePause(viewport)
 
       const handleFocusOutResume = (event: FocusEvent) => {
         const isFocusMovingOutside = !viewport.contains(event.relatedTarget as HTMLElement)
@@ -822,7 +888,6 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
       viewport.addEventListener('pointerleave', handlePointerLeaveResume)
       viewport.addEventListener('keydown', handleKeyDown)
       window.addEventListener('blur', handlePause)
-      window.addEventListener('focus', handleResume)
 
       cleanupFn(() => {
         viewport.removeEventListener('focusin', handlePause)
@@ -833,7 +898,11 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
         viewport.removeEventListener('pointerleave', handlePointerLeaveResume)
         viewport.removeEventListener('keydown', handleKeyDown)
         window.removeEventListener('blur', handlePause)
-        window.removeEventListener('focus', handleResume)
+        // The listeners that would release a hover or focus pause are gone (the last toast
+        // closed, or the viewport was replaced), so release it here. A window-blur pause
+        // is kept until the window `focus` listener above releases it.
+        if (document.hasFocus())
+          releasePause(viewport)
       })
     }
   })

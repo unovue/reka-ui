@@ -5,10 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 
 import { axe } from 'vitest-axe'
 import { defineComponent, nextTick } from 'vue'
 import {
+  DrawerBackdrop,
   DrawerClose,
-  DrawerContent,
   DrawerDescription,
-  DrawerOverlay,
+  DrawerPopup,
   DrawerPortal,
   DrawerRoot,
   DrawerTitle,
@@ -26,8 +26,8 @@ const DrawerTest = defineComponent({
     DrawerRoot,
     DrawerTrigger,
     DrawerPortal,
-    DrawerOverlay,
-    DrawerContent,
+    DrawerBackdrop,
+    DrawerPopup,
     DrawerTitle,
     DrawerDescription,
     DrawerClose,
@@ -36,26 +36,26 @@ const DrawerTest = defineComponent({
     <DrawerRoot>
       <DrawerTrigger>${OPEN_TEXT}</DrawerTrigger>
       <DrawerPortal>
-        <DrawerOverlay />
-        <DrawerContent>
+        <DrawerBackdrop />
+        <DrawerPopup>
           <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
           <DrawerDescription>Description text</DrawerDescription>
           <DrawerClose>${CLOSE_TEXT}</DrawerClose>
-        </DrawerContent>
+        </DrawerPopup>
       </DrawerPortal>
     </DrawerRoot>
   `,
 })
 
 const NoTitleDrawerTest = defineComponent({
-  components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerContent, DrawerClose },
+  components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerPopup, DrawerClose },
   template: `
     <DrawerRoot>
       <DrawerTrigger>${OPEN_TEXT}</DrawerTrigger>
       <DrawerPortal>
-        <DrawerContent>
+        <DrawerPopup>
           <DrawerClose>${CLOSE_TEXT}</DrawerClose>
-        </DrawerContent>
+        </DrawerPopup>
       </DrawerPortal>
     </DrawerRoot>
   `,
@@ -159,7 +159,7 @@ describe('given a default Drawer', () => {
 
 describe('update:open change event details', () => {
   const DrawerWithReason = defineComponent({
-    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerContent, DrawerTitle, DrawerClose },
+    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerPopup, DrawerTitle, DrawerClose },
     props: {
       onOpenChange: { type: Function, required: true },
       modal: { type: [Boolean, String], default: true },
@@ -168,10 +168,10 @@ describe('update:open change event details', () => {
       <DrawerRoot @update:open="onOpenChange" :modal="modal">
         <DrawerTrigger>Open</DrawerTrigger>
         <DrawerPortal>
-          <DrawerContent>
+          <DrawerPopup>
             <DrawerTitle>T</DrawerTitle>
             <DrawerClose>Close</DrawerClose>
-          </DrawerContent>
+          </DrawerPopup>
         </DrawerPortal>
       </DrawerRoot>
     `,
@@ -227,7 +227,7 @@ describe('update:open change event details', () => {
 
 describe('given a Drawer with focus props', () => {
   const DrawerWithFocusProps = defineComponent({
-    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerContent, DrawerTitle, DrawerClose },
+    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerPopup, DrawerTitle, DrawerClose },
     props: {
       initialFocus: { type: [Boolean, Object], default: undefined },
       finalFocus: { type: [Boolean, Object], default: undefined },
@@ -238,11 +238,11 @@ describe('given a Drawer with focus props', () => {
         <DrawerRoot>
           <DrawerTrigger>Open</DrawerTrigger>
           <DrawerPortal>
-            <DrawerContent :initial-focus="initialFocus" :final-focus="finalFocus">
+            <DrawerPopup :initial-focus="initialFocus" :final-focus="finalFocus">
               <DrawerTitle>T</DrawerTitle>
               <input data-testid="field">
               <DrawerClose>Close</DrawerClose>
-            </DrawerContent>
+            </DrawerPopup>
           </DrawerPortal>
         </DrawerRoot>
       </div>
@@ -250,16 +250,16 @@ describe('given a Drawer with focus props', () => {
   })
 
   const DrawerWithoutFocusProps = defineComponent({
-    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerContent, DrawerTitle, DrawerClose },
+    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerPopup, DrawerTitle, DrawerClose },
     template: `
       <DrawerRoot>
         <DrawerTrigger>Open</DrawerTrigger>
         <DrawerPortal>
-          <DrawerContent>
+          <DrawerPopup>
             <DrawerTitle>T</DrawerTitle>
             <input data-testid="field">
             <DrawerClose>Close</DrawerClose>
-          </DrawerContent>
+          </DrawerPopup>
         </DrawerPortal>
       </DrawerRoot>
     `,
@@ -389,7 +389,7 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
       DrawerVirtualKeyboardProvider,
       DrawerTrigger,
       DrawerPortal,
-      DrawerContent,
+      DrawerPopup,
       DrawerViewport,
       DrawerTitle,
     },
@@ -399,12 +399,12 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
           <DrawerTrigger>${OPEN_TEXT}</DrawerTrigger>
           <DrawerPortal>
             <DrawerViewport data-testid="viewport">
-              <DrawerContent>
+              <DrawerPopup>
                 <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
                 <div data-testid="scroll" style="overflow-y: auto">
                   <input data-testid="field" type="text">
                 </div>
-              </DrawerContent>
+              </DrawerPopup>
             </DrawerViewport>
           </DrawerPortal>
         </DrawerVirtualKeyboardProvider>
@@ -466,15 +466,15 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
   it('warns when the drawer has no DrawerViewport to measure against', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const NoViewport = defineComponent({
-      components: { DrawerRoot, DrawerVirtualKeyboardProvider, DrawerTrigger, DrawerPortal, DrawerContent, DrawerTitle },
+      components: { DrawerRoot, DrawerVirtualKeyboardProvider, DrawerTrigger, DrawerPortal, DrawerPopup, DrawerTitle },
       template: `
         <DrawerRoot>
           <DrawerVirtualKeyboardProvider>
             <DrawerTrigger>${OPEN_TEXT}</DrawerTrigger>
             <DrawerPortal>
-              <DrawerContent>
+              <DrawerPopup>
                 <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
-              </DrawerContent>
+              </DrawerPopup>
             </DrawerPortal>
           </DrawerVirtualKeyboardProvider>
         </DrawerRoot>
@@ -493,15 +493,15 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
   it('does not warn when a drawer with a DrawerViewport starts open', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const OpenOnMount = defineComponent({
-      components: { DrawerRoot, DrawerVirtualKeyboardProvider, DrawerPortal, DrawerContent, DrawerViewport, DrawerTitle },
+      components: { DrawerRoot, DrawerVirtualKeyboardProvider, DrawerPortal, DrawerPopup, DrawerViewport, DrawerTitle },
       template: `
         <DrawerRoot default-open>
           <DrawerVirtualKeyboardProvider>
             <DrawerPortal>
               <DrawerViewport>
-                <DrawerContent>
+                <DrawerPopup>
                   <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
-                </DrawerContent>
+                </DrawerPopup>
               </DrawerViewport>
             </DrawerPortal>
           </DrawerVirtualKeyboardProvider>
@@ -520,7 +520,7 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
   it('forgets the viewport once it unmounts', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const ToggleableViewport = defineComponent({
-      components: { DrawerRoot, DrawerVirtualKeyboardProvider, DrawerTrigger, DrawerPortal, DrawerContent, DrawerViewport, DrawerTitle },
+      components: { DrawerRoot, DrawerVirtualKeyboardProvider, DrawerTrigger, DrawerPortal, DrawerPopup, DrawerViewport, DrawerTitle },
       props: { withViewport: { type: Boolean, default: true } },
       template: `
         <DrawerRoot>
@@ -528,13 +528,13 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
             <DrawerTrigger>${OPEN_TEXT}</DrawerTrigger>
             <DrawerPortal>
               <DrawerViewport v-if="withViewport">
-                <DrawerContent>
+                <DrawerPopup>
                   <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
-                </DrawerContent>
+                </DrawerPopup>
               </DrawerViewport>
-              <DrawerContent v-else>
+              <DrawerPopup v-else>
                 <DrawerTitle>${TITLE_TEXT}</DrawerTitle>
-              </DrawerContent>
+              </DrawerPopup>
             </DrawerPortal>
           </DrawerVirtualKeyboardProvider>
         </DrawerRoot>
@@ -565,7 +565,7 @@ describe('drawer with DrawerVirtualKeyboardProvider', () => {
 // a change before `v-model:open` is written; `update:open` reports it after.
 describe('beforeUpdate:open with v-model:open', () => {
   const VModelDrawer = defineComponent({
-    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerContent, DrawerTitle },
+    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerPopup, DrawerTitle },
     props: {
       onBefore: { type: Function, default: undefined },
       onAfter: { type: Function, default: undefined },
@@ -575,7 +575,7 @@ describe('beforeUpdate:open with v-model:open', () => {
       <DrawerRoot v-model:open="open" @before-update:open="(v, d) => onBefore?.(v, d)" @update:open="(v, d) => onAfter?.(v, d)">
         <DrawerTrigger>Open</DrawerTrigger>
         <DrawerPortal>
-          <DrawerContent aria-describedby="x"><DrawerTitle>T</DrawerTitle></DrawerContent>
+          <DrawerPopup aria-describedby="x"><DrawerTitle>T</DrawerTitle></DrawerPopup>
         </DrawerPortal>
       </DrawerRoot>
     `,
@@ -605,5 +605,91 @@ describe('beforeUpdate:open with v-model:open', () => {
     expect(getByRole('dialog')).toBeTruthy()
     expect(onAfter).toHaveBeenCalledWith(true, expect.objectContaining({ reason: 'trigger-press', isCanceled: false }))
     unmount()
+  })
+})
+
+describe('given nested Drawers', () => {
+  const PARENT_HEIGHT = 400
+  const NESTED_HEIGHT = 240
+
+  class ResizeObserverStub {
+    constructor(private cb: ResizeObserverCallback) {}
+    observe(target: Element) {
+      queueMicrotask(() => this.cb([{ target, contentRect: { height: (target as HTMLElement).dataset.testid === 'child' ? NESTED_HEIGHT : PARENT_HEIGHT } } as unknown as ResizeObserverEntry], this as unknown as ResizeObserver))
+    }
+
+    unobserve() {}
+    disconnect() {}
+  }
+
+  const NestedDrawerTest = defineComponent({
+    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerPopup, DrawerTitle, DrawerClose },
+    template: `
+      <DrawerRoot>
+        <DrawerTrigger>Open parent</DrawerTrigger>
+        <DrawerPortal>
+          <DrawerPopup data-testid="parent" :aria-describedby="undefined">
+            <DrawerTitle>Parent</DrawerTitle>
+            <DrawerClose>Close parent</DrawerClose>
+            <DrawerRoot>
+              <DrawerTrigger>Open child</DrawerTrigger>
+              <DrawerPortal>
+                <DrawerPopup data-testid="child" :aria-describedby="undefined">
+                  <DrawerTitle>Child</DrawerTitle>
+                  <DrawerClose>Close child</DrawerClose>
+                </DrawerPopup>
+              </DrawerPortal>
+            </DrawerRoot>
+          </DrawerPopup>
+        </DrawerPortal>
+      </DrawerRoot>
+    `,
+  })
+
+  const frontmostHeight = (element: HTMLElement) => element.style.getPropertyValue('--drawer-frontmost-height')
+  const settle = async () => {
+    await new Promise(resolve => setTimeout(resolve))
+    await nextTick()
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.stubGlobal('ResizeObserver', ResizeObserverStub)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('exposes the nested drawer height as `--drawer-frontmost-height` on the parent', async () => {
+    const { getByText, getByTestId } = render(NestedDrawerTest)
+    await fireEvent.click(getByText('Open parent'))
+    await fireEvent.click(await findByText(document.body, 'Open child'))
+    await settle()
+    expect(frontmostHeight(getByTestId('parent'))).toBe(`${NESTED_HEIGHT}px`)
+  })
+
+  it('falls back to its own height, never `0px`, once the nested drawer closes', async () => {
+    const { getByText, getByTestId } = render(NestedDrawerTest)
+    await fireEvent.click(getByText('Open parent'))
+    await fireEvent.click(await findByText(document.body, 'Open child'))
+    await settle()
+
+    await fireEvent.click(getByText('Close child'))
+    await nextTick()
+    expect(frontmostHeight(getByTestId('parent'))).toBe(`${PARENT_HEIGHT}px`)
+  })
+
+  it('exposes its own height while no nested drawer is open, also after reopening', async () => {
+    const { getByText, getByTestId } = render(NestedDrawerTest)
+    await fireEvent.click(getByText('Open parent'))
+    await settle()
+    expect(frontmostHeight(getByTestId('parent'))).toBe(`${PARENT_HEIGHT}px`)
+
+    await fireEvent.click(getByText('Close parent'))
+    await settle()
+    await fireEvent.click(getByText('Open parent'))
+    await nextTick()
+    expect(frontmostHeight(getByTestId('parent'))).toBe(`${PARENT_HEIGHT}px`)
   })
 })

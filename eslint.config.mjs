@@ -57,6 +57,20 @@ export default antfu(
     },
   },
   {
+    // A family importing from the root barrel makes the module graph circular
+    // (barrel → family → barrel). Import from the owning family or `@/shared`.
+    files: ['packages/core/src/*/*.{ts,vue}'],
+    ignores: ['**/*.test.ts', '**/*.test-d.ts', '**/*.story.vue', '**/story/**', '**/stories/**'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [
+          { name: '..', message: 'Import from the owning family (`@/<Family>`) or `@/shared`, not the root barrel.' },
+          { name: '@/index', message: 'Import from the owning family (`@/<Family>`) or `@/shared`, not the root barrel.' },
+        ],
+      }],
+    },
+  },
+  {
     files: ['**/package.json'],
     rules: {
       // Wrecks the order of `files` otherwise, and breaks the exclusion patterns

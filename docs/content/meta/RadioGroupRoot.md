@@ -56,7 +56,7 @@
   {
     'name': 'orientation',
     'description': '<p>The orientation of the component.</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false
   },
   {
@@ -104,7 +104,7 @@
 | `loop` | When `true`, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | `true` |
 | `modelValue` | The controlled value of the radio item to check. Can be binded as `v-model`. | `AcceptableValue` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `orientation` | The orientation of the component. | `"vertical" \| "horizontal"` | No | - |
+| `orientation` | The orientation of the component. | `"horizontal" \| "vertical"` | No | - |
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | `false` |
 
 **Events**

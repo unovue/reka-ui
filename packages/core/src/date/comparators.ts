@@ -265,18 +265,14 @@ export function areAllDaysBetweenValid(
     return true
 
   let dCurrent = start.add({ days: 1 })
-  if ((isDisabled?.(dCurrent, 'day') || isUnavailable?.(dCurrent, 'day'))
-    && !isHighlightable?.(dCurrent, 'day')) {
-    return false
-  }
-
-  const dEnd = end
-  while (compareDateValues(dCurrent, dEnd) < 0) {
-    dCurrent = dCurrent.add({ days: 1 })
+  // Every day after `start`, up to and including `end`. Nothing past `end`:
+  // a single-day range has no day to check.
+  while (compareDateValues(dCurrent, end) <= 0) {
     if ((isDisabled?.(dCurrent, 'day') || isUnavailable?.(dCurrent, 'day'))
       && !isHighlightable?.(dCurrent, 'day')) {
       return false
     }
+    dCurrent = dCurrent.add({ days: 1 })
   }
   return true
 }

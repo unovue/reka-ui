@@ -49,12 +49,13 @@ export const [injectCheckboxRootContext, provideCheckboxRootContext]
 </script>
 
 <script setup lang="ts" generic="TrueValue = true, FalseValue = false">
-import { computed, mergeProps, onBeforeUnmount, onMounted, useAttrs, watch } from 'vue'
-import { isProgrammaticChange } from '@/Field/pendingFieldInput'
-import { claimFieldControl } from '@/Field/useFieldControl'
+import { computed, mergeProps, useAttrs, watch } from 'vue'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { isEqual } from '@/shared/compare'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useCheckbox } from './useCheckbox'
 
@@ -87,41 +88,40 @@ const checkboxGroupContext = injectCheckboxGroupRootContext(null)
 
 // Optional Field participation: `null` outside a `FieldRoot`, so every binding
 // below is inert when there is no Field. Also `null` inside another control of
-// the field (e.g. in a Combobox item), which owns it. In a group that is the
-// field's control, the checkbox reads the field but doesn't act as its control.
-const fieldContext = claimFieldControl() ?? checkboxGroupContext?.field ?? null
-
-// Checkboxes inside a `CheckboxGroupRoot` share one Field, so none of them
-// takes the field's id (it would be duplicated) or acts as its control.
-const participatesAsControl = computed(() => Boolean(fieldContext) && !checkboxGroupContext)
-const resolvedId = computed(() => props.id ?? (participatesAsControl.value ? fieldContext?.fieldId.value : undefined))
-const resolvedName = computed(() => fieldContext?.name.value ?? props.name)
-// `required` is a plain (non-optional-default) `Boolean` prop, so Vue casts
-// it to `false` rather than `undefined` when omitted — `props.required` can
-// never actually be `undefined`. Only fall back to the Field's `required`
-// when a Field is present, so standalone output (where this cast has always
-// applied) is untouched.
-const resolvedRequired = computed(() => (fieldContext ? (props.required || fieldContext.required.value) : props.required))
+// the field (e.g. in a Combobox item), which owns it. Checkboxes inside a
+// `CheckboxGroupRoot` share one Field, so none of them takes the field's id
+// (it would be duplicated) or acts as its control. In a group that is the
+// field's control (`groupField`), the checkbox only reads the field, and the
+// group reports focus, marking the field touched once focus leaves all of it.
+const field = useFieldBinding({
+  id: () => props.id,
+  element: () => currentElement.value as HTMLElement | undefined,
+  getValue: () => checkboxState.value,
+  required: () => props.required,
+  // A required checkbox must be checked.
+  isFilled: value => value === true,
+  participates: () => !checkboxGroupContext,
+  groupField: checkboxGroupContext?.field,
+})
+// Getters rather than computeds: cheap, and free for a standalone checkbox.
+const resolvedId = () => field ? field.id() : props.id
+const resolvedName = () => field ? field.name(props.name) : props.name
+const resolvedRequired = () => field ? field.required(props.required) : props.required
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
 // composable's `useControllableState` (`modelValue === undefined` → uncontrolled).
 // Group membership (checked state + press toggling, the group's `max`) lives
 // there too, keyed on the injected group context. `disabled` is the explicit
 // one (prop, group or Field): natively disabled and unfocusable.
-const { modelValue, checkedState: checkboxState, disabled, root, context } = useCheckbox<TrueValue | FalseValue>({
+const { modelValue, checkedState: checkboxState, disabled, root, context, isControlled } = useCheckbox<TrueValue | FalseValue>({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   emit: emits,
-  // A press is user input for the Field; a programmatic change
-  // (`isProgrammaticChange`) and a parent-driven one are reported through the
-  // `checkboxState` watcher below.
-  onUpdate: fieldContext
-    ? (value, details) => {
-        if (!isProgrammaticChange(details.reason) && participatesAsControl.value)
-          fieldContext.handleControlInput({ value: isEqual(value, props.trueValue) })
-      }
-    : undefined,
-  disabled: () => Boolean(props.disabled || fieldContext?.disabled.value),
+  // The Field hears its own commits by reason (`change`): user input, or, for
+  // a programmatic one (`setModelValue` and the like), only the watcher below,
+  // which also reports a parent-driven change.
+  onUpdate: field ? (value, details) => field.change(isEqual(value, props.trueValue), details) : undefined,
+  disabled: () => field ? field.disabled(props.disabled) : props.disabled,
   required: resolvedRequired,
   value: () => props.value,
   trueValue: () => props.trueValue as TrueValue,
@@ -133,12 +133,12 @@ const { modelValue, checkedState: checkboxState, disabled, root, context } = use
 // Both contexts are injected once, so outside a Field (or inside a group) the
 // watcher could never report anything: skip it rather than queue a no-op job
 // on every change.
-if (fieldContext && !checkboxGroupContext) {
-  watch(checkboxState, (state) => {
-    if (participatesAsControl.value)
-      fieldContext?.reportControlState({ filled: state === true })
-  })
-}
+if (field && !checkboxGroupContext)
+  watch(checkboxState, state => field.sync(state))
+
+// A native reset of the owning form puts the value back to `defaultValue`. A
+// checkbox in a group is reset by the group.
+const onFormReset = checkboxGroupContext ? undefined : (event: Event) => { resetControllableState(isControlled, event) }
 
 const isFormControl = useFormControl(currentElement)
 // The hidden form input is rendered as a sibling (not nested) of the interactive
@@ -151,66 +151,10 @@ const ariaLabel = computed(() => {
   // label lookup entirely — this matters when rendering many checkboxes at once.
   if (attrs['aria-label'])
     return undefined
-  return resolvedId.value && currentElement.value
-    ? (getRootNode(currentElement.value).querySelector(`[for="${resolvedId.value}"]`) as HTMLLabelElement)?.innerText
+  const id = resolvedId()
+  return id && currentElement.value
+    ? (getRootNode(currentElement.value).querySelector(`[for="${id}"]`) as HTMLLabelElement)?.innerText
     : undefined
-})
-
-// Field aria wiring, merged with (never overwriting) the consumer's values.
-// `attrs` isn't reactive, so this runs during render rather than in a
-// `computed`. A consumer-provided `aria-invalid` always wins — read it
-// explicitly, since this object is merged after `$attrs` and would otherwise
-// clobber it (even with an `undefined` value).
-function getFieldAriaAttrs() {
-  const mergeIds = (consumerValue: unknown, fieldValue: string | undefined) =>
-    [consumerValue as string | undefined, fieldValue].filter(Boolean).join(' ') || undefined
-  return {
-    'aria-labelledby': mergeIds(attrs['aria-labelledby'], participatesAsControl.value ? fieldContext?.labelId.value : undefined),
-    'aria-describedby': mergeIds(attrs['aria-describedby'], fieldContext?.describedBy.value),
-    'aria-invalid': attrs['aria-invalid'] ?? (fieldContext?.invalid.value || undefined),
-  }
-}
-
-// A group that is this Field's control reports focus for its checkboxes,
-// marking the field touched once focus leaves the whole group.
-const groupReportsFocus = Boolean(fieldContext) && checkboxGroupContext?.field === fieldContext
-
-// Only for a checkbox that reports focus without registering (one in a
-// `CheckboxGroupRoot`): a registered control's focus is cleared on unregister.
-let hasFocus = false
-function handleFocus() {
-  hasFocus = true
-  if (!groupReportsFocus)
-    fieldContext?.handleControlFocus()
-}
-function handleBlur() {
-  hasFocus = false
-  if (groupReportsFocus)
-    return
-  if (participatesAsControl.value)
-    fieldContext?.handleControlBlur()
-  else
-    fieldContext?.reportControlState({ focused: false, touched: true })
-}
-
-let unregisterControl: (() => void) | undefined
-onMounted(() => {
-  if (!participatesAsControl.value)
-    return
-  unregisterControl = fieldContext?.registerControl({
-    id: () => resolvedId.value,
-    element: () => currentElement.value as HTMLElement | undefined,
-    getValue: () => checkboxState.value,
-    required: () => props.required,
-    // A required checkbox must be checked.
-    isFilled: value => value === true,
-  })
-})
-onBeforeUnmount(() => {
-  unregisterControl?.()
-  // Not every browser fires `blur` for a removed element.
-  if (hasFocus && !participatesAsControl.value)
-    fieldContext?.reportControlState({ focused: false })
 })
 
 provideCheckboxRootContext(context)
@@ -223,23 +167,23 @@ const roving = checkboxGroupContext?.rovingFocus.value
   ? useRovingFocusItem({ element: currentElement, focusable: () => !disabled.value })
   : null
 
+// `attrs` isn't reactive, so the Field's wiring is read during render. Its aria
+// ids are merged with (never overwriting) the consumer's, and a consumer
+// `aria-invalid` wins: the binding reads it explicitly, since it merges after
+// `attrs` here.
 function renderAttrs() {
-  const own = mergeProps(
-    fieldContext?.dataAttributes.value ?? {},
-    attrs,
-    scopeIdAttrs,
-    getFieldAriaAttrs(),
-    root.attrs.value,
-    {
-      'id': resolvedId.value,
-      'type': props.as === 'button' ? 'button' : undefined,
-      'aria-label': attrs['aria-label'] || ariaLabel.value,
-      'onFocus': handleFocus,
-      'onBlur': handleBlur,
-    },
-  )
+  const own = {
+    'id': resolvedId(),
+    'type': props.as === 'button' ? 'button' : undefined,
+    'aria-label': attrs['aria-label'] || ariaLabel.value,
+    'onFocus': field?.onFocus,
+    'onBlur': field?.onBlur,
+  }
+  const merged = field
+    ? mergeProps(field.dataAttributes(), attrs, scopeIdAttrs, { ...field.ariaAttrs(attrs, disabled.value) }, root.attrs.value, own)
+    : mergeProps(attrs, scopeIdAttrs, root.attrs.value, own)
   // The roving bindings merge last, as the wrapper merged them over its attrs.
-  return roving ? mergeProps(own, roving.attrs()) : own
+  return roving ? mergeProps(merged, roving.attrs()) : merged
 }
 
 // Precedence is part of the v2 contract: the Field's data attributes, then
@@ -249,6 +193,8 @@ function renderAttrs() {
 // (a consumer `@click` observes the pre-toggle model). `mergeProps` keeps
 // exactly that order; the explicit bindings that follow it in the template win
 // over all of them, as they did before.
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -256,6 +202,7 @@ function renderAttrs() {
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
     v-bind="renderAttrs()"
+    @vue:mounted="bindFormReset"
   >
     <slot
       :model-value="modelValue"
@@ -264,13 +211,13 @@ function renderAttrs() {
   </component>
 
   <VisuallyHiddenInput
-    v-if="!checkboxGroupContext && resolvedName && isFormControl"
+    v-if="!checkboxGroupContext && resolvedName() && isFormControl"
     type="checkbox"
     :checked="!!checkboxState"
-    :name="resolvedName"
+    :name="resolvedName()!"
     :value="value"
     :disabled="disabled"
-    :required="resolvedRequired"
+    :required="resolvedRequired()"
     v-bind="scopeIdAttrs"
   />
 </template>

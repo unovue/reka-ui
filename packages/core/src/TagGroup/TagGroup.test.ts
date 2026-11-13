@@ -348,5 +348,64 @@ describe('tagGroup', () => {
     const grid = wrapper.get('[role="grid"]')
     expect(document.getElementById(grid.attributes('aria-labelledby')!)?.textContent).toBe('Frameworks')
     expect(document.getElementById(grid.attributes('aria-describedby')!)?.textContent).toBe('Your stack')
+    wrapper.unmount()
+  })
+
+  it('takes only its label, description and disabled state from a Field', async () => {
+    const wrapper = mount(defineComponent({
+      components: { FieldRoot, FieldLabel, TagGroupRoot, TagGroupItem },
+      props: { disabled: Boolean },
+      template: `
+        <FieldRoot name="stack" invalid required :disabled="disabled" data-testid="field">
+          <FieldLabel :native-label="false">Frameworks</FieldLabel>
+          <TagGroupRoot aria-labelledby="own" selection-mode="multiple">
+            <TagGroupItem value="Vue">Vue</TagGroupItem>
+          </TagGroupRoot>
+        </FieldRoot>
+      `,
+    }), { attachTo: document.body })
+    await nextTick()
+
+    const grid = wrapper.get('[role="grid"]')
+    const field = wrapper.get('[data-testid="field"]')
+    // The consumer's label id is kept, ahead of the field's.
+    expect(grid.attributes('aria-labelledby')).toBe(`own ${wrapper.get('[id^="reka-field-label"]').attributes('id')}`)
+    expect(grid.attributes('id')).toBeUndefined()
+    expect(grid.attributes('aria-invalid')).toBeUndefined()
+    expect(grid.attributes('aria-required')).toBeUndefined()
+    expect(grid.attributes('data-invalid')).toBeUndefined()
+
+    // Focus and selection are not reported to the field.
+    const row = wrapper.get('[role="row"]')
+    expect(row.attributes('aria-disabled')).toBeUndefined()
+    ;(row.element as HTMLElement).focus()
+    await nextTick()
+    expect(field.attributes('data-focused')).toBeUndefined()
+    await row.trigger('click')
+    expect(row.attributes('aria-selected')).toBe('true')
+    expect(field.attributes('data-dirty')).toBeUndefined()
+    expect(field.attributes('data-filled')).toBeUndefined()
+    ;(row.element as HTMLElement).blur()
+    await nextTick()
+    expect(field.attributes('data-touched')).toBeUndefined()
+
+    await wrapper.setProps({ disabled: true })
+    expect(row.attributes('aria-disabled')).toBe('true')
+    wrapper.unmount()
+  })
+
+  it('passes the consumer\'s aria ids through as they are outside a Field', () => {
+    const wrapper = mount(defineComponent({
+      components: { TagGroupRoot, TagGroupItem },
+      template: `
+        <TagGroupRoot aria-labelledby="" aria-describedby="hint">
+          <TagGroupItem value="Vue">Vue</TagGroupItem>
+        </TagGroupRoot>
+      `,
+    }))
+    const grid = wrapper.get('[role="grid"]')
+    expect(grid.attributes('aria-labelledby')).toBe('')
+    expect(grid.attributes('aria-describedby')).toBe('hint')
+    wrapper.unmount()
   })
 })

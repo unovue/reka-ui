@@ -189,6 +189,20 @@ describe('useHoverCard — timers', () => {
     expect(onUpdate).not.toHaveBeenCalled()
   })
 
+  it('onClose() replaces a pending close, so a re-entry cancels both', () => {
+    const onUpdate = vi.fn()
+    const h = useHoverCard({ defaultOpen: true, onUpdate })
+    // Trigger leave, then content leave before the first close fires: two
+    // onClose() calls in a row must leave ONE timer for onOpen() to cancel.
+    h.onClose('trigger-leave')
+    vi.advanceTimersByTime(100)
+    h.onClose('content-leave')
+    h.onOpen('content-hover')
+    vi.advanceTimersByTime(2000)
+    expect(h.open.value).toBe(true)
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+
   it('clears pending timers when the owning effect scope is disposed', () => {
     const onUpdate = vi.fn()
     const scope = effectScope()

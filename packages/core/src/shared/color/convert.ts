@@ -23,10 +23,10 @@ export function colorToString(color: Color, format: ColorFormat = 'hex'): string
  */
 export function colorToHex(color: Color): string {
   const rgb = color.space === 'rgb' ? color : convertToRgb(color)
-  const toHex = (n: number) => Math.round(n).toString(16).padStart(2, '0')
+  const toHex = (n: number) => Math.min(255, Math.max(0, Math.round(n))).toString(16).padStart(2, '0')
 
   if (rgb.alpha < 1) {
-    const alpha = Math.round(rgb.alpha * 255).toString(16).padStart(2, '0')
+    const alpha = toHex(rgb.alpha * 255)
     return `#${toHex(rgb.r)}${toHex(rgb.g)}${toHex(rgb.b)}${alpha}`
   }
 

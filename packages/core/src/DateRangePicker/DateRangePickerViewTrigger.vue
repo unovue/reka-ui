@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { RangeCalendarViewTriggerProps, RangeCalendarViewTriggerSlot } from '..'
-import { RangeCalendarViewTrigger } from '..'
+import type { RangeCalendarViewTriggerProps, RangeCalendarViewTriggerSlot } from '@/RangeCalendar'
+import { RangeCalendarViewTrigger } from '@/RangeCalendar'
 
 export interface DateRangePickerViewTriggerProps extends RangeCalendarViewTriggerProps {}
 </script>

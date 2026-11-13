@@ -24,7 +24,7 @@
   {
     'name': 'orientation',
     'description': '<p>The orientation of the scrollbar</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false,
     'default': '\'vertical\''
   }
@@ -40,6 +40,6 @@
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
-| `orientation` | The orientation of the scrollbar | `"vertical" \| "horizontal"` | No | `"vertical"` |
+| `orientation` | The orientation of the scrollbar | `"horizontal" \| "vertical"` | No | `"vertical"` |
 
 </llm-only>

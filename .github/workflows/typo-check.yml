@@ -17,4 +17,5 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Writes changes in the local checkout
-        uses: crate-ci/typos@master
+        # A fixed release, so a new typos dictionary cannot fail unrelated PRs.
+        uses: crate-ci/typos@v1.52.1

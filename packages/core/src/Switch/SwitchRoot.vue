@@ -45,8 +45,10 @@ export const [injectSwitchRootContext, provideSwitchRootContext]
 
 <script setup lang="ts" generic="TrueValue = true, FalseValue = false">
 import { computed, mergeProps, watch } from 'vue'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { renderAs } from '@/Primitive/renderAs'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useSwitch } from './useSwitch'
 
@@ -79,7 +81,7 @@ const isFormControl = useFormControl(currentElement)
 
 // Optional Field participation: `null` outside a `FieldRoot`, so every
 // binding below is inert without a Field.
-const field = useFieldControl({
+const field = useFieldBinding({
   id: () => props.id,
   element: () => currentElement.value as HTMLElement | undefined,
   getValue: () => checked.value,
@@ -99,7 +101,7 @@ const ariaLabel = computed(() => resolvedId() && currentElement.value ? (getRoot
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
 // composable's `useControllableState` (`modelValue === undefined` → uncontrolled).
-const { modelValue, checked, disabled, root, context } = useSwitch<TrueValue | FalseValue>({
+const { modelValue, checked, disabled, root, context, isControlled } = useSwitch<TrueValue | FalseValue>({
   modelValue: () => props.modelValue as TrueValue | FalseValue | undefined,
   defaultValue: props.defaultValue,
   emit,
@@ -115,6 +117,9 @@ const { modelValue, checked, disabled, root, context } = useSwitch<TrueValue | F
 })
 
 provideSwitchRootContext(context)
+
+// A native reset of the owning form puts the value back to `defaultValue`.
+function onFormReset(event: Event) { resetControllableState(isControlled, event) }
 
 if (field)
   watch(checked, value => field.sync(value))
@@ -142,6 +147,8 @@ function renderAttrs(attrs: Record<string, unknown>) {
     { ...field.ariaAttrs(attrs, disabled.value), onFocus: field.onFocus, onBlur: field.onBlur },
   ))
 }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -152,6 +159,7 @@ function renderAttrs(attrs: Record<string, unknown>) {
     :type="as === 'button' ? 'button' : undefined"
     :aria-label="$attrs['aria-label'] || ariaLabel"
     v-bind="renderAttrs($attrs)"
+    @vue:mounted="bindFormReset"
     @click="root.props.value.onClick"
     @keydown="root.props.value.onKeydown"
   >

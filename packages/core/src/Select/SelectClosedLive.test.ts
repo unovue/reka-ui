@@ -15,11 +15,18 @@ beforeAll(() => {
   globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} } as any
 })
 enableAutoUnmount(afterEach)
-beforeEach(() => { document.body.innerHTML = '' })
+beforeEach(() => {
+  document.body.innerHTML = ''
+  // The idle render and the 1 s typeahead reset are timers: drive them.
+  vi.useFakeTimers()
+})
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 async function settle() {
   await flushPromises()
-  await new Promise(r => setTimeout(r, 80))
+  await vi.advanceTimersByTimeAsync(80)
   await flushPromises()
 }
 const valueText = () => document.querySelector('[data-testid=value]')!.textContent
@@ -35,7 +42,7 @@ async function key(k: string) {
   trigger().dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }))
   await settle()
   // typeahead search buffer resets after 1 s
-  await new Promise(r => setTimeout(r, 1050))
+  await vi.advanceTimersByTimeAsync(1050)
 }
 
 interface Opt { value: string, text: string, disabled?: boolean, textValue?: string }
@@ -53,7 +60,7 @@ function make(opts: { list: () => Opt[], multiple?: boolean, model: any, name?: 
 
 const t = { en: { a: 'Apple', b: 'Banana', c: 'Cherry' }, fr: { a: 'Pomme', b: 'Banane', c: 'Cerise' } } as const
 
-describe('lean items stay live', { timeout: 20000 }, () => {
+describe('lean items stay live', () => {
   it('i18n single, value set: SelectValue + native + typeahead follow the locale', async () => {
     const locale = ref<'en' | 'fr'>('en')
     const model = ref('a')
@@ -100,7 +107,7 @@ describe('lean items stay live', { timeout: 20000 }, () => {
     const model = ref<string[]>([])
     make({ list: () => (['a', 'b'] as const).map(v => ({ value: v, text: t[locale.value][v] })), model, multiple: true, name: 'f' })
     await settle()
-    await new Promise(r => setTimeout(r, 1100))
+    await vi.advanceTimersByTimeAsync(1100)
     locale.value = 'fr'
     await settle()
     expect(nativeOpts()).toEqual(['a:Pomme', 'b:Banane'])
@@ -244,7 +251,7 @@ describe('lean items stay live', { timeout: 20000 }, () => {
   })
 })
 
-describe('two Selects: one MutationObserver per instance, no cross attribution', { timeout: 20000 }, () => {
+describe('two Selects: one MutationObserver per instance, no cross attribution', () => {
   it('mutating A does not touch B, and both stay live', async () => {
     const la = ref('Apple')
     const lb = ref('Apple')

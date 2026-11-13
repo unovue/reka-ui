@@ -47,7 +47,7 @@ import {
   DialogDescription,
   DialogRoot,
   DialogTitle,
-  DrawerContent,
+  DrawerPopup,
   DrawerRoot,
   DrawerTitle,
   DropdownMenuContent,
@@ -122,7 +122,7 @@ const cases: Case[] = [
   {
     name: 'Drawer',
     render: (open, onOpenComplete) => h(DrawerRoot, { open, 'onUpdate:openComplete': onOpenComplete }, () =>
-      h(DrawerContent, content, () => h(DrawerTitle, () => 'Title'))),
+      h(DrawerPopup, content, () => h(DrawerTitle, () => 'Title'))),
   },
   {
     name: 'Popover',

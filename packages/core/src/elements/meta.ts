@@ -311,6 +311,9 @@ export function parseAttribute(prop: Pick<PropMeta, 'kind' | 'attribute' | 'defa
         return false
       return value === '' || value === 'true' || value === prop.attribute ? true : value
     case 'number': {
+      // `Number('')` is 0: an empty attribute is an unset prop.
+      if (value.trim() === '')
+        return undefined
       const number = Number(value)
       return Number.isNaN(number) ? undefined : number
     }

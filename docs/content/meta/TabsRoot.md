@@ -25,7 +25,7 @@
   {
     'name': 'defaultValue',
     'description': '<p>The value of the tab that should be active when initially rendered. Use when you do not need to control the state of the tabs.\nWithout it, the first enabled tab is selected; <code>null</code> selects no tab.</p>\n',
-    'type': 'null | T',
+    'type': 'null | StringOrNumber',
     'required': false
   },
   {
@@ -37,13 +37,13 @@
   {
     'name': 'modelValue',
     'description': '<p>The controlled value of the tab to activate. Can be bind as <code>v-model</code>. <code>null</code> selects no tab. While it has been\n<code>undefined</code> since mount the tabs are uncontrolled: they start on <code>defaultValue</code> (not emitted), or on the first\nenabled tab without one (emitted). Once defined, it stays controlled, also when cleared to <code>undefined</code>.</p>\n',
-    'type': 'null | T',
+    'type': 'null | StringOrNumber',
     'required': false
   },
   {
     'name': 'orientation',
     'description': '<p>The orientation the tabs are laid out.\nMainly so arrow navigation is done accordingly (left &amp; right vs. up &amp; down)</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false,
     'default': '\'horizontal\''
   },
@@ -60,12 +60,12 @@
   {
     'name': 'beforeUpdate:modelValue',
     'description': '<p>Event handler called before the value changes; call <code>details.cancel()</code> to keep the current value</p>\n',
-    'type': '[payload: T, details: ChangeEventDetails&lt;TabsChangeReason, Event&gt;]'
+    'type': '[payload: StringOrNumber, details: ChangeEventDetails&lt;TabsChangeReason, Event&gt;]'
   },
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes</p>\n',
-    'type': '[payload: T, details: ChangeEventDetails&lt;TabsChangeReason, Event&gt;]'
+    'type': '[payload: StringOrNumber, details: ChangeEventDetails&lt;TabsChangeReason, Event&gt;]'
   }
 ]" />
 
@@ -87,18 +87,18 @@
 | `activationMode` | Whether a tab is activated automatically (on focus, so arrow keys select tabs as they move) or manually (on click, or Enter/Space; arrow keys only move focus). | `"automatic" \| "manual"` | No | `"manual"` |
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `defaultValue` | The value of the tab that should be active when initially rendered. Use when you do not need to control the state of the tabs. Without it, the first enabled tab is selected; `null` selects no tab. | `null \| T` | No | - |
+| `defaultValue` | The value of the tab that should be active when initially rendered. Use when you do not need to control the state of the tabs. Without it, the first enabled tab is selected; `null` selects no tab. | `null \| StringOrNumber` | No | - |
 | `dir` | The reading direction of the combobox when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
-| `modelValue` | The controlled value of the tab to activate. Can be bind as `v-model`. `null` selects no tab. While it has been `undefined` since mount the tabs are uncontrolled: they start on `defaultValue` (not emitted), or on the first enabled tab without one (emitted). Once defined, it stays controlled, also when cleared to `undefined`. | `null \| T` | No | - |
-| `orientation` | The orientation the tabs are laid out. Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"vertical" \| "horizontal"` | No | `"horizontal"` |
+| `modelValue` | The controlled value of the tab to activate. Can be bind as `v-model`. `null` selects no tab. While it has been `undefined` since mount the tabs are uncontrolled: they start on `defaultValue` (not emitted), or on the first enabled tab without one (emitted). Once defined, it stays controlled, also when cleared to `undefined`. | `null \| StringOrNumber` | No | - |
+| `orientation` | The orientation the tabs are laid out. Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"horizontal" \| "vertical"` | No | `"horizontal"` |
 | `unmountOnHide` | When `true`, an inactive `TabsContent` is removed from the DOM, element and all. When `false`, it stays mounted with the `hidden` attribute (any `display` style you give it overrides `hidden`). | `boolean` | No | `true` |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `beforeUpdate:modelValue` | Event handler called before the value changes; call `details.cancel()` to keep the current value | `[payload: T, details: ChangeEventDetails<TabsChangeReason, Event>]` |
-| `update:modelValue` | Event handler called when the value changes | `[payload: T, details: ChangeEventDetails<TabsChangeReason, Event>]` |
+| `beforeUpdate:modelValue` | Event handler called before the value changes; call `details.cancel()` to keep the current value | `[payload: StringOrNumber, details: ChangeEventDetails<TabsChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the value changes | `[payload: StringOrNumber, details: ChangeEventDetails<TabsChangeReason, Event>]` |
 
 **Slots**
 

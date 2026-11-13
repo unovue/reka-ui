@@ -2,7 +2,7 @@ import type { VueWrapper } from '@vue/test-utils'
 import type { UseComboboxRootProps, UseComboboxRootReturn } from './useCombobox'
 import type { ListboxFilterItem } from '@/Listbox/useListbox'
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
@@ -170,6 +170,84 @@ describe('useComboboxRoot — standalone', () => {
   })
 })
 
+describe('comboboxCancel — clears the value', () => {
+  it('clears the selected value and the input text by default', async () => {
+    const onUpdate = vi.fn()
+    const wrapper = mount(createCombobox({ 'defaultValue': 'Apple', 'onUpdate:modelValue': onUpdate }, { cancel: true }), { attachTo: document.body })
+    await settle()
+    expect(wrapper.find('input').element.value).toBe('Apple')
+    await wrapper.find('[data-testid=cancel]').trigger('click')
+    await settle()
+    expect(onUpdate).toHaveBeenCalledWith(null, expect.objectContaining({ reason: 'clear-press' }))
+    expect(wrapper.find('input').element.value).toBe('')
+    // The value is cleared too, so opening shows no selected item.
+    await wrapper.find('[data-testid=trigger]').trigger('click')
+    await settle()
+    expect(optionTexts()).toEqual(fruits)
+    expect(document.querySelector('[role=option][aria-selected=true]')).toBeNull()
+    wrapper.unmount()
+  })
+
+  it('clears a `multiple` selection to `[]` by default', async () => {
+    const onUpdate = vi.fn()
+    const wrapper = mount(createCombobox({ 'multiple': true, 'defaultValue': ['Apple', 'Cherry'], 'onUpdate:modelValue': onUpdate }, { cancel: true }), { attachTo: document.body })
+    await wrapper.find('[data-testid=cancel]').trigger('click')
+    expect(onUpdate).toHaveBeenCalledWith([], expect.objectContaining({ reason: 'clear-press' }))
+    wrapper.unmount()
+  })
+
+  it('keeps the value and clears only the text with `reset-model-value-on-clear="false"`', async () => {
+    const onUpdate = vi.fn()
+    const wrapper = mount(createCombobox({ 'defaultValue': 'Apple', 'resetModelValueOnClear': false, 'onUpdate:modelValue': onUpdate }, { cancel: true }), { attachTo: document.body })
+    await settle()
+    await wrapper.find('input').setValue('ch')
+    await settle()
+    await wrapper.find('[data-testid=cancel]').trigger('click')
+    await settle()
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(wrapper.find('input').element.value).toBe('')
+    // The popup opened by typing stays open, unfiltered, with the selection kept.
+    expect(optionTexts()).toEqual(fruits)
+    expect(document.querySelector('[role=option][aria-selected=true]')?.textContent).toBe('Apple')
+    wrapper.unmount()
+  })
+
+  it('does nothing while the combobox is disabled, also when not rendered as a button', async () => {
+    const onUpdate = vi.fn()
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ComboboxRoot, { 'defaultValue': 'Apple', 'disabled': true, 'onUpdate:modelValue': onUpdate }, () => [
+        h(ComboboxAnchor, null, () => [
+          h(ComboboxInput, { 'aria-label': 'Fruit' }),
+          h(ComboboxCancel, { 'data-testid': 'cancel', 'as': 'span' }, () => 'Clear'),
+        ]),
+        h(ComboboxContent, null, () => h(ComboboxViewport, null, () => fruits.map(value => h(ComboboxItem, { value }, () => value)))),
+      ]),
+    }), { attachTo: document.body })
+    await settle()
+    const cancel = wrapper.find('[data-testid=cancel]')
+    expect(cancel.attributes('aria-disabled')).toBe('true')
+    await cancel.trigger('click')
+    await settle()
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(wrapper.find('input').element.value).toBe('Apple')
+    wrapper.unmount()
+  })
+
+  it('defaults `resetModelValueOnClear` to `true` in `useComboboxRoot`', () => {
+    let api!: UseComboboxRootReturn<string>
+    let off!: UseComboboxRootReturn<string>
+    mount(defineComponent({
+      setup() {
+        api = useComboboxRoot<string>({ baseId: 'on', getItems: () => [] })
+        off = useComboboxRoot<string>({ baseId: 'off', getItems: () => [], resetModelValueOnClear: false })
+        return () => null
+      },
+    }))
+    expect(api.context.resetModelValueOnClear.value).toBe(true)
+    expect(off.context.resetModelValueOnClear.value).toBe(false)
+  })
+})
+
 describe('comboboxRoot — change details', () => {
   it('reports `item-press` for a click and for Enter, with the event', async () => {
     const onUpdate = vi.fn()
@@ -191,9 +269,9 @@ describe('comboboxRoot — change details', () => {
     wrapper.unmount()
   })
 
-  it('reports `clear-press` from ComboboxCancel with `reset-model-value-on-clear`', async () => {
+  it('reports `clear-press` from ComboboxCancel', async () => {
     const onUpdate = vi.fn()
-    const wrapper = mount(createCombobox({ 'defaultValue': 'Apple', 'resetModelValueOnClear': true, 'onUpdate:modelValue': onUpdate }, { cancel: true }), { attachTo: document.body })
+    const wrapper = mount(createCombobox({ 'defaultValue': 'Apple', 'onUpdate:modelValue': onUpdate }, { cancel: true }), { attachTo: document.body })
     await wrapper.find('[data-testid=cancel]').trigger('click')
     expect(onUpdate).toHaveBeenCalledWith(null, expect.objectContaining({ reason: 'clear-press' }))
     wrapper.unmount()
@@ -313,7 +391,6 @@ describe('comboboxRoot — cancellation', () => {
     const onUpdate = vi.fn()
     const wrapper = mount(createCombobox({
       'defaultValue': 'Apple',
-      'resetModelValueOnClear': true,
       'onBeforeUpdate:modelValue': (_: unknown, details: { cancel: () => void }) => details.cancel(),
       'onUpdate:modelValue': onUpdate,
     }, { cancel: true }), { attachTo: document.body })
@@ -366,18 +443,15 @@ describe('comboboxRoot — filter', () => {
     await wrapper.find('input').setValue('xyz')
     await settle()
     expect(optionTexts()).toEqual(fruits)
+    expect(document.body.textContent).not.toContain('Nothing')
     wrapper.unmount()
   })
 
-  it('treats the deprecated `ignore-filter` as `:filter="null"`, over a custom filter', async () => {
-    const filter = vi.fn(() => false)
-    const wrapper = mount(createCombobox({ ignoreFilter: true, filter }), { attachTo: document.body })
-    await wrapper.find('input').setValue('xyz')
-    await settle()
-    expect(optionTexts()).toEqual(fruits)
-    expect(filter).not.toHaveBeenCalled()
-    expect(document.body.textContent).not.toContain('Nothing')
-    wrapper.unmount()
+  it('has no `ignoreFilter` prop on the roots', () => {
+    expect((ComboboxRoot as any).props).toHaveProperty('filter')
+    expect((ComboboxRoot as any).props).not.toHaveProperty('ignoreFilter')
+    expect((AutocompleteRoot as any).props).toHaveProperty('filter')
+    expect((AutocompleteRoot as any).props).not.toHaveProperty('ignoreFilter')
   })
 
   it('hides a group none of whose items match', async () => {
@@ -465,8 +539,8 @@ describe('comboboxRoot — filter with ComboboxVirtualizer', () => {
     wrapper.unmount()
   })
 
-  it('leaves `options` untouched with `ignore-filter`', async () => {
-    const wrapper = mountVirtual({ ignoreFilter: true })
+  it('leaves `options` untouched with `:filter="null"`', async () => {
+    const wrapper = mountVirtual({ filter: null })
     await flushPromises()
     await wrapper.find('input').setValue('match')
     await flushPromises()
@@ -565,12 +639,17 @@ describe('comboboxInput — change details', () => {
   const reasons = (fn: ReturnType<typeof vi.fn>) => fn.mock.calls.map(call => [call[0], call[1].reason])
 
   it('reports `input-change`, `item-press` and `clear-press`', async () => {
+    // The blur reset runs on a timer after the close: drive it.
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const onInput = vi.fn()
     const wrapper = mount(createWithInput({}, { 'onUpdate:modelValue': onInput }), { attachTo: document.body })
     await wrapper.find('input').setValue('bl')
     await settle()
     ;(document.querySelector('[role=option]') as HTMLElement).click()
-    await sleep(10)
+    await vi.advanceTimersByTimeAsync(10)
     await settle()
     await wrapper.find('[data-testid=cancel]').trigger('click')
     expect(reasons(onInput)).toEqual([
@@ -583,24 +662,34 @@ describe('comboboxInput — change details', () => {
   })
 
   it('reports `escape-key` when Escape closes the popup and resets the text', async () => {
+    // The blur reset runs on a timer after the close: drive it.
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const onInput = vi.fn()
     const wrapper = mount(createWithInput({}, { 'onUpdate:modelValue': onInput }), { attachTo: document.body })
     await wrapper.find('input').setValue('ch')
     await settle()
     keydown(wrapper.find('input').element, 'Escape')
-    await sleep(10)
+    await vi.advanceTimersByTimeAsync(10)
     await settle()
     expect(reasons(onInput)).toEqual([['ch', 'input-change'], ['', 'escape-key']])
     wrapper.unmount()
   })
 
   it('reports `input-clear` when another close resets the text to empty', async () => {
+    // The blur reset runs on a timer after the close: drive it.
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const onInput = vi.fn()
     const wrapper = mount(createWithInput({}, { 'onUpdate:modelValue': onInput }), { attachTo: document.body })
     await wrapper.find('input').setValue('ch')
     await settle()
     await wrapper.find('[data-testid=trigger]').trigger('click')
-    await sleep(10)
+    await vi.advanceTimersByTimeAsync(10)
     await settle()
     expect(reasons(onInput)).toEqual([['ch', 'input-change'], ['', 'input-clear']])
     wrapper.unmount()
@@ -772,14 +861,14 @@ describe('autocompleteRoot — change details', () => {
     wrapper.unmount()
   })
 
-  it('filters with `filter` and treats `ignore-filter` as `:filter="null"`', async () => {
+  it('filters with `filter` and turns filtering off with `:filter="null"`', async () => {
     let wrapper: VueWrapper = mount(createAutocomplete({ filter: (text: string, search: string) => text.endsWith(search) }), { attachTo: document.body })
     await wrapper.find('input').setValue('rry')
     await settle()
     expect(optionTexts()).toEqual(['Blueberry', 'Cherry'])
     wrapper.unmount()
 
-    wrapper = mount(createAutocomplete({ ignoreFilter: true }), { attachTo: document.body })
+    wrapper = mount(createAutocomplete({ filter: null }), { attachTo: document.body })
     await wrapper.find('input').setValue('rry')
     await settle()
     expect(optionTexts()).toEqual(fruits)

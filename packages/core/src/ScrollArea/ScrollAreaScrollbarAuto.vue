@@ -1,5 +1,7 @@
 <script lang="ts">
-export interface ScrollAreaScrollbarAutoProps {
+import type { PrimitiveHTMLAttributes } from '@/Primitive'
+
+export interface ScrollAreaScrollbarAutoProps extends /* @vue-ignore */ PrimitiveHTMLAttributes {
   forceMount?: boolean
 }
 </script>

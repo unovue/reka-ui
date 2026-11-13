@@ -768,7 +768,6 @@ Bind props in camelCase (`:modelValue="checked"`, or `:modelValue.prop` to force
   - `ToolbarLink`: an `<a>`. A custom element can't be a link (navigation, middle click, the link context menu). Put a native `<a>` in the toolbar next to it; it isn't part of the arrow-key navigation.
   - `FieldControl`: an `<input>` (see [Field and Form](#field-and-form)).
   - `FieldValidity` renders nothing but a scoped slot.
-- **Drawer.** `DrawerContent` and `DrawerOverlay` (deprecated aliases of `DrawerPopup` and `DrawerBackdrop`) are not included.
 - **Toast text from the toast object.** In Vue, `ToastTitle`, `ToastDescription` and `ToastAction` fall back to the toast object's `title`, `description` and action label. As elements, put that text in the elements yourself.
 - **Virtualizers.** `ListboxVirtualizer`, `ComboboxVirtualizer`, `SelectVirtualizer` and `TreeVirtualizer` render each visible row from a scoped slot (`option`, `virtualItem`) and position the rows they create, which elements can't render for you. Render the rows yourself, with your own virtualization, or use the Vue components.
 - **Tag groups.** Delete and Backspace on a tag, and its delete button, always dispatch `remove`: the element can't tell whether you listen to it, where the Vue component only makes tags removable with a `@remove` listener. Remove the tags from the DOM in your listener. Rows need a `gridcell` child for a valid grid, which the Vue component adds: wrap a tag's content in `<span role="gridcell">`.

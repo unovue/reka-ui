@@ -1,10 +1,11 @@
-import type { DrawerOpenChangeDetails } from './DrawerRoot.vue'
+import type { DrawerOpenChangeReason } from './DrawerRoot.vue'
 import type { DrawerSnapPoint } from './utils'
+import type { ChangeEventDetails } from '@/shared'
 import { fireEvent, render } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, nextTick, ref } from 'vue'
-import { DrawerContent, DrawerPortal, DrawerRoot, DrawerTitle } from '.'
+import { DrawerPopup, DrawerPortal, DrawerRoot, DrawerTitle } from '.'
 import * as Reka from '../index'
 import { useDrawer } from './useDrawer'
 
@@ -59,7 +60,7 @@ describe('useDrawer — state', () => {
 
   it('controlled: reads the prop and reports the request without moving off it', () => {
     const open = ref(false)
-    const onOpenChange = vi.fn((value: boolean, _details: DrawerOpenChangeDetails) => {
+    const onOpenChange = vi.fn((value: boolean, _details: ChangeEventDetails<DrawerOpenChangeReason>) => {
       open.value = value
     })
     const d = useDrawer({ open, onUpdate: onOpenChange })
@@ -139,6 +140,24 @@ describe('useDrawer — state', () => {
     child.context.onNestedSwipeProgressChange(0.4)
     expect(set).toHaveBeenCalledWith({ swipeProgress: 0.4 })
   })
+
+  it('tracks the frontmost height: its own, the nested one while reported, then its own again', () => {
+    const parent = useDrawer()
+    const child = useDrawer({ parentContext: parent.context })
+    expect(parent.context.frontmostHeight.value).toBe(0)
+
+    parent.context.onPopupHeightChange(400)
+    expect(parent.context.frontmostHeight.value).toBe(400)
+
+    child.context.notifyParentFrontmostHeight?.(240)
+    expect(parent.context.frontmostHeight.value).toBe(240)
+    // Its own height changing does not take over while a nested drawer is frontmost.
+    parent.context.onPopupHeightChange(420)
+    expect(parent.context.frontmostHeight.value).toBe(240)
+
+    child.context.notifyParentFrontmostHeight?.(0)
+    expect(parent.context.frontmostHeight.value).toBe(420)
+  })
 })
 
 describe('useDrawer — ids and surfaces', () => {
@@ -189,14 +208,14 @@ describe('useDrawer — reasons through the shell', () => {
     unmount = undefined
   })
 
-  function mountDrawer(onUpdate: (value: boolean, details: DrawerOpenChangeDetails) => void, event = 'update:open') {
+  function mountDrawer(onUpdate: (value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason>) => void, event = 'update:open') {
     const result = render(defineComponent({
-      components: { DrawerRoot, DrawerPortal, DrawerContent, DrawerTitle },
+      components: { DrawerRoot, DrawerPortal, DrawerPopup, DrawerTitle },
       setup: () => ({ onUpdate, event }),
       template: `
         <DrawerRoot :default-open="true" v-on="{ [event]: onUpdate }">
           <DrawerPortal>
-            <DrawerContent><DrawerTitle>Title</DrawerTitle></DrawerContent>
+            <DrawerPopup><DrawerTitle>Title</DrawerTitle></DrawerPopup>
           </DrawerPortal>
         </DrawerRoot>
       `,
@@ -206,7 +225,7 @@ describe('useDrawer — reasons through the shell', () => {
   }
 
   it('reports escape-key, and cancel() keeps the drawer open', async () => {
-    const onUpdate = vi.fn((_v: boolean, details: DrawerOpenChangeDetails) => details.cancel())
+    const onUpdate = vi.fn((_v: boolean, details: ChangeEventDetails<DrawerOpenChangeReason>) => details.cancel())
     const { getByRole } = mountDrawer(onUpdate, 'beforeUpdate:open')
     await nextTick()
     await fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
@@ -269,5 +288,17 @@ describe('useDrawer — public export', () => {
     expect(typeof Reka.useDrawerContent).toBe('function')
     expect(typeof Reka.useDrawerSwipeArea).toBe('function')
     expect('getDrawerTriggerSurface' in Reka).toBe(false)
+  })
+
+  it('exports the popup and backdrop under one name each', () => {
+    expect(Reka.DrawerPopup).toBeDefined()
+    expect(Reka.DrawerBackdrop).toBeDefined()
+    expect('DrawerContent' in Reka).toBe(false)
+    expect('DrawerOverlay' in Reka).toBe(false)
+  })
+
+  it('reads the controlled snap point from `snapPoint` only', () => {
+    expect(useDrawer({ snapPoint: ref(0.5) }).activeSnapPoint.value).toBe(0.5)
+    expect(useDrawer({ activeSnapPoint: ref(0.5) } as any).activeSnapPoint.value).toBeNull()
   })
 })

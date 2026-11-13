@@ -324,6 +324,66 @@ describe('given default Slider', () => {
           expect(wrapper.emitted('valueCommit')?.[0].length).toBe(1)
         })
       })
+
+      describe('after pointerup and then lostpointercapture', () => {
+        beforeEach(async () => {
+          await fireEvent.pointerUp(sliderImpl.element, { pointerId: 1 })
+          await fireEvent.lostPointerCapture(sliderImpl.element, { pointerId: 1 })
+        })
+
+        it('should emit valueCommit on wrapper once', async () => {
+          expect(wrapper.emitted('valueCommit')).toHaveLength(1)
+        })
+      })
+
+      describe('after lostpointercapture and then pointerup', () => {
+        beforeEach(async () => {
+          await fireEvent.lostPointerCapture(sliderImpl.element, { pointerId: 1 })
+          await fireEvent.pointerUp(sliderImpl.element, { pointerId: 1 })
+        })
+
+        it('should emit valueCommit on wrapper once', async () => {
+          expect(wrapper.emitted('valueCommit')).toHaveLength(1)
+        })
+      })
+
+      describe('after pointerup once capture is gone, with no lostpointercapture on the slider', () => {
+        beforeEach(async () => {
+          vi.mocked(window.HTMLElement.prototype.hasPointerCapture).mockReturnValueOnce(false)
+          await fireEvent.pointerUp(sliderImpl.element, { pointerId: 1 })
+        })
+
+        it('should emit valueCommit on wrapper', async () => {
+          expect(wrapper.emitted('valueCommit')).toHaveLength(1)
+        })
+      })
+
+      describe('after pointercancel', () => {
+        beforeEach(async () => {
+          await fireEvent.pointerCancel(sliderImpl.element, { pointerId: 1 })
+          await fireEvent.lostPointerCapture(sliderImpl.element, { pointerId: 1 })
+        })
+
+        it('should emit valueCommit on wrapper', async () => {
+          expect(wrapper.emitted('valueCommit')).toHaveLength(1)
+        })
+      })
+
+      describe('after a second pointer slides and both lift', () => {
+        const onSlideEnd = vi.fn()
+        beforeEach(async () => {
+          onSlideEnd.mockClear()
+          await wrapper.setProps({ onSlideEnd } as any)
+          await fireEvent.pointerDown(sliderImpl.element, { clientX: 50, pointerId: 2 })
+          await fireEvent.pointerUp(sliderImpl.element, { pointerId: 1 })
+          await fireEvent.pointerMove(sliderImpl.element, { clientX: 90, pointerId: 2 })
+          await fireEvent.pointerUp(sliderImpl.element, { pointerId: 2 })
+        })
+
+        it('should end the slide for each pointer', async () => {
+          expect(onSlideEnd).toHaveBeenCalledTimes(2)
+        })
+      })
     })
   })
 

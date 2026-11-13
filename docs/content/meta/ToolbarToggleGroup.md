@@ -54,7 +54,7 @@
   {
     'name': 'orientation',
     'description': '<p>The orientation of the component, which determines how focus moves: <code>horizontal</code> for left/right arrows and <code>vertical</code> for up/down arrows.</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false
   },
   {
@@ -105,7 +105,7 @@
 | `loop` | When `loop` and `rovingFocus` is `true`, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
 | `modelValue` | The controlled value of the active item(s). Use this when you need to control the state of the items. Can be binded with `v-model` | `AcceptableValue \| AcceptableValue[]` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
-| `orientation` | The orientation of the component, which determines how focus moves: `horizontal` for left/right arrows and `vertical` for up/down arrows. | `"vertical" \| "horizontal"` | No | - |
+| `orientation` | The orientation of the component, which determines how focus moves: `horizontal` for left/right arrows and `vertical` for up/down arrows. | `"horizontal" \| "vertical"` | No | - |
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `rovingFocus` | When `false`, navigating through the items using arrow keys will be disabled. | `boolean` | No | - |
 | `type` | Determines whether a "single" or "multiple" items can be selected at a time. This prop will overwrite the inferred type from `modelValue` and `defaultValue`. | `"single" \| "multiple"` | No | - |

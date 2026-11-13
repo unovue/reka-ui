@@ -1,8 +1,7 @@
 import { renderToString } from '@vue/server-renderer'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createSSRApp, defineComponent, h, ref } from 'vue'
 import { resetBodyScrollLock } from '@/shared/useBodyScrollLock'
-import { sleep } from '@/test'
 import { DialogContent, DialogOverlay, DialogRoot, DialogTitle } from '.'
 
 /** A modal Dialog (overlay + content) whose `open` state the test controls. */
@@ -37,8 +36,13 @@ afterEach(() => {
 // with the dialog.
 describe('given a modal Dialog that is open in the SSR render', () => {
   it('should leave nothing on <body> while rendering on the server', async () => {
+    // Anything the render deferred to a timer runs before the asserts.
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const html = await renderToString(createSSRApp(createDialogFixture()))
-    await sleep(10)
+    await vi.advanceTimersByTimeAsync(10)
 
     expect(html).toContain('role="dialog"')
     expect(html).not.toContain('data-reka-internal-backdrop')

@@ -1,15 +1,22 @@
 <script lang="ts">
 import type { DateValue } from '@/date'
 import type { DateFieldChangeReason } from '@/DateField'
+import type { PrimitiveHTMLAttributes } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import type { SegmentPart } from '@/shared/date'
-import { DateFieldRoot } from '..'
+import { DateFieldRoot } from '@/DateField'
 import { injectDatePickerRootContext } from './DatePickerRoot.vue'
+
+/** Type-only: the attributes fall through to the root it renders. */
+interface DatePickerFieldProps extends /* @vue-ignore */ PrimitiveHTMLAttributes {}
 </script>
 
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
 import { useForwardElement } from '@/shared'
+import { injectFormResetDefault } from '@/shared/formReset'
+
+defineProps<DatePickerFieldProps>()
 
 defineSlots<{
   default?: (props: {
@@ -21,6 +28,7 @@ defineSlots<{
 }>()
 
 const rootContext = injectDatePickerRootContext()
+const defaultValue = injectFormResetDefault<DateValue>()
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
@@ -34,6 +42,8 @@ function setFieldRef(el: Element | ComponentPublicInstance | null) {
 // `beforeUpdate:modelValue` runs the picker's change, so the picker emits once
 // with the field's reason. A cancel on the picker keeps the last committed
 // value; the typed segments stay as they are, so typing can continue.
+// It also takes the picker's `defaultValue`: a native form reset puts the field
+// back to it, which reaches the picker the same way.
 </script>
 
 <template>
@@ -41,6 +51,7 @@ function setFieldRef(el: Element | ComponentPublicInstance | null) {
     v-slot="{ segments, modelValue }"
     :ref="setFieldRef"
     :model-value="rootContext.modelValue.value ?? null"
+    :default-value="defaultValue"
     :placeholder="rootContext.placeholder.value"
     v-bind="{
       id: rootContext.id.value,

@@ -24,6 +24,8 @@ export function useSliderPointer(options: UseSliderPointerOptions) {
   const instance = getCurrentInstance()
   let offsetPosition: number | undefined
   let rect: DOMRect | undefined
+  // The browser can release capture before `pointerup` arrives, so either one ends a pointer's slide, once.
+  const slidingPointerIds = new Set<number>()
 
   function reset() {
     rect = undefined
@@ -65,12 +67,20 @@ export function useSliderPointer(options: UseSliderPointerOptions) {
     return linearScale(input, output)(position)
   }
 
+  function endSlide(event: PointerEvent) {
+    if (!slidingPointerIds.delete(event.pointerId))
+      return
+    reset()
+    emit('onSlideEnd', event)
+  }
+
   return {
     reset,
     handlers: {
       onPointerdown(event: PointerEvent) {
         const target = event.target as HTMLElement
         target.setPointerCapture(event.pointerId)
+        slidingPointerIds.add(event.pointerId)
         // Prevent browser focus behaviour because we focus a thumb manually when values change.
         event.preventDefault()
         // Touch devices have a delay before focusing so won't focus if touch immediately moves
@@ -87,12 +97,11 @@ export function useSliderPointer(options: UseSliderPointerOptions) {
       },
       onPointerup(event: PointerEvent) {
         const target = event.target as HTMLElement
-        if (target.hasPointerCapture(event.pointerId)) {
+        if (target.hasPointerCapture(event.pointerId))
           target.releasePointerCapture(event.pointerId)
-          reset()
-          emit('onSlideEnd', event)
-        }
+        endSlide(event)
       },
+      onLostpointercapture: endSlide,
     },
   }
 }

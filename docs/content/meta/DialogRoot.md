@@ -18,7 +18,7 @@
   {
     'name': 'handle',
     'description': '<p>A handle from <code>createDialogHandle()</code> that connects detached\n<code>DialogTrigger</code>s rendered anywhere in the app. Focus returns to, and the\ndefault slot\'s <code>payload</code> comes from, the trigger that opened the dialog.</p>\n',
-    'type': 'DialogHandle&lt;Payload&gt;',
+    'type': 'DialogHandle&lt;unknown&gt;',
     'required': false
   },
   {
@@ -99,7 +99,7 @@
 | --- | --- | --- | --- | --- |
 | `defaultOpen` | The open state of the dialog when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
 | `defaultTriggerId` | The id of the trigger that owns a dialog that starts open (with `defaultOpen` and a `handle`). | `string \| null` | No | - |
-| `handle` | A handle from `createDialogHandle()` that connects detached `DialogTrigger`s rendered anywhere in the app. Focus returns to, and the default slot's `payload` comes from, the trigger that opened the dialog. | `DialogHandle<Payload>` | No | - |
+| `handle` | A handle from `createDialogHandle()` that connects detached `DialogTrigger`s rendered anywhere in the app. Focus returns to, and the default slot's `payload` comes from, the trigger that opened the dialog. | `DialogHandle<unknown>` | No | - |
 | `modal` | The modality of the dialog. When `true`, page scroll is locked, the rest of the page is covered by an internal backdrop (a press on it, or on `DialogOverlay`, closes the dialog) and only the dialog content is visible to screen readers. | `boolean` | No | `true` |
 | `open` | The controlled open state of the dialog. Can be binded as `v-model:open`. | `boolean` | No | - |
 | `triggerId` | The id of the trigger that owns the dialog, for a controlled dialog with detached triggers. Use with `open`. | `string \| null` | No | - |

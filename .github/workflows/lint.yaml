@@ -1,0 +1,32 @@
+name: Lint
+
+# Lint otherwise only runs in the pre-commit hook, which bots, the web editor
+# and `--no-verify` skip. ESLint also covers JSON, Markdown and YAML here, so
+# there is no path filter.
+on:
+  push:
+    branches:
+      - v2
+      - v3
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lint-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup (Install node & pnpm)
+        uses: ./.github/actions/setup
+
+      - name: Lint
+        run: pnpm lint

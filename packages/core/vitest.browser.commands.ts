@@ -23,9 +23,10 @@ export const wheelAt: BrowserCommand<[x: number, y: number, deltaY: number]> = a
  * A real (trusted) left-button drag between two points of the test page's
  * viewport: pressed on the first point and released on the second, so
  * `mousedown` and `mouseup` land on different elements and no `click` fires.
- * `userEvent` only offers whole clicks. `steps` spreads the travel over several
- * moves, so pointer listeners see its speed; `holdMs` waits before releasing,
- * for a release without speed.
+ * `userEvent` only offers whole clicks. `steps` splits the move into that many
+ * `mousemove`s, for gestures that start after a few pixels (a toast swipe) or
+ * read their speed (a carousel drag). `holdMs` waits before releasing, for a
+ * release without speed.
  */
 export const mouseDrag: BrowserCommand<[fromX: number, fromY: number, toX: number, toY: number, steps?: number, holdMs?: number]> = async (context, fromX, fromY, toX, toY, steps = 1, holdMs = 0) => {
   if (context.provider.name !== 'playwright')

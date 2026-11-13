@@ -2,7 +2,7 @@
 import type { DismissableLayerDismissDetails, DismissableLayerEmits, FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 import { syncRef } from '@vueuse/shared'
-import { useAncestorScroll, useForwardElement, useGraceArea } from '@/shared'
+import { useAncestorScroll, useForwardElement, useForwardProps, useGraceArea } from '@/shared'
 
 export type HoverCardContentImplEmits = DismissableLayerEmits
 export interface HoverCardContentImplProps extends PopperContentProps {}
@@ -13,7 +13,6 @@ import { computed, getCurrentInstance, mergeProps, nextTick, onMounted, onUnmoun
 import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer } from '@/DismissableLayer/useDismissableLayer'
 import { PopperContent } from '@/Popper'
 import { splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
-import { useForwardProps } from '..'
 import { injectHoverCardRootContext } from './HoverCardRoot.vue'
 import { getHoverCardContentSurface } from './useHoverCard'
 import { getTabbableNodes } from './utils'

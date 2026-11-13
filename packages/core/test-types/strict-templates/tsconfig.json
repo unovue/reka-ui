@@ -1,0 +1,17 @@
+{
+  // Type-checks `*.vue` fixtures against the BUILT `reka-ui` (`dist/*.d.ts`, through
+  // the package's own `exports`) with `strictTemplates`, the way a consumer does.
+  // Run with `pnpm --filter reka-ui test:types` after `pnpm --filter reka-ui build`.
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "vueCompilerOptions": {
+    "strictTemplates": true,
+    // `data-*` attributes are typed by no component: `vue-tsc` skips the ones matched here.
+    "dataAttributes": ["data-*"]
+  },
+  "include": ["./*.vue"]
+}

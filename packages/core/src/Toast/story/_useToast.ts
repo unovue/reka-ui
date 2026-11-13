@@ -1,4 +1,4 @@
-import type { Component, VNode } from 'vue'
+import type { Component, Ref, VNode } from 'vue'
 import type { ToastRootProps } from '../ToastRoot.vue'
 import { computed, ref } from 'vue'
 
@@ -76,7 +76,9 @@ function addToRemoveQueue(toastId: string) {
   toastTimeouts.set(toastId, timeout)
 }
 
-const state = ref<State>({
+// Typed as `Ref<State>`: unwrapping VNodes and the props' `class` / `style` values
+// exceeds TypeScript's instantiation depth.
+const state: Ref<State> = ref({
   toasts: [],
 })
 

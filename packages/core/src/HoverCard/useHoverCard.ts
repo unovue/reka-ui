@@ -213,8 +213,12 @@ export function useHoverCard(props: UseHoverCardProps = {}): UseHoverCardReturn 
 
   function onClose(reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event) {
     clearTimeout(openTimer)
-    if (!hasSelectionRef.value && !isPointerDownOnContentRef.value)
+    // Re-arming replaces a pending close: trigger-leave then content-leave
+    // must leave ONE timer for a re-entering `onOpen` to cancel.
+    if (!hasSelectionRef.value && !isPointerDownOnContentRef.value) {
+      clearTimeout(closeTimer)
       closeTimer = window.setTimeout(setState, closeDelay.value, false, reason, event)
+    }
   }
 
   function onDismiss(reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event): boolean {

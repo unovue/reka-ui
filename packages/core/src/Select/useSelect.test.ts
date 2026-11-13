@@ -25,6 +25,10 @@ beforeEach(() => {
   document.body.innerHTML = ''
 })
 
+afterEach(() => {
+  vi.useRealTimers()
+})
+
 const fruits = ['Apple', 'Banana', 'Blueberry', 'Cherry']
 
 function trigger() {
@@ -64,9 +68,9 @@ function isOpen() {
   return trigger().getAttribute('aria-expanded') === 'true'
 }
 
-/** Waits for the idle-time render of a closed select's items (`setTimeout` in jsdom). */
+/** Runs the idle-time render of a closed select's items (`setTimeout` in jsdom); needs fake timers. */
 async function idle() {
-  await new Promise(resolve => setTimeout(resolve, 60))
+  await vi.advanceTimersByTimeAsync(60)
   await flushPromises()
 }
 
@@ -179,11 +183,12 @@ describe('change reasons', () => {
   })
 
   it('reports outside-press when the content is dismissed from outside', async () => {
+    vi.useFakeTimers()
     const onOpen = vi.fn()
     mountSelect({ 'onUpdate:open': onOpen })
     await open()
     // Wait for the dismissable layer to arm its outside listeners.
-    await new Promise(resolve => setTimeout(resolve, 10))
+    await vi.advanceTimersByTimeAsync(10)
     const outside = document.createElement('div')
     document.body.appendChild(outside)
     await fireEvent.pointerDown(outside)
@@ -191,6 +196,7 @@ describe('change reasons', () => {
   })
 
   it('reports autofill when the native select changes', async () => {
+    vi.useFakeTimers()
     const onUpdate = vi.fn()
     mountSelect({ 'name': 'fruit', 'onUpdate:modelValue': onUpdate }, { form: true })
     // The native options of an empty select render in idle time.
@@ -524,6 +530,7 @@ describe('review fixes (#3072)', () => {
 
   // `useHideOthers` is a no-op under vitest (MODE === "test"), so only the backdrop and the scroll lock are asserted.
   it('a closed forceMount content keeps no backdrop or scroll lock', async () => {
+    vi.useFakeTimers()
     const open = ref(false)
     mount(defineComponent({
       setup: () => () => h('div', [
@@ -535,29 +542,30 @@ describe('review fixes (#3072)', () => {
       ]),
     }), { attachTo: document.body })
     await flushPromises()
-    await new Promise(resolve => setTimeout(resolve, 20))
+    await vi.advanceTimersByTimeAsync(20)
     expect(document.querySelector('[data-reka-internal-backdrop]')).toBeNull()
     expect(isScrollLocked()).toBe(false)
 
     open.value = true
     await flushPromises()
-    await new Promise(resolve => setTimeout(resolve, 20))
+    await vi.advanceTimersByTimeAsync(20)
     expect(document.querySelector('[data-reka-internal-backdrop]')).not.toBeNull()
     expect(isScrollLocked()).toBe(true)
 
     open.value = false
     await flushPromises()
-    await new Promise(resolve => setTimeout(resolve, 20))
+    await vi.advanceTimersByTimeAsync(20)
     expect(document.querySelector('[data-reka-internal-backdrop]')).toBeNull()
     expect(isScrollLocked()).toBe(false)
   })
 
   it('pressing the trigger of an open popper select closes it with trigger-press', async () => {
+    vi.useFakeTimers()
     const onOpen = vi.fn()
     mountSelect({ 'onUpdate:open': onOpen })
     await open()
     expect(isOpen()).toBe(true)
-    await new Promise(resolve => setTimeout(resolve, 20))
+    await vi.advanceTimersByTimeAsync(20)
     await fireEvent.pointerDown(trigger(), { button: 0, ctrlKey: false })
     await flushPromises()
     expect(isOpen()).toBe(false)
@@ -565,10 +573,11 @@ describe('review fixes (#3072)', () => {
   })
 
   it('a trigger press that closes the select leaves no pointer position for the next keyboard open', async () => {
+    vi.useFakeTimers()
     const onUpdate = vi.fn()
     mountSelect({ 'onUpdate:modelValue': onUpdate })
     await open()
-    await new Promise(resolve => setTimeout(resolve, 20))
+    await vi.advanceTimersByTimeAsync(20)
     await fireEvent.pointerDown(trigger(), { button: 0, ctrlKey: false, pageX: 5, pageY: 5 })
     await flushPromises()
     expect(isOpen()).toBe(false)

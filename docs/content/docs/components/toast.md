@@ -653,6 +653,17 @@ Combine `--reka-toast-swipe-move-[x|y]` and `--reka-toast-swipe-end-[x|y]` CSS v
 }
 ```
 
+### Selecting toast text
+
+The text of a toast can be selected and copied: a click, a triple-click or a drag that doesn't start a swipe selects as anywhere else on the page. `ToastRoot` sets `user-select: none` only while a swipe is in progress, so dragging the toast away doesn't select its text. To keep toast text unselectable, set it in your CSS:
+
+```css
+.ToastRoot {
+  user-select: none;
+  -webkit-user-select: none;
+}
+```
+
 ## Real-world examples
 
 - [Toast Undo](/examples/toast-undo): Archive optimistically and let a Toast own the rollback, with a countdown bar that pauses whenever the dismiss timer does.

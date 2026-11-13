@@ -13,7 +13,7 @@ import { useResizeObserver } from '@vueuse/core'
 import { computed, nextTick, onMounted, onUnmounted, ref, toValue, watch } from 'vue'
 import { isOwnBackdropPress } from '@/DismissableLayer/internalBackdrop'
 import { focus } from '@/FocusScope/utils'
-import { createPartSurface, disclosureState, getActiveElement, getElementByIdFrom, isHTMLElement, setGeneratedIds, useControllableState } from '@/shared'
+import { containsComposed, createPartSurface, disclosureState, getActiveElement, getElementByIdFrom, isHTMLElement, setGeneratedIds, useControllableState } from '@/shared'
 import { useDrawerSnapPoints } from './composables/useDrawerSnapPoints'
 import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import {
@@ -188,8 +188,6 @@ export interface UseDrawerProps {
    * the model's single store (written back).
    */
   snapPoint?: MaybeRefOrGetter<DrawerSnapPoint | null | undefined>
-  /** @deprecated Use `snapPoint`; a writable ref here is written back as before. */
-  activeSnapPoint?: Ref<DrawerSnapPoint | null | undefined>
   /** Initial snap point when uncontrolled. @defaultValue `null` */
   defaultSnapPoint?: DrawerSnapPoint | null
   /**
@@ -221,7 +219,7 @@ export interface UseDrawerProps {
   /**
    * Called once the popup's open (`true`) or close (`false`) transitions and
    * animations have finished (`update:openComplete`), reported by
-   * `DrawerContent`'s `Presence` through `context.notifyOpenComplete`.
+   * `DrawerPopup`'s `Presence` through `context.notifyOpenComplete`.
    */
   onOpenComplete?: (value: boolean) => void
   /** The parent drawer's context, for nested drawers. */
@@ -287,7 +285,7 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
 
   // Base UI's `onSnapPointChange(snapPoint, eventDetails)` is cancellable too.
   const { state: activeSnapPoint, setState: setSnapPoint } = useControllableState<DrawerSnapPoint | null | undefined, DrawerSnapPointChangeReason>({
-    prop: props.snapPoint ?? props.activeSnapPoint,
+    prop: props.snapPoint,
     defaultValue: props.defaultSnapPoint ?? null,
     name: 'snapPoint',
     emit: props.emit,
@@ -311,6 +309,8 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
   const nestedSwiping = ref(false)
   const isSwiping = ref(false)
   const nestedSwipeProgressStore = createNestedSwipeProgressStore()
+  // Whether a nested drawer currently reports a height, i.e. is the frontmost one.
+  let isNestedDrawerOpen = false
 
   // Base UI parity: an unchanged request reports `true` and emits nothing.
   function onOpenChange(value: boolean, reason?: DrawerOpenChangeReason | BaseChangeReason, event?: Event) {
@@ -373,9 +373,23 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
     setActiveSnapPoint,
     onPopupHeightChange(h) {
       popupHeight.value = h
+      // With no nested drawer open, this drawer is the frontmost one.
+      if (!isNestedDrawerOpen && h > 0)
+        frontmostHeight.value = h
       providerContext?.visualStateStore.set({ frontmostHeight: h })
     },
-    onNestedFrontmostHeightChange(h) { frontmostHeight.value = h },
+    onNestedFrontmostHeightChange(h) {
+      if (h > 0) {
+        isNestedDrawerOpen = true
+        frontmostHeight.value = h
+        return
+      }
+      // The nested drawer closed: fall back to this drawer's own height rather
+      // than 0, so it keeps its size while the nested drawer animates out.
+      isNestedDrawerOpen = false
+      if (popupHeight.value > 0)
+        frontmostHeight.value = popupHeight.value
+    },
     onNestedDrawerPresenceChange(present) {
       if (present)
         nestedOpenDrawerCount.value++
@@ -557,6 +571,33 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
   watch(() => rootContext.frontmostHeight.value, (h) => {
     currentElement.value?.style.setProperty(DRAWER_CSS_VARS.frontmostHeight, `${h}px`)
   })
+
+  // Report the frontmost height up the stack: this drawer's own height, or the
+  // one its own nested drawer reported. Report 0 once it closes or unmounts, so
+  // the parent falls back to its own height.
+  //
+  // The 0 is reported once, when this drawer stops being open. A sibling may
+  // open while this one is still animating out, and a second 0 from here
+  // would discard the height that sibling reported.
+  let isReportingFrontmostHeight = false
+  function releaseFrontmostHeight() {
+    if (!isReportingFrontmostHeight)
+      return
+    isReportingFrontmostHeight = false
+    rootContext.notifyParentFrontmostHeight?.(0)
+  }
+  watch(
+    [() => rootContext.open.value, () => rootContext.frontmostHeight.value],
+    ([isOpen, frontmostHeight]) => {
+      if (!isOpen) {
+        releaseFrontmostHeight()
+        return
+      }
+      isReportingFrontmostHeight = true
+      rootContext.notifyParentFrontmostHeight?.(frontmostHeight)
+    },
+    { immediate: true },
+  )
 
   // Swipe directions: when snap points exist, allow both dismiss AND expand directions
   const hasSnapPoints = computed(() => (rootContext.snapPoints.value?.length ?? 0) > 0)
@@ -745,6 +786,15 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
     rootContext.contentElement.value = currentElement.value as HTMLElement | undefined
     rootContext.notifyParentHasNestedDrawer?.(true)
 
+    // Initial frontmost height. Required on reopen, when the height is already
+    // known from a previous open and the lazy watcher would never fire.
+    if (rootContext.frontmostHeight.value > 0) {
+      currentElement.value?.style.setProperty(
+        DRAWER_CSS_VARS.frontmostHeight,
+        `${rootContext.frontmostHeight.value}px`,
+      )
+    }
+
     // Initial nested-drawer count
     currentElement.value?.style.setProperty(
       DRAWER_CSS_VARS.nestedDrawers,
@@ -764,6 +814,7 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
 
   onUnmounted(() => {
     rootContext.notifyParentHasNestedDrawer?.(false)
+    releaseFrontmostHeight()
     unsubscribeNestedProgress?.()
   })
 
@@ -773,7 +824,7 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
     onMounted(() => {
       if (!getElementByIdFrom(currentElement.value, rootContext.titleId)) {
         console.warn(
-          `Warning: \`DrawerContent\` requires a \`DrawerTitle\` for accessibility.`,
+          `Warning: \`DrawerPopup\` requires a \`DrawerTitle\` for accessibility.`,
         )
       }
     })
@@ -792,14 +843,14 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
 }
 
 // -----------------------------------------------------------------------------
-// useDrawerContentModality — DrawerContent's modality tiers and final focus
+// useDrawerContentModality — DrawerPopup's modality tiers and final focus
 // -----------------------------------------------------------------------------
 
 export interface UseDrawerContentModalityOptions {
   rootContext: Pick<DrawerRootContext, 'modal' | 'open' | 'triggerElement'> & Partial<Pick<DrawerRootContext, 'overlayElement'>>
   /**
    * The content element. With it, a modal drawer only dismisses on a press on
-   * its own backdrop (internal backdrop or `DrawerOverlay`).
+   * its own backdrop (internal backdrop or `DrawerBackdrop`).
    */
   contentElement?: MaybeRefOrGetter<HTMLElement | null | undefined>
   /**
@@ -836,7 +887,7 @@ export interface UseDrawerContentModalityReturn {
 }
 
 /**
- * The modality tiers of `DrawerContent` (`true` / `'trap-focus'` / `false`) and
+ * The modality tiers of `DrawerPopup` (`true` / `'trap-focus'` / `false`) and
  * their focus-return and outside-interaction handlers. Refs and closures only.
  *
  * @experimental Signatures may change in 3.x minors.
@@ -901,7 +952,8 @@ export function useDrawerContentModality(options: UseDrawerContentModalityOption
           hasPointerDownOutside.value = true
       }
       const target = e.target as HTMLElement
-      if (rootContext.triggerElement.value?.contains(target))
+      const trigger = rootContext.triggerElement.value
+      if (trigger && containsComposed(trigger, target))
         e.preventDefault()
       if (e.detail.originalEvent.type === 'focusin' && hasPointerDownOutside.value)
         e.preventDefault()

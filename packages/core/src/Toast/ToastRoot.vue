@@ -77,10 +77,13 @@ watch([() => props.toast, isContentMounted], ([toast, mounted]) => {
   if (toast && !toast.open && !mounted)
     providerContext.toastStore.remove(toast.id)
 }, { immediate: true })
+
+// A toast mounts open: `appear` stamps `data-starting-style` on its first
+// frame (#2827). Kept out of the template: a comment before the root makes it
+// a fragment in production, which drops fallthrough attributes.
 </script>
 
 <template>
-  <!-- A toast mounts open: `appear` stamps `data-starting-style` on its first frame (#2827). -->
   <Presence
     :present="isOpen"
     :force-mount="forceMount"

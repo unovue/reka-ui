@@ -40,7 +40,7 @@ const trigger = getHoverCardTriggerSurface(rootContext)
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps($attrs, trigger.attrs.value)"
+    v-bind="mergeProps({ type: as === 'button' ? 'button' : undefined }, $attrs, trigger.attrs.value)"
   >
     <slot />
   </component>

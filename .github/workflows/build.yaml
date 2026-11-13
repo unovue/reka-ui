@@ -2,14 +2,28 @@ name: Build
 
 on:
   push:
+    # The long-lived branches. `main` is no longer developed.
     branches:
-      - main
-    paths:
+      - v2
+      - v3
+    paths: &paths
       - 'packages/**'
+      # Dependency and tooling changes can break the build without touching `packages/`.
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - 'patches/**'
+      - 'docs/scripts/**'
+      - .github/workflows/build.yaml
+      - '.github/actions/**'
 
   pull_request:
-    paths:
-      - 'packages/**'
+    paths: *paths
+
+# A new push to a PR replaces its previous run; pushes to a branch always finish.
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -55,6 +69,11 @@ jobs:
 
       - name: Test (with coverage)
         run: pnpm --filter reka-ui test:coverage
+
+      # `test-types/strict-templates`: consumer templates with `strictTemplates`, against the built `.d.ts`
+      - name: Test (types)
+        if: ${{ !cancelled() }}
+        run: pnpm --filter reka-ui test:types
 
       # The resolver and Nuxt module tests import the built `reka-ui/constant` and family entries
       - name: Test (plugins)

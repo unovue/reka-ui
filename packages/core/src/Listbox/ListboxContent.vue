@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { PrimitiveProps } from '..'
+import type { PrimitiveProps } from '@/Primitive'
 import { refAutoReset } from '@vueuse/shared'
 import { injectListboxFieldContext, injectListboxRootContext } from './ListboxRoot.vue'
 import { getListboxContentSurface, getListboxContentTabindex } from './useListbox'

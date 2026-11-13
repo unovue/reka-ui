@@ -3,7 +3,7 @@ import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from '@/Dialog'
-import { DrawerContent, DrawerPortal, DrawerRoot, DrawerTitle } from '@/Drawer'
+import { DrawerPopup, DrawerPortal, DrawerRoot, DrawerTitle } from '@/Drawer'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '@/Popover'
 
@@ -26,6 +26,12 @@ enableAutoUnmount(afterEach)
 
 beforeEach(() => {
   document.body.innerHTML = ''
+  // The backdrop and the scroll lock are applied a macrotask later: drive it.
+  vi.useFakeTimers()
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 function hasBackdrop() {
@@ -38,7 +44,7 @@ function isScrollLocked() {
 
 async function settle() {
   await flushPromises()
-  await new Promise(resolve => setTimeout(resolve, 20))
+  await vi.advanceTimersByTimeAsync(20)
   await flushPromises()
 }
 
@@ -63,7 +69,7 @@ const cases: Array<{ name: string, locks: boolean, render: (open: boolean, onUpd
     name: 'Drawer (modal)',
     locks: true,
     render: (open, onUpdate) => h(DrawerRoot as Component, { 'open': open, 'onUpdate:open': onUpdate }, () => [
-      h(DrawerPortal, () => h(DrawerContent, { forceMount: true }, () => h(DrawerTitle, () => 'Title'))),
+      h(DrawerPortal, () => h(DrawerPopup, { forceMount: true }, () => h(DrawerTitle, () => 'Title'))),
     ]),
   },
 ]

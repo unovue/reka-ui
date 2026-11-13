@@ -1,11 +1,10 @@
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from '@/Dialog'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '@/Popover'
 import { resetBodyScrollLock } from '@/shared/useBodyScrollLock'
-import { sleep } from '@/test'
 import { resetLayerStack } from './layerStack'
 
 // Modality without body `pointer-events: none` (#2822): a modal layer renders
@@ -20,7 +19,12 @@ beforeAll(() => {
   } as any
 })
 
+beforeEach(() => {
+  vi.useFakeTimers()
+})
+
 afterEach(() => {
+  vi.useRealTimers()
   resetLayerStack()
   resetBodyScrollLock()
   document.body.innerHTML = ''
@@ -29,13 +33,13 @@ afterEach(() => {
 })
 
 /**
- * Waits for the deferred scroll lock and the outside-press arming macrotask. Vue's
- * flush schedules both first, so a slow flush (coverage, CI load) can't outlast the sleep.
+ * Runs the deferred scroll lock and the outside-press arming macrotask (fake timers).
+ * Vue's flush schedules both first, so the timers exist before they are advanced.
  */
 async function settle() {
   await nextTick()
   await nextTick()
-  await sleep(20)
+  await vi.advanceTimersByTimeAsync(20)
 }
 const isScrollLocked = () => getComputedStyle(document.body).overflowY === 'hidden'
 const backdrops = () => [...document.querySelectorAll<HTMLElement>('[data-reka-internal-backdrop]')]

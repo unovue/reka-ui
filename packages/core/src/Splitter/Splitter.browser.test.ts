@@ -2,7 +2,7 @@ import type { ChangeEventDetails } from '@/shared'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from '.'
 
 let unmount: (() => void) | undefined
@@ -158,5 +158,76 @@ describe('given a Splitter in a shadow root inside an iframe, in a real browser'
     }))
 
     await expect.poll(() => handle.getAttribute('data-state')).toBe('hover')
+  })
+})
+
+describe('given a Splitter with a disabled resize handle between two enabled ones, in a real browser', () => {
+  it('moves focus past the disabled handle with F6 and Shift+F6', async () => {
+    document.body.innerHTML = ''
+    mount(() => h('div', { style: 'width: 400px; height: 200px;' }, [
+      h(SplitterGroup, { direction: 'horizontal' }, () => [0, 1, 2].flatMap(index => [
+        h(SplitterPanel),
+        h(SplitterResizeHandle, { 'data-testid': `handle-${index}`, 'disabled': index === 1, 'style': 'width: 4px;' }),
+      ]).concat(h(SplitterPanel))),
+    ]), { attachTo: document.body })
+    await nextTick()
+    const handle = (index: number) => document.querySelector<HTMLElement>(`[data-testid="handle-${index}"]`)!
+
+    await userEvent.tab()
+    expect(document.activeElement).toBe(handle(0))
+    await expect.poll(() => handle(0).getAttribute('data-resize-handle-active')).toBe('keyboard')
+
+    await userEvent.keyboard('{F6}')
+    expect(document.activeElement).toBe(handle(2))
+    await expect.poll(() => handle(2).getAttribute('data-resize-handle-active')).toBe('keyboard')
+    expect(handle(0).hasAttribute('data-resize-handle-active')).toBe(false)
+
+    await userEvent.keyboard('{Shift>}{F6}{/Shift}')
+    expect(document.activeElement).toBe(handle(0))
+
+    // The disabled handle is still reachable with Tab; F6 from there moves on to an enabled handle.
+    await userEvent.tab()
+    expect(document.activeElement).toBe(handle(1))
+    await userEvent.keyboard('{F6}')
+    expect(document.activeElement).toBe(handle(2))
+  })
+})
+
+// https://github.com/unovue/reka-ui/issues/3126
+describe('given a Splitter whose resize handle is remounted with v-if, in a real browser', () => {
+  it.each([
+    ['with its panel', true],
+    ['on its own', false],
+  ])('resizes from the keyboard after the handle is remounted %s', async (_, withPanel) => {
+    document.body.innerHTML = ''
+    const shown = ref(true)
+    const layout = ref<number[]>([])
+    const panel = () => h(SplitterPanel, { id: 'side', order: 1, defaultSize: 30, collapsible: true, minSize: 10 })
+    const handle = () => h(SplitterResizeHandle, { 'data-testid': 'handle', 'style': 'width: 4px;' })
+    mount(() => h('div', { style: 'width: 400px; height: 200px;' }, [
+      h(SplitterGroup, { direction: 'horizontal', onLayout: (value: number[]) => { layout.value = value } }, () => [
+        ...(withPanel
+          ? (shown.value ? [panel(), handle()] : [])
+          : [panel(), shown.value ? handle() : null]),
+        h(SplitterPanel, { id: 'main', order: 2 }),
+      ]),
+    ]), { attachTo: document.body })
+    await nextTick()
+
+    shown.value = false
+    await nextTick()
+    shown.value = true
+    await nextTick()
+
+    await userEvent.tab()
+    const el = document.querySelector<HTMLElement>('[data-testid="handle"]')!
+    expect(document.activeElement).toBe(el)
+
+    await userEvent.keyboard('{ArrowRight}')
+    await expect.poll(() => layout.value[0]).toBe(40)
+    expect(el.getAttribute('aria-valuenow')).toBe('40')
+
+    await userEvent.keyboard('{Enter}')
+    await expect.poll(() => layout.value[0]).toBe(0)
   })
 })

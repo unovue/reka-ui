@@ -155,6 +155,137 @@ describe('useTimeRangeField', () => {
     })
   })
 
+  describe('unavailable times between the ends', () => {
+    const t = (hour: number, minute = 0, second = 0) => new Temporal.PlainTime(hour, minute, second)
+    const at = (hour: number, minute = 0, second = 0) => (d: any) => d.hour === hour && d.minute === minute && d.second === second
+    const invalid = (options: UseTimeRangeFieldProps) => withScope(() => useTimeRangeField({ locale: 'en-US', ...options }).isInvalid.value)
+
+    it('is invalid when a time strictly inside the range is unavailable', () => {
+      withScope(() => {
+        const api = useTimeRangeField({ defaultValue: { start: t(9), end: t(17) }, isTimeUnavailable: (d: any) => d.hour === 12, locale: 'en-US' })
+        expect(api.isInvalid.value).toBe(true)
+        expect(api.root.attrs.value['data-invalid']).toBe('')
+      })
+    })
+
+    it('is valid when the range only touches the unavailable time', () => {
+      const lunch = (d: any) => d.hour === 12
+      expect(invalid({ defaultValue: { start: t(9), end: t(11, 59) }, isTimeUnavailable: lunch })).toBe(false)
+      expect(invalid({ defaultValue: { start: t(13), end: t(17) }, isTimeUnavailable: lunch })).toBe(false)
+      expect(invalid({ defaultValue: { start: t(9), end: t(12, 29) }, isTimeUnavailable: at(12, 30) })).toBe(false)
+      expect(invalid({ defaultValue: { start: t(12, 31), end: t(17) }, isTimeUnavailable: at(12, 30) })).toBe(false)
+      expect(invalid({ defaultValue: { start: t(9), end: t(17) }, isTimeUnavailable: at(12, 30) })).toBe(true)
+    })
+
+    it('checks every hour at hour granularity', () => {
+      const value = { start: t(9), end: t(17) }
+      expect(invalid({ defaultValue: value, granularity: 'hour', isTimeUnavailable: at(12) })).toBe(true)
+      expect(invalid({ defaultValue: value, granularity: 'hour', isTimeUnavailable: at(12, 30) })).toBe(false)
+      const calls = vi.fn(() => false)
+      expect(invalid({ defaultValue: { start: t(0), end: t(23) }, granularity: 'hour', isTimeUnavailable: calls })).toBe(false)
+      // Both ends, then 01:00 to 22:00.
+      expect(calls).toHaveBeenCalledTimes(2 + 22)
+    })
+
+    it('checks every minute at minute granularity', () => {
+      const value = { start: t(10), end: t(10, 2) }
+      expect(invalid({ defaultValue: value, isTimeUnavailable: at(10, 1) })).toBe(true)
+      expect(invalid({ defaultValue: value, isTimeUnavailable: at(10, 0, 30) })).toBe(false)
+      const calls = vi.fn(() => false)
+      expect(invalid({ defaultValue: { start: t(0), end: t(23, 59) }, isTimeUnavailable: calls })).toBe(false)
+      expect(calls).toHaveBeenCalledTimes(2 + 1438)
+    })
+
+    it('checks every second at second granularity, and never more than 1,440 times', () => {
+      expect(invalid({ defaultValue: { start: t(10), end: t(10, 1) }, granularity: 'second', isTimeUnavailable: at(10, 0, 30) })).toBe(true)
+      const calls = vi.fn(() => false)
+      const fullDay = { start: t(0), end: t(23, 59, 59) }
+      expect(invalid({ defaultValue: fullDay, granularity: 'second', isTimeUnavailable: calls })).toBe(false)
+      // A full day of seconds is sampled once a minute.
+      expect(calls).toHaveBeenCalledTimes(2 + 1439)
+      expect(invalid({ defaultValue: fullDay, granularity: 'second', isTimeUnavailable: at(12, 30) })).toBe(true)
+      expect(invalid({ defaultValue: fullDay, granularity: 'second', isTimeUnavailable: at(12, 30, 30) })).toBe(false)
+    })
+
+    it('checks every unit of the granularity, whatever the step', () => {
+      const value = { start: t(9, 7), end: t(9, 11) }
+      const seen: string[] = []
+      const record = (d: any) => {
+        seen.push(d.toPlainTime().toString({ smallestUnit: 'minute' }))
+        return false
+      }
+      expect(invalid({ defaultValue: value, step: { minute: 15 }, isTimeUnavailable: record })).toBe(false)
+      expect(seen).toEqual(['09:07', '09:11', '09:08', '09:09', '09:10'])
+      // A time the step skips is still inside the range.
+      const stepped = { start: t(9), end: t(9, 30) }
+      expect(invalid({ defaultValue: stepped, step: { minute: 30 }, isTimeUnavailable: at(9, 20) })).toBe(true)
+      expect(invalid({ defaultValue: stepped, step: { minute: 30 }, isTimeUnavailable: at(9, 40) })).toBe(false)
+    })
+
+    it('caps a range of date-times spanning several days', () => {
+      const calls = vi.fn(() => false)
+      const value = { start: new Temporal.PlainDateTime(2024, 1, 1, 9), end: new Temporal.PlainDateTime(2024, 1, 11, 9) }
+      expect(invalid({ defaultValue: value, isTimeUnavailable: calls })).toBe(false)
+      expect(calls.mock.calls.length).toBeLessThanOrEqual(2 + 1440)
+      expect(invalid({ defaultValue: value, isTimeUnavailable: (d: any) => d.day === 5 })).toBe(true)
+    })
+
+    it('checks zoned ends', () => {
+      const zone = 'America/New_York'
+      const value = {
+        start: new Temporal.PlainDateTime(2024, 1, 1, 9).toZonedDateTime(zone),
+        end: new Temporal.PlainDateTime(2024, 1, 1, 17).toZonedDateTime(zone),
+      }
+      expect(invalid({ defaultValue: value, isTimeUnavailable: (d: any) => d.hour === 12 && d.timeZoneId === zone })).toBe(true)
+      expect(invalid({ defaultValue: value, isTimeUnavailable: (d: any) => d.hour === 18 })).toBe(false)
+    })
+
+    it('does not look between the ends without a complete, ordered range', () => {
+      const calls = vi.fn(() => false)
+      expect(invalid({ defaultValue: { start: t(9), end: undefined }, isTimeUnavailable: calls })).toBe(false)
+      expect(calls).toHaveBeenCalledTimes(1)
+      calls.mockClear()
+      // An end before the start is invalid on its own, as before.
+      expect(invalid({ defaultValue: { start: t(17), end: t(9) }, isTimeUnavailable: calls })).toBe(true)
+      expect(calls).toHaveBeenCalledTimes(2)
+      calls.mockClear()
+      expect(invalid({ defaultValue: { start: t(9), end: t(9) }, isTimeUnavailable: calls })).toBe(false)
+      expect(calls).toHaveBeenCalledTimes(2)
+    })
+
+    it('is valid without a matcher', () => {
+      expect(invalid({ defaultValue: { start: t(9), end: t(17) } })).toBe(false)
+      expect(invalid({ defaultValue: { start: t(0), end: t(23, 59, 59) }, granularity: 'second' })).toBe(false)
+    })
+
+    it('allowNonContiguousRanges keeps the check to the two ends', () => {
+      const value = { start: t(9), end: t(17) }
+      const calls = vi.fn((d: any) => d.hour === 12)
+      expect(invalid({ defaultValue: value, isTimeUnavailable: calls, allowNonContiguousRanges: true })).toBe(false)
+      expect(calls).toHaveBeenCalledTimes(2)
+      expect(invalid({ defaultValue: { start: t(9), end: t(12) }, isTimeUnavailable: calls, allowNonContiguousRanges: true })).toBe(true)
+
+      const allow = ref(true)
+      withScope(() => {
+        const api = useTimeRangeField({ defaultValue: value, isTimeUnavailable: calls, allowNonContiguousRanges: allow, locale: 'en-US' })
+        expect(api.isInvalid.value).toBe(false)
+        allow.value = false
+        expect(api.isInvalid.value).toBe(true)
+      })
+    })
+
+    it('follows the value', () => {
+      withScope(() => {
+        const api = useTimeRangeField({ defaultValue: { start: t(9), end: t(11) }, isTimeUnavailable: (d: any) => d.hour === 12, locale: 'en-US' })
+        expect(api.isInvalid.value).toBe(false)
+        api.setModelValue({ start: t(9), end: t(17) })
+        expect(api.isInvalid.value).toBe(true)
+        api.setModelValue({ start: t(13), end: t(17) })
+        expect(api.isInvalid.value).toBe(false)
+      })
+    })
+  })
+
   it('follows the hour cycle and the locale', async () => {
     const locale = ref('en-US')
     const pm = { start: new Temporal.PlainTime(14), end: new Temporal.PlainTime(16) }

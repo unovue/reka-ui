@@ -21,7 +21,7 @@ Extends the native form element with server error display and submit-time valida
     'Displays server-side errors by field name, cleared automatically once the user edits that field.',
     'Hands you the value of every named field through `formSubmit`, or leaves a valid form to submit natively.',
     'Sets a default `validationMode` for every Field inside it.',
-    'Native `reset` clears every Field\'s touched/dirty/error state.',
+    'Native `reset` puts every Reka UI control back to its `defaultValue` and clears every Field\'s touched/dirty/error state.',
   ]"
 />
 
@@ -128,6 +128,25 @@ Set `validation-mode` on `FormRoot` to change when every field inside it validat
   </FormRoot>
 </template>
 ```
+
+## Composables
+
+### useForm
+
+Reads and drives the enclosing `FormRoot` from script. Call it inside `setup()`, in a component rendered inside the form; it throws outside one. Like the other [composables](/docs/guides/composables), it is experimental. See [Forms and validation](/docs/guides/forms#reading-a-field-or-a-form-from-script) for an example.
+
+```ts
+import { useForm } from 'reka-ui'
+
+const { getValues, validate, reset, submitCount } = useForm()
+```
+
+| Returns | Type | Description |
+|---|---|---|
+| `getValues` | `() => Record<string, unknown>` | The current value of every named field, keyed by `name`: the object `formSubmit` receives. Read when called. |
+| `validate` | `(name?: string) => boolean` | Validates every field now, or only the field with that `name`. Returns whether they are all valid. |
+| `reset` | `() => void` | Resets the form as a `type="reset"` button does: every control returns to its default value and every field's state is cleared. In a `FormRoot` rendered as another element, only the fields' state is cleared. |
+| `submitCount` | `ComputedRef<number>` | How many times the form has been submitted, blocked submissions included. |
 
 ## Accessibility
 

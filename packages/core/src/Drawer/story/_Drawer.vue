@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import {
+  DrawerBackdrop,
   DrawerClose,
-  DrawerContent,
   DrawerDescription,
   DrawerGrabber,
-  DrawerOverlay,
+  DrawerPopup,
   DrawerPortal,
   DrawerRoot,
   DrawerTitle,
@@ -27,8 +27,8 @@ const open = ref(false)
       Open Drawer
     </DrawerTrigger>
     <DrawerPortal>
-      <DrawerOverlay class="drawer-overlay" />
-      <DrawerContent class="drawer-content-bottom">
+      <DrawerBackdrop class="drawer-overlay" />
+      <DrawerPopup class="drawer-content-bottom">
         <DrawerGrabber class="drawer-handle" />
         <div class="p-6">
           <DrawerTitle class="mb-2 text-xl font-semibold text-gray-900">
@@ -43,7 +43,7 @@ const open = ref(false)
             </DrawerClose>
           </div>
         </div>
-      </DrawerContent>
+      </DrawerPopup>
     </DrawerPortal>
   </DrawerRoot>
 </template>

@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref, ShallowRef } from 'vue'
 import type { SelectClosedItems } from './closedItems'
 import type { SelectChangeReason, SelectItemData, SelectItems, SelectModelValue, SelectNavigationIntent, SelectOpenChangeReason, SelectTypeaheadItem } from './useSelect'
-import type { FieldRootContext } from '@/Field'
+import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { BaseChangeReason, By, ChangeEventDetails, LabelRegistry } from '@/shared'
 import type { SelectionSelector } from '@/shared/selectionSelector'
 import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
@@ -139,19 +139,20 @@ export const [injectSelectRootContext, provideSelectRootContext]
   = createContext<SelectRootContext<AcceptableValue>>('SelectRoot')
 
 /**
- * The Field the Select is the control of, for its trigger: `null` outside a
- * Field and inside another control of it.
+ * The Select's binding to the Field it is the control of, for its trigger:
+ * `null` outside a Field and inside another control of it.
  * @internal
  */
 export const [injectSelectFieldContext, provideSelectFieldContext]
-  = createContext<FieldRootContext | null>('SelectRoot', 'SelectFieldContext')
+  = createContext<FieldControlBinding | null>('SelectRoot', 'SelectFieldContext')
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false">
 import { computed, onBeforeUnmount, onMounted, toRef, watch } from 'vue'
-import { isProgrammaticChange } from '@/Field/pendingFieldInput'
-import { claimFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { PopperRoot } from '@/Popper'
+import { provideFormResetOwner } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import BubbleSelect from './BubbleSelect.vue'
 import { useSelectRoot } from './useSelect'
 
@@ -177,20 +178,24 @@ defineSlots<{
 
 // Optional Field participation: `null` outside a `FieldRoot` (and inside
 // another control of the field, which owns it), so every binding below is
-// inert — and byte-for-byte identical to before — when there is no Field.
-// `SelectTrigger` (the focusable element) registers the Select as the
-// field's control and owns the id/aria wiring. Field's `name` takes
-// precedence over the local prop; `required`/`disabled` apply when set on either.
-const fieldContext = claimFieldControl()
-provideSelectFieldContext(fieldContext)
+// inert when there is no Field. The root owns the value and is the field's
+// control; `SelectTrigger` (the focusable element) carries the field's id,
+// label and aria wiring, and reports focus. Field's `name` takes precedence
+// over the local prop; `required`/`disabled` apply when set on either.
+const field = useFieldBinding({
+  // Getters read bindings that are retained anyway, not the composable's
+  // return object: capturing it in a closure would keep it alive per instance.
+  // The trigger's own `id` (else the field's, which the trigger then renders).
+  id: () => context.triggerElement.value?.id || undefined,
+  element: () => context.triggerElement.value,
+  getValue: () => modelValue.value,
+  required: () => props.required,
+})
+provideSelectFieldContext(field)
 
-const resolvedName = computed(() => fieldContext?.name.value ?? props.name)
-// `required` is a plain (non-optional-default) `Boolean` prop, so Vue casts
-// it to `false` rather than `undefined` when omitted — `props.required` can
-// never actually be `undefined`. Only fall back to the Field's `required`
-// when a Field is present, so standalone output is untouched.
-const required = computed(() => (fieldContext ? (props.required || fieldContext.required.value) : props.required))
-const disabled = computed(() => Boolean(props.disabled || fieldContext?.disabled.value))
+// A getter rather than a computed: cheap, and free for a standalone select.
+// The resolved `required` and `disabled` are the context's.
+const resolvedName = () => field ? field.name(props.name) : props.name
 
 // Every item registers here: the open content's and the closed ones the
 // content renders while it needs their labels.
@@ -204,37 +209,30 @@ const select = useSelectRoot<AcceptableValue>({
   by: props.by as By<AcceptableValue> | undefined,
   open: () => props.open,
   defaultOpen: props.defaultOpen,
-  disabled,
-  required,
+  disabled: () => field ? field.disabled(props.disabled) : props.disabled,
+  required: () => field ? field.required(props.required) : props.required,
   dir,
   baseId: useId(undefined, 'reka-select'),
   displayValue: toRef(() => props.displayValue as ((value: AcceptableValue) => string) | undefined),
   items: () => props.items as SelectItems<AcceptableValue> | undefined,
   getNavigationIntent: event => props.getNavigationIntent?.(event),
   emit: emits,
-  // A user selection marks the field dirty and runs on-change validation; a
-  // programmatic one (`isProgrammaticChange`) or a parent-driven `modelValue`
-  // change only reaches the watcher below. The selection is reported
-  // explicitly: a controlled `modelValue` only updates once the parent re-renders.
-  onUpdate: fieldContext
-    ? (value, details) => {
-        if (!isProgrammaticChange(details.reason))
-          fieldContext.handleControlInput({ value })
-      }
-    : undefined,
+  // The Field hears its own commits by reason (`change`): a user selection
+  // marks it dirty and runs on-change validation; a programmatic one (or a
+  // parent-driven `modelValue` change) only reaches the watcher below. The
+  // selection is reported explicitly: a controlled `modelValue` only updates
+  // once the parent re-renders.
+  onUpdate: field?.change,
   onOpenComplete: value => emits('update:openComplete', value),
 })
-const { context, open, isEmptyModelValue, isSelected } = select
+const { context, open, isSelected } = select
 const modelValue = select.modelValue as unknown as Ref<M extends true ? T[] : T | undefined>
 
 // `dirty` is reported from `onUpdate` instead (the user-driven path) — this
 // watcher also fires for a programmatic/parent-driven `modelValue` change,
 // which should update `filled` but must not mark the field dirty.
-if (fieldContext) {
-  watch(modelValue, () => {
-    fieldContext.reportControlState({ filled: !isEmptyModelValue.value })
-  })
-}
+if (field)
+  watch(modelValue, value => field.sync(value))
 
 const isFormControl = useFormControl(context.triggerElement)
 
@@ -254,7 +252,7 @@ closedItems.liveItems = () => {
 // to the browser's autofill, which can arrive at any time. `items` has them
 // from the start, so its render waits for idle time; otherwise the closed
 // content renders its lean items from the mount, while the name and form last.
-closedItems.needsForm = () => isFormControl.value && !!resolvedName.value
+closedItems.needsForm = () => isFormControl.value && !!resolvedName()
 onMounted(() => {
   // Past the mount (and the hydration), a selected value without a label
   // renders the closed items now, so the trigger shows it before the first paint.
@@ -331,6 +329,13 @@ const nativeOptions = computed(() => {
 // event `BubbleSelect` dispatches for that change.
 
 provideSelectRootContext(context)
+
+// A native reset of the owning form puts the value back to `defaultValue`. The
+// root renders no element: `SelectTrigger` binds it.
+// Read off the composable's return here: a closure over that object would keep
+// all of it alive for the life of the component.
+const { isControlled } = select
+provideFormResetOwner((event: Event) => { resetControllableState(isControlled, event) })
 </script>
 
 <template>
@@ -341,14 +346,14 @@ provideSelectRootContext(context)
     />
 
     <BubbleSelect
-      v-if="isFormControl && resolvedName"
+      v-if="isFormControl && resolvedName()"
       aria-hidden="true"
       tabindex="-1"
       :multiple="multiple"
-      :required="required"
-      :name="resolvedName"
+      :required="context.required.value"
+      :name="resolvedName()"
       :autocomplete="autocomplete"
-      :disabled="disabled"
+      :disabled="context.disabled.value"
       :value="modelValue"
     >
       <option

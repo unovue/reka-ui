@@ -1,4 +1,4 @@
-export { type AsTag, Primitive, type PrimitiveProps } from './Primitive'
+export { type AsTag, Primitive, type PrimitiveHTMLAttributes, type PrimitiveProps } from './Primitive'
 export { Slot } from './Slot'
 export { usePrimitiveElement } from './usePrimitiveElement'
 // `PrimitiveState` (= shared `PartState`) and `StateAttributesMapping` now live in

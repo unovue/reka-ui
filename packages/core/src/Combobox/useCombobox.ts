@@ -1,4 +1,5 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { ComboboxItems } from './comboboxItems'
 import type { ComboboxRootContext } from './ComboboxRoot.vue'
 import type { ListboxChangeReason, ListboxFilterFunction, ListboxItemState, ListboxState, UseListboxRootProps, UseListboxRootReturn } from '@/Listbox/useListbox'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
@@ -7,6 +8,7 @@ import { createEventHook, tryOnScopeDispose } from '@vueuse/core'
 import { computed, isRef, nextTick, ref, toValue } from 'vue'
 import { useListboxRoot } from '@/Listbox/useListbox'
 import { createPartSurface, disclosureState, getActiveElement, getElementByIdFrom, useComposing, useControllableState, useFilter } from '@/shared'
+import { getComboboxItemLabel } from './comboboxItems'
 import { useComboboxContentPositioning } from './useComboboxContentPositioning'
 
 // =============================================================================
@@ -30,7 +32,8 @@ import { useComboboxContentPositioning } from './useComboboxContentPositioning'
  *
  * - `'item-press'`: an item was clicked, or Enter selected the highlighted item
  *   (Enter clicks it).
- * - `'clear-press'`: `ComboboxCancel` reset the value (`resetModelValueOnClear`).
+ * - `'clear-press'`: `ComboboxCancel` reset the value (the default; off with
+ *   `resetModelValueOnClear: false`).
  * - `'input-clear'`: the user emptied the input of a single combobox, which
  *   clears its value to `null`.
  * - `'escape-key'`: Escape in the input of a closed combobox cleared the value
@@ -203,14 +206,20 @@ export function getComboboxTriggerSurface(
 }
 
 /**
- * The cancel surface: clears the input (and, with `resetModelValueOnClear`,
- * the value with `'clear-press'`), then the search term.
+ * The cancel surface: clears the value with `'clear-press'` (unless
+ * `resetModelValueOnClear` is `false`), then the input, then the search term.
+ * Inert while the combobox is disabled.
  */
 export function getComboboxCancelSurface(context: ComboboxRootContext<any>): PartSurface<Record<string, never>> {
   return createPartSurface<Record<string, never>>(
     () => ({
-      tabindex: '-1',
-      onClick: (event: MouseEvent) => {
+      'tabindex': '-1',
+      'disabled': context.disabled.value,
+      'aria-disabled': context.disabled.value,
+      'onClick': (event: MouseEvent) => {
+        // `disabled` only stops a native button; guard other elements too.
+        if (context.disabled.value)
+          return
         // A cancelled value clear (`beforeUpdate:modelValue` on the root)
         // keeps everything: the value, the input text and the filter.
         if (context.resetModelValueOnClear.value) {
@@ -413,11 +422,24 @@ export function createComboboxInputSurface(
 }
 
 /**
+ * The text of one selected value: the root's `displayValue` (not called for
+ * `null`), then its label in the root's `items`, then the `label` key of an
+ * object value, then a primitive value's string form; empty for `null` and for
+ * an object value nothing resolves.
+ */
+function getComboboxValueText(context: ComboboxRootContext<any>, value: unknown, byValue?: boolean): string {
+  if (value != null && context.displayValue)
+    return context.displayValue(value)
+  return value == null ? '' : getComboboxItemLabel(context, value, byValue) ?? (typeof value === 'object' ? '' : String(value))
+}
+
+/**
  * The text a combobox input shows for its value after a selection: the input's
- * own `displayValue`, then the root's, then a single primitive value's string
- * form; empty for `null` (the empty value), for an object value without a
- * resolver and for `multiple`. `''`, `0` and `false` are values:
- * they go through the root's `displayValue`.
+ * own `displayValue`, then the root's, then the value's label in the root's
+ * `items`, then the `label` key of an object value, then a single primitive
+ * value's string form; empty for `null` (the empty value), for an object value
+ * nothing resolves and for `multiple`. `''`, `0` and `false` are values: they
+ * go through the root's `displayValue` and `items`.
  */
 export function getComboboxInputText(
   context: ComboboxRootContext<any>,
@@ -426,11 +448,21 @@ export function getComboboxInputText(
   const value = context.modelValue.value
   if (displayValue)
     return displayValue(value)
-  if (context.multiple.value || value == null || Array.isArray(value))
+  if (context.multiple.value || Array.isArray(value))
     return ''
-  if (context.displayValue)
-    return context.displayValue(value)
-  return typeof value === 'object' ? '' : String(value)
+  return getComboboxValueText(context, value)
+}
+
+/**
+ * The text of each selected value, in the order of the value, as
+ * `ComboboxValue` shows it: the text the input would show for it, and a
+ * primitive value also finds its label among `{ value, label }` items. A
+ * single combobox has one entry, or none while it is empty (`null`). Reactive
+ * when read inside an effect.
+ */
+export function getComboboxSelectedLabels(context: ComboboxRootContext<any>): string[] {
+  const value = context.modelValue.value
+  return (Array.isArray(value) ? value : value == null ? [] : [value]).map(entry => getComboboxValueText(context, entry, true))
 }
 
 export interface UseComboboxRootProps<T = AcceptableValue> extends Omit<UseListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'filter' | 'filterSearch' | 'highlightScroll' | 'modelValue' | 'defaultValue'> {
@@ -464,8 +496,6 @@ export interface UseComboboxRootProps<T = AcceptableValue> extends Omit<UseListb
    * which would be mistaken for the filter itself.
    */
   filter?: ListboxFilterFunction<T> | null | Ref<ListboxFilterFunction<T> | null | undefined>
-  /** @deprecated Use `filter: null`. When `true`, client filtering is off whatever `filter` says. */
-  ignoreFilter?: MaybeRefOrGetter<boolean | undefined>
   /** Reset the input text when the combobox closes. @defaultValue `true` */
   resetSearchTermOnBlur?: MaybeRefOrGetter<boolean | undefined>
   /** Reset the input text when a value is selected. @defaultValue `true` */
@@ -474,7 +504,7 @@ export interface UseComboboxRootProps<T = AcceptableValue> extends Omit<UseListb
   openOnFocus?: MaybeRefOrGetter<boolean | undefined>
   /** Open when the input is clicked. @defaultValue `false` */
   openOnClick?: MaybeRefOrGetter<boolean | undefined>
-  /** `ComboboxCancel` also clears the value. @defaultValue `false` */
+  /** `ComboboxCancel` also clears the value; `false` clears only the search text. @defaultValue `true` */
   resetModelValueOnClear?: MaybeRefOrGetter<boolean | undefined>
   /** Unmount the content when closed. @defaultValue `true` */
   unmountOnHide?: MaybeRefOrGetter<boolean | undefined>
@@ -482,6 +512,16 @@ export interface UseComboboxRootProps<T = AcceptableValue> extends Omit<UseListb
   emptyValue?: T | null
   /** Resolves the text the input shows for a selected value (single selection). */
   displayValue?: (value: T) => string
+  /**
+   * The items as data: an array of items, an array of groups of them
+   * (`{ items }`), or a `createComboboxItems()` collection. A label source: the
+   * input shows the label of the selected value from it (after `displayValue`),
+   * so the text needs no rendered item. A collection resolves a value (an id)
+   * to its label; in an array, `by` matches an object value to its item and the
+   * item's `label` key is the text. The rendered items still make up the list
+   * and its filtering.
+   */
+  items?: MaybeRefOrGetter<ComboboxItems<any, T> | undefined>
   /**
    * What a selected item writes into the model (single selection). Defaults to
    * the item's value; Autocomplete, whose model is the input text, maps it
@@ -516,6 +556,8 @@ export interface UseComboboxRootReturn<T = AcceptableValue> extends Pick<UseList
   lastOpenChangeDetails: Readonly<Ref<ChangeEventDetails<ComboboxOpenChangeReason>>>
   /** The search term the filter runs against (writable). */
   filterSearch: Ref<string>
+  /** Puts the input's text back to the text of the current value, dropping what was typed. */
+  resetSearchTerm: (reason?: ComboboxOpenChangeReason | BaseChangeReason) => void
   /** The root surface: `dir`, the highlight release on pointer leave / focus out. */
   root: PartSurface<ComboboxState>
   /** The `role="listbox"` surface. */
@@ -548,8 +590,6 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
   const baseId = props.baseId ?? `reka-combobox-${++comboboxCount}`
   const { contains } = useFilter({ sensitivity: 'base' })
   const filter = computed(() => {
-    if (toValue(props.ignoreFilter))
-      return null
     const value = isRef(props.filter) ? props.filter.value : props.filter
     return value === undefined ? contains : value
   })
@@ -691,9 +731,10 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     filterState: listbox.filterState,
     openOnFocus: bool(props.openOnFocus),
     openOnClick: bool(props.openOnClick),
-    resetModelValueOnClear: bool(props.resetModelValueOnClear),
+    resetModelValueOnClear: bool(props.resetModelValueOnClear, true),
     unmountOnHide: bool(props.unmountOnHide, true),
     displayValue: props.displayValue,
+    items: props.items,
     notifyOpenComplete: value => props.onOpenComplete?.(value),
   }
 
@@ -713,6 +754,7 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     highlightSelected: listbox.highlightSelected,
     labels: listbox.labels,
     filterSearch,
+    resetSearchTerm: resetSearchTerm.trigger,
     filterState: listbox.filterState,
     isControlled: listbox.isControlled,
     lastChangeDetails: listbox.lastChangeDetails,

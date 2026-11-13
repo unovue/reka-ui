@@ -2,7 +2,7 @@
 import type { EventHook } from '@vueuse/core'
 import type { ComputedRef, Ref, ShallowRef } from 'vue'
 import type { ListboxChangeReason, ListboxFilterFunction, ListboxFilterItem, ListboxHighlightScroll, ListboxLabelRegistry, ListboxNavigationIntent, ListboxVirtualKeydown } from './useListbox'
-import type { FieldControlBinding } from '@/Field/useFieldControl'
+import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
@@ -162,9 +162,11 @@ export type ListboxRootEmits<T = AcceptableValue, M extends boolean = boolean> =
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false">
 import { mergeProps, ref, shallowRef, toRef, toRefs, watch } from 'vue'
 import { useCollection } from '@/Collection'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useListboxRoot } from './useListbox'
 
@@ -205,7 +207,7 @@ const isFormControl = useFormControl(currentElement)
 // `ListboxContent` carries the field's id, label and aria wiring.
 // The ref is only created inside a Field, so a standalone listbox allocates nothing.
 let fieldContent: ShallowRef<HTMLElement | undefined> | undefined
-const field = useFieldControl({
+const field = useFieldBinding({
   // Getters read bindings that are retained anyway, not the composable's
   // return object: capturing it in a closure would keep it alive per instance.
   // The content renders its own `id`, else the field's.
@@ -263,6 +265,12 @@ defineExpose(mergeExpose(expose, {
 }))
 
 provideListboxRootContext(context)
+
+// A native reset of the owning form puts the value back to `defaultValue`.
+// Read off the composable's return here: a closure over that object would keep
+// all of it alive for the life of the component.
+const { isControlled } = listbox
+function onFormReset(event: Event) { resetControllableState(isControlled, event) }
 if (field)
   provideListboxFieldContext({ field, contentElement: fieldContent! })
 // Only shadow an ancestor listbox's wiring; otherwise providing nothing already reads as `null`.
@@ -276,6 +284,8 @@ if (field)
 // an item, a `ListboxFilter`), and blurred once it leaves.
 const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
 const fieldFocusHandlers = focusWithin && { onFocusin: focusWithin.onFocusin, onFocusout: focusWithin.onFocusout }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -283,6 +293,7 @@ const fieldFocusHandlers = focusWithin && { onFocusin: focusWithin.onFocusin, on
     :is="renderAs(as, asChild)"
     ref="primitiveElement"
     v-bind="fieldFocusHandlers ? mergeProps(root.attrs.value, fieldFocusHandlers) : root.attrs.value"
+    @vue:mounted="bindFormReset"
   >
     <slot :model-value="modelValue" />
 

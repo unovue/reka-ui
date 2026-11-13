@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { EventHookOn } from '@vueuse/core'
-import type { ComputedRef, Ref } from 'vue'
+import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { ComboboxItemCollection, ComboboxItemGroup, ComboboxItems, ComboboxItemsIndex } from './comboboxItems'
 import type { ComboboxChangeReason, ComboboxInteractionType, ComboboxOpenChangeReason } from './useCombobox'
 import type { ListboxRootProps } from '@/Listbox'
 import type { ListboxRootContext } from '@/Listbox/ListboxRoot.vue'
@@ -56,7 +57,7 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
   onClearInput: (handler: (event?: Event) => boolean | void) => void
   /** The details of the last value change (or cancelled attempt). */
   lastChangeDetails: Readonly<Ref<ChangeEventDetails<ComboboxChangeReason>>>
-  /** The resolved filter: `null` while client filtering is off (`filter: null` or `ignoreFilter`). */
+  /** The resolved filter: `null` while client filtering is off (`filter: null`). */
   filter: ComputedRef<ListboxFilterFunction<T> | null>
   /** The search term the filter runs against. */
   filterSearch: Ref<string>
@@ -68,6 +69,10 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
   unmountOnHide: Ref<boolean>
   /** The root's `displayValue` resolver, if any. */
   displayValue?: (value: T) => string
+  /** The root's `items`, if any. Read through `getComboboxInputText` / `getComboboxSelectedLabels`. */
+  items?: MaybeRefOrGetter<ComboboxItems<any, T> | undefined>
+  /** The index of `items`, created by the first lookup that finds `items` set. @internal */
+  itemsIndex?: ComputedRef<ComboboxItemsIndex | undefined>
   /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
   notifyOpenComplete?: (value: boolean) => void
 }
@@ -102,7 +107,7 @@ export type ComboboxRootEmits<T = AcceptableValue, M extends boolean = boolean> 
  */
 export type ComboboxModelValue<T, M extends boolean = boolean> = boolean extends M ? T | T[] | null : M extends true ? T[] : T | null
 
-export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'filter' | 'getNavigationIntent' | 'modelValue' | 'defaultValue'> {
+export interface ComboboxRootProps<T = AcceptableValue, I = T> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'filter' | 'getNavigationIntent' | 'modelValue' | 'defaultValue'> {
   /**
    * The controlled value of the Combobox. Can be binded with `v-model`. An array when `multiple`; `null` is an empty
    * single selection, the value `ComboboxCancel` emits when it clears one.
@@ -148,12 +153,9 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
    */
   filter?: ListboxFilterFunction<T> | null
   /**
-   * Deprecated alias for `:filter="null"`: when `true`, turns client filtering off. Wins over `filter`.
-   * @deprecated Use `:filter="null"`.
-   */
-  ignoreFilter?: boolean
-  /**
-   * When `true` the `modelValue` will be reset to `null` (or `[]` if `multiple`)
+   * Whether `ComboboxCancel` also clears the selected value, resetting `modelValue` to `null` (or `[]` if `multiple`).
+   * Set to `false` to clear only the search text and keep the selection.
+   * @defaultValue true
    */
   resetModelValueOnClear?: boolean
   /**
@@ -164,32 +166,43 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
   unmountOnHide?: boolean
   /**
    * The text the input shows for the selected value of a single combobox, when `ComboboxInput` has no `displayValue`
-   * of its own. Without either, a primitive value shows as its string form and an object value as an empty input.
+   * of its own. Without either, the text comes from `items`, then from the `label` key of an object value; a primitive
+   * value shows as its string form and any other object value as an empty input.
    */
   displayValue?: (value: T) => string
+  /**
+   * The items as data: an array of items, an array of groups of them (`{ items: [...] }`), or a collection made with
+   * `createComboboxItems()`. It is where the label of the selected value comes from, so the input and `ComboboxValue`
+   * need no rendered item: they are right before the first open and on the server. A collection resolves a value (an
+   * id) to its label; in an array, `by` matches an object value to its item, whose `label` is shown. `displayValue`
+   * wins over it. The `ComboboxItem`s still render the list and are what the filter matches.
+   */
+  items?: readonly I[] | readonly ComboboxItemGroup<I>[] | ComboboxItemCollection<I, T>
 }
 </script>
 
-<script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false">
+<script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false, I = T">
 import { mergeProps, toRef, watch } from 'vue'
 import { useCollection } from '@/Collection'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { provideListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { renderAs } from '@/Primitive/renderAs'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { hasComboboxValue, useComboboxRoot } from './useCombobox'
 import { provideComboboxField } from './useComboboxField'
 
 defineOptions({ inheritAttrs: false })
 
-const props = withDefaults(defineProps<ComboboxRootProps<T> & { multiple?: M }>(), {
+const props = withDefaults(defineProps<ComboboxRootProps<T, I> & { multiple?: M }>(), {
   open: undefined,
   resetSearchTermOnBlur: true,
   resetSearchTermOnSelect: true,
   openOnFocus: false,
   openOnClick: false,
-  resetModelValueOnClear: false,
+  resetModelValueOnClear: true,
   highlightOnHover: true,
   unmountOnHide: true,
 })
@@ -218,7 +231,7 @@ function isSameValue(a: any, b: any): boolean {
 // Optional Field participation: `null` outside a `FieldRoot`, so every
 // binding below is inert without a Field. The root owns the value; the input
 // (Base UI parity) carries the field's id, label and aria wiring.
-const field = useFieldControl({
+const field = useFieldBinding({
   // Getters read bindings that are retained anyway, not the composable's
   // return object: capturing it in a closure would keep it alive per instance.
   // The element the field focuses, so `FieldLabel`'s `for` and `focusControl()`
@@ -250,7 +263,6 @@ const combobox = useComboboxRoot<AcceptableValue>({
   by: props.by as By<AcceptableValue> | undefined,
   getNavigationIntent: event => props.getNavigationIntent?.(event),
   filter: toRef(() => props.filter) as Ref<ListboxFilterFunction<AcceptableValue> | null | undefined>,
-  ignoreFilter: () => props.ignoreFilter,
   open: () => props.open,
   defaultOpen: props.defaultOpen,
   baseId: useId(undefined, 'reka-combobox'),
@@ -261,6 +273,7 @@ const combobox = useComboboxRoot<AcceptableValue>({
   resetModelValueOnClear: () => props.resetModelValueOnClear,
   unmountOnHide: () => props.unmountOnHide,
   displayValue: props.displayValue && (value => props.displayValue!(value as T)),
+  items: () => props.items as ComboboxItems<any, AcceptableValue> | undefined,
   getItems,
   getItem,
   element: currentElement,
@@ -290,6 +303,18 @@ defineExpose(mergeExpose(expose, {
 provideListboxRootContext(context)
 provideComboboxRootContext(context)
 provideComboboxField(field, context)
+
+// A native reset of the owning form puts the value back to `defaultValue`,
+// and the input's text back to that value's.
+// Read off the composable's return here: a closure over that object would keep
+// all of it alive for the life of the component.
+const { isControlled, resetSearchTerm } = combobox
+function onFormReset(event: Event) {
+  resetControllableState(isControlled, event)
+  resetSearchTerm('none')
+}
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -298,6 +323,7 @@ provideComboboxField(field, context)
       :is="renderAs(as, asChild)"
       :ref="forwardRef"
       v-bind="mergeProps(root.attrs.value, $attrs)"
+      @vue:mounted="bindFormReset"
     >
       <slot
         :open="open"

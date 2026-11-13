@@ -63,8 +63,10 @@ export const [injectColorSliderRootContext, provideColorSliderRootContext]
 
 <script setup lang="ts">
 import { mergeProps, watch } from 'vue'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { colorToString } from '@/shared/color'
+import { provideFormResetOwner } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { SliderRoot } from '@/Slider'
 import { provideSliderFieldContext } from '@/Slider/utils'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -93,7 +95,7 @@ const dir = useDirection(() => props.dir)
 // and registers it; the inner `SliderRoot` and `SliderThumb` render the
 // field's state, focus, id and aria wiring through the binding handed down.
 const thumbElement = () => (currentElement.value as HTMLElement | undefined)?.querySelector<HTMLElement>('[role="slider"]') ?? undefined
-const field = useFieldControl({
+const field = useFieldBinding({
   // The thumb renders its own `id`, else the field's.
   id: () => thumbElement()?.id || undefined,
   element: thumbElement,
@@ -105,7 +107,7 @@ const field = useFieldControl({
 const resolvedName = () => field ? field.name(props.name) : props.name
 const resolvedRequired = () => field ? field.required(props.required) : props.required
 
-const { sliderProps, context, color, disabled } = useColorSlider({
+const { sliderProps, context, color, disabled, isControlled } = useColorSlider({
   orientation: () => props.orientation,
   dir: () => dir.value,
   disabled: () => field ? field.disabled(props.disabled) : props.disabled,
@@ -123,6 +125,9 @@ const { sliderProps, context, color, disabled } = useColorSlider({
 })
 
 provideColorSliderRootContext(context)
+// A native reset of the owning form puts the value back to `defaultValue`.
+// The inner `SliderRoot` binds it on the element they share.
+provideFormResetOwner((event: Event) => { resetControllableState(isControlled, event) })
 if (field) {
   provideSliderFieldContext(field)
   watch(color, value => field.sync(value))

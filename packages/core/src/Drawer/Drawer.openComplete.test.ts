@@ -2,15 +2,14 @@
 import { fireEvent, render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
-import { sleep } from '@/test'
-import { DrawerClose, DrawerContent, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from '.'
+import { DrawerClose, DrawerPopup, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from '.'
 
 function drawer(rootProps: Record<string, unknown> = {}, contentProps: Record<string, unknown> = {}) {
   return defineComponent({
     setup() {
       return () => h(DrawerRoot, rootProps, () => [
         h(DrawerTrigger, null, () => 'Open'),
-        h(DrawerPortal, null, () => h(DrawerContent, { 'aria-describedby': undefined, ...contentProps }, () => [
+        h(DrawerPortal, null, () => h(DrawerPopup, { 'aria-describedby': undefined, ...contentProps }, () => [
           h(DrawerTitle, null, () => 'Title'),
           h(DrawerClose, null, () => 'Close'),
         ])),
@@ -36,9 +35,12 @@ function fakeAnimation(finished: Promise<unknown>, endTime = 300): Animation {
 describe('drawerRoot update:openComplete matches Base UI', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    // The animation frames before the animations are read, and the cancel below, are timers.
+    vi.useFakeTimers()
   })
   afterEach(() => {
     delete (HTMLElement.prototype as Partial<HTMLElement>).getAnimations
+    vi.useRealTimers()
   })
 
   // Base UI filters with isFiniteAnimation(); an infinite animation on the popup
@@ -48,7 +50,7 @@ describe('drawerRoot update:openComplete matches Base UI', () => {
     const onOpenComplete = vi.fn()
     const { getByText } = render(drawer({ 'onUpdate:openComplete': onOpenComplete }))
     await fireEvent.click(getByText('Open'))
-    await sleep(100)
+    await vi.advanceTimersByTimeAsync(100)
     expect(onOpenComplete).toHaveBeenCalledWith(true)
   })
 
@@ -75,7 +77,7 @@ describe('drawerRoot update:openComplete matches Base UI', () => {
     const onOpenComplete = vi.fn()
     const { getByText } = render(drawer({ 'onUpdate:openComplete': onOpenComplete }))
     await fireEvent.click(getByText('Open'))
-    await sleep(100)
+    await vi.advanceTimersByTimeAsync(100)
     expect(onOpenComplete).not.toHaveBeenCalled()
     finishB()
     await vi.waitFor(() => expect(onOpenComplete).toHaveBeenCalledWith(true))

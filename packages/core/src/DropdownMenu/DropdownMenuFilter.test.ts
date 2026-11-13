@@ -1,7 +1,8 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
+import { DropdownMenuContent, DropdownMenuFilter, DropdownMenuItem, DropdownMenuRoot, DropdownMenuTrigger } from '.'
 import DropdownMenuWithFilter from './story/_DropdownMenuWithFilter.vue'
 
 describe('given DropdownMenu with Filter', () => {
@@ -271,5 +272,174 @@ describe('given DropdownMenu with Filter', () => {
 
       expect(document.querySelector('[role="menuitem"][data-highlighted]')).not.toBeNull()
     })
+  })
+})
+
+describe('given a DropdownMenuFilter model', () => {
+  globalThis.ResizeObserver ??= class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  const Fixture = defineComponent({
+    props: { filterProps: { type: Object, default: () => ({}) } },
+    setup: props => () => h(DropdownMenuRoot, { open: true }, () => [
+      h(DropdownMenuTrigger, () => 'Open'),
+      h(DropdownMenuContent, () => [
+        h(DropdownMenuFilter, { 'aria-label': 'Filter', ...props.filterProps }),
+        h(DropdownMenuItem, () => 'New Tab'),
+      ]),
+    ]),
+  })
+
+  let wrapper: VueWrapper | undefined
+  afterEach(() => wrapper?.unmount())
+
+  async function mountFilter(filterProps: Record<string, unknown> = {}) {
+    document.body.innerHTML = ''
+    wrapper = mount(Fixture, { props: { filterProps }, attachTo: document.body })
+    await nextTick()
+    await nextTick()
+    const filter = wrapper.findComponent(DropdownMenuFilter)
+    return { filter, input: filter.element as HTMLInputElement }
+  }
+
+  async function inputValue(input: HTMLInputElement, value: string) {
+    input.value = value
+    input.dispatchEvent(new Event('input'))
+    await nextTick()
+  }
+
+  async function escape(input: HTMLInputElement) {
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    input.dispatchEvent(event)
+    await nextTick()
+    return event
+  }
+
+  it('uncontrolled: keeps the typed text and emits it as the only argument', async () => {
+    const { filter, input } = await mountFilter()
+    expect(input.value).toBe('')
+    await inputValue(input, 'ne')
+    expect(input.value).toBe('ne')
+    expect(filter.emitted('update:modelValue')).toEqual([['ne']])
+    expect(filter.emitted('beforeUpdate:modelValue')).toBeUndefined()
+  })
+
+  it('uncontrolled: does not emit when the text is unchanged', async () => {
+    const { filter, input } = await mountFilter()
+    await inputValue(input, '')
+    expect(filter.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('uncontrolled: Escape clears a non-empty text and emits an empty string', async () => {
+    const { filter, input } = await mountFilter()
+    await inputValue(input, 'ne')
+    await escape(input)
+    expect(input.value).toBe('')
+    expect(filter.emitted('update:modelValue')).toEqual([['ne'], ['']])
+    // An empty filter leaves Escape alone.
+    await escape(input)
+    expect(filter.emitted('update:modelValue')).toEqual([['ne'], ['']])
+  })
+
+  it('uncontrolled: follows a `modelValue` the parent sets later', async () => {
+    const { input } = await mountFilter()
+    await wrapper!.setProps({ filterProps: { modelValue: 'tab' } })
+    expect(input.value).toBe('tab')
+  })
+
+  it('controlled: reflects the prop and emits without applying until the parent does', async () => {
+    const { filter, input } = await mountFilter({ modelValue: 'ne' })
+    expect(input.value).toBe('ne')
+    await inputValue(input, 'new')
+    expect(filter.emitted('update:modelValue')).toEqual([['new']])
+    expect(filter.emitted('beforeUpdate:modelValue')).toBeUndefined()
+    await wrapper!.setProps({ filterProps: { modelValue: 'tab' } })
+    expect(input.value).toBe('tab')
+  })
+
+  it('controlled: emits on input even when the text is unchanged', async () => {
+    const { filter, input } = await mountFilter({ modelValue: 'ne' })
+    await inputValue(input, 'ne')
+    expect(filter.emitted('update:modelValue')).toEqual([['ne']])
+  })
+
+  it('controlled: Escape emits an empty string and keeps the text until the parent applies it', async () => {
+    const { filter, input } = await mountFilter({ modelValue: 'ne' })
+    await escape(input)
+    expect(filter.emitted('update:modelValue')).toEqual([['']])
+    expect(input.value).toBe('ne')
+    // The prop is still `'ne'`, so a second Escape clears again.
+    await escape(input)
+    expect(filter.emitted('update:modelValue')).toEqual([[''], ['']])
+  })
+
+  it('controlled: reads an empty text once the binding is cleared', async () => {
+    document.body.innerHTML = ''
+    const text = ref<string | undefined>('ne')
+    wrapper = mount(defineComponent({
+      setup: () => () => h(DropdownMenuRoot, { open: true }, () => [
+        h(DropdownMenuTrigger, () => 'Open'),
+        h(DropdownMenuContent, () => [
+          h(DropdownMenuFilter, { modelValue: text.value, as: 'div' }, {
+            default: ({ modelValue }: { modelValue: unknown }) => h('span', { 'data-testid': 'text' }, JSON.stringify(modelValue ?? null)),
+          }),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    expect(document.querySelector('[data-testid=text]')?.textContent).toBe('"ne"')
+    text.value = undefined
+    await nextTick()
+    expect(document.querySelector('[data-testid=text]')?.textContent).toBe('""')
+  })
+
+  it('bound after mount: reads an empty text once the binding is cleared', async () => {
+    document.body.innerHTML = ''
+    const text = ref<string | undefined>(undefined)
+    wrapper = mount(defineComponent({
+      setup: () => () => h(DropdownMenuRoot, { open: true }, () => [
+        h(DropdownMenuTrigger, () => 'Open'),
+        h(DropdownMenuContent, () => [
+          h(DropdownMenuFilter, { modelValue: text.value, as: 'div' }, {
+            default: ({ modelValue }: { modelValue: unknown }) => h('span', { 'data-testid': 'text' }, JSON.stringify(modelValue ?? null)),
+          }),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    text.value = 'ne'
+    await nextTick()
+    expect(document.querySelector('[data-testid=text]')?.textContent).toBe('"ne"')
+    text.value = undefined
+    await nextTick()
+    expect(document.querySelector('[data-testid=text]')?.textContent).toBe('""')
+  })
+
+  it('v-model: typing and Escape update the bound value', async () => {
+    document.body.innerHTML = ''
+    const text = ref('ne')
+    wrapper = mount(defineComponent({
+      setup: () => () => h(DropdownMenuRoot, { open: true }, () => [
+        h(DropdownMenuTrigger, () => 'Open'),
+        h(DropdownMenuContent, () => [
+          h(DropdownMenuFilter, { 'aria-label': 'Filter', 'modelValue': text.value, 'onUpdate:modelValue': (v: string) => { text.value = v } }),
+          h(DropdownMenuItem, () => 'New Tab'),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    const input = wrapper.findComponent(DropdownMenuFilter).element as HTMLInputElement
+    expect(input.value).toBe('ne')
+    await inputValue(input, 'new')
+    expect(text.value).toBe('new')
+    await escape(input)
+    expect(text.value).toBe('')
+    expect(input.value).toBe('')
+    text.value = 'tab'
+    await nextTick()
+    expect(input.value).toBe('tab')
   })
 })

@@ -8,7 +8,7 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { PopupRootStore } from '@/shared/popupHandle'
 import { computed, nextTick, ref, toValue } from 'vue'
 import { useMenuRoot } from '@/Menu/useMenu'
-import { createPartSurface } from '@/shared'
+import { containsComposed, createPartSurface } from '@/shared'
 import { createPopupRootStore, getPopupRootStore, setPopupRootStore } from '@/shared/popupHandle'
 
 // =============================================================================
@@ -143,7 +143,8 @@ export function createDropdownMenuContentSurface(
     }
     if (!context.modal.value || isRightClick)
       hasInteractedOutside.value = true
-    if (context.triggerElement.value?.contains(event.target as HTMLElement))
+    const trigger = context.triggerElement.value
+    if (trigger && containsComposed(trigger, event.target as Node))
       event.preventDefault()
   }
 

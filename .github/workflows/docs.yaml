@@ -1,0 +1,48 @@
+name: Docs
+
+# The docs site is otherwise only built when a release tag is pushed
+# (publish.yaml), next to the npm publish: a demo broken by a component change
+# would surface after the package is out.
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'packages/core/src/**'
+      - packages/core/package.json
+      # Dependency, patch and setup changes can break the site build too.
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - 'patches/**'
+      - .github/workflows/docs.yaml
+      - '.github/actions/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup (Install node & pnpm)
+        uses: ./.github/actions/setup
+
+      # The docs link `reka-ui` from `packages/core`, so they need its build.
+      - name: Build Reka UI
+        run: pnpm --filter reka-ui build
+
+      - name: Build Docs
+        run: pnpm docs:build
+        env:
+          # The VitePress build compiles every demo and example into both the
+          # client and SSR bundles, and peaks just past Node's default ~4GB heap.
+          NODE_OPTIONS: --max-old-space-size=8192

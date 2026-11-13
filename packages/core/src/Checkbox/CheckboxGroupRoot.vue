@@ -2,6 +2,7 @@
 import type { Ref } from 'vue'
 import type { CheckboxGroupChangeReason } from './useCheckboxGroup'
 import type { FieldRootContext } from '@/Field/FieldRoot.vue'
+import type { PrimitiveHTMLAttributes } from '@/Primitive'
 import type { RovingFocusGroupProps } from '@/RovingFocus'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
@@ -10,7 +11,7 @@ import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { createContext, useDirection, useFormControl } from '@/shared'
 
-export interface CheckboxGroupRootProps<T = AcceptableValue> extends Pick<RovingFocusGroupProps, 'as' | 'asChild' | 'dir' | 'orientation' | 'loop'>, FormFieldProps {
+export interface CheckboxGroupRootProps<T = AcceptableValue> extends Pick<RovingFocusGroupProps, 'as' | 'asChild' | 'dir' | 'orientation' | 'loop'>, FormFieldProps, /* @vue-ignore */ PrimitiveHTMLAttributes {
   /** The value of the checkbox when it is initially rendered. Use when you do not need to control its value. */
   defaultValue?: T[]
   /** The controlled value of the checkbox. Can be binded with v-model. */
@@ -58,9 +59,11 @@ export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { RovingFocusGroup } from '@/RovingFocus'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useCheckboxGroup } from './useCheckboxGroup'
 
@@ -97,7 +100,7 @@ function getFocusTarget() {
 // Optional Field participation: `null` outside a `FieldRoot`, so every
 // binding below is inert without a Field. The group is the field's control:
 // it takes the field's id and label, and its checkboxes don't register.
-const field = useFieldControl({
+const field = useFieldBinding({
   id: () => attrs.id as string | undefined,
   element: getFocusTarget,
   getValue: () => modelValue.value,
@@ -106,11 +109,14 @@ const field = useFieldControl({
 // Getters rather than computeds: cheap, and free for a standalone group.
 const resolvedName = () => field ? field.name(props.name) : props.name
 const resolvedRequired = () => field ? field.required(props.required) : props.required
+// Without a `name`, render the field only while a required group is empty, so the
+// checked values never become unnamed form fields.
+const showHiddenInput = () => isFormControl.value && (!!resolvedName() || (!!resolvedRequired() && !modelValue.value?.length))
 const disabled = field ? computed(() => field.disabled(props.disabled)) : toRef(props, 'disabled')
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` emits live in the
 // composable's `useControllableState` (`modelValue === undefined` → uncontrolled).
-const { modelValue, context } = useCheckboxGroup<T>({
+const { modelValue, context, isControlled } = useCheckboxGroup<T>({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   emit: emits,
@@ -125,6 +131,9 @@ const { modelValue, context } = useCheckboxGroup<T>({
 
 if (field)
   watch(modelValue, value => field.sync(value))
+
+// A native reset of the owning form puts the value back to `defaultValue`.
+function onFormReset(event: Event) { resetControllableState(isControlled, event) }
 
 // Touched once focus leaves the whole group, not on every checkbox-to-checkbox move.
 const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
@@ -155,6 +164,8 @@ function renderAttrs(attrs: Record<string, unknown>) {
     },
   ))
 }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -162,12 +173,13 @@ function renderAttrs(attrs: Record<string, unknown>) {
     :is="rovingFocus ? RovingFocusGroup : renderAs(as, asChild)"
     ref="primitiveElement"
     v-bind="renderAttrs($attrs)"
+    @vue:mounted="bindFormReset"
   >
     <slot />
 
     <VisuallyHiddenInput
-      v-if="isFormControl && resolvedName()"
-      :name="resolvedName()!"
+      v-if="showHiddenInput()"
+      :name="resolvedName() ?? ''"
       :value="modelValue"
       :required="resolvedRequired()"
       :disabled="disabled"

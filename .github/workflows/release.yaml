@@ -2,8 +2,8 @@
 
 name: Release
 
-permissions:
-  contents: write
+# Each job declares what it needs; nothing is granted workflow-wide.
+permissions: {}
 
 on:
   push:
@@ -14,19 +14,22 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      # changelogithub creates the GitHub release.
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
-
-      - uses: actions/checkout@v7
         with:
+          # The changelog is built from the commits since the previous tag.
           fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 18.x
+          node-version: 22
 
-      - run: npx changelogithub
+      # Pinned: this runs with a write token, so it must not float to whatever npm serves.
+      - run: npx changelogithub@15.0.5
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
@@ -59,21 +62,13 @@ jobs:
       # A prerelease (3.0.0-alpha.0) goes out under its own dist-tag (`alpha`),
       # never `latest`: npm 11 refuses a prerelease without `--tag`, and before
       # that it would have replaced the stable release for every install.
+      # The tag comes from packages/core/scripts/npm-dist-tag.mjs, which
+      # `pub:release` uses too, so the two publish paths cannot drift.
       - name: Publish to npm
         run: |
           version=$(node -p "require('./packages/core/package.json').version")
-          # Build metadata (`+build-1`) is not part of the prerelease.
-          release=${version%%+*}
-          case "$release" in
-            *-*)
-              prerelease=${release#*-}
-              tag=${prerelease%%.*}
-              # npm rejects a dist-tag that reads as a semver range (`0`, `v3`, `x`),
-              # so only letters are taken; anything else goes to `next`.
-              [[ "$tag" =~ ^[a-z]+(-[a-z]+)*$ && ! "$tag" =~ ^(latest|x)$ ]] || tag=next
-              ;;
-            *) tag=latest ;;
-          esac
+          tag=$(node packages/core/scripts/npm-dist-tag.mjs "$version")
+          echo "Publishing reka-ui@$version under the \`$tag\` dist-tag"
           if npm view "reka-ui@$version" version >/dev/null 2>&1; then
             echo "reka-ui@$version is already on npm, skipping"
           else

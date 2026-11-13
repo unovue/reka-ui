@@ -13,11 +13,18 @@ beforeAll(() => {
   globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} } as any
 })
 enableAutoUnmount(afterEach)
-beforeEach(() => { document.body.innerHTML = '' })
+beforeEach(() => {
+  document.body.innerHTML = ''
+  // The idle render and the 1 s typeahead reset are timers: drive them.
+  vi.useFakeTimers()
+})
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 async function settle() {
   await flushPromises()
-  await new Promise(r => setTimeout(r, 80))
+  await vi.advanceTimersByTimeAsync(80)
   await flushPromises()
 }
 const trigger = () => document.querySelector('[role=combobox]') as HTMLElement
@@ -25,7 +32,7 @@ async function type(key: string) {
   trigger().dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
   await settle()
   // let the typeahead buffer reset (1s)
-  await new Promise(r => setTimeout(r, 1100))
+  await vi.advanceTimersByTimeAsync(1100)
 }
 
 interface O { value: string, text: string, disabled?: boolean }
@@ -49,7 +56,7 @@ async function warm() {
   trigger().dispatchEvent(new KeyboardEvent('keydown', { key: '~', bubbles: true, cancelable: true }))
   await settle()
   // The typeahead search resets after 1 s.
-  await new Promise(resolve => setTimeout(resolve, 1050))
+  await vi.advanceTimersByTimeAsync(1050)
 }
 
 async function openClose() {
@@ -60,7 +67,7 @@ async function openClose() {
   trigger().focus()
 }
 
-describe('stale closed typeahead', { timeout: 15000 }, () => {
+describe('stale closed typeahead', () => {
   it('an item disabled while closed is not selected by typeahead', async () => {
     const list = ref<O[]>([{ value: 'a', text: 'Apple' }, { value: 'b', text: 'Banana' }])
     const model = make(() => list.value)

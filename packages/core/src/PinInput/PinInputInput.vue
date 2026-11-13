@@ -27,8 +27,9 @@ defineExpose(expose)
 
 // Same factory as `usePinInput().createInputSurface` — one source for the
 // attributes and every input / keyboard / paste / IME handler.
+const index = () => props.index
 const input = createPinInputInputSurface(context, {
-  index: () => props.index,
+  index,
   disabled: () => props.disabled,
   element: () => currentElement.value,
 })
@@ -39,8 +40,8 @@ watch(input.currentValue, input.updatePlaceholder)
 // Inside a Field, the slot this input fills (read live: `index` can change).
 const fieldSlots = injectPinInputFieldSlots(null)
 onMounted(() => {
-  fieldSlots?.set(currentElement.value, () => props.index)
-  context.onInputElementChange(currentElement.value)
+  fieldSlots?.set(currentElement.value, index)
+  context.onInputElementChange(currentElement.value, index)
 })
 // Before unmount: the element ref is already cleared once unmounted.
 onBeforeUnmount(() => {
@@ -55,16 +56,12 @@ if (fieldSlots) {
     if (previous)
       fieldSlots.delete(previous)
     if (element)
-      fieldSlots.set(element, () => props.index)
-    const inputs = context.inputElements?.value
-    if (!inputs || !previous || !inputs.has(previous)) {
-      if (element)
-        context.onInputElementChange(element)
-      return
-    }
-    const order = [...inputs]
-    order.splice(order.indexOf(previous), 1, ...(element ? [element] : []))
-    context.inputElements!.value = new Set(order)
+      fieldSlots.set(element, index)
+    // Inputs are ordered by `index`, so the new element simply replaces the old.
+    if (previous)
+      context.inputElements?.value.delete(previous)
+    if (element)
+      context.onInputElementChange(element, index)
   })
 }
 </script>

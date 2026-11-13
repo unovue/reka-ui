@@ -2,7 +2,7 @@
 import type { PopperContentProps } from '@/Popper'
 import type { PrimitiveProps } from '@/Primitive'
 import { defu } from 'defu'
-import { useAncestorScroll, useForwardElement } from '@/shared'
+import { containsComposed, useAncestorScroll, useForwardElement } from '@/shared'
 import { injectTooltipProviderContext } from './TooltipProvider.vue'
 
 export type TooltipContentImplEmits = {
@@ -132,7 +132,8 @@ const layerWrapper = computed(() => splitWrapperAttrs(mergeProps({
   disableOutsidePointerEvents: false,
   onEscapeKeyDown: (event: KeyboardEvent) => emits('escapeKeyDown', event),
   onPointerDownOutside: (event: PointerDownOutsideEvent) => {
-    if (rootContext.disableClosingTrigger.value && rootContext.trigger.value?.contains(event.target as HTMLElement))
+    const trigger = rootContext.trigger.value
+    if (rootContext.disableClosingTrigger.value && trigger && containsComposed(trigger, event.target as Node))
       event.preventDefault()
 
     emits('pointerDownOutside', event)

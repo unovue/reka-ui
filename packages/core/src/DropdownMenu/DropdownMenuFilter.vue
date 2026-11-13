@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useVModel } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watch, watchSyncEffect } from 'vue'
 import { injectMenuContentContext } from '@/Menu/MenuContentImpl.vue'
 import { injectMenuRootContext } from '@/Menu/MenuRoot.vue'
@@ -8,7 +7,7 @@ import { injectMenuSubContext } from '@/Menu/MenuSub.vue'
 import {
   usePrimitiveElement,
 } from '@/Primitive'
-import { useComposing } from '@/shared'
+import { useComposing, useControllableState } from '@/shared'
 
 export interface DropdownMenuFilterProps extends PrimitiveProps {
   /** The controlled value of the filter. Can be binded with v-model. */
@@ -39,9 +38,22 @@ defineSlots<{
   }) => any
 }>()
 
-const modelValue = useVModel(props, 'modelValue', emits, {
+// A single-argument `update:modelValue`, like `<input v-model>`. As with the
+// former `useVModel`: a filter bound at mount emits on every input (even an
+// unchanged text) and reads `''` once the binding is cleared.
+// Latched the first time a value is bound, at mount or later, as the composable latches
+// controlled mode.
+let controlled = props.modelValue !== undefined
+const { state: modelValue, setState: setModelValue } = useControllableState<string | undefined>({
+  prop: () => {
+    if (props.modelValue !== undefined)
+      controlled = true
+    return props.modelValue === undefined && controlled ? '' : props.modelValue
+  },
   defaultValue: '',
-  passive: (props.modelValue === undefined) as false,
+  // Typed `string | undefined` for the slot, as before; only strings are written.
+  onUpdate: value => emits('update:modelValue', value as string),
+  isEqual: (a, b) => !controlled && Object.is(a, b),
 })
 
 const rootContext = injectMenuRootContext()
@@ -79,7 +91,7 @@ onUnmounted(() => {
 const { isComposing, shouldDeferInput, handleCompositionStart, handleCompositionUpdate, handleCompositionEnd } = useComposing((event) => {
   const el = event.target as HTMLInputElement
   if (el) {
-    modelValue.value = el.value
+    setModelValue(el.value)
     contentContext.searchRef.value = el.value
   }
 })
@@ -90,7 +102,7 @@ function handleInput(event: InputEvent) {
   if (shouldDeferInput.value)
     return
   const target = event.target as HTMLInputElement
-  modelValue.value = target.value
+  setModelValue(target.value)
   contentContext.searchRef.value = target.value
 }
 
@@ -115,7 +127,7 @@ function handleKeyDown(event: KeyboardEvent) {
   // Prevent Escape from bubbling to avoid closing the menu when clearing the filter
   else if (event.key === 'Escape' && modelValue.value) {
     event.stopPropagation()
-    modelValue.value = ''
+    setModelValue('')
     contentContext.searchRef.value = ''
   }
 }

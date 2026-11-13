@@ -1,7 +1,10 @@
+import type { DefineSetupFnComponent } from 'vue'
+import type { PrimitiveHTMLAttributes } from './Primitive'
 import { cloneVNode, Comment, defineComponent, getCurrentInstance, mergeProps } from 'vue'
 import { renderSlotFragments } from '@/shared/renderSlotFragments'
 import { useForwardElement } from '@/shared/useForwardElement'
 
+/** Typed with the HTML attributes it merges into its child, for `strictTemplates`. */
 export const Slot = defineComponent({
   name: 'PrimitiveSlot',
   inheritAttrs: false,
@@ -50,4 +53,4 @@ export const Slot = defineComponent({
       return children
     }
   },
-})
+}) as unknown as DefineSetupFnComponent<PrimitiveHTMLAttributes>

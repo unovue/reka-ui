@@ -58,7 +58,7 @@ const maxValue = new Temporal.PlainDate(2024, 2, 20)
     <Variant title="Maximum Days">
       <RangeCalendar
         :default-value="defaultValue"
-        :maximum-days="5"
+        :maximum-length="5"
       />
     </Variant>
   </Story>

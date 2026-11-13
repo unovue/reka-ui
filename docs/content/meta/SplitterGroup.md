@@ -31,7 +31,7 @@
   {
     'name': 'direction',
     'description': '<p>The group orientation of splitter.</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': true
   },
   {
@@ -99,7 +99,7 @@
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `autoSaveId` | Unique id used to auto-save group arrangement via `localStorage`. Ignored while `layout` is controlled. | `string \| null` | No | `null` |
 | `dir` | The reading direction of the splitter group when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. Set, it is also rendered as the group's `dir` attribute, so the panels are laid out in that direction. | `"ltr" \| "rtl"` | No | - |
-| `direction` | The group orientation of splitter. | `"vertical" \| "horizontal"` | Yes | - |
+| `direction` | The group orientation of splitter. | `"horizontal" \| "vertical"` | Yes | - |
 | `id` | Group id; falls back to `useId` when not provided. | `string \| null` | No | - |
 | `keyboardResizeBy` | Step size when arrow key was pressed. | `number \| null` | No | `10` |
 | `layout` | The controlled layout: one size per panel, in each panel's `sizeUnit` (the values `@layout` reports). Can be bound as `v-model:layout`. A layout the constraints reject is applied as corrected and the correction emitted; an array whose length differs from the panel count is ignored. | `number[]` | No | - |

@@ -3,8 +3,7 @@ import type { ChangeEventDetails } from '@/shared'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, nextTick, ref } from 'vue'
-import { sleep } from '@/test'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { HoverCardContent, HoverCardRoot, HoverCardTrigger } from '.'
 import HoverCard from './story/_HoverCard.vue'
 
@@ -20,22 +19,30 @@ describe('given a default HoverCard', () => {
     wrapper = mount(HoverCard, { attachTo: document.body })
   })
 
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('should pass axe accessibility tests', async () => {
     expect(await axe(wrapper.element)).toHaveNoViolations()
   })
 
   describe('after mouse enter for a 100ms', () => {
     it('should pass axe accessibility tests', async () => {
+      vi.useFakeTimers()
       await wrapper.find('a').trigger('mouseenter')
-      await sleep(100)
+      await vi.advanceTimersByTimeAsync(100)
+      // axe schedules its own timers.
+      vi.useRealTimers()
       expect(await axe(document.body)).toHaveNoViolations()
     })
   })
 
   describe('a touch tap on the trigger', () => {
     it('should not open the hover card by default', async () => {
+      vi.useFakeTimers()
       await wrapper.find('a').trigger('pointerup', { pointerType: 'touch' })
-      await sleep(100)
+      await vi.advanceTimersByTimeAsync(100)
       expect(wrapper.find('a').attributes('data-popup-open')).toBeUndefined()
     })
   })
@@ -52,18 +59,24 @@ describe('given a HoverCard with enableTouch', () => {
   }
 
   beforeEach(() => {
+    // The open delay and the leave guard are timers: drive them.
+    vi.useFakeTimers()
     wrapper = mount(HoverCard, { props: { enableTouch: true }, attachTo: document.body })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('should toggle open/closed on touch tap', async () => {
     const trigger = wrapper.find('a')
 
     await trigger.trigger('pointerup', { pointerType: 'touch' })
-    await sleep(10)
+    await vi.advanceTimersByTimeAsync(10)
     expect(trigger.attributes('data-popup-open')).toBe('')
 
     await trigger.trigger('pointerup', { pointerType: 'touch' })
-    await sleep(10)
+    await vi.advanceTimersByTimeAsync(10)
     expect(trigger.attributes('data-popup-open')).toBeUndefined()
   })
 
@@ -71,7 +84,7 @@ describe('given a HoverCard with enableTouch', () => {
     const trigger = wrapper.find('a')
 
     await trigger.trigger('pointerup', { pointerType: 'mouse' })
-    await sleep(10)
+    await vi.advanceTimersByTimeAsync(10)
     expect(trigger.attributes('data-popup-open')).toBeUndefined()
   })
 
@@ -81,12 +94,12 @@ describe('given a HoverCard with enableTouch', () => {
     // focus schedules a delayed open (openDelay), then a touch tap opens immediately
     await trigger.trigger('focus')
     await trigger.trigger('pointerup', { pointerType: 'touch' })
-    await sleep(10)
+    await vi.advanceTimersByTimeAsync(10)
     expect(trigger.attributes('data-popup-open')).toBe('')
 
     // closing must cancel the pending open timer so it doesn't reopen
     await trigger.trigger('pointerup', { pointerType: 'touch' })
-    await sleep(150)
+    await vi.advanceTimersByTimeAsync(150)
     expect(trigger.attributes('data-popup-open')).toBeUndefined()
   })
 })
@@ -323,5 +336,20 @@ describe('hoverCardRoot change events (v3 foundation contract)', () => {
     await nextTick()
     expect(trigger().attributes('data-popup-open')).toBe('')
     expect(root.emitted('update:open')).toHaveLength(2)
+  })
+})
+
+describe('given a HoverCardTrigger rendered as a button', () => {
+  function mountTrigger(triggerProps: Record<string, unknown> = {}) {
+    const wrapper = mount(() => h(HoverCardRoot, () => h(HoverCardTrigger, { as: 'button', ...triggerProps }, () => 'trigger')))
+    return wrapper.get('button')
+  }
+
+  it('should set type="button" so it does not submit a surrounding form', () => {
+    expect(mountTrigger().attributes('type')).toBe('button')
+  })
+
+  it('should keep an explicit type', () => {
+    expect(mountTrigger({ type: 'submit' }).attributes('type')).toBe('submit')
   })
 })

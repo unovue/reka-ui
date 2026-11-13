@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { ComputedRef, Ref } from 'vue'
+import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { PinInputChangeReason } from './usePinInput'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
@@ -64,7 +64,8 @@ export interface PinInputRootContext<Type extends PinInputType = 'text'> {
   disabled: Readonly<Ref<boolean>>
   isCompleted: ComputedRef<boolean>
   inputElements?: Ref<Set<HTMLInputElement>>
-  onInputElementChange: (el: HTMLInputElement) => void
+  /** Registers an input with its `index`, which orders the inputs. */
+  onInputElementChange: (el: HTMLInputElement, index?: MaybeRefOrGetter<number>) => void
   isNumericMode: ComputedRef<boolean>
   /** Replaces the whole value. Returns `false` when unchanged or cancelled. */
   setModelValue: (value: PinInputContextValue<Type>, reason?: PinInputChangeReason | BaseChangeReason, event?: Event) => boolean
@@ -86,10 +87,12 @@ export const [injectPinInputFieldSlots, providePinInputFieldSlots]
 
 <script setup lang="ts" generic="Type extends PinInputType">
 import { mergeProps, useAttrs, watch } from 'vue'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
-import { usePinInput } from './usePinInput'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
+import { orderInputElements, usePinInput } from './usePinInput'
 
 defineOptions({
   inheritAttrs: false,
@@ -119,7 +122,7 @@ const dir = useDirection(() => props.dir)
 // The value collected is the model array, as `update:modelValue` emits it,
 // without trailing empty entries (see `toFieldValue`). A required pin input
 // needs every input filled, and only then is it filled.
-const field = useFieldControl({
+const field = useFieldBinding({
   id: () => props.id,
   element: () => firstInput(),
   getValue: () => toFieldValue(modelValue.value),
@@ -162,13 +165,13 @@ function toFieldValue(value: unknown) {
 }
 
 function firstInput() {
-  return Array.from(context.inputElements!.value)[0]
+  return orderInputElements(context.inputElements!.value)[0]
 }
 
 // The composable owns the model (`useControllableState`), `beforeUpdate:` /
 // `update:` and the `complete` watcher; the shell keeps `dir` resolution and
 // the hidden form input.
-const { modelValue: model, currentModelValue, root, context } = usePinInput({
+const { modelValue: model, currentModelValue, root, context, isControlled } = usePinInput({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   type: () => props.type,
@@ -186,6 +189,9 @@ const { modelValue: model, currentModelValue, root, context } = usePinInput({
 const modelValue = model as unknown as Readonly<Ref<PinInputValue<Type>>>
 
 providePinInputRootContext(context)
+
+// A native reset of the owning form puts the value back to `defaultValue`.
+function onFormReset(event: Event) { resetControllableState(isControlled, event) }
 
 // Touched once focus leaves the whole group, not when it moves between inputs.
 const focusWithin = useFieldFocusWithin(field, currentElement as Ref<HTMLElement | undefined>)
@@ -217,6 +223,8 @@ function getRootAttrs() {
     { onFocusin: focusWithin!.onFocusin, onFocusout: focusWithin!.onFocusout },
   )
 }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -224,6 +232,7 @@ function getRootAttrs() {
     :is="renderAs(as, asChild)"
     v-bind="getRootAttrs()"
     :ref="forwardRef"
+    @vue:mounted="bindFormReset"
   >
     <slot :model-value="modelValue" />
 

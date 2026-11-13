@@ -256,7 +256,7 @@ When used, portals your overlay and content parts into the `body`.
 ### Backdrop
 
 A layer that covers the inert portion of the view when the drawer is open. Only
-rendered when the drawer is `modal`. `DrawerOverlay` is a deprecated alias.
+rendered when the drawer is `modal`.
 
 <PresenceCallout />
 
@@ -284,10 +284,6 @@ rendered when the drawer is `modal`. `DrawerOverlay` is a deprecated alias.
 Contains the content to be rendered in the open drawer. Owns the swipe gesture
 and exposes the drag offset through CSS custom properties (see [Animating the
 drawer](#animating-the-drawer)).
-
-`DrawerContent` is a deprecated alias of `DrawerPopup`, kept for v3. Use
-`DrawerPopup` in new code: the alias is removed in a future major rather than
-kept as a second name.
 
 <PresenceCallout />
 

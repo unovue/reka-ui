@@ -48,10 +48,12 @@ export const [injectRadioGroupRootContext, provideRadioGroupRootContext]
 
 <script setup lang="ts">
 import { mergeProps, useAttrs, watch } from 'vue'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusGroup } from '@/RovingFocus/useRovingFocusGroup'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useRadioGroup } from './useRadioGroup'
 import { useArrowKeyListeners } from './utils'
@@ -98,7 +100,7 @@ function getFocusTarget() {
 // Optional Field participation: `null` outside a `FieldRoot`, so every
 // binding below is inert without a Field. The group is the field's control:
 // it takes the field's id and aria wiring, and the radios inside don't.
-const field = useFieldControl({
+const field = useFieldBinding({
   id: () => attrs.id as string | undefined,
   element: getFocusTarget,
   getValue: () => modelValue.value,
@@ -110,7 +112,7 @@ const field = useFieldControl({
 const resolvedName = () => field ? field.name(props.name) : props.name
 const resolvedRequired = () => field ? field.required(props.required) : props.required
 
-const { modelValue, disabled, root, context } = useRadioGroup({
+const { modelValue, disabled, root, context, isControlled } = useRadioGroup({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   emit: emits,
@@ -127,6 +129,9 @@ const { modelValue, disabled, root, context } = useRadioGroup({
 })
 
 provideRadioGroupRootContext(context)
+
+// A native reset of the owning form puts the value back to `defaultValue`.
+function onFormReset(event: Event) { resetControllableState(isControlled, event) }
 
 if (field)
   watch(modelValue, value => field.sync(value))
@@ -159,6 +164,8 @@ function renderAttrs(attrs: Record<string, unknown>) {
     { id: field.id(), ...field.ariaAttrs(attrs, disabled.value), onFocusin: focusWithin!.onFocusin, onFocusout: focusWithin!.onFocusout },
   ))
 }
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -166,6 +173,7 @@ function renderAttrs(attrs: Record<string, unknown>) {
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
     v-bind="renderAttrs($attrs)"
+    @vue:mounted="bindFormReset"
   >
     <slot :model-value="modelValue" />
 

@@ -119,6 +119,7 @@ export const components = {
   combobox: [
     'ComboboxRoot',
     'ComboboxInput',
+    'ComboboxValue',
     'ComboboxAnchor',
     'ComboboxEmpty',
     'ComboboxTrigger',
@@ -229,8 +230,8 @@ export const components = {
     'DrawerRoot',
     'DrawerTrigger',
     'DrawerPortal',
-    'DrawerOverlay',
-    'DrawerContent',
+    'DrawerBackdrop',
+    'DrawerPopup',
     'DrawerClose',
     'DrawerTitle',
     'DrawerDescription',
@@ -240,8 +241,6 @@ export const components = {
     'DrawerVirtualKeyboardProvider',
     'DrawerIndent',
     'DrawerIndentBackground',
-    'DrawerPopup',
-    'DrawerBackdrop',
     'DrawerProvider',
   ] as const,
 

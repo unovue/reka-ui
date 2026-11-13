@@ -79,7 +79,7 @@
   {
     'name': 'type',
     'description': '<p>Input type for the inputs.</p>\n',
-    'type': 'Type',
+    'type': 'PinInputType',
     'required': false,
     'default': '\'text\' as any'
   }
@@ -130,7 +130,7 @@
 | `otp` | When `true`, mobile devices will autodetect the OTP from messages or clipboard, and enable the autocomplete field. | `boolean` | No | - |
 | `placeholder` | The placeholder character to use for empty pin-inputs. | `string` | No | `""` |
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
-| `type` | Input type for the inputs. | `Type` | No | `"text" as any` |
+| `type` | Input type for the inputs. | `PinInputType` | No | `"text" as any` |
 
 **Events**
 

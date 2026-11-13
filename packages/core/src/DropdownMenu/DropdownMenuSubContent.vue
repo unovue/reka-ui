@@ -3,7 +3,7 @@ import type {
   MenuSubContentEmits,
   MenuSubContentProps,
 } from '@/Menu'
-import { useForwardElement } from '@/shared'
+import { useForwardElement, useForwardPropsEmits } from '@/shared'
 
 export type DropdownMenuSubContentEmits = MenuSubContentEmits
 
@@ -12,7 +12,6 @@ export interface DropdownMenuSubContentProps extends MenuSubContentProps {}
 
 <script setup lang="ts">
 import { MenuSubContent } from '@/Menu'
-import { useForwardPropsEmits } from '..'
 
 const props = defineProps<DropdownMenuSubContentProps>()
 const emits = defineEmits<DropdownMenuSubContentEmits>()

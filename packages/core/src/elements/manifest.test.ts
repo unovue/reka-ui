@@ -81,7 +81,7 @@ describe('custom elements manifest', () => {
       description: expect.stringContaining('Cancelable'),
     })
     const sliderRoot = elementsOf(manifest).find(element => element.tagName === 'reka-slider-root')!
-    expect(sliderRoot.attributes.find(attribute => attribute.name === 'orientation')).toMatchObject({ type: { text: '\'vertical\' | \'horizontal\'' }, default: 'horizontal' })
+    expect(sliderRoot.attributes.find(attribute => attribute.name === 'orientation')).toMatchObject({ type: { text: '\'horizontal\' | \'vertical\'' }, default: 'horizontal' })
     expect(sliderRoot.members.find(member => member.name === 'modelValue')?.type?.text).toContain('number[]')
   })
 

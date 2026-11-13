@@ -14,13 +14,13 @@
   {
     "path": "dist/index.js",
     "import": "{ SelectRoot, SelectTrigger, SelectContent, SelectItem, SelectViewport, SelectPortal }",
-    "limit": "36.7 KB",
+    "limit": "37.5 KB",
     "name": "Select"
   },
   {
     "path": "dist/index.js",
     "import": "{ ComboboxRoot, ComboboxInput, ComboboxContent, ComboboxItem, ComboboxVirtualizer }",
-    "limit": "41.7 KB",
+    "limit": "42.5 KB",
     "name": "Combobox"
   },
   {
@@ -56,7 +56,7 @@
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, switchElements }",
-    "limit": "16.5 KB",
+    "limit": "16.8 KB",
     "name": "Elements: runtime + Switch"
   },
   {
@@ -68,19 +68,19 @@
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, rekaElementFamilies }",
-    "limit": "200.0 KB",
+    "limit": "201.8 KB",
     "name": "Elements: all supported families"
   },
   {
     "path": "dist/index.js",
     "import": "{ CarouselRoot, CarouselViewport, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, CarouselIndicator, CarouselAutoplayToggle }",
-    "limit": "12.5 KB",
+    "limit": "12.8 KB",
     "name": "Carousel"
   },
   {
     "path": "dist/index.js",
     "import": "*",
-    "limit": "207.7 KB",
+    "limit": "210 KB",
     "name": "Full library"
   }
 ]

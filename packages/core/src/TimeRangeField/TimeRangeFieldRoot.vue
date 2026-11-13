@@ -70,8 +70,15 @@ export interface TimeRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   id?: string
   /** The reading direction of the time field when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
   dir?: Direction
-  /** A function that returns whether or not a time is unavailable */
+  /**
+   * A function that returns whether or not a time is unavailable. The range is invalid when either end is unavailable,
+   * or, unless `allowNonContiguousRanges` is set, when a time between them is: every unit of the `granularity` is checked
+   * (each minute by default), whatever the `step`.
+   * A range of more than 1,440 units is sampled at a wider interval, so it can miss an unavailable time shorter than that interval.
+   */
   isTimeUnavailable?: Matcher
+  /** When combined with `isTimeUnavailable`, determines whether non-contiguous ranges, i.e. ranges containing unavailable times, are valid. The two ends are always checked. */
+  allowNonContiguousRanges?: boolean
 }
 
 export type TimeRangeFieldRootEmits = {
@@ -92,12 +99,14 @@ export const [injectTimeRangeFieldRootContext, provideTimeRangeFieldRootContext]
 <script setup lang="ts">
 import { computed, mergeProps, toRefs, useAttrs, watch } from 'vue'
 import { createPendingFieldInput } from '@/Field/pendingFieldInput'
-import { useFieldControl } from '@/Field/useFieldControl'
+import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { isEqual } from '@/shared/compare'
 import { toRangeFormValue } from '@/shared/date'
+import { formResetBinder } from '@/shared/formReset'
+import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { useTimeRangeField } from './useTimeRangeField'
 
@@ -111,6 +120,7 @@ const props = withDefaults(defineProps<TimeRangeFieldRootProps>(), {
   readonly: false,
   placeholder: undefined,
   isTimeUnavailable: undefined,
+  allowNonContiguousRanges: false,
   stepSnapping: false,
 })
 const emits = defineEmits<TimeRangeFieldRootEmits>()
@@ -138,7 +148,7 @@ const { primitiveElement, currentElement: parentElement, expose } = usePrimitive
 // label/description wiring. The field's value is the range object, and a
 // required range needs both ends: the hidden input can't express that, so
 // `valueMissing` comes from `isFilled` instead of its `ValidityState`.
-const field = useFieldControl({
+const field = useFieldBinding({
   id: () => props.id,
   // The first segment (the group isn't itself focusable), so `FormRoot` can
   // move focus into the field on an invalid submit.
@@ -159,7 +169,7 @@ const resolvedRequired = () => field ? field.required(props.required) : props.re
 // a user edit stays one wherever focus goes next. Only in a Field.
 const pendingInput = field ? createPendingFieldInput<unknown>() : undefined
 
-const { root, context, modelValue, segments, isInvalid, segmentElements, setFocusedElement, focusFirstSegment } = useTimeRangeField({
+const { root, context, modelValue, segments, isInvalid, segmentElements, setFocusedElement, focusFirstSegment, resetSegments, isControlled } = useTimeRangeField({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   placeholder: () => props.placeholder,
@@ -176,6 +186,7 @@ const { root, context, modelValue, segments, isInvalid, segmentElements, setFocu
   disabled,
   readonly: () => props.readonly,
   isTimeUnavailable: computed(() => props.isTimeUnavailable),
+  allowNonContiguousRanges: () => props.allowNonContiguousRanges,
   parentElement,
   emit: emits,
   onUpdate: pendingInput?.record,
@@ -217,10 +228,20 @@ function getRootAttrs() {
 
 provideTimeRangeFieldRootContext(context)
 
+// A native reset of the owning form puts the value back to `defaultValue`, and
+// drops segments typed without completing a value: the model may not move
+// (it already holds the default), so the segments are put back here.
+function onFormReset(event: Event) {
+  resetControllableState(isControlled, event)
+  resetSegments()
+}
+
 defineExpose(mergeExpose(expose, {
   /** Records `el` as the focused segment for keyboard navigation. It does not move focus; call `el.focus()` for that. */
   setFocusedElement,
 }))
+
+const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
@@ -228,6 +249,7 @@ defineExpose(mergeExpose(expose, {
     :is="renderAs(as, asChild)"
     v-bind="getRootAttrs()"
     ref="primitiveElement"
+    @vue:mounted="bindFormReset"
   >
     <slot
       :model-value="modelValue"

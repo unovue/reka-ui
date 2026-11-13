@@ -1,7 +1,7 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import type { ListboxFilterFunction, ListboxFilterState } from './useListbox'
 import { mount } from '@vue/test-utils'
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { createSSRApp, defineComponent, effectScope, h, nextTick, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
@@ -430,7 +430,13 @@ describe('given a filtered Listbox driven through the context', () => {
     document.body.innerHTML = ''
   })
 
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('skips filtered-out items in typeahead', async () => {
+    // The typeahead search resets 1 s after the last key: drive that timer.
+    vi.useFakeTimers()
     const { wrapper, probe, content } = mountListbox()
     await settle()
     probe.value.context.setFilterSearch('an')
@@ -441,7 +447,7 @@ describe('given a filtered Listbox driven through the context', () => {
     // "Apple" starts with "a" but is filtered out: typeahead stays put.
     await content.trigger('keydown', { key: 'a' })
     expect(highlightedText(wrapper)).toBe('Banana')
-    await new Promise(resolve => setTimeout(resolve, 1100))
+    await vi.advanceTimersByTimeAsync(1100)
     await content.trigger('keydown', { key: 'm' })
     expect(highlightedText(wrapper)).toBe('Mango')
   })
@@ -665,5 +671,140 @@ describe('given a virtualized Listbox driven through the context', () => {
     expect(warn).toHaveBeenCalledTimes(1)
     expect(warn.mock.calls[0][0]).toContain('textContent')
     warn.mockRestore()
+  })
+})
+
+describe('given a ListboxFilter model', () => {
+  const Fixture = defineComponent({
+    props: { filterProps: { type: Object, default: () => ({}) } },
+    setup(props) {
+      const { contains } = useFilter({ sensitivity: 'base' })
+      return () => h(ListboxRoot, { filter: contains }, () => [
+        h(ListboxFilter, { 'aria-label': 'Search', ...props.filterProps }),
+        h(ListboxContent, { 'aria-label': 'Fruits' }, () => fruits.map(value => h(ListboxItem, { value }, () => value))),
+      ])
+    },
+  })
+
+  async function mountFilter(filterProps: Record<string, unknown> = {}) {
+    document.body.innerHTML = ''
+    const wrapper = mount(Fixture, { props: { filterProps }, attachTo: document.body })
+    await settle()
+    return { wrapper, input: wrapper.find('input'), filter: wrapper.findComponent(ListboxFilter) }
+  }
+
+  async function inputValue(input: DOMWrapper<HTMLInputElement>, value: string) {
+    input.element.value = value
+    await input.trigger('input')
+    await settle()
+  }
+
+  it('uncontrolled: keeps the typed text, filters by it and emits the text as the only argument', async () => {
+    const { input, filter, wrapper } = await mountFilter()
+    expect(input.element.value).toBe('')
+    await type(input, 'an')
+    expect(input.element.value).toBe('an')
+    expect(optionTexts(wrapper)).toEqual(['Banana', 'Mango'])
+    expect(filter.emitted('update:modelValue')).toEqual([['an']])
+    expect(filter.emitted('beforeUpdate:modelValue')).toBeUndefined()
+  })
+
+  it('uncontrolled: does not emit when the text is unchanged', async () => {
+    const { input, filter } = await mountFilter()
+    await inputValue(input, '')
+    expect(filter.emitted('update:modelValue')).toBeUndefined()
+    await type(input, 'an')
+    await inputValue(input, 'an')
+    expect(filter.emitted('update:modelValue')).toEqual([['an']])
+  })
+
+  it('uncontrolled: follows a `modelValue` the parent sets later', async () => {
+    const { input, wrapper } = await mountFilter()
+    await wrapper.setProps({ filterProps: { modelValue: 'man' } })
+    await settle()
+    expect(input.element.value).toBe('man')
+    expect(optionTexts(wrapper)).toEqual(['Mango'])
+  })
+
+  it('controlled: reflects the prop and filters by it', async () => {
+    const { input, wrapper } = await mountFilter({ modelValue: 'an' })
+    expect(input.element.value).toBe('an')
+    expect(optionTexts(wrapper)).toEqual(['Banana', 'Mango'])
+  })
+
+  it('controlled: emits the typed text without applying it until the parent does', async () => {
+    const { input, filter, wrapper } = await mountFilter({ modelValue: 'an' })
+    await type(input, 'ang')
+    expect(filter.emitted('update:modelValue')).toEqual([['ang']])
+    expect(filter.emitted('beforeUpdate:modelValue')).toBeUndefined()
+    expect(optionTexts(wrapper)).toEqual(['Banana', 'Mango'])
+    await wrapper.setProps({ filterProps: { modelValue: 'ang' } })
+    await settle()
+    expect(input.element.value).toBe('ang')
+    expect(optionTexts(wrapper)).toEqual(['Mango'])
+  })
+
+  it('controlled: emits on input even when the text is unchanged', async () => {
+    const { input, filter } = await mountFilter({ modelValue: 'an' })
+    await inputValue(input, 'an')
+    expect(filter.emitted('update:modelValue')).toEqual([['an']])
+  })
+
+  it('controlled: reads an empty text once the binding is cleared', async () => {
+    document.body.innerHTML = ''
+    const text = ref<string | undefined>('an')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ListboxRoot, () => [
+        h(ListboxFilter, { modelValue: text.value, as: 'div' }, {
+          default: ({ modelValue }: { modelValue: unknown }) => h('span', { 'data-testid': 'text' }, JSON.stringify(modelValue ?? null)),
+        }),
+      ]),
+    }), { attachTo: document.body })
+    await settle()
+    expect(wrapper.find('[data-testid=text]').text()).toBe('"an"')
+    text.value = undefined
+    await settle()
+    expect(wrapper.find('[data-testid=text]').text()).toBe('""')
+  })
+
+  it('bound after mount: reads an empty text once the binding is cleared', async () => {
+    document.body.innerHTML = ''
+    const text = ref<string | undefined>(undefined)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ListboxRoot, () => [
+        h(ListboxFilter, { modelValue: text.value, as: 'div' }, {
+          default: ({ modelValue }: { modelValue: unknown }) => h('span', { 'data-testid': 'text' }, JSON.stringify(modelValue ?? null)),
+        }),
+      ]),
+    }), { attachTo: document.body })
+    await settle()
+    text.value = 'an'
+    await settle()
+    expect(wrapper.find('[data-testid=text]').text()).toBe('"an"')
+    text.value = undefined
+    await settle()
+    expect(wrapper.find('[data-testid=text]').text()).toBe('""')
+  })
+
+  it('v-model: typing updates the bound value and the filter', async () => {
+    document.body.innerHTML = ''
+    const text = ref('ch')
+    const { contains } = useFilter({ sensitivity: 'base' })
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ListboxRoot, { filter: contains }, () => [
+        h(ListboxFilter, { 'aria-label': 'Search', 'modelValue': text.value, 'onUpdate:modelValue': (v: string) => { text.value = v } }),
+        h(ListboxContent, { 'aria-label': 'Fruits' }, () => fruits.map(value => h(ListboxItem, { value }, () => value))),
+      ]),
+    }), { attachTo: document.body })
+    await settle()
+    const input = wrapper.find('input')
+    expect(optionTexts(wrapper)).toEqual(['Cherry'])
+    await type(input, 'gr')
+    expect(text.value).toBe('gr')
+    expect(optionTexts(wrapper)).toEqual(['Grape'])
+    text.value = 'b'
+    await settle()
+    expect(input.element.value).toBe('b')
+    expect(optionTexts(wrapper)).toEqual(['Banana', 'Blueberry'])
   })
 })

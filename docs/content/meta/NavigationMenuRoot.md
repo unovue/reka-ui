@@ -63,7 +63,7 @@
   {
     'name': 'orientation',
     'description': '<p>The orientation of the menu.</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false,
     'default': '\'horizontal\''
   },
@@ -125,7 +125,7 @@
 | `disableHoverTrigger` | If `true`, menu cannot be open by hover on trigger | `boolean` | No | `false` |
 | `disablePointerLeaveClose` | If `true`, menu will not close during pointer leave event | `boolean` | No | - |
 | `modelValue` | The controlled value of the menu item to activate. Can be used as `v-model`. | `string` | No | - |
-| `orientation` | The orientation of the menu. | `"vertical" \| "horizontal"` | No | `"horizontal"` |
+| `orientation` | The orientation of the menu. | `"horizontal" \| "vertical"` | No | `"horizontal"` |
 | `skipDelayDuration` | How much time a user has to enter another trigger without incurring a delay again. | `number` | No | `300` |
 | `unmountOnHide` | When `true`, the element will be unmounted on closed state. | `boolean` | No | `true` |
 

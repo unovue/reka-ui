@@ -43,7 +43,7 @@
   {
     'name': 'orientation',
     'description': '<p>The orientation of the group.\nMainly so arrow navigation is done accordingly (left &amp; right vs. up &amp; down)</p>\n',
-    'type': '\'vertical\' | \'horizontal\'',
+    'type': '\'horizontal\' | \'vertical\'',
     'required': false
   },
   {
@@ -89,7 +89,7 @@
 | `defaultCurrentTabStopId` | The value of the current stop item. Use when you do not need to control the state of the stop item. | `string` | No | - |
 | `dir` | The direction of navigation between items. | `"ltr" \| "rtl"` | No | - |
 | `loop` | Whether keyboard navigation should loop around | `boolean` | No | `false` |
-| `orientation` | The orientation of the group. Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"vertical" \| "horizontal"` | No | - |
+| `orientation` | The orientation of the group. Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"horizontal" \| "vertical"` | No | - |
 | `preventScrollOnEntryFocus` | When `true`, will prevent scrolling to the focus item when focused. | `boolean` | No | `false` |
 
 **Events**

@@ -1,18 +1,25 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { sleep } from '@/test'
 import Progress from './story/_Progress.vue'
 
 describe('given a default Progress', () => {
   let wrapper: VueWrapper<InstanceType<typeof Progress>>
 
   beforeEach(() => {
+    // The story bumps its value after a 200 ms timer: drive it.
+    vi.useFakeTimers()
     wrapper = mount(Progress)
   })
 
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('should pass axe accessibility tests', async () => {
+    // axe schedules its own timers.
+    vi.useRealTimers()
     expect(await axe(wrapper.element)).toHaveNoViolations()
   })
 
@@ -22,7 +29,7 @@ describe('given a default Progress', () => {
 
   describe('after 200ms', () => {
     beforeEach(async () => {
-      await sleep(200)
+      await vi.advanceTimersByTimeAsync(200)
     })
 
     it('should contain correct value', async () => {

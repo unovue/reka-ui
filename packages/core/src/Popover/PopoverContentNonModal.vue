@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { PopoverContentImplEmits, PopoverContentImplProps } from './PopoverContentImpl.vue'
 import { ref } from 'vue'
-import { useForwardElement, useForwardPropsEmits } from '@/shared'
+import { containsComposed, useForwardElement, useForwardPropsEmits } from '@/shared'
 import { getPopupRootStore } from '@/shared/popupHandle'
 import PopoverContentImpl from './PopoverContentImpl.vue'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
@@ -50,7 +50,8 @@ defineExpose(expose)
         // As the trigger is already setup to close, without doing so would
         // cause it to close and immediately open.
         const target = event.target as HTMLElement;
-        const targetIsTrigger = rootContext.triggerElement.value?.contains(target);
+        const trigger = rootContext.triggerElement.value;
+        const targetIsTrigger = !!trigger && containsComposed(trigger, target);
         if (targetIsTrigger) event.preventDefault();
 
         // Another detached trigger of the same handle: its click moves the open

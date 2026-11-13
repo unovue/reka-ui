@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { CalendarHeadCellProps } from '..'
-import { CalendarHeadCell } from '..'
+import type { CalendarHeadCellProps } from '@/Calendar'
+import { CalendarHeadCell } from '@/Calendar'
 
 export interface DatePickerHeadCellProps extends CalendarHeadCellProps {}
 </script>
