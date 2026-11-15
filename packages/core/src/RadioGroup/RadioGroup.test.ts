@@ -63,6 +63,21 @@ describe('given a default RadioGroup', () => {
       })
     })
   })
+
+  describe('on a fast key tap where keyup precedes the deferred selection', () => {
+    beforeEach(async () => {
+      radios[0].element.focus()
+      await fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' })
+      await fireEvent.keyUp(radios[0].element, { key: 'ArrowDown' })
+      await sleep(0)
+    })
+
+    it('should still select the newly focused item', () => {
+      expect(radios[2].element).toBe(document.activeElement)
+      expect(radios[2].attributes('data-state')).toBe('checked')
+      expect(radios[0].attributes('data-state')).toBe('unchecked')
+    })
+  })
 })
 
 describe('given disabled RadioGroup', () => {

@@ -70,13 +70,14 @@ useEventListener('keyup', () => {
 })
 
 function handleFocus() {
+  const triggeredByArrowKey = isArrowKeyPressed.value
   setTimeout(() => {
     /**
      * Our `RovingFocusGroup` will focus the radio when navigating with arrow keys
      * and we need to 'check' it in that case. We click it to 'check' it (instead
      * of updating `context.value`) so that the radio change event fires.
      */
-    if (isArrowKeyPressed.value)
+    if (triggeredByArrowKey)
       currentElement.value?.click()
   }, 0)
 }
