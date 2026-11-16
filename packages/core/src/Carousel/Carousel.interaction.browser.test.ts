@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { commands, userEvent } from 'vitest/browser'
 import { defineComponent, h, ref } from 'vue'
-import { CarouselAutoplayToggle, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, CarouselRoot, CarouselViewport } from '.'
+import { CarouselAutoplayToggle, CarouselContent, CarouselIndicator, CarouselIndicatorGroup, CarouselItem, CarouselNext, CarouselPrevious, CarouselRoot, CarouselViewport } from '.'
 
 const SIZE = 200
 const COUNT = 5
@@ -277,6 +277,27 @@ describe('given a Carousel holding the keyboard focus in a real browser', () => 
     get('next').click()
     await expect.poll(() => model.value).toBe(1)
     await settled(scroll)
+    await expect.poll(() => document.activeElement).toBe(get('button-1'))
+  })
+
+  it('gives the focus to the incoming slide with translated slides and grouped indicators', async () => {
+    document.body.innerHTML = ''
+    const model = ref(0)
+    mount(defineComponent({
+      setup: () => () => [h('div', { 'data-testid': 'outside', 'style': { height: '20px' } }), h(CarouselRoot, { 'aria-label': 'Tabs', 'style': { width: `${SIZE}px` }, 'onUpdate:modelValue': (value: number) => model.value = value }, () => [
+        h(CarouselViewport, { 'data-testid': 'viewport' }, () => h(CarouselContent, () => [0, 1, 2].map(i =>
+          h(CarouselItem, { 'key': i, 'aria-roledescription': 'diapositiva', 'style': { width: `${SIZE}px` } }, () => button(i))))),
+        h(CarouselIndicatorGroup, () => [0, 1, 2].map(index => h(CarouselIndicator, { key: index, index }))),
+        h(CarouselNext, { 'data-testid': 'next' }, () => 'Next'),
+      ])],
+    }), { attachTo: document.body })
+    await mouseAway()
+    const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)!
+    await expect.poll(() => get('viewport').querySelector('[data-index="0"]')?.getAttribute('role')).toBe('tabpanel')
+    await sleep(300)
+    get('button-0').focus()
+    get('next').click()
+    await expect.poll(() => model.value).toBe(1)
     await expect.poll(() => document.activeElement).toBe(get('button-1'))
   })
 

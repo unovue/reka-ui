@@ -210,7 +210,8 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
   let focusedInSlide: HTMLElement | undefined
   function onFocusin(event: FocusEvent) {
     const target = event.target as HTMLElement
-    focusedInSlide = target !== element.value && target.closest('[aria-roledescription="slide"]') ? target : undefined
+    // The registered slides, not their role or roledescription, which a group of tabs or a translation changes.
+    focusedInSlide = target !== element.value && context.items.value.some(item => item.contains(target)) ? target : undefined
   }
   function onFocusout(event: FocusEvent) {
     const target = event.target as HTMLElement
@@ -581,13 +582,15 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
   function holdForFinger() {
     const doc = ownerDocument(element.value)
     context.held.value = true
+    // Touch events, not pointer ones: the browser cancels the pointer as soon as it
+    // takes over a native pan, while the finger is still down.
     const release = () => {
       context.held.value = false
-      doc.removeEventListener('pointerup', release)
-      doc.removeEventListener('pointercancel', release)
+      doc.removeEventListener('touchend', release)
+      doc.removeEventListener('touchcancel', release)
     }
-    doc.addEventListener('pointerup', release)
-    doc.addEventListener('pointercancel', release)
+    doc.addEventListener('touchend', release)
+    doc.addEventListener('touchcancel', release)
   }
 
   /**

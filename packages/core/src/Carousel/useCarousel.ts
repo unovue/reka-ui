@@ -99,11 +99,18 @@ export function getCarouselItemId(context: CarouselRootContext, index: number): 
   return `${context.contentId}-item-${index}`
 }
 
+/** The generated id of the tab for the snap at `index`, which its panels are labelled by. */
+export function getCarouselTabId(context: CarouselRootContext, index: number): string {
+  return `${context.contentId}-tab-${index}`
+}
+
 export function getCarouselIndicatorSurface(context: CarouselRootContext, index: MaybeRefOrGetter<number>, tabs = false): CarouselSurface<CarouselIndicatorState> {
   const isActive = () => context.modelValue.value === toValue(index)
   return createSurface<CarouselIndicatorState>(
     () => ({
-      'aria-label': `Go to slide ${toValue(index) + 1}`,
+      // A tab names its panel too (APG tabbed carousel), a button names the action.
+      'aria-label': tabs ? `Slide ${toValue(index) + 1}` : `Go to slide ${toValue(index) + 1}`,
+      'id': tabs ? getCarouselTabId(context, toValue(index)) : undefined,
       // A tab controls the slides of its own snap; a button the whole content.
       'aria-controls': tabs
         ? (context.snaps.value[toValue(index)]?.items.map(item => getCarouselItemId(context, item)).join(' ') || context.contentId)
@@ -237,7 +244,9 @@ export function getCarouselItemSurface(context: CarouselRootContext, element: Re
         'id': i === -1 ? undefined : getCarouselItemId(context, i),
         'role': context.indicatorTabs.value ? 'tabpanel' : 'group',
         'aria-roledescription': context.indicatorTabs.value ? undefined : 'slide',
-        'aria-label': getItemLabel(context, i),
+        // A tab panel is named by the tab of its snap; a slide group by its position.
+        'aria-label': context.indicatorTabs.value ? undefined : getItemLabel(context, i),
+        'aria-labelledby': context.indicatorTabs.value && i !== -1 ? getCarouselTabId(context, Math.max(0, context.snaps.value.findIndex(snap => snap.items.includes(i)))) : undefined,
         'aria-hidden': hidden ? 'true' : undefined,
         'inert': hidden ? '' : undefined,
         'style': compactStyle(fade

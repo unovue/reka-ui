@@ -40,6 +40,13 @@ describe('given a default Carousel', () => {
     expect(await axe(wrapper.element)).toHaveNoViolations()
   })
 
+  it('labels standalone indicators as actions on the whole content', () => {
+    const indicator = wrapper.find('[aria-label="Go to slide 1"]')
+    expect(indicator.attributes('role')).toBeUndefined()
+    expect(indicator.attributes('aria-controls')).toBe(wrapper.find('[aria-live]').attributes('id'))
+    expect(wrapper.find('[data-index="0"]').attributes('aria-labelledby')).toBeUndefined()
+  })
+
   it('renders the APG carousel roles, with slide groups when the indicators stand alone', () => {
     expect(wrapper.attributes('role')).toBe('region')
     expect(wrapper.attributes('aria-roledescription')).toBe('carousel')
@@ -265,7 +272,11 @@ describe('given a Carousel with autoplay', () => {
     expect(wrapper.attributes('data-paused')).toBe('')
     await vi.advanceTimersByTimeAsync(3000)
     expect(activeIndices(wrapper)).toEqual([0])
-    document.dispatchEvent(new PointerEvent('pointerup', { pointerType: 'touch', isPrimary: true, bubbles: true }))
+    // The browser cancels the pointer once it takes over the pan: the finger is still down.
+    viewport.dispatchEvent(new PointerEvent('pointercancel', { pointerType: 'touch', isPrimary: true, bubbles: true }))
+    await nextTick()
+    expect(wrapper.attributes('data-paused')).toBe('')
+    document.dispatchEvent(new Event('touchend', { bubbles: true }))
     await nextTick()
     expect(wrapper.attributes('data-paused')).toBeUndefined()
     await vi.advanceTimersByTimeAsync(1000)
@@ -489,8 +500,11 @@ describe('given a Carousel with grouped indicators', () => {
     const slides = wrapper.findAll('[data-index]')
     expect(slides.map(slide => slide.attributes('role'))).toEqual(['tabpanel', 'tabpanel', 'tabpanel', 'tabpanel'])
     expect(slides[0].attributes('aria-roledescription')).toBeUndefined()
-    expect(slides[0].attributes('aria-label')).toBe('1 of 4')
+    // Each tab controls its own panel, and each panel is labelled by its tab.
     expect(tabs(wrapper).map(tab => tab.attributes('aria-controls'))).toEqual(slides.map(slide => slide.attributes('id')))
+    expect(slides.map(slide => slide.attributes('aria-labelledby'))).toEqual(tabs(wrapper).map(tab => tab.attributes('id')))
+    expect(tabs(wrapper).map(tab => tab.attributes('aria-label'))).toEqual(['Slide 1', 'Slide 2', 'Slide 3', 'Slide 4'])
+    expect(slides[0].attributes('aria-label')).toBeUndefined()
   })
 
   it('points a tab at every slide of its snap', async () => {
@@ -499,6 +513,8 @@ describe('given a Carousel with grouped indicators', () => {
     const ids = wrapper.findAll('[data-index]').map(slide => slide.attributes('id'))
     expect(tabs(wrapper)[0].attributes('aria-controls')).toBe(`${ids[0]} ${ids[1]}`)
     expect(tabs(wrapper)[1].attributes('aria-controls')).toBe(`${ids[2]} ${ids[3]}`)
+    const labels = wrapper.findAll('[data-index]').map(slide => slide.attributes('aria-labelledby'))
+    expect(labels).toEqual([tabs(wrapper)[0].attributes('id'), tabs(wrapper)[0].attributes('id'), tabs(wrapper)[1].attributes('id'), tabs(wrapper)[1].attributes('id')])
   })
 
   it('moves between the indicators with the arrows, Home and End, and shows their slide', async () => {
