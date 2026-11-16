@@ -1,4 +1,4 @@
-# values (531)
+# values (533)
 AccordionContent
 AccordionHeader
 AccordionItem
@@ -48,6 +48,7 @@ CalendarRoot
 CarouselAutoplayToggle
 CarouselContent
 CarouselIndicator
+CarouselIndicatorGroup
 CarouselItem
 CarouselNext
 CarouselPrevious
@@ -445,6 +446,7 @@ injectAlertDialogContentContext
 injectAutocompleteRootContext
 injectAvatarRootContext
 injectCalendarRootContext
+injectCarouselIndicatorGroupContext
 injectCarouselRootContext
 injectCheckboxGroupRootContext
 injectCheckboxRootContext
@@ -531,7 +533,7 @@ useStateMachine
 useToastManager
 withDefault
 
-# types (585)
+# types (586)
 AcceptableInputValue
 AcceptableValue
 AccordionContentProps
@@ -596,6 +598,7 @@ CarouselAutoplayOptions
 CarouselAutoplayToggleProps
 CarouselContainScroll
 CarouselContentProps
+CarouselIndicatorGroupProps
 CarouselIndicatorProps
 CarouselItemProps
 CarouselNextProps

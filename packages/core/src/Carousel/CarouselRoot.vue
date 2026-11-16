@@ -37,8 +37,10 @@ export interface CarouselRootContext {
   playing: ComputedRef<boolean>
   /** Returns `false` when the state is unchanged. */
   setPlaying: (value: boolean) => boolean
-  /** Rotation is held, without changing `playing`: hover, a drag, a hidden page. */
+  /** Rotation is held, without changing `playing`: hover, a hidden page, the carousel out of view, a finger down. */
   paused: Ref<boolean>
+  /** Written by the viewport: a finger is down on the track. */
+  held: Ref<boolean>
   reducedMotion: Ref<boolean>
   mounted: Ref<boolean>
   /** The mounted items, in DOM order. */
@@ -81,6 +83,9 @@ export interface CarouselRootContext {
   scrollNext: () => boolean
   dragging: Ref<boolean>
   viewportElement: Ref<HTMLElement | undefined>
+  rootElement: Ref<HTMLElement | undefined>
+  /** Called once the slides rest on the current snap after a change. */
+  notifySettle: (index: number) => void
   contentElement: Ref<HTMLElement | undefined>
   /** A user press, drag, key or wheel gesture: stops rotation when `stopOnInteraction` is set. */
   reportInteraction: () => void
@@ -103,7 +108,7 @@ export interface CarouselRootProps extends PrimitiveProps {
    * The reading direction of the carousel. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode.
    */
   dir?: Direction
-  /** When `true`, the last slide is followed by the first one, and vice versa. Falls back to `false` when the slides are too few to wrap. */
+  /** When `true`, the last slide is followed by the first one, and vice versa. When the slides are too few to wrap, Next on the last snap scrolls back to the first instead. */
   loop?: boolean
   /**
    * Where a snap places its slides in the viewport.
@@ -164,6 +169,8 @@ export type CarouselRootEmits = {
   'update:modelValue': [value: number]
   /** Event handler called when rotation starts or stops. */
   'update:playing': [value: boolean]
+  /** Event handler called once the slides rest on the current snap after a change: after the scroll, drag or fade that moved them. */
+  'settle': [value: number]
 }
 
 export const [injectCarouselRootContext, provideCarouselRootContext]
@@ -171,7 +178,7 @@ export const [injectCarouselRootContext, provideCarouselRootContext]
 </script>
 
 <script setup lang="ts">
-import { computed, toRef } from 'vue'
+import { computed, toRef, watch } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useCarouselContext } from './useCarousel'
 import { useCarouselRotation } from './useCarouselRotation'
@@ -209,6 +216,8 @@ defineSlots<{
     scrollTo: (index: number) => boolean
     /** Whether `autoplay` or `autoScroll` is rotating */
     playing: boolean
+    /** Whether rotation is held for now: hover, a hidden page, the carousel out of view, a finger down */
+    paused: boolean
     /** Start rotation */
     play: () => boolean
     /** Stop rotation */
@@ -225,6 +234,8 @@ provideCarouselRootContext(context)
 // Hover, focus, visibility, reduced motion and the autoplay timer.
 const rotation = useCarouselRotation(context, currentElement)
 const playing = computed(() => context.rotationEnabled.value && context.playing.value)
+const paused = computed(() => playing.value && context.paused.value)
+watch(currentElement, el => context.rootElement.value = (el as HTMLElement | undefined) ?? undefined, { immediate: true })
 </script>
 
 <template>
@@ -237,6 +248,8 @@ const playing = computed(() => context.rotationEnabled.value && context.playing.
     aria-roledescription="carousel"
     :data-orientation="context.orientation.value"
     :data-playing="playing ? '' : undefined"
+    :data-paused="paused ? '' : undefined"
+    :style="context.autoplay.value ? { '--reka-carousel-interval': `${context.autoplay.value.delay}ms` } : undefined"
     v-bind="rotation.attrs"
   >
     <slot
@@ -248,6 +261,7 @@ const playing = computed(() => context.rotationEnabled.value && context.playing.
       :scroll-next="context.scrollNext"
       :scroll-to="context.changeModelValue"
       :playing="playing"
+      :paused="paused"
       :play="() => context.setPlaying(true)"
       :stop="() => context.setPlaying(false)"
     />

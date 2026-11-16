@@ -102,7 +102,7 @@
   },
   {
     'name': 'loop',
-    'description': '<p>When <code>true</code>, the last slide is followed by the first one, and vice versa. Falls back to <code>false</code> when the slides are too few to wrap.</p>\n',
+    'description': '<p>When <code>true</code>, the last slide is followed by the first one, and vice versa. When the slides are too few to wrap, Next on the last snap scrolls back to the first instead.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -147,6 +147,11 @@
 ]" />
 
 <EmitsTable :data="[
+  {
+    'name': 'settle',
+    'description': '<p>Event handler called once the slides rest on the current snap after a change: after the scroll, drag or fade that moved them.</p>\n',
+    'type': '[value: number]'
+  },
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the current snap changes.</p>\n',
@@ -201,6 +206,11 @@
     'type': 'boolean'
   },
   {
+    'name': 'paused',
+    'description': '<p>Whether rotation is held for now: hover, a hidden page, the carousel out of view, a finger down</p>\n',
+    'type': 'boolean'
+  },
+  {
     'name': 'play',
     'description': '<p>Start rotation</p>\n',
     'type': '(): boolean'
@@ -234,7 +244,7 @@
 | `fade` | When true, slides are stacked and cross-fade instead of sliding. Set the transition on the items yourself. | `boolean` | No | - |
 | `inViewThreshold` | The fraction (0 to 1) of an item that has to be visible for it to count as in view. | `number` | No | `0` |
 | `itemCount` | The number of slides. Only needed on the server, to render snapCount, the indicators, the enabled Previous/Next and the slide labels before hydration: the slides register once mounted, and their count wins from then on. | `number` | No | - |
-| `loop` | When true, the last slide is followed by the first one, and vice versa. Falls back to false when the slides are too few to wrap. | `boolean` | No | - |
+| `loop` | When true, the last slide is followed by the first one, and vice versa. When the slides are too few to wrap, Next on the last snap scrolls back to the first instead. | `boolean` | No | - |
 | `modelValue` | The controlled index of the current snap. Can be bound as v-model. | `number` | No | - |
 | `orientation` | The axis the slides are laid out and scroll along. | `"vertical" \| "horizontal"` | No | `"horizontal"` |
 | `playing` | The controlled rotation state of autoplay or autoScroll. Can be bound as v-model:playing. | `boolean` | No | - |
@@ -246,6 +256,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `settle` | Event handler called once the slides rest on the current snap after a change: after the scroll, drag or fade that moved them. | `[value: number]` |
 | `update:modelValue` | Event handler called when the current snap changes. | `[value: number]` |
 | `update:playing` | Event handler called when rotation starts or stops. | `[value: boolean]` |
 
@@ -261,6 +272,7 @@
 | `scrollNext` | Go to the next snap | `(): boolean` |
 | `scrollTo` | Go to the snap at index | `(index: number): boolean` |
 | `playing` | Whether autoplay or autoScroll is rotating | `boolean` |
+| `paused` | Whether rotation is held for now: hover, a hidden page, the carousel out of view, a finger down | `boolean` |
 | `play` | Start rotation | `(): boolean` |
 | `stop` | Stop rotation | `(): boolean` |
 

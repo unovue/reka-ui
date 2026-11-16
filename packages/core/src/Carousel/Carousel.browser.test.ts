@@ -159,7 +159,7 @@ describe('given a Carousel in a real browser', () => {
       await userEvent.click(get('next'))
     // 6 items, 2 visible: 5 snaps, the last one shows items 4 and 5.
     await expect.poll(() => model.value).toBe(4)
-    expect(get('next').hasAttribute('disabled')).toBe(true)
+    expect(get('next').hasAttribute('aria-disabled')).toBe(true)
   })
 
   it('loops past the last slide by rotating the items', async () => {
@@ -187,20 +187,31 @@ describe('given a Carousel in a real browser', () => {
     expect(scroll()).toBeCloseTo(350, 0)
   })
 
-  it('falls back to no loop when a group has no room on each side', async () => {
+  it('rewinds instead of wrapping when a group has no room on each side', async () => {
     // 5 slides of 100 in 200, moved 2 at a time: a hidden group of 200 does not fit on both sides.
-    document.body.innerHTML = ''
-    const { get, model } = mountCarousel({ count: 5, itemSize: 100, props: { loop: true, slidesToScroll: 2 } })
-    await expect.poll(() => get('prev').hasAttribute('disabled')).toBe(true)
+    const { get, model, viewport, scroll } = mountCarousel({ count: 5, itemSize: 100, props: { loop: true, slidesToScroll: 2 } })
+    await expect.poll(() => viewport.style.scrollSnapType).toBe('x mandatory')
+    // The slides keep their order: the track doesn't rotate.
+    expect(viewport.querySelector<HTMLElement>('[data-index="0"]')!.style.order).toBe('')
+    expect(get('prev').hasAttribute('aria-disabled')).toBe(false)
     await userEvent.click(get('next'))
     await userEvent.click(get('next'))
     await expect.poll(() => model.value).toBe(2)
-    expect(get('next').hasAttribute('disabled')).toBe(true)
+    expect(get('next').hasAttribute('aria-disabled')).toBe(false)
+    // Next on the last snap scrolls back to the first.
+    await userEvent.click(get('next'))
+    await expect.poll(() => model.value).toBe(0)
+    await expect.poll(() => scroll()).toBeCloseTo(0, 0)
   })
 
-  it('falls back to no loop when the slides are too few to wrap', async () => {
-    const { get } = mountCarousel({ count: 2, props: { loop: true } })
-    await expect.poll(() => get('prev').hasAttribute('disabled')).toBe(true)
+  it('rewinds instead of wrapping when the slides are too few', async () => {
+    const { get, model, viewport } = mountCarousel({ count: 2, props: { loop: true } })
+    await expect.poll(() => viewport.style.scrollSnapType).toBe('x mandatory')
+    expect(viewport.querySelector<HTMLElement>('[data-index="0"]')!.style.order).toBe('')
+    await userEvent.click(get('prev'))
+    await expect.poll(() => model.value).toBe(1)
+    await userEvent.click(get('next'))
+    await expect.poll(() => model.value).toBe(0)
   })
 
   it('scrolls the other way in RTL', async () => {

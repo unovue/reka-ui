@@ -61,10 +61,11 @@ function resolveAutoScroll(value: boolean | CarouselAutoScrollOptions | undefine
  * snaps in their visual order, which a rotation keeps equal to index order
  * around the current snap; a non-looping one steps by index.
  */
-function getStepTarget(index: number, snaps: CarouselSnap[], measured: boolean, loop: boolean, step: 1 | -1): number | undefined {
+function getStepTarget(index: number, snaps: CarouselSnap[], measured: boolean, loop: boolean, step: 1 | -1, wrap = loop): number | undefined {
   const count = snaps.length
+  // A `loop` too short to wrap still wraps its steps, by scrolling back to the other end.
   if (!loop || !measured)
-    return stepIndex(index, step, count, loop)
+    return stepIndex(index, step, count, wrap)
   const order = getSnapsByPosition(snaps)
   const next = order[order.indexOf(index) + step]
   return next ?? stepIndex(index, step, count, true)
@@ -76,7 +77,9 @@ export function getCarouselNavigationSurface(context: CarouselRootContext, kind:
     () => ({
       'aria-label': kind === 'previous' ? 'Previous slide' : 'Next slide',
       'aria-controls': context.contentId,
-      'disabled': disabled(),
+      // `aria-disabled`, not `disabled`: a disabled button would drop the keyboard focus
+      // of whoever just pressed it to reach the end.
+      'aria-disabled': disabled() ? 'true' : undefined,
       'onClick': (event: MouseEvent) => {
         if (event.defaultPrevented || disabled())
           return
@@ -91,14 +94,17 @@ export function getCarouselNavigationSurface(context: CarouselRootContext, kind:
   )
 }
 
-export function getCarouselIndicatorSurface(context: CarouselRootContext, index: MaybeRefOrGetter<number>): CarouselSurface<CarouselIndicatorState> {
+export function getCarouselIndicatorSurface(context: CarouselRootContext, index: MaybeRefOrGetter<number>, tabs = false): CarouselSurface<CarouselIndicatorState> {
   const isActive = () => context.modelValue.value === toValue(index)
   return createSurface<CarouselIndicatorState>(
     () => ({
       'aria-label': `Go to slide ${toValue(index) + 1}`,
       'aria-controls': context.contentId,
-      // APG grouped carousel: the current picker stays focusable but is marked unavailable.
-      'aria-disabled': isActive() ? 'true' : undefined,
+      // APG tabbed carousel: a tab per snap, the current one the group's only tab stop.
+      // APG grouped carousel: buttons, the current one focusable but marked unavailable.
+      ...(tabs
+        ? { 'role': 'tab', 'aria-selected': isActive() ? 'true' : 'false', 'tabindex': isActive() ? 0 : -1 }
+        : { 'aria-disabled': isActive() ? 'true' : undefined }),
       'onClick': (event: MouseEvent) => {
         if (event.defaultPrevented || isActive())
           return
@@ -261,7 +267,9 @@ export function getCarouselItemSurface(context: CarouselRootContext, element: Re
  */
 export function useCarouselContext(
   props: CarouselRootProps,
-  emits: ((event: 'update:modelValue', value: CarouselRootEmits['update:modelValue'][0]) => void) & ((event: 'update:playing', value: CarouselRootEmits['update:playing'][0]) => void),
+  emits: ((event: 'update:modelValue', value: CarouselRootEmits['update:modelValue'][0]) => void)
+    & ((event: 'update:playing', value: CarouselRootEmits['update:playing'][0]) => void)
+    & ((event: 'settle', value: CarouselRootEmits['settle'][0]) => void),
   dir: Ref<Direction>,
   baseId: string,
 ): CarouselRootContext {
@@ -355,7 +363,7 @@ export function useCarouselContext(
   })
 
   function scrollStep(step: 1 | -1) {
-    const target = getStepTarget(requested ?? modelValue.value, snaps.value, measured.value, loopActive.value, step)
+    const target = getStepTarget(requested ?? modelValue.value, snaps.value, measured.value, loopActive.value, step, options.value.loop)
     return target === undefined ? false : changeModelValue(target)
   }
 
@@ -381,6 +389,7 @@ export function useCarouselContext(
     playing: computed(() => playing.value),
     setPlaying,
     paused: ref(false),
+    held: ref(false),
     reducedMotion: ref(false),
     mounted,
     items,
@@ -410,12 +419,14 @@ export function useCarouselContext(
     loopOrder: shallowRef(),
     loopActive,
     loopFits,
-    canScrollPrev: computed(() => snapCount.value > 1 && (loopActive.value || modelValue.value > 0)),
-    canScrollNext: computed(() => snapCount.value > 1 && (loopActive.value || modelValue.value < snapCount.value - 1)),
+    canScrollPrev: computed(() => snapCount.value > 1 && (options.value.loop || modelValue.value > 0)),
+    canScrollNext: computed(() => snapCount.value > 1 && (options.value.loop || modelValue.value < snapCount.value - 1)),
     scrollPrev: () => scrollStep(-1),
     scrollNext: () => scrollStep(1),
     dragging: ref(false),
     viewportElement: ref(),
+    rootElement: ref(),
+    notifySettle: index => emits('settle', index),
     contentElement: ref(),
     reportInteraction() {
       const stops = autoplay.value?.stopOnInteraction || autoScroll.value?.stopOnInteraction

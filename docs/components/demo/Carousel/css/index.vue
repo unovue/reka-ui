@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { CarouselContent, CarouselIndicator, CarouselItem, CarouselNext, CarouselPrevious, CarouselRoot, CarouselViewport } from 'reka-ui'
+import { CarouselContent, CarouselIndicator, CarouselIndicatorGroup, CarouselItem, CarouselNext, CarouselPrevious, CarouselRoot, CarouselViewport } from 'reka-ui'
 import './styles.css'
 
 const slides = ['Mountains', 'Lakes', 'Forests', 'Deserts', 'Coasts']
@@ -31,14 +31,14 @@ const slides = ['Mountains', 'Lakes', 'Forests', 'Deserts', 'Coasts']
       <CarouselPrevious class="CarouselButton">
         <Icon icon="radix-icons:chevron-left" />
       </CarouselPrevious>
-      <div class="CarouselIndicators">
+      <CarouselIndicatorGroup class="CarouselIndicators">
         <CarouselIndicator
           v-for="(_, index) in snapCount"
           :key="index"
           :index="index"
           class="CarouselIndicator"
         />
-      </div>
+      </CarouselIndicatorGroup>
       <CarouselNext class="CarouselButton">
         <Icon icon="radix-icons:chevron-right" />
       </CarouselNext>

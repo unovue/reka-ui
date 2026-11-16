@@ -19,11 +19,12 @@ import { ownerDocument } from './dom'
 export function useCarouselRotation(context: CarouselRootContext, rootElement: Ref<HTMLElement | null | undefined>) {
   const hovered = ref(false)
   const pageHidden = ref(false)
+  const offscreen = ref(false)
   const isUsingKeyboard = useIsUsingKeyboard()
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 
   watch(reducedMotion, value => context.reducedMotion.value = value, { immediate: true })
-  watch([hovered, pageHidden], ([h, p]) => context.paused.value = h || p, { immediate: true })
+  watch([hovered, pageHidden, offscreen, context.held], values => context.paused.value = values.some(Boolean), { immediate: true })
 
   function stopForReducedMotion() {
     if (context.reducedMotion.value && context.rotationEnabled.value && context.playing.value)
@@ -40,6 +41,15 @@ export function useCarouselRotation(context: CarouselRootContext, rootElement: R
     useEventListener(doc, 'visibilitychange', () => {
       pageHidden.value = doc.visibilityState === 'hidden'
     })
+    // Scrolled out of the page view, nobody sees it rotate.
+    const win = doc.defaultView
+    if (rootElement.value && win && 'IntersectionObserver' in win) {
+      const observer = new win.IntersectionObserver(([entry]) => {
+        offscreen.value = !entry.isIntersecting
+      })
+      observer.observe(rootElement.value)
+      onScopeDispose(() => observer.disconnect())
+    }
   })
   watch(reducedMotion, stopForReducedMotion)
 

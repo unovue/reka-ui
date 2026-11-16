@@ -71,6 +71,7 @@ export const components = {
     'CarouselPrevious',
     'CarouselNext',
     'CarouselIndicator',
+    'CarouselIndicatorGroup',
     'CarouselAutoplayToggle',
   ] as const,
 

@@ -34,6 +34,12 @@ const WHEEL_PAGE_DELTA = 30
 const WHEEL_GESTURE_GAP = 180
 /** How many times a settle aims again at a programmatic target the scroll stopped short of. */
 const PROGRAMMATIC_SCROLL_RETRIES = 2
+/** How far a drag past an end moves the track, as a fraction of the pointer's travel. */
+const OVERSCROLL_RESISTANCE = 0.3
+/** Elements that keep their own pointer: a press on them selects text or moves a caret, it doesn't drag. */
+const FIELD_SELECTOR = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])'
+/** What can take the focus back when the slide holding it leaves the view. */
+const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable]:not([contenteditable="false"])'
 /** Fallback for engines without `scrollend`. */
 const SCROLL_END_DELAY = 120
 
@@ -149,6 +155,85 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     return `${vertical.value ? 'y' : 'x'} mandatory`
   }
 
+  /**
+   * `--reka-carousel-progress` on the root: 0 at the first snap, 1 at the last, set
+   * on every scroll frame without a render. A loop wraps it from the last snap
+   * (`(count - 1) / count`) back to 0.
+   */
+  function updateProgress() {
+    const root = context.rootElement.value
+    const el = element.value
+    const count = context.snapCount.value
+    if (!root || !el)
+      return
+    let progress = 0
+    if (count > 1 && (!context.measured.value || fade.value)) {
+      progress = context.modelValue.value / (context.loopActive.value ? count : count - 1)
+    }
+    else if (count > 1 && !context.loopActive.value) {
+      const max = getScrollSize(el) - getViewportSize(el)
+      progress = max > 0 ? Math.min(Math.max(getScroll(el) / max, 0), 1) : 0
+    }
+    else if (count > 1) {
+      // Between which two snaps the scroll sits, in visual order, as a fractional index.
+      const snaps = context.snaps.value
+      const order = getSnapsByPosition(snaps)
+      const position = getScroll(el)
+      let index = order[0]
+      for (let k = 0; k < order.length - 1; k++) {
+        const from = snaps[order[k]].position
+        const to = snaps[order[k + 1]].position
+        if (position >= from && position <= to) {
+          const step = (order[k + 1] - order[k] + count) % count
+          index = order[k] + (to > from ? (position - from) / (to - from) : 0) * step
+          break
+        }
+        if (position > to)
+          index = order[k + 1]
+      }
+      progress = (index % count) / count
+    }
+    root.style.setProperty('--reka-carousel-progress', String(Math.round(progress * 10000) / 10000))
+  }
+
+  // The snap the slides last rested on, so `settle` fires once per change.
+  let settledIndex = context.modelValue.value
+  function notifySettled(index: number) {
+    if (index === settledIndex)
+      return
+    settledIndex = index
+    context.notifySettle(index)
+  }
+
+  // The element inside a slide that holds the focus, kept until the focus really
+  // leaves: when the slide turns `inert` the browser drops it on the body instead.
+  let focusedInSlide: HTMLElement | undefined
+  function onFocusin(event: FocusEvent) {
+    const target = event.target as HTMLElement
+    focusedInSlide = target !== element.value && target.closest('[aria-roledescription="slide"]') ? target : undefined
+  }
+  function onFocusout(event: FocusEvent) {
+    const target = event.target as HTMLElement
+    const next = event.relatedTarget as Node | null
+    if (!target.closest('[inert]') && !(next && element.value?.contains(next)))
+      focusedInSlide = undefined
+  }
+  /** Gives the focus a slide just dropped to the slide that came in, or the viewport. */
+  function rescueFocus() {
+    const lost = focusedInSlide
+    if (!lost || !lost.closest('[inert]'))
+      return
+    const doc = ownerDocument(element.value)
+    const current = doc.activeElement
+    if (current && current !== doc.body && !lost.contains(current))
+      return
+    const incoming = context.items.value[Math.min(...context.activeItems.value)]
+    const target = incoming && !incoming.closest('[inert]')
+      ? incoming.querySelector<HTMLElement>(FOCUSABLE_SELECTOR) ?? element.value
+      : element.value
+    target?.focus({ preventScroll: true })
+  }
+
   function updateInView() {
     const el = element.value
     if (!el || !context.measured.value)
@@ -248,6 +333,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
 
     updateInView()
     updateAutoHeight()
+    updateProgress()
     // Laid out for the first time, or again after `display: none` reset the scroll: show the current snap.
     if (!wasMeasured)
       showCurrentSnap()
@@ -361,6 +447,8 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       scrollToSnap(context.modelValue.value)
     else if (!context.options.value.dragFree && !autoScrollRunning.value && Math.abs(context.snaps.value[nearest].position - getScroll()) >= 1)
       scrollToSnap(nearest)
+    else if (!autoScrollRunning.value)
+      notifySettled(nearest)
     rotate()
   }
 
@@ -382,6 +470,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     scrollFrame = win.requestAnimationFrame(() => {
       scrollFrame = 0
       updateInView()
+      updateProgress()
       if (!context.measured.value || dragState || programmaticTarget !== undefined)
         return
       const nearest = getNearestSnapIndex(getScroll(), context.snaps.value)
@@ -433,9 +522,10 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     if (!event.isPrimary || event.button !== 0)
       return
     if (event.pointerType === 'touch') {
-      // A finger on the scroller takes over the scroll natively.
+      // A finger on the scroller takes over the scroll natively, and holds rotation until it lifts.
       context.reportInteraction()
       interrupt()
+      holdForFinger()
     }
     else {
       // Grabbing the track stops `dragFree` momentum.
@@ -447,6 +537,8 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     if (!fade.value && event.pointerType === 'touch')
       return
     if (!fade.value && !context.measured.value)
+      return
+    if ((event.target as Element | null)?.closest?.(FIELD_SELECTOR))
       return
 
     const doc = ownerDocument(el)
@@ -484,6 +576,43 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
         win.removeEventListener('blur', lost)
       },
     }
+  }
+
+  function holdForFinger() {
+    const doc = ownerDocument(element.value)
+    context.held.value = true
+    const release = () => {
+      context.held.value = false
+      doc.removeEventListener('pointerup', release)
+      doc.removeEventListener('pointercancel', release)
+    }
+    doc.addEventListener('pointerup', release)
+    doc.addEventListener('pointercancel', release)
+  }
+
+  /**
+   * A mouse or pen drag past an end of a track that doesn't loop: the track
+   * follows the pointer a little way past the end, and springs back on release.
+   */
+  function setOverscroll(over: number) {
+    const content = context.contentElement.value
+    if (!content)
+      return
+    const offset = -over * OVERSCROLL_RESISTANCE * (rtl.value ? -1 : 1)
+    content.style.transition = ''
+    content.style.transform = over ? (vertical.value ? `translateY(${offset}px)` : `translateX(${offset}px)`) : ''
+  }
+  function releaseOverscroll() {
+    const content = context.contentElement.value
+    if (!content?.style.transform)
+      return
+    if (!context.reducedMotion.value)
+      content.style.transition = 'transform 250ms ease-out'
+    content.style.transform = ''
+    setTimeout(() => {
+      if (!content.style.transform)
+        content.style.transition = ''
+    }, 300)
   }
 
   function onPointermove(event: PointerEvent) {
@@ -529,6 +658,10 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       return
     const position = state.scroll - delta
     setScroll(position, 'instant')
+    if (!context.loopActive.value) {
+      const max = getScrollSize(el) - getViewportSize(el)
+      setOverscroll(position < 0 ? position : position > max ? position - max : 0)
+    }
     const now = event.timeStamp || performance.now()
     state.samples.push({ time: now, position })
     if (state.samples.length > 20)
@@ -539,6 +672,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     dragState?.cleanup()
     dragState = undefined
     context.dragging.value = false
+    releaseOverscroll()
   }
 
   function onPointerup(event: PointerEvent) {
@@ -755,7 +889,13 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
   // The track follows the current snap when it changes from outside the scroll (controls, keys, `v-model`).
   watch(context.modelValue, (value) => {
     updateAutoHeight()
-    if (!context.measured.value || fade.value || programmaticTarget === value || dragState)
+    // Nothing to scroll: the slides rest on the new snap right away (a fade transitions in CSS).
+    if (!context.measured.value || fade.value) {
+      updateProgress()
+      notifySettled(value)
+      return
+    }
+    if (programmaticTarget === value || dragState)
       return
     // Already there by a user scroll; a running programmatic scroll towards another snap still has to turn.
     if (programmaticTarget === undefined && getNearestSnapIndex(getScroll(), context.snaps.value) === value)
@@ -826,12 +966,15 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       return
     observe()
     measure()
+    updateProgress()
     // `containScroll: false` pads the track on the first measure: measure again on the padded layout.
     await nextTick()
     measure()
     scrollToSnap(context.modelValue.value, 'instant')
     rotate()
+    updateProgress()
   }, { immediate: true, flush: 'post' })
+  watch([context.inView, context.activeItems], rescueFocus, { flush: 'post' })
   watch([context.items, () => context.contentElement.value], () => {
     if (!context.mounted.value)
       return
@@ -899,6 +1042,8 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     onSelectstart,
     onWheel,
     onKeydown,
+    onFocusin,
+    onFocusout,
   }))
 
   return { attrs, measure }

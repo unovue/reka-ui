@@ -10,6 +10,7 @@ export interface CarouselIndicatorProps extends PrimitiveProps {
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
+import { injectCarouselIndicatorGroupContext } from './CarouselIndicatorGroup.vue'
 import { injectCarouselRootContext } from './CarouselRoot.vue'
 import { getCarouselIndicatorSurface } from './useCarousel'
 
@@ -24,9 +25,11 @@ defineSlots<{
 
 const { forwardRef } = useForwardExpose()
 const rootContext = injectCarouselRootContext()
+// In a `CarouselIndicatorGroup`, a tab of its tablist; on its own, a plain button.
+const tabs = !!injectCarouselIndicatorGroupContext(null)
 
-// aria-label, aria-disabled on the current snap, data-active and the click handler.
-const surface = getCarouselIndicatorSurface(rootContext, () => props.index)
+// aria-label, the current snap's state, data-active and the click handler.
+const surface = getCarouselIndicatorSurface(rootContext, () => props.index, tabs)
 </script>
 
 <template>

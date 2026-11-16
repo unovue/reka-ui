@@ -7,11 +7,12 @@ import { CarouselAutoplayToggle, CarouselContent, CarouselItem, CarouselNext, Ca
 const SIZE = 200
 const COUNT = 5
 
-function mountCarousel(props: Record<string, unknown> = {}) {
+function mountCarousel(props: Record<string, unknown> = {}, slide: (i: number) => any = i => `Slide ${i + 1}`) {
   document.body.innerHTML = ''
   const vertical = props.orientation === 'vertical'
   const model = ref((props.defaultValue as number | undefined) ?? 0)
   const playing = ref<boolean>()
+  const settled: number[] = []
   const wrapper = mount(defineComponent({
     setup: () => () => [h('div', { 'data-testid': 'outside', 'style': { height: '20px' } }), h(CarouselRoot, {
       'aria-label': 'Interaction',
@@ -20,6 +21,7 @@ function mountCarousel(props: Record<string, unknown> = {}) {
       'style': { width: `${SIZE}px`, margin: '20px' },
       'onUpdate:modelValue': (value: number) => model.value = value,
       'onUpdate:playing': (value: boolean) => playing.value = value,
+      'onSettle': (value: number) => settled.push(value),
     }, () => [
       h(CarouselAutoplayToggle, { 'data-testid': 'toggle' }, () => 'Toggle'),
       h(CarouselViewport, { 'data-testid': 'viewport', 'style': vertical ? { height: `${SIZE}px` } : undefined }, () =>
@@ -27,7 +29,7 @@ function mountCarousel(props: Record<string, unknown> = {}) {
           'key': i,
           'data-testid': `item-${i}`,
           'style': vertical ? { height: `${SIZE}px` } : { width: `${SIZE}px`, height: '100px' },
-        }, () => `Slide ${i + 1}`)))),
+        }, () => slide(i))))),
       h(CarouselPrevious, { 'data-testid': 'prev' }, () => 'Prev'),
       h(CarouselNext, { 'data-testid': 'next' }, () => 'Next'),
     ])],
@@ -35,7 +37,7 @@ function mountCarousel(props: Record<string, unknown> = {}) {
   const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)!
   const viewport = get('viewport')
   const scroll = () => vertical ? viewport.scrollTop : Math.abs(viewport.scrollLeft)
-  return { wrapper, get, viewport, model, playing, scroll }
+  return { wrapper, get, viewport, model, playing, scroll, settled }
 }
 
 /** Parks the real mouse outside the carousel: the previous test may have left it over this one, which pauses rotation. */
@@ -256,11 +258,112 @@ describe('given an auto-scrolling Carousel in a real browser', () => {
   })
 
   it('stops at the end of a track that does not loop', async () => {
-    const { viewport, scroll, playing } = mountCarousel({ autoScroll: { speed: 3000 } })
+    const { scroll, playing } = mountCarousel({ autoScroll: { speed: 3000 } })
     await mouseAway()
-    await measured(viewport)
     await expect.poll(() => playing.value, { timeout: 3000 }).toBe(false)
     await settled(scroll)
     expect(scroll()).toBeCloseTo(SIZE * (COUNT - 1), 0)
+  })
+})
+
+describe('given a Carousel holding the keyboard focus in a real browser', () => {
+  const button = (i: number) => h('button', { 'type': 'button', 'data-testid': `button-${i}` }, `Slide ${i + 1}`)
+
+  it.each([false, true])('gives the focus to the slide that comes in when the focused one pages away (fade: %s)', async (fade) => {
+    const { get, model, scroll } = mountCarousel({ fade }, button)
+    await mouseAway()
+    await sleep(300)
+    get('button-0').focus()
+    get('next').click()
+    await expect.poll(() => model.value).toBe(1)
+    await settled(scroll)
+    await expect.poll(() => document.activeElement).toBe(get('button-1'))
+  })
+
+  it('keeps the focus on Next when it reaches the last snap', async () => {
+    const { get, model, scroll } = mountCarousel()
+    await mouseAway()
+    await sleep(300)
+    get('next').focus()
+    for (let i = 0; i < COUNT - 1; i++)
+      await userEvent.keyboard('{Enter}')
+    await expect.poll(() => model.value).toBe(COUNT - 1)
+    await settled(scroll)
+    expect(get('next').getAttribute('aria-disabled')).toBe('true')
+    expect(document.activeElement).toBe(get('next'))
+    await userEvent.keyboard('{Enter}')
+    expect(model.value).toBe(COUNT - 1)
+  })
+})
+
+describe('given a Carousel with form fields in its slides in a real browser', () => {
+  it('leaves a mouse press on a field to the field', async () => {
+    const field = (i: number) => h('input', { 'data-testid': `field-${i}`, 'value': 'Select this text please', 'style': { width: '180px' } })
+    const { get, model, viewport, scroll } = mountCarousel({}, field)
+    await measured(viewport)
+    const box = get('field-0').getBoundingClientRect()
+    await commands.mouseDrag(box.left + 170, box.top + 5, box.left + 10, box.top + 5, 10)
+    await sleep(300)
+    expect(model.value).toBe(0)
+    expect(scroll()).toBeCloseTo(0, 0)
+    expect(document.activeElement).toBe(get('field-0'))
+    const input = get('field-0') as HTMLInputElement
+    expect(input.selectionEnd! - input.selectionStart!).toBeGreaterThan(0)
+  })
+})
+
+describe('given a Carousel dragged past its ends in a real browser', () => {
+  it('stretches past the first slide and springs back on release', async () => {
+    const { viewport, scroll } = mountCarousel()
+    await measured(viewport)
+    const content = viewport.firstElementChild as HTMLElement
+    const box = viewport.getBoundingClientRect()
+    const y = box.top + 40
+    const base = { bubbles: true, cancelable: true, composed: true, isPrimary: true, pointerId: 11, pointerType: 'pen' }
+    viewport.dispatchEvent(new PointerEvent('pointerdown', { ...base, button: 0, buttons: 1, clientX: box.left + 20, clientY: y }))
+    document.dispatchEvent(new PointerEvent('pointermove', { ...base, buttons: 1, clientX: box.left + 40, clientY: y }))
+    document.dispatchEvent(new PointerEvent('pointermove', { ...base, buttons: 1, clientX: box.left + 120, clientY: y }))
+    expect(scroll()).toBe(0)
+    expect(content.style.transform).toBe('translateX(30px)')
+    document.dispatchEvent(new PointerEvent('pointerup', { ...base, button: 0, buttons: 0, clientX: box.left + 120, clientY: y }))
+    expect(content.style.transform).toBe('')
+    await settled(scroll)
+    expect(scroll()).toBe(0)
+  })
+})
+
+describe('given a rotating Carousel scrolled out of the page view in a real browser', () => {
+  it('pauses while out of view', async () => {
+    const { model, get } = mountCarousel({ autoplay: { delay: 300 } })
+    const spacer = document.createElement('div')
+    spacer.style.height = '5000px'
+    document.body.append(spacer)
+    await mouseAway()
+    await expect.poll(() => model.value, { timeout: 2000 }).toBe(1)
+    window.scrollTo(0, 4000)
+    await expect.poll(() => get('root').hasAttribute('data-paused')).toBe(true)
+    const held = model.value
+    await sleep(900)
+    expect(model.value).toBe(held)
+    window.scrollTo(0, 0)
+    await expect.poll(() => get('root').hasAttribute('data-paused')).toBe(false)
+    await expect.poll(() => model.value, { timeout: 2000 }).toBe(held + 1)
+  })
+})
+
+describe('given a Carousel reporting its progress in a real browser', () => {
+  it('sets the progress as it scrolls and emits settle once it rests', async () => {
+    const { get, viewport, scroll, settled: rests } = mountCarousel()
+    await measured(viewport)
+    const progress = () => get('root').style.getPropertyValue('--reka-carousel-progress')
+    expect(progress()).toBe('0')
+    await userEvent.click(get('next'))
+    await settled(scroll)
+    expect(progress()).toBe(String(1 / (COUNT - 1)))
+    expect(rests).toEqual([1])
+    viewport.scrollTo({ left: SIZE * 2, behavior: 'instant' })
+    await settled(scroll)
+    expect(progress()).toBe(String(2 / (COUNT - 1)))
+    expect(rests).toEqual([1, 2])
   })
 })

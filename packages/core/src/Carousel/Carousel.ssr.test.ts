@@ -109,8 +109,8 @@ describe('given a Carousel rendered on the server', () => {
   it('renders the indicators, the controls and the slide labels from itemCount', async () => {
     const html = await render({ itemCount: 4 })
     expect(html.match(/aria-label="Go to slide/g)).toHaveLength(4)
-    expect(tag(html, 'aria-label="Next slide"')).not.toContain('disabled')
-    expect(tag(html, 'aria-label="Previous slide"')).toContain('disabled')
+    expect(tag(html, 'aria-label="Next slide"')).not.toContain('aria-disabled')
+    expect(tag(html, 'aria-label="Previous slide"')).toContain('aria-disabled')
     expect(tag(html, 'data-index="1"')).toContain('aria-label="2 of 4"')
   })
 
@@ -118,13 +118,13 @@ describe('given a Carousel rendered on the server', () => {
     const html = await render()
     expect(html).not.toContain('Go to slide')
     expect(html).not.toContain(' of 4"')
-    expect(tag(html, 'aria-label="Next slide"')).toContain('disabled')
+    expect(tag(html, 'aria-label="Next slide"')).toContain('aria-disabled')
   })
 
   it('enables both controls with loop and itemCount', async () => {
     const html = await render({ loop: true, itemCount: 4 })
-    expect(tag(html, 'aria-label="Previous slide"')).not.toContain('disabled')
-    expect(tag(html, 'aria-label="Next slide"')).not.toContain('disabled')
+    expect(tag(html, 'aria-label="Previous slide"')).not.toContain('aria-disabled')
+    expect(tag(html, 'aria-label="Next slide"')).not.toContain('aria-disabled')
   })
 
   it('renders rotation as playing, with the live region off', async () => {

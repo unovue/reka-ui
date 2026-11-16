@@ -11,6 +11,11 @@ export {
   type CarouselIndicatorProps,
 } from './CarouselIndicator.vue'
 export {
+  default as CarouselIndicatorGroup,
+  type CarouselIndicatorGroupProps,
+  injectCarouselIndicatorGroupContext,
+} from './CarouselIndicatorGroup.vue'
+export {
   default as CarouselItem,
   type CarouselItemProps,
 } from './CarouselItem.vue'

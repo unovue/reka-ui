@@ -129,7 +129,7 @@ describe('given a Carousel spaced with item padding and a negative content margi
     await userEvent.click(get('next'))
     await settled(scroll)
     expect(model.value).toBe(3)
-    expect(get('next').hasAttribute('disabled')).toBe(true)
+    expect(get('next').hasAttribute('aria-disabled')).toBe(true)
   })
 
   it('ends the slide content flush with the viewport with align end', async () => {
@@ -149,7 +149,7 @@ describe('given a Carousel spaced with item padding and a negative content margi
     await settled(scroll)
     // 6 items, 3 visible: 4 snaps.
     expect(model.value).toBe(3)
-    expect(get('next').hasAttribute('disabled')).toBe(true)
+    expect(get('next').hasAttribute('aria-disabled')).toBe(true)
     expect(offset(3)).toBeCloseTo(0, 0)
   })
 
@@ -209,7 +209,7 @@ describe('given a Carousel spaced with item padding and a negative content margi
     // loop would need 2 pairs of room around the view, which 5 slides don't leave.
     const { get, viewport } = mountGutter({ basis: 1 / 2, count: 5, props: { loop: true, slidesToScroll: 'auto' } })
     await measured(viewport)
-    await expect.poll(() => get('next').hasAttribute('disabled')).toBe(false)
+    await expect.poll(() => get('next').hasAttribute('aria-disabled')).toBe(false)
     expect(viewport.querySelector<HTMLElement>('[data-index="0"]')!.style.order).toBe('')
   })
 

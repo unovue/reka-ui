@@ -4,7 +4,7 @@ import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
-import { CarouselAutoplayToggle, CarouselContent, CarouselIndicator, CarouselItem, CarouselNext, CarouselPrevious, CarouselRoot, CarouselViewport } from '.'
+import { CarouselAutoplayToggle, CarouselContent, CarouselIndicator, CarouselIndicatorGroup, CarouselItem, CarouselNext, CarouselPrevious, CarouselRoot, CarouselViewport } from '.'
 import Carousel from './story/_Carousel.vue'
 
 // Every mounted carousel keeps its timers and document listeners until it unmounts.
@@ -56,8 +56,8 @@ describe('given a default Carousel', () => {
 
   it('starts on the first slide with previous disabled', () => {
     expect(activeIndices(wrapper)).toEqual([0])
-    expect(wrapper.find('[aria-label="Previous slide"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.find('[aria-label="Next slide"]').attributes('disabled')).toBeUndefined()
+    expect(wrapper.find('[aria-label="Previous slide"]').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.find('[aria-label="Next slide"]').attributes('aria-disabled')).toBeUndefined()
   })
 
   it('points the controls at the content', () => {
@@ -96,7 +96,7 @@ describe('given a default Carousel', () => {
 
   it('disables next on the last slide', async () => {
     await wrapper.find('[aria-label="Go to slide 5"]').trigger('click')
-    expect(wrapper.find('[aria-label="Next slide"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[aria-label="Next slide"]').attributes('aria-disabled')).toBe('true')
   })
 
   it('makes the viewport focusable and navigates with the keyboard', async () => {
@@ -139,7 +139,7 @@ describe('given a Carousel with options', () => {
   it('wraps around with loop', async () => {
     const wrapper = mountCarousel({ loop: true })
     await nextTick()
-    expect(wrapper.find('[aria-label="Previous slide"]').attributes('disabled')).toBeUndefined()
+    expect(wrapper.find('[aria-label="Previous slide"]').attributes('aria-disabled')).toBeUndefined()
     await wrapper.find('[aria-label="Previous slide"]').trigger('click')
     expect(activeIndices(wrapper)).toEqual([4])
     await wrapper.find('[aria-label="Next slide"]').trigger('click')
@@ -254,6 +254,22 @@ describe('given a Carousel with autoplay', () => {
     expect(wrapper.find('[aria-live]').attributes('aria-live')).toBe('polite')
     await vi.advanceTimersByTimeAsync(3000)
     expect(activeIndices(wrapper)).toEqual([0])
+  })
+
+  it('pauses while a finger is down on the track, and marks it paused', async () => {
+    const wrapper = mountCarousel({ autoplay: { delay: 1000, stopOnInteraction: false } })
+    await nextTick()
+    const viewport = wrapper.find('[tabindex="0"]').element
+    viewport.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', isPrimary: true, button: 0, bubbles: true }))
+    await nextTick()
+    expect(wrapper.attributes('data-paused')).toBe('')
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(activeIndices(wrapper)).toEqual([0])
+    document.dispatchEvent(new PointerEvent('pointerup', { pointerType: 'touch', isPrimary: true, bubbles: true }))
+    await nextTick()
+    expect(wrapper.attributes('data-paused')).toBeUndefined()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(activeIndices(wrapper)).toEqual([1])
   })
 
   it('pauses while a mouse hovers the carousel', async () => {
@@ -441,6 +457,87 @@ describe('given a Carousel whose slides change', () => {
   })
 })
 
+describe('given a Carousel with grouped indicators', () => {
+  function mountGrouped(props: Record<string, unknown> = {}) {
+    return mount(defineComponent({
+      setup: () => () => h(CarouselRoot, { 'aria-label': 'Grouped', ...props }, () => [
+        h(CarouselViewport, () => h(CarouselContent, () => [1, 2, 3, 4].map(i => h(CarouselItem, { key: i }, () => `Slide ${i}`)))),
+        h(CarouselIndicatorGroup, () => [0, 1, 2, 3].map(index => h(CarouselIndicator, { key: index, index }))),
+      ]),
+    }), { attachTo: document.body })
+  }
+  const tabs = (wrapper: VueWrapper) => wrapper.findAll('[role="tab"]')
+
+  it('should pass axe accessibility tests', async () => {
+    const wrapper = mountGrouped()
+    await nextTick()
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+  })
+
+  it('renders a tablist with the current indicator as its only tab stop', async () => {
+    const wrapper = mountGrouped({ defaultValue: 1 })
+    await nextTick()
+    expect(wrapper.find('[role="tablist"]').attributes('aria-label')).toBe('Choose slide to display')
+    expect(tabs(wrapper).map(tab => tab.attributes('aria-selected'))).toEqual(['false', 'true', 'false', 'false'])
+    expect(tabs(wrapper).map(tab => tab.attributes('tabindex'))).toEqual(['-1', '0', '-1', '-1'])
+    expect(tabs(wrapper)[1].attributes('aria-disabled')).toBeUndefined()
+  })
+
+  it('moves between the indicators with the arrows, Home and End, and shows their slide', async () => {
+    const wrapper = mountGrouped()
+    await nextTick()
+    ;(tabs(wrapper)[0].element as HTMLElement).focus()
+    await tabs(wrapper)[0].trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(tabs(wrapper)[1].element)
+    expect(wrapper.find('[data-index="1"]').attributes('data-active')).toBe('')
+    await tabs(wrapper)[1].trigger('keydown', { key: 'End' })
+    expect(document.activeElement).toBe(tabs(wrapper)[3].element)
+    await tabs(wrapper)[3].trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(tabs(wrapper)[0].element)
+    await tabs(wrapper)[0].trigger('keydown', { key: 'Home' })
+    expect(wrapper.find('[data-index="0"]').attributes('data-active')).toBe('')
+  })
+
+  it('swaps the arrows in RTL', async () => {
+    const wrapper = mountGrouped({ dir: 'rtl' })
+    await nextTick()
+    ;(tabs(wrapper)[0].element as HTMLElement).focus()
+    await tabs(wrapper)[0].trigger('keydown', { key: 'ArrowLeft' })
+    expect(document.activeElement).toBe(tabs(wrapper)[1].element)
+  })
+})
+
+describe('given a Carousel that reports where it rests', () => {
+  it('emits settle once per change, with the new snap', async () => {
+    const wrapper = mountCarousel()
+    await nextTick()
+    await wrapper.find('[aria-label="Next slide"]').trigger('click')
+    await nextTick()
+    await wrapper.find('[aria-label="Go to slide 4"]').trigger('click')
+    await nextTick()
+    expect(wrapper.emitted('settle')).toEqual([[1], [3]])
+  })
+
+  it('emits settle right away in fade mode', async () => {
+    const wrapper = mountCarousel({ fade: true })
+    await nextTick()
+    await wrapper.find('[aria-label="Next slide"]').trigger('click')
+    await nextTick()
+    expect(wrapper.emitted('settle')).toEqual([[1]])
+  })
+
+  it('sets the progress and the autoplay interval as CSS variables on the root', async () => {
+    const wrapper = mountCarousel({ autoplay: { delay: 3000 } })
+    await nextTick()
+    const root = wrapper.element as HTMLElement
+    expect(root.style.getPropertyValue('--reka-carousel-interval')).toBe('3000ms')
+    expect(root.style.getPropertyValue('--reka-carousel-progress')).toBe('0')
+    await wrapper.find('[aria-label="Go to slide 3"]').trigger('click')
+    await nextTick()
+    expect(root.style.getPropertyValue('--reka-carousel-progress')).toBe('0.5')
+  })
+})
+
 describe('given a Carousel that loses every slide', () => {
   it('counts no snaps, whatever itemCount says', async () => {
     const slides = ref([1, 2, 3])
@@ -459,7 +556,7 @@ describe('given a Carousel that loses every slide', () => {
     await nextTick()
     await nextTick()
     expect(wrapper.find('output').text()).toBe('0')
-    expect(wrapper.find('[aria-label="Next slide"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[aria-label="Next slide"]').attributes('aria-disabled')).toBe('true')
   })
 })
 
@@ -483,8 +580,8 @@ describe('given a Carousel that loses slides', () => {
     await nextTick()
     expect(updates).toEqual([1])
     expect(wrapper.find('[data-index="1"]').attributes('data-active')).toBe('')
-    expect(wrapper.find('[aria-label="Previous slide"]').attributes('disabled')).toBeUndefined()
-    expect(wrapper.find('[aria-label="Next slide"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[aria-label="Previous slide"]').attributes('aria-disabled')).toBeUndefined()
+    expect(wrapper.find('[aria-label="Next slide"]').attributes('aria-disabled')).toBe('true')
     if (fade) {
       expect(wrapper.find('[data-index="1"]').attributes('inert')).toBeUndefined()
       expect((wrapper.find('[data-index="1"]').element as HTMLElement).style.opacity).toBe('1')

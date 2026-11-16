@@ -47,6 +47,7 @@ import {
   CarouselAutoplayToggle,
   CarouselContent,
   CarouselIndicator,
+  CarouselIndicatorGroup,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
@@ -65,11 +66,13 @@ import {
     </CarouselViewport>
     <CarouselPrevious />
     <CarouselNext />
-    <CarouselIndicator
-      v-for="(_, index) in snapCount"
-      :key="index"
-      :index="index"
-    />
+    <CarouselIndicatorGroup>
+      <CarouselIndicator
+        v-for="(_, index) in snapCount"
+        :key="index"
+        :index="index"
+      />
+    </CarouselIndicatorGroup>
   </CarouselRoot>
 </template>
 ```
@@ -77,6 +80,8 @@ import {
 ## How it works
 
 `CarouselViewport` is a real scroll container with CSS scroll snapping, and `CarouselContent` is the track inside it. Before hydration the browser already scrolls it with touch, a trackpad or the keyboard, and snaps to the slides. Once mounted, the carousel measures the track, adds mouse and pen dragging, the controls and the options below, and keeps `v-model` in sync with the scroll position.
+
+A mouse or pen drag follows the pointer, stretches a little past the first and last slides, and settles on a snap based on its speed. A press on a field inside a slide (an input, a textarea, a select or an editable element) is left to the field. `settle` fires once the slides rest on a new snap, which is the moment for heavier work such as loading the next images.
 
 The parts set the layout styles they need inline: the overflow and snapping on the viewport, `display: flex` on the content and `flex-shrink: 0` on the items. Give the items their size yourself, for example `flex-basis: 100%` for one slide per view or `33.333%` for three. To space them, put a start padding on the items and the same negative start margin on the content, for example `ps-4` and `-ms-4`, or `pt-4` and `-mt-4` when vertical. The carousel measures where the first slide rests and rests every snap at that offset, so the gutter lines up on every slide. Before hydration the browser snaps to the item edges, so the slides sit one gutter off until the track is measured.
 
@@ -109,6 +114,23 @@ Contains all the parts of a carousel. Renders a `region` with `aria-roledescript
     {
       attribute: '[data-playing]',
       values: 'Present while autoplay or auto scroll is on',
+    },
+    {
+      attribute: '[data-paused]',
+      values: 'Present while rotation is held: hovered, a hidden page, scrolled out of view, or a finger down',
+    },
+  ]"
+/>
+
+<CssVariablesTable
+  :data="[
+    {
+      cssVariable: '--reka-carousel-progress',
+      description: 'From 0 at the first snap to 1 at the last, updated on every scroll frame. With <Code>loop</Code> it wraps back to 0',
+    },
+    {
+      cssVariable: '--reka-carousel-interval',
+      description: 'The <Code>autoplay</Code> delay, to time a progress animation',
     },
   ]"
 />
@@ -185,7 +207,7 @@ A slide. Renders a `group` with `aria-roledescription="slide"`, labelled with it
 
 ### Previous
 
-Goes to the previous snap. Disabled on the first one, unless `loop` is set.
+Goes to the previous snap. On the first one, unless `loop` is set, it is `aria-disabled` and does nothing, but keeps the focus.
 
 <!-- @include: @/meta/CarouselPrevious.md -->
 
@@ -204,7 +226,7 @@ Goes to the previous snap. Disabled on the first one, unless `loop` is set.
 
 ### Next
 
-Goes to the next snap. Disabled on the last one, unless `loop` is set.
+Goes to the next snap. On the last one, unless `loop` is set, it is `aria-disabled` and does nothing, but keeps the focus.
 
 <!-- @include: @/meta/CarouselNext.md -->
 
@@ -221,9 +243,24 @@ Goes to the next snap. Disabled on the last one, unless `loop` is set.
   ]"
 />
 
+### IndicatorGroup
+
+Wraps the indicators in a `tablist`, labelled "Choose slide to display" unless you pass `aria-label`. Its indicators become tabs: the current one is the only tab stop, and the arrow keys, `Home` and `End` move between them and show their snap.
+
+<!-- @include: @/meta/CarouselIndicatorGroup.md -->
+
+<DataAttributesTable
+  :data="[
+    {
+      attribute: '[data-orientation]',
+      values: ['vertical', 'horizontal'],
+    },
+  ]"
+/>
+
 ### Indicator
 
-Goes to the snap at `index`. The current one has `aria-disabled="true"`.
+Goes to the snap at `index`. In a `CarouselIndicatorGroup` it is a `tab` with `aria-selected`. On its own it is a button, and the current one has `aria-disabled="true"`.
 
 <!-- @include: @/meta/CarouselIndicator.md -->
 
@@ -349,7 +386,7 @@ Two carousels can share the same `v-model`: the thumbnails follow the main one, 
 
 ### Autoplay
 
-`autoplay` moves to the next snap on an interval, and `autoScroll` scrolls the track continuously. Both pause while a mouse hovers the carousel, stop when keyboard focus enters it, and stop on mount when the user prefers reduced motion. With `stopOnInteraction`, the default, they also stop on the first drag, press or key. Bind `v-model:playing` to control them.
+`autoplay` moves to the next snap on an interval, and `autoScroll` scrolls the track continuously. Both pause while a mouse hovers the carousel, while the page is hidden, while the carousel is scrolled out of view and while a finger is down on it. They stop when keyboard focus enters it, and stop on mount when the user prefers reduced motion. With `stopOnInteraction`, the default, they also stop on the first drag, press or key. Bind `v-model:playing` to control them.
 
 ```vue line=3,5
 <template>
@@ -424,7 +461,7 @@ With `autoHeight`, the viewport takes the height of the current slides. Animate 
 
 Adheres to the [Carousel WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/carousel).
 
-The root is a `region` with `aria-roledescription="carousel"`, each item a `group` with `aria-roledescription="slide"`, and the content a live region that announces slide changes, except while the carousel rotates on its own. The controls point at the content with `aria-controls`. Slides out of view are `inert`, so keyboard and screen reader users only meet the visible ones.
+The root is a `region` with `aria-roledescription="carousel"`, each item a `group` with `aria-roledescription="slide"`, and the content a live region that announces slide changes, except while the carousel rotates on its own. The controls point at the content with `aria-controls`. Slides out of view are `inert`, so keyboard and screen reader users only meet the visible ones. When the slide holding the focus leaves the view, the focus moves to the slide that comes in, or to the viewport when it has nothing to focus. Previous and Next stay focusable at the ends, and `CarouselIndicatorGroup` turns the indicators into a tablist with a single tab stop.
 
 Rotation follows the pattern: it pauses on hover, stops for good when keyboard focus enters the carousel, and only restarts from `CarouselAutoplayToggle`. When the user prefers reduced motion, rotation stops on mount and programmatic scrolls jump instead of animating.
 
@@ -459,6 +496,10 @@ Rotation follows the pattern: it pauses on hover, stops for good when keyboard f
     {
       keys: ['End'],
       description: '<span>When the viewport is focused, goes to the last snap.</span>',
+    },
+    {
+      keys: ['ArrowRight', 'ArrowLeft'],
+      description: '<span>In a <Code>CarouselIndicatorGroup</Code>, moves to the next or previous indicator and shows its snap.</span>',
     },
     {
       keys: ['Space', 'Enter'],
