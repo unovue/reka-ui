@@ -109,6 +109,18 @@ describe('given default Listbox', () => {
     })
   })
 
+  describe('when holding `Shift` before typing a letter', async () => {
+    beforeEach(async () => {
+      await content.trigger('keydown', { key: 'Shift', shiftKey: true })
+      await content.trigger('keydown', { key: 'B', shiftKey: true })
+    })
+
+    it('should ignore the named key and highlight text starting with B', () => {
+      const item = items.find(i => i.text().startsWith('B'))
+      expect(document.activeElement).toBe(item?.element)
+    })
+  })
+
   describe('when selection behavior `replace`', () => {
     beforeEach(() => {
       wrapper.setProps({ selectionBehavior: 'replace' })
@@ -303,6 +315,20 @@ describe('given a virtualized Listbox on initial mount', () => {
     const items = wrapper.findAll('[role=option]')
     expect(document.activeElement).toBe(items[0].element)
     expect(scrollSpy).toHaveBeenCalled()
+  })
+
+  it('should ignore named keys in typeahead', async () => {
+    const wrapper = mount(VirtualListbox, { props: { count: 5 }, attachTo: document.body })
+    await flush()
+    const content = wrapper.find('[role=listbox]')
+    await content.trigger('focus')
+    expect(document.activeElement?.getAttribute('data-index')).toBe('0')
+
+    await content.trigger('keydown', { key: 'Shift', shiftKey: true })
+    await content.trigger('keydown', { key: 'I', shiftKey: true })
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    await nextTick()
+    expect(document.activeElement?.getAttribute('data-index')).toBe('1')
   })
 
   describe('with `loop`', () => {
