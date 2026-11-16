@@ -41,6 +41,8 @@ export interface CarouselRootContext {
   paused: Ref<boolean>
   /** Written by the viewport: a finger is down on the track. */
   held: Ref<boolean>
+  /** How many `CarouselIndicatorGroup`s are mounted: with one, the slides are tab panels. */
+  indicatorTabs: Ref<number>
   reducedMotion: Ref<boolean>
   mounted: Ref<boolean>
   /** The mounted items, in DOM order. */

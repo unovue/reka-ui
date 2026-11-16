@@ -14,6 +14,7 @@ export const [injectCarouselIndicatorGroupContext, provideCarouselIndicatorGroup
 </script>
 
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectCarouselRootContext } from './CarouselRoot.vue'
 
@@ -23,6 +24,11 @@ const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectCarouselRootContext()
 
 provideCarouselIndicatorGroupContext({ tabs: true })
+
+// Mounted, it turns the slides into the tab panels of its tabs. It registers on mount
+// (the slides render before it), so the server renders the slides as groups.
+onMounted(() => rootContext.indicatorTabs.value++)
+onBeforeUnmount(() => rootContext.indicatorTabs.value--)
 
 // APG tabbed carousel: the arrows move between the indicators and show their slide,
 // Home and End go to the first and last one.

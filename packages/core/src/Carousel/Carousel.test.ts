@@ -40,7 +40,7 @@ describe('given a default Carousel', () => {
     expect(await axe(wrapper.element)).toHaveNoViolations()
   })
 
-  it('renders the APG carousel roles', () => {
+  it('renders the APG carousel roles, with slide groups when the indicators stand alone', () => {
     expect(wrapper.attributes('role')).toBe('region')
     expect(wrapper.attributes('aria-roledescription')).toBe('carousel')
     expect(wrapper.attributes('aria-label')).toBe('Featured')
@@ -483,6 +483,24 @@ describe('given a Carousel with grouped indicators', () => {
     expect(tabs(wrapper)[1].attributes('aria-disabled')).toBeUndefined()
   })
 
+  it('turns the slides into the tab panels its tabs control', async () => {
+    const wrapper = mountGrouped()
+    await nextTick()
+    const slides = wrapper.findAll('[data-index]')
+    expect(slides.map(slide => slide.attributes('role'))).toEqual(['tabpanel', 'tabpanel', 'tabpanel', 'tabpanel'])
+    expect(slides[0].attributes('aria-roledescription')).toBeUndefined()
+    expect(slides[0].attributes('aria-label')).toBe('1 of 4')
+    expect(tabs(wrapper).map(tab => tab.attributes('aria-controls'))).toEqual(slides.map(slide => slide.attributes('id')))
+  })
+
+  it('points a tab at every slide of its snap', async () => {
+    const wrapper = mountGrouped({ slidesToScroll: 2 })
+    await nextTick()
+    const ids = wrapper.findAll('[data-index]').map(slide => slide.attributes('id'))
+    expect(tabs(wrapper)[0].attributes('aria-controls')).toBe(`${ids[0]} ${ids[1]}`)
+    expect(tabs(wrapper)[1].attributes('aria-controls')).toBe(`${ids[2]} ${ids[3]}`)
+  })
+
   it('moves between the indicators with the arrows, Home and End, and shows their slide', async () => {
     const wrapper = mountGrouped()
     await nextTick()
@@ -504,6 +522,39 @@ describe('given a Carousel with grouped indicators', () => {
     ;(tabs(wrapper)[0].element as HTMLElement).focus()
     await tabs(wrapper)[0].trigger('keydown', { key: 'ArrowLeft' })
     expect(document.activeElement).toBe(tabs(wrapper)[1].element)
+  })
+})
+
+describe('given grouped indicators rendered on the server', () => {
+  it('hydrates without mismatches, then turns the slides into tab panels', async () => {
+    const App = defineComponent({
+      setup: () => () => h(CarouselRoot, { 'aria-label': 'Server tabs', 'itemCount': 3 }, {
+        default: ({ snapCount }: { snapCount: number }) => [
+          h(CarouselViewport, () => h(CarouselContent, () => [1, 2, 3].map(i => h(CarouselItem, { key: i }, () => `Slide ${i}`)))),
+          h(CarouselIndicatorGroup, () => Array.from({ length: snapCount }, (_, index) => h(CarouselIndicator, { key: index, index }))),
+        ],
+      }),
+    })
+    const container = document.createElement('div')
+    container.innerHTML = await renderToString(createSSRApp(App))
+    expect(container.querySelector('[data-index="0"]')?.getAttribute('role')).toBe('group')
+    document.body.innerHTML = ''
+    document.body.append(container)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const app = createSSRApp(App)
+      app.mount(container)
+      await nextTick()
+      const messages = [...warn.mock.calls, ...error.mock.calls].map(args => String(args[0]))
+      expect(messages.filter(m => /hydrat|mismatch/i.test(m))).toEqual([])
+      expect(container.querySelector('[data-index="0"]')?.getAttribute('role')).toBe('tabpanel')
+      app.unmount()
+    }
+    finally {
+      warn.mockRestore()
+      error.mockRestore()
+    }
   })
 })
 

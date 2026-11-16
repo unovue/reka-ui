@@ -180,7 +180,7 @@ The track that holds the slides. It is a polite live region, turned off while th
 
 ### Item
 
-A slide. Renders a `group` with `aria-roledescription="slide"`, labelled with its position ("2 of 5") unless you pass `aria-label` or `aria-labelledby`. Once measured, slides out of view are `inert` and hidden from assistive technologies.
+A slide. Renders a `group` with `aria-roledescription="slide"`, or a `tabpanel` next to a `CarouselIndicatorGroup`, labelled with its position ("2 of 5") unless you pass `aria-label` or `aria-labelledby`. It gets a generated `id` for the tabs to point at. Once measured, slides out of view are `inert` and hidden from assistive technologies.
 
 <!-- @include: @/meta/CarouselItem.md -->
 
@@ -245,7 +245,7 @@ Goes to the next snap. On the last one, unless `loop` is set, it is `aria-disabl
 
 ### IndicatorGroup
 
-Wraps the indicators in a `tablist`, labelled "Choose slide to display" unless you pass `aria-label`. Its indicators become tabs: the current one is the only tab stop, and the arrow keys, `Home` and `End` move between them and show their snap.
+Wraps the indicators in a `tablist`, labelled "Choose slide to display" unless you pass `aria-label`. Its indicators become tabs: the current one is the only tab stop, and the arrow keys, `Home` and `End` move between them and show their snap. The slides become the tab panels, following the tabbed carousel pattern: each tab's `aria-controls` points at the slides of its snap. The slides switch once the group mounts, so the server renders them as slide groups.
 
 <!-- @include: @/meta/CarouselIndicatorGroup.md -->
 

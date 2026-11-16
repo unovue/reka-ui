@@ -94,12 +94,20 @@ export function getCarouselNavigationSurface(context: CarouselRootContext, kind:
   )
 }
 
+/** The generated id of the item at `index`, which a tab's `aria-controls` points at. */
+export function getCarouselItemId(context: CarouselRootContext, index: number): string {
+  return `${context.contentId}-item-${index}`
+}
+
 export function getCarouselIndicatorSurface(context: CarouselRootContext, index: MaybeRefOrGetter<number>, tabs = false): CarouselSurface<CarouselIndicatorState> {
   const isActive = () => context.modelValue.value === toValue(index)
   return createSurface<CarouselIndicatorState>(
     () => ({
       'aria-label': `Go to slide ${toValue(index) + 1}`,
-      'aria-controls': context.contentId,
+      // A tab controls the slides of its own snap; a button the whole content.
+      'aria-controls': tabs
+        ? (context.snaps.value[toValue(index)]?.items.map(item => getCarouselItemId(context, item)).join(' ') || context.contentId)
+        : context.contentId,
       // APG tabbed carousel: a tab per snap, the current one the group's only tab stop.
       // APG grouped carousel: buttons, the current one focusable but marked unavailable.
       ...(tabs
@@ -225,8 +233,10 @@ export function getCarouselItemSurface(context: CarouselRootContext, element: Re
       const vertical = context.orientation.value === 'vertical'
       const hidden = inView() === false
       return {
-        'role': 'group',
-        'aria-roledescription': 'slide',
+        // APG tabbed carousel: with a `CarouselIndicatorGroup` the slides are tab panels.
+        'id': i === -1 ? undefined : getCarouselItemId(context, i),
+        'role': context.indicatorTabs.value ? 'tabpanel' : 'group',
+        'aria-roledescription': context.indicatorTabs.value ? undefined : 'slide',
         'aria-label': getItemLabel(context, i),
         'aria-hidden': hidden ? 'true' : undefined,
         'inert': hidden ? '' : undefined,
@@ -390,6 +400,7 @@ export function useCarouselContext(
     setPlaying,
     paused: ref(false),
     held: ref(false),
+    indicatorTabs: ref(0),
     reducedMotion: ref(false),
     mounted,
     items,
