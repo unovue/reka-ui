@@ -39,9 +39,14 @@ export interface PrimitiveProps {
 // For self closing tags, don't provide default slots because of hydration issue
 const SELF_CLOSING_TAGS = ['area', 'img', 'input']
 
-// A plain object with a `template` string and no render function, directly or through
-// `extends` / `mixins`, would be compiled at render time. Components from the app always
-// carry a `render`, `ssrRender` or `setup` function.
+// JSON-shaped values Vue would still render as a component: an object with a `template`
+// (string or element-like) anywhere in its `extends` / `mixins` chain, or a VNode / built-in / reactive
+// marker, and no `render`, `ssrRender` or `setup` of its own. Vue's full build compiles a merged
+// `template` even when a mixin provides `render`, so only the component's own functions count.
+function hasTemplate(value: any): boolean {
+  return !!value && typeof value === 'object' && (!!value.template || hasTemplate(value.extends) || (Array.isArray(value.mixins) && value.mixins.some(hasTemplate)))
+}
+
 function isTemplateObject(value: unknown): boolean {
   if (!value || typeof value !== 'object')
     return false
@@ -50,29 +55,20 @@ function isTemplateObject(value: unknown): boolean {
   if (typeof component.render === 'function' || typeof component.ssrRender === 'function' || typeof component.setup === 'function')
     return false
 
-  // A plain VNode or built-in marker would render its `type` and `props` as is.
-  // The built-ins themselves carry functions (`process`), plain data never does.
-  if ((component.__v_isVNode || component.__isTeleport || component.__isSuspense || component.__isKeepAlive) && !Object.values(component).some(item => typeof item === 'function'))
+  // The built-ins carry functions (`process`), plain data never does. `__v_raw` is unwrapped by Vue in development
+  if ((component.__v_isVNode || component.__isTeleport || component.__isSuspense || component.__isKeepAlive || component.__v_raw) && !Object.values(component).some(item => typeof item === 'function'))
     return true
 
-  // Vue's full build also compiles an element-like `template` (`nodeType` + `innerHTML`)
-  return typeof component.template === 'string'
-    || (typeof component.template === 'object' && component.template !== null)
-    || isTemplateObject(component.extends)
-    || (Array.isArray(component.mixins) && component.mixins.some(isTemplateObject))
+  return hasTemplate(component)
 }
 
-// Elements that run or load code from their content or attributes (`srcdoc`, `data`, …).
-// `style` stays allowed, the viewports render their own `<style>` through `Primitive`.
-const UNSAFE_TAGS = ['script', 'iframe', 'frame', 'frameset', 'object', 'embed', 'applet', 'base', 'link', 'meta', 'noscript']
-
-const TAG_NAME = /^[a-z][a-z0-9-]*$/i
+// A string that isn't a plain tag name (`img src=x onerror=…`) ends up as raw markup in the opening tag,
+// and these tags run or load code from their content or attributes. `style` stays allowed, the viewports
+// render their own `<style>` through `Primitive`.
+const SAFE_TAG = /^(?!(?:script|iframe|frame|frameset|object|embed|applet|base|link|meta|noscript)$)[a-z][a-z0-9-]*$/i
 
 function isUnsafeAs(value: unknown): boolean {
-  // A string that isn't a plain tag name (`img src=x onerror=…`) ends up as raw markup in the opening tag
-  if (typeof value === 'string')
-    return !TAG_NAME.test(value) || UNSAFE_TAGS.includes(value.toLowerCase())
-  return isTemplateObject(value)
+  return typeof value === 'string' ? !SAFE_TAG.test(value) : isTemplateObject(value)
 }
 
 export const Primitive = defineComponent({

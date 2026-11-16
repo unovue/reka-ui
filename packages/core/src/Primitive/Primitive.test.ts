@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { defineComponent, h, markRaw, nextTick, ref } from 'vue'
+import { createSSRApp, defineComponent, h, markRaw, nextTick, ref } from 'vue'
 import { Primitive } from '.'
 
 describe('test Primitive functionalities', () => {
@@ -303,5 +303,11 @@ describe('test Primitive functionalities', () => {
   it('should not render an element-like template object', () => {
     const wrapper = mount(Primitive, { props: { as: { template: { nodeType: 1, innerHTML: '<b>{{ 7 * 191 }}</b>' } } } })
     expect(wrapper.html()).not.toContain('1337')
+  })
+
+  it('should not render a plain object wrapped in `__v_raw`', async () => {
+    const { renderToString } = await import('vue/server-renderer')
+    const html = await renderToString(createSSRApp({ render: () => h(Primitive, { as: { __v_raw: { template: '<b>{{ 7 * 191 }}</b>' } } }) }))
+    expect(html).not.toContain('1337')
   })
 })
