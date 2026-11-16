@@ -2,7 +2,7 @@
 import type { ComputedRef } from 'vue'
 import type { RadioProps } from './Radio.vue'
 import type { SelectEvent } from './utils'
-import { createContext, getActiveElement, useForwardExpose, useForwardScopeId } from '@/shared'
+import { createContext, useForwardExpose, useForwardScopeId } from '@/shared'
 
 export interface RadioGroupItemProps extends Omit<RadioProps, 'checked'> {}
 export type RadioGroupItemEmits = {
@@ -82,7 +82,11 @@ function handleFocus() {
      * of updating `context.value`) so that the radio change event fires.
      */
     const element = currentElement.value
-    if (triggeredByArrowKey && element?.isConnected && !disabled.value && getActiveElement() === element)
+    if (!triggeredByArrowKey || !element?.isConnected || disabled.value)
+      return
+    // Read focus from the radio's own root so this also works inside a closed shadow root.
+    const root = element.getRootNode() as Document | ShadowRoot
+    if (root.activeElement === element)
       element.click()
   }, 0)
 }

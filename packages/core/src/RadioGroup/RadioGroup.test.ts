@@ -113,6 +113,35 @@ describe('given a default RadioGroup', () => {
   })
 })
 
+describe('given a RadioGroup inside a closed shadow root', () => {
+  it('should select the item that arrow-key navigation focused', async () => {
+    document.body.innerHTML = ''
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const shadowRoot = host.attachShadow({ mode: 'closed' })
+    const container = document.createElement('div')
+    shadowRoot.appendChild(container)
+    const wrapper = mount({
+      components: { RadioGroupItem, RadioGroupRoot },
+      template: `<RadioGroupRoot default-value="a" orientation="horizontal" :loop="false">
+        <RadioGroupItem value="a" aria-label="First" />
+        <RadioGroupItem value="b" aria-label="Second" />
+      </RadioGroupRoot>`,
+    }, { attachTo: container })
+    const [first, second] = wrapper.findAll('[role=radio]')
+    await nextTick()
+
+    first.element.focus()
+    await fireEvent.keyDown(first.element, { key: 'ArrowRight' })
+    await sleep(0)
+
+    expect(shadowRoot.activeElement).toBe(second.element)
+    expect(second.attributes('data-state')).toBe('checked')
+    expect(first.attributes('data-state')).toBe('unchecked')
+    wrapper.unmount()
+  })
+})
+
 describe('given disabled RadioGroup', () => {
   let wrapper: VueWrapper<InstanceType<typeof RadioGroup>>
   let radios: DOMWrapper<HTMLElement>[]
