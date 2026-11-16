@@ -44,13 +44,18 @@ export function useCarouselRotation(context: CarouselRootContext, rootElement: R
     // Scrolled out of the page view, nobody sees it rotate.
     const win = doc.defaultView
     if (win && 'IntersectionObserver' in win) {
-      const observer = new win.IntersectionObserver(([entry]) => {
-        offscreen.value = !entry.isIntersecting
+      const observer = new win.IntersectionObserver((entries) => {
+        // Only the current root: entries for a replaced one can still be queued.
+        const entry = entries.findLast(entry => entry.target === rootElement.value)
+        if (entry)
+          offscreen.value = !entry.isIntersecting
       })
       // Follows the root when `as`, or a conditional `as-child` child, replaces it.
       watch(rootElement, (el, previous) => {
-        if (previous)
+        if (previous) {
           observer.unobserve(previous)
+          observer.takeRecords()
+        }
         offscreen.value = false
         if (el)
           observer.observe(el)
