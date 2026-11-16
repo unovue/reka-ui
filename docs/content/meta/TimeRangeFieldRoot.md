@@ -3,6 +3,13 @@
 <llm-exclude>
 <PropsTable :data="[
   {
+    'name': 'allowWrap',
+    'description': '<p>Whether a range whose end is earlier than its start is allowed, for a daily window that wraps past midnight such as <code>23:00</code> to <code>07:00</code></p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
+  },
+  {
     'name': 'as',
     'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
@@ -173,6 +180,7 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
+| `allowWrap` | Whether a range whose end is earlier than its start is allowed, for a daily window that wraps past midnight such as 23:00 to 07:00 | `boolean` | No | `false` |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultPlaceholder` | The default placeholder time | `TimeValue` | No | - |

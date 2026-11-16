@@ -313,6 +313,36 @@ describe('timeField', () => {
     expect(input).toHaveAttribute('data-invalid', '')
   })
 
+  it('does not display data-invalid when start is after end and allowWrap is set', async () => {
+    const overnight = {
+      start: new Time(23, 0),
+      end: new Time(7, 0),
+    }
+    const { input } = setup({
+      timeRangeFieldProps: { modelValue: overnight, locale: 'en-GB', allowWrap: true },
+    })
+
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('still displays data-invalid for an out-of-range bound when allowWrap is set', async () => {
+    const overnight = {
+      start: new Time(23, 0),
+      end: new Time(7, 0),
+    }
+    const { input } = setup({
+      timeRangeFieldProps: {
+        modelValue: overnight,
+        locale: 'en-GB',
+        allowWrap: true,
+        maxValue: new Time(22, 0),
+      },
+    })
+
+    // allowWrap only lifts the ordering rule, start is still after the max of 22:00
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+
   it('focuses first segment on label click', async () => {
     const { user, label, start } = setup({
       timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },

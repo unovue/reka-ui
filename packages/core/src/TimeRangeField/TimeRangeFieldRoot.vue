@@ -78,6 +78,8 @@ export interface TimeRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   dir?: Direction
   /** A function that returns whether or not a time is unavailable */
   isTimeUnavailable?: Matcher
+  /** Whether a range whose end is earlier than its start is allowed, for a daily window that wraps past midnight such as `23:00` to `07:00` */
+  allowWrap?: boolean
 }
 
 export type TimeRangeFieldRootEmits = {
@@ -115,6 +117,7 @@ const props = withDefaults(defineProps<TimeRangeFieldRootProps>(), {
   readonly: false,
   placeholder: undefined,
   isTimeUnavailable: undefined,
+  allowWrap: false,
 })
 const emits = defineEmits<TimeRangeFieldRootEmits>()
 defineSlots<{
@@ -201,10 +204,14 @@ const isInvalid = computed(() => {
     end: convertValue(modelValue.value.end),
   }
 
-  if (!isBeforeOrSame(convertedModelValue.start, convertedModelValue.end))
+  const wraps = !isBeforeOrSame(convertedModelValue.start, convertedModelValue.end)
+
+  if (wraps && !props.allowWrap)
     return true
 
-  if (propsIsTimeUnavailable.value !== undefined) {
+  // `areAllDaysBetweenValid` walks forward from start to end, so it has nothing to walk
+  // over once the range wraps past midnight.
+  if (!wraps && propsIsTimeUnavailable.value !== undefined) {
     const allValid = areAllDaysBetweenValid(
       convertedModelValue.start,
       convertedModelValue.end,
