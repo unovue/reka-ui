@@ -243,7 +243,7 @@ function handleArrowKey(e: KeyboardEvent) {
     :data-outside-view="isOutsideView ? '' : undefined"
     :data-outside-visible-view="isOutsideVisibleView ? '' : undefined"
     :data-focused="isFocusedDate ? '' : undefined"
-    :tabindex="isFocusedDate ? 0 : (isOutsideView || isDisabled) && props.as !== 'button' ? undefined : -1"
+    :tabindex="isFocusedDate ? 0 : (isOutsideView || isDisabled) && props.as !== 'button' && !props.asChild ? undefined : -1"
     @click="handleClick"
     @keydown.up.down.left.right.space.enter.home.end.page-up.page-down="handleArrowKey"
     @keydown.enter.prevent

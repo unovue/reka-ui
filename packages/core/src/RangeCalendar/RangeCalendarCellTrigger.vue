@@ -325,7 +325,7 @@ function handleArrowKey(e: KeyboardEvent) {
     :data-today="isDateToday ? '' : undefined"
     :data-outside-view="isOutsideView ? '' : undefined"
     :data-focused="isFocusedDate ? '' : undefined"
-    :tabindex="isFocusedDate ? 0 : (isOutsideView || isDisabled) && as !== 'button' ? undefined : -1"
+    :tabindex="isFocusedDate ? 0 : (isOutsideView || isDisabled) && as !== 'button' && !asChild ? undefined : -1"
     @click="handleClick"
     @focusin="handleFocus"
     @mouseenter="handleFocus"

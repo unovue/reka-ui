@@ -7,6 +7,7 @@ const props = defineProps<{
   calendarProps?: RangeCalendarRootProps
   emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void }
   triggerAs?: string
+  triggerAsChild?: boolean
 }>()
 
 function pagingFunc(date: DateValue, sign: -1 | 1) {
@@ -72,10 +73,18 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
           >
             <RangeCalendarCellTrigger
               :as="props.triggerAs"
+              :as-child="props.triggerAsChild"
               :day="weekDate"
               :month="month.value"
               :data-testid="`date-${props.calendarProps?.numberOfMonths ?? 1 > 1 ? `${gridIndex}-` : ''}${weekDate.month}-${weekDate.day}`"
-            />
+            >
+              <template
+                v-if="props.triggerAsChild"
+                #default="{ dayValue }"
+              >
+                <button>{{ dayValue }}</button>
+              </template>
+            </RangeCalendarCellTrigger>
           </RangeCalendarCell>
         </RangeCalendarGridRow>
       </RangeCalendarGridBody>
