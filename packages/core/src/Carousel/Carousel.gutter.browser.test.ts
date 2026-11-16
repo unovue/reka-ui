@@ -204,6 +204,15 @@ describe('given a Carousel spaced with item padding and a negative content margi
     }
   })
 
+  it('sizes the groups a loop needs room for without their gutter', async () => {
+    // 5 slides of 168 with a 16 gutter in 320: 'auto' pairs them (320 of content each), and a
+    // loop would need 2 pairs of room around the view, which 5 slides don't leave.
+    const { get, viewport } = mountGutter({ basis: 1 / 2, count: 5, props: { loop: true, slidesToScroll: 'auto' } })
+    await measured(viewport)
+    await expect.poll(() => get('next').hasAttribute('disabled')).toBe(false)
+    expect(viewport.querySelector<HTMLElement>('[data-index="0"]')!.style.order).toBe('')
+  })
+
   it('lines up in RTL with the gutter on the inline start', async () => {
     const { get, viewport, offset, scroll } = mountGutter({ props: { dir: 'rtl' } })
     await measured(viewport)

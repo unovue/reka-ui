@@ -198,8 +198,10 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     const unrotated = getUnrotatedRects(rects)
     const lastRect = unrotated.at(-1)
     const trackSize = lastRect ? lastRect.start + lastRect.size - unrotated[0].start : 0
-    // A loop needs a hidden group of slides on each side of the view to scroll into.
-    const largestGroup = Math.max(...groupItems(unrotated, viewportSize, options.slidesToScroll).map((group) => {
+    // A loop needs a hidden group of slides on each side of the view to scroll into,
+    // grouped with the gutter the snaps use (a looping track measures from `rects`).
+    const loopGutter = Math.max(0, -Math.min(...rects.map(r => r.start)))
+    const largestGroup = Math.max(...groupItems(unrotated, viewportSize, options.slidesToScroll, loopGutter).map((group) => {
       const last = unrotated[group.at(-1)!]
       return last.start + last.size - unrotated[group[0]].start
     }))

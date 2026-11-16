@@ -227,13 +227,12 @@ export function getItemSnapStyles(
       styles[group.at(-1)!] = { align: 'end' }
     }
     else {
-      // Measured and fitting in the viewport, a group centers as a whole: its first
-      // item snaps to `start`, shifted by half the free space. A middle item only
-      // matches that when the group's items share a size.
+      // Measured, a group centers as a whole: its first item snaps to `start`, shifted
+      // by half the space left around the group, negative when the group is wider
+      // than the viewport. A middle item only matches that when the items share a size.
       const extent = rects && getGroupExtent(rects, group)
-      const margin = extent && viewportSize !== undefined ? (viewportSize - (extent.end - extent.start - gutter)) / 2 : -1
-      if (margin >= 0)
-        styles[group[0]] = { align: 'start', margin }
+      if (extent && viewportSize !== undefined)
+        styles[group[0]] = { align: 'start', margin: (viewportSize - (extent.end - extent.start - gutter)) / 2 }
       else
         styles[group[Math.floor((group.length - 1) / 2)]] = { align: 'center' }
     }

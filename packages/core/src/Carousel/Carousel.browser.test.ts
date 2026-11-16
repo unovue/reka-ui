@@ -177,6 +177,16 @@ describe('given a Carousel in a real browser', () => {
     expect(Array.from(document.querySelectorAll('[data-index]'), el => el.getAttribute('data-index'))).toEqual(['0', '1', '2', '3', '4'])
   })
 
+  it('snaps natively where it computes a centered group wider than the viewport', async () => {
+    // Groups of two 150 slides (300) in a 200 viewport, centered: snaps at 50, 350, 650.
+    const { viewport, scroll } = mountCarousel({ count: 6, itemSize: 150, props: { align: 'center', slidesToScroll: 2 } })
+    await expect.poll(() => scroll()).toBeCloseTo(50, 0)
+    viewport.scrollTo({ left: 380, behavior: 'instant' })
+    // Read before the carousel's own settle could correct it: this is the browser's snap.
+    await new Promise(resolve => requestAnimationFrame(resolve))
+    expect(scroll()).toBeCloseTo(350, 0)
+  })
+
   it('falls back to no loop when a group has no room on each side', async () => {
     // 5 slides of 100 in 200, moved 2 at a time: a hidden group of 200 does not fit on both sides.
     document.body.innerHTML = ''

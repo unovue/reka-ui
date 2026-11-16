@@ -168,8 +168,12 @@ describe('getItemSnapStyles', () => {
     expect(getItemSnapStyles(3, [[0, 1, 2]], 'center', rects, 400)).toEqual([{ align: 'start', margin: 50 }, {}, {}])
   })
 
-  it('centers the middle item of a group wider than the viewport', () => {
-    expect(getItemSnapStyles(3, [[0, 1, 2]], 'center', track(3, 200), 300)).toEqual([{}, { align: 'center' }, {}])
+  it('centers a group wider than the viewport with a negative margin', () => {
+    expect(getItemSnapStyles(4, [[0, 1], [2, 3]], 'center', track(4, 200), 300)).toEqual([{ align: 'start', margin: -50 }, {}, { align: 'start', margin: -50 }, {}])
+  })
+
+  it('centers the middle item while unmeasured', () => {
+    expect(getItemSnapStyles(3, [[0, 1, 2]], 'center')).toEqual([{}, { align: 'center' }, {}])
   })
 })
 
