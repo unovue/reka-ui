@@ -74,6 +74,32 @@ jobs:
       - name: Test (browser)
         run: pnpm --filter reka-ui test:browser
 
+  # The Carousel rests on native scroll snapping, smooth scrolling and `scrollend`,
+  # where Firefox and WebKit differ from Chromium, so its browser tests run in both.
+  test-browser-carousel:
+    needs: build
+    runs-on: ubuntu-latest
+    name: test-browser-carousel (${{ matrix.browser }})
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, webkit]
+    env:
+      BROWSER_ENGINES: ${{ matrix.browser }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup (Install node & pnpm)
+        uses: ./.github/actions/setup
+
+      - name: Install ${{ matrix.browser }}
+        run: pnpm --filter reka-ui exec playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Test (browser)
+        run: pnpm --filter reka-ui test:browser src/Carousel
+
   size:
     needs: build
     runs-on: ubuntu-latest

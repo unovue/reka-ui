@@ -42,3 +42,10 @@ export const mouseDrag: BrowserCommand<[fromX: number, fromY: number, toX: numbe
     await page.waitForTimeout(holdMs)
   await page.mouse.up()
 }
+
+/** Emulates `prefers-reduced-motion` for the test page. */
+export const setReducedMotion: BrowserCommand<[value: 'reduce' | 'no-preference']> = async (context, value) => {
+  if (context.provider.name !== 'playwright')
+    throw new Error(`setReducedMotion needs the playwright provider, not ${context.provider.name}`)
+  await context.page.emulateMedia({ reducedMotion: value })
+}
