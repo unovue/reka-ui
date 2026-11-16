@@ -55,8 +55,9 @@ function isTemplateObject(value: unknown): boolean {
   if (typeof component.render === 'function' || typeof component.ssrRender === 'function' || typeof component.setup === 'function')
     return false
 
-  // The built-ins carry functions (`process`), plain data never does. `__v_raw` is unwrapped by Vue in development
-  if ((component.__v_isVNode || component.__isTeleport || component.__isSuspense || component.__isKeepAlive || component.__v_raw) && !Object.values(component).some(item => typeof item === 'function'))
+  // The built-ins carry functions (`process`), plain data never does. Vue unwraps an owned `__v_raw` in
+  // development, a real reactive proxy doesn't own it
+  if ((component.__v_isVNode || component.__isTeleport || component.__isSuspense || component.__isKeepAlive || Object.hasOwn(component, '__v_raw')) && !Object.values(component).some(item => typeof item === 'function'))
     return true
 
   return hasTemplate(component)
