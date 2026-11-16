@@ -78,6 +78,39 @@ describe('given a default RadioGroup', () => {
       expect(radios[0].attributes('data-state')).toBe('unchecked')
     })
   })
+
+  describe('on a synchronous keydown and keyup', () => {
+    beforeEach(async () => {
+      radios[0].element.focus()
+      radios[0].element.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+      radios[0].element.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowDown', bubbles: true }))
+      // focus moves in `nextTick`, then the selection runs in a timeout
+      await nextTick()
+      await sleep(0)
+    })
+
+    it('should select the newly focused item', () => {
+      expect(radios[2].element).toBe(document.activeElement)
+      expect(radios[2].attributes('data-state')).toBe('checked')
+      expect(radios[0].attributes('data-state')).toBe('unchecked')
+    })
+  })
+
+  describe('when focus moves on before the deferred selection runs', () => {
+    beforeEach(async () => {
+      radios[0].element.focus()
+      await fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' })
+      await fireEvent.keyUp(document.activeElement!, { key: 'ArrowDown' })
+      radios[0].element.focus()
+      await sleep(0)
+    })
+
+    it('should not select the item that lost focus', () => {
+      expect(radios[0].element).toBe(document.activeElement)
+      expect(radios[0].attributes('data-state')).toBe('checked')
+      expect(radios[2].attributes('data-state')).toBe('unchecked')
+    })
+  })
 })
 
 describe('given disabled RadioGroup', () => {

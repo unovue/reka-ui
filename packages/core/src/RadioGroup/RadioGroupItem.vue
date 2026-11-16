@@ -2,7 +2,7 @@
 import type { ComputedRef } from 'vue'
 import type { RadioProps } from './Radio.vue'
 import type { SelectEvent } from './utils'
-import { createContext, useForwardExpose, useForwardScopeId } from '@/shared'
+import { createContext, getActiveElement, useForwardExpose, useForwardScopeId } from '@/shared'
 
 export interface RadioGroupItemProps extends Omit<RadioProps, 'checked'> {}
 export type RadioGroupItemEmits = {
@@ -21,7 +21,7 @@ export const [injectRadioGroupItemContext, provideRadiogroupItemContext]
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
 import { isEqual } from 'ohash'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { RovingFocusItem } from '@/RovingFocus'
 import Radio from './Radio.vue'
 import { injectRadioGroupRootContext } from './RadioGroupRoot.vue'
@@ -66,7 +66,11 @@ useEventListener('keydown', (event) => {
     isArrowKeyPressed.value = true
 })
 useEventListener('keyup', () => {
-  isArrowKeyPressed.value = false
+  // Reset after `RovingFocusGroup` has moved focus (it does so in `nextTick`), so a
+  // keyup dispatched in the same task as the keydown can't erase the arrow intent.
+  nextTick(() => {
+    isArrowKeyPressed.value = false
+  })
 })
 
 function handleFocus() {
@@ -77,8 +81,9 @@ function handleFocus() {
      * and we need to 'check' it in that case. We click it to 'check' it (instead
      * of updating `context.value`) so that the radio change event fires.
      */
-    if (triggeredByArrowKey)
-      currentElement.value?.click()
+    const element = currentElement.value
+    if (triggeredByArrowKey && element?.isConnected && !disabled.value && getActiveElement() === element)
+      element.click()
   }, 0)
 }
 // `RadioGroupItem` sets `inheritAttrs: false` and wraps the multi-root `Radio`, so the
