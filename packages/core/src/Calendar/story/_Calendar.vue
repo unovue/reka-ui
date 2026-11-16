@@ -3,7 +3,7 @@ import type { DateValue } from '@internationalized/date'
 import type { CalendarRootProps } from '..'
 import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from '..'
 
-const props = defineProps<{ calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } }>()
+const props = defineProps<{ calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void }, triggerAs?: string }>()
 
 function pagingFunc(date: DateValue, sign: -1 | 1) {
   if (sign === -1)
@@ -67,6 +67,7 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
             :date="weekDate"
           >
             <CalendarCellTrigger
+              :as="props.triggerAs"
               :day="weekDate"
               :month="month.value"
               :data-testid="`date-${props.calendarProps?.numberOfMonths ?? 1 > 1 ? `${gridIndex}-` : ''}${weekDate.month}-${weekDate.day}`"

@@ -23,7 +23,7 @@ const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 
 const kbd = useTestKbd()
 
-function setup(props: { calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } } = {}) {
+function setup(props: { calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void }, triggerAs?: string } = {}) {
   const user = userEvent.setup()
   const returned = render(Calendar, { props })
   const calendar = returned.getByTestId('calendar')
@@ -1553,5 +1553,18 @@ describe('calendar - tabindex states', () => {
 
     const firstCanTabSelectedDate = getByTestId('date-1-1')
     expect(firstCanTabSelectedDate).toHaveAttribute('tabindex', '0')
+  })
+
+  it('sets tabindex to -1 for disabled and outside view dates when rendered as a button', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+        isDateDisabled: (date: DateValue) => date.day === 15,
+      },
+      triggerAs: 'button',
+    })
+
+    expect(getByTestId('date-1-15')).toHaveAttribute('tabindex', '-1')
+    expect(getByTestId('date-12-31')).toHaveAttribute('tabindex', '-1')
   })
 })

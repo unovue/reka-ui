@@ -6,6 +6,7 @@ import { RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCa
 const props = defineProps<{
   calendarProps?: RangeCalendarRootProps
   emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void }
+  triggerAs?: string
 }>()
 
 function pagingFunc(date: DateValue, sign: -1 | 1) {
@@ -70,6 +71,7 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
             :date="weekDate"
           >
             <RangeCalendarCellTrigger
+              :as="props.triggerAs"
               :day="weekDate"
               :month="month.value"
               :data-testid="`date-${props.calendarProps?.numberOfMonths ?? 1 > 1 ? `${gridIndex}-` : ''}${weekDate.month}-${weekDate.day}`"
