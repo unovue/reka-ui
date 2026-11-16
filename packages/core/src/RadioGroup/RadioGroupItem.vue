@@ -61,10 +61,12 @@ provideRadiogroupItemContext({ disabled, checked })
 const isArrowKeyPressed = ref(false)
 const ARROW_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
 
+// Capture phase: `RovingFocusGroup` moves focus in a microtask that a real key press runs
+// before bubbling listeners, so the flag has to be set before then for `handleFocus` to see it.
 useEventListener('keydown', (event) => {
   if (ARROW_KEYS.includes(event.key))
     isArrowKeyPressed.value = true
-})
+}, { capture: true })
 useEventListener('keyup', () => {
   // Reset after `RovingFocusGroup` has moved focus (it does so in `nextTick`), so a
   // keyup dispatched in the same task as the keydown can't erase the arrow intent.
