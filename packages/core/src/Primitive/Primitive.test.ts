@@ -293,4 +293,15 @@ describe('test Primitive functionalities', () => {
       expect(wrapper.find('div').exists()).toBe(true)
     }
   })
+
+  it('should not render a malformed tag name', () => {
+    const wrapper = mount(Primitive, { props: { as: 'img src=x onerror=alert(1)' } })
+    expect(wrapper.html()).not.toContain('onerror')
+    expect(wrapper.find('div').exists()).toBe(true)
+  })
+
+  it('should not render an element-like template object', () => {
+    const wrapper = mount(Primitive, { props: { as: { template: { nodeType: 1, innerHTML: '<b>{{ 7 * 191 }}</b>' } } } })
+    expect(wrapper.html()).not.toContain('1337')
+  })
 })

@@ -55,7 +55,9 @@ function isTemplateObject(value: unknown): boolean {
   if ((component.__v_isVNode || component.__isTeleport || component.__isSuspense || component.__isKeepAlive) && !Object.values(component).some(item => typeof item === 'function'))
     return true
 
+  // Vue's full build also compiles an element-like `template` (`nodeType` + `innerHTML`)
   return typeof component.template === 'string'
+    || (typeof component.template === 'object' && component.template !== null)
     || isTemplateObject(component.extends)
     || (Array.isArray(component.mixins) && component.mixins.some(isTemplateObject))
 }
@@ -64,9 +66,12 @@ function isTemplateObject(value: unknown): boolean {
 // `style` stays allowed, the viewports render their own `<style>` through `Primitive`.
 const UNSAFE_TAGS = ['script', 'iframe', 'frame', 'frameset', 'object', 'embed', 'applet', 'base', 'link', 'meta', 'noscript']
 
+const TAG_NAME = /^[a-z][a-z0-9-]*$/i
+
 function isUnsafeAs(value: unknown): boolean {
+  // A string that isn't a plain tag name (`img src=x onerror=…`) ends up as raw markup in the opening tag
   if (typeof value === 'string')
-    return UNSAFE_TAGS.includes(value.trim().toLowerCase())
+    return !TAG_NAME.test(value) || UNSAFE_TAGS.includes(value.toLowerCase())
   return isTemplateObject(value)
 }
 
