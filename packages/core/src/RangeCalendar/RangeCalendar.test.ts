@@ -1642,3 +1642,36 @@ describe('range calendar - tabindex states', () => {
     expect(firstCanTabSelectedDate).toHaveAttribute('tabindex', '0')
   })
 })
+
+describe('unavailable day after the range', () => {
+  // 2024-01-18 is a Thursday, 2024-01-19 a Friday, 2024-01-20 a Saturday.
+  const isDateUnavailable = (date: DateValue) => date.day === 20
+
+  it('selects a single day before an unavailable day', async () => {
+    const { getByTestId, calendar, user } = setup({
+      calendarProps: { placeholder: new CalendarDate(2024, 1, 1), isDateUnavailable },
+    })
+
+    await user.click(getByTestId('date-1-19'))
+    await user.click(getByTestId('date-1-19'))
+
+    expect(getSelectedDays(calendar)).toHaveLength(1)
+    expect(getByTestId('date-1-19')).toHaveAttribute('data-selection-start')
+    expect(getByTestId('date-1-19')).toHaveAttribute('data-selection-end')
+  })
+
+  it('selects an end day whose time is later than the start time', async () => {
+    const { getByTestId, calendar, user } = setup({
+      calendarProps: {
+        defaultValue: { start: new CalendarDateTime(2024, 1, 18, 8), end: undefined },
+        placeholder: new CalendarDateTime(2024, 1, 18, 12),
+        isDateUnavailable,
+      },
+    })
+
+    await user.click(getByTestId('date-1-19'))
+
+    expect(getSelectedDays(calendar)).toHaveLength(2)
+    expect(getByTestId('date-1-19')).toHaveAttribute('data-selection-end')
+  })
+})
