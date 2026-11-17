@@ -4,17 +4,17 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '.'
 
-function mountPopover(contentProps: Record<string, unknown> = {}) {
+function mountPopover(contentProps: Record<string, unknown> = {}, rootProps: Record<string, unknown> = {}, content: () => unknown = () => 'Content') {
   const Fixture = defineComponent({
     setup() {
       return () => h('div', { style: 'padding: 200px;' }, [
-        h(PopoverRoot, null, () => [
+        h(PopoverRoot, rootProps, () => [
           h(PopoverTrigger, { 'data-testid': 'trigger', 'style': 'width: 100px; height: 30px;' }, () => 'Open'),
           h(PopoverPortal, null, () => h(PopoverContent, {
             'data-testid': 'content',
             'style': 'width: 150px; height: 50px;',
             ...contentProps,
-          }, () => 'Content')),
+          }, content)),
         ]),
         h('button', { 'data-testid': 'outside', 'style': 'position: fixed; top: 0; left: 0;' }, 'Outside'),
       ])
@@ -61,5 +61,23 @@ describe('given a Popover, in a real browser', () => {
     await userEvent.keyboard('{Escape}')
     await expect.poll(() => get('content')).toBeNull()
     expect(document.activeElement).toBe(get('trigger'))
+  })
+
+  it.each([true, false])('leaves focus alone when closeAutoFocus is only prevented with modal=%s', async (modal) => {
+    const { get } = mountPopover(
+      { onCloseAutoFocus: (event: Event) => event.preventDefault() },
+      { modal },
+      () => h('input', { 'data-testid': 'inside' }),
+    )
+
+    await userEvent.click(get('trigger')!)
+    await expect.poll(() => get('content')).not.toBeNull()
+    await expect.poll(() => document.activeElement).toBe(get('inside'))
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => get('content')).toBeNull()
+    // The focus scope would restore focus on the next macrotask
+    await new Promise(resolve => setTimeout(resolve))
+    // Nothing restores focus, so it falls back to the body once the content is removed
+    expect(document.activeElement).toBe(document.body)
   })
 })
