@@ -26,10 +26,10 @@ defineSlots<{
 const { forwardRef } = useForwardExpose()
 const rootContext = injectCarouselRootContext()
 // In a `CarouselIndicatorGroup`, a tab of its tablist; on its own, a plain button.
-const tabs = !!injectCarouselIndicatorGroupContext(null)
+const group = injectCarouselIndicatorGroupContext(null)
 
 // aria-label, the current snap's state, data-active and the click handler.
-const surface = getCarouselIndicatorSurface(rootContext, () => props.index, tabs)
+const surface = getCarouselIndicatorSurface(rootContext, () => props.index, group?.id)
 </script>
 
 <template>

@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { commands, userEvent } from 'vitest/browser'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h, ref, unref } from 'vue'
 import { CarouselAutoplayToggle, CarouselContent, CarouselIndicator, CarouselIndicatorGroup, CarouselItem, CarouselNext, CarouselPrevious, CarouselRoot, CarouselViewport } from '.'
 
 const SIZE = 200
@@ -10,13 +10,14 @@ const COUNT = 5
 function mountCarousel(props: Record<string, unknown> = {}, slide: (i: number) => any = i => `Slide ${i + 1}`) {
   document.body.innerHTML = ''
   const vertical = props.orientation === 'vertical'
-  const model = ref((props.defaultValue as number | undefined) ?? 0)
+  const model = ref(unref(props.modelValue as number | undefined) ?? (props.defaultValue as number | undefined) ?? 0)
   const playing = ref<boolean>()
   const settled: number[] = []
   const wrapper = mount(defineComponent({
     setup: () => () => [h('div', { 'data-testid': 'outside', 'style': { height: '20px' } }), h(CarouselRoot, {
       'aria-label': 'Interaction',
-      ...props,
+      // Refs render as their value, so a test can control `modelValue`.
+      ...Object.fromEntries(Object.entries(props).map(([key, value]) => [key, unref(value)])),
       'data-testid': 'root',
       'style': { width: `${SIZE}px`, margin: '20px' },
       'onUpdate:modelValue': (value: number) => model.value = value,
@@ -269,13 +270,16 @@ describe('given an auto-scrolling Carousel in a real browser', () => {
 describe('given a Carousel holding the keyboard focus in a real browser', () => {
   const button = (i: number) => h('button', { 'type': 'button', 'data-testid': `button-${i}` }, `Slide ${i + 1}`)
 
+  // Paged through `v-model` while the focus stays in the slide: a press on Next would move the
+  // focus to Next. `.focus()` because macOS WebKit doesn't focus a button on click.
   it.each([false, true])('gives the focus to the slide that comes in when the focused one pages away (fade: %s)', async (fade) => {
-    const { get, model, scroll } = mountCarousel({ fade }, button)
+    const index = ref(0)
+    const { get, scroll } = mountCarousel({ fade, modelValue: index }, button)
     await mouseAway()
     await sleep(300)
     get('button-0').focus()
-    get('next').click()
-    await expect.poll(() => model.value).toBe(1)
+    index.value = 1
+    await expect.poll(() => get('button-1').closest('[data-index]')!.hasAttribute('data-active')).toBe(true)
     await settled(scroll)
     await expect.poll(() => document.activeElement).toBe(get('button-1'))
   })
@@ -284,7 +288,7 @@ describe('given a Carousel holding the keyboard focus in a real browser', () => 
     document.body.innerHTML = ''
     const model = ref(0)
     mount(defineComponent({
-      setup: () => () => [h('div', { 'data-testid': 'outside', 'style': { height: '20px' } }), h(CarouselRoot, { 'aria-label': 'Tabs', 'style': { width: `${SIZE}px` }, 'onUpdate:modelValue': (value: number) => model.value = value }, () => [
+      setup: () => () => [h('div', { 'data-testid': 'outside', 'style': { height: '20px' } }), h(CarouselRoot, { 'aria-label': 'Tabs', 'style': { width: `${SIZE}px` }, 'modelValue': model.value, 'onUpdate:modelValue': (value: number) => model.value = value }, () => [
         h(CarouselViewport, { 'data-testid': 'viewport' }, () => h(CarouselContent, () => [0, 1, 2].map(i =>
           h(CarouselItem, { 'key': i, 'aria-roledescription': 'diapositiva', 'style': { width: `${SIZE}px` } }, () => button(i))))),
         h(CarouselIndicatorGroup, () => [0, 1, 2].map(index => h(CarouselIndicator, { key: index, index }))),
@@ -296,8 +300,7 @@ describe('given a Carousel holding the keyboard focus in a real browser', () => 
     await expect.poll(() => get('viewport').querySelector('[data-index="0"]')?.getAttribute('role')).toBe('tabpanel')
     await sleep(300)
     get('button-0').focus()
-    get('next').click()
-    await expect.poll(() => model.value).toBe(1)
+    model.value = 1
     await expect.poll(() => document.activeElement).toBe(get('button-1'))
   })
 

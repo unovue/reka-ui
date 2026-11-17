@@ -99,18 +99,20 @@ export function getCarouselItemId(context: CarouselRootContext, index: number): 
   return `${context.contentId}-item-${index}`
 }
 
-/** The generated id of the tab for the snap at `index`, which its panels are labelled by. */
-export function getCarouselTabId(context: CarouselRootContext, index: number): string {
-  return `${context.contentId}-tab-${index}`
+/** The generated id of a group's tab for the snap at `index`: its panels are labelled by it. */
+export function getCarouselTabId(groupId: string, index: number): string {
+  return `${groupId}-tab-${index}`
 }
 
-export function getCarouselIndicatorSurface(context: CarouselRootContext, index: MaybeRefOrGetter<number>, tabs = false): CarouselSurface<CarouselIndicatorState> {
+/** `groupId`: the `CarouselIndicatorGroup` the indicator is a tab of, if any. */
+export function getCarouselIndicatorSurface(context: CarouselRootContext, index: MaybeRefOrGetter<number>, groupId?: string): CarouselSurface<CarouselIndicatorState> {
+  const tabs = groupId !== undefined
   const isActive = () => context.modelValue.value === toValue(index)
   return createSurface<CarouselIndicatorState>(
     () => ({
       // A tab names its panel too (APG tabbed carousel), a button names the action.
       'aria-label': tabs ? `Slide ${toValue(index) + 1}` : `Go to slide ${toValue(index) + 1}`,
-      'id': tabs ? getCarouselTabId(context, toValue(index)) : undefined,
+      'id': tabs ? getCarouselTabId(groupId, toValue(index)) : undefined,
       // A tab controls the slides of its own snap; a button the whole content.
       'aria-controls': tabs
         ? (context.snaps.value[toValue(index)]?.items.map(item => getCarouselItemId(context, item)).join(' ') || context.contentId)
@@ -239,14 +241,16 @@ export function getCarouselItemSurface(context: CarouselRootContext, element: Re
       const fade = context.options.value.fade
       const vertical = context.orientation.value === 'vertical'
       const hidden = inView() === false
+      // APG tabbed carousel: with a `CarouselIndicatorGroup` the slides are tab panels.
+      const tabGroup = context.tabGroups.value[0]
       return {
-        // APG tabbed carousel: with a `CarouselIndicatorGroup` the slides are tab panels.
         'id': i === -1 ? undefined : getCarouselItemId(context, i),
-        'role': context.indicatorTabs.value ? 'tabpanel' : 'group',
-        'aria-roledescription': context.indicatorTabs.value ? undefined : 'slide',
+        'role': tabGroup ? 'tabpanel' : 'group',
+        'aria-roledescription': tabGroup ? undefined : 'slide',
         // A tab panel is named by the tab of its snap; a slide group by its position.
-        'aria-label': context.indicatorTabs.value ? undefined : getItemLabel(context, i),
-        'aria-labelledby': context.indicatorTabs.value && i !== -1 ? getCarouselTabId(context, Math.max(0, context.snaps.value.findIndex(snap => snap.items.includes(i)))) : undefined,
+        'aria-label': tabGroup ? undefined : getItemLabel(context, i),
+        // Labelled by the first group's tab, when several groups hold tabs for the same snaps.
+        'aria-labelledby': tabGroup && i !== -1 ? getCarouselTabId(tabGroup, Math.max(0, context.snaps.value.findIndex(snap => snap.items.includes(i)))) : undefined,
         'aria-hidden': hidden ? 'true' : undefined,
         'inert': hidden ? '' : undefined,
         'style': compactStyle(fade
@@ -409,7 +413,7 @@ export function useCarouselContext(
     setPlaying,
     paused: ref(false),
     held: ref(false),
-    indicatorTabs: ref(0),
+    tabGroups: shallowRef([]),
     reducedMotion: ref(false),
     mounted,
     items,

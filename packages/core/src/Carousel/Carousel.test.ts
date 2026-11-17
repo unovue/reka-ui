@@ -507,6 +507,21 @@ describe('given a Carousel with grouped indicators', () => {
     expect(slides[0].attributes('aria-label')).toBeUndefined()
   })
 
+  it('gives two groups their own tab ids, and labels the panels by the first one', async () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(CarouselRoot, { 'aria-label': 'Two groups' }, () => [
+        h(CarouselViewport, () => h(CarouselContent, () => [1, 2, 3].map(i => h(CarouselItem, { key: i }, () => `Slide ${i}`)))),
+        h(CarouselIndicatorGroup, { 'data-group': 'a' }, () => [0, 1, 2].map(index => h(CarouselIndicator, { key: index, index }))),
+        h(CarouselIndicatorGroup, { 'data-group': 'b' }, () => [0, 1, 2].map(index => h(CarouselIndicator, { key: index, index }))),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    const ids = wrapper.findAll('[role="tab"]').map(tab => tab.attributes('id'))
+    expect(new Set(ids).size).toBe(6)
+    const first = wrapper.findAll('[data-group="a"] [role="tab"]').map(tab => tab.attributes('id'))
+    expect(wrapper.findAll('[data-index]').map(slide => slide.attributes('aria-labelledby'))).toEqual(first)
+  })
+
   it('points a tab at every slide of its snap', async () => {
     const wrapper = mountGrouped({ slidesToScroll: 2 })
     await nextTick()

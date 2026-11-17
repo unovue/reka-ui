@@ -1,12 +1,12 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardExpose } from '@/shared'
+import { createContext, useForwardExpose, useId } from '@/shared'
 
 export interface CarouselIndicatorGroupProps extends PrimitiveProps {}
 
 export interface CarouselIndicatorGroupContext {
-  /** Indicators in a group are tabs: one tab stop, arrows between them. */
-  tabs: true
+  /** The group's id: its tabs' ids derive from it, so two groups never share one. */
+  id: string
 }
 
 export const [injectCarouselIndicatorGroupContext, provideCarouselIndicatorGroupContext]
@@ -23,12 +23,13 @@ withDefaults(defineProps<CarouselIndicatorGroupProps>(), { as: 'div' })
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectCarouselRootContext()
 
-provideCarouselIndicatorGroupContext({ tabs: true })
+const id = useId(undefined, 'reka-carousel-tabs')
+provideCarouselIndicatorGroupContext({ id })
 
 // Mounted, it turns the slides into the tab panels of its tabs. It registers on mount
 // (the slides render before it), so the server renders the slides as groups.
-onMounted(() => rootContext.indicatorTabs.value++)
-onBeforeUnmount(() => rootContext.indicatorTabs.value--)
+onMounted(() => rootContext.tabGroups.value = [...rootContext.tabGroups.value, id])
+onBeforeUnmount(() => rootContext.tabGroups.value = rootContext.tabGroups.value.filter(group => group !== id))
 
 // APG tabbed carousel: the arrows move between the indicators and show their slide,
 // Home and End go to the first and last one.

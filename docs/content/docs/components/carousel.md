@@ -245,7 +245,7 @@ Goes to the next snap. On the last one, unless `loop` is set, it is `aria-disabl
 
 ### IndicatorGroup
 
-Wraps the indicators in a `tablist`, labelled "Choose slide to display" unless you pass `aria-label`. Its indicators become tabs: the current one is the only tab stop, and the arrow keys, `Home` and `End` move between them and show their snap. The slides become the tab panels, following the tabbed carousel pattern: each tab is labelled "Slide 1", "Slide 2"..., its `aria-controls` points at the slides of its snap, and those slides are labelled by it through `aria-labelledby`. To translate, label the tabs. The slides switch once the group mounts, so the server renders them as slide groups.
+Wraps the indicators in a `tablist`, labelled "Choose slide to display" unless you pass `aria-label`. Its indicators become tabs: the current one is the only tab stop, and the arrow keys, `Home` and `End` move between them and show their snap. The slides become the tab panels, following the tabbed carousel pattern: each tab is labelled "Slide 1", "Slide 2"..., its `aria-controls` points at the slides of its snap, and those slides are labelled by it through `aria-labelledby`. To translate, label the tabs. With two groups, for example dots and thumbnails, each keeps its own tab ids and the slides are labelled by the first one. The slides switch once the group mounts, so the server renders them as slide groups.
 
 <!-- @include: @/meta/CarouselIndicatorGroup.md -->
 
