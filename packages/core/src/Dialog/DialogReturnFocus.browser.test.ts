@@ -253,7 +253,7 @@ describe('given a dialog reopened during its exit animation, in a real browser',
 
   const exiting = () => get('content')!.getAnimations().some(animation => animation.playState === 'paused')
 
-  it.each(INNER.flatMap(inner => [true, false].map(trigger => ({ inner, trigger }))))('$inner.name (with a trigger: $trigger): returns focus to the element focused at the first open', async ({ inner, trigger }) => {
+  it.each(INNER.flatMap(inner => [true, false].flatMap(trigger => [false, true].map(shadow => ({ inner, trigger, shadow })))))('$inner.name (with a trigger: $trigger, focus in a shadow root: $shadow): returns focus to the element focused at the first open', async ({ inner, trigger, shadow }) => {
     const open = ref(false)
     const parts = PARTS[inner.kind]
     mount(defineComponent({
@@ -271,6 +271,10 @@ describe('given a dialog reopened during its exit animation, in a real browser',
             'class': 'exit',
           }, () => [
             h(parts.Title, null, () => 'Title'),
+            // A custom element whose own input takes focus: `contains` does not see it.
+            shadow
+              ? h('div', { 'data-testid': 'host', 'onVnodeMounted': ({ el }: { el: HTMLElement }) => el.attachShadow({ mode: 'open' }).append(document.createElement('input')) })
+              : null,
             h(parts.Close, { 'data-testid': 'close' }, () => 'Close'),
           ])),
         ]),
@@ -281,6 +285,10 @@ describe('given a dialog reopened during its exit animation, in a real browser',
     open.value = true
     await expect.poll(() => isFocusWithin('content')).toBe(true)
     await settle()
+    if (shadow) {
+      get('host')!.shadowRoot!.querySelector('input')!.focus()
+      expect(focused()).toBe('host')
+    }
 
     await userEvent.keyboard('{Escape}')
     await expect.poll(exiting).toBe(true)
@@ -296,5 +304,53 @@ describe('given a dialog reopened during its exit animation, in a real browser',
     await expect.poll(() => get('content')).toBeNull()
     await settle()
     expect(focused()).toBe('opener')
+  })
+})
+
+describe('given a kept-mounted dialog opened from an input in a shadow root outside it, in a real browser', () => {
+  // The content is already in the DOM at the second open, so the open checks whether focus
+  // is inside it: an input in another element's shadow root is not, and is recorded.
+  it.each(INNER)('$name: returns focus to that input', async (inner) => {
+    const open = ref(false)
+    const parts = PARTS[inner.kind]
+    mount(defineComponent({
+      setup: () => () => h('div', [
+        h('button', { 'data-testid': 'opener' }, 'opener'),
+        h('div', { 'data-testid': 'host', 'onVnodeMounted': ({ el }: { el: HTMLElement }) => el.attachShadow({ mode: 'open' }).append(document.createElement('input')) }),
+        h(parts.Root as typeof DialogRoot, {
+          'open': open.value,
+          'onUpdate:open': (value: boolean) => open.value = value,
+          'unmountOnHide': false,
+          ...(inner.modal === false ? { modal: false } : {}),
+        }, () => h(parts.Portal, null, () => h(parts.Content as typeof DialogContent, {
+          'aria-describedby': undefined,
+          'data-testid': 'content',
+        }, () => [
+          h(parts.Title, null, () => 'Title'),
+          h(parts.Close, { 'data-testid': 'close' }, () => 'Close'),
+        ]))),
+      ]),
+    }), { attachTo: document.body })
+    const input = () => get('host')!.shadowRoot!.querySelector('input')!
+
+    // The first open records the opener.
+    get('opener')!.focus()
+    open.value = true
+    await expect.poll(() => isFocusWithin('content')).toBe(true)
+    await settle()
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => get('content')!.dataset.state).toBe('closed')
+    await settle()
+    expect(focused()).toBe('opener')
+
+    input().focus()
+    open.value = true
+    await expect.poll(() => isFocusWithin('content')).toBe(true)
+    await settle()
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => get('content')!.dataset.state).toBe('closed')
+    await settle()
+    expect(focused()).toBe('host')
+    expect(get('host')!.shadowRoot!.activeElement).toBe(input())
   })
 })

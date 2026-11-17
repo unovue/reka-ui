@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 import { onMounted } from 'vue'
+import { containsComposed } from '@/FocusScope/utils'
 import { getActiveElement } from '@/shared'
 
 const DEFAULT_TITLE_NAME = 'DialogTitle'
@@ -74,7 +75,7 @@ export function recordFocusBeforeOpen(rootContext: object, content?: HTMLElement
   const active = getActiveElement() as HTMLElement | null
   // Reopened while still animating out: focus never left the content, so the
   // element recorded for the previous open still stands.
-  if (active && content?.contains(active))
+  if (active && content && containsComposed(content, active))
     return
   focusedBeforeOpen.set(rootContext, active && active !== active.ownerDocument.body ? active : null)
 }
