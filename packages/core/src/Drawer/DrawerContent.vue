@@ -61,7 +61,11 @@ function finalFocusElement() {
 // never fires on close. Return focus once the content is no longer present,
 // unless the user interacted outside a non-modal drawer or something else took
 // focus meanwhile, e.g. a layer opened while this one was animating out.
+// Vue clears `presenceRef` before the focus scope unmounts, so the close
+// handlers below go by the presence last seen here instead of `isPresent`.
+let lastPresent = isPresent.value
 watch(isPresent, (present, wasPresent) => {
+  lastPresent = present
   if (present || !wasPresent)
     return
   if ((isFullModal.value || !hasInteractedOutside.value) && !hasFocusLeftScope(currentElement.value ?? null))
@@ -75,7 +79,7 @@ watch(isPresent, (present, wasPresent) => {
 function onCloseAutoFocusNonModal(e: Event) {
   if (!e.defaultPrevented) {
     // A force-mounted content removed after it closed has already handled focus above.
-    if (!hasInteractedOutside.value && isPresent.value)
+    if (!hasInteractedOutside.value && lastPresent)
       finalFocusElement()?.focus()
     e.preventDefault()
   }
@@ -115,7 +119,7 @@ function onInteractOutsideNonModal(e: any) {
         if (!e.defaultPrevented) {
           e.preventDefault()
           // A force-mounted content removed after it closed has already handled focus
-          if (isPresent) finalFocusElement()?.focus()
+          if (lastPresent) finalFocusElement()?.focus()
         }
       }"
       @pointer-down-outside="(e: any) => {

@@ -196,6 +196,17 @@ describe.each(CASES)('given a force-mounted Drawer with modal $modal (overlay: $
     expect(focused()).toBe('outside')
   })
 
+  it('returns focus to the trigger when the open content is removed', async () => {
+    const { open, content } = await mountClosed()
+    open.value = true
+    await expect.poll(() => isFocusWithin('content')).toBe(true)
+
+    content.value = false
+    await expect.poll(() => get('content')).toBeNull()
+    await settle()
+    expect(focused()).toBe('drawer-trigger')
+  })
+
   it('leaves focus in a Popover opened beside it, before and after it has been open', async () => {
     const { show, open } = mountPage({ withPopover: true })
     show.value = true
