@@ -259,14 +259,16 @@ export function areAllDaysBetweenValid(
   // Every day after `start`, up to and including the day of `end`, and nothing
   // past it: a single-day range has no day to check. Days are compared without
   // their time, so the time of day of `start` and `end` does not move the bounds.
+  // Stepping stops on the day of `end`, so it never needs a day past it
+  // (adding a day to December 31, 9999 returns the same date).
   const endDay = toCalendarDate(end)
-  let dCurrent = start.add({ days: 1 })
-  while (toCalendarDate(dCurrent).compare(endDay) <= 0) {
+  let dCurrent = start
+  while (toCalendarDate(dCurrent).compare(endDay) < 0) {
+    dCurrent = dCurrent.add({ days: 1 })
     if ((isDisabled?.(dCurrent) || isUnavailable?.(dCurrent))
       && !isHighlightable?.(dCurrent)) {
       return false
     }
-    dCurrent = dCurrent.add({ days: 1 })
   }
   return true
 }

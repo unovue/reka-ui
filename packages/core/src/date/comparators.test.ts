@@ -55,6 +55,18 @@ describe('areAllDaysBetweenValid', () => {
     expect(areAllDaysBetweenValid(friday.subtract({ days: 4 }), friday, isSaturday, undefined)).toBe(true)
   })
 
+  it('stops on the last supported day', () => {
+    // Adding a day to December 31, 9999 returns the same date, so stepping past the end would never finish.
+    let calls = 0
+    const isUnavailable = () => {
+      if (++calls > 10)
+        throw new Error('kept checking past the end')
+      return false
+    }
+    expect(areAllDaysBetweenValid(new CalendarDate(9999, 12, 30), new CalendarDate(9999, 12, 31), isUnavailable, undefined)).toBe(true)
+    expect(calls).toBe(1)
+  })
+
   it('lets highlightable days through', () => {
     expect(areAllDaysBetweenValid(friday, friday.add({ days: 3 }), isSaturday, undefined, isSaturday)).toBe(true)
   })
