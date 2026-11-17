@@ -2,7 +2,7 @@ import type { VueWrapper } from '@vue/test-utils'
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
-import { defineComponent, nextTick, ref } from 'vue'
+import { defineComponent, KeepAlive, nextTick, ref } from 'vue'
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from '.'
 import { useWindowSplitterResizeHandlerBehavior } from './utils/composables/useWindowSplitterBehavior'
 
@@ -305,6 +305,68 @@ describe('resize handles in two documents', () => {
 
     expect(framed.find('.handle').attributes('data-state')).toBe('hover')
     expect(page.find('.handle').attributes('data-state')).toBe('inactive')
+  })
+})
+
+describe('resize handle in a deactivated <KeepAlive> page', () => {
+  let wrapper: VueWrapper
+
+  afterEach(() => {
+    wrapper.unmount()
+    document.body.innerHTML = ''
+  })
+
+  it('should leave the hit test while deactivated and rejoin it when activated', async () => {
+    const SplitterPage = defineComponent({
+      components: { SplitterGroup, SplitterPanel, SplitterResizeHandle },
+      template: `
+        <SplitterGroup direction="horizontal">
+          <SplitterPanel />
+          <SplitterResizeHandle id="handle" />
+          <SplitterPanel />
+        </SplitterGroup>
+      `,
+    })
+    const OtherPage = defineComponent({ template: '<p id="other">Other page</p>' })
+    const page = ref<'splitter' | 'other'>('splitter')
+
+    wrapper = mount(defineComponent({
+      components: { KeepAlive, SplitterPage, OtherPage },
+      setup: () => ({ page }),
+      template: `
+        <KeepAlive>
+          <SplitterPage v-if="page === 'splitter'" />
+          <OtherPage v-else />
+        </KeepAlive>
+      `,
+    }), { attachTo: document.body })
+    await nextTick()
+
+    const handle = document.getElementById('handle')!
+    page.value = 'other'
+    await nextTick()
+    expect(handle.isConnected).toBe(false)
+
+    const errors: unknown[] = []
+    const onError = (event: ErrorEvent) => {
+      errors.push(event.error)
+      event.preventDefault()
+    }
+    window.addEventListener('error', onError)
+    try {
+      await fireEvent.mouseMove(document.getElementById('other')!, { clientX: 0, clientY: 0 })
+    }
+    finally {
+      window.removeEventListener('error', onError)
+    }
+    expect(errors).toEqual([])
+    expect(handle.getAttribute('data-state')).toBe('inactive')
+
+    page.value = 'splitter'
+    await nextTick()
+    expect(handle.isConnected).toBe(true)
+    await fireEvent.mouseMove(handle, { clientX: 0, clientY: 0 })
+    expect(handle.getAttribute('data-state')).toBe('hover')
   })
 })
 
