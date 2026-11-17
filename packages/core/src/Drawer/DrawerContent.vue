@@ -74,7 +74,8 @@ watch(isPresent, (present, wasPresent) => {
 // `.value` explicitly and the reads/writes are unambiguous.
 function onCloseAutoFocusNonModal(e: Event) {
   if (!e.defaultPrevented) {
-    if (!hasInteractedOutside.value)
+    // A force-mounted content removed after it closed has already handled focus above.
+    if (!hasInteractedOutside.value && isPresent.value)
       finalFocusElement()?.focus()
     e.preventDefault()
   }
@@ -113,7 +114,8 @@ function onInteractOutsideNonModal(e: any) {
       @close-auto-focus="(e: Event) => {
         if (!e.defaultPrevented) {
           e.preventDefault()
-          finalFocusElement()?.focus()
+          // A force-mounted content removed after it closed has already handled focus
+          if (isPresent) finalFocusElement()?.focus()
         }
       }"
       @pointer-down-outside="(e: any) => {

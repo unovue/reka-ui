@@ -34,9 +34,10 @@ interface DrawerOptions {
   forceMount?: boolean
   overlay?: boolean
   exit?: boolean
+  content?: Ref<boolean>
 }
 
-function drawer({ modal, open, forceMount = true, overlay = false, exit = false }: DrawerOptions): VNode {
+function drawer({ modal, open, forceMount = true, overlay = false, exit = false, content }: DrawerOptions): VNode {
   return h(DrawerRoot, {
     'open': open.value,
     modal,
@@ -45,16 +46,18 @@ function drawer({ modal, open, forceMount = true, overlay = false, exit = false 
     h(DrawerTrigger, { 'data-testid': 'drawer-trigger', 'style': 'position: fixed; top: 10px; left: 0;' }, () => 'drawer'),
     h(DrawerPortal, null, () => [
       overlay ? h(DrawerOverlay, { 'data-testid': 'overlay', forceMount }) : null,
-      h(DrawerContent, {
-        'data-testid': 'content',
-        'class': exit ? 'exit' : undefined,
-        forceMount,
-        'style': 'position: fixed; bottom: 0; left: 0; width: 200px;',
-      }, () => [
-        h(DrawerTitle, null, () => 'Drawer'),
-        h('button', { 'data-testid': 'first' }, 'first'),
-        h(DrawerClose, { 'data-testid': 'close' }, () => 'Close'),
-      ]),
+      content?.value === false
+        ? null
+        : h(DrawerContent, {
+            'data-testid': 'content',
+            'class': exit ? 'exit' : undefined,
+            forceMount,
+            'style': 'position: fixed; bottom: 0; left: 0; width: 200px;',
+          }, () => [
+            h(DrawerTitle, null, () => 'Drawer'),
+            h('button', { 'data-testid': 'first' }, 'first'),
+            h(DrawerClose, { 'data-testid': 'close' }, () => 'Close'),
+          ]),
     ]),
   ])
 }
@@ -92,14 +95,15 @@ describe.each(CASES)('given a force-mounted Drawer with modal $modal (overlay: $
     const open = ref(false)
     const show = ref(false)
     const outsideClicks = ref(0)
+    const content = ref(true)
     mount(defineComponent({
       setup: () => () => h('div', [
         h('button', { 'data-testid': 'outside', 'style': 'position: fixed; top: 10px; left: 100px;', 'onClick': () => outsideClicks.value++ }, 'outside'),
-        show.value ? drawer({ modal, open, overlay, forceMount: options.forceMount, exit: options.exit }) : null,
+        show.value ? drawer({ modal, open, overlay, forceMount: options.forceMount, exit: options.exit, content }) : null,
         options.withPopover ? popover() : null,
       ]),
     }), { attachTo: document.body })
-    return { open, show, outsideClicks }
+    return { open, show, outsideClicks, content }
   }
 
   // The page and its own body style before any drawer is there.
@@ -173,6 +177,23 @@ describe.each(CASES)('given a force-mounted Drawer with modal $modal (overlay: $
     expect(get('content')).not.toBeNull()
     expect(focused()).toBe('drawer-trigger')
     expect(document.body.style.pointerEvents).toBe('')
+  })
+
+  it.each([false, true])('leaves focus alone when the closed content is removed later (opened before: %s)', async (openedBefore) => {
+    const { open, content } = await mountClosed()
+    if (openedBefore) {
+      open.value = true
+      await expect.poll(() => isFocusWithin('content')).toBe(true)
+      await userEvent.keyboard('{Escape}')
+      await expect.poll(() => focused()).toBe('drawer-trigger')
+      await settle()
+    }
+
+    get('outside')!.focus()
+    content.value = false
+    await expect.poll(() => get('content')).toBeNull()
+    await settle()
+    expect(focused()).toBe('outside')
   })
 
   it('leaves focus in a Popover opened beside it, before and after it has been open', async () => {
