@@ -65,14 +65,18 @@ export function recordTriggerPress(rootContext: object, trigger: HTMLElement) {
 }
 
 /**
- * Records the element focused as the dialog opens (not `<body>`, not inside the
- * content), unless a trigger press opened it. @internal
+ * Records the element focused as the dialog opens (not `<body>`), unless a trigger
+ * press opened it. @internal
  */
 export function recordFocusBeforeOpen(rootContext: object, content?: HTMLElement) {
   if (pressedToOpen.delete(rootContext))
     return
   const active = getActiveElement() as HTMLElement | null
-  focusedBeforeOpen.set(rootContext, active && active !== active.ownerDocument.body && !content?.contains(active) ? active : null)
+  // Reopened while still animating out: focus never left the content, so the
+  // element recorded for the previous open still stands.
+  if (active && content?.contains(active))
+    return
+  focusedBeforeOpen.set(rootContext, active && active !== active.ownerDocument.body ? active : null)
 }
 
 /** The element focused before the dialog opened, if any. @internal */

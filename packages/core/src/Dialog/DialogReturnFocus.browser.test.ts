@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, ref } from 'vue'
 import { AlertDialogCancel, AlertDialogContent, AlertDialogOverlay, AlertDialogPortal, AlertDialogRoot, AlertDialogTitle, AlertDialogTrigger } from '@/AlertDialog'
@@ -234,5 +234,67 @@ describe('given a non-modal Dialog opened by a button of its own, in a real brow
     await settle()
     expect(open.value).toBe(false)
     expect(focused()).toBe('toggle')
+  })
+})
+
+describe('given a dialog reopened during its exit animation, in a real browser', () => {
+  // The exit is paused, so that the dialog stays in it until the test ends it.
+  const STYLES = `
+    @keyframes return-out { from { opacity: 1 } to { opacity: 0 } }
+    .exit[data-state="closed"] { animation: return-out 1s linear paused; }
+  `
+  let sheet: HTMLStyleElement
+  beforeEach(() => {
+    sheet = document.createElement('style')
+    sheet.textContent = STYLES
+    document.head.append(sheet)
+  })
+  afterEach(() => sheet.remove())
+
+  const exiting = () => get('content')!.getAnimations().some(animation => animation.playState === 'paused')
+
+  it.each(INNER.flatMap(inner => [true, false].map(trigger => ({ inner, trigger }))))('$inner.name (with a trigger: $trigger): returns focus to the element focused at the first open', async ({ inner, trigger }) => {
+    const open = ref(false)
+    const parts = PARTS[inner.kind]
+    mount(defineComponent({
+      setup: () => () => h('div', [
+        h('button', { 'data-testid': 'opener' }, 'opener'),
+        h(parts.Root as typeof DialogRoot, {
+          'open': open.value,
+          'onUpdate:open': (value: boolean) => open.value = value,
+          ...(inner.modal === false ? { modal: false } : {}),
+        }, () => [
+          trigger ? h(parts.Trigger, { 'data-testid': 'trigger' }, () => 'trigger') : null,
+          h(parts.Portal, null, () => h(parts.Content as typeof DialogContent, {
+            'aria-describedby': undefined,
+            'data-testid': 'content',
+            'class': 'exit',
+          }, () => [
+            h(parts.Title, null, () => 'Title'),
+            h(parts.Close, { 'data-testid': 'close' }, () => 'Close'),
+          ])),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+
+    get('opener')!.focus()
+    open.value = true
+    await expect.poll(() => isFocusWithin('content')).toBe(true)
+    await settle()
+
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(exiting).toBe(true)
+    // Reopened while focus is still in the content that is animating out.
+    expect(isFocusWithin('content')).toBe(true)
+    open.value = true
+    await expect.poll(() => get('content')!.dataset.state).toBe('open')
+    await settle()
+
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(exiting).toBe(true)
+    get('content')!.getAnimations().forEach(animation => animation.finish())
+    await expect.poll(() => get('content')).toBeNull()
+    await settle()
+    expect(focused()).toBe('opener')
   })
 })
