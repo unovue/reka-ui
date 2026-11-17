@@ -38,7 +38,7 @@ export const [injectHoverCardRootContext, provideHoverCardRootContext]
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { ref, toRefs } from 'vue'
+import { onBeforeUnmount, ref, toRefs } from 'vue'
 import { PopperRoot } from '@/Popper'
 
 const props = withDefaults(defineProps<HoverCardRootProps>(), {
@@ -82,6 +82,11 @@ function handleClose() {
   if (!hasSelectionRef.value && !isPointerDownOnContentRef.value)
     closeTimerRef.value = window.setTimeout(() => open.value = false, closeDelay.value)
 }
+
+onBeforeUnmount(() => {
+  clearTimeout(openTimerRef.value)
+  clearTimeout(closeTimerRef.value)
+})
 
 function handleDismiss() {
   clearTimeout(openTimerRef.value)

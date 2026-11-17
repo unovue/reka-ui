@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { h } from 'vue'
 import { sleep } from '@/test'
@@ -103,5 +103,26 @@ describe('given a HoverCardTrigger rendered as a button', () => {
 
   it('should keep an explicit type', () => {
     expect(mountTrigger({ type: 'submit' }).attributes('type')).toBe('submit')
+  })
+})
+
+describe('given a HoverCard that unmounts while its open delay is running', () => {
+  it('should not leave its open timer pending', async () => {
+    vi.useFakeTimers()
+    try {
+      const wrapper = mount(
+        () => h(HoverCardRoot, { openDelay: 500 }, () => h(HoverCardTrigger, null, () => 'trigger')),
+        { attachTo: document.body },
+      )
+      await wrapper.find('a').trigger('pointerenter', { pointerType: 'mouse' })
+      expect(vi.getTimerCount()).toBeGreaterThan(0)
+
+      wrapper.unmount()
+
+      expect(vi.getTimerCount()).toBe(0)
+    }
+    finally {
+      vi.useRealTimers()
+    }
   })
 })
