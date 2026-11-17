@@ -41,9 +41,15 @@ import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { computeSwipeReleaseScalar, DRAWER_CSS_VARS, getDisplacement, onAnimationsFinished, registerDrawerCssProperties } from './utils'
 
-const props = withDefaults(defineProps<DrawerContentImplProps>(), {
+const props = withDefaults(defineProps<DrawerContentImplProps & {
+  /** Whether the content is currently visible. Forwarded to `FocusScope` and
+   * `DismissableLayer` so a force-mounted drawer auto-focuses on open and
+   * leaves the layer and scope stacks while closed. */
+  present?: boolean
+}>(), {
   initialFocus: true,
   finalFocus: true,
+  present: true,
 })
 const emits = defineEmits<DrawerContentImplEmits>()
 
@@ -431,6 +437,7 @@ if (process.env.NODE_ENV !== 'production') {
     as-child
     loop
     :trapped="props.trapFocus"
+    :present="props.present"
     @mount-auto-focus="onMountAutoFocus"
     @unmount-auto-focus="emits('closeAutoFocus', $event)"
   >
@@ -439,6 +446,7 @@ if (process.env.NODE_ENV !== 'production') {
       :ref="forwardRef"
       :as="as"
       :as-child="asChild"
+      :present="props.present"
       :disable-outside-pointer-events="disableOutsidePointerEvents"
       role="dialog"
       :aria-describedby="rootContext.descriptionId"
