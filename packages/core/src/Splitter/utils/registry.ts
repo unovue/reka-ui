@@ -74,6 +74,12 @@ export function registerResizeHandle(
     panelConstraintFlags.delete(resizeHandleId)
     registeredResizeHandlers.delete(data)
 
+    // A handle that unmounts while the pointer is over it or dragging it must not stay in
+    // the list: it would keep its element and state alive, and keep driving the cursor.
+    const intersectingIndex = intersectingHandles.indexOf(data)
+    if (intersectingIndex >= 0)
+      intersectingHandles.splice(intersectingIndex, 1)
+
     const count = ownerDocumentCounts.get(ownerDocument) ?? 1
     ownerDocumentCounts.set(ownerDocument, count - 1)
 
