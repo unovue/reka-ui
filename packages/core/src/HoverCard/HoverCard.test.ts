@@ -126,3 +126,25 @@ describe('given a HoverCard that unmounts while its open delay is running', () =
     }
   })
 })
+
+describe('given a HoverCard trigger that is hovered then focused within the open delay', () => {
+  it('should not leave a stale open timer after unmount', async () => {
+    vi.useFakeTimers()
+    try {
+      const wrapper = mount(
+        () => h(HoverCardRoot, { openDelay: 500 }, () => h(HoverCardTrigger, null, () => 'trigger')),
+        { attachTo: document.body },
+      )
+      await wrapper.find('a').trigger('pointerenter', { pointerType: 'mouse' })
+      await wrapper.find('a').trigger('focus')
+      expect(vi.getTimerCount()).toBe(1)
+
+      wrapper.unmount()
+
+      expect(vi.getTimerCount()).toBe(0)
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+})

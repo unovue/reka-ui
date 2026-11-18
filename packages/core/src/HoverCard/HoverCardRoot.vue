@@ -74,13 +74,16 @@ const triggerElement = ref<HTMLElement>()
 
 function handleOpen() {
   clearTimeout(closeTimerRef.value)
+  clearTimeout(openTimerRef.value)
   openTimerRef.value = window.setTimeout(() => open.value = true, openDelay.value)
 }
 
 function handleClose() {
   clearTimeout(openTimerRef.value)
-  if (!hasSelectionRef.value && !isPointerDownOnContentRef.value)
+  if (!hasSelectionRef.value && !isPointerDownOnContentRef.value) {
+    clearTimeout(closeTimerRef.value)
     closeTimerRef.value = window.setTimeout(() => open.value = false, closeDelay.value)
+  }
 }
 
 onBeforeUnmount(() => {
