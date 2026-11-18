@@ -136,10 +136,13 @@ describe('given a HoverCard trigger that is hovered then focused within the open
         { attachTo: document.body },
       )
       await wrapper.find('a').trigger('pointerenter', { pointerType: 'mouse' })
-      await wrapper.find('a').trigger('focus')
-      expect(vi.getTimerCount()).toBe(1)
-
-      wrapper.unmount()
+      try {
+        await wrapper.find('a').trigger('focus')
+        expect(vi.getTimerCount()).toBe(1)
+      }
+      finally {
+        wrapper.unmount()
+      }
 
       expect(vi.getTimerCount()).toBe(0)
     }

@@ -4,6 +4,7 @@ export interface HoverCardTriggerProps extends PopperAnchorProps {}
 
 <script setup lang="ts">
 import type { PopperAnchorProps } from '@/Popper'
+import { onBeforeUnmount } from 'vue'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
@@ -18,13 +19,18 @@ const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectHoverCardRootContext()
 rootContext.triggerElement = currentElement
 
+let leaveTimer = 0
+
 function handleLeave() {
-  setTimeout(() => {
+  clearTimeout(leaveTimer)
+  leaveTimer = window.setTimeout(() => {
     if (!rootContext.isPointerInTransitRef.value && !rootContext.open.value) {
       rootContext.onClose()
     }
   }, 0)
 }
+
+onBeforeUnmount(() => clearTimeout(leaveTimer))
 
 function handleTouch(event: PointerEvent) {
   if (!rootContext.enableTouch.value || event.pointerType !== 'touch')

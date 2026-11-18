@@ -72,14 +72,24 @@ const isPointerDownOnContentRef = ref(false)
 const isPointerInTransitRef = ref(false)
 const triggerElement = ref<HTMLElement>()
 
+function clearOpenTimer() {
+  clearTimeout(openTimerRef.value)
+  openTimerRef.value = 0
+}
+
 function handleOpen() {
   clearTimeout(closeTimerRef.value)
-  clearTimeout(openTimerRef.value)
-  openTimerRef.value = window.setTimeout(() => open.value = true, openDelay.value)
+  // Keep the deadline of an already pending open (e.g. pointerenter followed by focus)
+  if (openTimerRef.value)
+    return
+  openTimerRef.value = window.setTimeout(() => {
+    openTimerRef.value = 0
+    open.value = true
+  }, openDelay.value)
 }
 
 function handleClose() {
-  clearTimeout(openTimerRef.value)
+  clearOpenTimer()
   if (!hasSelectionRef.value && !isPointerDownOnContentRef.value) {
     clearTimeout(closeTimerRef.value)
     closeTimerRef.value = window.setTimeout(() => open.value = false, closeDelay.value)
@@ -87,12 +97,12 @@ function handleClose() {
 }
 
 onBeforeUnmount(() => {
-  clearTimeout(openTimerRef.value)
+  clearOpenTimer()
   clearTimeout(closeTimerRef.value)
 })
 
 function handleDismiss() {
-  clearTimeout(openTimerRef.value)
+  clearOpenTimer()
   open.value = false
 }
 
