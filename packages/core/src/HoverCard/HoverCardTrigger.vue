@@ -24,13 +24,21 @@ let leaveTimer = 0
 function handleLeave() {
   clearTimeout(leaveTimer)
   leaveTimer = window.setTimeout(() => {
+    leaveTimer = 0
     if (!rootContext.isPointerInTransitRef.value && !rootContext.open.value) {
       rootContext.onClose()
     }
   }, 0)
 }
 
-onBeforeUnmount(() => clearTimeout(leaveTimer))
+onBeforeUnmount(() => {
+  if (!leaveTimer)
+    return
+  // The discarded leave check would have cancelled this trigger's pending open
+  clearTimeout(leaveTimer)
+  leaveTimer = 0
+  rootContext.onDismiss()
+})
 
 function handleTouch(event: PointerEvent) {
   if (!rootContext.enableTouch.value || event.pointerType !== 'touch')

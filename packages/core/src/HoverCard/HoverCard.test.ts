@@ -2,7 +2,7 @@ import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { h } from 'vue'
+import { h, nextTick, ref } from 'vue'
 import { sleep } from '@/test'
 import HoverCardRoot from './HoverCardRoot.vue'
 import HoverCardTrigger from './HoverCardTrigger.vue'
@@ -145,6 +145,34 @@ describe('given a HoverCard trigger that is hovered then focused within the open
       }
 
       expect(vi.getTimerCount()).toBe(0)
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
+describe('given a HoverCardTrigger that unmounts after the pointer left but before the leave check ran', () => {
+  it('should cancel the pending open request', async () => {
+    vi.useFakeTimers()
+    try {
+      const show = ref(true)
+      const wrapper = mount(
+        () => h(HoverCardRoot, { openDelay: 500 }, () => show.value ? h(HoverCardTrigger, null, () => 'trigger') : null),
+        { attachTo: document.body },
+      )
+      try {
+        const trigger = wrapper.find('a')
+        await trigger.trigger('pointerenter', { pointerType: 'mouse' })
+        await trigger.trigger('pointerleave', { pointerType: 'mouse' })
+        show.value = false
+        await nextTick()
+
+        expect(vi.getTimerCount()).toBe(0)
+      }
+      finally {
+        wrapper.unmount()
+      }
     }
     finally {
       vi.useRealTimers()
