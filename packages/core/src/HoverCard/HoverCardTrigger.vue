@@ -34,10 +34,11 @@ function handleLeave() {
 onBeforeUnmount(() => {
   if (!leaveTimer)
     return
-  // The discarded leave check would have cancelled this trigger's pending open
   clearTimeout(leaveTimer)
   leaveTimer = 0
-  rootContext.onDismiss()
+  // Same condition as the discarded leave check: only cancel a pending open, never close an open card
+  if (!rootContext.isPointerInTransitRef.value && !rootContext.open.value)
+    rootContext.onDismiss()
 })
 
 function handleTouch(event: PointerEvent) {

@@ -103,7 +103,9 @@ onBeforeUnmount(() => {
 
 function handleDismiss() {
   clearOpenTimer()
-  open.value = false
+  // Avoid re-emitting `update:open(false)` when already closed (e.g. dismiss during unmount)
+  if (open.value)
+    open.value = false
 }
 
 provideHoverCardRootContext({

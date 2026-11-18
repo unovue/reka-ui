@@ -179,3 +179,58 @@ describe('given a HoverCardTrigger that unmounts after the pointer left but befo
     }
   })
 })
+
+describe('given a HoverCardTrigger that unmounts right after the pointer left an open card', () => {
+  it('should not close the card or emit update:open', async () => {
+    vi.useFakeTimers()
+    try {
+      const show = ref(true)
+      const onUpdateOpen = vi.fn()
+      const wrapper = mount(
+        () => h(
+          HoverCardRoot,
+          { 'open': true, 'onUpdate:open': onUpdateOpen },
+          () => show.value ? h(HoverCardTrigger, null, () => 'trigger') : null,
+        ),
+        { attachTo: document.body },
+      )
+      try {
+        await wrapper.find('a').trigger('pointerleave', { pointerType: 'mouse' })
+        show.value = false
+        await nextTick()
+
+        expect(onUpdateOpen).not.toHaveBeenCalled()
+      }
+      finally {
+        wrapper.unmount()
+      }
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
+describe('given a controlled closed HoverCard that unmounts after the pointer left', () => {
+  it('should not emit update:open during unmount', async () => {
+    vi.useFakeTimers()
+    try {
+      const onUpdateOpen = vi.fn()
+      const wrapper = mount(
+        () => h(
+          HoverCardRoot,
+          { 'open': false, 'onUpdate:open': onUpdateOpen },
+          () => h(HoverCardTrigger, null, () => 'trigger'),
+        ),
+        { attachTo: document.body },
+      )
+      await wrapper.find('a').trigger('pointerleave', { pointerType: 'mouse' })
+      wrapper.unmount()
+
+      expect(onUpdateOpen).not.toHaveBeenCalled()
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+})
