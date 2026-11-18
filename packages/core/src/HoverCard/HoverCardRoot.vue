@@ -22,7 +22,10 @@ export type HoverCardRootEmits = {
 export interface HoverCardRootContext {
   open: Ref<boolean>
   onOpenChange: (open: boolean) => void
-  onOpen: () => void
+  /** `owner` identifies who requested the open, so only that requester can cancel it with `onCancelOpen`. */
+  onOpen: (owner?: object) => void
+  /** Withdraws `owner`'s pending open request. The timer is cleared once no other requester remains. Never writes `open`. */
+  onCancelOpen: (owner: object) => void
   onClose: () => void
   onDismiss: () => void
   hasSelectionRef: Ref<boolean>
@@ -72,20 +75,33 @@ const isPointerDownOnContentRef = ref(false)
 const isPointerInTransitRef = ref(false)
 const triggerElement = ref<HTMLElement>()
 
+// Requesters (trigger, content, ...) sharing the pending open timer
+const openRequesters = new Set<object>()
+const anonymousRequester = {}
+
 function clearOpenTimer() {
   clearTimeout(openTimerRef.value)
   openTimerRef.value = 0
+  openRequesters.clear()
 }
 
-function handleOpen() {
+function handleOpen(owner: object = anonymousRequester) {
   clearTimeout(closeTimerRef.value)
+  openRequesters.add(owner)
   // Keep the deadline of an already pending open (e.g. pointerenter followed by focus)
   if (openTimerRef.value)
     return
   openTimerRef.value = window.setTimeout(() => {
     openTimerRef.value = 0
+    openRequesters.clear()
     open.value = true
   }, openDelay.value)
+}
+
+function handleCancelOpen(owner: object) {
+  openRequesters.delete(owner)
+  if (!openRequesters.size)
+    clearOpenTimer()
 }
 
 function handleClose() {
@@ -114,6 +130,7 @@ provideHoverCardRootContext({
     open.value = value
   },
   onOpen: handleOpen,
+  onCancelOpen: handleCancelOpen,
   onClose: handleClose,
   onDismiss: handleDismiss,
   hasSelectionRef,

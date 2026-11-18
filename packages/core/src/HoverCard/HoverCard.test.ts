@@ -234,3 +234,35 @@ describe('given a controlled closed HoverCard that unmounts after the pointer le
     }
   })
 })
+
+describe('given a controlled open HoverCard whose trigger unmounts with an open request pending', () => {
+  it('should not emit update:open(true) after the card is closed', async () => {
+    vi.useFakeTimers()
+    try {
+      const show = ref(true)
+      const open = ref(true)
+      const onUpdateOpen = vi.fn()
+      const wrapper = mount(
+        () => h(HoverCardRoot, { 'open': open.value, 'openDelay': 500, 'onUpdate:open': onUpdateOpen }, () => show.value ? h(HoverCardTrigger, null, () => 'trigger') : null),
+        { attachTo: document.body },
+      )
+      try {
+        await wrapper.find('a').trigger('pointerenter', { pointerType: 'mouse' })
+        show.value = false
+        await nextTick()
+        open.value = false
+        await nextTick()
+
+        vi.advanceTimersByTime(1000)
+
+        expect(onUpdateOpen).not.toHaveBeenCalledWith(true)
+      }
+      finally {
+        wrapper.unmount()
+      }
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+})

@@ -20,6 +20,7 @@ const rootContext = injectHoverCardRootContext()
 rootContext.triggerElement = currentElement
 
 let leaveTimer = 0
+const openRequester = {}
 
 function handleLeave() {
   clearTimeout(leaveTimer)
@@ -32,13 +33,10 @@ function handleLeave() {
 }
 
 onBeforeUnmount(() => {
-  if (!leaveTimer)
-    return
   clearTimeout(leaveTimer)
   leaveTimer = 0
-  // Same condition as the discarded leave check: only cancel a pending open, never close an open card
-  if (!rootContext.isPointerInTransitRef.value && !rootContext.open.value)
-    rootContext.onDismiss()
+  // Withdraw only this trigger's own pending open; never write `open`
+  rootContext.onCancelOpen(openRequester)
 })
 
 function handleTouch(event: PointerEvent) {
@@ -65,10 +63,10 @@ function handleTouch(event: PointerEvent) {
       :type="$attrs.type ?? (as === 'button' ? 'button' : undefined)"
       :data-state="rootContext.open.value ? 'open' : 'closed'"
       data-grace-area-trigger
-      @pointerenter="excludeTouch(rootContext.onOpen)($event)"
+      @pointerenter="excludeTouch(() => rootContext.onOpen(openRequester))($event)"
       @pointerleave="excludeTouch(handleLeave)($event)"
       @pointerup="handleTouch"
-      @focus="rootContext.onOpen()"
+      @focus="rootContext.onOpen(openRequester)"
       @blur="rootContext.onClose()"
     >
       <slot />
