@@ -740,3 +740,76 @@ describe('given a Dialog root that stays mounted', () => {
     wrapper.unmount()
   })
 })
+
+// A dialog that opens while another one holds focus in its trap. jsdom, like WebKit, does
+// not focus a button on click, so the press leaves focus in the outer dialog.
+describe('given a Dialog that opens while another modal Dialog holds focus', () => {
+  let wrapper: VueWrapper
+  let outerOpen: { value: boolean }
+  let innerOpen: { value: boolean }
+  const byId = (id: string) => document.querySelector(`[data-testid="${id}"]`) as HTMLElement
+
+  beforeEach(async () => {
+    document.body.innerHTML = ''
+    const outer = ref(false)
+    const inner = ref(false)
+    outerOpen = outer
+    innerOpen = inner
+    wrapper = mount(defineComponent({
+      setup: () => () => h('div', [
+        h(DialogRoot, { 'open': outer.value, 'onUpdate:open': (value: boolean) => outer.value = value }, () => [
+          h(DialogTrigger, { 'data-testid': 'outer-trigger' }, () => 'outer'),
+          h(DialogContent, { 'aria-describedby': undefined, 'data-testid': 'outer-content', 'onInteractOutside': (event: Event) => event.preventDefault() }, () => [
+            h(DialogTitle, null, () => 'Outer'),
+            h('input', { 'data-testid': 'outer-input' }),
+          ]),
+        ]),
+        h(DialogRoot, { 'open': inner.value, 'onUpdate:open': (value: boolean) => inner.value = value }, () => [
+          h(DialogTrigger, { 'data-testid': 'inner-trigger' }, () => 'inner'),
+          h(DialogContent, { 'aria-describedby': undefined, 'data-testid': 'inner-content' }, () => [
+            h(DialogTitle, null, () => 'Inner'),
+            h(DialogClose, { 'data-testid': 'inner-close' }, () => 'Close'),
+          ]),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+
+    await fireEvent.click(byId('outer-trigger'))
+    await vi.waitFor(() => expect(byId('outer-content')?.contains(document.activeElement)).toBe(true))
+    byId('outer-input').focus()
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
+  })
+
+  async function closeInner() {
+    await vi.waitFor(() => expect(byId('inner-content')?.contains(document.activeElement)).toBe(true))
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await vi.waitFor(() => expect(byId('inner-content')).toBeNull())
+  }
+
+  it('should return focus to the pressed trigger', async () => {
+    let focusedAtPress: Element | null = null
+    byId('inner-trigger').addEventListener('click', () => focusedAtPress = document.activeElement, { capture: true })
+    await fireEvent.click(byId('inner-trigger'))
+    expect(focusedAtPress).toBe(byId('outer-input'))
+    await closeInner()
+    await vi.waitFor(() => expect(document.activeElement).toBe(byId('inner-trigger')))
+  })
+
+  it('should fall back to its trigger when the element focused at the open has left the DOM', async () => {
+    innerOpen.value = true
+    await vi.waitFor(() => expect(byId('inner-content')?.contains(document.activeElement)).toBe(true))
+    outerOpen.value = false
+    await vi.waitFor(() => expect(byId('outer-content')).toBeNull())
+    await closeInner()
+    await vi.waitFor(() => expect(document.activeElement).toBe(byId('inner-trigger')))
+  })
+
+  it('should return focus to the element focused at the open while it is still there', async () => {
+    innerOpen.value = true
+    await closeInner()
+    await vi.waitFor(() => expect(document.activeElement).toBe(byId('outer-input')))
+  })
+})

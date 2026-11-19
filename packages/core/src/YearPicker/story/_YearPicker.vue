@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import type { DateValue } from '@internationalized/date'
+import type { Component } from 'vue'
 import type { YearPickerRootProps } from '..'
 import { YearPickerCell, YearPickerCellTrigger, YearPickerGrid, YearPickerGridBody, YearPickerGridRow, YearPickerHeader, YearPickerHeading, YearPickerNext, YearPickerPrev, YearPickerRoot } from '..'
 
-const props = defineProps<{ pickerProps?: YearPickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } }>()
+const props = defineProps<{ pickerProps?: YearPickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void }, triggerAs?: string | Component }>()
 </script>
 
 <template>
@@ -33,6 +34,7 @@ const props = defineProps<{ pickerProps?: YearPickerRootProps, emits?: { 'onUpda
             :date="year"
           >
             <YearPickerCellTrigger
+              :as="props.triggerAs"
               :year="year"
               :data-testid="`year-${year.year}`"
             />

@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import type { DateValue } from '@internationalized/date'
+import type { Component } from 'vue'
 import type { MonthPickerRootProps } from '..'
 import { MonthPickerCell, MonthPickerCellTrigger, MonthPickerGrid, MonthPickerGridBody, MonthPickerGridRow, MonthPickerHeader, MonthPickerHeading, MonthPickerNext, MonthPickerPrev, MonthPickerRoot } from '..'
 
-const props = defineProps<{ pickerProps?: MonthPickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } }>()
+const props = defineProps<{ pickerProps?: MonthPickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void }, triggerAs?: string | Component }>()
 </script>
 
 <template>
@@ -33,6 +34,7 @@ const props = defineProps<{ pickerProps?: MonthPickerRootProps, emits?: { 'onUpd
             :date="month"
           >
             <MonthPickerCellTrigger
+              :as="props.triggerAs"
               :month="month"
               :data-testid="`month-${month.month}`"
             />

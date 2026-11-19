@@ -791,3 +791,50 @@ describe('given a Drawer root that stays mounted', () => {
     unmount()
   })
 })
+
+describe('given a force-mounted DrawerContent', () => {
+  function renderDrawer(modal: boolean | 'trap-focus') {
+    const open = ref(false)
+    const result = render(defineComponent({
+      setup: () => () => h('div', [
+        h('button', { 'data-testid': 'outside' }, 'Outside'),
+        h(DrawerRoot, { 'open': open.value, modal, 'onUpdate:open': (value: boolean) => open.value = value }, () => [
+          h(DrawerTrigger, () => OPEN_TEXT),
+          h(DrawerContent, { forceMount: true }, () => [
+            h(DrawerTitle, () => TITLE_TEXT),
+            h('input', { 'data-testid': 'field' }),
+            h(DrawerClose, () => CLOSE_TEXT),
+          ]),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+    return { ...result, open }
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it.each([true, 'trap-focus', false] as const)('acts as an open drawer only while open (modal %s)', async (modal) => {
+    const user = userEvent.setup()
+    const { getByTestId, getByText, open, unmount } = renderDrawer(modal)
+    const content = document.querySelector('[role="dialog"]')!
+    await new Promise(resolve => setTimeout(resolve))
+    expect(content.getAttribute('data-state')).toBe('closed')
+    expect.soft(document.activeElement).toBe(document.body)
+    expect.soft(document.body.style.pointerEvents).toBe('')
+    expect.soft(content.hasAttribute('forcemount')).toBe(false)
+
+    await user.click(getByText(OPEN_TEXT))
+    await vi.waitFor(() => expect(document.activeElement).toBe(getByTestId('field')))
+    expect(document.body.style.pointerEvents).toBe(modal === true ? 'none' : '')
+
+    await user.click(getByText(CLOSE_TEXT))
+    expect(open.value).toBe(false)
+    await vi.waitFor(() => expect(document.activeElement).toBe(getByText(OPEN_TEXT)))
+    expect(document.querySelector('[role="dialog"]')).toBe(content)
+    expect(document.body.style.pointerEvents).toBe('')
+
+    unmount()
+  })
+})

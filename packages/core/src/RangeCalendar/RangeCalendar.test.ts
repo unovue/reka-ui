@@ -1,4 +1,5 @@
 import type { DateValue } from '@internationalized/date'
+import type { Component } from 'vue'
 import type { RangeCalendarRootProps } from './RangeCalendarRoot.vue'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
@@ -6,6 +7,7 @@ import { fireEvent, render, waitFor } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, h } from 'vue'
 import { useTestKbd } from '@/shared'
 import { RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot } from '..'
 import RangeCalendar from './story/_RangeCalendar.vue'
@@ -46,7 +48,7 @@ function getHighlightedDays(calendar: HTMLElement) {
   return Array.from(calendar.querySelectorAll<HTMLElement>('[data-highlighted]'))
 }
 
-function setup(props: { calendarProps?: RangeCalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } } = {}) {
+function setup(props: { calendarProps?: RangeCalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void }, triggerAs?: string | Component, triggerAsChild?: boolean } = {}) {
   const user = userEvent.setup()
   const returned = render(RangeCalendar, { props })
   const calendar = returned.getByTestId('calendar')
@@ -1590,6 +1592,12 @@ describe('handles maximumDays', () => {
   })
 })
 
+const ButtonCell = defineComponent({
+  setup(_, { slots }) {
+    return () => h('button', { type: 'button' }, slots.default?.())
+  },
+})
+
 describe('range calendar - tabindex states', () => {
   it('sets tabindex to 0 for first can tab selected date when has modelValue', async () => {
     const { getByTestId } = setup({
@@ -1640,5 +1648,90 @@ describe('range calendar - tabindex states', () => {
 
     const firstCanTabSelectedDate = getByTestId('date-1-1')
     expect(firstCanTabSelectedDate).toHaveAttribute('tabindex', '0')
+  })
+
+  it('sets tabindex to -1 for disabled and outside view dates when rendered as a button', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDateRange,
+        isDateDisabled: (date: DateValue) => date.day === 15,
+      },
+      triggerAs: 'button',
+    })
+
+    expect(getByTestId('date-1-15')).toHaveAttribute('tabindex', '-1')
+    expect(getByTestId('date-12-31')).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('sets tabindex to -1 for disabled and outside view dates when rendered as a component', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDateRange,
+        isDateDisabled: (date: DateValue) => date.day === 15,
+      },
+      triggerAs: ButtonCell,
+    })
+
+    expect(getByTestId('date-1-15').tagName).toBe('BUTTON')
+    expect(getByTestId('date-1-15')).toHaveAttribute('tabindex', '-1')
+    expect(getByTestId('date-12-31')).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('omits tabindex on disabled and outside view dates rendered as the default div', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDateRange,
+        isDateDisabled: (date: DateValue) => date.day === 15,
+      },
+    })
+
+    expect(getByTestId('date-1-15')).not.toHaveAttribute('tabindex')
+    expect(getByTestId('date-12-31')).not.toHaveAttribute('tabindex')
+  })
+
+  it('sets tabindex to -1 for disabled and outside view dates when rendered as a child button', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDateRange,
+        isDateDisabled: (date: DateValue) => date.day === 15,
+      },
+      triggerAsChild: true,
+    })
+
+    expect(getByTestId('date-1-15')).toHaveAttribute('tabindex', '-1')
+    expect(getByTestId('date-12-31')).toHaveAttribute('tabindex', '-1')
+  })
+})
+
+describe('unavailable day after the range', () => {
+  // 2024-01-18 is a Thursday, 2024-01-19 a Friday, 2024-01-20 a Saturday.
+  const isDateUnavailable = (date: DateValue) => date.day === 20
+
+  it('selects a single day before an unavailable day', async () => {
+    const { getByTestId, calendar, user } = setup({
+      calendarProps: { placeholder: new CalendarDate(2024, 1, 1), isDateUnavailable },
+    })
+
+    await user.click(getByTestId('date-1-19'))
+    await user.click(getByTestId('date-1-19'))
+
+    expect(getSelectedDays(calendar)).toHaveLength(1)
+    expect(getByTestId('date-1-19')).toHaveAttribute('data-selection-start')
+    expect(getByTestId('date-1-19')).toHaveAttribute('data-selection-end')
+  })
+
+  it('selects an end day whose time is later than the start time', async () => {
+    const { getByTestId, calendar, user } = setup({
+      calendarProps: {
+        defaultValue: { start: new CalendarDateTime(2024, 1, 18, 8), end: undefined },
+        placeholder: new CalendarDateTime(2024, 1, 18, 12),
+        isDateUnavailable,
+      },
+    })
+
+    await user.click(getByTestId('date-1-19'))
+
+    expect(getSelectedDays(calendar)).toHaveLength(2)
+    expect(getByTestId('date-1-19')).toHaveAttribute('data-selection-end')
   })
 })

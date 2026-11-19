@@ -1,7 +1,7 @@
 import type { DateValue } from '@internationalized/date'
 
 import type { DateRangeFieldRootProps } from './DateRangeFieldRoot.vue'
-import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+import { CalendarDate, CalendarDateTime, isWeekend, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
@@ -236,5 +236,35 @@ describe('hidden input value', () => {
     await user.click(end.day)
     await user.keyboard(kbd.BACKSPACE)
     expect(input).toHaveValue('')
+  })
+})
+
+describe('unavailable days inside the range', () => {
+  // 2024-01-15 is a Monday, 2024-01-19 a Friday.
+  const isDateUnavailable = (date: DateValue) => isWeekend(date, 'en-US')
+
+  it('does not mark a single-day range invalid when the next day is unavailable', () => {
+    const friday = new CalendarDate(2024, 1, 19)
+    const { input, start } = setup({ dateFieldProps: { modelValue: { start: friday, end: friday }, isDateUnavailable } })
+    expect(input).not.toHaveAttribute('data-invalid')
+    expect(start.day).not.toHaveAttribute('aria-invalid')
+  })
+
+  it('does not check the day after the end of a date-time range', () => {
+    const { input } = setup({
+      dateFieldProps: {
+        modelValue: { start: new CalendarDateTime(2024, 1, 15, 9), end: new CalendarDateTime(2024, 1, 19, 17) },
+        granularity: 'hour',
+        isDateUnavailable,
+      },
+    })
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('marks a range with an unavailable day inside invalid', () => {
+    const { input } = setup({
+      dateFieldProps: { modelValue: { start: new CalendarDate(2024, 1, 18), end: new CalendarDate(2024, 1, 22) }, isDateUnavailable },
+    })
+    expect(input).toHaveAttribute('data-invalid', '')
   })
 })
