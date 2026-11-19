@@ -408,9 +408,17 @@ describe('given a Carousel with autoplay', () => {
 
   it('disables the rotation control without autoplay', async () => {
     const wrapper = mount(defineComponent({
-      setup: () => () => h(CarouselRoot, { 'aria-label': 'Plain' }, () => h(CarouselViewport, () => h(CarouselContent, () => h(CarouselItem, () => 'One')))),
+      setup: () => () => h(CarouselRoot, { 'aria-label': 'Plain' }, () => [
+        h(CarouselViewport, () => h(CarouselContent, () => h(CarouselItem, () => 'One'))),
+        h(CarouselAutoplayToggle, () => 'Toggle'),
+      ]),
     }), { attachTo: document.body })
     await nextTick()
+    const toggle = wrapper.find('button')
+    expect(toggle.attributes('disabled')).toBeDefined()
+    expect(toggle.attributes('aria-label')).toBe('Start slide rotation')
+    await toggle.trigger('click')
+    expect(wrapper.findComponent(CarouselRoot).emitted('update:playing')).toBeUndefined()
     expect(wrapper.find('[data-playing]').exists()).toBe(false)
     expect(wrapper.find('[aria-live]').attributes('aria-live')).toBe('polite')
   })
@@ -539,8 +547,12 @@ describe('given a Carousel with grouped indicators', () => {
     expect(slides.map(slide => slide.attributes('role'))).toEqual(['tabpanel', 'tabpanel', 'tabpanel', 'tabpanel'])
     expect(slides[0].attributes('aria-roledescription')).toBeUndefined()
     // Each tab controls its own panel, and each panel is labelled by its tab.
-    expect(tabs(wrapper).map(tab => tab.attributes('aria-controls'))).toEqual(slides.map(slide => slide.attributes('id')))
-    expect(slides.map(slide => slide.attributes('aria-labelledby'))).toEqual(tabs(wrapper).map(tab => tab.attributes('id')))
+    const panelIds = slides.map(slide => slide.attributes('id'))
+    const tabIds = tabs(wrapper).map(tab => tab.attributes('id'))
+    expect(panelIds.every(Boolean) && tabIds.every(Boolean)).toBe(true)
+    expect(new Set([...panelIds, ...tabIds]).size).toBe(panelIds.length + tabIds.length)
+    expect(tabs(wrapper).map(tab => tab.attributes('aria-controls'))).toEqual(panelIds)
+    expect(slides.map(slide => slide.attributes('aria-labelledby'))).toEqual(tabIds)
     expect(tabs(wrapper).map(tab => tab.attributes('aria-label'))).toEqual(['Slide 1', 'Slide 2', 'Slide 3', 'Slide 4'])
     expect(slides[0].attributes('aria-label')).toBeUndefined()
   })
@@ -581,8 +593,15 @@ describe('given a Carousel with grouped indicators', () => {
     expect(document.activeElement).toBe(tabs(wrapper)[3].element)
     await tabs(wrapper)[3].trigger('keydown', { key: 'ArrowRight' })
     expect(document.activeElement).toBe(tabs(wrapper)[0].element)
-    await tabs(wrapper)[0].trigger('keydown', { key: 'Home' })
     expect(wrapper.find('[data-index="0"]').attributes('data-active')).toBe('')
+    await tabs(wrapper)[0].trigger('keydown', { key: 'ArrowRight' })
+    await tabs(wrapper)[1].trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(tabs(wrapper)[2].element)
+    expect(wrapper.find('[data-index="2"]').attributes('data-active')).toBe('')
+    await tabs(wrapper)[2].trigger('keydown', { key: 'Home' })
+    expect(document.activeElement).toBe(tabs(wrapper)[0].element)
+    expect(wrapper.find('[data-index="0"]').attributes('data-active')).toBe('')
+    expect(wrapper.find('[data-index="2"]').attributes('data-active')).toBeUndefined()
   })
 
   it('swaps the arrows in RTL', async () => {
