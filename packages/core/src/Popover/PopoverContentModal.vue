@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { PopoverContentImplEmits, PopoverContentImplProps } from './PopoverContentImpl.vue'
 import { computed, ref, watch } from 'vue'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { useForwardExpose, useForwardPropsEmits, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import PopoverContentImpl from './PopoverContentImpl.vue'
@@ -28,17 +29,17 @@ useHideOthers(computed(() => props.present ? currentElement.value : undefined))
     :ref="forwardRef"
     :trap-focus="rootContext.open.value"
     disable-outside-pointer-events
-    @close-auto-focus.prevent="
+    @close-auto-focus="
       (event) => {
-        emits('closeAutoFocus', event);
-
-        if (!isRightClickOutsideRef) rootContext.triggerElement.value?.focus();
+        if (!event.defaultPrevented) {
+          event.preventDefault();
+          // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
+          if (!isRightClickOutsideRef && !hasFocusLeftScope(event.target)) rootContext.triggerElement.value?.focus();
+        }
       }
     "
     @pointer-down-outside="
       (event) => {
-        emits('pointerDownOutside', event);
-
         const originalEvent = event.detail.originalEvent;
         const ctrlLeftClick
           = originalEvent.button === 0 && originalEvent.ctrlKey === true;

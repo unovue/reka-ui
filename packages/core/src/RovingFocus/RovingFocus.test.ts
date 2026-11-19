@@ -1,6 +1,8 @@
 import userEvent from '@testing-library/user-event'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { defineComponent, h, nextTick, ref } from 'vue'
+import { RovingFocusGroup, RovingFocusItem } from '.'
 import Button from './story/_Button.vue'
 import ButtonGroup from './story/_ButtonGroup.vue'
 
@@ -127,5 +129,42 @@ describe('test RovingFocus with Arrow Navigation', () => {
     await userEvent.keyboard('[ArrowRight]')
     expect(buttons[3].element).not.toBe(document.activeElement)
     expect(buttons[0].element).toBe(document.activeElement)
+  })
+})
+
+describe('test RovingFocus with an `asChild` item whose element is replaced', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should keep arrow navigation working on the new element', async () => {
+    const asLink = ref(false)
+    // Re-renders on its own, so `RovingFocusItem` is not updated when the root element changes.
+    const Swappable = defineComponent({
+      setup: () => () => asLink.value
+        ? h('a', { 'href': '#', 'data-testid': 'first' }, 'One')
+        : h('button', { 'data-testid': 'first' }, 'One'),
+    })
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(RovingFocusGroup, null, () => [
+        h(RovingFocusItem, { asChild: true }, () => h(Swappable)),
+        h(RovingFocusItem, { asChild: true }, () => h('button', { 'data-testid': 'second' }, 'Two')),
+      ]),
+    }), { attachTo: document.body })
+
+    // Make the item the current tab stop first, so focusing it again later does not re-render it.
+    wrapper.get<HTMLElement>('[data-testid="first"]').element.focus()
+    await nextTick()
+
+    asLink.value = true
+    await nextTick()
+
+    const first = wrapper.get<HTMLElement>('[data-testid="first"]').element
+    expect(first.tagName).toBe('A')
+    first.focus()
+    await userEvent.keyboard('[ArrowRight]')
+
+    expect(wrapper.get('[data-testid="second"]').element).toBe(document.activeElement)
+    wrapper.unmount()
   })
 })

@@ -1,10 +1,12 @@
 import type { DateValue } from '@internationalized/date'
+import type { Component } from 'vue'
 import type { YearPickerRootProps } from './YearPickerRoot.vue'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, h } from 'vue'
 import { useTestKbd } from '@/shared'
 import YearPicker from './story/_YearPicker.vue'
 
@@ -79,6 +81,30 @@ describe('year picker', async () => {
     expect(heading).toHaveTextContent('1992 - 2003')
     await user.click(nextBtn)
     expect(heading).toHaveTextContent('2004 - 2015')
+  })
+
+  it('keeps the visible decade when modelValue is a new object for the same year', async () => {
+    const selected = new CalendarDate(1980, 1, 20)
+    const { getByTestId, user, rerender } = setup({ pickerProps: { modelValue: selected } })
+    const heading = getByTestId('heading')
+
+    await user.click(getByTestId('next-button'))
+    expect(heading).toHaveTextContent('1992 - 2003')
+
+    await rerender({ pickerProps: { modelValue: selected.copy() } })
+
+    expect(heading).toHaveTextContent('1992 - 2003')
+  })
+
+  it('moves the visible decade when the selected year changes', async () => {
+    const { getByTestId, user, rerender } = setup({ pickerProps: { modelValue: new CalendarDate(1980, 1, 20) } })
+
+    await user.click(getByTestId('next-button'))
+    expect(getByTestId('heading')).toHaveTextContent('1992 - 2003')
+
+    await rerender({ pickerProps: { modelValue: new CalendarDate(2010, 1, 1) } })
+
+    expect(getByTestId('heading')).toHaveTextContent('2010 - 2021')
   })
 
   it('navigates to prev decade using prev button', async () => {
@@ -420,5 +446,42 @@ describe('year picker - yearsPerPage', () => {
 
     const heading = getByTestId('heading')
     expect(heading).toHaveTextContent('1980 - 1995')
+  })
+})
+
+const ButtonCell = defineComponent({
+  setup(_, { slots }) {
+    return () => h('button', { type: 'button' }, slots.default?.())
+  },
+})
+
+describe('year picker - tabindex states', () => {
+  function renderPicker(triggerAs?: string | Component) {
+    return render(YearPicker, {
+      props: {
+        pickerProps: {
+          modelValue: new CalendarDate(2000, 1, 1),
+          isYearDisabled: (date: DateValue) => date.year === 2002,
+        },
+        triggerAs,
+      },
+    })
+  }
+
+  it('omits tabindex on disabled years rendered as the default div', () => {
+    const { getByTestId } = renderPicker()
+    expect(getByTestId('year-2000')).toHaveAttribute('tabindex', '0')
+    expect(getByTestId('year-2001')).toHaveAttribute('tabindex', '-1')
+    expect(getByTestId('year-2002')).not.toHaveAttribute('tabindex')
+  })
+
+  it.each([
+    ['a button', 'button'],
+    ['a component that renders a button', ButtonCell],
+  ])('sets tabindex -1 on disabled years rendered as %s', (_, triggerAs) => {
+    const { getByTestId } = renderPicker(triggerAs)
+    expect(getByTestId('year-2000')).toHaveAttribute('tabindex', '0')
+    expect(getByTestId('year-2002').tagName).toBe('BUTTON')
+    expect(getByTestId('year-2002')).toHaveAttribute('tabindex', '-1')
   })
 })

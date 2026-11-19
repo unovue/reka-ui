@@ -3,7 +3,7 @@ import type {
   DismissableLayerEmits,
   DismissableLayerProps,
 } from '@/DismissableLayer'
-import { getActiveElement, useForwardExpose, useId } from '@/shared'
+import { useContentId, useContentMounted, useForwardExpose, useId } from '@/shared'
 
 export type DialogContentImplEmits = DismissableLayerEmits & {
   /**
@@ -34,12 +34,13 @@ export interface DialogContentImplProps extends DismissableLayerProps {
 </script>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { isClient } from '@vueuse/shared'
+import { onMounted, onUnmounted, shallowRef, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { getOpenState } from '@/Menu/utils'
 import { injectDialogRootContext } from './DialogRoot.vue'
-import { useWarning } from './utils'
+import { recordFocusBeforeOpen, useWarning } from './utils'
 
 const props = defineProps<DialogContentImplProps & {
   /** Whether the content is currently visible. Forwarded to `FocusScope` and
@@ -52,26 +53,29 @@ const emits = defineEmits<DialogContentImplEmits>()
 const rootContext = injectDialogRootContext()
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
 
+useContentId(rootContext, contentElement)
+useContentMounted(rootContext, contentElement)
 rootContext.titleId ||= useId(undefined, 'reka-dialog-title')
 rootContext.descriptionId ||= useId(undefined, 'reka-dialog-description')
 
 onMounted(() => {
   rootContext.contentElement = contentElement
-
-  // Preserve the `DialogTrigger` element in case it was triggered programmatically
-  if (getActiveElement() !== document.body)
-    rootContext.triggerElement.value = getActiveElement() as HTMLElement
 })
 
-// Kept-mounted content (`unmountOnHide: false`) already restored focus when it
-// was hidden, so removing it later (e.g. `v-if`) must not move focus again.
-function handleUnmountAutoFocus(event: Event) {
-  if (!props.present) {
-    event.preventDefault()
-    return
-  }
-  emits('closeAutoFocus', event)
-}
+// Record where focus was on every open, before the content moves it: a content kept
+// mounted (`unmountOnHide: false`) sets up only once. The trigger ref is left alone, so
+// it stays the fallback when that element has left the DOM.
+watch(rootContext.open, (open) => {
+  if (open && isClient)
+    recordFocusBeforeOpen(rootContext, contentElement.value)
+}, { immediate: true, flush: 'sync' })
+
+// The root outlives this content, so hand it back an empty ref: the computed above
+// keeps this instance (and its detached element) reachable for as long as it is stored.
+onUnmounted(() => {
+  if (rootContext.contentElement === contentElement)
+    rootContext.contentElement = shallowRef()
+})
 
 if (process.env.NODE_ENV !== 'production') {
   useWarning({
@@ -92,7 +96,7 @@ if (process.env.NODE_ENV !== 'production') {
     :trapped="props.trapFocus"
     :present="props.present"
     @mount-auto-focus="emits('openAutoFocus', $event)"
-    @unmount-auto-focus="handleUnmountAutoFocus"
+    @unmount-auto-focus="emits('closeAutoFocus', $event)"
   >
     <DismissableLayer
       :id="rootContext.contentId"

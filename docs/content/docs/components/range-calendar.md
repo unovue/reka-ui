@@ -25,7 +25,7 @@ Presents a calendar view tailored for selecting date ranges.
     'Localization support',
     'Highly composable'
   ]"
-/>
+ />
 
 ## Preface
 
@@ -301,7 +301,7 @@ Interactable container for displaying the cell dates. Clicking it selects the da
       keys: ['Space'],
       description:`
       <span>
-          When the focus is on either <Code>CalendarNext</Code> or <Code>CalendarPrev</Code>, it navigates the calendar. Otherwise, it selects the date.
+          When the focus is on either <Code>RangeCalendarNext</Code> or <Code>RangeCalendarPrev</Code>, it navigates the calendar. Otherwise, it selects the date.
       </span>
     ` ,
     },
@@ -309,7 +309,7 @@ Interactable container for displaying the cell dates. Clicking it selects the da
       keys: ['Enter'],
       description:`
       <span>
-          When the focus is on either <Code>CalendarNext</Code> or <Code>CalendarPrev</Code>, it navigates the calendar. Otherwise, it selects the date.
+          When the focus is on either <Code>RangeCalendarNext</Code> or <Code>RangeCalendarPrev</Code>, it navigates the calendar. Otherwise, it selects the date.
       </span>
     ` ,
     },
@@ -317,7 +317,49 @@ Interactable container for displaying the cell dates. Clicking it selects the da
       keys: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'],
       description:
       `
-        When the focus is on <Code>CalendarCellTrigger</Code>, it navigates the dates, changing the month/year/decade if necessary.
+        When the focus is on <Code>RangeCalendarCellTrigger</Code>, it navigates the dates, changing the month/year/decade if necessary.
+      `
+    },
+    {
+      keys: ['Home'],
+      description:
+      `
+        When the focus is on <Code>RangeCalendarCellTrigger</Code>, it moves focus to the first day of the current week.
+      `
+    },
+    {
+      keys: ['End'],
+      description:
+      `
+        When the focus is on <Code>RangeCalendarCellTrigger</Code>, it moves focus to the last day of the current week.
+      `
+    },
+    {
+      keys: ['PageUp'],
+      description:
+      `
+        When the focus is on <Code>RangeCalendarCellTrigger</Code>, it moves to the previous month while preserving the day of the month when possible, or clamps to the last day of the month.
+      `
+    },
+    {
+      keys: ['PageDown'],
+      description:
+      `
+        When the focus is on <Code>RangeCalendarCellTrigger</Code>, it moves to the next month while preserving the day of the month when possible, or clamps to the last day of the month.
+      `
+    },
+    {
+      keys: ['Shift+PageUp'],
+      description:
+      `
+        When the focus is on <Code>RangeCalendarCellTrigger</Code>, it moves to the previous year while preserving the month and day when possible, or clamps to the last day of the month.
+      `
+    },
+    {
+      keys: ['Shift+PageDown'],
+      description:
+      `
+        When the focus is on <Code>RangeCalendarCellTrigger</Code>, it moves to the next year while preserving the month and day when possible, or clamps to the last day of the month.
       `
     }
   ]"

@@ -41,6 +41,12 @@
     'required': false
   },
   {
+    'name': 'toast',
+    'description': '<p>A toast from <code>useToastManager()</code>. Its <code>open</code>, <code>duration</code>, <code>type</code> and <code>status</code> drive the toast,\nand <code>ToastTitle</code>, <code>ToastDescription</code> and <code>ToastAction</code> render its content.</p>\n',
+    'type': 'ToastObject&lt;any&gt;',
+    'required': false
+  },
+  {
     'name': 'type',
     'description': '<p>Control the sensitivity of the toast for accessibility purposes.</p>\n<p>For toasts that are the result of a user action, choose <code>foreground</code>. Toasts generated from background tasks should use <code>background</code>.</p>\n',
     'type': '\'foreground\' | \'background\'',
@@ -123,6 +129,7 @@
 | `duration` | Time in milliseconds that toast should remain visible for. Overrides value given to ToastProvider. | `number` | No | - |
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
 | `open` | The controlled open state of the dialog. Can be bind as v-model:open. | `boolean` | No | - |
+| `toast` | A toast from useToastManager(). Its open, duration, type and status drive the toast, and ToastTitle, ToastDescription and ToastAction render its content. | `ToastObject<any>` | No | - |
 | `type` | Control the sensitivity of the toast for accessibility purposes. For toasts that are the result of a user action, choose foreground. Toasts generated from background tasks should use background. | `"foreground" \| "background"` | No | `"foreground"` |
 
 **Events**

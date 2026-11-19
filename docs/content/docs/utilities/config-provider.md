@@ -49,6 +49,8 @@ Use the config provider.
 
 Set global direction to `rtl`, and scroll body behavior to `false` (will not set any padding/margin).
 
+By default, the scrollbar width is added to the body's own right padding while scroll is locked, and the body's margin is left alone. Both are put back as they were when the lock is released. Pass an object such as `{ padding: 20 }` or `{ margin: true }` to choose what is set: `true` adds the scrollbar width to the existing value, a number is in pixels, and a string is used as written. `{ margin: true }` on its own moves the compensation to the margin and leaves the padding alone; set `padding` as well to change both.
+
 ```vue
 <script setup lang="ts">
 import { ConfigProvider } from 'reka-ui'

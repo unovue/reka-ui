@@ -2,6 +2,16 @@
 import type { PrimitiveProps } from '@/Primitive'
 
 export interface VisuallyHiddenProps extends PrimitiveProps {
+  /**
+   * How the content is hidden.
+   *
+   * - `focusable` (default): hidden visually only. The content stays in the
+   *   accessibility tree, so slotted text is announced and can label its
+   *   parent, and it keeps whatever focusability it has.
+   * - `fully-hidden`: also removed from the accessibility tree
+   *   (`aria-hidden="true"`) and the tab order (`tabindex="-1"`). Use for
+   *   hidden form inputs.
+   */
   feature?: 'focusable' | 'fully-hidden'
 }
 </script>
@@ -9,14 +19,33 @@ export interface VisuallyHiddenProps extends PrimitiveProps {
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
 
-withDefaults(defineProps<VisuallyHiddenProps>(), { as: 'span', feature: 'focusable' })
+const props = withDefaults(defineProps<VisuallyHiddenProps>(), { as: 'span', feature: 'focusable' })
+
+/**
+ * A hidden native form control (the twin a component renders for form
+ * participation) has no label of its own. Checkers that also inspect
+ * `aria-hidden` controls report it, and it is exposed without a name while it
+ * holds focus after a failed native validation. Its form field `name` is the
+ * default label.
+ *
+ * Only an element hidden from assistive technology gets it, through
+ * `feature="fully-hidden"` or an explicit `aria-hidden="true"`: a control left
+ * in the accessibility tree is labelled by its consumer. An `aria-label`
+ * passed by the consumer falls through and wins.
+ */
+function hiddenControlLabel(attrs: Record<string, unknown>) {
+  const { name } = attrs
+  const isHidden = props.feature === 'fully-hidden' || String(attrs['aria-hidden']) === 'true'
+  return isHidden && typeof name === 'string' && name ? name : undefined
+}
 </script>
 
 <template>
   <Primitive
     :as="as"
     :as-child="asChild"
-    :aria-hidden="feature === 'focusable' || feature === 'fully-hidden' ? 'true' : undefined"
+    :aria-label="hiddenControlLabel($attrs)"
+    :aria-hidden="feature === 'fully-hidden' ? 'true' : undefined"
     :data-hidden="feature === 'fully-hidden' ? '' : undefined"
     :tabindex="feature === 'fully-hidden' ? '-1' : undefined"
     :style="{

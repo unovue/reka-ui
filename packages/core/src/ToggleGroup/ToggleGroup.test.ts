@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import ToggleGroup from './story/_ToggleGroup.vue'
+import ToggleGroupItem from './ToggleGroupItem.vue'
+import ToggleGroupRoot from './ToggleGroupRoot.vue'
 
 describe('given default Toggle Group', () => {
   let wrapper: VueWrapper<InstanceType<typeof ToggleGroup>>
@@ -182,5 +184,21 @@ describe('given multiple value Toggle Group', () => {
         expect(triggers[2].attributes('data-state')).toBe('on')
       })
     })
+  })
+})
+
+describe('given Toggle Group in a form', () => {
+  const template = (attrs = '') => `<form><ToggleGroupRoot name="align" default-value="center" ${attrs}><ToggleGroupItem value="left" aria-label="Left" /><ToggleGroupItem value="center" aria-label="Center" /></ToggleGroupRoot></form>`
+
+  it('submits its value', () => {
+    const wrapper = mount({ components: { ToggleGroupRoot, ToggleGroupItem }, template: template() })
+    expect([...new FormData(wrapper.find('form').element)]).toEqual([['align', 'center']])
+    wrapper.unmount()
+  })
+
+  it('does not submit while disabled', () => {
+    const wrapper = mount({ components: { ToggleGroupRoot, ToggleGroupItem }, template: template('disabled') })
+    expect([...new FormData(wrapper.find('form').element)]).toEqual([])
+    wrapper.unmount()
   })
 })

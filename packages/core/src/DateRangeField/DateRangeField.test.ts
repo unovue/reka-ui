@@ -1,7 +1,7 @@
 import type { DateValue } from '@internationalized/date'
 
 import type { DateRangeFieldRootProps } from './DateRangeFieldRoot.vue'
-import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+import { CalendarDate, CalendarDateTime, isWeekend, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
@@ -207,5 +207,64 @@ describe('dateField', async () => {
     await user.keyboard('2')
     expect(start.month).toHaveTextContent('2')
     expect(end.month).toHaveTextContent(String(calendarDate.end.month))
+  })
+})
+
+describe('hidden input value', () => {
+  it.each([
+    { label: 'no value', modelValue: undefined, expected: '' },
+    { label: 'only a start', modelValue: { start: calendarDate.start, end: undefined }, expected: '' },
+    { label: 'only an end', modelValue: { start: undefined, end: calendarDate.end }, expected: '' },
+    { label: 'a complete date range', modelValue: calendarDate, expected: '2022-01-01 - 2022-03-01' },
+    { label: 'a complete date time range', modelValue: calendarDateTime, expected: '2022-01-01T12:30:00 - 2022-03-01T12:30:00' },
+  ])('is "$expected" for $label', ({ modelValue, expected }) => {
+    const { container } = setup({ dateFieldProps: { modelValue, name: 'range' } })
+    expect(container.querySelector('input')).toHaveValue(expected)
+  })
+
+  it('is filled once the second date is typed and emptied when a date is cleared', async () => {
+    const { container, start, end, user } = setup({ dateFieldProps: { name: 'range', locale: 'en-US' } })
+    const input = container.querySelector('input')
+
+    await user.click(start.month)
+    await user.keyboard('01012022')
+    expect(input).toHaveValue('')
+
+    await user.keyboard('03012022')
+    expect(input).toHaveValue('2022-01-01 - 2022-03-01')
+
+    await user.click(end.day)
+    await user.keyboard(kbd.BACKSPACE)
+    expect(input).toHaveValue('')
+  })
+})
+
+describe('unavailable days inside the range', () => {
+  // 2024-01-15 is a Monday, 2024-01-19 a Friday.
+  const isDateUnavailable = (date: DateValue) => isWeekend(date, 'en-US')
+
+  it('does not mark a single-day range invalid when the next day is unavailable', () => {
+    const friday = new CalendarDate(2024, 1, 19)
+    const { input, start } = setup({ dateFieldProps: { modelValue: { start: friday, end: friday }, isDateUnavailable } })
+    expect(input).not.toHaveAttribute('data-invalid')
+    expect(start.day).not.toHaveAttribute('aria-invalid')
+  })
+
+  it('does not check the day after the end of a date-time range', () => {
+    const { input } = setup({
+      dateFieldProps: {
+        modelValue: { start: new CalendarDateTime(2024, 1, 15, 9), end: new CalendarDateTime(2024, 1, 19, 17) },
+        granularity: 'hour',
+        isDateUnavailable,
+      },
+    })
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('marks a range with an unavailable day inside invalid', () => {
+    const { input } = setup({
+      dateFieldProps: { modelValue: { start: new CalendarDate(2024, 1, 18), end: new CalendarDate(2024, 1, 22) }, isDateUnavailable },
+    })
+    expect(input).toHaveAttribute('data-invalid', '')
   })
 })

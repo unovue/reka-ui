@@ -1,11 +1,151 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { computed, defineComponent, Fragment, h, ref, watchPostEffect } from 'vue'
+import { computed, defineComponent, Fragment, h, nextTick, ref, watchPostEffect } from 'vue'
 
 import { Primitive } from '../Primitive'
 import { useForwardExpose } from './useForwardExpose'
 
 describe('useForwardRef', async () => {
+  it.each([null, undefined])('should fall back to the root when a forwarded $el becomes %s', async (emptyElement) => {
+    let forwarded!: ReturnType<typeof useForwardExpose>
+    const show = ref(true)
+    const wrapper = mount(defineComponent({
+      setup() {
+        forwarded = useForwardExpose()
+        return () => h('div', show.value
+          ? [h('span', { ref: element => forwarded.forwardRef({ $el: element ?? emptyElement } as any) }, 'Child')]
+          : [])
+      },
+    }))
+
+    try {
+      await nextTick()
+      const root = wrapper.get('div').element
+      const exposed = wrapper.vm.$.exposed!
+      expect(exposed.$el).toBe(wrapper.get('span').element)
+      expect(forwarded.currentElement.value).toBe(wrapper.get('span').element)
+
+      show.value = false
+      await nextTick()
+      expect(exposed.$el).toBe(root)
+      expect(forwarded.currentRef.value).toBeNull()
+      expect(forwarded.currentElement.value).toBeNull()
+
+      show.value = true
+      await nextTick()
+      expect(exposed.$el).toBe(wrapper.get('span').element)
+      expect(forwarded.currentElement.value).toBe(wrapper.get('span').element)
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('should safely read cached child exposures after forwarding a $el-only ref', async () => {
+    const showComponent = ref(true)
+    const Child = defineComponent({
+      setup(_, { expose }) {
+        expose({ childValue: 'child' })
+        return () => h('span', 'Child')
+      },
+    })
+    const wrapper = mount(defineComponent({
+      setup() {
+        const { forwardRef } = useForwardExpose()
+        return () => h('div', showComponent.value
+          ? [h(Child, { ref: forwardRef })]
+          : [h('button', { ref: element => forwardRef({ $el: element } as any) }, 'Replacement')])
+      },
+    }))
+
+    try {
+      await nextTick()
+      const exposed = wrapper.vm.$.exposed!
+      expect(exposed.childValue).toBe('child')
+
+      showComponent.value = false
+      await nextTick()
+      expect(exposed.$el).toBe(wrapper.get('button').element)
+      expect(() => exposed.childValue).not.toThrow()
+      expect(exposed.childValue).toBeUndefined()
+
+      showComponent.value = true
+      await nextTick()
+      expect(exposed.$el).toBe(wrapper.get('span').element)
+      expect(exposed.childValue).toBe('child')
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it.each(['element', 'component'])('should release a forwarded %s when its child unmounts', async (kind) => {
+    const show = ref(true)
+    let forwarded!: ReturnType<typeof useForwardExpose>
+    const Child = defineComponent({
+      setup(_, { expose }) {
+        const element = ref<HTMLElement>()
+        expose({ element })
+        return () => h('span', { ref: element }, 'Child')
+      },
+    })
+    const wrapper = mount(defineComponent({
+      setup() {
+        forwarded = useForwardExpose()
+        return () => h('div', {}, show.value
+          ? [h(kind === 'element' ? 'span' : Child, { ref: forwarded.forwardRef })]
+          : [])
+      },
+    }))
+    await nextTick()
+
+    const element = wrapper.get('span').element
+    const rootElement = wrapper.get('div').element
+    const exposed = wrapper.vm.$.exposed!
+    expect(forwarded.currentElement.value).toBe(element)
+    expect(exposed.$el).toBe(element)
+
+    show.value = false
+    await nextTick()
+
+    expect(wrapper.vm.$.exposed!.$el).toBe(rootElement)
+    expect(exposed.$el).toBe(rootElement)
+    expect(exposed.element).toBeUndefined()
+    expect(forwarded.currentRef.value).toBeNull()
+    expect(forwarded.currentElement.value).toBeNull()
+
+    show.value = true
+    await nextTick()
+
+    expect(forwarded.currentElement.value).toBe(wrapper.get('span').element)
+    expect(wrapper.vm.$.exposed!.$el).toBe(wrapper.get('span').element)
+    expect(wrapper.get('span').element).not.toBe(element)
+    wrapper.unmount()
+  })
+
+  it('should keep parent props reactive when merging a child expose', async () => {
+    const Child = defineComponent({
+      setup(_, { expose }) {
+        expose({ childValue: 'child' })
+        return () => h('span')
+      },
+    })
+    const wrapper = mount(defineComponent({
+      props: { label: String },
+      setup() {
+        const { forwardRef } = useForwardExpose()
+        return () => h(Child, { ref: forwardRef })
+      },
+    }), { props: { label: 'before' } })
+    await nextTick()
+
+    const exposed = wrapper.vm.$.exposed!
+    expect(exposed.label).toBe('before')
+    await wrapper.setProps({ label: 'after' })
+    expect(exposed.label).toBe('after')
+    wrapper.unmount()
+  })
+
   it('should forward plain DOM element ref', async () => {
     const comp = defineComponent({
       setup() {
@@ -321,5 +461,86 @@ describe('useForwardRef', async () => {
     toggle.value = !toggle.value
     await flushPromises()
     expect(renderNode).toBe('span')
+  })
+})
+
+describe('given a forwarded child without a single element root', () => {
+  const COMMENT_ROOT = `<div v-if="false" />`
+  const TEXT_ROOT = `just text`
+
+  /** Forward `child` and render an unrelated element right after it, unless `alone`. */
+  async function resolveCurrentElement(child: any, alone = false) {
+    let forwarded!: ReturnType<typeof useForwardExpose>
+    const wrapper = mount(defineComponent({
+      setup() {
+        forwarded = useForwardExpose()
+        return () => [
+          h(child, { ref: forwarded.forwardRef }),
+          alone ? null : h('div', { id: 'outsider' }),
+        ]
+      },
+    }))
+    await flushPromises()
+    if (!alone)
+      expect(wrapper.find('#outsider').exists()).toBe(true)
+    return forwarded.currentElement.value
+  }
+
+  it.each([
+    ['text', TEXT_ROOT],
+    ['comment', COMMENT_ROOT],
+  ])('should resolve undefined for a %s root when nothing is forwarded', async (_, template) => {
+    let forwarded!: ReturnType<typeof useForwardExpose>
+    mount(defineComponent({
+      setup() {
+        forwarded = useForwardExpose()
+        return {}
+      },
+      template,
+    }))
+    await flushPromises()
+    expect(forwarded.currentElement.value).toBeUndefined()
+  })
+
+  it.each([
+    ['comment root', COMMENT_ROOT],
+    ['text root', TEXT_ROOT],
+    ['fragment of comments', `<!-- a --><!-- b -->`],
+  ])('should not resolve to an element outside a %s', async (_, template) => {
+    expect(await resolveCurrentElement(defineComponent({ template }))).toBeUndefined()
+  })
+
+  it.each([
+    ['comment root', COMMENT_ROOT],
+    ['text root', TEXT_ROOT],
+  ])('should resolve undefined for a %s with no following element', async (_, template) => {
+    expect(await resolveCurrentElement(defineComponent({ template }), true)).toBeUndefined()
+  })
+
+  it('should resolve the first element of a fragment that starts with text', async () => {
+    const Child = defineComponent({ template: `leading text <button id="own">ok</button>` })
+    const element = await resolveCurrentElement(Child)
+    expect(element).toBeInstanceOf(HTMLButtonElement)
+    expect(element.id).toBe('own')
+  })
+
+  it('should resolve through a component that wraps a fragment', async () => {
+    const Frag = defineComponent({ template: `leading <button id="own">ok</button>` })
+    const Hoc = defineComponent({ components: { Frag }, template: `<Frag />` })
+    expect((await resolveCurrentElement(Hoc))?.id).toBe('own')
+  })
+
+  it('should resolve Primitive as-child with a v-if comment before the element', async () => {
+    const Inner = defineComponent({
+      components: { Primitive },
+      template: `<Primitive as-child><template v-if="false"><i /></template><button id="own">b</button></Primitive>`,
+    })
+    expect((await resolveCurrentElement(Inner))?.id).toBe('own')
+  })
+
+  it('should not resolve to an element outside a component that wraps a comment root', async () => {
+    const Empty = defineComponent({ template: COMMENT_ROOT })
+    const Hoc = defineComponent({ components: { Empty }, template: `<Empty />` })
+    expect(await resolveCurrentElement(Hoc)).toBeUndefined()
   })
 })

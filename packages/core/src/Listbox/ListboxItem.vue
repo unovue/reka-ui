@@ -28,7 +28,7 @@ export const [injectListboxItemContext, provideListboxItemContext]
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '..'
 import type { AcceptableValue } from '@/shared/types'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '..'
 import { injectListboxRootContext } from './ListboxRoot.vue'
@@ -39,6 +39,13 @@ const props = withDefaults(defineProps<ListboxItemProps<T>>(), {
 })
 const emits = defineEmits<ListboxItemEmits<T>>()
 
+defineSlots<{
+  default?: (props: {
+    /** Whether the item is currently selected */
+    selected: boolean
+  }) => any
+}>()
+
 const id = useId(undefined, 'reka-listbox-item')
 const { CollectionItem } = useCollection()
 const { forwardRef, currentElement } = useForwardExpose()
@@ -48,6 +55,13 @@ const isHighlighted = computed(() => currentElement.value != null && currentElem
 const isSelected = computed(() => valueComparator(rootContext.modelValue.value, props.value, rootContext.by))
 
 const disabled = computed(() => rootContext.disabled.value || props.disabled)
+
+// `aria-activedescendant` names the highlighted item. An item that leaves the document releases the highlight.
+// A virtualized list unmounts rows as it scrolls, so `ListboxVirtualizer` owns the highlight there.
+onBeforeUnmount(() => {
+  if (!rootContext.isVirtual.value && rootContext.highlightedElement.value === currentElement.value)
+    rootContext.highlightedElement.value = null
+})
 
 async function handleSelect(ev: SelectEvent<T>) {
   emits('select', ev)
@@ -80,6 +94,7 @@ provideListboxItemContext({
       role="option"
       :tabindex="rootContext.focusable.value ? isHighlighted ? '0' : '-1' : -1"
       :aria-selected="isSelected"
+      :aria-disabled="disabled || undefined"
       :as="as"
       :as-child="asChild"
       :disabled="disabled ? '' : undefined"
@@ -96,7 +111,7 @@ provideListboxItemContext({
           rootContext.changeHighlight(currentElement, false, false)
       }"
     >
-      <slot />
+      <slot :selected="isSelected" />
     </Primitive>
   </CollectionItem>
 </template>

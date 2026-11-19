@@ -15,8 +15,9 @@ export interface MenuSubTriggerProps extends MenuItemImplProps {
 
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
+import { reactiveOmit } from '@vueuse/shared'
 import { nextTick, onUnmounted, ref, watch } from 'vue'
-import { useId } from '@/shared'
+import { useId, useRenderedContentId, useTriggerId } from '@/shared'
 import MenuAnchor from './MenuAnchor.vue'
 import { injectMenuContentContext } from './MenuContentImpl.vue'
 import MenuItemImpl from './MenuItemImpl.vue'
@@ -27,6 +28,8 @@ import { getOpenState, isMouseEvent, SUB_OPEN_KEYS } from './utils'
 const props = withDefaults(defineProps<MenuSubTriggerProps>(), {
   graceDuration: 300,
 })
+// `graceDuration` is not a `MenuItemImpl` prop, so it would land on the DOM element.
+const itemProps = reactiveOmit(props, 'graceDuration')
 
 const menuContext = injectMenuContext()
 const rootContext = injectMenuRootContext()
@@ -47,7 +50,8 @@ watch(menuContext.open, (open) => {
 
 const openTimerRef = ref<number | null>(null)
 
-subContext.triggerId ||= useId(undefined, 'reka-menu-sub-trigger')
+useTriggerId(subContext, subContext.trigger, () => useId(undefined, 'reka-menu-sub-trigger'))
+const contentId = useRenderedContentId(subContext, menuContext)
 
 function clearOpenTimer() {
   if (openTimerRef.value)
@@ -140,7 +144,7 @@ async function handleKeyDown(event: KeyboardEvent) {
 <template>
   <MenuAnchor as-child>
     <MenuItemImpl
-      v-bind="props"
+      v-bind="itemProps"
       :id="subContext.triggerId"
       :ref="
         (vnode: Element | ComponentPublicInstance | null) => {
@@ -152,7 +156,7 @@ async function handleKeyDown(event: KeyboardEvent) {
       "
       aria-haspopup="menu"
       :aria-expanded="menuContext.open.value"
-      :aria-controls="subContext.contentId"
+      :aria-controls="menuContext.open.value ? contentId : undefined"
       :data-state="getOpenState(menuContext.open.value)"
       @click="
         async (event: MouseEvent) => {

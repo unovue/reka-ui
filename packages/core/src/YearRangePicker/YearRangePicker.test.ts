@@ -1,4 +1,5 @@
 import type { DateValue } from '@internationalized/date'
+import type { Component } from 'vue'
 import type { YearRangePickerRootProps } from './YearRangePickerRoot.vue'
 import type { DateRange } from '@/shared/date'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
@@ -7,6 +8,7 @@ import { render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, h } from 'vue'
 import { useTestKbd } from '@/shared'
 import YearRangePicker from './story/_YearRangePicker.vue'
 
@@ -409,5 +411,42 @@ describe('year range picker - keyboard navigation', () => {
 
     expect(getByTestId('heading')).toHaveTextContent('1993 - 2004')
     expect(getByTestId('year-1993')).toHaveFocus()
+  })
+})
+
+const ButtonCell = defineComponent({
+  setup(_, { slots }) {
+    return () => h('button', { type: 'button' }, slots.default?.())
+  },
+})
+
+describe('year range picker - tabindex states', () => {
+  function renderPicker(triggerAs?: string | Component) {
+    return render(YearRangePicker, {
+      props: {
+        pickerProps: {
+          modelValue: { start: new CalendarDate(2000, 1, 1), end: new CalendarDate(2001, 1, 1) },
+          isYearDisabled: (date: DateValue) => date.year === 2002,
+        },
+        triggerAs,
+      },
+    })
+  }
+
+  it('omits tabindex on disabled years rendered as the default div', () => {
+    const { getByTestId } = renderPicker()
+    expect(getByTestId('year-2000')).toHaveAttribute('tabindex', '0')
+    expect(getByTestId('year-2001')).toHaveAttribute('tabindex', '-1')
+    expect(getByTestId('year-2002')).not.toHaveAttribute('tabindex')
+  })
+
+  it.each([
+    ['a button', 'button'],
+    ['a component that renders a button', ButtonCell],
+  ])('sets tabindex -1 on disabled years rendered as %s', (_, triggerAs) => {
+    const { getByTestId } = renderPicker(triggerAs)
+    expect(getByTestId('year-2000')).toHaveAttribute('tabindex', '0')
+    expect(getByTestId('year-2002').tagName).toBe('BUTTON')
+    expect(getByTestId('year-2002')).toHaveAttribute('tabindex', '-1')
   })
 })

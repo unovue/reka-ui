@@ -149,6 +149,64 @@ describe('focusScope', () => {
   })
 
   // https://github.com/unovue/reka-ui/issues/2550
+  // https://github.com/unovue/reka-ui/issues/1667
+  // A trapped FocusScope teleported into a shadow root must keep focus inside
+  // even when focus escapes to a light-DOM element outside the shadow tree.
+  // Listening only on `document` misses intra-shadow moves (retargeted to the
+  // host); listening only on the shadow root misses the light-DOM escape (which
+  // never propagates into the root). We assert the behaviour, not the wiring.
+  describe('given a trapped FocusScope rendered inside a shadow root (#1667)', () => {
+    const ShadowScope = defineComponent({
+      components: { FocusScope },
+      template: `<FocusScope asChild loop trapped>
+        <form>
+          <input data-testid="inner-first" />
+          <input data-testid="inner-second" />
+        </form>
+      </FocusScope>`,
+    })
+
+    // document.activeElement stops at the shadow host; drill down to the real one.
+    function deepActiveElement(): Element | null {
+      let active = document.activeElement
+      while (active?.shadowRoot?.activeElement)
+        active = active.shadowRoot.activeElement
+      return active
+    }
+
+    it('recalls focus into the scope when it escapes to a light-DOM element', async () => {
+      const host = document.createElement('div')
+      const outsideButton = document.createElement('button')
+      outsideButton.textContent = 'outside'
+      document.body.append(host, outsideButton)
+
+      try {
+        const shadowRoot = host.attachShadow({ mode: 'open' })
+        const container = document.createElement('div')
+        shadowRoot.appendChild(container)
+
+        render(ShadowScope, { container })
+        await nextTick()
+
+        const innerFirst = shadowRoot.querySelector<HTMLInputElement>('[data-testid="inner-first"]')!
+        innerFirst.focus()
+        await nextTick()
+        expect(container.contains(deepActiveElement())).toBe(true)
+
+        // Focus escapes to a light-DOM button outside the shadow tree.
+        outsideButton.focus()
+        await nextTick()
+
+        // The trap must pull focus back inside the scope.
+        expect(container.contains(deepActiveElement())).toBe(true)
+      }
+      finally {
+        host.remove()
+        outsideButton.remove()
+      }
+    })
+  })
+
   describe('given a FocusScope with SelectTrigger inside Dialog (#2550)', () => {
     const DialogWithSelect = defineComponent({
       components: { DialogRoot, DialogTrigger, DialogContent, DialogTitle, SelectRoot, SelectTrigger, SelectValue, SelectContent, SelectItem },
@@ -350,5 +408,98 @@ describe('focusScope', () => {
 
       expect(rendered.getByTestId('form-input')).toHaveFocus()
     })
+  })
+
+  describe('given a FocusScope that unmounts', () => {
+    const Unmounting = defineComponent({
+      components: { FocusScope },
+      props: { open: Boolean },
+      emits: ['unmountAutoFocus'],
+      template: `
+        <button data-testid="before">before</button>
+        <button data-testid="elsewhere">elsewhere</button>
+        <FocusScope v-if="open" @unmount-auto-focus="$emit('unmountAutoFocus', $event)">
+          <input data-testid="inside">
+        </FocusScope>
+      `,
+    })
+
+    async function setup(onUnmountAutoFocus = vi.fn((event: Event) => event.defaultPrevented)) {
+      const rendered = render(Unmounting, { props: { open: false, onUnmountAutoFocus }, attachTo: document.body })
+      rendered.getByTestId('before').focus()
+      await rendered.rerender({ open: true })
+      await vi.waitFor(() => expect(rendered.getByTestId('inside')).toHaveFocus())
+      return { rendered, onUnmountAutoFocus }
+    }
+
+    /** The unmount auto-focus is deferred by a timer; one queued after it runs after it. */
+    const afterUnmountAutoFocus = () => new Promise(resolve => setTimeout(resolve))
+
+    it('should return focus to the element focused before it mounted', async () => {
+      const { rendered, onUnmountAutoFocus } = await setup()
+
+      await rendered.rerender({ open: false })
+      await afterUnmountAutoFocus()
+
+      expect(rendered.getByTestId('before')).toHaveFocus()
+      expect(onUnmountAutoFocus).toHaveBeenCalledTimes(1)
+    })
+
+    it('should leave focus where it has moved to outside the scope, and still emit `unmountAutoFocus`', async () => {
+      const { rendered, onUnmountAutoFocus } = await setup()
+      rendered.getByTestId('elsewhere').focus()
+
+      await rendered.rerender({ open: false })
+      await afterUnmountAutoFocus()
+
+      expect(rendered.getByTestId('elsewhere')).toHaveFocus()
+      expect(onUnmountAutoFocus).toHaveBeenCalledTimes(1)
+      expect(onUnmountAutoFocus).toHaveReturnedWith(false)
+    })
+
+    it('should leave focus to a handler that prevents `unmountAutoFocus`', async () => {
+      const { rendered } = await setup(vi.fn((event: Event) => {
+        event.preventDefault()
+        return true
+      }))
+
+      await rendered.rerender({ open: false })
+      await afterUnmountAutoFocus()
+
+      expect(document.body).toHaveFocus()
+    })
+  })
+})
+
+describe('given a scope that unmounts before its mount effect has finished', () => {
+  const ActiveScope = defineComponent({
+    components: { FocusScope },
+    template: `<div>
+      <FocusScope trapped><input data-testid="inside" /></FocusScope>
+      <button data-testid="outside">outside</button>
+    </div>`,
+  })
+  const OtherScope = defineComponent({
+    components: { FocusScope },
+    template: `<FocusScope trapped><input /></FocusScope>`,
+  })
+
+  it('should leave the other scope trapping focus', async () => {
+    const active = render(ActiveScope)
+    await nextTick()
+    await nextTick()
+
+    // Unmount one microtask after mounting, while the effect still awaits `nextTick()`.
+    const other = render(OtherScope)
+    await Promise.resolve()
+    other.unmount()
+    await new Promise(resolve => setTimeout(resolve, 20))
+
+    const inside = active.getByTestId('inside') as HTMLInputElement
+    inside.focus()
+    active.getByTestId('outside').focus()
+    await nextTick()
+
+    expect(inside).toHaveFocus()
   })
 })

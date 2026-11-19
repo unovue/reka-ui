@@ -38,16 +38,18 @@ import { watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { PopperContent } from '@/Popper'
-import { useFocusGuards, useForwardExpose, useForwardProps } from '@/shared'
+import { useContentId, useContentMounted, useFocusGuards, useForwardExpose, useForwardProps } from '@/shared'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 
 const props = withDefaults(defineProps<PopoverContentImplPrivateProps>(), { present: true })
 const emits = defineEmits<PopoverContentImplEmits>()
 
 const forwarded = useForwardProps(reactiveOmit(props, 'trapFocus', 'disableOutsidePointerEvents', 'present'))
-const { forwardRef } = useForwardExpose()
+const { forwardRef, currentElement } = useForwardExpose()
 
 const rootContext = injectPopoverRootContext()
+useContentId(rootContext, currentElement)
+useContentMounted(rootContext, currentElement)
 useFocusGuards()
 
 // Kept-mounted content (`unmountOnHide: false`) never unmounts its FocusScope,
@@ -92,6 +94,7 @@ function handleUnmountAutoFocus(event: Event) {
         v-bind="forwarded"
         :id="rootContext.contentId"
         :ref="forwardRef"
+        scope="popover"
         :present="present"
         :data-state="rootContext.open.value ? 'open' : 'closed'"
         :aria-labelledby="rootContext.triggerId"

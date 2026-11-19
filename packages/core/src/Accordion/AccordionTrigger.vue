@@ -6,7 +6,7 @@ export interface AccordionTriggerProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { CollapsibleTrigger } from '@/Collapsible'
-import { useId } from '@/shared'
+import { useId, useTriggerId } from '@/shared'
 import { injectAccordionItemContext } from './AccordionItem.vue'
 
 import { injectAccordionRootContext } from './AccordionRoot.vue'
@@ -16,7 +16,7 @@ const props = defineProps<AccordionTriggerProps>()
 const rootContext = injectAccordionRootContext()
 const itemContext = injectAccordionItemContext()
 
-itemContext.triggerId ||= useId(undefined, 'reka-accordion-trigger')
+useTriggerId(itemContext, itemContext.currentElement, () => useId(undefined, 'reka-accordion-trigger'))
 function changeItem() {
   const triggerDisabled = rootContext.isSingle.value && itemContext.open.value && !rootContext.collapsible
   if (itemContext.disabled.value || triggerDisabled)

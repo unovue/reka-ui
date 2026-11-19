@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
+import { onBeforeUnmount, onMounted } from 'vue'
 import { useForwardExpose } from '@/shared'
 import { injectStepperItemContext } from './StepperItem.vue'
 </script>
@@ -12,6 +13,13 @@ export interface StepperTitleProps extends PrimitiveProps { }
 const props = withDefaults(defineProps<StepperTitleProps>(), { as: 'h4' })
 const itemContext = injectStepperItemContext()
 useForwardExpose()
+
+onMounted(() => {
+  itemContext.hasTitle.value = true
+})
+onBeforeUnmount(() => {
+  itemContext.hasTitle.value = false
+})
 </script>
 
 <template>

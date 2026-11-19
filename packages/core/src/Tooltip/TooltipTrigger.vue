@@ -1,5 +1,5 @@
 <script lang="ts">
-import { useForwardExpose, useId } from '@/shared'
+import { useForwardExpose, useId, useRenderedContentId } from '@/shared'
 
 export type TooltipTriggerDataState
   = | 'closed'
@@ -11,7 +11,7 @@ export interface TooltipTriggerProps extends PopperAnchorProps {}
 
 <script setup lang="ts">
 import type { PopperAnchorProps } from '@/Popper'
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { PopperAnchor } from '@/Popper'
 import {
   Primitive,
@@ -26,6 +26,7 @@ const rootContext = injectTooltipRootContext()
 const providerContext = injectTooltipProviderContext()
 
 rootContext.contentId ||= useId(undefined, 'reka-tooltip-content')
+const contentId = useRenderedContentId(rootContext)
 
 const { forwardRef, currentElement: triggerElement } = useForwardExpose()
 
@@ -50,14 +51,22 @@ watch(triggerElement, (el) => {
   rootContext.onTriggerChange(el)
 }, { immediate: true })
 
+let pointerUpTimer: ReturnType<typeof setTimeout> | undefined
 function handlePointerUp() {
-  setTimeout(() => {
+  pointerUpTimer = setTimeout(() => {
     isPointerDown.value = false
   }, 1)
 }
 
+// The listener is registered on the document and fires once, so a trigger that unmounts
+// mid-press would stay referenced by it until the next pointer release.
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerup', handlePointerUp)
+  clearTimeout(pointerUpTimer)
+})
+
 function handlePointerDown() {
-  if (rootContext.open && !rootContext.disableClosingTrigger.value) {
+  if (rootContext.open.value && !rootContext.disableClosingTrigger.value) {
     rootContext.onClose()
   }
   isPointerDown.value = true
@@ -102,17 +111,19 @@ function handleClick() {
 
 <template>
   <PopperAnchor
+    scope="tooltip"
     as-child
     :reference="reference ?? triggerElement"
   >
     <Primitive
       :ref="forwardRef"
       :aria-describedby="
-        rootContext.open.value ? rootContext.contentId : undefined
+        rootContext.open.value ? contentId : undefined
       "
       :data-state="rootContext.stateAttribute.value"
       :as="as"
       :as-child="props.asChild"
+      :type="$attrs.type ?? (!props.asChild && as === 'button' ? 'button' : undefined)"
       data-grace-area-trigger
       v-on="tooltipListeners"
     >

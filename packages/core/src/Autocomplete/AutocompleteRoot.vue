@@ -5,7 +5,7 @@ import type { Direction, GenericComponentInstance } from '@/shared/types'
 import { provideComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
 import { useComboboxContentPositioning } from '@/Combobox/useComboboxContentPositioning'
 import { usePrimitiveElement } from '@/Primitive'
-import { createContext, useDirection, useFilter } from '@/shared'
+import { createContext, defineReactiveIds, useDirection, useFilter } from '@/shared'
 
 export interface AutocompleteRootProps extends PrimitiveProps {
   /** The controlled value of the Autocomplete (the input text). Can be bound with `v-model`. */
@@ -45,6 +45,8 @@ export interface AutocompleteRootProps extends PrimitiveProps {
   ignoreFilter?: boolean
   /** When `true`, hover over item will trigger highlight */
   highlightOnHover?: boolean
+  /** When `true`, keyboard navigation will loop from last item to first, and vice versa. */
+  loop?: boolean
 }
 
 export type AutocompleteRootEmits = {
@@ -89,7 +91,7 @@ defineSlots<{
 }>()
 
 const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
-const { disabled, ignoreFilter, openOnFocus, openOnClick, dir: propDir, highlightOnHover } = toRefs(props)
+const { disabled, ignoreFilter, openOnFocus, openOnClick, dir: propDir, highlightOnHover, loop } = toRefs(props)
 
 const dir = useDirection(propDir)
 
@@ -214,7 +216,7 @@ defineExpose({
 })
 
 // Provide the Combobox context so all Combobox sub-components work inside Autocomplete
-provideComboboxRootContext({
+provideComboboxRootContext(defineReactiveIds({
   modelValue: contextModelValue as any,
   multiple: ref(false),
   disabled,
@@ -240,8 +242,9 @@ provideComboboxRootContext({
   openOnFocus,
   openOnClick,
   resetModelValueOnClear: ref(true),
+  getClearValue: () => null,
   unmountOnHide: ref(true),
-})
+}, ['contentId']))
 
 // Provide autocomplete-specific context
 provideAutocompleteRootContext({
@@ -250,7 +253,7 @@ provideAutocompleteRootContext({
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="combobox">
     <ListboxRoot
       ref="primitiveElement"
       v-bind="$attrs"
@@ -265,6 +268,7 @@ provideAutocompleteRootContext({
       :required="required"
       :disabled="disabled"
       :highlight-on-hover="highlightOnHover"
+      :loop="loop"
       @highlight="emits('highlight', $event as any)"
     >
       <slot

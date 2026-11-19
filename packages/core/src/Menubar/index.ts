@@ -9,6 +9,7 @@ export {
 } from './MenubarCheckboxItem.vue'
 export {
   default as MenubarContent,
+  type MenubarContentEmits,
   type MenubarContentProps,
 } from './MenubarContent.vue'
 export {

@@ -3,6 +3,13 @@
 <llm-exclude>
 <PropsTable :data="[
   {
+    'name': 'allowWrap',
+    'description': '<p>Whether a range whose end is earlier than its start is allowed, for a daily window that wraps\npast midnight such as <code>22:00</code> to <code>06:00</code>.</p>\n<p>Wrapping only applies when both values fall on the same calendar day, which is always the case\nfor <code>Time</code> values. When the values carry a date and the end is on an earlier day than the start,\nthe range stays invalid.</p>\n<p><code>minValue</code> and <code>maxValue</code> still bound the start and the end separately, so they cannot describe\na window that crosses midnight.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
+  },
+  {
     'name': 'as',
     'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
@@ -173,6 +180,7 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
+| `allowWrap` | Whether a range whose end is earlier than its start is allowed, for a daily window that wraps past midnight such as 22:00 to 06:00. Wrapping only applies when both values fall on the same calendar day, which is always the case for Time values. When the values carry a date and the end is on an earlier day than the start, the range stays invalid. minValue and maxValue still bound the start and the end separately, so they cannot describe a window that crosses midnight. | `boolean` | No | `false` |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultPlaceholder` | The default placeholder time | `TimeValue` | No | - |

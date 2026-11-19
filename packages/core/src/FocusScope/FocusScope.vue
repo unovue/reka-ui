@@ -1,6 +1,9 @@
 <script lang="ts">
+import type { FocusScopeNode } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import { getActiveElement, useForwardExpose } from '@/shared'
+
+const FOCUS_SCOPE_NODE_KEY = Symbol('FocusScopeNode')
 
 export type FocusScopeEmits = {
   /**
@@ -45,17 +48,22 @@ export interface FocusScopeProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { isClient } from '@vueuse/shared'
-import { nextTick, reactive, ref, watch, watchEffect } from 'vue'
+import { inject, nextTick, provide, reactive, ref, watch, watchEffect } from 'vue'
 import { Primitive } from '@/Primitive'
 import { createFocusScopesStack } from './stack'
 import {
   AUTOFOCUS_ON_MOUNT,
   AUTOFOCUS_ON_UNMOUNT,
+  containsComposed,
   EVENT_OPTIONS,
+  findVisible,
   focus,
   focusFirst,
+  focusScopeNodes,
   getTabbableCandidates,
   getTabbableEdges,
+  getTabStopsAfter,
+  hasFocusLeftScope,
 } from './utils'
 
 const props = withDefaults(defineProps<FocusScopeProps>(), {
@@ -75,6 +83,14 @@ const { currentRef, currentElement } = useForwardExpose()
 const lastFocusedElementRef = ref<HTMLElement | null>(null)
 const focusScopesStack = createFocusScopesStack()
 
+// Lets `hasFocusLeftScope` tell the scopes nested in this one from unrelated ones.
+const scopeNode: FocusScopeNode = { parent: inject<FocusScopeNode | undefined>(FOCUS_SCOPE_NODE_KEY, undefined) }
+provide(FOCUS_SCOPE_NODE_KEY, scopeNode)
+watch(currentElement, (container) => {
+  if (container)
+    focusScopeNodes.set(container, scopeNode)
+}, { immediate: true })
+
 const focusScope = reactive({
   paused: false,
   pause() {
@@ -91,6 +107,14 @@ watchEffect((cleanupFn) => {
   const container = currentElement.value
   if (!props.trapped)
     return
+
+  // Attach focus listeners to the scope's root node (a shadow root when
+  // teleported into one, otherwise the document). On `document`, focus events
+  // originating inside a shadow root are retargeted to the host, so
+  // `container.contains(target)` never matches and focus escapes the trap.
+  // -- related: https://github.com/unovue/reka-ui/issues/1667
+  const ownerDocument = container?.ownerDocument ?? document
+  const root = container ? (container.getRootNode() as Document | ShadowRoot) : ownerDocument
 
   function handleFocusIn(event: FocusEvent) {
     if (focusScope.paused || !container)
@@ -164,15 +188,32 @@ watchEffect((cleanupFn) => {
       focus(container)
   }
 
-  document.addEventListener('focusin', handleFocusIn)
-  document.addEventListener('focusout', handleFocusOut)
+  // A shadow root never sees a light-DOM `focusin`: when focus escapes to an
+  // element outside the shadow tree, the event fires on the owner document, not
+  // the root. So when the scope lives in a shadow root we also listen on the
+  // document and use a composed (deep) containment check, since `event.target`
+  // is retargeted to the shadow host at the document level.
+  function handleDocumentFocusIn(event: FocusEvent) {
+    if (focusScope.paused || !container)
+      return
+    const target = event.composedPath()[0] as HTMLElement | null
+    if (!containsComposed(container, target))
+      focus(lastFocusedElementRef.value, { select: true })
+  }
+
+  root.addEventListener('focusin', handleFocusIn as EventListener)
+  root.addEventListener('focusout', handleFocusOut as EventListener)
+  if (root !== ownerDocument)
+    ownerDocument.addEventListener('focusin', handleDocumentFocusIn as EventListener)
   const mutationObserver = new MutationObserver(handleMutations)
   if (container)
     mutationObserver.observe(container, { childList: true, subtree: true })
 
   cleanupFn(() => {
-    document.removeEventListener('focusin', handleFocusIn)
-    document.removeEventListener('focusout', handleFocusOut)
+    root.removeEventListener('focusin', handleFocusIn as EventListener)
+    root.removeEventListener('focusout', handleFocusOut as EventListener)
+    if (root !== ownerDocument)
+      ownerDocument.removeEventListener('focusin', handleDocumentFocusIn as EventListener)
     mutationObserver.disconnect()
   })
 })
@@ -198,8 +239,16 @@ function dispatchMountAutoFocus(container: HTMLElement, previouslyFocusedElement
 watchEffect(async (cleanupFn) => {
   const container = currentElement.value
 
+  // A cleanup registered after the `await` below never runs when the effect was stopped
+  // meanwhile (e.g. the scope unmounted within the same tick), which would leave this scope
+  // in the stack, paused others and retaining its container. So note the stop here, before it.
+  let isStale = false
+  cleanupFn(() => {
+    isStale = true
+  })
+
   await nextTick()
-  if (!container)
+  if (!container || isStale)
     return
   // A scope that mounts hidden (`present: false`, e.g. a closed Dialog with
   // `unmountOnHide: false`) must stay out of the scope stack: adding it would
@@ -227,6 +276,7 @@ watchEffect(async (cleanupFn) => {
       emits('unmountAutoFocus', ev)
     }
     container.addEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)
+    scopeNode.focusLeftAtUnmount = hasFocusLeftScope(container)
     container.dispatchEvent(unmountEvent)
 
     // Signal that blur events fired below are system-initiated (focus trap
@@ -234,7 +284,9 @@ watchEffect(async (cleanupFn) => {
     container.setAttribute('data-focus-scope-unmounting', '')
 
     setTimeout(() => {
-      if (!unmountEvent.defaultPrevented)
+      // Focus goes back to where it was, unless something else took it meanwhile, e.g. a
+      // layer opened by the click that closed this one.
+      if (!unmountEvent.defaultPrevented && !hasFocusLeftScope(container))
         focus(previouslyFocusedElement ?? document.body, { select: true })
 
       // we need to remove the listener after we `dispatchEvent`
@@ -242,6 +294,7 @@ watchEffect(async (cleanupFn) => {
 
       focusScopesStack.remove(focusScope)
       container.removeAttribute('data-focus-scope-unmounting')
+      scopeNode.focusLeftAtUnmount = undefined
     }, 0)
   })
 })
@@ -290,7 +343,8 @@ function handleKeyDown(event: KeyboardEvent) {
 
   if (isTabKey && focusedElement) {
     const container = event.currentTarget as HTMLElement
-    const [first, last] = getTabbableEdges(container)
+    const candidates = getTabbableCandidates(container)
+    const [first, last] = getTabbableEdges(container, candidates)
     const hasTabbableElementsInside = first && last
 
     // we can only wrap focus if we have tabbable edges
@@ -299,15 +353,12 @@ function handleKeyDown(event: KeyboardEvent) {
         event.preventDefault()
     }
     else {
-      if (!event.shiftKey && focusedElement === last) {
+      // Wrap when no visible tab stop is left in the tabbing direction.
+      const tabbingOrder = event.shiftKey ? [...candidates].reverse() : candidates
+      if (!findVisible(getTabStopsAfter(tabbingOrder, focusedElement), container)) {
         event.preventDefault()
         if (props.loop)
-          focus(first, { select: true })
-      }
-      else if (event.shiftKey && focusedElement === first) {
-        event.preventDefault()
-        if (props.loop)
-          focus(last, { select: true })
+          focus(event.shiftKey ? last : first, { select: true })
       }
     }
   }

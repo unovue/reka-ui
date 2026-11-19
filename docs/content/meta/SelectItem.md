@@ -42,6 +42,14 @@
     'type': '[event: SelectEvent&lt;T&gt;]'
   }
 ]" />
+
+<SlotsTable :data="[
+  {
+    'name': 'selected',
+    'description': '<p>Whether the item is currently selected</p>\n',
+    'type': 'boolean'
+  }
+]" />
 </llm-exclude>
 
 <llm-only>
@@ -61,5 +69,11 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `select` | Event handler called when the selecting item. <br> It can be prevented by calling event.preventDefault. | `[event: SelectEvent<T>]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `selected` | Whether the item is currently selected | `boolean` |
 
 </llm-only>

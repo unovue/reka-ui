@@ -1,0 +1,61 @@
+.FormRoot {
+  display: flex;
+  width: 256px;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.FieldRoot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.FieldLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+}
+
+.FieldControl {
+  border-radius: 6px;
+  border: 1px solid #404040;
+  background-color: #171717;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: white;
+  outline: none;
+}
+
+.FieldControl:focus {
+  box-shadow: 0 0 0 2px #10b981;
+}
+
+.FieldControl[data-invalid] {
+  border-color: #ef4444;
+}
+
+.FieldError {
+  font-size: 12px;
+  color: #ef4444;
+}
+
+.SubmitButton {
+  border-radius: 6px;
+  background-color: #047857;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.SubmitButton:hover {
+  background-color: #065f46;
+}
+
+.SuccessMessage {
+  font-size: 12px;
+  color: #10b981;
+}

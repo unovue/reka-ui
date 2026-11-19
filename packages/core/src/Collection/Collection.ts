@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import { computed, defineComponent, h, inject, markRaw, provide, ref, watch, watchEffect } from 'vue'
+import { computed, defineComponent, h, inject, markRaw, onBeforeUnmount, provide, ref, watch, watchEffect } from 'vue'
 import { Slot, usePrimitiveElement } from '@/Primitive'
 
 interface CollectionContext<ItemData = {}> {
@@ -60,6 +60,12 @@ export function useCollection<ItemData = {}>(options: { key?: string, isProvider
       const { primitiveElement, currentElement } = usePrimitiveElement()
       watch(currentElement, () => {
         context.collectionRef.value = currentElement.value
+      })
+      // The watcher stops on unmount, before the element ref clears, so a provider that
+      // outlives this slot would keep the detached element. Only clear our own registration.
+      onBeforeUnmount(() => {
+        if (context.collectionRef.value === currentElement.value)
+          context.collectionRef.value = undefined
       })
       return () => h(Slot, { ref: primitiveElement, ...attrs }, slots)
     },

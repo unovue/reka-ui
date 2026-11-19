@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { defineComponent, h, nextTick, reactive } from 'vue'
+import { defineComponent, h, inject, nextTick, reactive, ref } from 'vue'
 import { useCollection } from './Collection'
 
 // Characterization tests for `useCollection`.
@@ -212,6 +212,66 @@ describe('useCollection', () => {
     expect(collection.getItems()).toEqual([])
     expect(collection.getItems(true)).toEqual([])
     expect(collection.itemMapSize.value).toBe(0)
+
+    wrapper.unmount()
+  })
+})
+
+describe('given a Collection provider that outlives its CollectionSlot', () => {
+  function mountCollection() {
+    let context!: { collectionRef: { value: HTMLElement | undefined } }
+    const show = ref({ first: true, second: false })
+    const Slot = defineComponent({
+      props: { name: String },
+      setup(props) {
+        const { CollectionSlot } = useCollection({ key: 'release' })
+        context = inject('releaseCollectionProvider')!
+        return () => h(CollectionSlot, () => h('ul', { 'data-testid': props.name }))
+      },
+    })
+    const wrapper = mount(defineComponent({
+      setup() {
+        useCollection({ key: 'release', isProvider: true })
+        return () => h('div', [
+          show.value.first ? h(Slot, { key: 'first', name: 'first' }) : null,
+          show.value.second ? h(Slot, { key: 'second', name: 'second' }) : null,
+        ])
+      },
+    }), { attachTo: document.body })
+    return { wrapper, show, context: () => context }
+  }
+
+  it('should release the element when the CollectionSlot unmounts', async () => {
+    const { wrapper, show, context } = mountCollection()
+
+    for (let cycle = 0; cycle < 2; cycle++) {
+      await nextTick()
+      expect(context().collectionRef.value).toBe(wrapper.get('[data-testid=first]').element)
+
+      show.value.first = false
+      await nextTick()
+      expect(context().collectionRef.value).toBeUndefined()
+
+      show.value.first = true
+      await nextTick()
+    }
+
+    wrapper.unmount()
+  })
+
+  it('should keep a newer registration when an older CollectionSlot unmounts', async () => {
+    const { wrapper, show, context } = mountCollection()
+    await nextTick()
+
+    show.value.second = true
+    await nextTick()
+    await nextTick()
+    const second = wrapper.get('[data-testid=second]').element
+    expect(context().collectionRef.value).toBe(second)
+
+    show.value.first = false
+    await nextTick()
+    expect(context().collectionRef.value).toBe(second)
 
     wrapper.unmount()
   })
