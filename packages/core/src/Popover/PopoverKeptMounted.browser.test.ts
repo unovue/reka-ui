@@ -2,7 +2,7 @@ import type { VNode } from 'vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h, ref, Transition, vShow, withDirectives } from 'vue'
 import { DialogClose, DialogContent, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from '@/Dialog'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
 import { PopoverClose, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '.'
@@ -299,5 +299,33 @@ describe.each(CASES)('$name kept mounted with $keep', ({ keep, modal }) => {
     await settle()
     expect(get('kept-content')).toBeNull()
     expect(onCloseAutoFocus.mock.calls.length).toBe(emitted + 1)
+  })
+})
+
+describe('a force-mounted Popover hidden by the consumer', () => {
+  it('stays in place while its leave transition runs', async () => {
+    const open = ref(false)
+    let finishLeave: (() => void) | undefined
+    mount(defineComponent({
+      setup: () => () => h(PopoverRoot, { 'open': open.value, 'onUpdate:open': (value: boolean) => open.value = value }, () => [
+        h(PopoverTrigger, trigger('kept', 0), () => 'kept'),
+        h(PopoverPortal, null, () => h(Transition, { css: false, onLeave: (_el: Element, done: () => void) => finishLeave = done }, () =>
+          withDirectives(h(PopoverContent, { 'data-testid': 'kept-content', 'forceMount': true }, () => 'Content'), [[vShow, open.value]]))),
+      ]),
+    }), { attachTo: document.body, global: { stubs: { transition: false } } })
+
+    await userEvent.click(get('kept-trigger')!)
+    await expect.poll(() => get('kept-content')?.getAttribute('data-state')).toBe('open')
+    await settle()
+    const wrapper = get('kept-content')!.parentElement!
+    const shown = wrapper.getBoundingClientRect().top
+
+    open.value = false
+    await expect.poll(() => finishLeave).toBeDefined()
+    await settle()
+    expect(wrapper.style.display).not.toBe('none')
+    expect(wrapper.getBoundingClientRect().top).toBe(shown)
+    finishLeave!()
+    await expect.poll(() => wrapper.style.display).toBe('none')
   })
 })

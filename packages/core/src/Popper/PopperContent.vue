@@ -348,7 +348,9 @@ const computedMiddleware = computed(() => {
   ] as Middleware[]
 })
 
-// If provided custom reference, it will overwrite the default anchor element
+// If provided custom reference, it will overwrite the default anchor element.
+// Content kept mounted while closed drops it, which stops tracking the position but keeps the
+// last one, so that a leave transition run by the consumer (e.g. `v-show`) ends in place.
 const reference = computed(() => props.present ? (props.reference ?? rootContext.anchor.value) : undefined)
 
 const { floatingStyles, placement, isPositioned, middlewareData, update } = useFloating(
@@ -357,7 +359,6 @@ const { floatingStyles, placement, isPositioned, middlewareData, update } = useF
   {
     strategy: props.positionStrategy,
     placement: desiredPlacement,
-    open: () => props.present,
     whileElementsMounted: (...args) => {
       const cleanup = autoUpdate(...args, {
         layoutShift: !props.disableUpdateOnLayoutShift,
