@@ -58,7 +58,8 @@ export interface PinInputRootContext<Type extends PinInputType = 'text'> {
   disabled: Ref<boolean>
   isCompleted: ComputedRef<boolean>
   inputElements?: Ref<Set<HTMLInputElement>>
-  onInputElementChange: (el: HTMLInputElement) => void
+  getModelIndex: (el: HTMLInputElement, position: number) => number
+  onInputElementChange: (el: HTMLInputElement, index?: number) => void
   isNumericMode: ComputedRef<boolean>
 }
 
@@ -100,19 +101,34 @@ const modelValue = useVModel(props, 'modelValue', emits, {
 const currentModelValue = computed(() => Array.isArray(modelValue.value) ? [...modelValue.value] : [])
 
 const inputElements = ref<Set<HTMLInputElement>>(new Set())
-function onInputElementChange(el: HTMLInputElement) {
-  inputElements.value.add(el)
+const modelIndexByInput = new WeakMap<HTMLInputElement, number>()
+function getModelIndex(el: HTMLInputElement, position: number) {
+  return modelIndexByInput.get(el) ?? position
+}
+
+function onInputElementChange(el: HTMLInputElement, index?: number) {
+  if (index !== undefined)
+    modelIndexByInput.set(el, index)
+  // A conditional slot may mount between two inputs that are already registered.
+  const elements = [...inputElements.value, el]
+  elements.sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
+  inputElements.value = new Set(elements)
 }
 
 const isNumericMode = computed(() => props.type === 'number')
+const mountedValues = computed(() => {
+  const indices = new Set(Array.from(inputElements.value, getModelIndex))
+  return currentModelValue.value.filter((_, index) => indices.has(index)) as PinInputValue<Type>
+})
 const isCompleted = computed(() => {
-  const modelValues = currentModelValue.value.filter(i => !!i || (isNumericMode.value && i === 0))
-  return modelValues.length === inputElements.value.size
+  return mountedValues.value.length > 0
+    && mountedValues.value.length === inputElements.value.size
+    && mountedValues.value.every(value => !!value || (isNumericMode.value && value === 0))
 })
 
 watch(modelValue, () => {
   if (isCompleted.value)
-    emits('complete', modelValue.value)
+    emits('complete', mountedValues.value)
 }, { deep: true })
 
 providePinInputRootContext({
@@ -126,6 +142,7 @@ providePinInputRootContext({
   disabled,
   isCompleted,
   inputElements,
+  getModelIndex,
   onInputElementChange,
   isNumericMode,
 })
@@ -148,7 +165,7 @@ providePinInputRootContext({
       feature="focusable"
       aria-hidden="true"
       tabindex="-1"
-      :value="currentModelValue.join('')"
+      :value="mountedValues.join('')"
       :name="name ?? ''"
       :disabled="disabled"
       :required="required"

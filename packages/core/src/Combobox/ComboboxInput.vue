@@ -9,6 +9,17 @@ export type ComboboxInputEmits = ListboxFilterEmits
 export interface ComboboxInputProps extends ListboxFilterProps {
   /** The display value of input for selected item. Does not work with `multiple`. */
   displayValue?: (val: any) => string
+  /**
+   * Whether to move focus to the input when the combobox opens, whether it is opened
+   * by the trigger, the keyboard or the `open` prop. <br>
+   * Set to `false` to leave focus where it is, for example to keep the on-screen keyboard closed
+   * on touch devices when the input sits inside `ComboboxContent`. The user can still focus the
+   * input to type and navigate. While the combobox is open, `ArrowDown` / `ArrowUp` on a focused
+   * `ComboboxTrigger` move focus to the input. <br>
+   * This is separate from `autoFocus`, which only focuses the input when it mounts.
+   * @defaultValue true
+   */
+  focusOnOpen?: boolean
 }
 </script>
 
@@ -19,6 +30,7 @@ import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 const props = withDefaults(defineProps<ComboboxInputProps>(), {
   as: 'input',
+  focusOnOpen: true,
 })
 const emits = defineEmits<ComboboxInputEmits>()
 
@@ -30,6 +42,8 @@ const { primitiveElement, currentElement } = usePrimitiveElement()
 const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
 })
+
+watch(() => props.focusOnOpen, value => rootContext.focusInputOnOpen.value = value, { immediate: true })
 
 onMounted(() => {
   if (currentElement.value)

@@ -26,6 +26,14 @@ onMounted(() => {
   if (currentElement.value)
     rootContext.onTriggerElementChange(currentElement.value)
 })
+
+// With `focusOnOpen: false` opening leaves focus here, so let the arrow keys move it to the input.
+function handleKeyDown(ev: KeyboardEvent) {
+  if (!rootContext.open.value || rootContext.focusInputOnOpen.value || !rootContext.inputElement.value)
+    return
+  ev.preventDefault()
+  rootContext.inputElement.value.focus()
+}
 </script>
 
 <template>
@@ -43,6 +51,7 @@ onMounted(() => {
     :data-disabled="disabled ? '' : undefined"
     :aria-disabled="disabled ?? undefined"
     @click="rootContext.onOpenChange(!rootContext.open.value)"
+    @keydown.down.up="handleKeyDown"
   >
     <slot />
   </Primitive>
