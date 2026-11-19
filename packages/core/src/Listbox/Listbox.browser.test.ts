@@ -172,4 +172,39 @@ describe('given a Listbox whose value is set programmatically while focus is out
     expect(tabStop()).toEqual(['Option 1'])
     expect(window.scrollY).toBe(0)
   })
+
+  it.each([['non-virtual', false], ['virtual', true]])('%s: a later change made after focus leaves supersedes an earlier pending highlight', async (_, virtual) => {
+    const { selected } = mountListbox({ keepFocusOnValueChange: true, virtual })
+    await settle()
+    await focusInput()
+    await userEvent.tab()
+    expect(document.activeElement).toBe(option('Option 0'))
+
+    // The first change is made with focus inside, so its highlight would focus the item.
+    // Focus leaves before that highlight has run, and the second change must win.
+    selected.value = 'Option 4'
+    await nextTick()
+    input().focus()
+    selected.value = 'Option 8'
+    await expect.poll(highlighted).toEqual(['Option 8'])
+    await settle()
+
+    expect(document.activeElement).toBe(input())
+    expect(tabStop()).toEqual(['Option 8'])
+  })
+
+  it.each([[true], [undefined]])('moves focus to the first option when a virtual list is cleared with focus inside (keepFocusOnValueChange: %s)', async (keepFocusOnValueChange) => {
+    const { selected } = mountListbox({ keepFocusOnValueChange, virtual: true, count: 200 })
+    await settle()
+    await focusInput()
+    await userEvent.tab()
+
+    selected.value = 'Option 150'
+    await expect.poll(() => document.activeElement?.textContent).toBe('Option 150')
+    await settle()
+
+    selected.value = undefined
+    await expect.poll(() => document.activeElement?.textContent).toBe('Option 0')
+    expect(highlighted()).toEqual(['Option 0'])
+  })
 })

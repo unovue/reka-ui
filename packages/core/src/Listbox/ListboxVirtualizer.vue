@@ -176,7 +176,7 @@ const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map(
   }
 }))
 
-rootContext.virtualFocusHook.on(({ event, scroll, keepFocus }) => {
+rootContext.virtualFocusHook.on(({ event, scroll, keepFocus, isStale }) => {
   // `scroll` is `false` only for the initial mount highlight. There we set the
   // roving-tabindex target without focusing or scrolling, so a virtualized
   // Listbox below the fold doesn't pull the page to it on load. User-driven
@@ -194,11 +194,24 @@ rootContext.virtualFocusHook.on(({ event, scroll, keepFocus }) => {
     // only scrolls the listbox container, never the page.
     virtualizer.value.scrollToIndex(index, { align: 'start' })
     requestAnimationFrame(() => {
+      // A later value change under `keepFocusOnValueChange` has queued its own highlight.
+      if (isStale?.())
+        return
       const item = queryCheckedElement(parentEl.value)
       if (item) {
         const focus = event ? true : scroll ? undefined : false
         rootContext.changeHighlight(item, scroll, focus)
       }
+    })
+  }
+  else if (scroll && isStale) {
+    // `highlightFirstItem` under `keepFocusOnValueChange`, with a check for a later value change
+    // before the deferred highlight.
+    virtualizer.value.scrollToIndex(0)
+    requestAnimationFrame(() => {
+      const item = getItems().find(i => i.ref.dataset.disabled !== '')?.ref
+      if (item && !isStale())
+        rootContext.changeHighlight(item)
     })
   }
   else if (scroll) {
@@ -214,7 +227,7 @@ rootContext.virtualFocusHook.on(({ event, scroll, keepFocus }) => {
       virtualizer.value.scrollToIndex(0)
     requestAnimationFrame(() => {
       const item = getItems().find(i => i.ref.dataset.disabled !== '')?.ref
-      if (item)
+      if (item && !isStale?.())
         rootContext.changeHighlight(item, false, false)
     })
   }

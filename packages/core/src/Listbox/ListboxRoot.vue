@@ -17,7 +17,7 @@ type ListboxRootContext<T> = {
   loop: Ref<boolean>
   highlightedElement: Ref<HTMLElement | null>
   isVirtual: Ref<boolean>
-  virtualFocusHook: EventHook<{ event?: Event, scroll: boolean, keepFocus?: boolean }>
+  virtualFocusHook: EventHook<{ event?: Event, scroll: boolean, keepFocus?: boolean, isStale?: () => boolean }>
   virtualKeydownHook: EventHook<KeyboardEvent>
   virtualHighlightHook: EventHook<{ value: any, focus?: boolean }>
   by?: string | ((a: T, b: T) => boolean)
@@ -186,7 +186,7 @@ const highlightedElement = ref<HTMLElement | null>(null)
 const previousElement = ref<HTMLElement | null>(null)
 const isVirtual = ref(false)
 const isComposing = ref(false)
-const virtualFocusHook = createEventHook<{ event?: Event, scroll: boolean, keepFocus?: boolean }>()
+const virtualFocusHook = createEventHook<{ event?: Event, scroll: boolean, keepFocus?: boolean, isStale?: () => boolean }>()
 const virtualKeydownHook = createEventHook<KeyboardEvent>()
 const virtualHighlightHook = createEventHook<{ value: T, focus?: boolean }>()
 
@@ -419,8 +419,9 @@ function highlightSelected(event?: Event, scroll = true) {
 }
 
 // `keepFocus` is set for a programmatic value change under `keepFocusOnValueChange` while focus
-// is outside the listbox. It implies `scroll` is `false`.
-async function highlightSelectedItem(event: Event | undefined, scroll: boolean, keepFocus: boolean) {
+// is outside the listbox. It implies `scroll` is `false`. `isStale` is set under
+// `keepFocusOnValueChange`, and is `true` once a later value change has queued its own highlight.
+async function highlightSelectedItem(event: Event | undefined, scroll: boolean, keepFocus: boolean, isStale?: () => boolean) {
   // highlightSelected is called inside a watch with immediate set to true.
   // This results in code execution during SSR.
   // Ensure this code only runs in a browser environment, since it performs
@@ -428,12 +429,14 @@ async function highlightSelectedItem(event: Event | undefined, scroll: boolean, 
   if (!isClient)
     return
   await nextTick()
+  if (isStale?.())
+    return
   if (isVirtual.value) {
     // Trigger on nextTick for Virtualizer to be mounted.
     // `scroll` is `false` on the initial mount highlight, so the virtualizer sets
     // its roving-tabindex target without focusing/scrolling — otherwise a
     // virtualized Listbox below the fold would pull the page to it on load.
-    virtualFocusHook.trigger({ event, scroll, keepFocus })
+    virtualFocusHook.trigger({ event, scroll, keepFocus, isStale })
   }
   else {
     const collection = getCollectionItem()
@@ -456,6 +459,10 @@ async function highlightSelectedItem(event: Event | undefined, scroll: boolean, 
 // rather than via a shared flag released on a later tick.
 let hasHighlightedOnMount = false
 
+// Counts the value-change highlights queued under `keepFocusOnValueChange`. Each one decides
+// on focus when its change is made, so an earlier one must not run after a later change.
+let highlightGeneration = 0
+
 // watch for only programmatic changes
 watch(modelValue, () => {
   if (!isUserAction.value) {
@@ -466,8 +473,11 @@ watch(modelValue, () => {
     // scroll the page away from the focused element. Read the focus now, before the update
     // renders: it may remove the focused item, and the focus would leave with it.
     const keepFocus = scroll && !!props.keepFocusOnValueChange && !currentElement.value?.contains(getActiveElement())
+    const generation = props.keepFocusOnValueChange ? ++highlightGeneration : undefined
+    const isStale = generation === undefined ? undefined : () => generation !== highlightGeneration
     nextTick(() => {
-      highlightSelectedItem(undefined, scroll && !keepFocus, keepFocus)
+      if (!isStale?.())
+        highlightSelectedItem(undefined, scroll && !keepFocus, keepFocus, isStale)
     })
   }
 }, { immediate: true, deep: true })
