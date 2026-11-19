@@ -66,11 +66,19 @@ function isTemplateObject(value: unknown): boolean {
 // A string that isn't a plain tag name (`img src=x onerror=…`) ends up as raw markup in the opening tag,
 // and these tags run or load code from their content or attributes. `style` stays allowed, the viewports
 // render their own `<style>` through `Primitive`. Custom element names (they contain a `-`) may also use
-// `_` and `.`.
-const SAFE_TAG = /^(?!(?:script|iframe|frame|frameset|object|embed|applet|base|link|meta|noscript)$)[a-z](?:[a-z0-9-]*|[\w.-]*-[\w.-]*)$/i
+// `_` and `.`. Each pattern is linear, so a long `as` can't make the check backtrack.
+const TAG_NAME = /^[a-z][\w.-]*$/i
+const BLOCKED_TAG = /^(?:script|iframe|frame|frameset|object|embed|applet|base|link|meta|noscript)$/i
+const CUSTOM_ELEMENT_ONLY_CHAR = /[_.]/
+
+function isSafeTag(value: string): boolean {
+  if (!TAG_NAME.test(value) || BLOCKED_TAG.test(value))
+    return false
+  return value.includes('-') || !CUSTOM_ELEMENT_ONLY_CHAR.test(value)
+}
 
 function isUnsafeAs(value: unknown): boolean {
-  return typeof value === 'string' ? !SAFE_TAG.test(value) : isTemplateObject(value)
+  return typeof value === 'string' ? !isSafeTag(value) : isTemplateObject(value)
 }
 
 // Created on first use so the production build drops them together with the warning

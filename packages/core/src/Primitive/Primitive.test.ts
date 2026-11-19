@@ -330,6 +330,16 @@ describe('test Primitive functionalities', () => {
     }
   })
 
+  it('should reject a long invalid `as` without backtracking', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const as = `a${'-'.repeat(50_000)}!`
+    const start = performance.now()
+    const wrapper = mount(Primitive, { props: { as } })
+    expect(performance.now() - start).toBeLessThan(1000)
+    expect(wrapper.element.tagName).toBe('DIV')
+    vi.restoreAllMocks()
+  })
+
   it('should warn once per unsafe `as` value in development', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
