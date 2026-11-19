@@ -33,6 +33,7 @@ import { MenuRoot } from '@/Menu'
 const props = withDefaults(defineProps<DropdownMenuRootProps>(), {
   modal: true,
   open: undefined,
+  unmountOnHide: true,
 })
 const emit = defineEmits<DropdownMenuRootEmits>()
 
@@ -74,6 +75,7 @@ provideDropdownMenuRootContext(defineReactiveIds({
     v-model:open="open"
     :dir="dir"
     :modal="modal"
+    :unmount-on-hide="unmountOnHide"
   >
     <slot :open="open" />
   </MenuRoot>

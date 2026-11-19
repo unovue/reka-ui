@@ -17,8 +17,10 @@ export interface MenuSubContentProps extends Omit<MenuContentImplProps, 'disable
 </script>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Presence } from '@/Presence'
 import { useContentId, useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
+import { vShowWhenKept } from '@/shared/vShowWhenKept'
 import MenuContentImpl, { injectMenuContentContext } from './MenuContentImpl.vue'
 import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
 import { injectMenuSubContext } from './MenuSub.vue'
@@ -40,14 +42,25 @@ const { forwardRef, currentElement: subContentElement } = useForwardExpose()
 
 menuSubContext.contentId ||= useId(undefined, 'reka-menu-sub-content')
 useContentId(menuSubContext, subContentElement)
+
+// As in `MenuContent`: a submenu follows its root's `unmountOnHide`.
+const staysMounted = computed(() => !rootContext.unmountOnHide.value)
+const hidesWhenClosed = computed(() => staysMounted.value && !props.forceMount)
+const keptArg = computed(() => hidesWhenClosed.value ? 'kept' : null)
 </script>
 
 <template>
-  <Presence :present="forceMount || menuContext.open.value">
+  <Presence
+    v-slot="{ present }"
+    :present="staysMounted ? menuContext.open.value : (forceMount || menuContext.open.value)"
+    :force-mount="staysMounted"
+  >
     <MenuContentImpl
       v-bind="forwarded"
       :id="menuSubContext.contentId"
       :ref="forwardRef"
+      v-show-when-kept:[keptArg]="hidesWhenClosed ? present : true"
+      :present="staysMounted ? present : true"
       :aria-labelledby="menuSubContext.triggerId"
       align="start"
       :side="rootContext.dir.value === 'rtl' ? 'left' : 'right'"

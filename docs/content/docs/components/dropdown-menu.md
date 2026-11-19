@@ -872,6 +872,29 @@ const filteredItems = computed(() =>
 </template>
 ```
 
+### Keep the content mounted when closed
+
+By default the content is removed when the menu closes. Use `:unmount-on-hide="false"` on `DropdownMenuRoot` to keep it, and the content of its submenus, mounted and only hide it, for example to preserve the state of the elements inside it between openings.
+
+While closed, the hidden content does not act as an open menu: it does not trap focus, take part in keyboard navigation or typeahead, block pointer events outside of it, lock the body scroll or hide the rest of the page from assistive technologies. Focus still returns to the trigger when it closes.
+
+```vue line=6
+<script setup>
+import { DropdownMenuContent, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
+</script>
+
+<template>
+  <DropdownMenuRoot :unmount-on-hide="false">
+    <DropdownMenuTrigger>Open</DropdownMenuTrigger>
+    <DropdownMenuPortal>
+      <DropdownMenuContent>
+        …
+      </DropdownMenuContent>
+    </DropdownMenuPortal>
+  </DropdownMenuRoot>
+</template>
+```
+
 ## Accessibility
 
 Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button) and uses [roving tabindex](https://www.w3.org/WAI/ARIA/apg/practices/keyboard-interface/#kbd_roving_tabindex) to manage focus movement among menu items.
