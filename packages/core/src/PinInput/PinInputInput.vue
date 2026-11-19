@@ -14,7 +14,7 @@ export interface PinInputInputProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 
 const props = withDefaults(defineProps<PinInputInputProps>(), {
   as: 'input',
@@ -33,6 +33,13 @@ const NON_NUMBER_REG = /\D/g
 
 const { primitiveElement, currentElement } = usePrimitiveElement()
 
+const mountedPosition = computed(() => inputElements.value.indexOf(currentElement.value as HTMLInputElement))
+function focusNextInput() {
+  const position = mountedPosition.value
+  if (position >= 0)
+    inputElements.value[position + 1]?.focus()
+}
+
 const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing((event) => {
   const target = event.target as HTMLInputElement
   const value = event.data || target.value
@@ -49,9 +56,7 @@ const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposi
     }
     target.value = filtered
     updateModelValueAt(props.index, filtered)
-    const nextEl = inputElements.value[props.index + 1]
-    if (nextEl)
-      nextEl.focus()
+    focusNextInput()
     return
   }
 
@@ -63,9 +68,7 @@ const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposi
   target.value = value
   updateModelValueAt(props.index, value)
 
-  const nextEl = inputElements.value[props.index + 1]
-  if (nextEl)
-    nextEl.focus()
+  focusNextInput()
 })
 
 function handleInput(event: InputEvent) {
@@ -86,9 +89,7 @@ function handleInput(event: InputEvent) {
   target.value = event.data || target.value.slice(-1)
   updateModelValueAt(props.index, target.value)
 
-  const nextEl = inputElements.value[props.index + 1]
-  if (nextEl)
-    nextEl.focus()
+  focusNextInput()
 }
 
 function updatePlaceholder() {
@@ -133,10 +134,11 @@ function handleBackspace(event: KeyboardEvent) {
     updateModelValueAt(props.index, '')
   }
   else {
-    const prevEl = inputElements.value[props.index - 1]
+    const previousPosition = mountedPosition.value - 1
+    const prevEl = inputElements.value[previousPosition]
     if (prevEl) {
       prevEl.focus()
-      updateModelValueAt(props.index - 1, '')
+      updateModelValueAt(context.getModelIndex(prevEl, previousPosition), '')
     }
   }
 }
@@ -155,15 +157,15 @@ function handleDelete(event: KeyboardEvent) {
 function getFirstEmptyInputIndex() {
   if (!context.otp.value)
     return -1
-  return inputElements.value.findIndex((_, idx) =>
-    context.currentModelValue.value[idx] === ''
-    || context.currentModelValue.value[idx] === undefined,
-  )
+  return inputElements.value.findIndex((input, position) => {
+    const value = context.currentModelValue.value[context.getModelIndex(input, position)]
+    return value === '' || value === undefined
+  })
 }
 
 function getEarlierEmptyInput() {
   const firstEmptyInputIdx = getFirstEmptyInputIndex()
-  if (firstEmptyInputIdx !== -1 && firstEmptyInputIdx < props.index)
+  if (firstEmptyInputIdx !== -1 && firstEmptyInputIdx < mountedPosition.value)
     return inputElements.value[firstEmptyInputIdx]
   return undefined
 }
@@ -213,19 +215,22 @@ function handlePaste(event: ClipboardEvent) {
 
 function handleMultipleCharacter(values: string) {
   const tempModelValue = [...context.currentModelValue.value] as typeof context.currentModelValue.value
-  const initialIndex = values.length >= inputElements.value.length ? 0 : props.index
+  const initialIndex = values.length >= inputElements.value.length ? 0 : mountedPosition.value
+  if (initialIndex < 0)
+    return
   const lastIndex = Math.min(initialIndex + values.length, inputElements.value.length)
   for (let i = initialIndex; i < lastIndex; i++) {
     const input = inputElements.value[i]
+    const modelIndex = context.getModelIndex(input, i)
     const value = values[i - initialIndex]
     if (context.isNumericMode.value) {
       const num = Number.parseInt(value)
       if (Number.isNaN(num))
         continue
-      tempModelValue[i] = num
+      tempModelValue[modelIndex] = num
     }
     else {
-      tempModelValue[i] = value
+      tempModelValue[modelIndex] = value
     }
     input.focus()
   }
@@ -266,12 +271,13 @@ function updateModelValueAt(index: number, value: string) {
 
 watch(currentValue, updatePlaceholder)
 
-onMounted(() => {
-  context.onInputElementChange(currentElement.value as HTMLInputElement)
-})
-onUnmounted(() => {
-  context.inputElements?.value.delete(currentElement.value as HTMLInputElement)
-})
+watch([currentElement, () => props.index], ([element], _, onCleanup) => {
+  if (!element)
+    return
+  const input = element as HTMLInputElement
+  context.onInputElementChange(input, props.index)
+  onCleanup(() => context.inputElements?.value.delete(input))
+}, { flush: 'post' })
 </script>
 
 <template>
@@ -289,7 +295,7 @@ onUnmounted(() => {
     :disabled="disabled"
     :data-disabled="disabled ? '' : undefined"
     :data-complete="context.isCompleted.value ? '' : undefined"
-    :aria-label="`pin input ${index + 1} of ${inputElements.length}`"
+    :aria-label="mountedPosition < 0 ? 'pin input' : `pin input ${mountedPosition + 1} of ${inputElements.length}`"
     @input="handleInput($event as InputEvent)"
     @keydown.left.right.up.down.home.end="handleKeydown"
     @keydown.backspace="handleBackspace"
