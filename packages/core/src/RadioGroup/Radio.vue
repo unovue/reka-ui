@@ -91,7 +91,7 @@ function handleClick(event: MouseEvent) {
     :data-state="checked ? 'checked' : 'unchecked'"
     :data-disabled="disabled ? '' : undefined"
     :value="value"
-    :required="required"
+    :required="required ? '' : undefined"
     :name="name"
     v-bind="{ ...scopeIdAttrs, ...$attrs }"
     @click.stop="handleClick"

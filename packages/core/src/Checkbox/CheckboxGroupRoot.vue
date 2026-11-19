@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { RovingFocusGroupProps } from '@/RovingFocus'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
-import { computed, toRefs } from 'vue'
+import { computed, shallowReactive, toRefs } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
 import { createRekaContext, useDirection, useFormControl } from '@/shared'
 
@@ -22,6 +22,11 @@ export interface CheckboxGroupRootProps<T = AcceptableValue> extends Pick<Roving
    * about the limit. Style them with `[aria-disabled="true"]`.
    */
   max?: number | null
+  /**
+   * Every value a parent checkbox (`CheckboxRoot` with `parent`) controls. The parent is
+   * checked when all of them are in the model, unchecked when none are, and indeterminate otherwise.
+   */
+  allValues?: T[]
 }
 
 export type CheckboxGroupRootEmits<T = AcceptableValue> = {
@@ -29,11 +34,20 @@ export type CheckboxGroupRootEmits<T = AcceptableValue> = {
   'update:modelValue': [value: T[]]
 }
 
+interface CheckboxGroupItem {
+  value: () => AcceptableValue
+  disabled: () => boolean
+  id: () => string | undefined
+}
+
 interface CheckboxGroupRootContext {
   modelValue: Ref<AcceptableValue[]>
   rovingFocus: Ref<boolean>
   disabled: Ref<boolean>
   max: Ref<number | null | undefined>
+  allValues: Ref<AcceptableValue[] | undefined>
+  /** The mounted (non-parent) checkboxes, read by a parent checkbox. */
+  items: Set<CheckboxGroupItem>
 }
 
 export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
@@ -49,7 +63,7 @@ const props = withDefaults(defineProps<CheckboxGroupRootProps<T>>(), {
 })
 const emits = defineEmits<CheckboxGroupRootEmits<T>>()
 
-const { disabled, max, rovingFocus, dir: propDir } = toRefs(props)
+const { disabled, max, rovingFocus, allValues, dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
 
 const { primitiveElement, currentElement } = usePrimitiveElement()
@@ -73,6 +87,8 @@ provideCheckboxGroupRootContext({
   rovingFocus,
   disabled,
   max,
+  allValues,
+  items: shallowReactive(new Set()),
 })
 </script>
 

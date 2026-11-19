@@ -4,7 +4,7 @@ import type { CheckedState } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
-import { createRekaContext, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { createRekaContext, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose, useForwardScopeId, useId } from '@/shared'
 import { injectCheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 
 export interface CheckboxRootProps<TrueValue = boolean, FalseValue = TrueValue> extends PrimitiveProps, FormFieldProps {
@@ -14,6 +14,12 @@ export interface CheckboxRootProps<TrueValue = boolean, FalseValue = TrueValue> 
   modelValue?: NoInfer<TrueValue | FalseValue> | 'indeterminate' | null
   /** When `true`, prevents the user from interacting with the checkbox */
   disabled?: boolean
+  /**
+   * When `true` inside a `CheckboxGroupRoot`, the checkbox controls the values listed in the
+   * group's `allValues`: it shows their combined state and checks or unchecks them all.
+   * Disabled checkboxes keep their value. A parent checkbox doesn't submit a value of its own.
+   */
+  parent?: boolean
   /**
    * The value given as data when submitted with a `name`.
    *  @defaultValue "on"
@@ -43,16 +49,19 @@ interface CheckboxRootContext {
 
 export const [injectCheckboxRootContext, provideCheckboxRootContext]
   = createRekaContext<CheckboxRootContext>('CheckboxRoot')
+
+// Ids for checkboxes whose group gets `allValues` after they mount.
+let lateIdCount = 0
 </script>
 
 <script setup lang="ts" generic="TrueValue = true, FalseValue = false">
 import { isEqual } from 'ohash'
-import { computed, onBeforeUnmount, onMounted, useAttrs, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, shallowRef, useAttrs, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
-import { getState, isIndeterminate } from './utils'
+import { getParentState, getParentToggleValue, getState, isIndeterminate } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -79,6 +88,12 @@ defineSlots<{
 const { forwardRef, currentElement } = useForwardExpose()
 
 const checkboxGroupContext = injectCheckboxGroupRootContext(null)
+// A parent checkbox only means something inside a group.
+const isParent = computed(() => Boolean(checkboxGroupContext && props.parent))
+// While the group has `allValues`, its other checkboxes register for the parent and get an
+// id for its `aria-controls`. Without it, nothing registers and no id is generated.
+const isControlledChild = () => Boolean(checkboxGroupContext?.allValues.value && !props.parent)
+const generatedId = shallowRef(isControlledChild() ? useId(undefined, 'reka-checkbox') : undefined)
 
 // Optional Field participation: `injectFieldRootContext(null)` returns
 // `null` (instead of throwing) outside a `FieldRoot`, so every binding below
@@ -93,7 +108,8 @@ const modelValue = useVModel(props as any, 'modelValue', emits as any, {
 // An unchecked checkbox can't be added once its group has reached `max`.
 const isGroupMaxReached = computed(() => {
   const max = checkboxGroupContext?.max.value
-  if (isNullish(max))
+  // A parent can always uncheck, and checks only up to `max`.
+  if (isNullish(max) || isParent.value)
     return false
   const values = checkboxGroupContext!.modelValue.value ?? []
   return !isValueEqualOrExist(values, props.value) && values.length >= max
@@ -108,7 +124,7 @@ const disabled = computed(() => nativeDisabled.value || isGroupMaxReached.value)
 // Checkboxes inside a `CheckboxGroupRoot` share one Field, so none of them
 // takes the field's id (it would be duplicated) or acts as its control.
 const participatesAsControl = computed(() => Boolean(fieldContext) && !checkboxGroupContext)
-const resolvedId = computed(() => props.id ?? (participatesAsControl.value ? fieldContext?.fieldId.value : undefined))
+const resolvedId = computed(() => props.id ?? (participatesAsControl.value ? fieldContext?.fieldId.value : generatedId.value))
 const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
 // `required` is a plain (non-optional-default) `Boolean` prop, so Vue casts
 // it to `false` rather than `undefined` when omitted — `props.required` can
@@ -121,6 +137,8 @@ const isChecked = computed(() => isEqual(modelValue.value, props.trueValue))
 
 const checkboxState = computed<CheckedState>(() => {
   if (!isNullish(checkboxGroupContext?.modelValue.value)) {
+    if (isParent.value)
+      return getParentState(checkboxGroupContext.allValues.value ?? [], checkboxGroupContext.modelValue.value)
     return isValueEqualOrExist(checkboxGroupContext.modelValue.value, props.value)
   }
   else {
@@ -141,8 +159,17 @@ function handleClick() {
   const nextState = checkboxState.value !== true
 
   if (!isNullish(checkboxGroupContext?.modelValue.value)) {
-    const modelValueArray = [...(checkboxGroupContext.modelValue.value || [])]
-    if (isValueEqualOrExist(modelValueArray, props.value)) {
+    let modelValueArray = [...(checkboxGroupContext.modelValue.value || [])]
+    if (isParent.value) {
+      const disabledItems = getControlledItems().filter(item => item.disabled())
+      modelValueArray = getParentToggleValue(
+        checkboxGroupContext.allValues.value ?? [],
+        modelValueArray,
+        value => disabledItems.some(item => isEqual(item.value(), value)),
+        checkboxGroupContext.max.value,
+      )
+    }
+    else if (isValueEqualOrExist(modelValueArray, props.value)) {
       const index = modelValueArray.findIndex(i => isEqual(i, props.value))
       modelValueArray.splice(index, 1)
     }
@@ -226,6 +253,44 @@ onMounted(() => {
 })
 onBeforeUnmount(() => unregisterControl?.())
 
+function getControlledItems() {
+  const allValues = checkboxGroupContext!.allValues.value ?? []
+  return [...checkboxGroupContext!.items].filter(item => isValueEqualOrExist(allValues, item.value()))
+}
+
+const ariaControls = computed(() => isParent.value
+  ? getControlledItems().map(item => item.id()).filter(Boolean).join(' ') || undefined
+  : undefined)
+
+if (checkboxGroupContext) {
+  const items = checkboxGroupContext!.items
+  const item = {
+    value: () => props.value,
+    disabled: () => nativeDisabled.value,
+    id: () => resolvedId.value,
+  }
+  // Reused if `allValues` (or `parent`) changes back and forth.
+  let id = generatedId.value
+  onMounted(() => {
+    if (isControlledChild())
+      items.add(item)
+  })
+  // Changed after mount: no SSR to match, so a client-side id is enough. Its own prefix
+  // keeps it apart from `useId`'s ids.
+  watch(isControlledChild, (controlled) => {
+    if (controlled) {
+      id ??= `reka-checkbox-late-${++lateIdCount}`
+      generatedId.value = id
+      items.add(item)
+    }
+    else {
+      generatedId.value = undefined
+      items.delete(item)
+    }
+  })
+  onBeforeUnmount(() => items.delete(item))
+}
+
 provideCheckboxRootContext({
   disabled: nativeDisabled,
   state: checkboxState,
@@ -234,7 +299,7 @@ provideCheckboxRootContext({
 
 <template>
   <component
-    v-bind="{ ...fieldContext?.dataAttributes.value, ...$attrs, ...scopeIdAttrs, ...getFieldAriaAttrs() }"
+    v-bind="{ ...fieldContext?.dataAttributes.value, 'aria-controls': ariaControls, ...$attrs, ...scopeIdAttrs, ...getFieldAriaAttrs() }"
     :is="checkboxGroupContext?.rovingFocus.value ? RovingFocusItem : Primitive"
     :id="resolvedId"
     :ref="forwardRef"
