@@ -12,6 +12,25 @@ import { getDaysInMonth, getLastFirstDayOfWeek, getNextLastDayOfWeek } from '@/d
  */
 export const MAX_FOCUS_RETRIES = 24
 
+/**
+ * Tabindex for a calendar or picker cell trigger. The focused cell is the only
+ * tab stop; other cells get `-1` so keyboard navigation can still focus them.
+ * Skipped cells (disabled or outside the view) drop the attribute only when
+ * rendered as the default `div`. Any other tag, a component or `asChild` may
+ * render something natively focusable, so those cells keep `-1`.
+ */
+export function getCalendarCellTabindex(
+  isFocused: boolean | undefined,
+  isSkipped: boolean | undefined,
+  primitive: { as?: unknown, asChild?: boolean },
+): 0 | -1 | undefined {
+  if (isFocused)
+    return 0
+  if (isSkipped && primitive.as === 'div' && !primitive.asChild)
+    return undefined
+  return -1
+}
+
 interface FocusDateOptions {
   parentElement: HTMLElement
   target: DateValue

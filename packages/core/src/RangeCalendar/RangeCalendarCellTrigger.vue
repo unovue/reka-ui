@@ -9,7 +9,7 @@ import {
 } from '@internationalized/date'
 import { computed, nextTick } from 'vue'
 import { isBetweenInclusive, toDate } from '@/date'
-import { focusPagination, focusWeekBoundary, useKbd } from '@/shared'
+import { focusPagination, focusWeekBoundary, getCalendarCellTabindex, useKbd } from '@/shared'
 
 export interface RangeCalendarCellTriggerProps extends PrimitiveProps {
   day: DateValue
@@ -325,7 +325,7 @@ function handleArrowKey(e: KeyboardEvent) {
     :data-today="isDateToday ? '' : undefined"
     :data-outside-view="isOutsideView ? '' : undefined"
     :data-focused="isFocusedDate ? '' : undefined"
-    :tabindex="isFocusedDate ? 0 : isOutsideView || isDisabled ? undefined : -1"
+    :tabindex="getCalendarCellTabindex(isFocusedDate, isOutsideView || isDisabled, props)"
     @click="handleClick"
     @focusin="handleFocus"
     @mouseenter="handleFocus"

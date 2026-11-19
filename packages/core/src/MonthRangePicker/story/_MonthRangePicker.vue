@@ -1,9 +1,10 @@
 <script lang="ts" setup>
+import type { Component } from 'vue'
 import type { MonthRangePickerRootProps } from '..'
 import type { DateRange } from '@/shared/date'
 import { MonthRangePickerCell, MonthRangePickerCellTrigger, MonthRangePickerGrid, MonthRangePickerGridBody, MonthRangePickerGridRow, MonthRangePickerHeader, MonthRangePickerHeading, MonthRangePickerNext, MonthRangePickerPrev, MonthRangePickerRoot } from '..'
 
-const props = defineProps<{ pickerProps?: MonthRangePickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateRange) => void } }>()
+const props = defineProps<{ pickerProps?: MonthRangePickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateRange) => void }, triggerAs?: string | Component }>()
 </script>
 
 <template>
@@ -33,6 +34,7 @@ const props = defineProps<{ pickerProps?: MonthRangePickerRootProps, emits?: { '
             :date="month"
           >
             <MonthRangePickerCellTrigger
+              :as="props.triggerAs"
               :month="month"
               :data-testid="`month-${month.month}`"
             />

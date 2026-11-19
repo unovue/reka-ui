@@ -100,6 +100,15 @@ describe('given default Tree', () => {
     })
   })
 
+  describe('when holding `Shift` before typing a letter', async () => {
+    it('should ignore the named key and highlight text starting with r', async () => {
+      await content.trigger('keydown', { key: 'Shift', shiftKey: true })
+      await content.trigger('keydown', { key: 'R', shiftKey: true })
+      const item = items.find(i => i.text().startsWith('routes'))
+      expect(document.activeElement).toBe(item?.element)
+    })
+  })
+
   describe('when selection behavior `replace`', () => {
     beforeEach(async () => {
       await wrapper.setProps({ selectionBehavior: 'replace' })
@@ -593,7 +602,7 @@ describe('given a Tree with `loop`', () => {
             items,
             getKey: (item: any) => item.title,
             loop: true,
-          }, () => h(TreeVirtualizer as any, { textContent: (item: any) => item.value.title }, {
+          }, () => h(TreeVirtualizer as any, { textContent: (item: any) => item.title }, {
             default: ({ item }: any) => h(TreeItem as any, { ...item.bind, disabled: disabled.includes(item.index) }, { default: () => item.value.title }),
           })))
         },
@@ -632,6 +641,16 @@ describe('given a Tree with `loop`', () => {
 
       await press(kbd.ARROW_UP, { [modifier]: true })
       expect(document.activeElement?.getAttribute('data-index')).toBe('0')
+    })
+
+    it('should ignore named keys in typeahead', async () => {
+      const wrapper = mountVirtualTree(5)
+      await nextTick()
+      ;(wrapper.find('[data-index="0"]').element as HTMLElement).focus()
+
+      await press('Shift', { shiftKey: true })
+      await press('I', { shiftKey: true })
+      expect(document.activeElement?.getAttribute('data-index')).toBe('1')
     })
 
     it('should not wrap at the end of the rendered window', async () => {

@@ -256,7 +256,7 @@ function onKeydownTypeAhead(event: KeyboardEvent) {
       if (lastItem)
         changeHighlight(lastItem.ref)
     }
-    else if (!isMetaKey) {
+    else if (!isMetaKey && event.key.length === 1) {
       const el = handleTypeaheadSearch(event.key, getItems())
       if (el)
         changeHighlight(el)

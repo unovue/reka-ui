@@ -1,4 +1,5 @@
 import type { DateValue } from '@internationalized/date'
+import type { Component } from 'vue'
 import type { MonthRangePickerRootProps } from './MonthRangePickerRoot.vue'
 import type { DateRange } from '@/shared/date'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
@@ -7,6 +8,7 @@ import { render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, h } from 'vue'
 import { useTestKbd } from '@/shared'
 import MonthRangePicker from './story/_MonthRangePicker.vue'
 
@@ -476,5 +478,42 @@ describe('month range picker - keyboard navigation', () => {
     expect(getByTestId('heading')).toHaveTextContent('1981')
     expect(getByTestId('month-1')).toHaveAttribute('data-disabled')
     expect(getByTestId('month-2')).toHaveFocus()
+  })
+})
+
+const ButtonCell = defineComponent({
+  setup(_, { slots }) {
+    return () => h('button', { type: 'button' }, slots.default?.())
+  },
+})
+
+describe('month range picker - tabindex states', () => {
+  function renderPicker(triggerAs?: string | Component) {
+    return render(MonthRangePicker, {
+      props: {
+        pickerProps: {
+          modelValue: { start: new CalendarDate(2000, 1, 1), end: new CalendarDate(2000, 2, 1) },
+          isMonthDisabled: (date: DateValue) => date.month === 3,
+        },
+        triggerAs,
+      },
+    })
+  }
+
+  it('omits tabindex on disabled months rendered as the default div', () => {
+    const { getByTestId } = renderPicker()
+    expect(getByTestId('month-1')).toHaveAttribute('tabindex', '0')
+    expect(getByTestId('month-2')).toHaveAttribute('tabindex', '-1')
+    expect(getByTestId('month-3')).not.toHaveAttribute('tabindex')
+  })
+
+  it.each([
+    ['a button', 'button'],
+    ['a component that renders a button', ButtonCell],
+  ])('sets tabindex -1 on disabled months rendered as %s', (_, triggerAs) => {
+    const { getByTestId } = renderPicker(triggerAs)
+    expect(getByTestId('month-1')).toHaveAttribute('tabindex', '0')
+    expect(getByTestId('month-3').tagName).toBe('BUTTON')
+    expect(getByTestId('month-3')).toHaveAttribute('tabindex', '-1')
   })
 })

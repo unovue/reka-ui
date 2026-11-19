@@ -470,3 +470,36 @@ describe('focusScope', () => {
     })
   })
 })
+
+describe('given a scope that unmounts before its mount effect has finished', () => {
+  const ActiveScope = defineComponent({
+    components: { FocusScope },
+    template: `<div>
+      <FocusScope trapped><input data-testid="inside" /></FocusScope>
+      <button data-testid="outside">outside</button>
+    </div>`,
+  })
+  const OtherScope = defineComponent({
+    components: { FocusScope },
+    template: `<FocusScope trapped><input /></FocusScope>`,
+  })
+
+  it('should leave the other scope trapping focus', async () => {
+    const active = render(ActiveScope)
+    await nextTick()
+    await nextTick()
+
+    // Unmount one microtask after mounting, while the effect still awaits `nextTick()`.
+    const other = render(OtherScope)
+    await Promise.resolve()
+    other.unmount()
+    await new Promise(resolve => setTimeout(resolve, 20))
+
+    const inside = active.getByTestId('inside') as HTMLInputElement
+    inside.focus()
+    active.getByTestId('outside').focus()
+    await nextTick()
+
+    expect(inside).toHaveFocus()
+  })
+})

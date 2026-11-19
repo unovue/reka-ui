@@ -11,7 +11,7 @@ export interface TooltipTriggerProps extends PopperAnchorProps {}
 
 <script setup lang="ts">
 import type { PopperAnchorProps } from '@/Popper'
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { PopperAnchor } from '@/Popper'
 import {
   Primitive,
@@ -51,14 +51,22 @@ watch(triggerElement, (el) => {
   rootContext.onTriggerChange(el)
 }, { immediate: true })
 
+let pointerUpTimer: ReturnType<typeof setTimeout> | undefined
 function handlePointerUp() {
-  setTimeout(() => {
+  pointerUpTimer = setTimeout(() => {
     isPointerDown.value = false
   }, 1)
 }
 
+// The listener is registered on the document and fires once, so a trigger that unmounts
+// mid-press would stay referenced by it until the next pointer release.
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerup', handlePointerUp)
+  clearTimeout(pointerUpTimer)
+})
+
 function handlePointerDown() {
-  if (rootContext.open && !rootContext.disableClosingTrigger.value) {
+  if (rootContext.open.value && !rootContext.disableClosingTrigger.value) {
     rootContext.onClose()
   }
   isPointerDown.value = true
