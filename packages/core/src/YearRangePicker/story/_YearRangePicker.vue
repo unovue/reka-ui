@@ -1,9 +1,10 @@
 <script lang="ts" setup>
+import type { Component } from 'vue'
 import type { YearRangePickerRootProps } from '..'
 import type { DateRange } from '@/shared/date'
 import { YearRangePickerCell, YearRangePickerCellTrigger, YearRangePickerGrid, YearRangePickerGridBody, YearRangePickerGridRow, YearRangePickerHeader, YearRangePickerHeading, YearRangePickerNext, YearRangePickerPrev, YearRangePickerRoot } from '..'
 
-const props = defineProps<{ pickerProps?: YearRangePickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateRange) => void } }>()
+const props = defineProps<{ pickerProps?: YearRangePickerRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateRange) => void }, triggerAs?: string | Component }>()
 </script>
 
 <template>
@@ -33,6 +34,7 @@ const props = defineProps<{ pickerProps?: YearRangePickerRootProps, emits?: { 'o
             :date="year"
           >
             <YearRangePickerCellTrigger
+              :as="props.triggerAs"
               :year="year"
               :data-testid="`year-${year.year}`"
             />
