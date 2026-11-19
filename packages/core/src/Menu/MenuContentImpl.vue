@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { ComponentPublicInstance, Ref } from 'vue'
 import type {
   GraceIntent,
   Side,
@@ -92,6 +92,7 @@ export interface MenuRootContentTypeProps
 </script>
 
 <script setup lang="ts">
+import { unrefElement } from '@vueuse/core'
 import {
   onBeforeUnmount,
   ref,
@@ -116,8 +117,12 @@ import {
   LAST_KEYS,
 } from './utils'
 
-const props = withDefaults(defineProps<MenuContentImplProps>(), {
+const props = withDefaults(defineProps<MenuContentImplProps & {
+  /** Internal: whether a content kept mounted while closed (`unmountOnHide: false`) is shown. */
+  present?: boolean
+}>(), {
   ...PopperContentPropsDefaultValue,
+  present: true,
 })
 const emits = defineEmits<MenuContentImplPrivateEmits>()
 const menuContext = injectMenuContext()
@@ -125,8 +130,10 @@ const rootContext = injectMenuRootContext()
 
 const { trapFocus, disableOutsidePointerEvents, loop } = toRefs(props)
 
-useFocusGuards()
-useBodyScrollLock(disableOutsidePointerEvents.value)
+useFocusGuards(() => props.present)
+// A content kept mounted while closed (`unmountOnHide: false`) holds the lock only while shown.
+// Otherwise `present` never changes, and the lock is held from mount to unmount.
+const scrollLocked = useBodyScrollLock(props.present && disableOutsidePointerEvents.value)
 
 const searchRef = ref('')
 const timerRef = ref(0)
@@ -137,6 +144,7 @@ const lastPointerXRef = ref(0)
 const currentItemId = ref<string | null>(null)
 
 const rovingFocusGroupRef = ref<InstanceType<typeof RovingFocusGroup>>()
+const focusScopeRef = ref<ComponentPublicInstance>()
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
 // Lets the trigger of this menu know that its content is in the document.
 useContentMounted(menuContext, contentElement)
@@ -144,17 +152,50 @@ const { handleTypeaheadSearch } = useTypeahead()
 
 const highlightedElement = ref<HTMLElement>()
 
+// A content kept mounted while closed stays in the focus scope and layer stacks' place
+// but leaves them, so no unmount returns focus. Let the menu know once it is hidden, with
+// the element that had focus before it was shown, which an unmount would focus back.
+let focusedBeforeShow: HTMLElement | null = null
+watch(() => props.present, (present, wasPresent) => {
+  if (present) {
+    if (!wasPresent)
+      focusedBeforeShow = getActiveElement() as HTMLElement | null
+    scrollLocked.value = disableOutsidePointerEvents.value
+  }
+  else if (wasPresent) {
+    scrollLocked.value = false
+    // Opens afresh next time, as a remounted content would: from the first item, no search.
+    currentItemId.value = null
+    highlightedElement.value = undefined
+    searchRef.value = ''
+    menuContext.contentHidden({ container: unrefElement(focusScopeRef) as HTMLElement | undefined, focusedBeforeShow })
+    focusedBeforeShow = null
+  }
+}, { immediate: true })
+
+/**
+ * The items of this menu, without those of a submenu rendered inside it (without a
+ * portal), which a submenu kept mounted while closed leaves in the document.
+ */
+function getOwnItems() {
+  const content = contentElement.value
+  if (!content)
+    return []
+  const items = content.querySelectorAll<HTMLElement>('[data-reka-collection-item]:not([data-disabled])')
+  return Array.from(items).filter(item => item.closest('[data-reka-menu-content]') === content)
+}
+
 function onKeydownNavigation(event: KeyboardEvent) {
   const el = useArrowNavigation(
     event,
     (highlightedElement.value || getActiveElement()) as HTMLElement,
-    contentElement.value,
+    undefined,
     {
+      itemsArray: getOwnItems(),
       loop: loop.value,
       arrowKeyOptions: 'vertical',
       dir: rootContext?.dir.value,
       focus: false,
-      attributeName: '[data-reka-collection-item]:not([data-disabled])',
     },
   )
   if (el) {
@@ -234,13 +275,13 @@ function handleKeyDown(event: KeyboardEvent) {
   const el = useArrowNavigation(
     event,
     getActiveElement() as HTMLElement,
-    contentElement.value,
+    undefined,
     {
+      itemsArray: getOwnItems(),
       loop: loop.value,
       arrowKeyOptions: 'vertical',
       dir: rootContext?.dir.value,
       focus: true,
-      attributeName: '[data-reka-collection-item]:not([data-disabled])',
     },
   )
   if (el)
@@ -351,14 +392,17 @@ provideMenuContentContext({
 
 <template>
   <FocusScope
+    ref="focusScopeRef"
     as-child
     :trapped="trapFocus"
+    :present="present"
     @mount-auto-focus="handleMountAutoFocus"
     @unmount-auto-focus="emits('closeAutoFocus', $event)"
   >
     <DismissableLayer
       as-child
       :disable-outside-pointer-events="disableOutsidePointerEvents"
+      :present="present"
       @escape-key-down="emits('escapeKeyDown', $event)"
       @pointer-down-outside="emits('pointerDownOutside', $event)"
       @focus-outside="emits('focusOutside', $event)"
@@ -381,6 +425,7 @@ provideMenuContentContext({
         <PopperContent
           :ref="forwardRef"
           scope="menu"
+          :present="present"
           role="menu"
           :as="as"
           :as-child="asChild"
