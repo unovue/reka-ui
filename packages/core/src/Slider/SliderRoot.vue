@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { DataOrientation, Direction, FormFieldProps } from '../shared/types'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { clamp, createRekaContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
+import { clamp, createRekaContext, getDecimalCount, useDirection, useFormControl, useForwardExpose } from '@/shared'
 
 type ThumbAlignment = 'contain' | 'overflow'
 
@@ -72,7 +72,7 @@ import { computed, ref, toRaw, toRefs } from 'vue'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import SliderHorizontal from './SliderHorizontal.vue'
 import SliderVertical from './SliderVertical.vue'
-import { ARROW_KEYS, getClosestValueIndex, getDecimalCount, getNextSortedValues, hasMinStepsBetweenValues, PAGE_KEYS, roundValue } from './utils'
+import { ARROW_KEYS, getClosestValueIndex, getNextSortedValues, hasMinStepsBetweenValues, PAGE_KEYS, roundValue } from './utils'
 
 defineOptions({
   inheritAttrs: false,

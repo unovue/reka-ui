@@ -112,12 +112,6 @@ export function linearScale(input: readonly [number, number], output: readonly [
   }
 }
 
-export function getDecimalCount(value: number) {
-  const [coefficient, exponent = '0'] = String(value).split('e')
-  const fractionDigits = coefficient.split('.')[1]?.length ?? 0
-  return Math.max(0, fractionDigits - Number(exponent))
-}
-
 export function roundValue(value: number, decimalCount: number) {
   const rounder = 10 ** decimalCount
   const scaled = value * rounder
