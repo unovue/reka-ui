@@ -1,7 +1,7 @@
 import type { DateValue } from '@internationalized/date'
 import type { Component } from 'vue'
 import type { MonthPickerRootProps } from './MonthPickerRoot.vue'
-import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+import { CalendarDate, CalendarDateTime, HebrewCalendar, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
@@ -39,6 +39,39 @@ it('should pass axe accessibility tests', async () => {
 })
 
 describe('month picker', async () => {
+  it('focuses and selects the thirteenth month of a Hebrew leap year', async () => {
+    const date = new CalendarDate(new HebrewCalendar(), 5784, 12, 1)
+    const { getByTestId, user } = setup({ pickerProps: { defaultPlaceholder: date, locale: 'en-US-u-ca-hebrew' } })
+
+    const lastMonth = getByTestId('month-13')
+    getByTestId('month-12').focus()
+    await user.keyboard(kbd.ARROW_RIGHT)
+    expect(lastMonth).toHaveFocus()
+    await user.keyboard(kbd.ENTER)
+    expect(lastMonth).toHaveAttribute('data-selected')
+  })
+
+  it.each([
+    { navigation: 'default', prevPage: undefined },
+    { navigation: 'custom', prevPage: (date: DateValue) => date.subtract({ years: 1 }) },
+  ])('can return to a year whose last month contains minValue with $navigation navigation', async ({ prevPage }) => {
+    const calendar = new HebrewCalendar()
+    const { getByTestId, queryByTestId, user } = setup({
+      pickerProps: {
+        defaultPlaceholder: new CalendarDate(calendar, 5785, 1, 1),
+        minValue: new CalendarDate(calendar, 5784, 13, 15),
+        prevPage,
+      },
+    })
+
+    expect(queryByTestId('month-13')).toBeNull()
+    const prev = getByTestId('prev-button')
+    expect(prev).not.toHaveAttribute('data-disabled')
+    await user.click(prev)
+    expect(getByTestId('month-13')).not.toHaveAttribute('data-disabled')
+    expect(prev).toHaveAttribute('data-disabled')
+  })
+
   it('does not forward month prop as a DOM attribute', async () => {
     const { getByTestId } = setup({ pickerProps: { placeholder: calendarDate } })
     const janMonth = getByTestId('month-1')

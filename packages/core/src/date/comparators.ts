@@ -1,6 +1,6 @@
 import type { DateValue } from '@internationalized/date'
 import type { Matcher } from './types'
-import { CalendarDateTime, getDayOfWeek, getLocalTimeZone, parseDate, parseDateTime, parseZonedDateTime, toCalendar, toCalendarDate, ZonedDateTime } from '@internationalized/date'
+import { CalendarDateTime, getDayOfWeek, getLocalTimeZone, isSameMonth, parseDate, parseDateTime, parseZonedDateTime, toCalendar, toCalendarDate, ZonedDateTime } from '@internationalized/date'
 
 /**
  * Given a date string and a reference `DateValue` object, parse the
@@ -300,7 +300,17 @@ export function isYearBetweenInclusive(date: DateValue, start: DateValue, end: D
  * Get the number of months between two dates (inclusive).
  */
 export function getMonthsBetween(start: DateValue, end: DateValue): number {
-  return (end.year - start.year) * 12 + (end.month - start.month) + 1
+  // Step a month at a time so calendars with more than 12 months a year, and eras that
+  // start mid-year, are counted correctly.
+  let current = toCalendarDate(start)
+  const target = toCalendarDate(end)
+  const direction = current.compare(target) <= 0 ? 1 : -1
+  let steps = 0
+  while (!isSameMonth(current, target)) {
+    current = current.add({ months: direction })
+    steps++
+  }
+  return direction * steps + 1
 }
 
 /**
