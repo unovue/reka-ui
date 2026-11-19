@@ -462,19 +462,29 @@ const shift = ref({
 
 <template>
   <TimeRangeFieldRoot
+    v-slot="{ segments }"
     v-model="shift"
     allow-wrap
     locale="en-GB"
+    class="flex items-center"
   >
-    <div class="flex items-center gap-2">
-      <TimeRangeFieldInput part="hour" type="start" />
-      <span>:</span>
-      <TimeRangeFieldInput part="minute" type="start" />
-      <span class="mx-2">to</span>
-      <TimeRangeFieldInput part="hour" type="end" />
-      <span>:</span>
-      <TimeRangeFieldInput part="minute" type="end" />
-    </div>
+    <TimeRangeFieldInput
+      v-for="(item, index) in segments.start"
+      :key="`start-${item.part}-${index}`"
+      :part="item.part"
+      type="start"
+    >
+      {{ item.value }}
+    </TimeRangeFieldInput>
+    <span class="mx-2">to</span>
+    <TimeRangeFieldInput
+      v-for="(item, index) in segments.end"
+      :key="`end-${item.part}-${index}`"
+      :part="item.part"
+      type="end"
+    >
+      {{ item.value }}
+    </TimeRangeFieldInput>
   </TimeRangeFieldRoot>
 </template>
 ```
