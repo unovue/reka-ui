@@ -10,7 +10,7 @@ export interface CollapsibleContentProps extends PrimitiveProps {
 }
 
 export type CollapsibleContentEmits = {
-  contentFound: [void]
+  contentFound: []
 }
 </script>
 

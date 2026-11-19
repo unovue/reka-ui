@@ -23,10 +23,12 @@ const forwardedProps = computed(() => {
 
 // When `unmountOnHide` is `false` the content stays mounted on close, so
 // `close-auto-focus` never fires. Restore focus to the trigger manually once
-// the content is no longer present, unless the user interacted outside.
+// the content is no longer present, unless the user interacted outside or
+// something else took focus meanwhile, e.g. a layer opened while this one was
+// animating out.
 watch(() => props.present, (isPresent, wasPresent) => {
   if (!isPresent && wasPresent) {
-    if (!hasInteractedOutsideRef.value)
+    if (!hasInteractedOutsideRef.value && !hasFocusLeftScope(rootContext.contentElement.value ?? null))
       rootContext.triggerElement.value?.focus()
     hasInteractedOutsideRef.value = false
     hasPointerDownOutsideRef.value = false

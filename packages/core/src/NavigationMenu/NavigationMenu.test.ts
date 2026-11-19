@@ -1,7 +1,7 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import userEvent from '@testing-library/user-event'
 import { fireEvent } from '@testing-library/vue'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { useDebounceFn } from '@vueuse/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -469,5 +469,62 @@ describe('given NavigationMenuTrigger inside a form', () => {
     const { trigger } = mountInForm({ type: 'submit' })
 
     expect(trigger.attributes('type')).toBe('submit')
+  })
+})
+
+describe('given a NavigationMenuContent with outside interaction listeners', () => {
+  function mountWithListeners(preventClose = false) {
+    document.body.innerHTML = ''
+    const counts = { pointerDownOutside: 0, focusOutside: 0, interactOutside: 0 }
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('div', [
+        h('button', { id: 'outside' }, 'Outside'),
+        h(NavigationMenuRoot, () => h(NavigationMenuList, () => h(NavigationMenuItem, { value: 'learn' }, () => [
+          h(NavigationMenuTrigger, () => 'Learn'),
+          h(NavigationMenuContent, {
+            onPointerDownOutside: () => counts.pointerDownOutside++,
+            onFocusOutside: () => counts.focusOutside++,
+            onInteractOutside: (event: Event) => {
+              counts.interactOutside++
+              if (preventClose)
+                event.preventDefault()
+            },
+          }, () => h(NavigationMenuLink, { href: '#' }, () => 'Docs')),
+        ]))),
+      ]),
+    }), { attachTo: document.body })
+    return { wrapper, counts }
+  }
+
+  async function openMenu(wrapper: VueWrapper) {
+    await wrapper.get('[data-navigation-menu-trigger]').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('[data-dismissable-layer]')).not.toBeNull())
+    // The outside listeners are registered on the next macrotask
+    await sleep(0)
+  }
+
+  it.each([false, true])('should emit pointerDownOutside and interactOutside once per outside pointer down (preventClose=%s)', async (preventClose) => {
+    const { wrapper, counts } = mountWithListeners(preventClose)
+    await openMenu(wrapper)
+
+    document.getElementById('outside')!.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }))
+    await flushPromises()
+
+    expect(counts.pointerDownOutside).toBe(1)
+    expect(counts.interactOutside).toBe(1)
+    expect(wrapper.find('[data-dismissable-layer]').exists()).toBe(preventClose)
+    wrapper.unmount()
+  })
+
+  it('should emit focusOutside and interactOutside once per outside focus', async () => {
+    const { wrapper, counts } = mountWithListeners()
+    await openMenu(wrapper)
+
+    document.getElementById('outside')!.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    // Focus outside is reported a couple of ticks after the focus event
+    await vi.waitFor(() => expect(counts.focusOutside).toBeGreaterThan(0))
+
+    expect(counts).toMatchObject({ focusOutside: 1, interactOutside: 1 })
+    wrapper.unmount()
   })
 })

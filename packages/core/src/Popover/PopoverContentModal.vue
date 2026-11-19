@@ -28,16 +28,12 @@ useHideOthers(currentElement)
     disable-outside-pointer-events
     @close-auto-focus.prevent="
       (event) => {
-        emits('closeAutoFocus', event);
-
         // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
         if (!isRightClickOutsideRef && !hasFocusLeftScope(event.target)) rootContext.triggerElement.value?.focus();
       }
     "
     @pointer-down-outside="
       (event) => {
-        emits('pointerDownOutside', event);
-
         const originalEvent = event.detail.originalEvent;
         const ctrlLeftClick
           = originalEvent.button === 0 && originalEvent.ctrlKey === true;

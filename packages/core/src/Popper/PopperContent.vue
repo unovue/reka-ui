@@ -236,7 +236,7 @@ const props = withDefaults(defineProps<PopperContentProps & { scope?: PopperScop
   ...PopperContentPropsDefaultValue,
 })
 const emits = defineEmits<{
-  placed: [void]
+  placed: []
 }>()
 
 const rootContext = injectPopperRootContext(props.scope)
