@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import type { DateValue } from '@internationalized/date'
+import type { Component } from 'vue'
 import type { CalendarRootProps } from '..'
 import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridHead, CalendarGridRow, CalendarHeadCell, CalendarHeader, CalendarHeading, CalendarNext, CalendarPrev, CalendarRoot } from '..'
 
-const props = defineProps<{ calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void }, triggerAs?: string, triggerAsChild?: boolean }>()
+const props = defineProps<{ calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void }, triggerAs?: string | Component, triggerAsChild?: boolean }>()
 
 function pagingFunc(date: DateValue, sign: -1 | 1) {
   if (sign === -1)

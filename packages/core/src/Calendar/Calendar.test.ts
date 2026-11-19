@@ -1,10 +1,12 @@
 import type { DateValue } from '@internationalized/date'
+import type { Component } from 'vue'
 import type { CalendarRootProps } from './CalendarRoot.vue'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, h } from 'vue'
 import { useTestKbd } from '@/shared'
 import { handleCalendarInitialFocus } from '@/shared/date'
 import Calendar from './story/_Calendar.vue'
@@ -23,7 +25,7 @@ const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 
 const kbd = useTestKbd()
 
-function setup(props: { calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void }, triggerAs?: string, triggerAsChild?: boolean } = {}) {
+function setup(props: { calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void }, triggerAs?: string | Component, triggerAsChild?: boolean } = {}) {
   const user = userEvent.setup()
   const returned = render(Calendar, { props })
   const calendar = returned.getByTestId('calendar')
@@ -1470,6 +1472,12 @@ describe('calendar - edge cases', () => {
   })
 })
 
+const ButtonCell = defineComponent({
+  setup(_, { slots }) {
+    return () => h('button', { type: 'button' }, slots.default?.())
+  },
+})
+
 describe('calendar - tabindex states', () => {
   it('sets tabindex to 0 for focused date', async () => {
     const { getByTestId } = setup({
@@ -1566,6 +1574,32 @@ describe('calendar - tabindex states', () => {
 
     expect(getByTestId('date-1-15')).toHaveAttribute('tabindex', '-1')
     expect(getByTestId('date-12-31')).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('sets tabindex to -1 for disabled and outside view dates when rendered as a component', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+        isDateDisabled: (date: DateValue) => date.day === 15,
+      },
+      triggerAs: ButtonCell,
+    })
+
+    expect(getByTestId('date-1-15').tagName).toBe('BUTTON')
+    expect(getByTestId('date-1-15')).toHaveAttribute('tabindex', '-1')
+    expect(getByTestId('date-12-31')).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('omits tabindex on disabled and outside view dates rendered as the default div', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+        isDateDisabled: (date: DateValue) => date.day === 15,
+      },
+    })
+
+    expect(getByTestId('date-1-15')).not.toHaveAttribute('tabindex')
+    expect(getByTestId('date-12-31')).not.toHaveAttribute('tabindex')
   })
 
   it('sets tabindex to -1 for disabled and outside view dates when rendered as a child button', async () => {
