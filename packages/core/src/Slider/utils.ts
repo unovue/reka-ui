@@ -112,13 +112,10 @@ export function linearScale(input: readonly [number, number], output: readonly [
   }
 }
 
-export function getDecimalCount(value: number) {
-  return (String(value).split('.')[1] || '').length
-}
-
 export function roundValue(value: number, decimalCount: number) {
   const rounder = 10 ** decimalCount
-  return Math.round(value * rounder) / rounder
+  const scaled = value * rounder
+  return Number.isFinite(scaled) ? Math.round(scaled) / rounder : value
 }
 
 export type Direction = 'ltr' | 'rtl'
