@@ -134,7 +134,7 @@ function handleSlideEnd() {
 }
 
 function updateValues(value: number, atIndex: number, { commit } = { commit: false }) {
-  const decimalCount = getDecimalCount(step.value)
+  const decimalCount = Math.max(getDecimalCount(min.value), getDecimalCount(step.value))
   const snapToStep = roundValue(Math.round((value - min.value) / step.value) * step.value + min.value, decimalCount)
   const nextValue = clamp(snapToStep, min.value, max.value)
 
