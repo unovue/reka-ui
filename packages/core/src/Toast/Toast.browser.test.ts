@@ -332,6 +332,28 @@ describe('toast pause options, in a real browser', () => {
     await expect.poll(() => open.value, CLOSES).toBe(false)
   })
 
+  // When the window gets its focus back, the `focus` of the element that had it can come
+  // in a later task than the `focus` of the window. The window `focus` alone must not
+  // resume toasts that the focused action still holds.
+  it.each([
+    ['by default', {}],
+    ['when the blur pause is off', { disableWindowBlurPause: true }],
+  ])('stays paused by a focused action when the window is focused before the action, %s', async (_, props) => {
+    const { open, events, startCountdown } = mountPausableToast(props)
+    await expect.poll(() => el('[data-action]')).toBeTruthy()
+    el('[data-action]')!.focus()
+    window.dispatchEvent(new Event('blur'))
+    window.dispatchEvent(new Event('focus'))
+    expect(events).toEqual(['pause'])
+
+    await startCountdown()
+    await sleep(DURATION * 3)
+    expect(open.value).toBe(true)
+
+    el('[data-testid="outside"]')!.focus()
+    await expect.poll(() => open.value, CLOSES).toBe(false)
+  })
+
   it('closes on time while the window is blurred when the blur pause is off', async () => {
     const { open, startCountdown } = mountPausableToast({ disableWindowBlurPause: true })
     await expect.poll(() => el('[data-testid="toast"]')).toBeTruthy()
@@ -399,10 +421,10 @@ describe('toast window blur pause, when the window really loses focus', () => {
     expect(events).toEqual(['pause', 'resume', 'pause'])
     await startCountdown()
 
-    // The window gets its focus first, which resumes, and then the action, which pauses.
+    // The window gets its focus back with the action active again, which keeps the pause.
     await setWindowFocused(true)
-    expect(events).toEqual(['pause', 'resume', 'pause', 'resume', 'pause'])
     expect(document.activeElement).toBe(el('[data-action]'))
+    expect(events).toEqual(['pause', 'resume', 'pause'])
     expect(open.value).toBe(true)
 
     el('[data-testid="outside"]')!.focus()
@@ -436,8 +458,8 @@ describe('toast window blur pause, when the window really loses focus', () => {
 
     await setWindowFocused(true)
     expect(document.activeElement).toBe(action)
-    // The window gets its focus first, which resumes, and then the action, which pauses.
-    expect(events).toEqual(['pause', 'resume', 'pause'])
+    // The window gets its focus back with the action active again, which keeps the pause.
+    expect(events).toEqual(['pause'])
     expect(open.value).toBe(true)
 
     el('[data-testid="outside"]')!.focus()
