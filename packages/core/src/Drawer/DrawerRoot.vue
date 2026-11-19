@@ -5,7 +5,7 @@ import type {
   NestedSwipeProgressStore,
   SwipeDirection,
 } from './utils'
-import { createContext, defineReactiveIds, useId } from '@/shared'
+import { createRekaContext, defineReactiveIds, useId } from '@/shared'
 
 export type DrawerModal = boolean | 'trap-focus'
 
@@ -101,7 +101,7 @@ export interface DrawerRootContext {
 }
 
 export const [injectDrawerRootContext, provideDrawerRootContext]
-  = createContext<DrawerRootContext>('DrawerRoot')
+  = createRekaContext<DrawerRootContext>('DrawerRoot')
 </script>
 
 <script setup lang="ts">

@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useResizeObserver } from '@vueuse/core'
 import { useCollection } from '@/Collection'
-import { clamp, createContext, useForwardExpose } from '@/shared'
+import { clamp, createRekaContext, useForwardExpose } from '@/shared'
 
 interface SelectItemAlignedPositionContext {
   contentWrapper?: Ref<HTMLElement | undefined>
@@ -14,7 +14,7 @@ interface SelectItemAlignedPositionContext {
 export interface SelectItemAlignedPositionProps extends PrimitiveProps {}
 
 export const [injectSelectItemAlignedPositionContext, provideSelectItemAlignedPositionContext]
-  = createContext<SelectItemAlignedPositionContext>('SelectItemAlignedPosition')
+  = createRekaContext<SelectItemAlignedPositionContext>('SelectItemAlignedPosition')
 </script>
 
 <script setup lang="ts">

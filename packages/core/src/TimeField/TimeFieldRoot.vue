@@ -7,7 +7,7 @@ import type { DateStep, HourCycle, SegmentPart, SegmentValueObj, TimeValue } fro
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { getLocalTimeZone, isEqualDay, Time, toCalendarDateTime, today } from '@internationalized/date'
 import { isBefore } from '@/date'
-import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
+import { createRekaContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   createContent,
   getDefaultTime,
@@ -81,7 +81,7 @@ export type TimeFieldRootEmits = {
 }
 
 export const [injectTimeFieldRootContext, provideTimeFieldRootContext]
-  = createContext<TimeFieldRootContext>('TimeFieldRoot')
+  = createRekaContext<TimeFieldRootContext>('TimeFieldRoot')
 
 function convertValue(value: TimeValue, date: DateValue = today(getLocalTimeZone())) {
   if (value && 'day' in value) {

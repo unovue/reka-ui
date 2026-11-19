@@ -2,11 +2,12 @@ import type { RenderResult } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, onMounted, ref, useTemplateRef } from 'vue'
+import { defineComponent, nextTick, onMounted, reactive, ref, useTemplateRef } from 'vue'
 import { FocusScope } from '.'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '../Combobox'
 import { DialogContent, DialogRoot, DialogTitle, DialogTrigger } from '../Dialog'
 import { SelectContent, SelectItem, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '../Select'
+import { createFocusScopesStack } from './stack'
 
 const INNER_NAME_INPUT_LABEL = 'Name'
 const INNER_EMAIL_INPUT_LABEL = 'Email'
@@ -501,5 +502,39 @@ describe('given a scope that unmounts before its mount effect has finished', () 
     await nextTick()
 
     expect(inside).toHaveFocus()
+  })
+})
+
+describe('given a scope re-added to the stack while it is paused', () => {
+  // reactive like FocusScope's own scope object, so the deep stack ref keeps the same proxy
+  function scope() {
+    return reactive({
+      paused: false,
+      pause() {
+        this.paused = true
+      },
+      resume() {
+        this.paused = false
+      },
+    })
+  }
+
+  it('should resume it, since the scope at the top of the stack is the active one', () => {
+    const stack = createFocusScopesStack()
+    const parent = scope()
+    const nested = scope()
+    stack.add(parent)
+    stack.add(nested)
+    expect(parent.paused).toBe(true)
+
+    // The parent hides (`present: false`) and shows again while the nested scope stays open.
+    stack.remove(parent)
+    stack.add(parent)
+    expect(parent.paused).toBe(false)
+    expect(nested.paused).toBe(true)
+
+    stack.remove(nested)
+    expect(parent.paused).toBe(false)
+    stack.remove(parent)
   })
 })

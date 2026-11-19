@@ -232,7 +232,12 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<PopperContentProps & { scope?: PopperScope }>(), {
+const props = withDefaults(defineProps<PopperContentProps & {
+  scope?: PopperScope
+  /** Internal: kept-mounted content that is hidden should not track position. */
+  present?: boolean
+}>(), {
+  present: true,
   ...PopperContentPropsDefaultValue,
 })
 const emits = defineEmits<{
@@ -343,8 +348,10 @@ const computedMiddleware = computed(() => {
   ] as Middleware[]
 })
 
-// If provided custom reference, it will overwrite the default anchor element
-const reference = computed(() => props.reference ?? rootContext.anchor.value)
+// If provided custom reference, it will overwrite the default anchor element.
+// Content kept mounted while closed drops it, which stops tracking the position but keeps the
+// last one, so that a leave transition run by the consumer (e.g. `v-show`) ends in place.
+const reference = computed(() => props.present ? (props.reference ?? rootContext.anchor.value) : undefined)
 
 const { floatingStyles, placement, isPositioned, middlewareData, update } = useFloating(
   reference,

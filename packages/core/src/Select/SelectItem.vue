@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
-import { createContext, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
+import { createRekaContext, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
 
 interface SelectItemContext<T = AcceptableValue> {
   value: T
@@ -14,7 +14,7 @@ interface SelectItemContext<T = AcceptableValue> {
 }
 
 export const [injectSelectItemContext, provideSelectItemContext]
-  = createContext<SelectItemContext>('SelectItem')
+  = createRekaContext<SelectItemContext>('SelectItem')
 
 export type SelectEvent<T> = CustomEvent<{ originalEvent: PointerEvent | KeyboardEvent, value?: T }>
 

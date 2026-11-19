@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, DataOrientation, Direction, SingleOrMultipleProps, SingleOrMultipleType } from '@/shared/types'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
+import { createRekaContext, useDirection, useForwardExpose } from '@/shared'
 
 export interface AccordionRootProps<T = string | string[]>
   extends PrimitiveProps, SingleOrMultipleProps<T> {
@@ -63,7 +63,7 @@ export type AccordionRootContext<P extends AccordionRootProps> = {
 }
 
 export const [injectAccordionRootContext, provideAccordionRootContext]
-  = createContext<AccordionRootContext<AccordionRootProps>>('AccordionRoot')
+  = createRekaContext<AccordionRootContext<AccordionRootProps>>('AccordionRoot')
 </script>
 
 <script setup lang="ts" generic="T extends (string | string[]), ExplicitType extends SingleOrMultipleType">
