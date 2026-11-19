@@ -123,7 +123,10 @@ complete example to read alongside this section.
   default action of a key press, and layout or positioning. Drive them with
   `userEvent` from `vitest/browser`, which sends trusted events. Run
   `pnpm test:browser`; the first time, install the browser with
-  `pnpm --filter reka-ui exec playwright install chromium`.
+  `pnpm --filter reka-ui exec playwright install chromium`. Pick other engines
+  with `BROWSER_ENGINES`, for example `BROWSER_ENGINES=firefox,webkit pnpm test:browser src/Carousel`
+  after `pnpm --filter reka-ui exec playwright install firefox webkit`. CI runs the
+  whole suite in Chromium and the Carousel tests in Firefox and WebKit too.
 
 ## Documentation
 
