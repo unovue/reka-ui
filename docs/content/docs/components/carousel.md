@@ -510,7 +510,7 @@ Rotation follows the pattern: it pauses on hover, stops for good when keyboard f
 
 ### Labels
 
-The labels are in English. Pass your own as attributes: `aria-roledescription` on `CarouselRoot` and `CarouselItem`, and `aria-label` on `CarouselItem`, `CarouselPrevious`, `CarouselNext`, `CarouselIndicator` and `CarouselAutoplayToggle`, whose label follows the `playing` slot prop of the root. The item label is its position, built from the `v-for` index and the number of slides. Next to a `CarouselIndicatorGroup` the slides take their name from the tabs, so label the indicators instead.
+The built-in accessible labels are in English. Override them with attributes: `aria-roledescription` on `CarouselRoot` and `CarouselItem`, and `aria-label` on `CarouselItem`, `CarouselPrevious`, `CarouselNext`, `CarouselIndicator`, `CarouselIndicatorGroup` and `CarouselAutoplayToggle`, whose label follows the `playing` slot prop of the root. The item label is its position, built from the `v-for` index and the number of slides. Next to a `CarouselIndicatorGroup` the slides take their name from the tabs, so label the indicators instead.
 
 ```vue
 <template>
