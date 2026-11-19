@@ -10,8 +10,10 @@ function createHandle(left: number) {
   return element
 }
 
+const registered = new Set<() => void>()
+
 function register(element: HTMLElement, setResizeHandlerState: SetResizeHandlerState = () => {}) {
-  return registerResizeHandle(
+  const unregister = registerResizeHandle(
     `handle-${element.getBoundingClientRect().left}`,
     element,
     ref('horizontal'),
@@ -19,10 +21,19 @@ function register(element: HTMLElement, setResizeHandlerState: SetResizeHandlerS
     ref(undefined),
     setResizeHandlerState,
   )
+  const cleanup = () => {
+    if (registered.delete(cleanup))
+      unregister()
+  }
+  registered.add(cleanup)
+  return cleanup
 }
 
 describe('given a resize handle that unmounts while it is being dragged', () => {
+  // Runs even when an assertion fails, so a leftover handle or pointer session can't leak into later tests
   afterEach(() => {
+    window.dispatchEvent(new MouseEvent('mouseup', { clientX: 5, clientY: 5 }))
+    registered.forEach(cleanup => cleanup())
     document.body.innerHTML = ''
     document.head.querySelectorAll('style').forEach(style => style.remove())
   })
@@ -31,16 +42,13 @@ describe('given a resize handle that unmounts while it is being dragged', () => 
     const dragged = createHandle(0)
     const other = createHandle(100)
     const unregisterDragged = register(dragged)
-    const unregisterOther = register(other)
+    register(other)
 
     document.body.dispatchEvent(new MouseEvent('mousedown', { clientX: 5, clientY: 5, bubbles: true }))
     unregisterDragged()
     document.body.dispatchEvent(new MouseEvent('mousemove', { clientX: 5, clientY: 5, bubbles: true }))
 
     expect(document.head.querySelectorAll('style')).toHaveLength(0)
-
-    window.dispatchEvent(new MouseEvent('mouseup', { clientX: 5, clientY: 5 }))
-    unregisterOther()
   })
 
   it('should let the next handle start a drag on its first mousedown when it was the only one', () => {
@@ -50,15 +58,12 @@ describe('given a resize handle that unmounts while it is being dragged', () => 
     unregisterDragged()
 
     const states: string[] = []
-    const unregisterNext = register(createHandle(0), (action, isActive) => {
+    register(createHandle(0), (action, isActive) => {
       states.push(`${action}:${isActive}`)
     })
 
     document.body.dispatchEvent(new MouseEvent('mousedown', { clientX: 5, clientY: 5, bubbles: true }))
 
     expect(states).toContain('down:true')
-
-    window.dispatchEvent(new MouseEvent('mouseup', { clientX: 5, clientY: 5 }))
-    unregisterNext()
   })
 })
