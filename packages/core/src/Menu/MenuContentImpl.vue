@@ -13,7 +13,7 @@ import type { PopperContentProps } from '@/Popper'
 import type { RovingFocusGroupEmits } from '@/RovingFocus'
 
 import {
-  createContext,
+  createRekaContext,
   getActiveElement,
   useArrowNavigation,
   useContentMounted,
@@ -39,7 +39,7 @@ export interface MenuContentContext {
 }
 
 export const [injectMenuContentContext, provideMenuContentContext]
-  = createContext<MenuContentContext>('MenuContent')
+  = createRekaContext<MenuContentContext>('MenuContent')
 
 export interface MenuContentImplPrivateProps {
   /**

@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { FieldValidateFn, FieldValidationMode, FieldValidityState } from './useFieldValidation'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardExpose, useId } from '@/shared'
+import { createRekaContext, useForwardExpose, useId } from '@/shared'
 
 export interface FieldRootProps extends PrimitiveProps {
   /**
@@ -146,7 +146,7 @@ export interface FieldRootContext {
 }
 
 export const [injectFieldRootContext, provideFieldRootContext]
-  = createContext<FieldRootContext>('FieldRoot')
+  = createRekaContext<FieldRootContext>('FieldRoot')
 </script>
 
 <script setup lang="ts">

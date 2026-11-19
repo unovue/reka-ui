@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Direction } from '@/shared/types'
-import { createContext, getActiveElement, useDirection, useSelectionBehavior, useTypeahead } from '@/shared'
+import { createRekaContext, getActiveElement, useDirection, useSelectionBehavior, useTypeahead } from '@/shared'
 import { flatten } from './utils'
 
 export interface TreeRootProps<T = Record<string, any>, U extends Record<string, any> = Record<string, any>, M extends boolean = false> extends PrimitiveProps {
@@ -75,7 +75,7 @@ export type FlattenedItem<T> = {
   }
 }
 
-export const [injectTreeRootContext, provideTreeRootContext] = createContext<TreeRootContext<any>>('TreeRoot')
+export const [injectTreeRootContext, provideTreeRootContext] = createRekaContext<TreeRootContext<any>>('TreeRoot')
 </script>
 
 <script setup lang="ts" generic="T extends Record<string, any>, U extends Record<string, any>, M extends boolean = false">

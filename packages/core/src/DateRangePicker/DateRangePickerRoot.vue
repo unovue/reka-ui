@@ -8,7 +8,7 @@ import type { DateRange, DateStep, Granularity, HourCycle } from '@/shared/date'
 
 import type { Direction } from '@/shared/types'
 import { getWeekStartsOn } from '@/date'
-import { createContext, useDirection, useLocale } from '@/shared'
+import { createRekaContext, useDirection, useLocale } from '@/shared'
 import { getDefaultDate } from '@/shared/date'
 import { PopoverRoot } from '..'
 
@@ -65,7 +65,7 @@ export type DateRangePickerRootEmits = PopoverRootEmits & {
 }
 
 export const [injectDateRangePickerRootContext, provideDateRangePickerRootContext]
-  = createContext<DateRangePickerRootContext>('DateRangePickerRoot')
+  = createRekaContext<DateRangePickerRootContext>('DateRangePickerRoot')
 </script>
 
 <script setup lang="ts">

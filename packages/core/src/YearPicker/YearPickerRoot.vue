@@ -6,7 +6,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { Direction } from '@/shared/types'
 import { focusedDateValue, isSameDateSelection, isSameYear } from '@/date'
-import { createContext, useDirection, useId, useLocale } from '@/shared'
+import { createRekaContext, useDirection, useId, useLocale } from '@/shared'
 import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
 import { useYearPicker, useYearPickerState } from './useYearPicker'
 
@@ -90,7 +90,7 @@ export type YearPickerRootEmits = {
 }
 
 export const [injectYearPickerRootContext, provideYearPickerRootContext]
-  = createContext<YearPickerRootContext>('YearPickerRoot')
+  = createRekaContext<YearPickerRootContext>('YearPickerRoot')
 </script>
 
 <script setup lang="ts">

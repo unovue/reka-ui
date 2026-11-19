@@ -5,7 +5,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import { useMutationObserver, useVModel } from '@vueuse/core'
 import { computed, nextTick, ref, toRefs, watch, watchPostEffect } from 'vue'
 import { Primitive } from '@/Primitive'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
+import { createRekaContext, useDirection, useForwardExpose } from '@/shared'
 
 export interface StepperRootContext {
   modelValue: Ref<number | undefined>
@@ -45,7 +45,7 @@ export type StepperRootEmits = {
 }
 
 export const [injectStepperRootContext, provideStepperRootContext]
-  = createContext<StepperRootContext>('StepperRoot')
+  = createRekaContext<StepperRootContext>('StepperRoot')
 </script>
 
 <script setup lang="ts">

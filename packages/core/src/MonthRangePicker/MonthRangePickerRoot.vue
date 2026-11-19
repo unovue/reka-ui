@@ -8,7 +8,7 @@ import type { DateRange } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { compareYearMonth, isSameYearMonth } from '@/date'
 import { useMonthPicker } from '@/MonthPicker/useMonthPicker'
-import { createContext, useDirection, useId, useKbd, useLocale } from '@/shared'
+import { createRekaContext, useDirection, useId, useKbd, useLocale } from '@/shared'
 import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
 import { useRangeMonthPickerState } from './useRangeMonthPicker'
 
@@ -105,7 +105,7 @@ export type MonthRangePickerRootEmits = {
 }
 
 export const [injectMonthRangePickerRootContext, provideMonthRangePickerRootContext]
-  = createContext<MonthRangePickerRootContext>('MonthRangePickerRoot')
+  = createRekaContext<MonthRangePickerRootContext>('MonthRangePickerRoot')
 </script>
 
 <script setup lang="ts">
