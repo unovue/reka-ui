@@ -28,13 +28,16 @@ const { forwardRef } = useForwardExpose()
 <template>
   <Presence
     v-if="rootContext.modal.value && (!isNested || forceRender)"
-    :present="forceMount || rootContext.open.value"
+    v-slot="{ present }"
+    :present="rootContext.open.value"
+    :force-mount="forceMount"
   >
     <DrawerOverlayImpl
       v-bind="$attrs"
       :ref="forwardRef"
       :as="as"
       :as-child="asChild"
+      :present="forceMount ? present : true"
     >
       <slot />
     </DrawerOverlayImpl>

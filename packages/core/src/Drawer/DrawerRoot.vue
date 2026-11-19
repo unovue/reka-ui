@@ -95,6 +95,8 @@ export interface DrawerRootContext {
   triggerElement: Ref<HTMLElement | undefined>
   contentElement: Ref<HTMLElement | undefined>
   viewportElement: Ref<HTMLElement | undefined>
+  /** Whether a `DrawerOverlay` is present, which is what locks body scroll. */
+  overlayPresent: Ref<boolean>
   contentId: string
   titleId: string
   descriptionId: string
@@ -144,6 +146,7 @@ const { modal, swipeDirection, snapPoints, snapToSequentialPoints } = toRefs(pro
 const triggerElement = ref<HTMLElement>()
 const contentElement = ref<HTMLElement>()
 const viewportElement = ref<HTMLElement>()
+const overlayPresent = ref(false)
 const popupHeight = ref(0)
 const frontmostHeight = ref(0)
 const hasNestedDrawer = ref(false)
@@ -233,6 +236,7 @@ provideDrawerRootContext(defineReactiveIds({
   triggerElement,
   contentElement,
   viewportElement,
+  overlayPresent,
   contentId,
   titleId,
   descriptionId,

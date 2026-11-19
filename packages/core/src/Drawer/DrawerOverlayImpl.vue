@@ -5,22 +5,28 @@ export interface DrawerOverlayImplProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useBodyScrollLock, useForwardExpose } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { DRAWER_CSS_VARS } from './utils'
 
-defineProps<DrawerOverlayImplProps>()
+const props = withDefaults(defineProps<DrawerOverlayImplProps & {
+  /** Whether the overlay is open or still animating out. A force-mounted overlay stays mounted while closed. */
+  present?: boolean
+}>(), {
+  present: true,
+})
 const rootContext = injectDrawerRootContext()
 
-// Only lock body scroll while the drawer is actually open. With `forceMount`,
-// the overlay may stay mounted while closed — unconditional lock would keep
-// the page scroll blocked.
-const locked = useBodyScrollLock(rootContext.open.value)
-watch(() => rootContext.open.value, (open) => {
-  locked.value = open
-}, { immediate: true })
+// Lock body scroll for as long as the overlay is present, including its exit animation.
+const locked = useBodyScrollLock(props.present)
+watch(() => props.present, val => locked.value = val)
+// The content reads this to hold the lock for as long as it is still animating out.
+// An overlay that is kept mounted is told it is present a moment after the drawer opens,
+// and it counts from the opening on, so that the content never sees an open drawer without it.
+watch(() => props.present || rootContext.open.value, val => rootContext.overlayPresent.value = val, { immediate: true })
+onBeforeUnmount(() => rootContext.overlayPresent.value = false)
 
 useForwardExpose()
 

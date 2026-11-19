@@ -168,8 +168,8 @@ describe.each(CASES)('given a force-mounted Drawer with modal $modal (overlay: $
     if (exit) {
       await settle()
       expect(get('content')!.getAnimations()).toHaveLength(1)
-      // Still on screen: still the top layer until it has finished leaving.
-      expect(document.body.style.pointerEvents).toBe(modal === true ? 'none' : '')
+      // Still on screen: still the top layer, and with an overlay still scroll locked, until it has finished leaving.
+      expect(document.body.style.pointerEvents).toBe(blocksPage ? 'none' : '')
       finishExit()
     }
     await settle()

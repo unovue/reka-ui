@@ -31,11 +31,11 @@ export interface DrawerContentImplProps extends DismissableLayerProps {
 <script setup lang="ts">
 import type { SwipeDirection } from './utils'
 import { useResizeObserver } from '@vueuse/core'
-import { computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { focus } from '@/FocusScope/utils'
-import { isHTMLElement, useContentId, useContentMounted, useForwardExpose } from '@/shared'
+import { isHTMLElement, useBodyScrollLock, useContentId, useContentMounted, useForwardExpose } from '@/shared'
 import { useDrawerSnapPoints } from './composables/useDrawerSnapPoints'
 import { useSwipeDismiss } from './composables/useSwipeDismiss'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
@@ -322,24 +322,39 @@ function onMountAutoFocus(event: Event) {
 // opening that is interrupted by a close (or the reverse) reports nothing.
 let cancelOpenCompleteWait: (() => void) | undefined
 // Whether a close has started and has not been reported yet.
-let isClosePending = false
+const isClosePending = ref(false)
 
 function completeOpenChange(isOpen: boolean) {
   cancelOpenCompleteWait = undefined
-  isClosePending = false
+  isClosePending.value = false
   rootContext.notifyOpenComplete(isOpen)
 }
 
 function waitForOpenComplete(isOpen: boolean) {
   cancelOpenCompleteWait?.()
   cancelOpenCompleteWait = undefined
-  isClosePending = !isOpen
+  isClosePending.value = !isOpen
   const el = currentElement.value
   if (el)
     cancelOpenCompleteWait = onAnimationsFinished(el, () => completeOpenChange(isOpen))
 }
 
 watch(() => rootContext.open.value, waitForOpenComplete)
+
+// The overlay is what locks body scroll, and without one the page stays scrollable. Its lock
+// ends when it leaves, which is right away if it has no exit animation of its own, so the
+// content takes a share of that lock and keeps it until the drawer has finished closing.
+const scrollLocked = useBodyScrollLock(false)
+// Read after rendering, so that a drawer reopened during its exit has its overlay back by then.
+watch([() => rootContext.open.value || isClosePending.value, rootContext.overlayPresent, rootContext.open], ([shown, overlayPresent, open]) => {
+  if (!shown)
+    scrollLocked.value = false
+  else if (overlayPresent)
+    scrollLocked.value = true
+  // An open drawer without an overlay never holds the lock. A closing one keeps what it has.
+  else if (open)
+    scrollLocked.value = false
+}, { immediate: true, flush: 'post' })
 
 // Data attributes
 const dataAttributes = computed(() => {
@@ -416,7 +431,7 @@ onUnmounted(() => {
   cancelOpenCompleteWait?.()
   // The content left before its close was reported, which is what happens
   // whenever it unmounts at the end of the exit animation: the close is complete.
-  if (isClosePending && !rootContext.open.value)
+  if (isClosePending.value && !rootContext.open.value)
     completeOpenChange(false)
 })
 
