@@ -52,7 +52,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the progress value changes</p>\n',
-    'type': '[value: string[]]'
+    'type': '[value: number | null]'
   }
 ]" />
 
@@ -83,7 +83,7 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `update:max` | Event handler called when the max value changes | `[value: number]` |
-| `update:modelValue` | Event handler called when the progress value changes | `[value: string[]]` |
+| `update:modelValue` | Event handler called when the progress value changes | `[value: number \| null]` |
 
 **Slots**
 

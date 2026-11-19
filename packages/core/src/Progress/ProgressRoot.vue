@@ -5,7 +5,7 @@ import { createContext, isNullish, useForwardExpose } from '@/shared'
 
 export type ProgressRootEmits = {
   /** Event handler called when the progress value changes */
-  'update:modelValue': [value: string[] | undefined]
+  'update:modelValue': [value: number | null | undefined]
   /** Event handler called when the max value changes */
   'update:max': [value: number]
 }
