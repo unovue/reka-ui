@@ -9,6 +9,8 @@ import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 export interface TagsInputItemProps extends PrimitiveProps {
   /** Value associated with the tags */
   value: AcceptableInputValue
+  /** The zero-based index in the root's model. Pass the original index for each tag when filtering or reordering duplicates. */
+  modelIndex?: number
   /** When `true`, prevents the user from interacting with the tags input. */
   disabled?: boolean
 }
@@ -52,7 +54,7 @@ const itemContext = provideTagsInputItemContext({
 </script>
 
 <template>
-  <CollectionItem :value="value">
+  <CollectionItem :value="{ tag: value, modelIndex: props.modelIndex }">
     <Primitive
       :ref="forwardRef"
       :as="as"

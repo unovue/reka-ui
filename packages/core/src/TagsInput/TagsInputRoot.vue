@@ -124,13 +124,19 @@ function handleRemoveItem(element: HTMLElement) {
   if (!item)
     return
 
-  // Match the occurrence among equal values, including disabled tags. Consumers
-  // can render a subset or a different order, so DOM and model indices can differ.
-  const matchingItems = getItems(true).filter(other => isEqual(other.value, item.value))
+  const { tag, modelIndex } = item.value
+  const values = currentModelValue.value
+  if (modelIndex !== undefined) {
+    if (Number.isInteger(modelIndex) && modelIndex >= 0 && modelIndex < values.length && isEqual(values[modelIndex], tag))
+      handleRemoveTag(modelIndex)
+    return
+  }
+
+  // Without explicit indices, equal tags are matched in render order, including disabled tags.
+  const matchingItems = getItems(true).filter(other => isEqual(other.value.tag, tag))
   const occurrence = matchingItems.indexOf(item)
   let match = 0
-  const modelIndex = currentModelValue.value.findIndex(value => isEqual(value, item.value) && match++ === occurrence)
-  handleRemoveTag(modelIndex)
+  handleRemoveTag(values.findIndex(value => isEqual(value, tag) && match++ === occurrence))
 }
 
 provideTagsInputRootContext({
