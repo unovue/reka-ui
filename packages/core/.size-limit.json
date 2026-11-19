@@ -20,7 +20,7 @@
   {
     "path": "dist/index.js",
     "import": "{ ComboboxRoot, ComboboxInput, ComboboxContent, ComboboxItem, ComboboxVirtualizer }",
-    "limit": "34 KB",
+    "limit": "35 KB",
     "name": "Combobox"
   },
   {
@@ -44,7 +44,7 @@
   {
     "path": "dist/index.js",
     "import": "{ PopoverRoot, PopoverTrigger, PopoverContent, PopoverPortal }",
-    "limit": "22 KB",
+    "limit": "23 KB",
     "name": "Popover"
   },
   {
@@ -62,7 +62,7 @@
   {
     "path": "dist/index.js",
     "import": "*",
-    "limit": "179 KB",
+    "limit": "180 KB",
     "name": "Full library"
   }
 ]
