@@ -413,6 +413,34 @@ describe('given TagsInput with a disabled item before a removable one', () => {
   })
 })
 
+describe('given duplicate tags', () => {
+  it.each(['click', 'Backspace'])('removes the selected occurrence with %s', async (action) => {
+    const wrapper = mount(defineComponent({
+      components: { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot },
+      template: `<TagsInputRoot v-slot="{ modelValue }" duplicate :default-value="['hidden', 'a', 'b', 'a']">
+        <TagsInputItem v-for="(value, index) in modelValue.slice(1)" :key="index" :value="value" :disabled="index === 0">
+          <TagsInputItemText />
+          <TagsInputItemDelete />
+        </TagsInputItem>
+        <TagsInputInput />
+      </TagsInputRoot>`,
+    }), { attachTo: document.body })
+
+    await nextTick()
+    if (action === 'click') {
+      await wrapper.findAll('button')[2].trigger('click')
+    }
+    else {
+      const input = wrapper.get('input')
+      await input.trigger('keydown', { key: 'Backspace' })
+      await input.trigger('keydown', { key: 'Backspace' })
+    }
+
+    expect(wrapper.getComponent(TagsInputRoot).emitted('update:modelValue')).toEqual([[['hidden', 'a', 'b']]])
+    wrapper.unmount()
+  })
+})
+
 describe('given a TagsInputItemDelete with an aria-label', () => {
   it('should not override the aria-label with aria-labelledby', () => {
     const wrapper = mount(defineComponent({

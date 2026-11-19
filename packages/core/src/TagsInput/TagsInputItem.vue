@@ -18,6 +18,7 @@ export interface TagsInputItemContext {
   displayValue: ComputedRef<string>
   isSelected: Ref<boolean>
   disabled?: Ref<boolean>
+  onRemove: () => void
   textId: string
 }
 
@@ -44,6 +45,7 @@ const itemContext = provideTagsInputItemContext({
   value,
   isSelected,
   disabled,
+  onRemove: () => context.onRemoveItem(currentElement.value),
   textId: '',
   displayValue: computed(() => context.displayValue(value.value)),
 })
