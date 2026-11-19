@@ -533,7 +533,7 @@ useStateMachine
 useToastManager
 withDefault
 
-# types (586)
+# types (587)
 AcceptableInputValue
 AcceptableValue
 AccordionContentProps
@@ -841,6 +841,7 @@ ListboxFilterEmits
 ListboxFilterProps
 ListboxGroupLabelProps
 ListboxGroupProps
+ListboxHighlightItemOptions
 ListboxItemEmits
 ListboxItemIndicatorProps
 ListboxItemProps

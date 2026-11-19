@@ -997,3 +997,115 @@ describe('given ListboxItem slot props and ListboxItemIndicator', () => {
     expect(a.attributes('aria-hidden')).toBe('true')
   })
 })
+
+describe('given a Listbox driven by `highlightItem` from a sibling input', () => {
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+  window.HTMLElement.prototype.scrollTo = vi.fn()
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect
+  beforeAll(() => {
+    // jsdom reports zero-sized rects; give the virtualizer a viewport so its items mount.
+    window.HTMLElement.prototype.getBoundingClientRect = function () {
+      return { width: 200, height: 200, top: 0, left: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }
+    }
+  })
+  afterAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
+  })
+
+  const options = Array.from({ length: 50 }, (_, i) => `Item ${i}`)
+
+  function mountListbox(virtual: boolean, disabled: string[] = []) {
+    const listbox = ref<InstanceType<typeof ListboxRoot>>()
+    const shown = ref(options)
+    const onHighlight = vi.fn()
+    const item = (option: string) => h(ListboxItem, { key: option, value: option, disabled: disabled.includes(option) }, () => option)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => [
+          h('input', { 'data-testid': 'search' }),
+          h(ListboxRoot, { ref: listbox, onHighlight }, () =>
+            h(ListboxContent, { style: 'height: 200px; overflow: auto' }, () => virtual
+              ? h(ListboxVirtualizer, { options: shown.value }, {
+                  default: ({ option }: any) => item(option),
+                })
+              : shown.value.map(item))),
+        ]
+      },
+    }), { attachTo: document.body })
+    return { wrapper, listbox, shown, onHighlight }
+  }
+
+  async function flush() {
+    await nextTick()
+    await nextTick()
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    await nextTick()
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  describe.each([['non-virtual', false], ['virtual', true]])('%s', (_, virtual) => {
+    it('should highlight the item without moving focus with `{ focus: false }`', async () => {
+      const { wrapper, listbox, onHighlight } = mountListbox(virtual as boolean)
+      await flush()
+      const input = wrapper.find('[data-testid=search]').element as HTMLInputElement
+      input.focus()
+
+      listbox.value!.highlightItem('Item 3', { focus: false })
+      await flush()
+
+      const item = wrapper.findAll('[role=option]').find(i => i.text() === 'Item 3')!
+      expect(item.attributes('data-highlighted')).toBe('')
+      expect(listbox.value!.highlightedElement).toBe(item.element)
+      expect(onHighlight).toHaveBeenLastCalledWith(expect.objectContaining({ value: 'Item 3' }))
+      expect(document.activeElement).toBe(input)
+    })
+
+    it('should still move focus to the item by default', async () => {
+      const { wrapper, listbox } = mountListbox(virtual as boolean)
+      await flush()
+      const input = wrapper.find('[data-testid=search]').element as HTMLInputElement
+      input.focus()
+
+      listbox.value!.highlightItem('Item 3')
+      await flush()
+
+      const item = wrapper.findAll('[role=option]').find(i => i.text() === 'Item 3')!
+      expect(item.attributes('data-highlighted')).toBe('')
+      expect(document.activeElement).toBe(item.element)
+    })
+
+    it('should not highlight a disabled item', async () => {
+      const { wrapper, listbox } = mountListbox(virtual as boolean, ['Item 3'])
+      await flush()
+      const highlighted = listbox.value!.highlightedElement
+
+      listbox.value!.highlightItem('Item 3', { focus: false })
+      await flush()
+
+      const item = wrapper.findAll('[role=option]').find(i => i.text() === 'Item 3')!
+      expect(item.attributes('data-highlighted')).toBeUndefined()
+      expect(listbox.value!.highlightedElement).toBe(highlighted)
+    })
+
+    it('should highlight the requested item when the options are reordered before it renders', async () => {
+      const { wrapper, listbox, shown } = mountListbox(virtual as boolean)
+      await flush()
+
+      listbox.value!.highlightItem('Item 1', { focus: false })
+      shown.value = ['Item 0', 'Item 2', 'Item 1', ...options.slice(3)]
+      await flush()
+
+      const highlighted = wrapper.findAll('[data-highlighted]')
+      expect(highlighted.map(i => i.text())).toEqual(['Item 1'])
+    })
+  })
+})
