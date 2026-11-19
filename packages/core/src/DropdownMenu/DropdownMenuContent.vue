@@ -47,8 +47,17 @@ function handleCloseAutoFocus(event: Event) {
   event.preventDefault()
 }
 
+// A content kept mounted while closed (`unmountOnHide: false`) is hidden, not unmounted, so
+// no `closeAutoFocus` returns focus. Return it to the trigger as `handleCloseAutoFocus` does.
+const menuContext = injectMenuContext()
+menuContext.onContentHide(({ container }) => {
+  if (!hasInteractedOutsideRef.value && !hasFocusLeftScope(container ?? null))
+    rootContext.triggerElement.value?.focus()
+  hasInteractedOutsideRef.value = false
+})
+
 rootContext.contentId ||= useId(undefined, 'reka-dropdown-menu-content')
-useContentId(rootContext, injectMenuContext().content)
+useContentId(rootContext, menuContext.content)
 </script>
 
 <template>
