@@ -17,7 +17,7 @@ type ListboxRootContext<T> = {
   loop: Ref<boolean>
   highlightedElement: Ref<HTMLElement | null>
   isVirtual: Ref<boolean>
-  virtualFocusHook: EventHook<{ event?: Event, scroll: boolean }>
+  virtualFocusHook: EventHook<{ event?: Event, scroll: boolean, keepFocus?: boolean }>
   virtualKeydownHook: EventHook<KeyboardEvent>
   virtualHighlightHook: EventHook<{ value: any, focus?: boolean }>
   by?: string | ((a: T, b: T) => boolean)
@@ -186,7 +186,7 @@ const highlightedElement = ref<HTMLElement | null>(null)
 const previousElement = ref<HTMLElement | null>(null)
 const isVirtual = ref(false)
 const isComposing = ref(false)
-const virtualFocusHook = createEventHook<{ event?: Event, scroll: boolean }>()
+const virtualFocusHook = createEventHook<{ event?: Event, scroll: boolean, keepFocus?: boolean }>()
 const virtualKeydownHook = createEventHook<KeyboardEvent>()
 const virtualHighlightHook = createEventHook<{ value: T, focus?: boolean }>()
 
@@ -414,7 +414,13 @@ function handleMultipleReplace(event: KeyboardEvent, targetEl: HTMLElement) {
   }
 }
 
-async function highlightSelected(event?: Event, scroll = true) {
+function highlightSelected(event?: Event, scroll = true) {
+  return highlightSelectedItem(event, scroll, false)
+}
+
+// `keepFocus` is set for a programmatic value change under `keepFocusOnValueChange` while focus
+// is outside the listbox. It implies `scroll` is `false`.
+async function highlightSelectedItem(event: Event | undefined, scroll: boolean, keepFocus: boolean) {
   // highlightSelected is called inside a watch with immediate set to true.
   // This results in code execution during SSR.
   // Ensure this code only runs in a browser environment, since it performs
@@ -427,7 +433,7 @@ async function highlightSelected(event?: Event, scroll = true) {
     // `scroll` is `false` on the initial mount highlight, so the virtualizer sets
     // its roving-tabindex target without focusing/scrolling — otherwise a
     // virtualized Listbox below the fold would pull the page to it on load.
-    virtualFocusHook.trigger({ event, scroll })
+    virtualFocusHook.trigger({ event, scroll, keepFocus })
   }
   else {
     const collection = getCollectionItem()
@@ -455,12 +461,13 @@ watch(modelValue, () => {
   if (!isUserAction.value) {
     const scroll = hasHighlightedOnMount
     hasHighlightedOnMount = true
+    // With `keepFocusOnValueChange`, a change made while focus is elsewhere highlights the
+    // item the way the mount highlight does: no focus, and no `scrollIntoView`, which could
+    // scroll the page away from the focused element. Read the focus now, before the update
+    // renders: it may remove the focused item, and the focus would leave with it.
+    const keepFocus = scroll && !!props.keepFocusOnValueChange && !currentElement.value?.contains(getActiveElement())
     nextTick(() => {
-      // With `keepFocusOnValueChange`, a change made while focus is elsewhere highlights the
-      // item the way the mount highlight does: no focus, and no `scrollIntoView`, which could
-      // scroll the page away from the focused element.
-      const keepFocus = props.keepFocusOnValueChange && !currentElement.value?.contains(getActiveElement())
-      highlightSelected(undefined, scroll && !keepFocus)
+      highlightSelectedItem(undefined, scroll && !keepFocus, keepFocus)
     })
   }
 }, { immediate: true, deep: true })

@@ -1,14 +1,23 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 import { ListboxContent, ListboxItem, ListboxRoot, ListboxVirtualizer } from '.'
 
 const options = Array.from({ length: 30 }, (_, index) => `Option ${index}`)
 
-function mountListbox({ keepFocusOnValueChange, virtual = false, belowFold = false }: { keepFocusOnValueChange?: boolean, virtual?: boolean, belowFold?: boolean } = {}) {
+interface FixtureOptions {
+  keepFocusOnValueChange?: boolean
+  virtual?: boolean
+  belowFold?: boolean
+  count?: number
+  disabled?: string[]
+}
+
+function mountListbox({ keepFocusOnValueChange, virtual = false, belowFold = false, count, disabled = [] }: FixtureOptions = {}) {
   const selected = ref<string>()
-  const item = (option: string) => h(ListboxItem, { key: option, value: option, style: { height: '28px' } }, () => option)
+  const shown = shallowRef(count ? Array.from({ length: count }, (_, index) => `Option ${index}`) : options)
+  const item = (option: string) => h(ListboxItem, { key: option, value: option, disabled: disabled.includes(option), style: { height: '28px' } }, () => option)
   const Fixture = defineComponent({
     setup() {
       return () => [
@@ -19,14 +28,14 @@ function mountListbox({ keepFocusOnValueChange, virtual = false, belowFold = fal
           keepFocusOnValueChange,
           'modelValue': selected.value,
           'onUpdate:modelValue': (value: string) => { selected.value = value },
-        }, () => h(ListboxContent, { 'aria-label': 'Options', 'style': { height: '140px', overflow: 'auto' } }, () => virtual
-          ? h(ListboxVirtualizer, { options, estimateSize: 28 }, { default: ({ option }: { option: string }) => item(option) })
-          : options.map(item))),
+        }, () => h(ListboxContent, { 'aria-label': 'Options', 'data-testid': 'content', 'style': { height: '140px', overflow: 'auto' } }, () => virtual
+          ? h(ListboxVirtualizer, { options: shown.value, estimateSize: 28 }, { default: ({ option }: { option: string }) => item(option) })
+          : shown.value.map(item))),
       ]
     },
   })
   mount(Fixture, { attachTo: document.body })
-  return { selected }
+  return { selected, shown }
 }
 
 async function settle() {
@@ -39,6 +48,7 @@ async function settle() {
 const input = () => document.querySelector<HTMLInputElement>('[data-testid="search"]')!
 const option = (text: string) => Array.from(document.querySelectorAll<HTMLElement>('[role="option"]')).find(o => o.textContent === text)!
 const highlighted = () => Array.from(document.querySelectorAll('[role="option"][data-highlighted]'), o => o.textContent)
+const content = () => document.querySelector<HTMLElement>('[data-testid="content"]')!
 const tabStop = () => Array.from(document.querySelectorAll('[role="option"][tabindex="0"]'), o => o.textContent)
 
 async function focusInput() {
@@ -123,5 +133,43 @@ describe('given a Listbox whose value is set programmatically while focus is out
     await userEvent.click(option('Option 7'))
     expect(selected.value).toBe('Option 7')
     expect(document.activeElement).toBe(option('Option 7'))
+  })
+
+  it.each([['non-virtual', false], ['virtual', true]])('%s: moves focus to the new item when the focused item is removed in the same update', async (_, virtual) => {
+    const { selected, shown } = mountListbox({ keepFocusOnValueChange: true, virtual })
+    await settle()
+    await focusInput()
+    await userEvent.tab()
+    expect(document.activeElement).toBe(option('Option 0'))
+
+    // The update that changes the value also removes the focused item, so focus falls back to
+    // the body before the highlight runs. Focus was inside the listbox when the value changed.
+    shown.value = options.slice(1)
+    selected.value = 'Option 4'
+    await expect.poll(() => document.activeElement?.textContent).toBe('Option 4')
+    expect(highlighted()).toEqual(['Option 4'])
+  })
+
+  it('highlights the first enabled option of the full list when a virtual list is cleared, without moving focus', async () => {
+    const { selected } = mountListbox({ keepFocusOnValueChange: true, virtual: true, count: 200, disabled: ['Option 0'] })
+    await settle()
+    await focusInput()
+
+    // Two jumps, so the rows near the start that kept the mount highlight are unmounted.
+    selected.value = 'Option 150'
+    await expect.poll(highlighted).toEqual(['Option 150'])
+    await settle()
+    selected.value = 'Option 100'
+    await expect.poll(highlighted).toEqual(['Option 100'])
+    await settle()
+    expect(option('Option 1')).toBeUndefined()
+
+    selected.value = undefined
+    await expect.poll(highlighted).toEqual(['Option 1'])
+    await settle()
+
+    expect(document.activeElement).toBe(input())
+    expect(tabStop()).toEqual(['Option 1'])
+    expect(window.scrollY).toBe(0)
   })
 })

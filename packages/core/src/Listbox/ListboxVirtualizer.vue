@@ -176,7 +176,7 @@ const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map(
   }
 }))
 
-rootContext.virtualFocusHook.on(({ event, scroll }) => {
+rootContext.virtualFocusHook.on(({ event, scroll, keepFocus }) => {
   // `scroll` is `false` only for the initial mount highlight. There we set the
   // roving-tabindex target without focusing or scrolling, so a virtualized
   // Listbox below the fold doesn't pull the page to it on load. User-driven
@@ -208,6 +208,10 @@ rootContext.virtualFocusHook.on(({ event, scroll }) => {
     // Mount highlight with no checked item: highlight the first enabled item only,
     // mirroring the non-virtual path. `highlightFirstItem` is reserved for
     // user-driven PageUp/Home navigation, which focuses and scrolls.
+    // A value cleared under `keepFocusOnValueChange` can find the list scrolled away from
+    // the start, so bring the first options into the list's own viewport first.
+    if (keepFocus)
+      virtualizer.value.scrollToIndex(0)
     requestAnimationFrame(() => {
       const item = getItems().find(i => i.ref.dataset.disabled !== '')?.ref
       if (item)
