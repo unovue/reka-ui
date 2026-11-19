@@ -239,8 +239,16 @@ function dispatchMountAutoFocus(container: HTMLElement, previouslyFocusedElement
 watchEffect(async (cleanupFn) => {
   const container = currentElement.value
 
+  // A cleanup registered after the `await` below never runs when the effect was stopped
+  // meanwhile (e.g. the scope unmounted within the same tick), which would leave this scope
+  // in the stack, paused others and retaining its container. So note the stop here, before it.
+  let isStale = false
+  cleanupFn(() => {
+    isStale = true
+  })
+
   await nextTick()
-  if (!container)
+  if (!container || isStale)
     return
   // A scope that mounts hidden (`present: false`, e.g. a closed Dialog with
   // `unmountOnHide: false`) must stay out of the scope stack: adding it would
