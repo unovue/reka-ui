@@ -442,6 +442,44 @@ describe('given a Carousel with translated labels', () => {
     await wrapper.find('[data-state="playing"]').trigger('click')
     expect(wrapper.find('[data-state="paused"]').attributes('aria-label')).toBe('Iniciar')
   })
+
+  it('lets the indicator group and its tabs override the English default', async () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(CarouselRoot, { 'aria-label': 'Galería' }, () => [
+        h(CarouselViewport, () => h(CarouselContent, () => [1, 2].map(i => h(CarouselItem, { key: i }, () => `Slide ${i}`)))),
+        h(CarouselIndicatorGroup, { 'aria-label': 'Elegir diapositiva' }, () =>
+          [0, 1].map(index => h(CarouselIndicator, { 'key': index, index, 'aria-label': `Diapositiva ${index + 1}` }))),
+      ]),
+    }), { attachTo: document.body })
+    await nextTick()
+    expect(wrapper.find('[role="tablist"]').attributes('aria-label')).toBe('Elegir diapositiva')
+    expect(wrapper.findAll('[role="tab"]').map(tab => tab.attributes('aria-label'))).toEqual(['Diapositiva 1', 'Diapositiva 2'])
+  })
+})
+
+describe('given a CarouselViewport with consumer attributes', () => {
+  function mountViewport(attrs: Record<string, unknown>) {
+    return mount(defineComponent({
+      setup: () => () => h(CarouselRoot, { 'aria-label': 'Plain' }, () =>
+        h(CarouselViewport, { 'data-testid': 'viewport', ...attrs }, () => h(CarouselContent, () => h(CarouselItem, () => 'One')))),
+    }), { attachTo: document.body })
+  }
+
+  it('lets a consumer `tabindex` win over the default', async () => {
+    const wrapper = mountViewport({ tabindex: '-1' })
+    await nextTick()
+    expect(wrapper.find('[data-testid="viewport"]').attributes('tabindex')).toBe('-1')
+  })
+
+  it('keeps the default `tabindex` and merges `aria-label` and `style`', async () => {
+    const wrapper = mountViewport({ 'aria-label': 'Slides', 'style': { outline: 'none' } })
+    await nextTick()
+    const viewport = wrapper.find('[data-testid="viewport"]')
+    expect(viewport.attributes('tabindex')).toBe('0')
+    expect(viewport.attributes('aria-label')).toBe('Slides')
+    expect((viewport.element as HTMLElement).style.outline).toBe('none')
+    expect((viewport.element as HTMLElement).style.overflowX).toBe('auto')
+  })
 })
 
 describe('given a Carousel whose slides change', () => {

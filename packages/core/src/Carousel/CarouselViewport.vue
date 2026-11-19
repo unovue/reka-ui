@@ -12,7 +12,8 @@ import { injectCarouselRootContext } from './CarouselRoot.vue'
 import { useCarouselViewport } from './useCarouselViewport'
 
 defineOptions({
-  // `$attrs` are merged under the viewport bindings so consumer listeners chain with them.
+  // `$attrs` are merged under the viewport bindings so consumer listeners chain with them. A consumer
+  // `tabindex` still wins over the default one.
   inheritAttrs: false,
 })
 
@@ -35,6 +36,7 @@ const viewport = useCarouselViewport(rootContext, currentElement)
     :as="as"
     :as-child="asChild"
     v-bind="mergeProps($attrs, viewport.attrs.value)"
+    :tabindex="$attrs.tabindex ?? viewport.attrs.value.tabindex"
     :data-orientation="rootContext.orientation.value"
     :data-dragging="rootContext.dragging.value ? '' : undefined"
   >
