@@ -350,7 +350,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     const position = getScroll()
     if (firstLayout) {
       firstLayout = false
-      const nearest = getNearestSnapIndex(position, context.snaps.value)
+      const nearest = getNearestSnapIndex(position, context.snaps.value, context.modelValue.value)
       if (position > 1 && nearest !== context.modelValue.value && context.changeModelValue(nearest)) {
         scrollToSnap(nearest, 'instant')
         rotate()
@@ -443,7 +443,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       setScrollSnapSuspended(false)
     if (!context.measured.value || dragState || momentumFrame)
       return
-    const nearest = getNearestSnapIndex(getScroll(), context.snaps.value)
+    const nearest = getNearestSnapIndex(getScroll(), context.snaps.value, context.modelValue.value)
     if (nearest !== context.modelValue.value && !context.changeModelValue(nearest))
       scrollToSnap(context.modelValue.value)
     else if (!context.options.value.dragFree && !autoScrollRunning.value && Math.abs(context.snaps.value[nearest].position - getScroll()) >= 1)
@@ -474,7 +474,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
       updateProgress()
       if (!context.measured.value || dragState || programmaticTarget !== undefined)
         return
-      const nearest = getNearestSnapIndex(getScroll(), context.snaps.value)
+      const nearest = getNearestSnapIndex(getScroll(), context.snaps.value, context.modelValue.value)
       if (nearest !== context.modelValue.value)
         context.changeModelValue(nearest)
     })
@@ -901,7 +901,7 @@ export function useCarouselViewport(context: CarouselRootContext, element: Ref<H
     if (programmaticTarget === value || dragState)
       return
     // Already there by a user scroll; a running programmatic scroll towards another snap still has to turn.
-    if (programmaticTarget === undefined && getNearestSnapIndex(getScroll(), context.snaps.value) === value)
+    if (programmaticTarget === undefined && getNearestSnapIndex(getScroll(), context.snaps.value, value) === value)
       return
     if (!context.loopActive.value) {
       scrollToSnap(value)

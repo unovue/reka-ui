@@ -162,8 +162,12 @@ export function computeSnaps(options: ComputeSnapsOptions): ComputeSnapsResult {
   return { groups, spacing, snaps }
 }
 
-/** The snap closest to `position`; the first one wins a tie. */
-export function getNearestSnapIndex(position: number, snaps: CarouselSnap[]): number {
+/**
+ * The snap closest to `position`. `preferred` wins a tie, so a snap that shares
+ * its position with another (`containScroll: 'keepSnaps'`) stays selected;
+ * otherwise the first one does.
+ */
+export function getNearestSnapIndex(position: number, snaps: CarouselSnap[], preferred?: number): number {
   let nearest = 0
   let distance = Infinity
   snaps.forEach((snap, index) => {
@@ -173,6 +177,9 @@ export function getNearestSnapIndex(position: number, snaps: CarouselSnap[]): nu
       nearest = index
     }
   })
+  const kept = preferred === undefined ? undefined : snaps[preferred]
+  if (kept && Math.abs(kept.position - position) < distance + 0.5)
+    return preferred!
   return nearest
 }
 

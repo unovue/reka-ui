@@ -279,4 +279,35 @@ describe('given a Carousel in a real browser', () => {
     const { visibleItem } = mountCarousel({ props: { defaultValue: 3 } })
     await expect.poll(() => visibleItem()).toBe(3)
   })
+
+  it('keeps a keepSnaps snap selected when it shares its position with another', async () => {
+    document.body.innerHTML = ''
+    const current = ref(0)
+    const emitted: number[] = []
+    // Five 100px items in a 200px viewport: snaps 3 and 4 both sit at the end (300).
+    const Fixture = defineComponent({
+      setup() {
+        return () => h(CarouselRoot, {
+          'aria-label': 'Thumbnails',
+          'containScroll': 'keepSnaps',
+          'modelValue': current.value,
+          'style': { width: `${SIZE}px` },
+          'onUpdate:modelValue': (value: number) => {
+            emitted.push(value)
+            current.value = value
+          },
+        }, () => h(CarouselViewport, { 'data-testid': 'viewport' }, () =>
+          h(CarouselContent, () => Array.from({ length: 5 }, (_, i) =>
+            h(CarouselItem, { key: i, style: { width: '100px' } }, () => `Slide ${i + 1}`)))))
+      },
+    })
+    mount(Fixture, { attachTo: document.body })
+    const viewport = document.querySelector<HTMLElement>('[data-testid="viewport"]')!
+    await expect.poll(() => viewport.style.scrollSnapType).toBe('x mandatory')
+    current.value = 4
+    await expect.poll(() => viewport.scrollLeft).toBeCloseTo(300, 0)
+    await settled(() => viewport.scrollLeft)
+    expect(current.value).toBe(4)
+    expect(emitted).toEqual([])
+  })
 })

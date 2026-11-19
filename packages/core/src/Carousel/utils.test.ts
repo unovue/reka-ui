@@ -116,6 +116,13 @@ describe('getNearestSnapIndex', () => {
   it('picks the first of two equally close snaps', () => {
     expect(getNearestSnapIndex(50, snaps)).toBe(0)
   })
+
+  it('keeps the preferred snap when it ties with another', () => {
+    const kept = [0, 100, 100].map(position => ({ position, items: [] }))
+    expect(getNearestSnapIndex(100, kept)).toBe(1)
+    expect(getNearestSnapIndex(100, kept, 2)).toBe(2)
+    expect(getNearestSnapIndex(100, kept, 0)).toBe(1)
+  })
 })
 
 describe('getSnapsByPosition', () => {
