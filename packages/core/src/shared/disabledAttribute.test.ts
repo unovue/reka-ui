@@ -2,7 +2,7 @@ import type { VueWrapper } from '@vue/test-utils'
 import type { Component, VNode } from 'vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, defineCustomElement, h, nextTick } from 'vue'
 import { AccordionItem, AccordionRoot, AccordionTrigger } from '@/Accordion'
 import { CalendarNext, CalendarPrev, CalendarRoot } from '@/Calendar'
 import { CheckboxRoot } from '@/Checkbox'
@@ -33,7 +33,7 @@ import { YearRangePickerNext, YearRangePickerPrev, YearRangePickerRoot } from '@
 // Parts that render a `<button>` by default bind `disabled`. Rendered as an element without a
 // `disabled` DOM property, an enabled part used to get `disabled="false"`, which `[disabled]` matches.
 // A tag or component for `as`, or a child to render with `asChild`
-type As = string | Component | { asChild: () => VNode }
+type As = string | Component | { asChild: () => VNode } | { template: () => VNode }
 
 interface Case {
   name: string
@@ -45,6 +45,8 @@ const target = { 'data-testid': 'target' }
 function part(component: Component, as: As, props: Record<string, unknown> = {}) {
   if (typeof as === 'object' && 'asChild' in as)
     return h(component as any, { ...target, ...props, asChild: true }, as.asChild)
+  if (typeof as === 'object' && 'template' in as)
+    return h(component as any, { ...target, ...props, as: 'template' }, as.template)
   return h(component as any, { ...target, as, ...props }, () => 'part')
 }
 
@@ -55,6 +57,20 @@ const DisabledByDefault = defineComponent({
     return () => h('div', { 'data-component-disabled': String(props.disabled) }, slots.default?.())
   },
 })
+
+// A custom element whose own `disabled` defaults to `true`. Vue sets its props as DOM properties
+const CUSTOM_ELEMENT = 'disabled-attr-element'
+customElements.define(CUSTOM_ELEMENT, defineCustomElement({
+  props: { disabled: { type: Boolean, default: true } },
+  setup(props) {
+    return () => h('span', { 'data-component-disabled': String(props.disabled) })
+  },
+}))
+
+async function customElementDisabled(el: Element) {
+  await nextTick()
+  return el.shadowRoot?.querySelector('span')?.getAttribute('data-component-disabled')
+}
 
 // The part takes `disabled` itself
 function own(name: string, component: Component, wrap: (child: VNode) => VNode = child => child): Case {
@@ -188,5 +204,29 @@ describe.each(cases)('$name', (c) => {
 
   it('keeps disabled="true" on a plain child with `asChild` when disabled', () => {
     expect(render(c, true, { asChild: () => h('span', 'part') }).el.getAttribute('disabled')).toBe('true')
+  })
+
+  it('passes false to a custom element given as `as` when enabled', async () => {
+    expect(await customElementDisabled(render(c, false, CUSTOM_ELEMENT).el)).toBe('false')
+  })
+
+  it('passes true to a custom element given as `as` when disabled', async () => {
+    expect(await customElementDisabled(render(c, true, CUSTOM_ELEMENT).el)).toBe('true')
+  })
+
+  it('passes false to a custom element child with `asChild` when enabled', async () => {
+    const { el } = render(c, false, { asChild: () => h(CUSTOM_ELEMENT) })
+    expect(await customElementDisabled(el)).toBe('false')
+  })
+
+  it('passes false to a component child with `as="template"` when enabled', () => {
+    const { el } = render(c, false, { template: () => h(DisabledByDefault, () => 'part') })
+    expect(el.getAttribute('data-component-disabled')).toBe('false')
+  })
+
+  it('omits the disabled attribute on a plain child with `as="template"` when enabled', () => {
+    const { el } = render(c, false, { template: () => h('span', 'part') })
+    expect(el.tagName).toBe('SPAN')
+    expect(el.hasAttribute('disabled')).toBe(false)
   })
 })

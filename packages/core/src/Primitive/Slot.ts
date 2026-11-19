@@ -1,5 +1,5 @@
 import { cloneVNode, Comment, defineComponent, mergeProps } from 'vue'
-import { renderSlotFragments } from '@/shared'
+import { isPlainTag, renderSlotFragments } from '@/shared'
 
 export const Slot = defineComponent({
   name: 'PrimitiveSlot',
@@ -28,9 +28,10 @@ export const Slot = defineComponent({
         : attrs
       const cloned = cloneVNode({ ...firstNonCommentChildren, props: {} }, mergedProps)
       // A part passes `disabled: false` through when it can't see the element (`disabledAttr`).
-      // On a plain tag without the property it would render `disabled="false"`, so drop it there.
-      // `cloneVNode` merged the props into a new object, so this doesn't touch `attrs`
-      if (cloned.props!.disabled === false && typeof cloned.type === 'string')
+      // On a plain tag without the property it would render `disabled="false"`, so drop it there. A
+      // custom element keeps it, it may default `disabled` to `true`. `cloneVNode` merged the props
+      // into a new object, so this doesn't touch `attrs`
+      if (cloned.props!.disabled === false && isPlainTag(cloned.type))
         cloned.props!.disabled = undefined
 
       if (children.length === 1)

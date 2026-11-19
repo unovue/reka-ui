@@ -1,10 +1,18 @@
 /**
- * The value to bind as `disabled` on a `Primitive`. A plain tag without a `disabled` property
- * (`a`, `div`, `span`) would otherwise render `disabled="false"` while enabled, so `false` becomes
- * `undefined` there. A component given as `as` gets the boolean unchanged, so its own `disabled`
- * default doesn't apply. With `asChild` the element is unknown here, and `Slot` drops the `false`
- * once it sees a plain tag.
+ * Whether `disabled: false` can be dropped on this tag: a plain element without the property would
+ * render `disabled="false"`. A custom element (its name has a `-`) may declare `disabled` with a
+ * default of `true`, so it keeps `false`, like a component.
+ */
+export function isPlainTag(tag: unknown): tag is string {
+  return typeof tag === 'string' && !tag.includes('-')
+}
+
+/**
+ * The value to bind as `disabled` on a `Primitive`. For a plain tag `false` becomes `undefined`, so an
+ * enabled part doesn't render `disabled="false"`. A component or custom element gets the boolean
+ * unchanged, so its own `disabled` default doesn't apply. With `asChild` or `as="template"` the element
+ * is unknown here, and `Slot` drops the `false` once it sees a plain tag.
  */
 export function disabledAttr(disabled: boolean | undefined, as: unknown, asChild?: boolean): boolean | undefined {
-  return typeof as === 'string' && !asChild ? disabled || undefined : disabled
+  return !asChild && as !== 'template' && isPlainTag(as) ? disabled || undefined : disabled
 }
