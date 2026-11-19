@@ -31,6 +31,12 @@ export interface PaginationRootProps extends PrimitiveProps {
   disabled?: boolean
   /** When `true`, always show first page, last page, and ellipsis */
   showEdges?: boolean
+  /**
+   * When `true`, keeps the page within the page count. If `total` or `itemsPerPage` drops below
+   * the current page, the page moves to the last page and `update:page` is emitted. A `total` of
+   * `0` resets the page to `1`, so keep the previous `total` while new data loads.
+   */
+  clampPage?: boolean
 }
 
 export type PaginationRootEmits = {
@@ -75,17 +81,19 @@ const modelPage = useVModel(props, 'page', emits, {
 
 const pageCount = computed(() => Math.max(1, Math.ceil(props.total / (props.itemsPerPage || 1))))
 
+// Navigation always lands within the page count. Moving an out-of-range page back into range is
+// opt-in, because a `total` that drops while data loads would otherwise lose the current page.
 const page = computed({
-  get: () => clamp(modelPage.value, 1, pageCount.value),
+  get: () => props.clampPage ? clamp(modelPage.value, 1, pageCount.value) : modelPage.value,
   set(value: number) {
     modelPage.value = clamp(value, 1, pageCount.value)
   },
 })
 
-watch(pageCount, (count, previousCount) => {
-  if (count < previousCount && modelPage.value > count)
-    modelPage.value = count
-})
+watch([() => props.clampPage, modelPage, pageCount], ([clampPage, value, count]) => {
+  if (clampPage && value !== clamp(value, 1, count))
+    modelPage.value = clamp(value, 1, count)
+}, { immediate: true })
 
 providePaginationRootContext({
   page,

@@ -263,16 +263,37 @@ describe('given 0 total value', () => {
 })
 
 describe('when the page count shrinks', () => {
-  it.each([
-    { model: { defaultPage: 10 }, change: { total: 20 } },
-    { model: { page: 10 }, change: { itemsPerPage: 50 } },
-  ])('uses the new last page for the slot and navigation with $model', async ({ model, change }) => {
-    const wrapper = mount(PaginationRoot, {
-      props: { total: 100, itemsPerPage: 10, ...model },
+  function mountPagination(props: Record<string, unknown>) {
+    return mount(PaginationRoot, {
+      props: { total: 100, itemsPerPage: 10, ...props },
       slots: {
         default: ({ page }: { page: number }) => [h('output', String(page)), h(PaginationPrev), h(PaginationNext)],
       },
     })
+  }
+
+  it.each([
+    { model: { defaultPage: 10 }, change: { total: 20 } },
+    { model: { page: 10 }, change: { itemsPerPage: 50 } },
+  ])('keeps the page but navigates within the new page count with $model', async ({ model, change }) => {
+    const wrapper = mountPagination(model)
+
+    await wrapper.setProps(change)
+    expect(wrapper.get('output').text()).toBe('10')
+    expect(wrapper.emitted('update:page')).toBeUndefined()
+
+    const next = wrapper.get('[aria-label="Next Page"]')
+    expect(next.attributes('disabled')).toBeDefined()
+    await next.trigger('click')
+    await wrapper.get('[aria-label="Previous Page"]').trigger('click')
+    expect(wrapper.emitted('update:page')).toEqual([[2]])
+  })
+
+  it.each([
+    { model: { defaultPage: 10 }, change: { total: 20 } },
+    { model: { page: 10 }, change: { itemsPerPage: 50 } },
+  ])('moves to the new last page with `clampPage` and $model', async ({ model, change }) => {
+    const wrapper = mountPagination({ clampPage: true, ...model })
     expect(wrapper.get('output').text()).toBe('10')
 
     await wrapper.setProps(change)
@@ -284,5 +305,19 @@ describe('when the page count shrinks', () => {
     await next.trigger('click')
     await wrapper.get('[aria-label="Previous Page"]').trigger('click')
     expect(wrapper.emitted('update:page')).toEqual([[2], [1]])
+  })
+
+  it('brings an out-of-range page into range on mount and when `clampPage` turns on', async () => {
+    const wrapper = mountPagination({ page: 20, total: 50 })
+    expect(wrapper.get('output').text()).toBe('20')
+    expect(wrapper.emitted('update:page')).toBeUndefined()
+
+    await wrapper.setProps({ clampPage: true })
+    expect(wrapper.get('output').text()).toBe('5')
+    expect(wrapper.emitted('update:page')).toEqual([[5]])
+
+    const mounted = mountPagination({ clampPage: true, defaultPage: 20, total: 50 })
+    expect(mounted.get('output').text()).toBe('5')
+    expect(mounted.emitted('update:page')).toEqual([[5]])
   })
 })

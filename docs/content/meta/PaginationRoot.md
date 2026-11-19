@@ -16,6 +16,12 @@
     'required': false
   },
   {
+    'name': 'clampPage',
+    'description': '<p>When <code>true</code>, keeps the page within the page count. If <code>total</code> or <code>itemsPerPage</code> drops below\nthe current page, the page moves to the last page and <code>update:page</code> is emitted. A <code>total</code> of\n<code>0</code> resets the page to <code>1</code>, so keep the previous <code>total</code> while new data loads.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'defaultPage',
     'description': '<p>The value of the page that should be active when initially rendered.</p>\n<p>Use when you do not need to control the value state.</p>\n',
     'type': 'number',
@@ -93,6 +99,7 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"nav"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `clampPage` | When true, keeps the page within the page count. If total or itemsPerPage drops below the current page, the page moves to the last page and update:page is emitted. A total of 0 resets the page to 1, so keep the previous total while new data loads. | `boolean` | No | - |
 | `defaultPage` | The value of the page that should be active when initially rendered. Use when you do not need to control the value state. | `number` | No | `1` |
 | `disabled` | When true, prevents the user from interacting with item | `boolean` | No | - |
 | `itemsPerPage` | Number of items per page | `number` | Yes | - |
