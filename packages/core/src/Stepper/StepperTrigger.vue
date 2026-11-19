@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { computed, watchPostEffect } from 'vue'
+import { computed, useAttrs, watchPostEffect } from 'vue'
 import { getActiveElement, useArrowNavigation, useForwardExpose, useKbd } from '@/shared'
 
 export interface StepperTriggerProps extends PrimitiveProps {
@@ -18,6 +18,29 @@ withDefaults(defineProps<StepperTriggerProps>(), {
 
 const rootContext = injectStepperRootContext()
 const itemContext = injectStepperItemContext()
+
+const attrs = useAttrs()
+
+// Name the trigger by its title and description so the accessible name matches the visible
+// content. Only reference parts that are rendered, and let a consumer `aria-label` win
+// (`aria-labelledby` would otherwise take precedence over it). Plain functions rather than
+// computeds: `attrs` is not reactive, but the template re-renders when it changes.
+function getAriaLabelledby() {
+  if (attrs['aria-label'])
+    return undefined
+  const ids = [
+    itemContext.hasTitle.value ? itemContext.titleId : undefined,
+    itemContext.hasDescription.value ? itemContext.descriptionId : undefined,
+  ].filter(Boolean)
+  return ids.length ? ids.join(' ') : undefined
+}
+
+// The description is already part of the name when it is referenced by `aria-labelledby`.
+function getAriaDescribedby() {
+  if (!itemContext.hasDescription.value || getAriaLabelledby())
+    return undefined
+  return itemContext.descriptionId
+}
 
 const kbd = useKbd()
 const stepperItems = computed(() => Array.from(rootContext.totalStepperItems.value))
@@ -90,8 +113,9 @@ watchPostEffect((cleanup) => {
     :data-disabled="itemContext.disabled.value || !itemContext.isFocusable.value ? '' : undefined"
     :data-orientation="rootContext.orientation.value"
     :tabindex="itemContext.isFocusable.value ? 0 : -1"
-    :aria-describedby="itemContext.descriptionId"
-    :aria-labelledby="itemContext.titleId"
+    :aria-current="itemContext.state.value === 'active' ? 'step' : undefined"
+    :aria-describedby="getAriaDescribedby()"
+    :aria-labelledby="getAriaLabelledby()"
     @mousedown.left="handleMouseDown"
     @keydown.enter.space.left.right.up.down="handleKeyDown"
   >

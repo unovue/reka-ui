@@ -138,7 +138,7 @@ If you want to hide the title, wrap it inside our Visually Hidden utility like t
 
 An optional accessible description to be announced when the stepper trigger is focused.
 
-If you want to hide the description, wrap it inside our Visually Hidden utility like this `<VisuallyHidden asChild>`. If you want to remove the description entirely, remove this part and pass `aria-describedby="undefined"` to `StepperTrigger`.
+If you want to hide the description, wrap it inside our Visually Hidden utility like this `<VisuallyHidden asChild>`. If you want to remove the description entirely, remove this part.
 
 <!-- @include: @/meta/StepperItem.md -->
 
@@ -217,6 +217,12 @@ const stepper = useTemplateRef('stepper')
 ```
 
 ## Accessibility
+
+### Trigger name and current step
+
+`StepperTrigger` is named by the item's rendered `StepperTitle` and `StepperDescription`, in that order, through `aria-labelledby`. Only the parts that are rendered are referenced. Pass an `aria-label` to `StepperTrigger` to name it yourself; the description is then exposed through `aria-describedby`.
+
+The trigger of the current step has `aria-current="step"`. `StepperItem` keeps `aria-current="true"` for styling.
 
 ### Step announcements
 

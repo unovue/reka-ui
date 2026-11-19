@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 
 import type { PrimitiveProps } from '@/Primitive'
-import { computed, toRefs } from 'vue'
+import { computed, ref, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { createContext, useForwardExpose, useId } from '@/shared'
 import { injectStepperRootContext } from './StepperRoot.vue'
@@ -14,6 +14,10 @@ export type StepperState = 'completed' | 'active' | 'inactive'
 export interface StepperItemContext {
   titleId: string
   descriptionId: string
+  /** Whether a `StepperTitle` is rendered for this item. */
+  hasTitle: Ref<boolean>
+  /** Whether a `StepperDescription` is rendered for this item. */
+  hasDescription: Ref<boolean>
   step: Ref<number>
   state: Ref<StepperState>
   disabled: Ref<boolean>
@@ -71,9 +75,14 @@ const isFocusable = computed(() => {
   return true
 })
 
+const hasTitle = ref(false)
+const hasDescription = ref(false)
+
 provideStepperItemContext({
   titleId,
   descriptionId,
+  hasTitle,
+  hasDescription,
   state: itemState,
   disabled,
   step,
