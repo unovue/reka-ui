@@ -49,11 +49,14 @@ interface CheckboxRootContext {
 
 export const [injectCheckboxRootContext, provideCheckboxRootContext]
   = createContext<CheckboxRootContext>('CheckboxRoot')
+
+// Ids for checkboxes whose group gets `allValues` after they mount.
+let lateIdCount = 0
 </script>
 
 <script setup lang="ts" generic="TrueValue = true, FalseValue = false">
 import { isEqual } from 'ohash'
-import { computed, onBeforeUnmount, onMounted, useAttrs, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, shallowRef, useAttrs, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
@@ -87,9 +90,11 @@ const { forwardRef, currentElement } = useForwardExpose()
 const checkboxGroupContext = injectCheckboxGroupRootContext(null)
 // A parent checkbox only means something inside a group.
 const isParent = Boolean(checkboxGroupContext && props.parent)
-// The checkboxes a parent controls need ids for its `aria-controls`.
-const groupHasParent = Boolean(checkboxGroupContext && !props.parent && checkboxGroupContext.allValues.value)
-const generatedId = groupHasParent && !props.id ? useId(undefined, 'reka-checkbox') : undefined
+// While the group has `allValues`, its checkboxes register for the parent and get an id
+// for its `aria-controls`. Without it, nothing registers and no id is generated.
+const isGroupChild = Boolean(checkboxGroupContext && !props.parent)
+const hasAllValues = () => Boolean(checkboxGroupContext?.allValues.value)
+const generatedId = shallowRef(isGroupChild && hasAllValues() ? useId(undefined, 'reka-checkbox') : undefined)
 
 // Optional Field participation: `injectFieldRootContext(null)` returns
 // `null` (instead of throwing) outside a `FieldRoot`, so every binding below
@@ -120,7 +125,7 @@ const disabled = computed(() => nativeDisabled.value || isGroupMaxReached.value)
 // Checkboxes inside a `CheckboxGroupRoot` share one Field, so none of them
 // takes the field's id (it would be duplicated) or acts as its control.
 const participatesAsControl = computed(() => Boolean(fieldContext) && !checkboxGroupContext)
-const resolvedId = computed(() => props.id ?? (participatesAsControl.value ? fieldContext?.fieldId.value : generatedId))
+const resolvedId = computed(() => props.id ?? (participatesAsControl.value ? fieldContext?.fieldId.value : generatedId.value))
 const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
 // `required` is a plain (non-optional-default) `Boolean` prop, so Vue casts
 // it to `false` rather than `undefined` when omitted — `props.required` can
@@ -261,14 +266,32 @@ const ariaControls = computed(() => isParent
   ? getControlledItems().map(item => item.id()).filter(Boolean).join(' ') || undefined
   : undefined)
 
-if (groupHasParent) {
+if (isGroupChild) {
+  const items = checkboxGroupContext!.items
   const item = {
     value: () => props.value,
     disabled: () => nativeDisabled.value,
     id: () => resolvedId.value,
   }
-  onMounted(() => checkboxGroupContext!.items.add(item))
-  onBeforeUnmount(() => checkboxGroupContext!.items.delete(item))
+  // Reused if `allValues` is removed and set again.
+  let id = generatedId.value
+  onMounted(() => {
+    if (hasAllValues())
+      items.add(item)
+  })
+  // `allValues` set or removed after mount: no SSR to match, so a client-side id is enough.
+  watch(hasAllValues, (controlled) => {
+    if (controlled) {
+      id ??= `reka-checkbox-${++lateIdCount}`
+      generatedId.value = id
+      items.add(item)
+    }
+    else {
+      generatedId.value = undefined
+      items.delete(item)
+    }
+  })
+  onBeforeUnmount(() => items.delete(item))
 }
 
 provideCheckboxRootContext({

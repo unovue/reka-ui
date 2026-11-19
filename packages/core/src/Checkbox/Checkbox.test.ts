@@ -669,6 +669,62 @@ describe('given a parent Checkbox', () => {
     })
   })
 
+  describe('when allValues is set after mount', () => {
+    const LateGroup = defineComponent({
+      components: { CheckboxGroupRoot, CheckboxRoot },
+      props: { allValues: { type: Array as PropType<string[]>, default: undefined } },
+      emits: ['update:modelValue'],
+      template: `<CheckboxGroupRoot
+        :default-value="['a']"
+        :all-values="allValues"
+        @update:model-value="$emit('update:modelValue', $event)"
+      >
+        <CheckboxRoot id="parent" aria-label="All" parent />
+        <CheckboxRoot value="a" aria-label="A" />
+        <CheckboxRoot value="b" aria-label="B" disabled />
+        <CheckboxRoot value="c" aria-label="C" />
+      </CheckboxGroupRoot>`,
+    })
+
+    function getChildIds(wrapper: VueWrapper<any>) {
+      return wrapper.findAll('[role="checkbox"]:not(#parent)').map(c => c.attributes('id'))
+    }
+
+    it('should register the children and generate their ids without remounting', async () => {
+      const wrapper = mount(LateGroup)
+      await nextTick()
+      expect(getChildIds(wrapper)).toEqual([undefined, undefined, undefined])
+      expect(getParent(wrapper).attributes('aria-controls')).toBeUndefined()
+
+      await wrapper.setProps({ allValues: ['a', 'b', 'c'] })
+      const ids = getChildIds(wrapper)
+      expect(ids.every(id => id?.startsWith('reka-checkbox-'))).toBe(true)
+      expect(new Set(ids).size).toBe(3)
+      expect(getParent(wrapper).attributes('aria-controls')).toBe(ids.join(' '))
+      expect(getParent(wrapper).attributes('data-state')).toBe('indeterminate')
+
+      // The disabled, unchecked `b` stays unchecked
+      await getParent(wrapper).trigger('click')
+      expect(lastEmitted(wrapper)).toEqual(['a', 'c'])
+    })
+
+    it('should unregister the children and drop their ids when allValues is removed', async () => {
+      const wrapper = mount(LateGroup, { props: { allValues: ['a', 'b', 'c'] } })
+      await nextTick()
+      const ids = getChildIds(wrapper)
+      expect(getParent(wrapper).attributes('aria-controls')).toBe(ids.join(' '))
+
+      await wrapper.setProps({ allValues: undefined })
+      expect(getChildIds(wrapper)).toEqual([undefined, undefined, undefined])
+      expect(getParent(wrapper).attributes('aria-controls')).toBeUndefined()
+
+      // Set again: the same ids come back
+      await wrapper.setProps({ allValues: ['a', 'b', 'c'] })
+      expect(getChildIds(wrapper)).toEqual(ids)
+      expect(getParent(wrapper).attributes('aria-controls')).toBe(ids.join(' '))
+    })
+  })
+
   it('should check up to the group max and stay enabled', async () => {
     const wrapper = mount(ParentGroup, { props: { max: 2, defaultValue: [] } })
     await getParent(wrapper).trigger('click')
