@@ -7,7 +7,7 @@ import type { Formatter } from '@/shared'
 import type { DateRange } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { isSameYear } from '@/date'
-import { createContext, useDirection, useId, useKbd, useLocale } from '@/shared'
+import { createRekaContext, useDirection, useId, useKbd, useLocale } from '@/shared'
 import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
 import { useYearPicker } from '@/YearPicker/useYearPicker'
 import { useRangeYearPickerState } from './useRangeYearPicker'
@@ -108,7 +108,7 @@ export type YearRangePickerRootEmits = {
 }
 
 export const [injectYearRangePickerRootContext, provideYearRangePickerRootContext]
-  = createContext<YearRangePickerRootContext>('YearRangePickerRoot')
+  = createRekaContext<YearRangePickerRootContext>('YearRangePickerRoot')
 </script>
 
 <script setup lang="ts">

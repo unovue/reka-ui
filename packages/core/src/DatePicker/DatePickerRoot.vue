@@ -9,7 +9,7 @@ import type { Direction } from '@/shared/types'
 import { isEqualDay } from '@internationalized/date'
 import { computed, ref, toRefs, watch } from 'vue'
 import { getWeekStartsOn, isSameDateSelection, isSameDateValue } from '@/date'
-import { createContext, useDirection, useLocale } from '@/shared'
+import { createRekaContext, useDirection, useLocale } from '@/shared'
 import { getDefaultDate } from '@/shared/date'
 import { PopoverRoot } from '..'
 
@@ -46,7 +46,7 @@ type DatePickerRootContext = {
   closeOnSelect: Ref<boolean>
 }
 
-export type DatePickerRootProps = Omit<DateFieldRootProps, 'as' | 'asChild'> & PopoverRootProps & Pick<CalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect'> & {
+export type DatePickerRootProps = Omit<DateFieldRootProps, 'as' | 'asChild'> & Omit<PopoverRootProps, 'unmountOnHide'> & Pick<CalendarRootProps, 'isDateDisabled' | 'pagedNavigation' | 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect'> & {
   /** Whether or not to close the popover on date select */
   closeOnSelect?: boolean
 }
@@ -59,7 +59,7 @@ export type DatePickerRootEmits = PopoverRootEmits & {
 }
 
 export const [injectDatePickerRootContext, provideDatePickerRootContext]
-  = createContext<DatePickerRootContext>('DatePickerRoot')
+  = createRekaContext<DatePickerRootContext>('DatePickerRoot')
 </script>
 
 <script setup lang="ts">

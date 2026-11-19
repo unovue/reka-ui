@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { Direction } from '../shared/types'
 import { useCollection } from '@/Collection'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
+import { createRekaContext, useDirection, useForwardExpose } from '@/shared'
 
 export interface MenubarRootProps {
   /** The controlled value of the menu to open. Can be used as `v-model`. */
@@ -33,7 +33,7 @@ export interface MenubarRootContext {
 }
 
 export const [injectMenubarRootContext, provideMenubarRootContext]
-  = createContext<MenubarRootContext>('MenubarRoot')
+  = createRekaContext<MenubarRootContext>('MenubarRoot')
 </script>
 
 <script setup lang="ts">

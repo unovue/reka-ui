@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { Direction } from './utils'
-import { createContext, useDirection } from '@/shared'
+import { createRekaContext, useDirection } from '@/shared'
 import { useIsUsingKeyboard } from '@/shared/useIsUsingKeyboard'
 
 export interface MenuContext {
@@ -40,10 +40,10 @@ export type MenuEmits = {
 }
 
 export const [injectMenuContext, provideMenuContext]
-  = createContext<MenuContext>(['MenuRoot', 'MenuSub'], 'MenuContext')
+  = createRekaContext<MenuContext>(['MenuRoot', 'MenuSub'], 'MenuContext')
 
 export const [injectMenuRootContext, provideMenuRootContext]
-  = createContext<MenuRootContext>('MenuRoot')
+  = createRekaContext<MenuRootContext>('MenuRoot')
 </script>
 
 <script setup lang="ts">

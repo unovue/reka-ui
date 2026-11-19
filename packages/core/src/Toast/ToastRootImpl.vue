@@ -5,7 +5,7 @@ import type { SwipeEvent } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import { isClient } from '@vueuse/shared'
 import { useCollection } from '@/Collection'
-import { createContext, getActiveElement, useForwardExpose } from '@/shared'
+import { createRekaContext, getActiveElement, useForwardExpose } from '@/shared'
 
 export type ToastRootImplEmits = {
   close: []
@@ -49,7 +49,7 @@ export interface ToastRootImplProps extends PrimitiveProps {
 }
 
 export const [injectToastRootContext, provideToastRootContext]
-  = createContext<{ onClose: (event?: PointerEvent) => void, toast: Ref<ToastObject | undefined> }>('ToastRoot')
+  = createRekaContext<{ onClose: (event?: PointerEvent) => void, toast: Ref<ToastObject | undefined> }>('ToastRoot')
 </script>
 
 <script setup lang="ts">

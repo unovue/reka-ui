@@ -13,7 +13,7 @@ import {
   isBefore,
   isBeforeOrSame,
 } from '@/date'
-import { createContext, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
+import { createRekaContext, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   createContent,
   getDefaultDate,
@@ -91,7 +91,7 @@ export type DateRangeFieldRootEmits = {
 }
 
 export const [injectDateRangeFieldRootContext, provideDateRangeFieldRootContext]
-  = createContext<DateRangeFieldRootContext>('DateRangeFieldRoot')
+  = createRekaContext<DateRangeFieldRootContext>('DateRangeFieldRoot')
 </script>
 
 <script setup lang="ts">
