@@ -58,6 +58,7 @@ export interface PinInputRootContext<Type extends PinInputType = 'text'> {
   disabled: Ref<boolean>
   isCompleted: ComputedRef<boolean>
   inputElements?: Ref<Set<HTMLInputElement>>
+  getModelIndex: (el: HTMLInputElement, position: number) => number
   onInputElementChange: (el: HTMLInputElement, index?: number) => void
   isNumericMode: ComputedRef<boolean>
 }
@@ -101,6 +102,10 @@ const currentModelValue = computed(() => Array.isArray(modelValue.value) ? [...m
 
 const inputElements = ref<Set<HTMLInputElement>>(new Set())
 const modelIndexByInput = new WeakMap<HTMLInputElement, number>()
+function getModelIndex(el: HTMLInputElement, position: number) {
+  return modelIndexByInput.get(el) ?? position
+}
+
 function onInputElementChange(el: HTMLInputElement, index?: number) {
   if (index !== undefined)
     modelIndexByInput.set(el, index)
@@ -112,7 +117,7 @@ function onInputElementChange(el: HTMLInputElement, index?: number) {
 
 const isNumericMode = computed(() => props.type === 'number')
 const mountedValues = computed(() => {
-  const indices = new Set(Array.from(inputElements.value, (el, position) => modelIndexByInput.get(el) ?? position))
+  const indices = new Set(Array.from(inputElements.value, getModelIndex))
   return currentModelValue.value.filter((_, index) => indices.has(index)) as PinInputValue<Type>
 })
 const isCompleted = computed(() => {
@@ -137,6 +142,7 @@ providePinInputRootContext({
   disabled,
   isCompleted,
   inputElements,
+  getModelIndex,
   onInputElementChange,
   isNumericMode,
 })
@@ -158,7 +164,7 @@ providePinInputRootContext({
       feature="focusable"
       aria-hidden="true"
       tabindex="-1"
-      :value="currentModelValue.join('')"
+      :value="mountedValues.join('')"
       :name="name ?? ''"
       :disabled="disabled"
       :required="required"
