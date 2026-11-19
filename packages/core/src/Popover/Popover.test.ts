@@ -296,16 +296,15 @@ describe('given a Popover with content event listeners', () => {
     expect(document.activeElement).toBe(document.getElementById('elsewhere'))
   })
 
-  // A modal popover returns focus to its trigger unless focus has already moved elsewhere,
-  // so preventing the event alone is only covered for the non-modal one.
-  it('should leave focus alone when closeAutoFocus is only prevented with modal=false', async () => {
-    const { wrapper, counts } = setup(false, event => event.preventDefault())
+  it.each(cases)('should leave focus alone when closeAutoFocus is only prevented with modal=$modal closing by $by', async ({ modal, by }) => {
+    const { wrapper, counts } = setup(modal, event => event.preventDefault())
 
     await open(wrapper)
     expect(document.activeElement).toBe(document.getElementById('inside'))
-    await close(wrapper, 'Escape')
+    await close(wrapper, by)
     expect(counts.closeAutoFocus).toBe(1)
-    expect(document.activeElement).not.toBe(wrapper.get('#trigger').element)
+    // Nothing restores focus, so it falls back to the body once the content is removed
+    expect(document.activeElement).toBe(document.body)
   })
 
   it.each([true, false])('should emit closeAutoFocus once when an open content is unmounted with modal=%s', async (modal) => {

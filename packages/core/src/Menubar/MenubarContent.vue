@@ -84,14 +84,17 @@ function handleArrowNavigation(event: KeyboardEvent) {
     }"
     v-bind="{ ...forwarded, ...omitEntryFocusListener($attrs) }"
     @close-auto-focus="(event) => {
-      const menubarOpen = Boolean(rootContext.modelValue.value);
-      if (!menubarOpen && !hasInteractedOutsideRef) {
-        menuContext.triggerElement.value?.focus();
+      if (!event.defaultPrevented) {
+        const menubarOpen = Boolean(rootContext.modelValue.value);
+        if (!menubarOpen && !hasInteractedOutsideRef) {
+          menuContext.triggerElement.value?.focus();
+        }
+
+        // Always prevent auto focus because we either focus manually or want user agent focus
+        event.preventDefault();
       }
 
       hasInteractedOutsideRef = false;
-      // Always prevent auto focus because we either focus manually or want user agent focus
-      event.preventDefault();
     }"
     @focus-outside="(event) => {
       const target = event.target as HTMLElement;

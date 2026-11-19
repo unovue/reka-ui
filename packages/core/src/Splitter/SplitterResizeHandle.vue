@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { onMounted, onUnmounted, ref, toRefs, watch, watchEffect } from 'vue'
+import { onActivated, onDeactivated, onMounted, onUnmounted, ref, toRefs, watch, watchEffect } from 'vue'
 import { useNonce } from '@/shared/useNonce'
 import { useWindowSplitterResizeHandlerBehavior } from './utils/composables/useWindowSplitterBehavior'
 
@@ -69,6 +69,11 @@ const resizeHandler = ref<ResizeHandler | null>(null)
 const { nonce: propNonce } = toRefs(props)
 const nonce = useNonce(propNonce)
 
+// A deactivated <KeepAlive> handle is out of the document but still mounted
+const isActive = ref(true)
+onActivated(() => isActive.value = true)
+onDeactivated(() => isActive.value = false)
+
 watch(disabled, () => {
   if (!isBrowser)
     return
@@ -79,7 +84,7 @@ watch(disabled, () => {
 }, { immediate: true })
 
 watchEffect((onCleanup) => {
-  if (disabled.value || resizeHandler.value === null)
+  if (disabled.value || !isActive.value || resizeHandler.value === null)
     return
 
   const element = currentElement.value

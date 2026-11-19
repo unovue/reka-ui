@@ -6,6 +6,7 @@ import { useEmitAsProps, useForwardExpose, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import DialogContentImpl from './DialogContentImpl.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
+import { getReturnFocusElement } from './utils'
 
 const props = withDefaults(defineProps<DialogContentImplProps & { present: boolean }>(), {
   disableOutsidePointerEvents: true,
@@ -48,7 +49,7 @@ const forwardedProps = computed(() => {
 // animating out.
 watch(() => props.present, (isPresent, wasPresent) => {
   if (!isPresent && wasPresent && !hasFocusLeftScope(rootContext.contentElement.value ?? null))
-    rootContext.triggerElement.value?.focus()
+    getReturnFocusElement(rootContext)?.focus()
 })
 </script>
 
@@ -64,7 +65,7 @@ watch(() => props.present, (isPresent, wasPresent) => {
         if (!event.defaultPrevented) {
           event.preventDefault();
           // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
-          if (!hasFocusLeftScope(event.target)) rootContext.triggerElement.value?.focus();
+          if (!hasFocusLeftScope(event.target)) getReturnFocusElement(rootContext)?.focus();
         }
       }
     "

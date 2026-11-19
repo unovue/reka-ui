@@ -4,7 +4,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import { endOfYear, getLocalTimeZone, startOfYear, toCalendar, today } from '@internationalized/date'
 import { computed, nextTick } from 'vue'
 import { isSameYear, toDate } from '@/date'
-import { useKbd } from '@/shared'
+import { getCalendarCellTabindex, useKbd } from '@/shared'
 
 export interface YearPickerCellTriggerProps extends PrimitiveProps {
   /** The date value provided to the cell trigger */
@@ -204,7 +204,7 @@ function handleArrowKey(e: KeyboardEvent) {
     :data-unavailable="isUnavailable ? '' : undefined"
     :data-today="isCurrentYear ? '' : undefined"
     :data-focused="isFocusedYear ? '' : undefined"
-    :tabindex="isFocusedYear ? 0 : isDisabled ? undefined : -1"
+    :tabindex="getCalendarCellTabindex(isFocusedYear, isDisabled, props)"
     @click="handleClick"
     @keydown.up.down.left.right.space.enter.page-up.page-down="handleArrowKey"
   >

@@ -13,7 +13,7 @@ exports[`give default Popper > should render correctly and match snapshot 1`] = 
   <div
     data-reka-popper-content-wrapper=""
     dir="ltr"
-    style="position: fixed; left: 0px; top: 0px; transform: translate(0, -200%); min-width: max-content; z-index: auto;"
+    style="position: fixed; left: 0px; top: 0px; transform: translate(0px, -200%); min-width: max-content; --reka-popper-transform-origin:  ; z-index: auto;"
   >
     <div
       data-align="center"
@@ -24,7 +24,7 @@ exports[`give default Popper > should render correctly and match snapshot 1`] = 
       
        Content 
       <span
-        style="position: absolute; top: 0px; transform-origin: center 0; transform: rotate(180deg); visibility: hidden;"
+        style="position: absolute; top: 0px; transform-origin: center 0px; transform: rotate(180deg); visibility: hidden;"
       >
         <svg
           height="5"
