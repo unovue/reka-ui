@@ -1,4 +1,5 @@
 import type { VueWrapper } from '@vue/test-utils'
+import type { App, Component } from 'vue'
 import { renderToString } from '@vue/server-renderer'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -26,6 +27,36 @@ function activeIndices(wrapper: VueWrapper) {
 function lastEmit(wrapper: VueWrapper, name: string) {
   const events = wrapper.emitted(name) as [unknown][] | undefined
   return events?.at(-1)
+}
+
+/**
+ * Hydrates the server HTML in `container` and runs `check` with the console
+ * messages logged so far. `enableAutoUnmount` does not cover apps mounted with
+ * `createSSRApp`, so the app, its container and the console spies are torn
+ * down here, even when an assertion fails.
+ */
+async function hydrate(
+  component: Component,
+  props: Record<string, unknown> | undefined,
+  container: HTMLElement,
+  check: (messages: () => string[]) => unknown,
+) {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+  let app: App | undefined
+  try {
+    const created = createSSRApp(component, props)
+    created.mount(container)
+    app = created
+    await nextTick()
+    await check(() => [...warn.mock.calls, ...error.mock.calls].map(args => String(args[0])))
+  }
+  finally {
+    app?.unmount()
+    container.remove()
+    warn.mockRestore()
+    error.mockRestore()
+  }
 }
 
 describe('given a default Carousel', () => {
@@ -628,21 +659,10 @@ describe('given grouped indicators rendered on the server', () => {
     expect(container.querySelector('[data-index="0"]')?.getAttribute('role')).toBe('group')
     document.body.innerHTML = ''
     document.body.append(container)
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-    try {
-      const app = createSSRApp(App)
-      app.mount(container)
-      await nextTick()
-      const messages = [...warn.mock.calls, ...error.mock.calls].map(args => String(args[0]))
-      expect(messages.filter(m => /hydrat|mismatch/i.test(m))).toEqual([])
+    await hydrate(App, undefined, container, (messages) => {
+      expect(messages().filter(m => /hydrat|mismatch/i.test(m))).toEqual([])
       expect(container.querySelector('[data-index="0"]')?.getAttribute('role')).toBe('tabpanel')
-      app.unmount()
-    }
-    finally {
-      warn.mockRestore()
-      error.mockRestore()
-    }
+    })
   })
 })
 
@@ -767,16 +787,10 @@ describe('given a Carousel rendered on the server', () => {
     container.innerHTML = html
     document.body.innerHTML = ''
     document.body.append(container)
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    try {
-      createSSRApp(WithControls).mount(container)
-      await nextTick()
-      expect(warn.mock.calls.map(args => String(args[0])).filter(m => m.includes('Hydration'))).toEqual([])
+    await hydrate(WithControls, undefined, container, (messages) => {
+      expect(messages().filter(m => m.includes('Hydration'))).toEqual([])
       expect(container.querySelectorAll('[aria-label^="Go to slide"]')).toHaveLength(2)
-    }
-    finally {
-      warn.mockRestore()
-    }
+    })
   })
 
   it('hides the inactive slides with fade', async () => {
@@ -790,20 +804,11 @@ describe('given a Carousel rendered on the server', () => {
     container.innerHTML = await renderToString(createSSRApp(Fixture, { defaultValue: 1 }))
     document.body.innerHTML = ''
     document.body.append(container)
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-    try {
-      createSSRApp(Fixture, { defaultValue: 1 }).mount(container)
-      await nextTick()
-      const messages = [...warn.mock.calls, ...error.mock.calls].map(args => String(args[0]))
-      expect(messages.filter(m => m.includes('Hydration'))).toEqual([])
+    await hydrate(Fixture, { defaultValue: 1 }, container, (messages) => {
+      expect(messages().filter(m => m.includes('Hydration'))).toEqual([])
       // Labels arrive once the total is known.
       expect(container.querySelector('[data-index="1"]')?.getAttribute('aria-label')).toBe('2 of 4')
-    }
-    finally {
-      warn.mockRestore()
-      error.mockRestore()
-    }
+    })
   })
 
   const FullFixture = defineComponent({
@@ -839,26 +844,19 @@ describe('given a Carousel rendered on the server', () => {
   ])('hydrates %j without mismatches', async (options) => {
     const container = document.createElement('div')
     container.innerHTML = await renderToString(createSSRApp(FullFixture, { options }))
-    const serverHtml = container.innerHTML
     document.body.innerHTML = ''
     document.body.append(container)
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-    try {
-      const app = createSSRApp(FullFixture, { options })
-      app.mount(container)
-      await nextTick()
-      const messages = [...warn.mock.calls, ...error.mock.calls].map(args => String(args[0]))
-      expect(messages.filter(m => /hydrat|mismatch/i.test(m))).toEqual([])
+    const serverSlides = Array.from(container.querySelectorAll('[aria-roledescription="slide"]'))
+    expect(serverSlides).toHaveLength(5)
+    await hydrate(FullFixture, { options }, container, (messages) => {
+      expect(messages().filter(m => /hydrat|mismatch/i.test(m))).toEqual([])
       // The slides are the server's elements, not re-created ones.
-      expect(serverHtml).toContain('aria-roledescription="slide"')
-      expect(container.querySelectorAll('[aria-roledescription="slide"]')).toHaveLength(5)
+      const slides = Array.from(container.querySelectorAll('[aria-roledescription="slide"]'))
+      expect(slides).toHaveLength(5)
+      serverSlides.forEach((slide) => {
+        expect(container.querySelector(`[data-index="${slide.getAttribute('data-index')}"]`)).toBe(slide)
+      })
       expect(container.querySelector('[data-index="0"]')?.getAttribute('aria-label')).toBe('1 of 5')
-      app.unmount()
-    }
-    finally {
-      warn.mockRestore()
-      error.mockRestore()
-    }
+    })
   })
 })
