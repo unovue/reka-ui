@@ -2,7 +2,7 @@
 import type { ReferenceElement } from '@floating-ui/vue'
 import type { ToastObject } from './createToastManager'
 import type { PopperContentProps } from '@/Popper'
-import { createContext, useForwardExpose } from '@/shared'
+import { createRekaContext, useForwardExpose } from '@/shared'
 
 export interface ToastPositionerProps extends Omit<PopperContentProps, 'reference' | 'memoDependencies'> {
   /** The toast to position. Its `positionerProps` are used for any prop that is not set. */
@@ -12,7 +12,7 @@ export interface ToastPositionerProps extends Omit<PopperContentProps, 'referenc
 }
 
 export const [injectToastPositionerContext, provideToastPositionerContext]
-  = createContext<object>('ToastPositioner')
+  = createRekaContext<object>('ToastPositioner')
 </script>
 
 <script setup lang="ts">

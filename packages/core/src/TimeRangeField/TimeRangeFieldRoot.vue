@@ -10,7 +10,7 @@ import type { TimeRange } from '@/shared/date/types'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { getLocalTimeZone, isSameDay, Time, toCalendarDateTime, today } from '@internationalized/date'
 import { areAllDaysBetweenValid, isBefore, isBeforeOrSame } from '@/date'
-import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
+import { createRekaContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   createContent,
   getDefaultTime,
@@ -100,7 +100,7 @@ export type TimeRangeFieldRootEmits = {
 }
 
 export const [injectTimeRangeFieldRootContext, provideTimeRangeFieldRootContext]
-  = createContext<TimeRangeFieldRootContext>('TimeRangeFieldRoot')
+  = createRekaContext<TimeRangeFieldRootContext>('TimeRangeFieldRoot')
 
 function convertValue(value: TimeValue, date: DateValue = today(getLocalTimeZone())) {
   if (value && 'day' in value) {

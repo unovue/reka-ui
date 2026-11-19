@@ -1,5 +1,5 @@
 import type { ComputedRef } from 'vue'
-import { clamp, createContext } from '@/shared'
+import { clamp, createRekaContext } from '@/shared'
 
 export interface SliderOrientationPrivateProps {
   min: number
@@ -143,4 +143,4 @@ interface SliderOrientation {
 }
 
 export const [injectSliderOrientationContext, provideSliderOrientationContext]
-  = createContext<SliderOrientation>(['SliderVertical', 'SliderHorizontal'])
+  = createRekaContext<SliderOrientation>(['SliderVertical', 'SliderHorizontal'])

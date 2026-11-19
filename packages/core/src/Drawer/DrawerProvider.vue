@@ -1,5 +1,5 @@
 <script lang="ts">
-import { createContext } from '@/shared'
+import { createRekaContext } from '@/shared'
 
 export interface DrawerVisualState {
   swipeProgress: number
@@ -20,7 +20,7 @@ export interface DrawerProviderContext {
 }
 
 export const [injectDrawerProviderContext, provideDrawerProviderContext]
-  = createContext<DrawerProviderContext>('DrawerProvider')
+  = createRekaContext<DrawerProviderContext>('DrawerProvider')
 </script>
 
 <script setup lang="ts">

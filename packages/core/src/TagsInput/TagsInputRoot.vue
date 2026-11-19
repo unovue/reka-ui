@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { computed, ref, toRefs } from 'vue'
-import { createContext, useArrowNavigation, useDirection, useFormControl, useForwardExpose } from '@/shared'
+import { createRekaContext, useArrowNavigation, useDirection, useFormControl, useForwardExpose } from '@/shared'
 
 export type AcceptableInputValue = string | number | bigint | Record<string, any>
 
@@ -65,7 +65,7 @@ export interface TagsInputRootContext<T = AcceptableInputValue> {
 }
 
 export const [injectTagsInputRootContext, provideTagsInputRootContext]
-  = createContext<TagsInputRootContext>('TagsInputRoot')
+  = createRekaContext<TagsInputRootContext>('TagsInputRoot')
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableInputValue = string">
