@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { Direction } from '../shared/types'
 import type { MenuEmits, MenuProps } from '@/Menu'
-import { createContext, defineReactiveIds, useDirection, useForwardExpose } from '@/shared'
+import { createRekaContext, defineReactiveIds, useDirection, useForwardExpose } from '@/shared'
 
 export interface DropdownMenuRootProps extends MenuProps {
   /** The open state of the dropdown menu when it is initially rendered. Use when you do not need to control its open state. */
@@ -22,7 +22,7 @@ export interface DropdownMenuRootContext {
 }
 
 export const [injectDropdownMenuRootContext, provideDropdownMenuRootContext]
-  = createContext<DropdownMenuRootContext>('DropdownMenuRoot')
+  = createRekaContext<DropdownMenuRootContext>('DropdownMenuRoot')
 </script>
 
 <script setup lang="ts">
@@ -33,6 +33,7 @@ import { MenuRoot } from '@/Menu'
 const props = withDefaults(defineProps<DropdownMenuRootProps>(), {
   modal: true,
   open: undefined,
+  unmountOnHide: true,
 })
 const emit = defineEmits<DropdownMenuRootEmits>()
 
@@ -74,6 +75,7 @@ provideDropdownMenuRootContext(defineReactiveIds({
     v-model:open="open"
     :dir="dir"
     :modal="modal"
+    :unmount-on-hide="unmountOnHide"
   >
     <slot :open="open" />
   </MenuRoot>

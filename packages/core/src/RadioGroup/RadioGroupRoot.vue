@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
-import { createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
+import { createRekaContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
 
 export interface RadioGroupRootProps extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the radio item to check. Can be binded as `v-model`. */
@@ -38,7 +38,7 @@ interface RadioGroupRootContext {
 }
 
 export const [injectRadioGroupRootContext, provideRadioGroupRootContext]
-  = createContext<RadioGroupRootContext>('RadioGroupRoot')
+  = createRekaContext<RadioGroupRootContext>('RadioGroupRoot')
 </script>
 
 <script setup lang="ts">

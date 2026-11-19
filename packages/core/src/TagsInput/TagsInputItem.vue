@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { AcceptableInputValue } from './TagsInputRoot.vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { computed, toRefs } from 'vue'
-import { createContext, useForwardExpose } from '@/shared'
+import { createRekaContext, useForwardExpose } from '@/shared'
 import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 
 export interface TagsInputItemProps extends PrimitiveProps {
@@ -23,7 +23,7 @@ export interface TagsInputItemContext {
 }
 
 export const [injectTagsInputItemContext, provideTagsInputItemContext]
-  = createContext<TagsInputItemContext>('TagsInputItem')
+  = createRekaContext<TagsInputItemContext>('TagsInputItem')
 </script>
 
 <script setup lang="ts">

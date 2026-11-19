@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { Direction, ScrollBodyOption } from '@/shared/types'
-import { createContext } from '@/shared'
+import { createRekaContext } from '@/shared'
 
 interface ConfigProviderContextValue {
   dir?: Ref<Direction>
@@ -13,7 +13,7 @@ interface ConfigProviderContextValue {
 }
 
 export const [injectConfigProviderContext, provideConfigProviderContext]
-  = createContext<ConfigProviderContextValue>('ConfigProvider')
+  = createRekaContext<ConfigProviderContextValue>('ConfigProvider')
 
 export interface ConfigProviderProps {
   /**

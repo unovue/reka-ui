@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useId } from '@/shared'
+import { createRekaContext, useId } from '@/shared'
 
 export interface SelectGroupProps extends PrimitiveProps {}
 
@@ -9,7 +9,7 @@ interface SelectGroupContext {
 }
 
 export const [injectSelectGroupContext, provideSelectGroupContext]
-  = createContext<SelectGroupContext>('SelectGroup')
+  = createRekaContext<SelectGroupContext>('SelectGroup')
 </script>
 
 <script setup lang="ts">

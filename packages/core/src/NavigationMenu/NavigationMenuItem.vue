@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { createContext, defineReactiveIds, getActiveElement, useArrowNavigation, useForwardExpose, useId } from '@/shared'
+import { createRekaContext, defineReactiveIds, getActiveElement, useArrowNavigation, useForwardExpose, useId } from '@/shared'
 
 export interface NavigationMenuItemProps extends PrimitiveProps {
   /**
@@ -29,7 +29,7 @@ export type NavigationMenuItemContext = {
 }
 
 export const [injectNavigationMenuItemContext, provideNavigationMenuItemContext]
-  = createContext<NavigationMenuItemContext>('NavigationMenuItem')
+  = createRekaContext<NavigationMenuItemContext>('NavigationMenuItem')
 </script>
 
 <script setup lang="ts">

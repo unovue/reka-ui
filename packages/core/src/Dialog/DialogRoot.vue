@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import { createContext, defineReactiveIds } from '@/shared'
+import { createRekaContext, defineReactiveIds } from '@/shared'
 
 export interface DialogRootProps {
   /** The controlled open state of the dialog. Can be binded as `v-model:open`. */
@@ -42,7 +42,7 @@ export interface DialogRootContext {
 }
 
 export const [injectDialogRootContext, provideDialogRootContext]
-  = createContext<DialogRootContext>('DialogRoot')
+  = createRekaContext<DialogRootContext>('DialogRoot')
 </script>
 
 <script setup lang="ts">
