@@ -224,3 +224,39 @@ describe('given a Collapsible mounted closed, in a real browser', () => {
     wrapper.unmount()
   })
 })
+
+describe('given a Collapsible mounted closed with a short closed-state animation, in a real browser', () => {
+  it('still runs the open animation after the closed-state animation ended (unmountOnHide: false)', async () => {
+    document.body.innerHTML = ''
+    style = document.createElement('style')
+    style.textContent = `
+@keyframes reka-test-open { from { opacity: 0 } to { opacity: 1 } }
+@keyframes reka-test-close-short { from { opacity: 1 } to { opacity: 0 } }
+.content[data-state="open"] { animation: reka-test-open 60s linear }
+.content[data-state="closed"] { animation: reka-test-close-short 10ms linear }
+`
+    document.head.appendChild(style)
+
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(CollapsibleRoot, { unmountOnHide: false }, () => [
+          h(CollapsibleTrigger, { 'data-testid': 'trigger' }, () => 'Trigger'),
+          h(CollapsibleContent, { 'class': 'content', 'data-testid': 'content' }, () => 'Content'),
+        ])
+      },
+    }), { attachTo: document.body })
+    const content = () => document.querySelector<HTMLElement>('[data-testid="content"]')!
+    const ended: string[] = []
+    content().addEventListener('animationend', event => ended.push((event as AnimationEvent).animationName))
+
+    // The closed-state animation plays on mount and ends while the panel is still closed.
+    await expect.poll(() => ended).toEqual(['reka-test-close-short'])
+    await nextFrame()
+    await nextFrame()
+    expect(content().hasAttribute('hidden')).toBe(true)
+
+    await userEvent.click(document.querySelector<HTMLElement>('[data-testid="trigger"]')!)
+    await expect.poll(() => content().getAnimations().map(a => (a as CSSAnimation).animationName)).toEqual(['reka-test-open'])
+    wrapper.unmount()
+  })
+})

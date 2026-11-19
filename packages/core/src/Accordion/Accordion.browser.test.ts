@@ -51,4 +51,37 @@ describe('given an Accordion with items mounted closed, in a real browser', () =
     await expect.poll(() => content().getBoundingClientRect().height).toBe(87)
     wrapper.unmount()
   })
+
+  it('still runs the open animation after a closed-state animation ended (unmountOnHide: false)', async () => {
+    document.body.innerHTML = ''
+    style = document.createElement('style')
+    style.textContent = `${css}
+@keyframes reka-test-fade-out { from { opacity: 1 } to { opacity: 0 } }
+.content[data-state="closed"] { animation: reka-test-fade-out 10ms linear }
+`
+    document.head.appendChild(style)
+
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(AccordionRoot, { type: 'single', collapsible: true, unmountOnHide: false }, () =>
+          h(AccordionItem, { value: 'a' }, () => [
+            h(AccordionHeader, () => h(AccordionTrigger, { 'data-testid': 'trigger' }, () => 'a')),
+            h(AccordionContent, { 'class': 'content', 'data-testid': 'content' }, () => h('div', { class: 'content-body' })),
+          ]))
+      },
+    }), { attachTo: document.body })
+    const content = () => document.querySelector<HTMLElement>('[data-testid="content"]')!
+    const ended: string[] = []
+    content().addEventListener('animationend', event => ended.push((event as AnimationEvent).animationName))
+
+    // The closed-state animation plays on mount and ends while the item is still closed.
+    await expect.poll(() => ended).toEqual(['reka-test-fade-out'])
+    await new Promise(resolve => requestAnimationFrame(resolve))
+    await new Promise(resolve => requestAnimationFrame(resolve))
+    expect(content().getAttribute('hidden')).toBe('until-found')
+
+    await userEvent.click(document.querySelector<HTMLElement>('[data-testid="trigger"]')!)
+    await expect.poll(() => content().getAnimations().map(a => (a as CSSAnimation).animationName)).toEqual(['reka-test-slide-down'])
+    wrapper.unmount()
+  })
 })
