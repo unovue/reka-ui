@@ -51,8 +51,8 @@
   },
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the progress value changes</p>\n',
-    'type': '[value: string[]]'
+    'description': '<p>Called when the progress value changes. The listener receives a number, or <code>null</code> or <code>undefined</code> for indeterminate progress.</p>\n',
+    'type': '[value: number | null]'
   }
 ]" />
 
@@ -83,7 +83,7 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `update:max` | Event handler called when the max value changes | `[value: number]` |
-| `update:modelValue` | Event handler called when the progress value changes | `[value: string[]]` |
+| `update:modelValue` | Called when the progress value changes. The listener receives a number, or null or undefined for indeterminate progress. | `[value: number \| null]` |
 
 **Slots**
 

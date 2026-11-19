@@ -4,8 +4,8 @@ import type { PrimitiveProps } from '@/Primitive'
 import { createRekaContext, isNullish, useForwardExpose } from '@/shared'
 
 export type ProgressRootEmits = {
-  /** Event handler called when the progress value changes */
-  'update:modelValue': [value: string[] | undefined]
+  /** Called when the progress value changes. The listener receives a number, or `null` or `undefined` for indeterminate progress. */
+  'update:modelValue': [value: number | null | undefined]
   /** Event handler called when the max value changes */
   'update:max': [value: number]
 }
