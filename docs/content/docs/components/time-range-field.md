@@ -441,6 +441,44 @@ const maxTime = new Time(18, 0)
 </template>
 ```
 
+### Ranges That Cross Midnight
+
+By default, a range whose end is earlier than its start is invalid. Set `allow-wrap` to accept a daily window that wraps past midnight, such as an overnight shift.
+
+Wrapping only applies when both values fall on the same calendar day, which is always true for `Time` values. If the values carry a date and the end is on an earlier day than the start, the range stays invalid. `min-value` and `max-value` still bound the start and the end separately, so they cannot describe a window that crosses midnight.
+
+```vue
+<script setup>
+import { Time } from '@internationalized/date'
+import { TimeRangeFieldInput, TimeRangeFieldRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+// Overnight shift: 22:00 to 06:00 the next morning
+const shift = ref({
+  start: new Time(22, 0),
+  end: new Time(6, 0)
+})
+</script>
+
+<template>
+  <TimeRangeFieldRoot
+    v-model="shift"
+    allow-wrap
+    locale="en-GB"
+  >
+    <div class="flex items-center gap-2">
+      <TimeRangeFieldInput part="hour" type="start" />
+      <span>:</span>
+      <TimeRangeFieldInput part="minute" type="start" />
+      <span class="mx-2">to</span>
+      <TimeRangeFieldInput part="hour" type="end" />
+      <span>:</span>
+      <TimeRangeFieldInput part="minute" type="end" />
+    </div>
+  </TimeRangeFieldRoot>
+</template>
+```
+
 ### With Step Increment
 
 ```vue
