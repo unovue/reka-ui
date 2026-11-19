@@ -216,15 +216,17 @@ rootContext.virtualFocusHook.on(({ event, scroll }) => {
   }
 })
 
-rootContext.virtualHighlightHook.on((value) => {
+rootContext.virtualHighlightHook.on(({ value, focus }) => {
   const index = props.options.findIndex((option) => {
     return compare(option, value, rootContext.by)
   })
+  if (index === -1)
+    return
   virtualizer.value.scrollToIndex(index, { align: 'start' })
   requestAnimationFrame(() => {
-    const item = queryCheckedElement(parentEl.value)
-    if (item)
-      rootContext.changeHighlight(item)
+    const item = parentEl.value.querySelector(`[data-index="${index}"]`)
+    if (item instanceof HTMLElement)
+      rootContext.changeHighlight(item, true, focus)
   })
 })
 

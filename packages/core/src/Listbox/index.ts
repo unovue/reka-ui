@@ -32,6 +32,7 @@ export {
 } from './ListboxItemIndicator.vue'
 export {
   injectListboxRootContext,
+  type ListboxHighlightItemOptions,
   default as ListboxRoot,
   type ListboxRootEmits,
   type ListboxRootProps,

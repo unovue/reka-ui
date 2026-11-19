@@ -997,3 +997,88 @@ describe('given ListboxItem slot props and ListboxItemIndicator', () => {
     expect(a.attributes('aria-hidden')).toBe('true')
   })
 })
+
+describe('given a Listbox driven by `highlightItem` from a sibling input', () => {
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+  window.HTMLElement.prototype.scrollTo = vi.fn()
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect
+  beforeAll(() => {
+    // jsdom reports zero-sized rects; give the virtualizer a viewport so its items mount.
+    window.HTMLElement.prototype.getBoundingClientRect = function () {
+      return { width: 200, height: 200, top: 0, left: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }
+    }
+  })
+  afterAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
+  })
+
+  const options = Array.from({ length: 50 }, (_, i) => `Item ${i}`)
+
+  function mountListbox(virtual: boolean) {
+    const listbox = ref<InstanceType<typeof ListboxRoot>>()
+    const onHighlight = vi.fn()
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => [
+          h('input', { 'data-testid': 'search' }),
+          h(ListboxRoot, { ref: listbox, onHighlight }, () =>
+            h(ListboxContent, { style: 'height: 200px; overflow: auto' }, () => virtual
+              ? h(ListboxVirtualizer, { options }, {
+                  default: ({ option }: any) => h(ListboxItem, { value: option }, () => option),
+                })
+              : options.map(option => h(ListboxItem, { value: option }, () => option)))),
+        ]
+      },
+    }), { attachTo: document.body })
+    return { wrapper, listbox, onHighlight }
+  }
+
+  async function flush() {
+    await nextTick()
+    await nextTick()
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    await nextTick()
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  describe.each([['non-virtual', false], ['virtual', true]])('%s', (_, virtual) => {
+    it('should highlight the item without moving focus with `{ focus: false }`', async () => {
+      const { wrapper, listbox, onHighlight } = mountListbox(virtual as boolean)
+      await flush()
+      const input = wrapper.find('[data-testid=search]').element as HTMLInputElement
+      input.focus()
+
+      listbox.value!.highlightItem('Item 3', { focus: false })
+      await flush()
+
+      const item = wrapper.findAll('[role=option]').find(i => i.text() === 'Item 3')!
+      expect(item.attributes('data-highlighted')).toBe('')
+      expect(listbox.value!.highlightedElement).toBe(item.element)
+      expect(onHighlight).toHaveBeenLastCalledWith(expect.objectContaining({ value: 'Item 3' }))
+      expect(document.activeElement).toBe(input)
+    })
+
+    it('should still move focus to the item by default', async () => {
+      const { wrapper, listbox } = mountListbox(virtual as boolean)
+      await flush()
+      const input = wrapper.find('[data-testid=search]').element as HTMLInputElement
+      input.focus()
+
+      listbox.value!.highlightItem('Item 3')
+      await flush()
+
+      const item = wrapper.findAll('[role=option]').find(i => i.text() === 'Item 3')!
+      expect(item.attributes('data-highlighted')).toBe('')
+      expect(document.activeElement).toBe(item.element)
+    })
+  })
+})
