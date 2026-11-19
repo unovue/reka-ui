@@ -9,6 +9,7 @@ import { onMounted } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose, useId, useRenderedContentId } from '@/shared'
 import { injectDialogRootContext } from './DialogRoot.vue'
+import { recordTriggerPress } from './utils'
 
 const props = withDefaults(defineProps<DialogTriggerProps>(), {
   as: 'button',
@@ -21,6 +22,14 @@ const contentId = useRenderedContentId(rootContext)
 onMounted(() => {
   rootContext.triggerElement.value = currentElement.value
 })
+
+function onClick(event: MouseEvent) {
+  // Focus returns to this trigger even when the press did not focus it, e.g. while
+  // focus is held in another dialog's trap.
+  if (!rootContext.open.value)
+    recordTriggerPress(rootContext, event.currentTarget as HTMLElement)
+  rootContext.onOpenToggle()
+}
 </script>
 
 <template>
@@ -32,7 +41,7 @@ onMounted(() => {
     :aria-expanded="rootContext.open.value || false"
     :aria-controls="rootContext.open.value ? contentId : undefined"
     :data-state="rootContext.open.value ? 'open' : 'closed'"
-    @click="rootContext.onOpenToggle"
+    @click="onClick"
   >
     <slot />
   </Primitive>

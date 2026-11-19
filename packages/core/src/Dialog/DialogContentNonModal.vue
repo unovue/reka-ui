@@ -5,6 +5,7 @@ import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { useEmitAsProps, useForwardExpose } from '@/shared'
 import DialogContentImpl from './DialogContentImpl.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
+import { getFocusedBeforeOpen, getReturnFocusElement } from './utils'
 
 const props = defineProps<DialogContentImplProps & { present: boolean }>()
 const emits = defineEmits<DialogContentImplEmits>()
@@ -29,7 +30,7 @@ const forwardedProps = computed(() => {
 watch(() => props.present, (isPresent, wasPresent) => {
   if (!isPresent && wasPresent) {
     if (!hasInteractedOutsideRef.value && !hasFocusLeftScope(rootContext.contentElement.value ?? null))
-      rootContext.triggerElement.value?.focus()
+      getReturnFocusElement(rootContext)?.focus()
     hasInteractedOutsideRef.value = false
     hasPointerDownOutsideRef.value = false
   }
@@ -46,7 +47,7 @@ watch(() => props.present, (isPresent, wasPresent) => {
       (event) => {
         if (!event.defaultPrevented) {
           // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
-          if (!hasInteractedOutsideRef && !hasFocusLeftScope(event.target)) rootContext.triggerElement.value?.focus();
+          if (!hasInteractedOutsideRef && !hasFocusLeftScope(event.target)) getReturnFocusElement(rootContext)?.focus();
           // Always prevent auto focus because we either focus manually or want user agent focus
           event.preventDefault();
         }
@@ -63,11 +64,11 @@ watch(() => props.present, (isPresent, wasPresent) => {
         }
       }
 
-      // Prevent dismissing when clicking the trigger.
-      // As the trigger is already setup to close, without doing so would
-      // cause it to close and immediately open.
+      // Prevent dismissing when clicking the trigger, or the element that opened
+      // the dialog programmatically. As it is already setup to close, without doing
+      // so would cause it to close and immediately open.
       const target = event.target as HTMLElement;
-      const targetIsTrigger = rootContext.triggerElement.value?.contains(target);
+      const targetIsTrigger = [rootContext.triggerElement.value, getFocusedBeforeOpen(rootContext)].some(element => element?.contains(target));
       if (targetIsTrigger) event.preventDefault();
 
       // On Safari if the trigger is inside a container with tabIndex={0}, when clicked

@@ -2,9 +2,11 @@
 import type { CheckboxRootProps } from '..'
 import { Icon } from '@iconify/vue'
 import { ref } from 'vue'
+import { useForwardProps } from '@/shared'
 import { CheckboxIndicator, CheckboxRoot } from '..'
 
 const props = defineProps<CheckboxRootProps>()
+const forwardedProps = useForwardProps(props)
 const modelValue = ref(props.modelValue)
 </script>
 
@@ -16,7 +18,7 @@ const modelValue = ref(props.modelValue)
     Test
   </label>
   <CheckboxRoot
-    v-bind="props"
+    v-bind="forwardedProps"
     v-model="modelValue"
     name="test"
     class="shadow-blackA7 hover:bg-violet3 flex h-[25px] w-[25px] appearance-none items-center justify-center rounded-[4px] bg-white shadow-[0_2px_10px] outline-none focus-within:shadow-[0_0_0_2px_black]"

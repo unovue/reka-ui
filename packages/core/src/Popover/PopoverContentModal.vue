@@ -26,10 +26,13 @@ useHideOthers(currentElement)
     :ref="forwardRef"
     :trap-focus="rootContext.open.value"
     disable-outside-pointer-events
-    @close-auto-focus.prevent="
+    @close-auto-focus="
       (event) => {
-        // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
-        if (!isRightClickOutsideRef && !hasFocusLeftScope(event.target)) rootContext.triggerElement.value?.focus();
+        if (!event.defaultPrevented) {
+          event.preventDefault();
+          // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
+          if (!isRightClickOutsideRef && !hasFocusLeftScope(event.target)) rootContext.triggerElement.value?.focus();
+        }
       }
     "
     @pointer-down-outside="

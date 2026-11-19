@@ -1,6 +1,6 @@
 import type { DateValue } from '@internationalized/date'
 import type { Matcher } from './types'
-import { CalendarDateTime, getDayOfWeek, getLocalTimeZone, parseDate, parseDateTime, parseZonedDateTime, toCalendar, ZonedDateTime } from '@internationalized/date'
+import { CalendarDateTime, getDayOfWeek, getLocalTimeZone, parseDate, parseDateTime, parseZonedDateTime, toCalendar, toCalendarDate, ZonedDateTime } from '@internationalized/date'
 
 /**
  * Given a date string and a reference `DateValue` object, parse the
@@ -256,14 +256,14 @@ export function areAllDaysBetweenValid(
   if (isUnavailable === undefined && isDisabled === undefined && isHighlightable === undefined)
     return true
 
-  let dCurrent = start.add({ days: 1 })
-  if ((isDisabled?.(dCurrent) || isUnavailable?.(dCurrent))
-    && !isHighlightable?.(dCurrent)) {
-    return false
-  }
-
-  const dEnd = end
-  while (dCurrent.compare(dEnd) < 0) {
+  // Every day after `start`, up to and including the day of `end`, and nothing
+  // past it: a single-day range has no day to check. Days are compared without
+  // their time, so the time of day of `start` and `end` does not move the bounds.
+  // Stepping stops on the day of `end`, so it never needs a day past it
+  // (adding a day to December 31, 9999 returns the same date).
+  const endDay = toCalendarDate(end)
+  let dCurrent = start
+  while (toCalendarDate(dCurrent).compare(endDay) < 0) {
     dCurrent = dCurrent.add({ days: 1 })
     if ((isDisabled?.(dCurrent) || isUnavailable?.(dCurrent))
       && !isHighlightable?.(dCurrent)) {

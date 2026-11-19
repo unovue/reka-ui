@@ -1,9 +1,10 @@
+import type { DateValue } from '@internationalized/date'
 import type { TimeRangeFieldRootProps } from './TimeRangeFieldRoot.vue'
 import type { TimeValue } from '@/shared/date'
-import { CalendarDateTime, Time, toZoned } from '@internationalized/date'
+import { CalendarDateTime, getLocalTimeZone, now, Time, toCalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
 import TimeField from './story/_TimeRangeField.vue'
@@ -406,5 +407,42 @@ describe('hidden input value', () => {
   ])('is "$expected" for $label', ({ modelValue, expected }) => {
     const { container } = setup({ timeRangeFieldProps: { modelValue, name: 'range' } })
     expect(container.querySelector('input')).toHaveValue(expected)
+  })
+})
+
+describe('unavailable days inside the range', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('does not check the next day for a `Time` range on today', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2024, 0, 19, 15, 0))
+    // Times later than now are unavailable: 09:00 to 10:00 today is in the past.
+    const isTimeUnavailable = (value: DateValue) => value.compare(toCalendarDateTime(now(getLocalTimeZone()))) > 0
+    const { input } = setup({
+      timeRangeFieldProps: { modelValue: { start: new Time(9, 0), end: new Time(10, 0) }, locale: 'en-GB', isTimeUnavailable },
+    })
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it.each([
+    ['CalendarDateTime', calendarDateTime],
+    ['ZonedDateTime', zonedDateTime],
+  ])('does not check the next day for a same-day `%s` range', (_, { start, end }) => {
+    // The day after the range, 2 January, is unavailable.
+    const isTimeUnavailable = (value: DateValue) => value.day === 2
+    const { input } = setup({
+      timeRangeFieldProps: { modelValue: { start, end }, locale: 'en-GB', isTimeUnavailable },
+    })
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('marks a date-time range with an unavailable day inside invalid', () => {
+    const isTimeUnavailable = (value: DateValue) => value.day === 2
+    const { input } = setup({
+      timeRangeFieldProps: { modelValue: { start: calendarDateTime.start, end: calendarDateTime.end.add({ days: 2 }) }, locale: 'en-GB', isTimeUnavailable },
+    })
+    expect(input).toHaveAttribute('data-invalid', '')
   })
 })
