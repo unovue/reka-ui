@@ -511,12 +511,12 @@ describe('given a CarouselViewport with consumer attributes', () => {
   })
 
   it('keeps the default `tabindex` and merges `aria-label` and `style`', async () => {
-    const wrapper = mountViewport({ 'aria-label': 'Slides', 'style': { outline: 'none' } })
+    const wrapper = mountViewport({ 'aria-label': 'Slides', 'style': { opacity: '0.5' } })
     await nextTick()
     const viewport = wrapper.find('[data-testid="viewport"]')
     expect(viewport.attributes('tabindex')).toBe('0')
     expect(viewport.attributes('aria-label')).toBe('Slides')
-    expect((viewport.element as HTMLElement).style.outline).toBe('none')
+    expect((viewport.element as HTMLElement).style.opacity).toBe('0.5')
     expect((viewport.element as HTMLElement).style.overflowX).toBe('auto')
   })
 })
