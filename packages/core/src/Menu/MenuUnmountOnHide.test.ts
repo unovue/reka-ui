@@ -308,3 +308,39 @@ describe.each([true, false])('given two DropdownMenus with unmountOnHide=%s', (u
     wrapper.unmount()
   })
 })
+
+describe('given a DropdownMenu kept mounted with unmountOnHide=false', () => {
+  it('should start a new typeahead search after it is closed and reopened', async () => {
+    document.body.innerHTML = ''
+    const open = ref(false)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(DropdownMenuRoot, {
+        'open': open.value,
+        'onUpdate:open': (value: boolean) => open.value = value,
+        'unmountOnHide': false,
+      }, () => [
+        h(DropdownMenuTrigger, null, () => 'Open'),
+        h(DropdownMenuContent, { 'data-testid': 'content' }, () => [
+          h(DropdownMenuItem, { 'data-testid': 'apple' }, () => 'Apple'),
+          h(DropdownMenuItem, { 'data-testid': 'banana' }, () => 'Banana'),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+    const type = (key: string) => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }))
+
+    // The typeahead search resets 1 second after the last key, so all of this runs well within it.
+    open.value = true
+    await settle()
+    type('a')
+    expect(document.activeElement).toBe(get('apple'))
+
+    open.value = false
+    await settle()
+    open.value = true
+    await settle()
+    get('content')!.focus()
+    type('b')
+    expect(document.activeElement).toBe(get('banana'))
+    wrapper.unmount()
+  })
+})

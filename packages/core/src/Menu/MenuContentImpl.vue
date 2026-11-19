@@ -148,7 +148,7 @@ const focusScopeRef = ref<ComponentPublicInstance>()
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
 // Lets the trigger of this menu know that its content is in the document.
 useContentMounted(menuContext, contentElement)
-const { handleTypeaheadSearch } = useTypeahead()
+const { handleTypeaheadSearch, resetTypeahead } = useTypeahead()
 
 const highlightedElement = ref<HTMLElement>()
 
@@ -168,6 +168,7 @@ watch(() => props.present, (present, wasPresent) => {
     currentItemId.value = null
     highlightedElement.value = undefined
     searchRef.value = ''
+    resetTypeahead()
     menuContext.contentHidden({ container: unrefElement(focusScopeRef) as HTMLElement | undefined, focusedBeforeShow })
     focusedBeforeShow = null
   }
