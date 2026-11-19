@@ -34,6 +34,51 @@ describe('given a Popover root that stays mounted', () => {
   })
 })
 
+describe.each([true, false])('given a Popover with unmountOnHide and modal=%s', (modal) => {
+  function mountPopover(rootProps: Record<string, unknown>) {
+    const open = ref(false)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(PopoverRoot, { 'open': open.value, 'onUpdate:open': (value: boolean) => open.value = value, modal, ...rootProps }, () => [
+        h(PopoverTrigger, () => 'Open'),
+        h(PopoverPortal, null, () => h(PopoverContent, { 'data-testid': 'content' }, () => 'Content')),
+      ]),
+    }), { attachTo: document.body })
+    onTestFinished(() => wrapper.unmount())
+    const content = () => document.querySelector<HTMLElement>('[data-testid="content"]')
+    // `v-show` hides the wrapper element that positions the content.
+    const isShown = () => content()?.parentElement?.style.display !== 'none'
+    return { open, content, isShown }
+  }
+
+  it('should keep the content in the DOM, hidden, while closed when unmountOnHide=false', async () => {
+    const { open, content, isShown } = mountPopover({ unmountOnHide: false })
+    await vi.waitFor(() => expect(content()).not.toBeNull())
+    expect(isShown()).toBe(false)
+    expect(content()!.getAttribute('data-state')).toBe('closed')
+
+    open.value = true
+    await vi.waitFor(() => expect(isShown()).toBe(true))
+    expect(content()!.getAttribute('data-state')).toBe('open')
+
+    open.value = false
+    await vi.waitFor(() => expect(isShown()).toBe(false))
+    expect(content()).not.toBeNull()
+  })
+
+  it('should unmount the content on close by default', async () => {
+    const { open, content } = mountPopover({})
+    await flushPromises()
+    expect(content()).toBeNull()
+
+    open.value = true
+    await vi.waitFor(() => expect(content()).not.toBeNull())
+    expect(content()!.parentElement!.style.display).not.toBe('none')
+
+    open.value = false
+    await vi.waitFor(() => expect(content()).toBeNull())
+  })
+})
+
 describe('given default Popover', () => {
   let wrapper: VueWrapper<InstanceType<typeof Popover>>
 

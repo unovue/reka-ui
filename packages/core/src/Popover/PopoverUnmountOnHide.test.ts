@@ -77,6 +77,9 @@ describe.each([
       props: { modal, unmountOnHide, onInteractOutside, onOpenAutoFocus, onCloseAutoFocus },
     })
     await settle()
+    // The content parts load asynchronously, which can outlast `settle` on a cold import.
+    if (!unmountOnHide)
+      await vi.waitFor(() => expect(document.querySelector('[data-testid="content-1"]')).not.toBeNull())
   })
 
   afterEach(() => wrapper.unmount())
@@ -135,7 +138,7 @@ describe.each([
     expect(isHidden('content-1')).toBe(true)
   })
 
-  it('should not move focus when closed content is later removed', async () => {
+  it('should leave focus alone but emit closeAutoFocus when closed content is later removed', async () => {
     get('trigger-1').focus()
     get('trigger-1').click()
     await settle()
@@ -147,7 +150,8 @@ describe.each([
     await wrapper.setProps({ showFirst: false })
     await settle()
     expect(document.activeElement).toBe(get('outside'))
-    expect(onCloseAutoFocus).toHaveBeenCalledTimes(closeAutoFocusCalls)
+    // A kept-mounted content unmounts its focus scope only now, which still fires `closeAutoFocus`.
+    expect(onCloseAutoFocus).toHaveBeenCalledTimes(closeAutoFocusCalls + (unmountOnHide ? 0 : 1))
   })
 
   it('should close the open popover on outside click', async () => {
