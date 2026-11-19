@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@nuxt/kit": "^4.1.2",
-    "@nuxt/schema": "^4.1.2",
+    "@nuxt/schema": "^4.6.4",
     "reka-ui": "link:../core",
     "unbuild": "^3.0.0",
     "unplugin-vue-components": "^32.0.0"
