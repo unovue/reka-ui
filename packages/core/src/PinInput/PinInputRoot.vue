@@ -2,9 +2,9 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { computed, ref, toRefs, watch } from 'vue'
+import { computed, ref, toRefs, watch, watchEffect } from 'vue'
 import { createRekaContext, useDirection, useForwardExpose } from '@/shared'
-import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
+import VisuallyHiddenInputBubble from '@/VisuallyHidden/VisuallyHiddenInputBubble.vue'
 
 export type PinInputType = 'text' | 'number'
 
@@ -37,6 +37,8 @@ export interface PinInputRootProps<Type extends PinInputType = 'text'> extends P
   mask?: boolean
   /** When `true`, mobile devices will autodetect the OTP from messages or clipboard, and enable the autocomplete field. */
   otp?: boolean
+  /** When `true` and `required`, every mounted PIN input must be filled before the form can be submitted. Defaults to `false`. */
+  requireComplete?: boolean
   /** Input type for the inputs. */
   type?: Type
   /** The reading direction of the combobox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
@@ -69,7 +71,7 @@ export const [injectPinInputRootContext, providePinInputRootContext]
 
 <script setup lang="ts" generic="Type extends PinInputType">
 import { useVModel } from '@vueuse/core'
-import { Primitive } from '@/Primitive'
+import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 defineOptions({
   inheritAttrs: false,
@@ -90,6 +92,7 @@ defineSlots<{
 
 const { mask, otp, placeholder, type, disabled, dir: propDir } = toRefs(props)
 const { forwardRef } = useForwardExpose()
+const { primitiveElement: formInputRef, currentElement: formInput } = usePrimitiveElement()
 const dir = useDirection(propDir)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
@@ -131,6 +134,14 @@ watch(modelValue, () => {
     emits('complete', mountedValues.value)
 }, { deep: true })
 
+watchEffect((onCleanup) => {
+  const input = formInput.value as HTMLInputElement | undefined
+  if (input && props.required && props.requireComplete && !isCompleted.value) {
+    input.setCustomValidity('Please fill in every PIN field.')
+    onCleanup(() => input.setCustomValidity(''))
+  }
+})
+
 providePinInputRootContext({
   modelValue,
   currentModelValue: currentModelValue as ComputedRef<PinInputValue<Type>>,
@@ -158,9 +169,9 @@ providePinInputRootContext({
   >
     <slot :model-value="modelValue" />
 
-    <!-- An empty pattern rejects a nonempty partial PIN while preserving its value for form events. -->
-    <VisuallyHiddenInput
+    <VisuallyHiddenInputBubble
       :id="id"
+      ref="formInputRef"
       as="input"
       feature="focusable"
       aria-hidden="true"
@@ -169,7 +180,6 @@ providePinInputRootContext({
       :name="name ?? ''"
       :disabled="disabled"
       :required="required"
-      :pattern="required && !isCompleted ? '' : undefined"
       @focus="Array.from(inputElements)?.[0]?.focus()"
     />
   </Primitive>
