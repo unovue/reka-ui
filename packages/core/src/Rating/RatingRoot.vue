@@ -111,7 +111,8 @@ provideRatingRootContext({
 
 <template>
   <RadioGroupRoot
-    v-bind="reactiveOmit(props, 'length', 'clearable', 'hoverable', 'step')"
+    v-bind="reactiveOmit(props, 'modelValue', 'defaultValue', 'length', 'clearable', 'hoverable', 'step')"
+    :model-value="modelValue ?? null"
     :disabled="disabled"
     @mouseleave="resetHoveredRating"
   >
