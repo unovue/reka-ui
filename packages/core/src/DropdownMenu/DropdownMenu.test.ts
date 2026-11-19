@@ -1,9 +1,10 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { findAllByRole, findByRole, fireEvent, render } from '@testing-library/vue'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
+import { injectMenuContext } from '@/Menu/MenuRoot.vue'
 import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
@@ -18,6 +19,172 @@ import {
   DropdownMenuTrigger,
 } from '.'
 import DropdownMenu from './story/_DropdownMenu.vue'
+
+describe('given a DropdownMenu root that stays mounted', () => {
+  it.each([true, false])('should preserve replaced submenu content and keyboard focus with modal=%s', async (modal) => {
+    let menuContext!: ReturnType<typeof injectMenuContext>
+    const ContextProbe = defineComponent({
+      setup() {
+        menuContext = injectMenuContext()
+        return () => null
+      },
+    })
+    const contentKey = ref(0)
+    const open = ref(true)
+    const wrapper = mount(defineComponent({
+      components: {
+        ContextProbe,
+        DropdownMenuRoot,
+        DropdownMenuTrigger,
+        DropdownMenuContent,
+        DropdownMenuSub,
+        DropdownMenuSubTrigger,
+        DropdownMenuSubContent,
+        DropdownMenuItem,
+      },
+      setup: () => ({ contentKey, open, modal }),
+      template: `<DropdownMenuRoot :open="true" :modal="modal">
+        <DropdownMenuTrigger>Open</DropdownMenuTrigger>
+        <DropdownMenuContent @close-auto-focus.prevent>
+          <DropdownMenuSub :open="open">
+            <ContextProbe />
+            <DropdownMenuSubTrigger data-testid="sub-trigger">Submenu</DropdownMenuSubTrigger>
+            <DropdownMenuSubContent :key="contentKey" data-testid="sub-content">
+              <DropdownMenuItem>Sub Item</DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        </DropdownMenuContent>
+      </DropdownMenuRoot>`,
+    }), { attachTo: document.body })
+
+    try {
+      await flushPromises()
+      let content = wrapper.get('[data-testid="sub-content"]').element
+      expect(menuContext.content.value).toBe(content)
+
+      for (let cycle = 0; cycle < 2; cycle++) {
+        contentKey.value++
+        await flushPromises()
+        const replacement = wrapper.get('[data-testid="sub-content"]').element
+        expect(replacement).not.toBe(content)
+        expect(menuContext.content.value).toBe(replacement)
+
+        const trigger = wrapper.get<HTMLElement>('[data-testid="sub-trigger"]')
+        trigger.element.focus()
+        expect(document.activeElement).toBe(trigger.element)
+        await trigger.trigger('keydown', { key: 'ArrowRight' })
+        expect(replacement.contains(document.activeElement)).toBe(true)
+        content = replacement
+      }
+
+      open.value = false
+      await flushPromises()
+      expect(menuContext.content.value).toBeUndefined()
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('should keep the registered submenu content when an older one unmounts', async () => {
+    let menuContext!: ReturnType<typeof injectMenuContext>
+    const ContextProbe = defineComponent({
+      setup() {
+        menuContext = injectMenuContext()
+        return () => null
+      },
+    })
+    const showFirst = ref(true)
+    const showSecond = ref(false)
+    const wrapper = mount(defineComponent({
+      components: {
+        ContextProbe,
+        DropdownMenuRoot,
+        DropdownMenuTrigger,
+        DropdownMenuContent,
+        DropdownMenuSub,
+        DropdownMenuSubTrigger,
+        DropdownMenuSubContent,
+        DropdownMenuItem,
+      },
+      setup: () => ({ showFirst, showSecond }),
+      template: `<DropdownMenuRoot :open="true">
+        <DropdownMenuTrigger>Open</DropdownMenuTrigger>
+        <DropdownMenuContent @close-auto-focus.prevent>
+          <DropdownMenuSub :open="true">
+            <ContextProbe />
+            <DropdownMenuSubTrigger data-testid="sub-trigger">Submenu</DropdownMenuSubTrigger>
+            <DropdownMenuSubContent v-if="showFirst" data-testid="first-content">
+              <DropdownMenuItem>First Item</DropdownMenuItem>
+            </DropdownMenuSubContent>
+            <DropdownMenuSubContent v-if="showSecond" data-testid="second-content">
+              <DropdownMenuItem>Second Item</DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        </DropdownMenuContent>
+      </DropdownMenuRoot>`,
+    }), { attachTo: document.body })
+
+    try {
+      await flushPromises()
+      expect(menuContext.content.value).toBe(wrapper.get('[data-testid="first-content"]').element)
+
+      showSecond.value = true
+      await flushPromises()
+      const second = wrapper.get('[data-testid="second-content"]').element
+      expect(menuContext.content.value).toBe(second)
+
+      showFirst.value = false
+      await flushPromises()
+      expect(wrapper.find('[data-testid="first-content"]').exists()).toBe(false)
+      expect(menuContext.content.value).toBe(second)
+
+      const trigger = wrapper.get<HTMLElement>('[data-testid="sub-trigger"]')
+      trigger.element.focus()
+      expect(document.activeElement).toBe(trigger.element)
+      await trigger.trigger('keydown', { key: 'ArrowRight' })
+      expect(second.contains(document.activeElement)).toBe(true)
+
+      showSecond.value = false
+      await flushPromises()
+      expect(menuContext.content.value).toBeUndefined()
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it.each([true, false])('should release closed content with modal=%s', async (modal) => {
+    let menuContext!: ReturnType<typeof injectMenuContext>
+    const ContextProbe = defineComponent({
+      setup() {
+        menuContext = injectMenuContext()
+        return () => null
+      },
+    })
+    const open = ref(false)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(DropdownMenuRoot, { open: open.value, modal }, () => [
+        h(ContextProbe),
+        h(DropdownMenuTrigger, () => 'Open'),
+        h(DropdownMenuPortal, { disabled: true }, () => h(DropdownMenuContent, () => h(DropdownMenuItem, () => 'Item'))),
+      ]),
+    }), { attachTo: document.body })
+
+    for (let cycle = 0; cycle < 2; cycle++) {
+      open.value = true
+      await flushPromises()
+      expect(menuContext.content.value).toBe(wrapper.get('[role="menu"]').element)
+
+      open.value = false
+      await flushPromises()
+      expect(wrapper.find('[role="menu"]').exists()).toBe(false)
+      expect(menuContext.content.value).toBeUndefined()
+    }
+
+    wrapper.unmount()
+  })
+})
 
 const DropdownMenuTabTest = defineComponent({
   components: {

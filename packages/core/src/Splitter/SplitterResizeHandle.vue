@@ -176,7 +176,7 @@ onUnmounted(bumpResizeHandleRegistration)
     :data-panel-resize-handle-enabled="!disabled"
     :data-panel-resize-handle-id=" resizeHandleId"
     @blur="isFocused = false"
-    @focus="isFocused = false"
+    @focus="isFocused = true"
   >
     <slot />
   </Primitive>

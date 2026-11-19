@@ -64,7 +64,7 @@ const isRender = computed(() => {
 
 onMounted(() => {
   // textValue to perform filter
-  rootContext.allItems.value.set(id, props.textValue || currentElement.value.textContent || currentElement.value.innerText)
+  rootContext.allItems.value.set(id, props.textValue || currentElement.value?.textContent || currentElement.value?.innerText)
 
   const groupId = groupContext?.id
   if (groupId) {

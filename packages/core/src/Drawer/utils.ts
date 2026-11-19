@@ -204,3 +204,48 @@ export function registerDrawerCssProperties() {
 
   drawerCssVarsRegistered = true
 }
+
+function isFiniteAnimation(animation: Animation) {
+  const timing = animation.effect?.getTiming()
+  return timing?.duration !== Infinity && timing?.iterations !== Infinity
+}
+
+/**
+ * Runs `callback` once every animation and transition on `element` has
+ * finished, or on the next frame when nothing is animating. Animations that
+ * never end are not waited for.
+ *
+ * The first look is delayed by a frame so that the animations started by the
+ * state change that led here are registered.
+ *
+ * @returns A function that cancels the wait.
+ */
+export function onAnimationsFinished(element: HTMLElement, callback: () => void): () => void {
+  // Animations cannot be observed here, so there is nothing to wait for.
+  if (typeof element.getAnimations !== 'function') {
+    callback()
+    return () => {}
+  }
+
+  let isCanceled = false
+  const waitForAnimations = () => {
+    Promise.all(element.getAnimations().filter(isFiniteAnimation).map(animation => animation.finished)).then(
+      () => {
+        if (!isCanceled)
+          callback()
+      },
+      () => {
+        // An animation was canceled, e.g. a property it depends on changed
+        // while it played. Wait for the current ones, which include any replacement.
+        if (!isCanceled)
+          waitForAnimations()
+      },
+    )
+  }
+  const frame = requestAnimationFrame(waitForAnimations)
+
+  return () => {
+    isCanceled = true
+    cancelAnimationFrame(frame)
+  }
+}

@@ -60,6 +60,8 @@ import { CheckboxGroupRoot, CheckboxIndicator, CheckboxRoot } from 'reka-ui'
 
 Contains all the parts of a checkbox. An `input` will also render when used within a `form` to ensure events propagate correctly.
 
+When a `name` is provided, the hidden input uses the field name as its default label. The visible checkbox still needs its own label.
+
 <!-- @include: @/meta/CheckboxRoot.md -->
 
 <DataAttributesTable

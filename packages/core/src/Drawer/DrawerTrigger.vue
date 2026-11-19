@@ -7,12 +7,13 @@ export interface DrawerTriggerProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { onUnmounted, watch } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { useForwardExpose, useRenderedContentId } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 
 const props = withDefaults(defineProps<DrawerTriggerProps>(), { as: 'button' })
 const rootContext = injectDrawerRootContext()
 const { forwardRef, currentElement } = useForwardExpose()
+const contentId = useRenderedContentId(rootContext)
 
 // Keep triggerElement in sync with the rendered element — useForwardExpose's
 // currentElement is a reactive computed ref, and v-if / conditional rendering
@@ -35,7 +36,7 @@ onUnmounted(() => {
     :type="as === 'button' ? 'button' : undefined"
     aria-haspopup="dialog"
     :aria-expanded="rootContext.open.value"
-    :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
+    :aria-controls="rootContext.open.value ? contentId : undefined"
     :data-state="rootContext.open.value ? 'open' : 'closed'"
     @click="rootContext.onOpenToggle"
   >

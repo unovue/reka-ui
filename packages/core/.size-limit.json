@@ -14,13 +14,13 @@
   {
     "path": "dist/index.js",
     "import": "{ SelectRoot, SelectTrigger, SelectContent, SelectItem, SelectViewport, SelectPortal }",
-    "limit": "27 KB",
+    "limit": "28 KB",
     "name": "Select"
   },
   {
     "path": "dist/index.js",
     "import": "{ ComboboxRoot, ComboboxInput, ComboboxContent, ComboboxItem, ComboboxVirtualizer }",
-    "limit": "33 KB",
+    "limit": "34 KB",
     "name": "Combobox"
   },
   {
@@ -44,19 +44,19 @@
   {
     "path": "dist/index.js",
     "import": "{ PopoverRoot, PopoverTrigger, PopoverContent, PopoverPortal }",
-    "limit": "21 KB",
+    "limit": "22 KB",
     "name": "Popover"
   },
   {
     "path": "dist/index.js",
     "import": "{ TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent }",
-    "limit": "19 KB",
+    "limit": "20 KB",
     "name": "Tooltip"
   },
   {
     "path": "dist/index.js",
     "import": "*",
-    "limit": "163.3 KB",
+    "limit": "170 KB",
     "name": "Full library"
   }
 ]

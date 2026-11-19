@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from '.'
+import { useWindowSplitterResizeHandlerBehavior } from './utils/composables/useWindowSplitterBehavior'
 
 // Regression test for https://github.com/unovue/reka-ui/issues/3126
 // A handle mounted into a group that is already in the page (e.g. with v-if)
@@ -304,5 +305,110 @@ describe('resize handles in two documents', () => {
 
     expect(framed.find('.handle').attributes('data-state')).toBe('hover')
     expect(page.find('.handle').attributes('data-state')).toBe('inactive')
+  })
+})
+
+describe('resize handle focus', () => {
+  let wrapper: VueWrapper
+
+  afterEach(() => {
+    wrapper.unmount()
+    document.body.innerHTML = ''
+  })
+
+  function mountSplitter(disabled: boolean[]) {
+    const TestComponent = defineComponent({
+      components: { SplitterGroup, SplitterPanel, SplitterResizeHandle },
+      setup: () => ({ disabled }),
+      template: `
+        <SplitterGroup direction="horizontal">
+          <template v-for="(isDisabled, index) in disabled" :key="index">
+            <SplitterPanel />
+            <SplitterResizeHandle :id="'handle-' + index" :disabled="isDisabled" />
+          </template>
+          <SplitterPanel />
+        </SplitterGroup>
+      `,
+    })
+    wrapper = mount(TestComponent, { attachTo: document.body })
+    return (index: number) => document.getElementById(`handle-${index}`)!
+  }
+
+  function pressF6(element: HTMLElement, shiftKey = false) {
+    element.dispatchEvent(new KeyboardEvent('keydown', { key: 'F6', shiftKey, bubbles: true, cancelable: true }))
+  }
+
+  it('should skip a disabled handle on F6 and Shift+F6', async () => {
+    const handle = mountSplitter([false, true, false])
+    await nextTick()
+
+    handle(0).focus()
+    pressF6(handle(0))
+    expect(document.activeElement).toBe(handle(2))
+
+    pressF6(handle(2), true)
+    expect(document.activeElement).toBe(handle(0))
+
+    // Wraps around past the disabled handle as well.
+    pressF6(handle(0), true)
+    expect(document.activeElement).toBe(handle(2))
+  })
+
+  it('should move focus from a disabled handle to an enabled one on F6, without resizing on arrow keys', async () => {
+    const handle = mountSplitter([false, true, false])
+    await nextTick()
+
+    handle(1).focus()
+    const arrow = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true })
+    handle(1).dispatchEvent(arrow)
+    expect(arrow.defaultPrevented).toBe(false)
+
+    pressF6(handle(1))
+    expect(document.activeElement).toBe(handle(2))
+
+    handle(1).focus()
+    pressF6(handle(1), true)
+    expect(document.activeElement).toBe(handle(0))
+  })
+
+  it('should keep focus on F6 when every other handle is disabled', async () => {
+    const handle = mountSplitter([false, true])
+    await nextTick()
+
+    handle(0).focus()
+    pressF6(handle(0))
+    expect(document.activeElement).toBe(handle(0))
+  })
+
+  it('should mark a focused handle as keyboard-active', async () => {
+    const handle = mountSplitter([false])
+    await nextTick()
+
+    expect(handle(0).hasAttribute('data-resize-handle-active')).toBe(false)
+
+    handle(0).focus()
+    await nextTick()
+    expect(handle(0).getAttribute('data-resize-handle-active')).toBe('keyboard')
+
+    handle(0).blur()
+    await nextTick()
+    expect(handle(0).hasAttribute('data-resize-handle-active')).toBe(false)
+  })
+})
+
+describe('resize handle keyboard behavior without a group element', () => {
+  it.each([null, undefined])('should not handle keys while the group element is %s', (groupElement) => {
+    const handle = document.createElement('div')
+    useWindowSplitterResizeHandlerBehavior({
+      disabled: ref(false),
+      handleId: 'handle',
+      resizeHandler: ref(null),
+      panelGroupElement: ref(groupElement) as any,
+      element: ref(handle),
+    })
+
+    const event = new KeyboardEvent('keydown', { key: 'F6', cancelable: true })
+    handle.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
   })
 })

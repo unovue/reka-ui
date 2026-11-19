@@ -1,12 +1,12 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import type { Mock, MockInstance } from 'vitest'
 import { createEvent, findByText, fireEvent, render } from '@testing-library/vue'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { sleep } from '@/test'
-import { DialogClose, DialogContent, DialogOverlay, DialogRoot, DialogTitle, DialogTrigger } from '.'
+import { DialogClose, DialogContent, DialogOverlay, DialogRoot, DialogTitle, DialogTrigger, injectDialogRootContext } from '.'
 
 const OPEN_TEXT = 'Open'
 const CLOSE_TEXT = 'Close'
@@ -682,5 +682,61 @@ describe('given a Dialog with content nested inside the overlay', () => {
 
       expect(document.body.innerHTML).toContain(CLOSE_TEXT)
     })
+  })
+})
+
+describe('given a Dialog root that stays mounted', () => {
+  function mountDialog(props: Record<string, unknown>, contentProps: Record<string, unknown> = {}) {
+    let rootContext!: ReturnType<typeof injectDialogRootContext>
+    const ContextProbe = defineComponent({
+      setup() {
+        rootContext = injectDialogRootContext()
+        return () => null
+      },
+    })
+    const open = ref(false)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(DialogRoot, { open: open.value, ...props }, () => [
+        h(ContextProbe),
+        h(DialogTrigger, () => OPEN_TEXT),
+        h(DialogContent, { 'aria-describedby': undefined, ...contentProps }, () => h(DialogTitle, () => TITLE_TEXT)),
+      ]),
+    }), { attachTo: document.body })
+    return { wrapper, open, context: () => rootContext }
+  }
+
+  it.each([true, false])('should release the closed content element with modal=%s', async (modal) => {
+    const { wrapper, open, context } = mountDialog({ modal })
+
+    for (let cycle = 0; cycle < 2; cycle++) {
+      open.value = true
+      await flushPromises()
+      const registered = context().contentElement
+      expect(registered.value).toBe(wrapper.get('[role="dialog"]').element)
+
+      open.value = false
+      await flushPromises()
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+      // The content's own ref would keep its unmounted instance reachable from the root.
+      expect(context().contentElement).not.toBe(registered)
+      expect(context().contentElement.value).toBeUndefined()
+    }
+
+    wrapper.unmount()
+  })
+
+  it('should keep a force-mounted content element registered while closed', async () => {
+    const { wrapper, open, context } = mountDialog({}, { forceMount: true })
+    open.value = true
+    await flushPromises()
+    const content = wrapper.get('[role="dialog"]').element
+    expect(context().contentElement.value).toBe(content)
+
+    open.value = false
+    await flushPromises()
+    expect(wrapper.get('[role="dialog"]').element).toBe(content)
+    expect(context().contentElement.value).toBe(content)
+
+    wrapper.unmount()
   })
 })

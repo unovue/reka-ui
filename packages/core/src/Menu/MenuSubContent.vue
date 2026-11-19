@@ -18,7 +18,7 @@ export interface MenuSubContentProps extends Omit<MenuContentImplProps, 'disable
 
 <script setup lang="ts">
 import { Presence } from '@/Presence'
-import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
+import { useContentId, useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
 import MenuContentImpl, { injectMenuContentContext } from './MenuContentImpl.vue'
 import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
 import { injectMenuSubContext } from './MenuSub.vue'
@@ -39,6 +39,7 @@ const parentContentContext = injectMenuContentContext()
 const { forwardRef, currentElement: subContentElement } = useForwardExpose()
 
 menuSubContext.contentId ||= useId(undefined, 'reka-menu-sub-content')
+useContentId(menuSubContext, subContentElement)
 </script>
 
 <template>

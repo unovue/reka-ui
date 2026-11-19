@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DialogContentImplEmits, DialogContentImplProps } from './DialogContentImpl.vue'
 import { computed, ref, watch } from 'vue'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { useEmitAsProps, useForwardExpose } from '@/shared'
 import DialogContentImpl from './DialogContentImpl.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
@@ -22,10 +23,12 @@ const forwardedProps = computed(() => {
 
 // When `unmountOnHide` is `false` the content stays mounted on close, so
 // `close-auto-focus` never fires. Restore focus to the trigger manually once
-// the content is no longer present, unless the user interacted outside.
+// the content is no longer present, unless the user interacted outside or
+// something else took focus meanwhile, e.g. a layer opened while this one was
+// animating out.
 watch(() => props.present, (isPresent, wasPresent) => {
   if (!isPresent && wasPresent) {
-    if (!hasInteractedOutsideRef.value)
+    if (!hasInteractedOutsideRef.value && !hasFocusLeftScope(rootContext.contentElement.value ?? null))
       rootContext.triggerElement.value?.focus()
     hasInteractedOutsideRef.value = false
     hasPointerDownOutsideRef.value = false
@@ -42,7 +45,8 @@ watch(() => props.present, (isPresent, wasPresent) => {
     @close-auto-focus="
       (event) => {
         if (!event.defaultPrevented) {
-          if (!hasInteractedOutsideRef) rootContext.triggerElement.value?.focus();
+          // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
+          if (!hasInteractedOutsideRef && !hasFocusLeftScope(event.target)) rootContext.triggerElement.value?.focus();
           // Always prevent auto focus because we either focus manually or want user agent focus
           event.preventDefault();
         }

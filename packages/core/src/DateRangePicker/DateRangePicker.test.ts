@@ -4,10 +4,12 @@ import type { DateRangePickerRootProps } from './DateRangePickerRoot.vue'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, h } from 'vue'
 import { ConfigProvider } from '@/ConfigProvider'
 import { useTestKbd } from '@/shared'
+import { DateRangePickerContent, DateRangePickerRoot, DateRangePickerTrigger } from '.'
 import DateRangePicker from './story/_DateRangePicker.vue'
 
 const calendarDate = {
@@ -316,5 +318,27 @@ describe('dateRangePicker', async () => {
       expect(heading).toHaveTextContent('January')
       expect(heading).toHaveTextContent('2022')
     })
+  })
+})
+
+describe('given a DateRangePickerContent with an openAutoFocus listener', () => {
+  it('should emit openAutoFocus once per open', async () => {
+    const user = userEvent.setup()
+    const onOpenAutoFocus = vi.fn()
+    const { getByTestId } = render(defineComponent({
+      setup: () => () => h(DateRangePickerRoot, null, () => [
+        h(DateRangePickerTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
+        h(DateRangePickerContent, { onOpenAutoFocus }, () => h('button', 'Inside')),
+      ]),
+    }))
+
+    for (let cycle = 1; cycle <= 2; cycle++) {
+      await user.click(getByTestId('trigger'))
+      await screen.findByRole('dialog')
+      expect(onOpenAutoFocus).toHaveBeenCalledTimes(cycle)
+
+      await user.keyboard('{Escape}')
+      await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    }
   })
 })

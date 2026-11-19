@@ -12,6 +12,8 @@ type ToastProviderContext = {
   disableSwipe: Ref<boolean>
   swipeDirection: Ref<SwipeDirection>
   swipeThreshold: Ref<number>
+  disableHoverPause: Ref<boolean>
+  disableWindowBlurPause: Ref<boolean>
   toastCount: Ref<number>
   viewport: Ref<HTMLElement | undefined>
   onViewportChange: (viewport: HTMLElement) => void
@@ -75,6 +77,21 @@ export interface ToastProviderProps {
    */
   swipeThreshold?: number
   /**
+   * When `true`, toasts keep counting down while the pointer is over the viewport, so a toast
+   * can close while a pointer user is still reading it. Best kept to short status toasts
+   * without actions. Keyboard focus inside the viewport and a press or swipe on a toast
+   * always pause the toasts.
+   * @defaultValue false
+   */
+  disableHoverPause?: boolean
+  /**
+   * When `true`, toasts keep counting down while the window is not focused, so a toast can
+   * close before the user comes back to the page. Keyboard focus inside the viewport still
+   * pauses the toasts until the window is focused again.
+   * @defaultValue false
+   */
+  disableWindowBlurPause?: boolean
+  /**
    * The maximum number of toasts shown at once. Older toasts beyond the limit get
    * `data-limited` and `inert` rather than being removed, so they can be hidden or animated.
    * No limit is applied when unset.
@@ -106,7 +123,7 @@ const props = withDefaults(defineProps<ToastProviderProps>(), {
   swipeDirection: 'right',
   swipeThreshold: 50,
 })
-const { label, duration, disableSwipe, swipeDirection, swipeThreshold } = toRefs(props)
+const { label, duration, disableSwipe, swipeDirection, swipeThreshold, disableHoverPause, disableWindowBlurPause } = toRefs(props)
 useCollection({ isProvider: true })
 
 const viewport = ref<HTMLElement>()
@@ -170,6 +187,8 @@ provideToastProviderContext({
   disableSwipe,
   swipeDirection,
   swipeThreshold,
+  disableHoverPause,
+  disableWindowBlurPause,
   toastCount,
   viewport,
   onViewportChange(el) {

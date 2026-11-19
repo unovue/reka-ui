@@ -9,9 +9,9 @@ export interface MenubarContentProps extends MenuContentProps {}
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { MenuContent } from '@/Menu'
+import { injectMenuContext, MenuContent } from '@/Menu'
 import { omitEntryFocusListener } from '@/Menu/utils'
-import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
+import { useContentId, useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
 import { wrapArray } from '@/shared/useTypeahead'
 import { injectMenubarMenuContext } from './MenubarMenu.vue'
 import { injectMenubarRootContext } from './MenubarRoot.vue'
@@ -31,6 +31,7 @@ const rootContext = injectMenubarRootContext()
 const menuContext = injectMenubarMenuContext()
 
 menuContext.contentId ||= useId(undefined, 'reka-menubar-content')
+useContentId(menuContext, injectMenuContext().content)
 
 const { getItems } = useCollection({ key: 'Menubar' })
 

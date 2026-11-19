@@ -63,6 +63,11 @@ describe('getNextMatch', () => {
       getNextMatch(['Apple', 'Apricot', 'Banana'], 'ap', 'Apple'),
     ).toBeUndefined()
   })
+
+  it('cycles through items with the same text', () => {
+    const items = [{ text: 'Main St' }, { text: 'Main St' }, { text: 'Market St' }]
+    expect(getNextMatch(items, 'm', items[0], item => item.text)).toBe(items[1])
+  })
 })
 
 describe('useTypeahead', () => {
@@ -118,6 +123,17 @@ describe('useTypeahead', () => {
 
     expect(banana.ref.focus).toHaveBeenCalledTimes(1)
     expect(result).toBe(banana.ref)
+  })
+
+  it('falls back to textContent when textValue is empty', () => {
+    vi.useFakeTimers()
+    const { handleTypeaheadSearch } = useTypeahead()
+
+    const apple = createItem('Apple', { textValue: '' })
+    const banana = createItem('Banana', { textValue: '' })
+    banana.ref.focus = vi.fn()
+
+    expect(handleTypeaheadSearch('b', [apple, banana])).toBe(banana.ref)
   })
 
   it('accumulates the search buffer across calls', () => {

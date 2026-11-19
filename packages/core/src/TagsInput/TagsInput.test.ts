@@ -4,7 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
-import { TagsInputInput, TagsInputItem, TagsInputItemText, TagsInputRoot } from '.'
+import { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot } from '.'
 import TagsInput from './story/_TagsInput.vue'
 import TagsInputDisabled from './story/_TagsInputDisabled.vue'
 import TagsInputObject from './story/_TagsInputObject.vue'
@@ -413,6 +413,25 @@ describe('given TagsInput with a disabled item before a removable one', () => {
   })
 })
 
+describe('given a TagsInputItemDelete with an aria-label', () => {
+  it('should not override the aria-label with aria-labelledby', () => {
+    const wrapper = mount(defineComponent({
+      components: { TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot },
+      template: `<TagsInputRoot :model-value="['Me']">
+        <TagsInputItem value="Me">
+          <TagsInputItemText />
+          <TagsInputItemDelete aria-label="Remove Me" />
+        </TagsInputItem>
+      </TagsInputRoot>`,
+    }), { attachTo: document.body })
+
+    const button = wrapper.get('button')
+    expect(button.attributes('aria-label')).toBe('Remove Me')
+    expect(button.attributes('aria-labelledby')).toBeUndefined()
+    wrapper.unmount()
+  })
+})
+
 describe('given TagsInput inside a form', () => {
   function mountInForm(inputAttrs: Record<string, unknown> = {}) {
     const values = ref<string[]>([])
@@ -480,5 +499,27 @@ describe('given TagsInput inside a form', () => {
     expect(values.value).toEqual([])
     expect(input.value).toBe('draft')
     wrapper.unmount()
+  })
+})
+
+describe('given a TagsInputInput rendered as-child without an element', () => {
+  it('should not auto focus an unrelated input that follows it', async () => {
+    vi.useFakeTimers()
+    const wrapper = mount(defineComponent({
+      components: { TagsInputInput, TagsInputRoot },
+      template: `<TagsInputRoot :model-value="[]">
+        <TagsInputInput as-child auto-focus><template v-if="false"><input /></template></TagsInputInput><input data-testid="outsider" />
+      </TagsInputRoot>`,
+    }), { attachTo: document.body })
+
+    try {
+      await flushPromises()
+      vi.runAllTimers()
+      expect(document.activeElement).not.toBe(wrapper.get('[data-testid="outsider"]').element)
+    }
+    finally {
+      vi.useRealTimers()
+      wrapper.unmount()
+    }
   })
 })

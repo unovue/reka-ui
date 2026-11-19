@@ -112,6 +112,22 @@ describe('editable', () => {
     expect(preview).toHaveTextContent('New Value')
   })
 
+  it('submits the value when another editable is focused', async () => {
+    const { getAllByTestId } = render({
+      components: { Editable },
+      template: '<Editable /><Editable />',
+    })
+
+    const [firstInput] = getAllByTestId('input')
+    const [firstPreview, secondPreview] = getAllByTestId('preview')
+
+    await userEvent.click(firstPreview)
+    await userEvent.type(firstInput, 'New Value')
+    await userEvent.click(secondPreview)
+
+    expect(firstPreview).toHaveTextContent('New Value')
+  })
+
   it('submits the value when pressing enter if submitMode is both', async () => {
     const { input, preview, rerender } = setup({ editableProps: { modelValue: '', submitMode: 'both' }, emits: { 'onUpdate:modelValue': (data: string) => rerender({ modelValue: data }) } })
 

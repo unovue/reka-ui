@@ -209,3 +209,32 @@ describe('dateField', async () => {
     expect(end.month).toHaveTextContent(String(calendarDate.end.month))
   })
 })
+
+describe('hidden input value', () => {
+  it.each([
+    { label: 'no value', modelValue: undefined, expected: '' },
+    { label: 'only a start', modelValue: { start: calendarDate.start, end: undefined }, expected: '' },
+    { label: 'only an end', modelValue: { start: undefined, end: calendarDate.end }, expected: '' },
+    { label: 'a complete date range', modelValue: calendarDate, expected: '2022-01-01 - 2022-03-01' },
+    { label: 'a complete date time range', modelValue: calendarDateTime, expected: '2022-01-01T12:30:00 - 2022-03-01T12:30:00' },
+  ])('is "$expected" for $label', ({ modelValue, expected }) => {
+    const { container } = setup({ dateFieldProps: { modelValue, name: 'range' } })
+    expect(container.querySelector('input')).toHaveValue(expected)
+  })
+
+  it('is filled once the second date is typed and emptied when a date is cleared', async () => {
+    const { container, start, end, user } = setup({ dateFieldProps: { name: 'range', locale: 'en-US' } })
+    const input = container.querySelector('input')
+
+    await user.click(start.month)
+    await user.keyboard('01012022')
+    expect(input).toHaveValue('')
+
+    await user.keyboard('03012022')
+    expect(input).toHaveValue('2022-01-01 - 2022-03-01')
+
+    await user.click(end.day)
+    await user.keyboard(kbd.BACKSPACE)
+    expect(input).toHaveValue('')
+  })
+})

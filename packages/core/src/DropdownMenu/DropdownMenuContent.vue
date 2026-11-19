@@ -11,9 +11,10 @@ export interface DropdownMenuContentProps extends MenuContentProps {}
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { MenuContent } from '@/Menu'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
+import { injectMenuContext, MenuContent } from '@/Menu'
 import { omitEntryFocusListener } from '@/Menu/utils'
-import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
+import { useContentId, useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
 import { injectDropdownMenuRootContext } from './DropdownMenuRoot.vue'
 
 defineOptions({
@@ -33,8 +34,11 @@ function handleCloseAutoFocus(event: Event) {
   if (event.defaultPrevented)
     return
   if (!hasInteractedOutsideRef.value) {
+    const scope = event.target
     setTimeout(() => {
-      rootContext.triggerElement.value?.focus()
+      // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
+      if (!hasFocusLeftScope(scope))
+        rootContext.triggerElement.value?.focus()
     }, 0)
   }
   hasInteractedOutsideRef.value = false
@@ -44,6 +48,7 @@ function handleCloseAutoFocus(event: Event) {
 }
 
 rootContext.contentId ||= useId(undefined, 'reka-dropdown-menu-content')
+useContentId(rootContext, injectMenuContext().content)
 </script>
 
 <template>
