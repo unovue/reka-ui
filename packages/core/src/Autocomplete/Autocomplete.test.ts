@@ -50,11 +50,7 @@ describe('given default Autocomplete', () => {
     })
 
     it('should pass axe accessibility tests', async () => {
-      expect(await axe(wrapper.element, {
-        rules: {
-          'aria-required-children': { enabled: false },
-        },
-      })).toHaveNoViolations()
+      expect(await axe(wrapper.element)).toHaveNoViolations()
     })
 
     it('should show the popup content', () => {

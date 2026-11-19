@@ -1,4 +1,4 @@
-# values (523)
+# values (534)
 AccordionContent
 AccordionHeader
 AccordionItem
@@ -45,6 +45,15 @@ CalendarHeading
 CalendarNext
 CalendarPrev
 CalendarRoot
+CarouselAutoplayToggle
+CarouselContent
+CarouselIndicator
+CarouselIndicatorGroup
+CarouselItem
+CarouselNext
+CarouselPrevious
+CarouselRoot
+CarouselViewport
 CheckboxGroupRoot
 CheckboxIndicator
 CheckboxRoot
@@ -438,6 +447,8 @@ injectAlertDialogContentContext
 injectAutocompleteRootContext
 injectAvatarRootContext
 injectCalendarRootContext
+injectCarouselIndicatorGroupContext
+injectCarouselRootContext
 injectCheckboxGroupRootContext
 injectCheckboxRootContext
 injectCollapsibleRootContext
@@ -523,7 +534,7 @@ useStateMachine
 useToastManager
 withDefault
 
-# types (573)
+# types (589)
 AcceptableInputValue
 AcceptableValue
 AccordionContentProps
@@ -582,6 +593,21 @@ CalendarNextProps
 CalendarPrevProps
 CalendarRootEmits
 CalendarRootProps
+CarouselAlign
+CarouselAutoScrollOptions
+CarouselAutoplayOptions
+CarouselAutoplayToggleProps
+CarouselContainScroll
+CarouselContentProps
+CarouselIndicatorGroupProps
+CarouselIndicatorProps
+CarouselItemProps
+CarouselNextProps
+CarouselPreviousProps
+CarouselRootEmits
+CarouselRootProps
+CarouselSlidesToScroll
+CarouselViewportProps
 CheckboxCheckedState
 CheckboxGroupRootEmits
 CheckboxGroupRootProps
@@ -818,6 +844,7 @@ ListboxFilterEmits
 ListboxFilterProps
 ListboxGroupLabelProps
 ListboxGroupProps
+ListboxHighlightItemOptions
 ListboxItemEmits
 ListboxItemIndicatorProps
 ListboxItemProps

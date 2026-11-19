@@ -46,6 +46,9 @@ const height = ref(0)
 const isOpen = computed(() => rootContext.open.value)
 const isMountAnimationPrevented = ref(isOpen.value)
 const currentStyle = ref<Record<string, string>>()
+// A panel mounted closed is hidden, so measuring it would only force a layout for a size the
+// animations never read: the next run, once it is shown, measures it before it animates.
+let hasBeenPresent = false
 
 watch(
   () => [isOpen.value, presentRef.value?.present],
@@ -54,10 +57,16 @@ watch(
     const node = currentElement.value
     if (!node)
       return
+    // Taken on mount, before the `animationend` handler below can write `none` over the author's
+    // inline style (a closed-state animation can end before the first open). Reading it forces
+    // no layout.
     currentStyle.value = currentStyle.value || {
       transitionDuration: node.style.transitionDuration,
       animationName: node.style.animationName,
     }
+    if (!hasBeenPresent && !presentRef.value?.present)
+      return
+    hasBeenPresent = true
     // block any animations/transitions so the element renders at its full dimensions
     node.style.transitionDuration = '0s'
     node.style.animationName = 'none'

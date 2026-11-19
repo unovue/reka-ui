@@ -296,6 +296,45 @@ const people = [
 </template>
 ```
 
+### Highlighting an item programmatically
+
+`ListboxRoot` exposes `highlightItem(value, options?)`, which highlights the item with the given value and scrolls it into view. By default it also moves focus to that item. Pass `{ focus: false }` to keep focus where it is, for example on a separate text input that jumps to the first matching item as the user types.
+
+```vue line=12
+<script setup lang="ts">
+import { ListboxContent, ListboxItem, ListboxRoot } from 'reka-ui'
+import { useTemplateRef } from 'vue'
+
+const fruits = ['Apple', 'Banana', 'Blueberry', 'Cherry', 'Grapes']
+const listbox = useTemplateRef('listbox')
+
+function onInput(event: Event) {
+  const query = (event.target as HTMLInputElement).value.toLowerCase()
+  const match = fruits.find(fruit => fruit.toLowerCase().startsWith(query))
+  if (query && match)
+    listbox.value?.highlightItem(match, { focus: false })
+}
+</script>
+
+<template>
+  <input
+    aria-label="Jump to fruit"
+    @input="onInput"
+  >
+  <ListboxRoot ref="listbox">
+    <ListboxContent>
+      <ListboxItem
+        v-for="fruit in fruits"
+        :key="fruit"
+        :value="fruit"
+      >
+        {{ fruit }}
+      </ListboxItem>
+    </ListboxContent>
+  </ListboxRoot>
+</template>
+```
+
 ## Accessibility
 
 Adheres to the [Listbox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).

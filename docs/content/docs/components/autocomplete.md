@@ -152,7 +152,7 @@ The button that clears the input text and resets the value.
 
 ### Empty
 
-Shown when none of the items match the query.
+Shown when none of the items match the query. Renders as a disabled option that cannot be selected or highlighted.
 
 <!-- @include: @/meta/ComboboxEmpty.md -->
 

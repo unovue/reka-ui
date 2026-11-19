@@ -63,6 +63,18 @@ export const components = {
     'CalendarCellTrigger',
   ] as const,
 
+  carousel: [
+    'CarouselRoot',
+    'CarouselViewport',
+    'CarouselContent',
+    'CarouselItem',
+    'CarouselPrevious',
+    'CarouselNext',
+    'CarouselIndicator',
+    'CarouselIndicatorGroup',
+    'CarouselAutoplayToggle',
+  ] as const,
+
   checkbox: [
     'CheckboxGroupRoot',
     'CheckboxRoot',

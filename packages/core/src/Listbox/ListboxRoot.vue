@@ -19,7 +19,7 @@ type ListboxRootContext<T> = {
   isVirtual: Ref<boolean>
   virtualFocusHook: EventHook<{ event?: Event, scroll: boolean }>
   virtualKeydownHook: EventHook<KeyboardEvent>
-  virtualHighlightHook: EventHook<any>
+  virtualHighlightHook: EventHook<{ value: any, focus?: boolean }>
   by?: string | ((a: T, b: T) => boolean)
   firstValue?: Ref<T | undefined>
   selectionBehavior?: Ref<'toggle' | 'replace'>
@@ -48,6 +48,14 @@ type ListboxHighlightScrollContext = {
 
 export const [injectListboxHighlightScrollContext, provideListboxHighlightScrollContext]
   = createContext<ListboxHighlightScrollContext>('ListboxHighlightScroll')
+
+export interface ListboxHighlightItemOptions {
+  /**
+   * Whether to move focus to the highlighted item.
+   * @defaultValue true
+   */
+  focus?: boolean
+}
 
 export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the listbox. Can be binded with `v-model`. */
@@ -171,7 +179,7 @@ const isVirtual = ref(false)
 const isComposing = ref(false)
 const virtualFocusHook = createEventHook<{ event?: Event, scroll: boolean }>()
 const virtualKeydownHook = createEventHook<KeyboardEvent>()
-const virtualHighlightHook = createEventHook<T>()
+const virtualHighlightHook = createEventHook<{ value: T, focus?: boolean }>()
 
 function getCollectionItem() {
   return getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
@@ -207,17 +215,16 @@ function changeHighlight(el: HTMLElement, scrollIntoView = true, focus?: boolean
   emits('highlight', highlightedItem)
 }
 
-function highlightItem(value: T) {
+function highlightItem(value: T, options: ListboxHighlightItemOptions = {}) {
+  // `undefined` keeps the default: focus the item unless focus belongs to a filter input.
+  const focus = options.focus === false ? false : undefined
   if (isVirtual.value) {
-    // @ts-expect-error known type issue https://github.com/vueuse/vueuse/issues/4610
-    virtualHighlightHook.trigger(value)
+    virtualHighlightHook.trigger({ value, focus })
   }
   else {
     const item = getItems().find(i => compare(i.value, value, props.by))
-    if (item) {
-      highlightedElement.value = item.ref
-      changeHighlight(item.ref)
-    }
+    if (item)
+      changeHighlight(item.ref, true, focus)
   }
 }
 
@@ -446,10 +453,18 @@ watch(modelValue, () => {
 }, { immediate: true, deep: true })
 
 defineExpose({
+  /** The currently highlighted item element. */
   highlightedElement,
+  /**
+   * Highlight the item with the given value and scroll it into view. By default it also moves
+   * focus to the item; pass `{ focus: false }` to keep focus where it is (e.g. on an input).
+   */
   highlightItem,
+  /** Highlight the first enabled item. */
   highlightFirstItem,
+  /** Highlight the selected item, or the first enabled item when nothing is selected. */
   highlightSelected,
+  /** Get the registered items. */
   getItems,
 })
 
