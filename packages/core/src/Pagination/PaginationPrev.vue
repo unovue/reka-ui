@@ -15,7 +15,7 @@ const props = withDefaults(defineProps<PaginationPrevProps>(), { as: 'button' })
 useForwardExpose()
 const rootContext = injectPaginationRootContext()
 
-const disabled = computed((): boolean => rootContext.page.value === 1 || rootContext.disabled.value)
+const disabled = computed((): boolean => rootContext.page.value <= 1 || rootContext.disabled.value)
 </script>
 
 <template>

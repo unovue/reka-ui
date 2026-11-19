@@ -206,6 +206,28 @@ const currentPage = ref(1)
 </template>
 ```
 
+### Keep the page within the page count
+
+When `total` or `itemsPerPage` shrinks, for example after filtering a list, the current page can end up past the last page. Set `clampPage` to move it to the last page and emit `update:page`.
+
+A `total` of `0` resets the page to `1`, so keep the previous `total` while new data loads.
+
+```vue line=10
+<script setup lang="ts">
+import { PaginationRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+const currentPage = ref(10)
+const total = ref(100)
+</script>
+
+<template>
+  <PaginationRoot v-model:page="currentPage" :total="total" :items-per-page="10" clamp-page>
+    ...
+  </PaginationRoot>
+</template>
+```
+
 ## Keyboard Interactions
 
 <KeyboardTable
