@@ -1,5 +1,5 @@
 import type { DateValue } from '@internationalized/date'
-import { BuddhistCalendar, CalendarDate, CalendarDateTime, HebrewCalendar, toCalendar, toTimeZone, toZoned } from '@internationalized/date'
+import { BuddhistCalendar, CalendarDate, CalendarDateTime, HebrewCalendar, JapaneseCalendar, toCalendar, toTimeZone, toZoned } from '@internationalized/date'
 import { describe, expect, it } from 'vitest'
 import { areAllDaysBetweenValid, getMonthsBetween, isSameDateValue } from './comparators'
 
@@ -97,5 +97,14 @@ describe('getMonthsBetween', () => {
     const end = new CalendarDate(calendar, 5785, 1, 1)
     expect(getMonthsBetween(start, end)).toBe(3)
     expect(getMonthsBetween(end, start)).toBe(-1)
+  })
+
+  it('counts across the first year of a Japanese era', () => {
+    const calendar = new JapaneseCalendar()
+    const start = new CalendarDate(calendar, 'reiwa', 1, 12, 1)
+    const end = new CalendarDate(calendar, 'reiwa', 2, 1, 1)
+    expect(getMonthsBetween(start, end)).toBe(2)
+    expect(getMonthsBetween(end, start)).toBe(0)
+    expect(getMonthsBetween(new CalendarDate(calendar, 'heisei', 31, 4, 1), new CalendarDate(calendar, 'reiwa', 1, 5, 1))).toBe(2)
   })
 })
