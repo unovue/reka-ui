@@ -1,8 +1,10 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
+import type { PropType } from 'vue'
+import userEvent from '@testing-library/user-event'
 import { mount } from '@vue/test-utils'
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 import { handleSubmit, sleep } from '@/test'
 import { CheckboxGroupRoot, CheckboxRoot } from '.'
 import Checkbox from './story/_Checkbox.vue'
@@ -138,13 +140,11 @@ describe('given CheckboxGroup', () => {
   describe('when clicking the checkbox', async () => {
     let wrapper: VueWrapper<InstanceType<typeof CheckboxGroup>>
     let checkboxes: DOMWrapper<HTMLButtonElement>[]
-    let parentCheckbox: DOMWrapper<HTMLButtonElement>
 
     beforeEach(async () => {
       wrapper = mount(CheckboxGroup)
       checkboxes = wrapper.findAll('button')
       checkboxes[0].trigger('click')
-      parentCheckbox = wrapper.find('#parent')
     })
 
     it('should render a visible indicator', async () => {
@@ -169,26 +169,6 @@ describe('given CheckboxGroup', () => {
       it('should render 2 checkboxes', async () => {
         expect(checkboxes[0].attributes('data-state')).toBe('checked')
         expect(checkboxes[1].attributes('data-state')).toBe('checked')
-        expect(checkboxes[2].attributes('data-state')).toBe('unchecked')
-      })
-    })
-
-    describe('when clicking parent checkbox', async () => {
-      it('should has indeterminate state', async () => {
-        expect(parentCheckbox.attributes('data-state')).toBe('indeterminate')
-      })
-
-      it('should toggle all checkbox', async () => {
-        // toggle on
-        await parentCheckbox.trigger('click')
-        expect(checkboxes[0].attributes('data-state')).toBe('checked')
-        expect(checkboxes[1].attributes('data-state')).toBe('checked')
-        expect(checkboxes[2].attributes('data-state')).toBe('checked')
-
-        // toggle off
-        await parentCheckbox.trigger('click')
-        expect(checkboxes[0].attributes('data-state')).toBe('unchecked')
-        expect(checkboxes[1].attributes('data-state')).toBe('unchecked')
         expect(checkboxes[2].attributes('data-state')).toBe('unchecked')
       })
     })
@@ -465,5 +445,254 @@ describe('given checkboxGroup in a form', async () => {
       expect(handleSubmit).toHaveBeenCalledTimes(1)
       expect(submittedData).toStrictEqual({ })
     })
+  })
+})
+
+describe('given a parent Checkbox', () => {
+  interface Item { value: any, label: string, disabled?: boolean, id?: string }
+  const ParentGroup = defineComponent({
+    components: { CheckboxGroupRoot, CheckboxRoot },
+    props: {
+      items: { type: Array as PropType<Item[]>, default: () => [
+        { value: 'a', label: 'A', id: 'a' },
+        { value: 'b', label: 'B', id: 'b' },
+        { value: 'c', label: 'C', id: 'c' },
+      ] },
+      allValues: { type: Array as PropType<any[]>, default: undefined },
+      modelValue: { type: Array as PropType<any[]>, default: undefined },
+      defaultValue: { type: Array as PropType<any[]>, default: undefined },
+      max: { type: Number, default: undefined },
+      name: { type: String, default: undefined },
+    },
+    emits: ['update:modelValue'],
+    template: `<CheckboxGroupRoot
+      :model-value="modelValue"
+      :default-value="defaultValue"
+      :all-values="allValues === undefined ? items.map(i => i.value) : allValues"
+      :max="max"
+      :name="name"
+      @update:model-value="$emit('update:modelValue', $event)"
+    >
+      <CheckboxRoot id="parent" aria-label="All" parent />
+      <CheckboxRoot
+        v-for="item in items"
+        :id="item.id"
+        :key="item.label"
+        :value="item.value"
+        :aria-label="item.label"
+        :disabled="item.disabled"
+      />
+    </CheckboxGroupRoot>`,
+  })
+
+  function getParent(wrapper: VueWrapper<any>) {
+    return wrapper.find('#parent')
+  }
+  function getStates(wrapper: VueWrapper<any>) {
+    return wrapper.findAll('[role="checkbox"]:not(#parent)').map(c => c.attributes('data-state'))
+  }
+  function lastEmitted(wrapper: VueWrapper<any>) {
+    return wrapper.emitted('update:modelValue')!.at(-1)![0]
+  }
+
+  it('should pass axe accessibility tests', async () => {
+    const wrapper = mount(ParentGroup, { props: { defaultValue: ['a'] }, attachTo: document.body })
+    await nextTick()
+    expect(await axe(wrapper.element)).toHaveNoViolations()
+    wrapper.unmount()
+  })
+
+  it('should be indeterminate when some values are checked', () => {
+    const wrapper = mount(ParentGroup, { props: { defaultValue: ['a'] } })
+    expect(getParent(wrapper).attributes('data-state')).toBe('indeterminate')
+    expect(getParent(wrapper).attributes('aria-checked')).toBe('mixed')
+  })
+
+  it('should be checked when every value is checked', () => {
+    const wrapper = mount(ParentGroup, { props: { defaultValue: ['c', 'a', 'b'] } })
+    expect(getParent(wrapper).attributes('data-state')).toBe('checked')
+  })
+
+  it('should check every child, then uncheck every child (uncontrolled)', async () => {
+    const wrapper = mount(ParentGroup, { props: { defaultValue: ['a'] } })
+    await getParent(wrapper).trigger('click')
+    expect(getStates(wrapper)).toEqual(['checked', 'checked', 'checked'])
+    expect(getParent(wrapper).attributes('data-state')).toBe('checked')
+    await getParent(wrapper).trigger('click')
+    expect(getStates(wrapper)).toEqual(['unchecked', 'unchecked', 'unchecked'])
+    expect(getParent(wrapper).attributes('data-state')).toBe('unchecked')
+    expect(wrapper.emitted('update:modelValue')).toEqual([[['a', 'b', 'c']], [[]]])
+  })
+
+  it('should follow a controlled model', async () => {
+    const wrapper = mount(ParentGroup, {
+      props: {
+        'modelValue': ['b'],
+        'onUpdate:modelValue': (value: any[]) => wrapper.setProps({ modelValue: value }),
+      },
+    })
+    await getParent(wrapper).trigger('click')
+    expect(wrapper.props('modelValue')).toEqual(['b', 'a', 'c'])
+    expect(getParent(wrapper).attributes('data-state')).toBe('checked')
+
+    await wrapper.setProps({ modelValue: ['c'] })
+    expect(getParent(wrapper).attributes('data-state')).toBe('indeterminate')
+    await wrapper.setProps({ modelValue: [] })
+    expect(getParent(wrapper).attributes('data-state')).toBe('unchecked')
+  })
+
+  it('should toggle with the Space key', async () => {
+    const user = userEvent.setup()
+    const wrapper = mount(ParentGroup, { props: { defaultValue: ['a'] }, attachTo: document.body })
+    ;(getParent(wrapper).element as HTMLElement).focus()
+    await user.keyboard(' ')
+    expect(getStates(wrapper)).toEqual(['checked', 'checked', 'checked'])
+    await user.keyboard(' ')
+    expect(getStates(wrapper)).toEqual(['unchecked', 'unchecked', 'unchecked'])
+    wrapper.unmount()
+  })
+
+  it('should keep values that are not in allValues', async () => {
+    const wrapper = mount(ParentGroup, { props: { defaultValue: ['other', 'a'] } })
+    await getParent(wrapper).trigger('click')
+    expect(lastEmitted(wrapper)).toEqual(['other', 'a', 'b', 'c'])
+    await getParent(wrapper).trigger('click')
+    expect(lastEmitted(wrapper)).toEqual(['other'])
+  })
+
+  it('should be unchecked and do nothing when allValues is empty', async () => {
+    const wrapper = mount(ParentGroup, { props: { items: [], defaultValue: [] } })
+    expect(getParent(wrapper).attributes('data-state')).toBe('unchecked')
+    expect(getParent(wrapper).attributes('aria-checked')).toBe('false')
+    await getParent(wrapper).trigger('click')
+    expect(getParent(wrapper).attributes('data-state')).toBe('unchecked')
+    expect(wrapper.emitted('update:modelValue')).toEqual([[[]]])
+  })
+
+  describe('with object values', () => {
+    const items = [
+      { value: { id: 1 }, label: 'One' },
+      { value: { id: 2 }, label: 'Two' },
+    ]
+
+    it('should compare values structurally', async () => {
+      const wrapper = mount(ParentGroup, {
+        props: { items, allValues: [{ id: 1 }, { id: 2 }], defaultValue: [{ id: 2 }, { id: 1 }] },
+      })
+      expect(getParent(wrapper).attributes('data-state')).toBe('checked')
+      await getParent(wrapper).trigger('click')
+      expect(lastEmitted(wrapper)).toEqual([])
+    })
+
+    it('should not duplicate values when checking all', async () => {
+      const wrapper = mount(ParentGroup, {
+        props: { items, allValues: [{ id: 1 }, { id: 2 }], defaultValue: [{ id: 1 }] },
+      })
+      expect(getParent(wrapper).attributes('data-state')).toBe('indeterminate')
+      await getParent(wrapper).trigger('click')
+      expect(lastEmitted(wrapper)).toEqual([{ id: 1 }, { id: 2 }])
+    })
+  })
+
+  describe('with disabled children', () => {
+    const items = [
+      { value: 'a', label: 'A' },
+      { value: 'b', label: 'B', disabled: true },
+      { value: 'c', label: 'C', disabled: true },
+    ]
+
+    it('should leave a disabled unchecked child unchecked when checking all', async () => {
+      const wrapper = mount(ParentGroup, { props: { items, defaultValue: ['c'] } })
+      await getParent(wrapper).trigger('click')
+      expect(lastEmitted(wrapper)).toEqual(['c', 'a'])
+      expect(getParent(wrapper).attributes('data-state')).toBe('indeterminate')
+    })
+
+    it('should leave a disabled checked child checked when unchecking all', async () => {
+      const wrapper = mount(ParentGroup, { props: { items, defaultValue: ['a', 'b', 'c'] } })
+      await getParent(wrapper).trigger('click')
+      expect(lastEmitted(wrapper)).toEqual(['b', 'c'])
+    })
+
+    it('should uncheck the enabled children when only disabled ones are left unchecked', async () => {
+      const wrapper = mount(ParentGroup, { props: { items, defaultValue: ['a', 'c'] } })
+      expect(getParent(wrapper).attributes('data-state')).toBe('indeterminate')
+      await getParent(wrapper).trigger('click')
+      expect(lastEmitted(wrapper)).toEqual(['c'])
+      await getParent(wrapper).trigger('click')
+      expect(lastEmitted(wrapper)).toEqual(['c', 'a'])
+    })
+  })
+
+  describe('when a child unmounts', () => {
+    it('should update the parent state and stop treating the child as disabled', async () => {
+      const items = [
+        { value: 'a', label: 'A', id: 'a' },
+        { value: 'b', label: 'B', id: 'b', disabled: true },
+      ]
+      const wrapper = mount(ParentGroup, { props: { items, defaultValue: ['a'] } })
+      await nextTick()
+      expect(getParent(wrapper).attributes('data-state')).toBe('indeterminate')
+      expect(getParent(wrapper).attributes('aria-controls')).toBe('a b')
+
+      await wrapper.setProps({ items: [items[0]] })
+      expect(getParent(wrapper).attributes('data-state')).toBe('checked')
+      expect(getParent(wrapper).attributes('aria-controls')).toBe('a')
+
+      // `b` is still controlled, but no longer rendered (so no longer disabled)
+      await wrapper.setProps({ allValues: ['a', 'b'] })
+      expect(getParent(wrapper).attributes('aria-controls')).toBe('a')
+      await getParent(wrapper).trigger('click')
+      expect(lastEmitted(wrapper)).toEqual(['a', 'b'])
+    })
+  })
+
+  describe('aria-controls', () => {
+    it('should reference the ids of the child checkboxes, generating missing ones', async () => {
+      const wrapper = mount(ParentGroup, {
+        props: { items: [{ value: 'a', label: 'A', id: 'first' }, { value: 'b', label: 'B' }] },
+      })
+      await nextTick()
+      const ids = getParent(wrapper).attributes('aria-controls')!.split(' ')
+      const children = wrapper.findAll('[role="checkbox"]:not(#parent)')
+      expect(ids).toEqual(children.map(c => c.attributes('id')))
+      expect(ids[0]).toBe('first')
+      expect(ids[1]).toMatch(/^reka-checkbox-/)
+    })
+
+    it('should not generate ids in a group without allValues', () => {
+      const wrapper = mount({
+        components: { CheckboxGroupRoot, CheckboxRoot },
+        template: `<CheckboxGroupRoot><CheckboxRoot value="a" aria-label="A" /></CheckboxGroupRoot>`,
+      })
+      expect(wrapper.find('[role="checkbox"]').attributes('id')).toBeUndefined()
+    })
+  })
+
+  it('should check up to the group max and stay enabled', async () => {
+    const wrapper = mount(ParentGroup, { props: { max: 2, defaultValue: [] } })
+    await getParent(wrapper).trigger('click')
+    expect(lastEmitted(wrapper)).toEqual(['a', 'b'])
+    expect(getParent(wrapper).attributes('aria-disabled')).toBeUndefined()
+    await getParent(wrapper).trigger('click')
+    expect(lastEmitted(wrapper)).toEqual([])
+  })
+
+  it('should not submit a value of its own in a form', async () => {
+    const wrapper = mount({
+      components: { ParentGroup },
+      template: '<form><ParentGroup name="letters" :default-value="[]" /></form>',
+    })
+    const form = wrapper.find('form').element as HTMLFormElement
+    await wrapper.find('#parent').trigger('click')
+    const values = Array.from(new FormData(form), ([, value]) => value)
+    expect(values).toEqual(['a', 'b', 'c'])
+    expect(wrapper.findAll('input[type="checkbox"]')).toHaveLength(0)
+  })
+
+  it('should behave like a regular checkbox outside a group', async () => {
+    const wrapper = mount(CheckboxRoot, { props: { parent: true }, attrs: { 'aria-label': 'x' } })
+    await wrapper.find('button').trigger('click')
+    expect(wrapper.find('button').attributes('data-state')).toBe('checked')
   })
 })
