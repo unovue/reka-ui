@@ -127,7 +127,7 @@ function handleBeforeInput(event: InputEvent) {
     :inputmode="inputMode"
     :value="rootContext.inputValue.value"
     :placeholder="rootContext.placeholder.value"
-    :disabled="rootContext.disabled.value"
+    :disabled="rootContext.disabled.value || undefined"
     :readonly="rootContext.readonly.value"
     :data-disabled="rootContext.disabled.value ? '' : undefined"
     :data-readonly="rootContext.readonly.value ? '' : undefined"

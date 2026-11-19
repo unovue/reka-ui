@@ -38,7 +38,7 @@ function changeItem() {
     :data-disabled="itemContext.dataDisabled.value"
     :data-orientation="rootContext.orientation"
     :data-state="itemContext.dataState.value"
-    :disabled="itemContext.disabled.value"
+    :disabled="itemContext.disabled.value || undefined"
     @click="changeItem"
   >
     <slot />

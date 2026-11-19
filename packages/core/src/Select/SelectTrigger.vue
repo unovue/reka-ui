@@ -217,7 +217,7 @@ function onTriggerKeyDown(event: KeyboardEvent) {
       :aria-expanded="rootContext.open.value || false"
       :aria-required="rootContext.required?.value"
       aria-autocomplete="none"
-      :disabled="isDisabled"
+      :disabled="isDisabled || undefined"
       :dir="rootContext?.dir.value"
       :data-state="rootContext?.open.value ? 'open' : 'closed'"
       :data-disabled="isDisabled ? '' : undefined"

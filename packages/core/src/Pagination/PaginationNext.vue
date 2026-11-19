@@ -23,7 +23,7 @@ const disabled = computed((): boolean => rootContext.page.value === rootContext.
     v-bind="props"
     aria-label="Next Page"
     :type="as === 'button' ? 'button' : undefined"
-    :disabled
+    :disabled="disabled || undefined"
     @click="!disabled && rootContext.onPageChange(rootContext.page.value + 1)"
   >
     <slot>Next page</slot>

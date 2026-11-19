@@ -26,7 +26,7 @@ const rootContext = injectCollapsibleRootContext()
     :aria-expanded="rootContext.open.value"
     :data-state="rootContext.open.value ? 'open' : 'closed'"
     :data-disabled="rootContext.disabled?.value ? '' : undefined"
-    :disabled="rootContext.disabled?.value"
+    :disabled="rootContext.disabled?.value || undefined"
     @click="rootContext.onOpenToggle"
   >
     <slot />

@@ -50,7 +50,7 @@ const isSelected = computed(() => props.value === rootContext.modelValue.value)
       :aria-selected="isSelected ? 'true' : 'false'"
       :aria-controls="contentId"
       :data-state="isSelected ? 'active' : 'inactive'"
-      :disabled="disabled"
+      :disabled="disabled || undefined"
       :data-disabled="disabled ? '' : undefined"
       :data-orientation="rootContext.orientation.value"
       @mousedown="(event: MouseEvent) => {

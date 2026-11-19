@@ -19,7 +19,7 @@ const context = injectEditableRootContext()
     aria-label="submit"
     :aria-disabled="context.disabled.value ? '' : undefined"
     :data-disabled="context.disabled.value ? '' : undefined"
-    :disabled="context.disabled.value"
+    :disabled="context.disabled.value || undefined"
     :type="as === 'button' ? 'button' : undefined"
     :hidden="context.isEditing.value ? undefined : ''"
     @click="context.submit"

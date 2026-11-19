@@ -111,7 +111,7 @@ provideSwitchRootContext({
     :data-disabled="disabled ? '' : undefined"
     :as-child="asChild"
     :as="as"
-    :disabled="disabled"
+    :disabled="disabled || undefined"
     v-bind="{ ...scopeIdAttrs, ...$attrs }"
     @click="toggleCheck"
     @keydown.enter.prevent="toggleCheck"

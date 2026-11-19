@@ -61,7 +61,7 @@ onMounted(() => {
           :data-highlighted="isFocused ? '' : undefined"
           :data-state="open ? 'open' : 'closed'"
           :data-disabled="disabled ? '' : undefined"
-          :disabled="disabled"
+          :disabled="disabled || undefined"
           :data-value="menuContext.value"
           @pointerdown="(event: PointerEvent) => {
             if (event.defaultPrevented) return;

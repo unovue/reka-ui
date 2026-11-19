@@ -313,7 +313,7 @@ provideCheckboxRootContext({
     :data-state="getState(checkboxState)"
     :aria-disabled="disabled ? 'true' : undefined"
     :data-disabled="nativeDisabled ? '' : undefined"
-    :disabled="nativeDisabled"
+    :disabled="nativeDisabled || undefined"
     :focusable="checkboxGroupContext?.rovingFocus.value ? !nativeDisabled : undefined"
     @keydown.enter.prevent="() => {
       // According to WAI ARIA, Checkboxes don't activate on enter keypress

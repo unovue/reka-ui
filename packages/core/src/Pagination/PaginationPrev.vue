@@ -23,7 +23,7 @@ const disabled = computed((): boolean => rootContext.page.value === 1 || rootCon
     v-bind="props"
     aria-label="Previous Page"
     :type="as === 'button' ? 'button' : undefined"
-    :disabled
+    :disabled="disabled || undefined"
     @click="!disabled && rootContext.onPageChange(rootContext.page.value - 1)"
   >
     <slot>Prev page</slot>

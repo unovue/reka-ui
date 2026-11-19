@@ -24,6 +24,7 @@ const { forwardRef } = useForwardExpose()
       :ref="forwardRef"
       :type="as === 'button' ? 'button' : undefined"
       v-bind="props"
+      :disabled="disabled || undefined"
     >
       <slot />
     </Primitive>

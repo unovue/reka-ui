@@ -148,7 +148,7 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
     <Primitive
       :id="itemContext.triggerId"
       :ref="forwardRef"
-      :disabled="disabled"
+      :disabled="disabled || undefined"
       :data-disabled="disabled ? '' : undefined"
       :data-state="getOpenState(open)"
       data-navigation-menu-trigger

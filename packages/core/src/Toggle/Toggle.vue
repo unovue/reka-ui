@@ -90,7 +90,7 @@ const isFormControl = useFormControl(currentElement)
     :aria-pressed="modelValue"
     :data-state="dataState"
     :data-disabled="disabled ? '' : undefined"
-    :disabled="disabled"
+    :disabled="disabled || undefined"
     v-bind="{ ...scopeIdAttrs, ...$attrs }"
     @click="togglePressed"
   >

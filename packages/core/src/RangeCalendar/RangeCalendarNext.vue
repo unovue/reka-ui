@@ -42,7 +42,7 @@ function handleClick() {
     :type="props.as === 'button' ? 'button' : undefined"
     :aria-disabled="disabled || undefined"
     :data-disabled="disabled || undefined"
-    :disabled="disabled"
+    :disabled="disabled || undefined"
     @click="handleClick"
   >
     <slot :disabled>

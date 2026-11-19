@@ -70,6 +70,7 @@ const { restore: restoreSwipe } = useSwipeDismiss({
   <Primitive
     v-bind="props"
     :ref="forwardRef"
+    :disabled="disabled || undefined"
     :data-state="rootContext.open.value ? 'open' : 'closed'"
     :data-swipe-direction="openDirection"
   >

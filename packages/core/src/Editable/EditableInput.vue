@@ -56,7 +56,7 @@ function handleSubmitKeyDown(event: KeyboardEvent) {
     v-bind="props"
     :value="context.inputValue.value"
     :placeholder="placeholder"
-    :disabled="disabled"
+    :disabled="disabled || undefined"
     :maxlength="context.maxLength.value"
     :data-disabled="disabled ? '' : undefined"
     :data-readonly="context.readonly.value ? '' : undefined"

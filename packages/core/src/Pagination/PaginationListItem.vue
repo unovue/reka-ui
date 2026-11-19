@@ -29,7 +29,7 @@ const disabled = computed((): boolean => rootContext.disabled.value)
     :aria-label="`Page ${value}`"
     :aria-current="isSelected ? 'page' : undefined"
     :data-selected="isSelected ? 'true' : undefined"
-    :disabled
+    :disabled="disabled || undefined"
     :type="as === 'button' ? 'button' : undefined"
     @click="!disabled && rootContext.onPageChange(value)"
   >
