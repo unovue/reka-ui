@@ -81,6 +81,15 @@ export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, F
   loop?: boolean
   /** Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. */
   by?: string | ((a: T, b: T) => boolean)
+  /**
+   * When `true`, a programmatic `modelValue` change made while focus is outside the listbox
+   * (e.g. on a text input) highlights the selected item without focusing it or scrolling the
+   * page to it, so focus stays where it is. A virtualized list still scrolls its own viewport
+   * to the item. When focus is already inside the listbox, focus follows the new highlight as
+   * usual. User interaction (click, keyboard, typeahead) is not affected.
+   * @defaultValue false
+   */
+  keepFocusOnValueChange?: boolean
 }
 
 export type ListboxRootEmits<T = AcceptableValue> = {
@@ -447,7 +456,11 @@ watch(modelValue, () => {
     const scroll = hasHighlightedOnMount
     hasHighlightedOnMount = true
     nextTick(() => {
-      highlightSelected(undefined, scroll)
+      // With `keepFocusOnValueChange`, a change made while focus is elsewhere highlights the
+      // item the way the mount highlight does: no focus, and no `scrollIntoView`, which could
+      // scroll the page away from the focused element.
+      const keepFocus = props.keepFocusOnValueChange && !currentElement.value?.contains(getActiveElement())
+      highlightSelected(undefined, scroll && !keepFocus)
     })
   }
 }, { immediate: true, deep: true })

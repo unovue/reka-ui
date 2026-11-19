@@ -3,6 +3,8 @@ import { mount } from '@vue/test-utils'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
+import { ColorSwatchPickerRoot } from '@/ColorSwatchPicker'
+import { ComboboxRoot } from '@/Combobox'
 import { useKbd } from '@/shared'
 import { handleSubmit } from '@/test'
 import { ListboxContent, ListboxFilter, ListboxItem, ListboxItemIndicator, ListboxRoot, ListboxVirtualizer } from '.'
@@ -1107,5 +1109,68 @@ describe('given a Listbox driven by `highlightItem` from a sibling input', () =>
       const highlighted = wrapper.findAll('[data-highlighted]')
       expect(highlighted.map(i => i.text())).toEqual(['Item 1'])
     })
+  })
+})
+
+describe('given a Listbox with `keepFocusOnValueChange`', () => {
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  function mountListbox(keepFocusOnValueChange?: boolean) {
+    const selected = ref<string>()
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => [
+          h('input', { 'data-testid': 'search', 'aria-label': 'Search' }),
+          h(ListboxRoot, {
+            keepFocusOnValueChange,
+            'modelValue': selected.value,
+            'onUpdate:modelValue': (value: string) => { selected.value = value },
+          }, () => h(ListboxContent, { 'aria-label': 'Fruits' }, () =>
+            ['Apple', 'Banana', 'Cherry'].map(value => h(ListboxItem, { key: value, value }, () => value)))),
+        ]
+      },
+    }), { attachTo: document.body })
+    return { wrapper, selected }
+  }
+
+  async function flush() {
+    for (let i = 0; i < 3; i++) await nextTick()
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.mocked(window.HTMLElement.prototype.scrollIntoView).mockClear()
+  })
+
+  it('should pass axe accessibility tests', async () => {
+    const { wrapper } = mountListbox(true)
+    await flush()
+    expect(await axe(wrapper.element.parentElement!)).toHaveNoViolations()
+  })
+
+  it.each([
+    ['keeps focus on the input', true],
+    ['moves focus to the item by default', undefined],
+  ])('%s when the value changes programmatically', async (_, keepFocusOnValueChange) => {
+    const { wrapper, selected } = mountListbox(keepFocusOnValueChange)
+    await flush()
+    const input = wrapper.find('[data-testid=search]').element as HTMLInputElement
+    input.focus()
+
+    selected.value = 'Cherry'
+    await flush()
+
+    const cherry = wrapper.findAll('[role=option]').find(i => i.text() === 'Cherry')!
+    expect(cherry.attributes('data-highlighted')).toBe('')
+    expect(document.activeElement).toBe(keepFocusOnValueChange ? input : cherry.element)
+    expect(window.HTMLElement.prototype.scrollIntoView).toHaveBeenCalledTimes(keepFocusOnValueChange ? 0 : 1)
+  })
+
+  it('is not a prop of the components built on Listbox', () => {
+    expect(ListboxRoot.props).toHaveProperty('keepFocusOnValueChange')
+    expect(ComboboxRoot.props).toHaveProperty('highlightOnHover')
+    expect(ComboboxRoot.props).not.toHaveProperty('keepFocusOnValueChange')
+    expect(ColorSwatchPickerRoot.props).toHaveProperty('loop')
+    expect(ColorSwatchPickerRoot.props).not.toHaveProperty('keepFocusOnValueChange')
   })
 })

@@ -50,7 +50,7 @@ export type ComboboxRootEmits<T = AcceptableValue, ClearValue = never> = {
   'update:open': [value: boolean]
 }
 
-export interface ComboboxRootProps<T = AcceptableValue, ClearValue = any> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior'> {
+export interface ComboboxRootProps<T = AcceptableValue, ClearValue = any> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'keepFocusOnValueChange'> {
   /** The controlled open state of the Combobox. Can be binded with `v-model:open`. */
   open?: boolean
   /** The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. */
