@@ -247,7 +247,7 @@ describe('given a Presence with an async child', () => {
 
     const wrapper = mount(defineComponent({
       setup: () => () => h(Presence, { present: open.value }, () => h(AsyncChild, { onEnter, onAfterEnter })),
-    }))
+    }), { attachTo: document.body }) // detached elements have no computed `animation-name`
 
     open.value = true
     await flushPromises()
