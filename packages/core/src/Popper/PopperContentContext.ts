@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import type { Side } from './utils'
-import { createContext } from '@/shared'
+import { createRekaContext } from '@/shared'
 
 export interface PopperContentContext {
   placedSide: Ref<Side>
@@ -11,4 +11,4 @@ export interface PopperContentContext {
 }
 
 export const [injectPopperContentContext, providePopperContentContext]
-  = createContext<PopperContentContext>('PopperContent')
+  = createRekaContext<PopperContentContext>('PopperContent')

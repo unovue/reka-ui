@@ -9,7 +9,7 @@ import type { Direction } from '@/shared/types'
 import { isEqualDay } from '@internationalized/date'
 import { computed, ref, toRefs, watch } from 'vue'
 import { getWeekStartsOn, isSameDateSelection, isSameDateValue } from '@/date'
-import { createContext, useDirection, useLocale } from '@/shared'
+import { createRekaContext, useDirection, useLocale } from '@/shared'
 import { getDefaultDate } from '@/shared/date'
 import { PopoverRoot } from '..'
 
@@ -59,7 +59,7 @@ export type DatePickerRootEmits = PopoverRootEmits & {
 }
 
 export const [injectDatePickerRootContext, provideDatePickerRootContext]
-  = createContext<DatePickerRootContext>('DatePickerRoot')
+  = createRekaContext<DatePickerRootContext>('DatePickerRoot')
 </script>
 
 <script setup lang="ts">

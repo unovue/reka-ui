@@ -1,54 +1,126 @@
-import { describe, expect, it } from 'vitest'
+import { readdirSync, readFileSync } from 'node:fs'
+import { join, relative } from 'node:path'
+import { describe, expect, it, vi } from 'vitest'
 import { createSSRApp, defineComponent, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
-import { createContext } from './createContext'
+import { version } from '../../package.json'
 
-describe('createContext', () => {
-  // Two independent `createContext()` calls with the same name simulate the
-  // library being installed twice (e.g. a version mismatch duplicated by npm).
-  // With a module-local `Symbol()` the two keys differ and injection fails
-  // (`Injection Symbol(...) not found`, #229); with the global registry
-  // (`Symbol.for`) they share identity and provide/inject keeps working.
-  it('resolves provide/inject across separate instances with the same name', async () => {
-    const [, provideFoo] = createContext<{ value: number }>('Foo') // "copy A"
-    const [injectFoo] = createContext<{ value: number }>('Foo') // "copy B"
+type ContextModule = typeof import('./createContext')
 
-    const Child = defineComponent({
-      setup() {
-        const ctx = injectFoo()
-        return () => h('div', String(ctx.value))
-      },
-    })
-    const App = defineComponent({
-      setup() {
-        provideFoo({ value: 42 })
-        return () => h(Child)
-      },
-    })
+/**
+ * Load a fresh, independent copy of the context module, the way a second
+ * install of reka-ui would be loaded next to the first one.
+ */
+async function loadCopy(): Promise<ContextModule> {
+  vi.resetModules()
+  return import('./createContext')
+}
 
-    const html = await renderToString(createSSRApp(App))
-    expect(html).toContain('42')
+type ContextPair = readonly [(fallback?: any) => { value: number }, (value: { value: number }) => unknown]
+
+/** Render a provider from one context pair with a child injecting from another. */
+async function renderAcross(provider: ContextPair, injector: ContextPair) {
+  let injected: { value: number } | null | undefined
+  let error: unknown
+  const Child = defineComponent({
+    setup() {
+      try {
+        injected = injector[0]()
+      }
+      catch (e) {
+        error = e
+      }
+      return () => h('div')
+    },
+  })
+  const App = defineComponent({
+    setup() {
+      provider[1]({ value: 42 })
+      return () => h(Child)
+    },
+  })
+  await renderToString(createSSRApp(App))
+  return { injected, error }
+}
+
+describe('createRekaContext', () => {
+  it('shares contexts across two copies of the same version', async () => {
+    const copyA = await loadCopy()
+    const copyB = await loadCopy()
+    expect(copyA).not.toBe(copyB)
+
+    const { injected, error } = await renderAcross(
+      copyA.createRekaContext<{ value: number }>('DialogRoot'),
+      copyB.createRekaContext<{ value: number }>('DialogRoot'),
+    )
+    expect(error).toBeUndefined()
+    expect(injected).toEqual({ value: 42 })
   })
 
-  it('keeps distinct contexts isolated (different names do not collide)', async () => {
-    const [, provideA] = createContext<{ n: number }>('Alpha')
-    const [injectB] = createContext<{ n: number }>('Beta')
+  it('keys contexts by the exact package version', async () => {
+    const { createRekaContext } = await loadCopy()
+    const [injectFoo] = createRekaContext('Foo')
+    expect(() => injectFoo()).toThrow(`Symbol(reka-ui@${version}:FooContext)`)
+  })
 
-    const Child = defineComponent({
-      setup() {
-        // Beta was never provided -> injecting it must throw, not pick up Alpha.
-        expect(() => injectB()).toThrow(/not found/)
-        return () => h('div', 'ok')
-      },
-    })
-    const App = defineComponent({
-      setup() {
-        provideA({ n: 1 })
-        return () => h(Child)
-      },
-    })
+  it('keeps contexts of different versions isolated', async () => {
+    const copyA = await loadCopy()
+    const copyB = await loadCopy()
 
-    const html = await renderToString(createSSRApp(App))
-    expect(html).toContain('ok')
+    const { injected, error } = await renderAcross(
+      copyA.createVersionedContext<{ value: number }>('2.10.0', 'DialogRoot'),
+      copyB.createVersionedContext<{ value: number }>('2.11.0', 'DialogRoot'),
+    )
+    expect(injected).toBeUndefined()
+    expect(String(error)).toContain('Symbol(reka-ui@2.11.0:DialogRootContext)')
+  })
+
+  it('keeps differently named contexts isolated', async () => {
+    const { createRekaContext } = await loadCopy()
+    const { error } = await renderAcross(
+      createRekaContext<{ value: number }>('Alpha'),
+      createRekaContext<{ value: number }>('Beta'),
+    )
+    expect(String(error)).toMatch(/not found/)
+  })
+})
+
+describe('createContext (public)', () => {
+  it('creates a unique key per call, even with the same name', async () => {
+    const { createContext } = await loadCopy()
+    const { injected, error } = await renderAcross(
+      createContext<{ value: number }>('Foo'),
+      createContext<{ value: number }>('Foo'),
+    )
+    expect(injected).toBeUndefined()
+    expect(String(error)).toContain('Symbol(FooContext)')
+  })
+
+  it('does not collide with reka-ui internal contexts of the same name', async () => {
+    const { createContext, createRekaContext } = await loadCopy()
+    const { injected, error } = await renderAcross(
+      createRekaContext<{ value: number }>('DialogRoot'),
+      createContext<{ value: number }>('DialogRoot'),
+    )
+    expect(injected).toBeUndefined()
+    expect(String(error)).toMatch(/not found/)
+  })
+
+  it('still provides and injects within one context', async () => {
+    const { createContext } = await loadCopy()
+    const pair = createContext<{ value: number }>('Foo')
+    const { injected } = await renderAcross(pair, pair)
+    expect(injected).toEqual({ value: 42 })
+  })
+})
+
+describe('internal call sites', () => {
+  it('use createRekaContext, never the public createContext', () => {
+    const srcDir = join(__dirname, '..')
+    const offenders = readdirSync(srcDir, { recursive: true, encoding: 'utf8' })
+      .filter(file => /\.(?:ts|vue)$/.test(file) && !/\.(?:test|story)\./.test(file) && !file.includes('createContext.ts'))
+      .filter(file => /\bcreateContext\s*[<(]/.test(readFileSync(join(srcDir, file), 'utf8')))
+      .map(file => relative(srcDir, join(srcDir, file)))
+    expect(offenders).toEqual([])
   })
 })

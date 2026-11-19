@@ -2,7 +2,7 @@
 import type { RadioGroupRootProps } from '@/RadioGroup'
 import { reactiveOmit, useVModel } from '@vueuse/core'
 import { RadioGroupRoot } from '@/RadioGroup'
-import { createContext, useForwardExpose } from '@/shared'
+import { createRekaContext, useForwardExpose } from '@/shared'
 
 export interface RatingRootContext {
   modelValue: Ref<number>
@@ -36,7 +36,7 @@ export type RatingRootEmits = {
 }
 
 export const [injectRatingRootContext, provideRatingRootContext]
-  = createContext<RatingRootContext>('RatingRoot')
+  = createRekaContext<RatingRootContext>('RatingRoot')
 </script>
 
 <script setup lang="ts">

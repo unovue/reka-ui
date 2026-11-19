@@ -4,7 +4,7 @@ import type { CheckedState } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
-import { createContext, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { createRekaContext, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 import { injectCheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 
 export interface CheckboxRootProps<TrueValue = boolean, FalseValue = TrueValue> extends PrimitiveProps, FormFieldProps {
@@ -42,7 +42,7 @@ interface CheckboxRootContext {
 }
 
 export const [injectCheckboxRootContext, provideCheckboxRootContext]
-  = createContext<CheckboxRootContext>('CheckboxRoot')
+  = createRekaContext<CheckboxRootContext>('CheckboxRoot')
 </script>
 
 <script setup lang="ts" generic="TrueValue = true, FalseValue = false">

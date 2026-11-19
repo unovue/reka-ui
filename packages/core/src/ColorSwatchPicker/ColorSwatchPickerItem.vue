@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { ListboxItemEmits, ListboxItemProps } from '@/Listbox'
-import { createContext, useForwardPropsEmits } from '@/shared'
+import { createRekaContext, useForwardPropsEmits } from '@/shared'
 
 export interface ColorSwatchPickerItemProps extends ListboxItemProps {
 /**
@@ -18,7 +18,7 @@ export interface ColorSwatchPickerItemContext {
 }
 
 export const [injectColorSwatchPickerItemContext, provideColorSwatchPickerItemContext]
-  = createContext<ColorSwatchPickerItemContext>('ColorSwatchPickerItem', 'ColorSwatchPickerItemContext')
+  = createRekaContext<ColorSwatchPickerItemContext>('ColorSwatchPickerItem', 'ColorSwatchPickerItemContext')
 </script>
 
 <script setup lang="ts">

@@ -4,7 +4,7 @@ import type { CarouselAutoplayOptions, CarouselAutoScrollOptions } from './useCa
 import type { CarouselAlign, CarouselContainScroll, CarouselItemSnapStyle, CarouselSlidesToScroll, CarouselSnap } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { DataOrientation, Direction } from '@/shared/types'
-import { createContext, useDirection, useForwardExpose, useId } from '@/shared'
+import { createRekaContext, useDirection, useForwardExpose, useId } from '@/shared'
 
 export interface CarouselResolvedOptions {
   loop: boolean
@@ -176,7 +176,7 @@ export type CarouselRootEmits = {
 }
 
 export const [injectCarouselRootContext, provideCarouselRootContext]
-  = createContext<CarouselRootContext>('CarouselRoot')
+  = createRekaContext<CarouselRootContext>('CarouselRoot')
 </script>
 
 <script setup lang="ts">

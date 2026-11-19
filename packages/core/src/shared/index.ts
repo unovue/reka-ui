@@ -1,7 +1,7 @@
 export * from './arrays'
 export * from './browser'
 export * from './clamp'
-export { createContext } from './createContext'
+export { createContext, createRekaContext } from './createContext'
 export { type DateRange, type DateStep, type DateValue, type SegmentPart, type TimeRange, type TimeValue } from './date'
 export { getActiveElement } from './getActiveElement'
 export { handleAndDispatchCustomEvent } from './handleAndDispatchCustomEvent'

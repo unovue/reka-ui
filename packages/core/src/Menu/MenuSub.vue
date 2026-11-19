@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { MenuContext } from './MenuRoot.vue'
-import { createContext, defineReactiveIds } from '@/shared'
+import { createRekaContext, defineReactiveIds } from '@/shared'
 
 export interface MenuSubContext {
   contentId: string
@@ -12,7 +12,7 @@ export interface MenuSubContext {
 }
 
 export const [injectMenuSubContext, provideMenuSubContext]
-  = createContext<MenuSubContext>('MenuSub')
+  = createRekaContext<MenuSubContext>('MenuSub')
 
 export interface MenuSubProps {
   /** The controlled open state of the menu. Can be used as `v-model:open`. */
