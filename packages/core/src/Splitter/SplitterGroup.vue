@@ -2,7 +2,7 @@
 import type { CSSProperties, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { computed, ref, toRefs, watch, watchEffect } from 'vue'
-import { areEqual, createContext, useDirection, useForwardExpose, useId } from '@/shared'
+import { areEqual, createRekaContext, useDirection, useForwardExpose, useId } from '@/shared'
 import { useWindowSplitterPanelGroupBehavior } from './utils/composables/useWindowSplitterPanelGroupBehavior'
 import {
   initializeDefaultStorage,
@@ -70,7 +70,7 @@ export type PanelGroupContext = {
   getPanelStyle: (panelData: PanelData, defaultSize: number | undefined) => CSSProperties
 }
 
-export const [injectPanelGroupContext, providePanelGroupContext] = createContext<PanelGroupContext>('PanelGroup')
+export const [injectPanelGroupContext, providePanelGroupContext] = createRekaContext<PanelGroupContext>('PanelGroup')
 </script>
 
 <script setup lang="ts">

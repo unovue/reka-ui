@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import type { MenuContext } from './MenuRoot.vue'
-import { createContext, defineReactiveIds } from '@/shared'
+import type { MenuContentHideEvent, MenuContext } from './MenuRoot.vue'
+import { createRekaContext, defineReactiveIds } from '@/shared'
 
 export interface MenuSubContext {
   contentId: string
@@ -12,7 +12,7 @@ export interface MenuSubContext {
 }
 
 export const [injectMenuSubContext, provideMenuSubContext]
-  = createContext<MenuSubContext>('MenuSub')
+  = createRekaContext<MenuSubContext>('MenuSub')
 
 export interface MenuSubProps {
   /** The controlled open state of the menu. Can be used as `v-model:open`. */
@@ -26,7 +26,7 @@ export type MenuSubEmits = {
 </script>
 
 <script setup lang="ts">
-import { useVModel } from '@vueuse/core'
+import { createEventHook, useVModel } from '@vueuse/core'
 import {
   ref,
   watchEffect,
@@ -47,6 +47,7 @@ const open = useVModel(props, 'open', emits, {
 const parentMenuContext = injectMenuContext()
 const trigger = ref<HTMLElement>()
 const content = ref<HTMLElement>()
+const contentHide = createEventHook<MenuContentHideEvent>()
 
 // Prevent the parent menu from reopening with open submenus.
 watchEffect((cleanupFn) => {
@@ -64,6 +65,8 @@ provideMenuContext({
   onContentChange: (element) => {
     content.value = element
   },
+  onContentHide: contentHide.on,
+  contentHidden: contentHide.trigger,
 })
 
 provideMenuSubContext(defineReactiveIds({

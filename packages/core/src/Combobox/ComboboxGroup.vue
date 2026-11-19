@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ListboxGroupProps } from '@/Listbox'
 import { computed, onMounted, onUnmounted } from 'vue'
-import { createContext, useId } from '@/shared'
+import { createRekaContext, useId } from '@/shared'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 export interface ComboboxGroupProps extends ListboxGroupProps {}
@@ -12,7 +12,7 @@ type ComboboxGroupContext = {
 }
 
 export const [injectComboboxGroupContext, provideComboboxGroupContext]
-  = createContext<ComboboxGroupContext>('ComboboxGroup')
+  = createRekaContext<ComboboxGroupContext>('ComboboxGroup')
 </script>
 
 <script setup lang="ts">

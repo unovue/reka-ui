@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardExpose } from '@/shared'
+import { createRekaContext, useForwardExpose } from '@/shared'
 
 type PaginationRootContext = {
   page: Ref<number>
@@ -39,7 +39,7 @@ export type PaginationRootEmits = {
 }
 
 export const [injectPaginationRootContext, providePaginationRootContext]
-  = createContext<PaginationRootContext>('PaginationRoot')
+  = createRekaContext<PaginationRootContext>('PaginationRoot')
 </script>
 
 <script setup lang="ts">

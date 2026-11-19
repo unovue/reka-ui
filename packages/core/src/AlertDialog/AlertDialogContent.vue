@@ -3,14 +3,14 @@ import type {
   DialogContentEmits,
   DialogContentProps,
 } from '@/Dialog'
-import { createContext, useEmitAsProps, useForwardExpose } from '@/shared'
+import { createRekaContext, useEmitAsProps, useForwardExpose } from '@/shared'
 
 interface AlertDialogContentContext {
   onCancelElementChange: (el: HTMLElement | undefined) => void
 }
 
 export const [injectAlertDialogContentContext, provideAlertDialogContentContext]
-  = createContext<AlertDialogContentContext>('AlertDialogContent')
+  = createRekaContext<AlertDialogContentContext>('AlertDialogContent')
 
 export type AlertDialogContentEmits = DialogContentEmits
 export interface AlertDialogContentProps extends DialogContentProps {}

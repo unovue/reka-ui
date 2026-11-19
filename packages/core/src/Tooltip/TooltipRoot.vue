@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import { createContext, defineReactiveIds, useForwardExpose } from '@/shared'
+import { createRekaContext, defineReactiveIds, useForwardExpose } from '@/shared'
 
 export interface TooltipRootProps {
   /**
@@ -67,7 +67,7 @@ export interface TooltipContext {
 }
 
 export const [injectTooltipRootContext, provideTooltipRootContext]
-  = createContext<TooltipContext>('TooltipRoot')
+  = createRekaContext<TooltipContext>('TooltipRoot')
 </script>
 
 <script setup lang="ts">

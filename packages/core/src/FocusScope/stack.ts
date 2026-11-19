@@ -26,6 +26,9 @@ export function createFocusScopesStack() {
       // remove in case it already exists (because we'll re-add it at the top of the stack)
       stack.value = arrayRemove(stack.value, focusScope)
       stack.value.unshift(focusScope)
+      // the scope at the top is the active one, even when it was paused before it left the
+      // stack (e.g. hidden through `present` while a nested scope was open)
+      focusScope.resume()
     },
 
     remove(focusScope: FocusScopeAPI) {

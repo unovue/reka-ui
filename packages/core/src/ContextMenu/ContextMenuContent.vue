@@ -20,7 +20,8 @@ export interface ContextMenuContentProps
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { MenuContent } from '@/Menu'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
+import { injectMenuContext, MenuContent } from '@/Menu'
 import { omitEntryFocusListener } from '@/Menu/utils'
 import { injectContextMenuRootContext } from './ContextMenuRoot.vue'
 
@@ -42,6 +43,14 @@ const forwarded = useForwardPropsEmits(props, emits)
 useForwardExpose()
 const rootContext = injectContextMenuRootContext()
 const hasInteractedOutside = ref(false)
+
+// A content kept mounted while closed (`unmountOnHide: false`) is hidden, not unmounted, so
+// no `closeAutoFocus` returns focus. Return it to where it was before opening, as on unmount.
+injectMenuContext().onContentHide(({ container, focusedBeforeShow }) => {
+  if (!hasInteractedOutside.value && !hasFocusLeftScope(container ?? null))
+    focusedBeforeShow?.focus({ preventScroll: true })
+  hasInteractedOutside.value = false
+})
 </script>
 
 <template>

@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { DataOrientation, Direction, FormFieldProps } from '../shared/types'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { clamp, createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
+import { clamp, createRekaContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
 
 type ThumbAlignment = 'contain' | 'overflow'
 
@@ -63,7 +63,7 @@ export interface SliderRootContext {
 }
 
 export const [injectSliderRootContext, provideSliderRootContext]
-  = createContext<SliderRootContext>('SliderRoot')
+  = createRekaContext<SliderRootContext>('SliderRoot')
 </script>
 
 <script setup lang="ts">
