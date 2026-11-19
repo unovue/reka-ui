@@ -50,6 +50,7 @@ export interface TagsInputRootContext<T = AcceptableInputValue> {
   modelValue: Ref<Array<T>>
   onAddValue: (payload: string) => boolean
   onRemoveValue: (index: number) => void
+  onRemoveItem: (element: HTMLElement) => void
   onInputKeydown: (event: KeyboardEvent) => void
   selectedElement: Ref<HTMLElement | undefined>
   isInvalidInput: Ref<boolean>
@@ -103,7 +104,7 @@ const { forwardRef, currentElement } = useForwardExpose()
 const { focused } = useFocusWithin(currentElement)
 const isFormControl = useFormControl(currentElement)
 
-const { getItems, CollectionSlot } = useCollection({ isProvider: true })
+const { getItem, getItems, CollectionSlot } = useCollection({ isProvider: true })
 
 const selectedElement = ref<HTMLElement>()
 const isInvalidInput = ref(false)
@@ -116,6 +117,24 @@ function handleRemoveTag(index: number) {
     modelValue.value = modelValue.value.filter((_, i) => i !== index)
     emits('removeTag', removedValue)
   }
+}
+
+function handleRemoveItem(element: HTMLElement) {
+  const item = getItem(element)
+  if (!item)
+    return
+
+  const { tag, modelIndex } = item.value
+  const values = currentModelValue.value
+  if (Number.isInteger(modelIndex) && modelIndex >= 0 && modelIndex < values.length && isEqual(values[modelIndex], tag))
+    return handleRemoveTag(modelIndex)
+
+  // Without a matching index, equal tags are matched in render order, including disabled tags.
+  // A stale or wrong `modelIndex` falls back here, so the delete still removes an equal tag.
+  const matchingItems = getItems(true).filter(other => isEqual(other.value.tag, tag))
+  const occurrence = matchingItems.indexOf(item)
+  let match = 0
+  handleRemoveTag(values.findIndex(value => isEqual(value, tag) && match++ === occurrence))
 }
 
 provideTagsInputRootContext({
@@ -156,6 +175,7 @@ provideTagsInputRootContext({
     return false
   },
   onRemoveValue: handleRemoveTag,
+  onRemoveItem: handleRemoveItem,
   onInputKeydown: (event) => {
     // Don't navigate/select tags mid-composition, keys are used for IME candidate navigation
     if (event.isComposing)
@@ -173,9 +193,7 @@ provideTagsInputRootContext({
 
         if (selectedElement.value) {
           const index = collection.findIndex(i => i === selectedElement.value)
-          const selectedItem = getItems().find(i => i.ref === selectedElement.value)
-          const modelIndex = selectedItem ? modelValue.value.findIndex(v => isEqual(v, selectedItem.value)) : -1
-          handleRemoveTag(modelIndex)
+          handleRemoveItem(selectedElement.value)
           selectedElement.value = selectedElement.value === lastTag ? collection.at(index - 1) : collection.at(index + 1)
           event.preventDefault()
         }
