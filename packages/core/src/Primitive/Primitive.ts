@@ -65,11 +65,33 @@ function isTemplateObject(value: unknown): boolean {
 
 // A string that isn't a plain tag name (`img src=x onerror=…`) ends up as raw markup in the opening tag,
 // and these tags run or load code from their content or attributes. `style` stays allowed, the viewports
-// render their own `<style>` through `Primitive`.
-const SAFE_TAG = /^(?!(?:script|iframe|frame|frameset|object|embed|applet|base|link|meta|noscript)$)[a-z][a-z0-9-]*$/i
+// render their own `<style>` through `Primitive`. Custom element names (they contain a `-`) may also use
+// `_` and `.`.
+const SAFE_TAG = /^(?!(?:script|iframe|frame|frameset|object|embed|applet|base|link|meta|noscript)$)[a-z](?:[a-z0-9-]*|[\w.-]*-[\w.-]*)$/i
 
 function isUnsafeAs(value: unknown): boolean {
   return typeof value === 'string' ? !SAFE_TAG.test(value) : isTemplateObject(value)
+}
+
+// Created on first use so the production build drops them together with the warning
+let warnedTags: Set<string> | undefined
+let warnedObjects: WeakSet<object> | undefined
+
+function warnUnsafeAs(value: unknown) {
+  if (typeof value === 'string') {
+    warnedTags ??= new Set()
+    if (warnedTags.has(value))
+      return
+    warnedTags.add(value)
+    console.warn(`[Reka UI] Primitive: ignored unsafe \`as\` value ${JSON.stringify(value)} and rendered a \`div\` instead. Use a plain tag name that doesn't run or load code (not \`script\`, \`iframe\`, \`object\`, …).`)
+  }
+  else if (value && typeof value === 'object') {
+    warnedObjects ??= new WeakSet()
+    if (warnedObjects.has(value))
+      return
+    warnedObjects.add(value)
+    console.warn('[Reka UI] Primitive: ignored an `as` object without its own `render` or `setup` function (a template-only object, a VNode or a built-in) and rendered a `div` instead. Pass a compiled component.', value)
+  }
 }
 
 export const Primitive = defineComponent({
@@ -91,8 +113,15 @@ export const Primitive = defineComponent({
     if (typeof asTag === 'string' && SELF_CLOSING_TAGS.includes(asTag))
       return () => h(asTag, attrs)
 
-    if (asTag !== 'template')
-      return () => h(isUnsafeAs(props.as) ? 'div' : props.as, attrs, { default: slots.default })
+    if (asTag !== 'template') {
+      return () => {
+        const unsafe = isUnsafeAs(props.as)
+        // eslint-disable-next-line node/prefer-global/process -- bundlers replace it, the warning drops in production
+        if (process.env.NODE_ENV !== 'production' && unsafe)
+          warnUnsafeAs(props.as)
+        return h(unsafe ? 'div' : props.as, attrs, { default: slots.default })
+      }
+    }
 
     return () => h(Slot, attrs, { default: slots.default })
   },

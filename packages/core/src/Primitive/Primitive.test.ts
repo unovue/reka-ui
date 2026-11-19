@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createSSRApp, defineComponent, h, markRaw, nextTick, reactive, ref } from 'vue'
 import { Primitive } from '.'
 
@@ -314,5 +314,40 @@ describe('test Primitive functionalities', () => {
   it('should render a reactive component', () => {
     const wrapper = mount(Primitive, { props: { as: reactive({ render: () => h('button', 'Action') }) } })
     expect(wrapper.find('button').exists()).toBe(true)
+  })
+
+  it('should render a custom element name with `_` or `.`', () => {
+    for (const as of ['my-el_v2', 'x-a.b']) {
+      const wrapper = mount(Primitive, { props: { as } })
+      expect(wrapper.element.tagName.toLowerCase()).toBe(as)
+    }
+  })
+
+  it('should still reject `_` or `.` outside a custom element name', () => {
+    for (const as of ['my_el', 'a.b']) {
+      const wrapper = mount(Primitive, { props: { as } })
+      expect(wrapper.element.tagName).toBe('DIV')
+    }
+  })
+
+  it('should warn once per unsafe `as` value in development', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      mount(Primitive, { props: { as: 'embed' } })
+      mount(Primitive, { props: { as: 'embed' } })
+      mount(Primitive, { props: { as: 'frameset' } })
+      const component = { template: '<b />' }
+      mount(Primitive, { props: { as: component } })
+      mount(Primitive, { props: { as: component } })
+
+      expect(warn).toHaveBeenCalledTimes(3)
+      expect(warn.mock.calls[0][0]).toContain('"embed"')
+      expect(warn.mock.calls[0][0]).toContain('`div`')
+      expect(warn.mock.calls[1][0]).toContain('"frameset"')
+      expect(warn.mock.calls[2][0]).toContain('render')
+    }
+    finally {
+      warn.mockRestore()
+    }
   })
 })
