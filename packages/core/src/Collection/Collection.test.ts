@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { defineComponent, h, nextTick, reactive } from 'vue'
+import { defineComponent, h, inject, nextTick, reactive, ref } from 'vue'
 import { useCollection } from './Collection'
 
 // Characterization tests for `useCollection`.
@@ -155,6 +155,43 @@ describe('useCollection', () => {
     wrapper.unmount()
   })
 
+  it('looks up registered items by element and preserves disabled filtering', async () => {
+    const { getCollection, wrapper } = createWrapper([
+      { value: 'enabled' },
+      { value: 'disabled', disabled: true },
+    ])
+    await nextTick()
+
+    const { getItem, getItems } = getCollection()
+    const enabled = wrapper.get<HTMLElement>('[data-testid=enabled]').element
+    const disabled = wrapper.get<HTMLElement>('[data-testid=disabled]').element
+
+    expect(getItem(enabled)).toBe(getItems().find(item => item.ref === enabled))
+    expect(getItem(disabled)).toBeUndefined()
+    expect(getItem(disabled, true)).toBe(getItems(true).find(item => item.ref === disabled))
+    expect(getItem(document.createElement('div'))).toBeUndefined()
+
+    wrapper.unmount()
+  })
+
+  it('finds detached registered items but not unmounted items', async () => {
+    const { getCollection, items, wrapper } = createWrapper([{ value: 'item' }])
+    await nextTick()
+
+    const { getItem, getItems } = getCollection()
+    const element = wrapper.get<HTMLElement>('[data-testid=item]').element
+    const item = getItems()[0]
+    element.remove()
+    expect(getItem(element)).toBe(item)
+
+    wrapper.element.appendChild(element)
+    items.splice(0, 1)
+    await nextTick()
+    expect(getItem(element)).toBeUndefined()
+
+    wrapper.unmount()
+  })
+
   it('getItems() returns [] when no CollectionSlot element is mounted', async () => {
     // A provider context whose `collectionRef` is never set (no CollectionSlot
     // currentElement). `getItems()` short-circuits to `[]`.
@@ -171,9 +208,70 @@ describe('useCollection', () => {
     const wrapper = mount(Parent, { attachTo: document.body })
     await nextTick()
 
+    expect(collection.getItem(document.createElement('div'))).toBeUndefined()
     expect(collection.getItems()).toEqual([])
     expect(collection.getItems(true)).toEqual([])
     expect(collection.itemMapSize.value).toBe(0)
+
+    wrapper.unmount()
+  })
+})
+
+describe('given a Collection provider that outlives its CollectionSlot', () => {
+  function mountCollection() {
+    let context!: { collectionRef: { value: HTMLElement | undefined } }
+    const show = ref({ first: true, second: false })
+    const Slot = defineComponent({
+      props: { name: String },
+      setup(props) {
+        const { CollectionSlot } = useCollection({ key: 'release' })
+        context = inject('releaseCollectionProvider')!
+        return () => h(CollectionSlot, () => h('ul', { 'data-testid': props.name }))
+      },
+    })
+    const wrapper = mount(defineComponent({
+      setup() {
+        useCollection({ key: 'release', isProvider: true })
+        return () => h('div', [
+          show.value.first ? h(Slot, { key: 'first', name: 'first' }) : null,
+          show.value.second ? h(Slot, { key: 'second', name: 'second' }) : null,
+        ])
+      },
+    }), { attachTo: document.body })
+    return { wrapper, show, context: () => context }
+  }
+
+  it('should release the element when the CollectionSlot unmounts', async () => {
+    const { wrapper, show, context } = mountCollection()
+
+    for (let cycle = 0; cycle < 2; cycle++) {
+      await nextTick()
+      expect(context().collectionRef.value).toBe(wrapper.get('[data-testid=first]').element)
+
+      show.value.first = false
+      await nextTick()
+      expect(context().collectionRef.value).toBeUndefined()
+
+      show.value.first = true
+      await nextTick()
+    }
+
+    wrapper.unmount()
+  })
+
+  it('should keep a newer registration when an older CollectionSlot unmounts', async () => {
+    const { wrapper, show, context } = mountCollection()
+    await nextTick()
+
+    show.value.second = true
+    await nextTick()
+    await nextTick()
+    const second = wrapper.get('[data-testid=second]').element
+    expect(context().collectionRef.value).toBe(second)
+
+    show.value.first = false
+    await nextTick()
+    expect(context().collectionRef.value).toBe(second)
 
     wrapper.unmount()
   })

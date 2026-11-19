@@ -6,8 +6,9 @@ import type { CalendarRootProps, DateFieldRoot, DateFieldRootProps, PopoverRootE
 import type { Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
+import { isEqualDay } from '@internationalized/date'
 import { computed, ref, toRefs, watch } from 'vue'
-import { getWeekStartsOn } from '@/date'
+import { getWeekStartsOn, isSameDateSelection, isSameDateValue } from '@/date'
 import { createContext, useDirection, useLocale } from '@/shared'
 import { getDefaultDate } from '@/shared/date'
 import { PopoverRoot } from '..'
@@ -150,14 +151,21 @@ function resetTime(date: DateValue) {
   return date.set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
 }
 
-watch(modelValue, (value) => {
-  if (value && value.compare(placeholder.value) !== 0) {
+watch(modelValue, (value, previous) => {
+  // A new object for the same value is not a new selection. Skip placeholder
+  // reset and closeOnSelect, or paging the calendar is undone. Compare the
+  // exact value, not the day, so a same-day time or zone change still syncs.
+  if (isSameDateSelection(previous, value, isSameDateValue))
+    return
+
+  if (value && !isSameDateValue(value, placeholder.value)) {
     placeholder.value = value.copy()
   }
   else if (!value && 'hour' in placeholder.value) {
     placeholder.value = resetTime(placeholder.value)
   }
-  if (closeOnSelect.value) {
+  // Only a new day is a pick. A same-day time or zone change leaves the popover open.
+  if (closeOnSelect.value && !isSameDateSelection(previous, value, isEqualDay)) {
     open.value = false
   }
 })

@@ -1,7 +1,7 @@
 import type { EditableRootProps } from './EditableRoot.vue'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
 import Editable from './story/_Editable.vue'
@@ -71,12 +71,12 @@ describe('editable', () => {
   })
 
   it('selects the input value when entering edit mode and selectOnFocus is true', async () => {
-    const { input } = setup({ editableProps: { defaultValue: 'Default Value', selectOnFocus: true } })
+    const { input, edit } = setup({ editableProps: { defaultValue: 'Default Value', selectOnFocus: true } })
 
-    await userEvent.click(input)
-    expect(input).toHaveFocus()
+    await userEvent.click(edit)
+    await vi.waitFor(() => expect(input).toHaveFocus())
     expect(input).toHaveValue('Default Value')
-    expect(input.selectionStart).toBe(input.value.length)
+    expect(input.selectionStart).toBe(0)
     expect(input.selectionEnd).toBe(input.value.length)
   })
 
@@ -88,12 +88,13 @@ describe('editable', () => {
 
   it('submits the value when pressing enter', async () => {
     let submittedValue = ''
-    const { input, preview, rerender } = setup({
+    const { input, preview, edit, rerender } = setup({
       editableProps: { modelValue: '', submitMode: 'enter' },
       onSubmit: data => submittedValue = data,
       emits: { 'onUpdate:modelValue': (data: string) => rerender({ modelValue: data }) },
     })
 
+    await userEvent.click(edit)
     await userEvent.type(input, 'New Value')
     await userEvent.keyboard(kbd.ENTER)
     expect(preview).toBeVisible()
@@ -112,9 +113,26 @@ describe('editable', () => {
     expect(preview).toHaveTextContent('New Value')
   })
 
-  it('submits the value when pressing enter if submitMode is both', async () => {
-    const { input, preview, rerender } = setup({ editableProps: { modelValue: '', submitMode: 'both' }, emits: { 'onUpdate:modelValue': (data: string) => rerender({ modelValue: data }) } })
+  it('submits the value when another editable is focused', async () => {
+    const { getAllByTestId } = render({
+      components: { Editable },
+      template: '<Editable /><Editable />',
+    })
 
+    const [firstInput] = getAllByTestId('input')
+    const [firstPreview, secondPreview] = getAllByTestId('preview')
+
+    await userEvent.click(firstPreview)
+    await userEvent.type(firstInput, 'New Value')
+    await userEvent.click(secondPreview)
+
+    expect(firstPreview).toHaveTextContent('New Value')
+  })
+
+  it('submits the value when pressing enter if submitMode is both', async () => {
+    const { input, preview, edit, rerender } = setup({ editableProps: { modelValue: '', submitMode: 'both' }, emits: { 'onUpdate:modelValue': (data: string) => rerender({ modelValue: data }) } })
+
+    await userEvent.click(edit)
     await userEvent.type(input, 'New Value')
     await userEvent.keyboard(kbd.ENTER)
     expect(preview).toBeVisible()

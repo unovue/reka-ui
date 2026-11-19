@@ -16,6 +16,12 @@ export interface CheckboxGroupRootProps<T = AcceptableValue> extends Pick<Roving
   rovingFocus?: boolean
   /** When `true`, prevents the user from interacting with the checkboxes */
   disabled?: boolean
+  /**
+   * The maximum number of values that can be selected. Once reached, the unchecked
+   * checkboxes get `aria-disabled` but stay focusable, so consider telling users
+   * about the limit. Style them with `[aria-disabled="true"]`.
+   */
+  max?: number | null
 }
 
 export type CheckboxGroupRootEmits<T = AcceptableValue> = {
@@ -27,6 +33,7 @@ interface CheckboxGroupRootContext {
   modelValue: Ref<AcceptableValue[]>
   rovingFocus: Ref<boolean>
   disabled: Ref<boolean>
+  max: Ref<number | null | undefined>
 }
 
 export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
@@ -42,7 +49,7 @@ const props = withDefaults(defineProps<CheckboxGroupRootProps<T>>(), {
 })
 const emits = defineEmits<CheckboxGroupRootEmits<T>>()
 
-const { disabled, rovingFocus, dir: propDir } = toRefs(props)
+const { disabled, max, rovingFocus, dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
 
 const { primitiveElement, currentElement } = usePrimitiveElement()
@@ -53,6 +60,10 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
 }) as Ref<T[]>
 
+// Without a `name`, render the field only while a required group is empty, so the
+// checked values never become unnamed form fields.
+const showHiddenInput = computed(() => isFormControl.value && (!!props.name || (props.required && !modelValue.value?.length)))
+
 const rovingFocusProps = computed(() => {
   return rovingFocus.value ? { loop: props.loop, dir: dir.value, orientation: props.orientation } : {}
 })
@@ -61,6 +72,7 @@ provideCheckboxGroupRootContext({
   modelValue,
   rovingFocus,
   disabled,
+  max,
 })
 </script>
 
@@ -75,10 +87,11 @@ provideCheckboxGroupRootContext({
     <slot />
 
     <VisuallyHiddenInput
-      v-if="isFormControl && name"
-      :name="name"
+      v-if="showHiddenInput"
+      :name="name ?? ''"
       :value="modelValue"
       :required="required"
+      :disabled="disabled"
     />
   </component>
 </template>

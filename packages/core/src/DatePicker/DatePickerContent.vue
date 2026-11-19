@@ -10,7 +10,7 @@ export interface DatePickerContentProps extends PopoverContentProps {
    */
   portal?: PopoverPortalProps
 }
-export interface DatePickerContentEmits extends PopoverContentEmits {}
+export type DatePickerContentEmits = PopoverContentEmits
 </script>
 
 <script setup lang="ts">
@@ -29,8 +29,6 @@ const forwarded = useForwardPropsEmits(propsToForward, emits)
     <PopoverContent
       v-bind="{ ...forwarded, ...$attrs }"
       @open-auto-focus="event => {
-        emits('openAutoFocus', event)
-
         if (!event.defaultPrevented && event.target) {
           handleCalendarInitialFocus(event.target as HTMLElement)
           event.preventDefault()

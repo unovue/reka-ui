@@ -4,16 +4,22 @@ import type {
   MenuContentProps,
 } from '@/Menu'
 
-export type DropdownMenuContentEmits = MenuContentEmits
+export type DropdownMenuContentEmits = Omit<MenuContentEmits, 'entryFocus'>
 
 export interface DropdownMenuContentProps extends MenuContentProps {}
 </script>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { MenuContent } from '@/Menu'
-import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
+import { injectMenuContext, MenuContent } from '@/Menu'
+import { omitEntryFocusListener } from '@/Menu/utils'
+import { useContentId, useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
 import { injectDropdownMenuRootContext } from './DropdownMenuRoot.vue'
+
+defineOptions({
+  inheritAttrs: false,
+})
 
 const props = defineProps<DropdownMenuContentProps>()
 const emits = defineEmits<DropdownMenuContentEmits>()
@@ -28,8 +34,11 @@ function handleCloseAutoFocus(event: Event) {
   if (event.defaultPrevented)
     return
   if (!hasInteractedOutsideRef.value) {
+    const scope = event.target
     setTimeout(() => {
-      rootContext.triggerElement.value?.focus()
+      // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
+      if (!hasFocusLeftScope(scope))
+        rootContext.triggerElement.value?.focus()
     }, 0)
   }
   hasInteractedOutsideRef.value = false
@@ -39,11 +48,11 @@ function handleCloseAutoFocus(event: Event) {
 }
 
 rootContext.contentId ||= useId(undefined, 'reka-dropdown-menu-content')
+useContentId(rootContext, injectMenuContext().content)
 </script>
 
 <template>
   <MenuContent
-    v-bind="forwarded"
     :id="rootContext.contentId"
     :aria-labelledby="rootContext?.triggerId"
     :style="{
@@ -57,6 +66,7 @@ rootContext.contentId ||= useId(undefined, 'reka-dropdown-menu-content')
       '--reka-dropdown-menu-trigger-height':
         'var(--reka-popper-anchor-height)',
     }"
+    v-bind="{ ...forwarded, ...omitEntryFocusListener($attrs) }"
     @close-auto-focus="handleCloseAutoFocus"
     @interact-outside="(event) => {
       if (event.defaultPrevented) return

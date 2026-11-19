@@ -63,6 +63,18 @@ export const components = {
     'CalendarCellTrigger',
   ] as const,
 
+  carousel: [
+    'CarouselRoot',
+    'CarouselViewport',
+    'CarouselContent',
+    'CarouselItem',
+    'CarouselPrevious',
+    'CarouselNext',
+    'CarouselIndicator',
+    'CarouselIndicatorGroup',
+    'CarouselAutoplayToggle',
+  ] as const,
+
   checkbox: [
     'CheckboxGroupRoot',
     'CheckboxRoot',
@@ -220,6 +232,7 @@ export const components = {
     'DrawerHandle',
     'DrawerSwipeArea',
     'DrawerViewport',
+    'DrawerVirtualKeyboardProvider',
     'DrawerIndent',
     'DrawerIndentBackground',
   ] as const,
@@ -251,6 +264,19 @@ export const components = {
     'EditableSubmitTrigger',
     'EditableCancelTrigger',
     'EditableEditTrigger',
+  ] as const,
+
+  field: [
+    'FieldRoot',
+    'FieldLabel',
+    'FieldControl',
+    'FieldDescription',
+    'FieldError',
+    'FieldValidity',
+  ] as const,
+
+  form: [
+    'FormRoot',
   ] as const,
 
   hoverCard: [
@@ -402,6 +428,7 @@ export const components = {
   scrollArea: [
     'ScrollAreaRoot',
     'ScrollAreaViewport',
+    'ScrollAreaVirtualizer',
     'ScrollAreaScrollbar',
     'ScrollAreaThumb',
     'ScrollAreaCorner',
@@ -466,6 +493,13 @@ export const components = {
     'TabsIndicator',
   ] as const,
 
+  tagGroup: [
+    'TagGroupRoot',
+    'TagGroupItem',
+    'TagGroupItemText',
+    'TagGroupItemDelete',
+  ] as const,
+
   tagsInput: [
     'TagsInputRoot',
     'TagsInputInput',
@@ -494,6 +528,8 @@ export const components = {
     'ToastViewport',
     'ToastTitle',
     'ToastDescription',
+    'ToastPositioner',
+    'ToastArrow',
   ] as const,
 
   toggle: [
@@ -602,6 +638,8 @@ export const utilities = {
     'useLocale',
     'withDefault',
     'createContext',
+    'createToastManager',
+    'useToastManager',
   ] as const,
 }
 

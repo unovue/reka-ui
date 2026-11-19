@@ -1,11 +1,11 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { useKbd } from '@/shared'
 import { handleSubmit } from '@/test'
-import { ListboxContent, ListboxItem, ListboxRoot, ListboxVirtualizer } from '.'
+import { ListboxContent, ListboxFilter, ListboxItem, ListboxItemIndicator, ListboxRoot, ListboxVirtualizer } from '.'
 import Listbox from './story/_Listbox.vue'
 
 describe('given default Listbox', () => {
@@ -109,6 +109,18 @@ describe('given default Listbox', () => {
     })
   })
 
+  describe('when holding `Shift` before typing a letter', async () => {
+    beforeEach(async () => {
+      await content.trigger('keydown', { key: 'Shift', shiftKey: true })
+      await content.trigger('keydown', { key: 'B', shiftKey: true })
+    })
+
+    it('should ignore the named key and highlight text starting with B', () => {
+      const item = items.find(i => i.text().startsWith('B'))
+      expect(document.activeElement).toBe(item?.element)
+    })
+  })
+
   describe('when selection behavior `replace`', () => {
     beforeEach(() => {
       wrapper.setProps({ selectionBehavior: 'replace' })
@@ -129,6 +141,47 @@ describe('given default Listbox', () => {
       await newItem.trigger('click')
       expect(document.activeElement).toBe(newItem.element)
     })
+  })
+})
+
+describe('given a Listbox with hover highlighting', () => {
+  it('emits the highlighted item without querying the collection', async () => {
+    const wrapper = mount(ListboxRoot, {
+      attachTo: document.body,
+      props: { highlightOnHover: true },
+      slots: {
+        default: () => h(ListboxContent, null, {
+          default: () => ['first', 'second', 'third'].map(value =>
+            h(ListboxItem, { value }, () => value)),
+        }),
+      },
+    })
+    await nextTick()
+    await nextTick()
+
+    const content = wrapper.find('[role=listbox]')
+    const items = wrapper.findAll('[role=option]')
+    const querySpy = vi.spyOn(content.element, 'querySelectorAll')
+    try {
+      for (const item of items.slice(1)) {
+        await item.trigger('pointermove', { pointerType: 'mouse' })
+        expect(wrapper.emitted('highlight')?.at(-1)?.[0]).toEqual({
+          ref: item.element,
+          value: item.text(),
+        })
+        expect(item.attributes('data-highlighted')).toBe('')
+      }
+      expect(querySpy).not.toHaveBeenCalled()
+
+      const eventCount = wrapper.emitted('highlight')?.length
+      await items[2].trigger('pointermove', { pointerType: 'mouse' })
+      expect(wrapper.emitted('highlight')).toHaveLength(eventCount!)
+      expect(querySpy).not.toHaveBeenCalled()
+    }
+    finally {
+      querySpy.mockRestore()
+      wrapper.unmount()
+    }
   })
 })
 
@@ -192,13 +245,13 @@ describe('given a virtualized Listbox on initial mount', () => {
   })
 
   const VirtualListbox = defineComponent({
-    props: { multiple: Boolean, modelValue: { type: null, default: undefined } },
+    props: { multiple: Boolean, loop: Boolean, count: { type: Number, default: 100 }, disabled: { type: Array, default: () => [] }, modelValue: { type: null, default: undefined } },
     setup(props) {
-      const options = Array.from({ length: 100 }, (_, i) => ({ label: `Item ${i}`, value: i }))
-      return () => h(ListboxRoot, { multiple: props.multiple, modelValue: props.modelValue }, () =>
+      const options = Array.from({ length: props.count }, (_, i) => ({ label: `Item ${i}`, value: i }))
+      return () => h(ListboxRoot, { multiple: props.multiple, loop: props.loop, modelValue: props.modelValue }, () =>
         h(ListboxContent, { style: 'height: 200px; overflow: auto' }, () =>
           h(ListboxVirtualizer, { options, textContent: (o: any) => o.label }, {
-            default: ({ option }: any) => h(ListboxItem, { value: option }, () => option.label),
+            default: ({ option }: any) => h(ListboxItem, { value: option, disabled: props.disabled.includes(option.value) }, () => option.label),
           })))
     },
   })
@@ -262,6 +315,82 @@ describe('given a virtualized Listbox on initial mount', () => {
     const items = wrapper.findAll('[role=option]')
     expect(document.activeElement).toBe(items[0].element)
     expect(scrollSpy).toHaveBeenCalled()
+  })
+
+  it('should ignore named keys in typeahead', async () => {
+    const wrapper = mount(VirtualListbox, { props: { count: 5 }, attachTo: document.body })
+    await flush()
+    const content = wrapper.find('[role=listbox]')
+    await content.trigger('focus')
+    expect(document.activeElement?.getAttribute('data-index')).toBe('0')
+
+    await content.trigger('keydown', { key: 'Shift', shiftKey: true })
+    await content.trigger('keydown', { key: 'I', shiftKey: true })
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    await nextTick()
+    expect(document.activeElement?.getAttribute('data-index')).toBe('1')
+  })
+
+  describe('with `loop`', () => {
+    const kbd = useKbd()
+
+    async function press(content: DOMWrapper<Element>, key: string) {
+      await content.trigger('keydown', { key })
+      await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+      await nextTick()
+    }
+
+    it('should wrap from the first option to the last on `ArrowUp`', async () => {
+      const wrapper = mount(VirtualListbox, { props: { loop: true, count: 5 }, attachTo: document.body })
+      await flush()
+      const content = wrapper.find('[role=listbox]')
+      await content.trigger('focus')
+
+      await press(content, kbd.ARROW_UP)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('4')
+    })
+
+    it('should wrap from the last option to the first on `ArrowDown`', async () => {
+      const wrapper = mount(VirtualListbox, { props: { loop: true, count: 5 }, attachTo: document.body })
+      await flush()
+      const content = wrapper.find('[role=listbox]')
+      await content.trigger('focus')
+
+      await press(content, kbd.END)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('4')
+      await press(content, kbd.ARROW_DOWN)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('0')
+    })
+
+    it('should wrap past disabled boundary options', async () => {
+      const wrapper = mount(VirtualListbox, { props: { loop: true, count: 5, disabled: [0, 4] }, attachTo: document.body })
+      await flush()
+      const content = wrapper.find('[role=listbox]')
+      await content.trigger('focus')
+      expect(document.activeElement?.getAttribute('data-index')).toBe('1')
+
+      await press(content, kbd.ARROW_UP)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('3')
+      await press(content, kbd.ARROW_DOWN)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('1')
+    })
+
+    it('should not wrap at the end of the rendered window', async () => {
+      // jsdom never scrolls, so only the first window of the 100 options is rendered.
+      const wrapper = mount(VirtualListbox, { props: { loop: true }, attachTo: document.body })
+      await flush()
+      const content = wrapper.find('[role=listbox]')
+      await content.trigger('focus')
+
+      const rendered = wrapper.findAll('[role=option]')
+      const lastRendered = rendered.at(-1)!.attributes('data-index')
+      expect(Number(lastRendered)).toBeLessThan(99)
+
+      await press(content, kbd.END)
+      expect(document.activeElement?.getAttribute('data-index')).toBe(lastRendered)
+      await press(content, kbd.ARROW_DOWN)
+      expect(document.activeElement?.getAttribute('data-index')).toBe(lastRendered)
+    })
   })
 })
 
@@ -361,6 +490,50 @@ describe('given multiple `true` Listbox', () => {
           expect(items[i].attributes('aria-selected')).toBe('true')
       })
     })
+  })
+})
+
+describe('given a Listbox with `loop`', () => {
+  const kbd = useKbd()
+
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  function setup(loop: boolean) {
+    document.body.innerHTML = ''
+    const wrapper = mount(Listbox, { props: { loop }, attachTo: document.body })
+    return { wrapper, content: wrapper.find('[role=listbox]'), items: wrapper.findAll('[role=option]') }
+  }
+
+  it('should wrap from the last item to the first on `ArrowDown`', async () => {
+    const { content, items } = setup(true)
+    await content.trigger('focus')
+    await content.trigger('keydown', { key: kbd.END })
+    expect(items.at(-1)!.attributes('data-highlighted')).toBe('')
+
+    await content.trigger('keydown', { key: kbd.ARROW_DOWN })
+    expect(items[0].attributes('data-highlighted')).toBe('')
+    expect(document.activeElement).toBe(items[0].element)
+  })
+
+  it('should wrap from the first item to the last on `ArrowUp`', async () => {
+    const { content, items } = setup(true)
+    await content.trigger('focus')
+    expect(items[0].attributes('data-highlighted')).toBe('')
+
+    await content.trigger('keydown', { key: kbd.ARROW_UP })
+    expect(items.at(-1)!.attributes('data-highlighted')).toBe('')
+    expect(document.activeElement).toBe(items.at(-1)!.element)
+  })
+
+  it('should stay on the boundary items without `loop`', async () => {
+    const { content, items } = setup(false)
+    await content.trigger('focus')
+    await content.trigger('keydown', { key: kbd.ARROW_UP })
+    expect(items[0].attributes('data-highlighted')).toBe('')
+
+    await content.trigger('keydown', { key: kbd.END })
+    await content.trigger('keydown', { key: kbd.ARROW_DOWN })
+    expect(items.at(-1)!.attributes('data-highlighted')).toBe('')
   })
 })
 
@@ -477,18 +650,172 @@ describe('given ListboxItem with reactive `disabled` prop', () => {
 
     expect(items[0].attributes('data-disabled')).toBeUndefined()
     expect(items[0].attributes('disabled')).toBeUndefined()
+    expect(items[0].attributes('aria-disabled')).toBeUndefined()
 
     isDisabled.value = true
     await nextTick()
 
     expect(items[0].attributes('data-disabled')).toBe('')
     expect(items[0].attributes('disabled')).toBe('')
+    expect(items[0].attributes('aria-disabled')).toBe('true')
 
     isDisabled.value = false
     await nextTick()
 
     expect(items[0].attributes('data-disabled')).toBeUndefined()
     expect(items[0].attributes('disabled')).toBeUndefined()
+    expect(items[0].attributes('aria-disabled')).toBeUndefined()
+  })
+})
+
+// Regression test for https://github.com/unovue/reka-ui/issues/2904
+// The VNode memoized by ListboxItem's `v-memo` spreads `$attrs`, so the memo
+// must also invalidate when a fallthrough attribute changes. Otherwise a
+// surviving virtualizer row whose `option` changes after filtering keeps the
+// previous option's attributes (`data-testid`, `aria-setsize`, ...) while its
+// slot content updates.
+describe('given ListboxItem with reactive fallthrough attrs', () => {
+  it('should update DOM attributes when an attr changes without highlight/selection change', async () => {
+    const testId = ref('option-a')
+    const ReactiveAttrListbox = defineComponent({
+      setup() {
+        return () =>
+          h(ListboxRoot, null, {
+            default: () => [
+              h(ListboxItem, { 'value': { id: 1 }, 'data-testid': testId.value }, () => 'first'),
+              h(ListboxItem, { value: { id: 2 } }, () => 'other'),
+            ],
+          })
+      },
+    })
+
+    const wrapper = mount(ReactiveAttrListbox, { attachTo: document.body })
+    const items = wrapper.findAll('[role=option]')
+    expect(items[0].attributes('data-testid')).toBe('option-a')
+
+    testId.value = 'option-b'
+    await nextTick()
+
+    expect(items[0].attributes('data-testid')).toBe('option-b')
+  })
+
+  it('should update DOM attributes when an attr key changes while its value stays the same', async () => {
+    const attrName = ref('data-variant-a')
+    const ReactiveAttrKeyListbox = defineComponent({
+      setup() {
+        return () =>
+          h(ListboxRoot, null, {
+            default: () => [
+              h(ListboxItem, { value: { id: 1 }, [attrName.value]: 'same' }, () => 'first'),
+              h(ListboxItem, { value: { id: 2 } }, () => 'other'),
+            ],
+          })
+      },
+    })
+
+    const wrapper = mount(ReactiveAttrKeyListbox, { attachTo: document.body })
+    const items = wrapper.findAll('[role=option]')
+    expect(items[0].attributes('data-variant-a')).toBe('same')
+
+    attrName.value = 'data-variant-b'
+    await nextTick()
+
+    expect(items[0].attributes('data-variant-a')).toBeUndefined()
+    expect(items[0].attributes('data-variant-b')).toBe('same')
+  })
+
+  it('should re-render a surviving virtualizer row when filtering shrinks the options', async () => {
+    const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect
+    window.HTMLElement.prototype.getBoundingClientRect = function () {
+      return { width: 200, height: 200, top: 0, left: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} } as DOMRect
+    }
+
+    try {
+      const options = ref([
+        { label: 'cdi', value: 'cdi' },
+        { label: 'alpha', value: 'alpha' },
+        { label: 'default', value: 'default' },
+      ])
+      const VirtualFilterListbox = defineComponent({
+        setup() {
+          return () =>
+            h(ListboxRoot, null, () =>
+              h(ListboxContent, { style: 'height: 200px; overflow: auto' }, () =>
+                h(ListboxVirtualizer, { options: options.value, textContent: (o: any) => o.label }, {
+                  default: ({ option }: any) =>
+                    h(ListboxItem, { 'value': option, 'data-testid': `option-${option.label}` }, () => option.label),
+                })))
+        },
+      })
+
+      const wrapper = mount(VirtualFilterListbox, { attachTo: document.body })
+      await nextTick()
+      expect(wrapper.find('[data-index="0"]').attributes('data-testid')).toBe('option-cdi')
+
+      // a filter that keeps only the last option: index 0 survives but maps to a different option
+      options.value = [{ label: 'default', value: 'default' }]
+      await nextTick()
+
+      const survivor = wrapper.find('[data-index="0"]')
+      expect(survivor.text()).toBe('default')
+      expect(survivor.attributes('data-testid')).toBe('option-default')
+      expect(survivor.attributes('aria-setsize')).toBe('1')
+    }
+    finally {
+      window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
+    }
+  })
+})
+
+describe('given a Listbox whose highlighted item leaves the document', () => {
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  const Fixture = defineComponent({
+    props: {
+      options: { type: Array as () => string[], default: () => ['Apple', 'Banana', 'Cherry'] },
+      withFilter: Boolean,
+    },
+    setup(props) {
+      const search = ref('')
+      const items = computed(() => props.options.filter(item => item.toLowerCase().includes(search.value.toLowerCase())))
+      return () => h(ListboxRoot, null, () => [
+        props.withFilter
+          ? h(ListboxFilter, { 'data-testid': 'filter', 'modelValue': search.value, 'onUpdate:modelValue': (value: string) => search.value = value })
+          : null,
+        h(ListboxContent, { 'data-testid': 'content' }, () => items.value.map(item => h(ListboxItem, { key: item, value: item }, () => item))),
+      ])
+    },
+  })
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should remove aria-activedescendant when the filter term matches no item', async () => {
+    const wrapper = mount(Fixture, { attachTo: document.body, props: { withFilter: true } })
+    const filter = wrapper.find('[data-testid="filter"]')
+    await filter.trigger('keydown', { key: 'ArrowDown' })
+    expect(filter.attributes('aria-activedescendant')).toBeTruthy()
+
+    await filter.setValue('zzz')
+    await nextTick()
+
+    expect(wrapper.findAll('[role="option"]')).toHaveLength(0)
+    expect(filter.attributes('aria-activedescendant')).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it('should keep the content in the tab order when the highlighted item is removed', async () => {
+    const wrapper = mount(Fixture, { attachTo: document.body })
+    const content = wrapper.find('[data-testid="content"]')
+    await content.trigger('focus')
+    expect(content.attributes('tabindex')).toBe('-1')
+    expect(wrapper.find('[role="option"]').attributes('tabindex')).toBe('0')
+
+    await wrapper.setProps({ options: ['Banana', 'Cherry'] })
+
+    expect(content.attributes('tabindex')).toBe('0')
+    wrapper.unmount()
   })
 })
 
@@ -533,8 +860,252 @@ describe('given Listbox in a form', async () => {
     })
 
     it('should trigger submit once', () => {
-      expect(handleSubmit).toHaveBeenCalledTimes(2)
-      expect(handleSubmit.mock.results[1].value).toStrictEqual({ test: items[4].text() })
+      expect(handleSubmit).toHaveBeenCalledTimes(1)
+      expect(handleSubmit.mock.results[0].value).toStrictEqual({ test: items[4].text() })
+    })
+  })
+})
+
+describe('given Listbox with ListboxFilter handling IME composition', () => {
+  let wrapper: VueWrapper
+  let input: DOMWrapper<HTMLInputElement>
+  let updates: string[]
+
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36'
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    updates = []
+    const search = ref('')
+    wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ListboxRoot, {}, {
+          default: () => [
+            h(ListboxFilter, {
+              'modelValue': search.value,
+              'onUpdate:modelValue': (v: string) => {
+                updates.push(v)
+                search.value = v
+              },
+            }),
+            h(ListboxContent, {}, {
+              default: () => ['Apple', 'Banana'].map(i => h(ListboxItem, { value: i }, { default: () => i })),
+            }),
+          ],
+        })
+      },
+    }), { attachTo: document.body })
+    input = wrapper.find('input')
+  })
+
+  afterEach(() => {
+    delete (window.navigator as { userAgent?: string }).userAgent
+  })
+
+  it('should not update modelValue during plain-text composition off Android (desktop Pinyin preedit)', async () => {
+    await input.trigger('compositionstart')
+    input.element.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'xiang', bubbles: true }))
+    input.element.value = 'xiang'
+    await input.trigger('input')
+
+    expect(updates).toEqual([])
+  })
+
+  it('should update modelValue live during plain-text (autocorrect) composition on Android', async () => {
+    Object.defineProperty(window.navigator, 'userAgent', { value: ANDROID_UA, configurable: true })
+
+    await input.trigger('compositionstart')
+    input.element.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'Br', bubbles: true }))
+    input.element.value = 'Br'
+    await input.trigger('input')
+
+    expect(updates).toEqual(['Br'])
+  })
+
+  it('should not update modelValue during CJK IME composition on Android until compositionend', async () => {
+    Object.defineProperty(window.navigator, 'userAgent', { value: ANDROID_UA, configurable: true })
+
+    await input.trigger('compositionstart')
+    input.element.dispatchEvent(new CompositionEvent('compositionupdate', { data: 'かんじ', bubbles: true }))
+    input.element.value = 'かんじ'
+    await input.trigger('input')
+
+    expect(updates).toEqual([])
+
+    await input.trigger('compositionend')
+    await nextTick()
+
+    expect(updates).toEqual(['かんじ'])
+  })
+})
+
+describe('given ListboxItem slot props and ListboxItemIndicator', () => {
+  function mountListbox(forceMount = false) {
+    return mount(defineComponent({
+      setup() {
+        const modelValue = ref('a')
+        return () => h(ListboxRoot, {
+          'modelValue': modelValue.value,
+          'onUpdate:modelValue': (v: any) => { modelValue.value = v },
+        }, () => h(ListboxContent, () => ['a', 'b'].map(value =>
+          h(ListboxItem, { value }, {
+            default: ({ selected }: { selected: boolean }) => [
+              h('span', { 'data-testid': `label-${value}` }, `${value}:${selected}`),
+              h(ListboxItemIndicator, { 'forceMount': forceMount, 'data-testid': `indicator-${value}` }, () => '✓'),
+            ],
+          }),
+        )))
+      },
+    }), { attachTo: document.body })
+  }
+
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should expose `selected` slot prop', async () => {
+    const wrapper = mountListbox()
+    expect(wrapper.find('[data-testid=label-a]').text()).toBe('a:true')
+    expect(wrapper.find('[data-testid=label-b]').text()).toBe('b:false')
+
+    await wrapper.findAll('[role=option]')[1].trigger('click')
+    expect(wrapper.find('[data-testid=label-a]').text()).toBe('a:false')
+    expect(wrapper.find('[data-testid=label-b]').text()).toBe('b:true')
+  })
+
+  it('should only mount the indicator of the selected item', async () => {
+    const wrapper = mountListbox()
+    expect(wrapper.find('[data-testid=indicator-a]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid=indicator-b]').exists()).toBe(false)
+
+    await wrapper.findAll('[role=option]')[1].trigger('click')
+    expect(wrapper.find('[data-testid=indicator-a]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid=indicator-b]').exists()).toBe(true)
+  })
+
+  it('should keep indicators mounted with `forceMount` and reflect `data-state`', async () => {
+    const wrapper = mountListbox(true)
+    const a = wrapper.find('[data-testid=indicator-a]')
+    const b = wrapper.find('[data-testid=indicator-b]')
+    expect(a.attributes('data-state')).toBe('checked')
+    expect(b.attributes('data-state')).toBe('unchecked')
+    expect(a.attributes('forcemount')).toBeUndefined()
+    expect(a.attributes('aria-hidden')).toBe('true')
+  })
+})
+
+describe('given a Listbox driven by `highlightItem` from a sibling input', () => {
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+  window.HTMLElement.prototype.scrollTo = vi.fn()
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect
+  beforeAll(() => {
+    // jsdom reports zero-sized rects; give the virtualizer a viewport so its items mount.
+    window.HTMLElement.prototype.getBoundingClientRect = function () {
+      return { width: 200, height: 200, top: 0, left: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }
+    }
+  })
+  afterAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
+  })
+
+  const options = Array.from({ length: 50 }, (_, i) => `Item ${i}`)
+
+  function mountListbox(virtual: boolean, disabled: string[] = []) {
+    const listbox = ref<InstanceType<typeof ListboxRoot>>()
+    const shown = ref(options)
+    const onHighlight = vi.fn()
+    const item = (option: string) => h(ListboxItem, { key: option, value: option, disabled: disabled.includes(option) }, () => option)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => [
+          h('input', { 'data-testid': 'search' }),
+          h(ListboxRoot, { ref: listbox, onHighlight }, () =>
+            h(ListboxContent, { style: 'height: 200px; overflow: auto' }, () => virtual
+              ? h(ListboxVirtualizer, { options: shown.value }, {
+                  default: ({ option }: any) => item(option),
+                })
+              : shown.value.map(item))),
+        ]
+      },
+    }), { attachTo: document.body })
+    return { wrapper, listbox, shown, onHighlight }
+  }
+
+  async function flush() {
+    await nextTick()
+    await nextTick()
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    await nextTick()
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  describe.each([['non-virtual', false], ['virtual', true]])('%s', (_, virtual) => {
+    it('should highlight the item without moving focus with `{ focus: false }`', async () => {
+      const { wrapper, listbox, onHighlight } = mountListbox(virtual as boolean)
+      await flush()
+      const input = wrapper.find('[data-testid=search]').element as HTMLInputElement
+      input.focus()
+
+      listbox.value!.highlightItem('Item 3', { focus: false })
+      await flush()
+
+      const item = wrapper.findAll('[role=option]').find(i => i.text() === 'Item 3')!
+      expect(item.attributes('data-highlighted')).toBe('')
+      expect(listbox.value!.highlightedElement).toBe(item.element)
+      expect(onHighlight).toHaveBeenLastCalledWith(expect.objectContaining({ value: 'Item 3' }))
+      expect(document.activeElement).toBe(input)
+    })
+
+    it('should still move focus to the item by default', async () => {
+      const { wrapper, listbox } = mountListbox(virtual as boolean)
+      await flush()
+      const input = wrapper.find('[data-testid=search]').element as HTMLInputElement
+      input.focus()
+
+      listbox.value!.highlightItem('Item 3')
+      await flush()
+
+      const item = wrapper.findAll('[role=option]').find(i => i.text() === 'Item 3')!
+      expect(item.attributes('data-highlighted')).toBe('')
+      expect(document.activeElement).toBe(item.element)
+    })
+
+    it('should not highlight a disabled item', async () => {
+      const { wrapper, listbox } = mountListbox(virtual as boolean, ['Item 3'])
+      await flush()
+      const highlighted = listbox.value!.highlightedElement
+
+      listbox.value!.highlightItem('Item 3', { focus: false })
+      await flush()
+
+      const item = wrapper.findAll('[role=option]').find(i => i.text() === 'Item 3')!
+      expect(item.attributes('data-highlighted')).toBeUndefined()
+      expect(listbox.value!.highlightedElement).toBe(highlighted)
+    })
+
+    it('should highlight the requested item when the options are reordered before it renders', async () => {
+      const { wrapper, listbox, shown } = mountListbox(virtual as boolean)
+      await flush()
+
+      listbox.value!.highlightItem('Item 1', { focus: false })
+      shown.value = ['Item 0', 'Item 2', 'Item 1', ...options.slice(3)]
+      await flush()
+
+      const highlighted = wrapper.findAll('[data-highlighted]')
+      expect(highlighted.map(i => i.text())).toEqual(['Item 1'])
     })
   })
 })

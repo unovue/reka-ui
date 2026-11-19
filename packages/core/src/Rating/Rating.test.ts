@@ -56,6 +56,34 @@ describe('given a default Rating', () => {
   })
 })
 
+describe('given a hoverable Rating', () => {
+  let wrapper: VueWrapper<InstanceType<typeof Rating>>
+  let root: DOMWrapper<HTMLElement>
+  let radios: DOMWrapper<HTMLElement>[]
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(Rating, { attachTo: document.body, props: { defaultValue: 1, hoverable: true, length: 3 } })
+    root = wrapper.find('[role=radiogroup]')
+    radios = wrapper.findAll('[role=radio]')
+  })
+
+  it('should preview the hovered rating', async () => {
+    await fireEvent.mouseEnter(radios[2].element)
+    expect(radios[1].attributes('data-state')).toBe('active')
+    expect(radios[2].attributes('data-state')).toBe('active')
+  })
+
+  it('should reset the preview to the model value on mouse leave', async () => {
+    await fireEvent.mouseEnter(radios[2].element)
+    await fireEvent.mouseLeave(root.element)
+
+    expect(radios[0].attributes('data-state')).toBe('active')
+    expect(radios[1].attributes('data-state')).toBeUndefined()
+    expect(radios[2].attributes('data-state')).toBeUndefined()
+  })
+})
+
 describe('given disabled Rating', () => {
   let wrapper: VueWrapper<InstanceType<typeof Rating>>
   let radios: DOMWrapper<HTMLElement>[]

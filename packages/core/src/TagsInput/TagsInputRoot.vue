@@ -70,6 +70,7 @@ export const [injectTagsInputRootContext, provideTagsInputRootContext]
 
 <script setup lang="ts" generic="T extends AcceptableInputValue = string">
 import { useFocusWithin, useVModel } from '@vueuse/core'
+import { isEqual } from 'ohash'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -111,9 +112,9 @@ const currentModelValue = computed(() => Array.isArray(modelValue.value) ? [...m
 
 function handleRemoveTag(index: number) {
   if (index !== -1) {
-    const collection = getItems().filter(i => i.ref.dataset.disabled !== '')
+    const removedValue = modelValue.value[index] as T
     modelValue.value = modelValue.value.filter((_, i) => i !== index)
-    emits('removeTag', collection[index].value)
+    emits('removeTag', removedValue)
   }
 }
 
@@ -172,7 +173,9 @@ provideTagsInputRootContext({
 
         if (selectedElement.value) {
           const index = collection.findIndex(i => i === selectedElement.value)
-          handleRemoveTag(index)
+          const selectedItem = getItems().find(i => i.ref === selectedElement.value)
+          const modelIndex = selectedItem ? modelValue.value.findIndex(v => isEqual(v, selectedItem.value)) : -1
+          handleRemoveTag(modelIndex)
           selectedElement.value = selectedElement.value === lastTag ? collection.at(index - 1) : collection.at(index + 1)
           event.preventDefault()
         }

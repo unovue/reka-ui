@@ -71,6 +71,12 @@
     'required': false
   },
   {
+    'name': 'loop',
+    'description': '<p>When <code>true</code>, keyboard navigation will loop from last item to first, and vice versa.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'modelValue',
     'description': '<p>The controlled value of the tree. Can be binded with <code>v-model</code>.</p>\n',
     'type': '(M extends true ? U[] : U)',
@@ -146,6 +152,7 @@
 | `getChildren` | This function is passed the index of each item and should return a list of children for that item | `((val: T) => T[])` | No | `val.children` |
 | `getKey` | This function is passed the index of each item and should return a unique key for that item | `(val: T): string` | Yes | - |
 | `items` | List of items | `T[]` | No | - |
+| `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
 | `modelValue` | The controlled value of the tree. Can be binded with v-model. | `(M extends true ? U[] : U)` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean \| M` | No | - |
 | `propagateSelect` | When true, selecting parent will select the descendants. Requires multiple to be true. | `boolean` | No | - |

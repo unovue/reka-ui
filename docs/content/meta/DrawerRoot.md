@@ -60,11 +60,11 @@
   {
     'name': 'update:open',
     'description': '<p>Event handler called when the open state of the dialog changes.</p>\n',
-    'type': '[value: boolean, details?: DrawerOpenChangeDetails]'
+    'type': '[value: boolean, details: DrawerOpenChangeDetails]'
   },
   {
     'name': 'update:openComplete',
-    'description': '',
+    'description': '<p>Emitted with <code>true</code> once the drawer has finished opening and <code>false</code> once it has finished closing:\nwhen the animations and transitions running on the popup have ended, or when its content unmounts.\nAnimations that never end are not waited for.</p>\n',
     'type': '[value: boolean]'
   },
   {
@@ -107,8 +107,8 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:open` | Event handler called when the open state of the dialog changes. | `[value: boolean, details?: DrawerOpenChangeDetails]` |
-| `update:openComplete` |  | `[value: boolean]` |
+| `update:open` | Event handler called when the open state of the dialog changes. | `[value: boolean, details: DrawerOpenChangeDetails]` |
+| `update:openComplete` | Emitted with true once the drawer has finished opening and false once it has finished closing: when the animations and transitions running on the popup have ended, or when its content unmounts. Animations that never end are not waited for. | `[value: boolean]` |
 | `update:snapPoint` |  | `[value: DrawerSnapPoint \| null]` |
 
 **Slots**

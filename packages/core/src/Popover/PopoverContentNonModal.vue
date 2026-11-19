@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { PopoverContentImplEmits, PopoverContentImplProps } from './PopoverContentImpl.vue'
 import { ref } from 'vue'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { useForwardPropsEmits } from '@/shared'
 import PopoverContentImpl from './PopoverContentImpl.vue'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
@@ -21,10 +22,9 @@ const forwarded = useForwardPropsEmits(props, emits)
     :disable-outside-pointer-events="false"
     @close-auto-focus="
       (event) => {
-        emits('closeAutoFocus', event);
-
         if (!event.defaultPrevented) {
-          if (!hasInteractedOutsideRef) rootContext.triggerElement.value?.focus();
+          // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
+          if (!hasInteractedOutsideRef && !hasFocusLeftScope(event.target)) rootContext.triggerElement.value?.focus();
           // Always prevent auto focus because we either focus manually or want user agent focus
           event.preventDefault();
         }
@@ -35,8 +35,6 @@ const forwarded = useForwardPropsEmits(props, emits)
     "
     @interact-outside="
       async (event) => {
-        emits('interactOutside', event);
-
         if (!event.defaultPrevented) {
           hasInteractedOutsideRef = true;
           if (event.detail.originalEvent.type === 'pointerdown') {

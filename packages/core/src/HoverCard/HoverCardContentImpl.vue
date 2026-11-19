@@ -2,7 +2,7 @@
 import type { DismissableLayerEmits } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 import { syncRef } from '@vueuse/shared'
-import { useForwardExpose, useGraceArea } from '@/shared'
+import { useForwardExpose, useForwardProps, useGraceArea } from '@/shared'
 
 export type HoverCardContentImplEmits = DismissableLayerEmits
 export interface HoverCardContentImplProps extends PopperContentProps {}
@@ -13,7 +13,6 @@ import { useEventListener } from '@vueuse/core'
 import { nextTick, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { PopperContent } from '@/Popper'
-import { useForwardProps } from '..'
 import { injectHoverCardRootContext } from './HoverCardRoot.vue'
 import { getTabbableNodes } from './utils'
 
@@ -96,6 +95,7 @@ onUnmounted(() => {
     <PopperContent
       v-bind="{ ...forwarded, ...$attrs }"
       :ref="forwardRef"
+      scope="hover-card"
       :data-state="rootContext.open.value ? 'open' : 'closed'"
       :style="{
         'userSelect': containSelection ? 'text' : undefined,

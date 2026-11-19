@@ -1,3 +1,5 @@
+import type { CheckedState } from './utils'
+
 export {
   default as CheckboxGroupRoot,
   type CheckboxGroupRootEmits,
@@ -14,6 +16,4 @@ export {
   type CheckboxRootProps,
   injectCheckboxRootContext,
 } from './CheckboxRoot.vue'
-export type {
-  CheckedState as CheckboxCheckedState,
-} from './utils'
+export type CheckboxCheckedState = CheckedState

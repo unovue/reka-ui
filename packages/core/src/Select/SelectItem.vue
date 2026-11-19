@@ -45,7 +45,6 @@ import {
   nextTick,
   onMounted,
   ref,
-  toRefs,
 } from 'vue'
 import { Primitive } from '@/Primitive'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
@@ -53,10 +52,16 @@ import { injectSelectRootContext } from './SelectRoot.vue'
 import { SELECTION_KEYS, valueComparator } from './utils'
 
 const props = defineProps<SelectItemProps>()
-const emits = defineEmits<SelectItemEmits<T>>()
-const { disabled } = toRefs(props)
 
+const emits = defineEmits<SelectItemEmits<T>>()
+defineSlots<{
+  default?: (props: {
+    /** Whether the item is currently selected */
+    selected: boolean
+  }) => any
+}>()
 const rootContext = injectSelectRootContext()
+const disabled = computed(() => Boolean(props.disabled || rootContext.disabled?.value))
 const contentContext = injectSelectContentContext()
 const { forwardRef, currentElement } = useForwardExpose()
 const { CollectionItem } = useCollection()
@@ -69,7 +74,7 @@ const textId = useId(undefined, 'reka-select-item-text')
 const SELECT_SELECT = 'select.select'
 
 async function handleSelectCustomEvent(ev: PointerEvent | KeyboardEvent) {
-  if (ev.defaultPrevented)
+  if (ev.defaultPrevented || disabled.value)
     return
 
   const eventDetail = { originalEvent: ev, value: props.value as T }
@@ -89,6 +94,77 @@ async function handleSelect(ev: SelectEvent<T>) {
   }
 }
 
+// A match typed on the closed trigger: nothing is open to close, so only the value changes.
+// It still goes through `select`, so a handler that prevents it keeps the item unselected.
+function handleTypeaheadSelect(originalEvent: KeyboardEvent) {
+  if (disabled.value)
+    return
+
+  handleAndDispatchCustomEvent(SELECT_SELECT, (ev: SelectEvent<T>) => {
+    emits('select', ev)
+    if (!ev.defaultPrevented)
+      rootContext.onValueChange(props.value)
+  }, { originalEvent, value: props.value as T })
+}
+
+// Touch selects on `click`: iOS Safari fires `pointerup` on whatever item ends up under the
+// finger once a scroll through the list stops, while a `click` never follows a scroll.
+// Mouse and pen keep selecting on `pointerup`, so they can press the trigger, move down the
+// list and release over an item.
+function isTouch(event: PointerEvent) {
+  return event.pointerType === 'touch'
+}
+
+// Whether a touch press began on this item. The trigger opens the content on a touch
+// `pointerup`, so the `click` that ends that same tap can land on an item that was just
+// rendered under the finger; only a tap that started here may select.
+let touchPressStarted = false
+// That tap's `pointerup`, handed to `select` as the `originalEvent` just as when it selected itself.
+let tapPointerUp: PointerEvent | undefined
+// Whether a selection key is held. An item rendered as a native button turns that key into a
+// `click` of its own, which must not select a second time.
+let isSelectionKeyDown = false
+
+function handlePointerDown(event: PointerEvent) {
+  touchPressStarted = isTouch(event)
+  tapPointerUp = undefined
+  if (!touchPressStarted)
+    (event.currentTarget as HTMLElement).focus({ preventScroll: true })
+}
+
+function handlePointerUp(event: PointerEvent) {
+  if (!isTouch(event))
+    handleSelectCustomEvent(event)
+  else if (touchPressStarted)
+    tapPointerUp = event
+}
+
+function handleClick(event: MouseEvent) {
+  const startedOnItem = touchPressStarted
+  const pointerUp = tapPointerUp
+  touchPressStarted = false
+  tapPointerUp = undefined
+  if (event.defaultPrevented)
+    return
+  // A click that no pointer produced (`detail` is 0), e.g. from assistive technology
+  const isVirtualClick = event.detail === 0 && !isSelectionKeyDown
+  // Browsers dispatch `click` as a `PointerEvent`; it stands in when there was no `pointerup`.
+  if (startedOnItem || isVirtualClick)
+    handleSelectCustomEvent(pointerUp ?? event as PointerEvent)
+}
+
+function handleKeyUp() {
+  // The `click` a native button makes from Space comes right after `keyup`
+  setTimeout(() => {
+    isSelectionKeyDown = false
+  })
+}
+
+function handleBlur() {
+  isFocused.value = false
+  isSelectionKeyDown = false
+}
+
 async function handlePointerMove(event: PointerEvent) {
   await nextTick()
   if (event.defaultPrevented)
@@ -96,7 +172,7 @@ async function handlePointerMove(event: PointerEvent) {
   if (disabled.value) {
     contentContext.onItemLeave?.()
   }
-  else {
+  else if (!isTouch(event)) {
     // even though safari doesn't support this option, it's acceptable
     // as it only means it might scroll a few pixels when using the pointer.
     (event.currentTarget as HTMLElement | null)?.focus({ preventScroll: true })
@@ -112,6 +188,8 @@ async function handlePointerLeave(event: PointerEvent) {
 }
 
 async function handleKeyDown(event: KeyboardEvent) {
+  if (SELECTION_KEYS.includes(event.key))
+    isSelectionKeyDown = true
   await nextTick()
   if (event.defaultPrevented)
     return
@@ -143,7 +221,9 @@ onMounted(() => {
 
 provideSelectItemContext({
   value: props.value,
-  disabled,
+  // The item's own state only: `SelectItemText` registers the native `<option>` once on mount,
+  // so the root's `disabled` must not leak in (the native `<select>` already carries it).
+  disabled: computed(() => Boolean(props.disabled)),
   textId,
   isSelected,
   onItemTextChange: (node) => {
@@ -153,7 +233,7 @@ provideSelectItemContext({
 </script>
 
 <template>
-  <CollectionItem :value="{ textValue }">
+  <CollectionItem :value="{ textValue, value, typeaheadSelect: handleTypeaheadSelect }">
     <Primitive
       :ref="forwardRef"
       role="option"
@@ -167,17 +247,16 @@ provideSelectItemContext({
       :as="as"
       :as-child="asChild"
       @focus="isFocused = true"
-      @blur="isFocused = false"
-      @pointerup="handleSelectCustomEvent"
-      @pointerdown="(event: PointerEvent) => {
-        (event.currentTarget as HTMLElement).focus({ preventScroll: true })
-      }"
-      @touchend.prevent.stop
+      @blur="handleBlur"
+      @click="handleClick"
+      @pointerup="handlePointerUp"
+      @pointerdown="handlePointerDown"
       @pointermove="handlePointerMove"
       @pointerleave="handlePointerLeave"
       @keydown="handleKeyDown"
+      @keyup="handleKeyUp"
     >
-      <slot />
+      <slot :selected="isSelected" />
     </Primitive>
   </CollectionItem>
 </template>

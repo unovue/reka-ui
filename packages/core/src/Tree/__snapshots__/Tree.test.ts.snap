@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`given default Tree > should render snapshot 1`] = `
-"<ul class="list-none select-none w-64 bg-white text-blackA11 rounded-md p-2 text-sm font-medium" tabindex="0" data-orientation="vertical" dir="ltr" style="outline: none;" role="tree">
+"<ul class="list-none select-none w-64 bg-white text-blackA11 rounded-md p-2 text-sm font-medium" tabindex="0" data-orientation="vertical" dir="ltr" style="outline: medium;" role="tree">
   <li data-reka-collection-item="" tabindex="-1" data-orientation="vertical" class="flex items-center py-1 px-2 my-0.5 rounded w-max outline-none focus:ring-grass9 focus:ring-2 data-[selected]:bg-grass4" style="margin-left: 1rem;" aria-setsize="3" aria-posinset="1" role="treeitem" aria-selected="false" aria-level="1" data-indent="1">
     <!--v-if-->
     <div class="pl-2">index.vue</div>

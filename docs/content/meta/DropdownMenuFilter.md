@@ -23,7 +23,7 @@
   },
   {
     'name': 'disabled',
-    'description': '<p>When <code>true</code>, prevents the user from interacting with item</p>\n',
+    'description': '<p>When <code>true</code>, prevents the user from interacting with the filter input.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -61,7 +61,7 @@
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"input"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `autoFocus` | Focus on element when mounted. | `boolean` | No | - |
-| `disabled` | When true, prevents the user from interacting with item | `boolean` | No | - |
+| `disabled` | When true, prevents the user from interacting with the filter input. | `boolean` | No | - |
 | `modelValue` | The controlled value of the filter. Can be binded with v-model. | `string` | No | - |
 
 **Events**

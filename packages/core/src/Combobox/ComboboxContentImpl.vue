@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { DismissableLayerEmits, DismissableLayerProps } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 
-import { createContext, getActiveElement, useFocusGuards, useForwardExpose, useForwardProps, useHideOthers } from '@/shared'
+import { createContext, getActiveElement, useContentId, useContentMounted, useFocusGuards, useForwardExpose, useForwardProps, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 
 export type ComboboxContentImplEmits = DismissableLayerEmits
@@ -31,7 +31,7 @@ export const [injectComboboxContentContext, provideComboboxContentContext]
 </script>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, toRefs } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { ListboxContent } from '@/Listbox'
@@ -39,13 +39,17 @@ import { PopperContent } from '@/Popper'
 import { Primitive } from '@/Primitive'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
-const props = withDefaults(defineProps<ComboboxContentImplProps>(), {
+const props = withDefaults(defineProps<ComboboxContentImplProps & { present?: boolean }>(), {
   position: 'inline',
+  present: true,
 })
 const emits = defineEmits<ComboboxContentImplEmits>()
 
 const { position } = toRefs(props)
 const rootContext = injectComboboxRootContext()
+const contentId = Symbol('ComboboxContent')
+
+watch(position, value => rootContext.onContentPositionChange(contentId, value), { immediate: true })
 
 const isEmpty = computed(() => rootContext.ignoreFilter.value
   ? rootContext.allItems.value.size === 0
@@ -53,17 +57,25 @@ const isEmpty = computed(() => rootContext.ignoreFilter.value
 )
 
 const { forwardRef, currentElement } = useForwardExpose()
-useBodyScrollLock(props.bodyLock)
+useContentId(rootContext, currentElement)
+useContentMounted(rootContext, currentElement)
+const scrollLocked = useBodyScrollLock(props.present && props.bodyLock)
+watch([() => props.present, () => props.bodyLock], ([present, bodyLock]) => scrollLocked.value = present && bodyLock)
 useFocusGuards()
-useHideOthers(rootContext.parentElement)
+const ariaHiddenTarget = computed(() => props.present ? rootContext.parentElement.value : undefined)
+useHideOthers(ariaHiddenTarget)
 
 const pickedProps = computed(() => {
-  if (props.position === 'popper')
-    return props
-  else return {}
+  if (props.position === 'popper') {
+    const { present: _, ...forwardedProps } = props
+    return forwardedProps
+  }
+  else {
+    return {}
+  }
 })
 
-const forwardedProps = useForwardProps(pickedProps.value)
+const forwardedProps = useForwardProps(pickedProps)
 
 const popperStyle = {
   // Ensure border-box for floating-ui calculations
@@ -84,14 +96,37 @@ provideComboboxContentContext({ position })
 const isInputWithinContent = ref(false)
 onMounted(() => {
   if (rootContext.inputElement.value) {
-    isInputWithinContent.value = currentElement.value.contains(rootContext.inputElement.value)
-    if (isInputWithinContent.value) {
+    isInputWithinContent.value = currentElement.value?.contains(rootContext.inputElement.value) ?? false
+    if (props.present && isInputWithinContent.value) {
       rootContext.inputElement.value.focus()
     }
   }
 })
 
+watch(() => props.present, async (isPresent, wasPresent) => {
+  if (isPresent) {
+    // Content kept mounted while closed (`unmountOnHide: false`) is still hidden when the root
+    // focuses the input on open, and a hidden input can't take focus. Focus it once it's shown.
+    if (!wasPresent && isInputWithinContent.value) {
+      await nextTick()
+      if (props.present)
+        rootContext.inputElement.value?.focus()
+    }
+    return
+  }
+  if (!wasPresent)
+    return
+
+  const activeElement = getActiveElement()
+  if (!activeElement || !currentElement.value?.contains(activeElement))
+    return
+
+  await nextTick()
+  rootContext.triggerElement.value?.focus()
+})
+
 onUnmounted(() => {
+  rootContext.onContentUnmount(contentId)
   const activeElement = getActiveElement()
   if (isInputWithinContent.value && (!activeElement || activeElement === document.body)) {
     rootContext.triggerElement.value?.focus()
@@ -110,17 +145,23 @@ function isEventTargetWithinCombobox(target: EventTarget | null) {
   const control = label?.control
   return !!control && !!rootContext.parentElement.value?.contains(control)
 }
+
+const popperContentEvents = {
+  placed: () => rootContext.onContentPlaced(contentId),
+}
 </script>
 
 <template>
   <ListboxContent as-child>
     <FocusScope
       as-child
+      :present="props.present"
       @mount-auto-focus.prevent
       @unmount-auto-focus.prevent
     >
       <DismissableLayer
         as-child
+        :present="props.present"
         :disable-outside-pointer-events="disableOutsidePointerEvents"
         @dismiss="rootContext.onOpenChange(false)"
         @focus-outside="(ev) => {
@@ -141,6 +182,7 @@ function isEventTargetWithinCombobox(target: EventTarget | null) {
           v-bind="{ ...$attrs, ...forwardedProps }"
           :id="rootContext.contentId"
           :ref="forwardRef"
+          :scope="position === 'popper' ? 'combobox' : undefined"
           :memo-dependencies="position === 'popper'
             ? [rootContext.filterSearch.value, rootContext.filterState.value]
             : undefined"
@@ -155,6 +197,7 @@ function isEventTargetWithinCombobox(target: EventTarget | null) {
             outline: 'none',
             ...(position === 'popper' ? popperStyle : {}),
           }"
+          v-on="position === 'popper' ? popperContentEvents : {}"
         >
           <slot />
         </component>

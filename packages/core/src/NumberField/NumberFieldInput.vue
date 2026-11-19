@@ -53,9 +53,17 @@ function handleKeydown(event: KeyboardEvent) {
       rootContext.handleMinMaxValue('max')
       break
     case kbd.ENTER:
-      rootContext.applyInputValue((event.target as HTMLInputElement)?.value)
+      commit((event.target as HTMLInputElement)?.value)
       break
   }
+}
+
+function commit(value: string | undefined) {
+  rootContext.applyInputValue(value ?? '')
+  // The committed text can leave `textValue` unchanged (reformatted, reverted or rejected input),
+  // so the watcher below would not run and the next render would bring back the stale typed text.
+  // Resync the bound value with what was just written to the element.
+  inputValue.value = (currentElement.value as HTMLInputElement | undefined)?.value ?? rootContext.textValue.value
 }
 
 function handleWheelEvent(event: WheelEvent) {
@@ -121,6 +129,9 @@ function handleChange() {
     @wheel="handleWheelEvent"
     @beforeinput="(event: InputEvent) => {
       if (event.isComposing) return
+      // A collapsed deletion carries no data, so nextValue would repeat the current value; undo and redo read the same
+      // Every deletion is skipped so they stay consistent, and applyInputValue reformats on blur
+      if (event.inputType.startsWith('delete') || event.inputType.startsWith('history')) return
       const target = event.target as HTMLInputElement
       let nextValue
         = target.value.slice(0, target.selectionStart ?? undefined)
@@ -136,7 +147,7 @@ function handleChange() {
       inputValue = target.value
     }"
     @change="handleChange"
-    @blur="rootContext.applyInputValue($event.target?.value)"
+    @blur="commit($event.target?.value)"
     @compositionstart="handleCompositionStart"
     @compositionend="handleCompositionEnd"
   >

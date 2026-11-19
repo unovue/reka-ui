@@ -12,7 +12,7 @@ import { injectComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
 import { ListboxFilter } from '@/Listbox'
 import { injectListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { usePrimitiveElement } from '@/Primitive'
-import { useComposing } from '@/shared'
+import { useComposing, useRenderedContentId } from '@/shared'
 import { injectAutocompleteRootContext } from './AutocompleteRoot.vue'
 
 const props = withDefaults(defineProps<AutocompleteInputProps>(), {
@@ -21,6 +21,7 @@ const props = withDefaults(defineProps<AutocompleteInputProps>(), {
 const emits = defineEmits<AutocompleteInputEmits>()
 
 const rootContext = injectComboboxRootContext()
+const contentId = useRenderedContentId(rootContext)
 const autocompleteContext = injectAutocompleteRootContext()
 const listboxContext = injectListboxRootContext()
 const { primitiveElement, currentElement } = usePrimitiveElement()
@@ -38,7 +39,7 @@ onMounted(() => {
     rootContext.onInputElementChange(currentElement.value as HTMLInputElement)
 })
 
-const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing((event) => {
+const { isComposing, shouldDeferInput, handleCompositionStart, handleCompositionUpdate, handleCompositionEnd } = useComposing((event) => {
   const el = event.target as HTMLInputElement
   if (el)
     processInputValue(el.value)
@@ -71,7 +72,7 @@ function processInputValue(value: string) {
 }
 
 function handleInput(event: InputEvent) {
-  if (isComposing.value)
+  if (shouldDeferInput.value)
     return
   processInputValue((event.target as HTMLInputElement).value)
 }
@@ -114,7 +115,8 @@ watch(rootContext.filterState, (_newValue, oldValue) => {
     :auto-focus="autoFocus"
     :disabled="disabled"
     :aria-expanded="rootContext.open.value"
-    :aria-controls="rootContext.contentId"
+    :aria-controls="rootContext.open.value ? contentId : undefined"
+    :aria-activedescendant="rootContext.open.value ? listboxContext.highlightedElement.value?.id : undefined"
     aria-autocomplete="list"
     role="combobox"
     autocomplete="off"
@@ -123,6 +125,7 @@ watch(rootContext.filterState, (_newValue, oldValue) => {
     @keydown.down.up="handleKeyDown"
     @focus="handleFocus"
     @compositionstart="handleCompositionStart"
+    @compositionupdate="handleCompositionUpdate"
     @compositionend="handleCompositionEnd"
   >
     <slot />

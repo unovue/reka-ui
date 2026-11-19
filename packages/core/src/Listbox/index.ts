@@ -1,3 +1,5 @@
+import type { SelectEvent } from './ListboxItem.vue'
+
 export {
   default as ListboxContent,
   type ListboxContentProps,
@@ -22,14 +24,15 @@ export {
   default as ListboxItem,
   type ListboxItemEmits,
   type ListboxItemProps,
-  type SelectEvent as ListboxItemSelectEvent,
 } from './ListboxItem.vue'
+export type ListboxItemSelectEvent<T> = SelectEvent<T>
 export {
   default as ListboxItemIndicator,
   type ListboxItemIndicatorProps,
 } from './ListboxItemIndicator.vue'
 export {
   injectListboxRootContext,
+  type ListboxHighlightItemOptions,
   default as ListboxRoot,
   type ListboxRootEmits,
   type ListboxRootProps,
