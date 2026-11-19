@@ -5,6 +5,7 @@ import { mount } from '@vue/test-utils'
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, nextTick } from 'vue'
+import { ConfigProvider } from '@/ConfigProvider'
 import { handleSubmit, sleep } from '@/test'
 import { CheckboxGroupRoot, CheckboxRoot } from '.'
 import Checkbox from './story/_Checkbox.vue'
@@ -722,6 +723,63 @@ describe('given a parent Checkbox', () => {
       await wrapper.setProps({ allValues: ['a', 'b', 'c'] })
       expect(getChildIds(wrapper)).toEqual(ids)
       expect(getParent(wrapper).attributes('aria-controls')).toBe(ids.join(' '))
+    })
+
+    it('should not reuse ids from useId for late children', async () => {
+      // An id source that counts like `useId`'s fallback counter
+      let count = 0
+      const wrapper = mount({
+        components: { ConfigProvider, LateGroup },
+        props: { late: { type: Array as PropType<string[]>, default: undefined } },
+        setup: () => ({ useId: () => `${++count}` }),
+        template: `<ConfigProvider :use-id="useId">
+          <LateGroup :all-values="['a', 'b', 'c']" />
+          <LateGroup :all-values="late" />
+        </ConfigProvider>`,
+      })
+      await wrapper.setProps({ late: ['a', 'b', 'c'] })
+      const ids = wrapper.findAll('[role="checkbox"]:not(#parent)').map(c => c.attributes('id'))
+      expect(ids.slice(0, 3).every(id => /^reka-checkbox-\d+$/.test(id!))).toBe(true)
+      expect(ids.slice(3).every(id => id?.startsWith('reka-checkbox-late-'))).toBe(true)
+      expect(new Set(ids).size).toBe(6)
+    })
+  })
+
+  describe('when the parent prop changes after mount', () => {
+    const SwitchGroup = defineComponent({
+      components: { CheckboxGroupRoot, CheckboxRoot },
+      props: { secondIsParent: Boolean },
+      emits: ['update:modelValue'],
+      template: `<CheckboxGroupRoot
+        :default-value="['a']"
+        :all-values="['a', 'b']"
+        @update:model-value="$emit('update:modelValue', $event)"
+      >
+        <CheckboxRoot id="parent" aria-label="All" parent />
+        <CheckboxRoot id="second" value="b" aria-label="B" :parent="secondIsParent" />
+        <CheckboxRoot id="a" value="a" aria-label="A" />
+      </CheckboxGroupRoot>`,
+    })
+
+    it('should switch between the parent and child roles', async () => {
+      const wrapper = mount(SwitchGroup)
+      await nextTick()
+      const second = wrapper.find('#second')
+      expect(getParent(wrapper).attributes('aria-controls')).toBe('second a')
+
+      await wrapper.setProps({ secondIsParent: true })
+      expect(getParent(wrapper).attributes('aria-controls')).toBe('a')
+      expect(second.attributes('aria-controls')).toBe('a')
+      expect(second.attributes('data-state')).toBe('indeterminate')
+      await second.trigger('click')
+      expect(lastEmitted(wrapper)).toEqual(['a', 'b'])
+
+      await wrapper.setProps({ secondIsParent: false })
+      expect(second.attributes('aria-controls')).toBeUndefined()
+      expect(second.attributes('data-state')).toBe('checked')
+      expect(getParent(wrapper).attributes('aria-controls')!.split(' ').sort()).toEqual(['a', 'second'])
+      await second.trigger('click')
+      expect(lastEmitted(wrapper)).toEqual(['a'])
     })
   })
 

@@ -89,12 +89,11 @@ const { forwardRef, currentElement } = useForwardExpose()
 
 const checkboxGroupContext = injectCheckboxGroupRootContext(null)
 // A parent checkbox only means something inside a group.
-const isParent = Boolean(checkboxGroupContext && props.parent)
-// While the group has `allValues`, its checkboxes register for the parent and get an id
-// for its `aria-controls`. Without it, nothing registers and no id is generated.
-const isGroupChild = Boolean(checkboxGroupContext && !props.parent)
-const hasAllValues = () => Boolean(checkboxGroupContext?.allValues.value)
-const generatedId = shallowRef(isGroupChild && hasAllValues() ? useId(undefined, 'reka-checkbox') : undefined)
+const isParent = computed(() => Boolean(checkboxGroupContext && props.parent))
+// While the group has `allValues`, its other checkboxes register for the parent and get an
+// id for its `aria-controls`. Without it, nothing registers and no id is generated.
+const isControlledChild = () => Boolean(checkboxGroupContext?.allValues.value && !props.parent)
+const generatedId = shallowRef(isControlledChild() ? useId(undefined, 'reka-checkbox') : undefined)
 
 // Optional Field participation: `injectFieldRootContext(null)` returns
 // `null` (instead of throwing) outside a `FieldRoot`, so every binding below
@@ -110,7 +109,7 @@ const modelValue = useVModel(props as any, 'modelValue', emits as any, {
 const isGroupMaxReached = computed(() => {
   const max = checkboxGroupContext?.max.value
   // A parent can always uncheck, and checks only up to `max`.
-  if (isNullish(max) || isParent)
+  if (isNullish(max) || isParent.value)
     return false
   const values = checkboxGroupContext!.modelValue.value ?? []
   return !isValueEqualOrExist(values, props.value) && values.length >= max
@@ -138,7 +137,7 @@ const isChecked = computed(() => isEqual(modelValue.value, props.trueValue))
 
 const checkboxState = computed<CheckedState>(() => {
   if (!isNullish(checkboxGroupContext?.modelValue.value)) {
-    if (isParent)
+    if (isParent.value)
       return getParentState(checkboxGroupContext.allValues.value ?? [], checkboxGroupContext.modelValue.value)
     return isValueEqualOrExist(checkboxGroupContext.modelValue.value, props.value)
   }
@@ -161,11 +160,12 @@ function handleClick() {
 
   if (!isNullish(checkboxGroupContext?.modelValue.value)) {
     let modelValueArray = [...(checkboxGroupContext.modelValue.value || [])]
-    if (isParent) {
+    if (isParent.value) {
+      const disabledItems = getControlledItems().filter(item => item.disabled())
       modelValueArray = getParentToggleValue(
         checkboxGroupContext.allValues.value ?? [],
         modelValueArray,
-        isChildDisabled,
+        value => disabledItems.some(item => isEqual(item.value(), value)),
         checkboxGroupContext.max.value,
       )
     }
@@ -258,31 +258,28 @@ function getControlledItems() {
   return [...checkboxGroupContext!.items].filter(item => isValueEqualOrExist(allValues, item.value()))
 }
 
-function isChildDisabled(value: AcceptableValue) {
-  return getControlledItems().some(item => item.disabled() && isEqual(item.value(), value))
-}
-
-const ariaControls = computed(() => isParent
+const ariaControls = computed(() => isParent.value
   ? getControlledItems().map(item => item.id()).filter(Boolean).join(' ') || undefined
   : undefined)
 
-if (isGroupChild) {
+if (checkboxGroupContext) {
   const items = checkboxGroupContext!.items
   const item = {
     value: () => props.value,
     disabled: () => nativeDisabled.value,
     id: () => resolvedId.value,
   }
-  // Reused if `allValues` is removed and set again.
+  // Reused if `allValues` (or `parent`) changes back and forth.
   let id = generatedId.value
   onMounted(() => {
-    if (hasAllValues())
+    if (isControlledChild())
       items.add(item)
   })
-  // `allValues` set or removed after mount: no SSR to match, so a client-side id is enough.
-  watch(hasAllValues, (controlled) => {
+  // Changed after mount: no SSR to match, so a client-side id is enough. Its own prefix
+  // keeps it apart from `useId`'s ids.
+  watch(isControlledChild, (controlled) => {
     if (controlled) {
-      id ??= `reka-checkbox-${++lateIdCount}`
+      id ??= `reka-checkbox-late-${++lateIdCount}`
       generatedId.value = id
       items.add(item)
     }
