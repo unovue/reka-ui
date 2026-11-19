@@ -5,8 +5,42 @@ import { expect } from 'vitest'
 
 /** How many `scroll` events each scroller has fired since its last `scrollend`. */
 const scrolls = new WeakMap<EventTarget, number>()
-/** The position a smooth `scrollTo` is heading for, until the `scrollend` that ends it. */
+/**
+ * Where a smooth `scrollTo` is heading, clamped to the scroll range when it was called, until the
+ * `scrollend` that ends it.
+ */
 const smoothTargets = new WeakMap<Element, { left?: number, top?: number }>()
+
+/**
+ * The range an axis scrolls over. It runs from `-max` to 0 where the content overflows towards the
+ * start: `scrollLeft` in RTL, or in a right-to-left vertical writing mode.
+ */
+function range(el: Element, axis: 'left' | 'top'): [number, number] {
+  const max = axis === 'left' ? el.scrollWidth - el.clientWidth : el.scrollHeight - el.clientHeight
+  const style = getComputedStyle(el)
+  const reversed = axis === 'left' && (style.writingMode.startsWith('horizontal') ? style.direction === 'rtl' : style.writingMode.endsWith('rl'))
+  return reversed ? [-max, 0] : [0, max]
+}
+
+/**
+ * The target of a smooth `scrollTo`, clamped now, or `undefined` if it moves nothing: the browser
+ * clamps it to the range at the call too, and a scroll that moves nothing sends no event. Decided
+ * once: content that grows later doesn't turn a scroll that moved nothing into one on its way.
+ */
+function smoothTarget(el: Element, options: ScrollToOptions) {
+  const target: { left?: number, top?: number } = {}
+  let moves = false
+  for (const axis of ['left', 'top'] as const) {
+    const value = options[axis]
+    if (value === undefined || Number.isNaN(value))
+      continue
+    const [min, max] = range(el, axis)
+    const clamped = Math.min(Math.max(value, min), max)
+    target[axis] = clamped
+    moves ||= Math.abs(clamped - (axis === 'left' ? el.scrollLeft : el.scrollTop)) >= 1
+  }
+  return moves ? target : undefined
+}
 
 if (typeof window !== 'undefined' && 'onscrollend' in window) {
   document.addEventListener('scroll', event => event.target && scrolls.set(event.target, (scrolls.get(event.target) ?? 0) + 1), { capture: true })
@@ -22,23 +56,19 @@ if (typeof window !== 'undefined' && 'onscrollend' in window) {
   const scrollTo = Element.prototype.scrollTo
   Element.prototype.scrollTo = function (this: Element, ...args: [ScrollToOptions?] | [number, number]) {
     const options = typeof args[0] === 'object' ? args[0] : undefined
-    if (options?.behavior === 'smooth')
-      smoothTargets.set(this, { left: options.left, top: options.top })
+    const target = options?.behavior === 'smooth' ? smoothTarget(this, options) : undefined
+    if (target)
+      smoothTargets.set(this, target)
     else
       smoothTargets.delete(this)
     return (scrollTo as (...a: unknown[]) => void).apply(this, args)
   } as typeof scrollTo
 }
 
-/** Where `scroller` can actually scroll to along one axis: a target past an end stops at the end. */
-function clamp(target: number, max: number) {
-  return target < 0 ? Math.max(target, -max) : Math.min(target, max)
-}
-
 /**
  * Whether a scroll is in flight on `scroller`:
  * - a smooth `scrollTo` it was asked for has not ended. It ends with its `scrollend`, or once the
- *   scroller is at its target (a scroll to where it already is moves nothing and sends no event);
+ *   scroller is at its target;
  * - or it moved more than once since its last `scrollend`. A single unpaired `scroll` is a jump,
  *   not an animation, and may get no `scrollend`: Chromium sends none for the instant scroll a
  *   carousel makes as it mounts on `defaultValue`.
@@ -46,8 +76,8 @@ function clamp(target: number, max: number) {
 function scrolling(scroller: HTMLElement) {
   const target = smoothTargets.get(scroller)
   if (target) {
-    const left = target.left === undefined || Math.abs(scroller.scrollLeft - clamp(target.left, scroller.scrollWidth - scroller.clientWidth)) < 1
-    const top = target.top === undefined || Math.abs(scroller.scrollTop - clamp(target.top, scroller.scrollHeight - scroller.clientHeight)) < 1
+    const left = target.left === undefined || Math.abs(scroller.scrollLeft - target.left) < 1
+    const top = target.top === undefined || Math.abs(scroller.scrollTop - target.top) < 1
     if (!left || !top)
       return true
     smoothTargets.delete(scroller)

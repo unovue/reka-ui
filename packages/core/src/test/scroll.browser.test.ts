@@ -54,4 +54,33 @@ describe('settled', () => {
     await settled(scroller, 1000)
     expect(scroller.scrollLeft).toBe(800)
   })
+
+  it('does not wait for a smooth scroll before the start, which stays at the start', async () => {
+    const scroller = mountScroller()
+    scroller.scrollTo({ left: -50, behavior: 'smooth' })
+    await settled(scroller, 1000)
+    expect(scroller.scrollLeft).toBe(0)
+  })
+
+  it('does not wait for a smooth scroll that moved nothing when the content grows after it', async () => {
+    const scroller = mountScroller()
+    scroller.scrollLeft = 800
+    await settled(scroller, 1000)
+    scroller.scrollTo({ left: 5000, behavior: 'smooth' })
+    // The range grows past 800 only now: the scroll still moved nothing.
+    ;(scroller.firstElementChild as HTMLElement).style.width = '1200px'
+    await settled(scroller, 1000)
+    expect(scroller.scrollLeft).toBe(800)
+  })
+
+  it('waits for a smooth scroll in RTL, where the range is negative', async () => {
+    const scroller = mountScroller()
+    scroller.dir = 'rtl'
+    scroller.scrollTo({ left: 50, behavior: 'smooth' })
+    await settled(scroller, 1000)
+    expect(scroller.scrollLeft).toBe(0)
+    scroller.scrollTo({ left: -5000, behavior: 'smooth' })
+    await settled(scroller)
+    expect(scroller.scrollLeft).toBe(-800)
+  })
 })
