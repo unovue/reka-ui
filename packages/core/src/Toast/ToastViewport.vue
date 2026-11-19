@@ -151,9 +151,17 @@ function isPausedByWindowBlur() {
 
 // Releases a blur pause, including one left over after the last toast closed, which would
 // otherwise keep later toasts from ever starting their timers.
+//
+// The window gets its focus back before the element that had it, and the `focus` of that
+// element can come in a later task. The active element is already back, so read the focus
+// pause from it: releasing first would run the timers until the element `focus` pauses again.
 useEventListener('focus', () => {
   windowBlurred.value = false
-  releasePause(viewportElement.value)
+  const viewport = viewportElement.value
+  if (hasToasts.value && viewport)
+    providerContext.focused.value = viewport.contains(getActiveElement())
+  if (!shouldPause())
+    releasePause(viewport)
 })
 
 // Focus inside the viewport and a press on a toast always pause. Hover and window blur
