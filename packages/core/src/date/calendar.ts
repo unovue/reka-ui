@@ -142,13 +142,15 @@ export function createDecade(props: SetDecadeProps): DateValue[] {
 export function createYear(props: SetYearProps): DateValue[] {
   const { dateObj, numberOfMonths = 1, pagedNavigation = false } = props
 
+  const monthsInYear = dateObj.calendar.getMonthsInYear(dateObj)
+
   if (numberOfMonths && pagedNavigation) {
-    const monthsArray = Array.from({ length: Math.floor(12 / numberOfMonths) }, (_, i) => startOfMonth(dateObj.set({ month: i * numberOfMonths + 1 })))
+    const monthsArray = Array.from({ length: Math.floor(monthsInYear / numberOfMonths) }, (_, i) => startOfMonth(dateObj.set({ month: i * numberOfMonths + 1 })))
 
     return monthsArray
   }
 
-  const monthsArray = Array.from({ length: 12 }, (_, i) => startOfMonth(dateObj.set({ month: i + 1 })))
+  const monthsArray = Array.from({ length: monthsInYear }, (_, i) => startOfMonth(dateObj.set({ month: i + 1 })))
   return monthsArray
 }
 
@@ -189,7 +191,7 @@ export function createMonths(props: SetMonthProps) {
 }
 
 /**
- * Creates a 3x4 grid of months for a given year.
+ * Creates a four-column grid of months for a given year.
  */
 export function createMonthGrid(props: CreateSelectProps): Grid<DateValue> {
   const { dateObj } = props
