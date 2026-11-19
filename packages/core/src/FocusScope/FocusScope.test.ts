@@ -2,7 +2,7 @@ import type { RenderResult } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, onMounted, ref, useTemplateRef } from 'vue'
+import { defineComponent, nextTick, onMounted, reactive, ref, useTemplateRef } from 'vue'
 import { FocusScope } from '.'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '../Combobox'
 import { DialogContent, DialogRoot, DialogTitle, DialogTrigger } from '../Dialog'
@@ -506,8 +506,9 @@ describe('given a scope that unmounts before its mount effect has finished', () 
 })
 
 describe('given a scope re-added to the stack while it is paused', () => {
+  // reactive like FocusScope's own scope object, so the deep stack ref keeps the same proxy
   function scope() {
-    return {
+    return reactive({
       paused: false,
       pause() {
         this.paused = true
@@ -515,7 +516,7 @@ describe('given a scope re-added to the stack while it is paused', () => {
       resume() {
         this.paused = false
       },
-    }
+    })
   }
 
   it('should resume it, since the scope at the top of the stack is the active one', () => {
