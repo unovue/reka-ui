@@ -9,6 +9,7 @@ export interface MenubarContentProps extends MenuContentProps {}
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { injectMenuContext, MenuContent } from '@/Menu'
 import { omitEntryFocusListener } from '@/Menu/utils'
 import { useContentId, useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
@@ -30,12 +31,23 @@ useForwardExpose()
 const rootContext = injectMenubarRootContext()
 const menuContext = injectMenubarMenuContext()
 
+const menuContentContext = injectMenuContext()
 menuContext.contentId ||= useId(undefined, 'reka-menubar-content')
-useContentId(menuContext, injectMenuContext().content)
+useContentId(menuContext, menuContentContext.content)
 
 const { getItems } = useCollection({ key: 'Menubar' })
 
 const hasInteractedOutsideRef = ref(false)
+
+// A content kept mounted while closed (`unmountOnHide: false`) is hidden, not unmounted, so
+// no `closeAutoFocus` returns focus. Return it to the trigger as on unmount, unless another
+// menu of the menubar opened in its place, or focus moved on to another layer.
+menuContentContext.onContentHide(({ container }) => {
+  const menubarOpen = Boolean(rootContext.modelValue.value)
+  if (!menubarOpen && !hasInteractedOutsideRef.value && !hasFocusLeftScope(container ?? null))
+    menuContext.triggerElement.value?.focus()
+  hasInteractedOutsideRef.value = false
+})
 
 function handleArrowNavigation(event: KeyboardEvent) {
   const target = event.target as HTMLElement

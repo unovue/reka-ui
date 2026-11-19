@@ -40,6 +40,7 @@ const props = withDefaults(defineProps<ContextMenuRootProps>(), {
   modal: true,
   pressOpenDelay: 700,
   open: undefined,
+  unmountOnHide: true,
 })
 const emits = defineEmits<ContextMenuRootEmits>()
 const { dir: propDir, modal, pressOpenDelay } = toRefs(props)
@@ -69,6 +70,7 @@ provideContextMenuRootContext({
     v-model:open="open"
     :dir="dir"
     :modal="modal"
+    :unmount-on-hide="unmountOnHide"
   >
     <slot />
   </MenuRoot>
