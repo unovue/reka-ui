@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import type { StringOrNumber } from '@/shared/types'
-import { useForwardExpose } from '@/shared'
+import { disabledAttr, useForwardExpose } from '@/shared'
 
 export interface TabsTriggerProps extends PrimitiveProps {
   /** A unique value that associates the trigger with a content. */
@@ -50,7 +50,7 @@ const isSelected = computed(() => props.value === rootContext.modelValue.value)
       :aria-selected="isSelected ? 'true' : 'false'"
       :aria-controls="contentId"
       :data-state="isSelected ? 'active' : 'inactive'"
-      :disabled="disabled"
+      :disabled="disabledAttr(disabled, props.as, props.asChild)"
       :data-disabled="disabled ? '' : undefined"
       :data-orientation="rootContext.orientation.value"
       @mousedown="(event: MouseEvent) => {

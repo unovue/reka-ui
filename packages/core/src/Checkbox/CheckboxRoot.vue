@@ -4,7 +4,7 @@ import type { CheckedState } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
-import { createRekaContext, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose, useForwardScopeId, useId } from '@/shared'
+import { createRekaContext, disabledAttr, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose, useForwardScopeId, useId } from '@/shared'
 import { injectCheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 
 export interface CheckboxRootProps<TrueValue = boolean, FalseValue = TrueValue> extends PrimitiveProps, FormFieldProps {
@@ -313,7 +313,7 @@ provideCheckboxRootContext({
     :data-state="getState(checkboxState)"
     :aria-disabled="disabled ? 'true' : undefined"
     :data-disabled="nativeDisabled ? '' : undefined"
-    :disabled="nativeDisabled"
+    :disabled="disabledAttr(nativeDisabled, props.as, props.asChild)"
     :focusable="checkboxGroupContext?.rovingFocus.value ? !nativeDisabled : undefined"
     @keydown.enter.prevent="() => {
       // According to WAI ARIA, Checkboxes don't activate on enter keypress

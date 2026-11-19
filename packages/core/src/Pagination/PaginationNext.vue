@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { disabledAttr, useForwardExpose } from '@/shared'
 
 export interface PaginationNextProps extends PrimitiveProps {}
 </script>
@@ -23,7 +23,7 @@ const disabled = computed((): boolean => rootContext.page.value >= rootContext.p
     v-bind="props"
     aria-label="Next Page"
     :type="as === 'button' ? 'button' : undefined"
-    :disabled
+    :disabled="disabledAttr(disabled, props.as, props.asChild)"
     @click="!disabled && rootContext.onPageChange(rootContext.page.value + 1)"
   >
     <slot>Next page</slot>

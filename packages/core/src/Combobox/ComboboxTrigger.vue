@@ -10,7 +10,7 @@ export interface ComboboxTriggerProps extends PrimitiveProps {
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose, useRenderedContentId } from '@/shared'
+import { disabledAttr, useForwardExpose, useRenderedContentId } from '@/shared'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 const props = withDefaults(defineProps<ComboboxTriggerProps>(), {
@@ -47,7 +47,7 @@ function handleKeyDown(ev: KeyboardEvent) {
     :aria-expanded="rootContext.open.value"
     :aria-controls="rootContext.open.value ? contentId : undefined"
     :data-state="rootContext.open.value ? 'open' : 'closed'"
-    :disabled="disabled"
+    :disabled="disabledAttr(disabled, props.as, props.asChild)"
     :data-disabled="disabled ? '' : undefined"
     :aria-disabled="disabled ?? undefined"
     @click="rootContext.onOpenChange(!rootContext.open.value)"

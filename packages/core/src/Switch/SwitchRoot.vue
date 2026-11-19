@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { FormFieldProps } from '@/shared/types'
-import { createRekaContext, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { createRekaContext, disabledAttr, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 
 export interface SwitchRootProps<TrueValue = boolean, FalseValue = TrueValue> extends PrimitiveProps, FormFieldProps {
   /** The state of the switch when it is initially rendered. Use when you do not need to control its state. */
@@ -111,7 +111,7 @@ provideSwitchRootContext({
     :data-disabled="disabled ? '' : undefined"
     :as-child="asChild"
     :as="as"
-    :disabled="disabled"
+    :disabled="disabledAttr(disabled, props.as, props.asChild)"
     v-bind="{ ...scopeIdAttrs, ...$attrs }"
     @click="toggleCheck"
     @keydown.enter.prevent="toggleCheck"
