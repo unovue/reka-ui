@@ -184,6 +184,24 @@ describe('given a RadioGroupItem whose label is not found', () => {
   })
 })
 
+describe('given the required prop', () => {
+  function mountGroup(required: boolean) {
+    return mount({
+      components: { RadioGroupItem, RadioGroupRoot },
+      setup: () => ({ required }),
+      template: '<RadioGroupRoot :required="required"><RadioGroupItem value="a" aria-label="First" /></RadioGroupRoot>',
+    })
+  }
+
+  it('should not render a required attribute on the radio of an optional group', () => {
+    expect(mountGroup(false).find('[role=radio]').attributes()).not.toHaveProperty('required')
+  })
+
+  it('should render a required attribute on the radio of a required group', () => {
+    expect(mountGroup(true).find('[role=radio]').attributes('required')).toBe('')
+  })
+})
+
 describe('given radio in a form', async () => {
   const wrapper = mount({
     props: ['handleSubmit'],
