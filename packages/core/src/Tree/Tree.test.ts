@@ -297,6 +297,41 @@ describe('given a Tree with a custom children structure', () => {
   })
 })
 
+describe('selection with a custom child accessor', () => {
+  const leaf = { title: 'leaf' }
+  const branch = { title: 'branch', nodes: [leaf] }
+  const root = { title: 'root', nodes: [branch] }
+
+  function mountTree(props: { propagateSelect?: boolean, bubbleSelect?: boolean, defaultValue?: Array<typeof leaf> }) {
+    return mount(Tree, {
+      props: {
+        items: [root],
+        getChildren: item => item.nodes,
+        multiple: true,
+        expanded: ['root', 'branch'],
+        ...props,
+      },
+    })
+  }
+
+  it('selects and deselects all descendants of the parent', async () => {
+    const wrapper = mountTree({ propagateSelect: true })
+    const [parent, child, grandchild] = wrapper.findAll('[role=treeitem]')
+    await parent.trigger('click')
+    expect([child, grandchild].map(item => item.attributes('aria-selected'))).toEqual(['true', 'true'])
+    await parent.trigger('click')
+    expect([child, grandchild].map(item => item.attributes('aria-selected'))).toEqual(['false', 'false'])
+  })
+
+  it.each([
+    { bubbleSelect: true, defaultValue: [leaf] },
+    { propagateSelect: true, defaultValue: [root, branch] },
+  ])('reports a partially selected subtree for %o', (props) => {
+    const wrapper = mountTree(props)
+    expect(wrapper.getComponent(TreeItem).vm.isIndeterminate).toBe(true)
+  })
+})
+
 describe('given a Tree with bubbleSelect and propagateSelect', () => {
   const customItems = [
     {
