@@ -2,6 +2,8 @@ import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { h } from 'vue'
+import { PaginationNext, PaginationPrev, PaginationRoot } from '.'
 import Pagination from './story/_Pagination.vue'
 
 describe('given default Pagination', () => {
@@ -257,5 +259,30 @@ describe('given 0 total value', () => {
     expect(wrapper.find('[aria-label="Previous Page"]').attributes('disabled')).toBeDefined()
     expect(wrapper.find('[aria-label="Next Page"]').attributes('disabled')).toBeDefined()
     expect(wrapper.find('[aria-label="Last Page"]').attributes('disabled')).toBeDefined()
+  })
+})
+
+describe('when the page count shrinks', () => {
+  it.each([
+    { model: { defaultPage: 10 }, change: { total: 20 } },
+    { model: { page: 10 }, change: { itemsPerPage: 50 } },
+  ])('uses the new last page for the slot and navigation with $model', async ({ model, change }) => {
+    const wrapper = mount(PaginationRoot, {
+      props: { total: 100, itemsPerPage: 10, ...model },
+      slots: {
+        default: ({ page }: { page: number }) => [h('output', String(page)), h(PaginationPrev), h(PaginationNext)],
+      },
+    })
+    expect(wrapper.get('output').text()).toBe('10')
+
+    await wrapper.setProps(change)
+    expect(wrapper.get('output').text()).toBe('2')
+    expect(wrapper.emitted('update:page')).toEqual([[2]])
+
+    const next = wrapper.get('[aria-label="Next Page"]')
+    expect(next.attributes('disabled')).toBeDefined()
+    await next.trigger('click')
+    await wrapper.get('[aria-label="Previous Page"]').trigger('click')
+    expect(wrapper.emitted('update:page')).toEqual([[2], [1]])
   })
 })
