@@ -49,6 +49,29 @@ it('accepts a partial required PIN unless complete validation is enabled', async
   wrapper.unmount()
 })
 
+it('submits the full PIN synchronously from the complete handler', async () => {
+  const form = ref<HTMLFormElement>()
+  const onSubmit = vi.fn((event: SubmitEvent) => {
+    event.preventDefault()
+    return new FormData(event.currentTarget as HTMLFormElement).get('pin')
+  })
+  const wrapper = mount(() => h('form', { ref: form, onSubmit }, [
+    h(PinInputRoot, {
+      name: 'pin',
+      required: true,
+      requireComplete: true,
+      defaultValue: ['0', '1', '2'],
+      onComplete: () => form.value!.requestSubmit(),
+    }, () => Array.from({ length: 4 }, (_, index) => h(PinInputInput, { index }))),
+  ]), { attachTo: document.body })
+
+  await userEvent.click(wrapper.findAll('input:not([aria-hidden])')[3].element)
+  await userEvent.keyboard('3')
+  expect(onSubmit).toHaveBeenCalledOnce()
+  expect(onSubmit).toHaveReturnedWith('0123')
+  wrapper.unmount()
+})
+
 it('rechecks completeness when an empty slot unmounts and remounts', async () => {
   const showMiddle = ref(true)
   const wrapper = mount(() => h('form', [

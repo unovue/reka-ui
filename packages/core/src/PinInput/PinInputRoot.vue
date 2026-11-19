@@ -129,11 +129,6 @@ const isCompleted = computed(() => {
     && mountedValues.value.every(value => !!value || (isNumericMode.value && value === 0))
 })
 
-watch(modelValue, () => {
-  if (isCompleted.value)
-    emits('complete', mountedValues.value)
-}, { deep: true })
-
 watchEffect((onCleanup) => {
   const input = formInput.value as HTMLInputElement | undefined
   if (input && props.required && props.requireComplete && !isCompleted.value) {
@@ -141,6 +136,12 @@ watchEffect((onCleanup) => {
     onCleanup(() => input.setCustomValidity(''))
   }
 })
+
+// A complete handler can submit the form immediately, so update the native input first.
+watch(modelValue, () => {
+  if (isCompleted.value)
+    emits('complete', mountedValues.value)
+}, { deep: true, flush: 'post' })
 
 providePinInputRootContext({
   modelValue,
