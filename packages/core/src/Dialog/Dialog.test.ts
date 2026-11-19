@@ -2,7 +2,7 @@ import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import type { Mock, MockInstance } from 'vitest'
 import { createEvent, findByText, fireEvent, render } from '@testing-library/vue'
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref, Transition } from 'vue'
 import { sleep } from '@/test'
@@ -838,5 +838,44 @@ describe.each([true, false])('given a Dialog content wrapped in a Vue Transition
     }
 
     wrapper.unmount()
+  })
+})
+
+describe.each([true, false])('given an open Dialog whose unmountOnHide changes with modal=%s', (modal) => {
+  it('should keep the content mounted, with its state', async () => {
+    const unmountOnHide = ref(true)
+    const open = ref(true)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(DialogRoot, { open: open.value, modal, unmountOnHide: unmountOnHide.value }, () => [
+        h(DialogTrigger, () => OPEN_TEXT),
+        h(DialogContent, { 'aria-describedby': undefined }, () => [
+          h(DialogTitle, () => TITLE_TEXT),
+          h('input', { 'data-testid': 'field' }),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+    onTestFinished(() => wrapper.unmount())
+    const field = () => document.querySelector<HTMLInputElement>('[data-testid="field"]')
+    await vi.waitFor(() => expect(field()).not.toBeNull())
+    const input = field()!
+    input.value = 'typed'
+
+    for (const value of [false, true]) {
+      unmountOnHide.value = value
+      await flushPromises()
+      expect(field()).toBe(input)
+      expect(input.value).toBe('typed')
+      expect(input.closest('[role="dialog"]')!.matches('[style*="display: none"]')).toBe(false)
+    }
+
+    // Kept mounted from now on: hidden on close, and shown again on open
+    unmountOnHide.value = false
+    await flushPromises()
+    open.value = false
+    await vi.waitFor(() => expect(input.closest('[role="dialog"]')!.matches('[style*="display: none"]')).toBe(true))
+    open.value = true
+    await vi.waitFor(() => expect(input.closest('[role="dialog"]')!.matches('[style*="display: none"]')).toBe(false))
+    expect(field()).toBe(input)
+    expect(input.value).toBe('typed')
   })
 })

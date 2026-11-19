@@ -28,6 +28,7 @@ export interface PopoverContentProps extends PopoverContentImplProps {
 <script setup lang="ts">
 import { Presence } from '@/Presence'
 import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
+import { vShowWhenKept } from '@/shared/vShowWhenKept'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 
 const props = defineProps<PopoverContentProps>()
@@ -44,10 +45,11 @@ rootContext.contentId ||= useId(undefined, 'reka-popover-content')
 // root opts out of unmounting. Only then does the child need the real presence
 // state, since no physical unmount happens to end the layer's side effects.
 const staysMounted = computed(() => props.forceMount || !rootContext.unmountOnHide.value)
-// Hidden by `v-show` only when kept mounted by the root: a force-mounted content is
-// shown or hidden by the consumer. Without `v-show` at all otherwise, so that a
-// `<Transition>` wrapping the content runs its hooks once.
+// Hidden while closed only when kept mounted by the root: a force-mounted content is
+// shown or hidden by the consumer. One branch either way, so that a change of
+// `unmountOnHide` while open keeps the content and its state.
 const hidesWhenClosed = computed(() => !props.forceMount && !rootContext.unmountOnHide.value)
+const keptArg = computed(() => hidesWhenClosed.value ? 'kept' : null)
 const contentComponent = computed(() => rootContext.modal.value ? PopoverContentModal : PopoverContentNonModal)
 </script>
 
@@ -59,19 +61,9 @@ const contentComponent = computed(() => rootContext.modal.value ? PopoverContent
   >
     <component
       :is="contentComponent"
-      v-if="hidesWhenClosed"
-      v-show="present"
       v-bind="forwarded"
       :ref="forwardRef"
-      :present="present"
-    >
-      <slot />
-    </component>
-    <component
-      :is="contentComponent"
-      v-else
-      v-bind="forwarded"
-      :ref="forwardRef"
+      v-show-when-kept:[keptArg]="hidesWhenClosed ? present : true"
       :present="staysMounted ? present : true"
     >
       <slot />

@@ -404,3 +404,41 @@ describe('given a Popover content wrapped in a Vue Transition', () => {
     wrapper.unmount()
   })
 })
+
+describe.each([true, false])('given an open Popover whose unmountOnHide changes with modal=%s', (modal) => {
+  it('should keep the content mounted, with its state', async () => {
+    const unmountOnHide = ref(true)
+    const open = ref(true)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(PopoverRoot, { open: open.value, modal, unmountOnHide: unmountOnHide.value }, () => [
+        h(PopoverTrigger, () => 'Open'),
+        h(PopoverContent, null, () => [
+          h('input', { 'data-testid': 'field' }),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+    onTestFinished(() => wrapper.unmount())
+    const field = () => document.querySelector<HTMLInputElement>('[data-testid="field"]')
+    await vi.waitFor(() => expect(field()).not.toBeNull())
+    const input = field()!
+    input.value = 'typed'
+
+    for (const value of [false, true]) {
+      unmountOnHide.value = value
+      await flushPromises()
+      expect(field()).toBe(input)
+      expect(input.value).toBe('typed')
+      expect(input.closest('[data-reka-popper-content-wrapper]')!.matches('[style*="display: none"]')).toBe(false)
+    }
+
+    // Kept mounted from now on: hidden on close, and shown again on open
+    unmountOnHide.value = false
+    await flushPromises()
+    open.value = false
+    await vi.waitFor(() => expect(input.closest('[data-reka-popper-content-wrapper]')!.matches('[style*="display: none"]')).toBe(true))
+    open.value = true
+    await vi.waitFor(() => expect(input.closest('[data-reka-popper-content-wrapper]')!.matches('[style*="display: none"]')).toBe(false))
+    expect(field()).toBe(input)
+    expect(input.value).toBe('typed')
+  })
+})

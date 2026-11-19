@@ -19,6 +19,7 @@ export interface DialogContentProps extends Omit<DialogContentImplProps, 'trapFo
 import { computed } from 'vue'
 import { Presence } from '@/Presence'
 import { useEmitAsProps, useForwardExpose } from '@/shared'
+import { vShowWhenKept } from '@/shared/vShowWhenKept'
 import DialogContentModal from './DialogContentModal.vue'
 import DialogContentNonModal from './DialogContentNonModal.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
@@ -46,10 +47,11 @@ const { forwardRef } = useForwardExpose()
 const staysMounted = computed(
   () => props.forceMount || !rootContext.unmountOnHide.value,
 )
-// Hidden by `v-show` only when kept mounted by the root: a force-mounted content is
-// shown or hidden by the consumer. Without `v-show` at all otherwise, so that a
-// `<Transition>` wrapping the content runs its hooks once.
+// Hidden while closed only when kept mounted by the root: a force-mounted content is
+// shown or hidden by the consumer. One branch either way, so that a change of
+// `unmountOnHide` while open keeps the content and its state.
 const hidesWhenClosed = computed(() => !props.forceMount && !rootContext.unmountOnHide.value)
+const keptArg = computed(() => hidesWhenClosed.value ? 'kept' : null)
 const contentComponent = computed(() => rootContext.modal.value ? DialogContentModal : DialogContentNonModal)
 </script>
 
@@ -61,18 +63,8 @@ const contentComponent = computed(() => rootContext.modal.value ? DialogContentM
   >
     <component
       :is="contentComponent"
-      v-if="hidesWhenClosed"
-      v-show="present"
       :ref="forwardRef"
-      :present="present"
-      v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
-    >
-      <slot />
-    </component>
-    <component
-      :is="contentComponent"
-      v-else
-      :ref="forwardRef"
+      v-show-when-kept:[keptArg]="hidesWhenClosed ? present : true"
       :present="staysMounted ? present : true"
       v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
     >
