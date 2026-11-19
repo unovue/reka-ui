@@ -24,7 +24,7 @@
   },
   {
     'name': 'unmountOnHide',
-    'description': '<p>When <code>true</code>, the element will be unmounted on closed state.</p>\n',
+    'description': '<p>When set to <code>false</code>, the popover content will not be unmounted when closed, but instead hidden with CSS. &lt;br&gt;\nUseful when you want to keep the state of the content, or to improve performance by not remounting it on every open.</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'true'
@@ -62,7 +62,7 @@
 | `defaultOpen` | The open state of the popover when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
 | `modal` | The modality of the popover. When set to true, interaction with outside elements will be disabled and only popover content will be visible to screen readers. | `boolean` | No | `false` |
 | `open` | The controlled open state of the popover. | `boolean` | No | - |
-| `unmountOnHide` | When true, the element will be unmounted on closed state. | `boolean` | No | `true` |
+| `unmountOnHide` | When set to false, the popover content will not be unmounted when closed, but instead hidden with CSS. <br> Useful when you want to keep the state of the content, or to improve performance by not remounting it on every open. | `boolean` | No | `true` |
 
 **Events**
 

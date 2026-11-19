@@ -18,9 +18,9 @@ export interface PopoverRootProps {
    */
   modal?: boolean
   /**
-   * When `true`, the element will be unmounted on closed state.
-   *
-   * @defaultValue `true`
+   * When set to `false`, the popover content will not be unmounted when closed, but instead hidden with CSS. <br>
+   * Useful when you want to keep the state of the content, or to improve performance by not remounting it on every open.
+   * @defaultValue true
    */
   unmountOnHide?: boolean
 }
