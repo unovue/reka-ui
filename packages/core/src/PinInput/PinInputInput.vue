@@ -270,7 +270,7 @@ watch([currentElement, () => props.index], ([element], _, onCleanup) => {
   if (!element)
     return
   const input = element as HTMLInputElement
-  context.onInputElementChange(input)
+  context.onInputElementChange(input, props.index)
   onCleanup(() => context.inputElements?.value.delete(input))
 }, { flush: 'post' })
 </script>
