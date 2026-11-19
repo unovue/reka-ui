@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useId } from '@/shared'
+import { createRekaContext, useId } from '@/shared'
 
 export interface ListboxGroupProps extends PrimitiveProps {}
 
@@ -9,7 +9,7 @@ interface ListboxGroupContext {
 }
 
 export const [injectListboxGroupContext, provideListboxGroupContext]
-  = createContext<ListboxGroupContext>('ListboxGroup')
+  = createRekaContext<ListboxGroupContext>('ListboxGroup')
 </script>
 
 <script setup lang="ts">

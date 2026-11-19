@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { DismissableLayerEmits, DismissableLayerProps } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 
-import { createContext, getActiveElement, useContentId, useContentMounted, useFocusGuards, useForwardExpose, useForwardProps, useHideOthers } from '@/shared'
+import { createRekaContext, getActiveElement, useContentId, useContentMounted, useFocusGuards, useForwardExpose, useForwardProps, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 
 export type ComboboxContentImplEmits = DismissableLayerEmits
@@ -25,7 +25,7 @@ export interface ComboboxContentImplProps extends PopperContentProps, Dismissabl
 }
 
 export const [injectComboboxContentContext, provideComboboxContentContext]
-  = createContext<{
+  = createRekaContext<{
     position: Ref<'inline' | 'popper'>
   }>('ComboboxContent')
 </script>

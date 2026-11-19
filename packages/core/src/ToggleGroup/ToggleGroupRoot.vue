@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps, SingleOrMultipleProps } from '../shared/types'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
+import { createRekaContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
 export interface ToggleGroupRootProps<T = AcceptableValue | AcceptableValue[]>
@@ -35,7 +35,7 @@ interface ToggleGroupRootContext {
 }
 
 export const [injectToggleGroupRootContext, provideToggleGroupRootContext]
-  = createContext<ToggleGroupRootContext>('ToggleGroupRoot')
+  = createRekaContext<ToggleGroupRootContext>('ToggleGroupRoot')
 </script>
 
 <script setup lang="ts">
