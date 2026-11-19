@@ -95,6 +95,7 @@ function handleFocusOutside(ev: FocusOutsideEvent) {
 
 function handlePointerDownOutside(ev: PointerDownOutsideEvent) {
   emits('pointerDownOutside', ev)
+  emits('interactOutside', ev)
 
   if (!ev.defaultPrevented) {
     const target = ev.target as HTMLElement
