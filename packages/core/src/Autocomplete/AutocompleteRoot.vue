@@ -5,7 +5,7 @@ import type { Direction, GenericComponentInstance } from '@/shared/types'
 import { provideComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
 import { useComboboxContentPositioning } from '@/Combobox/useComboboxContentPositioning'
 import { usePrimitiveElement } from '@/Primitive'
-import { createContext, defineReactiveIds, useDirection, useFilter } from '@/shared'
+import { createRekaContext, defineReactiveIds, useDirection, useFilter } from '@/shared'
 
 export interface AutocompleteRootProps extends PrimitiveProps {
   /** The controlled value of the Autocomplete (the input text). Can be bound with `v-model`. */
@@ -63,7 +63,7 @@ export type AutocompleteRootContext = {
 }
 
 export const [injectAutocompleteRootContext, provideAutocompleteRootContext]
-  = createContext<AutocompleteRootContext>('AutocompleteRoot')
+  = createRekaContext<AutocompleteRootContext>('AutocompleteRoot')
 </script>
 
 <script setup lang="ts">

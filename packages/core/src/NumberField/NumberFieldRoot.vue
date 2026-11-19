@@ -4,7 +4,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { FormFieldProps } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
 import { computed, ref, toRefs } from 'vue'
-import { clamp, createContext, isNullish, snapValueToStep, useFormControl, useLocale } from '@/shared'
+import { clamp, createRekaContext, isNullish, snapValueToStep, useFormControl, useLocale } from '@/shared'
 
 export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   defaultValue?: number
@@ -70,7 +70,7 @@ interface NumberFieldRootContext {
   id: Ref<string | undefined>
 }
 
-export const [injectNumberFieldRootContext, provideNumberFieldRootContext] = createContext<NumberFieldRootContext>('NumberFieldRoot')
+export const [injectNumberFieldRootContext, provideNumberFieldRootContext] = createRekaContext<NumberFieldRootContext>('NumberFieldRoot')
 </script>
 
 <script setup lang="ts">

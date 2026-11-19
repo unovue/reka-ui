@@ -7,6 +7,11 @@
 import type { AxeMatchers } from 'vitest-axe/matchers'
 import 'vitest'
 
+declare global {
+  /** Exact package version, injected at build time. */
+  const __REKA_UI_VERSION__: string | undefined
+}
+
 declare module 'vitest' {
   export interface Assertion extends AxeMatchers {}
   export interface AsymmetricMatchersContaining extends AxeMatchers {}

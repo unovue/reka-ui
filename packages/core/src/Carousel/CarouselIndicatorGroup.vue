@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardExpose, useId } from '@/shared'
+import { createRekaContext, useForwardExpose, useId } from '@/shared'
 
 export interface CarouselIndicatorGroupProps extends PrimitiveProps {}
 
@@ -10,7 +10,7 @@ export interface CarouselIndicatorGroupContext {
 }
 
 export const [injectCarouselIndicatorGroupContext, provideCarouselIndicatorGroupContext]
-  = createContext<CarouselIndicatorGroupContext>('CarouselIndicatorGroup')
+  = createRekaContext<CarouselIndicatorGroupContext>('CarouselIndicatorGroup')
 </script>
 
 <script setup lang="ts">

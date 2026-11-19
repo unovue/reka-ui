@@ -19,6 +19,7 @@ export interface DialogContentProps extends Omit<DialogContentImplProps, 'trapFo
 import { computed } from 'vue'
 import { Presence } from '@/Presence'
 import { useEmitAsProps, useForwardExpose } from '@/shared'
+import { vShowWhenKept } from '@/shared/vShowWhenKept'
 import DialogContentModal from './DialogContentModal.vue'
 import DialogContentNonModal from './DialogContentNonModal.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
@@ -46,6 +47,12 @@ const { forwardRef } = useForwardExpose()
 const staysMounted = computed(
   () => props.forceMount || !rootContext.unmountOnHide.value,
 )
+// Hidden while closed only when kept mounted by the root: a force-mounted content is
+// shown or hidden by the consumer. One branch either way, so that a change of
+// `unmountOnHide` while open keeps the content and its state.
+const hidesWhenClosed = computed(() => !props.forceMount && !rootContext.unmountOnHide.value)
+const keptArg = computed(() => hidesWhenClosed.value ? 'kept' : null)
+const contentComponent = computed(() => rootContext.modal.value ? DialogContentModal : DialogContentNonModal)
 </script>
 
 <template>
@@ -54,23 +61,14 @@ const staysMounted = computed(
     :present="rootContext.open.value"
     :force-mount="staysMounted"
   >
-    <DialogContentModal
-      v-if="rootContext.modal.value"
-      v-show="forceMount || rootContext.unmountOnHide.value || present"
+    <component
+      :is="contentComponent"
       :ref="forwardRef"
+      v-show-when-kept:[keptArg]="hidesWhenClosed ? present : true"
       :present="staysMounted ? present : true"
       v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
     >
       <slot />
-    </DialogContentModal>
-    <DialogContentNonModal
-      v-else
-      v-show="forceMount || rootContext.unmountOnHide.value || present"
-      :ref="forwardRef"
-      :present="staysMounted ? present : true"
-      v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
-    >
-      <slot />
-    </DialogContentNonModal>
+    </component>
   </Presence>
 </template>

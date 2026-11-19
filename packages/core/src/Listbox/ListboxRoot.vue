@@ -3,7 +3,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
 import { usePrimitiveElement } from '@/Primitive'
 import { getFocusIntent } from '@/RovingFocus/utils'
-import { createContext, findValuesBetween, getActiveElement, useDirection, useFormControl, useKbd, useTypeahead } from '@/shared'
+import { createRekaContext, findValuesBetween, getActiveElement, useDirection, useFormControl, useKbd, useTypeahead } from '@/shared'
 import { Primitive } from '..'
 
 type ListboxRootContext<T> = {
@@ -38,7 +38,7 @@ type ListboxRootContext<T> = {
 }
 
 export const [injectListboxRootContext, provideListboxRootContext]
-  = createContext<ListboxRootContext<AcceptableValue>>('ListboxRoot')
+  = createRekaContext<ListboxRootContext<AcceptableValue>>('ListboxRoot')
 
 /** Controls highlight scrolling while a parent composite is being positioned. */
 type ListboxHighlightScrollContext = {
@@ -47,7 +47,7 @@ type ListboxHighlightScrollContext = {
 }
 
 export const [injectListboxHighlightScrollContext, provideListboxHighlightScrollContext]
-  = createContext<ListboxHighlightScrollContext>('ListboxHighlightScroll')
+  = createRekaContext<ListboxHighlightScrollContext>('ListboxHighlightScroll')
 
 export interface ListboxHighlightItemOptions {
   /**

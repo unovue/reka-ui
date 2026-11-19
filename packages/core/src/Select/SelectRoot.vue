@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
 import { useCollection } from '@/Collection'
-import { createContext, defineReactiveIds, isNullish, useDirection, useFormControl } from '@/shared'
+import { createRekaContext, defineReactiveIds, isNullish, useDirection, useFormControl } from '@/shared'
 import { compare, valueComparator } from './utils'
 
 export interface SelectRootProps<T = AcceptableValue> extends FormFieldProps {
@@ -59,7 +59,7 @@ export interface SelectRootContext<T> {
 }
 
 export const [injectSelectRootContext, provideSelectRootContext]
-  = createContext<SelectRootContext<AcceptableValue>>('SelectRoot')
+  = createRekaContext<SelectRootContext<AcceptableValue>>('SelectRoot')
 
 interface SelectOption { value: any, disabled?: boolean, textContent: string }
 </script>

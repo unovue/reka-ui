@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, ref } from 'vue'
+import { settled } from '@/test/scroll'
 import { CarouselContent, CarouselItem, CarouselNext, CarouselRoot, CarouselViewport } from '.'
 
 const VIEW = 320
@@ -60,16 +61,6 @@ function mountGutter({ basis = 1, gutter = GUTTER, count = 5, props = {}, contro
   return { get, viewport, model, offset, scroll }
 }
 
-/** Waits until the scroll position holds for 300ms. */
-async function settled(scroll: () => number) {
-  const readings: number[] = []
-  await expect.poll(() => {
-    readings.push(scroll())
-    const last = readings.slice(-4)
-    return last.length === 4 && last.every(value => Math.abs(value - last[0]) < 0.5)
-  }, { interval: 100, timeout: 4000 }).toBe(true)
-}
-
 async function measured(viewport: HTMLElement) {
   await expect.poll(() => viewport.querySelector('[data-index="0"]')?.hasAttribute('data-in-view')).toBe(true)
 }
@@ -87,7 +78,7 @@ describe('given a Carousel spaced with item padding and a negative content margi
       await userEvent.click(get('next'))
       await expect.poll(() => offset(i)).toBeCloseTo(0, 0)
     }
-    await settled(scroll)
+    await settled(viewport)
     expect(offset(2)).toBeCloseTo(0, 0)
   })
 
@@ -95,7 +86,7 @@ describe('given a Carousel spaced with item padding and a negative content margi
     const { viewport, model, offset, scroll } = mountGutter()
     await measured(viewport)
     viewport.scrollBy({ left: VIEW * 0.6, behavior: 'instant' })
-    await settled(scroll)
+    await settled(viewport)
     expect(model.value).toBe(1)
     expect(offset(1)).toBeCloseTo(0, 0)
   })
@@ -103,13 +94,13 @@ describe('given a Carousel spaced with item padding and a negative content margi
   it('centers the slide content, not the gutter, with align center', async () => {
     const { get, viewport, offset, scroll } = mountGutter({ props: { align: 'center' } })
     await measured(viewport)
-    await settled(scroll)
+    await settled(viewport)
     expect(offset(0)).toBeCloseTo(0, 0)
     await userEvent.click(get('next'))
-    await settled(scroll)
+    await settled(viewport)
     expect(offset(1)).toBeCloseTo(0, 0)
     viewport.scrollBy({ left: VIEW * 0.6, behavior: 'instant' })
-    await settled(scroll)
+    await settled(viewport)
     expect(offset(2)).toBeCloseTo(0, 0)
   })
 
@@ -118,16 +109,16 @@ describe('given a Carousel spaced with item padding and a negative content margi
     await measured(viewport)
     const slide = (VIEW + GUTTER) / 3 - GUTTER
     await userEvent.click(get('next'))
-    await settled(scroll)
+    await settled(viewport)
     expect(model.value).toBe(1)
     expect(offset(2)).toBeCloseTo((VIEW - slide) / 2, 0)
     viewport.scrollBy({ left: (VIEW + GUTTER) / 3, behavior: 'instant' })
-    await settled(scroll)
+    await settled(viewport)
     expect(offset(3)).toBeCloseTo((VIEW - slide) / 2, 0)
     expect(model.value).toBe(2)
     // 6 items, 3 visible, centered: 4 snaps once the ends are trimmed.
     await userEvent.click(get('next'))
-    await settled(scroll)
+    await settled(viewport)
     expect(model.value).toBe(3)
     expect(get('next').hasAttribute('aria-disabled')).toBe(true)
   })
@@ -137,7 +128,7 @@ describe('given a Carousel spaced with item padding and a negative content margi
     await measured(viewport)
     const slide = (VIEW + GUTTER) / 2 - GUTTER
     await userEvent.click(get('next'))
-    await settled(scroll)
+    await settled(viewport)
     expect(offset(2) + slide).toBeCloseTo(VIEW, 0)
   })
 
@@ -146,7 +137,7 @@ describe('given a Carousel spaced with item padding and a negative content margi
     await measured(viewport)
     for (let i = 0; i < 3; i++)
       await userEvent.click(get('next'))
-    await settled(scroll)
+    await settled(viewport)
     // 6 items, 3 visible: 4 snaps.
     expect(model.value).toBe(3)
     expect(get('next').hasAttribute('aria-disabled')).toBe(true)
@@ -158,10 +149,10 @@ describe('given a Carousel spaced with item padding and a negative content margi
     await measured(viewport)
     expect(offset(0)).toBeCloseTo(0, 0)
     await userEvent.click(get('next'))
-    await settled(scroll)
+    await settled(viewport)
     expect(offset(1)).toBeCloseTo(0, 0)
     viewport.scrollBy({ top: VIEW * 0.6, behavior: 'instant' })
-    await settled(scroll)
+    await settled(viewport)
     expect(offset(2)).toBeCloseTo(0, 0)
   })
 
@@ -169,11 +160,11 @@ describe('given a Carousel spaced with item padding and a negative content margi
     const { get, viewport, model, offset, scroll } = mountGutter({ basis: 1 / 2, count: 6, props: { loop: true } })
     await measured(viewport)
     await expect.poll(() => viewport.querySelector<HTMLElement>('[data-index="0"]')!.style.order).not.toBe('')
-    await settled(scroll)
+    await settled(viewport)
     expect(offset(0)).toBeCloseTo(0, 0)
     for (let i = 0; i < 6; i++)
       await userEvent.click(get('next'))
-    await settled(scroll)
+    await settled(viewport)
     expect(model.value).toBe(0)
     expect(offset(0)).toBeCloseTo(0, 0)
   })
@@ -187,7 +178,7 @@ describe('given a Carousel spaced with item padding and a negative content margi
     const { get, viewport, model, offset, scroll } = mountGutter({ basis: 1 / 2, count: 6, controlled, props: { loop: true, align: 'center' } })
     await measured(viewport)
     await expect.poll(() => viewport.querySelector<HTMLElement>('[data-index="0"]')!.style.order).not.toBe('')
-    await settled(scroll)
+    await settled(viewport)
     const slide = (VIEW + GUTTER) / 2 - GUTTER
     const centered = (VIEW - slide) / 2
     expect(offset(0)).toBeCloseTo(centered, 0)
@@ -198,7 +189,7 @@ describe('given a Carousel spaced with item padding and a negative content margi
         if (gap)
           await new Promise(resolve => setTimeout(resolve, gap))
       }
-      await settled(scroll)
+      await settled(viewport)
       expect(model.value).toBe(target)
       expect(offset(target)).toBeCloseTo(centered, 0)
     }
@@ -218,7 +209,7 @@ describe('given a Carousel spaced with item padding and a negative content margi
     await measured(viewport)
     expect(offset(0)).toBeCloseTo(0, 0)
     await userEvent.click(get('next'))
-    await settled(scroll)
+    await settled(viewport)
     expect(offset(1)).toBeCloseTo(0, 0)
   })
 
@@ -226,10 +217,10 @@ describe('given a Carousel spaced with item padding and a negative content margi
     const { get, viewport, offset, scroll } = mountGutter({ gutter: 0 })
     await measured(viewport)
     await userEvent.click(get('next'))
-    await settled(scroll)
+    await settled(viewport)
     expect(offset(1)).toBeCloseTo(0, 0)
     viewport.scrollBy({ left: VIEW * 0.6, behavior: 'instant' })
-    await settled(scroll)
+    await settled(viewport)
     expect(offset(2)).toBeCloseTo(0, 0)
   })
 })

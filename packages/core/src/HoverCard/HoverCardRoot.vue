@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import { createContext, useForwardExpose } from '@/shared'
+import { createRekaContext, useForwardExpose } from '@/shared'
 
 export interface HoverCardRootProps {
   /** The open state of the hover card when it is initially rendered. Use when you do not need to control its open state. */
@@ -36,7 +36,7 @@ export interface HoverCardRootContext {
 }
 
 export const [injectHoverCardRootContext, provideHoverCardRootContext]
-  = createContext<HoverCardRootContext>('HoverCardRoot')
+  = createRekaContext<HoverCardRootContext>('HoverCardRoot')
 </script>
 
 <script setup lang="ts">

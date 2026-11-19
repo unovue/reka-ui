@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, isNullish, useForwardExpose } from '@/shared'
+import { createRekaContext, isNullish, useForwardExpose } from '@/shared'
 
 export type ProgressRootEmits = {
   /** Event handler called when the progress value changes */
@@ -36,7 +36,7 @@ interface ProgressRootContext {
 }
 
 export const [injectProgressRootContext, provideProgressRootContext]
-  = createContext<ProgressRootContext>('ProgressRoot')
+  = createRekaContext<ProgressRootContext>('ProgressRoot')
 
 export type ProgressState = 'indeterminate' | 'loading' | 'complete'
 

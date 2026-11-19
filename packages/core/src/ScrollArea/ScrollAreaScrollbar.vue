@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardExpose } from '@/shared'
+import { createRekaContext, useForwardExpose } from '@/shared'
 
 export interface ScrollAreaScrollbarProps extends PrimitiveProps {
   /** The orientation of the scrollbar */
@@ -22,7 +22,7 @@ export interface ScrollAreaScrollbarContext {
 }
 
 export const [injectScrollAreaScrollbarContext, provideScrollAreaScrollbarContext]
-  = createContext<ScrollAreaScrollbarContext>('ScrollAreaScrollbar')
+  = createRekaContext<ScrollAreaScrollbarContext>('ScrollAreaScrollbar')
 </script>
 
 <script setup lang="ts">

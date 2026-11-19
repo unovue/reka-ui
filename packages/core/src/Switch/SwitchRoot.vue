@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { FormFieldProps } from '@/shared/types'
-import { createContext, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { createRekaContext, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 
 export interface SwitchRootProps<TrueValue = boolean, FalseValue = TrueValue> extends PrimitiveProps, FormFieldProps {
   /** The state of the switch when it is initially rendered. Use when you do not need to control its state. */
@@ -36,7 +36,7 @@ export interface SwitchRootContext {
 }
 
 export const [injectSwitchRootContext, provideSwitchRootContext]
-  = createContext<SwitchRootContext>('SwitchRoot')
+  = createRekaContext<SwitchRootContext>('SwitchRoot')
 </script>
 
 <script setup lang="ts" generic="TrueValue = true, FalseValue = false">
