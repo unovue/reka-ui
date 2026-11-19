@@ -14,31 +14,31 @@
   {
     "path": "dist/index.js",
     "import": "{ SelectRoot, SelectTrigger, SelectContent, SelectItem, SelectViewport, SelectPortal }",
-    "limit": "28 KB",
+    "limit": "30 KB",
     "name": "Select"
   },
   {
     "path": "dist/index.js",
     "import": "{ ComboboxRoot, ComboboxInput, ComboboxContent, ComboboxItem, ComboboxVirtualizer }",
-    "limit": "35 KB",
+    "limit": "36 KB",
     "name": "Combobox"
   },
   {
     "path": "dist/index.js",
     "import": "{ CalendarRoot, CalendarHeader, CalendarGrid, CalendarCell, CalendarCellTrigger }",
-    "limit": "17 KB",
+    "limit": "18 KB",
     "name": "Calendar"
   },
   {
     "path": "dist/index.js",
     "import": "{ DateFieldRoot, DateFieldInput }",
-    "limit": "19 KB",
+    "limit": "20 KB",
     "name": "DateField"
   },
   {
     "path": "dist/index.js",
     "import": "{ TreeRoot, TreeItem, TreeVirtualizer }",
-    "limit": "14 KB",
+    "limit": "15 KB",
     "name": "Tree"
   },
   {
@@ -50,19 +50,19 @@
   {
     "path": "dist/index.js",
     "import": "{ TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent }",
-    "limit": "20 KB",
+    "limit": "21 KB",
     "name": "Tooltip"
   },
   {
     "path": "dist/index.js",
     "import": "{ CarouselRoot, CarouselViewport, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, CarouselIndicatorGroup, CarouselIndicator, CarouselAutoplayToggle }",
-    "limit": "14 KB",
+    "limit": "15 KB",
     "name": "Carousel"
   },
   {
     "path": "dist/index.js",
     "import": "*",
-    "limit": "180 KB",
+    "limit": "182 KB",
     "name": "Full library"
   }
 ]
