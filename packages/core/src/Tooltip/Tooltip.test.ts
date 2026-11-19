@@ -333,6 +333,34 @@ describe('given stacked tooltips whose content covers another trigger', () => {
   })
 })
 
+describe('given a controlled tooltip whose trigger is pressed', () => {
+  function mountControlled(open: boolean) {
+    const onUpdateOpen = vi.fn()
+    const wrapper = mount(() => h(TooltipProvider, () => h(
+      TooltipRoot,
+      { 'open': open, 'onUpdate:open': onUpdateOpen },
+      () => h(TooltipTrigger, () => 'trigger'),
+    )), { attachTo: document.body })
+    return { wrapper, onUpdateOpen }
+  }
+
+  it('should close the tooltip when it is open', async () => {
+    const { wrapper, onUpdateOpen } = mountControlled(true)
+    await wrapper.get('button').trigger('pointerdown')
+
+    expect(onUpdateOpen).toHaveBeenCalledExactlyOnceWith(false)
+    wrapper.unmount()
+  })
+
+  it('should not emit update:open when it is already closed', async () => {
+    const { wrapper, onUpdateOpen } = mountControlled(false)
+    await wrapper.get('button').trigger('pointerdown')
+
+    expect(onUpdateOpen).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+})
+
 describe('given a tooltip trigger inside a form', () => {
   function mountInForm(triggerProps: Record<string, unknown> = {}) {
     const onSubmit = vi.fn((event: Event) => event.preventDefault())
@@ -390,5 +418,24 @@ describe('given a tooltip trigger inside a form', () => {
     const { trigger } = mountInForm({ as: 'span' })
 
     expect(trigger.attributes('type')).toBeUndefined()
+  })
+})
+
+describe('given a Tooltip trigger that unmounts while it is pressed', () => {
+  it('should remove its document pointerup listener', async () => {
+    const wrapper = mount(
+      () => h(TooltipProvider, null, () => h(TooltipRoot, null, () => h(TooltipTrigger, null, () => 'trigger'))),
+      { attachTo: document.body },
+    )
+    const addSpy = vi.spyOn(document, 'addEventListener')
+    const removeSpy = vi.spyOn(document, 'removeEventListener')
+
+    await wrapper.find('button').trigger('pointerdown')
+    const [, listener] = addSpy.mock.calls.find(([type]) => type === 'pointerup')!
+    wrapper.unmount()
+
+    expect(removeSpy).toHaveBeenCalledWith('pointerup', listener)
+    addSpy.mockRestore()
+    removeSpy.mockRestore()
   })
 })

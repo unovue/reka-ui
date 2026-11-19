@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { computed, watchPostEffect } from 'vue'
+import { computed, onMounted, ref, useAttrs, watchPostEffect } from 'vue'
 import { getActiveElement, useArrowNavigation, useForwardExpose, useKbd } from '@/shared'
 
 export interface StepperTriggerProps extends PrimitiveProps {
@@ -18,6 +18,42 @@ withDefaults(defineProps<StepperTriggerProps>(), {
 
 const rootContext = injectStepperRootContext()
 const itemContext = injectStepperItemContext()
+
+const attrs = useAttrs()
+
+// Whether the trigger has mounted. Until then, which parts are rendered is unknown: the
+// title and description report themselves once mounted, and usually come after the trigger.
+// The server render and the first client render reference both ids so that the server HTML
+// names the trigger and hydration matches it; an id without an element is ignored.
+const isMounted = ref(false)
+onMounted(() => {
+  isMounted.value = true
+})
+
+// Name the trigger by its title and description so the accessible name matches the visible
+// content. Only reference parts that are rendered, and leave the name to a consumer
+// `aria-label` or `aria-labelledby`. Plain functions rather than computeds: `attrs` is not
+// reactive, but the template re-renders when it changes.
+function hasConsumerName() {
+  return !!(attrs['aria-label'] || attrs['aria-labelledby'])
+}
+
+function getAriaLabelledby() {
+  if (hasConsumerName())
+    return undefined
+  const ids = [
+    !isMounted.value || itemContext.hasTitle.value ? itemContext.titleId : undefined,
+    !isMounted.value || itemContext.hasDescription.value ? itemContext.descriptionId : undefined,
+  ].filter(Boolean)
+  return ids.length ? ids.join(' ') : undefined
+}
+
+// The description is already part of the name when the trigger names itself by it.
+function getAriaDescribedby() {
+  if (!hasConsumerName() || (isMounted.value && !itemContext.hasDescription.value))
+    return undefined
+  return itemContext.descriptionId
+}
 
 const kbd = useKbd()
 const stepperItems = computed(() => Array.from(rootContext.totalStepperItems.value))
@@ -90,8 +126,9 @@ watchPostEffect((cleanup) => {
     :data-disabled="itemContext.disabled.value || !itemContext.isFocusable.value ? '' : undefined"
     :data-orientation="rootContext.orientation.value"
     :tabindex="itemContext.isFocusable.value ? 0 : -1"
-    :aria-describedby="itemContext.descriptionId"
-    :aria-labelledby="itemContext.titleId"
+    :aria-current="itemContext.isCurrent.value ? 'step' : undefined"
+    :aria-describedby="getAriaDescribedby()"
+    :aria-labelledby="getAriaLabelledby()"
     @mousedown.left="handleMouseDown"
     @keydown.enter.space.left.right.up.down="handleKeyDown"
   >
