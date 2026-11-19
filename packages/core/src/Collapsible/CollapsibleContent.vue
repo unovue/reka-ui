@@ -46,6 +46,9 @@ const height = ref(0)
 const isOpen = computed(() => rootContext.open.value)
 const isMountAnimationPrevented = ref(isOpen.value)
 const currentStyle = ref<Record<string, string>>()
+// A panel mounted closed is hidden, so measuring it would only force a layout for a size the
+// animations never read: the next run, once it is shown, measures it before it animates.
+let hasBeenPresent = false
 
 watch(
   () => [isOpen.value, presentRef.value?.present],
@@ -54,6 +57,9 @@ watch(
     const node = currentElement.value
     if (!node)
       return
+    if (!hasBeenPresent && !presentRef.value?.present)
+      return
+    hasBeenPresent = true
     currentStyle.value = currentStyle.value || {
       transitionDuration: node.style.transitionDuration,
       animationName: node.style.animationName,
