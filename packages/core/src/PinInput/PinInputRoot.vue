@@ -101,7 +101,10 @@ const currentModelValue = computed(() => Array.isArray(modelValue.value) ? [...m
 
 const inputElements = ref<Set<HTMLInputElement>>(new Set())
 function onInputElementChange(el: HTMLInputElement) {
-  inputElements.value.add(el)
+  // A conditional slot may mount between two inputs that are already registered.
+  const elements = [...inputElements.value, el]
+  elements.sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
+  inputElements.value = new Set(elements)
 }
 
 const isNumericMode = computed(() => props.type === 'number')

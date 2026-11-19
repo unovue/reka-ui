@@ -14,7 +14,7 @@ export interface PinInputInputProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 
 const props = withDefaults(defineProps<PinInputInputProps>(), {
   as: 'input',
@@ -266,12 +266,13 @@ function updateModelValueAt(index: number, value: string) {
 
 watch(currentValue, updatePlaceholder)
 
-onMounted(() => {
-  context.onInputElementChange(currentElement.value as HTMLInputElement)
-})
-onUnmounted(() => {
-  context.inputElements?.value.delete(currentElement.value as HTMLInputElement)
-})
+watch([currentElement, () => props.index], ([element], _, onCleanup) => {
+  if (!element)
+    return
+  const input = element as HTMLInputElement
+  context.onInputElementChange(input)
+  onCleanup(() => context.inputElements?.value.delete(input))
+}, { flush: 'post' })
 </script>
 
 <template>

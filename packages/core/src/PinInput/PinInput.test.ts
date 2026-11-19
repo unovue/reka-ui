@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { h, nextTick, ref } from 'vue'
+import { PinInputInput, PinInputRoot } from '.'
 import PinInput from './story/_PinInput.vue'
 
 const originalGetComputedStyle = window.getComputedStyle
@@ -554,4 +555,30 @@ describe('give OTP PinInput', () => {
     await userEvent.tab({ shift: true })
     expect(document.activeElement).toBe(inputs[0].element)
   })
+})
+
+it('updates the slot count and navigation when inputs unmount and remount', async () => {
+  const keys = ref(['first', 'middle', 'last'])
+  const wrapper = mount(PinInputRoot, {
+    attachTo: document.body,
+    slots: { default: () => keys.value.map((key, index) => h(PinInputInput, { key, index })) },
+  })
+  try {
+    keys.value = ['first', 'last']
+    await nextTick()
+
+    const first = wrapper.get<HTMLInputElement>('input[aria-label="pin input 1 of 2"]')
+    first.element.focus()
+    await userEvent.keyboard('12')
+    expect(wrapper.emitted('complete')).toEqual([[['1', '2']]])
+
+    keys.value = ['first', 'middle', 'last']
+    await nextTick()
+    first.element.focus()
+    await userEvent.keyboard('3')
+    expect(document.activeElement).toBe(wrapper.get('input[aria-label="pin input 2 of 3"]').element)
+  }
+  finally {
+    wrapper.unmount()
+  }
 })
