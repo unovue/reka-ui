@@ -1,7 +1,7 @@
 import type { DateValue } from '@internationalized/date'
-import { BuddhistCalendar, CalendarDate, CalendarDateTime, toCalendar, toTimeZone, toZoned } from '@internationalized/date'
+import { BuddhistCalendar, CalendarDate, CalendarDateTime, HebrewCalendar, toCalendar, toTimeZone, toZoned } from '@internationalized/date'
 import { describe, expect, it } from 'vitest'
-import { areAllDaysBetweenValid, isSameDateValue } from './comparators'
+import { areAllDaysBetweenValid, getMonthsBetween, isSameDateValue } from './comparators'
 
 describe('isSameDateValue', () => {
   it('matches a copy of the same value', () => {
@@ -81,5 +81,21 @@ describe('areAllDaysBetweenValid', () => {
     expect(areAllDaysBetweenValid(fridayAt(9), fridayAt(17), isSaturday, undefined)).toBe(true)
     // Monday 17:00 to Friday 09:00: Friday is still in the range.
     expect(areAllDaysBetweenValid(mondayAt(17), fridayAt(9), (date: DateValue) => date.day === 19, undefined)).toBe(false)
+  })
+})
+
+describe('getMonthsBetween', () => {
+  it('counts the months inclusively across Gregorian years', () => {
+    expect(getMonthsBetween(new CalendarDate(2024, 11, 1), new CalendarDate(2025, 2, 1))).toBe(4)
+    expect(getMonthsBetween(new CalendarDate(2024, 3, 1), new CalendarDate(2024, 3, 31))).toBe(1)
+    expect(getMonthsBetween(new CalendarDate(2025, 2, 1), new CalendarDate(2024, 11, 1))).toBe(-2)
+  })
+
+  it('counts the thirteenth month of a Hebrew leap year', () => {
+    const calendar = new HebrewCalendar()
+    const start = new CalendarDate(calendar, 5784, 12, 1)
+    const end = new CalendarDate(calendar, 5785, 1, 1)
+    expect(getMonthsBetween(start, end)).toBe(3)
+    expect(getMonthsBetween(end, start)).toBe(-1)
   })
 })

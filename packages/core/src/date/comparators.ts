@@ -300,7 +300,19 @@ export function isYearBetweenInclusive(date: DateValue, start: DateValue, end: D
  * Get the number of months between two dates (inclusive).
  */
 export function getMonthsBetween(start: DateValue, end: DateValue): number {
-  return (end.year - start.year) * 12 + (end.month - start.month) + 1
+  // Count each year's months from its calendar, since some years have more than 12.
+  let months = end.month - start.month + 1
+  let year = toCalendarDate(start).set({ month: 1, day: 1 })
+  const endYear = toCalendarDate(end).set({ month: 1, day: 1 })
+  while (year.compare(endYear) < 0) {
+    months += year.calendar.getMonthsInYear(year)
+    year = year.add({ years: 1 })
+  }
+  while (year.compare(endYear) > 0) {
+    year = year.subtract({ years: 1 })
+    months -= year.calendar.getMonthsInYear(year)
+  }
+  return months
 }
 
 /**
