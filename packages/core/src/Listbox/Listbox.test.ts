@@ -624,18 +624,21 @@ describe('given ListboxItem with reactive `disabled` prop', () => {
 
     expect(items[0].attributes('data-disabled')).toBeUndefined()
     expect(items[0].attributes('disabled')).toBeUndefined()
+    expect(items[0].attributes('aria-disabled')).toBeUndefined()
 
     isDisabled.value = true
     await nextTick()
 
     expect(items[0].attributes('data-disabled')).toBe('')
     expect(items[0].attributes('disabled')).toBe('')
+    expect(items[0].attributes('aria-disabled')).toBe('true')
 
     isDisabled.value = false
     await nextTick()
 
     expect(items[0].attributes('data-disabled')).toBeUndefined()
     expect(items[0].attributes('disabled')).toBeUndefined()
+    expect(items[0].attributes('aria-disabled')).toBeUndefined()
   })
 })
 
