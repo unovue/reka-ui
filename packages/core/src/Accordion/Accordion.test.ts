@@ -288,3 +288,62 @@ describe('given a multiple Accordion', () => {
     })
   })
 })
+
+describe('given an Accordion with closed items', () => {
+  const Fixture = defineComponent({
+    props: { type: { type: String as () => 'single' | 'multiple', required: true } },
+    setup(props) {
+      return () => h(AccordionRoot, { type: props.type, collapsible: true }, () =>
+        Array.from({ length: 10 }, (_, i) =>
+          h(AccordionItem, { key: i, value: `item-${i}` }, () => [
+            h(AccordionHeader, () => h(AccordionTrigger, { 'data-testid': `trigger-${i}` }, () => `Trigger ${i}`)),
+            h(AccordionContent, { 'data-testid': `content-${i}` }, () => `Content ${i}`),
+          ])))
+    },
+  })
+
+  let wrapper: VueWrapper | undefined
+  let measured: (id?: string) => number
+
+  beforeEach(() => {
+    const spy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+    spy.mockImplementation(function (this: HTMLElement) {
+      const rect = this.hasAttribute('hidden') ? { width: 0, height: 0 } : { width: 200, height: 120 }
+      return { ...rect, x: 0, y: 0, top: 0, left: 0, right: rect.width, bottom: rect.height, toJSON: () => rect } as DOMRect
+    })
+    // Calls made on the content elements (or the one with `id`), which is what the measurement reads.
+    measured = (id = 'content') => spy.mock.contexts.filter(el => (el as HTMLElement).dataset.testid?.startsWith(id)).length
+  })
+
+  afterEach(() => {
+    wrapper?.unmount()
+    wrapper = undefined
+    vi.restoreAllMocks()
+  })
+
+  const settle = async () => {
+    for (let i = 0; i < 4; i++)
+      await nextTick()
+  }
+
+  it.each(['single', 'multiple'] as const)('does not measure the closed items on mount (%s)', async (type) => {
+    wrapper = mount(Fixture, { props: { type }, attachTo: document.body })
+    await settle()
+
+    expect(measured()).toBe(0)
+  })
+
+  it.each(['single', 'multiple'] as const)('sets the size variables of an item when it opens (%s)', async (type) => {
+    wrapper = mount(Fixture, { props: { type }, attachTo: document.body })
+    await settle()
+
+    await wrapper.find('[data-testid="trigger-3"]').trigger('click')
+    await settle()
+
+    const content = wrapper.find<HTMLElement>('[data-testid="content-3"]').element
+    expect(content.style.getPropertyValue('--reka-collapsible-content-height')).toBe('120px')
+    expect(content.style.getPropertyValue('--reka-collapsible-content-width')).toBe('200px')
+    expect(measured('content-3')).toBeGreaterThan(0)
+    expect(measured()).toBe(measured('content-3'))
+  })
+})
