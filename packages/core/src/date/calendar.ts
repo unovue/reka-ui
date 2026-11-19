@@ -126,17 +126,10 @@ export function endOfDecade(dateObj: DateValue) {
   return endOfYear(dateObj.add({ years: Math.ceil((dateObj.year + 1) / 10) * 10 - dateObj.year - 1 }).set({ day: 35, month: 12 }))
 }
 
-export function createDecade(props: SetDecadeProps): DateValue[] {
-  const { dateObj, startIndex, endIndex } = props
-
-  const decadeArray = Array.from({ length: Math.abs(startIndex ?? 0) + endIndex }, (_, i) =>
-    i <= Math.abs((startIndex ?? 0))
-      ? dateObj.subtract({ years: i }).set({ day: 1, month: 1 })
-      : dateObj.add({ years: i - endIndex }).set({ day: 1, month: 1 }))
-
-  decadeArray.sort((a: DateValue, b: DateValue) => a.year - b.year)
-
-  return decadeArray
+export function createDecade({ dateObj, startIndex = 0, endIndex }: SetDecadeProps): DateValue[] {
+  const yearsBefore = Math.abs(startIndex)
+  return Array.from({ length: yearsBefore + endIndex }, (_, i) =>
+    dateObj.add({ years: i - yearsBefore }).set({ month: 1, day: 1 }))
 }
 
 export function createYear(props: SetYearProps): DateValue[] {
