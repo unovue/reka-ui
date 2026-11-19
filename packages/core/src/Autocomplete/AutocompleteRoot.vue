@@ -229,6 +229,7 @@ provideComboboxRootContext(defineReactiveIds({
   inputElement,
   highlightedElement,
   onInputElementChange: val => inputElement.value = val,
+  focusInputOnOpen: ref(true),
   triggerElement,
   onTriggerElementChange: val => triggerElement.value = val,
   parentElement,
