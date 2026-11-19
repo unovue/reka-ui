@@ -344,6 +344,51 @@ describe('timeField', () => {
     expect(input).toHaveAttribute('data-invalid', '')
   })
 
+  it('allows a same-day date-carrying range to wrap when allowWrap is set', async () => {
+    const { input } = setup({
+      timeRangeFieldProps: {
+        modelValue: {
+          start: new CalendarDateTime(2024, 1, 5, 22, 0),
+          end: new CalendarDateTime(2024, 1, 5, 6, 0),
+        },
+        locale: 'en-GB',
+        allowWrap: true,
+      },
+    })
+
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('still displays data-invalid for a backwards range across days when allowWrap is set', async () => {
+    const { input } = setup({
+      timeRangeFieldProps: {
+        modelValue: {
+          start: new CalendarDateTime(2024, 1, 5, 10, 0),
+          end: new CalendarDateTime(2024, 1, 1, 9, 0),
+        },
+        locale: 'en-GB',
+        allowWrap: true,
+      },
+    })
+
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+
+  it('still displays data-invalid for a backwards zoned range across days when allowWrap is set', async () => {
+    const { input } = setup({
+      timeRangeFieldProps: {
+        modelValue: {
+          start: toZoned(new CalendarDateTime(2024, 1, 5, 10, 0), 'America/New_York'),
+          end: toZoned(new CalendarDateTime(2024, 1, 1, 9, 0), 'America/New_York'),
+        },
+        locale: 'en-GB',
+        allowWrap: true,
+      },
+    })
+
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+
   it('focuses first segment on label click', async () => {
     const { user, label, start } = setup({
       timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },

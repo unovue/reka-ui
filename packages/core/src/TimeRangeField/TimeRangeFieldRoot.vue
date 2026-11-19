@@ -8,7 +8,7 @@ import type { Formatter } from '@/shared'
 import type { DateStep, HourCycle, SegmentPart, SegmentValueObj, TimeValue } from '@/shared/date'
 import type { TimeRange } from '@/shared/date/types'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { getLocalTimeZone, Time, toCalendarDateTime, today } from '@internationalized/date'
+import { getLocalTimeZone, isSameDay, Time, toCalendarDateTime, today } from '@internationalized/date'
 import { areAllDaysBetweenValid, isBefore, isBeforeOrSame } from '@/date'
 import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
@@ -78,7 +78,17 @@ export interface TimeRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   dir?: Direction
   /** A function that returns whether or not a time is unavailable */
   isTimeUnavailable?: Matcher
-  /** Whether a range whose end is earlier than its start is allowed, for a daily window that wraps past midnight such as `23:00` to `07:00` */
+  /**
+   * Whether a range whose end is earlier than its start is allowed, for a daily window that wraps
+   * past midnight such as `22:00` to `06:00`.
+   *
+   * Wrapping only applies when both values fall on the same calendar day, which is always the case
+   * for `Time` values. When the values carry a date and the end is on an earlier day than the start,
+   * the range stays invalid.
+   *
+   * `minValue` and `maxValue` still bound the start and the end separately, so they cannot describe
+   * a window that crosses midnight.
+   */
   allowWrap?: boolean
 }
 
@@ -206,7 +216,9 @@ const isInvalid = computed(() => {
 
   const wraps = !isBeforeOrSame(convertedModelValue.start, convertedModelValue.end)
 
-  if (wraps && !props.allowWrap)
+  // Only a time-of-day wrap within the same calendar day is allowed. `Time` values are converted
+  // to today, so they always qualify; date-carrying values on different days stay invalid.
+  if (wraps && !(props.allowWrap && isSameDay(convertedModelValue.start, convertedModelValue.end)))
     return true
 
   // `areAllDaysBetweenValid` walks forward from start to end, so it has nothing to walk
