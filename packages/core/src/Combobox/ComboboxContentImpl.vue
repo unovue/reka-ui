@@ -107,9 +107,10 @@ watch(() => props.present, async (isPresent, wasPresent) => {
   if (isPresent) {
     // Content kept mounted while closed (`unmountOnHide: false`) is still hidden when the root
     // focuses the input on open, and a hidden input can't take focus. Focus it once it's shown.
-    if (!wasPresent && isInputWithinContent.value && rootContext.focusInputOnOpen.value) {
+    if (!wasPresent && isInputWithinContent.value) {
       await nextTick()
-      if (props.present)
+      // Read `focusOnOpen` after the tick: the input may get its new value in this same update.
+      if (props.present && rootContext.focusInputOnOpen.value)
         rootContext.inputElement.value?.focus()
     }
     return

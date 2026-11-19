@@ -14,8 +14,8 @@ export interface ComboboxInputProps extends ListboxFilterProps {
    * by the trigger, the keyboard or the `open` prop. <br>
    * Set to `false` to leave focus where it is, for example to keep the on-screen keyboard closed
    * on touch devices when the input sits inside `ComboboxContent`. The user can still focus the
-   * input to type and navigate, and `ArrowDown` / `ArrowUp` on a focused `ComboboxTrigger` moves
-   * focus to it. <br>
+   * input to type and navigate. While the combobox is open, `ArrowDown` / `ArrowUp` on a focused
+   * `ComboboxTrigger` move focus to the input. <br>
    * This is separate from `autoFocus`, which only focuses the input when it mounts.
    * @defaultValue true
    */

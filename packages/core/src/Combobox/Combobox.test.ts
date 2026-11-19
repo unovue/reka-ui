@@ -382,6 +382,48 @@ describe('given a Combobox with its input inside content and focusOnOpen', () =>
     expect(document.activeElement).toBe(trigger())
   })
 
+  it('renders the docs example with a tabbable trigger that opens without focusing the input', async () => {
+    document.body.innerHTML = ''
+    // Same template as the "Keep focus on open" example in docs/content/docs/components/combobox.md.
+    wrapper = mount(defineComponent({
+      components: { ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport },
+      template: `<ComboboxRoot>
+    <ComboboxTrigger tabindex="0">
+      Select a fruit
+    </ComboboxTrigger>
+    <ComboboxPortal>
+      <ComboboxContent>
+        <ComboboxInput :focus-on-open="false" placeholder="Search..." />
+        <ComboboxViewport>
+          <ComboboxItem value="Apple">
+            Apple
+          </ComboboxItem>
+          <ComboboxItem value="Banana">
+            Banana
+          </ComboboxItem>
+        </ComboboxViewport>
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>`,
+    }), { attachTo: document.body })
+
+    const exampleTrigger = document.querySelector<HTMLElement>('button[aria-haspopup="listbox"]')!
+    expect(exampleTrigger.getAttribute('tabindex')).toBe('0')
+    expect(exampleTrigger.tabIndex).toBe(0)
+
+    exampleTrigger.focus()
+    exampleTrigger.click()
+    await flushPromises()
+    await sleep(10)
+    expect(exampleTrigger.getAttribute('aria-expanded')).toBe('true')
+    expect(document.querySelectorAll('[role="option"]')).toHaveLength(2)
+    expect(document.activeElement).toBe(exampleTrigger)
+
+    exampleTrigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    await flushPromises()
+    expect(document.activeElement).toBe(document.querySelector('input[placeholder="Search..."]'))
+  })
+
   it('has no accessibility violations when open with focusOnOpen false', async () => {
     mountCombobox({ unmountOnHide: true, focusOnOpen: false })
     await openFromTrigger()

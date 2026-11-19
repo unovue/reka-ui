@@ -642,16 +642,20 @@ const selectedPerson = ref<string | undefined>('Durward Reynolds')
 
 By default, opening the combobox moves focus to `ComboboxInput`, including when the input is placed inside `ComboboxContent`. This is separate from `autoFocus`, which only focuses the input when it mounts.
 
-Set `focus-on-open` to `false` to leave focus where it is when the combobox opens, for example to keep the on-screen keyboard closed on touch devices. The user can still focus the input to type and navigate, and pressing <kbd>ArrowDown</kbd> or <kbd>ArrowUp</kbd> on a focused `ComboboxTrigger` moves focus to it.
+Set `focus-on-open` to `false` to leave focus where it is when the combobox opens, for example to keep the on-screen keyboard closed on touch devices. The user can still focus the input to type and navigate. While the combobox is open, pressing <kbd>ArrowDown</kbd> or <kbd>ArrowUp</kbd> on a focused `ComboboxTrigger` moves focus to the input.
 
-```vue line=10
+`ComboboxTrigger` is left out of the tab order by default (`tabindex="-1"`). When the input sits inside `ComboboxContent`, the trigger is usually the only control that opens the list, so give it `tabindex="0"` to let keyboard users reach it.
+
+```vue line=7,12
 <script setup lang="ts">
 import { ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from 'reka-ui'
 </script>
 
 <template>
   <ComboboxRoot>
-    <ComboboxTrigger>Select a fruit</ComboboxTrigger>
+    <ComboboxTrigger tabindex="0">
+      Select a fruit
+    </ComboboxTrigger>
     <ComboboxPortal>
       <ComboboxContent>
         <ComboboxInput :focus-on-open="false" placeholder="Search..." />

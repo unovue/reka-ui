@@ -2,16 +2,24 @@ import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick, ref, watch } from 'vue'
 import { ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '.'
 
 let wrapper: VueWrapper | undefined
 const open = ref(false)
+const focusOnOpen = ref<boolean | undefined>()
 
 function mountCombobox(options: { unmountOnHide: boolean, focusOnOpen?: boolean }) {
   document.body.innerHTML = ''
   open.value = false
-  const inputProps = options.focusOnOpen === undefined ? {} : { focusOnOpen: options.focusOnOpen }
+  focusOnOpen.value = options.focusOnOpen
+  // A child component reads `focusOnOpen`, so changing it re-renders the input after the content updates.
+  const Input = defineComponent({
+    setup: () => () => h(ComboboxInput, {
+      'data-testid': 'input',
+      ...(focusOnOpen.value === undefined ? {} : { focusOnOpen: focusOnOpen.value }),
+    }),
+  })
   const Fixture = defineComponent({
     setup: () => () => h('div', [
       h('button', { 'data-testid': 'outside', 'onClick': () => open.value = true }, 'Outside'),
@@ -22,7 +30,7 @@ function mountCombobox(options: { unmountOnHide: boolean, focusOnOpen?: boolean 
       }, () => [
         h(ComboboxTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
         h(ComboboxPortal, null, () => h(ComboboxContent, null, () => [
-          h(ComboboxInput, { 'data-testid': 'input', ...inputProps }),
+          h(Input),
           h(ComboboxViewport, null, () => ['Apple', 'Banana', 'Cherry'].map(value =>
             h(ComboboxItem, { 'value': value, 'data-testid': value }, () => value))),
         ])),
@@ -129,6 +137,30 @@ describe('given a Combobox with its input inside content and focusOnOpen', () =>
     await userEvent.keyboard('{Escape}')
     await expect.poll(isOpen).toBe(false)
     await expect.poll(activeTestId).toBe('trigger')
+  })
+
+  it('does not focus kept-mounted content when focusOnOpen turns false in the same update as open', async () => {
+    mountCombobox({ unmountOnHide: false, focusOnOpen: true })
+
+    // Open and close once so the content is mounted and kept hidden.
+    await userEvent.click(byTestId('trigger'))
+    await expect.poll(activeTestId).toBe('input')
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(isOpen).toBe(false)
+
+    // Turn focusOnOpen off in the same update that shows the kept-mounted content: Presence shows
+    // it a tick after `open` changes, so the input's new prop arrives after the content's watcher ran.
+    const stop = watch(open, async (value) => {
+      await nextTick()
+      if (value)
+        focusOnOpen.value = false
+    })
+    byTestId('outside').focus()
+    open.value = true
+    await expect.poll(isOpen).toBe(true)
+    stop()
+    await settle()
+    expect(activeTestId()).toBe('outside')
   })
 
   it('navigates and selects once the user clicks the input', async () => {
