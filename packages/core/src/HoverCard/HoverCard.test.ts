@@ -2,9 +2,9 @@ import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { h, nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { sleep } from '@/test'
-import HoverCardRoot from './HoverCardRoot.vue'
+import HoverCardRoot, { injectHoverCardRootContext } from './HoverCardRoot.vue'
 import HoverCardTrigger from './HoverCardTrigger.vue'
 import HoverCard from './story/_HoverCard.vue'
 
@@ -264,5 +264,94 @@ describe('given a controlled open HoverCard whose trigger unmounts with an open 
     finally {
       vi.useRealTimers()
     }
+  })
+})
+
+describe('given a HoverCard whose open delay is already running', () => {
+  function mountWithDelay() {
+    return mount(
+      () => h(HoverCardRoot, { openDelay: 500 }, () => h(HoverCardTrigger, null, () => 'trigger')),
+      { attachTo: document.body },
+    )
+  }
+
+  it('should keep the first deadline when another open request arrives', async () => {
+    vi.useFakeTimers()
+    const wrapper = mountWithDelay()
+    try {
+      const trigger = wrapper.find('a')
+      await trigger.trigger('pointerenter', { pointerType: 'mouse' })
+      vi.advanceTimersByTime(450)
+      await trigger.trigger('focus')
+
+      vi.advanceTimersByTime(49)
+      await nextTick()
+      expect(trigger.attributes('data-state')).toBe('closed')
+
+      vi.advanceTimersByTime(1)
+      await nextTick()
+      expect(trigger.attributes('data-state')).toBe('open')
+    }
+    finally {
+      wrapper.unmount()
+      vi.useRealTimers()
+    }
+  })
+
+  it('should start a fresh delay when the pointer leaves and re-enters', async () => {
+    vi.useFakeTimers()
+    const wrapper = mountWithDelay()
+    try {
+      const trigger = wrapper.find('a')
+      await trigger.trigger('pointerenter', { pointerType: 'mouse' })
+      vi.advanceTimersByTime(100)
+      await trigger.trigger('pointerleave', { pointerType: 'mouse' })
+      vi.advanceTimersByTime(350)
+      await trigger.trigger('pointerenter', { pointerType: 'mouse' })
+
+      vi.advanceTimersByTime(499)
+      await nextTick()
+      expect(trigger.attributes('data-state')).toBe('closed')
+
+      vi.advanceTimersByTime(1)
+      await nextTick()
+      expect(trigger.attributes('data-state')).toBe('open')
+    }
+    finally {
+      wrapper.unmount()
+      vi.useRealTimers()
+    }
+  })
+})
+
+describe('given a controlled HoverCard that is dismissed', () => {
+  const DismissButton = defineComponent({
+    setup() {
+      const rootContext = injectHoverCardRootContext()
+      return () => h('button', { onClick: () => rootContext.onDismiss() }, 'dismiss')
+    },
+  })
+
+  function mountControlled(open: boolean) {
+    const onUpdateOpen = vi.fn()
+    const wrapper = mount(
+      () => h(HoverCardRoot, { 'open': open, 'onUpdate:open': onUpdateOpen }, () => h(DismissButton)),
+      { attachTo: document.body },
+    )
+    return { wrapper, onUpdateOpen }
+  }
+
+  it('should emit update:open(false) when it was open', async () => {
+    const { wrapper, onUpdateOpen } = mountControlled(true)
+    await wrapper.find('button').trigger('click')
+    expect(onUpdateOpen).toHaveBeenCalledExactlyOnceWith(false)
+    wrapper.unmount()
+  })
+
+  it('should not emit update:open when it was already closed', async () => {
+    const { wrapper, onUpdateOpen } = mountControlled(false)
+    await wrapper.find('button').trigger('click')
+    expect(onUpdateOpen).not.toHaveBeenCalled()
+    wrapper.unmount()
   })
 })
