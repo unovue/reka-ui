@@ -442,3 +442,46 @@ describe.each([true, false])('given an open Popover whose unmountOnHide changes 
     expect(input.value).toBe('typed')
   })
 })
+
+describe.each([true, false])('given a kept-mounted Popover content wrapped in a Vue Transition with modal=%s', (modal) => {
+  function setup(rootProps: { open: boolean, unmountOnHide: boolean }, transitionProps: Record<string, unknown>) {
+    const root = ref(rootProps)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(PopoverRoot, { ...root.value, modal }, () => [
+        h(PopoverTrigger, () => 'Open'),
+        h(Transition, transitionProps, () => h(PopoverContent, { 'data-testid': 'kept' }, () => 'Content')),
+      ]),
+    }), { attachTo: document.body, global: { stubs: { transition: false } } })
+    onTestFinished(() => wrapper.unmount())
+    const element = () => document.querySelector<HTMLElement>('[data-testid="kept"]')
+    const isShown = () => !element()!.closest('[style*="display: none"]')
+    return { root, element, isShown }
+  }
+
+  it('should run the appear hook once when it mounts open', async () => {
+    const onEnter = vi.fn((_el: Element, done: () => void) => done())
+    const { element } = setup({ open: true, unmountOnHide: false }, { appear: true, onEnter })
+    await vi.waitFor(() => expect(element()).not.toBeNull())
+    await flushPromises()
+    expect(onEnter).toHaveBeenCalledOnce()
+  })
+
+  it('should stay shown when reopened during its leave as unmountOnHide becomes true', async () => {
+    let finishLeave: (() => void) | undefined
+    const { root, element, isShown } = setup({ open: true, unmountOnHide: false }, {
+      onEnter: (_el: Element, done: () => void) => done(),
+      onLeave: (_el: Element, done: () => void) => finishLeave = done,
+    })
+    await vi.waitFor(() => expect(element()).not.toBeNull())
+    await flushPromises()
+
+    root.value = { open: false, unmountOnHide: false }
+    await vi.waitFor(() => expect(finishLeave).toBeDefined())
+    root.value = { open: true, unmountOnHide: true }
+    await flushPromises()
+    finishLeave!()
+    await flushPromises()
+    expect(element()).not.toBeNull()
+    expect(isShown()).toBe(true)
+  })
+})

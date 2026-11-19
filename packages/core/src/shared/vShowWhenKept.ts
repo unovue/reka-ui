@@ -11,6 +11,13 @@ const isKept = (binding: { arg?: string | null }) => binding.arg === KEPT
 const withoutTransition = <T extends VNode<any, any>>(vnode: T): T => ({ ...vnode, transition: null })
 
 /**
+ * On mount, the renderer runs the enter (or appear) hooks of a transition itself unless it is
+ * `persisted`, which a `<Transition>` only sets for a `v-show` child of its own. `vShow` must not
+ * run them a second time.
+ */
+const forMount = <T extends VNode<any, any>>(vnode: T): T => vnode.transition?.persisted ? vnode : withoutTransition(vnode)
+
+/**
  * `v-show` that only acts while its argument is `'kept'`, for content that a root keeps mounted
  * while closed (`unmountOnHide: false`): `v-show-when-kept:[kept ? 'kept' : null]="present"`.
  *
@@ -25,11 +32,11 @@ export const vShowWhenKept: ObjectDirective<VShowElement, boolean> & { name: str
   name: 'show',
   beforeMount(el, binding, vnode, prevVNode) {
     if (isKept(binding))
-      vShow.beforeMount!(el, binding, vnode, prevVNode)
+      vShow.beforeMount!(el, binding, forMount(vnode), prevVNode)
   },
   mounted(el, binding, vnode, prevVNode) {
     if (isKept(binding))
-      vShow.mounted!(el, binding, vnode, prevVNode)
+      vShow.mounted!(el, binding, forMount(vnode), prevVNode)
   },
   updated(el, binding, vnode, prevVNode) {
     const wasKept = prevVNode.dirs?.some(dir => dir.dir === vShowWhenKept && isKept(dir)) ?? false
@@ -41,8 +48,9 @@ export const vShowWhenKept: ObjectDirective<VShowElement, boolean> & { name: str
         vShow.updated!(el, binding, vnode, prevVNode)
     }
     else if (wasKept) {
-      // Stops acting: leave the content shown
-      vShow.updated!(el, { ...binding, value: true }, withoutTransition(vnode), prevVNode)
+      // Stops acting: leave the content shown. With the transition, so that showing it again
+      // first cancels a leave still running from when it was hidden, whose end would hide it.
+      vShow.updated!(el, { ...binding, value: true }, vnode, prevVNode)
     }
   },
   beforeUnmount(el, binding, vnode, prevVNode) {
