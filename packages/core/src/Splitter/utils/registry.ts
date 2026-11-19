@@ -80,6 +80,15 @@ export function registerResizeHandle(
     if (intersectingIndex >= 0)
       intersectingHandles.splice(intersectingIndex, 1)
 
+    // Without handles no listener is left to see the pointer go up, so a drag in progress
+    // would never end: the next handle to register would wait for a mouseup before its
+    // first mousedown counts
+    if (registeredResizeHandlers.size === 0) {
+      isPointerDown = false
+      intersectingHandles.splice(0)
+      panelConstraintFlags.clear()
+    }
+
     const count = ownerDocumentCounts.get(ownerDocument) ?? 1
     ownerDocumentCounts.set(ownerDocument, count - 1)
 

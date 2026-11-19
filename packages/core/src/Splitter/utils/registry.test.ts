@@ -1,3 +1,4 @@
+import type { SetResizeHandlerState } from './registry'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 import { registerResizeHandle } from './registry'
@@ -9,14 +10,14 @@ function createHandle(left: number) {
   return element
 }
 
-function register(element: HTMLElement) {
+function register(element: HTMLElement, setResizeHandlerState: SetResizeHandlerState = () => {}) {
   return registerResizeHandle(
     `handle-${element.getBoundingClientRect().left}`,
     element,
     ref('horizontal'),
     { coarse: 0, fine: 0 },
     ref(undefined),
-    () => {},
+    setResizeHandlerState,
   )
 }
 
@@ -40,5 +41,24 @@ describe('given a resize handle that unmounts while it is being dragged', () => 
 
     window.dispatchEvent(new MouseEvent('mouseup', { clientX: 5, clientY: 5 }))
     unregisterOther()
+  })
+
+  it('should let the next handle start a drag on its first mousedown when it was the only one', () => {
+    const unregisterDragged = register(createHandle(0))
+
+    document.body.dispatchEvent(new MouseEvent('mousedown', { clientX: 5, clientY: 5, bubbles: true }))
+    unregisterDragged()
+
+    const states: string[] = []
+    const unregisterNext = register(createHandle(0), (action, isActive) => {
+      states.push(`${action}:${isActive}`)
+    })
+
+    document.body.dispatchEvent(new MouseEvent('mousedown', { clientX: 5, clientY: 5, bubbles: true }))
+
+    expect(states).toContain('down:true')
+
+    window.dispatchEvent(new MouseEvent('mouseup', { clientX: 5, clientY: 5 }))
+    unregisterNext()
   })
 })
