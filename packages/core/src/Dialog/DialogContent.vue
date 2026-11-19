@@ -46,6 +46,11 @@ const { forwardRef } = useForwardExpose()
 const staysMounted = computed(
   () => props.forceMount || !rootContext.unmountOnHide.value,
 )
+// Hidden by `v-show` only when kept mounted by the root: a force-mounted content is
+// shown or hidden by the consumer. Without `v-show` at all otherwise, so that a
+// `<Transition>` wrapping the content runs its hooks once.
+const hidesWhenClosed = computed(() => !props.forceMount && !rootContext.unmountOnHide.value)
+const contentComponent = computed(() => rootContext.modal.value ? DialogContentModal : DialogContentNonModal)
 </script>
 
 <template>
@@ -54,23 +59,24 @@ const staysMounted = computed(
     :present="rootContext.open.value"
     :force-mount="staysMounted"
   >
-    <DialogContentModal
-      v-if="rootContext.modal.value"
-      v-show="forceMount || rootContext.unmountOnHide.value || present"
+    <component
+      :is="contentComponent"
+      v-if="hidesWhenClosed"
+      v-show="present"
       :ref="forwardRef"
-      :present="staysMounted ? present : true"
+      :present="present"
       v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
     >
       <slot />
-    </DialogContentModal>
-    <DialogContentNonModal
+    </component>
+    <component
+      :is="contentComponent"
       v-else
-      v-show="forceMount || rootContext.unmountOnHide.value || present"
       :ref="forwardRef"
       :present="staysMounted ? present : true"
       v-bind="{ ...props, ...emitsAsProps, ...$attrs }"
     >
       <slot />
-    </DialogContentNonModal>
+    </component>
   </Presence>
 </template>

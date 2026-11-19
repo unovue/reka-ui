@@ -4,7 +4,7 @@ import { createEvent, findByText, fireEvent, render } from '@testing-library/vue
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick, ref, Transition } from 'vue'
 import { sleep } from '@/test'
 import { DialogClose, DialogContent, DialogOverlay, DialogRoot, DialogTitle, DialogTrigger, injectDialogRootContext } from '.'
 
@@ -811,5 +811,32 @@ describe('given a Dialog that opens while another modal Dialog holds focus', () 
     innerOpen.value = true
     await closeInner()
     await vi.waitFor(() => expect(document.activeElement).toBe(byId('outer-input')))
+  })
+})
+
+describe.each([true, false])('given a Dialog content wrapped in a Vue Transition with modal=%s', (modal) => {
+  it('should run the enter and leave hooks once per open and close', async () => {
+    const open = ref(false)
+    const onEnter = vi.fn((_el: Element, done: () => void) => done())
+    const onLeave = vi.fn((_el: Element, done: () => void) => done())
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(DialogRoot, { open: open.value, modal }, () => [
+        h(DialogTrigger, () => OPEN_TEXT),
+        h(Transition, { onEnter, onLeave }, () => h(DialogContent, { 'aria-describedby': undefined }, () => h(DialogTitle, () => TITLE_TEXT))),
+      ]),
+    }), { attachTo: document.body, global: { stubs: { transition: false } } })
+
+    for (let cycle = 1; cycle <= 2; cycle++) {
+      open.value = true
+      await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull())
+      await flushPromises()
+      expect(onEnter).toHaveBeenCalledTimes(cycle)
+
+      open.value = false
+      await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeNull())
+      expect(onLeave).toHaveBeenCalledTimes(cycle)
+    }
+
+    wrapper.unmount()
   })
 })
