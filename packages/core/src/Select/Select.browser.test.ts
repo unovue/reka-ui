@@ -284,3 +284,83 @@ describe('given a Select used with a real pointer, in a real browser', () => {
     })
   })
 })
+
+const PLACEHOLDER = 'Pick a fruit'
+const FRUITS = ['Apple', 'Banana', 'Cherry']
+
+function mountPlaceholderSelect(defaultValue?: string, position: 'popper' | 'item-aligned' = 'popper') {
+  document.body.innerHTML = ''
+  const Fixture = defineComponent({
+    setup() {
+      return () => h(SelectRoot, { defaultValue }, () => [
+        h(SelectTrigger, { 'data-testid': 'trigger' }, () => h(SelectValue, { placeholder: PLACEHOLDER })),
+        h(SelectPortal, null, () => h(SelectContent, { position }, () => h(SelectViewport, null, () => FRUITS.map(fruit =>
+          h(SelectItem, { 'key': fruit, 'value': fruit, 'data-testid': `item-${fruit}` }, () => h(SelectItemText, null, () => fruit)),
+        )))),
+      ])
+    },
+  })
+  mount(Fixture, { attachTo: document.body })
+  return {
+    trigger: () => document.querySelector<HTMLElement>('[data-testid="trigger"]')!,
+    item: (fruit: string) => document.querySelector<HTMLElement>(`[data-testid="item-${fruit}"]`)!,
+  }
+}
+
+function recordTriggerText(trigger: HTMLElement) {
+  const seen: string[] = []
+  const push = () => {
+    const text = trigger.textContent?.trim() ?? ''
+    if (seen.at(-1) !== text)
+      seen.push(text)
+  }
+  push()
+
+  const observer = new MutationObserver(push)
+  observer.observe(trigger, { childList: true, subtree: true, characterData: true })
+
+  let frame = requestAnimationFrame(function tick() {
+    push()
+    frame = requestAnimationFrame(tick)
+  })
+
+  return {
+    seen,
+    stop: () => {
+      observer.disconnect()
+      cancelAnimationFrame(frame)
+    },
+  }
+}
+
+const settleTriggerText = () => new Promise(resolve => setTimeout(resolve, 100))
+
+describe.each(['popper', 'item-aligned'] as const)('given Select with a placeholder and position=%s, in a real browser', (position) => {
+  it('never shows the placeholder while the first selection closes the content', async () => {
+    const { trigger, item } = mountPlaceholderSelect(undefined, position)
+    await userEvent.click(trigger())
+    await expect.poll(() => item('Banana')).not.toBeNull()
+
+    const recorder = recordTriggerText(trigger())
+    await userEvent.click(item('Banana'))
+    await expect.poll(() => document.querySelector('[role="listbox"]')).toBeNull()
+    await settleTriggerText()
+    recorder.stop()
+
+    expect(recorder.seen).toEqual([PLACEHOLDER, 'Banana'])
+  })
+
+  it('never shows the placeholder while switching from one option to another', async () => {
+    const { trigger, item } = mountPlaceholderSelect('Apple', position)
+    await userEvent.click(trigger())
+    await expect.poll(() => item('Cherry')).not.toBeNull()
+
+    const recorder = recordTriggerText(trigger())
+    await userEvent.click(item('Cherry'))
+    await expect.poll(() => document.querySelector('[role="listbox"]')).toBeNull()
+    await settleTriggerText()
+    recorder.stop()
+
+    expect(recorder.seen).toEqual(['Apple', 'Cherry'])
+  })
+})
