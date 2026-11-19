@@ -4,10 +4,10 @@ import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { computed, ref, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
-import { createContext, useForwardExpose, useId } from '@/shared'
+import { createRekaContext, useForwardExpose, useId } from '@/shared'
 import { injectStepperRootContext } from './StepperRoot.vue'
 
-export const [injectStepperItemContext, provideStepperItemContext] = createContext<StepperItemContext>('StepperItem')
+export const [injectStepperItemContext, provideStepperItemContext] = createRekaContext<StepperItemContext>('StepperItem')
 
 export type StepperState = 'completed' | 'active' | 'inactive'
 

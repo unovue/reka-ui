@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ComputedRef, VNodeRef } from 'vue'
 import type { CollapsibleRootProps } from '../Collapsible'
-import { createContext, defineReactiveIds, useArrowNavigation, useForwardExpose } from '@/shared'
+import { createRekaContext, defineReactiveIds, useArrowNavigation, useForwardExpose } from '@/shared'
 import { injectAccordionRootContext } from './AccordionRoot.vue'
 
 enum AccordionItemState {
@@ -36,7 +36,7 @@ interface AccordionItemContext {
 }
 
 export const [injectAccordionItemContext, provideAccordionItemContext]
-  = createContext<AccordionItemContext>('AccordionItem')
+  = createRekaContext<AccordionItemContext>('AccordionItem')
 </script>
 
 <script setup lang="ts">

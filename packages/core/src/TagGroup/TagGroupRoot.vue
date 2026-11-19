@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, Direction } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
-import { createContext, getActiveElement, useDirection, useForwardExpose, useTypeahead } from '@/shared'
+import { createRekaContext, getActiveElement, useDirection, useForwardExpose, useTypeahead } from '@/shared'
 
 export type TagGroupSelectionMode = 'none' | 'single' | 'multiple'
 
@@ -69,7 +69,7 @@ interface TagGroupRootContext<T = AcceptableValue> {
 }
 
 export const [injectTagGroupRootContext, provideTagGroupRootContext]
-  = createContext<TagGroupRootContext>('TagGroupRoot')
+  = createRekaContext<TagGroupRootContext>('TagGroupRoot')
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">

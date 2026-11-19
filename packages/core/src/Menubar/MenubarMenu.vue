@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import { createContext, defineReactiveIds, useForwardExpose, useId } from '@/shared'
+import { createRekaContext, defineReactiveIds, useForwardExpose, useId } from '@/shared'
 
 export interface MenubarMenuProps {
   /**
@@ -20,7 +20,7 @@ type MenubarMenuContext = {
 }
 
 export const [injectMenubarMenuContext, provideMenubarMenuContext]
-  = createContext<MenubarMenuContext>('MenubarMenu')
+  = createRekaContext<MenubarMenuContext>('MenubarMenu')
 </script>
 
 <script setup lang="ts">

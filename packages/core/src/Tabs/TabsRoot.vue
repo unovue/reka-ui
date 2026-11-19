@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { DataOrientation, Direction, StringOrNumber } from '../shared/types'
 import type { PrimitiveProps } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
-import { createContext, useDirection, useForwardExpose, useId } from '@/shared'
+import { createRekaContext, useDirection, useForwardExpose, useId } from '@/shared'
 
 export interface TabsRootContext {
   modelValue: Ref<StringOrNumber | undefined>
@@ -58,7 +58,7 @@ export type TabsRootEmits<T extends StringOrNumber = StringOrNumber> = {
 }
 
 export const [injectTabsRootContext, provideTabsRootContext]
-  = createContext<TabsRootContext>('TabsRoot')
+  = createRekaContext<TabsRootContext>('TabsRoot')
 </script>
 
 <script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">

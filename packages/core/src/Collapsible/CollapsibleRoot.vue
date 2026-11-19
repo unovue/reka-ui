@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { toRefs } from 'vue'
-import { createContext, defineReactiveIds, useForwardExpose } from '@/shared'
+import { createRekaContext, defineReactiveIds, useForwardExpose } from '@/shared'
 
 export interface CollapsibleRootProps extends PrimitiveProps {
   /** The open state of the collapsible when it is initially rendered. <br> Use when you do not need to control its open state. */
@@ -30,7 +30,7 @@ interface CollapsibleRootContext {
 }
 
 export const [injectCollapsibleRootContext, provideCollapsibleRootContext]
-  = createContext<CollapsibleRootContext>('CollapsibleRoot')
+  = createRekaContext<CollapsibleRootContext>('CollapsibleRoot')
 </script>
 
 <script setup lang="ts">

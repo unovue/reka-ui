@@ -5,7 +5,7 @@ import type { AcceptableValue, FormFieldProps } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
 import { computed, shallowReactive, toRefs } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { createContext, useDirection, useFormControl } from '@/shared'
+import { createRekaContext, useDirection, useFormControl } from '@/shared'
 
 export interface CheckboxGroupRootProps<T = AcceptableValue> extends Pick<RovingFocusGroupProps, 'as' | 'asChild' | 'dir' | 'orientation' | 'loop'>, FormFieldProps {
   /** The value of the checkbox when it is initially rendered. Use when you do not need to control its value. */
@@ -51,7 +51,7 @@ interface CheckboxGroupRootContext {
 }
 
 export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
-  = createContext<CheckboxGroupRootContext>('CheckboxGroupRoot')
+  = createRekaContext<CheckboxGroupRootContext>('CheckboxGroupRoot')
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
