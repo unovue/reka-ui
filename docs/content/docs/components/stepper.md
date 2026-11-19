@@ -220,7 +220,7 @@ const stepper = useTemplateRef('stepper')
 
 ### Trigger name and current step
 
-`StepperTrigger` is named by the item's rendered `StepperTitle` and `StepperDescription`, in that order, through `aria-labelledby`. Only the parts that are rendered are referenced. Pass an `aria-label` to `StepperTrigger` to name it yourself; the description is then exposed through `aria-describedby`.
+`StepperTrigger` is named by the item's rendered `StepperTitle` and `StepperDescription`, in that order, through `aria-labelledby`. Only the parts that are rendered are referenced. Pass an `aria-label` or `aria-labelledby` to `StepperTrigger` to name it yourself; the description is then exposed through `aria-describedby`.
 
 The trigger of the current step has `aria-current="step"`. `StepperItem` keeps `aria-current="true"` for styling.
 

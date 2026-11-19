@@ -288,4 +288,48 @@ describe('stepper trigger accessibility', () => {
     expect(getByTestId('stepper-item-trigger-3')).toHaveAttribute('aria-current', 'step')
     expect(getByTestId('stepper-item-trigger-2')).not.toHaveAttribute('aria-current')
   })
+
+  it('keeps the description when a consumer aria-labelledby names the trigger', async () => {
+    const { getByTestId } = render(defineComponent({
+      components: parts,
+      template: `
+        <span id="external">External</span>
+        <StepperRoot :default-value="1">
+          <StepperItem :step="1">
+            <StepperTrigger data-testid="trigger" aria-labelledby="external">
+              <StepperTitle>Title</StepperTitle>
+              <StepperDescription>Desc</StepperDescription>
+            </StepperTrigger>
+          </StepperItem>
+        </StepperRoot>`,
+    }))
+    await nextTick()
+
+    const trigger = getByTestId('trigger')
+    expect(trigger).toHaveAttribute('aria-labelledby', 'external')
+    expect(trigger).toHaveAccessibleName('External')
+    expect(trigger).toHaveAccessibleDescription('Desc')
+  })
+
+  it('marks the current step even when it is completed', async () => {
+    const { getByTestId } = render(defineComponent({
+      components: parts,
+      template: `
+        <StepperRoot :model-value="2">
+          <StepperItem :step="1" data-testid="item-1">
+            <StepperTrigger data-testid="trigger-1">1</StepperTrigger>
+          </StepperItem>
+          <StepperItem :step="2" completed data-testid="item-2">
+            <StepperTrigger data-testid="trigger-2">2</StepperTrigger>
+          </StepperItem>
+        </StepperRoot>`,
+    }))
+    await nextTick()
+
+    expect(getByTestId('trigger-2')).toHaveAttribute('aria-current', 'step')
+    expect(getByTestId('item-2')).toHaveAttribute('aria-current', 'true')
+    expect(getByTestId('item-2')).toHaveAttribute('data-state', 'completed')
+    expect(getByTestId('trigger-1')).not.toHaveAttribute('aria-current')
+    expect(getByTestId('item-1')).not.toHaveAttribute('aria-current')
+  })
 })

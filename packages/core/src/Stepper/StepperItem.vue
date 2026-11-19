@@ -20,6 +20,8 @@ export interface StepperItemContext {
   hasDescription: Ref<boolean>
   step: Ref<number>
   state: Ref<StepperState>
+  /** Whether this is the current step (`step` equals the root value), whatever its `completed` state. */
+  isCurrent: Ref<boolean>
   disabled: Ref<boolean>
   isFocusable: Ref<boolean>
 }
@@ -66,6 +68,8 @@ const itemState = computed(() => {
   return 'inactive'
 })
 
+const isCurrent = computed(() => rootContext.modelValue.value === step.value)
+
 const isFocusable = computed(() => {
   if (disabled.value)
     return false
@@ -84,6 +88,7 @@ provideStepperItemContext({
   hasTitle,
   hasDescription,
   state: itemState,
+  isCurrent,
   disabled,
   step,
   isFocusable,
@@ -95,7 +100,7 @@ provideStepperItemContext({
     :ref="forwardRef"
     :as="as"
     :as-child="asChild"
-    :aria-current="itemState === 'active' ? 'true' : undefined"
+    :aria-current="isCurrent ? 'true' : undefined"
     :data-state="itemState"
     :disabled="disabled || !isFocusable ? '' : undefined"
     :data-disabled="disabled || !isFocusable ? '' : undefined"
