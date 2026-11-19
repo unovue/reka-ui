@@ -1,4 +1,4 @@
-# values (522)
+# values (523)
 AccordionContent
 AccordionHeader
 AccordionItem
@@ -422,6 +422,7 @@ convertToHsb
 convertToHsl
 convertToRgb
 createContext
+createFocusScopesStack
 createToastManager
 createValidityState
 getAreaBackgroundStyle
@@ -522,7 +523,7 @@ useStateMachine
 useToastManager
 withDefault
 
-# types (571)
+# types (573)
 AcceptableInputValue
 AcceptableValue
 AccordionContentProps
@@ -790,8 +791,10 @@ FieldValidationMode
 FieldValidityState
 FlattenedItem
 FocusOutsideEvent
+FocusScopeAPI
 FocusScopeEmits
 FocusScopeProps
+FocusScopesStack
 FormFieldProps
 FormRegisteredField
 FormRootContext

@@ -2,8 +2,8 @@ import type { VNode } from 'vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
-import { defineComponent, h, vShow, withDirectives } from 'vue'
-import { FocusScope } from '.'
+import { defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref, vShow, withDirectives } from 'vue'
+import { createFocusScopesStack, FocusScope } from '.'
 import { getTabbableCandidates } from './utils'
 
 type Wrapper = ReturnType<typeof mount>
@@ -50,6 +50,76 @@ function radio(name: string, value: string, { checked = false, ...attrs }: { che
 function button(id: string) {
   return h('button', { 'type': 'button', 'data-testid': id }, id)
 }
+
+// A third-party modal owns its own focus trap. Reka only needs to know when
+// that trap is active so its parent FocusScope does not reclaim focus from the
+// portaled modal.
+const ExternalModalFixture = defineComponent({
+  setup() {
+    const externalOpen = ref(false)
+    const externalDialog = ref<HTMLElement>()
+    const externalInput = ref<HTMLInputElement>()
+    const parentInput = ref<HTMLInputElement>()
+    const focusScopesStack = createFocusScopesStack()
+    let externalFocusScope: ReturnType<typeof focusScopesStack.add> | undefined
+
+    function keepFocusInExternalModal(event: FocusEvent) {
+      if (!externalOpen.value || !externalDialog.value)
+        return
+      if (!externalDialog.value.contains(event.target as Node))
+        externalInput.value?.focus()
+    }
+
+    function openExternalModal() {
+      externalOpen.value = true
+      externalFocusScope = focusScopesStack.add()
+
+      const dialog = document.createElement('div')
+      dialog.setAttribute('role', 'dialog')
+      dialog.dataset.testid = 'external-dialog'
+      const input = document.createElement('input')
+      input.dataset.testid = 'external-input'
+      const closeButton = document.createElement('button')
+      closeButton.dataset.testid = 'close-external'
+      closeButton.textContent = 'Close external modal'
+      closeButton.addEventListener('click', closeExternalModal)
+      dialog.append(input, closeButton)
+      document.body.append(dialog)
+      externalDialog.value = dialog
+      externalInput.value = input
+      input.focus()
+    }
+
+    async function closeExternalModal() {
+      externalOpen.value = false
+      if (externalFocusScope) {
+        focusScopesStack.remove(externalFocusScope)
+        externalFocusScope = undefined
+      }
+      externalDialog.value?.remove()
+      externalDialog.value = undefined
+      externalInput.value = undefined
+      await nextTick()
+      parentInput.value?.focus()
+    }
+
+    onMounted(() => document.addEventListener('focusin', keepFocusInExternalModal))
+    onBeforeUnmount(() => {
+      document.removeEventListener('focusin', keepFocusInExternalModal)
+      if (externalFocusScope)
+        focusScopesStack.remove(externalFocusScope)
+      externalDialog.value?.remove()
+    })
+
+    return () => h('div', [
+      h('button', { 'data-testid': 'background' }, 'Background'),
+      h(FocusScope, { asChild: true, loop: true, trapped: true }, () => h('div', { 'data-testid': 'parent-scope' }, [
+        h('input', { 'ref': parentInput, 'data-testid': 'parent-input' }),
+        h('button', { 'data-testid': 'open-external', 'onClick': openExternalModal }, 'Open external modal'),
+      ])),
+    ])
+  },
+})
 
 // A trapped, looping scope around `children`, last in the document after `outside`.
 function mountChildren(children: () => VNode[], outside: VNode[] = []) {
@@ -329,5 +399,35 @@ describe('getTabbableCandidates with native radio groups, in a real browser', ()
 
     const ids = getTabbableCandidates(get('scope')!).map(element => element.dataset.testid)
     expect(ids).toEqual(['button', 'a', 'b'])
+  })
+})
+
+describe('given an externally managed portaled modal, in a real browser', () => {
+  it('pauses the parent trap while the external trap is active', async () => {
+    wrapper = mount(ExternalModalFixture, { attachTo: document.body })
+
+    const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
+    const parentInput = get('parent-input') as HTMLInputElement
+    const externalInput = () => get('external-input') as HTMLInputElement
+
+    await expect.poll(() => document.activeElement).toBe(parentInput)
+
+    await userEvent.click(get('open-external')!)
+    await expect.poll(() => get('external-input')).not.toBeNull()
+    await expect.poll(() => document.activeElement).toBe(externalInput())
+
+    await userEvent.type(externalInput(), 'https://example.com')
+    expect(externalInput().value).toBe('https://example.com')
+
+    // The third-party trap continues to keep unrelated background content out.
+    await userEvent.click(get('background')!)
+    expect(document.activeElement).toBe(externalInput())
+
+    await userEvent.click(get('close-external')!)
+    await expect.poll(() => document.activeElement).toBe(parentInput)
+
+    // Once the external scope is removed, the parent trap is active again.
+    get('background')!.focus()
+    await expect.poll(() => document.activeElement).toBe(parentInput)
   })
 })

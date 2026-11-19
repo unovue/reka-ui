@@ -69,6 +69,37 @@ function handleMountFocus(event) {
 </template>
 ```
 
+### Coordinating an external modal
+
+When a third-party modal renders into a portal outside a Reka UI dialog, use
+the app-wide focus-scope stack while the external modal's own focus trap is
+active:
+
+```ts
+import { createFocusScopesStack } from 'reka-ui'
+
+const focusScopes = createFocusScopesStack()
+let externalScope: ReturnType<typeof focusScopes.add> | undefined
+
+function openExternalModal() {
+  externalScope = focusScopes.add()
+  // Open the external modal and let it move focus into its content.
+}
+
+function closeExternalModal() {
+  // Restore focus to the appropriate trigger before or after removing the
+  // external modal, according to that library's lifecycle.
+  if (externalScope) {
+    focusScopes.remove(externalScope)
+    externalScope = undefined
+  }
+}
+```
+
+The returned coordination scope pauses Reka UI traps; it does not trap focus,
+restore focus, or change pointer-event and accessibility isolation for the
+third-party portal. The external modal remains responsible for those concerns.
+
 <br>
 
 <Callout type="warning">
