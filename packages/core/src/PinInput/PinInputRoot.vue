@@ -141,6 +141,7 @@ providePinInputRootContext({
   >
     <slot :model-value="modelValue" />
 
+    <!-- An empty pattern rejects a nonempty partial PIN while preserving its value for form events. -->
     <VisuallyHiddenInput
       :id="id"
       as="input"
@@ -151,6 +152,7 @@ providePinInputRootContext({
       :name="name ?? ''"
       :disabled="disabled"
       :required="required"
+      :pattern="required && !isCompleted ? '' : undefined"
       @focus="Array.from(inputElements)?.[0]?.focus()"
     />
   </Primitive>
