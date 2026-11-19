@@ -30,7 +30,7 @@ import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
 import { getActiveElement, handleAndDispatchCustomEvent } from '@/shared'
 import { injectTreeRootContext } from './TreeRoot.vue'
-import { flatten } from './utils'
+import { getDescendants } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -69,13 +69,13 @@ const isSelected = computed(() => {
 
 const isIndeterminate = computed(() => {
   if (rootContext.bubbleSelect.value && hasChildren.value && Array.isArray(rootContext.modelValue.value)) {
-    const children = flatten<T, any>(rootContext.getChildren(props.value) || [])
+    const children = getDescendants(props.value, rootContext.getChildren)
 
     return children.some(child => rootContext.modelValue.value.find((v: any) => rootContext.getKey(v) === rootContext.getKey(child)))
       && !children.every(child => rootContext.modelValue.value.find((v: any) => rootContext.getKey(v) === rootContext.getKey(child)))
   }
   else if (rootContext.propagateSelect.value && isSelected.value && hasChildren.value && Array.isArray(rootContext.modelValue.value)) {
-    const children = flatten<T, any>(rootContext.getChildren(props.value) || [])
+    const children = getDescendants(props.value, rootContext.getChildren)
 
     return !children.every(child => rootContext.modelValue.value.find((v: any) => rootContext.getKey(v) === rootContext.getKey(child)))
   }

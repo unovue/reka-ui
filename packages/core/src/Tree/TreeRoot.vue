@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Direction } from '@/shared/types'
 import { createRekaContext, getActiveElement, useDirection, useSelectionBehavior, useTypeahead } from '@/shared'
-import { flatten } from './utils'
+import { getDescendants } from './utils'
 
 export interface TreeRootProps<T = Record<string, any>, U extends Record<string, any> = Record<string, any>, M extends boolean = false> extends PrimitiveProps {
   /** The controlled value of the tree. Can be binded with `v-model`. */
@@ -255,16 +255,16 @@ provideTreeRootContext({
     }
 
     if (props.propagateSelect && props.multiple && Array.isArray(modelValue.value)) {
-      const children = flatten<U, any>(props.getChildren(val) ?? [])
+      const children = getDescendants(val, props.getChildren)
 
       if (exist) {
         // remove all child
         modelValue.value = [...modelValue.value]
-          .filter(i => !children.some(child => props.getKey(i as any ?? {}) === props.getKey(child as any)))
+          .filter(i => !children.some(child => props.getKey(i as any ?? {}) === props.getKey(child)))
       }
       else {
         // select all child
-        modelValue.value = [...modelValue.value, ...children]
+        modelValue.value = [...modelValue.value, ...children] as U[]
       }
     }
   },

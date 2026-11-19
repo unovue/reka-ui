@@ -97,7 +97,7 @@ const isInputWithinContent = ref(false)
 onMounted(() => {
   if (rootContext.inputElement.value) {
     isInputWithinContent.value = currentElement.value?.contains(rootContext.inputElement.value) ?? false
-    if (props.present && isInputWithinContent.value) {
+    if (props.present && isInputWithinContent.value && rootContext.focusInputOnOpen.value) {
       rootContext.inputElement.value.focus()
     }
   }
@@ -109,7 +109,8 @@ watch(() => props.present, async (isPresent, wasPresent) => {
     // focuses the input on open, and a hidden input can't take focus. Focus it once it's shown.
     if (!wasPresent && isInputWithinContent.value) {
       await nextTick()
-      if (props.present)
+      // Read `focusOnOpen` after the tick: the input may get its new value in this same update.
+      if (props.present && rootContext.focusInputOnOpen.value)
         rootContext.inputElement.value?.focus()
     }
     return

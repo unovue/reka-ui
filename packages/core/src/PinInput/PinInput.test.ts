@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { h, nextTick, ref } from 'vue'
+import { PinInputInput, PinInputRoot } from '.'
 import PinInput from './story/_PinInput.vue'
 
 const originalGetComputedStyle = window.getComputedStyle
@@ -554,4 +555,58 @@ describe('give OTP PinInput', () => {
     await userEvent.tab({ shift: true })
     expect(document.activeElement).toBe(inputs[0].element)
   })
+})
+
+it('updates the slot count and navigation when inputs unmount and remount', async () => {
+  const keys = ref(['first', 'middle', 'last'])
+  const wrapper = mount(PinInputRoot, {
+    attachTo: document.body,
+    slots: { default: () => keys.value.map((key, index) => h(PinInputInput, { key, index })) },
+  })
+  try {
+    keys.value = ['first', 'last']
+    await nextTick()
+
+    const first = wrapper.get<HTMLInputElement>('input[aria-label="pin input 1 of 2"]')
+    first.element.focus()
+    await userEvent.keyboard('12')
+    expect(wrapper.emitted('complete')).toEqual([[['1', '2']]])
+
+    keys.value = ['first', 'middle', 'last']
+    await nextTick()
+    first.element.focus()
+    await userEvent.keyboard('3')
+    expect(document.activeElement).toBe(wrapper.get('input[aria-label="pin input 2 of 3"]').element)
+  }
+  finally {
+    wrapper.unmount()
+  }
+})
+
+it.each([2, 3])('checks only mounted values after removing populated slot %i', async (removedIndex) => {
+  const emptyIndex = removedIndex === 3 ? 2 : 3
+  const indices = ref([0, 1, 2, 3])
+  const initialValue = [0, 2, 3, 4]
+  const wrapper = mount(PinInputRoot, {
+    attachTo: document.body,
+    props: { type: 'number', defaultValue: initialValue },
+    slots: { default: () => indices.value.map(index => h(PinInputInput, { key: index, index })) },
+  })
+  try {
+    const inputs = wrapper.findAll<HTMLInputElement>('input:not([aria-hidden])')
+    await inputs[emptyIndex].trigger('keydown', { key: 'Delete' })
+    indices.value = indices.value.filter(index => index !== removedIndex)
+    await nextTick()
+
+    await inputs[1].setValue('5')
+    expect(wrapper.attributes('data-complete')).toBeUndefined()
+    expect(wrapper.emitted('complete')).toBeUndefined()
+
+    await inputs[emptyIndex].setValue('6')
+    expect(wrapper.attributes('data-complete')).toBe('')
+    expect(wrapper.emitted('complete')).toEqual([[[0, 5, 6]]])
+  }
+  finally {
+    wrapper.unmount()
+  }
 })
