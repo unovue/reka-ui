@@ -333,6 +333,34 @@ describe('given stacked tooltips whose content covers another trigger', () => {
   })
 })
 
+describe('given a controlled tooltip whose trigger is pressed', () => {
+  function mountControlled(open: boolean) {
+    const onUpdateOpen = vi.fn()
+    const wrapper = mount(() => h(TooltipProvider, () => h(
+      TooltipRoot,
+      { 'open': open, 'onUpdate:open': onUpdateOpen },
+      () => h(TooltipTrigger, () => 'trigger'),
+    )), { attachTo: document.body })
+    return { wrapper, onUpdateOpen }
+  }
+
+  it('should close the tooltip when it is open', async () => {
+    const { wrapper, onUpdateOpen } = mountControlled(true)
+    await wrapper.get('button').trigger('pointerdown')
+
+    expect(onUpdateOpen).toHaveBeenCalledExactlyOnceWith(false)
+    wrapper.unmount()
+  })
+
+  it('should not emit update:open when it is already closed', async () => {
+    const { wrapper, onUpdateOpen } = mountControlled(false)
+    await wrapper.get('button').trigger('pointerdown')
+
+    expect(onUpdateOpen).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+})
+
 describe('given a tooltip trigger inside a form', () => {
   function mountInForm(triggerProps: Record<string, unknown> = {}) {
     const onSubmit = vi.fn((event: Event) => event.preventDefault())

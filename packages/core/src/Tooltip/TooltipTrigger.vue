@@ -66,7 +66,7 @@ onBeforeUnmount(() => {
 })
 
 function handlePointerDown() {
-  if (rootContext.open && !rootContext.disableClosingTrigger.value) {
+  if (rootContext.open.value && !rootContext.disableClosingTrigger.value) {
     rootContext.onClose()
   }
   isPointerDown.value = true
