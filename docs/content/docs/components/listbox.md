@@ -335,6 +335,47 @@ function onInput(event: Event) {
 </template>
 ```
 
+### Keeping focus when the value changes
+
+By default, changing `modelValue` from code after mount highlights the selected item and moves focus to it. Set `keepFocusOnValueChange` when the value can change while the user is working elsewhere, for example typing in a text input. If focus is outside the listbox at that moment, the item is highlighted and becomes the tab stop, but focus stays where it is and the page is not scrolled to the listbox. If focus is already inside the listbox, focus follows the new highlight as usual. Clicking, keyboard navigation and typeahead are not affected.
+
+```vue line=22
+<script setup lang="ts">
+import { ListboxContent, ListboxItem, ListboxRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+const fruits = ['Apple', 'Banana', 'Cherry']
+const fruit = ref<string>()
+
+// Selects the fruit the user types, while focus stays in the input.
+function onInput(event: Event) {
+  const query = (event.target as HTMLInputElement).value.toLowerCase()
+  fruit.value = fruits.find(f => f.toLowerCase() === query) ?? fruit.value
+}
+</script>
+
+<template>
+  <input
+    aria-label="Fruit"
+    @input="onInput"
+  >
+  <ListboxRoot
+    v-model="fruit"
+    keep-focus-on-value-change
+  >
+    <ListboxContent>
+      <ListboxItem
+        v-for="item in fruits"
+        :key="item"
+        :value="item"
+      >
+        {{ item }}
+      </ListboxItem>
+    </ListboxContent>
+  </ListboxRoot>
+</template>
+```
+
 ## Accessibility
 
 Adheres to the [Listbox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).

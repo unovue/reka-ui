@@ -3,7 +3,7 @@ import type { ListboxRootEmits, ListboxRootProps } from '@/Listbox'
 import { useVModel } from '@vueuse/core'
 import { useForwardPropsEmits } from '@/shared'
 
-export interface ColorSwatchPickerRootProps extends Omit<ListboxRootProps, 'by'> {
+export interface ColorSwatchPickerRootProps extends Omit<ListboxRootProps, 'by' | 'keepFocusOnValueChange'> {
   defaultValue?: string | string[]
   modelValue?: string | string[]
 }
