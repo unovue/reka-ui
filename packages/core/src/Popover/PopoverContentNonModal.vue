@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { PopoverContentImplEmits, PopoverContentImplProps } from './PopoverContentImpl.vue'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { hasFocusLeftScope } from '@/FocusScope/utils'
-import { useForwardPropsEmits } from '@/shared'
+import { useForwardExpose, useForwardPropsEmits } from '@/shared'
 import PopoverContentImpl from './PopoverContentImpl.vue'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 
@@ -13,11 +13,27 @@ const hasInteractedOutsideRef = ref(false)
 const hasPointerDownOutsideRef = ref(false)
 
 const forwarded = useForwardPropsEmits(props, emits)
+const { forwardRef, currentElement } = useForwardExpose()
+
+// When `unmountOnHide` is `false` the content stays mounted on close, so
+// `close-auto-focus` never fires. Restore focus to the trigger manually once
+// the content is no longer present, unless the user interacted outside or
+// something else took focus meanwhile, e.g. a layer opened while this one was
+// animating out.
+watch(() => props.present, (isPresent, wasPresent) => {
+  if (!isPresent && wasPresent) {
+    if (!hasInteractedOutsideRef.value && !hasFocusLeftScope(currentElement.value ?? null))
+      rootContext.triggerElement.value?.focus()
+    hasInteractedOutsideRef.value = false
+    hasPointerDownOutsideRef.value = false
+  }
+})
 </script>
 
 <template>
   <PopoverContentImpl
     v-bind="forwarded"
+    :ref="forwardRef"
     :trap-focus="false"
     :disable-outside-pointer-events="false"
     @close-auto-focus="

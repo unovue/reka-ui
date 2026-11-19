@@ -3,7 +3,7 @@ import type {
   PopoverContentImplEmits,
   PopoverContentImplProps,
 } from './PopoverContentImpl.vue'
-import { defineAsyncComponent } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 
 const PopoverContentModal = defineAsyncComponent({
   loader: () => import('./PopoverContentModal.vue'),
@@ -26,7 +26,6 @@ export interface PopoverContentProps extends PopoverContentImplProps {
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Presence } from '@/Presence'
 import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
@@ -41,7 +40,15 @@ const { forwardRef } = useForwardExpose()
 
 rootContext.contentId ||= useId(undefined, 'reka-popover-content')
 
+// The node stays in the DOM across open/close when force-mounted, or when the
+// root opts out of unmounting. Only then does the child need the real presence
+// state, since no physical unmount happens to end the layer's side effects.
 const staysMounted = computed(() => props.forceMount || !rootContext.unmountOnHide.value)
+// Hidden by `v-show` only when kept mounted by the root: a force-mounted content is
+// shown or hidden by the consumer. Without `v-show` at all otherwise, so that a
+// `<Transition>` wrapping the content runs its hooks once.
+const hidesWhenClosed = computed(() => !props.forceMount && !rootContext.unmountOnHide.value)
+const contentComponent = computed(() => rootContext.modal.value ? PopoverContentModal : PopoverContentNonModal)
 </script>
 
 <template>
@@ -50,23 +57,24 @@ const staysMounted = computed(() => props.forceMount || !rootContext.unmountOnHi
     :present="rootContext.open.value"
     :force-mount="staysMounted"
   >
-    <PopoverContentModal
-      v-if="rootContext.modal.value"
-      v-show="forceMount || rootContext.unmountOnHide.value || present"
+    <component
+      :is="contentComponent"
+      v-if="hidesWhenClosed"
+      v-show="present"
       v-bind="forwarded"
       :ref="forwardRef"
-      :present="staysMounted ? present : true"
+      :present="present"
     >
       <slot />
-    </PopoverContentModal>
-    <PopoverContentNonModal
+    </component>
+    <component
+      :is="contentComponent"
       v-else
-      v-show="forceMount || rootContext.unmountOnHide.value || present"
       v-bind="forwarded"
       :ref="forwardRef"
       :present="staysMounted ? present : true"
     >
       <slot />
-    </PopoverContentNonModal>
+    </component>
   </Presence>
 </template>

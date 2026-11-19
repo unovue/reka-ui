@@ -34,7 +34,6 @@ interface PopoverContentImplPrivateProps extends PopoverContentImplProps {
 </script>
 
 <script setup lang="ts">
-import { watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { PopperContent } from '@/Popper'
@@ -51,24 +50,6 @@ const rootContext = injectPopoverRootContext()
 useContentId(rootContext, currentElement)
 useContentMounted(rootContext, currentElement)
 useFocusGuards()
-
-// Kept-mounted content (`unmountOnHide: false`) never unmounts its FocusScope,
-// so synthesize `closeAutoFocus` when it hides; consumers restore focus as usual.
-watch(() => props.present, (present, wasPresent) => {
-  if (present || !wasPresent)
-    return
-  emits('closeAutoFocus', new CustomEvent('focusScope.autoFocusOnUnmount', { cancelable: true }))
-})
-
-// Kept-mounted content (`unmountOnHide: false`) already restored focus when it
-// was hidden, so removing it later (e.g. `v-if`) must not move focus again.
-function handleUnmountAutoFocus(event: Event) {
-  if (!props.present) {
-    event.preventDefault()
-    return
-  }
-  emits('closeAutoFocus', event)
-}
 </script>
 
 <template>
@@ -78,7 +59,7 @@ function handleUnmountAutoFocus(event: Event) {
     :trapped="trapFocus"
     :present="present"
     @mount-auto-focus="emits('openAutoFocus', $event)"
-    @unmount-auto-focus="handleUnmountAutoFocus"
+    @unmount-auto-focus="emits('closeAutoFocus', $event)"
   >
     <DismissableLayer
       as-child
