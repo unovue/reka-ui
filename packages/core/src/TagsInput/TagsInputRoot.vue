@@ -126,13 +126,11 @@ function handleRemoveItem(element: HTMLElement) {
 
   const { tag, modelIndex } = item.value
   const values = currentModelValue.value
-  if (modelIndex !== undefined) {
-    if (Number.isInteger(modelIndex) && modelIndex >= 0 && modelIndex < values.length && isEqual(values[modelIndex], tag))
-      handleRemoveTag(modelIndex)
-    return
-  }
+  if (Number.isInteger(modelIndex) && modelIndex >= 0 && modelIndex < values.length && isEqual(values[modelIndex], tag))
+    return handleRemoveTag(modelIndex)
 
-  // Without explicit indices, equal tags are matched in render order, including disabled tags.
+  // Without a matching index, equal tags are matched in render order, including disabled tags.
+  // A stale or wrong `modelIndex` falls back here, so the delete still removes an equal tag.
   const matchingItems = getItems(true).filter(other => isEqual(other.value.tag, tag))
   const occurrence = matchingItems.indexOf(item)
   let match = 0

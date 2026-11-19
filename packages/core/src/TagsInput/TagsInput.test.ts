@@ -439,6 +439,24 @@ describe('given duplicate tags', () => {
     wrapper.unmount()
   })
 
+  it('falls back to the rendered occurrence when the model index does not match', async () => {
+    const wrapper = mount(defineComponent({
+      components: { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputRoot },
+      template: `<TagsInputRoot v-slot="{ modelValue }" :default-value="['a', 'b', 'c']">
+        <TagsInputItem v-for="(value, index) in modelValue.slice(1)" :key="value" :value="value" :model-index="index">
+          <TagsInputItemDelete />
+        </TagsInputItem>
+        <TagsInputInput />
+      </TagsInputRoot>`,
+    }), { attachTo: document.body })
+
+    await nextTick()
+    await wrapper.findAll('button')[1].trigger('click')
+
+    expect(wrapper.getComponent(TagsInputRoot).emitted('update:modelValue')).toEqual([[['a', 'b']]])
+    wrapper.unmount()
+  })
+
   it.each(['click', 'Backspace'])('removes the selected occurrence with %s', async (action) => {
     const wrapper = mount(defineComponent({
       components: { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot },
