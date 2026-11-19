@@ -5,7 +5,7 @@ import type {
   Orientation,
 } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useDirection } from '@/shared'
+import { createRekaContext, useDirection } from '@/shared'
 
 export interface RovingFocusGroupProps extends PrimitiveProps {
   /**
@@ -53,7 +53,7 @@ interface RovingContext {
 }
 
 export const [injectRovingFocusGroupContext, provideRovingFocusGroupContext]
-  = createContext<RovingContext>('RovingFocusGroup')
+  = createRekaContext<RovingContext>('RovingFocusGroup')
 </script>
 
 <script setup lang="ts">

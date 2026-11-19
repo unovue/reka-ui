@@ -7,7 +7,7 @@ import type { DateStep, Formatter } from '@/shared'
 import type { Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { hasTime, isBefore, isSameDateSelection, isSameDateValue } from '@/date'
-import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
+import { createRekaContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   createContent,
   getDefaultDate,
@@ -86,7 +86,7 @@ export type DateFieldRootEmits = {
 }
 
 export const [injectDateFieldRootContext, provideDateFieldRootContext]
-  = createContext<DateFieldRootContext>('DateFieldRoot')
+  = createRekaContext<DateFieldRootContext>('DateFieldRoot')
 </script>
 
 <script setup lang="ts">

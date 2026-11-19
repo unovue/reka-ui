@@ -28,6 +28,8 @@ interface PopoverContentImplPrivateProps extends PopoverContentImplProps {
    * @defaultValue false
    */
   trapFocus?: FocusScopeProps['trapped']
+  /** Internal: whether a kept-mounted content is currently shown. */
+  present?: boolean
 }
 </script>
 
@@ -38,10 +40,10 @@ import { PopperContent } from '@/Popper'
 import { useContentId, useContentMounted, useFocusGuards, useForwardExpose, useForwardProps } from '@/shared'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 
-const props = defineProps<PopoverContentImplPrivateProps>()
+const props = withDefaults(defineProps<PopoverContentImplPrivateProps>(), { present: true })
 const emits = defineEmits<PopoverContentImplEmits>()
 
-const forwarded = useForwardProps(reactiveOmit(props, 'trapFocus', 'disableOutsidePointerEvents'))
+const forwarded = useForwardProps(reactiveOmit(props, 'trapFocus', 'disableOutsidePointerEvents', 'present'))
 const { forwardRef, currentElement } = useForwardExpose()
 
 const rootContext = injectPopoverRootContext()
@@ -55,11 +57,13 @@ useFocusGuards()
     as-child
     loop
     :trapped="trapFocus"
+    :present="present"
     @mount-auto-focus="emits('openAutoFocus', $event)"
     @unmount-auto-focus="emits('closeAutoFocus', $event)"
   >
     <DismissableLayer
       as-child
+      :present="present"
       :disable-outside-pointer-events="disableOutsidePointerEvents"
       @pointer-down-outside="emits('pointerDownOutside', $event)"
       @interact-outside="emits('interactOutside', $event)"
@@ -72,6 +76,7 @@ useFocusGuards()
         :id="rootContext.contentId"
         :ref="forwardRef"
         scope="popover"
+        :present="present"
         :data-state="rootContext.open.value ? 'open' : 'closed'"
         :aria-labelledby="rootContext.triggerId"
         :style="{

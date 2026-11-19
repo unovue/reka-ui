@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { ListboxRootProps } from '@/Listbox'
 import type { AcceptableValue, GenericComponentInstance } from '@/shared/types'
 import { usePrimitiveElement } from '@/Primitive'
-import { createContext, defineReactiveIds, useDirection, useFilter } from '@/shared'
+import { createRekaContext, defineReactiveIds, useDirection, useFilter } from '@/shared'
 
 type ComboboxRootContext<T> = {
   modelValue: Ref<T | Array<T> | undefined>
@@ -39,7 +39,7 @@ type ComboboxRootContext<T> = {
 }
 
 export const [injectComboboxRootContext, provideComboboxRootContext]
-  = createContext<ComboboxRootContext<AcceptableValue>>('ComboboxRoot')
+  = createRekaContext<ComboboxRootContext<AcceptableValue>>('ComboboxRoot')
 
 export type ComboboxRootEmits<T = AcceptableValue, ClearValue = never> = {
   /** Event handler called when the value changes. */
