@@ -638,6 +638,37 @@ const selectedPerson = ref<string | undefined>('Durward Reynolds')
 </template>
 ```
 
+### Keep focus on open
+
+By default, opening the combobox moves focus to `ComboboxInput`, including when the input is placed inside `ComboboxContent`. This is separate from `autoFocus`, which only focuses the input when it mounts.
+
+Set `focus-on-open` to `false` to leave focus where it is when the combobox opens, for example to keep the on-screen keyboard closed on touch devices. The user can still focus the input to type and navigate, and pressing <kbd>ArrowDown</kbd> or <kbd>ArrowUp</kbd> on a focused `ComboboxTrigger` moves focus to it.
+
+```vue line=10
+<script setup lang="ts">
+import { ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from 'reka-ui'
+</script>
+
+<template>
+  <ComboboxRoot>
+    <ComboboxTrigger>Select a fruit</ComboboxTrigger>
+    <ComboboxPortal>
+      <ComboboxContent>
+        <ComboboxInput :focus-on-open="false" placeholder="Search..." />
+        <ComboboxViewport>
+          <ComboboxItem value="Apple">
+            Apple
+          </ComboboxItem>
+          <ComboboxItem value="Banana">
+            Banana
+          </ComboboxItem>
+        </ComboboxViewport>
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>
+</template>
+```
+
 ### Virtualized combobox with working filtering
 
 Combobox items **must** be filtered manually before passing them over to the virtualizer.

@@ -19,6 +19,8 @@ type ComboboxRootContext<T> = {
   contentId: string
   inputElement: Ref<HTMLInputElement | undefined>
   onInputElementChange: (el: HTMLInputElement) => void
+  /** Whether opening the combobox moves focus to the input. Set by `ComboboxInput`'s `focusOnOpen`. */
+  focusInputOnOpen: Ref<boolean>
   triggerElement: Ref<HTMLElement | undefined>
   onTriggerElementChange: (el: HTMLElement) => void
   highlightedElement: Ref<HTMLElement | undefined>
@@ -162,7 +164,8 @@ async function onOpenChange(val: boolean) {
     isOpeningInternally = false
     primitiveElement.value?.highlightSelected()
     isUserInputted.value = true
-    inputElement.value?.focus()
+    if (focusInputOnOpen.value)
+      inputElement.value?.focus()
   }
   else {
     isUserInputted.value = false
@@ -177,6 +180,7 @@ const resetSearchTerm = createEventHook()
 const isUserInputted = ref(false)
 const isVirtual = ref(false)
 const inputElement = ref<HTMLInputElement>()
+const focusInputOnOpen = ref(true)
 const triggerElement = ref<HTMLElement>()
 
 const highlightedElement = computed(() => primitiveElement.value?.highlightedElement ?? undefined)
@@ -287,6 +291,7 @@ provideComboboxRootContext(defineReactiveIds({
   inputElement,
   highlightedElement,
   onInputElementChange: val => inputElement.value = val,
+  focusInputOnOpen,
   triggerElement,
   onTriggerElementChange: val => triggerElement.value = val,
   parentElement,
