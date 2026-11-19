@@ -11,6 +11,12 @@ it.each(constants)('it should export %s', (component) => {
   expect(exportedComponents).toContain(component)
 })
 
+it('registers public components for auto-import', () => {
+  const registered = new Set<string>(Object.values(components).flat())
+  const componentNames = Object.keys(RekaUI).filter(name => /^[A-Z]/.test(name))
+  expect(componentNames.filter(name => !registered.has(name))).toEqual([])
+})
+
 /**
  * Every name the entry exports, type-only ones included. Types do not exist at runtime, so the
  * names are read from the module's export table through the TypeScript compiler. Only binding is
