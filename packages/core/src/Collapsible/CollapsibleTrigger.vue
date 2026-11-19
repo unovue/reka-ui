@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { disabledAttr, useForwardExpose } from '@/shared'
 
 export interface CollapsibleTriggerProps extends PrimitiveProps {}
 </script>
@@ -26,7 +26,7 @@ const rootContext = injectCollapsibleRootContext()
     :aria-expanded="rootContext.open.value"
     :data-state="rootContext.open.value ? 'open' : 'closed'"
     :data-disabled="rootContext.disabled?.value ? '' : undefined"
-    :disabled="rootContext.disabled?.value || undefined"
+    :disabled="disabledAttr(rootContext.disabled?.value, props.as, props.asChild)"
     @click="rootContext.onOpenToggle"
   >
     <slot />

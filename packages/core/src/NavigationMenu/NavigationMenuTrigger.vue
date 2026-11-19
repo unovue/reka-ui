@@ -2,7 +2,7 @@
 import type { ComponentPublicInstance } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { useForwardExpose, useRenderedContentId, useTriggerId } from '@/shared'
+import { disabledAttr, useForwardExpose, useRenderedContentId, useTriggerId } from '@/shared'
 
 export interface NavigationMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -148,7 +148,7 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
     <Primitive
       :id="itemContext.triggerId"
       :ref="forwardRef"
-      :disabled="disabled || undefined"
+      :disabled="disabledAttr(disabled, props.as, props.asChild)"
       :data-disabled="disabled ? '' : undefined"
       :data-state="getOpenState(open)"
       data-navigation-menu-trigger

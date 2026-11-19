@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import type { FormFieldProps } from '@/shared/types'
-import { useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
+import { disabledAttr, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 import { injectToggleGroupRootContext } from '@/ToggleGroup/ToggleGroupRoot.vue'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
@@ -90,7 +90,7 @@ const isFormControl = useFormControl(currentElement)
     :aria-pressed="modelValue"
     :data-state="dataState"
     :data-disabled="disabled ? '' : undefined"
-    :disabled="disabled || undefined"
+    :disabled="disabledAttr(disabled, props.as, props.asChild)"
     v-bind="{ ...scopeIdAttrs, ...$attrs }"
     @click="togglePressed"
   >

@@ -2,7 +2,7 @@ import type { VueWrapper } from '@vue/test-utils'
 import type { Component, VNode } from 'vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
-import { h } from 'vue'
+import { defineComponent, h } from 'vue'
 import { AccordionItem, AccordionRoot, AccordionTrigger } from '@/Accordion'
 import { CalendarNext, CalendarPrev, CalendarRoot } from '@/Calendar'
 import { CheckboxRoot } from '@/Checkbox'
@@ -32,16 +32,29 @@ import { YearRangePickerNext, YearRangePickerPrev, YearRangePickerRoot } from '@
 
 // Parts that render a `<button>` by default bind `disabled`. Rendered as an element without a
 // `disabled` DOM property, an enabled part used to get `disabled="false"`, which `[disabled]` matches.
+// A tag or component for `as`, or a child to render with `asChild`
+type As = string | Component | { asChild: () => VNode }
+
 interface Case {
   name: string
-  render: (disabled: boolean, as: string) => VNode
+  render: (disabled: boolean, as: As) => VNode
 }
 
 const target = { 'data-testid': 'target' }
 
-function part(component: Component, as: string, props: Record<string, unknown> = {}) {
+function part(component: Component, as: As, props: Record<string, unknown> = {}) {
+  if (typeof as === 'object' && 'asChild' in as)
+    return h(component as any, { ...target, ...props, asChild: true }, as.asChild)
   return h(component as any, { ...target, as, ...props }, () => 'part')
 }
+
+// A component whose own `disabled` defaults to `true`: it must receive `false` from an enabled part
+const DisabledByDefault = defineComponent({
+  props: { disabled: { type: Boolean, default: true } },
+  setup(props, { slots }) {
+    return () => h('div', { 'data-component-disabled': String(props.disabled) }, slots.default?.())
+  },
+})
 
 // The part takes `disabled` itself
 function own(name: string, component: Component, wrap: (child: VNode) => VNode = child => child): Case {
@@ -122,7 +135,7 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-function render(c: Case, disabled: boolean, as: string) {
+function render(c: Case, disabled: boolean, as: As) {
   const wrapper = mount({ render: () => c.render(disabled, as) }, { attachTo: document.body })
   mounted.push(wrapper)
   const el = document.querySelector('[data-testid="target"]')!
@@ -152,5 +165,28 @@ describe.each(cases)('$name', (c) => {
     const disabled = render(c, true, 'button')
     expect((disabled.el as HTMLButtonElement).disabled).toBe(true)
     expect(disabled.el.getAttribute('disabled')).toBe('')
+  })
+
+  it('passes false to a component given as `as` when enabled', () => {
+    expect(render(c, false, DisabledByDefault).el.getAttribute('data-component-disabled')).toBe('false')
+  })
+
+  it('passes true to a component given as `as` when disabled', () => {
+    expect(render(c, true, DisabledByDefault).el.getAttribute('data-component-disabled')).toBe('true')
+  })
+
+  it('passes false to a component child with `asChild` when enabled', () => {
+    const { el } = render(c, false, { asChild: () => h(DisabledByDefault, () => 'part') })
+    expect(el.getAttribute('data-component-disabled')).toBe('false')
+  })
+
+  it('omits the disabled attribute on a plain child with `asChild` when enabled', () => {
+    const { el } = render(c, false, { asChild: () => h('span', 'part') })
+    expect(el.tagName).toBe('SPAN')
+    expect(el.hasAttribute('disabled')).toBe(false)
+  })
+
+  it('keeps disabled="true" on a plain child with `asChild` when disabled', () => {
+    expect(render(c, true, { asChild: () => h('span', 'part') }).el.getAttribute('disabled')).toBe('true')
   })
 })

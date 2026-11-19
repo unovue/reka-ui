@@ -6,7 +6,7 @@ export interface AccordionTriggerProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { CollapsibleTrigger } from '@/Collapsible'
-import { useId, useTriggerId } from '@/shared'
+import { disabledAttr, useId, useTriggerId } from '@/shared'
 import { injectAccordionItemContext } from './AccordionItem.vue'
 
 import { injectAccordionRootContext } from './AccordionRoot.vue'
@@ -38,7 +38,7 @@ function changeItem() {
     :data-disabled="itemContext.dataDisabled.value"
     :data-orientation="rootContext.orientation"
     :data-state="itemContext.dataState.value"
-    :disabled="itemContext.disabled.value || undefined"
+    :disabled="disabledAttr(itemContext.disabled.value, props.as, props.asChild)"
     @click="changeItem"
   >
     <slot />

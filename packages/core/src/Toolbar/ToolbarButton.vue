@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { disabledAttr, useForwardExpose } from '@/shared'
 
 export interface ToolbarButtonProps extends PrimitiveProps {
   disabled?: boolean
@@ -24,7 +24,7 @@ const { forwardRef } = useForwardExpose()
       :ref="forwardRef"
       :type="as === 'button' ? 'button' : undefined"
       v-bind="props"
-      :disabled="disabled || undefined"
+      :disabled="disabledAttr(disabled, props.as, props.asChild)"
     >
       <slot />
     </Primitive>

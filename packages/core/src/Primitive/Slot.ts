@@ -27,6 +27,11 @@ export const Slot = defineComponent({
         ? mergeProps(attrs, firstNonCommentChildren.props)
         : attrs
       const cloned = cloneVNode({ ...firstNonCommentChildren, props: {} }, mergedProps)
+      // A part passes `disabled: false` through when it can't see the element (`disabledAttr`).
+      // On a plain tag without the property it would render `disabled="false"`, so drop it there.
+      // `cloneVNode` merged the props into a new object, so this doesn't touch `attrs`
+      if (cloned.props!.disabled === false && typeof cloned.type === 'string')
+        cloned.props!.disabled = undefined
 
       if (children.length === 1)
         return cloned

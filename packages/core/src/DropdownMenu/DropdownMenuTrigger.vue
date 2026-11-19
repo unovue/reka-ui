@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose, useId, useRenderedContentId, useTriggerId } from '@/shared'
+import { disabledAttr, useForwardExpose, useId, useRenderedContentId, useTriggerId } from '@/shared'
 
 export interface DropdownMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -44,7 +44,7 @@ const contentId = useRenderedContentId(rootContext, injectMenuContext())
       :aria-expanded="rootContext.open.value"
       :aria-controls="rootContext.open.value ? contentId : undefined"
       :data-disabled="disabled ? '' : undefined"
-      :disabled="disabled || undefined"
+      :disabled="disabledAttr(disabled, props.as, props.asChild)"
       :data-state="rootContext.open.value ? 'open' : 'closed'"
       @click="
         async (event: MouseEvent) => {

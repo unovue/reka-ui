@@ -12,7 +12,7 @@ import { computed, onBeforeUnmount, onMounted, toRaw, useAttrs } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { PopperAnchor } from '@/Popper'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose, useId, useRenderedContentId, useTypeahead } from '@/shared'
+import { disabledAttr, useForwardExpose, useId, useRenderedContentId, useTypeahead } from '@/shared'
 import {
   injectSelectRootContext,
 } from './SelectRoot.vue'
@@ -217,7 +217,7 @@ function onTriggerKeyDown(event: KeyboardEvent) {
       :aria-expanded="rootContext.open.value || false"
       :aria-required="rootContext.required?.value"
       aria-autocomplete="none"
-      :disabled="isDisabled || undefined"
+      :disabled="disabledAttr(isDisabled, props.as, props.asChild)"
       :dir="rootContext?.dir.value"
       :data-state="rootContext?.open.value ? 'open' : 'closed'"
       :data-disabled="isDisabled ? '' : undefined"

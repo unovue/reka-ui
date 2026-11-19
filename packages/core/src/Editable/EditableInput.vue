@@ -8,7 +8,7 @@ export interface EditableInputProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, watch } from 'vue'
-import { useKbd } from '@/shared'
+import { disabledAttr, useKbd } from '@/shared'
 import { injectEditableRootContext } from './EditableRoot.vue'
 
 const props = withDefaults(defineProps<EditableInputProps>(), {
@@ -56,7 +56,7 @@ function handleSubmitKeyDown(event: KeyboardEvent) {
     v-bind="props"
     :value="context.inputValue.value"
     :placeholder="placeholder"
-    :disabled="disabled || undefined"
+    :disabled="disabledAttr(disabled, props.as, props.asChild)"
     :maxlength="context.maxLength.value"
     :data-disabled="disabled ? '' : undefined"
     :data-readonly="context.readonly.value ? '' : undefined"
