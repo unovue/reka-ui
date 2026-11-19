@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { commands, userEvent } from 'vitest/browser'
 import { defineComponent, h, ref, unref } from 'vue'
+import { settled } from '@/test/scroll'
 import { CarouselAutoplayToggle, CarouselContent, CarouselIndicator, CarouselIndicatorGroup, CarouselItem, CarouselNext, CarouselPrevious, CarouselRoot, CarouselViewport } from '.'
 
 const SIZE = 200
@@ -46,16 +47,6 @@ async function mouseAway() {
   await userEvent.hover(document.querySelector<HTMLElement>('[data-testid="outside"]')!)
 }
 
-/** Waits until the scroll position holds for 300ms. */
-async function settled(scroll: () => number) {
-  const readings: number[] = []
-  await expect.poll(() => {
-    readings.push(scroll())
-    const last = readings.slice(-4)
-    return last.length === 4 && last.every(value => Math.abs(value - last[0]) < 0.5)
-  }, { interval: 100, timeout: 6000 }).toBe(true)
-}
-
 async function measured(viewport: HTMLElement, index = 0) {
   await expect.poll(() => viewport.querySelector(`[data-index="${index}"]`)?.hasAttribute('data-in-view')).toBe(true)
 }
@@ -85,7 +76,7 @@ describe('given a Carousel dragged in a real browser', () => {
     const box = viewport.getBoundingClientRect()
     const y = box.top + 40
     pointerGesture(viewport, 'pen', [[box.right - 20, y], [box.right - 60, y], [box.left + 40, y]])
-    await settled(scroll)
+    await settled(viewport)
     expect(model.value).toBe(1)
     expect(scroll()).toBeCloseTo(SIZE, 0)
   })
@@ -109,7 +100,7 @@ describe('given a Carousel dragged in a real browser', () => {
     const y = box.top + 40
     await commands.mouseDrag(box.right - 10, y, box.left + 10, y, 3)
     const released = scroll()
-    await settled(scroll)
+    await settled(viewport)
     expect(scroll()).toBeGreaterThan(released + 10)
     expect(viewport.style.scrollSnapType).toBe('none')
     expect(model.value).toBe(Math.round(scroll() / SIZE))
@@ -121,7 +112,7 @@ describe('given a Carousel dragged in a real browser', () => {
     const box = viewport.getBoundingClientRect()
     const y = box.top + 40
     await commands.mouseDrag(box.right - 5, y, box.left + 5, y, 2)
-    await settled(scroll)
+    await settled(viewport)
     expect(model.value).toBeGreaterThanOrEqual(2)
     expect(scroll()).toBeCloseTo(model.value * SIZE, 0)
   })
@@ -132,7 +123,7 @@ describe('given a Carousel paged with the wheel in a real browser', () => {
     const prevented: boolean[] = []
     const { viewport, model, scroll } = mountCarousel({ wheel: true, defaultValue: COUNT - 1 })
     await measured(viewport, COUNT - 1)
-    await settled(scroll)
+    await settled(viewport)
     document.addEventListener('wheel', event => prevented.push(event.defaultPrevented))
     const box = viewport.getBoundingClientRect()
     await commands.wheelAt(box.left + 50, box.top + 50, 100)
@@ -253,16 +244,16 @@ describe('given an auto-scrolling Carousel in a real browser', () => {
     await measured(viewport)
     await userEvent.click(get('next'))
     await expect.poll(() => playing.value).toBe(false)
-    await settled(scroll)
+    await settled(viewport)
     expect(viewport.style.scrollSnapType).toBe('x mandatory')
     expect(scroll() % SIZE).toBeCloseTo(0, 0)
   })
 
   it('stops at the end of a track that does not loop', async () => {
-    const { scroll, playing } = mountCarousel({ autoScroll: { speed: 3000 } })
+    const { viewport, scroll, playing } = mountCarousel({ autoScroll: { speed: 3000 } })
     await mouseAway()
     await expect.poll(() => playing.value, { timeout: 3000 }).toBe(false)
-    await settled(scroll)
+    await settled(viewport)
     expect(scroll()).toBeCloseTo(SIZE * (COUNT - 1), 0)
   })
 })
@@ -274,13 +265,13 @@ describe('given a Carousel holding the keyboard focus in a real browser', () => 
   // focus to Next. `.focus()` because macOS WebKit doesn't focus a button on click.
   it.each([false, true])('gives the focus to the slide that comes in when the focused one pages away (fade: %s)', async (fade) => {
     const index = ref(0)
-    const { get, scroll } = mountCarousel({ fade, modelValue: index }, button)
+    const { get, viewport } = mountCarousel({ fade, modelValue: index }, button)
     await mouseAway()
     await sleep(300)
     get('button-0').focus()
     index.value = 1
     await expect.poll(() => get('button-1').closest('[data-index]')!.hasAttribute('data-active')).toBe(true)
-    await settled(scroll)
+    await settled(viewport)
     await expect.poll(() => document.activeElement).toBe(get('button-1'))
   })
 
@@ -305,14 +296,14 @@ describe('given a Carousel holding the keyboard focus in a real browser', () => 
   })
 
   it('keeps the focus on Next when it reaches the last snap', async () => {
-    const { get, model, scroll } = mountCarousel()
+    const { get, model, viewport } = mountCarousel()
     await mouseAway()
     await sleep(300)
     get('next').focus()
     for (let i = 0; i < COUNT - 1; i++)
       await userEvent.keyboard('{Enter}')
     await expect.poll(() => model.value).toBe(COUNT - 1)
-    await settled(scroll)
+    await settled(viewport)
     expect(get('next').getAttribute('aria-disabled')).toBe('true')
     expect(document.activeElement).toBe(get('next'))
     await userEvent.keyboard('{Enter}')
@@ -351,7 +342,7 @@ describe('given a Carousel dragged past its ends in a real browser', () => {
     expect(content.style.transform).toBe('translateX(30px)')
     document.dispatchEvent(new PointerEvent('pointerup', { ...base, button: 0, buttons: 0, clientX: box.left + 120, clientY: y }))
     expect(content.style.transform).toBe('')
-    await settled(scroll)
+    await settled(viewport)
     expect(scroll()).toBe(0)
   })
 })
@@ -382,11 +373,11 @@ describe('given a Carousel reporting its progress in a real browser', () => {
     const progress = () => get('root').style.getPropertyValue('--reka-carousel-progress')
     expect(progress()).toBe('0')
     await userEvent.click(get('next'))
-    await settled(scroll)
+    await settled(viewport)
     expect(progress()).toBe(String(1 / (COUNT - 1)))
     expect(rests).toEqual([1])
     viewport.scrollTo({ left: SIZE * 2, behavior: 'instant' })
-    await settled(scroll)
+    await settled(viewport)
     expect(progress()).toBe(String(2 / (COUNT - 1)))
     expect(rests).toEqual([1, 2])
   })

@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { computed, ref, toRefs, watch } from 'vue'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
+import { createRekaContext, useDirection, useForwardExpose } from '@/shared'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
 export type PinInputType = 'text' | 'number'
@@ -64,7 +64,7 @@ export interface PinInputRootContext<Type extends PinInputType = 'text'> {
 }
 
 export const [injectPinInputRootContext, providePinInputRootContext]
-  = createContext<PinInputRootContext<PinInputType>>('PinInputRoot')
+  = createRekaContext<PinInputRootContext<PinInputType>>('PinInputRoot')
 </script>
 
 <script setup lang="ts" generic="Type extends PinInputType">

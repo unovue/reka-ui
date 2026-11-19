@@ -1,6 +1,6 @@
 import type { ReferenceElement } from '@floating-ui/vue'
 import type { Ref } from 'vue'
-import { createContext } from '@/shared'
+import { createRekaContext } from '@/shared'
 
 export type PopperScope = 'combobox' | 'hover-card' | 'menu' | 'popover' | 'select' | 'tooltip'
 
@@ -9,8 +9,8 @@ interface PopperRootContext {
   onAnchorChange: (element: ReferenceElement | undefined) => void
 }
 
-const defaultContext = createContext<PopperRootContext>('PopperRoot')
-const scopedContexts = new Map<PopperScope, ReturnType<typeof createContext<PopperRootContext>>>()
+const defaultContext = createRekaContext<PopperRootContext>('PopperRoot')
+const scopedContexts = new Map<PopperScope, ReturnType<typeof createRekaContext<PopperRootContext>>>()
 
 /**
  * Return stable context helpers for a family, creating its injection key once.
@@ -22,7 +22,7 @@ const scopedContexts = new Map<PopperScope, ReturnType<typeof createContext<Popp
 function getScopedContext(scope: PopperScope) {
   let context = scopedContexts.get(scope)
   if (!context) {
-    context = createContext<PopperRootContext>(`PopperRoot (${scope})`)
+    context = createRekaContext<PopperRootContext>(`PopperRoot (${scope})`)
     scopedContexts.set(scope, context)
   }
   return context

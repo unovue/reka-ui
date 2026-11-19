@@ -3,7 +3,7 @@ import type { ComputedRef, CSSProperties, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
 import type { FormFieldProps } from '@/shared/types'
-import { createContext, useFormControl, useForwardExpose } from '@/shared'
+import { createRekaContext, useFormControl, useForwardExpose } from '@/shared'
 
 export interface ColorAreaRootProps extends PrimitiveProps, FormFieldProps {
   /** The color value (controlled). Can be a hex string or Color object. */
@@ -47,7 +47,7 @@ export interface ColorAreaRootContext {
 }
 
 export const [injectColorAreaRootContext, provideColorAreaRootContext]
-  = createContext<ColorAreaRootContext>('ColorAreaRoot')
+  = createRekaContext<ColorAreaRootContext>('ColorAreaRoot')
 </script>
 
 <script setup lang="ts">

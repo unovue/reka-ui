@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import { createContext, defineReactiveIds } from '@/shared'
+import { createRekaContext, defineReactiveIds } from '@/shared'
 
 export interface PopoverRootProps {
   /**
@@ -37,7 +37,7 @@ export interface PopoverRootContext {
 }
 
 export const [injectPopoverRootContext, providePopoverRootContext]
-  = createContext<PopoverRootContext>('PopoverRoot')
+  = createRekaContext<PopoverRootContext>('PopoverRoot')
 </script>
 
 <script setup lang="ts">
