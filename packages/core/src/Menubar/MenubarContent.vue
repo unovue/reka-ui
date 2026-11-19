@@ -2,18 +2,23 @@
 import type { MenuContentEmits, MenuContentProps } from '@/Menu'
 import { useCollection } from '@/Collection'
 
-export type MenubarContentEmits = MenuContentEmits
+export type MenubarContentEmits = Omit<MenuContentEmits, 'entryFocus'>
 
 export interface MenubarContentProps extends MenuContentProps {}
 </script>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { MenuContent } from '@/Menu'
-import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
+import { injectMenuContext, MenuContent } from '@/Menu'
+import { omitEntryFocusListener } from '@/Menu/utils'
+import { useContentId, useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
 import { wrapArray } from '@/shared/useTypeahead'
 import { injectMenubarMenuContext } from './MenubarMenu.vue'
 import { injectMenubarRootContext } from './MenubarRoot.vue'
+
+defineOptions({
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<MenubarContentProps>(), {
   align: 'start',
@@ -26,6 +31,7 @@ const rootContext = injectMenubarRootContext()
 const menuContext = injectMenubarMenuContext()
 
 menuContext.contentId ||= useId(undefined, 'reka-menubar-content')
+useContentId(menuContext, injectMenuContext().content)
 
 const { getItems } = useCollection({ key: 'Menubar' })
 
@@ -63,7 +69,6 @@ function handleArrowNavigation(event: KeyboardEvent) {
 
 <template>
   <MenuContent
-    v-bind="forwarded"
     :id="menuContext.contentId"
     data-reka-menubar-content=""
     :aria-labelledby="menuContext.triggerId"
@@ -77,15 +82,19 @@ function handleArrowNavigation(event: KeyboardEvent) {
       '--reka-menubar-trigger-width': 'var(--reka-popper-anchor-width)',
       '--reka-menubar-trigger-height': 'var(--reka-popper-anchor-height)',
     }"
+    v-bind="{ ...forwarded, ...omitEntryFocusListener($attrs) }"
     @close-auto-focus="(event) => {
-      const menubarOpen = Boolean(rootContext.modelValue.value);
-      if (!menubarOpen && !hasInteractedOutsideRef) {
-        menuContext.triggerElement.value?.focus();
+      if (!event.defaultPrevented) {
+        const menubarOpen = Boolean(rootContext.modelValue.value);
+        if (!menubarOpen && !hasInteractedOutsideRef) {
+          menuContext.triggerElement.value?.focus();
+        }
+
+        // Always prevent auto focus because we either focus manually or want user agent focus
+        event.preventDefault();
       }
 
       hasInteractedOutsideRef = false;
-      // Always prevent auto focus because we either focus manually or want user agent focus
-      event.preventDefault();
     }"
     @focus-outside="(event) => {
       const target = event.target as HTMLElement;

@@ -20,7 +20,12 @@ export interface AlertDialogContentProps extends DialogContentProps {}
 import { nextTick, ref } from 'vue'
 import { DialogContent } from '@/Dialog'
 
-const props = defineProps<AlertDialogContentProps>()
+const props = withDefaults(defineProps<AlertDialogContentProps>(), {
+  // Keep `undefined` (instead of Vue's boolean coercion to `false`) so
+  // DialogContent can preserve the modal default while still honoring an
+  // explicit `:disable-outside-pointer-events="false"`.
+  disableOutsidePointerEvents: undefined,
+})
 const emits = defineEmits<AlertDialogContentEmits>()
 
 const emitsAsProps = useEmitAsProps(emits)
@@ -30,6 +35,10 @@ const cancelElement = ref<HTMLElement | undefined>()
 
 provideAlertDialogContentContext({
   onCancelElementChange: (el) => {
+    // A cancel button that unmounts only releases the registered one once it has left the
+    // document, so another cancel button that is still rendered keeps its registration.
+    if (!el && cancelElement.value?.isConnected)
+      return
     cancelElement.value = el
   },
 })

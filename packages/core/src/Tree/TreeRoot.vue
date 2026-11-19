@@ -4,13 +4,13 @@ import { createContext, getActiveElement, useDirection, useSelectionBehavior, us
 import { flatten } from './utils'
 
 export interface TreeRootProps<T = Record<string, any>, U extends Record<string, any> = Record<string, any>, M extends boolean = false> extends PrimitiveProps {
-  /** The controlled value of the tree. Can be binded with with `v-model`. */
+  /** The controlled value of the tree. Can be binded with `v-model`. */
   modelValue?: M extends true ? U[] : U
   /** The value of the tree when initially rendered. Use when you do not need to control the state of the tree */
   defaultValue?: M extends true ? U[] : U
   /** List of items */
   items?: T[]
-  /** The controlled value of the expanded item. Can be binded with with `v-model`. */
+  /** The controlled value of the expanded item. Can be binded with `v-model`. */
   expanded?: string[]
   /** The value of the expanded tree when initially rendered. Use when you do not need to control the state of the expanded tree */
   defaultExpanded?: string[]
@@ -26,10 +26,12 @@ export interface TreeRootProps<T = Record<string, any>, U extends Record<string,
   dir?: Direction
   /** When `true`, prevents the user from interacting with tree  */
   disabled?: boolean
-  /** When `true`, selecting parent will select the descendants. */
+  /** When `true`, selecting parent will select the descendants. Requires `multiple` to be `true`. */
   propagateSelect?: boolean
-  /** When `true`, selecting children will update the parent state. */
+  /** When `true`, selecting children will update the parent state. Requires `multiple` to be `true`. */
   bubbleSelect?: boolean
+  /** When `true`, keyboard navigation will loop from last item to first, and vice versa. */
+  loop?: boolean
 }
 
 export type TreeRootEmits<T = Record<string, any>, M extends boolean = false> = {
@@ -52,6 +54,7 @@ interface TreeRootContext<T = Record<string, any>> {
   dir: Ref<Direction>
   propagateSelect: Ref<boolean>
   bubbleSelect: Ref<boolean>
+  loop: Ref<boolean>
   isVirtual: Ref<boolean>
   virtualKeydownHook: EventHook<KeyboardEvent>
 
@@ -100,7 +103,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { items, multiple, disabled, propagateSelect, dir: propDir, bubbleSelect } = toRefs(props)
+const { items, multiple, disabled, propagateSelect, dir: propDir, bubbleSelect, loop } = toRefs(props)
 const { handleTypeaheadSearch } = useTypeahead()
 const dir = useDirection(propDir)
 const rovingFocusGroupRef = ref<InstanceType<typeof RovingFocusGroup>>()
@@ -167,18 +170,39 @@ const expandedItems = computed(() => {
   return flattenItems(items ?? [])
 })
 
+/**
+ * A form control rendered inside a tree item — an inline rename, a per-row
+ * filter or picker — owns its own keys. Without this, typing into it drives
+ * tree typeahead and selection, moving focus to another row mid-edit. `select`
+ * counts too: it consumes character keys for its own option typeahead and
+ * Shift+Arrow to extend a multiple selection.
+ *
+ * Same idea as the guard in `MenuContentImpl`, widened past `input`/`textarea`.
+ */
+const KEY_OWNING_TAGS = ['input', 'textarea', 'select']
+
+function isKeyDownInFormField(event: KeyboardEvent) {
+  const target = event.target as HTMLElement | null
+  if (!target)
+    return false
+  return KEY_OWNING_TAGS.includes(target.tagName.toLowerCase()) || target.isContentEditable
+}
+
 function handleKeydown(event: KeyboardEvent) {
+  if (isKeyDownInFormField(event))
+    return
+
   if (isVirtual.value) {
     virtualKeydownHook.trigger(event)
   }
-  else {
+  else if (event.key.length === 1) {
     const collections = rovingFocusGroupRef.value?.getItems() ?? []
     handleTypeaheadSearch(event.key, collections)
   }
 }
 
 function handleKeydownNavigation(event: KeyboardEvent) {
-  if (isVirtual.value)
+  if (isVirtual.value || isKeyDownInFormField(event))
     return
 
   const intent = MAP_KEY_TO_FOCUS_INTENT[event.key]
@@ -254,7 +278,7 @@ provideTreeRootContext({
     if (expanded.value.includes(key))
       expanded.value = expanded.value.filter(val => val !== key)
     else
-      expanded.value.push(key)
+      expanded.value = [...expanded.value, key]
   },
   getKey: props.getKey,
   getChildren: props.getChildren,
@@ -265,6 +289,7 @@ provideTreeRootContext({
   dir,
   propagateSelect,
   bubbleSelect,
+  loop,
 
   isVirtual,
   virtualKeydownHook,
@@ -278,6 +303,7 @@ provideTreeRootContext({
     as-child
     orientation="vertical"
     :dir="dir"
+    :loop="loop && !isVirtual"
   >
     <Primitive
       role="tree"

@@ -1,0 +1,55 @@
+name: Update Docs Data
+
+on:
+  schedule:
+    # Every Monday at 00:00 UTC
+    - cron: '0 0 * * 1'
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-docs-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup (Install node & pnpm)
+        uses: ./.github/actions/setup
+
+      # The two updates are independent, and each script leaves its file
+      # untouched when it fails. `!cancelled()` lets the rest of the job carry on
+      # so one failure still commits the other update — the job itself is still
+      # marked failed, so the error stays visible.
+      - name: Update contributors
+        run: pnpm docs:contributors
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update sponsors
+        if: ${{ !cancelled() }}
+        run: pnpm docs:sponsors
+
+      - name: Commit and push
+        if: ${{ !cancelled() }}
+        run: |
+          FILES="docs/.vitepress/contributor-names.json docs/content/public/sponsors.svg"
+
+          if [ -z "$(git status --porcelain -- $FILES)" ]; then
+            echo "Contributors and sponsors are already up to date."
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- $FILES
+          git commit -m 'chore(docs): update contributors and sponsors'
+          git push

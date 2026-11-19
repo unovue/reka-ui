@@ -1,5 +1,6 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -17,14 +18,14 @@
   {
     'name': 'getValueLabel',
     'description': '<p>A function to get the accessible label text in a human-readable format.</p>\n<p>If not provided, the value label will be read as the numeric value as a percentage of the max value.</p>\n',
-    'type': '((value: number | null, max: number) => string)',
+    'type': '((value: number | null, max: number) =&gt; string)',
     'required': false,
     'default': 'isNumber(value) ? `${Math.round((value / max) * DEFAULT_MAX)}%` : undefined'
   },
   {
     'name': 'getValueText',
     'description': '<p>A function to get the accessible value text representing the current value in a human-readable format.</p>\n',
-    'type': '((value: number | null, max: number) => string)',
+    'type': '((value: number | null, max: number) =&gt; string)',
     'required': false
   },
   {
@@ -62,11 +63,32 @@
     'type': 'number | null | undefined'
   }
 ]" />
+</llm-exclude>
 
-<MethodsTable :data="[
-  {
-    'name': 'getValueLabel',
-    'description': '<p>A function to get the accessible label text in a human-readable format.</p>\n<p>If not provided, the value label will be read as the numeric value as a percentage of the max value.</p>\n',
-    'type': '(value: number | null | undefined, max: number) => string | undefined'
-  }
-]" />
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `getValueLabel` | A function to get the accessible label text in a human-readable format. If not provided, the value label will be read as the numeric value as a percentage of the max value. | `((value: number \| null, max: number) => string)` | No | `isNumber(value) ? `${Math.round((value / max) * DEFAULT_MAX)}%` : undefined` |
+| `getValueText` | A function to get the accessible value text representing the current value in a human-readable format. | `((value: number \| null, max: number) => string)` | No | - |
+| `max` | The maximum progress value. | `number` | No | `DEFAULT_MAX` |
+| `modelValue` | The progress value. Can be bind as v-model. | `number \| null` | No | - |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:max` | Event handler called when the max value changes | `[value: number]` |
+| `update:modelValue` | Event handler called when the progress value changes | `[value: string[]]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `modelValue` | Current input values | `number \| null \| undefined` |
+
+</llm-only>

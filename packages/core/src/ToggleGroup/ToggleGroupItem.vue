@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { AcceptableValue } from '@/shared/types'
 import type { ToggleProps } from '@/Toggle'
-import { isValueEqualOrExist, useForwardExpose } from '@/shared'
+import { isValueEqualOrExist, useForwardExpose, useForwardScopeId } from '@/shared'
 
 export interface ToggleGroupItemProps extends Omit<ToggleProps, 'name' | 'required' | 'modelValue' | 'defaultValue'> {
   /**
@@ -27,17 +27,19 @@ const disabled = computed(() => rootContext.disabled?.value || props.disabled)
 const pressed = computed(() => isValueEqualOrExist(rootContext.modelValue.value, props.value))
 
 const { forwardRef } = useForwardExpose()
+// `ToggleGroupItem` wraps the multi-root `Toggle`, so the parent's scoped-style id
+// is not auto-forwarded; pass it through manually so consumer `<style scoped>` works.
+const scopeIdAttrs = useForwardScopeId()
 </script>
 
 <template>
   <component
     :is="rootContext.rovingFocus.value ? RovingFocusItem : Primitive"
     as-child
-    :focusable="!disabled"
-    :active="pressed"
+    v-bind="rootContext.rovingFocus.value ? { focusable: !disabled, active: pressed } : {}"
   >
     <Toggle
-      v-bind="props"
+      v-bind="{ ...scopeIdAttrs, ...props }"
       :ref="forwardRef"
       v-slot="slotProps"
       :disabled="disabled"

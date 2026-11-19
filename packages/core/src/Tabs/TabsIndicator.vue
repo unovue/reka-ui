@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { nextTick, ref, watch } from 'vue'
+import { computed, ref, watch, watchPostEffect } from 'vue'
 import { useForwardExpose } from '@/shared'
 import { injectTabsRootContext } from './TabsRoot.vue'
 
@@ -8,46 +8,58 @@ export interface TabsIndicatorProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { useResizeObserver } from '@vueuse/core'
+import { useMounted, useResizeObserver } from '@vueuse/core'
 import { Primitive } from '@/Primitive'
 
 const props = defineProps<TabsIndicatorProps>()
 const context = injectTabsRootContext()
+defineExpose({
+  updateIndicatorStyle,
+})
 useForwardExpose()
+
+const isMounted = useMounted()
 
 interface IndicatorStyle {
   size: number | null
+  thickness: number | null
   position: number | null
 }
-const activeTab = ref<HTMLElement | null>()
 const indicatorStyle = ref<IndicatorStyle>({
   size: null,
+  thickness: null,
   position: null,
 })
+const tabs = ref<Array<HTMLElement>>([])
 
-watch(() => [context.modelValue.value, context?.dir.value], async () => {
-  await nextTick()
+watch(() => [context.modelValue.value, context?.dir.value], () => {
   updateIndicatorStyle()
-}, { immediate: true })
+}, { immediate: true, flush: 'post' })
 
-useResizeObserver([context.tabsList, activeTab], updateIndicatorStyle)
+watchPostEffect(() => {
+  tabs.value = Array.from(context.tabsList.value?.querySelectorAll<HTMLElement>('[role="tab"]') || [])
+})
+
+useResizeObserver(computed(() => [context.tabsList.value, ...tabs.value]), updateIndicatorStyle)
 
 function updateIndicatorStyle() {
-  activeTab.value = context.tabsList.value?.querySelector<HTMLButtonElement>('[role="tab"][data-state="active"]')
+  const activeTab = context.tabsList.value?.querySelector<HTMLButtonElement>('[role="tab"][data-state="active"]')
 
-  if (!activeTab.value)
+  if (!activeTab)
     return
 
   if (context.orientation.value === 'horizontal') {
     indicatorStyle.value = {
-      size: activeTab.value.offsetWidth,
-      position: activeTab.value.offsetLeft,
+      size: activeTab.offsetWidth,
+      thickness: activeTab.offsetHeight,
+      position: activeTab.offsetLeft,
     }
   }
   else {
     indicatorStyle.value = {
-      size: activeTab.value.offsetHeight,
-      position: activeTab.value.offsetTop,
+      size: activeTab.offsetHeight,
+      thickness: activeTab.offsetWidth,
+      position: activeTab.offsetTop,
     }
   }
 }
@@ -55,10 +67,11 @@ function updateIndicatorStyle() {
 
 <template>
   <Primitive
-    v-if="typeof indicatorStyle.size === 'number'"
+    v-if="isMounted && typeof indicatorStyle.size === 'number'"
     v-bind="props"
     :style="{
       '--reka-tabs-indicator-size': `${indicatorStyle.size}px`,
+      '--reka-tabs-indicator-thickness': `${indicatorStyle.thickness}px`,
       '--reka-tabs-indicator-position': `${indicatorStyle.position}px`,
     }"
   >

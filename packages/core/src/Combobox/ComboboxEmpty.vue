@@ -22,6 +22,8 @@ const isRender = computed(() => rootContext.ignoreFilter.value
   <Primitive
     v-if="isRender"
     v-bind="props"
+    role="option"
+    aria-disabled="true"
   >
     <slot>No options</slot>
   </Primitive>

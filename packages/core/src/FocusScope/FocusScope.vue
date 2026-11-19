@@ -1,6 +1,9 @@
 <script lang="ts">
+import type { FocusScopeNode } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import { getActiveElement, useForwardExpose } from '@/shared'
+
+const FOCUS_SCOPE_NODE_KEY = Symbol('FocusScopeNode')
 
 export type FocusScopeEmits = {
   /**
@@ -30,33 +33,63 @@ export interface FocusScopeProps extends PrimitiveProps {
    * @defaultValue false
    */
   trapped?: boolean
+
+  /**
+   * Whether the scope is currently visible. Lets a consumer keep the scope
+   * mounted but hidden (e.g. `display: none`) and still get correct auto-focus:
+   * the mount auto-focus is skipped while not present, and re-runs when it
+   * becomes present again. Defaults to `true` so consumers that mount the scope
+   * only while visible are unaffected.
+   * @defaultValue true
+   */
+  present?: boolean
 }
 </script>
 
 <script setup lang="ts">
 import { isClient } from '@vueuse/shared'
-import { nextTick, reactive, ref, watchEffect } from 'vue'
+import { inject, nextTick, provide, reactive, ref, watch, watchEffect } from 'vue'
 import { Primitive } from '@/Primitive'
-import { createFocusScopesStack, removeLinks } from './stack'
+import { createFocusScopesStack } from './stack'
 import {
   AUTOFOCUS_ON_MOUNT,
   AUTOFOCUS_ON_UNMOUNT,
+  containsComposed,
   EVENT_OPTIONS,
+  findVisible,
   focus,
   focusFirst,
+  focusScopeNodes,
   getTabbableCandidates,
   getTabbableEdges,
+  getTabStopsAfter,
+  hasFocusLeftScope,
 } from './utils'
 
 const props = withDefaults(defineProps<FocusScopeProps>(), {
   loop: false,
   trapped: false,
+  // `present` MUST default to `true`. It is typed `boolean`, so Vue's boolean
+  // prop casting would otherwise coerce an absent prop to `false` (not
+  // `undefined`), and the `props.present !== false` gates below would then skip
+  // adding the scope to the stack for every consumer that doesn't pass `present`
+  // (e.g. Combobox/Select content). That scope would never pause an ancestor
+  // trap, so a Combobox input inside a Dialog could not be focused (#2749).
+  present: true,
 })
 const emits = defineEmits<FocusScopeEmits>()
 
 const { currentRef, currentElement } = useForwardExpose()
 const lastFocusedElementRef = ref<HTMLElement | null>(null)
 const focusScopesStack = createFocusScopesStack()
+
+// Lets `hasFocusLeftScope` tell the scopes nested in this one from unrelated ones.
+const scopeNode: FocusScopeNode = { parent: inject<FocusScopeNode | undefined>(FOCUS_SCOPE_NODE_KEY, undefined) }
+provide(FOCUS_SCOPE_NODE_KEY, scopeNode)
+watch(currentElement, (container) => {
+  if (container)
+    focusScopeNodes.set(container, scopeNode)
+}, { immediate: true })
 
 const focusScope = reactive({
   paused: false,
@@ -74,6 +107,14 @@ watchEffect((cleanupFn) => {
   const container = currentElement.value
   if (!props.trapped)
     return
+
+  // Attach focus listeners to the scope's root node (a shadow root when
+  // teleported into one, otherwise the document). On `document`, focus events
+  // originating inside a shadow root are retargeted to the host, so
+  // `container.contains(target)` never matches and focus escapes the trap.
+  // -- related: https://github.com/unovue/reka-ui/issues/1667
+  const ownerDocument = container?.ownerDocument ?? document
+  const root = container ? (container.getRootNode() as Document | ShadowRoot) : ownerDocument
 
   function handleFocusIn(event: FocusEvent) {
     if (focusScope.paused || !container)
@@ -117,70 +158,177 @@ watchEffect((cleanupFn) => {
   // if the element still exist inside the container,
   // if not then we focus to the container
   function handleMutations(mutations: MutationRecord[]) {
-    const isLastFocusedElementExist = container.contains(lastFocusedElementRef.value)
+    const lastFocusedElement = lastFocusedElementRef.value
+
+    // Mutation may be triggered by something unrelated to focus, e.g. class is set on an element
+    // so we first check if we even have a previously focused element.
+    if (lastFocusedElement === null) {
+      return
+    }
+
+    // Ensure mutations removed nodes from the DOM at all.
+    const anyNodesRemoved = mutations.some(m => m.removedNodes.length > 0)
+    if (!anyNodesRemoved) {
+      return
+    }
+
+    // Confirm focus was actually orphaned before pulling it back. `lastFocusedElement`
+    // is only tracked while the scope is not paused, so an open popper (which pauses
+    // this trap and only resumes it in a `setTimeout`) leaves it pointing at a stale
+    // element. Without this check, an element focused inside the container during that
+    // window — e.g. a view swapped in by the popper's `select` handler focusing its own
+    // input on mount — would be robbed of focus.
+    // -- related: https://github.com/unovue/reka-ui/issues/2886
+    const activeElement = getActiveElement()
+    if (activeElement && container.contains(activeElement))
+      return
+
+    const isLastFocusedElementExist = container.contains(lastFocusedElement)
     if (!isLastFocusedElementExist)
       focus(container)
   }
 
-  document.addEventListener('focusin', handleFocusIn)
-  document.addEventListener('focusout', handleFocusOut)
+  // A shadow root never sees a light-DOM `focusin`: when focus escapes to an
+  // element outside the shadow tree, the event fires on the owner document, not
+  // the root. So when the scope lives in a shadow root we also listen on the
+  // document and use a composed (deep) containment check, since `event.target`
+  // is retargeted to the shadow host at the document level.
+  function handleDocumentFocusIn(event: FocusEvent) {
+    if (focusScope.paused || !container)
+      return
+    const target = event.composedPath()[0] as HTMLElement | null
+    if (!containsComposed(container, target))
+      focus(lastFocusedElementRef.value, { select: true })
+  }
+
+  root.addEventListener('focusin', handleFocusIn as EventListener)
+  root.addEventListener('focusout', handleFocusOut as EventListener)
+  if (root !== ownerDocument)
+    ownerDocument.addEventListener('focusin', handleDocumentFocusIn as EventListener)
   const mutationObserver = new MutationObserver(handleMutations)
   if (container)
     mutationObserver.observe(container, { childList: true, subtree: true })
 
   cleanupFn(() => {
-    document.removeEventListener('focusin', handleFocusIn)
-    document.removeEventListener('focusout', handleFocusOut)
+    root.removeEventListener('focusin', handleFocusIn as EventListener)
+    root.removeEventListener('focusout', handleFocusOut as EventListener)
+    if (root !== ownerDocument)
+      ownerDocument.removeEventListener('focusin', handleDocumentFocusIn as EventListener)
     mutationObserver.disconnect()
   })
 })
 
+// Dispatch the mount auto-focus event and move focus to the first tabbable
+// candidate (or the container as a fallback). Shared by the physical-mount path
+// and the visibility path below so both behave identically. Consumers (e.g.
+// Dialog's `openAutoFocus`) may `preventDefault()` to opt out of default focus.
+function dispatchMountAutoFocus(container: HTMLElement, previouslyFocusedElement: HTMLElement | null) {
+  const mountEvent = new CustomEvent(AUTOFOCUS_ON_MOUNT, EVENT_OPTIONS)
+  const handleMountAutoFocus = (ev: Event) => emits('mountAutoFocus', ev)
+  container.addEventListener(AUTOFOCUS_ON_MOUNT, handleMountAutoFocus)
+  container.dispatchEvent(mountEvent)
+  container.removeEventListener(AUTOFOCUS_ON_MOUNT, handleMountAutoFocus)
+
+  if (!mountEvent.defaultPrevented) {
+    focusFirst(getTabbableCandidates(container), { select: true })
+    if (getActiveElement() === previouslyFocusedElement)
+      focus(container)
+  }
+}
+
 watchEffect(async (cleanupFn) => {
   const container = currentElement.value
 
+  // A cleanup registered after the `await` below never runs when the effect was stopped
+  // meanwhile (e.g. the scope unmounted within the same tick), which would leave this scope
+  // in the stack, paused others and retaining its container. So note the stop here, before it.
+  let isStale = false
+  cleanupFn(() => {
+    isStale = true
+  })
+
   await nextTick()
-  if (!container)
+  if (!container || isStale)
     return
-  focusScopesStack.add(focusScope)
+  // A scope that mounts hidden (`present: false`, e.g. a closed Dialog with
+  // `unmountOnHide: false`) must stay out of the scope stack: adding it would
+  // pause the currently active scope and break its focus trap. The `present`
+  // watcher below adds/removes it as it becomes visible.
+  if (props.present !== false)
+    focusScopesStack.add(focusScope)
   const previouslyFocusedElement = getActiveElement() as HTMLElement | null
   const hasFocusedCandidate = container.contains(previouslyFocusedElement)
 
-  if (!hasFocusedCandidate) {
-    const mountEvent = new CustomEvent(AUTOFOCUS_ON_MOUNT, EVENT_OPTIONS)
-    container.addEventListener(AUTOFOCUS_ON_MOUNT, (ev: Event) =>
-      emits('mountAutoFocus', ev))
-    container.dispatchEvent(mountEvent)
-
-    if (!mountEvent.defaultPrevented) {
-      focusFirst(removeLinks(getTabbableCandidates(container)), {
-        select: true,
-      })
-      if (getActiveElement() === previouslyFocusedElement)
-        focus(container)
-    }
-  }
+  // When force-mounted while closed (e.g. Dialog `unmountOnHide: false`), the
+  // consumer keeps the scope mounted but flags it as not present. Skip the
+  // mount auto-focus in that case, otherwise it fires `mountAutoFocus` and
+  // steals focus into a hidden scope. The `present` watcher below re-runs the
+  // auto-focus once the scope becomes present again.
+  // NOTE: `props.present` must stay read *after* the `await` above so this
+  // effect does not track it — re-running on `present` changes would dispatch
+  // the unmount auto-focus cleanup below on every close.
+  if (!hasFocusedCandidate && props.present !== false)
+    dispatchMountAutoFocus(container, previouslyFocusedElement)
 
   cleanupFn(() => {
-    container.removeEventListener(AUTOFOCUS_ON_MOUNT, (ev: Event) =>
-      emits('mountAutoFocus', ev))
-
     const unmountEvent = new CustomEvent(AUTOFOCUS_ON_UNMOUNT, EVENT_OPTIONS)
     const unmountEventHandler = (ev: Event) => {
       emits('unmountAutoFocus', ev)
     }
     container.addEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)
+    scopeNode.focusLeftAtUnmount = hasFocusLeftScope(container)
     container.dispatchEvent(unmountEvent)
 
+    // Signal that blur events fired below are system-initiated (focus trap
+    // cleanup), not user-initiated. Consumers can use this to skip validation.
+    container.setAttribute('data-focus-scope-unmounting', '')
+
     setTimeout(() => {
-      if (!unmountEvent.defaultPrevented)
+      // Focus goes back to where it was, unless something else took it meanwhile, e.g. a
+      // layer opened by the click that closed this one.
+      if (!unmountEvent.defaultPrevented && !hasFocusLeftScope(container))
         focus(previouslyFocusedElement ?? document.body, { select: true })
 
       // we need to remove the listener after we `dispatchEvent`
       container.removeEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler)
 
       focusScopesStack.remove(focusScope)
+      container.removeAttribute('data-focus-scope-unmounting')
+      scopeNode.focusLeftAtUnmount = undefined
     }, 0)
   })
+})
+
+// Force-mounted scopes (e.g. Dialog `unmountOnHide: false`) stay mounted across
+// open/close and toggle `present` instead of unmounting, so mount/unmount-keyed
+// behavior must be re-keyed on `present`: stack membership (which pauses other
+// scopes' traps) and the mount auto-focus (which only fires on physical mount).
+// Awaiting `nextTick` lets the consumer's visibility change (e.g. `v-show`)
+// apply first, so the focus targets exist. Consumers that don't pass `present`
+// default it to `true` (see `withDefaults`); since it never changes for them,
+// this watcher never fires and the main effect above owns their stack membership.
+watch(() => props.present, async (present, prevPresent) => {
+  if (!isClient)
+    return
+
+  if (present === false && prevPresent === true) {
+    focusScopesStack.remove(focusScope)
+    return
+  }
+
+  if (present !== true || prevPresent !== false)
+    return
+
+  focusScopesStack.add(focusScope)
+
+  await nextTick()
+  const container = currentElement.value
+  if (!container)
+    return
+
+  const previouslyFocusedElement = getActiveElement() as HTMLElement | null
+  if (!container.contains(previouslyFocusedElement))
+    dispatchMountAutoFocus(container, previouslyFocusedElement)
 })
 
 function handleKeyDown(event: KeyboardEvent) {
@@ -195,7 +343,8 @@ function handleKeyDown(event: KeyboardEvent) {
 
   if (isTabKey && focusedElement) {
     const container = event.currentTarget as HTMLElement
-    const [first, last] = getTabbableEdges(container)
+    const candidates = getTabbableCandidates(container)
+    const [first, last] = getTabbableEdges(container, candidates)
     const hasTabbableElementsInside = first && last
 
     // we can only wrap focus if we have tabbable edges
@@ -204,15 +353,12 @@ function handleKeyDown(event: KeyboardEvent) {
         event.preventDefault()
     }
     else {
-      if (!event.shiftKey && focusedElement === last) {
+      // Wrap when no visible tab stop is left in the tabbing direction.
+      const tabbingOrder = event.shiftKey ? [...candidates].reverse() : candidates
+      if (!findVisible(getTabStopsAfter(tabbingOrder, focusedElement), container)) {
         event.preventDefault()
         if (props.loop)
-          focus(first, { select: true })
-      }
-      else if (event.shiftKey && focusedElement === first) {
-        event.preventDefault()
-        if (props.loop)
-          focus(last, { select: true })
+          focus(event.shiftKey ? last : first, { select: true })
       }
     }
   }

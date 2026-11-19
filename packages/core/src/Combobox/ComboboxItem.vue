@@ -26,6 +26,13 @@ import { ListboxItem } from '@/Listbox'
 const props = defineProps<ComboboxItemProps<T>>()
 const emits = defineEmits<ComboboxItemEmits<T>>()
 
+defineSlots<{
+  default?: (props: {
+    /** Whether the item is currently selected */
+    selected: boolean
+  }) => any
+}>()
+
 const id = useId(undefined, 'reka-combobox-item')
 const rootContext = injectComboboxRootContext()
 const groupContext = injectComboboxGroupContext(null)
@@ -57,7 +64,7 @@ const isRender = computed(() => {
 
 onMounted(() => {
   // textValue to perform filter
-  rootContext.allItems.value.set(id, props.textValue || currentElement.value.textContent || currentElement.value.innerText)
+  rootContext.allItems.value.set(id, props.textValue || currentElement.value?.textContent || currentElement.value?.innerText)
 
   const groupId = groupContext?.id
   if (groupId) {
@@ -71,6 +78,9 @@ onMounted(() => {
 })
 onUnmounted(() => {
   rootContext.allItems.value.delete(id)
+  // Items come and go while their group stays, so the group must not keep their ids.
+  if (groupContext?.id)
+    rootContext.allGroups.value.get(groupContext.id)?.delete(id)
 })
 </script>
 
@@ -80,6 +90,8 @@ onUnmounted(() => {
     v-bind="props"
     :id="id"
     ref="primitiveElement"
+    v-slot="slotProps"
+    v-memo="[isRender, rootContext.filterSearch.value, rootContext.disabled.value, disabled, props.value, props.as, props.asChild, ...Object.values($attrs)]"
     :disabled="rootContext.disabled.value || disabled"
     @select="(event) => {
       emits('select', event as any)
@@ -91,8 +103,13 @@ onUnmounted(() => {
         rootContext.onOpenChange(false)
         rootContext.modelValue.value = props.value
       }
+      else if (rootContext.multiple.value) {
+        rootContext.inputElement.value?.focus()
+      }
     }"
   >
-    <slot>{{ value }}</slot>
+    <slot v-bind="slotProps">
+      {{ value }}
+    </slot>
   </ListboxItem>
 </template>

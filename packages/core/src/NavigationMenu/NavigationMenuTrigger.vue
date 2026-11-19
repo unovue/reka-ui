@@ -1,8 +1,8 @@
 <script lang="ts">
-import type { VNode } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { useForwardExpose } from '@/shared'
+import { useForwardExpose, useRenderedContentId, useTriggerId } from '@/shared'
 
 export interface NavigationMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -19,7 +19,7 @@ import {
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
-import { getOpenState, makeContentId, makeTriggerId } from './utils'
+import { getOpenState } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -34,18 +34,18 @@ const itemContext = injectNavigationMenuItemContext()
 
 const { CollectionItem } = useCollection({ key: 'NavigationMenu' })
 const { forwardRef, currentElement: triggerElement } = useForwardExpose()
-const triggerId = ref('')
-const contentId = ref('')
+// Only while the content is mounted: a closed item renders none without `forceMount`.
+const contentId = useRenderedContentId(itemContext)
 
 const hasPointerMoveOpenedRef = refAutoReset(false, 300)
 const wasClickCloseRef = ref(false)
 
 const open = computed(() => itemContext.value === menuContext.modelValue.value)
 
+useTriggerId(itemContext, triggerElement)
+
 onMounted(() => {
   itemContext.triggerRef = triggerElement
-  triggerId.value = makeTriggerId(menuContext.baseId, itemContext.value)
-  contentId.value = makeContentId(menuContext.baseId, itemContext.value)
 })
 
 function handlePointerEnter() {
@@ -57,7 +57,7 @@ function handlePointerEnter() {
 }
 
 function handlePointerMove(ev: PointerEvent) {
-  if (menuContext.disableHoverTrigger.value)
+  if (ev.defaultPrevented || menuContext.disableHoverTrigger.value)
     return
 
   if (ev.pointerType === 'mouse') {
@@ -87,9 +87,15 @@ function handlePointerLeave(ev: PointerEvent) {
   }
 }
 
-function handleClick(event: PointerEvent) {
-  if (event.pointerType === 'mouse' && menuContext.disableClickTrigger.value)
+function handleClick(event: MouseEvent | PointerEvent) {
+  if (event.defaultPrevented)
     return
+  if (
+    (!('pointerType' in event) || event.pointerType === 'mouse')
+    && menuContext.disableClickTrigger.value
+  ) {
+    return
+  }
 
   // if open via pointermove, we prevent click event
   if (hasPointerMoveOpenedRef.value)
@@ -103,6 +109,8 @@ function handleClick(event: PointerEvent) {
 }
 
 function handleKeydown(ev: KeyboardEvent) {
+  if (ev.defaultPrevented)
+    return
   const verticalEntryKey = menuContext.dir.value === 'rtl' ? 'ArrowLeft' : 'ArrowRight'
   const entryKey = { horizontal: 'ArrowDown', vertical: verticalEntryKey }[
     menuContext.orientation
@@ -115,7 +123,9 @@ function handleKeydown(ev: KeyboardEvent) {
   }
 }
 
-function setFocusProxyRef(node: VNode) {
+function setFocusProxyRef(node: Element | ComponentPublicInstance | null) {
+  if (!node)
+    return undefined
   // @ts-expect-error unrefElement expect MaybeRef, but also support Vnode
   itemContext.focusProxyRef.value = unrefElement(node)
   return undefined
@@ -134,9 +144,9 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
 </script>
 
 <template>
-  <CollectionItem>
+  <CollectionItem :value="itemContext.value">
     <Primitive
-      :id="triggerId"
+      :id="itemContext.triggerId"
       :ref="forwardRef"
       :disabled="disabled"
       :data-disabled="disabled ? '' : undefined"
@@ -146,6 +156,7 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
       :aria-controls="contentId"
       :as-child="props.asChild"
       :as="as"
+      :type="as === 'button' ? 'button' : undefined"
       v-bind="$attrs"
       @pointerenter="handlePointerEnter"
       @pointermove="handlePointerMove"
@@ -160,12 +171,11 @@ function handleVisuallyHiddenFocus(ev: FocusEvent) {
   <template v-if="open">
     <VisuallyHidden
       :ref="setFocusProxyRef"
-      aria-hidden="true"
       :tabindex="0"
       @focus="handleVisuallyHiddenFocus"
     />
     <span
-      v-if="menuContext.viewport"
+      v-if="menuContext.viewport.value"
       :aria-owns="contentId"
     />
   </template>

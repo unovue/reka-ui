@@ -17,5 +17,17 @@ configureAxe({
 })
 
 beforeAll(() => {
+  // Tests opting into the `node` environment (plain SSR) have no DOM to patch.
+  if (typeof window === 'undefined')
+    return
+
   window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  // jsdom throws "Not implemented" when getComputedStyle receives a
+  // non-empty pseudo-element string. axe-core calls it this way during
+  // accessibility audits. Strip the pseudo-element arg so jsdom returns
+  // the element's computed styles instead of throwing.
+  const originalGetComputedStyle = window.getComputedStyle
+  window.getComputedStyle = (elt: Element, pseudoElt?: string | null) =>
+    originalGetComputedStyle(elt)
 })

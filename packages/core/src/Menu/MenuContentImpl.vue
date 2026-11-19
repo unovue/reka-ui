@@ -16,6 +16,7 @@ import {
   createContext,
   getActiveElement,
   useArrowNavigation,
+  useContentMounted,
   useFocusGuards,
   useForwardExpose,
   useTypeahead,
@@ -24,9 +25,15 @@ import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 
 export interface MenuContentContext {
   onItemEnter: (event: PointerEvent) => boolean
-  onItemLeave: (event: PointerEvent) => void
+  onItemLeave: (event: PointerEvent) => boolean
   onTriggerLeave: (event: PointerEvent) => boolean
   searchRef: Ref<string>
+  highlightedElement: Ref<HTMLElement | undefined>
+  onKeydownNavigation: (event: KeyboardEvent) => void
+  onKeydownEnter: (event: KeyboardEvent) => void
+  filterElement: Ref<HTMLElement | undefined>
+  onFilterElementChange: (el: HTMLElement | undefined) => void
+  activeSubmenuContext: Ref<{ onOpenChange: (open: boolean) => void, trigger: Ref<HTMLElement | undefined> } | undefined>
   pointerGraceTimerRef: Ref<number>
   onPointerGraceIntentChange: (intent: GraceIntent | null) => void
 }
@@ -86,8 +93,9 @@ export interface MenuRootContentTypeProps
 
 <script setup lang="ts">
 import {
-  onUnmounted,
+  onBeforeUnmount,
   ref,
+  shallowRef,
   toRefs,
   watch,
 } from 'vue'
@@ -130,13 +138,63 @@ const currentItemId = ref<string | null>(null)
 
 const rovingFocusGroupRef = ref<InstanceType<typeof RovingFocusGroup>>()
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
+// Lets the trigger of this menu know that its content is in the document.
+useContentMounted(menuContext, contentElement)
 const { handleTypeaheadSearch } = useTypeahead()
+
+const highlightedElement = ref<HTMLElement>()
+
+function onKeydownNavigation(event: KeyboardEvent) {
+  const el = useArrowNavigation(
+    event,
+    (highlightedElement.value || getActiveElement()) as HTMLElement,
+    contentElement.value,
+    {
+      loop: loop.value,
+      arrowKeyOptions: 'vertical',
+      dir: rootContext?.dir.value,
+      focus: false,
+      attributeName: '[data-reka-collection-item]:not([data-disabled])',
+    },
+  )
+  if (el) {
+    highlightedElement.value = el
+    el.scrollIntoView({ block: 'nearest' })
+  }
+}
+
+function onKeydownEnter() {
+  if (highlightedElement.value) {
+    highlightedElement.value.click()
+  }
+}
+
+const filterElement = ref<HTMLElement>()
+// A deep `ref` would unwrap `trigger` to the element, so `trigger.value` would always be `undefined`.
+const activeSubmenuContext = shallowRef<{ onOpenChange: (open: boolean) => void, trigger: Ref<HTMLElement | undefined> }>()
+
+watch(highlightedElement, (el) => {
+  if (activeSubmenuContext.value && (el === undefined || el !== activeSubmenuContext.value.trigger.value)) {
+    // Don't close the submenu when the highlight disappears (pointer left
+    // all parent items, likely because the submenu opened on top of the
+    // trigger in a constrained viewport). Only close when highlight moves
+    // to a different parent item.
+    if (el === undefined)
+      return
+    activeSubmenuContext.value.onOpenChange(false)
+    activeSubmenuContext.value = undefined
+  }
+})
 
 watch(contentElement, (el) => {
   menuContext!.onContentChange(el)
 })
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
+  // Clear before a replacement registers its content, as the watcher stops on unmount.
+  // Another content may have registered since, so only clear our own registration.
+  if (menuContext.content.value === contentElement.value)
+    menuContext.onContentChange(undefined)
   window.clearTimeout(timerRef.value)
 })
 
@@ -169,6 +227,7 @@ function handleKeyDown(event: KeyboardEvent) {
   const target = event.target as HTMLElement
   const isKeyDownInside
     = target.closest('[data-reka-menu-content]') === event.currentTarget
+  const isKeyDownInTextField = ['input', 'textarea'].includes(target.tagName.toLowerCase())
   const isModifierKey = event.ctrlKey || event.altKey || event.metaKey
   const isCharacterKey = event.key.length === 1
 
@@ -194,10 +253,9 @@ function handleKeyDown(event: KeyboardEvent) {
   const collectionItems = rovingFocusGroupRef.value?.getItems() ?? []
 
   if (isKeyDownInside) {
-    // menus should not be navigated using tab key so we prevent it
-    if (event.key === 'Tab')
+    if (event.key === 'Tab' && rootContext.modal.value)
       event.preventDefault()
-    if (!isModifierKey && isCharacterKey)
+    if (!isModifierKey && isCharacterKey && !isKeyDownInTextField)
       handleTypeaheadSearch(event.key, collectionItems)
   }
 
@@ -240,6 +298,15 @@ function handlePointerMove(event: PointerEvent) {
   }
 }
 
+function handlePointerEnter(event: PointerEvent) {
+  if (!isMouseEvent(event))
+    return
+  // When hovering over a menu content (main or sub), focus its filter element if it exists
+  if (filterElement.value) {
+    filterElement.value.focus()
+  }
+}
+
 provideMenuContentContext({
   onItemEnter: (event) => {
     // event.preventDefault() we can't prevent pointerMove event
@@ -250,9 +317,14 @@ provideMenuContentContext({
   },
   onItemLeave: (event) => {
     if (isPointerMovingToSubmenu(event))
-      return
-    contentElement.value?.focus()
+      return true
+
+    const isInputFocused = ['INPUT', 'TEXTAREA'].includes(getActiveElement()?.tagName || '')
+    if (!isInputFocused)
+      contentElement.value?.focus()
+
     currentItemId.value = null
+    return false
   },
   onTriggerLeave: (event) => {
     // event.preventDefault() we can't prevent pointerLeave event
@@ -262,6 +334,14 @@ provideMenuContentContext({
       return false
   },
   searchRef,
+  highlightedElement,
+  onKeydownNavigation,
+  onKeydownEnter,
+  filterElement,
+  onFilterElementChange: (el) => {
+    filterElement.value = el
+  },
+  activeSubmenuContext,
   pointerGraceTimerRef,
   onPointerGraceIntentChange: (intent) => {
     pointerGraceIntentRef.value = intent
@@ -300,6 +380,7 @@ provideMenuContentContext({
       >
         <PopperContent
           :ref="forwardRef"
+          scope="menu"
           role="menu"
           :as="as"
           :as-child="asChild"
@@ -307,23 +388,30 @@ provideMenuContentContext({
           data-reka-menu-content
           :data-state="getOpenState(menuContext.open.value)"
           :dir="rootContext.dir.value"
+          :memo-dependencies="memoDependencies"
           :side="side"
           :side-offset="sideOffset"
+          :side-flip="sideFlip"
+          :fallback-axis-side-direction="fallbackAxisSideDirection"
           :align="align"
           :align-offset="alignOffset"
+          :align-flip="alignFlip"
           :avoid-collisions="avoidCollisions"
           :collision-boundary="collisionBoundary"
           :collision-padding="collisionPadding"
           :arrow-padding="arrowPadding"
+          :hide-shifted-arrow="hideShiftedArrow"
           :prioritize-position="prioritizePosition"
           :position-strategy="positionStrategy"
           :update-position-strategy="updatePositionStrategy"
+          :disable-update-on-layout-shift="disableUpdateOnLayoutShift"
           :sticky="sticky"
           :hide-when-detached="hideWhenDetached"
           :reference="reference"
           @keydown="handleKeyDown"
           @blur="handleBlur"
           @pointermove="handlePointerMove"
+          @pointerenter="handlePointerEnter"
         >
           <slot />
         </PopperContent>

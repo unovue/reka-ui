@@ -1,11 +1,13 @@
 import type { MaybeElementRef } from '@vueuse/core'
 import { unrefElement } from '@vueuse/core'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 export function useSize(element: MaybeElementRef) {
   const size = ref<{ width: number, height: number }>()
   const width = computed(() => size.value?.width ?? 0)
   const height = computed(() => size.value?.height ?? 0)
+
+  let resizeObserver: ResizeObserver | undefined
 
   onMounted(() => {
     const el = unrefElement(element) as HTMLElement
@@ -13,7 +15,7 @@ export function useSize(element: MaybeElementRef) {
       // provide size as early as possible
       size.value = { width: el.offsetWidth, height: el.offsetHeight }
 
-      const resizeObserver = new ResizeObserver((entries) => {
+      resizeObserver = new ResizeObserver((entries) => {
         if (!Array.isArray(entries))
           return
 
@@ -47,14 +49,17 @@ export function useSize(element: MaybeElementRef) {
       })
 
       resizeObserver.observe(el, { box: 'border-box' })
-
-      return () => resizeObserver.unobserve(el)
     }
     else {
       // We only want to reset to `undefined` when the element becomes `null`,
       // not if it changes to another element.
       size.value = undefined
     }
+  })
+
+  onUnmounted(() => {
+    resizeObserver?.disconnect()
+    resizeObserver = undefined
   })
 
   return {

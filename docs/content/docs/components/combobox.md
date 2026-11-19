@@ -45,6 +45,7 @@ import {
   ComboboxArrow,
   ComboboxCancel,
   ComboboxContent,
+  ComboboxEmpty,
   ComboboxGroup,
   ComboboxInput,
   ComboboxItem,
@@ -69,9 +70,13 @@ import {
     <ComboboxPortal>
       <ComboboxContent>
         <ComboboxViewport>
+          <ComboboxEmpty />
+
           <ComboboxItem>
             <ComboboxItemIndicator />
           </ComboboxItem>
+
+          <ComboboxSeparator />
 
           <ComboboxGroup>
             <ComboboxLabel />
@@ -79,7 +84,6 @@ import {
               <ComboboxItemIndicator />
             </ComboboxItem>
           </ComboboxGroup>
-          <ComboboxSeparator />
         </ComboboxViewport>
 
         <ComboboxArrow />
@@ -136,7 +140,7 @@ The button that clears the search term.
 
 ### Empty
 
-Shown when none of the items match the query.
+Shown when none of the items match the query. Renders as a disabled option that cannot be selected or highlighted.
 
 <!-- @include: @/meta/ComboboxEmpty.md -->
 
@@ -169,6 +173,10 @@ The component that pops out when the combobox is open.
     {
       attribute: '[data-align]',
       values: ['start', 'end', 'center'],
+    },
+    {
+      attribute: '[data-empty]',
+      values: 'Present when there are no items matching the filter',
     },
   ]"
 />
@@ -576,6 +584,54 @@ import { ref } from 'vue'
           Item A
         </ComboboxItem>
         …
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>
+</template>
+```
+
+### Custom clear value
+
+When `resetModelValueOnClear` is `true`, clicking `ComboboxCancel` will reset the `modelValue` to `null`, or to `[]` in multiple-select mode. Pass a function to `clearValue` to reset to the value it returns instead.
+
+For example, pass `:clear-value="() => undefined"` to clear a single selection to `undefined` instead of `null`.
+
+In multiple-select mode the function should return the array to reset to. Any other result is ignored and the `modelValue` resets to `[]`.
+
+```vue line=12,18-19
+<script setup lang="ts">
+import {
+  ComboboxCancel,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxPortal,
+  ComboboxRoot,
+} from 'reka-ui'
+import { ref } from 'vue'
+
+const selectedPerson = ref<string | undefined>('Durward Reynolds')
+</script>
+
+<template>
+  <ComboboxRoot
+    v-model="selectedPerson"
+    reset-model-value-on-clear
+    :clear-value="() => undefined"
+  >
+    <ComboboxInput placeholder="Search person..." />
+    <ComboboxCancel>Clear</ComboboxCancel>
+    <ComboboxPortal>
+      <ComboboxContent>
+        <ComboboxItem value="Durward Reynolds">
+          Durward Reynolds
+        </ComboboxItem>
+        <ComboboxItem value="Kenton Towne">
+          Kenton Towne
+        </ComboboxItem>
+        <ComboboxItem value="Therese Wunsch">
+          Therese Wunsch
+        </ComboboxItem>
       </ComboboxContent>
     </ComboboxPortal>
   </ComboboxRoot>

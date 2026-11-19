@@ -21,6 +21,7 @@ A control that allows the user to toggle between checked and not checked.
     'Supports indeterminate state.',
     'Full keyboard navigation.',
     'Can be controlled or uncontrolled.',
+    'Supports custom true/false values.',
   ]"
 />
 
@@ -58,6 +59,8 @@ import { CheckboxGroupRoot, CheckboxIndicator, CheckboxRoot } from 'reka-ui'
 ### Root
 
 Contains all the parts of a checkbox. An `input` will also render when used within a `form` to ensure events propagate correctly.
+
+When a `name` is provided, the hidden input uses the field name as its default label. The visible checkbox still needs its own label.
 
 <!-- @include: @/meta/CheckboxRoot.md -->
 
@@ -102,6 +105,42 @@ Wrapper around `CheckboxRoot` to support array of `modelValue`
 <!-- @include: @/meta/CheckboxGroupRoot.md -->
 
 ## Examples
+
+### Custom Values
+
+Use the `trueValue` and `falseValue` props to specify custom values for the checked and unchecked states instead of the default `true`/`false`.
+
+```vue line=5-6,11-12
+<script setup>
+import { Icon } from '@iconify/vue'
+import { CheckboxIndicator, CheckboxRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+// With string values
+const acceptTerms = ref('no')
+
+// With number values
+const permission = ref(0)
+</script>
+
+<template>
+  <!-- String values -->
+  <CheckboxRoot v-model="acceptTerms" true-value="yes" false-value="no">
+    <CheckboxIndicator>
+      <Icon icon="radix-icons:check" />
+    </CheckboxIndicator>
+  </CheckboxRoot>
+  <span>Value: {{ acceptTerms }}</span> <!-- "yes" or "no" -->
+
+  <!-- Number values -->
+  <CheckboxRoot v-model="permission" :true-value="1" :false-value="0">
+    <CheckboxIndicator>
+      <Icon icon="radix-icons:check" />
+    </CheckboxIndicator>
+  </CheckboxRoot>
+  <span>Value: {{ permission }}</span> <!-- 1 or 0 -->
+</template>
+```
 
 ### Indeterminate
 

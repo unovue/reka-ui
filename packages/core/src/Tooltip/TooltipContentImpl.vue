@@ -1,8 +1,11 @@
 <script lang="ts">
-import type { VNode } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 import type { PopperContentProps } from '@/Popper'
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { defu } from 'defu'
+import { useContentElement, useContentMounted, useForwardExpose } from '@/shared'
+import { resolveElement } from '@/shared/resolveElement'
+import { injectTooltipProviderContext } from './TooltipProvider.vue'
 
 export type TooltipContentImplEmits = {
   /** Event handler called when focus moves to the destructive action after opening. It can be prevented by calling `event.preventDefault` */
@@ -17,6 +20,7 @@ export interface TooltipContentImplProps
     PopperContentProps,
     | 'side'
     | 'sideOffset'
+    | 'fallbackAxisSideDirection'
     | 'align'
     | 'alignOffset'
     | 'avoidCollisions'
@@ -42,7 +46,7 @@ export interface TooltipContentImplProps
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { Comment, computed, onMounted, useSlots } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { PopperContent } from '@/Popper'
 import { VisuallyHidden } from '@/VisuallyHidden'
@@ -50,42 +54,38 @@ import { injectTooltipRootContext } from './TooltipRoot.vue'
 import { TOOLTIP_OPEN } from './utils'
 
 const props = withDefaults(defineProps<TooltipContentImplProps>(), {
-  side: 'top',
-  sideOffset: 0,
-  align: 'center',
-  avoidCollisions: true,
-  collisionBoundary: () => [],
-  collisionPadding: 0,
-  arrowPadding: 0,
-  sticky: 'partial',
-  hideWhenDetached: false,
+  avoidCollisions: undefined,
+  asChild: undefined,
+  hideWhenDetached: undefined,
 })
 const emits = defineEmits<TooltipContentImplEmits>()
 
 const rootContext = injectTooltipRootContext()
+const providerContext = injectTooltipProviderContext()
 
-const { forwardRef } = useForwardExpose()
-const slot = useSlots()
-const defaultSlot = computed(() => slot.default?.({}))
-const ariaLabel = computed(() => {
-  if (props.ariaLabel)
-    return props.ariaLabel
-  let content = ''
+const { forwardRef, currentElement } = useForwardExpose()
+const ariaLabel = computed(() => props.ariaLabel || currentElement.value?.textContent)
 
-  function recursiveTextSearch(node: VNode) {
-    if (typeof node.children === 'string' && node.type !== Comment)
-      content += node.children
-    else if (Array.isArray(node.children))
-      node.children.forEach(child => recursiveTextSearch(child as VNode))
-  }
-
-  defaultSlot.value?.forEach((node: VNode) => recursiveTextSearch(node))
-  return content
-})
+// The element the trigger is described by.
+const description = ref<ComponentPublicInstance>()
+const descriptionElement = computed(() => resolveElement(description.value))
+useContentElement(rootContext, descriptionElement)
+useContentMounted(rootContext, descriptionElement)
 
 const popperContentProps = computed(() => {
   const { ariaLabel: _, ...restProps } = props
-  return restProps
+
+  return defu(restProps, providerContext.content.value ?? {}, {
+    side: 'top',
+    sideOffset: 0,
+    align: 'center',
+    avoidCollisions: true,
+    collisionBoundary: [],
+    collisionPadding: 0,
+    arrowPadding: 0,
+    sticky: 'partial',
+    hideWhenDetached: false,
+  } satisfies TooltipContentImplProps)
 })
 
 onMounted(() => {
@@ -94,9 +94,9 @@ onMounted(() => {
     const target = event.target as HTMLElement
     if (target?.contains(rootContext.trigger.value!))
       rootContext.onClose()
-  })
+  }, { capture: true })
   // Close this tooltip if another one opens
-  useEventListener(window, TOOLTIP_OPEN, rootContext.onClose)
+  useEventListener(document, TOOLTIP_OPEN, rootContext.onClose)
 })
 </script>
 
@@ -116,6 +116,7 @@ onMounted(() => {
   >
     <PopperContent
       :ref="forwardRef"
+      scope="tooltip"
       :data-state="rootContext.stateAttribute.value"
       v-bind="{ ...$attrs, ...popperContentProps }"
       :style="{
@@ -129,6 +130,7 @@ onMounted(() => {
       <slot />
       <VisuallyHidden
         :id="rootContext.contentId"
+        ref="description"
         role="tooltip"
       >
         {{ ariaLabel }}

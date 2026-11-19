@@ -2,6 +2,8 @@ import type { MarkdownEnv, MarkdownRenderer } from 'vitepress'
 import { readdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 
+const PATH_SEPARATOR_RE = /[/\\]/
+
 export const rawPathRegexp
   = /^(.+?(?:\.([a-z0-9]+))?)(#[\w-]+)?(?: ?\{(\d+(?:[,-]\d+)*)? ?(\S+)?\})? ?(?:\[(.+)\])?$/
 
@@ -64,7 +66,7 @@ export default function (md: MarkdownRenderer) {
       const { realPath, path: _path } = state.env as MarkdownEnv
 
       const childFiles = readdirSync(resolve(dirname(realPath ?? _path), pathName), { withFileTypes: false, recursive: true })
-        .map(file => typeof file === 'string' ? file.split(/[/\\]/).join('/') : file)
+        .map(file => typeof file === 'string' ? file.split(PATH_SEPARATOR_RE).join('/') : file)
 
       const groupedFiles = props.type === 'example'
         ? { tailwind: childFiles }

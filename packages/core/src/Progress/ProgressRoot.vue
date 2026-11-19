@@ -154,6 +154,8 @@ provideProgressRootContext({
     :data-value="modelValue ?? undefined"
     :data-max="max"
   >
-    <slot :model-value="modelValue" />
+    <slot
+      :model-value="modelValue"
+    />
   </Primitive>
 </template>

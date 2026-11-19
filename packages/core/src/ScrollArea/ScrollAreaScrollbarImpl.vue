@@ -49,8 +49,8 @@ function handlePointerDown(event: PointerEvent) {
     // so we remove text selection manually when scrolling
     prevWebkitUserSelectRef.value = document.body.style.webkitUserSelect
     document.body.style.webkitUserSelect = 'none'
-    if (rootContext.viewport)
-      rootContext.viewport.value!.style.scrollBehavior = 'auto'
+    if (rootContext.viewport.value)
+      rootContext.viewport.value.style.scrollBehavior = 'auto'
 
     handleDragScroll(event)
   }
@@ -66,8 +66,8 @@ function handlePointerUp(event: PointerEvent) {
     element.releasePointerCapture(event.pointerId)
 
   document.body.style.webkitUserSelect = prevWebkitUserSelectRef.value
-  if (rootContext.viewport)
-    rootContext.viewport.value!.style.scrollBehavior = ''
+  if (rootContext.viewport.value)
+    rootContext.viewport.value.style.scrollBehavior = ''
 
   rectRef.value = undefined
 }
@@ -109,11 +109,13 @@ function handleSizeChange() {
       viewport: rootContext.viewport.value?.offsetHeight ?? 0,
       scrollbar: {
         size: scrollbar.value?.clientHeight ?? 0,
-        paddingStart: toInt(getComputedStyle(scrollbar.value!).paddingLeft),
-        paddingEnd: toInt(getComputedStyle(scrollbar.value!).paddingRight),
+        paddingStart: toInt(getComputedStyle(scrollbar.value!).paddingTop),
+        paddingEnd: toInt(getComputedStyle(scrollbar.value!).paddingBottom),
       },
     })
   }
+
+  scrollbarVisibleContext.onThumbPositionChange()
 }
 
 useResizeObserver(scrollbar, handleSizeChange)

@@ -3,7 +3,7 @@ import type {
   SelectContentImplEmits,
   SelectContentImplProps,
 } from './SelectContentImpl.vue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 export type SelectContentEmits = SelectContentImplEmits
 
@@ -17,6 +17,7 @@ export interface SelectContentProps extends SelectContentImplProps {
 </script>
 
 <script setup lang="ts">
+import { useCollection } from '@/Collection'
 import { Presence } from '@/Presence'
 import { useForwardPropsEmits } from '@/shared'
 import SelectContentImpl from './SelectContentImpl.vue'
@@ -33,6 +34,9 @@ const emits = defineEmits<SelectContentEmits>()
 const forwarded = useForwardPropsEmits(props, emits)
 
 const rootContext = injectSelectRootContext()
+// While closed, the items still render into the fragment below. Mark it as the
+// collection so the trigger's typeahead can find them, as Radix does.
+const { CollectionSlot } = useCollection()
 
 const fragment = ref<DocumentFragment>()
 onMounted(() => {
@@ -42,22 +46,11 @@ onMounted(() => {
 const presenceRef = ref<InstanceType<typeof Presence>>()
 
 const present = computed(() => props.forceMount || rootContext.open.value)
-const renderPresence = ref(present.value)
-
-watch(present, () => {
-  // Toggle render presence after a delay (nextTick is not enough)
-  // to allow children to re-render with the latest state.
-  // Otherwise, they would remain in the old state during the transition,
-  // which would prevent the animation that depend on state (e.g., data-[state=closed])
-  // from being applied accurately.
-  // @see https://github.com/unovue/reka-ui/issues/1865
-  setTimeout(() => renderPresence.value = present.value)
-})
 </script>
 
 <template>
   <Presence
-    v-if="present || renderPresence || presenceRef?.present"
+    v-if="present || presenceRef?.present"
     ref="presenceRef"
     :present="present"
   >
@@ -69,7 +62,11 @@ watch(present, () => {
   <div v-else-if="fragment">
     <Teleport :to="fragment">
       <SelectProvider :context="rootContext">
-        <slot />
+        <CollectionSlot>
+          <div>
+            <slot />
+          </div>
+        </CollectionSlot>
       </SelectProvider>
     </Teleport>
   </div>

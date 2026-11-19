@@ -8,7 +8,10 @@ const props = defineProps<MenuAnchorProps>()
 </script>
 
 <template>
-  <PopperAnchor v-bind="props">
+  <PopperAnchor
+    v-bind="props"
+    scope="menu"
+  >
     <slot />
   </PopperAnchor>
 </template>

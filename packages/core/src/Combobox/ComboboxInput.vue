@@ -3,6 +3,7 @@ import type { ListboxFilterEmits, ListboxFilterProps } from '@/Listbox'
 import { useVModel } from '@vueuse/core'
 import { nextTick, onMounted, watch } from 'vue'
 import { usePrimitiveElement } from '@/Primitive'
+import { useComposing, useRenderedContentId } from '@/shared'
 
 export type ComboboxInputEmits = ListboxFilterEmits
 export interface ComboboxInputProps extends ListboxFilterProps {
@@ -22,6 +23,7 @@ const props = withDefaults(defineProps<ComboboxInputProps>(), {
 const emits = defineEmits<ComboboxInputEmits>()
 
 const rootContext = injectComboboxRootContext()
+const contentId = useRenderedContentId(rootContext)
 const listboxContext = injectListboxRootContext()
 const { primitiveElement, currentElement } = usePrimitiveElement()
 
@@ -34,30 +36,75 @@ onMounted(() => {
     rootContext.onInputElementChange(currentElement.value as HTMLInputElement)
 })
 
+const { isComposing, shouldDeferInput, handleCompositionStart, handleCompositionUpdate, handleCompositionEnd } = useComposing((event) => {
+  const el = event.target as HTMLInputElement
+  if (el)
+    processInputValue(el.value)
+})
+
 function handleKeyDown(ev: KeyboardEvent) {
+  // Don't swallow arrow keys mid-composition, they're used for IME candidate navigation
+  if (isComposing.value)
+    return
+  ev.preventDefault()
   if (!rootContext.open.value)
     rootContext.onOpenChange(true)
 }
 
-function handleInput(event: InputEvent) {
-  const target = event.target as HTMLInputElement
+function processInputValue(value: string) {
   if (!rootContext.open.value) {
     rootContext.onOpenChange(true)
     nextTick(() => {
-      if (target.value) {
-        rootContext.filterSearch.value = target.value
+      if (value) {
+        rootContext.filterSearch.value = value
         listboxContext.highlightFirstItem()
       }
     })
   }
   else {
-    rootContext.filterSearch.value = target.value
+    rootContext.filterSearch.value = value
   }
+}
+
+function handleInput(event: InputEvent) {
+  if (shouldDeferInput.value)
+    return
+  processInputValue((event.target as HTMLInputElement).value)
 }
 
 function handleFocus() {
   if (rootContext.openOnFocus.value && !rootContext.open.value)
     rootContext.onOpenChange(true)
+}
+
+function handleBlur(ev: FocusEvent) {
+  if (!rootContext.open.value)
+    return
+
+  const nextFocus = ev.relatedTarget as Element | null
+
+  // If focus moves to nothing (e.g. click on non-focusable area), let DismissableLayer handle it
+  if (!nextFocus)
+    return
+
+  const isInsideRoot = rootContext.parentElement.value?.contains(nextFocus)
+  const isInsideContent = document.getElementById(rootContext.contentId)?.contains(nextFocus)
+
+  if (!isInsideRoot && !isInsideContent) {
+    // Delay to let FocusScope's focus-restoration (handleFocusOut) run first.
+    // Without this, closing fires before FocusScope can pull focus back inside,
+    // causing a second combobox to immediately close when switching between two.
+    requestAnimationFrame(() => {
+      if (!rootContext.open.value)
+        return
+      const active = document.activeElement
+      const isStillOutside = !rootContext.parentElement.value?.contains(active)
+        && !document.getElementById(rootContext.contentId)?.contains(active)
+      if (isStillOutside) {
+        rootContext.onOpenChange(false)
+      }
+    })
+  }
 }
 
 function handleClick() {
@@ -96,9 +143,10 @@ watch(rootContext.modelValue, async () => {
     resetSearchTerm()
 }, { immediate: true, deep: true })
 
-watch(rootContext.filterState, () => {
-  // we exclude virtualized list as the state would be constantly updated
-  if (!rootContext.isVirtual.value) {
+watch(rootContext.filterState, (_newValue, oldValue) => {
+  // we exclude virtualized list as the state would be constantly updated,
+  // and only change highlight when previously there were no items displayed
+  if (!rootContext.isVirtual.value && (oldValue.count === 0)) {
     listboxContext.highlightFirstItem()
   }
 })
@@ -113,14 +161,19 @@ watch(rootContext.filterState, () => {
     :auto-focus="autoFocus"
     :disabled="disabled"
     :aria-expanded="rootContext.open.value"
-    :aria-controls="rootContext.contentId"
+    :aria-controls="rootContext.open.value ? contentId : undefined"
+    :aria-activedescendant="rootContext.open.value ? listboxContext.highlightedElement.value?.id : undefined"
     aria-autocomplete="list"
     role="combobox"
     autocomplete="off"
     @click="handleClick"
     @input="handleInput"
-    @keydown.down.up.prevent="handleKeyDown"
+    @keydown.down.up="handleKeyDown"
     @focus="handleFocus"
+    @blur="handleBlur"
+    @compositionstart="handleCompositionStart"
+    @compositionupdate="handleCompositionUpdate"
+    @compositionend="handleCompositionEnd"
   >
     <slot />
   </ListboxFilter>

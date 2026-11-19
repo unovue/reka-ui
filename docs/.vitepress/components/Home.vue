@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import AccordionDemo from '../../components/demo/Accordion/tailwind/index.vue'
+import AutocompleteDemo from '../../components/demo/Autocomplete/tailwind/index.vue'
 import CalendarDemo from '../../components/demo/Calendar/tailwind/index.vue'
+import ColorAreaDemo from '../../components/demo/ColorArea/tailwind/index.vue'
+import ColorFieldDemo from '../../components/demo/ColorField/tailwind/index.vue'
 import HoverCardDemo from '../../components/demo/HoverCard/tailwind/index.vue'
 import NumberFieldDemo from '../../components/demo/NumberField/tailwind/index.vue'
-import PinInputDemo from '../../components/demo/PinInput/tailwind/index.vue'
 import ProgressDemo from '../../components/demo/Progress/tailwind/index.vue'
-import SelectDemo from '../../components/demo/Select/tailwind/index.vue'
 import SliderDemo from '../../components/demo/Slider/tailwind/index.vue'
-import TagsInputDemo from '../../components/demo/TagsInput/tailwind/index.vue'
+import TimeRangeFieldDemo from '../../components/demo/TimeRangeField/tailwind/index.vue'
+
 import ToolbarDemo from '../../components/demo/Toolbar/tailwind/index.vue'
 import TreeDemo from '../../components/demo/Tree/tailwind/index.vue'
+import { openCollective, sponsor } from '../meta'
 import Chip from './Chip.vue'
+import Sponsors from './Sponsors.vue'
 </script>
 
 <template>
@@ -19,11 +22,11 @@ import Chip from './Chip.vue'
     <div class="grid justify-items-center gap-8 p-5 px-3 sm:px-4 md:gap-10 md:px-8">
       <div class="mt-2 grid w-full max-w-4xl justify-items-center gap-[inherit] sm:mt-10 md:mt-20">
         <div class="flex flex-col items-center gap-4">
-          <Chip href="/docs/overview/releases">
+          <Chip href="/docs/overview/releases#v2-11">
             <div class="group-hover:scale-150 group-focus:scale-150 transition origin-bottom-left">
-              🎉
+              ✨
             </div>
-            <span class="group-hover:ml-3 group-focus:ml-3 ml-1 transition-[margin]">v2 Release!</span>
+            <span class="group-hover:ml-3 group-focus:ml-3 ml-1 transition-[margin]">New in v2.11: Form, Field & Toast Manager</span>
           </Chip>
           <h1 class="text-pretty text-center text-4xl font-bold sm:text-6xl sm:font-extrabold md:text-7xl text-foreground">
             Craft accessible web apps with Vue
@@ -84,11 +87,11 @@ import Chip from './Chip.vue'
     </div>
     <div class="absolute left-1/2 z-[1] h-[32rem] w-[90rem] -translate-x-1/2 md:block">
       <div class="absolute top-8 left-[16rem] xl:left-8">
-        <TagsInputDemo />
+        <ColorFieldDemo />
       </div>
 
-      <div class="absolute top-[24rem] md:top-[4rem] right-[32rem] md:right-[30rem] text-stone-700 text-sm">
-        <PinInputDemo />
+      <div class="absolute top-[24rem] md:top-[6rem] right-[32rem] md:right-[38rem] text-stone-700 text-sm">
+        <TimeRangeFieldDemo />
       </div>
 
       <div class="absolute top-8 right-[30rem] md:right-[10rem] xl:right-6">
@@ -96,7 +99,7 @@ import Chip from './Chip.vue'
       </div>
 
       <div class="absolute top-[8rem] left-[20rem]">
-        <AccordionDemo />
+        <ColorAreaDemo />
       </div>
 
       <div class="absolute top-48 left-[2rem] xl:-left-12">
@@ -112,7 +115,7 @@ import Chip from './Chip.vue'
       </div>
 
       <div class="absolute hidden md:block bottom-[4rem] right-[36rem] xl:right-[32rem]">
-        <SelectDemo />
+        <AutocompleteDemo />
       </div>
 
       <div class="absolute hidden md:block top-[12rem] right-[40rem] xl:right-[24rem]">
@@ -258,7 +261,7 @@ import Chip from './Chip.vue'
       <div class="flex flex-col sm:flex-row items-center justify-center gap-12 sm:gap-20">
         <div class="flex flex-col items-center justify-center">
           <div class="text-4xl md:text-6xl font-bold">
-            600k+
+            2.9mil+
           </div>
           <div class="mt-1">
             Monthly downloads
@@ -267,7 +270,7 @@ import Chip from './Chip.vue'
 
         <div class="flex flex-col items-center justify-center">
           <div class="text-4xl md:text-6xl font-bold">
-            130+
+            220+
           </div>
           <div class="mt-1">
             Contributors
@@ -276,13 +279,46 @@ import Chip from './Chip.vue'
 
         <div class="flex flex-col items-center justify-center">
           <div class="text-4xl md:text-6xl font-bold">
-            4k+
+            6.2k+
           </div>
           <div class="mt-1">
             GitHub Stars
           </div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section class="px-4 py-12 md:py-24 max-w-screen-xl mx-auto md:px-6">
+    <h2 class="text-pretty text-center text-3xl font-bold sm:text-5xl sm:font-extrabold md:text-6xl text-foreground">
+      Our Sponsors
+    </h2>
+
+    <p class="mt-4 md:mt-6 text-center text-muted-foreground text-pretty">
+      Reka UI is free and open source. It is made possible by the generous support of our sponsors.
+    </p>
+
+    <Sponsors class="mt-8 md:mt-12" />
+
+    <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+      <a
+        :href="openCollective"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground hover:bg-primary/90 transition"
+      >
+        <Icon icon="lucide:building-2" />
+        Sponsor as a company
+      </a>
+      <a
+        :href="sponsor"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-2 rounded-lg border border-muted bg-card px-4 py-2 font-semibold hover:bg-muted/50 transition"
+      >
+        <Icon icon="lucide:heart" />
+        Sponsor on GitHub
+      </a>
     </div>
   </section>
 

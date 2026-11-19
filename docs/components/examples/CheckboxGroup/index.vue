@@ -17,10 +17,10 @@ const items = [
     v-model="values"
     class="flex flex-col gap-2.5"
   >
-    <div
+    <label
       v-for="item in items"
       :key="item.value"
-      class="flex items-center gap-3"
+      class="flex flex-row gap-3 items-center"
     >
       <CheckboxRoot
         :value="item.value"
@@ -33,9 +33,7 @@ const items = [
           />
         </CheckboxIndicator>
       </CheckboxRoot>
-      <label class="flex flex-row gap-4 items-center">
-        <span class="select-none dark:text-white">{{ item.label }}</span>
-      </label>
-    </div>
+      <span class="select-none dark:text-white">{{ item.label }}</span>
+    </label>
   </CheckboxGroupRoot>
 </template>

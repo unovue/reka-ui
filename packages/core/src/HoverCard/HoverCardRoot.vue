@@ -11,6 +11,8 @@ export interface HoverCardRootProps {
   openDelay?: number
   /** The duration from when the mouse leaves the trigger or content until the hover card closes. */
   closeDelay?: number
+  /** When `true`, tapping the trigger on touch devices toggles the hover card open/closed. By default touch interactions are ignored to match pointer hover semantics. */
+  enableTouch?: boolean
 }
 export type HoverCardRootEmits = {
   /** Event handler called when the open state of the hover card changes. */
@@ -20,13 +22,17 @@ export type HoverCardRootEmits = {
 export interface HoverCardRootContext {
   open: Ref<boolean>
   onOpenChange: (open: boolean) => void
-  onOpen: () => void
+  /** `owner` identifies who requested the open, so only that requester can cancel it with `onCancelOpen`. */
+  onOpen: (owner?: object) => void
+  /** Withdraws `owner`'s pending open request. The timer is cleared once no other requester remains. Never writes `open`. */
+  onCancelOpen: (owner: object) => void
   onClose: () => void
   onDismiss: () => void
   hasSelectionRef: Ref<boolean>
   isPointerDownOnContentRef: Ref<boolean>
   isPointerInTransitRef: Ref<boolean>
   triggerElement: Ref<HTMLElement | undefined>
+  enableTouch: Ref<boolean>
 }
 
 export const [injectHoverCardRootContext, provideHoverCardRootContext]
@@ -35,7 +41,7 @@ export const [injectHoverCardRootContext, provideHoverCardRootContext]
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { ref, toRefs } from 'vue'
+import { onBeforeUnmount, ref, toRefs } from 'vue'
 import { PopperRoot } from '@/Popper'
 
 const props = withDefaults(defineProps<HoverCardRootProps>(), {
@@ -43,6 +49,7 @@ const props = withDefaults(defineProps<HoverCardRootProps>(), {
   open: undefined,
   openDelay: 700,
   closeDelay: 300,
+  enableTouch: false,
 })
 const emit = defineEmits<HoverCardRootEmits>()
 
@@ -53,7 +60,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { openDelay, closeDelay } = toRefs(props)
+const { openDelay, closeDelay, enableTouch } = toRefs(props)
 
 useForwardExpose()
 const open = useVModel(props, 'open', emit, {
@@ -68,19 +75,53 @@ const isPointerDownOnContentRef = ref(false)
 const isPointerInTransitRef = ref(false)
 const triggerElement = ref<HTMLElement>()
 
-function handleOpen() {
+// Requesters (trigger, content, ...) sharing the pending open timer
+const openRequesters = new Set<object>()
+const anonymousRequester = {}
+
+function clearOpenTimer() {
+  clearTimeout(openTimerRef.value)
+  openTimerRef.value = 0
+  openRequesters.clear()
+}
+
+function handleOpen(owner: object = anonymousRequester) {
   clearTimeout(closeTimerRef.value)
-  openTimerRef.value = window.setTimeout(() => open.value = true, openDelay.value)
+  openRequesters.add(owner)
+  // Keep the deadline of an already pending open (e.g. pointerenter followed by focus)
+  if (openTimerRef.value)
+    return
+  openTimerRef.value = window.setTimeout(() => {
+    openTimerRef.value = 0
+    openRequesters.clear()
+    open.value = true
+  }, openDelay.value)
+}
+
+function handleCancelOpen(owner: object) {
+  openRequesters.delete(owner)
+  if (!openRequesters.size)
+    clearOpenTimer()
 }
 
 function handleClose() {
-  clearTimeout(openTimerRef.value)
-  if (!hasSelectionRef.value && !isPointerDownOnContentRef.value)
+  clearOpenTimer()
+  if (!hasSelectionRef.value && !isPointerDownOnContentRef.value) {
+    clearTimeout(closeTimerRef.value)
     closeTimerRef.value = window.setTimeout(() => open.value = false, closeDelay.value)
+  }
 }
 
+onBeforeUnmount(() => {
+  clearOpenTimer()
+  clearTimeout(closeTimerRef.value)
+})
+
 function handleDismiss() {
-  open.value = false
+  clearOpenTimer()
+  // Avoid re-emitting `update:open(false)` when already closed (e.g. dismiss during unmount)
+  if (open.value)
+    open.value = false
 }
 
 provideHoverCardRootContext({
@@ -89,17 +130,19 @@ provideHoverCardRootContext({
     open.value = value
   },
   onOpen: handleOpen,
+  onCancelOpen: handleCancelOpen,
   onClose: handleClose,
   onDismiss: handleDismiss,
   hasSelectionRef,
   isPointerDownOnContentRef,
   isPointerInTransitRef,
   triggerElement,
+  enableTouch,
 })
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="hover-card">
     <slot :open="open" />
   </PopperRoot>
 </template>

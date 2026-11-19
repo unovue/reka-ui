@@ -3,10 +3,13 @@ import type { DateValue } from '@internationalized/date'
 import type { DateRangePickerRootProps } from './DateRangePickerRoot.vue'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
-import { render } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, h } from 'vue'
+import { ConfigProvider } from '@/ConfigProvider'
 import { useTestKbd } from '@/shared'
+import { DateRangePickerContent, DateRangePickerRoot, DateRangePickerTrigger } from '.'
 import DateRangePicker from './story/_DateRangePicker.vue'
 
 const calendarDate = {
@@ -203,6 +206,139 @@ describe('dateRangePicker', async () => {
         const seg = getByTestId(`${field}-${segment}`)
         expect(seg).not.toHaveAttribute('tabindex')
       }
+    }
+  })
+
+  it('should close the picker on select when `closeOnSelect` is true', async () => {
+    const { user, trigger, getByTestId } = setup({
+      dateFieldProps: {
+        defaultValue: calendarDate,
+        closeOnSelect: true,
+      },
+    })
+
+    await user.click(trigger)
+
+    const popoverContent = await screen.findByTestId('popover-content')
+    expect(popoverContent).toBeVisible()
+
+    const startDay = getByTestId('date-1-1')
+    const endDay = getByTestId('date-1-10')
+    await user.click(startDay)
+    await user.click(endDay)
+    expect(popoverContent).not.toBeVisible()
+  })
+
+  it('should not close the picker on select when `closeOnSelect` is true', async () => {
+    const { user, trigger, getByTestId } = setup({
+      dateFieldProps: {
+        defaultValue: calendarDate,
+        closeOnSelect: false,
+      },
+    })
+
+    await user.click(trigger)
+
+    const popoverContent = await screen.findByTestId('popover-content')
+    expect(popoverContent).toBeVisible()
+
+    const startDay = getByTestId('date-1-1')
+    const endDay = getByTestId('date-1-10')
+    await user.click(startDay)
+    await user.click(endDay)
+    expect(popoverContent).toBeVisible()
+  })
+
+  describe('locale integration with ConfigProvider', () => {
+    it('uses locale from ConfigProvider when no locale prop is provided', async () => {
+      const user = userEvent.setup()
+      const { getByTestId } = render({
+        components: { ConfigProvider, DateRangePicker },
+        template: `
+          <ConfigProvider locale="de">
+            <DateRangePicker :dateFieldProps="{
+              modelValue: {
+                start: new CalendarDate(2024, 1, 15),
+                end: new CalendarDate(2024, 1, 20)
+              }
+            }" />
+          </ConfigProvider>
+        `,
+        setup() {
+          return { CalendarDate }
+        },
+      })
+
+      const trigger = getByTestId('trigger')
+      await user.click(trigger)
+
+      const heading = await screen.findByTestId('heading')
+      // German locale should display month name in German (e.g., "Januar" not "January")
+      expect(heading).toHaveTextContent('Januar')
+    })
+
+    it('locale prop overrides ConfigProvider locale', async () => {
+      const user = userEvent.setup()
+      const { getByTestId } = render({
+        components: { ConfigProvider, DateRangePicker },
+        template: `
+          <ConfigProvider locale="de">
+            <DateRangePicker :dateFieldProps="{
+              modelValue: {
+                start: new CalendarDate(2024, 1, 15),
+                end: new CalendarDate(2024, 1, 20)
+              },
+              locale: 'en-US'
+            }" />
+          </ConfigProvider>
+        `,
+        setup() {
+          return { CalendarDate }
+        },
+      })
+
+      const trigger = getByTestId('trigger')
+      await user.click(trigger)
+
+      const heading = await screen.findByTestId('heading')
+      // Even though ConfigProvider sets 'de', explicit prop should use 'en-US'
+      expect(heading).toHaveTextContent('January')
+    })
+
+    it('uses default locale when no ConfigProvider and no locale prop', async () => {
+      const { user, trigger, getByTestId } = setup({
+        dateFieldProps: { modelValue: calendarDate },
+      })
+
+      await user.click(trigger)
+
+      const heading = await screen.findByTestId('heading')
+      // Should use browser default locale (typically 'en' in test environment)
+      // January 2022 should be displayed
+      expect(heading).toHaveTextContent('January')
+      expect(heading).toHaveTextContent('2022')
+    })
+  })
+})
+
+describe('given a DateRangePickerContent with an openAutoFocus listener', () => {
+  it('should emit openAutoFocus once per open', async () => {
+    const user = userEvent.setup()
+    const onOpenAutoFocus = vi.fn()
+    const { getByTestId } = render(defineComponent({
+      setup: () => () => h(DateRangePickerRoot, null, () => [
+        h(DateRangePickerTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
+        h(DateRangePickerContent, { onOpenAutoFocus }, () => h('button', 'Inside')),
+      ]),
+    }))
+
+    for (let cycle = 1; cycle <= 2; cycle++) {
+      await user.click(getByTestId('trigger'))
+      await screen.findByRole('dialog')
+      expect(onOpenAutoFocus).toHaveBeenCalledTimes(cycle)
+
+      await user.keyboard('{Escape}')
+      await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     }
   })
 })

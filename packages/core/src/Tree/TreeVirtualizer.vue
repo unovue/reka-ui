@@ -3,7 +3,7 @@ export interface TreeVirtualizerProps {
   /** Number of items rendered outside the visible area */
   overscan?: number
   /** Estimated size (in px) of each item */
-  estimateSize?: number
+  estimateSize?: number | ((index: number) => number)
   /** Text content for each item to achieve type-ahead feature */
   textContent?: (item: Record<string, any>) => string
 }
@@ -79,7 +79,10 @@ const virtualizer = useVirtualizer(
     getItemKey(index) {
       return index + rootContext.getKey(rootContext.expandedItems.value[index].value)
     },
-    estimateSize() {
+    estimateSize(index) {
+      if (typeof props.estimateSize === 'function')
+        return props.estimateSize(index)
+
       return props.estimateSize ?? 28
     },
     getScrollElement() { return parentEl.value },
@@ -122,7 +125,21 @@ rootContext.virtualKeydownHook.on((event) => {
   if (isTabKey)
     return
 
-  const intent = MAP_KEY_TO_FOCUS_INTENT[event.key]
+  let intent = MAP_KEY_TO_FOCUS_INTENT[event.key]
+
+  // Only a window of items is rendered, so wrapping is resolved against the
+  // full list of expanded items rather than by the roving focus group.
+  if (rootContext.loop.value && !isMetaKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+    const isDown = event.key === 'ArrowDown'
+    const rendered = getItems(true).map(i => i.ref)
+    const enabled = rendered.filter(i => i.dataset.disabled !== '')
+    const edgeEnabled = isDown ? enabled.at(-1) : enabled[0]
+    const edgeIndex = Number((isDown ? rendered.at(-1) : rendered[0])?.getAttribute('data-index'))
+    const boundaryIndex = isDown ? rootContext.expandedItems.value.length - 1 : 0
+    // Wrap from the outermost enabled item once the window reaches the end of the list.
+    if (edgeEnabled && edgeEnabled === getActiveElement() && edgeIndex === boundaryIndex)
+      intent = isDown ? 'first' : 'last'
+  }
 
   if (['first', 'last'].includes(intent)) {
     event.preventDefault()
@@ -130,8 +147,10 @@ rootContext.virtualKeydownHook.on((event) => {
     const index = intent === 'first' ? 0 : rootContext.expandedItems.value.length - 1
     virtualizer.value.scrollToIndex(index)
     requestAnimationFrame(() => {
-      const items = getItems()
-      const item = intent === 'first' ? items[0] : items[items.length - 1]
+      const items = getItems().filter(i => i.ref.dataset.disabled !== '')
+      if (!items.length)
+        return
+      const item = intent === 'first' ? items[0] : items.at(-1)!
       item.ref.focus()
     })
   }
@@ -145,7 +164,7 @@ rootContext.virtualKeydownHook.on((event) => {
     if (parentItem)
       scrollToIndexAndFocus(parentItem.index)
   }
-  else if (!intent && !isMetaKey) {
+  else if (!intent && !isMetaKey && event.key.length === 1) {
     search.value += event.key
     const currentIndex = Number(getActiveElement()?.getAttribute('data-index'))
     const currentMatch = optionsWithMetadata.value[currentIndex].textContent

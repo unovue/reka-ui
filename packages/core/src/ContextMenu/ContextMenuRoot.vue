@@ -10,9 +10,17 @@ type ContextMenuRootContext = {
   modal: Ref<boolean>
   dir: Ref<Direction>
   triggerElement: Ref<HTMLElement | undefined>
+  pressOpenDelay: Ref<number>
 }
 
-export interface ContextMenuRootProps extends Omit<MenuProps, 'open'> {}
+export interface ContextMenuRootProps extends MenuProps {
+  /**
+   * The duration from when the trigger is pressed until the menu opens.
+   *
+   * @defaultValue 700
+   */
+  pressOpenDelay?: number
+}
 export type ContextMenuRootEmits = MenuEmits
 
 export const [injectContextMenuRootContext, provideContextMenuRootContext]
@@ -20,7 +28,8 @@ export const [injectContextMenuRootContext, provideContextMenuRootContext]
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs, watch } from 'vue'
+import { useVModel } from '@vueuse/core'
+import { ref, toRefs } from 'vue'
 import { MenuRoot } from '@/Menu'
 
 defineOptions({
@@ -29,13 +38,18 @@ defineOptions({
 
 const props = withDefaults(defineProps<ContextMenuRootProps>(), {
   modal: true,
+  pressOpenDelay: 700,
+  open: undefined,
 })
 const emits = defineEmits<ContextMenuRootEmits>()
-const { dir: propDir, modal } = toRefs(props)
+const { dir: propDir, modal, pressOpenDelay } = toRefs(props)
 useForwardExpose()
 const dir = useDirection(propDir)
 
-const open = ref(false)
+const open = useVModel(props, 'open', emits, {
+  defaultValue: false,
+  passive: (props.open === undefined) as false,
+}) as Ref<boolean>
 const triggerElement = ref<HTMLElement>()
 
 provideContextMenuRootContext({
@@ -46,10 +60,7 @@ provideContextMenuRootContext({
   dir,
   modal,
   triggerElement,
-})
-
-watch(open, (value) => {
-  emits('update:open', value)
+  pressOpenDelay,
 })
 </script>
 

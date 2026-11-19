@@ -1,0 +1,105 @@
+@import '@radix-ui/colors/black-alpha.css';
+@import '@radix-ui/colors/mauve.css';
+@import '@radix-ui/colors/grass.css';
+
+/* reset */
+button, input {
+  all: unset;
+}
+
+.AutocompleteRoot {
+  position: relative;
+}
+
+.AutocompleteAnchor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  line-height: 1;
+  height: 35px;
+  padding: 0 15px;
+  gap: 5px;
+  background-color: white;
+  color: var(--grass-11);
+  border-radius: 4px;
+  box-shadow: 0 2px 10px var(--black-a7);
+}
+.AutocompleteAnchor:hover {
+  background-color: var(--mauve-3);
+}
+
+.AutocompleteInput {    
+  height: 100%;
+  background-color: transparent;
+  color: var(--grass-11); 
+}
+.AutocompleteInput[data-placeholder] {
+  color: var(--grass-9);
+}
+
+.AutocompleteIcon {
+  width: 16px;
+  height: 16px;
+  color: var(--grass-11);
+}
+
+.AutocompleteContent {
+  z-index: 10;
+  width: 100%;
+  position: absolute;
+  overflow: hidden;
+  background-color: white;
+  border-radius: 6px;
+  margin-top: 8px;
+  box-shadow: 0px 10px 38px -10px rgb(22 23 24 / 35%), 0px 10px 20px -15px rgb(22 23 24 / 20%);
+}
+
+.AutocompleteViewport {
+  padding: 5px;
+}
+
+.AutocompleteEmpty {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500; 
+  color: var(--mauve-11);
+}
+
+.AutocompleteItem {
+  font-size: 13px;
+  line-height: 1;
+  color: var(--grass-11);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  height: 25px;
+  padding: 0 35px 0 25px;
+  position: relative;
+  user-select: none;
+}
+.AutocompleteItem[data-disabled] {
+  color: var(--mauve-8);
+  pointer-events: none;
+}
+.AutocompleteItem[data-highlighted] {
+  outline: none;
+  background-color: var(--grass-9);
+  color: var(--grass-1);
+}
+
+.AutocompleteLabel {
+  padding: 0 25px;
+  font-size: 12px;
+  line-height: 25px;
+  color: var(--mauve-11);
+}
+
+.AutocompleteSeparator {
+  height: 1px;
+  background-color: var(--grass-6);
+  margin: 5px;
+}

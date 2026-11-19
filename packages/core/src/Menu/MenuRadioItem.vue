@@ -3,12 +3,15 @@ import type {
   MenuItemEmits,
   MenuItemProps,
 } from './MenuItem.vue'
+import type { AcceptableValue } from '@/shared/types'
+import { reactiveOmit } from '@vueuse/shared'
+import { useForwardProps } from '@/shared'
 
 export type MenuRadioItemEmits = MenuItemEmits
 
 export interface MenuRadioItemProps extends MenuItemProps {
   /** The unique value of the item. */
-  value: string
+  value: AcceptableValue
 }
 </script>
 
@@ -22,6 +25,15 @@ import { getCheckedState } from './utils'
 const props = defineProps<MenuRadioItemProps>()
 const emits = defineEmits<MenuRadioItemEmits>()
 
+defineSlots<{
+  default?: (props: {
+    /** Current checked state */
+    checked: boolean
+  }) => any
+}>()
+const delegatedProps = reactiveOmit(props, ['value'])
+const forwarded = useForwardProps(delegatedProps)
+
 const { value } = toRefs(props)
 const radioGroupContext = injectMenuRadioGroupContext()
 const modelValue = computed(
@@ -34,7 +46,7 @@ provideMenuItemIndicatorContext({ modelValue })
 <template>
   <MenuItem
     role="menuitemradio"
-    v-bind="props"
+    v-bind="forwarded"
     :aria-checked="modelValue"
     :data-state="getCheckedState(modelValue)"
     @select="
@@ -44,6 +56,6 @@ provideMenuItemIndicatorContext({ modelValue })
       }
     "
   >
-    <slot />
+    <slot :checked="modelValue" />
   </MenuItem>
 </template>

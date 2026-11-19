@@ -9,7 +9,7 @@ export interface ScrollAreaScrollbarVisibleContext {
   handleWheelScroll: (event: WheelEvent, payload: number) => void
   handleThumbDown: (
     event: MouseEvent,
-    payload: { x: number, y: number }
+    payload: { x: number, y: number },
   ) => void
   handleThumbUp: (event: MouseEvent) => void
   handleSizeChange: (payload: Sizes) => void

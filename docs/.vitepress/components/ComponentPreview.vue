@@ -11,7 +11,7 @@ const props = withDefaults(defineProps<{
 }>(), { type: 'demo' })
 
 const cssFramework = useStorage<'css' | 'tailwind' | 'pinceau'>('cssFramework', 'tailwind')
-const parsedFiles = computed(() => JSON.parse(decodeURIComponent(props.files ?? ''))[cssFramework.value])
+const parsedFiles = computed(() => JSON.parse(decodeURIComponent(props.files ?? ''))[props.type === 'example' ? 'tailwind' : cssFramework.value])
 </script>
 
 <template>

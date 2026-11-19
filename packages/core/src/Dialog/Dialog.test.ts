@@ -1,11 +1,12 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
-import type { Mock, SpyInstance } from 'vitest'
-import { findByText, fireEvent, render } from '@testing-library/vue'
-import { mount } from '@vue/test-utils'
+import type { Mock, MockInstance } from 'vitest'
+import { createEvent, findByText, fireEvent, render } from '@testing-library/vue'
+import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, nextTick } from 'vue'
-import { DialogClose, DialogContent, DialogOverlay, DialogRoot, DialogTitle, DialogTrigger } from '.'
+import { defineComponent, h, nextTick, ref } from 'vue'
+import { sleep } from '@/test'
+import { DialogClose, DialogContent, DialogOverlay, DialogRoot, DialogTitle, DialogTrigger, injectDialogRootContext } from '.'
 
 const OPEN_TEXT = 'Open'
 const CLOSE_TEXT = 'Close'
@@ -50,11 +51,490 @@ const DialogTest = defineComponent({
 </DialogRoot>`,
 })
 
+const TabindexDialogTest = defineComponent({
+  components: { DialogRoot, DialogTrigger, DialogOverlay, DialogContent, DialogClose, DialogTitle },
+  template: `<DialogRoot>
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogOverlay />
+  <DialogContent>
+    <DialogTitle>${TITLE_TEXT}</DialogTitle>
+    <input aria-label="Second" tabindex="2">
+    <DialogClose tabindex="1">${CLOSE_TEXT}</DialogClose>
+    <input aria-label="Default">
+  </DialogContent>
+</DialogRoot>`,
+})
+
+const UnmountOnHideDialogTest = defineComponent({
+  components: { DialogRoot, DialogTrigger, DialogOverlay, DialogContent, DialogClose, DialogTitle },
+  template: `<DialogRoot :unmount-on-hide="false">
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogOverlay />
+  <DialogContent>
+    <DialogTitle>${TITLE_TEXT}</DialogTitle>
+    <DialogClose>${CLOSE_TEXT}</DialogClose>
+  </DialogContent>
+</DialogRoot>`,
+})
+
+const NonModalUnmountOnHideDialogTest = defineComponent({
+  components: { DialogRoot, DialogTrigger, DialogOverlay, DialogContent, DialogClose, DialogTitle },
+  template: `<DialogRoot :modal="false" :unmount-on-hide="false">
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogContent>
+    <DialogTitle>${TITLE_TEXT}</DialogTitle>
+    <DialogClose>${CLOSE_TEXT}</DialogClose>
+  </DialogContent>
+</DialogRoot>`,
+})
+
+// Reproduces https://github.com/unovue/reka-ui/issues/2660 — the content is
+// nested *inside* the overlay (a common centering pattern), so pointerdown
+// events from controls in the content bubble up to the overlay.
+const NestedContentDialogTest = defineComponent({
+  components: { DialogRoot, DialogTrigger, DialogOverlay, DialogContent, DialogClose, DialogTitle },
+  template: `<DialogRoot>
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogOverlay>
+    <DialogContent>
+      <DialogTitle>${TITLE_TEXT}</DialogTitle>
+      <input data-testid="text-input" type="text">
+      <DialogClose>${CLOSE_TEXT}</DialogClose>
+    </DialogContent>
+  </DialogOverlay>
+</DialogRoot>`,
+})
+
+describe('given a Dialog with tabindex values', () => {
+  it('should auto-focus the tabbable element with the lowest positive tabindex', async () => {
+    renderAndClickDialogTrigger(TabindexDialogTest)
+    const closeButton = await findByText(document.body, CLOSE_TEXT)
+
+    await vi.waitFor(() => expect(closeButton).toBe(document.activeElement))
+  })
+})
+
+describe('given a Dialog with unmountOnHide=false', () => {
+  let wrapper: VueWrapper<InstanceType<typeof UnmountOnHideDialogTest>>
+  let trigger: DOMWrapper<HTMLElement>
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(UnmountOnHideDialogTest, { attachTo: document.body })
+    trigger = wrapper.find('button')
+  })
+
+  // The content is force-mounted, so unmount explicitly to avoid leaking the
+  // layer into `DismissableLayer`'s module-level tracking set across tests.
+  afterEach(() => {
+    wrapper?.unmount()
+  })
+
+  it('should keep content in DOM when closed after being opened', async () => {
+    await fireEvent.click(trigger.element)
+    await nextTick()
+
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await nextTick()
+
+    const contentEl = document.querySelector('[role="dialog"]')
+    expect(contentEl).not.toBeNull()
+    expect((contentEl as HTMLElement).style.display).toBe('none')
+  })
+
+  it('should not pull focus into the content while closed on mount', async () => {
+    // Content is force-mounted but hidden; auto-focus must not fire yet.
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull()
+    expect(document.activeElement).toBe(document.body)
+  })
+
+  it('should focus the close button on open', async () => {
+    await fireEvent.click(trigger.element)
+    const closeButton = await findByText(document.body, CLOSE_TEXT)
+    await vi.waitFor(() => expect(closeButton).toBe(document.activeElement))
+  })
+
+  it('should re-focus the content when reopened', async () => {
+    // The content stays mounted, so focus must be re-applied on each open via
+    // the `present` false -> true transition (not just on physical mount).
+    await fireEvent.click(trigger.element)
+    await nextTick()
+
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await vi.waitFor(() => expect(document.activeElement).toBe(trigger.element))
+
+    await fireEvent.click(trigger.element)
+    const closeButton = await findByText(document.body, CLOSE_TEXT)
+    await vi.waitFor(() => expect(closeButton).toBe(document.activeElement))
+  })
+
+  it('should restore focus to trigger on close', async () => {
+    await fireEvent.click(trigger.element)
+    await nextTick()
+
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await vi.waitFor(() => expect(document.activeElement).toBe(trigger.element))
+  })
+
+  it('should not apply aria-hidden to body after open then close', async () => {
+    await fireEvent.click(trigger.element)
+    await nextTick()
+
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await nextTick()
+
+    // Content stays mounted, but the rest of the page must stay accessible.
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull()
+    expect(document.body.getAttribute('aria-hidden')).toBeNull()
+  })
+
+  it('should pass axe accessibility tests when open', async () => {
+    await fireEvent.click(trigger.element)
+    await nextTick()
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+})
+
+describe('given a non-modal Dialog with unmountOnHide=false', () => {
+  let wrapper: VueWrapper<InstanceType<typeof NonModalUnmountOnHideDialogTest>>
+  let trigger: DOMWrapper<HTMLElement>
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    wrapper = mount(NonModalUnmountOnHideDialogTest, { attachTo: document.body })
+    trigger = wrapper.find('button')
+  })
+
+  afterEach(() => {
+    wrapper?.unmount()
+  })
+
+  it('should keep content in DOM when closed after being opened', async () => {
+    await fireEvent.click(trigger.element)
+    await nextTick()
+
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await nextTick()
+
+    const contentEl = document.querySelector('[role="dialog"]')
+    expect(contentEl).not.toBeNull()
+    expect((contentEl as HTMLElement).style.display).toBe('none')
+  })
+
+  it('should focus the close button on open', async () => {
+    expect(document.activeElement).toBe(document.body)
+
+    await fireEvent.click(trigger.element)
+    const closeButton = await findByText(document.body, CLOSE_TEXT)
+    await vi.waitFor(() => expect(closeButton).toBe(document.activeElement))
+  })
+
+  it('should restore focus to trigger on close', async () => {
+    await fireEvent.click(trigger.element)
+    await nextTick()
+
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await vi.waitFor(() => expect(document.activeElement).toBe(trigger.element))
+  })
+})
+
+describe('given a Dialog with unmountOnHide=false, openAutoFocus', () => {
+  const OpenAutoFocusDialog = defineComponent({
+    components: { DialogRoot, DialogTrigger, DialogContent, DialogClose, DialogTitle },
+    props: ['onOpenAutoFocus'],
+    template: `<DialogRoot :unmount-on-hide="false">
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogContent @open-auto-focus="onOpenAutoFocus">
+    <DialogTitle>${TITLE_TEXT}</DialogTitle>
+    <DialogClose>${CLOSE_TEXT}</DialogClose>
+  </DialogContent>
+</DialogRoot>`,
+  })
+
+  it('should not emit openAutoFocus while closed and emit once per open', async () => {
+    document.body.innerHTML = ''
+    const onOpenAutoFocus = vi.fn()
+    const wrapper = mount(OpenAutoFocusDialog, { attachTo: document.body, props: { onOpenAutoFocus } })
+    const trigger = wrapper.find('button')
+
+    // Force-mounted but hidden: the auto-focus must not fire on mount.
+    await nextTick()
+    expect(onOpenAutoFocus).toHaveBeenCalledTimes(0)
+
+    await fireEvent.click(trigger.element)
+    await vi.waitFor(() => expect(onOpenAutoFocus).toHaveBeenCalledTimes(1))
+
+    wrapper.unmount()
+  })
+
+  it('should emit openAutoFocus again on reopen', async () => {
+    document.body.innerHTML = ''
+    const onOpenAutoFocus = vi.fn()
+    const wrapper = mount(OpenAutoFocusDialog, { attachTo: document.body, props: { onOpenAutoFocus } })
+    const trigger = wrapper.find('button')
+
+    await fireEvent.click(trigger.element)
+    await vi.waitFor(() => expect(onOpenAutoFocus).toHaveBeenCalledTimes(1))
+
+    await fireEvent.click(await findByText(document.body, CLOSE_TEXT))
+    await fireEvent.click(trigger.element)
+    await vi.waitFor(() => expect(onOpenAutoFocus).toHaveBeenCalledTimes(2))
+
+    wrapper.unmount()
+  })
+})
+
+// `forceMount` also keeps the content in the DOM across open/close, so
+// `FocusScope` never physically remounts and mount-keyed behaviour has to be
+// re-keyed on the presence state. Folding `forceMount` into `Presence`'s
+// `present` pinned that state to `true`, so `openAutoFocus` fired only on the
+// very first open and the overlay never released the body scroll lock (#2450).
+describe('given a Dialog with forceMount', () => {
+  const ForceMountDialog = defineComponent({
+    components: { DialogRoot, DialogTrigger, DialogOverlay, DialogContent, DialogClose, DialogTitle },
+    props: ['onOpenAutoFocus'],
+    template: `<DialogRoot>
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogOverlay force-mount />
+  <DialogContent force-mount @open-auto-focus="onOpenAutoFocus">
+    <DialogTitle>${TITLE_TEXT}</DialogTitle>
+    <DialogClose>${CLOSE_TEXT}</DialogClose>
+  </DialogContent>
+</DialogRoot>`,
+  })
+
+  let wrapper: VueWrapper
+
+  // The body scroll lock is a shared composable: leaving a dialog mounted after
+  // a failed assertion keeps the lock held and cascades into unrelated tests.
+  afterEach(() => {
+    wrapper?.unmount()
+    document.body.style.overflow = ''
+    document.body.style.pointerEvents = ''
+  })
+
+  it('should emit openAutoFocus on every open, not only the first', async () => {
+    document.body.innerHTML = ''
+    const onOpenAutoFocus = vi.fn()
+    wrapper = mount(ForceMountDialog, { attachTo: document.body, props: { onOpenAutoFocus } })
+    const trigger = wrapper.find('button')
+
+    // Force-mounted but closed: the dialog must not grab focus or lock the body
+    // on mount. `FocusScope` dispatches its mount auto-focus a few ticks in, so
+    // a bare `nextTick()` here would pass even when it does fire.
+    await sleep(100)
+    expect(onOpenAutoFocus).toHaveBeenCalledTimes(0)
+    expect(document.activeElement).toBe(document.body)
+    expect(document.body.style.overflow).not.toBe('hidden')
+
+    await fireEvent.click(trigger.element)
+    await vi.waitFor(() => expect(onOpenAutoFocus).toHaveBeenCalledTimes(1))
+
+    await fireEvent.click(await findByText(document.body, CLOSE_TEXT))
+    await fireEvent.click(trigger.element)
+    await vi.waitFor(() => expect(onOpenAutoFocus).toHaveBeenCalledTimes(2))
+  })
+
+  it('should release the body scroll lock on close', async () => {
+    document.body.innerHTML = ''
+    wrapper = mount(ForceMountDialog, { attachTo: document.body, props: { onOpenAutoFocus: vi.fn() } })
+    const trigger = wrapper.find('button')
+
+    await fireEvent.click(trigger.element)
+    await vi.waitFor(() => expect(document.body.style.overflow).toBe('hidden'))
+
+    await fireEvent.click(await findByText(document.body, CLOSE_TEXT))
+    await vi.waitFor(() => expect(document.body.style.overflow).not.toBe('hidden'))
+  })
+})
+
+// Regression guard for the default (unmounting) path: the content unmounts on
+// close, so the auto-focus is driven by the physical remount rather than by
+// `present`.
+describe('given a default Dialog, openAutoFocus', () => {
+  const DefaultAutoFocusDialog = defineComponent({
+    components: { DialogRoot, DialogTrigger, DialogContent, DialogClose, DialogTitle },
+    props: ['onOpenAutoFocus'],
+    template: `<DialogRoot>
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogContent @open-auto-focus="onOpenAutoFocus">
+    <DialogTitle>${TITLE_TEXT}</DialogTitle>
+    <DialogClose>${CLOSE_TEXT}</DialogClose>
+  </DialogContent>
+</DialogRoot>`,
+  })
+
+  it('should emit once per open across repeated opens', async () => {
+    document.body.innerHTML = ''
+    const onOpenAutoFocus = vi.fn()
+    const wrapper = mount(DefaultAutoFocusDialog, { attachTo: document.body, props: { onOpenAutoFocus } })
+    const trigger = wrapper.find('button')
+
+    await nextTick()
+    expect(onOpenAutoFocus).toHaveBeenCalledTimes(0)
+
+    await fireEvent.click(trigger.element)
+    await vi.waitFor(() => expect(onOpenAutoFocus).toHaveBeenCalledTimes(1))
+
+    await fireEvent.click(await findByText(document.body, CLOSE_TEXT))
+    // The content unmounts asynchronously; reopening before it is gone would
+    // reuse the still-mounted scope and tell us nothing about the remount path.
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeNull())
+
+    await fireEvent.click(trigger.element)
+    await vi.waitFor(() => expect(onOpenAutoFocus).toHaveBeenCalledTimes(2))
+
+    wrapper.unmount()
+  })
+})
+
+// Two dialogs with `unmountOnHide: false` coexist on the page (e.g. a menu
+// drawer and a cart slideover), so both contents are force-mounted from the
+// start. Hidden layers/scopes must not participate in the global
+// `DismissableLayer` and `FocusScope` stacks: the later-mounted hidden one
+// would otherwise be treated as the topmost layer (swallowing Escape meant for
+// the open dialog) and would pause the open dialog's focus trap.
+describe('given two Dialogs with unmountOnHide=false', () => {
+  const TwoDialogsTest = defineComponent({
+    components: { DialogRoot, DialogTrigger, DialogOverlay, DialogContent, DialogClose, DialogTitle },
+    props: ['onInteractOutside'],
+    template: `<div>
+  <DialogRoot :unmount-on-hide="false">
+    <DialogTrigger data-testid="first-trigger">open first</DialogTrigger>
+    <DialogOverlay />
+    <DialogContent data-testid="first-content">
+      <DialogTitle>first</DialogTitle>
+      <DialogClose data-testid="first-close">close first</DialogClose>
+    </DialogContent>
+  </DialogRoot>
+  <DialogRoot :modal="false" :unmount-on-hide="false">
+    <DialogTrigger data-testid="second-trigger">open second</DialogTrigger>
+    <DialogContent data-testid="second-content" @interact-outside="onInteractOutside">
+      <DialogTitle>second</DialogTitle>
+      <DialogClose data-testid="second-close">close second</DialogClose>
+    </DialogContent>
+  </DialogRoot>
+</div>`,
+  })
+
+  let wrapper: VueWrapper<InstanceType<typeof TwoDialogsTest>>
+  let onInteractOutside: Mock
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    onInteractOutside = vi.fn()
+    wrapper = mount(TwoDialogsTest, { attachTo: document.body, props: { onInteractOutside } })
+  })
+
+  afterEach(() => {
+    wrapper?.unmount()
+  })
+
+  it('should close the open dialog on Escape even though a hidden one mounted after it', async () => {
+    const trigger = wrapper.find('[data-testid="first-trigger"]')
+    await fireEvent.click(trigger.element)
+    await nextTick()
+
+    const content = document.querySelector('[data-testid="first-content"]') as HTMLElement
+    expect(content.style.display).not.toBe('none')
+
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await nextTick()
+
+    expect(content.style.display).toBe('none')
+    await vi.waitFor(() => expect(document.activeElement).toBe(trigger.element))
+  })
+
+  it('should keep the modal focus trap active despite the hidden later-mounted scope', async () => {
+    await fireEvent.click(wrapper.find('[data-testid="first-trigger"]').element)
+    await nextTick()
+    await vi.waitFor(() => expect(document.activeElement?.getAttribute('data-testid')).toBe('first-close'))
+
+    // Move focus outside the open modal dialog: the trap must pull it back.
+    const outside = document.querySelector('[data-testid="second-trigger"]') as HTMLElement
+    outside.focus()
+    await nextTick()
+
+    const content = document.querySelector('[data-testid="first-content"]') as HTMLElement
+    expect(content.contains(document.activeElement)).toBe(true)
+  })
+
+  it('should not emit interactOutside on a closed keep-mounted dialog', async () => {
+    // Wait out the `setTimeout(0)` before outside-pointerdown listeners attach.
+    await sleep(1)
+    await fireEvent.pointerDown(document.body)
+    await nextTick()
+    expect(onInteractOutside).not.toHaveBeenCalled()
+  })
+})
+
+// Reproduces https://github.com/unovue/reka-ui/issues/2677 — a modal Dialog
+// hardcoded `disableOutsidePointerEvents` to `true`, so the prop passed to
+// `DialogContent` was ignored. These are tested without a `DialogOverlay`,
+// because the overlay's `useBodyScrollLock` locks `body` pointer-events through
+// a separate mechanism unrelated to this prop.
+function makeModalDialog(contentBinding: string) {
+  return defineComponent({
+    components: { DialogRoot, DialogTrigger, DialogContent, DialogClose, DialogTitle },
+    template: `<DialogRoot>
+  <DialogTrigger>${OPEN_TEXT}</DialogTrigger>
+  <DialogContent ${contentBinding}>
+    <DialogTitle>${TITLE_TEXT}</DialogTitle>
+    <DialogClose>${CLOSE_TEXT}</DialogClose>
+  </DialogContent>
+</DialogRoot>`,
+  })
+}
+
+describe('given a modal Dialog (#2677)', () => {
+  let consoleWarnMock: MockInstance
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    document.body.style.pointerEvents = ''
+    consoleWarnMock = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    consoleWarnMock.mockRestore()
+  })
+
+  it('should lock body pointer-events by default', async () => {
+    const wrapper = mount(makeModalDialog(''), { attachTo: document.body })
+    fireEvent.click(wrapper.find('button').element)
+    await findByText(document.body, CLOSE_TEXT)
+    await nextTick()
+
+    expect(document.body.style.pointerEvents).toBe('none')
+    wrapper.unmount()
+  })
+
+  it('should respect disableOutsidePointerEvents=false on the content', async () => {
+    const wrapper = mount(makeModalDialog(':disable-outside-pointer-events="false"'), { attachTo: document.body })
+    fireEvent.click(wrapper.find('button').element)
+    await findByText(document.body, CLOSE_TEXT)
+    await nextTick()
+
+    expect(document.body.style.pointerEvents).not.toBe('none')
+    wrapper.unmount()
+  })
+
+  it('should still lock body pointer-events when explicitly true', async () => {
+    const wrapper = mount(makeModalDialog(':disable-outside-pointer-events="true"'), { attachTo: document.body })
+    fireEvent.click(wrapper.find('button').element)
+    await findByText(document.body, CLOSE_TEXT)
+    await nextTick()
+
+    expect(document.body.style.pointerEvents).toBe('none')
+    wrapper.unmount()
+  })
+})
+
 describe('given a default Dialog', () => {
   let wrapper: VueWrapper<InstanceType<typeof DialogTest>>
   let trigger: DOMWrapper<HTMLElement>
   let closeButton: HTMLElement
-  let consoleWarnMock: SpyInstance
+  let consoleWarnMock: MockInstance
   let consoleWarnMockFunction: Mock
 
   beforeEach(() => {
@@ -134,5 +614,202 @@ describe('given a default Dialog', () => {
         expect(document.activeElement).toBe(trigger.element)
       })
     })
+
+    describe('when clicking the overlay', () => {
+      beforeEach(async () => {
+        // Wait for the document-level pointerdown listener to be registered
+        // (registered via setTimeout(0) inside DismissableLayer).
+        await new Promise(resolve => setTimeout(resolve, 0))
+        // Find the overlay: the only element with data-state="open" that
+        // isn't the trigger button or the dialog content.
+        const overlayEl = Array.from(
+          document.querySelectorAll('[data-state="open"]'),
+        ).find(el => el.tagName === 'DIV' && !el.getAttribute('role')) as HTMLElement
+        await fireEvent.pointerDown(overlayEl)
+        await nextTick()
+        await nextTick()
+        // setTimeout(0) inside FocusScope cleanup
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
+
+      it('should close the content', () => {
+        expect(document.body.innerHTML).not.toContain(closeButton.innerHTML)
+      })
+
+      it('should focus trigger', () => {
+        expect(document.activeElement).toBe(trigger.element)
+      })
+    })
+  })
+})
+
+// Regression test for https://github.com/unovue/reka-ui/issues/2660
+// The overlay calls `preventDefault()` on its own `pointerdown` to keep focus
+// on the trigger after the dialog closes (#2655). When the content is nested
+// inside the overlay, that handler must NOT prevent the default action of
+// pointerdown events bubbling up from controls inside the content — otherwise
+// native `<select>`/`<input>` interactions break.
+describe('given a Dialog with content nested inside the overlay', () => {
+  let wrapper: VueWrapper<InstanceType<typeof NestedContentDialogTest>>
+  let consoleWarnMock: MockInstance
+
+  beforeEach(async () => {
+    document.body.innerHTML = ''
+    wrapper = mount(NestedContentDialogTest, { attachTo: document.body })
+    consoleWarnMock = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    fireEvent.click(wrapper.find('button').element)
+    await findByText(document.body, CLOSE_TEXT)
+  })
+
+  afterEach(() => {
+    consoleWarnMock.mockRestore()
+  })
+
+  describe('when pressing down on a control inside the content', () => {
+    it('should not prevent the default pointerdown action', async () => {
+      const input = document.querySelector<HTMLInputElement>('[data-testid="text-input"]')!
+      const event = createEvent.pointerDown(input, { button: 0 })
+      input.dispatchEvent(event)
+      await nextTick()
+
+      expect(event.defaultPrevented).toBe(false)
+    })
+
+    it('should keep the dialog open', async () => {
+      const input = document.querySelector<HTMLInputElement>('[data-testid="text-input"]')!
+      await fireEvent.pointerDown(input, { button: 0 })
+      await nextTick()
+
+      expect(document.body.innerHTML).toContain(CLOSE_TEXT)
+    })
+  })
+})
+
+describe('given a Dialog root that stays mounted', () => {
+  function mountDialog(props: Record<string, unknown>, contentProps: Record<string, unknown> = {}) {
+    let rootContext!: ReturnType<typeof injectDialogRootContext>
+    const ContextProbe = defineComponent({
+      setup() {
+        rootContext = injectDialogRootContext()
+        return () => null
+      },
+    })
+    const open = ref(false)
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(DialogRoot, { open: open.value, ...props }, () => [
+        h(ContextProbe),
+        h(DialogTrigger, () => OPEN_TEXT),
+        h(DialogContent, { 'aria-describedby': undefined, ...contentProps }, () => h(DialogTitle, () => TITLE_TEXT)),
+      ]),
+    }), { attachTo: document.body })
+    return { wrapper, open, context: () => rootContext }
+  }
+
+  it.each([true, false])('should release the closed content element with modal=%s', async (modal) => {
+    const { wrapper, open, context } = mountDialog({ modal })
+
+    for (let cycle = 0; cycle < 2; cycle++) {
+      open.value = true
+      await flushPromises()
+      const registered = context().contentElement
+      expect(registered.value).toBe(wrapper.get('[role="dialog"]').element)
+
+      open.value = false
+      await flushPromises()
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+      // The content's own ref would keep its unmounted instance reachable from the root.
+      expect(context().contentElement).not.toBe(registered)
+      expect(context().contentElement.value).toBeUndefined()
+    }
+
+    wrapper.unmount()
+  })
+
+  it('should keep a force-mounted content element registered while closed', async () => {
+    const { wrapper, open, context } = mountDialog({}, { forceMount: true })
+    open.value = true
+    await flushPromises()
+    const content = wrapper.get('[role="dialog"]').element
+    expect(context().contentElement.value).toBe(content)
+
+    open.value = false
+    await flushPromises()
+    expect(wrapper.get('[role="dialog"]').element).toBe(content)
+    expect(context().contentElement.value).toBe(content)
+
+    wrapper.unmount()
+  })
+})
+
+// A dialog that opens while another one holds focus in its trap. jsdom, like WebKit, does
+// not focus a button on click, so the press leaves focus in the outer dialog.
+describe('given a Dialog that opens while another modal Dialog holds focus', () => {
+  let wrapper: VueWrapper
+  let outerOpen: { value: boolean }
+  let innerOpen: { value: boolean }
+  const byId = (id: string) => document.querySelector(`[data-testid="${id}"]`) as HTMLElement
+
+  beforeEach(async () => {
+    document.body.innerHTML = ''
+    const outer = ref(false)
+    const inner = ref(false)
+    outerOpen = outer
+    innerOpen = inner
+    wrapper = mount(defineComponent({
+      setup: () => () => h('div', [
+        h(DialogRoot, { 'open': outer.value, 'onUpdate:open': (value: boolean) => outer.value = value }, () => [
+          h(DialogTrigger, { 'data-testid': 'outer-trigger' }, () => 'outer'),
+          h(DialogContent, { 'aria-describedby': undefined, 'data-testid': 'outer-content', 'onInteractOutside': (event: Event) => event.preventDefault() }, () => [
+            h(DialogTitle, null, () => 'Outer'),
+            h('input', { 'data-testid': 'outer-input' }),
+          ]),
+        ]),
+        h(DialogRoot, { 'open': inner.value, 'onUpdate:open': (value: boolean) => inner.value = value }, () => [
+          h(DialogTrigger, { 'data-testid': 'inner-trigger' }, () => 'inner'),
+          h(DialogContent, { 'aria-describedby': undefined, 'data-testid': 'inner-content' }, () => [
+            h(DialogTitle, null, () => 'Inner'),
+            h(DialogClose, { 'data-testid': 'inner-close' }, () => 'Close'),
+          ]),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+
+    await fireEvent.click(byId('outer-trigger'))
+    await vi.waitFor(() => expect(byId('outer-content')?.contains(document.activeElement)).toBe(true))
+    byId('outer-input').focus()
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
+  })
+
+  async function closeInner() {
+    await vi.waitFor(() => expect(byId('inner-content')?.contains(document.activeElement)).toBe(true))
+    await fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    await vi.waitFor(() => expect(byId('inner-content')).toBeNull())
+  }
+
+  it('should return focus to the pressed trigger', async () => {
+    let focusedAtPress: Element | null = null
+    byId('inner-trigger').addEventListener('click', () => focusedAtPress = document.activeElement, { capture: true })
+    await fireEvent.click(byId('inner-trigger'))
+    expect(focusedAtPress).toBe(byId('outer-input'))
+    await closeInner()
+    await vi.waitFor(() => expect(document.activeElement).toBe(byId('inner-trigger')))
+  })
+
+  it('should fall back to its trigger when the element focused at the open has left the DOM', async () => {
+    innerOpen.value = true
+    await vi.waitFor(() => expect(byId('inner-content')?.contains(document.activeElement)).toBe(true))
+    outerOpen.value = false
+    await vi.waitFor(() => expect(byId('outer-content')).toBeNull())
+    await closeInner()
+    await vi.waitFor(() => expect(document.activeElement).toBe(byId('inner-trigger')))
+  })
+
+  it('should return focus to the element focused at the open while it is still there', async () => {
+    innerOpen.value = true
+    await closeInner()
+    await vi.waitFor(() => expect(document.activeElement).toBe(byId('outer-input')))
   })
 })

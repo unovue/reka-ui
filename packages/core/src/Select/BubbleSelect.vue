@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { VisuallyHidden } from '@/VisuallyHidden'
+import { injectSelectRootContext } from './SelectRoot.vue'
 
 interface BubbleSelectProps {
   autocomplete?: string
@@ -16,6 +17,7 @@ interface BubbleSelectProps {
 
 const props = defineProps<BubbleSelectProps>()
 const selectElement = ref<HTMLElement>()
+const rootContext = injectSelectRootContext()
 
 // This would bubble "change" event to form, with the target as Select element.
 watch(() => props.value, (cur, prev) => {
@@ -33,6 +35,14 @@ watch(() => props.value, (cur, prev) => {
 })
 
 /**
+ * Form autofill will trigger an `input` event on the `select` element.
+ * We listen to that event and update our internal state to support it.
+ */
+function handleInput(event: Event) {
+  rootContext.onValueChange((event.target as HTMLSelectElement).value)
+}
+
+/**
  * We purposefully use a `select` here to support form autofill as much
  * as possible.
  *
@@ -41,14 +51,21 @@ watch(() => props.value, (cur, prev) => {
  *
  * We use `VisuallyHidden` rather than `display: "none"` because Safari autofill
  * won't work otherwise.
+ *
+ * Use the form field name as a default label for checkers that also inspect
+ * aria-hidden controls.
  */
 </script>
 
 <template>
-  <VisuallyHidden as-child>
+  <VisuallyHidden
+    as-child
+    :aria-label="name || undefined"
+  >
     <select
       ref="selectElement"
       v-bind="props"
+      @input="handleInput"
     >
       <slot />
     </select>
