@@ -34,7 +34,7 @@ function handleDelete() {
   <Primitive
     tabindex="-1"
     v-bind="props"
-    :aria-labelledby="itemContext.textId"
+    :aria-labelledby="$attrs['aria-label'] ? undefined : itemContext.textId"
     :aria-current="itemContext.isSelected.value"
     :data-state="itemContext.isSelected.value ? 'active' : 'inactive'"
     :data-disabled="disabled ? '' : undefined"

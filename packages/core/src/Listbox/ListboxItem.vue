@@ -94,6 +94,7 @@ provideListboxItemContext({
       role="option"
       :tabindex="rootContext.focusable.value ? isHighlighted ? '0' : '-1' : -1"
       :aria-selected="isSelected"
+      :aria-disabled="disabled || undefined"
       :as="as"
       :as-child="asChild"
       :disabled="disabled ? '' : undefined"
