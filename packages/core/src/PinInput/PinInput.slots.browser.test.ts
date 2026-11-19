@@ -24,7 +24,7 @@ it('submits the visible digits and restores a retained digit when its slot retur
   indices.value = [0, 1, 3]
   await nextTick()
   expect(new FormData(form).get('pin')).toBe('056')
-  await inputs()[2].setValue('7')
+  await userEvent.fill(inputs()[2].element, '7')
   expect(wrapper.emitted('complete')?.at(-1)).toEqual([[0, 5, 7]])
   expect(new FormData(form).get('pin')).toBe('057')
 
@@ -35,14 +35,16 @@ it('submits the visible digits and restores a retained digit when its slot retur
 })
 
 it('writes full and partial pastes to the model indices of visible slots', async () => {
-  const { indices, inputs, wrapper } = mountPin([0, 1, 8, 3])
+  const { form, indices, inputs, wrapper } = mountPin([0, 1, 8, 3])
   indices.value = [0, 2, 3]
   await nextTick()
+  const source = form.appendChild(document.createElement('input'))
   const paste = async (position: number, text: string) => {
-    const data = new DataTransfer()
-    data.setData('text', text)
-    inputs()[position].element.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, clipboardData: data }))
-    await nextTick()
+    await userEvent.fill(source, text)
+    source.select()
+    await userEvent.copy()
+    await userEvent.click(inputs()[position].element)
+    await userEvent.paste()
   }
 
   await paste(1, '456')
