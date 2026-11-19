@@ -478,6 +478,18 @@ describe('numberField', () => {
   })
 
   describe('given min/max with step condition', () => {
+    it.each([
+      { min: -0.025, step: 0.1, values: ['-0.025', '0.075', '0.175'] },
+      { min: 0.5, step: 1, values: ['0.5', '1.5', '2.5'] },
+    ])('should keep steps relative to min=$min with step=$step', async ({ min, step, values }) => {
+      const { input } = setup({ min, step, stepSnapping: true })
+
+      for (const value of values) {
+        await fireEvent.keyDown(input, { key: kbd.ARROW_UP })
+        expect(input.value).toBe(value)
+      }
+    })
+
     it('should compute min with step correctly', async () => {
       const { input } = setup({ min: 2, step: 3 })
 
