@@ -217,16 +217,16 @@ rootContext.virtualFocusHook.on(({ event, scroll }) => {
 })
 
 rootContext.virtualHighlightHook.on(({ value, focus }) => {
-  const index = props.options.findIndex((option) => {
-    return compare(option, value, rootContext.by)
-  })
+  const index = props.options.findIndex(option => compare(option, value, rootContext.by))
   if (index === -1)
     return
   virtualizer.value.scrollToIndex(index, { align: 'start' })
   requestAnimationFrame(() => {
-    const item = parentEl.value.querySelector(`[data-index="${index}"]`)
-    if (item instanceof HTMLElement)
-      rootContext.changeHighlight(item, true, focus)
+    // Look the value up again, as the options may have changed since the scroll.
+    // `getItems()` leaves out disabled rows, so a disabled item is never highlighted.
+    const item = getItems().find(i => compare(i.value, value, rootContext.by))
+    if (item)
+      rootContext.changeHighlight(item.ref, true, focus)
   })
 })
 

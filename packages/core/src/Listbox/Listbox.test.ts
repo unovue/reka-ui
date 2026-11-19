@@ -1020,23 +1020,25 @@ describe('given a Listbox driven by `highlightItem` from a sibling input', () =>
 
   const options = Array.from({ length: 50 }, (_, i) => `Item ${i}`)
 
-  function mountListbox(virtual: boolean) {
+  function mountListbox(virtual: boolean, disabled: string[] = []) {
     const listbox = ref<InstanceType<typeof ListboxRoot>>()
+    const shown = ref(options)
     const onHighlight = vi.fn()
+    const item = (option: string) => h(ListboxItem, { key: option, value: option, disabled: disabled.includes(option) }, () => option)
     const wrapper = mount(defineComponent({
       setup() {
         return () => [
           h('input', { 'data-testid': 'search' }),
           h(ListboxRoot, { ref: listbox, onHighlight }, () =>
             h(ListboxContent, { style: 'height: 200px; overflow: auto' }, () => virtual
-              ? h(ListboxVirtualizer, { options }, {
-                  default: ({ option }: any) => h(ListboxItem, { value: option }, () => option),
+              ? h(ListboxVirtualizer, { options: shown.value }, {
+                  default: ({ option }: any) => item(option),
                 })
-              : options.map(option => h(ListboxItem, { value: option }, () => option)))),
+              : shown.value.map(item))),
         ]
       },
     }), { attachTo: document.body })
-    return { wrapper, listbox, onHighlight }
+    return { wrapper, listbox, shown, onHighlight }
   }
 
   async function flush() {
@@ -1079,6 +1081,31 @@ describe('given a Listbox driven by `highlightItem` from a sibling input', () =>
       const item = wrapper.findAll('[role=option]').find(i => i.text() === 'Item 3')!
       expect(item.attributes('data-highlighted')).toBe('')
       expect(document.activeElement).toBe(item.element)
+    })
+
+    it('should not highlight a disabled item', async () => {
+      const { wrapper, listbox } = mountListbox(virtual as boolean, ['Item 3'])
+      await flush()
+      const highlighted = listbox.value!.highlightedElement
+
+      listbox.value!.highlightItem('Item 3', { focus: false })
+      await flush()
+
+      const item = wrapper.findAll('[role=option]').find(i => i.text() === 'Item 3')!
+      expect(item.attributes('data-highlighted')).toBeUndefined()
+      expect(listbox.value!.highlightedElement).toBe(highlighted)
+    })
+
+    it('should highlight the requested item when the options are reordered before it renders', async () => {
+      const { wrapper, listbox, shown } = mountListbox(virtual as boolean)
+      await flush()
+
+      listbox.value!.highlightItem('Item 1', { focus: false })
+      shown.value = ['Item 0', 'Item 2', 'Item 1', ...options.slice(3)]
+      await flush()
+
+      const highlighted = wrapper.findAll('[data-highlighted]')
+      expect(highlighted.map(i => i.text())).toEqual(['Item 1'])
     })
   })
 })
