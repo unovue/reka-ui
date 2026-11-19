@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { resolve, sep } from 'node:path'
 import vue from '@vitejs/plugin-vue'
 import Component from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
@@ -14,7 +14,7 @@ export default defineConfig({
         (name) => {
           const demo = resolve(__dirname, '../../docs/components/demo', name, 'tailwind/index.vue')
           if (existsSync(demo))
-            return { name: 'default', from: demo }
+            return { name: 'default', from: demo.split(sep).join('/') }
         },
       ],
       exclude: [/\.md$/],
