@@ -50,7 +50,7 @@ export const [injectPaginationRootContext, providePaginationRootContext]
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { computed, toRefs, watch } from 'vue'
+import { computed, nextTick, toRefs, watch } from 'vue'
 import { Primitive } from '@/Primitive'
 
 const props = withDefaults(defineProps<PaginationRootProps>(), {
@@ -74,9 +74,14 @@ defineSlots<{
 const { siblingCount, disabled, showEdges } = toRefs(props)
 
 useForwardExpose()
+// A clamp correction is emitted directly: in passive mode (`page` starts undefined) `useVModel`
+// drops emits while it syncs a new `page` prop, so an out-of-range page set by the parent would
+// never be corrected. `useVModel` then skips its own emit for that value, so it is emitted once.
+let emittedCorrection: number | undefined
 const modelPage = useVModel(props, 'page', emits, {
   defaultValue: props.defaultPage,
   passive: (props.page === undefined) as false,
+  shouldEmit: value => value !== emittedCorrection,
 }) as Ref<number>
 
 const pageCount = computed(() => Math.max(1, Math.ceil(props.total / (props.itemsPerPage || 1))))
@@ -91,8 +96,13 @@ const page = computed({
 })
 
 watch([() => props.clampPage, modelPage, pageCount], ([clampPage, value, count]) => {
-  if (clampPage && value !== clamp(value, 1, count))
-    modelPage.value = clamp(value, 1, count)
+  const clamped = clamp(value, 1, count)
+  if (!clampPage || value === clamped)
+    return
+  emittedCorrection = clamped
+  emits('update:page', clamped)
+  modelPage.value = clamped
+  nextTick(() => emittedCorrection = undefined)
 }, { immediate: true })
 
 providePaginationRootContext({

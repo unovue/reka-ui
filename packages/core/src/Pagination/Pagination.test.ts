@@ -2,7 +2,7 @@ import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import { h } from 'vue'
+import { h, nextTick } from 'vue'
 import { PaginationNext, PaginationPrev, PaginationRoot } from '.'
 import Pagination from './story/_Pagination.vue'
 
@@ -319,5 +319,65 @@ describe('when the page count shrinks', () => {
     const mounted = mountPagination({ clampPage: true, defaultPage: 20, total: 50 })
     expect(mounted.get('output').text()).toBe('5')
     expect(mounted.emitted('update:page')).toEqual([[5]])
+  })
+
+  describe('with `clampPage` and a `v-model:page` that starts undefined', () => {
+    function mountBound(data: { page?: number, total: number, clampPage: boolean }) {
+      const updates: number[] = []
+      const wrapper = mount({
+        components: { PaginationRoot },
+        data: () => ({ page: undefined as number | undefined, ...data }),
+        methods: {
+          onUpdate(value: number) {
+            updates.push(value)
+            this.page = value
+          },
+        },
+        template: `<PaginationRoot :page="page" :total="total" :items-per-page="10" :clamp-page="clampPage" @update:page="onUpdate" v-slot="{ page: current }">
+          <output>{{ current }}</output>
+        </PaginationRoot>`,
+      })
+      return { wrapper, updates }
+    }
+
+    it('emits the correction when the parent sets an out-of-range page', async () => {
+      const { wrapper, updates } = mountBound({ total: 50, clampPage: true })
+
+      await wrapper.setData({ page: 20 })
+      await nextTick()
+      expect(updates).toEqual([5])
+      expect(wrapper.vm.page).toBe(5)
+      expect(wrapper.get('output').text()).toBe('5')
+    })
+
+    it('emits each correction once when the page count shrinks or `clampPage` turns on', async () => {
+      const { wrapper, updates } = mountBound({ total: 50, clampPage: false })
+
+      await wrapper.setData({ page: 4 })
+      await wrapper.setData({ clampPage: true, total: 20 })
+      await nextTick()
+      expect(updates).toEqual([2])
+      expect(wrapper.vm.page).toBe(2)
+
+      await wrapper.setData({ clampPage: false })
+      await wrapper.setData({ page: 9 })
+      await wrapper.setData({ clampPage: true })
+      await nextTick()
+      expect(updates).toEqual([2, 2])
+      expect(wrapper.get('output').text()).toBe('2')
+    })
+  })
+
+  it('emits a correction once with a controlled page', async () => {
+    const wrapper = mountPagination({ clampPage: true, page: 3, total: 50 })
+
+    await wrapper.setProps({ page: 20 })
+    await nextTick()
+    expect(wrapper.emitted('update:page')).toEqual([[5]])
+
+    await wrapper.setProps({ page: 5 })
+    await wrapper.setProps({ total: 30 })
+    await nextTick()
+    expect(wrapper.emitted('update:page')).toEqual([[5], [3]])
   })
 })
