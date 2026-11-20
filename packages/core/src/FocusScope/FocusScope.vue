@@ -98,8 +98,45 @@ const focusScope = reactive({
   },
   resume() {
     this.paused = false
+    // The focused element may have been removed while another scope was on top.
+    recoverRemovedFocus()
   },
 })
+
+// When the focused element gets removed from the DOM, browsers move focus
+// back to the document.body. In this case, we move focus to the container
+// to keep focus trapped correctly.
+// -- related: https://github.com/unovue/reka-ui/issues/518
+// Reka UI tentative solution:
+// instead of leaning on document.activeElement, we use lastFocusedElementRef.value to check
+// if the element still exist inside the container,
+// if not then we focus to the container
+function recoverRemovedFocus() {
+  const container = currentElement.value
+  const lastFocusedElement = lastFocusedElementRef.value
+
+  // A paused scope is covered by another one (e.g. a nested dialog, whose modal layer
+  // marks this container `aria-hidden`), so it must not pull focus back. It recovers
+  // when it is resumed instead.
+  // Without a previously focused element there is nothing to recover: mutations may be
+  // triggered by something unrelated to focus, e.g. class is set on an element.
+  if (!props.trapped || focusScope.paused || !container || lastFocusedElement === null)
+    return
+
+  // Confirm focus was actually orphaned before pulling it back. `lastFocusedElement`
+  // is only tracked while the scope is not paused, so an open popper (which pauses
+  // this trap and only resumes it in a `setTimeout`) leaves it pointing at a stale
+  // element. Without this check, an element focused inside the container during that
+  // window — e.g. a view swapped in by the popper's `select` handler focusing its own
+  // input on mount — would be robbed of focus.
+  // -- related: https://github.com/unovue/reka-ui/issues/2886
+  const activeElement = getActiveElement()
+  if (activeElement && container.contains(activeElement))
+    return
+
+  if (!container.contains(lastFocusedElement))
+    focus(container)
+}
 
 watchEffect((cleanupFn) => {
   if (!isClient)
@@ -149,43 +186,10 @@ watchEffect((cleanupFn) => {
       focus(lastFocusedElementRef.value, { select: true })
   }
 
-  // When the focused element gets removed from the DOM, browsers move focus
-  // back to the document.body. In this case, we move focus to the container
-  // to keep focus trapped correctly.
-  // -- related: https://github.com/unovue/reka-ui/issues/518
-  // Reka UI tentative solution:
-  // instead of leaning on document.activeElement, we use lastFocusedElementRef.value to check
-  // if the element still exist inside the container,
-  // if not then we focus to the container
   function handleMutations(mutations: MutationRecord[]) {
-    const lastFocusedElement = lastFocusedElementRef.value
-
-    // Mutation may be triggered by something unrelated to focus, e.g. class is set on an element
-    // so we first check if we even have a previously focused element.
-    if (lastFocusedElement === null) {
-      return
-    }
-
     // Ensure mutations removed nodes from the DOM at all.
-    const anyNodesRemoved = mutations.some(m => m.removedNodes.length > 0)
-    if (!anyNodesRemoved) {
-      return
-    }
-
-    // Confirm focus was actually orphaned before pulling it back. `lastFocusedElement`
-    // is only tracked while the scope is not paused, so an open popper (which pauses
-    // this trap and only resumes it in a `setTimeout`) leaves it pointing at a stale
-    // element. Without this check, an element focused inside the container during that
-    // window — e.g. a view swapped in by the popper's `select` handler focusing its own
-    // input on mount — would be robbed of focus.
-    // -- related: https://github.com/unovue/reka-ui/issues/2886
-    const activeElement = getActiveElement()
-    if (activeElement && container.contains(activeElement))
-      return
-
-    const isLastFocusedElementExist = container.contains(lastFocusedElement)
-    if (!isLastFocusedElementExist)
-      focus(container)
+    if (mutations.some(m => m.removedNodes.length > 0))
+      recoverRemovedFocus()
   }
 
   // A shadow root never sees a light-DOM `focusin`: when focus escapes to an

@@ -1,6 +1,7 @@
 import type { RenderResult } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, onMounted, reactive, ref, useTemplateRef } from 'vue'
 import { FocusScope } from '.'
@@ -536,5 +537,72 @@ describe('given a scope re-added to the stack while it is paused', () => {
     stack.remove(nested)
     expect(parent.paused).toBe(false)
     stack.remove(parent)
+  })
+})
+
+describe('given a paused scope whose focused element is removed', () => {
+  const Harness = defineComponent({
+    components: { FocusScope },
+    setup() {
+      return { rowVisible: ref(true), upperOpen: ref(false) }
+    },
+    template: `<div>
+      <FocusScope trapped data-testid="lower">
+        <button v-if="rowVisible" data-testid="row">row</button>
+        <input data-testid="lower-input" />
+      </FocusScope>
+      <FocusScope v-if="upperOpen" trapped data-testid="upper">
+        <button data-testid="confirm">confirm</button>
+      </FocusScope>
+    </div>`,
+  })
+
+  async function settle() {
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 0))
+    await nextTick()
+  }
+
+  it('should not pull focus into its container while another scope is on top', async () => {
+    const wrapper = mount(Harness, { attachTo: document.body })
+    await settle()
+    const lower = document.querySelector<HTMLElement>('[data-testid="lower"]')!
+    document.querySelector<HTMLButtonElement>('[data-testid="row"]')!.focus()
+
+    wrapper.vm.upperOpen = true
+    await settle()
+    const confirm = document.querySelector<HTMLButtonElement>('[data-testid="confirm"]')!
+    expect(confirm).toHaveFocus()
+
+    // In a browser the covered container is `aria-hidden` here (e.g. under a modal), so even a
+    // focus attempt that the top scope immediately takes back triggers a warning.
+    const focusMovesIntoLower: EventTarget[] = []
+    confirm.addEventListener('focusout', (event) => {
+      if (event.relatedTarget instanceof Node && lower.contains(event.relatedTarget))
+        focusMovesIntoLower.push(event.relatedTarget)
+    })
+    wrapper.vm.rowVisible = false
+    await settle()
+
+    expect(focusMovesIntoLower).toEqual([])
+    expect(confirm).toHaveFocus()
+    wrapper.unmount()
+  })
+
+  it('should move focus to its container once it is back on top', async () => {
+    const wrapper = mount(Harness, { attachTo: document.body })
+    await settle()
+    const lower = document.querySelector<HTMLElement>('[data-testid="lower"]')!
+    document.querySelector<HTMLButtonElement>('[data-testid="row"]')!.focus()
+
+    wrapper.vm.upperOpen = true
+    await settle()
+    wrapper.vm.rowVisible = false
+    await settle()
+    wrapper.vm.upperOpen = false
+    await settle()
+
+    expect(lower).toHaveFocus()
+    wrapper.unmount()
   })
 })
