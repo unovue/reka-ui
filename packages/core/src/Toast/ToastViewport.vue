@@ -82,8 +82,16 @@ onMounted(() => {
   observer = new MutationObserver(() => {
     const element = unrefElement(primitiveRef as ComponentPublicInstance)
     // An `asChild` slot that renders nothing leaves a comment anchor, which can't hold toasts.
-    if (element instanceof HTMLElement)
+    if (element instanceof HTMLElement) {
       viewportElement.value = element
+    }
+    // An emptied `asChild` slot takes any hover or focus inside it along, as a replaced
+    // element does below. A window-blur pause is kept.
+    else if (viewportElement.value) {
+      pendingPointerLeave.value = true
+      if (!isPausedByWindowBlur())
+        releasePause(viewportElement.value)
+    }
   })
   observer.observe(unrefElement(branchRef)!, { childList: true })
 })
@@ -98,8 +106,13 @@ const pendingPointerLeave = ref(false)
 // current element when the element is replaced after mount.
 watch(viewportElement, (element) => {
   const previous = providerContext.viewport.value
-  if (!element || !previous || element === previous)
+  if (!element || element === previous)
     return
+  // An `asChild` viewport that mounted empty publishes its first element here.
+  if (!previous) {
+    providerContext.onViewportChange(element)
+    return
+  }
 
   // The pause listeners on the old element are gone, and focus or hover inside it went
   // with it, so release its pause while the toasts still listen there. A window-blur

@@ -806,10 +806,11 @@ describe('given a ToastViewport whose element is replaced', () => {
   const ReplaceableViewport = defineComponent({
     props: {
       mode: { type: String as PropType<'asChild' | 'as'>, default: 'asChild' },
+      initial: { type: String as PropType<'a' | 'none'>, default: 'a' },
     },
-    setup() {
+    setup(props) {
       const open = ref(true)
-      const variant = ref<'a' | 'b' | 'none'>('a')
+      const variant = ref<'a' | 'b' | 'none'>(props.initial)
       return { open, variant }
     },
     render() {
@@ -876,6 +877,15 @@ describe('given a ToastViewport whose element is replaced', () => {
     expect(newViewport.querySelector('li')?.textContent).toContain('Saved')
   })
 
+  it('should teleport open toasts into the first element of a viewport that mounted empty', async () => {
+    wrapper.unmount()
+    wrapper = mount(ReplaceableViewport, { attachTo: document.body, props: { initial: 'none' } })
+    await flush()
+    wrapper.vm.variant = 'a'
+    await flush()
+    expect(document.querySelector('[data-viewport="a"] li')?.textContent).toContain('Saved')
+  })
+
   it('should teleport open toasts into the current viewport when `as` changes', async () => {
     wrapper.unmount()
     wrapper = mount(ReplaceableViewport, { attachTo: document.body, props: { mode: 'as' } })
@@ -923,6 +933,44 @@ describe('given a ToastViewport whose element is replaced', () => {
 
     expect(errorHandler).not.toHaveBeenCalled()
     expect(document.querySelector('[data-viewport="b"] li')?.textContent).toContain('Saved')
+  })
+
+  it('should release a hover pause when the viewport child is removed', async () => {
+    await fireEvent.pointerMove(document.querySelector('[data-viewport="a"]')!)
+    wrapper.vm.variant = 'none'
+    await flush()
+    await runDuration()
+    expect(wrapper.vm.open).toBe(false)
+  })
+
+  it('should keep a window-blur pause when the viewport child is removed', async () => {
+    vi.mocked(document.hasFocus).mockReturnValue(false)
+    window.dispatchEvent(new Event('blur'))
+    wrapper.vm.variant = 'none'
+    await flush()
+    await runDuration()
+    expect(wrapper.vm.open).toBe(true)
+  })
+
+  it('should release a hover pause when the viewport child is removed while the window is blurred', async () => {
+    await fireEvent.pointerMove(document.querySelector('[data-viewport="a"]')!)
+    vi.mocked(document.hasFocus).mockReturnValue(false)
+    window.dispatchEvent(new Event('blur'))
+    wrapper.vm.variant = 'none'
+    await flush()
+    vi.mocked(document.hasFocus).mockReturnValue(true)
+    window.dispatchEvent(new Event('focus'))
+    await runDuration()
+    expect(wrapper.vm.open).toBe(false)
+  })
+
+  it('should release a focus pause when the viewport child is removed', async () => {
+    document.querySelector<HTMLElement>('[data-viewport="a"] li')!.focus()
+    await flush()
+    wrapper.vm.variant = 'none'
+    await flush()
+    await runDuration()
+    expect(wrapper.vm.open).toBe(false)
   })
 
   it('should collapse the stack when the viewport is replaced while hovered', async () => {
