@@ -108,7 +108,7 @@ export interface ComboboxRootProps<T = AcceptableValue, ClearValue = any> extend
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, ClearValue extends T | Array<T> | null | undefined = never">
 import type { EventHookOn } from '@vueuse/core'
 import { createEventHook, useVModel } from '@vueuse/core'
-import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs, watch } from 'vue'
+import { computed, getCurrentInstance, nextTick, onDeactivated, onMounted, ref, toRefs, watch } from 'vue'
 import { ListboxRoot } from '@/Listbox'
 import { PopperRoot } from '@/Popper'
 import { useComboboxContentPositioning } from './useComboboxContentPositioning'
@@ -276,6 +276,12 @@ defineExpose({
   highlightItem: primitiveElement.value?.highlightItem,
   highlightFirstItem: primitiveElement.value?.highlightFirstItem,
   highlightSelected: primitiveElement.value?.highlightSelected,
+})
+
+// A `KeepAlive` page keeps the content teleported and open, anchored to a trigger out of the document.
+onDeactivated(() => {
+  if (open.value)
+    onOpenChange(false)
 })
 
 provideComboboxRootContext(defineReactiveIds({

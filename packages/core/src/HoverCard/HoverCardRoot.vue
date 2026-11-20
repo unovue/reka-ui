@@ -41,7 +41,7 @@ export const [injectHoverCardRootContext, provideHoverCardRootContext]
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { onBeforeUnmount, ref, toRefs } from 'vue'
+import { onBeforeUnmount, onDeactivated, ref, toRefs } from 'vue'
 import { PopperRoot } from '@/Popper'
 
 const props = withDefaults(defineProps<HoverCardRootProps>(), {
@@ -123,6 +123,12 @@ function handleDismiss() {
   if (open.value)
     open.value = false
 }
+
+// A `KeepAlive` page keeps the content teleported and open, anchored to a trigger out of the document.
+onDeactivated(() => {
+  clearTimeout(closeTimerRef.value)
+  handleDismiss()
+})
 
 provideHoverCardRootContext({
   open,

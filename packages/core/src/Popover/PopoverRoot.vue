@@ -49,7 +49,7 @@ export const [injectPopoverRootContext, providePopoverRootContext]
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { ref, toRefs } from 'vue'
+import { onDeactivated, ref, toRefs } from 'vue'
 import { PopperRoot } from '@/Popper'
 
 const props = withDefaults(defineProps<PopoverRootProps>(), {
@@ -78,6 +78,12 @@ const open = useVModel(props, 'open', emit, {
 
 const triggerElement = ref<HTMLElement>()
 const hasCustomAnchor = ref(false)
+
+// A `KeepAlive` page keeps the content teleported and open, anchored to a trigger out of the document.
+onDeactivated(() => {
+  if (open.value)
+    open.value = false
+})
 
 providePopoverRootContext(defineReactiveIds({
   contentId: '',
