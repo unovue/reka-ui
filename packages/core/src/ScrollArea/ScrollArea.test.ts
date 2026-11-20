@@ -1,5 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import type { PropType } from 'vue'
+import { renderToString } from '@vue/server-renderer'
 import { mount } from '@vue/test-utils'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -14,6 +15,11 @@ import ScrollAreaVirtualizer from './ScrollAreaVirtualizer.vue'
 import ScrollArea from './story/_ScrollArea.vue'
 
 describe('given a ScrollAreaViewport', () => {
+  it('renders a camelCase tabIndex only once during SSR', async () => {
+    const html = await renderToString(h(ScrollAreaRoot, null, () => h(ScrollAreaViewport, { tabIndex: -1 })))
+    expect(html.match(/\btabindex="[^"]*"/g)).toEqual(['tabindex="-1"'])
+  })
+
   it.each([
     { attrs: {}, expected: '0' },
     { attrs: { tabindex: '-1' }, expected: '-1' },
