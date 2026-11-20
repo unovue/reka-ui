@@ -599,6 +599,27 @@ describe('given toasts whose close timers are paused', () => {
     })
   })
 
+  describe('when a focused toast is removed without focusout (WebKit)', () => {
+    it('should not leave the next toast paused', async () => {
+      // On WebKit, removing a focused element from the DOM does not fire
+      // focusout. This simulates: focus a close button (focusin pauses),
+      // close the toast (button removed from DOM), no focusout fires.
+      const closeFirst = document.querySelector<HTMLElement>('[data-close="first"]')!
+      closeFirst.focus()
+      await fireEvent.focusIn(viewport)
+
+      // Close both toasts — the focused button is removed but we
+      // intentionally skip focusOut to match WebKit behaviour.
+      wrapper.vm.open = { first: false, second: false }
+      await waitForUnmount()
+
+      // A later toast should still auto-close.
+      await reopenFirst()
+      await runDuration()
+      expect(wrapper.vm.open.first).toBe(false)
+    })
+  })
+
   describe('when Escape closes only one of two hovered toasts', () => {
     it('should keep the other paused until the pointer leaves', async () => {
       await fireEvent.pointerMove(viewport)
