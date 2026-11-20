@@ -635,6 +635,46 @@ describe('given a paused scope whose focused element is removed', () => {
     // `document.activeElement` stops at the shadow host.
     expect(document.activeElement).toBe(host)
     expect(host.shadowRoot!.activeElement).toBe(shadowInput)
+
+    // The removed row must not stay the recovery target, or focus could leave the scope.
+    const outside = document.createElement('button')
+    document.body.append(outside)
+    outside.focus()
+    await settle()
+    expect(document.activeElement).toBe(host)
+    expect(host.shadowRoot!.activeElement).toBe(shadowInput)
+    outside.remove()
+    wrapper.unmount()
+  })
+
+  it('should keep focus that was moved inside it before it resumed trapped there', async () => {
+    const wrapper = mount(Harness, {
+      attachTo: document.body,
+      props: {
+        onUpperUnmountAutoFocus: (event: Event) => {
+          event.preventDefault()
+          document.querySelector<HTMLInputElement>('[data-testid="lower-input"]')!.focus()
+        },
+      },
+    })
+    await settle()
+    const lowerInput = document.querySelector<HTMLInputElement>('[data-testid="lower-input"]')!
+    document.querySelector<HTMLButtonElement>('[data-testid="row"]')!.focus()
+
+    wrapper.vm.upperOpen = true
+    await settle()
+    wrapper.vm.rowVisible = false
+    await settle()
+    wrapper.vm.upperOpen = false
+    await settle()
+    expect(lowerInput).toHaveFocus()
+
+    const outside = document.createElement('button')
+    document.body.append(outside)
+    outside.focus()
+    await settle()
+    expect(lowerInput).toHaveFocus()
+    outside.remove()
     wrapper.unmount()
   })
 })

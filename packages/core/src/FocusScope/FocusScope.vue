@@ -132,8 +132,12 @@ function recoverRemovedFocus() {
   // -- related: https://github.com/unovue/reka-ui/issues/2886
   // `getActiveElement()` descends into shadow roots, so the check has to cross them too.
   const activeElement = getActiveElement()
-  if (activeElement && containsComposed(container, activeElement))
+  if (activeElement && containsComposed(container, activeElement)) {
+    // `handleFocusIn` does not record focus that moved in while the scope was paused, so record
+    // it here. Otherwise the trap would later try to restore focus to a removed element.
+    lastFocusedElementRef.value = activeElement as HTMLElement
     return
+  }
 
   if (!container.contains(lastFocusedElement))
     focus(container)
