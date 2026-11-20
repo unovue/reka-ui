@@ -1,5 +1,5 @@
 import { cloneVNode, Comment, defineComponent, mergeProps } from 'vue'
-import { isPlainTag, renderSlotFragments } from '@/shared'
+import { acceptsDisabled, isPlainTag, renderSlotFragments } from '@/shared'
 
 export const Slot = defineComponent({
   name: 'PrimitiveSlot',
@@ -33,6 +33,12 @@ export const Slot = defineComponent({
       // into a new object, so this doesn't touch `attrs`
       if (cloned.props!.disabled === false && isPlainTag(cloned.type))
         cloned.props!.disabled = undefined
+
+      // With asChild, this is where an option's underlying tag becomes known.
+      if (attrs.role === 'option' && attrs.disabled != null && !acceptsDisabled(cloned.type)) {
+        if (!Object.hasOwn(firstNonCommentChildren.props ?? {}, 'disabled'))
+          cloned.props!.disabled = undefined
+      }
 
       if (children.length === 1)
         return cloned
