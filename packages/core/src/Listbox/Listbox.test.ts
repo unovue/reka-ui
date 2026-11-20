@@ -630,7 +630,7 @@ describe('given horizontal Listbox', () => {
 
 // Regression test for https://github.com/unovue/reka-ui/issues/2644
 // `v-memo` on ListboxItem must invalidate when `disabled` (or
-// `rootContext.focusable.value`) changes, otherwise `data-disabled` / `disabled`
+// `rootContext.focusable.value`) changes, otherwise `data-disabled` / `aria-disabled`
 // attributes go stale and the item still participates in keyboard navigation.
 describe('given ListboxItem with reactive `disabled` prop', () => {
   it('should update DOM attributes when `disabled` toggles without highlight/selection change', async () => {
@@ -658,7 +658,7 @@ describe('given ListboxItem with reactive `disabled` prop', () => {
     await nextTick()
 
     expect(items[0].attributes('data-disabled')).toBe('')
-    expect(items[0].attributes('disabled')).toBe('')
+    expect(items[0].attributes('disabled')).toBeUndefined()
     expect(items[0].attributes('aria-disabled')).toBe('true')
 
     isDisabled.value = false
@@ -667,6 +667,29 @@ describe('given ListboxItem with reactive `disabled` prop', () => {
     expect(items[0].attributes('data-disabled')).toBeUndefined()
     expect(items[0].attributes('disabled')).toBeUndefined()
     expect(items[0].attributes('aria-disabled')).toBeUndefined()
+  })
+})
+
+describe('disabled ListboxItem rendered with a custom tag', () => {
+  it.each(['button', 'span'] as const)('respects native disabled support for %s', (tag) => {
+    const wrapper = mount(ListboxRoot, {
+      props: { disabled: true },
+      slots: {
+        default: () => [
+          h(ListboxItem, { value: 'direct', as: tag }, () => 'direct'),
+          h(ListboxItem, { value: 'child', asChild: true }, () => h(tag, 'child')),
+        ],
+      },
+    })
+
+    const options = wrapper.findAll('[role=option]')
+    expect(options).toHaveLength(2)
+    for (const option of options) {
+      expect(option.element.tagName.toLowerCase()).toBe(tag)
+      expect(option.attributes('aria-disabled')).toBe('true')
+      expect(option.element.hasAttribute('disabled')).toBe(tag === 'button')
+    }
+    wrapper.unmount()
   })
 })
 

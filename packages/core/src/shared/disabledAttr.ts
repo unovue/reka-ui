@@ -7,6 +7,13 @@ export function isPlainTag(tag: unknown): tag is string {
   return typeof tag === 'string' && !tag.includes('-')
 }
 
+const nativeDisabledTags = new Set(['button', 'fieldset', 'input', 'optgroup', 'option', 'select', 'textarea'])
+
+// Components and custom elements can implement their own disabled prop.
+export function acceptsDisabled(tag: unknown): boolean {
+  return !isPlainTag(tag) || nativeDisabledTags.has(tag.toLowerCase())
+}
+
 /**
  * The value to bind as `disabled` on a `Primitive`. For a plain tag `false` becomes `undefined`, so an
  * enabled part doesn't render `disabled="false"`. A component or custom element gets the boolean

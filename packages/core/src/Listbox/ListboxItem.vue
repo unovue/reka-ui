@@ -1,5 +1,5 @@
 <script lang="ts">
-import { createRekaContext, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
+import { acceptsDisabled, createRekaContext, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
 
 export interface ListboxItemProps<T = AcceptableValue> extends PrimitiveProps {
   /** The value given as data when submitted with a `name`. */
@@ -90,14 +90,14 @@ provideListboxItemContext({
       :id="id"
       v-bind="$attrs"
       :ref="forwardRef"
-      v-memo="[isHighlighted, isSelected, disabled, rootContext.focusable.value, ...Object.entries($attrs).flat()]"
+      v-memo="[isHighlighted, isSelected, disabled, as, asChild, rootContext.focusable.value, ...Object.entries($attrs).flat()]"
       role="option"
       :tabindex="rootContext.focusable.value ? isHighlighted ? '0' : '-1' : -1"
       :aria-selected="isSelected"
       :aria-disabled="disabled || undefined"
       :as="as"
       :as-child="asChild"
-      :disabled="disabled ? '' : undefined"
+      :disabled="disabled && (asChild || as === 'template' || acceptsDisabled(as)) ? '' : undefined"
       :data-disabled="disabled ? '' : undefined"
       :data-highlighted="isHighlighted ? '' : undefined"
       :data-state="isSelected ? 'checked' : 'unchecked'"
