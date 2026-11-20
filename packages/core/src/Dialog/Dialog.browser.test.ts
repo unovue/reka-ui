@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { AlertDialogCancel, AlertDialogContent, AlertDialogOverlay, AlertDialogPortal, AlertDialogRoot, AlertDialogTitle } from '@/AlertDialog'
@@ -293,6 +293,39 @@ describe('given a modal Dialog with an exit animation, in a real browser', () =>
     finishExit('content')
     await expect.poll(lock).toEqual(UNLOCKED)
     expect(overflow).toEqual(['', 'hidden', ''])
+  })
+
+  it('hands Escape and accessibility back to the parent during the child exit', async () => {
+    vi.stubEnv('MODE', 'development') // Exercise useHideOthers in the browser.
+    onTestFinished(() => vi.unstubAllEnvs())
+    const outerOpen = ref(false)
+    const innerOpen = ref(false)
+    // Omit overlays so the layer is the only owner of the body pointer lock.
+    const options = { overlay: false, contentExit: true }
+    mount(defineComponent({
+      setup: () => () => dialog('outer', outerOpen, options, () => dialog('inner', innerOpen, options)),
+    }), { attachTo: document.body })
+    page.tabIndex = -1
+    page.focus()
+    outerOpen.value = true
+    await expect.poll(() => get('outer')?.contains(document.activeElement)).toBe(true)
+    innerOpen.value = true
+    await expect.poll(() => get('outer')?.getAttribute('aria-hidden')).toBe('true')
+
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => exiting('inner')).toBe(true)
+    expect(get('outer')!.closest('[aria-hidden="true"]')).toBeNull()
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => exiting('outer')).toBe(true)
+    expect(exiting('inner')).toBe(true)
+    expect(document.body.style.pointerEvents).toBe('')
+
+    // The parent's exit can finish first and unmount both scopes in the same tick.
+    finishExit('outer')
+    await expect.poll(() => get('outer')).toBeNull()
+    expect(document.activeElement).toBe(page)
   })
 
   it('keeps the outer lock when a nested dialog has finished its exit', async () => {
