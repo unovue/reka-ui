@@ -216,7 +216,7 @@ import {
   size,
   useFloating,
 } from '@floating-ui/vue'
-import { computed, ref, watchEffect, watchPostEffect } from 'vue'
+import { computed, onActivated, onDeactivated, ref, watchEffect, watchPostEffect } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
@@ -348,10 +348,15 @@ const computedMiddleware = computed(() => {
   ] as Middleware[]
 })
 
+// `KeepAlive` takes a deactivated page out of the document, anchor included.
+const isDeactivated = ref(false)
+onDeactivated(() => isDeactivated.value = true)
+onActivated(() => isDeactivated.value = false)
+
 // If provided custom reference, it will overwrite the default anchor element.
-// Content kept mounted while closed drops it, which stops tracking the position but keeps the
-// last one, so that a leave transition run by the consumer (e.g. `v-show`) ends in place.
-const reference = computed(() => props.present ? (props.reference ?? rootContext.anchor.value) : undefined)
+// Content kept mounted while closed, or whose page is deactivated, drops it, which stops tracking
+// the position but keeps the last one, so that a leave transition (e.g. `v-show`) ends in place.
+const reference = computed(() => props.present && !isDeactivated.value ? (props.reference ?? rootContext.anchor.value) : undefined)
 
 const { floatingStyles, placement, isPositioned, middlewareData, update } = useFloating(
   reference,

@@ -72,7 +72,7 @@ export const [injectTooltipRootContext, provideTooltipRootContext]
 
 <script setup lang="ts">
 import { useTimeoutFn, useVModel } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, onDeactivated, ref, watch } from 'vue'
 import { PopperRoot } from '@/Popper'
 import { injectTooltipProviderContext } from './TooltipProvider.vue'
 import { TOOLTIP_OPEN } from './utils'
@@ -151,6 +151,13 @@ function handleClose() {
 function handleDelayedOpen() {
   startTimer()
 }
+
+// A `KeepAlive` page keeps the content teleported and open, anchored to a trigger out of the document.
+onDeactivated(() => {
+  clearTimer()
+  if (open.value)
+    open.value = false
+})
 
 provideTooltipRootContext(defineReactiveIds({
   contentId: '',

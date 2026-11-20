@@ -68,7 +68,7 @@ export const [injectAutocompleteRootContext, provideAutocompleteRootContext]
 
 <script setup lang="ts">
 import { createEventHook, useVModel } from '@vueuse/core'
-import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs } from 'vue'
+import { computed, getCurrentInstance, nextTick, onDeactivated, onMounted, ref, toRefs } from 'vue'
 import { ListboxRoot } from '@/Listbox'
 import { PopperRoot } from '@/Popper'
 
@@ -213,6 +213,12 @@ defineExpose({
   highlightItem: primitiveElement.value?.highlightItem,
   highlightFirstItem: primitiveElement.value?.highlightFirstItem,
   highlightSelected: primitiveElement.value?.highlightSelected,
+})
+
+// A `KeepAlive` page keeps the content teleported and open, anchored to a trigger out of the document.
+onDeactivated(() => {
+  if (open.value)
+    onOpenChange(false)
 })
 
 // Provide the Combobox context so all Combobox sub-components work inside Autocomplete
