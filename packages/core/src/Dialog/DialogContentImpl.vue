@@ -35,7 +35,7 @@ export interface DialogContentImplProps extends DismissableLayerProps {
 
 <script setup lang="ts">
 import { isClient } from '@vueuse/shared'
-import { onMounted, onUnmounted, shallowRef, watch } from 'vue'
+import { onBeforeUnmount, onMounted, onUnmounted, shallowRef, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { getOpenState } from '@/Menu/utils'
@@ -43,9 +43,7 @@ import { injectDialogRootContext } from './DialogRoot.vue'
 import { recordFocusBeforeOpen, useWarning } from './utils'
 
 const props = defineProps<DialogContentImplProps & {
-  /** Whether the content is currently visible. Forwarded to `FocusScope` and
-   * `DismissableLayer` so a force-mounted dialog (`unmountOnHide: false`)
-   * auto-focuses on show and leaves the layer/scope stacks while hidden. */
+  /** Whether the content is present, including while it animates out. */
   present?: boolean
 }>()
 const emits = defineEmits<DialogContentImplEmits>()
@@ -60,6 +58,13 @@ rootContext.descriptionId ||= useId(undefined, 'reka-dialog-description')
 
 onMounted(() => {
   rootContext.contentElement = contentElement
+})
+
+// A nested scope can restore focus after this scope's closeAutoFocus handler,
+// while its trigger is still connected inside the content about to be removed.
+onBeforeUnmount(() => {
+  if (contentElement.value)
+    contentElement.value.inert = true
 })
 
 // Record where focus was on every open, before the content moves it: a content kept
@@ -103,7 +108,7 @@ if (process.env.NODE_ENV !== 'production') {
       :ref="forwardRef"
       :as="as"
       :as-child="asChild"
-      :present="props.present"
+      :present="rootContext.open.value && props.present"
       :disable-outside-pointer-events="disableOutsidePointerEvents"
       role="dialog"
       :aria-describedby="rootContext.descriptionId"
