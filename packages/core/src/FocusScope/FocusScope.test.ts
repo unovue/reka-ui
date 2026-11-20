@@ -543,6 +543,7 @@ describe('given a scope re-added to the stack while it is paused', () => {
 describe('given a paused scope whose focused element is removed', () => {
   const Harness = defineComponent({
     components: { FocusScope },
+    emits: ['upperUnmountAutoFocus'],
     setup() {
       return { rowVisible: ref(true), upperOpen: ref(false) }
     },
@@ -550,8 +551,9 @@ describe('given a paused scope whose focused element is removed', () => {
       <FocusScope trapped data-testid="lower">
         <button v-if="rowVisible" data-testid="row">row</button>
         <input data-testid="lower-input" />
+        <div data-testid="shadow-host" />
       </FocusScope>
-      <FocusScope v-if="upperOpen" trapped data-testid="upper">
+      <FocusScope v-if="upperOpen" trapped data-testid="upper" @unmount-auto-focus="$emit('upperUnmountAutoFocus', $event)">
         <button data-testid="confirm">confirm</button>
       </FocusScope>
     </div>`,
@@ -603,6 +605,36 @@ describe('given a paused scope whose focused element is removed', () => {
     await settle()
 
     expect(lower).toHaveFocus()
+    wrapper.unmount()
+  })
+
+  it('should keep focus that was moved into a shadow root inside it before it resumed', async () => {
+    const shadowInput = document.createElement('input')
+    const wrapper = mount(Harness, {
+      attachTo: document.body,
+      props: {
+        // The app takes over the unmount auto-focus and focuses a field of a web component in the lower scope.
+        onUpperUnmountAutoFocus: (event: Event) => {
+          event.preventDefault()
+          shadowInput.focus()
+        },
+      },
+    })
+    await settle()
+    const host = document.querySelector<HTMLElement>('[data-testid="shadow-host"]')!
+    host.attachShadow({ mode: 'open' }).append(shadowInput)
+    document.querySelector<HTMLButtonElement>('[data-testid="row"]')!.focus()
+
+    wrapper.vm.upperOpen = true
+    await settle()
+    wrapper.vm.rowVisible = false
+    await settle()
+    wrapper.vm.upperOpen = false
+    await settle()
+
+    // `document.activeElement` stops at the shadow host.
+    expect(document.activeElement).toBe(host)
+    expect(host.shadowRoot!.activeElement).toBe(shadowInput)
     wrapper.unmount()
   })
 })

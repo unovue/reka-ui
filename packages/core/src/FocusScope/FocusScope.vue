@@ -130,8 +130,9 @@ function recoverRemovedFocus() {
   // window — e.g. a view swapped in by the popper's `select` handler focusing its own
   // input on mount — would be robbed of focus.
   // -- related: https://github.com/unovue/reka-ui/issues/2886
+  // `getActiveElement()` descends into shadow roots, so the check has to cross them too.
   const activeElement = getActiveElement()
-  if (activeElement && container.contains(activeElement))
+  if (activeElement && containsComposed(container, activeElement))
     return
 
   if (!container.contains(lastFocusedElement))
