@@ -77,15 +77,15 @@ async function handleCustomKeydown(event: KeyboardEvent, { preventImplicitSubmit
 
   const target = event.target as HTMLInputElement
   // A form submits implicitly as soon as the `Enter` keydown dispatch finishes,
-  // so it has to be cancelled synchronously. An empty draft keeps submitting the form.
-  if (preventImplicitSubmit && target.value && !isPreventedByOthers)
+  // so it has to be cancelled synchronously. An empty or blank draft keeps submitting the form.
+  if (preventImplicitSubmit && target.value.trim() && !isPreventedByOthers)
     nativePreventDefault()
 
   await nextTick()
   if (isPreventedByOthers)
     return
 
-  if (!target.value)
+  if (!target.value.trim())
     return
 
   const isAdded = context.onAddValue(target.value)
@@ -137,15 +137,15 @@ function handlePaste(event: ClipboardEvent) {
       return
 
     const value = clipboardData.getData('text')
-    if (context.delimiter.value) {
-      const splitValue = value.split(context.delimiter.value)
-      splitValue.forEach((v) => {
-        context.onAddValue(v)
-      })
-    }
-    else {
-      context.onAddValue(value)
-    }
+    // Blank pieces (a trailing delimiter, a paste of only spaces) are not tags,
+    // and a tag does not keep the spaces around it.
+    const delimiter = context.delimiter.value
+    const texts = (delimiter ? value.split(delimiter) : [value])
+      .map(text => text.trim())
+      .filter(Boolean)
+    texts.forEach((text) => {
+      context.onAddValue(text)
+    })
   }
 }
 
