@@ -13,6 +13,21 @@ import ScrollAreaViewport from './ScrollAreaViewport.vue'
 import ScrollAreaVirtualizer from './ScrollAreaVirtualizer.vue'
 import ScrollArea from './story/_ScrollArea.vue'
 
+describe('given a ScrollAreaViewport', () => {
+  it.each([
+    { attrs: {}, expected: '0' },
+    { attrs: { tabindex: '-1' }, expected: '-1' },
+    { attrs: { tabindex: null }, expected: undefined },
+  ])('renders $expected for viewport attributes $attrs', ({ attrs, expected }) => {
+    const wrapper = mount(ScrollAreaRoot, {
+      slots: { default: () => h(ScrollAreaViewport, attrs) },
+    })
+
+    expect(wrapper.get('[data-reka-scroll-area-viewport]').attributes('tabindex')).toBe(expected)
+    wrapper.unmount()
+  })
+})
+
 describe('given a virtualized ScrollArea', () => {
   const options = Array.from({ length: 100 }, (_, index) => `Item ${index}`)
   const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect

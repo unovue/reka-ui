@@ -59,8 +59,8 @@ const { forwardRef, currentElement: contentElement } = useForwardExpose()
       overflowX: rootContext.scrollbarXEnabled.value ? 'scroll' : 'hidden',
       overflowY: rootContext.scrollbarYEnabled.value ? 'scroll' : 'hidden',
     }"
-    v-bind="$attrs"
     :tabindex="0"
+    v-bind="$attrs"
   >
     <Primitive
       :ref="forwardRef"
