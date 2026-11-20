@@ -254,11 +254,13 @@ provideSelectRootContext(defineReactiveIds({
       <option
         v-if="isNullish(modelValue)"
         :value="nullableValue"
+        selected
       />
       <option
         v-for="option in Array.from(optionsSet)"
         :key="option.value ?? ''"
         v-bind="option"
+        :selected="multiple ? valueComparator(modelValue, option.value, by) : undefined"
       />
     </BubbleSelect>
   </PopperRoot>
