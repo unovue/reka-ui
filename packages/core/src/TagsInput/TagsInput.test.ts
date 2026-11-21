@@ -178,6 +178,30 @@ describe('given default TagsInput', () => {
       expect(event.defaultPrevented).toBe(true)
     })
 
+    it('should let keydown:tab move focus when the draft is a duplicate', async () => {
+      await wrapper.setProps({ addOnTab: true })
+      await setValueInInput('Test')
+
+      const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+      input.element.dispatchEvent(event)
+      await flushPromises()
+
+      expect(wrapper.findAll('[data-reka-collection-item]').length).toBe(1)
+      expect(event.defaultPrevented).toBe(false)
+    })
+
+    it('should let keydown:tab move focus when max is reached', async () => {
+      await wrapper.setProps({ addOnTab: true, max: 1 })
+      await setValueInInput('tag:tab')
+
+      const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+      input.element.dispatchEvent(event)
+      await flushPromises()
+
+      expect(wrapper.html()).not.toContain('tag:tab')
+      expect(event.defaultPrevented).toBe(false)
+    })
+
     it('should let keydown:tab move focus when the draft is empty', async () => {
       await wrapper.setProps({ addOnTab: true })
       await setValueInInput('')

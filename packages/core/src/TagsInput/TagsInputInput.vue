@@ -89,8 +89,10 @@ async function handleCustomKeydown(event: KeyboardEvent, { preventImplicitSubmit
     return
 
   const isAdded = context.onAddValue(target.value)
-  if (isAdded)
-    target.value = ''
+  if (!isAdded)
+    return
+
+  target.value = ''
 
   // Keep focus in the input after `Tab` adds a tag. A browser still honours this
   // from a microtask of the keydown dispatch; `Enter` was already cancelled above.
