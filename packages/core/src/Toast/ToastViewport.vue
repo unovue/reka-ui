@@ -125,6 +125,13 @@ watch(hasToasts, (value) => {
     providerContext.hovering.value = false
     providerContext.focused.value = false
     pendingPointerLeave.value = false
+    // On WebKit, removing a focused element from the DOM does not fire
+    // focusout, so a pause set by focusin on the toast's action or close
+    // button is never released. Reset it when all toasts are gone so that
+    // later toasts can start their timers. A window-blur pause must be
+    // kept: the window focus listener releases it.
+    if (!isPausedByWindowBlur())
+      releasePause(viewportElement.value)
   }
 })
 
