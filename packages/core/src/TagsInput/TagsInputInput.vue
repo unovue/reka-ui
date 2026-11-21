@@ -23,9 +23,14 @@ const props = withDefaults(defineProps<TagsInputInputProps>(), {
 
 const context = injectTagsInputRootContext()
 const { forwardRef, currentElement } = useForwardExpose()
+let isBlurFromRejectedTab = false
 
 function handleBlur(event: FocusEvent) {
   context.selectedElement.value = undefined
+  const skipAdd = isBlurFromRejectedTab
+  isBlurFromRejectedTab = false
+  if (skipAdd)
+    return
 
   if (!context.addOnBlur.value)
     return
@@ -89,8 +94,10 @@ async function handleCustomKeydown(event: KeyboardEvent, { preventImplicitSubmit
     return
 
   const isAdded = context.onAddValue(target.value)
-  if (!isAdded)
+  if (!isAdded) {
+    isBlurFromRejectedTab = event.key === 'Tab'
     return
+  }
 
   target.value = ''
 
@@ -102,6 +109,7 @@ async function handleCustomKeydown(event: KeyboardEvent, { preventImplicitSubmit
 function handleInput(event: InputEvent) {
   if (isComposing.value)
     return
+  isBlurFromRejectedTab = false
   context.isInvalidInput.value = false
   if (event.data === null)
     return
@@ -128,6 +136,8 @@ function handleInputKeydown(event: KeyboardEvent) {
   // tag navigation is skipped even when the commit keydown reports `event.isComposing === false`.
   if (isComposing.value)
     return
+  if (event.key !== 'Tab')
+    isBlurFromRejectedTab = false
   context.onInputKeydown(event)
 }
 

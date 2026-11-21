@@ -213,6 +213,22 @@ describe('given default TagsInput', () => {
       expect(event.defaultPrevented).toBe(false)
     })
 
+    it('should emit `invalid` once when a rejected keydown:tab blurs the input', async () => {
+      await wrapper.setProps({ addOnTab: true, addOnBlur: true })
+      await setValueInInput('Test')
+
+      input.element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }))
+      await flushPromises()
+      await input.trigger('blur')
+
+      expect(rootComponent.emitted('invalid')?.flat()).toEqual(['Test'])
+
+      input.element.focus()
+      await input.trigger('blur')
+
+      expect(rootComponent.emitted('invalid')?.flat()).toEqual(['Test', 'Test'])
+    })
+
     it('should add value on blur', async () => {
       const tag = 'tag:blur'
       await wrapper.setProps({ addOnBlur: true })
