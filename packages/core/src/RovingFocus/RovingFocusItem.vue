@@ -32,13 +32,21 @@ const props = withDefaults(defineProps<RovingFocusItemProps>(), {
 const context = injectRovingFocusGroupContext()
 const randomId = useId()
 const id = computed(() => props.tabStopId || randomId)
-const isCurrentTabStop = computed(
-  () => context.currentTabStopId.value === id.value,
-)
+// Until a tab stop is chosen, the group only becomes tabbable once its items
+// have mounted, so the server-rendered HTML would have no stop at all. Before
+// mount, the active item stands in as the stop; after mount the group's own
+// tabindex takes over, as before.
+const isMounted = shallowRef(false)
+const isCurrentTabStop = computed(() => {
+  if (context.currentTabStopId.value != null)
+    return context.currentTabStopId.value === id.value
+  return !isMounted.value && props.active && props.focusable
+})
 
 const { getItems, CollectionItem } = useCollection()
 
 onMounted(() => {
+  isMounted.value = true
   if (props.focusable)
     context.onFocusableItemAdd()
 })
