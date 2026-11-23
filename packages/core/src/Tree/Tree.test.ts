@@ -701,3 +701,44 @@ describe('given a Tree with `loop`', () => {
     })
   })
 })
+
+describe('given a Tree with a controlled `expanded`', () => {
+  const treeItems = [
+    { title: 'fruits', children: [{ title: 'grape' }, { title: 'kiwi' }] },
+    { title: 'vegetables', children: [{ title: 'leek' }] },
+  ]
+
+  function mountTree(expanded: string[]) {
+    return mount(defineComponent({
+      props: { expanded: { type: Array, required: true } },
+      setup(props) {
+        return () => h(TreeRoot as any, {
+          items: treeItems,
+          getKey: (item: any) => item.title,
+          expanded: props.expanded,
+        }, {
+          default: ({ flattenItems }: any) => flattenItems.map((item: any) =>
+            h(TreeItem as any, { key: item._id, ...item.bind }, { default: () => item.value.title }),
+          ),
+        })
+      },
+    }), { attachTo: document.body, props: { expanded } })
+  }
+
+  const titles = (wrapper: VueWrapper) => wrapper.findAll('[role=treeitem]').map(item => item.text())
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should render the children of the expanded items only', () => {
+    const wrapper = mountTree(['fruits'])
+    expect(titles(wrapper)).toEqual(['fruits', 'grape', 'kiwi', 'vegetables'])
+  })
+
+  it('should render again when `expanded` changes', async () => {
+    const wrapper = mountTree(['fruits'])
+    await wrapper.setProps({ expanded: ['vegetables'] })
+    expect(titles(wrapper)).toEqual(['fruits', 'vegetables', 'leek'])
+  })
+})

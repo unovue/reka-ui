@@ -135,11 +135,11 @@ const selectedKeys = computed(() => {
     return [props.getKey(modelValue.value as any ?? {})]
 })
 
-function flattenItems(items: T[], level: number = 1, parentItem?: T): FlattenedItem<T>[] {
+function flattenItems(items: T[], expandedKeys: Set<string>, level: number = 1, parentItem?: T): FlattenedItem<T>[] {
   return items.reduce((acc: FlattenedItem<T>[], item: T, index: number) => {
     const key = props.getKey(item)
     const children = props.getChildren(item)
-    const isExpanded = expanded.value.includes(key)
+    const isExpanded = expandedKeys.has(key)
 
     const flattenedItem: FlattenedItem<T> = {
       _id: key,
@@ -158,7 +158,7 @@ function flattenItems(items: T[], level: number = 1, parentItem?: T): FlattenedI
     acc.push(flattenedItem)
 
     if (children && isExpanded)
-      acc.push(...flattenItems(children, level + 1, item))
+      acc.push(...flattenItems(children, expandedKeys, level + 1, item))
 
     return acc
   }, [])
@@ -166,8 +166,9 @@ function flattenItems(items: T[], level: number = 1, parentItem?: T): FlattenedI
 
 const expandedItems = computed(() => {
   const items = props.items
-  const expandedKeys = expanded.value.map(i => i)
-  return flattenItems(items ?? [])
+  // a Set, so the lookup for each item does not search every expanded key
+  const expandedKeys = new Set(expanded.value)
+  return flattenItems(items ?? [], expandedKeys)
 })
 
 /**
