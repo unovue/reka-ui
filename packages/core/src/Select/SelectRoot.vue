@@ -148,6 +148,7 @@ const dir = useDirection(propDir)
 
 const isFormControl = useFormControl(triggerElement)
 const optionsSet = ref<Set<SelectOption>>(new Set())
+const bubbleSelect = ref<{ selectElement?: HTMLElement }>()
 
 // The native `select` only associates the correct default value if the corresponding
 // `option` is rendered as a child **at the same time** as itself.
@@ -160,6 +161,14 @@ const nativeSelectKey = computed(() => {
     .map(option => option.value)
     .join(';')}`
 })
+
+// Switching `multiple` rebuilds the native select (see `nativeSelectKey`), and the new one's
+// watcher starts at the new value. When the value changed in that same update, the form is
+// notified here, once the new select and its options are rendered.
+watch([multiple, modelValue], ([isMultiple, value], [wasMultiple, previousValue]) => {
+  if (isMultiple !== wasMultiple && value !== previousValue)
+    bubbleSelect.value?.selectElement?.dispatchEvent(new Event('change', { bubbles: true }))
+}, { flush: 'post' })
 
 function handleValueChange(value: T) {
   let nextValue: T | T[]
@@ -243,6 +252,7 @@ provideSelectRootContext(defineReactiveIds({
     <BubbleSelect
       v-if="isFormControl && resolvedName"
       :key="nativeSelectKey"
+      ref="bubbleSelect"
       aria-hidden="true"
       tabindex="-1"
       :multiple="multiple"

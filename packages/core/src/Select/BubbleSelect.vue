@@ -46,6 +46,8 @@ watch(() => props.value, (cur, prev) => {
   }
 }, { flush: props.multiple ? 'post' : 'pre' })
 
+defineExpose({ selectElement })
+
 /**
  * Form autofill will trigger an `input` event on the `select` element.
  * We listen to that event and update our internal state to support it.

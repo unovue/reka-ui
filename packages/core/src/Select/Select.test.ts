@@ -1213,9 +1213,17 @@ describe('given a multiple Select in a form', () => {
     modelValue.value = ['cherry']
     await flushPromises()
     expect(submitted()).toEqual(['cherry'])
+    // The mode and the value changed in one update: `change` still fires, with the new selection
+    expect(seen).toEqual([['cherry']])
     modelValue.value = ['banana', 'cherry']
     await flushPromises()
     expect(seen.at(-1)).toEqual(['banana', 'cherry'])
+
+    seen.length = 0
+    multiple.value = false
+    modelValue.value = 'banana'
+    await flushPromises()
+    expect(seen).toEqual([['banana']])
   })
 
   it('keeps submitting the empty `nullableValue` while the value is nullish', async () => {
