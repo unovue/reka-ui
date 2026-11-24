@@ -161,9 +161,10 @@ watchEffect((cleanupFn) => {
   const viewport = providerContext.viewport.value
   if (viewport) {
     const handleResume = () => {
-      if (!props.open)
-        return
-      startTimer(closeTimerRemainingTimeRef.value)
+      // a closed toast must not re-arm its timer, but still balances the earlier pause
+      // a closed toast must not re-arm its timer, but still balances the earlier pause
+      if (props.open)
+        startTimer(closeTimerRemainingTimeRef.value)
       remainingRaf.resume()
       emits('resume')
     }

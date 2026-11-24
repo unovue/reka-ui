@@ -1063,6 +1063,8 @@ describe('given a toast closed by its open prop while its content stays mounted'
   function mountToast(duration = 1000) {
     const open = ref(true)
     const onUpdateOpen = vi.fn()
+    const onPause = vi.fn()
+    const onResume = vi.fn()
     wrapper = mount(defineComponent({
       setup() {
         return () => h(ToastProvider, { duration }, () => [
@@ -1070,12 +1072,14 @@ describe('given a toast closed by its open prop while its content stays mounted'
             'open': open.value,
             'forceMount': true,
             'onUpdate:open': onUpdateOpen,
+            onPause,
+            onResume,
           }, () => h(ToastDescription, null, () => 'Closing toast')),
           h(ToastViewport),
         ])
       },
     }), { attachTo: document.body })
-    return { open, onUpdateOpen, viewport: () => wrapper!.find<HTMLElement>('ol').element }
+    return { open, onUpdateOpen, onPause, onResume, viewport: () => wrapper!.find<HTMLElement>('ol').element }
   }
 
   async function runDuration(ms: number) {
@@ -1116,6 +1120,49 @@ describe('given a toast closed by its open prop while its content stays mounted'
     await runDuration(1500)
 
     expect(onUpdateOpen).not.toHaveBeenCalled()
+  })
+
+  it('still balances a pause with a resume when the pointer leaves after it closed', async () => {
+    const { open, onPause, onResume, viewport } = mountToast(1000)
+    await nextTick()
+
+    await fireEvent.pointerMove(viewport())
+    open.value = false
+    await nextTick()
+    await fireEvent.pointerLeave(viewport())
+
+    expect(onPause).toHaveBeenCalledTimes(1)
+    expect(onResume).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps counting down the remaining time after it reopens', async () => {
+    const open = ref(true)
+    let remaining = Number.NaN
+    wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ToastProvider, { duration: 1000 }, () => [
+          h(ToastRoot, { open: open.value, forceMount: true }, {
+            default: (slotProps: { remaining: number }) => {
+              remaining = slotProps.remaining
+              return h(ToastDescription, null, () => 'Reopening toast')
+            },
+          }),
+          h(ToastViewport),
+        ])
+      },
+    }), { attachTo: document.body })
+    const viewport = wrapper.find<HTMLElement>('ol').element
+    await nextTick()
+
+    await fireEvent.pointerMove(viewport)
+    open.value = false
+    await nextTick()
+    await fireEvent.pointerLeave(viewport)
+    open.value = true
+    await nextTick()
+    await runDuration(400)
+
+    expect(remaining).toBeLessThan(1000)
   })
 })
 
