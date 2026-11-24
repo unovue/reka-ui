@@ -6,7 +6,7 @@ export interface SliderAreaThumbProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { useMounted } from '@vueuse/core'
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose, useSize } from '@/shared'
@@ -45,21 +45,6 @@ const thumbInBoundsOffsetY = computed(() => {
 })
 
 const isMounted = useMounted()
-
-let mountedEl: HTMLElement | undefined
-onMounted(() => {
-  if (currentElement.value) {
-    mountedEl = currentElement.value
-    rootContext.thumbElements.value.push(mountedEl)
-  }
-})
-onUnmounted(() => {
-  if (mountedEl) {
-    const i = rootContext.thumbElements.value.findIndex(el => el === mountedEl)
-    if (i >= 0)
-      rootContext.thumbElements.value.splice(i, 1)
-  }
-})
 </script>
 
 <template>

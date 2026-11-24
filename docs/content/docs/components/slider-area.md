@@ -311,19 +311,19 @@ Adheres to the [Slider WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/
     },
     {
       keys: ['Home'],
-      description: 'Sets the X value to its minimum.',
+      description: 'Sets the X value to its minimum, regardless of <Code>dir</Code> or <Code>invertedX</Code>.',
     },
     {
       keys: ['End'],
-      description: 'Sets the X value to its maximum.',
+      description: 'Sets the X value to its maximum, regardless of <Code>dir</Code> or <Code>invertedX</Code>.',
     },
     {
       keys: ['PageUp'],
-      description: 'Sets the Y value to its minimum.',
+      description: 'Decreases the Y value by a larger <Code>stepY</Code>.',
     },
     {
       keys: ['PageDown'],
-      description: 'Sets the Y value to its maximum.',
+      description: 'Increases the Y value by a larger <Code>stepY</Code>.',
     },
   ]"
 />
@@ -332,8 +332,8 @@ Adheres to the [Slider WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/
 
 When axes are inverted, some keyboard controls are inverted as well:
 
-- When <Code>invertedX</Code> is set, <kbd>ArrowRight</kbd>, <kbd>ArrowLeft</kbd>, <kbd>Home</kbd>, and <kbd>End</kbd> are inverted.
-- When <Code>invertedY</Code> is set, <kbd>ArrowUp</kbd>, <kbd>ArrowDown</kbd>, <kbd>PageUp</kbd>, and <kbd>PageDown</kbd> are inverted.
+- When <Code>invertedX</Code> is set (or <Code>dir</Code> is <Code>rtl</Code>), <kbd>ArrowRight</kbd>, <kbd>ArrowLeft</kbd>, <kbd>Shift + ArrowRight</kbd>, and <kbd>Shift + ArrowLeft</kbd> are inverted.
+- When <Code>invertedY</Code> is set, <kbd>ArrowUp</kbd>, <kbd>ArrowDown</kbd>, <kbd>PageUp</kbd>, <kbd>PageDown</kbd>, <kbd>Shift + ArrowUp</kbd>, and <kbd>Shift + ArrowDown</kbd> are inverted.
 
 ## Custom APIs
 

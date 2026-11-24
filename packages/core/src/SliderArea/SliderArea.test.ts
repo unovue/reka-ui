@@ -2,7 +2,9 @@ import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, nextTick, ref } from 'vue'
 import { handleSubmit } from '@/test'
+import { SliderAreaArea, SliderAreaRoot, SliderAreaThumb } from '.'
 import SliderArea from './story/_SliderArea.vue'
 
 describe('given default SliderArea', () => {
@@ -100,24 +102,24 @@ describe('given default SliderArea', () => {
         expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 51]])
       })
 
-      it('home should set X to max (inverted)', async () => {
+      it('home should still set X to min', async () => {
         await slider.trigger('keydown', { key: 'Home' })
-        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[100, 50]])
-      })
-
-      it('end should set X to min (inverted)', async () => {
-        await slider.trigger('keydown', { key: 'End' })
         expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[0, 50]])
       })
 
-      it('pageUp should set Y to min', async () => {
-        await slider.trigger('keydown', { key: 'PageUp' })
-        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 0]])
+      it('end should still set X to max', async () => {
+        await slider.trigger('keydown', { key: 'End' })
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[100, 50]])
       })
 
-      it('pageDown should set Y to max', async () => {
+      it('pageUp should still decrease Y by 10', async () => {
+        await slider.trigger('keydown', { key: 'PageUp' })
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 40]])
+      })
+
+      it('pageDown should still increase Y by 10', async () => {
         await slider.trigger('keydown', { key: 'PageDown' })
-        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 100]])
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 60]])
       })
     })
   })
@@ -154,14 +156,14 @@ describe('given default SliderArea', () => {
         expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[49, 50]])
       })
 
-      it('pageUp should set Y to max (inverted)', async () => {
+      it('pageUp should increase Y by 10', async () => {
         await slider.trigger('keydown', { key: 'PageUp' })
-        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 100]])
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 60]])
       })
 
-      it('pageDown should set Y to min (inverted)', async () => {
+      it('pageDown should decrease Y by 10', async () => {
         await slider.trigger('keydown', { key: 'PageDown' })
-        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 0]])
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 40]])
       })
 
       it('home should set X to min', async () => {
@@ -208,24 +210,24 @@ describe('given default SliderArea', () => {
         expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 49]])
       })
 
-      it('pageUp should set Y to max (inverted)', async () => {
+      it('pageUp should increase Y by 10', async () => {
         await slider.trigger('keydown', { key: 'PageUp' })
-        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 100]])
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 60]])
       })
 
-      it('pageDown should set Y to min (inverted)', async () => {
+      it('pageDown should decrease Y by 10', async () => {
         await slider.trigger('keydown', { key: 'PageDown' })
-        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 0]])
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 40]])
       })
 
-      it('home should set X to max (inverted)', async () => {
+      it('home should still set X to min', async () => {
         await slider.trigger('keydown', { key: 'Home' })
-        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[100, 50]])
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[0, 50]])
       })
 
-      it('end should set X to min (inverted)', async () => {
+      it('end should still set X to max', async () => {
         await slider.trigger('keydown', { key: 'End' })
-        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[0, 50]])
+        expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[100, 50]])
       })
     })
   })
@@ -311,14 +313,14 @@ describe('given default SliderArea', () => {
       expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 51]])
     })
 
-    it('pageUp should set Y to min', async () => {
+    it('pageUp should decrease Y by 10 steps', async () => {
       await slider.trigger('keydown', { key: 'PageUp' })
-      expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 0]])
+      expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 40]])
     })
 
-    it('pageDown should set Y to max', async () => {
+    it('pageDown should increase Y by 10 steps', async () => {
       await slider.trigger('keydown', { key: 'PageDown' })
-      expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 100]])
+      expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toStrictEqual([[50, 60]])
     })
 
     it('home should set X to 0', async () => {
@@ -384,5 +386,103 @@ describe('given slider area in a form', () => {
       expect(handleSubmit).toHaveBeenCalledTimes(1)
       expect(handleSubmit.mock.results[0].value).toStrictEqual({ 'slider-area': '[[51,50]]' })
     })
+  })
+})
+
+describe('given SliderAreaRoot with direction and step props', () => {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  function mountRoot(props: Record<string, unknown>) {
+    return mount(defineComponent({
+      components: { SliderAreaRoot, SliderAreaThumb },
+      setup() {
+        return { props }
+      },
+      template: `<SliderAreaRoot v-bind="props" :default-value="[[50, 50]]"><SliderAreaThumb /></SliderAreaRoot>`,
+    }))
+  }
+
+  function lastValue(wrapper: VueWrapper) {
+    const emitted = wrapper.findComponent(SliderAreaRoot).emitted('update:modelValue')
+    return emitted?.at(-1)?.[0]
+  }
+
+  describe('when dir is rtl', () => {
+    it('arrowRight should decrease X by 1', async () => {
+      const wrapper = mountRoot({ dir: 'rtl' })
+      await wrapper.find('[role="slider"]').trigger('keydown', { key: 'ArrowRight' })
+      expect(lastValue(wrapper)).toStrictEqual([[49, 50]])
+    })
+
+    it('home should set X to min', async () => {
+      const wrapper = mountRoot({ dir: 'rtl' })
+      await wrapper.find('[role="slider"]').trigger('keydown', { key: 'Home' })
+      expect(lastValue(wrapper)).toStrictEqual([[0, 50]])
+    })
+
+    it('end should set X to max', async () => {
+      const wrapper = mountRoot({ dir: 'rtl' })
+      await wrapper.find('[role="slider"]').trigger('keydown', { key: 'End' })
+      expect(lastValue(wrapper)).toStrictEqual([[100, 50]])
+    })
+  })
+
+  it('pageDown should move Y by stepY times 10', async () => {
+    const wrapper = mountRoot({ stepY: 2 })
+    await wrapper.find('[role="slider"]').trigger('keydown', { key: 'PageDown' })
+    expect(lastValue(wrapper)).toStrictEqual([[50, 70]])
+  })
+
+  it('shift+pageDown should not multiply the page step again', async () => {
+    const wrapper = mountRoot({ stepY: 2 })
+    await wrapper.find('[role="slider"]').trigger('keydown', { key: 'PageDown', shiftKey: true })
+    expect(lastValue(wrapper)).toStrictEqual([[50, 70]])
+  })
+})
+
+describe('given slider area whose thumbs mount out of DOM order', () => {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  const Multi = defineComponent({
+    components: { SliderAreaRoot, SliderAreaArea, SliderAreaThumb },
+    props: { showFirst: Boolean },
+    setup() {
+      return { value: ref([[10, 10], [80, 80]]) }
+    },
+    template: `
+      <SliderAreaRoot v-model="value">
+        <SliderAreaArea />
+        <SliderAreaThumb v-if="showFirst" data-testid="first" />
+        <SliderAreaThumb data-testid="second" />
+      </SliderAreaRoot>
+      <span data-testid="value">{{ JSON.stringify(value) }}</span>
+    `,
+  })
+
+  it('keeps focus and keyboard on the thumb at the same index as its value', async () => {
+    // The second thumb mounts first; the first thumb is inserted before it afterwards.
+    const wrapper = mount(Multi, { props: { showFirst: false }, attachTo: document.body })
+    await wrapper.setProps({ showFirst: true })
+    await nextTick()
+
+    const first = wrapper.find('[data-testid="first"]')
+    ;(first.element as HTMLElement).focus()
+    await first.trigger('keydown', { key: 'ArrowRight' })
+    await nextTick()
+
+    expect(document.activeElement).toBe(first.element)
+    await (document.activeElement as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    await nextTick()
+
+    expect(wrapper.find('[data-testid="value"]').text()).toBe('[[12,10],[80,80]]')
+    wrapper.unmount()
   })
 })
