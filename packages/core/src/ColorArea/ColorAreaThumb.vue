@@ -59,6 +59,7 @@ const ariaValueText = computed(() => {
     :aria-valuenow="rootContext.xValue.value"
     :aria-valuetext="ariaValueText"
     aria-orientation="horizontal"
+    :aria-disabled="rootContext.disabled.value || undefined"
     :data-disabled="rootContext.disabled.value ? '' : undefined"
     :as-child="asChild"
     :as="as"
