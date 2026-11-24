@@ -12,6 +12,7 @@ export interface TabsListProps extends PrimitiveProps {
 import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
+import { provideRovingFocusNoActiveItem } from '@/RovingFocus/RovingFocusGroup.vue'
 import { injectTabsRootContext } from './TabsRoot.vue'
 
 const props = withDefaults(defineProps<TabsListProps>(), {
@@ -23,6 +24,9 @@ const { forwardRef, currentElement } = useForwardExpose()
 const context = injectTabsRootContext()
 
 context.tabsList = currentElement
+
+// A list with no selected tab has no active trigger.
+provideRovingFocusNoActiveItem(() => context.modelValue.value === undefined)
 </script>
 
 <template>

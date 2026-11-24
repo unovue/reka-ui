@@ -88,6 +88,7 @@ import { createEventHook, useVModel } from '@vueuse/core'
 import { computed, nextTick, ref, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
+import { provideRovingFocusNoActiveItem } from '@/RovingFocus/RovingFocusGroup.vue'
 import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
 
 const props = withDefaults(defineProps<TreeRootProps<T, U, M>>(), {
@@ -300,6 +301,9 @@ provideTreeRootContext({
   virtualKeydownHook,
   handleMultipleReplace,
 })
+
+// Tree items are never active.
+provideRovingFocusNoActiveItem(() => true)
 </script>
 
 <template>

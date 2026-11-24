@@ -46,6 +46,7 @@ import { useVModel } from '@vueuse/core'
 import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
+import { provideRovingFocusNoActiveItem } from '@/RovingFocus/RovingFocusGroup.vue'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
 const props = withDefaults(defineProps<RadioGroupRootProps>(), {
@@ -85,6 +86,9 @@ provideRadioGroupRootContext({
   name: name?.value,
   required,
 })
+
+// A group with no value has no checked item.
+provideRovingFocusNoActiveItem(() => modelValue.value == null)
 </script>
 
 <template>

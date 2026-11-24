@@ -35,10 +35,11 @@ const id = computed(() => props.tabStopId || randomId)
 // Until a tab stop is chosen, the group only becomes tabbable once its items
 // have mounted, so the server-rendered HTML would have no stop at all. Before
 // mount, the first active item stands in as the stop (one per group, even when
-// several are active, as in a multiple ToggleGroup); after mount the group's own
-// tabindex takes over, as before.
+// several are active, as in a multiple ToggleGroup), or the first focusable one
+// when the group has no active item; after mount the group's own tabindex takes
+// over, as before.
 const isMounted = shallowRef(false)
-const isPreMountTabStop = props.active && props.focusable && context.claimPreMountTabStop(id.value)
+const isPreMountTabStop = props.focusable && context.claimPreMountTabStop(id.value, props.active)
 const isCurrentTabStop = computed(() => {
   if (context.currentTabStopId.value != null)
     return context.currentTabStopId.value === id.value
