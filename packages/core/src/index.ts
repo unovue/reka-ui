@@ -111,6 +111,7 @@ export {
   type StringOrNumber,
 } from './shared/types'
 export * from './Slider'
+export * from './SliderArea'
 export * from './Splitter'
 export * from './Stepper'
 export * from './Switch'

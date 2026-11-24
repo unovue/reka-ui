@@ -1,4 +1,4 @@
-# values (533)
+# values (538)
 AccordionContent
 AccordionHeader
 AccordionItem
@@ -336,6 +336,10 @@ SelectTrigger
 SelectValue
 SelectViewport
 Separator
+SliderAreaArea
+SliderAreaRegion
+SliderAreaRoot
+SliderAreaThumb
 SliderRange
 SliderRoot
 SliderThumb
@@ -494,6 +498,7 @@ injectScrollAreaScrollbarContext
 injectSelectGroupContext
 injectSelectItemContext
 injectSelectRootContext
+injectSliderAreaRootContext
 injectSliderRootContext
 injectSplitterGroupContext
 injectStepperItemContext
@@ -533,7 +538,7 @@ useStateMachine
 useToastManager
 withDefault
 
-# types (587)
+# types (592)
 AcceptableInputValue
 AcceptableValue
 AccordionContentProps
@@ -1001,6 +1006,11 @@ SelectViewportProps
 SeparatorProps
 SingleOrMultipleProps
 SingleOrMultipleType
+SliderAreaAreaProps
+SliderAreaRegionProps
+SliderAreaRootEmits
+SliderAreaRootProps
+SliderAreaThumbProps
 SliderRangeProps
 SliderRootEmits
 SliderRootProps
