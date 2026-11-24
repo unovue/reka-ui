@@ -44,6 +44,8 @@ interface TreeRootContext<T = Record<string, any>> {
   selectedKeys: Ref<string[]>
   onSelect: (val: T) => void
   expanded: Ref<string[]>
+  /** The expanded keys as a `Set`, so a lookup does not search every expanded key */
+  expandedKeys: Ref<Set<string>>
   onToggle: (val: T) => void
   items: Ref<T[]>
   expandedItems: Ref<T[]>
@@ -164,11 +166,12 @@ function flattenItems(items: T[], expandedKeys: Set<string>, level: number = 1, 
   }, [])
 }
 
+// a Set, so the lookup for each item does not search every expanded key
+const expandedKeys = computed(() => new Set(expanded.value))
+
 const expandedItems = computed(() => {
   const items = props.items
-  // a Set, so the lookup for each item does not search every expanded key
-  const expandedKeys = new Set(expanded.value)
-  return flattenItems(items ?? [], expandedKeys)
+  return flattenItems(items ?? [], expandedKeys.value)
 })
 
 /**
@@ -270,6 +273,7 @@ provideTreeRootContext({
     }
   },
   expanded,
+  expandedKeys,
   onToggle(val) {
     const children = val ? props.getChildren(val) : undefined
     if (!children)

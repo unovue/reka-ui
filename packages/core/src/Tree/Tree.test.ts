@@ -740,5 +740,7 @@ describe('given a Tree with a controlled `expanded`', () => {
     const wrapper = mountTree(['fruits'])
     await wrapper.setProps({ expanded: ['vegetables'] })
     expect(titles(wrapper)).toEqual(['fruits', 'vegetables', 'leek'])
+    expect(wrapper.findAll('[role=treeitem]').map(item => item.attributes('aria-expanded')))
+      .toEqual(['false', 'true', undefined])
   })
 })
