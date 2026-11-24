@@ -627,6 +627,117 @@ describe('given a DismissableLayer after a cancelled touch tap outside', () => {
   })
 })
 
+// #3360: iOS WebKit fires a tap's compatibility mouse events in a later task than its
+// pointer events, and its `mousedown` focuses the tapped button's focusable ancestor.
+// That focus move comes before the `click` a touch `pointerDownOutside` waits for, so
+// it is held back until the press ends, keeping the order a mouse press produces.
+describe('given a DismissableLayer and a focus move during a press outside', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function pointerEvent(type: string, pointerType: string) {
+    // jsdom has no `PointerEvent`; see `touchPointerDown` above.
+    const event = new MouseEvent(type, { bubbles: true })
+    Object.defineProperty(event, 'pointerType', { value: pointerType })
+    return event
+  }
+
+  async function setup() {
+    const events: string[] = []
+    const record = (name: string) => (event: CustomEvent<{ originalEvent: Event }>) =>
+      events.push(`${name}:${event.detail.originalEvent.type}`)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h('div', [
+          h('div', { 'data-testid': 'container', 'tabindex': '-1' }, [
+            h('button', { 'data-testid': 'outside' }, 'Outside'),
+          ]),
+          h(DismissableLayerPrimitive, {
+            onPointerDownOutside: record('pointerDownOutside'),
+            onFocusOutside: record('focusOutside'),
+            onDismiss: () => events.push('dismiss'),
+          }, () => h('button', { 'data-testid': 'inside' }, 'Inside')),
+        ])
+      },
+    }), { attachTo: document.body })
+    await sleep(1)
+    ;(wrapper.find('[data-testid="inside"]').element as HTMLElement).focus()
+    await sleep(1)
+    const get = (id: string) => wrapper.find(`[data-testid="${id}"]`).element as HTMLElement
+    return { events, wrapper, outside: get('outside'), container: get('container') }
+  }
+
+  it('handles the focus move after the touch press it belongs to, on its click', async () => {
+    const { events, wrapper, outside, container } = await setup()
+
+    outside.dispatchEvent(pointerEvent('pointerdown', 'touch'))
+    outside.dispatchEvent(pointerEvent('pointerup', 'touch'))
+    await sleep(1)
+    // WebKit: `mousedown` focuses the button's focusable ancestor.
+    container.focus()
+    await sleep(1)
+    expect(events).toEqual([])
+
+    await fireEvent.click(outside)
+    await sleep(1)
+    expect(events).toEqual(['pointerDownOutside:pointerdown', 'focusOutside:focusin', 'dismiss', 'dismiss'])
+
+    wrapper.unmount()
+  })
+
+  it('handles the focus move once a touch press is cancelled instead of clicked', async () => {
+    const { events, wrapper, outside, container } = await setup()
+
+    outside.dispatchEvent(pointerEvent('pointerdown', 'touch'))
+    container.focus()
+    await sleep(1)
+    expect(events).toEqual([])
+
+    outside.dispatchEvent(pointerEvent('pointercancel', 'touch'))
+    await sleep(1)
+    expect(events).toEqual(['focusOutside:focusin', 'dismiss'])
+
+    wrapper.unmount()
+  })
+
+  it('handles the focus move before the next press when the last one never ended', async () => {
+    const { events, wrapper, outside, container } = await setup()
+
+    outside.dispatchEvent(pointerEvent('pointerdown', 'touch'))
+    container.focus()
+    await sleep(1)
+    expect(events).toEqual([])
+
+    document.body.dispatchEvent(pointerEvent('pointerdown', 'mouse'))
+    await sleep(1)
+    expect(events.slice(0, 2)).toEqual(['focusOutside:focusin', 'dismiss'])
+
+    wrapper.unmount()
+  })
+
+  it('handles the focus move of a mouse press right away, as before', async () => {
+    const { events, wrapper, outside, container } = await setup()
+
+    outside.dispatchEvent(pointerEvent('pointerdown', 'mouse'))
+    container.focus()
+    await sleep(1)
+    expect(events).toEqual(['pointerDownOutside:pointerdown', 'dismiss', 'focusOutside:focusin', 'dismiss'])
+
+    wrapper.unmount()
+  })
+
+  it('handles a focus move outside right away when no press is in flight', async () => {
+    const { events, wrapper, container } = await setup()
+
+    container.focus()
+    await sleep(1)
+    expect(events).toEqual(['focusOutside:focusin', 'dismiss'])
+
+    wrapper.unmount()
+  })
+})
+
 describe('given a mounted DismissableLayer toggling disableOutsidePointerEvents', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

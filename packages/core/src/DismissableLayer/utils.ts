@@ -82,6 +82,37 @@ export function usePointerDownOutside(
   const handleClickRef = ref(() => {})
   const pointerEventsEnabled = new WeakMap<PointerEvent, boolean>()
 
+  /**
+   * Work held back while a touch press outside is in flight, i.e. between its
+   * `pointerdown` and the `click` its `pointerDownOutside` is deferred to.
+   */
+  let isTouchPressPending = false
+  let heldUntilTouchPressEnds: Array<() => void> = []
+
+  function endTouchPress() {
+    isTouchPressPending = false
+    const held = heldUntilTouchPressEnds
+    heldUntilTouchPressEnds = []
+    held.forEach(run => run())
+  }
+
+  /**
+   * Runs `callback` once the touch press outside in flight has ended (right away
+   * when there is none), after its deferred `pointerDownOutside`.
+   *
+   * iOS WebKit fires a tap's compatibility mouse events in a later task than its
+   * pointer events, and its `mousedown` focuses the tapped button's focusable
+   * ancestor. That focus move belongs to the press, so it must not be handled
+   * before the press is: with a mouse, `pointerDownOutside` comes first, and a
+   * trigger in a focusable container relies on that to close its own layer (#3360).
+   */
+  function runAfterTouchPress(callback: () => void) {
+    if (isTouchPressPending)
+      heldUntilTouchPressEnds.push(callback)
+    else
+      callback()
+  }
+
   watchEffect((cleanupFn) => {
     if (!isClient || !toValue(enabled))
       return
@@ -89,7 +120,14 @@ export function usePointerDownOutside(
     // not mounted yet when this composable runs, and listening on the global
     // `document` would miss events from a layer rendered inside an iframe.
     const ownerDocument = element?.value?.ownerDocument ?? globalThis.document
+    // A press that turns into a scroll or a long press is cancelled instead of
+    // clicked: whatever it held back runs then.
+    const handlePointerCancel = () => endTouchPress()
     const handlePointerDownCapture = (event: PointerEvent) => {
+      // Whatever a previous press still held back runs before a new press starts,
+      // even if that press ended without a `click` or `pointercancel` reaching us.
+      if (isTouchPressPending)
+        endTouchPress()
       // Opening another layer in a target handler must not change eligibility
       // for the same event when it reaches the document's bubble listener.
       pointerEventsEnabled.set(event, isPointerEventsEnabled())
@@ -141,10 +179,14 @@ export function usePointerDownOutside(
          */
         if (event.pointerType === 'touch') {
           ownerDocument.removeEventListener('click', handleClickRef.value)
-          handleClickRef.value = handleAndDispatchPointerDownOutsideEvent
+          handleClickRef.value = () => {
+            handleAndDispatchPointerDownOutsideEvent()
+            endTouchPress()
+          }
           ownerDocument.addEventListener('click', handleClickRef.value, {
             once: true,
           })
+          isTouchPressPending = true
         }
         else {
           handleAndDispatchPointerDownOutsideEvent()
@@ -173,13 +215,18 @@ export function usePointerDownOutside(
     const timerId = window.setTimeout(() => {
       ownerDocument.addEventListener('pointerdown', handlePointerDownCapture, true)
       ownerDocument.addEventListener('pointerdown', handlePointerDown)
+      ownerDocument.addEventListener('pointercancel', handlePointerCancel, true)
     }, 0)
 
     cleanupFn(() => {
       window.clearTimeout(timerId)
       ownerDocument.removeEventListener('pointerdown', handlePointerDownCapture, true)
       ownerDocument.removeEventListener('pointerdown', handlePointerDown)
+      ownerDocument.removeEventListener('pointercancel', handlePointerCancel, true)
       ownerDocument.removeEventListener('click', handleClickRef.value)
+      // The layer is gone or no longer listening: drop what the press held back.
+      isTouchPressPending = false
+      heldUntilTouchPressEnds = []
     })
   })
 
@@ -189,6 +236,7 @@ export function usePointerDownOutside(
         return
       isPointerInsideDOMTree.value = true
     },
+    runAfterTouchPress,
   }
 }
 
