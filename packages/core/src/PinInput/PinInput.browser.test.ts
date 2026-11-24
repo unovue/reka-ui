@@ -49,7 +49,7 @@ it('accepts a partial required PIN unless complete validation is enabled', async
   wrapper.unmount()
 })
 
-it('submits the full PIN synchronously from the complete handler', async () => {
+it.each([false, true])('submits the full PIN synchronously from the complete handler (requireComplete: %s)', async (requireComplete) => {
   const form = ref<HTMLFormElement>()
   const onSubmit = vi.fn((event: SubmitEvent) => {
     event.preventDefault()
@@ -59,7 +59,7 @@ it('submits the full PIN synchronously from the complete handler', async () => {
     h(PinInputRoot, {
       name: 'pin',
       required: true,
-      requireComplete: true,
+      requireComplete,
       defaultValue: ['0', '1', '2'],
       onComplete: () => form.value!.requestSubmit(),
     }, () => Array.from({ length: 4 }, (_, index) => h(PinInputInput, { index }))),
