@@ -44,6 +44,8 @@ interface TreeRootContext<T = Record<string, any>> {
   selectedKeys: Ref<string[]>
   onSelect: (val: T) => void
   expanded: Ref<string[]>
+  /** The expanded keys as a `Set`, so a lookup does not search every expanded key */
+  expandedKeys: Ref<Set<string>>
   onToggle: (val: T) => void
   items: Ref<T[]>
   expandedItems: Ref<T[]>
@@ -135,11 +137,11 @@ const selectedKeys = computed(() => {
     return [props.getKey(modelValue.value as any ?? {})]
 })
 
-function flattenItems(items: T[], level: number = 1, parentItem?: T): FlattenedItem<T>[] {
+function flattenItems(items: T[], expandedKeys: Set<string>, level: number = 1, parentItem?: T): FlattenedItem<T>[] {
   return items.reduce((acc: FlattenedItem<T>[], item: T, index: number) => {
     const key = props.getKey(item)
     const children = props.getChildren(item)
-    const isExpanded = expanded.value.includes(key)
+    const isExpanded = expandedKeys.has(key)
 
     const flattenedItem: FlattenedItem<T> = {
       _id: key,
@@ -158,16 +160,18 @@ function flattenItems(items: T[], level: number = 1, parentItem?: T): FlattenedI
     acc.push(flattenedItem)
 
     if (children && isExpanded)
-      acc.push(...flattenItems(children, level + 1, item))
+      acc.push(...flattenItems(children, expandedKeys, level + 1, item))
 
     return acc
   }, [])
 }
 
+// a Set, so the lookup for each item does not search every expanded key
+const expandedKeys = computed(() => new Set(expanded.value))
+
 const expandedItems = computed(() => {
   const items = props.items
-  const expandedKeys = expanded.value.map(i => i)
-  return flattenItems(items ?? [])
+  return flattenItems(items ?? [], expandedKeys.value)
 })
 
 /**
@@ -269,6 +273,7 @@ provideTreeRootContext({
     }
   },
   expanded,
+  expandedKeys,
   onToggle(val) {
     const children = val ? props.getChildren(val) : undefined
     if (!children)
