@@ -42,6 +42,8 @@ export type TreeRootEmits<T = Record<string, any>, M extends boolean = false> = 
 interface TreeRootContext<T = Record<string, any>> {
   modelValue: Ref<T | T[]>
   selectedKeys: Ref<string[]>
+  /** The selected keys as a `Set`, so a lookup does not search every selected key */
+  selectedKeySet: Ref<Set<string>>
   onSelect: (val: T) => void
   expanded: Ref<string[]>
   /** The expanded keys as a `Set`, so a lookup does not search every expanded key */
@@ -136,6 +138,8 @@ const selectedKeys = computed(() => {
   else
     return [props.getKey(modelValue.value as any ?? {})]
 })
+
+const selectedKeySet = computed(() => new Set(selectedKeys.value))
 
 function flattenItems(items: T[], expandedKeys: Set<string>, level: number = 1, parentItem?: T): FlattenedItem<T>[] {
   return items.reduce((acc: FlattenedItem<T>[], item: T, index: number) => {
@@ -244,6 +248,7 @@ function handleBubbleSelect(item: FlattenedItem<T>) {
 provideTreeRootContext({
   modelValue,
   selectedKeys,
+  selectedKeySet,
   onSelect: (val) => {
     const condition = (baseValue: U) => props.getKey(baseValue as any ?? {}) === props.getKey(val)
     const exist = props.multiple && Array.isArray(modelValue.value) ? modelValue.value?.findIndex(condition) !== -1 : undefined

@@ -64,20 +64,30 @@ const isExpanded = computed(() => {
 
 const isSelected = computed(() => {
   const key = rootContext.getKey(props.value)
-  return rootContext.selectedKeys.value.includes(key)
+  return rootContext.selectedKeySet.value.has(key)
 })
+
+/**
+ * Whether `child` is in the model value. `bubbleSelect` and `propagateSelect` require `multiple`,
+ * where the selected-key `Set` mirrors the model value; otherwise search the model value itself.
+ */
+function isInModelValue(child: Record<string, any>) {
+  const key = rootContext.getKey(child)
+  if (rootContext.multiple.value)
+    return rootContext.selectedKeySet.value.has(key)
+  return (rootContext.modelValue.value as any[]).some((v: any) => rootContext.getKey(v) === key)
+}
 
 const isIndeterminate = computed(() => {
   if (rootContext.bubbleSelect.value && hasChildren.value && Array.isArray(rootContext.modelValue.value)) {
     const children = getDescendants(props.value, rootContext.getChildren)
 
-    return children.some(child => rootContext.modelValue.value.find((v: any) => rootContext.getKey(v) === rootContext.getKey(child)))
-      && !children.every(child => rootContext.modelValue.value.find((v: any) => rootContext.getKey(v) === rootContext.getKey(child)))
+    return children.some(isInModelValue) && !children.every(isInModelValue)
   }
   else if (rootContext.propagateSelect.value && isSelected.value && hasChildren.value && Array.isArray(rootContext.modelValue.value)) {
     const children = getDescendants(props.value, rootContext.getChildren)
 
-    return !children.every(child => rootContext.modelValue.value.find((v: any) => rootContext.getKey(v) === rootContext.getKey(child)))
+    return !children.every(isInModelValue)
   }
   else {
     return undefined
