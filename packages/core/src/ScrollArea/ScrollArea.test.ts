@@ -32,6 +32,15 @@ describe('given a ScrollAreaViewport', () => {
     expect(wrapper.get('[data-reka-scroll-area-viewport]').attributes('tabindex')).toBe(expected)
     wrapper.unmount()
   })
+
+  it('keeps tabindex after the other viewport attributes', () => {
+    const wrapper = mount(ScrollAreaRoot, {
+      slots: { default: () => h(ScrollAreaViewport, { 'class': 'viewport', 'aria-label': 'list' }) },
+    })
+
+    expect(wrapper.get('[data-reka-scroll-area-viewport]').element.getAttributeNames().at(-1)).toBe('tabindex')
+    wrapper.unmount()
+  })
 })
 
 describe('given a virtualized ScrollArea', () => {

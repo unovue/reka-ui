@@ -41,8 +41,9 @@ const { forwardRef, currentElement: contentElement } = useForwardExpose()
 
 function getViewportAttrs(attrs: Record<string, unknown>): Record<string, unknown> {
   // Vue's server renderer lowercases both spellings, so merge them under one key.
-  const { tabIndex, ...rest } = attrs
-  return { tabindex: 'tabIndex' in attrs ? tabIndex : 0, ...rest }
+  // `tabindex` stays last, so the attribute order is the same as without an override.
+  const { tabIndex, tabindex, ...rest } = attrs
+  return { ...rest, tabindex: 'tabindex' in attrs ? tabindex : 'tabIndex' in attrs ? tabIndex : 0 }
 }
 </script>
 
