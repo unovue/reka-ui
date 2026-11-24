@@ -40,7 +40,8 @@ function handleBlur(event: FocusEvent) {
   if (controlledId && relatedTarget?.closest(`#${CSS.escape(controlledId)}`))
     return
 
-  if (!target.value)
+  // A blank draft is not a tag.
+  if (!target.value.trim())
     return
 
   const isAdded = context.onAddValue(target.value)
@@ -137,12 +138,11 @@ function handlePaste(event: ClipboardEvent) {
       return
 
     const value = clipboardData.getData('text')
-    // Blank pieces (a trailing delimiter, a paste of only spaces) are not tags,
-    // and a tag does not keep the spaces around it.
+    // Blank pieces (a trailing delimiter, a paste of only spaces) are not tags.
+    // Other pieces are added as pasted, like a typed draft.
     const delimiter = context.delimiter.value
     const texts = (delimiter ? value.split(delimiter) : [value])
-      .map(text => text.trim())
-      .filter(Boolean)
+      .filter(text => text.trim() !== '')
     texts.forEach((text) => {
       context.onAddValue(text)
     })

@@ -202,8 +202,8 @@ describe('given default TagsInput', () => {
       expect(tags[1].text()).toBe(tag)
     })
 
-    it.each(['keydown.enter', 'keydown.tab'])('should not add a whitespace-only draft on %s', async (trigger) => {
-      await wrapper.setProps({ addOnTab: true })
+    it.each(['keydown.enter', 'keydown.tab', 'blur'])('should not add a whitespace-only draft on %s', async (trigger) => {
+      await wrapper.setProps({ addOnTab: true, addOnBlur: true })
       await setValueInInput('   ')
 
       await input.trigger(trigger)
@@ -351,11 +351,13 @@ describe('given a TagsInput with objects', async () => {
 
     it.each([
       [',', 'tag1,tag2,', ['tag1', 'tag2']],
-      [',', 'tag1, tag2', ['tag1', 'tag2']],
       [',', 'tag1,,tag2', ['tag1', 'tag2']],
+      [',', 'tag1, ,tag2', ['tag1', 'tag2']],
       [',', '   ', []],
       [/[ ,;\t\n\r]+/, 'tag1\r\ntag2\r\n', ['tag1', 'tag2']],
-    ])('should add only trimmed, non-blank tags on paste (delimiter %s, text %j)', async (delimiter, text, expected) => {
+      // Not trimmed, like a typed draft
+      [',', 'tag1, tag2', ['tag1', ' tag2']],
+    ])('should add only non-blank tags on paste (delimiter %s, text %j)', async (delimiter, text, expected) => {
       const { wrapper, input } = setupDelimiter(delimiter)
       const user = userEvent.setup()
 
