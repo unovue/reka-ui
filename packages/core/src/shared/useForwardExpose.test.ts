@@ -436,6 +436,136 @@ describe('useForwardRef', async () => {
     expect(parentRef.value?.$el).toBeInstanceOf(HTMLButtonElement)
   })
 
+  describe('when the forwarded child clears', () => {
+    // Parent and child both expose `message`; while a child is forwarded, it wins.
+    const Child = defineComponent({
+      setup(_, { expose }) {
+        expose({ message: 'child' })
+        return () => h('button', 'Child')
+      },
+    })
+    const OtherChild = defineComponent({
+      setup(_, { expose }) {
+        expose({ other: 'other' })
+        return () => h('button', 'Other')
+      },
+    })
+
+    function mountForwarding(render: (forwardRef: ReturnType<typeof useForwardExpose>['forwardRef']) => ReturnType<typeof h>) {
+      const instance = ref<any>()
+      const Forwarding = defineComponent({
+        setup(_, { expose }) {
+          expose({ message: 'parent' })
+          const { forwardRef } = useForwardExpose()
+          return () => render(forwardRef)
+        },
+      })
+      const wrapper = mount(defineComponent(() => () => h(Forwarding, { ref: instance })))
+      return { instance, wrapper }
+    }
+
+    it('should restore the parent exposed value when the child unmounts', async () => {
+      const show = ref(true)
+      const { instance, wrapper } = mountForwarding(forwardRef =>
+        show.value ? h(Child, { ref: forwardRef }) : h('div', 'Fallback'))
+
+      try {
+        // Read through the ref first: Vue caches the expose proxy on this first read.
+        expect(instance.value.message).toBe('child')
+
+        show.value = false
+        await nextTick()
+        expect(instance.value.$el.textContent).toBe('Fallback')
+        expect(instance.value.message).toBe('parent')
+      }
+      finally {
+        wrapper.unmount()
+      }
+    })
+
+    it('should forward the child exposed value again when it remounts', async () => {
+      const show = ref(true)
+      const { instance, wrapper } = mountForwarding(forwardRef =>
+        show.value ? h(Child, { ref: forwardRef }) : h('div', 'Fallback'))
+
+      try {
+        expect(instance.value.message).toBe('child')
+        show.value = false
+        await nextTick()
+        expect(instance.value.message).toBe('parent')
+
+        show.value = true
+        await nextTick()
+        expect(instance.value.$el.textContent).toBe('Child')
+        expect(instance.value.message).toBe('child')
+      }
+      finally {
+        wrapper.unmount()
+      }
+    })
+
+    it('should restore the parent exposed value when the child is replaced by a DOM element', async () => {
+      const showComponent = ref(true)
+      const { instance, wrapper } = mountForwarding(forwardRef =>
+        showComponent.value
+          ? h(Child, { ref: forwardRef })
+          : h('button', { ref: (element: any) => forwardRef(element) }, 'Replacement'))
+
+      try {
+        expect(instance.value.message).toBe('child')
+
+        showComponent.value = false
+        await nextTick()
+        expect(instance.value.$el.textContent).toBe('Replacement')
+        expect(instance.value.message).toBe('parent')
+      }
+      finally {
+        wrapper.unmount()
+      }
+    })
+
+    it('should restore the parent exposed value when the replacement child does not expose it', async () => {
+      const showFirst = ref(true)
+      const { instance, wrapper } = mountForwarding(forwardRef =>
+        h(showFirst.value ? Child : OtherChild, { ref: forwardRef, key: showFirst.value ? 'first' : 'second' }))
+
+      try {
+        expect(instance.value.message).toBe('child')
+
+        showFirst.value = false
+        await nextTick()
+        expect(instance.value.message).toBe('parent')
+      }
+      finally {
+        wrapper.unmount()
+      }
+    })
+
+    it('should keep a value only the child exposes undefined once the child is gone', async () => {
+      const show = ref(true)
+      const OnlyChild = defineComponent({
+        setup(_, { expose }) {
+          expose({ childOnly: 'child-only' })
+          return () => h('button', 'Child')
+        },
+      })
+      const { instance, wrapper } = mountForwarding(forwardRef =>
+        show.value ? h(OnlyChild, { ref: forwardRef }) : h('div', 'Fallback'))
+
+      try {
+        expect(instance.value.childOnly).toBe('child-only')
+
+        show.value = false
+        await nextTick()
+        expect(instance.value.childOnly).toBeUndefined()
+        expect(instance.value.message).toBe('parent')
+      }
+      finally {
+        wrapper.unmount()
+      }
+    })
+  })
+
   it('should update currentElement when as-child conditional child swaps', async () => {
     const toggle = ref(true)
     let renderNode: string | undefined
