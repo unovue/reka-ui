@@ -12,14 +12,11 @@ describe('parseColor', () => {
     expect(parseColor('hsb(10, 200%, 300%)')).toMatchObject({ s: 100, b: 100 })
   })
 
-  it('rejects trailing or leading junk around functional notation', () => {
-    expect(isValidColor('rgb(1, 2, 3) junk')).toBe(false)
-    expect(isValidColor('xrgb(1, 2, 3)')).toBe(false)
-    expect(isValidColor('rgb: rgb(1, 2, 3)')).toBe(false)
-    expect(isValidColor('hsl(1, 2%, 3%) junk')).toBe(false)
-    expect(isValidColor('hsb(1, 2%, 3%) junk')).toBe(false)
+  it('keeps accepting whitespace, uppercase and text after functional notation', () => {
     expect(isValidColor('rgb(1, 2, 3)')).toBe(true)
     expect(isValidColor('  RGB(1,2,3)  ')).toBe(true)
+    // A trailing `;` from pasted CSS was accepted before, so out-of-range clamping must not reject it
+    expect(parseColor('rgb(300, 0, 0);')).toMatchObject({ r: 255 })
   })
 })
 

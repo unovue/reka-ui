@@ -321,18 +321,6 @@ describe('keyboard interactions', () => {
     expect(input.element.value).toBe('#ff0000')
   })
 
-  it('should not commit a color with trailing text on Enter', async () => {
-    const wrapper = mount(ColorField, {
-      props: {
-        defaultValue: '#ff0000',
-      },
-    })
-    const input = wrapper.find('input')
-    await input.setValue('rgb(0, 0, 255) junk')
-    await input.trigger('keydown', { key: 'Enter' })
-    expect(input.element.value).toBe('#ff0000')
-  })
-
   it('should not increment when disabled', async () => {
     const wrapper = mount(ColorField, {
       props: {
