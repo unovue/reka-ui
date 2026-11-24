@@ -103,6 +103,7 @@ provideStepperItemContext({
     :aria-current="isCurrent ? 'true' : undefined"
     :data-state="itemState"
     :disabled="disabled || !isFocusable ? '' : undefined"
+    :aria-disabled="null"
     :data-disabled="disabled || !isFocusable ? '' : undefined"
     :data-orientation="rootContext.orientation.value"
   >

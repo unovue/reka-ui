@@ -71,6 +71,7 @@ const { restore: restoreSwipe } = useSwipeDismiss({
     v-bind="props"
     :ref="forwardRef"
     :disabled="disabledAttr(disabled, props.as, props.asChild)"
+    :aria-disabled="null"
     :data-state="rootContext.open.value ? 'open' : 'closed'"
     :data-swipe-direction="openDirection"
   >
