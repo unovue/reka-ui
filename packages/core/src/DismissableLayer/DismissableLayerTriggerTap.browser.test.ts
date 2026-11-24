@@ -1,6 +1,7 @@
 import type { VNode } from 'vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
+import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '@/Combobox'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
@@ -57,7 +58,8 @@ function layer(kind: Kind): VNode {
           h(ComboboxViewport, () => h(ComboboxItem, { value: 'one' }, () => 'one')))),
       ])
     case 'navigation menu':
-      return h(NavigationMenuRoot, () => h(NavigationMenuList, () => h(NavigationMenuItem, () => [
+      // A real mouse opens it on hover, before the press: only the press is under test.
+      return h(NavigationMenuRoot, { disableHoverTrigger: true }, () => h(NavigationMenuList, () => h(NavigationMenuItem, () => [
         h(NavigationMenuTrigger, trigger, () => 'Open'),
         h(NavigationMenuContent, content, () => h(NavigationMenuLink, { href: '#' }, () => 'one')),
       ])))
@@ -94,18 +96,26 @@ const isOpen = () => get('trigger')!.getAttribute('data-state') === 'open'
  *   compatibility mouse events, with `mousedown` focusing the pressed button's
  *   focusable ancestor (WebKit does not focus a tapped button);
  * - Chromium touch: the same gap, but `mousedown` focuses the button itself;
- * - mouse: no gap, `mousedown` focusing the button.
- * The events go to whatever is under the trigger, as a modal layer can make the
- * trigger itself unhittable. Focus follows `mousedown` unless that is prevented,
- * like the browser default.
+ * - mouse: a trusted click from the browser itself, which has no such gap.
+ * The press goes to whatever is under the trigger, as a modal layer can make the
+ * trigger itself unhittable. In the replays, focus follows `mousedown` unless that
+ * is prevented, like the browser default.
  */
 async function press(order: Order) {
   const rect = get('trigger')!.getBoundingClientRect()
-  const target = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)!
+  const x = rect.left + rect.width / 2
+  const y = rect.top + rect.height / 2
+  const target = document.elementFromPoint(x, y)!
+  if (order === 'mouse') {
+    const box = target.getBoundingClientRect()
+    await userEvent.click(target, { position: { x: x - box.left, y: y - box.top } })
+    await settle()
+    return
+  }
   const focusTarget = order === 'webkit touch' && target.matches('button')
     ? target.parentElement?.closest<HTMLElement>(focusable)
     : target.closest<HTMLElement>(focusable)
-  const pointerType = order === 'mouse' ? 'mouse' : 'touch'
+  const pointerType = 'touch'
 
   // A browser dispatches each event on its own, running microtasks (and so the
   // ticks outside handlers wait for) in between.
@@ -117,20 +127,19 @@ async function press(order: Order) {
 
   // A prevented `pointerdown` suppresses the compatibility mouse events.
   const withMouseEvents = await dispatch(pointer('pointerdown', pointerType))
-  if (order !== 'mouse') {
-    await dispatch(pointer('pointerup', pointerType))
-    await nextTask()
-  }
+  await dispatch(pointer('pointerup', pointerType))
+  await nextTask()
   if (withMouseEvents && await dispatch(mouse('mousedown'))) {
     focusTarget?.focus()
     await drainMicrotasks()
   }
-  if (order === 'mouse')
-    await dispatch(pointer('pointerup', pointerType))
   if (withMouseEvents)
     await dispatch(mouse('mouseup'))
   await dispatch(mouse('click'))
+  await settle()
+}
 
+async function settle() {
   // Let the content mount or unmount, then let a mounted layer start listening for
   // outside presses (it does so from a 0 ms timer).
   for (let i = 0; i < 50 && isOpen() !== !!get('content'); i++)
