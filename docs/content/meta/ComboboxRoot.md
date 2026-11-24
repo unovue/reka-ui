@@ -71,6 +71,13 @@
     'required': false
   },
   {
+    'name': 'max',
+    'description': '<p>Maximum number of options the user can select. Only applies when <code>multiple</code> is <code>true</code>.\nA selection that would go over it (click, &lt;kbd&gt;Enter&lt;/kbd&gt;, range or select-all) is blocked\nand emits <code>invalid</code>. <code>0</code> means no limit. It does not clamp a <code>modelValue</code> set programmatically.</p>\n',
+    'type': 'number',
+    'required': false,
+    'default': '0'
+  },
+  {
     'name': 'modelValue',
     'description': '<p>The controlled value of the listbox. Can be binded with <code>v-model</code>.</p>\n',
     'type': 'T | T[]',
@@ -151,6 +158,11 @@
     'type': '[payload: { ref: HTMLElement; value: T; }]'
   },
   {
+    'name': 'invalid',
+    'description': '<p>Event handler called when a selection is blocked because it would go over <code>max</code>. The payload is the first value over the limit.</p>\n',
+    'type': '[payload: T]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
     'type': '[value: T | ClearValue]'
@@ -193,6 +205,7 @@
 | `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | `true` |
 | `ignoreFilter` | When true, disable the default filters | `boolean` | No | - |
 | `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
+| `max` | Maximum number of options the user can select. Only applies when multiple is true. A selection that would go over it (click, <kbd>Enter</kbd>, range or select-all) is blocked and emits invalid. 0 means no limit. It does not clamp a modelValue set programmatically. | `number` | No | `0` |
 | `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `T \| T[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
@@ -210,6 +223,7 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: T; }]` |
+| `invalid` | Event handler called when a selection is blocked because it would go over max. The payload is the first value over the limit. | `[payload: T]` |
 | `update:modelValue` | Event handler called when the value changes. | `[value: T \| ClearValue]` |
 | `update:open` | Event handler called when the open state of the combobox changes. | `[value: boolean]` |
 

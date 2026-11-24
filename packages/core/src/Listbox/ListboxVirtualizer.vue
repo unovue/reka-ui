@@ -288,7 +288,8 @@ function handleMultipleReplace(event: Event, intent: 'first' | 'last' | 'prev' |
       break
     }
   }
-  rootContext.modelValue.value = value
+  if (!rootContext.exceedsMax(value ?? []))
+    rootContext.modelValue.value = value
 }
 
 rootContext.virtualKeydownHook.on((event) => {
@@ -302,7 +303,8 @@ rootContext.virtualKeydownHook.on((event) => {
   // Meta + A, select all feature
   if (isMetaKey && event.key === 'a' && rootContext.multiple.value) {
     event.preventDefault()
-    rootContext.modelValue.value = [...props.options]
+    if (!rootContext.exceedsMax([...props.options]))
+      rootContext.modelValue.value = [...props.options]
     // purposely make the focus to last
     intent = 'last'
   }

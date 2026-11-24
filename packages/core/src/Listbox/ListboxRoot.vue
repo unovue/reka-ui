@@ -10,6 +10,8 @@ type ListboxRootContext<T> = {
   modelValue: Ref<T | Array<T> | undefined>
   onValueChange: (val: T) => void
   multiple: Ref<boolean>
+  max: Ref<number>
+  exceedsMax: (values: Array<T>) => boolean
   orientation: Ref<DataOrientation>
   dir: Ref<Direction>
   disabled: Ref<boolean>
@@ -64,6 +66,14 @@ export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, F
   defaultValue?: T | Array<T>
   /** Whether multiple options can be selected or not. */
   multiple?: boolean
+  /**
+   * Maximum number of options the user can select. Only applies when `multiple` is `true`.
+   * A selection that would go over it (click, <kbd>Enter</kbd>, range or select-all) is blocked
+   * and emits `invalid`. `0` means no limit. It does not clamp a `modelValue` set programmatically.
+   *
+   * @defaultValue 0
+   */
+  max?: number
   /** The orientation of the listbox. <br>Mainly so arrow navigation is done accordingly (left & right vs. up & down) */
   orientation?: DataOrientation
   /** The reading direction of the listbox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
@@ -101,6 +111,8 @@ export type ListboxRootEmits<T = AcceptableValue> = {
   'entryFocus': [event: CustomEvent]
   /** Event handler called when the mouse leave the container */
   'leave': [event: Event]
+  /** Event handler called when a selection is blocked because it would go over `max`. The payload is the first value over the limit. */
+  'invalid': [payload: T]
 }
 </script>
 
@@ -115,6 +127,7 @@ import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { compare } from './utils'
 
 const props = withDefaults(defineProps<ListboxRootProps>(), {
+  max: 0,
   selectionBehavior: 'toggle',
   orientation: 'vertical',
 })
@@ -127,7 +140,7 @@ defineSlots<{
   }) => any
 }>()
 
-const { multiple, highlightOnHover, loop, orientation, disabled, selectionBehavior, dir: propDir } = toRefs(props)
+const { multiple, max, highlightOnHover, loop, orientation, disabled, selectionBehavior, dir: propDir } = toRefs(props)
 const { getItems, getItem } = useCollection<{ value: T }>({ isProvider: true })
 const { handleTypeaheadSearch } = useTypeahead()
 const { primitiveElement, currentElement } = usePrimitiveElement()
@@ -152,13 +165,31 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   deep: true,
 }) as Ref<T | T[] | undefined>
 
+// Blocks a multiple selection that would go over `max`, emitting `invalid` with the first value
+// over the limit. Returns `true` when the selection is blocked.
+function exceedsMax(values: Array<T | AcceptableValue>) {
+  if (!multiple.value || !max.value || values.length <= max.value)
+    return false
+  emits('invalid', values[max.value] as T)
+  return true
+}
+
 function onValueChange(val: T) {
-  isUserAction.value = true
   if (props.multiple) {
     const modelArray = Array.isArray(modelValue.value) ? [...modelValue.value] : []
     const index = modelArray.findIndex(i => compare(i, val, props.by))
+    // Check before flagging a user action: a blocked selection changes nothing, so the flag
+    // would never be released and later programmatic changes would skip the highlight.
+    if (props.selectionBehavior === 'toggle' && index === -1 && exceedsMax([...modelArray, val]))
+      return
+    isUserAction.value = true
     if (props.selectionBehavior === 'toggle') {
-      index === -1 ? modelArray.push(val) : modelArray.splice(index, 1)
+      if (index === -1) {
+        modelArray.push(val)
+      }
+      else {
+        modelArray.splice(index, 1)
+      }
       modelValue.value = modelArray
     }
     else {
@@ -167,6 +198,7 @@ function onValueChange(val: T) {
     }
   }
   else {
+    isUserAction.value = true
     if (props.selectionBehavior === 'toggle') {
       if (compare(modelValue.value, val, props.by))
         modelValue.value = undefined
@@ -266,8 +298,9 @@ function onKeydownTypeAhead(event: KeyboardEvent) {
     if (isMetaKey && event.key === 'a' && multiple.value) {
       const collection = getItems()
       const values = collection.map(i => i.value)
-      modelValue.value = [...values]
       event.preventDefault()
+      if (!exceedsMax(values))
+        modelValue.value = [...values]
       const lastItem = collection.at(-1)
       if (lastItem)
         changeHighlight(lastItem.ref)
@@ -410,7 +443,8 @@ function handleMultipleReplace(event: KeyboardEvent, targetEl: HTMLElement) {
       return
 
     const values = findValuesBetween(collection.map(i => i.value), firstValue.value, lastValue)
-    modelValue.value = values
+    if (!exceedsMax(values))
+      modelValue.value = values
   }
 }
 
@@ -503,6 +537,8 @@ provideListboxRootContext({
   // @ts-expect-error ignoring
   onValueChange,
   multiple,
+  max,
+  exceedsMax,
   orientation,
   dir,
   disabled,

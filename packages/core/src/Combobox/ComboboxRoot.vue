@@ -50,6 +50,8 @@ export type ComboboxRootEmits<T = AcceptableValue, ClearValue = never> = {
   'highlight': [payload: { ref: HTMLElement, value: T } | undefined]
   /** Event handler called when the open state of the combobox changes. */
   'update:open': [value: boolean]
+  /** Event handler called when a selection is blocked because it would go over `max`. The payload is the first value over the limit. */
+  'invalid': [payload: T]
 }
 
 export interface ComboboxRootProps<T = AcceptableValue, ClearValue = any> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'keepFocusOnValueChange'> {
@@ -114,6 +116,7 @@ import { PopperRoot } from '@/Popper'
 import { useComboboxContentPositioning } from './useComboboxContentPositioning'
 
 const props = withDefaults(defineProps<ComboboxRootProps<T, ClearValue>>(), {
+  max: 0,
   open: undefined,
   resetSearchTermOnBlur: true,
   resetSearchTermOnSelect: true,
@@ -323,12 +326,14 @@ provideComboboxRootContext(defineReactiveIds({
       :as-child="asChild"
       :dir="dir"
       :multiple="multiple"
+      :max="props.max"
       :name="name"
       :required="required"
       :disabled="disabled"
       :highlight-on-hover="highlightOnHover"
       :loop="loop"
       :by="props.by as any"
+      @invalid="emits('invalid', $event as T)"
       @highlight="emits('highlight', $event as any)"
     >
       <slot
