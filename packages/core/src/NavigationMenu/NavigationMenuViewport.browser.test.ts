@@ -4,8 +4,9 @@ import { page, userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { NavigationMenuContent, NavigationMenuItem, NavigationMenuList, NavigationMenuRoot, NavigationMenuTrigger, NavigationMenuViewport } from '.'
 
-function mountMenu({ scale = '1', align = 'center', vertical = false, panelSize = 120, outerPosition = 'fixed', outerStyle = '', rootSize = 300, rootStyle = '', boundaryTransform = `scale(${scale})` }: {
+function mountMenu({ scale = '1', align = 'center', vertical = false, panelSize = 120, outerPosition = 'fixed', outerStyle = '', rootSize = 300, rootStyle = '', boundaryTransform = `scale(${scale})`, avoidClipping = false }: {
   scale?: string
+  avoidClipping?: boolean
   align?: 'start' | 'center' | 'end'
   vertical?: boolean
   outerStyle?: string
@@ -23,7 +24,7 @@ function mountMenu({ scale = '1', align = 'center', vertical = false, panelSize 
             h(NavigationMenuTrigger, { 'data-testid': value, 'style': 'box-sizing: border-box; width: 100px; height: 100px;' }, () => value),
             h(NavigationMenuContent, { style: `width: ${panelSize}px; height: ${panelSize}px;` }, () => value),
           ]))),
-          h(NavigationMenuViewport, { 'align': align, 'data-testid': 'viewport', 'style': `position: absolute; left: ${vertical ? '0' : 'var(--reka-navigation-menu-viewport-left)'}; top: ${vertical ? 'var(--reka-navigation-menu-viewport-top)' : '0'}; width: var(--reka-navigation-menu-viewport-width); height: var(--reka-navigation-menu-viewport-height);` }),
+          h(NavigationMenuViewport, { 'align': align, avoidClipping, 'data-testid': 'viewport', 'style': `position: absolute; left: ${vertical ? '0' : 'var(--reka-navigation-menu-viewport-left)'}; top: ${vertical ? 'var(--reka-navigation-menu-viewport-top)' : '0'}; width: var(--reka-navigation-menu-viewport-width); height: var(--reka-navigation-menu-viewport-height);` }),
         ]),
       ]),
     ]),
@@ -36,7 +37,7 @@ function mountMenu({ scale = '1', align = 'center', vertical = false, panelSize 
   return { get, open }
 }
 
-function mountClippedMenu({ scale = '1', align = 'center', vertical = false, panelSize = 300, outerWidth = 360, outerHeight = 360, outerOverflow = 'hidden', outerStyle = '', rootSize = 300, triggerSize = 100, boundaryStyle = '', rootStyle = '', viewportWrapperStyle = '' }: {
+function mountClippedMenu({ avoidClipping = true, scale = '1', align = 'center', vertical = false, panelSize = 300, outerWidth = 360, outerHeight = 360, outerOverflow = 'hidden', outerStyle = '', rootSize = 300, triggerSize = 100, boundaryStyle = '', rootStyle = '', viewportWrapperStyle = '' }: {
   scale?: string
   align?: 'start' | 'center' | 'end'
   vertical?: boolean
@@ -50,10 +51,11 @@ function mountClippedMenu({ scale = '1', align = 'center', vertical = false, pan
   boundaryStyle?: string
   rootStyle?: string
   viewportWrapperStyle?: string
+  avoidClipping?: boolean
 } = {}) {
   mount(defineComponent({
     setup: () => () => {
-      const viewport = h(NavigationMenuViewport, { 'align': align, 'data-testid': 'viewport', 'style': `position: absolute; left: ${vertical ? '0' : 'var(--reka-navigation-menu-viewport-left)'}; top: ${vertical ? 'var(--reka-navigation-menu-viewport-top)' : '0'}; width: var(--reka-navigation-menu-viewport-width); height: var(--reka-navigation-menu-viewport-height);` })
+      const viewport = h(NavigationMenuViewport, { 'align': align, avoidClipping, 'data-testid': 'viewport', 'style': `position: absolute; left: ${vertical ? '0' : 'var(--reka-navigation-menu-viewport-left)'}; top: ${vertical ? 'var(--reka-navigation-menu-viewport-top)' : '0'}; width: var(--reka-navigation-menu-viewport-width); height: var(--reka-navigation-menu-viewport-height);` })
       return h('div', { 'data-testid': 'outer', 'style': `position: fixed; left: 320px; top: 100px; width: ${outerWidth}px; height: ${outerHeight}px; overflow: ${outerOverflow}; ${outerStyle}` }, [
         h('div', { 'data-testid': 'boundary', 'style': `position: relative; width: ${rootSize}px; height: ${rootSize}px; transform: scale(${scale}); transform-origin: top left; ${boundaryStyle}` }, [
           h(NavigationMenuRoot, { 'data-testid': 'root', 'orientation': vertical ? 'vertical' : 'horizontal', 'disableHoverTrigger': true, 'style': `position: relative; width: ${rootSize}px; height: ${rootSize}px; ${rootStyle}` }, () => [
@@ -190,6 +192,23 @@ describe('navigationMenuViewport positioning in a real browser', () => {
     const { get, open } = mountMenu({ rootStyle, vertical })
     await open('two')
     await expect.poll(() => {
+      const rootRect = get('root').getBoundingClientRect()
+      const trigger = get('two').getBoundingClientRect()
+      const viewport = get('viewport')
+      return [
+        viewport.style.getPropertyValue('--reka-navigation-menu-viewport-left'),
+        viewport.style.getPropertyValue('--reka-navigation-menu-viewport-top'),
+      ].join(',') === [
+        `${Math.round(trigger.left - rootRect.left + trigger.width / 2 - 60)}px`,
+        `${Math.round(trigger.top - rootRect.top + trigger.height / 2 - 60)}px`,
+      ].join(',')
+    }).toBe(true)
+  })
+
+  it.each(sizelessRoots)('centres the viewport for a root with "$rootStyle" when avoiding clipping, vertical=$vertical', async ({ rootStyle, vertical }) => {
+    const { get, open } = mountMenu({ rootStyle, vertical, avoidClipping: true })
+    await open('two')
+    await expect.poll(() => {
       const trigger = get('two').getBoundingClientRect()
       const viewport = get('viewport')
       const viewportRect = viewport.getBoundingClientRect()
@@ -206,7 +225,7 @@ describe('navigationMenuViewport positioning in a real browser', () => {
     document.body.style.position = 'static'
 
     try {
-      const { get, open } = mountMenu({ boundaryTransform: 'none', outerPosition: 'static', rootStyle: 'display: contents;', vertical: false })
+      const { get, open } = mountMenu({ boundaryTransform: 'none', outerPosition: 'static', rootStyle: 'display: contents;', vertical: false, avoidClipping: true })
       await open('two')
       await expect.poll(() => {
         const trigger = get('two').getBoundingClientRect()
@@ -228,7 +247,7 @@ describe('navigationMenuViewport positioning in a real browser', () => {
     document.body.style.position = 'relative'
 
     try {
-      const { get, open } = mountMenu({ boundaryTransform: 'none', outerPosition: 'static', rootStyle: 'display: contents;', vertical: false })
+      const { get, open } = mountMenu({ boundaryTransform: 'none', outerPosition: 'static', rootStyle: 'display: contents;', vertical: false, avoidClipping: true })
       await open('two')
       await expect.poll(() => {
         const trigger = get('two').getBoundingClientRect()
@@ -257,7 +276,7 @@ describe('navigationMenuViewport positioning in a real browser', () => {
     document.body.style.willChange = value
 
     try {
-      const { get, open } = mountMenu({ boundaryTransform: 'none', outerPosition: 'static', rootStyle: 'display: contents;' })
+      const { get, open } = mountMenu({ boundaryTransform: 'none', outerPosition: 'static', rootStyle: 'display: contents;', avoidClipping: true })
       await open('two')
       await expect.poll(() => {
         const trigger = get('two').getBoundingClientRect()
@@ -273,8 +292,9 @@ describe('navigationMenuViewport positioning in a real browser', () => {
     }
   })
 
-  it.each(['content-box', 'border-box'])('measures the fractional %s border box after a resize', async (boxSizing) => {
+  it.each(['content-box', 'border-box'].flatMap(boxSizing => [false, true].map(avoidClipping => ({ boxSizing, avoidClipping }))))('measures the fractional $boxSizing border box after a resize, avoidClipping=$avoidClipping', async ({ boxSizing, avoidClipping }) => {
     const { get, open } = mountMenu({
+      avoidClipping,
       rootSize: 300.5,
       scale: '1.002',
       panelSize: document.documentElement.offsetWidth * 2,
@@ -284,9 +304,10 @@ describe('navigationMenuViewport positioning in a real browser', () => {
     await open('one')
     const assertPosition = () => expect.poll(() => {
       const rootRect = get('root').getBoundingClientRect()
-      // Absolute positioning is relative to the root's padding edge, so the
-      // one-pixel border is part of the local coordinate conversion.
-      const expected = Math.round((10 - rootRect.left) / 1.002 - 1)
+      // By default the position is relative to the root's border edge. Avoiding clipping,
+      // it is relative to its padding edge, as absolute positioning is, so the one-pixel
+      // border is part of the local coordinate conversion.
+      const expected = Math.round((10 - rootRect.left) / 1.002 - (avoidClipping ? 1 : 0))
       return Number.parseFloat(get('viewport').style.getPropertyValue('--reka-navigation-menu-viewport-left')) - expected
     }).toBe(0)
     await assertPosition()
@@ -528,8 +549,19 @@ describe('navigationMenuViewport positioning in a real browser', () => {
     }).toBeLessThan(1)
   })
 
+  it('clamps to the document, not a clipping ancestor, by default', async () => {
+    const { get, open } = mountClippedMenu({ avoidClipping: false })
+    await open('three')
+    await expect.poll(() => {
+      const trigger = get('three').getBoundingClientRect()
+      const viewport = get('viewport').getBoundingClientRect()
+      return Math.abs(viewport.left + viewport.width / 2 - trigger.left - trigger.width / 2)
+    }).toBeLessThan(1)
+    expect(get('viewport').getBoundingClientRect().right).toBeGreaterThan(get('outer').getBoundingClientRect().right)
+  })
+
   it('preserves the document boundary when no ancestor clips', async () => {
-    const { get, open } = mountMenu({ outerStyle: 'left: calc(100vw - 100px);', panelSize: 260 })
+    const { get, open } = mountMenu({ outerStyle: 'left: calc(100vw - 100px);', panelSize: 260, avoidClipping: true })
     await open('one')
     await expect.poll(() => Math.abs(get('viewport').getBoundingClientRect().right - (document.documentElement.offsetWidth - 10))).toBeLessThan(1)
   })

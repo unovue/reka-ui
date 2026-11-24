@@ -16,6 +16,13 @@ export interface NavigationMenuViewportProps extends PrimitiveProps {
    * @defaultValue 'center'
    */
   align?: 'start' | 'center' | 'end'
+  /**
+   * When `true`, keeps the viewport inside the ancestors that clip it (an `overflow` other
+   * than `visible`, or paint containment) instead of the document, and sets the position
+   * css variables in the coordinates of the viewport's containing block.
+   * @defaultValue false
+   */
+  avoidClipping?: boolean
 }
 </script>
 
@@ -179,7 +186,7 @@ function getPositioningContext(element: HTMLElement, fallbackScaleX: number, fal
 
 const content = ref<HTMLElement>()
 const open = computed(() => !!menuContext.modelValue.value)
-const clippingAncestors = computed(() => currentElement.value && content.value && open.value
+const clippingAncestors = computed(() => props.avoidClipping && currentElement.value && content.value && open.value
   ? getClippingAncestors(currentElement.value).map(({ element }) => element)
   : [])
 
@@ -200,6 +207,73 @@ watch([modelValue, open], () => {
 }, { immediate: true })
 
 function updatePosition() {
+  if (props.avoidClipping)
+    updateClippedPosition()
+  else
+    updateDocumentPosition()
+}
+
+/** Clamps against the document, in the root's coordinates. */
+function updateDocumentPosition() {
+  if (content.value && activeTrigger.value && rootNavigationMenu.value) {
+    const bodyWidth = document.documentElement.offsetWidth
+    const bodyHeight = document.documentElement.offsetHeight
+    const rootRect = rootNavigationMenu.value.getBoundingClientRect()
+    // Rectangles include transforms; ResizeObserver border boxes retain the
+    // fractional, untransformed layout size (unlike offsetWidth/offsetHeight).
+    // A root without a box on an axis (`display: contents`, zero width or height) is
+    // never measured, or measures 0: there is no scale to read, so assume none.
+    const layoutSize = rootSize?.target === rootNavigationMenu.value ? rootSize : undefined
+    const scaleX = (layoutSize?.width && rootRect.width / layoutSize.width) || 1
+    const scaleY = (layoutSize?.height && rootRect.height / layoutSize.height) || 1
+    const rect = activeTrigger.value.getBoundingClientRect()
+    const { offsetWidth, offsetHeight } = content.value
+
+    // Find the beginning of the position of the menu item
+    const startPositionLeft = (rect.left - rootRect.left) / scaleX
+    const startPositionTop = (rect.top - rootRect.top) / scaleY
+
+    // Aligning to specified alignment
+    let posLeft = null
+    let posTop = null
+    switch (props.align) {
+      case 'start':
+        posLeft = startPositionLeft
+        posTop = startPositionTop
+        break
+      case 'end':
+        posLeft = startPositionLeft - offsetWidth + rect.width / scaleX
+        posTop = startPositionTop - offsetHeight + rect.height / scaleY
+        break
+      default:
+        // center
+        posLeft = startPositionLeft - offsetWidth / 2 + rect.width / scaleX / 2
+        posTop = startPositionTop - offsetHeight / 2 + rect.height / scaleY / 2
+    }
+
+    const screenOffset = 10
+
+    // Convert the screen bounds to local coordinates before clamping.
+    const minLeft = (screenOffset - rootRect.left) / scaleX
+    const maxLeft = (bodyWidth - screenOffset - rootRect.left) / scaleX - offsetWidth
+    const minTop = (screenOffset - rootRect.top) / scaleY
+    const maxTop = (bodyHeight - screenOffset - rootRect.top) / scaleY - offsetHeight
+    posLeft = Math.max(minLeft, Math.min(posLeft, maxLeft))
+    posTop = Math.max(minTop, Math.min(posTop, maxTop))
+
+    // Possible blurring font with decimal values
+    posLeft = Math.round(posLeft)
+    posTop = Math.round(posTop)
+
+    position.value = {
+      left: posLeft,
+      top: posTop,
+    }
+  }
+}
+
+/** Clamps against the clipping ancestors, in the coordinates of the viewport's containing block. */
+function updateClippedPosition() {
   if (content.value && activeTrigger.value && rootNavigationMenu.value && currentElement.value) {
     const rootRect = rootNavigationMenu.value.getBoundingClientRect()
     // Rectangles include transforms; ResizeObserver border boxes retain the
@@ -295,8 +369,13 @@ useResizeObserver([globalThis.document?.body, rootNavigationMenu], (entries) => 
 
 useResizeObserver(clippingAncestors, updatePosition, { box: 'border-box' })
 useResizeObserver(clippingAncestors, updatePosition, { box: 'content-box' })
-useEventListener(globalThis.window, 'resize', updatePosition)
-useEventListener(globalThis.window, 'scroll', updatePosition, { capture: true, passive: true })
+// The document boundary is only measured on resize of the body, root or content.
+function updateClippedPositionOnChange() {
+  if (props.avoidClipping)
+    updateClippedPosition()
+}
+useEventListener(globalThis.window, 'resize', updateClippedPositionOnChange)
+useEventListener(globalThis.window, 'scroll', updateClippedPositionOnChange, { capture: true, passive: true })
 </script>
 
 <template>
