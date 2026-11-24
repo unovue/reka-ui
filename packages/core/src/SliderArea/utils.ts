@@ -1,11 +1,11 @@
-import { clamp } from '@/shared'
-import { getDecimalCount, roundValue } from '../Slider/utils'
+import { clamp, getDecimalCount } from '@/shared'
+import { roundValue } from '../Slider/utils'
 
 /**
  * Snap a value to the nearest step, then clamp it within [min, max].
  */
 export function snapToStep(value: number, min: number, max: number, step: number): number {
-  const decimalCount = getDecimalCount(step)
+  const decimalCount = Math.max(getDecimalCount(min), getDecimalCount(step))
   const snapped = roundValue(Math.round((value - min) / step) * step + min, decimalCount)
   return clamp(snapped, min, max)
 }
