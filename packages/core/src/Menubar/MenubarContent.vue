@@ -9,6 +9,7 @@ export interface MenubarContentProps extends MenuContentProps {}
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { isTriggerPressInFlight } from '@/DismissableLayer/utils'
 import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { injectMenuContext, MenuContent } from '@/Menu'
 import { omitEntryFocusListener } from '@/Menu/utils'
@@ -111,7 +112,11 @@ function handleArrowNavigation(event: KeyboardEvent) {
     @focus-outside="(event) => {
       const target = event.target as HTMLElement;
       const isMenubarTrigger = getItems().filter(i => i.ref.dataset.disabled !== '').some((i) => i.ref.contains(target));
-      if (isMenubarTrigger) event.preventDefault();
+      // WebKit does not focus a pressed button but its focusable ancestor: pressing a
+      // trigger focuses the menubar itself, which must not close the menu it opens (#3360).
+      const trigger = menuContext.triggerElement.value;
+      const isMenubar = isTriggerPressInFlight(trigger) && target === trigger?.closest('[role=menubar]');
+      if (isMenubarTrigger || isMenubar) event.preventDefault();
     }"
     @interact-outside="
       (event) => {

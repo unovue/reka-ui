@@ -10,6 +10,7 @@ export interface DropdownMenuTriggerProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { nextTick, onMounted } from 'vue'
+import { trackTriggerPress } from '@/DismissableLayer/utils'
 import { injectMenuContext, MenuAnchor } from '@/Menu'
 import {
   Primitive,
@@ -46,6 +47,7 @@ const contentId = useRenderedContentId(rootContext, injectMenuContext())
       :data-disabled="disabled ? '' : undefined"
       :disabled="disabledAttr(disabled, props.as, props.asChild)"
       :data-state="rootContext.open.value ? 'open' : 'closed'"
+      @pointerdown="trackTriggerPress"
       @click="
         async (event: MouseEvent) => {
           if (event.defaultPrevented) return;

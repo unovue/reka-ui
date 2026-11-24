@@ -11,6 +11,7 @@ export interface DropdownMenuContentProps extends MenuContentProps {}
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { isTriggerPressInFlight } from '@/DismissableLayer/utils'
 import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { injectMenuContext, MenuContent } from '@/Menu'
 import { omitEntryFocusListener } from '@/Menu/utils'
@@ -29,6 +30,27 @@ useForwardExpose()
 const rootContext = injectDropdownMenuRootContext()
 
 const hasInteractedOutsideRef = ref(false)
+function handleInteractOutside(event: CustomEvent<{ originalEvent: Event }>) {
+  const target = event.target as HTMLElement
+  const trigger = rootContext.triggerElement.value
+  const originalEvent = event.detail.originalEvent
+
+  if (event.defaultPrevented)
+    return
+
+  const pointerEvent = originalEvent as PointerEvent
+  const ctrlLeftClick = pointerEvent.button === 0 && pointerEvent.ctrlKey === true
+  const isRightClick = pointerEvent.button === 2 || ctrlLeftClick
+  if (!rootContext.modal.value || isRightClick)
+    hasInteractedOutsideRef.value = true
+  if (trigger?.contains(target))
+    event.preventDefault()
+  // WebKit does not focus a pressed button but its focusable ancestor. The trigger
+  // handles its own press, so that focus move is treated like the focus the trigger
+  // itself gets in other engines (#3360).
+  else if (originalEvent.type === 'focusin' && trigger && isTriggerPressInFlight(trigger) && target.contains(trigger))
+    event.preventDefault()
+}
 
 function handleCloseAutoFocus(event: Event) {
   if (event.defaultPrevented)
@@ -77,15 +99,7 @@ useContentId(rootContext, menuContext.content)
     }"
     v-bind="{ ...forwarded, ...omitEntryFocusListener($attrs) }"
     @close-auto-focus="handleCloseAutoFocus"
-    @interact-outside="(event) => {
-      if (event.defaultPrevented) return
-
-      const originalEvent = event.detail.originalEvent as PointerEvent;
-      const ctrlLeftClick = originalEvent.button === 0 && originalEvent.ctrlKey === true;
-      const isRightClick = originalEvent.button === 2 || ctrlLeftClick;
-      if (!rootContext.modal.value || isRightClick) hasInteractedOutsideRef = true;
-      if (rootContext.triggerElement.value?.contains(event.target as HTMLElement)) event.preventDefault()
-    }"
+    @interact-outside="handleInteractOutside"
   >
     <slot />
   </MenuContent>
