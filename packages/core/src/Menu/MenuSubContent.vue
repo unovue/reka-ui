@@ -47,6 +47,10 @@ useContentId(menuSubContext, subContentElement)
 const staysMounted = computed(() => !rootContext.unmountOnHide.value)
 const hidesWhenClosed = computed(() => staysMounted.value && !props.forceMount)
 const keptArg = computed(() => hidesWhenClosed.value ? 'kept' : null)
+// A closing content still mounted for its exit animation hands Escape, outside interaction
+// and the accessibility tree back to the layer below at once. A force-mounted content keeps
+// its layer while closed, as before.
+const layerPresent = computed(() => menuContext.open.value || !!props.forceMount)
 </script>
 
 <template>
@@ -61,6 +65,7 @@ const keptArg = computed(() => hidesWhenClosed.value ? 'kept' : null)
       :ref="forwardRef"
       v-show-when-kept:[keptArg]="hidesWhenClosed ? present : true"
       :present="staysMounted ? present : true"
+      :layer-present="(staysMounted ? present : true) && layerPresent"
       :aria-labelledby="menuSubContext.triggerId"
       align="start"
       :side="rootContext.dir.value === 'rtl' ? 'left' : 'right'"
