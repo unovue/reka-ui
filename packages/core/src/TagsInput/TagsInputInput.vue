@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useComposing, useForwardExpose } from '@/shared'
+import { disabledAttr, useComposing, useForwardExpose } from '@/shared'
 
 export interface TagsInputInputProps extends PrimitiveProps {
   /** The placeholder character to use for empty tags input. */
@@ -177,7 +177,7 @@ onMounted(() => {
     :as-child="asChild"
     :maxlength="maxLength"
     :placeholder="placeholder"
-    :disabled="context.disabled.value"
+    :disabled="disabledAttr(context.disabled.value, props.as, props.asChild)"
     :data-invalid="context.isInvalidInput.value ? '' : undefined"
     @input="handleInput"
     @keydown.enter="handleEnter"

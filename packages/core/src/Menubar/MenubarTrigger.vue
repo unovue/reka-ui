@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { useForwardExpose, useRenderedContentId, useTriggerId } from '@/shared'
+import { disabledAttr, useForwardExpose, useRenderedContentId, useTriggerId } from '@/shared'
 
 export interface MenubarTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -61,7 +61,7 @@ onMounted(() => {
           :data-highlighted="isFocused ? '' : undefined"
           :data-state="open ? 'open' : 'closed'"
           :data-disabled="disabled ? '' : undefined"
-          :disabled="disabled"
+          :disabled="disabledAttr(disabled, as, asChild)"
           :data-value="menuContext.value"
           @pointerdown="(event: PointerEvent) => {
             if (event.defaultPrevented) return;

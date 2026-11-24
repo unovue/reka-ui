@@ -413,6 +413,77 @@ describe('given TagsInput with a disabled item before a removable one', () => {
   })
 })
 
+describe('given duplicate tags', () => {
+  it.each(['click', 'Backspace'])('uses the model index with %s when an earlier duplicate is hidden', async (action) => {
+    const wrapper = mount(defineComponent({
+      components: { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputRoot },
+      template: `<TagsInputRoot v-slot="{ modelValue }" duplicate :default-value="['a', 'b', 'a']">
+        <TagsInputItem v-for="(value, index) in modelValue.slice(1)" :key="index" :value="value" :model-index="index + 1">
+          <TagsInputItemDelete />
+        </TagsInputItem>
+        <TagsInputInput />
+      </TagsInputRoot>`,
+    }), { attachTo: document.body })
+
+    await nextTick()
+    if (action === 'click') {
+      await wrapper.findAll('button')[1].trigger('click')
+    }
+    else {
+      const input = wrapper.get('input')
+      await input.trigger('keydown', { key: 'Backspace' })
+      await input.trigger('keydown', { key: 'Backspace' })
+    }
+
+    expect(wrapper.getComponent(TagsInputRoot).emitted('update:modelValue')).toEqual([[['a', 'b']]])
+    wrapper.unmount()
+  })
+
+  it('falls back to the rendered occurrence when the model index does not match', async () => {
+    const wrapper = mount(defineComponent({
+      components: { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputRoot },
+      template: `<TagsInputRoot v-slot="{ modelValue }" :default-value="['a', 'b', 'c']">
+        <TagsInputItem v-for="(value, index) in modelValue.slice(1)" :key="value" :value="value" :model-index="index">
+          <TagsInputItemDelete />
+        </TagsInputItem>
+        <TagsInputInput />
+      </TagsInputRoot>`,
+    }), { attachTo: document.body })
+
+    await nextTick()
+    await wrapper.findAll('button')[1].trigger('click')
+
+    expect(wrapper.getComponent(TagsInputRoot).emitted('update:modelValue')).toEqual([[['a', 'b']]])
+    wrapper.unmount()
+  })
+
+  it.each(['click', 'Backspace'])('removes the selected occurrence with %s', async (action) => {
+    const wrapper = mount(defineComponent({
+      components: { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot },
+      template: `<TagsInputRoot v-slot="{ modelValue }" duplicate :default-value="['hidden', 'a', 'b', 'a']">
+        <TagsInputItem v-for="(value, index) in modelValue.slice(1)" :key="index" :value="value" :disabled="index === 0">
+          <TagsInputItemText />
+          <TagsInputItemDelete />
+        </TagsInputItem>
+        <TagsInputInput />
+      </TagsInputRoot>`,
+    }), { attachTo: document.body })
+
+    await nextTick()
+    if (action === 'click') {
+      await wrapper.findAll('button')[2].trigger('click')
+    }
+    else {
+      const input = wrapper.get('input')
+      await input.trigger('keydown', { key: 'Backspace' })
+      await input.trigger('keydown', { key: 'Backspace' })
+    }
+
+    expect(wrapper.getComponent(TagsInputRoot).emitted('update:modelValue')).toEqual([[['hidden', 'a', 'b']]])
+    wrapper.unmount()
+  })
+})
+
 describe('given a TagsInputItemDelete with an aria-label', () => {
   it('should not override the aria-label with aria-labelledby', () => {
     const wrapper = mount(defineComponent({

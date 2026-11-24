@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import ts from 'typescript'
 import { expect, it } from 'vitest'
@@ -9,6 +10,25 @@ const constants = [...Object.values(components).flat(), ...Object.values(utiliti
 
 it.each(constants)('it should export %s', (component) => {
   expect(exportedComponents).toContain(component)
+})
+
+it('registers public components for auto-import', () => {
+  const registered = new Set<string>(Object.values(components).flat())
+  const componentNames = Object.keys(RekaUI).filter(name => /^[A-Z]/.test(name))
+  expect(componentNames.filter(name => !registered.has(name))).toEqual([])
+})
+
+// `packages/plugins/src/namespaced/index.ts` is generated from the registry. Regenerate it with
+// `pnpm --filter plugins generate` (after `pnpm --filter reka-ui build`) and `eslint --fix` it.
+it('keeps the committed namespaced entry in sync with the registry', () => {
+  // Same groups as `excludedComponents` in `packages/plugins/src/namespaced/generate.ts`
+  const excluded = ['configProvider', 'primitive', 'visuallyHidden']
+  const expected = Object.entries(components)
+    .filter(([group]) => !excluded.includes(group))
+    .flatMap(([, names]) => names as readonly string[])
+  const source = readFileSync(resolve(__dirname, '../../plugins/src/namespaced/index.ts'), 'utf-8')
+  const imported = source.match(/^import \{([^}]*)\} from 'reka-ui'/)![1].split(',').map(name => name.trim())
+  expect([...imported].sort()).toEqual([...expected].sort())
 })
 
 /**
