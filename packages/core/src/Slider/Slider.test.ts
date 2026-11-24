@@ -59,6 +59,10 @@ describe('given default Slider', () => {
     expect(wrapper.html()).toContain('aria-valuenow="50"')
   })
 
+  it('should not mark the thumb as disabled', () => {
+    expect(wrapper.find('[role="slider"]').attributes('aria-disabled')).toBeUndefined()
+  })
+
   describe('when disabled', () => {
     beforeEach(async () => {
       await wrapper.setProps({ disabled: true })
@@ -67,6 +71,7 @@ describe('given default Slider', () => {
     it('should disable the thumb', () => {
       const thumb = wrapper.find('[role="slider"]')
       expect(thumb.attributes('data-disabled')).toBe('')
+      expect(thumb.attributes('aria-disabled')).toBe('true')
       expect(thumb.attributes('aria-valuemin')).toBe('0')
       expect(thumb.attributes('aria-valuemax')).toBe('100')
       expect(thumb.attributes('aria-valuenow')).toBe('50')

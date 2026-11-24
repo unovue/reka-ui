@@ -74,6 +74,7 @@ onUnmounted(() => {
       role="slider"
       :tabindex="rootContext.disabled.value ? undefined : 0"
       :aria-label="$attrs['aria-label'] || label"
+      :aria-disabled="rootContext.disabled.value || undefined"
       :data-disabled="rootContext.disabled.value ? '' : undefined"
       :data-orientation="rootContext.orientation.value"
       :aria-valuenow="value"

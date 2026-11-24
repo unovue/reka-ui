@@ -334,6 +334,10 @@ describe('colorArea HSL Saturation(x) / Lightness(y)', () => {
       expect(thumb.attributes('tabindex')).toBeUndefined()
     })
 
+    it('thumb has aria-disabled="true"', () => {
+      expect(w.find('[role="slider"]').attributes('aria-disabled')).toBe('true')
+    })
+
     it('arrowRight does not change saturation', async () => {
       const before = getXValue(w)
       await keydown(w, 'ArrowRight')
