@@ -180,7 +180,7 @@ function addHexValue(delta: number) {
       })()
   const clamped = Math.min(Math.max(hexInt + intDelta, MIN_HEX_INT), MAX_HEX_INT)
   const hex = `#${clamped.toString(16).padStart(6, '0')}`
-  color.value = parseColor(hex)
+  color.value = { ...parseColor(hex), alpha: color.value.alpha }
   inputValue.value = formatValue(color.value)
 }
 

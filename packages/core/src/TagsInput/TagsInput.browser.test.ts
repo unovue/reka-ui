@@ -40,13 +40,14 @@ describe('given a TagsInput inside a form, in a real browser', () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 
-  it('submits the form on Enter when the draft is empty', async () => {
-    const { input, onSubmit } = mountInForm()
+  it.each(['', '   '])('submits the form on Enter when the draft is %j', async (draft) => {
+    const { input, values, onSubmit } = mountInForm()
 
     await userEvent.click(input)
-    await userEvent.keyboard('{Enter}')
+    await userEvent.keyboard(`${draft}{Enter}`)
 
     await expect.poll(() => onSubmit).toHaveBeenCalledTimes(1)
+    expect(values.value).toEqual([])
   })
 
   it('keeps focus in the input when Tab adds the draft (addOnTab)', async () => {
@@ -59,12 +60,13 @@ describe('given a TagsInput inside a form, in a real browser', () => {
     expect(document.activeElement).toBe(input)
   })
 
-  it('moves focus on Tab when the draft is empty (addOnTab)', async () => {
-    const { input } = mountInForm({ addOnTab: true })
+  it.each(['', '   '])('moves focus on Tab when the draft is %j (addOnTab)', async (draft) => {
+    const { input, values } = mountInForm({ addOnTab: true })
 
     await userEvent.click(input)
-    await userEvent.keyboard('{Tab}')
+    await userEvent.keyboard(`${draft}{Tab}`)
 
     expect(document.activeElement).toBe(document.querySelector('button[type="submit"]'))
+    expect(values.value).toEqual([])
   })
 })

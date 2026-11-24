@@ -156,6 +156,38 @@ describe('test Primitive functionalities', () => {
       expect(element.attributes('class')).toBe('parent-class child-class more-child-class')
     })
 
+    it('should keep the child\'s template ref in every instance and after an update', async () => {
+      const Trigger = defineComponent({
+        components: { Primitive },
+        props: { active: Boolean },
+        setup() {
+          return { button: ref<HTMLElement>() }
+        },
+        template: `
+          <Primitive as-child :data-active="active">
+            <button ref="button">Trigger</button>
+          </Primitive>
+        `,
+      })
+      const wrapper = mount(defineComponent({
+        components: { Trigger },
+        props: { active: Boolean },
+        template: '<Trigger ref="first" :active="active" /><Trigger ref="second" :active="active" />',
+      }))
+      const [first, second] = wrapper.findAll('button').map(button => button.element)
+      const expectRefs = () => {
+        const { $refs } = wrapper.vm as any
+        expect($refs.first.button).toBe(first)
+        expect($refs.second.button).toBe(second)
+      }
+
+      expectRefs()
+
+      await wrapper.setProps({ active: true })
+      expect(first.dataset.active).toBe('true')
+      expectRefs()
+    })
+
     it('should render the Component that passed in as', () => {
       const Button = markRaw(defineComponent({
         setup(props, { slots }) {

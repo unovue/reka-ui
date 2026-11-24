@@ -1,9 +1,10 @@
 import type { VueWrapper } from '@vue/test-utils'
 import type { PropType } from 'vue'
+import { renderToString } from '@vue/server-renderer'
 import { mount } from '@vue/test-utils'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { sleep } from '@/test'
 import ScrollAreaCorner from './ScrollAreaCorner.vue'
 import ScrollAreaRoot from './ScrollAreaRoot.vue'
@@ -12,6 +13,35 @@ import ScrollAreaThumb from './ScrollAreaThumb.vue'
 import ScrollAreaViewport from './ScrollAreaViewport.vue'
 import ScrollAreaVirtualizer from './ScrollAreaVirtualizer.vue'
 import ScrollArea from './story/_ScrollArea.vue'
+
+describe('given a ScrollAreaViewport', () => {
+  it('renders a camelCase tabIndex only once during SSR', async () => {
+    const html = await renderToString(h(ScrollAreaRoot, null, () => h(ScrollAreaViewport, { tabIndex: -1 })))
+    expect(html.match(/\btabindex="[^"]*"/g)).toEqual(['tabindex="-1"'])
+  })
+
+  it.each([
+    { attrs: {}, expected: '0' },
+    { attrs: { tabindex: '-1' }, expected: '-1' },
+    { attrs: { tabindex: null }, expected: undefined },
+  ])('renders $expected for viewport attributes $attrs', ({ attrs, expected }) => {
+    const wrapper = mount(ScrollAreaRoot, {
+      slots: { default: () => h(ScrollAreaViewport, attrs) },
+    })
+
+    expect(wrapper.get('[data-reka-scroll-area-viewport]').attributes('tabindex')).toBe(expected)
+    wrapper.unmount()
+  })
+
+  it('keeps tabindex after the other viewport attributes', () => {
+    const wrapper = mount(ScrollAreaRoot, {
+      slots: { default: () => h(ScrollAreaViewport, { 'class': 'viewport', 'aria-label': 'list' }) },
+    })
+
+    expect(wrapper.get('[data-reka-scroll-area-viewport]').element.getAttributeNames().at(-1)).toBe('tabindex')
+    wrapper.unmount()
+  })
+})
 
 describe('given a virtualized ScrollArea', () => {
   const options = Array.from({ length: 100 }, (_, index) => `Item ${index}`)
@@ -286,6 +316,30 @@ describe('given prop:type="always" ScrollArea', () => {
   it('should render content and scrollbar', () => {
     expect(wrapper.html()).toMatchSnapshot()
     expect(wrapper.html()).toContain('data-orientation="vertical"')
+  })
+})
+
+describe('given a visible scrollbar', () => {
+  // A non-passive wheel listener on the document makes WebKit wait for the main thread
+  // before scrolling anything on the page, so the scrollbar listens on itself.
+  it('listens for wheel events on the scrollbar, not on the document', async () => {
+    const documentListener = vi.spyOn(document, 'addEventListener')
+    const elementListener = vi.spyOn(HTMLElement.prototype, 'addEventListener')
+    const wrapper = mount(ScrollArea, { attachTo: document.body, props: { type: 'always' } })
+    await nextTick()
+
+    expect(documentListener.mock.calls.filter(([type]) => type === 'wheel')).toEqual([])
+    const scrollbars = Array.from(wrapper.element.querySelectorAll('[data-scrollbarimpl]'))
+    const wheelOnScrollbar = elementListener.mock.contexts
+      .map((context, index) => [context, elementListener.mock.calls[index]] as const)
+      .filter(([context, [type]]) => type === 'wheel' && scrollbars.includes(context as Element))
+    expect(wheelOnScrollbar.length).toBeGreaterThan(0)
+    for (const [, [, , options]] of wheelOnScrollbar)
+      expect(options).toMatchObject({ passive: false })
+
+    wrapper.unmount()
+    documentListener.mockRestore()
+    elementListener.mockRestore()
   })
 })
 

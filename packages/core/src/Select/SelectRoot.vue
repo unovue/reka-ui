@@ -148,17 +148,27 @@ const dir = useDirection(propDir)
 
 const isFormControl = useFormControl(triggerElement)
 const optionsSet = ref<Set<SelectOption>>(new Set())
+const bubbleSelect = ref<{ selectElement?: HTMLElement }>()
 
 // The native `select` only associates the correct default value if the corresponding
 // `option` is rendered as a child **at the same time** as itself.
 // Because it might take a few renders for our items to gather the information to build
 // the native `option`(s), we generate a key on the `select` to make sure Vue re-builds it
-// each time the options change.
+// each time the options change. It also changes with `multiple`, as the two modes bind
+// the selection differently (`value` vs `option.selected`).
 const nativeSelectKey = computed(() => {
-  return Array.from(optionsSet.value)
+  return `${multiple.value ? 'multiple' : 'single'}:${Array.from(optionsSet.value)
     .map(option => option.value)
-    .join(';')
+    .join(';')}`
 })
+
+// Switching `multiple` rebuilds the native select (see `nativeSelectKey`), and the new one's
+// watcher starts at the new value. When the value changed in that same update, the form is
+// notified here, once the new select and its options are rendered.
+watch([multiple, modelValue], ([isMultiple, value], [wasMultiple, previousValue]) => {
+  if (isMultiple !== wasMultiple && value !== previousValue)
+    bubbleSelect.value?.selectElement?.dispatchEvent(new Event('change', { bubbles: true }))
+}, { flush: 'post' })
 
 function handleValueChange(value: T) {
   let nextValue: T | T[]
@@ -242,6 +252,7 @@ provideSelectRootContext(defineReactiveIds({
     <BubbleSelect
       v-if="isFormControl && resolvedName"
       :key="nativeSelectKey"
+      ref="bubbleSelect"
       aria-hidden="true"
       tabindex="-1"
       :multiple="multiple"
@@ -254,11 +265,13 @@ provideSelectRootContext(defineReactiveIds({
       <option
         v-if="isNullish(modelValue)"
         :value="nullableValue"
+        selected
       />
       <option
         v-for="option in Array.from(optionsSet)"
         :key="option.value ?? ''"
         v-bind="option"
+        :selected="multiple ? valueComparator(modelValue, option.value, by) : undefined"
       />
     </BubbleSelect>
   </PopperRoot>

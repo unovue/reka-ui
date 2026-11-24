@@ -100,6 +100,11 @@ projects:
     url: https://javascriptquiz.com/
     image: https://javascriptquiz.com/og-image.png
 
+  - title: Kliv
+    description: AI web app builder that turns a chat description into a working, hosted web app.
+    url: https://kliv.dev
+    image: /showcase/kliv.jpg
+
 starters:
   - title: shadcn-docs
     description: A Nuxt content docs theme built with `shadcn-vue`
