@@ -29,7 +29,10 @@ const families: Record<string, Family> = {
 const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
 const active = () => document.activeElement?.textContent?.trim()
 
-async function openMenu(familyName: string, extra: () => any[] = () => [], spaceExtendsTypeahead = true) {
+// `'omit'` leaves the prop out, to check its default.
+const spaceExtendsTypeaheadProp = (value: boolean | 'omit') => value === 'omit' ? {} : { spaceExtendsTypeahead: value }
+
+async function openMenu(familyName: string, extra: () => any[] = () => [], spaceExtendsTypeahead: boolean | 'omit' = true) {
   const family = families[familyName]
   const onSelect = vi.fn()
   // The part of this family, like `DropdownMenuItem` for 'Item'
@@ -37,14 +40,14 @@ async function openMenu(familyName: string, extra: () => any[] = () => [], space
   const item = (name: string) => h(part('Item'), { onSelect: () => onSelect(name) }, () => name)
   const content = () => [
     h(part('Trigger'), { 'data-testid': 'trigger', 'style': 'display: block; width: 120px; height: 40px;' }, () => 'File'),
-    h(part('Portal'), null, () => h(part('Content'), { 'data-testid': 'content', spaceExtendsTypeahead }, () => [
+    h(part('Portal'), null, () => h(part('Content'), { 'data-testid': 'content', ...spaceExtendsTypeaheadProp(spaceExtendsTypeahead) }, () => [
       item('New Tab'),
       item('New Window'),
       item('New Private Window'),
       h(part('Sub'), null, () => [
         h(part('SubTrigger'), null, () => 'More Tools'),
         // Not portalled, so its keys bubble through the parent content.
-        h(part('SubContent'), { 'data-testid': 'sub-content', spaceExtendsTypeahead }, () => [item('Save Page'), item('Developer Tools')]),
+        h(part('SubContent'), { 'data-testid': 'sub-content', ...spaceExtendsTypeaheadProp(spaceExtendsTypeahead) }, () => [item('Save Page'), item('Developer Tools')]),
       ]),
       item('More Settings'),
       ...extra(),
@@ -60,8 +63,8 @@ async function openMenu(familyName: string, extra: () => any[] = () => [], space
 }
 
 describe.each(Object.keys(families))('%s typeahead with Space, in a real browser', (name) => {
-  it('selects the focused item with Space during a search by default', async () => {
-    const onSelect = await openMenu(name, undefined, false)
+  it.each([['by default', 'omit'], ['with spaceExtendsTypeahead false', false]] as const)('selects the focused item with Space during a search %s', async (_, value) => {
+    const onSelect = await openMenu(name, undefined, value)
 
     await userEvent.keyboard('new')
     await expect.poll(active).toMatch(/^New /)
