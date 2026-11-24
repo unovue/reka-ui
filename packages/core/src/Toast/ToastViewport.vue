@@ -3,6 +3,7 @@ import type { ComponentPublicInstance } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
 import { getActiveElement, useForwardExpose } from '@/shared'
+import { resolveElement } from '@/shared/resolveElement'
 
 export interface ToastViewportProps extends PrimitiveProps {
   /**
@@ -80,7 +81,9 @@ onMounted(() => {
   providerContext.onViewportChange(currentElement.value)
   viewportElement.value = currentElement.value
   observer = new MutationObserver(() => {
-    const element = unrefElement(primitiveRef as ComponentPublicInstance)
+    // A slot that renders several nodes (e.g. an element next to a `v-if` comment) has a
+    // fragment anchor as its root, so read the element inside it.
+    const element = resolveElement(primitiveRef)
     // An `asChild` slot that renders nothing leaves a comment anchor, which can't hold toasts.
     if (element instanceof HTMLElement) {
       viewportElement.value = element
@@ -88,6 +91,8 @@ onMounted(() => {
     // An emptied `asChild` slot takes any hover or focus inside it along, as a replaced
     // element does below. A window-blur pause is kept.
     else if (viewportElement.value) {
+      // A removed focused element sends no `focusout`.
+      providerContext.focused.value = false
       pendingPointerLeave.value = true
       if (!isPausedByWindowBlur())
         releasePause(viewportElement.value)

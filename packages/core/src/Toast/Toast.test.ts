@@ -807,6 +807,9 @@ describe('given a ToastViewport whose element is replaced', () => {
     props: {
       mode: { type: String as PropType<'asChild' | 'as'>, default: 'asChild' },
       initial: { type: String as PropType<'a' | 'none'>, default: 'a' },
+      // Render a `v-if` comment next to the element, so the slot has a fragment root.
+      sibling: { type: Boolean, default: false },
+      disableHoverPause: { type: Boolean, default: false },
     },
     setup(props) {
       const open = ref(true)
@@ -814,7 +817,7 @@ describe('given a ToastViewport whose element is replaced', () => {
       return { open, variant }
     },
     render() {
-      return h(ToastProvider, { duration: 1000 }, {
+      return h(ToastProvider, { duration: 1000, disableHoverPause: this.disableHoverPause }, {
         default: () => [
           h(ToastRoot, {
             'open': this.open,
@@ -825,9 +828,12 @@ describe('given a ToastViewport whose element is replaced', () => {
           this.mode === 'as'
             ? h(ToastViewport, { 'as': this.variant === 'a' ? 'ol' : 'ul', 'data-viewport': this.variant })
             : h(ToastViewport, { asChild: true }, {
-                default: () => this.variant === 'none'
-                  ? null
-                  : h('ol', { 'key': this.variant, 'data-viewport': this.variant }),
+                default: () => {
+                  const element = this.variant === 'none'
+                    ? null
+                    : h('ol', { 'key': this.variant, 'data-viewport': this.variant })
+                  return this.sibling ? [element, null] : element
+                },
               }),
         ],
       })
@@ -884,6 +890,27 @@ describe('given a ToastViewport whose element is replaced', () => {
     wrapper.vm.variant = 'a'
     await flush()
     expect(document.querySelector('[data-viewport="a"] li')?.textContent).toContain('Saved')
+  })
+
+  it('should teleport open toasts into the first element of a viewport that mounted empty next to a comment', async () => {
+    wrapper.unmount()
+    wrapper = mount(ReplaceableViewport, { attachTo: document.body, props: { initial: 'none', sibling: true } })
+    await flush()
+    wrapper.vm.variant = 'a'
+    await flush()
+    expect(document.querySelector('[data-viewport="a"] li')?.textContent).toContain('Saved')
+  })
+
+  it('should forget focus inside a removed viewport child', async () => {
+    document.querySelector<HTMLElement>('[data-viewport="a"] li')!.focus()
+    await flush()
+    wrapper.vm.variant = 'none'
+    await flush()
+    // An option change asks again whether to pause, which must not see the old focus.
+    await wrapper.setProps({ disableHoverPause: true })
+    await flush()
+    await runDuration()
+    expect(wrapper.vm.open).toBe(false)
   })
 
   it('should teleport open toasts into the current viewport when `as` changes', async () => {
