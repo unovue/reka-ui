@@ -1,5 +1,4 @@
 import type { ComponentOptionsBase, DefineComponent, VNodeProps } from 'vue'
-import type { ComponentProps } from 'vue-component-type-helpers'
 import { h, mergeProps } from 'vue'
 import { useForwardExpose } from './useForwardExpose'
 
@@ -13,6 +12,12 @@ type RawProps = VNodeProps & {
   // used to differ from Array children
   [Symbol.iterator]?: never
 } & Record<string, any>
+
+// Inlined from `vue-component-type-helpers`, a devDependency: a published
+// declaration file can't import from it.
+type ComponentProps<T> = T extends new (...args: any) => { $props: infer P }
+  ? NonNullable<P>
+  : T extends (props: infer P, ...args: any) => any ? P : {}
 
 // types inspired from vue-test-utils
 // https://github.com/vuejs/test-utils/blob/main/src/mount.ts#L36
