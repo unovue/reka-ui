@@ -1,7 +1,7 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { findAllByRole } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import Menu from './story/_Menu.vue'
@@ -60,9 +60,92 @@ describe('given a default Menu', () => {
       })
     })
   })
+
+  describe('typeahead with Space', () => {
+    const press = async (key: string, init: KeyboardEventInit = {}) => {
+      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init })
+      document.activeElement!.dispatchEvent(event)
+      await nextTick()
+      return event
+    }
+    const typeBeef = async () => {
+      (await findAllByRole(document.body, 'menuitem'))[0].focus()
+      for (const key of 'beef')
+        await press(key)
+      expect(document.activeElement?.textContent?.trim()).toBe('Beef')
+    }
+
+    it('should select with Space during a search by default', async () => {
+      await typeBeef()
+      await press(' ', { code: 'Space' })
+      expect(wrapper.emitted('select')?.length).toBe(1)
+    })
+
+    describe('with spaceExtendsTypeahead', () => {
+      beforeEach(() => {
+        wrapper.unmount()
+        document.body.innerHTML = ''
+        wrapper = mount(Menu, {
+          attachTo: document.body,
+          attrs: { spaceExtendsTypeahead: true },
+        })
+      })
+
+      // A virtual keyboard may report Space without `code`.
+      it.each([
+        ['with', { code: 'Space' }],
+        ['without', {}],
+      ])('should append Space %s code to an in-progress search instead of selecting', async (_, init) => {
+        await typeBeef()
+        const space = await press(' ', init)
+        expect(space.defaultPrevented).toBe(true)
+        expect(wrapper.emitted('select')).toBeUndefined()
+
+        await press('w')
+        expect(document.activeElement?.textContent?.trim()).toBe('Beef with sauce')
+        expect(wrapper.emitted('select')).toBeUndefined()
+      })
+
+      it('should select with Space when no search is in progress', async () => {
+        (await findAllByRole(document.body, 'menuitem'))[0].focus()
+        await nextTick()
+        const space = await press(' ', { code: 'Space' })
+        expect(space.defaultPrevented).toBe(true)
+        expect(wrapper.emitted('select')?.length).toBe(1)
+      })
+
+      // An IME may report an ideographic space with the Space `code`; it must not start a search.
+      it('should not start a search with another space reported as Space', async () => {
+        (await findAllByRole(document.body, 'menuitem'))[0].focus()
+        await nextTick()
+        await press('　', { code: 'Space' })
+        await press(' ', { code: 'Space' })
+        expect(wrapper.emitted('select')?.length).toBe(1)
+      })
+
+      it.each([
+        ['a text field', () => document.createElement('input')],
+        ['a button that is not one of its items', () => {
+          const button = document.createElement('button')
+          // Another family's roving item carries the same attribute.
+          button.setAttribute('data-reka-collection-item', '')
+          return button
+        }],
+      ])('should leave Space to %s in the menu while a search is in progress', async (_, create) => {
+        await typeBeef()
+        const control = create()
+        document.querySelector('[data-reka-menu-content]')!.appendChild(control)
+        control.focus()
+        const space = await press(' ', { code: 'Space' })
+        expect(space.defaultPrevented).toBe(false)
+        control.remove()
+      })
+    })
+  })
 })
 
 describe('given a Menu with submenu', () => {
+  let wrapper: VueWrapper<InstanceType<typeof MenuWithSubmenu>>
   globalThis.ResizeObserver = class ResizeObserver {
     observe() {}
     unobserve() {}
@@ -70,9 +153,16 @@ describe('given a Menu with submenu', () => {
   }
   beforeEach(() => {
     document.body.innerHTML = ''
-    mount(MenuWithSubmenu, {
+    wrapper = mount(MenuWithSubmenu, {
       attachTo: document.body,
     })
+  })
+
+  afterEach(async () => {
+    wrapper.unmount()
+    if (vi.isFakeTimers())
+      await vi.runOnlyPendingTimersAsync()
+    vi.useRealTimers()
   })
 
   it('should highlight sub trigger on pointermove', async () => {
@@ -90,5 +180,110 @@ describe('given a Menu with submenu', () => {
     await nextTick()
 
     expect(subTrigger.hasAttribute('data-highlighted')).toBe(true)
+  })
+
+  it('should keep the submenu open when the pointer moves within its focused trigger', async () => {
+    vi.useFakeTimers()
+    const subTrigger = wrapper.get<HTMLElement>('[aria-haspopup="menu"]').element
+
+    async function movePointer() {
+      // jsdom does not support PointerEvent.
+      const event = new MouseEvent('pointermove', { bubbles: true })
+      Object.defineProperty(event, 'pointerType', { value: 'mouse' })
+      subTrigger.dispatchEvent(event)
+      await nextTick()
+    }
+
+    await movePointer()
+    expect(subTrigger).toHaveFocus()
+
+    await vi.advanceTimersByTimeAsync(100)
+    expect(subTrigger).toHaveAttribute('aria-expanded', 'true')
+
+    await movePointer()
+    expect(subTrigger).toHaveAttribute('aria-expanded', 'true')
+    expect(wrapper.find('[role="menu"][aria-labelledby]').exists()).toBe(true)
+  })
+
+  it('should keep the submenu open when the pointer returns to its trigger', async () => {
+    vi.useFakeTimers()
+    const subTrigger = wrapper.get<HTMLElement>('[aria-haspopup="menu"]').element
+
+    // jsdom does not support PointerEvent.
+    async function dispatchPointer(type: string) {
+      const event = new MouseEvent(type, { bubbles: type !== 'pointerleave' })
+      Object.defineProperty(event, 'pointerType', { value: 'mouse' })
+      subTrigger.dispatchEvent(event)
+      await nextTick()
+      await nextTick()
+    }
+
+    await dispatchPointer('pointermove')
+    await vi.advanceTimersByTimeAsync(100)
+    expect(subTrigger).toHaveAttribute('aria-expanded', 'true')
+
+    // A focused text field keeps focus in the submenu while the pointer is over the parent menu.
+    const input = wrapper.get<HTMLInputElement>('input').element
+    input.focus()
+
+    // Leave the trigger for a non-item area of the parent menu, then come back.
+    await dispatchPointer('pointerleave')
+    expect(subTrigger).not.toHaveAttribute('data-highlighted')
+    await dispatchPointer('pointermove')
+
+    expect(subTrigger).toHaveAttribute('aria-expanded', 'true')
+    expect(input).toHaveFocus()
+  })
+
+  it.each([undefined, 1000])('should not render `graceDuration` (%s) as an attribute on the sub trigger', async (graceDuration) => {
+    await wrapper.setProps({ graceDuration })
+
+    const subTrigger = wrapper.get<HTMLElement>('[aria-haspopup="menu"]').element
+    expect(subTrigger).not.toHaveAttribute('graceduration')
+    expect(subTrigger).not.toHaveAttribute('grace-duration')
+  })
+
+  it.each([
+    [undefined, 300],
+    [1000, 1000],
+  ])('should keep the submenu open while the pointer heads towards it (graceDuration: %s)', async (graceDuration, expected) => {
+    await wrapper.setProps({ graceDuration })
+    vi.useFakeTimers()
+    const subTrigger = wrapper.get<HTMLElement>('[aria-haspopup="menu"]').element
+    const siblingItem = wrapper.findAll<HTMLElement>('[role="menuitem"]').find(item => item.text() === 'Item 2')!.element
+
+    // jsdom does not support PointerEvent.
+    async function dispatchPointer(el: HTMLElement, type: string, clientX: number) {
+      const event = new MouseEvent(type, { bubbles: type !== 'pointerleave', clientX, clientY: 50 })
+      Object.defineProperty(event, 'pointerType', { value: 'mouse' })
+      el.dispatchEvent(event)
+      await nextTick()
+    }
+
+    await dispatchPointer(subTrigger, 'pointermove', 100)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(subTrigger).toHaveAttribute('aria-expanded', 'true')
+
+    // jsdom has no layout, so place the submenu to the right of the trigger.
+    const subContent = wrapper.get<HTMLElement>('[role="menu"][aria-labelledby]').element
+    subContent.dataset.side = 'right'
+    vi.spyOn(subContent, 'getBoundingClientRect').mockReturnValue(
+      { left: 200, right: 300, top: 0, bottom: 200, width: 100, height: 200, x: 200, y: 0, toJSON: () => {} },
+    )
+
+    // Leave the trigger and cross a sibling item on the way to the submenu.
+    await dispatchPointer(subTrigger, 'pointerleave', 100)
+    await dispatchPointer(siblingItem, 'pointermove', 150)
+    expect(siblingItem).not.toHaveFocus()
+
+    await vi.advanceTimersByTimeAsync(expected - 50)
+    await dispatchPointer(siblingItem, 'pointermove', 160)
+    expect(siblingItem).not.toHaveFocus()
+    expect(subTrigger).toHaveAttribute('aria-expanded', 'true')
+
+    // Once the grace period ends, the sibling item takes over.
+    await vi.advanceTimersByTimeAsync(50)
+    await dispatchPointer(siblingItem, 'pointermove', 170)
+    expect(siblingItem).toHaveFocus()
   })
 })

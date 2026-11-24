@@ -4,6 +4,7 @@ export * from './AspectRatio'
 export * from './Autocomplete'
 export * from './Avatar'
 export * from './Calendar'
+export * from './Carousel'
 export * from './Checkbox'
 export * from './Collapsible'
 export * from './ColorArea'
@@ -21,9 +22,12 @@ export * from './DateRangeField'
 export * from './DateRangePicker'
 export * from './Dialog'
 export { type FocusOutsideEvent, type PointerDownOutsideEvent } from './DismissableLayer'
+export * from './Drawer'
 export * from './DropdownMenu'
 export * from './Editable'
+export * from './Field'
 export * from './FocusScope'
+export * from './Form'
 export * from './HoverCard'
 export * from './Label'
 export * from './Listbox'
@@ -40,6 +44,7 @@ export { type AsTag, Primitive, type PrimitiveProps, Slot } from './Primitive'
 export * from './Progress'
 export * from './RadioGroup'
 export * from './RangeCalendar'
+export * from './Rating'
 export * from './RovingFocus'
 export * from './ScrollArea'
 export * from './Select'
@@ -96,7 +101,14 @@ export {
 } from './shared/color'
 export {
   type AcceptableValue,
+  type DataOrientation,
+  type Direction,
+  type FormFieldProps,
   type GenericComponentInstance,
+  type ScrollBodyOption,
+  type SingleOrMultipleProps,
+  type SingleOrMultipleType,
+  type StringOrNumber,
 } from './shared/types'
 export * from './Slider'
 export * from './SliderArea'
@@ -104,6 +116,7 @@ export * from './Splitter'
 export * from './Stepper'
 export * from './Switch'
 export * from './Tabs'
+export * from './TagGroup'
 export * from './TagsInput'
 export * from './TimeField'
 export * from './TimeRangeField'

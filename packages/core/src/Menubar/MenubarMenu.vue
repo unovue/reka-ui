@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import { createContext, useForwardExpose, useId } from '@/shared'
+import { createRekaContext, defineReactiveIds, useForwardExpose, useId } from '@/shared'
 
 export interface MenubarMenuProps {
   /**
@@ -20,7 +20,7 @@ type MenubarMenuContext = {
 }
 
 export const [injectMenubarMenuContext, provideMenubarMenuContext]
-  = createContext<MenubarMenuContext>('MenubarMenu')
+  = createRekaContext<MenubarMenuContext>('MenubarMenu')
 </script>
 
 <script setup lang="ts">
@@ -44,13 +44,13 @@ watch(open, () => {
     wasKeyboardTriggerOpenRef.value = false
 })
 
-provideMenubarMenuContext({
+provideMenubarMenuContext(defineReactiveIds({
   value,
   triggerElement,
   triggerId: value,
   contentId: '',
   wasKeyboardTriggerOpenRef,
-})
+}, ['triggerId', 'contentId']))
 </script>
 
 <template>
@@ -58,6 +58,7 @@ provideMenubarMenuContext({
     :open="open"
     :modal="false"
     :dir="rootContext.dir.value"
+    :unmount-on-hide="rootContext.unmountOnHide.value"
     @update:open="
       (value) => {
         // Menu only calls `@update:open` when dismissing so we

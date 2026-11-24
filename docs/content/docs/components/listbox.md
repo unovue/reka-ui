@@ -296,6 +296,86 @@ const people = [
 </template>
 ```
 
+### Highlighting an item programmatically
+
+`ListboxRoot` exposes `highlightItem(value, options?)`, which highlights the item with the given value and scrolls it into view. By default it also moves focus to that item. Pass `{ focus: false }` to keep focus where it is, for example on a separate text input that jumps to the first matching item as the user types.
+
+```vue line=12
+<script setup lang="ts">
+import { ListboxContent, ListboxItem, ListboxRoot } from 'reka-ui'
+import { useTemplateRef } from 'vue'
+
+const fruits = ['Apple', 'Banana', 'Blueberry', 'Cherry', 'Grapes']
+const listbox = useTemplateRef('listbox')
+
+function onInput(event: Event) {
+  const query = (event.target as HTMLInputElement).value.toLowerCase()
+  const match = fruits.find(fruit => fruit.toLowerCase().startsWith(query))
+  if (query && match)
+    listbox.value?.highlightItem(match, { focus: false })
+}
+</script>
+
+<template>
+  <input
+    aria-label="Jump to fruit"
+    @input="onInput"
+  >
+  <ListboxRoot ref="listbox">
+    <ListboxContent>
+      <ListboxItem
+        v-for="fruit in fruits"
+        :key="fruit"
+        :value="fruit"
+      >
+        {{ fruit }}
+      </ListboxItem>
+    </ListboxContent>
+  </ListboxRoot>
+</template>
+```
+
+### Keeping focus when the value changes
+
+By default, changing `modelValue` from code after mount highlights the selected item and moves focus to it. Set `keepFocusOnValueChange` when the value can change while the user is working elsewhere, for example typing in a text input. If focus is outside the listbox at that moment, the item is highlighted and becomes the tab stop, but focus stays where it is and the page is not scrolled to the listbox. If focus is already inside the listbox, focus follows the new highlight as usual. Clicking, keyboard navigation and typeahead are not affected.
+
+```vue line=22
+<script setup lang="ts">
+import { ListboxContent, ListboxItem, ListboxRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+const fruits = ['Apple', 'Banana', 'Cherry']
+const fruit = ref<string>()
+
+// Selects the fruit the user types, while focus stays in the input.
+function onInput(event: Event) {
+  const query = (event.target as HTMLInputElement).value.toLowerCase()
+  fruit.value = fruits.find(f => f.toLowerCase() === query) ?? fruit.value
+}
+</script>
+
+<template>
+  <input
+    aria-label="Fruit"
+    @input="onInput"
+  >
+  <ListboxRoot
+    v-model="fruit"
+    keep-focus-on-value-change
+  >
+    <ListboxContent>
+      <ListboxItem
+        v-for="item in fruits"
+        :key="item"
+        :value="item"
+      >
+        {{ item }}
+      </ListboxItem>
+    </ListboxContent>
+  </ListboxRoot>
+</template>
+```
+
 ## Accessibility
 
 Adheres to the [Listbox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).

@@ -1,4 +1,17 @@
 import type { Color, HSBColor, HSLColor, RGBColor } from './types'
+import { clamp } from '../clamp'
+
+const HEX3_RE = /^[0-9A-F]{3}$/i
+const HEX6_RE = /^[0-9A-F]{6}$/i
+const HEX8_RE = /^[0-9A-F]{8}$/i
+const RGB_RE = /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)/
+const HSL_RE = /hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*(?:,\s*([\d.]+)\s*)?\)/
+const HSB_RE = /hsb[av]?\(\s*([\d.]+)\s*,\s*([\d.]+)%?\s*,\s*([\d.]+)%?\s*(?:,\s*([\d.]+)\s*)?\)/
+
+/** Hue is an angle: 400 is 40. 360 itself is kept, as the hue channel's range allows it. */
+function wrapHue(hue: number): number {
+  return hue > 360 ? hue % 360 : hue
+}
 
 /**
  * Parses a color string into a Color object.
@@ -34,7 +47,7 @@ function parseHex(hex: string): RGBColor {
   let normalized = hex.slice(1)
 
   // Validate hex format (3, 6, or 8 hex digits)
-  if (!/^[0-9A-F]{3}$/i.test(normalized) && !/^[0-9A-F]{6}$/i.test(normalized) && !/^[0-9A-F]{8}$/i.test(normalized)) {
+  if (!HEX3_RE.test(normalized) && !HEX6_RE.test(normalized) && !HEX8_RE.test(normalized)) {
     throw new Error(`Invalid hex color: ${hex}. Expected format: #RGB, #RRGGBB, or #RRGGBBAA`)
   }
 
@@ -71,47 +84,47 @@ function parseHex(hex: string): RGBColor {
 }
 
 function parseRgb(rgb: string): RGBColor {
-  const match = rgb.match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)/)
+  const match = rgb.match(RGB_RE)
   if (!match) {
     throw new Error(`Invalid RGB color: ${rgb}`)
   }
 
   return {
     space: 'rgb',
-    r: parseFloat(match[1]),
-    g: parseFloat(match[2]),
-    b: parseFloat(match[3]),
-    alpha: match[4] ? parseFloat(match[4]) : 1,
+    r: clamp(parseFloat(match[1]), 0, 255),
+    g: clamp(parseFloat(match[2]), 0, 255),
+    b: clamp(parseFloat(match[3]), 0, 255),
+    alpha: match[4] ? clamp(parseFloat(match[4]), 0, 1) : 1,
   }
 }
 
 function parseHsl(hsl: string): HSLColor {
-  const match = hsl.match(/hsla?\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*(?:,\s*([\d.]+)\s*)?\)/)
+  const match = hsl.match(HSL_RE)
   if (!match) {
     throw new Error(`Invalid HSL color: ${hsl}`)
   }
 
   return {
     space: 'hsl',
-    h: parseFloat(match[1]),
-    s: parseFloat(match[2]),
-    l: parseFloat(match[3]),
-    alpha: match[4] ? parseFloat(match[4]) : 1,
+    h: wrapHue(parseFloat(match[1])),
+    s: clamp(parseFloat(match[2]), 0, 100),
+    l: clamp(parseFloat(match[3]), 0, 100),
+    alpha: match[4] ? clamp(parseFloat(match[4]), 0, 1) : 1,
   }
 }
 
 function parseHsb(hsb: string): HSBColor {
-  const match = hsb.match(/hsb[av]?\(\s*([\d.]+)\s*,\s*([\d.]+)%?\s*,\s*([\d.]+)%?\s*(?:,\s*([\d.]+)\s*)?\)/)
+  const match = hsb.match(HSB_RE)
   if (!match) {
     throw new Error(`Invalid HSB color: ${hsb}`)
   }
 
   return {
     space: 'hsb',
-    h: parseFloat(match[1]),
-    s: parseFloat(match[2]),
-    b: parseFloat(match[3]),
-    alpha: match[4] ? parseFloat(match[4]) : 1,
+    h: wrapHue(parseFloat(match[1])),
+    s: clamp(parseFloat(match[2]), 0, 100),
+    b: clamp(parseFloat(match[3]), 0, 100),
+    alpha: match[4] ? clamp(parseFloat(match[4]), 0, 1) : 1,
   }
 }
 

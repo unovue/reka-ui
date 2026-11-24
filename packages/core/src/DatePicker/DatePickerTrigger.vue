@@ -7,6 +7,8 @@ export interface DatePickerTriggerProps extends PopoverTriggerProps {}
 </script>
 
 <script setup lang="ts">
+import { disabledAttr } from '@/shared'
+
 const props = defineProps<DatePickerTriggerProps>()
 const rootContext = injectDatePickerRootContext()
 </script>
@@ -15,7 +17,7 @@ const rootContext = injectDatePickerRootContext()
   <PopoverTrigger
     data-reka-date-field-segment="trigger"
     v-bind="props"
-    :disabled="rootContext.disabled.value"
+    :disabled="disabledAttr(rootContext.disabled.value, props.as, props.asChild)"
     @focusin="(e: FocusEvent) => {
       rootContext.dateFieldRef.value?.setFocusedElement(e.target as HTMLElement)
     }"

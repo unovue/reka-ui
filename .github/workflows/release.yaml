@@ -11,18 +11,26 @@ on:
       - 'v*'
   workflow_dispatch:
 
+# The dist-tag is picked from npm's current `latest` right before the publish,
+# so two releases must not interleave. Release workflows on every branch share
+# this group. `queue: max` keeps every waiting release instead of replacing an
+# older pending one, so no version is skipped; runs are never cancelled.
+concurrency:
+  group: npm-publish
+  queue: max
+
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 18.x
 
@@ -39,17 +47,35 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup (Install node & pnpm)
         uses: ./.github/actions/setup
 
       - name: Update npm (Trusted Publishers requires npm >= 11.5.1)
-        run: npm install -g npm@^11
+        # Workaround for npm/cli#9151: Node 22's bundled npm 10.9.7 is broken
+        # (missing promise-retry). Pin to 11.11.0 which installs successfully.
+        run: npm install -g npm@11.11.0
 
       - name: Build Packages
         run: pnpm build
 
-      # Must publish from repo root for provenance to work with OIDC
+      # Must publish from repo root for provenance to work with OIDC.
+      # The dist-tag comes from packages/core/scripts/npm-dist-tag.mjs, which
+      # `pub:release` uses too: a prerelease goes out under its id (`beta`), and
+      # a stable 2.x goes out as `v2-latest` instead of `latest` once a newer
+      # major is `latest` on npm. The script fails the step if it can't read
+      # npm's `latest`, since an explicit `--tag latest` would overwrite it.
+      # npm refuses to publish over an existing version, so a rerun after a
+      # failure that followed a successful publish skips the publish instead
+      # of dying on the 403.
       - name: Publish to npm
-        run: npm publish ./packages/core --access public --provenance
+        run: |
+          version=$(node -p "require('./packages/core/package.json').version")
+          tag=$(node packages/core/scripts/npm-dist-tag.mjs "$version")
+          echo "Publishing reka-ui@$version under the \`$tag\` dist-tag"
+          if npm view "reka-ui@$version" version >/dev/null 2>&1; then
+            echo "reka-ui@$version is already on npm, skipping"
+          else
+            npm publish ./packages/core --access public --provenance --tag "$tag"
+          fi

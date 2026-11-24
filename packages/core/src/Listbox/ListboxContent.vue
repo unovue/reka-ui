@@ -29,7 +29,7 @@ const isClickFocus = refAutoReset(false, 10)
       :aria-multiselectable="!!rootContext.multiple.value"
       :data-orientation="rootContext.orientation.value"
       @mousedown.left="isClickFocus = true"
-      @focus="(ev) => {
+      @focus="(ev: FocusEvent) => {
         if (isClickFocus)
           return
         rootContext.onEnter(ev)

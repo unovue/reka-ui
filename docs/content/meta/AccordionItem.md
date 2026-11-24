@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -41,3 +42,24 @@
     'type': 'boolean'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `disabled` | Whether or not an accordion item is disabled from user interaction. When true, prevents the user from interacting with the item. | `boolean` | No | - |
+| `unmountOnHide` | When true, the element will be unmounted on closed state. | `boolean` | No | - |
+| `value` | A string value for the accordion item. All items within an accordion should use a unique value. | `string` | Yes | - |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `open` | Current open state | `boolean` |
+
+</llm-only>

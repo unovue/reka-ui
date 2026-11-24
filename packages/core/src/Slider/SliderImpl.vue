@@ -23,13 +23,20 @@ const props = withDefaults(defineProps<SliderImplProps>(), {
 })
 const emits = defineEmits<SliderImplEmits>()
 const rootContext = injectSliderRootContext()
+
+// The browser can release capture before `pointerup` arrives, so either one ends a pointer's slide, once.
+const slidingPointerIds = new Set<number>()
+function endSlide(event: PointerEvent) {
+  if (slidingPointerIds.delete(event.pointerId))
+    emits('slideEnd', event)
+}
 </script>
 
 <template>
   <Primitive
     data-slider-impl
     v-bind="props"
-    @keydown="(event) => {
+    @keydown="(event: KeyboardEvent) => {
       if (event.key === 'Home') {
         emits('homeKeyDown', event)
         // Prevent scrolling to page start
@@ -46,9 +53,10 @@ const rootContext = injectSliderRootContext()
         event.preventDefault();
       }
     }"
-    @pointerdown="(event) => {
+    @pointerdown="(event: PointerEvent) => {
       const target = event.target as HTMLElement;
       target.setPointerCapture(event.pointerId);
+      slidingPointerIds.add(event.pointerId);
       // Prevent browser focus behaviour because we focus a thumb manually when values change.
       event.preventDefault();
       // Touch devices have a delay before focusing so won't focus if touch immediately moves
@@ -60,17 +68,17 @@ const rootContext = injectSliderRootContext()
         emits('slideStart', event)
       }
     }"
-    @pointermove="(event) => {
+    @pointermove="(event: PointerEvent) => {
       const target = event.target as HTMLElement;
       if (target.hasPointerCapture(event.pointerId)) emits('slideMove', event);
     }"
-    @pointerup="(event) => {
+    @pointerup="(event: PointerEvent) => {
       const target = event.target as HTMLElement;
-      if (target.hasPointerCapture(event.pointerId)) {
+      if (target.hasPointerCapture(event.pointerId))
         target.releasePointerCapture(event.pointerId);
-        emits('slideEnd', event)
-      }
+      endSlide(event)
     }"
+    @lostpointercapture="endSlide"
   >
     <slot />
   </Primitive>

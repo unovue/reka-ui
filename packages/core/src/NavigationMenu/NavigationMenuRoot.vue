@@ -4,7 +4,7 @@ import type { Ref } from 'vue'
 import type { Direction, Orientation } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { createContext, useDirection, useForwardExpose, useId } from '@/shared'
+import { createRekaContext, useDirection, useForwardExpose, useId } from '@/shared'
 import { EVENT_ROOT_CONTENT_DISMISS } from './utils'
 
 export interface NavigationMenuRootProps extends PrimitiveProps {
@@ -88,7 +88,7 @@ export interface NavigationMenuContext {
 }
 
 export const [injectNavigationMenuContext, provideNavigationMenuContext]
-  = createContext<NavigationMenuContext>(['NavigationMenuRoot', 'NavigationMenuSub'], 'NavigationMenuContext')
+  = createRekaContext<NavigationMenuContext>(['NavigationMenuRoot', 'NavigationMenuSub'], 'NavigationMenuContext')
 </script>
 
 <script setup lang="ts">
@@ -140,6 +140,7 @@ const { delayDuration, skipDelayDuration, dir: propDir, disableClickTrigger, dis
 const dir = useDirection(propDir)
 
 const isDelaySkipped = refAutoReset(false, skipDelayDuration)
+const skipNextClose = ref(false)
 const computedDelay = computed(() => {
   const isOpen = modelValue.value !== ''
   if (isOpen || isDelaySkipped.value)
@@ -150,8 +151,14 @@ const computedDelay = computed(() => {
 const debouncedFn = useDebounceFn((val?: string) => {
   // passing `undefined` meant to reset the debounce timer
   if (typeof val === 'string') {
+    if (val === '' && skipNextClose.value) {
+      skipNextClose.value = false
+      return
+    }
     previousValue.value = modelValue.value
     modelValue.value = val
+    if (val === '')
+      isDelaySkipped.value = true
   }
 }, computedDelay)
 
@@ -159,10 +166,7 @@ watchEffect(() => {
   if (!modelValue.value)
     return
 
-  const items = getItems().map(i => i.ref)
-  activeTrigger.value = items.find(item =>
-    item.id.includes(modelValue.value),
-  )
+  activeTrigger.value = getItems().find(item => item.value === modelValue.value)?.ref
 })
 
 useEventListener(rootNavigationMenu, EVENT_ROOT_CONTENT_DISMISS, onItemDismiss)
@@ -188,18 +192,27 @@ provideNavigationMenuContext({
     viewport.value = val
   },
   onTriggerEnter: (val) => {
-    debouncedFn(val)
+    if (modelValue.value !== '') {
+      skipNextClose.value = true
+      previousValue.value = modelValue.value
+      modelValue.value = val
+    }
+    else {
+      debouncedFn(val)
+    }
   },
   onTriggerLeave: () => {
-    isDelaySkipped.value = true
+    skipNextClose.value = false
     debouncedFn('')
   },
   onContentEnter: () => {
     debouncedFn()
   },
   onContentLeave: () => {
-    if (!props.disablePointerLeaveClose)
+    if (!props.disablePointerLeaveClose) {
+      skipNextClose.value = false
       debouncedFn('')
+    }
   },
   onItemSelect: (val) => {
     // When selecting item we trigger update immediately

@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -111,3 +112,40 @@
     'type': 'CSSProperties'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `colorSpace` | The color space to operate in. | `"hsl" \| "rgb" \| "hsb"` | No | `"hsl"` |
+| `defaultValue` | The default color value (uncontrolled). | `string \| Color` | No | `"#ff0000"` |
+| `disabled` | When true, prevents the user from interacting with the area. | `boolean` | No | `false` |
+| `modelValue` | The color value (controlled). Can be a hex string or Color object. | `string \| Color` | No | - |
+| `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
+| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `xChannel` | Color channel for the horizontal (x) axis. | `"hue" \| "saturation" \| "red" \| "green" \| "blue" \| "alpha" \| "lightness" \| "brightness"` | No | `"hue"` |
+| `xName` | The name of the x channel input element for form submission. | `string` | No | - |
+| `yChannel` | Color channel for the vertical (y) axis. | `"hue" \| "saturation" \| "red" \| "green" \| "blue" \| "alpha" \| "lightness" \| "brightness"` | No | `"saturation"` |
+| `yName` | The name of the y channel input element for form submission. | `string` | No | - |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `change` |  | `[value: string]` |
+| `changeEnd` |  | `[value: string]` |
+| `update:color` |  | `[value: Color]` |
+| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: string]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `style` | CSS styles for the color area background gradient | `CSSProperties` |
+
+</llm-only>

@@ -5,7 +5,7 @@ import type {
 } from '@/Menu'
 import { useForwardExpose, useForwardPropsEmits } from '@/shared'
 
-export type ContextMenuContentEmits = MenuContentEmits
+export type ContextMenuContentEmits = Omit<MenuContentEmits, 'entryFocus'>
 
 export interface ContextMenuContentProps
   extends Omit<
@@ -20,8 +20,14 @@ export interface ContextMenuContentProps
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { MenuContent } from '@/Menu'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
+import { injectMenuContext, MenuContent } from '@/Menu'
+import { omitEntryFocusListener } from '@/Menu/utils'
 import { injectContextMenuRootContext } from './ContextMenuRoot.vue'
+
+defineOptions({
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<ContextMenuContentProps>(), {
   alignOffset: 0,
@@ -37,11 +43,18 @@ const forwarded = useForwardPropsEmits(props, emits)
 useForwardExpose()
 const rootContext = injectContextMenuRootContext()
 const hasInteractedOutside = ref(false)
+
+// A content kept mounted while closed (`unmountOnHide: false`) is hidden, not unmounted, so
+// no `closeAutoFocus` returns focus. Return it to where it was before opening, as on unmount.
+injectMenuContext().onContentHide(({ container, focusedBeforeShow }) => {
+  if (!hasInteractedOutside.value && !hasFocusLeftScope(container ?? null))
+    focusedBeforeShow?.focus({ preventScroll: true })
+  hasInteractedOutside.value = false
+})
 </script>
 
 <template>
   <MenuContent
-    v-bind="forwarded"
     side="right"
     :side-offset="2"
     align="start"
@@ -57,6 +70,7 @@ const hasInteractedOutside = ref(false)
       '--reka-context-menu-trigger-height':
         'var(--reka-popper-anchor-height)',
     }"
+    v-bind="{ ...forwarded, ...omitEntryFocusListener($attrs) }"
     @close-auto-focus="
       (event) => {
         if (!event.defaultPrevented && hasInteractedOutside) {
@@ -68,8 +82,8 @@ const hasInteractedOutside = ref(false)
     @interact-outside="
       (event) => {
         const originalEvent = event.detail.originalEvent as PointerEvent
-        // Prevent closing when right click (button=2) with the trigger element
-        if (originalEvent.button === 2 && event.target === rootContext.triggerElement.value) {
+        // Prevent closing when right click (button=2) on the trigger element or its descendants
+        if (originalEvent.button === 2 && rootContext.triggerElement.value?.contains(event.target as Node)) {
           event.preventDefault()
         }
         if (!event.defaultPrevented && !rootContext.modal.value)

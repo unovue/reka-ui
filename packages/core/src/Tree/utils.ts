@@ -1,12 +1,7 @@
-export function flatten<U, T extends { children: any[] }>(items: T[]): U[] {
-  return items.reduce((acc: any[], item: T) => {
-    acc.push(item)
-
-    if (item.children)
-      acc.push(...flatten(item.children))
-
-    return acc
-  }, [])
+export function getDescendants<T>(item: T, getChildren: (item: T) => T[] | undefined): T[] {
+  const descendants: T[] = []
+  for (const child of getChildren(item) ?? []) {
+    descendants.push(child, ...getDescendants(child, getChildren))
+  }
+  return descendants
 }
-
-// TODO: expose more utility function to handle flattened item

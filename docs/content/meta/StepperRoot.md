@@ -1,6 +1,13 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
+  {
+    'name': 'announce',
+    'description': '<p>Customize the live announcement using the active step\'s one-based position and total. Set to <code>false</code> to disable the built-in live region.</p>\n',
+    'type': 'false | ((step: number, total: number) =&gt; string)',
+    'required': false
+  },
   {
     'name': 'as',
     'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
@@ -142,3 +149,53 @@
     'type': '() =&gt; boolean'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `announce` | Customize the live announcement using the active step's one-based position and total. Set to false to disable the built-in live region. | `false \| ((step: number, total: number) => string)` | No | - |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `defaultValue` | The value of the step that should be active when initially rendered. Use when you do not need to control the state of the steps. | `number` | No | `1` |
+| `dir` | The reading direction of the combobox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `linear` | Whether or not the steps must be completed in order. | `boolean` | No | `true` |
+| `modelValue` | The controlled value of the step to activate. Can be bound as v-model. | `number` | No | - |
+| `orientation` | The orientation the steps are laid out. Mainly so arrow navigation is done accordingly (left & right vs. up & down). | `"vertical" \| "horizontal"` | No | `"horizontal"` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:modelValue` | Event handler called when the value changes | `[payload: number]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `modelValue` | Current step | `number \| undefined` |
+| `totalSteps` | Total number of steps | `number` |
+| `isNextDisabled` | Whether or not the next step is disabled | `boolean` |
+| `isPrevDisabled` | Whether or not the previous step is disabled | `boolean` |
+| `isFirstStep` | Whether or not the first step is active | `boolean` |
+| `isLastStep` | Whether or not the last step is active | `boolean` |
+| `goToStep` | Go to a specific step | `(step: number): void` |
+| `nextStep` | Go to the next step | `(): void` |
+| `prevStep` | Go to the previous step | `(): void` |
+| `hasNext` | Whether or not there is a next step | `(): boolean` |
+| `hasPrev` | Whether or not there is a previous step | `(): boolean` |
+
+**Methods**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `goToStep` |  | `(step: number) => void` |
+| `nextStep` |  | `() => void` |
+| `prevStep` |  | `() => void` |
+| `hasNext` |  | `() => boolean` |
+| `hasPrev` |  | `() => boolean` |
+
+</llm-only>

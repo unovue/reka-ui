@@ -3,8 +3,9 @@ import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Direction, GenericComponentInstance } from '@/shared/types'
 import { provideComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
+import { useComboboxContentPositioning } from '@/Combobox/useComboboxContentPositioning'
 import { usePrimitiveElement } from '@/Primitive'
-import { createContext, useDirection, useFilter } from '@/shared'
+import { createRekaContext, defineReactiveIds, useDirection, useFilter } from '@/shared'
 
 export interface AutocompleteRootProps extends PrimitiveProps {
   /** The controlled value of the Autocomplete (the input text). Can be bound with `v-model`. */
@@ -44,6 +45,8 @@ export interface AutocompleteRootProps extends PrimitiveProps {
   ignoreFilter?: boolean
   /** When `true`, hover over item will trigger highlight */
   highlightOnHover?: boolean
+  /** When `true`, keyboard navigation will loop from last item to first, and vice versa. */
+  loop?: boolean
 }
 
 export type AutocompleteRootEmits = {
@@ -60,7 +63,7 @@ export type AutocompleteRootContext = {
 }
 
 export const [injectAutocompleteRootContext, provideAutocompleteRootContext]
-  = createContext<AutocompleteRootContext>('AutocompleteRoot')
+  = createRekaContext<AutocompleteRootContext>('AutocompleteRoot')
 </script>
 
 <script setup lang="ts">
@@ -88,7 +91,7 @@ defineSlots<{
 }>()
 
 const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
-const { disabled, ignoreFilter, openOnFocus, openOnClick, dir: propDir, highlightOnHover } = toRefs(props)
+const { disabled, ignoreFilter, openOnFocus, openOnClick, dir: propDir, highlightOnHover, loop } = toRefs(props)
 
 const dir = useDirection(propDir)
 
@@ -146,6 +149,7 @@ const inputElement = ref<HTMLInputElement>()
 const triggerElement = ref<HTMLElement>()
 
 const highlightedElement = computed(() => primitiveElement.value?.highlightedElement ?? undefined)
+const contentPositioning = useComboboxContentPositioning(open)
 
 const allItems = ref<Map<string, string>>(new Map())
 const allGroups = ref<Map<string, Set<string>>>(new Map())
@@ -212,18 +216,20 @@ defineExpose({
 })
 
 // Provide the Combobox context so all Combobox sub-components work inside Autocomplete
-provideComboboxRootContext({
+provideComboboxRootContext(defineReactiveIds({
   modelValue: contextModelValue as any,
   multiple: ref(false),
   disabled,
   open,
   onOpenChange,
+  ...contentPositioning,
   contentId: '',
   isUserInputted,
   isVirtual,
   inputElement,
   highlightedElement,
   onInputElementChange: val => inputElement.value = val,
+  focusInputOnOpen: ref(true),
   triggerElement,
   onTriggerElementChange: val => triggerElement.value = val,
   parentElement,
@@ -237,7 +243,9 @@ provideComboboxRootContext({
   openOnFocus,
   openOnClick,
   resetModelValueOnClear: ref(true),
-})
+  getClearValue: () => null,
+  unmountOnHide: ref(true),
+}, ['contentId']))
 
 // Provide autocomplete-specific context
 provideAutocompleteRootContext({
@@ -246,7 +254,7 @@ provideAutocompleteRootContext({
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="combobox">
     <ListboxRoot
       ref="primitiveElement"
       v-bind="$attrs"
@@ -261,6 +269,7 @@ provideAutocompleteRootContext({
       :required="required"
       :disabled="disabled"
       :highlight-on-hover="highlightOnHover"
+      :loop="loop"
       @highlight="emits('highlight', $event as any)"
     >
       <slot

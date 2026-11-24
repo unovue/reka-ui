@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose, useId } from '@/shared'
+import { disabledAttr, useForwardExpose, useId, useRenderedContentId, useTriggerId } from '@/shared'
 
 export interface DropdownMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -10,7 +10,8 @@ export interface DropdownMenuTriggerProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { nextTick, onMounted } from 'vue'
-import { MenuAnchor } from '@/Menu'
+import { trackTriggerPress } from '@/DismissableLayer/utils'
+import { injectMenuContext, MenuAnchor } from '@/Menu'
 import {
   Primitive,
 } from '@/Primitive'
@@ -28,7 +29,8 @@ onMounted(() => {
   rootContext.triggerElement = triggerElement
 })
 
-rootContext.triggerId ||= useId(undefined, 'reka-dropdown-menu-trigger')
+useTriggerId(rootContext, triggerElement, () => useId(undefined, 'reka-dropdown-menu-trigger'))
+const contentId = useRenderedContentId(rootContext, injectMenuContext())
 </script>
 
 <template>
@@ -41,12 +43,14 @@ rootContext.triggerId ||= useId(undefined, 'reka-dropdown-menu-trigger')
       :as="as"
       aria-haspopup="menu"
       :aria-expanded="rootContext.open.value"
-      :aria-controls="rootContext.open.value ? rootContext.contentId : undefined"
+      :aria-controls="rootContext.open.value ? contentId : undefined"
       :data-disabled="disabled ? '' : undefined"
-      :disabled="disabled"
+      :disabled="disabledAttr(disabled, props.as, props.asChild)"
       :data-state="rootContext.open.value ? 'open' : 'closed'"
+      @pointerdown="trackTriggerPress"
       @click="
-        async (event) => {
+        async (event: MouseEvent) => {
+          if (event.defaultPrevented) return;
           // only call handler if it's the left button (mousedown gets triggered by all mouse buttons)
           // but not when the control key is pressed (avoiding MacOS right click)
           if (!disabled && event.button === 0 && event.ctrlKey === false) {
@@ -59,8 +63,8 @@ rootContext.triggerId ||= useId(undefined, 'reka-dropdown-menu-trigger')
         }
       "
       @keydown.enter.space.arrow-down="
-        (event) => {
-          if (disabled) return;
+        (event: KeyboardEvent) => {
+          if (disabled || event.defaultPrevented) return;
           if (['Enter', ' '].includes(event.key)) rootContext.onOpenToggle();
           if (event.key === 'ArrowDown') rootContext.onOpenChange(true);
           // prevent keydown from scrolling window / first focused item to execute

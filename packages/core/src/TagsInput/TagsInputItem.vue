@@ -3,12 +3,14 @@ import type { ComputedRef, Ref } from 'vue'
 import type { AcceptableInputValue } from './TagsInputRoot.vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { computed, toRefs } from 'vue'
-import { createContext, useForwardExpose } from '@/shared'
+import { createRekaContext, useForwardExpose } from '@/shared'
 import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 
 export interface TagsInputItemProps extends PrimitiveProps {
   /** Value associated with the tags */
   value: AcceptableInputValue
+  /** The zero-based index in the root's model. Pass the original index for each tag when filtering or reordering duplicates. */
+  modelIndex?: number
   /** When `true`, prevents the user from interacting with the tags input. */
   disabled?: boolean
 }
@@ -18,11 +20,12 @@ export interface TagsInputItemContext {
   displayValue: ComputedRef<string>
   isSelected: Ref<boolean>
   disabled?: Ref<boolean>
+  onRemove: () => void
   textId: string
 }
 
 export const [injectTagsInputItemContext, provideTagsInputItemContext]
-  = createContext<TagsInputItemContext>('TagsInputItem')
+  = createRekaContext<TagsInputItemContext>('TagsInputItem')
 </script>
 
 <script setup lang="ts">
@@ -44,13 +47,14 @@ const itemContext = provideTagsInputItemContext({
   value,
   isSelected,
   disabled,
+  onRemove: () => context.onRemoveItem(currentElement.value),
   textId: '',
   displayValue: computed(() => context.displayValue(value.value)),
 })
 </script>
 
 <template>
-  <CollectionItem :value="value">
+  <CollectionItem :value="{ tag: value, modelIndex: props.modelIndex }">
     <Primitive
       :ref="forwardRef"
       :as="as"

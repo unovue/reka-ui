@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -82,3 +83,35 @@
     'type': 'null | string | number | bigint | Record&lt;string, any&gt;'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `defaultValue` | The value of the radio item that should be checked when initially rendered. Use when you do not need to control the state of the radio items. | `AcceptableValue` | No | - |
+| `dir` | The reading direction of the combobox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | When true, prevents the user from interacting with radio items. | `boolean` | No | `false` |
+| `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | `true` |
+| `modelValue` | The controlled value of the radio item to check. Can be binded as v-model. | `AcceptableValue` | No | - |
+| `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
+| `orientation` | The orientation of the component. | `"vertical" \| "horizontal"` | No | - |
+| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | `false` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:modelValue` | Event handler called when the radio group value changes | `[payload: AcceptableValue]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `modelValue` | Current input values | `null \| string \| number \| bigint \| Record<string, any>` |
+
+</llm-only>

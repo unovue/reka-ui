@@ -13,7 +13,7 @@ import {
   isBefore,
   isBeforeOrSame,
 } from '@/date'
-import { createContext, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
+import { createRekaContext, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   createContent,
   getDefaultDate,
@@ -24,6 +24,7 @@ import {
   normalizeHourCycle,
 
   syncSegmentValues,
+  useSegmentNavigation,
 } from '@/shared/date'
 
 export type DateRangeType = 'start' | 'end'
@@ -84,13 +85,13 @@ export interface DateRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
 
 export type DateRangeFieldRootEmits = {
   /** Event handler called whenever the model value changes */
-  'update:modelValue': [DateRange]
+  'update:modelValue': [date: DateRange]
   /** Event handler called whenever the placeholder value changes */
   'update:placeholder': [date: DateValue]
 }
 
 export const [injectDateRangeFieldRootContext, provideDateRangeFieldRootContext]
-  = createContext<DateRangeFieldRootContext>('DateRangeFieldRoot')
+  = createRekaContext<DateRangeFieldRootContext>('DateRangeFieldRoot')
 </script>
 
 <script setup lang="ts">
@@ -272,6 +273,13 @@ watch(modelValue, (_modelValue) => {
   }
 })
 
+// The value the hidden native input submits. Only a complete range is a value:
+// while either end is missing it stays empty, so `required` reports `valueMissing`.
+const inputValue = computed(() => {
+  const { start, end } = modelValue.value ?? {}
+  return start && end ? `${start.toString()} - ${end.toString()}` : ''
+})
+
 watch([startValue, locale], ([_startValue]) => {
   if (_startValue !== undefined) {
     startSegmentValues.value = { ...syncSegmentValues({ value: _startValue, formatter }) }
@@ -311,32 +319,19 @@ watch([endValue, locale], ([_endValue]) => {
 
 const currentFocusedElement = ref<HTMLElement | null>(null)
 
-const currentSegmentIndex = computed(() => Array.from(segmentElements.value).findIndex(el =>
-  el.getAttribute('data-reka-date-field-segment') === currentFocusedElement.value?.getAttribute('data-reka-date-field-segment')
-  && el.getAttribute('data-reka-date-range-field-segment-type') === currentFocusedElement.value?.getAttribute('data-reka-date-range-field-segment-type')))
-
-const nextFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const nextCondition = sign < 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (nextCondition)
-    return null
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value + sign]
-  return segmentToFocus
-})
-
-const prevFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const prevCondition = sign > 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (prevCondition)
-    return null
-
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value - sign]
-  return segmentToFocus
+const { nextFocusableSegment, prevFocusableSegment, focusNext } = useSegmentNavigation({
+  segmentElements,
+  currentFocusedElement,
+  dir,
+  segmentAttributes: ['data-reka-date-field-segment', 'data-reka-date-range-field-segment-type'],
 })
 
 const kbd = useKbd()
 
 function handleKeydown(e: KeyboardEvent) {
+  // Don't navigate between segments mid-composition, arrow keys are used for IME candidate navigation
+  if (e.isComposing)
+    return
   if (!isSegmentNavigationKey(e.key))
     return
   if (e.key === kbd.ARROW_LEFT)
@@ -365,9 +360,7 @@ provideDateRangeFieldRootContext({
   segmentContents: editableSegmentContents,
   elements: segmentElements,
   setFocusedElement,
-  focusNext() {
-    nextFocusableSegment.value?.focus()
-  },
+  focusNext,
 })
 
 defineExpose({
@@ -397,8 +390,9 @@ defineExpose({
       :id="id"
       as="input"
       feature="focusable"
+      aria-hidden="true"
       tabindex="-1"
-      :value="`${modelValue?.start?.toString()} - ${modelValue?.end?.toString()}`"
+      :value="inputValue"
       :name="name"
       :disabled="disabled"
       :required="required"

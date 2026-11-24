@@ -1,5 +1,6 @@
+import type { MaybeRefOrGetter } from 'vue'
 import { isClient } from '@vueuse/shared'
-import { watchEffect } from 'vue'
+import { toValue, watchEffect } from 'vue'
 
 /** Number of components which have requested interest to have focus guards */
 let count = 0
@@ -7,10 +8,13 @@ let count = 0
 /**
  * Injects a pair of focus guards at the edges of the whole DOM tree
  * to ensure `focusin` & `focusout` events can be caught consistently.
+ *
+ * @param enabled Whether the caller needs the guards, e.g. only while a content kept
+ * mounted when closed is shown, as the guards are tab stops of their own.
  */
-export function useFocusGuards() {
+export function useFocusGuards(enabled: MaybeRefOrGetter<boolean> = true) {
   watchEffect((cleanupFn) => {
-    if (!isClient)
+    if (!isClient || !toValue(enabled))
       return
     const edgeGuards = document.querySelectorAll('[data-reka-focus-guard]')
     document.body.insertAdjacentElement(

@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -46,3 +47,45 @@
     'type': '[payload: boolean]'
   }
 ]" />
+
+<SlotsTable :data="[
+  {
+    'name': 'checked',
+    'description': '<p>Current checked state</p>\n',
+    'type': 'false | true | \'indeterminate\''
+  },
+  {
+    'name': 'modelValue',
+    'description': '<p>Current modelValue state</p>\n',
+    'type': 'CheckedState'
+  }
+]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `disabled` | When true, prevents the user from interacting with the item. | `boolean` | No | - |
+| `modelValue` | The controlled checked state of the item. Can be used as v-model. | `false \| true \| "indeterminate"` | No | - |
+| `textValue` | Optional text used for typeahead purposes. By default the typeahead behavior will use the .textContent of the item. <br> Use this when the content is complex, or you have non-textual content inside. | `string` | No | - |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `select` | Event handler called when the user selects an item (via mouse or keyboard). <br> Calling event.preventDefault in this handler will prevent the menu from closing when selecting that item. | `[event: Event]` |
+| `update:modelValue` | Event handler called when the value changes. | `[payload: boolean]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `checked` | Current checked state | `false \| true \| "indeterminate"` |
+| `modelValue` | Current modelValue state | `CheckedState` |
+
+</llm-only>

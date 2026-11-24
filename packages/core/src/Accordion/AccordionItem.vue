@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ComputedRef, VNodeRef } from 'vue'
 import type { CollapsibleRootProps } from '../Collapsible'
-import { createContext, useArrowNavigation, useForwardExpose } from '@/shared'
+import { createRekaContext, defineReactiveIds, useArrowNavigation, useForwardExpose } from '@/shared'
 import { injectAccordionRootContext } from './AccordionRoot.vue'
 
 enum AccordionItemState {
@@ -36,7 +36,7 @@ interface AccordionItemContext {
 }
 
 export const [injectAccordionItemContext, provideAccordionItemContext]
-  = createContext<AccordionItemContext>('AccordionItem')
+  = createRekaContext<AccordionItemContext>('AccordionItem')
 </script>
 
 <script setup lang="ts">
@@ -79,7 +79,7 @@ const dataState = computed(() =>
 defineExpose({ open, dataDisabled })
 const { currentRef, currentElement } = useForwardExpose()
 
-provideAccordionItemContext({
+provideAccordionItemContext(defineReactiveIds({
   open,
   dataState,
   disabled,
@@ -88,7 +88,7 @@ provideAccordionItemContext({
   currentRef,
   currentElement,
   value: computed(() => props.value),
-})
+}, ['triggerId']))
 
 function handleArrowKey(e: KeyboardEvent) {
   const target = e.target as HTMLElement

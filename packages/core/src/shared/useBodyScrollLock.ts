@@ -4,13 +4,18 @@ import {
   useEventListener,
 } from '@vueuse/core'
 import { isClient, isIOS, tryOnBeforeUnmount } from '@vueuse/shared'
-import { defu } from 'defu'
 import { computed, nextTick, ref, watch } from 'vue'
 import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
+import { acquireBodyPointerEvents, releaseBodyPointerEvents } from './bodyPointerEvents'
+
+// The whole lock stack holds a single share of the body pointer-events owner.
+const pointerEventsOwner = Symbol('useBodyScrollLock')
 
 const useBodyLockStackCount = createSharedComposable(() => {
   const map = ref<Map<string, boolean>>(new Map())
   const initialOverflow = ref<string | undefined>()
+  // The inline values the lock overwrites, put back as they were on release.
+  let initialInlineStyle: { paddingRight: string, marginRight: string } | undefined
 
   const locked = computed(() => {
     for (const value of map.value.values()) {
@@ -24,15 +29,19 @@ const useBodyLockStackCount = createSharedComposable(() => {
     scrollBody: ref(true),
   })
 
-  let stopTouchMoveListener: Fn | null = null
+  let stopTouchListeners: Fn | null = null
 
   const resetBodyStyle = () => {
-    document.body.style.paddingRight = ''
-    document.body.style.marginRight = ''
-    document.body.style.pointerEvents = ''
+    if (initialInlineStyle) {
+      document.body.style.paddingRight = initialInlineStyle.paddingRight
+      document.body.style.marginRight = initialInlineStyle.marginRight
+      initialInlineStyle = undefined
+    }
+    // Only restored once no `DismissableLayer` still holds it either (#2784)
+    releaseBodyPointerEvents(document, pointerEventsOwner)
     document.documentElement.style.removeProperty('--scrollbar-width')
     document.body.style.overflow = initialOverflow.value ?? ''
-    isIOS && stopTouchMoveListener?.()
+    isIOS && stopTouchListeners?.()
 
     initialOverflow.value = undefined
   }
@@ -51,38 +60,78 @@ const useBodyLockStackCount = createSharedComposable(() => {
       initialOverflow.value = document.body.style.overflow
 
     const verticalScrollbarWidth = window.innerWidth - document.documentElement.clientWidth
-    const defaultConfig = { padding: verticalScrollbarWidth, margin: 0 }
-
-    const config = context.scrollBody?.value
-      ? typeof context.scrollBody.value === 'object'
-        ? defu({
-            padding: context.scrollBody.value.padding === true ? verticalScrollbarWidth : context.scrollBody.value.padding,
-            margin: context.scrollBody.value.margin === true ? verticalScrollbarWidth : context.scrollBody.value.margin,
-          }, defaultConfig)
-        : defaultConfig
-      : ({ padding: 0, margin: 0 })
 
     if (verticalScrollbarWidth > 0) {
-      document.body.style.paddingRight = typeof config.padding === 'number' ? `${config.padding}px` : String(config.padding)
-      document.body.style.marginRight = typeof config.margin === 'number' ? `${config.margin}px` : String(config.margin)
+      const { style } = document.body
+      initialInlineStyle ??= { paddingRight: style.paddingRight, marginRight: style.marginRight }
+
+      // `false` leaves both alone. Otherwise the padding makes up for the scrollbar by default,
+      // and the margin is only written when asked for. `margin: true` on its own leaves
+      // the padding out, so that the scrollbar is made up for once rather than twice.
+      const scrollBody = context.scrollBody?.value
+      if (scrollBody) {
+        const option = typeof scrollBody === 'object' ? scrollBody : {}
+        const { padding = option.margin !== true, margin = false } = option
+        const computedStyle = getComputedStyle(document.body)
+        // `true` adds the scrollbar width to what the body already has; a value is used as written.
+        const resolve = (value: boolean | number | string, existing: string) => value === true
+          ? `${(Number.parseFloat(existing) || 0) + verticalScrollbarWidth}px`
+          : typeof value === 'number' ? `${value}px` : String(value)
+        const paddingRight = padding === false ? undefined : resolve(padding, computedStyle.paddingRight)
+        const marginRight = margin === false ? undefined : resolve(margin, computedStyle.marginRight)
+        if (paddingRight !== undefined)
+          style.paddingRight = paddingRight
+        if (marginRight !== undefined)
+          style.marginRight = marginRight
+      }
       document.documentElement.style.setProperty('--scrollbar-width', `${verticalScrollbarWidth}px`)
       document.body.style.overflow = 'hidden'
     }
 
     if (isIOS) {
-      stopTouchMoveListener = useEventListener(
+      let touchStart: { identifier: number, x: number, y: number } | undefined
+
+      // Only `touchmove` cancels, so gesture tracking stays passive and never delays scrolling.
+      const stopTrackingListener = useEventListener(
+        document,
+        ['touchstart', 'touchend', 'touchcancel'],
+        (e: TouchEvent) => {
+          const touch = e.touches[0]
+          touchStart = e.type === 'touchstart' && e.touches.length === 1
+            ? { identifier: touch.identifier, x: touch.clientX, y: touch.clientY }
+            : undefined
+        },
+        { passive: true },
+      )
+
+      const stopTouchMoveListener = useEventListener(
         document,
         'touchmove',
-        (e: TouchEvent) => preventDefault(e),
+        (e: TouchEvent) => {
+          const touch = e.touches[0]
+          // iOS can report subpixel coordinate noise as a move; cancelling it suppresses the tap's click.
+          if (touchStart && e.touches.length === 1 && touch.identifier === touchStart.identifier
+            && Math.hypot(touch.clientX - touchStart.x, touch.clientY - touchStart.y) <= 0.01) {
+            return
+          }
+
+          // Once the gesture moves, returning to its origin must not make it a tap again.
+          touchStart = undefined
+          preventDefault(e)
+        },
         { passive: false },
       )
+
+      stopTouchListeners = () => {
+        stopTrackingListener()
+        stopTouchMoveListener()
+      }
     }
 
-    // let dismissibleLayer set previous pointerEvent first
     nextTick(() => {
       if (!locked.value)
         return
-      document.body.style.pointerEvents = 'none'
+      acquireBodyPointerEvents(document, pointerEventsOwner)
       document.body.style.overflow = 'hidden'
     })
   }, { immediate: true, flush: 'sync' })

@@ -3,7 +3,7 @@ import type { ComputedRef } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
-import { createContext } from '@/shared'
+import { createRekaContext } from '@/shared'
 import { injectRatingRootContext } from './RatingRoot.vue'
 
 interface RatingItemContext {
@@ -11,11 +11,12 @@ interface RatingItemContext {
 }
 
 export interface RatingItemProps extends PrimitiveProps {
+  /** The 1-based index of this item within the rating (e.g. the 3rd star). */
   item: number
 }
 
 export const [injectRatingItemContext, provideRatingItemContext]
-  = createContext<RatingItemContext>('RatingItem')
+  = createRekaContext<RatingItemContext>('RatingItem')
 </script>
 
 <script setup lang="ts">

@@ -1,9 +1,10 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { useKbd } from '@/shared'
+import { TreeItem, TreeRoot, TreeVirtualizer } from '.'
 import Tree from './story/_Tree.vue'
 
 const kbd = useKbd()
@@ -95,6 +96,15 @@ describe('given default Tree', () => {
     it('should highlight text starting with l', async () => {
       await content.trigger('keydown', { key: 'l' })
       const item = items.find(i => i.text().startsWith('l'))
+      expect(document.activeElement).toBe(item?.element)
+    })
+  })
+
+  describe('when holding `Shift` before typing a letter', async () => {
+    it('should ignore the named key and highlight text starting with r', async () => {
+      await content.trigger('keydown', { key: 'Shift', shiftKey: true })
+      await content.trigger('keydown', { key: 'R', shiftKey: true })
+      const item = items.find(i => i.text().startsWith('routes'))
       expect(document.activeElement).toBe(item?.element)
     })
   })
@@ -287,6 +297,41 @@ describe('given a Tree with a custom children structure', () => {
   })
 })
 
+describe('selection with a custom child accessor', () => {
+  const leaf = { title: 'leaf' }
+  const branch = { title: 'branch', nodes: [leaf] }
+  const root = { title: 'root', nodes: [branch] }
+
+  function mountTree(props: { propagateSelect?: boolean, bubbleSelect?: boolean, defaultValue?: Array<typeof leaf> }) {
+    return mount(Tree, {
+      props: {
+        items: [root],
+        getChildren: item => item.nodes,
+        multiple: true,
+        expanded: ['root', 'branch'],
+        ...props,
+      },
+    })
+  }
+
+  it('selects and deselects all descendants of the parent', async () => {
+    const wrapper = mountTree({ propagateSelect: true })
+    const [parent, child, grandchild] = wrapper.findAll('[role=treeitem]')
+    await parent.trigger('click')
+    expect([child, grandchild].map(item => item.attributes('aria-selected'))).toEqual(['true', 'true'])
+    await parent.trigger('click')
+    expect([child, grandchild].map(item => item.attributes('aria-selected'))).toEqual(['false', 'false'])
+  })
+
+  it.each([
+    { bubbleSelect: true, defaultValue: [leaf] },
+    { propagateSelect: true, defaultValue: [root, branch] },
+  ])('reports a partially selected subtree for %o', (props) => {
+    const wrapper = mountTree(props)
+    expect(wrapper.getComponent(TreeItem).vm.isIndeterminate).toBe(true)
+  })
+})
+
 describe('given a Tree with bubbleSelect and propagateSelect', () => {
   const customItems = [
     {
@@ -331,5 +376,430 @@ describe('given a Tree with bubbleSelect and propagateSelect', () => {
     expect(items.map(i => i.attributes('aria-selected'))).toStrictEqual(['false', 'false', 'false', 'true'])
     await items[3].trigger('click')
     expect(items.map(i => i.attributes('aria-selected'))).toStrictEqual(['false', 'false', 'false', 'false'])
+  })
+})
+
+describe('given a Tree with disabled items', () => {
+  const treeItems = [
+    { title: 'apple' },
+    { title: 'banana' },
+    { title: 'cherry' },
+    { title: 'fruits', children: [{ title: 'grape' }, { title: 'kiwi' }] },
+  ]
+
+  function mountTree(disabledKeys: string[] = ['banana'], rootDisabled = false) {
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(TreeRoot as any, {
+          items: treeItems,
+          getKey: (item: any) => item.title,
+          selectionBehavior: 'toggle',
+          disabled: rootDisabled,
+          expanded: ['fruits'],
+        }, {
+          default: ({ flattenItems }: any) => flattenItems.map((item: any) =>
+            h(TreeItem as any, {
+              key: item._id,
+              ...item.bind,
+              disabled: disabledKeys.includes(item._id),
+            }, { default: () => item.value.title }),
+          ),
+        })
+      },
+    }), { attachTo: document.body })
+    return { wrapper, items: () => wrapper.findAll('[role=treeitem]') }
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should set aria-disabled and data-disabled attributes', () => {
+    const { items } = mountTree()
+    expect(items()[1].attributes('aria-disabled')).toBe('true')
+    expect(items()[1].attributes('data-disabled')).toBe('')
+    expect(items()[0].attributes('aria-disabled')).toBeUndefined()
+    expect(items()[0].attributes('data-disabled')).toBeUndefined()
+  })
+
+  it('should not select a disabled item on click or keydown', async () => {
+    const { items } = mountTree()
+    await items()[1].trigger('click')
+    expect(items()[1].attributes('aria-selected')).toBe('false')
+    await items()[1].trigger('keydown', { key: kbd.ENTER })
+    expect(items()[1].attributes('aria-selected')).toBe('false')
+  })
+
+  it('should not toggle a disabled item', async () => {
+    const { items } = mountTree(['fruits'])
+    expect(items().length).toBe(6)
+
+    await items()[3].trigger('click')
+    expect(items().length).toBe(6)
+
+    await items()[3].trigger('keydown', { key: kbd.ARROW_LEFT })
+    expect(items().length).toBe(6)
+  })
+
+  it('should disable all items when root is disabled', async () => {
+    const { items } = mountTree([], true)
+    for (const item of items()) {
+      expect(item.attributes('aria-disabled')).toBe('true')
+    }
+    await items()[0].trigger('click')
+    expect(items()[0].attributes('aria-selected')).toBe('false')
+  })
+})
+
+describe('given a Tree with a text field inside an item', () => {
+  let wrapper: VueWrapper<any>
+  let input: DOMWrapper<HTMLInputElement>
+
+  // An inline rename is the common shape: the row stays a tree item, but while
+  // it is being edited the keys belong to the input.
+  const Fixture = defineComponent({
+    setup() {
+      const items = [
+        { title: 'components', children: [{ title: 'Card.vue' }, { title: 'Button.vue' }] },
+        { title: 'app.vue' },
+      ]
+
+      return () => h(
+        TreeRoot,
+        { items, getKey: (item: any) => item.title, defaultExpanded: ['components'] },
+        {
+          default: ({ flattenItems }: any) => flattenItems.map((item: any) =>
+            h(
+              TreeItem,
+              { key: item._id, ...item.bind },
+              () => {
+                if (item.value.title === 'app.vue')
+                  return h('input', { 'data-testid': 'rename' })
+                if (item.value.title === 'Card.vue')
+                  return h('select', { 'data-testid': 'picker' }, [h('option', 'components'), h('option', 'other')])
+                return h('span', item.value.title)
+              },
+            ),
+          ),
+        },
+      )
+    },
+  })
+
+  function pressIn(target: HTMLElement, key: string) {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+    target.dispatchEvent(event)
+    return event
+  }
+
+  beforeEach(async () => {
+    document.body.innerHTML = ''
+    wrapper = mount(Fixture, { attachTo: document.body })
+    input = wrapper.find('[data-testid=rename]') as DOMWrapper<HTMLInputElement>
+    input.element.focus()
+    await nextTick()
+  })
+
+  it('leaves ArrowRight to the caret instead of walking the tree', async () => {
+    const rowsBefore = wrapper.findAll('[role=treeitem]').length
+    const event = pressIn(input.element, kbd.ARROW_RIGHT)
+    await nextTick()
+
+    expect(event.defaultPrevented).toBe(false)
+    expect(document.activeElement).toBe(input.element)
+    expect(wrapper.findAll('[role=treeitem]')).toHaveLength(rowsBefore)
+  })
+
+  it('leaves ArrowLeft to the caret instead of jumping to the parent row', async () => {
+    const rowsBefore = wrapper.findAll('[role=treeitem]').length
+    const event = pressIn(input.element, kbd.ARROW_LEFT)
+    await nextTick()
+
+    expect(event.defaultPrevented).toBe(false)
+    expect(document.activeElement).toBe(input.element)
+    expect(wrapper.findAll('[role=treeitem]')).toHaveLength(rowsBefore)
+  })
+
+  it('does not run typeahead while typing', async () => {
+    // 'c' matches both "components" and "Card.vue"; typeahead would focus one.
+    pressIn(input.element, 'c')
+    await nextTick()
+
+    expect(document.activeElement).toBe(input.element)
+  })
+
+  it('does not run typeahead while a select inside an item is focused', async () => {
+    // A native select owns character keys for its own option typeahead.
+    const picker = wrapper.find('[data-testid=picker]').element as HTMLSelectElement
+    picker.focus()
+    await nextTick()
+
+    pressIn(picker, 'c')
+    await nextTick()
+
+    expect(document.activeElement).toBe(picker)
+  })
+
+  it('still walks the tree when the key lands on the item itself', async () => {
+    const items = wrapper.findAll('[role=treeitem]')
+    const folder = items[0]
+    await folder.trigger('keydown', { key: kbd.ARROW_LEFT })
+
+    // "components" was expanded, so ArrowLeft on the row collapses it.
+    expect(wrapper.findAll('[role=treeitem]').length).toBeLessThan(items.length)
+  })
+})
+
+describe('given a Tree with `loop`', () => {
+  const treeItems = [
+    { title: 'apple' },
+    { title: 'banana' },
+    { title: 'fruits', children: [{ title: 'grape' }, { title: 'kiwi' }] },
+  ]
+
+  async function mountTree(loop: boolean) {
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(TreeRoot as any, {
+          items: treeItems,
+          getKey: (item: any) => item.title,
+          defaultExpanded: ['fruits'],
+          loop,
+        }, {
+          default: ({ flattenItems }: any) => flattenItems.map((item: any) =>
+            h(TreeItem as any, { key: item._id, ...item.bind }, { default: () => item.value.title }),
+          ),
+        })
+      },
+    }), { attachTo: document.body })
+    // items register with the collection after mount
+    await nextTick()
+    return wrapper.findAll('[role=treeitem]')
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should wrap around the boundary items', async () => {
+    const items = await mountTree(true)
+    ;(items[0].element as HTMLElement).focus()
+
+    await items[0].trigger('keydown', { key: kbd.ARROW_UP })
+    await nextTick()
+    expect(document.activeElement).toBe(items.at(-1)!.element)
+
+    await items.at(-1)!.trigger('keydown', { key: kbd.ARROW_DOWN })
+    await nextTick()
+    expect(document.activeElement).toBe(items[0].element)
+  })
+
+  it('should stay on the boundary items without `loop`', async () => {
+    const items = await mountTree(false)
+    ;(items[0].element as HTMLElement).focus()
+
+    await items[0].trigger('keydown', { key: kbd.ARROW_UP })
+    await nextTick()
+    expect(document.activeElement).toBe(items[0].element)
+  })
+
+  describe('when virtualized', () => {
+    // jsdom reports zero-sized rects, so give the virtualizer a viewport to render into.
+    const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect
+    beforeAll(() => {
+      window.HTMLElement.prototype.scrollTo = vi.fn()
+      globalThis.ResizeObserver ??= class ResizeObserver {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+      window.HTMLElement.prototype.getBoundingClientRect = function () {
+        return { width: 200, height: 200, top: 0, left: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }
+      }
+    })
+    afterAll(() => {
+      window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
+    })
+
+    async function press(key: string, init: KeyboardEventInit = {}) {
+      const target = document.activeElement as HTMLElement
+      target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, ...init }))
+      await nextTick()
+      await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+      await nextTick()
+    }
+
+    function mountVirtualTree(count: number, disabled: number[] = []) {
+      const items = Array.from({ length: count }, (_, i) => ({ title: `item ${i}` }))
+      const wrapper = mount(defineComponent({
+        setup() {
+          return () => h('div', { style: 'height: 200px; overflow: auto' }, h(TreeRoot as any, {
+            items,
+            getKey: (item: any) => item.title,
+            loop: true,
+          }, () => h(TreeVirtualizer as any, { textContent: (item: any) => item.title }, {
+            default: ({ item }: any) => h(TreeItem as any, { ...item.bind, disabled: disabled.includes(item.index) }, { default: () => item.value.title }),
+          })))
+        },
+      }), { attachTo: document.body })
+      return wrapper
+    }
+
+    it('should wrap around the boundary items', async () => {
+      const wrapper = mountVirtualTree(5)
+      await nextTick()
+      ;(wrapper.find('[data-index="0"]').element as HTMLElement).focus()
+
+      await press(kbd.ARROW_UP)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('4')
+
+      await press(kbd.ARROW_DOWN)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('0')
+    })
+
+    it('should wrap past disabled boundary items', async () => {
+      const wrapper = mountVirtualTree(5, [0, 4])
+      await nextTick()
+      ;(wrapper.find('[data-index="1"]').element as HTMLElement).focus()
+
+      await press(kbd.ARROW_UP)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('3')
+
+      await press(kbd.ARROW_DOWN)
+      expect(document.activeElement?.getAttribute('data-index')).toBe('1')
+    })
+
+    it.each(['ctrlKey', 'altKey', 'metaKey'] as const)('should not wrap with %s held', async (modifier) => {
+      const wrapper = mountVirtualTree(5)
+      await nextTick()
+      ;(wrapper.find('[data-index="0"]').element as HTMLElement).focus()
+
+      await press(kbd.ARROW_UP, { [modifier]: true })
+      expect(document.activeElement?.getAttribute('data-index')).toBe('0')
+    })
+
+    it('should ignore named keys in typeahead', async () => {
+      const wrapper = mountVirtualTree(5)
+      await nextTick()
+      ;(wrapper.find('[data-index="0"]').element as HTMLElement).focus()
+
+      await press('Shift', { shiftKey: true })
+      await press('I', { shiftKey: true })
+      expect(document.activeElement?.getAttribute('data-index')).toBe('1')
+    })
+
+    it('should not wrap at the end of the rendered window', async () => {
+      // jsdom never scrolls, so only the first window of the 100 items is rendered.
+      const wrapper = mountVirtualTree(100)
+      await nextTick()
+      const lastRendered = wrapper.findAll('[role=treeitem]').at(-1)!
+      expect(Number(lastRendered.attributes('data-index'))).toBeLessThan(99)
+      ;(lastRendered.element as HTMLElement).focus()
+
+      await press(kbd.ARROW_DOWN)
+      expect(document.activeElement).toBe(lastRendered.element)
+    })
+  })
+})
+
+describe('given a Tree with a controlled `expanded`', () => {
+  const treeItems = [
+    { title: 'fruits', children: [{ title: 'grape' }, { title: 'kiwi' }] },
+    { title: 'vegetables', children: [{ title: 'leek' }] },
+  ]
+
+  function mountTree(expanded: string[]) {
+    return mount(defineComponent({
+      props: { expanded: { type: Array, required: true } },
+      setup(props) {
+        return () => h(TreeRoot as any, {
+          items: treeItems,
+          getKey: (item: any) => item.title,
+          expanded: props.expanded,
+        }, {
+          default: ({ flattenItems }: any) => flattenItems.map((item: any) =>
+            h(TreeItem as any, { key: item._id, ...item.bind }, { default: () => item.value.title }),
+          ),
+        })
+      },
+    }), { attachTo: document.body, props: { expanded } })
+  }
+
+  const titles = (wrapper: VueWrapper) => wrapper.findAll('[role=treeitem]').map(item => item.text())
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('should render the children of the expanded items only', () => {
+    const wrapper = mountTree(['fruits'])
+    expect(titles(wrapper)).toEqual(['fruits', 'grape', 'kiwi', 'vegetables'])
+  })
+
+  it('should render again when `expanded` changes', async () => {
+    const wrapper = mountTree(['fruits'])
+    await wrapper.setProps({ expanded: ['vegetables'] })
+    expect(titles(wrapper)).toEqual(['fruits', 'vegetables', 'leek'])
+    expect(wrapper.findAll('[role=treeitem]').map(item => item.attributes('aria-expanded')))
+      .toEqual(['false', 'true', undefined])
+  })
+})
+
+describe('given a multiple Tree with many selected keys', () => {
+  interface Node { id: string, children?: Node[] }
+
+  function build(depth: number, prefix: string): Node[] {
+    return Array.from({ length: 4 }, (_, i) => {
+      const id = `${prefix}-${i}`
+      return depth > 0 ? { id, children: build(depth - 1, id) } : { id }
+    })
+  }
+  const items = build(3, 'n')
+  const all: Node[] = []
+  const collect = (nodes: Node[]) => nodes.forEach((n) => {
+    all.push(n)
+    collect(n.children ?? [])
+  })
+  collect(items)
+  const descendants = (n: Node): Node[] => (n.children ?? []).flatMap(c => [c, ...descendants(c)])
+  // Every third node, plus a duplicate and an unknown key
+  const selected = [...all.filter((_, i) => i % 3 === 0), all[0], { id: 'unknown' }]
+  const selectedIds = selected.map(n => n.id)
+
+  function render(props: Record<string, any>) {
+    const states: Record<string, { selected: boolean, indeterminate: boolean | undefined }> = {}
+    mount(defineComponent({
+      setup: () => () => h(TreeRoot as any, {
+        items,
+        getKey: (n: Node) => n.id,
+        multiple: true,
+        modelValue: selected,
+        expanded: all.map(n => n.id),
+        ...props,
+      }, {
+        default: ({ flattenItems }: any) => flattenItems.map((item: any) => h(TreeItem as any, { key: item._id, ...item.bind }, {
+          default: ({ isSelected, isIndeterminate }: any) => {
+            states[item._id] = { selected: isSelected, indeterminate: isIndeterminate }
+            return item._id
+          },
+        })),
+      }),
+    }))
+    return states
+  }
+
+  it.each(['bubbleSelect', 'propagateSelect'])('matches a direct search of the model value with %s', (mode) => {
+    const states = render({ [mode]: true })
+    expect(Object.keys(states)).toHaveLength(all.length)
+    for (const node of all) {
+      const isSelected = selectedIds.includes(node.id)
+      const kids = descendants(node)
+      let indeterminate: boolean | undefined
+      if (kids.length && mode === 'bubbleSelect')
+        indeterminate = kids.some(k => selectedIds.includes(k.id)) && !kids.every(k => selectedIds.includes(k.id))
+      else if (kids.length && isSelected)
+        indeterminate = !kids.every(k => selectedIds.includes(k.id))
+      expect(states[node.id], node.id).toEqual({ selected: isSelected, indeterminate })
+    }
   })
 })

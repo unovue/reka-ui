@@ -2,22 +2,23 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { computed, ref, toRefs, watch } from 'vue'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
-import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
+import { computed, ref, toRefs, watch, watchEffect } from 'vue'
+import { createRekaContext, useDirection, useForwardExpose } from '@/shared'
+import VisuallyHiddenInputBubble from '@/VisuallyHidden/VisuallyHiddenInputBubble.vue'
 
 export type PinInputType = 'text' | 'number'
 
 // Using this type to avoid mixed arrays (string | number)[].
-// The value type can be number[] only when the type is explicitly set to 'number'
-export type PinInputValue<Type extends PinInputType> = [Type] extends ['number'] ? number[] : string[]
+// The value type can be (number | undefined)[] only when the type is explicitly set to 'number'.
+// Cleared inputs leave gaps, so numeric values may be `undefined`.
+export type PinInputValue<Type extends PinInputType> = [Type] extends ['number'] ? (number | undefined)[] : string[]
 
 // provide the mixed arrays because the `type` is dynamic in the context
 export type PinInputContextValue<Type extends PinInputType = 'text'>
   = Type extends 'number'
     ? Type extends 'string'
-      ? string[] | number[]
-      : number[]
+      ? string[] | (number | undefined)[]
+      : (number | undefined)[]
     : string[]
 
 export type PinInputRootEmits<Type extends PinInputType = 'text'> = {
@@ -36,6 +37,8 @@ export interface PinInputRootProps<Type extends PinInputType = 'text'> extends P
   mask?: boolean
   /** When `true`, mobile devices will autodetect the OTP from messages or clipboard, and enable the autocomplete field. */
   otp?: boolean
+  /** When `true` and `required`, every mounted PIN input must be filled before the form can be submitted. Defaults to `false`. */
+  requireComplete?: boolean
   /** Input type for the inputs. */
   type?: Type
   /** The reading direction of the combobox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
@@ -57,17 +60,18 @@ export interface PinInputRootContext<Type extends PinInputType = 'text'> {
   disabled: Ref<boolean>
   isCompleted: ComputedRef<boolean>
   inputElements?: Ref<Set<HTMLInputElement>>
-  onInputElementChange: (el: HTMLInputElement) => void
+  getModelIndex: (el: HTMLInputElement, position: number) => number
+  onInputElementChange: (el: HTMLInputElement, index?: number) => void
   isNumericMode: ComputedRef<boolean>
 }
 
 export const [injectPinInputRootContext, providePinInputRootContext]
-  = createContext<PinInputRootContext<PinInputType>>('PinInputRoot')
+  = createRekaContext<PinInputRootContext<PinInputType>>('PinInputRoot')
 </script>
 
 <script setup lang="ts" generic="Type extends PinInputType">
 import { useVModel } from '@vueuse/core'
-import { Primitive } from '@/Primitive'
+import { Primitive, usePrimitiveElement } from '@/Primitive'
 
 defineOptions({
   inheritAttrs: false,
@@ -88,6 +92,7 @@ defineSlots<{
 
 const { mask, otp, placeholder, type, disabled, dir: propDir } = toRefs(props)
 const { forwardRef } = useForwardExpose()
+const { primitiveElement: formInputRef, currentElement: formInput } = usePrimitiveElement()
 const dir = useDirection(propDir)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
@@ -99,20 +104,44 @@ const modelValue = useVModel(props, 'modelValue', emits, {
 const currentModelValue = computed(() => Array.isArray(modelValue.value) ? [...modelValue.value] : [])
 
 const inputElements = ref<Set<HTMLInputElement>>(new Set())
-function onInputElementChange(el: HTMLInputElement) {
-  inputElements.value.add(el)
+const modelIndexByInput = new WeakMap<HTMLInputElement, number>()
+function getModelIndex(el: HTMLInputElement, position: number) {
+  return modelIndexByInput.get(el) ?? position
+}
+
+function onInputElementChange(el: HTMLInputElement, index?: number) {
+  if (index !== undefined)
+    modelIndexByInput.set(el, index)
+  // A conditional slot may mount between two inputs that are already registered.
+  const elements = [...inputElements.value, el]
+  elements.sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
+  inputElements.value = new Set(elements)
 }
 
 const isNumericMode = computed(() => props.type === 'number')
+const mountedValues = computed(() => {
+  const indices = new Set(Array.from(inputElements.value, getModelIndex))
+  return currentModelValue.value.filter((_, index) => indices.has(index)) as PinInputValue<Type>
+})
 const isCompleted = computed(() => {
-  const modelValues = currentModelValue.value.filter(i => !!i || (isNumericMode.value && i === 0))
-  return modelValues.length === inputElements.value.size
+  return mountedValues.value.length > 0
+    && mountedValues.value.length === inputElements.value.size
+    && mountedValues.value.every(value => !!value || (isNumericMode.value && value === 0))
 })
 
+watchEffect((onCleanup) => {
+  const input = formInput.value as HTMLInputElement | undefined
+  if (input && props.required && props.requireComplete && !isCompleted.value) {
+    input.setCustomValidity('Please fill in every PIN field.')
+    onCleanup(() => input.setCustomValidity(''))
+  }
+})
+
+// A complete handler can submit the form immediately, so update the native input first.
 watch(modelValue, () => {
   if (isCompleted.value)
-    emits('complete', modelValue.value)
-}, { deep: true })
+    emits('complete', mountedValues.value)
+}, { deep: true, flush: 'post' })
 
 providePinInputRootContext({
   modelValue,
@@ -125,6 +154,7 @@ providePinInputRootContext({
   disabled,
   isCompleted,
   inputElements,
+  getModelIndex,
   onInputElementChange,
   isNumericMode,
 })
@@ -140,12 +170,14 @@ providePinInputRootContext({
   >
     <slot :model-value="modelValue" />
 
-    <VisuallyHiddenInput
+    <VisuallyHiddenInputBubble
       :id="id"
+      ref="formInputRef"
       as="input"
       feature="focusable"
+      aria-hidden="true"
       tabindex="-1"
-      :value="currentModelValue.join('')"
+      :value="mountedValues.join('')"
       :name="name ?? ''"
       :disabled="disabled"
       :required="required"

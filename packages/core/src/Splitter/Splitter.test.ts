@@ -118,4 +118,91 @@ describe('nested px SplitterGroup layout re-initialization (issue #2509)', () =>
     // Content panel (%): should occupy the bulk of the remaining space
     expect(lastLayout[1]).toBeGreaterThan(50)
   })
+
+  // Regression test: with sizeUnit="px" the panel is visually collapsed but
+  // data-state stays "expanded". px constraints are converted px→% and the
+  // layout renormalized to sum to 100, so panelSize drifts from collapsedSize
+  // by a float epsilon and the old strict `===` comparison failed.
+  it('should set data-state="collapsed" for a collapsed px panel', async () => {
+    const showPanels = ref(false)
+
+    const TestComponent = defineComponent({
+      components: { SplitterGroup, SplitterPanel, SplitterResizeHandle },
+      setup() {
+        return { showPanels }
+      },
+      // Group width 923px is intentionally indivisible by the px constraints so
+      // the px→% conversion produces non-terminating decimals.
+      template: `
+        <SplitterGroup direction="horizontal">
+          <template v-if="showPanels">
+            <SplitterPanel
+              id="sidebar"
+              ref="sidebar"
+              size-unit="px"
+              collapsible
+              :collapsed-size="80"
+              :default-size="300"
+              :min-size="150"
+            />
+            <SplitterResizeHandle />
+            <SplitterPanel id="content" />
+          </template>
+        </SplitterGroup>
+      `,
+    })
+
+    const wrapper = mount(TestComponent)
+    await nextTick()
+
+    // Establish a real group size before the panels register, so px constraints
+    // can be converted and the layout initialized with a defined panel size.
+    fireResize(923)
+    await nextTick()
+
+    showPanels.value = true
+    await nextTick() // registerPanel
+    await nextTick() // panelDataArrayChanged → layout init
+
+    const sidebar = wrapper.find('#sidebar')
+    expect(sidebar.attributes('data-state')).toBe('expanded')
+
+    // Collapse via the public API; the panel reaches collapsedSize through
+    // adjustLayoutByDelta, leaving panelSize a float-epsilon off collapsedSize.
+    ;(wrapper.vm.$refs.sidebar as { collapse: () => void }).collapse()
+    await nextTick()
+
+    expect(sidebar.attributes('data-state')).toBe('collapsed')
+  })
+
+  // Regression test for https://github.com/unovue/reka-ui/issues/3131
+  // Enter on the handle only updated the drawn layout, so data-state kept
+  // reporting the pre-Enter state and collapse()/expand() acted on it.
+  it('should update data-state when a panel is collapsed with Enter on the handle', async () => {
+    const TestComponent = defineComponent({
+      components: { SplitterGroup, SplitterPanel, SplitterResizeHandle },
+      template: `
+        <SplitterGroup direction="horizontal">
+          <SplitterPanel id="sidebar" collapsible :collapsed-size="0" :default-size="40" :min-size="20" />
+          <SplitterResizeHandle id="handle" />
+          <SplitterPanel id="content" />
+        </SplitterGroup>
+      `,
+    })
+
+    const wrapper = mount(TestComponent)
+    await nextTick()
+    fireResize(923)
+    await nextTick()
+    await nextTick()
+
+    const sidebar = wrapper.find('#sidebar')
+    expect(sidebar.attributes('data-state')).toBe('expanded')
+
+    await wrapper.find('#handle').trigger('keydown', { key: 'Enter' })
+    expect(sidebar.attributes('data-state')).toBe('collapsed')
+
+    await wrapper.find('#handle').trigger('keydown', { key: 'Enter' })
+    expect(sidebar.attributes('data-state')).toBe('expanded')
+  })
 })

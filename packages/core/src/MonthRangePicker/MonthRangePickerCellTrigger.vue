@@ -4,7 +4,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import { endOfMonth, getLocalTimeZone, toCalendar, today } from '@internationalized/date'
 import { computed, nextTick } from 'vue'
 import { isMonthBetweenInclusive, isSameYearMonth, toDate } from '@/date'
-import { useKbd } from '@/shared'
+import { getCalendarCellTabindex, useKbd } from '@/shared'
 
 export interface MonthRangePickerCellTriggerProps extends PrimitiveProps {
   /** The date value provided to the cell trigger */
@@ -165,6 +165,10 @@ function handleFocus() {
 function handleArrowKey(e: KeyboardEvent) {
   if (isDisabled.value)
     return
+  // Modifier combos on Enter/Space (e.g. Ctrl+Enter) are not handled by the cell —
+  // let them bubble so parent listeners can react (e.g. submit a form).
+  if ((e.code === kbd.ENTER || e.code === kbd.SPACE_CODE) && (e.ctrlKey || e.metaKey || e.altKey))
+    return
   e.preventDefault()
   e.stopPropagation()
   const parentElement = rootContext.parentElement.value!
@@ -284,12 +288,11 @@ function handleArrowKey(e: KeyboardEvent) {
     :data-unavailable="isUnavailable ? '' : undefined"
     :data-today="isCurrentMonth ? '' : undefined"
     :data-focused="isFocusedMonth ? '' : undefined"
-    :tabindex="isFocusedMonth ? 0 : isDisabled ? undefined : -1"
+    :tabindex="getCalendarCellTabindex(isFocusedMonth, isDisabled, props)"
     @click="handleClick"
     @focusin="handleFocus"
     @mouseenter="handleFocus"
     @keydown.up.down.left.right.space.enter.page-up.page-down="handleArrowKey"
-    @keydown.enter.prevent
   >
     <slot
       :month-value="shortMonthValue"

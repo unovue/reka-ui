@@ -21,7 +21,9 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
     isPointerInTransit.value = false
   }
 
-  function handleCreateGraceArea(event: PointerEvent, hoverTarget: HTMLElement) {
+  function handleCreateGraceArea(event: PointerEvent, hoverTarget: HTMLElement | undefined) {
+    if (!hoverTarget)
+      return
     const currentTarget = event.currentTarget as HTMLElement
     const exitPoint = { x: event.clientX, y: event.clientY }
     const exitSide = getExitSideFromRect(exitPoint, currentTarget.getBoundingClientRect())
@@ -34,15 +36,17 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
 
   watchEffect((cleanupFn) => {
     if (triggerElement.value && containerElement.value) {
-      const handleTriggerLeave = (event: PointerEvent) => handleCreateGraceArea(event, containerElement.value!)
-      const handleContentLeave = (event: PointerEvent) => handleCreateGraceArea(event, triggerElement.value!)
+      const trigger = triggerElement.value
+      const container = containerElement.value
+      const handleTriggerLeave = (event: PointerEvent) => handleCreateGraceArea(event, container)
+      const handleContentLeave = (event: PointerEvent) => handleCreateGraceArea(event, trigger)
 
-      triggerElement.value.addEventListener('pointerleave', handleTriggerLeave)
-      containerElement.value.addEventListener('pointerleave', handleContentLeave)
+      trigger.addEventListener('pointerleave', handleTriggerLeave)
+      container.addEventListener('pointerleave', handleContentLeave)
 
       cleanupFn(() => {
-        triggerElement.value?.removeEventListener('pointerleave', handleTriggerLeave)
-        containerElement.value?.removeEventListener('pointerleave', handleContentLeave)
+        trigger.removeEventListener('pointerleave', handleTriggerLeave)
+        container.removeEventListener('pointerleave', handleContentLeave)
       })
     }
   })
@@ -67,9 +71,10 @@ export function useGraceArea(triggerElement: Ref<HTMLElement | undefined>, conta
           pointerExit.trigger()
         }
       }
-      triggerElement.value?.ownerDocument.addEventListener('pointermove', handleTrackPointerGrace)
+      const ownerDocument = triggerElement.value?.ownerDocument
+      ownerDocument?.addEventListener('pointermove', handleTrackPointerGrace)
 
-      cleanupFn(() => triggerElement.value?.ownerDocument.removeEventListener('pointermove', handleTrackPointerGrace))
+      cleanupFn(() => ownerDocument?.removeEventListener('pointermove', handleTrackPointerGrace))
     }
   })
 
@@ -190,7 +195,7 @@ function getHullPresorted<P extends Point>(points: Readonly<Array<P>>): Array<P>
   for (let i = 0; i < points.length; i++) {
     const p = points[i]
     while (upperHull.length >= 2) {
-      const q = upperHull[upperHull.length - 1]
+      const q = upperHull.at(-1)!
       const r = upperHull[upperHull.length - 2]
       if ((q.x - r.x) * (p.y - r.y) >= (q.y - r.y) * (p.x - r.x))
         upperHull.pop()
@@ -204,7 +209,7 @@ function getHullPresorted<P extends Point>(points: Readonly<Array<P>>): Array<P>
   for (let i = points.length - 1; i >= 0; i--) {
     const p = points[i]
     while (lowerHull.length >= 2) {
-      const q = lowerHull[lowerHull.length - 1]
+      const q = lowerHull.at(-1)!
       const r = lowerHull[lowerHull.length - 2]
       if ((q.x - r.x) * (p.y - r.y) >= (q.y - r.y) * (p.x - r.x))
         lowerHull.pop()

@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { ListboxItemEmits, ListboxItemProps } from '@/Listbox'
-import { createContext, useForwardPropsEmits } from '@/shared'
+import { createRekaContext, useForwardPropsEmits } from '@/shared'
 
 export interface ColorSwatchPickerItemProps extends ListboxItemProps {
 /**
@@ -18,7 +18,7 @@ export interface ColorSwatchPickerItemContext {
 }
 
 export const [injectColorSwatchPickerItemContext, provideColorSwatchPickerItemContext]
-  = createContext<ColorSwatchPickerItemContext>('ColorSwatchPickerItem', 'ColorSwatchPickerItemContext')
+  = createRekaContext<ColorSwatchPickerItemContext>('ColorSwatchPickerItem', 'ColorSwatchPickerItemContext')
 </script>
 
 <script setup lang="ts">
@@ -29,6 +29,13 @@ import { getColorName } from '@/shared/color'
 const props = defineProps<ColorSwatchPickerItemProps>()
 
 const emits = defineEmits<ColorSwatchPickerItemEmits>()
+
+defineSlots<{
+  default?: (props: {
+    /** Whether the item is currently selected */
+    selected: boolean
+  }) => any
+}>()
 
 const { value } = toRefs(props)
 
@@ -50,11 +57,12 @@ provideColorSwatchPickerItemContext({
 
 <template>
   <ListboxItem
+    v-slot="slotProps"
     v-bind="forwarded"
     :aria-label="colorLabel"
     :data-color="value"
     :style="{ '--reka-color-swatch-picker-item-color': value }"
   >
-    <slot />
+    <slot v-bind="slotProps" />
   </ListboxItem>
 </template>

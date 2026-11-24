@@ -2,7 +2,7 @@ import type { DateValue } from '@internationalized/date'
 import type { Ref } from 'vue'
 import type { Grid, Matcher } from '@/date'
 import type { DateFormatterOptions } from '@/shared/useDateFormatter'
-import { endOfMonth } from '@internationalized/date'
+import { endOfMonth, endOfYear } from '@internationalized/date'
 import { computed, ref, watch } from 'vue'
 import { createMonthGrid, isAfter, isBefore, isSameYearMonth, toDate } from '@/date'
 import { useDateFormatter } from '@/shared'
@@ -119,13 +119,9 @@ export function useMonthPicker(props: UseMonthPickerProps) {
       return true
 
     const currentDate = grid.value.value
-    if (prevPageFunc || props.prevPage.value) {
-      const prevDate = (prevPageFunc || props.prevPage.value)!(currentDate)
-      return isBefore(endOfMonth(prevDate.set({ month: 12 })), props.minValue.value)
-    }
-
-    const prevYear = currentDate.subtract({ years: 1 }).set({ month: 12, day: 31 })
-    return isBefore(prevYear, props.minValue.value)
+    const getPreviousPage = prevPageFunc || props.prevPage.value
+    const prevDate = getPreviousPage ? getPreviousPage(currentDate) : currentDate.subtract({ years: 1 })
+    return isBefore(endOfYear(prevDate), props.minValue.value)
   }
 
   const nextPage = (nextPageFunc?: (date: DateValue) => DateValue) => {
@@ -134,13 +130,13 @@ export function useMonthPicker(props: UseMonthPickerProps) {
     if (nextPageFunc || props.nextPage.value) {
       const newDate = (nextPageFunc || props.nextPage.value)!(currentDate)
       grid.value = createMonthGrid({ dateObj: newDate })
-      props.placeholder.value = newDate.set({ day: 1 })
+      props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
       return
     }
 
     const newDate = currentDate.add({ years: 1 })
     grid.value = createMonthGrid({ dateObj: newDate })
-    props.placeholder.value = newDate.set({ day: 1 })
+    props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
   }
 
   const prevPage = (prevPageFunc?: (date: DateValue) => DateValue) => {
@@ -149,13 +145,13 @@ export function useMonthPicker(props: UseMonthPickerProps) {
     if (prevPageFunc || props.prevPage.value) {
       const newDate = (prevPageFunc || props.prevPage.value)!(currentDate)
       grid.value = createMonthGrid({ dateObj: newDate })
-      props.placeholder.value = newDate.set({ day: 1 })
+      props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
       return
     }
 
     const newDate = currentDate.subtract({ years: 1 })
     grid.value = createMonthGrid({ dateObj: newDate })
-    props.placeholder.value = newDate.set({ day: 1 })
+    props.placeholder.value = newDate.set({ month: props.placeholder.value.month, day: props.placeholder.value.day })
   }
 
   watch(props.placeholder, (value) => {

@@ -1,5 +1,6 @@
 <!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'estimateSize',
@@ -38,3 +39,24 @@
     'type': 'VirtualItem'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `estimateSize` | Estimated size (in px) of each item | `number \| ((index: number) => number)` | No | - |
+| `overscan` | Number of items rendered outside the visible area | `number` | No | - |
+| `textContent` | Text content for each item to achieve type-ahead feature | `((item: Record<string, any>) => string)` | No | - |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `item` |  | `FlattenedItem<Record<string, any>>` |
+| `virtualizer` |  | `Virtualizer<Element \| Window, Element>` |
+| `virtualItem` |  | `VirtualItem` |
+
+</llm-only>

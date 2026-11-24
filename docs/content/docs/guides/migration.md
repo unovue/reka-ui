@@ -15,7 +15,7 @@ First and foremost, you need to install the latest `reka-ui`.
 
 <InstallationTabs value="reka-ui" />
 
-Congratulation! 🎉 Now that you've installed the above package, let's perform the migration! The first 2 steps are relatively simple. Just do a global search and replace for the following changes.
+Congratulations! 🎉 Now that you've installed the above package, let's perform the migration! The first 2 steps are relatively simple. Just do a global search and replace for the following changes.
 
 ## Import Statement Changes
 
@@ -97,7 +97,7 @@ CSS variable and data attributes names have been updated to use the `reka` prefi
 
 ### Pagination
 
-- [Required `itemsPerPage` prop](https://github.com/unovue/reka-ui/commit/37bba0c26a3cbe7e7e3e4ac36770be3ef5224f0c) - Instead of default `itemsPerPage` value, now it is required as to provide a more explicit hint about the page size.
+- [Required `itemsPerPage` prop](https://github.com/unovue/reka-ui/commit/37bba0c26a3cbe7e7e3e4ac36770be3ef5224f0c) - The `itemsPerPage` prop is now required instead of relying on a default value.
 
   ```vue
   <template>
@@ -129,7 +129,7 @@ CSS variable and data attributes names have been updated to use the `reka` prefi
 
 ### Select
 
-- [`SelectValue` no longer render teleported element](https://github.com/unovue/reka-ui/commit/6a623484d610cc3b7c1a23a77c253c8e95cef518) - Previous implementation of `SelectValue` will render the selected `SelectItem` via teleporting fragment. This causes SSR flickering, and it is unnecessarily computation.
+- [`SelectValue` no longer renders a teleported element](https://github.com/unovue/reka-ui/commit/6a623484d610cc3b7c1a23a77c253c8e95cef518) - The previous implementation of `SelectValue` rendered the selected `SelectItem` through a teleported fragment. This caused SSR flicker and unnecessary computation.
 
   ```vue
   <template>
@@ -141,14 +141,14 @@ CSS variable and data attributes names have been updated to use the `reka` prefi
 
 ### Presence
 
-To have better supports for SSR content, we also modify the logic around the usage of `forceMount` for component that utilize Presence:
+To have better support for SSR content, we also modified the logic around the usage of `forceMount` for components that utilize Presence:
 
 - `Accordion`
 - `Collapsible`
 - `Tabs`
 - `NavigationMenu`
 
-[`forceMount` will now render the component](https://github.com/unovue/reka-ui/commit/6f7f29abe79ac6c3ace117a398b6f7613ab6d2bc) eventhough the state is inactive. You are now required to handle the visibility logic of the component manually.
+[`forceMount` will now render the component](https://github.com/unovue/reka-ui/commit/6f7f29abe79ac6c3ace117a398b6f7613ab6d2bc) even though the state is inactive. You are now required to handle the visibility logic of the component manually.
 
 ```vue
 <template>

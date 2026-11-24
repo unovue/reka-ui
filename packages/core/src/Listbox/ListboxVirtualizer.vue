@@ -12,13 +12,13 @@ export interface ListboxVirtualizerProps<T extends AcceptableValue = AcceptableV
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
-import type { VirtualItem, Virtualizer } from '@tanstack/vue-virtual'
+import type { Range, VirtualItem, Virtualizer } from '@tanstack/vue-virtual'
 import type { Ref, VNode } from 'vue'
 import type { AcceptableValue } from '@/shared/types'
-import { useVirtualizer } from '@tanstack/vue-virtual'
+import { defaultRangeExtractor, useVirtualizer } from '@tanstack/vue-virtual'
 import { useParentElement } from '@vueuse/core'
 import { refAutoReset } from '@vueuse/shared'
-import { cloneVNode, computed, Fragment, useSlots } from 'vue'
+import { cloneVNode, computed, Fragment, nextTick, shallowRef, useSlots, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
 import { findValuesBetween, getActiveElement } from '@/shared'
@@ -58,6 +58,10 @@ const padding = computed(() => {
   }
 })
 
+// The index the highlighted option moved to in `options`, until its row there has the highlight.
+let movedIndex: number | undefined
+const movedVersion = shallowRef(0)
+
 const virtualizer = useVirtualizer(
   {
     get scrollPaddingStart() { return padding.value.start },
@@ -72,8 +76,76 @@ const virtualizer = useVirtualizer(
     },
     getScrollElement() { return parentEl.value },
     overscan: props.overscan ?? 12,
+    // The highlight is the DOM node of a row, and the virtualizer removes the node of a row that
+    // leaves the rendered window. The highlighted row remains mounted, with its adjacent rows,
+    // because the arrow keys move the highlight to the next mounted row.
+    // The virtualizer extracts the range again only for a new range, count or extractor.
+    // Reading the version here gives it a new extractor when the highlighted option moves.
+    get rangeExtractor() {
+      void movedVersion.value
+      return (range: Range) => {
+        const indexes = defaultRangeExtractor(range)
+        const highlighted = rootContext.highlightedElement.value
+        const highlightedIndex = movedIndex ?? (highlighted?.isConnected ? Number(highlighted.dataset.index) : Number.NaN)
+        if (Number.isNaN(highlightedIndex))
+          return indexes
+
+        const highlightedIndexes = defaultRangeExtractor({ ...range, startIndex: highlightedIndex, endIndex: highlightedIndex, overscan: 1 })
+        return [...new Set([...highlightedIndexes, ...indexes])].sort((a, b) => a - b)
+      }
+    },
   },
 )
+
+// A row has its index as its key, so the row of a removed, moved or replaced option stays for another option.
+// The highlight belongs to its option: it follows the option to its new row, and leaves when the option does.
+// A row that scrolls out of the window loses its collection entry, so the highlighted option is kept here.
+let highlightedOption: { value: T } | undefined
+watch(rootContext.highlightedElement, (element) => {
+  highlightedOption = element ? getItems(true).find(item => item.ref === element) : undefined
+})
+// The copy makes an in-place change of the array run the watcher.
+watch(() => props.options.slice(), (options) => {
+  if (!highlightedOption)
+    return
+
+  const { value } = highlightedOption
+  const element = rootContext.highlightedElement.value
+  const currentIndex = movedIndex ?? Number(element?.dataset.index)
+  if (compare(options[currentIndex], value, rootContext.by))
+    return
+
+  const index = options.findIndex(option => compare(option, value, rootContext.by))
+  if (index === -1) {
+    movedIndex = undefined
+    rootContext.highlightedElement.value = null
+    return
+  }
+
+  // The row of the new index is mounted in the coming render, and then takes the highlight.
+  // The focus goes with it when the previous row has it, without scrolling the list.
+  const hadFocus = !!element?.contains(getActiveElement())
+  movedIndex = index
+  movedVersion.value++
+  nextTick(() => {
+    if (movedIndex !== index)
+      return
+
+    movedIndex = undefined
+    // The highlight was cleared or changed after the move was queued, for example when the focus left the list.
+    if (rootContext.highlightedElement.value !== element)
+      return
+
+    const row = parentEl.value?.querySelector<HTMLElement>(`[data-index="${index}"]`)
+    if (!row) {
+      rootContext.highlightedElement.value = null
+      return
+    }
+    rootContext.changeHighlight(row, false, false)
+    if (hadFocus)
+      row.focus({ preventScroll: true })
+  })
+})
 
 const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map((item) => {
   const defaultNode = slots.default!({
@@ -83,7 +155,7 @@ const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map(
   })[0]
 
   const targetNode = defaultNode.type === Fragment && Array.isArray(defaultNode.children)
-    ? defaultNode.children[0] as VNode
+    ? defaultNode.children.find(child => typeof (child as VNode).type !== 'symbol') as VNode
     : defaultNode
 
   return {
@@ -104,7 +176,11 @@ const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map(
   }
 }))
 
-rootContext.virtualFocusHook.on((event) => {
+rootContext.virtualFocusHook.on(({ event, scroll, keepFocus, isStale }) => {
+  // `scroll` is `false` only for the initial mount highlight. There we set the
+  // roving-tabindex target without focusing or scrolling, so a virtualized
+  // Listbox below the fold doesn't pull the page to it on load. User-driven
+  // highlights (keyboard, typeahead, select) keep scrolling as before.
   const index = props.options.findIndex((option) => {
     if (Array.isArray(rootContext.modelValue.value))
       return compare(option, rootContext.modelValue.value[0], rootContext.by)
@@ -114,30 +190,60 @@ rootContext.virtualFocusHook.on((event) => {
   if (index !== -1) {
     event?.preventDefault()
 
+    // Bringing the checked item into the (internal) scroll viewport is safe — it
+    // only scrolls the listbox container, never the page.
     virtualizer.value.scrollToIndex(index, { align: 'start' })
     requestAnimationFrame(() => {
+      // A later value change under `keepFocusOnValueChange` has queued its own highlight.
+      if (isStale?.())
+        return
       const item = queryCheckedElement(parentEl.value)
       if (item) {
-        rootContext.changeHighlight(item)
-        if (event)
-          item?.focus()
+        const focus = event ? true : scroll ? undefined : false
+        rootContext.changeHighlight(item, scroll, focus)
       }
     })
   }
-  else {
+  else if (scroll && isStale) {
+    // `highlightFirstItem` under `keepFocusOnValueChange`, with a check for a later value change
+    // before the deferred highlight.
+    virtualizer.value.scrollToIndex(0)
+    requestAnimationFrame(() => {
+      const item = getItems().find(i => i.ref.dataset.disabled !== '')?.ref
+      if (item && !isStale())
+        rootContext.changeHighlight(item)
+    })
+  }
+  else if (scroll) {
     rootContext.highlightFirstItem()
+  }
+  else {
+    // Mount highlight with no checked item: highlight the first enabled item only,
+    // mirroring the non-virtual path. `highlightFirstItem` is reserved for
+    // user-driven PageUp/Home navigation, which focuses and scrolls.
+    // A value cleared under `keepFocusOnValueChange` can find the list scrolled away from
+    // the start, so bring the first options into the list's own viewport first.
+    if (keepFocus)
+      virtualizer.value.scrollToIndex(0)
+    requestAnimationFrame(() => {
+      const item = getItems().find(i => i.ref.dataset.disabled !== '')?.ref
+      if (item && !isStale?.())
+        rootContext.changeHighlight(item, false, false)
+    })
   }
 })
 
-rootContext.virtualHighlightHook.on((value) => {
-  const index = props.options.findIndex((option) => {
-    return compare(option, value, rootContext.by)
-  })
+rootContext.virtualHighlightHook.on(({ value, focus }) => {
+  const index = props.options.findIndex(option => compare(option, value, rootContext.by))
+  if (index === -1)
+    return
   virtualizer.value.scrollToIndex(index, { align: 'start' })
   requestAnimationFrame(() => {
-    const item = queryCheckedElement(parentEl.value)
+    // Look the value up again, as the options may have changed since the scroll.
+    // `getItems()` leaves out disabled rows, so a disabled item is never highlighted.
+    const item = getItems().find(i => compare(i.value, value, rootContext.by))
     if (item)
-      rootContext.changeHighlight(item)
+      rootContext.changeHighlight(item.ref, true, focus)
   })
 })
 
@@ -178,7 +284,7 @@ function handleMultipleReplace(event: Event, intent: 'first' | 'last' | 'prev' |
       break
     }
     case 'last': {
-      value = findValuesBetween(props.options, rootContext.firstValue.value as T, props.options?.[props.options.length - 1])
+      value = findValuesBetween(props.options, rootContext.firstValue.value as T, props.options.at(-1)!)
       break
     }
   }
@@ -211,12 +317,12 @@ rootContext.virtualKeydownHook.on((event) => {
     virtualizer.value.scrollToIndex(index)
     requestAnimationFrame(() => {
       const items = getItems()
-      const item = intent === 'first' ? items[0] : items[items.length - 1]
+      const item = intent === 'first' ? items[0] : items.at(-1)
       if (item)
         rootContext.changeHighlight(item.ref)
     })
   }
-  else if (!intent && !isMetaKey) {
+  else if (!intent && !isMetaKey && event.key.length === 1) {
     search.value += event.key
     const currentIndex = Number(getActiveElement()?.getAttribute('data-index'))
     const currentMatch = optionsWithMetadata.value[currentIndex].textContent

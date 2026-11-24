@@ -78,7 +78,7 @@ export function createMonth(props: CreateMonthProps): Grid<DateValue> {
   if (fixedWeeks && totalDays < 42) {
     const extraDays = 42 - totalDays
 
-    let startFrom = nextMonthDays[nextMonthDays.length - 1]
+    let startFrom = nextMonthDays.at(-1)
 
     if (!startFrom)
       startFrom = endOfMonth(dateObj)
@@ -126,29 +126,24 @@ export function endOfDecade(dateObj: DateValue) {
   return endOfYear(dateObj.add({ years: Math.ceil((dateObj.year + 1) / 10) * 10 - dateObj.year - 1 }).set({ day: 35, month: 12 }))
 }
 
-export function createDecade(props: SetDecadeProps): DateValue[] {
-  const { dateObj, startIndex, endIndex } = props
-
-  const decadeArray = Array.from({ length: Math.abs(startIndex ?? 0) + endIndex }, (_, i) =>
-    i <= Math.abs((startIndex ?? 0))
-      ? dateObj.subtract({ years: i }).set({ day: 1, month: 1 })
-      : dateObj.add({ years: i - endIndex }).set({ day: 1, month: 1 }))
-
-  decadeArray.sort((a: DateValue, b: DateValue) => a.year - b.year)
-
-  return decadeArray
+export function createDecade({ dateObj, startIndex = 0, endIndex }: SetDecadeProps): DateValue[] {
+  const yearsBefore = Math.abs(startIndex)
+  return Array.from({ length: yearsBefore + endIndex }, (_, i) =>
+    dateObj.add({ years: i - yearsBefore }).set({ month: 1, day: 1 }))
 }
 
 export function createYear(props: SetYearProps): DateValue[] {
   const { dateObj, numberOfMonths = 1, pagedNavigation = false } = props
 
+  const monthsInYear = dateObj.calendar.getMonthsInYear(dateObj)
+
   if (numberOfMonths && pagedNavigation) {
-    const monthsArray = Array.from({ length: Math.floor(12 / numberOfMonths) }, (_, i) => startOfMonth(dateObj.set({ month: i * numberOfMonths + 1 })))
+    const monthsArray = Array.from({ length: Math.floor(monthsInYear / numberOfMonths) }, (_, i) => startOfMonth(dateObj.set({ month: i * numberOfMonths + 1 })))
 
     return monthsArray
   }
 
-  const monthsArray = Array.from({ length: 12 }, (_, i) => startOfMonth(dateObj.set({ month: i + 1 })))
+  const monthsArray = Array.from({ length: monthsInYear }, (_, i) => startOfMonth(dateObj.set({ month: i + 1 })))
   return monthsArray
 }
 
@@ -189,7 +184,7 @@ export function createMonths(props: SetMonthProps) {
 }
 
 /**
- * Creates a 3x4 grid of months for a given year.
+ * Creates a four-column grid of months for a given year.
  */
 export function createMonthGrid(props: CreateSelectProps): Grid<DateValue> {
   const { dateObj } = props
