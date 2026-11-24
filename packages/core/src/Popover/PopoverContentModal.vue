@@ -21,7 +21,9 @@ watch(() => props.present, (present) => {
 const forwarded = useForwardPropsEmits(props, emits)
 
 const { forwardRef, currentElement } = useForwardExpose()
-useHideOthers(computed(() => props.present ? currentElement.value : undefined))
+// A closing content hands Escape, outside interaction and the accessibility tree back
+// to the layer below at once, while it animates out.
+useHideOthers(computed(() => rootContext.open.value && props.present ? currentElement.value : undefined))
 
 // When `unmountOnHide` is `false` the content stays mounted on close, so
 // `FocusScope` never unmounts and `close-auto-focus` never fires. Restore

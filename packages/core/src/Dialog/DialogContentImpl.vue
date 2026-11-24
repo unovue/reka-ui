@@ -43,9 +43,7 @@ import { injectDialogRootContext } from './DialogRoot.vue'
 import { recordFocusBeforeOpen, useWarning } from './utils'
 
 const props = defineProps<DialogContentImplProps & {
-  /** Whether the content is currently visible. Forwarded to `FocusScope` and
-   * `DismissableLayer` so a force-mounted dialog (`unmountOnHide: false`)
-   * auto-focuses on show and leaves the layer/scope stacks while hidden. */
+  /** Whether the content is present, including while it animates out. */
   present?: boolean
 }>()
 const emits = defineEmits<DialogContentImplEmits>()
@@ -103,7 +101,7 @@ if (process.env.NODE_ENV !== 'production') {
       :ref="forwardRef"
       :as="as"
       :as-child="asChild"
-      :present="props.present"
+      :present="rootContext.open.value && props.present"
       :disable-outside-pointer-events="disableOutsidePointerEvents"
       role="dialog"
       :aria-describedby="rootContext.descriptionId"

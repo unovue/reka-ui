@@ -245,6 +245,28 @@ describe('closing a layer together with one nested in it', () => {
     expect(get('first-content')).toBeNull()
   })
 
+  it('keeps a Dialog closed that was closed by selecting in a Select inside it', async () => {
+    const isOpen = ref(false)
+    mount(defineComponent({
+      setup: () => () => h(DialogRoot, { 'open': isOpen.value, 'onUpdate:open': (value: boolean) => isOpen.value = value }, () => [
+        h(DialogTrigger, { 'data-testid': 'first-trigger' }, () => 'first'),
+        h(DialogPortal, () => h(DialogContent, { 'data-testid': 'first-content', 'aria-describedby': undefined }, () => [
+          h(DialogTitle, () => 'Title'),
+          select('second', { 'data-testid': 'second-trigger', 'aria-label': 'second' }, { 'onUpdate:modelValue': () => isOpen.value = false }),
+        ])),
+      ]),
+    }), { attachTo: document.body })
+    await open('first')
+    await open('second')
+
+    await userEvent.keyboard('{Enter}')
+
+    await expect.poll(() => get('second-content')).toBeNull()
+    await afterFrames()
+    expect(isOpen.value).toBe(false)
+    expect(get('first-content')).toBeNull()
+  })
+
   // The outer layer and the Select open inside it unmount in one pass, after another layer has
   // taken focus. Neither may take it back: the Select's trigger is on its way out with the
   // outer layer, so focus would be dropped on `body` with the other layer still open.
