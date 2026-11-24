@@ -302,9 +302,6 @@ importers:
       vue:
         specifier: 3.5.44
         version: 3.5.44(typescript@5.8.3)
-      vue-component-type-helpers:
-        specifier: ^3.3.11
-        version: 3.3.11
       vue-tsc:
         specifier: 3.3.11
         version: 3.3.11(typescript@5.8.3)
