@@ -152,5 +152,16 @@ describe('given a layer whose trigger sits inside a focusable container (#3360)'
       }
       expect(states).toEqual([true, false, true])
     })
+
+    it.each<Order>(['webkit touch', 'chromium touch', 'mouse'])('opens, closes and reopens with %s presses only', async (order) => {
+      mountInFocusableContainer(kind)
+
+      const states: boolean[] = []
+      for (let i = 0; i < 3; i++) {
+        await press(order)
+        states.push(isOpen())
+      }
+      expect(states).toEqual([true, false, true])
+    })
   })
 })

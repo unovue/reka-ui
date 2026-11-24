@@ -111,7 +111,10 @@ function handleArrowNavigation(event: KeyboardEvent) {
     @focus-outside="(event) => {
       const target = event.target as HTMLElement;
       const isMenubarTrigger = getItems().filter(i => i.ref.dataset.disabled !== '').some((i) => i.ref.contains(target));
-      if (isMenubarTrigger) event.preventDefault();
+      // WebKit does not focus a pressed button but its focusable ancestor: pressing a
+      // trigger focuses the menubar itself, which must not close the menu it opens (#3360).
+      const isMenubar = target === menuContext.triggerElement.value?.closest('[role=menubar]');
+      if (isMenubarTrigger || isMenubar) event.preventDefault();
     }"
     @interact-outside="
       (event) => {
