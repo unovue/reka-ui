@@ -701,6 +701,22 @@ describe('given a DismissableLayer and a focus move during a press outside', () 
     wrapper.unmount()
   })
 
+  it('handles the focus move once the press is clicked even if the click stops propagating', async () => {
+    const { events, wrapper, outside, container } = await setup()
+    outside.addEventListener('click', event => event.stopPropagation())
+
+    outside.dispatchEvent(pointerEvent('pointerdown', 'touch'))
+    container.focus()
+    await sleep(1)
+    expect(events).toEqual([])
+
+    await fireEvent.click(outside)
+    await sleep(1)
+    expect(events).toEqual(['focusOutside:focusin', 'dismiss'])
+
+    wrapper.unmount()
+  })
+
   it('handles the focus move before the next press when the last one never ended', async () => {
     const { events, wrapper, outside, container } = await setup()
 

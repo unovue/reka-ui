@@ -87,6 +87,7 @@ export function usePointerDownOutside(
    * `pointerdown` and the `click` its `pointerDownOutside` is deferred to.
    */
   let isTouchPressPending = false
+  let touchPressId = 0
   let heldUntilTouchPressEnds: Array<() => void> = []
 
   function endTouchPress() {
@@ -187,6 +188,14 @@ export function usePointerDownOutside(
             once: true,
           })
           isTouchPressPending = true
+          // A `click` whose propagation is stopped before it reaches the document
+          // still ends the press, in the next task so the listener above, when it
+          // does run, keeps handling `pointerDownOutside` first.
+          const pressId = ++touchPressId
+          ownerDocument.addEventListener('click', () => window.setTimeout(() => {
+            if (pressId === touchPressId && isTouchPressPending)
+              endTouchPress()
+          }), { capture: true, once: true })
         }
         else {
           handleAndDispatchPointerDownOutsideEvent()
