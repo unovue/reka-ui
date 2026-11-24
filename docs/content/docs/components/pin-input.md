@@ -52,6 +52,8 @@ import { PinInputInput, PinInputRoot } from 'reka-ui'
 
 Contains all the parts of a pin. An `input` will also render when used within a `form` to ensure events propagate correctly.
 
+A required PIN can be shorter than the number of inputs. For a fixed-length PIN, use `<PinInputRoot required require-complete>` to require a value in every mounted input before the form can be submitted.
+
 <!-- @include: @/meta/PinInputRoot.md -->
 
 <DataAttributesTable

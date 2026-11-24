@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { defineComponent, defineCustomElement, h, nextTick } from 'vue'
 import { AccordionItem, AccordionRoot, AccordionTrigger } from '@/Accordion'
 import { CalendarNext, CalendarPrev, CalendarRoot } from '@/Calendar'
+import { CarouselAutoplayToggle, CarouselContent, CarouselItem, CarouselRoot, CarouselViewport } from '@/Carousel'
 import { CheckboxRoot } from '@/Checkbox'
 import { CollapsibleRoot, CollapsibleTrigger } from '@/Collapsible'
 import { ColorFieldInput, ColorFieldRoot } from '@/ColorField'
@@ -88,6 +89,14 @@ const cases: Case[] = [
   fromRoot('AccordionTrigger', AccordionRoot, AccordionTrigger, { type: 'single' }, child => h(AccordionItem, { value: 'a' }, () => child)),
   fromRoot('CalendarPrev', CalendarRoot, CalendarPrev),
   fromRoot('CalendarNext', CalendarRoot, CalendarNext),
+  {
+    // Disabled while nothing rotates: enabled with `autoplay`, disabled without it
+    name: 'CarouselAutoplayToggle',
+    render: (disabled, as) => h(CarouselRoot, { 'aria-label': 'Slides', 'autoplay': !disabled }, () => [
+      h(CarouselViewport, () => h(CarouselContent, () => h(CarouselItem, () => 'One'))),
+      part(CarouselAutoplayToggle, as),
+    ]),
+  },
   own('CheckboxRoot', CheckboxRoot),
   fromRoot('CollapsibleTrigger', CollapsibleRoot, CollapsibleTrigger),
   fromRoot('ColorFieldInput', ColorFieldRoot, ColorFieldInput),
