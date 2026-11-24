@@ -738,6 +738,21 @@ describe('given a Combobox with multiple prop', async () => {
   })
 })
 
+describe('given a multiple Combobox with `max`', () => {
+  it('should block selecting over `max` and emit `invalid`', async () => {
+    document.body.innerHTML = ''
+    const wrapper = mount(Combobox, { props: { multiple: true, max: 1 }, attachTo: document.body })
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+    const items = wrapper.findAll('[role=option]')
+    await items[0].trigger('click')
+    await items[1].trigger('click')
+    expect(wrapper.emitted('update:modelValue')).toEqual([[[items[0].text()]]])
+    expect(wrapper.emitted('invalid')).toEqual([[items[1].text()]])
+    expect(items[1].attributes('aria-selected')).toBe('false')
+  })
+})
+
 describe('given a virtualized Combobox', () => {
   window.HTMLElement.prototype.releasePointerCapture = vi.fn()
   window.HTMLElement.prototype.hasPointerCapture = vi.fn()

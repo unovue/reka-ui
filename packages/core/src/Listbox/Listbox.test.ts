@@ -1174,3 +1174,152 @@ describe('given a Listbox with `keepFocusOnValueChange`', () => {
     expect(ColorSwatchPickerRoot.props).not.toHaveProperty('keepFocusOnValueChange')
   })
 })
+
+describe('given a multiple Listbox with `max`', () => {
+  const kbd = useKbd()
+  let wrapper: VueWrapper<InstanceType<typeof Listbox>>
+  let content: DOMWrapper<Element>
+  let items: DOMWrapper<Element>[]
+
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
+  async function setup(props: Record<string, unknown>) {
+    document.body.innerHTML = ''
+    wrapper = mount(Listbox, { props: { multiple: true, ...props }, attachTo: document.body })
+    await nextTick()
+    content = wrapper.find('[role=listbox]')
+    items = wrapper.findAll('[role=option]')
+    await content.trigger('focus')
+  }
+
+  const selected = () => items.filter(i => i.attributes('aria-selected') === 'true').map(i => i.text())
+
+  it('should block a click that goes over `max` and emit `invalid`', async () => {
+    await setup({ max: 2 })
+    await items[0].trigger('click')
+    await items[1].trigger('click')
+    await items[2].trigger('click')
+    expect(selected()).toEqual([items[0].text(), items[1].text()])
+    expect(wrapper.emitted('invalid')).toEqual([[items[2].text()]])
+  })
+
+  it('should block `Enter` that goes over `max` and still allow deselecting', async () => {
+    await setup({ max: 1 })
+    await content.trigger('keydown', { key: kbd.ENTER })
+    await content.trigger('keydown', { key: kbd.ARROW_DOWN })
+    await content.trigger('keydown', { key: kbd.ENTER })
+    expect(selected()).toEqual([items[0].text()])
+    expect(wrapper.emitted('invalid')).toEqual([[items[1].text()]])
+
+    await items[0].trigger('click')
+    expect(selected()).toEqual([])
+  })
+
+  it('should block select-all that goes over `max`', async () => {
+    await setup({ max: 2 })
+    await content.trigger('keydown', { key: 'a', ctrlKey: true })
+    expect(selected()).toEqual([])
+    expect(wrapper.emitted('invalid')).toEqual([[items[2].text()]])
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('should block a `Shift` range selection that goes over `max`', async () => {
+    await setup({ max: 2, selectionBehavior: 'replace' })
+    await items[0].trigger('click')
+    await content.trigger('keydown.shift', { key: kbd.ARROW_DOWN })
+    expect(selected()).toEqual([items[0].text(), items[1].text()])
+    await content.trigger('keydown.shift', { key: kbd.ARROW_DOWN })
+    expect(selected()).toEqual([items[0].text(), items[1].text()])
+    expect(wrapper.emitted('invalid')).toEqual([[items[2].text()]])
+  })
+
+  it('should not limit the selection without `max`', async () => {
+    await setup({})
+    await content.trigger('keydown', { key: 'a', ctrlKey: true })
+    expect(selected()).toHaveLength(items.length)
+    expect(wrapper.emitted('invalid')).toBeUndefined()
+  })
+})
+
+describe('given a virtualized multiple Listbox with `max`', () => {
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn()
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn()
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+  window.HTMLElement.prototype.scrollTo = vi.fn()
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect
+  beforeAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = function () {
+      return { width: 200, height: 200, top: 0, left: 0, right: 200, bottom: 200, x: 0, y: 0, toJSON() {} }
+    }
+  })
+  afterAll(() => {
+    window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect
+  })
+
+  const options = Array.from({ length: 10 }, (_, i) => `Item ${i}`)
+  const onInvalid = vi.fn()
+  const onUpdate = vi.fn()
+  const VirtualListbox = defineComponent({
+    props: { max: { type: Number, default: 0 }, selectionBehavior: { type: String, default: 'toggle' } },
+    setup(props) {
+      return () => h(ListboxRoot, { 'multiple': true, 'max': props.max, 'selectionBehavior': props.selectionBehavior as any, 'onInvalid': onInvalid, 'onUpdate:modelValue': onUpdate }, () =>
+        h(ListboxContent, { style: 'height: 200px; overflow: auto' }, () =>
+          h(ListboxVirtualizer, { options }, {
+            default: ({ option }: any) => h(ListboxItem, { value: option }, () => option),
+          })))
+    },
+  })
+
+  async function flush() {
+    await nextTick()
+    await nextTick()
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    await nextTick()
+  }
+
+  beforeEach(() => {
+    onInvalid.mockClear()
+    onUpdate.mockClear()
+    document.body.innerHTML = ''
+  })
+
+  it('should block select-all that goes over `max`', async () => {
+    const wrapper = mount(VirtualListbox, { props: { max: 3 }, attachTo: document.body })
+    await flush()
+    const content = wrapper.find('[role=listbox]')
+    await content.trigger('focus')
+    await content.trigger('keydown', { key: 'a', ctrlKey: true })
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(onInvalid).toHaveBeenCalledWith('Item 3')
+  })
+
+  it('should block a `Shift` range selection that goes over `max`', async () => {
+    const wrapper = mount(VirtualListbox, { props: { max: 2, selectionBehavior: 'replace' }, attachTo: document.body })
+    await flush()
+    const content = wrapper.find('[role=listbox]')
+    await content.trigger('focus')
+    await wrapper.find('[data-index="0"]').trigger('click')
+    await content.trigger('keydown', { key: 'End', shiftKey: true })
+    await flush()
+    expect(onUpdate).toHaveBeenLastCalledWith(['Item 0'])
+    expect(onInvalid).toHaveBeenCalledWith('Item 2')
+  })
+
+  it('should not limit select-all without `max`', async () => {
+    const wrapper = mount(VirtualListbox, { attachTo: document.body })
+    await flush()
+    const content = wrapper.find('[role=listbox]')
+    await content.trigger('focus')
+    await content.trigger('keydown', { key: 'a', ctrlKey: true })
+    expect(onUpdate).toHaveBeenLastCalledWith(options)
+    expect(onInvalid).not.toHaveBeenCalled()
+  })
+})

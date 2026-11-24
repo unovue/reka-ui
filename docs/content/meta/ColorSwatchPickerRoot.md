@@ -49,6 +49,12 @@
     'default': 'false'
   },
   {
+    'name': 'max',
+    'description': '<p>Maximum number of options the user can select. Only applies when <code>multiple</code> is <code>true</code>.\nA selection that would go over it (click, &lt;kbd&gt;Enter&lt;/kbd&gt;, range or select-all) is blocked\nand emits <code>invalid</code>. <code>0</code> means no limit. It does not clamp a <code>modelValue</code> set programmatically.</p>\n',
+    'type': 'number',
+    'required': false
+  },
+  {
     'name': 'modelValue',
     'description': '<p>The controlled value of the listbox. Can be binded with <code>v-model</code>.</p>\n',
     'type': 'string | string[]',
@@ -99,6 +105,11 @@
     'type': '[payload: { ref: HTMLElement; value: AcceptableValue; }]'
   },
   {
+    'name': 'invalid',
+    'description': '<p>Event handler called when a selection is blocked because it would go over <code>max</code>. The payload is the first value over the limit.</p>\n',
+    'type': '[payload: AcceptableValue]'
+  },
+  {
     'name': 'leave',
     'description': '<p>Event handler called when the mouse leave the container</p>\n',
     'type': '[event: Event]'
@@ -132,6 +143,7 @@
 | `disabled` | When true, prevents the user from interacting with listbox | `boolean` | No | `false` |
 | `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | - |
 | `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | `false` |
+| `max` | Maximum number of options the user can select. Only applies when multiple is true. A selection that would go over it (click, <kbd>Enter</kbd>, range or select-all) is blocked and emits invalid. 0 means no limit. It does not clamp a modelValue set programmatically. | `number` | No | - |
 | `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `string \| string[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
@@ -145,6 +157,7 @@
 | --- | --- | --- |
 | `entryFocus` | Event handler called when container is being focused. Can be prevented. | `[event: CustomEvent<any>]` |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; }]` |
+| `invalid` | Event handler called when a selection is blocked because it would go over max. The payload is the first value over the limit. | `[payload: AcceptableValue]` |
 | `leave` | Event handler called when the mouse leave the container | `[event: Event]` |
 | `update:modelValue` | Event handler called when the value changes. | `[value: AcceptableValue]` |
 
