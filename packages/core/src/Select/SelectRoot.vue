@@ -66,7 +66,7 @@ interface SelectOption { value: any, disabled?: boolean, textContent: string }
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { useVModel } from '@vueuse/core'
-import { computed, onDeactivated, ref, toRefs, watch } from 'vue'
+import { computed, ref, toRefs, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { PopperRoot } from '@/Popper'
 import BubbleSelect from './BubbleSelect.vue'
@@ -197,12 +197,6 @@ function getOption(value: SelectOption['value']) {
   return Array.from(optionsSet.value)
     .find(option => valueComparator(value, option.value, props.by))
 }
-
-// A `KeepAlive` page keeps the content teleported and open, anchored to a trigger out of the document.
-onDeactivated(() => {
-  if (open.value)
-    open.value = false
-})
 
 provideSelectRootContext(defineReactiveIds({
   triggerElement,

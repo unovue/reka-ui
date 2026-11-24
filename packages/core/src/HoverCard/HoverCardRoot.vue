@@ -124,11 +124,8 @@ function handleDismiss() {
     open.value = false
 }
 
-// A `KeepAlive` page keeps the content teleported and open, anchored to a trigger out of the document.
-onDeactivated(() => {
-  clearTimeout(closeTimerRef.value)
-  handleDismiss()
-})
+// A pending open of a `KeepAlive` page that is left would fire on the page shown instead.
+onDeactivated(clearOpenTimer)
 
 provideHoverCardRootContext({
   open,

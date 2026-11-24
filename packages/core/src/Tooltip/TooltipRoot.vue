@@ -152,12 +152,8 @@ function handleDelayedOpen() {
   startTimer()
 }
 
-// A `KeepAlive` page keeps the content teleported and open, anchored to a trigger out of the document.
-onDeactivated(() => {
-  clearTimer()
-  if (open.value)
-    open.value = false
-})
+// A pending open of a `KeepAlive` page that is left would fire on the page shown instead.
+onDeactivated(clearTimer)
 
 provideTooltipRootContext(defineReactiveIds({
   contentId: '',

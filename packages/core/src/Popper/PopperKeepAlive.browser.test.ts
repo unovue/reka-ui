@@ -5,10 +5,8 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h, KeepAlive, nextTick, ref } from 'vue'
 import { AutocompleteAnchor, AutocompleteContent, AutocompleteInput, AutocompleteItem, AutocompletePortal, AutocompleteRoot, AutocompleteViewport } from '@/Autocomplete'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxViewport } from '@/Combobox'
-import { ContextMenuContent, ContextMenuItem, ContextMenuPortal, ContextMenuRoot, ContextMenuTrigger } from '@/ContextMenu'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
 import { HoverCardContent, HoverCardPortal, HoverCardRoot, HoverCardTrigger } from '@/HoverCard'
-import { MenubarContent, MenubarItem, MenubarMenu, MenubarPortal, MenubarRoot, MenubarTrigger } from '@/Menubar'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '@/Popover'
 import { SelectContent, SelectItem, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '@/Select'
 import { TooltipContent, TooltipPortal, TooltipProvider, TooltipRoot, TooltipTrigger } from '@/Tooltip'
@@ -57,70 +55,33 @@ const popups: Record<string, (root: Record<string, unknown>) => VNode> = {
   ]),
   Combobox: root => h(ComboboxRoot, root, () => [
     h(ComboboxAnchor, trigger, () => h(ComboboxInput, { 'aria-label': 'pick' })),
-    h(ComboboxPortal, () => h(ComboboxContent, content, () =>
+    h(ComboboxPortal, () => h(ComboboxContent, { ...content, position: 'popper' }, () =>
       h(ComboboxViewport, () => h(ComboboxItem, { value: 'a' }, () => 'a')))),
   ]),
   Autocomplete: root => h(AutocompleteRoot, root, () => [
     h(AutocompleteAnchor, trigger, () => h(AutocompleteInput, { 'aria-label': 'pick' })),
-    h(AutocompletePortal, () => h(AutocompleteContent, content, () =>
+    h(AutocompletePortal, () => h(AutocompleteContent, { ...content, position: 'popper' }, () =>
       h(AutocompleteViewport, () => h(AutocompleteItem, { value: 'a' }, () => 'a')))),
   ]),
 }
 
-async function expectClosedOnOtherPage(onPage: { value: boolean }) {
-  onPage.value = false
-  await nextTick()
-  await afterFrames()
-
-  expect(get('content')).toBeNull()
-  // A modal popup no longer disables pointer events on the page shown instead.
-  expect(document.body.style.pointerEvents).toBe('')
-  const onOther = vi.fn()
-  get('other')!.addEventListener('click', onOther)
-  await userEvent.click(get('other')!)
-  expect(onOther).toHaveBeenCalledTimes(1)
-}
-
 describe('given an open popup in a KeepAlive page', () => {
-  // #785: the page leaves the document, but the teleported content stayed open in the
-  // body, placed against the detached trigger in the top-left corner.
-  it.each(Object.keys(popups))('%s closes when the page is deactivated', async (name) => {
+  // #785: the page leaves the document with the trigger, and the teleported content was
+  // placed against the detached trigger in the top-left corner. It now stays where it was.
+  it.each(Object.keys(popups))('%s keeps its open state and position while the page is deactivated', async (name) => {
     const onOpen = vi.fn()
     const onPage = mountPages(() => popups[name]({ 'defaultOpen': true, 'onUpdate:open': onOpen }))
     await expect.poll(() => get('content')).not.toBeNull()
+    await afterFrames()
+    const open = position(get('content')!)
 
-    await expectClosedOnOtherPage(onPage)
-    expect(onOpen).toHaveBeenCalledExactlyOnceWith(false)
-
-    onPage.value = true
+    onPage.value = false
     await nextTick()
     await afterFrames()
-    expect(get('content')).toBeNull()
-  })
 
-  it('a context menu closes when the page is deactivated', async () => {
-    const onOpen = vi.fn()
-    const onPage = mountPages(() => h(ContextMenuRoot, { 'onUpdate:open': onOpen }, () => [
-      h(ContextMenuTrigger, { ...trigger, style: 'display: block; height: 40px' }, () => 'area'),
-      h(ContextMenuPortal, () => h(ContextMenuContent, content, () => h(ContextMenuItem, () => 'item'))),
-    ]))
-    await userEvent.click(get('trigger')!, { button: 'right' })
-    await expect.poll(() => get('content')).not.toBeNull()
-
-    await expectClosedOnOtherPage(onPage)
-    expect(onOpen).toHaveBeenLastCalledWith(false)
-  })
-
-  it('a menubar menu closes when the page is deactivated', async () => {
-    const onValue = vi.fn()
-    const onPage = mountPages(() => h(MenubarRoot, { 'defaultValue': 'file', 'onUpdate:modelValue': onValue }, () => h(MenubarMenu, { value: 'file' }, () => [
-      h(MenubarTrigger, trigger, () => 'file'),
-      h(MenubarPortal, () => h(MenubarContent, content, () => h(MenubarItem, () => 'item'))),
-    ])))
-    await expect.poll(() => get('content')).not.toBeNull()
-
-    await expectClosedOnOtherPage(onPage)
-    expect(onValue).toHaveBeenCalledExactlyOnceWith('')
+    expect(onOpen).not.toHaveBeenCalled()
+    expect(get('content')).not.toBeNull()
+    expect(position(get('content')!)).toEqual(open)
   })
 })
 

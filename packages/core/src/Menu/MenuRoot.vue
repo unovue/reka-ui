@@ -72,7 +72,6 @@ export const [injectMenuRootContext, provideMenuRootContext]
 <script setup lang="ts">
 import { createEventHook, useVModel } from '@vueuse/core'
 import {
-  onDeactivated,
   ref,
   toRefs,
 } from 'vue'
@@ -92,12 +91,6 @@ const open = useVModel(props, 'open', emits)
 const content = ref<HTMLElement>()
 const isUsingKeyboardRef = useIsUsingKeyboard()
 const contentHide = createEventHook<MenuContentHideEvent>()
-
-// A `KeepAlive` page keeps the content teleported and open, anchored to a trigger out of the document.
-onDeactivated(() => {
-  if (open.value)
-    open.value = false
-})
 
 provideMenuContext({
   open,

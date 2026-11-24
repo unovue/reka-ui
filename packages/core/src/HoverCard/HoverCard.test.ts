@@ -456,25 +456,3 @@ describe('given a hover card waiting to open in a KeepAlive page', () => {
     }
   })
 })
-
-describe('given a controlled hover card waiting to close in a KeepAlive page', () => {
-  it('emits update:open(false) once when the page is deactivated', async () => {
-    vi.useFakeTimers()
-    const onUpdateOpen = vi.fn()
-    const { wrapper, onPage } = mountInKeepAlivePage({ 'open': true, 'closeDelay': 200, 'onUpdate:open': onUpdateOpen })
-    try {
-      // Starts the close delay, as leaving the card does.
-      await wrapper.find('a').trigger('blur')
-      onPage.value = false
-      await nextTick()
-      vi.advanceTimersByTime(300)
-      await nextTick()
-
-      expect(onUpdateOpen).toHaveBeenCalledExactlyOnceWith(false)
-    }
-    finally {
-      wrapper.unmount()
-      vi.useRealTimers()
-    }
-  })
-})
