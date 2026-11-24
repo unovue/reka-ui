@@ -33,6 +33,12 @@ jobs:
   npm:
     runs-on: ubuntu-latest
     environment: npm
+    # The dist-tag is picked from npm's current `latest` right before the
+    # publish, so two publishes must not interleave. Release workflows on every
+    # branch share this group.
+    concurrency:
+      group: npm-publish
+      cancel-in-progress: false
     permissions:
       id-token: write
       contents: read
@@ -56,7 +62,8 @@ jobs:
       # The dist-tag comes from packages/core/scripts/npm-dist-tag.mjs, which
       # `pub:release` uses too: a prerelease goes out under its id (`beta`), and
       # a stable 2.x goes out as `v2-latest` instead of `latest` once a newer
-      # major is `latest` on npm (npm refuses to move `latest` backwards).
+      # major is `latest` on npm. The script fails the step if it can't read
+      # npm's `latest`, since an explicit `--tag latest` would overwrite it.
       # npm refuses to publish over an existing version, so a rerun after a
       # failure that followed a successful publish skips the publish instead
       # of dying on the 403.

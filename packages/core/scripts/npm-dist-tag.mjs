@@ -8,6 +8,9 @@
 //   a higher major (for example once 3.0.0 ships). npm refuses to move
 //   `latest` back to an older version without an explicit tag, so the release
 //   goes out as `v<major>-latest` (`v2-latest`) instead.
+// - If npm's `latest` can't be read for a stable version, the script exits
+//   with an error instead of guessing: an explicit `--tag latest` would skip
+//   npm's own check against moving `latest` backwards.
 //
 //   node scripts/npm-dist-tag.mjs                  # version from package.json, latest from npm
 //   node scripts/npm-dist-tag.mjs 2.12.0 3.0.0     # explicit version and current `latest`
@@ -51,24 +54,33 @@ export function distTag(version, currentLatest) {
 }
 
 /**
- * The version npm's `latest` dist-tag points at, or `undefined` when npm can't
- * be reached. Without it the stable release is tagged `latest`, and npm's own
- * guard refuses the publish if that would move `latest` backwards.
+ * The version npm's `latest` dist-tag points at.
  * @param {string} name the package name
- * @returns {string | undefined} the version, if npm answered
+ * @returns {string} the version
  */
 function npmLatest(name) {
-  try {
-    return execFileSync('npm', ['view', name, 'dist-tags.latest'], { encoding: 'utf8' }).trim() || undefined
-  }
-  catch {
-    return undefined
-  }
+  return execFileSync('npm', ['view', name, 'dist-tags.latest'], { encoding: 'utf8' }).trim()
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
   const version = process.argv[2] ?? pkg.version
-  const currentLatest = process.argv[3] ?? npmLatest(pkg.name)
+  let currentLatest = process.argv[3]
+  // A stable release needs npm's current `latest` to pick its tag. Publishing
+  // with an explicit `--tag latest` skips npm's check against moving `latest`
+  // backwards, so if the lookup fails, stop rather than guess.
+  if (currentLatest === undefined && !version.split('+')[0].includes('-')) {
+    try {
+      currentLatest = npmLatest(pkg.name)
+    }
+    catch (error) {
+      process.stderr.write(`Could not read the \`latest\` dist-tag of ${pkg.name} from npm, refusing to pick a tag: ${error.message}\n`)
+      process.exit(1)
+    }
+    if (!currentLatest) {
+      process.stderr.write(`npm returned no \`latest\` dist-tag for ${pkg.name}, refusing to pick a tag\n`)
+      process.exit(1)
+    }
+  }
   process.stdout.write(`${distTag(version, currentLatest)}\n`)
 }
