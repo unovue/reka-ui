@@ -5,8 +5,8 @@ export interface RangeCalendarGridProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { computed } from 'vue'
+import { Primitive } from '@/Primitive'
 import { injectRangeCalendarRootContext } from './RangeCalendarRoot.vue'
 
 const props = withDefaults(defineProps<RangeCalendarGridProps>(), { as: 'table' })
@@ -21,11 +21,12 @@ const readonly = computed(() => rootContext.readonly.value ? true : undefined)
   <Primitive
     v-bind="props"
     tabindex="-1"
-    role="grid"
+    role="application"
     :aria-readonly="readonly"
     :aria-disabled="disabled"
     :data-readonly="readonly && ''"
     :data-disabled="disabled && ''"
+    @mouseleave="rootContext.focusedValue.value = undefined"
   >
     <slot />
   </Primitive>

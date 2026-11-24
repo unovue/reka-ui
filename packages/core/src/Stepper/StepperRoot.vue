@@ -1,11 +1,11 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { Ref } from 'vue'
 import type { DataOrientation, Direction } from '../shared/types'
+import type { PrimitiveProps } from '@/Primitive'
+import { useMutationObserver, useVModel } from '@vueuse/core'
+import { computed, nextTick, ref, toRefs, watch, watchPostEffect } from 'vue'
 import { Primitive } from '@/Primitive'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
-import { useVModel } from '@vueuse/core'
-import { computed, nextTick, ref, toRefs, watch } from 'vue'
+import { createRekaContext, useDirection, useForwardExpose } from '@/shared'
 
 export interface StepperRootContext {
   modelValue: Ref<number | undefined>
@@ -14,6 +14,7 @@ export interface StepperRootContext {
   dir: Ref<Direction>
   linear: Ref<boolean>
   totalStepperItems: Ref<Set<HTMLElement>>
+  stepperItemValues: Map<HTMLElement, () => number>
 }
 
 export interface StepperRootProps extends PrimitiveProps {
@@ -35,6 +36,8 @@ export interface StepperRootProps extends PrimitiveProps {
   modelValue?: number
   /** Whether or not the steps must be completed in order. */
   linear?: boolean
+  /** Customize the live announcement using the active step's one-based position and total. Set to `false` to disable the built-in live region. */
+  announce?: ((step: number, total: number) => string) | false
 }
 export type StepperRootEmits = {
   /** Event handler called when the value changes */
@@ -42,7 +45,7 @@ export type StepperRootEmits = {
 }
 
 export const [injectStepperRootContext, provideStepperRootContext]
-  = createContext<StepperRootContext>('StepperRoot')
+  = createRekaContext<StepperRootContext>('StepperRoot')
 </script>
 
 <script setup lang="ts">
@@ -50,11 +53,12 @@ const props = withDefaults(defineProps<StepperRootProps>(), {
   orientation: 'horizontal',
   linear: true,
   defaultValue: 1,
+  announce: undefined,
 })
 const emits = defineEmits<StepperRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current step */
     modelValue: number | undefined
     /** Total number of steps */
@@ -73,14 +77,18 @@ defineSlots<{
     nextStep: () => void
     /** Go to the previous step */
     prevStep: () => void
+    /** Whether or not there is a next step */
+    hasNext: () => boolean
+    /** Whether or not there is a previous step */
+    hasPrev: () => boolean
   }) => any
 }>()
 
 const { dir: propDir, orientation: propOrientation, linear } = toRefs(props)
 const dir = useDirection(propDir)
-useForwardExpose()
 
 const totalStepperItems = ref<Set<HTMLElement>>(new Set())
+const stepperItemValues = new Map<HTMLElement, () => number>()
 
 const modelValue = useVModel(props, 'modelValue', emits, {
   defaultValue: props.defaultValue,
@@ -93,6 +101,22 @@ const isFirstStep = computed(() => modelValue.value === 1)
 const isLastStep = computed(() => modelValue.value === totalStepperItemsArray.value.length)
 
 const totalSteps = computed(() => totalStepperItems.value.size)
+const announcement = ref('')
+
+function updateAnnouncement() {
+  const orderedItems = [...totalStepperItems.value]
+    .sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
+  const step = orderedItems.findIndex(item => stepperItemValues.get(item)?.() === modelValue.value) + 1
+  if (!step || props.announce === false) {
+    announcement.value = ''
+    return
+  }
+  // Anything that is not a function (e.g. a bare `announce` attribute cast to `true`) uses the default text.
+  const custom = typeof props.announce === 'function' ? props.announce(step, orderedItems.length) : undefined
+  announcement.value = custom ?? `Step ${step} of ${orderedItems.length}`
+}
+
+watchPostEffect(updateAnnouncement)
 
 function goToStep(step: number) {
   if (step > totalSteps.value)
@@ -111,6 +135,23 @@ function goToStep(step: number) {
 
   modelValue.value = step
 }
+
+function nextStep() {
+  goToStep((modelValue.value ?? 1) + 1)
+}
+
+function prevStep() {
+  goToStep((modelValue.value ?? 1) - 1)
+}
+
+function hasNext() {
+  return (modelValue.value ?? 1) < totalSteps.value
+}
+
+function hasPrev() {
+  return (modelValue.value ?? 1) > 1
+}
+
 const nextStepperItem = ref<HTMLElement | null>(null)
 const prevStepperItem = ref<HTMLElement | null>(null)
 const isNextDisabled = computed(() => nextStepperItem.value ? nextStepperItem.value.getAttribute('disabled') === '' : true)
@@ -138,11 +179,31 @@ provideStepperRootContext({
   dir,
   linear,
   totalStepperItems,
+  stepperItemValues,
 })
+
+defineExpose({
+  goToStep,
+  nextStep,
+  prevStep,
+  modelValue,
+  totalSteps,
+  isNextDisabled,
+  isPrevDisabled,
+  isFirstStep,
+  isLastStep,
+  hasNext,
+  hasPrev,
+})
+
+const { forwardRef, currentElement } = useForwardExpose()
+// Keyed moves inside nested components do not update the root or registration set.
+useMutationObserver(currentElement, updateAnnouncement, { childList: true, subtree: true })
 </script>
 
 <template>
   <Primitive
+    :ref="forwardRef"
     role="group"
     aria-label="progress"
     :as="as"
@@ -158,11 +219,14 @@ provideStepperRootContext({
       :is-first-step="isFirstStep"
       :is-last-step="isLastStep"
       :go-to-step="goToStep"
-      :next-step="() => goToStep((modelValue ?? 1) + 1)"
-      :prev-step="() => goToStep((modelValue ?? 1) - 1)"
+      :next-step="nextStep"
+      :prev-step="prevStep"
+      :has-next="hasNext"
+      :has-prev="hasPrev"
     />
 
     <div
+      v-if="announce !== false"
       aria-live="polite"
       aria-atomic="true"
       role="status"
@@ -174,7 +238,7 @@ provideStepperRootContext({
         margin: 0,
       }"
     >
-      Step {{ modelValue }} of {{ totalStepperItems.size }}
+      {{ announcement }}
     </div>
   </Primitive>
 </template>

@@ -328,7 +328,7 @@ Adheres to the [Tree WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/pa
 <KeyboardTable
   :data="[
     {
-      keys: ['Enter'],
+      keys: ['Enter', 'Space'],
       description: 'When highlight on <code>TreeItem</code>, selects the focused item.',
     },
     {

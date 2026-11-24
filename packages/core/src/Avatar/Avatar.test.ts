@@ -1,7 +1,7 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { findByAltText, findByText, queryByText, waitForElementToBeRemoved } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { nextTick } from 'vue'
 import Avatar from './story/_Avatar.vue'
@@ -48,8 +48,11 @@ describe('given an Avatar with fallback and a working image', async () => {
   let wrapper: VueWrapper<InstanceType<typeof Avatar>>
   beforeAll(async () => {
     (window.Image as any) = ImgClass
-    wrapper = mount(Avatar)
+    // Attached so `toHaveStyle` can read computed styles: detached elements have none.
+    wrapper = mount(Avatar, { attachTo: document.body })
   })
+
+  afterAll(() => wrapper.unmount())
 
   it('should render the fallback initially', async () => {
     await nextTick()

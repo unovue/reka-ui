@@ -1,5 +1,6 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'defaultOpen',
@@ -20,6 +21,13 @@
     'description': '<p>The controlled open state of the popover.</p>\n',
     'type': 'boolean',
     'required': false
+  },
+  {
+    'name': 'unmountOnHide',
+    'description': '<p>When set to <code>false</code>, the popover content will not be unmounted when closed, but instead hidden with CSS. &lt;br&gt;\nUseful when you want to keep the state of the content, or to improve performance by not remounting it on every open.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'true'
   }
 ]" />
 
@@ -36,5 +44,37 @@
     'name': 'open',
     'description': '<p>Current open state</p>\n',
     'type': 'boolean'
+  },
+  {
+    'name': 'close',
+    'description': '<p>Close the popover</p>\n',
+    'type': '(): void'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `defaultOpen` | The open state of the popover when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
+| `modal` | The modality of the popover. When set to true, interaction with outside elements will be disabled and only popover content will be visible to screen readers. | `boolean` | No | `false` |
+| `open` | The controlled open state of the popover. | `boolean` | No | - |
+| `unmountOnHide` | When set to false, the popover content will not be unmounted when closed, but instead hidden with CSS. <br> Useful when you want to keep the state of the content, or to improve performance by not remounting it on every open. | `boolean` | No | `true` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:open` | Event handler called when the open state of the popover changes. | `[value: boolean]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `open` | Current open state | `boolean` |
+| `close` | Close the popover | `(): void` |
+
+</llm-only>

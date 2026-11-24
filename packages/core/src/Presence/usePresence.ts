@@ -1,14 +1,24 @@
 import type { Ref } from 'vue'
-import { useStateMachine } from '@/shared'
 import { defaultWindow } from '@vueuse/core'
 import { isClient } from '@vueuse/shared'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
+import { useStateMachine } from '@/shared'
 
+/**
+ * Keep content mounted until its exit animation completes.
+ *
+ * The node watcher releases live computed styles, animation listeners, and
+ * pending fill-mode timers when the node changes or the component unmounts.
+ *
+ * @param present - Whether the content is requested to be present.
+ * @param node - The active content element, or undefined after removal.
+ * @returns An object containing `isPresent`, which stays true during exit animations.
+ */
 export function usePresence(
   present: Ref<boolean>,
   node: Ref<HTMLElement | undefined>,
 ) {
-  const stylesRef = ref<CSSStyleDeclaration>({} as any)
+  const stylesRef = ref<CSSStyleDeclaration>()
   const prevAnimationNameRef = ref<string>('none')
   const prevPresentRef = ref(present)
   const initialState = present.value ? 'mounted' : 'unmounted'
@@ -38,20 +48,29 @@ export function usePresence(
     }
   }
 
+  let isEnterPending = false
+  const dispatchEnter = () => {
+    dispatchCustomEvent('enter')
+    if (getAnimationName(node.value) === 'none')
+      dispatchCustomEvent('after-enter')
+  }
+
   watch(
     present,
     async (currentPresent, prevPresent) => {
       const hasPresentChanged = prevPresent !== currentPresent
       await nextTick()
       if (hasPresentChanged) {
+        isEnterPending = false
         const prevAnimationName = prevAnimationNameRef.value
         const currentAnimationName = getAnimationName(node.value)
 
         if (currentPresent) {
           dispatch('MOUNT')
-          dispatchCustomEvent('enter')
-          if (currentAnimationName === 'none')
-            dispatchCustomEvent('after-enter')
+          if (node.value)
+            dispatchEnter()
+          else
+            isEnterPending = true
         }
         else if (
           currentAnimationName === 'none' || currentAnimationName === 'undefined'
@@ -91,12 +110,15 @@ export function usePresence(
    * make sure we only trigger ANIMATION_END for the currently active animation.
    */
   const handleAnimationEnd = (event: AnimationEvent) => {
+    if (event.target !== node.value)
+      return
+
     const currentAnimationName = getAnimationName(node.value)
     const isCurrentAnimation = currentAnimationName.includes(
-      event.animationName,
+      CSS.escape(event.animationName),
     )
     const directionName = state.value === 'mounted' ? 'enter' : 'leave'
-    if (event.target === node.value && isCurrentAnimation) {
+    if (isCurrentAnimation) {
       dispatchCustomEvent(`after-${directionName}`)
       dispatch('ANIMATION_END')
 
@@ -115,7 +137,7 @@ export function usePresence(
       }
     }
     // if no animation, immediately trigger 'ANIMATION_END'
-    if (event.target === node.value && currentAnimationName === 'none')
+    if (currentAnimationName === 'none')
       dispatch('ANIMATION_END')
   }
   const handleAnimationStart = (event: AnimationEvent) => {
@@ -127,37 +149,45 @@ export function usePresence(
 
   const watcher = watch(
     node,
-    (newNode, oldNode) => {
+    (newNode, _, onCleanup) => {
       if (newNode) {
         stylesRef.value = getComputedStyle(newNode)
         newNode.addEventListener('animationstart', handleAnimationStart)
         newNode.addEventListener('animationcancel', handleAnimationEnd)
         newNode.addEventListener('animationend', handleAnimationEnd)
+        onCleanup(() => {
+          // Computed styles are live and retain their element.
+          stylesRef.value = undefined
+          if (timeoutId !== undefined)
+            ownerWindow?.clearTimeout(timeoutId)
+          newNode.removeEventListener('animationstart', handleAnimationStart)
+          newNode.removeEventListener('animationcancel', handleAnimationEnd)
+          newNode.removeEventListener('animationend', handleAnimationEnd)
+        })
+        if (isEnterPending) {
+          isEnterPending = false
+          dispatchEnter()
+        }
       }
       else {
         // Transition to the unmounted state if the node is removed prematurely.
         // We avoid doing so during cleanup as the node may change but still exist.
         dispatch('ANIMATION_END')
-
-        if (timeoutId !== undefined)
-          ownerWindow?.clearTimeout(timeoutId)
-        oldNode?.removeEventListener('animationstart', handleAnimationStart)
-        oldNode?.removeEventListener('animationcancel', handleAnimationEnd)
-        oldNode?.removeEventListener('animationend', handleAnimationEnd)
       }
     },
     { immediate: true },
   )
 
-  const stateWatcher = watch(state, () => {
-    const currentAnimationName = getAnimationName(node.value)
-    prevAnimationNameRef.value
-      = state.value === 'mounted' ? currentAnimationName : 'none'
+  const stateWatcher = watch(state, (value) => {
+    // Read styles only when the name is kept: a read while siblings unmount forces a style recalculation each.
+    prevAnimationNameRef.value = value === 'mounted' ? getAnimationName(node.value) : 'none'
   })
 
   onUnmounted(() => {
     watcher()
     stateWatcher()
+    if (timeoutId !== undefined)
+      ownerWindow?.clearTimeout(timeoutId)
   })
 
   const isPresent = computed(() =>

@@ -1,5 +1,6 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'as',
@@ -17,7 +18,13 @@
   {
     'name': 'by',
     'description': '<p>Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared.</p>\n',
-    'type': 'string | ((a: AcceptableValue, b: AcceptableValue) => boolean)',
+    'type': 'string | ((a: T, b: T) =&gt; boolean)',
+    'required': false
+  },
+  {
+    'name': 'clearValue',
+    'description': '<p>A function returning the value the <code>modelValue</code> is reset to when the combobox is cleared\nand <code>resetModelValueOnClear</code> is <code>true</code>, e.g. <code>() =&gt; undefined</code>. &lt;br&gt;\nWhen omitted, the <code>modelValue</code> is reset to <code>null</code> (or <code>[]</code> if <code>multiple</code>). &lt;br&gt;\nIf <code>multiple</code>, return the array to reset to: any other result is ignored and <code>[]</code> is used.</p>\n<p>A controlled combobox that is also given a <code>defaultValue</code> falls back to that default\nwhenever its <code>modelValue</code> is <code>undefined</code>, so do not combine the two when clearing to <code>undefined</code>.</p>\n',
+    'type': '(() =&gt; ClearValue)',
     'required': false
   },
   {
@@ -29,7 +36,7 @@
   {
     'name': 'defaultValue',
     'description': '<p>The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox</p>\n',
-    'type': 'AcceptableValue | AcceptableValue[]',
+    'type': 'T | T[]',
     'required': false
   },
   {
@@ -48,7 +55,8 @@
     'name': 'highlightOnHover',
     'description': '<p>When <code>true</code>, hover over item will trigger highlight</p>\n',
     'type': 'boolean',
-    'required': false
+    'required': false,
+    'default': 'true'
   },
   {
     'name': 'ignoreFilter',
@@ -57,16 +65,15 @@
     'required': false
   },
   {
-    'name': 'max',
-    'description': '<p>Maximum number of options that can be selected.\nOnly applies when <code>multiple</code> is <code>true</code>.\nWhen <code>0</code>, there is no limit.</p>\n',
-    'type': 'number',
-    'required': false,
-    'default': '0'
+    'name': 'loop',
+    'description': '<p>When <code>true</code>, keyboard navigation will loop from last item to first, and vice versa.</p>\n',
+    'type': 'boolean',
+    'required': false
   },
   {
     'name': 'modelValue',
-    'description': '<p>The controlled value of the listbox. Can be binded with with <code>v-model</code>.</p>\n',
-    'type': 'AcceptableValue | AcceptableValue[]',
+    'description': '<p>The controlled value of the listbox. Can be binded with <code>v-model</code>.</p>\n',
+    'type': 'T | T[]',
     'required': false
   },
   {
@@ -83,15 +90,36 @@
   },
   {
     'name': 'open',
-    'description': '<p>The controlled open state of the Combobox. Can be binded with with <code>v-model:open</code>.</p>\n',
+    'description': '<p>The controlled open state of the Combobox. Can be binded with <code>v-model:open</code>.</p>\n',
     'type': 'boolean',
     'required': false
+  },
+  {
+    'name': 'openOnClick',
+    'description': '<p>Whether to open the combobox when the input is clicked</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
+  },
+  {
+    'name': 'openOnFocus',
+    'description': '<p>Whether to open the combobox when the input is focused</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
   },
   {
     'name': 'required',
     'description': '<p>When <code>true</code>, indicates that the user must set the value before the owning form can be submitted.</p>\n',
     'type': 'boolean',
     'required': false
+  },
+  {
+    'name': 'resetModelValueOnClear',
+    'description': '<p>When <code>true</code> the <code>modelValue</code> will be reset to <code>null</code> (or <code>[]</code> if <code>multiple</code>). &lt;br&gt;\nUse <code>clearValue</code> to reset to another value.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
   },
   {
     'name': 'resetSearchTermOnBlur',
@@ -106,6 +134,13 @@
     'type': 'boolean',
     'required': false,
     'default': 'true'
+  },
+  {
+    'name': 'unmountOnHide',
+    'description': '<p>When set to <code>false</code>, the Combobox content will not be unmounted when closed, but instead hidden with CSS. &lt;br&gt;\nUseful when you want to improve performance by not remounting the content on every open.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'true'
   }
 ]" />
 
@@ -113,17 +148,12 @@
   {
     'name': 'highlight',
     'description': '<p>Event handler when highlighted element changes.</p>\n',
-    'type': '[payload: { ref: HTMLElement; value: AcceptableValue; }]'
-  },
-  {
-    'name': 'invalid',
-    'description': '<p>Event handler called when the value is invalid</p>\n',
-    'type': '[payload: AcceptableValue]'
+    'type': '[payload: { ref: HTMLElement; value: T; }]'
   },
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes.</p>\n',
-    'type': '[value: AcceptableValue]'
+    'type': '[value: T | ClearValue]'
   },
   {
     'name': 'update:open',
@@ -141,6 +171,53 @@
   {
     'name': 'modelValue',
     'description': '<p>Current active value</p>\n',
-    'type': 'AcceptableValue | AcceptableValue[]'
+    'type': 'T | T[]'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. | `string \| ((a: T, b: T) => boolean)` | No | - |
+| `clearValue` | A function returning the value the modelValue is reset to when the combobox is cleared and resetModelValueOnClear is true, e.g. () => undefined. <br> When omitted, the modelValue is reset to null (or [] if multiple). <br> If multiple, return the array to reset to: any other result is ignored and [] is used. A controlled combobox that is also given a defaultValue falls back to that default whenever its modelValue is undefined, so do not combine the two when clearing to undefined. | `(() => ClearValue)` | No | - |
+| `defaultOpen` | The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. | `boolean` | No | - |
+| `defaultValue` | The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox | `T \| T[]` | No | - |
+| `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | When true, prevents the user from interacting with listbox | `boolean` | No | - |
+| `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | `true` |
+| `ignoreFilter` | When true, disable the default filters | `boolean` | No | - |
+| `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
+| `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `T \| T[]` | No | - |
+| `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
+| `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
+| `open` | The controlled open state of the Combobox. Can be binded with v-model:open. | `boolean` | No | - |
+| `openOnClick` | Whether to open the combobox when the input is clicked | `boolean` | No | `false` |
+| `openOnFocus` | Whether to open the combobox when the input is focused | `boolean` | No | `false` |
+| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `resetModelValueOnClear` | When true the modelValue will be reset to null (or [] if multiple). <br> Use clearValue to reset to another value. | `boolean` | No | `false` |
+| `resetSearchTermOnBlur` | Whether to reset the searchTerm when the Combobox input blurred | `boolean` | No | `true` |
+| `resetSearchTermOnSelect` | Whether to reset the searchTerm when the Combobox value is selected | `boolean` | No | `true` |
+| `unmountOnHide` | When set to false, the Combobox content will not be unmounted when closed, but instead hidden with CSS. <br> Useful when you want to improve performance by not remounting the content on every open. | `boolean` | No | `true` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: T; }]` |
+| `update:modelValue` | Event handler called when the value changes. | `[value: T \| ClearValue]` |
+| `update:open` | Event handler called when the open state of the combobox changes. | `[value: boolean]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `open` | Current open state | `boolean` |
+| `modelValue` | Current active value | `T \| T[]` |
+
+</llm-only>

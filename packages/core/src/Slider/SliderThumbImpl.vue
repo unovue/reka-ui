@@ -7,11 +7,11 @@ export interface SliderThumbImplProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { useMounted } from '@vueuse/core'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose, useSize } from '@/shared'
-import { useMounted } from '@vueuse/core'
-import { computed, onMounted, onUnmounted } from 'vue'
 import { injectSliderRootContext } from './SliderRoot.vue'
 import { convertValueToPercentage, getLabel, getThumbInBoundsOffset, injectSliderOrientationContext } from './utils'
 
@@ -42,12 +42,37 @@ const thumbInBoundsOffset = computed(() => {
 })
 
 const isMounted = useMounted()
+// Keep the mounted element: the template ref is already null by the time `onUnmounted` runs.
+let mountedThumb: HTMLElement | undefined
 onMounted(() => {
-  rootContext.thumbElements.value.push(thumbElement.value)
+  // An `asChild` thumb that rendered no element has nothing to register.
+  if (!(thumbElement.value instanceof Element))
+    return
+  mountedThumb = thumbElement.value
+  const thumbs = rootContext.thumbElements.value
+  const active = rootContext.valueIndexToChangeRef
+  const activeThumb = thumbs[active.value]
+  // Insert in DOM order: thumb indexes come from the collection, so a reinserted thumb must not land at the end.
+  const next = thumbs.findIndex(thumb => mountedThumb!.compareDocumentPosition(thumb) & Node.DOCUMENT_POSITION_FOLLOWING)
+  thumbs.splice(next === -1 ? thumbs.length : next, 0, mountedThumb)
+  // Keep the active index on the same thumb when this one lands before it.
+  if (activeThumb)
+    active.value = thumbs.indexOf(activeThumb)
 })
 onUnmounted(() => {
-  const i = rootContext.thumbElements.value.findIndex(i => i === thumbElement.value) ?? -1
-  rootContext.thumbElements.value.splice(i, 1)
+  if (!mountedThumb)
+    return
+  const thumbs = rootContext.thumbElements.value
+  const i = thumbs.indexOf(mountedThumb)
+  mountedThumb = undefined
+  if (i === -1)
+    return
+  thumbs.splice(i, 1)
+  // Keep the active index pointing at the same thumb, or at a thumb that still exists.
+  const active = rootContext.valueIndexToChangeRef
+  if (i < active.value)
+    active.value--
+  active.value = Math.min(active.value, Math.max(thumbs.length - 1, 0))
 })
 </script>
 
@@ -59,6 +84,7 @@ onUnmounted(() => {
       role="slider"
       :tabindex="rootContext.disabled.value ? undefined : 0"
       :aria-label="$attrs['aria-label'] || label"
+      :aria-disabled="rootContext.disabled.value || undefined"
       :data-disabled="rootContext.disabled.value ? '' : undefined"
       :data-orientation="rootContext.orientation.value"
       :aria-valuenow="value"

@@ -12,6 +12,11 @@ export function validatePanelGroupLayout({
   panelConstraints: PanelConstraints[]
 }): number[] {
   const nextLayout = [...prevLayout]
+
+  // An empty group has no sizes to total, so 0 !== 100 here is not a misconfiguration
+  if (nextLayout.length === 0 && panelConstraints.length === 0)
+    return nextLayout
+
   const nextLayoutTotalSize = nextLayout.reduce(
     (accumulated, current) => accumulated + current,
     0,
@@ -112,11 +117,12 @@ export function validatePanelConstraints({
       defaultSize,
       maxSize = 100,
       minSize = 0,
+      sizeUnit = '%',
     } = panelConstraints
 
     if (minSize > maxSize) {
       warnings.push(
-        `min size (${minSize}%) should not be greater than max size (${maxSize}%)`,
+        `min size (${minSize}${sizeUnit}) should not be greater than max size (${maxSize}${sizeUnit})`,
       )
     }
 
@@ -131,7 +137,7 @@ export function validatePanelConstraints({
         warnings.push('default size should not be less than min size')
       }
 
-      if (defaultSize > 100)
+      if (sizeUnit === '%' && defaultSize > 100)
         warnings.push('default size should not be greater than 100')
       else if (defaultSize > maxSize)
         warnings.push('default size should not be greater than max size')

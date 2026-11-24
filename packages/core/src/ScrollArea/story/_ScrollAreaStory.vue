@@ -35,6 +35,8 @@ const props = withDefaults(defineProps<Props>(), {
     <ScrollAreaScrollbar
       v-if="vertical"
       class="flex select-none touch-none p-0.5 bg-black/10 transition hover:bg-black/20 data-[orientation=vertical]:w-[var(--scrollbar-size)]"
+      :class="[animated
+        && 'data-[state=visible]:animate-fadeIn data-[state=hidden]:animate-fadeOut']"
       orientation="vertical"
     >
       <ScrollAreaThumb
@@ -49,6 +51,8 @@ const props = withDefaults(defineProps<Props>(), {
     <ScrollAreaScrollbar
       v-if="horizontal"
       class="flex select-none touch-none p-0.5 bg-black/10 transition hover:bg-black/20 data-[orientation=horizontal]:flex-col data-[orientation=horizontal]:h-[var(--scrollbar-size)]"
+      :class="[animated
+        && 'data-[state=visible]:animate-fadeIn data-[state=hidden]:animate-fadeOut']"
       orientation="horizontal"
     >
       <ScrollAreaThumb

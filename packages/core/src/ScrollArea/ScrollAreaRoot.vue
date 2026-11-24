@@ -1,8 +1,8 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { Ref } from 'vue'
 import type { Direction, ScrollType } from './types'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
+import type { PrimitiveProps } from '@/Primitive'
+import { createRekaContext, useDirection, useForwardExpose } from '@/shared'
 
 export interface ScrollAreaRootContext {
   type: Ref<ScrollType>
@@ -26,7 +26,7 @@ export interface ScrollAreaRootContext {
 }
 
 export const [injectScrollAreaRootContext, provideScrollAreaRootContext]
-  = createContext<ScrollAreaRootContext>('ScrollAreaRoot')
+  = createRekaContext<ScrollAreaRootContext>('ScrollAreaRoot')
 
 export interface ScrollAreaRootProps extends PrimitiveProps {
   /**
@@ -35,7 +35,8 @@ export interface ScrollAreaRootProps extends PrimitiveProps {
    * `auto` - means that scrollbars are visible when content is overflowing on the corresponding orientation. <br>
    * `always` - means that scrollbars are always visible regardless of whether the content is overflowing.<br>
    * `scroll` - means that scrollbars are visible when the user is scrolling along its corresponding orientation.<br>
-   * `hover` - when the user is scrolling along its corresponding orientation and when the user is hovering over the scroll area.
+   * `hover` - when the user is scrolling along its corresponding orientation and when the user is hovering over the scroll area.<br>
+   * `glimpse` - a hybrid approach that briefly shows scrollbars when the user enters the scroll area, then hides them until further interaction.
    */
   type?: ScrollType
   /** The reading direction of the combobox when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. */
@@ -46,8 +47,8 @@ export interface ScrollAreaRootProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { ref, toRefs } from 'vue'
+import { Primitive } from '@/Primitive'
 
 const props = withDefaults(defineProps<ScrollAreaRootProps>(), {
   type: 'hover',

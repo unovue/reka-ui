@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { DataOrientation } from '../types'
+import type { PrimitiveProps } from '@/Primitive'
 
 export interface BaseSeparatorProps extends PrimitiveProps {
   /**
@@ -18,8 +18,8 @@ export interface BaseSeparatorProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { computed } from 'vue'
+import { Primitive } from '@/Primitive'
 
 const props = withDefaults(defineProps<BaseSeparatorProps>(), {
   orientation: 'horizontal',

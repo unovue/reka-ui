@@ -1,5 +1,6 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
   {
     'name': 'defaultValue',
@@ -25,6 +26,13 @@
     'description': '<p>The controlled value of the menu to open. Can be used as <code>v-model</code>.</p>\n',
     'type': 'string',
     'required': false
+  },
+  {
+    'name': 'unmountOnHide',
+    'description': '<p>When set to <code>false</code>, the content of each menu and its submenus will not be unmounted when closed, but instead hidden with CSS.</p>\n<p>Useful when you want to keep the state of the content, or to improve performance by not remounting it on every open.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'true'
   }
 ]" />
 
@@ -43,3 +51,30 @@
     'type': 'string'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `defaultValue` | The value of the menu that should be open when initially rendered. Use when you do not need to control the value state. | `string` | No | - |
+| `dir` | The reading direction of the combobox when applicable. If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
+| `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | `false` |
+| `modelValue` | The controlled value of the menu to open. Can be used as v-model. | `string` | No | - |
+| `unmountOnHide` | When set to false, the content of each menu and its submenus will not be unmounted when closed, but instead hidden with CSS. Useful when you want to keep the state of the content, or to improve performance by not remounting it on every open. | `boolean` | No | `true` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:modelValue` | Event handler called when the value changes. | `[value: boolean]` |
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `modelValue` | Current input values | `string` |
+
+</llm-only>

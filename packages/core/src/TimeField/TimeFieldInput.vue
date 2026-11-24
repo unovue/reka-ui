@@ -1,9 +1,9 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import type { SegmentPart } from '@/shared/date'
+import { computed, ref } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useDateField } from '@/shared/date/useDateField'
-import { computed, ref } from 'vue'
 import { injectTimeFieldRootContext } from './TimeFieldRoot.vue'
 
 export interface TimeFieldInputProps extends PrimitiveProps {
@@ -23,12 +23,18 @@ const lastKeyZero = ref(false)
 const {
   handleSegmentClick,
   handleSegmentKeydown,
+  handleSegmentBeforeInput,
+  handleSegmentCompositionStart,
+  handleSegmentCompositionEnd,
+  handleSegmentFocusOut,
   attributes,
 } = useDateField({
   hasLeftFocus,
   lastKeyZero,
   placeholder: rootContext.placeholder,
   hourCycle: rootContext.hourCycle,
+  step: rootContext.step,
+  stepSnapping: rootContext.stepSnapping,
   segmentValues: rootContext.segmentValues,
   formatter: rootContext.formatter,
   part: props.part,
@@ -58,7 +64,13 @@ const isInvalid = computed(() => rootContext.isInvalid.value)
     v-on="part !== 'literal' ? {
       mousedown: handleSegmentClick,
       keydown: handleSegmentKeydown,
-      focusout: () => { hasLeftFocus = true },
+      beforeinput: handleSegmentBeforeInput,
+      compositionstart: handleSegmentCompositionStart,
+      compositionend: handleSegmentCompositionEnd,
+      focusout: () => {
+        hasLeftFocus = true
+        handleSegmentFocusOut()
+      },
       focusin: (e: FocusEvent) => {
         rootContext.setFocusedElement(e.target as HTMLElement)
       },

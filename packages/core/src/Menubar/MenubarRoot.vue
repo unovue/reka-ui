@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { Direction } from '../shared/types'
 import { useCollection } from '@/Collection'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
+import { createRekaContext, useDirection, useForwardExpose } from '@/shared'
 
 export interface MenubarRootProps {
   /** The controlled value of the menu to open. Can be used as `v-model`. */
@@ -17,6 +17,13 @@ export interface MenubarRootProps {
   dir?: Direction
   /** When `true`, keyboard navigation will loop from last item to first, and vice versa. */
   loop?: boolean
+  /**
+   * When set to `false`, the content of each menu and its submenus will not be unmounted when closed, but instead hidden with CSS.
+   *
+   * Useful when you want to keep the state of the content, or to improve performance by not remounting it on every open.
+   * @defaultValue true
+   */
+  unmountOnHide?: boolean
 }
 export type MenubarRootEmits = {
   /** Event handler called when the value changes. */
@@ -27,28 +34,31 @@ export interface MenubarRootContext {
   modelValue: Ref<string>
   dir: Ref<Direction>
   loop: Ref<boolean>
+  unmountOnHide: Ref<boolean>
   onMenuOpen: (value: string) => void
   onMenuClose: () => void
   onMenuToggle: (value: string) => void
 }
 
 export const [injectMenubarRootContext, provideMenubarRootContext]
-  = createContext<MenubarRootContext>('MenubarRoot')
+  = createRekaContext<MenubarRootContext>('MenubarRoot')
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
-import { RovingFocusGroup } from '@/RovingFocus'
 import { useVModel } from '@vueuse/core'
 import { ref, toRefs } from 'vue'
+import { Primitive } from '@/Primitive'
+import { RovingFocusGroup } from '@/RovingFocus'
+import { provideRovingFocusNoActiveItem } from '@/RovingFocus/RovingFocusGroup.vue'
 
 const props = withDefaults(defineProps<MenubarRootProps>(), {
   loop: false,
+  unmountOnHide: true,
 })
 const emit = defineEmits<MenubarRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current input values */
     modelValue: typeof modelValue.value
   }) => any
@@ -64,12 +74,13 @@ const modelValue = useVModel(props, 'modelValue', emit, {
 
 const currentTabStopId = ref<string | null>(null)
 
-const { dir: propDir, loop } = toRefs(props)
+const { dir: propDir, loop, unmountOnHide } = toRefs(props)
 const dir = useDirection(propDir)
 provideMenubarRootContext({
   modelValue,
   dir,
   loop,
+  unmountOnHide,
   onMenuOpen: (value) => {
     modelValue.value = value
     currentTabStopId.value = value
@@ -84,6 +95,9 @@ provideMenubarRootContext({
     currentTabStopId.value = value
   },
 })
+
+// Menubar triggers are never active.
+provideRovingFocusNoActiveItem(() => true)
 </script>
 
 <template>

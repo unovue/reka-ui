@@ -1,7 +1,8 @@
 <script lang="ts">
+import type { EventHookOn } from '@vueuse/core'
 import type { Ref } from 'vue'
 import type { Direction } from './utils'
-import { createContext, useDirection } from '@/shared'
+import { createRekaContext, useDirection } from '@/shared'
 import { useIsUsingKeyboard } from '@/shared/useIsUsingKeyboard'
 
 export interface MenuContext {
@@ -9,6 +10,20 @@ export interface MenuContext {
   onOpenChange: (open: boolean) => void
   content: Ref<HTMLElement | undefined>
   onContentChange: (content: HTMLElement | undefined) => void
+  /**
+   * Internal: registers a handler for when a content kept mounted while closed
+   * (`unmountOnHide: false`) is hidden, which no unmount reports.
+   */
+  onContentHide: EventHookOn<MenuContentHideEvent>
+  /** Internal: called by the content when it is hidden while kept mounted. */
+  contentHidden: (event: MenuContentHideEvent) => void
+}
+
+export interface MenuContentHideEvent {
+  /** The focus scope of the content that was hidden. */
+  container: HTMLElement | undefined
+  /** The element that had focus before the content was shown, which an unmount would focus back. */
+  focusedBeforeShow: HTMLElement | null
 }
 
 export interface MenuRootContext {
@@ -16,6 +31,7 @@ export interface MenuRootContext {
   dir: Ref<Direction>
   isUsingKeyboardRef: Ref<boolean>
   modal: Ref<boolean>
+  unmountOnHide: Ref<boolean>
 }
 
 export interface MenuProps {
@@ -33,6 +49,13 @@ export interface MenuProps {
    * When set to `true`, interaction with outside elements will be disabled and only menu content will be visible to screen readers.
    */
   modal?: boolean
+  /**
+   * When set to `false`, the menu content and its submenus will not be unmounted when closed, but instead hidden with CSS.
+   *
+   * Useful when you want to keep the state of the content, or to improve performance by not remounting it on every open.
+   * @defaultValue true
+   */
+  unmountOnHide?: boolean
 }
 
 export type MenuEmits = {
@@ -40,32 +63,34 @@ export type MenuEmits = {
 }
 
 export const [injectMenuContext, provideMenuContext]
-  = createContext<MenuContext>(['MenuRoot', 'MenuSub'], 'MenuContext')
+  = createRekaContext<MenuContext>(['MenuRoot', 'MenuSub'], 'MenuContext')
 
 export const [injectMenuRootContext, provideMenuRootContext]
-  = createContext<MenuRootContext>('MenuRoot')
+  = createRekaContext<MenuRootContext>('MenuRoot')
 </script>
 
 <script setup lang="ts">
-import { PopperRoot } from '@/Popper'
-import { useVModel } from '@vueuse/core'
+import { createEventHook, useVModel } from '@vueuse/core'
 import {
   ref,
   toRefs,
 } from 'vue'
+import { PopperRoot } from '@/Popper'
 
 const props = withDefaults(defineProps<MenuProps>(), {
   open: false,
   modal: true,
+  unmountOnHide: true,
 })
 const emits = defineEmits<MenuEmits>()
-const { modal, dir: propDir } = toRefs(props)
+const { modal, dir: propDir, unmountOnHide } = toRefs(props)
 const dir = useDirection(propDir)
 
 const open = useVModel(props, 'open', emits)
 
 const content = ref<HTMLElement>()
 const isUsingKeyboardRef = useIsUsingKeyboard()
+const contentHide = createEventHook<MenuContentHideEvent>()
 
 provideMenuContext({
   open,
@@ -76,6 +101,8 @@ provideMenuContext({
   onContentChange: (element) => {
     content.value = element
   },
+  onContentHide: contentHide.on,
+  contentHidden: contentHide.trigger,
 })
 
 provideMenuRootContext({
@@ -85,11 +112,12 @@ provideMenuRootContext({
   isUsingKeyboardRef,
   dir,
   modal,
+  unmountOnHide,
 })
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="menu">
     <slot />
   </PopperRoot>
 </template>

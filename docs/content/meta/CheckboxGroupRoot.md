@@ -1,6 +1,13 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
 
+<llm-exclude>
 <PropsTable :data="[
+  {
+    'name': 'allValues',
+    'description': '<p>Every value a parent checkbox (<code>CheckboxRoot</code> with <code>parent</code>) controls. The parent is\nchecked when all of them are in the model, unchecked when none are, and indeterminate otherwise.</p>\n',
+    'type': 'T[]',
+    'required': false
+  },
   {
     'name': 'as',
     'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
@@ -17,7 +24,7 @@
   {
     'name': 'defaultValue',
     'description': '<p>The value of the checkbox when it is initially rendered. Use when you do not need to control its value.</p>\n',
-    'type': 'AcceptableValue[]',
+    'type': 'T[]',
     'required': false
   },
   {
@@ -39,9 +46,15 @@
     'required': false
   },
   {
+    'name': 'max',
+    'description': '<p>The maximum number of values that can be selected. Once reached, the unchecked\ncheckboxes get <code>aria-disabled</code> but stay focusable, so consider telling users\nabout the limit. Style them with <code>[aria-disabled=&quot;true&quot;]</code>.</p>\n',
+    'type': 'number | null',
+    'required': false
+  },
+  {
     'name': 'modelValue',
     'description': '<p>The controlled value of the checkbox. Can be binded with v-model.</p>\n',
-    'type': 'AcceptableValue[]',
+    'type': 'T[]',
     'required': false
   },
   {
@@ -75,6 +88,35 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value of the checkbox changes.</p>\n',
-    'type': '[value: AcceptableValue[]]'
+    'type': '[value: T[]]'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Props**
+
+| Name | Description | Type | Required | Default |
+| --- | --- | --- | --- | --- |
+| `allValues` | Every value a parent checkbox (CheckboxRoot with parent) controls. The parent is checked when all of them are in the model, unchecked when none are, and indeterminate otherwise. | `T[]` | No | - |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `defaultValue` | The value of the checkbox when it is initially rendered. Use when you do not need to control its value. | `T[]` | No | - |
+| `dir` | The direction of navigation between items. | `"ltr" \| "rtl"` | No | - |
+| `disabled` | When true, prevents the user from interacting with the checkboxes | `boolean` | No | - |
+| `loop` | Whether keyboard navigation should loop around | `boolean` | No | - |
+| `max` | The maximum number of values that can be selected. Once reached, the unchecked checkboxes get aria-disabled but stay focusable, so consider telling users about the limit. Style them with [aria-disabled="true"]. | `number \| null` | No | - |
+| `modelValue` | The controlled value of the checkbox. Can be binded with v-model. | `T[]` | No | - |
+| `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
+| `orientation` | The orientation of the group. Mainly so arrow navigation is done accordingly (left & right vs. up & down) | `"vertical" \| "horizontal"` | No | - |
+| `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
+| `rovingFocus` | When false, navigating through the items using arrow keys will be disabled. | `boolean` | No | `true` |
+
+**Events**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `update:modelValue` | Event handler called when the value of the checkbox changes. | `[value: T[]]` |
+
+</llm-only>

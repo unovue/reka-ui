@@ -1,9 +1,11 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
+import type { Ref } from 'vue'
+import type { ToastObject } from './createToastManager'
 import type { SwipeEvent } from './utils'
-import { useCollection } from '@/Collection'
-import { createContext, getActiveElement, useForwardExpose } from '@/shared'
+import type { PrimitiveProps } from '@/Primitive'
 import { isClient } from '@vueuse/shared'
+import { useCollection } from '@/Collection'
+import { createRekaContext, getActiveElement, useForwardExpose } from '@/shared'
 
 export type ToastRootImplEmits = {
   close: []
@@ -39,17 +41,23 @@ export interface ToastRootImplProps extends PrimitiveProps {
    * given to `ToastProvider`.
    */
   duration?: number
+  /**
+   * A toast from `useToastManager()`. Its `open`, `duration`, `type` and `status` drive the toast,
+   * and `ToastTitle`, `ToastDescription` and `ToastAction` render its content.
+   */
+  toast?: ToastObject
 }
 
 export const [injectToastRootContext, provideToastRootContext]
-  = createContext<{ onClose: () => void }>('ToastRoot')
+  = createRekaContext<{ onClose: (event?: PointerEvent) => void, toast: Ref<ToastObject | undefined> }>('ToastRoot')
 </script>
 
 <script setup lang="ts">
+import { onKeyStroke, useRafFn, useResizeObserver } from '@vueuse/core'
+import { computed, onMounted, onUnmounted, reactive, ref, shallowRef, toRef, watch, watchEffect } from 'vue'
 import { Primitive } from '@/Primitive'
-import { onKeyStroke, useRafFn } from '@vueuse/core'
-import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue'
 import ToastAnnounce from './ToastAnnounce.vue'
+import { injectToastPositionerContext } from './ToastPositioner.vue'
 import { injectToastProviderContext } from './ToastProvider.vue'
 import { getAnnounceTextContent, handleAndDispatchCustomEvent, isDeltaInDirection, TOAST_SWIPE_CANCEL, TOAST_SWIPE_END, TOAST_SWIPE_MOVE, TOAST_SWIPE_START, VIEWPORT_PAUSE, VIEWPORT_RESUME } from './utils'
 
@@ -82,7 +90,7 @@ const closeTimerRef = ref(0)
 const remainingTime = ref(duration.value)
 
 const remainingRaf = useRafFn(() => {
-  const elapsedTime = new Date().getTime() - closeTimerStartTimeRef.value
+  const elapsedTime = Date.now() - closeTimerStartTimeRef.value
   remainingTime.value = Math.max(closeTimerRemainingTimeRef.value - elapsedTime, 0)
 }, { fpsLimit: 60 })
 
@@ -95,7 +103,7 @@ function startTimer(duration: number) {
   if (!isClient)
     return
   window.clearTimeout(closeTimerRef.value)
-  closeTimerStartTimeRef.value = new Date().getTime()
+  closeTimerStartTimeRef.value = Date.now()
   closeTimerRef.value = window.setTimeout(handleClose, duration)
 }
 
@@ -109,15 +117,40 @@ function handleClose(event?: PointerEvent) {
   if (isFocusInToast && isNonPointerEvent)
     providerContext.viewport.value?.focus()
 
-  if (isNonPointerEvent) {
-    // when manually close the toast, we reset isClosePausedRef
-    providerContext.isClosePausedRef.value = false
-  }
-
   emits('close')
 }
 
-const announceTextContent = computed(() => currentElement.value ? getAnnounceTextContent(currentElement.value) : null)
+const positionerContext = injectToastPositionerContext(null)
+
+// Read after the DOM updates, and again when a managed toast changes, so that an
+// updated toast (e.g. a promise going from loading to success) is announced again.
+const announceTextContent = shallowRef<string[] | null>(null)
+watch([currentElement, () => props.toast?.updateKey], ([element]) => {
+  announceTextContent.value = element ? getAnnounceTextContent(element) : null
+}, { flush: 'post', immediate: true })
+
+const stackEntry = reactive({ seq: 0, height: 0, open: props.open })
+const stack = computed(() => providerContext.getToastStack(stackEntry))
+
+function measureHeight() {
+  const element = currentElement.value
+  if (!element)
+    return
+  // Measure the natural height, even when styles collapse the toast to the frontmost height.
+  const previousHeight = element.style.height
+  element.style.height = 'auto'
+  stackEntry.height = element.offsetHeight
+  element.style.height = previousHeight
+}
+
+useResizeObserver(currentElement, measureHeight)
+watch(() => props.toast?.updateKey, measureHeight, { flush: 'post' })
+
+watch(() => props.open, (open, wasOpen) => {
+  stackEntry.open = open
+  if (open && !wasOpen)
+    providerContext.reopenToast(stackEntry)
+})
 
 if (props.type && !['foreground', 'background'].includes(props.type)) {
   const error = 'Invalid prop `type` supplied to `Toast`. Expected `foreground | background`.'
@@ -133,7 +166,7 @@ watchEffect((cleanupFn) => {
       emits('resume')
     }
     const handlePause = () => {
-      const elapsedTime = new Date().getTime() - closeTimerStartTimeRef.value
+      const elapsedTime = Date.now() - closeTimerStartTimeRef.value
       closeTimerRemainingTimeRef.value = closeTimerRemainingTimeRef.value - elapsedTime
       window.clearTimeout(closeTimerRef.value)
       remainingRaf.pause()
@@ -141,17 +174,18 @@ watchEffect((cleanupFn) => {
     }
     viewport.addEventListener(VIEWPORT_PAUSE, handlePause)
     viewport.addEventListener(VIEWPORT_RESUME, handleResume)
-    return () => {
+    cleanupFn(() => {
       viewport.removeEventListener(VIEWPORT_PAUSE, handlePause)
       viewport.removeEventListener(VIEWPORT_RESUME, handleResume)
-    }
+    })
   }
 })
 
 // start timer when toast opens or duration changes.
 // we include `open` in deps because closed !== unmounted when animating
 // so it could reopen before being completely unmounted
-watch(() => [props.open, duration.value], () => {
+const restartKey = computed(() => props.toast ? providerContext.toastStore.getRestartKey(props.toast.id) : 0)
+watch([() => props.open, duration, restartKey], () => {
   // Reset the timer when the toast is rerendered with the new duration
   closeTimerRemainingTimeRef.value = duration.value
 
@@ -159,56 +193,90 @@ watch(() => [props.open, duration.value], () => {
     startTimer(duration.value)
 }, { immediate: true })
 
+// Only an Escape from inside this toast closes it, and it goes no further, so it
+// doesn't also close the dialog or popover around it. An Escape inside a layer
+// open in the toast, such as a popover without a portal, is that layer's.
 onKeyStroke('Escape', (event) => {
+  const layer = (event.target as Element | null)?.closest?.('[data-dismissable-layer]')
+  if (layer && currentElement.value?.contains(layer))
+    return
+  event.stopPropagation()
   emits('escapeKeyDown', event)
   if (!event.defaultPrevented) {
     providerContext.isFocusedToastEscapeKeyDownRef.value = true
     handleClose()
   }
-})
+}, { target: currentElement })
 
+let unregisterToast: (() => void) | undefined
 onMounted(() => {
   providerContext.onToastAdd()
+  unregisterToast = providerContext.registerToast(stackEntry)
+  measureHeight()
 })
 onUnmounted(() => {
   providerContext.onToastRemove()
+  unregisterToast?.()
 })
 
-provideToastRootContext({ onClose: handleClose })
+provideToastRootContext({ onClose: handleClose, toast: toRef(props, 'toast') })
 </script>
 
 <template>
   <ToastAnnounce
     v-if="announceTextContent"
+    :key="toast?.updateKey ?? 0"
     role="alert"
     :aria-live="type === 'foreground' ? 'assertive' : 'polite'"
-    aria-atomic="true"
   >
-    {{ announceTextContent }}
+    <!--
+      Render each chunk as its own text node so screen readers get the
+      natural pause break between nodes (see comment in utils.ts).
+      Interpolating the array directly with `{{ announceTextContent }}`
+      would route through Vue's `toDisplayString`, which JSON-stringifies
+      arrays — the live region would then announce literal `[`, quotes
+      and commas instead of the toast title and description.
+    -->
+    <template
+      v-for="(text, i) in announceTextContent"
+      :key="i"
+    >
+      {{ text }}
+    </template>
   </ToastAnnounce>
 
   <Teleport
-    v-if="providerContext.viewport.value"
-    :to="providerContext.viewport.value"
+    v-if="providerContext.viewport.value || positionerContext"
+    :to="providerContext.viewport.value ?? 'body'"
+    :disabled="!!positionerContext"
   >
     <CollectionItem>
       <Primitive
         :ref="forwardRef"
-        role="alert"
-        aria-live="off"
-        aria-atomic="true"
         tabindex="0"
         v-bind="$attrs"
         :as="as"
         :as-child="asChild"
         :data-state="open ? 'open' : 'closed'"
         :data-swipe-direction="providerContext.swipeDirection.value"
-        :style="{ userSelect: 'none', touchAction: 'none' }"
+        :data-status="toast?.status"
+        :data-expanded="providerContext.expanded.value ? '' : undefined"
+        :data-limited="stack.limited ? '' : undefined"
+        :inert="stack.limited || undefined"
+        :style="{
+          ...(providerContext.disableSwipe.value ? undefined : { userSelect: 'none', touchAction: 'none' }),
+          '--reka-toast-index': stack.index,
+          '--reka-toast-offset-y': `${stack.offsetY}px`,
+          '--reka-toast-height': stackEntry.height ? `${stackEntry.height}px` : undefined,
+        }"
         @pointerdown.left="(event: PointerEvent) => {
+          if (providerContext.disableSwipe.value) return;
+
           pointerStartRef = { x: event.clientX, y: event.clientY };
         }"
         @pointermove="(event: PointerEvent) => {
-          if (!pointerStartRef) return;
+          if (providerContext.disableSwipe.value || !pointerStartRef) return;
+
           const x = event.clientX - pointerStartRef.x;
           const y = event.clientY - pointerStartRef.y;
           const hasSwipeMoveStarted = Boolean(swipeDeltaRef);
@@ -237,6 +305,8 @@ provideToastRootContext({ onClose: handleClose })
           }
         }"
         @pointerup="(event: PointerEvent) => {
+          if (providerContext.disableSwipe.value) return;
+
           const delta = swipeDeltaRef;
           const target = event.target as HTMLElement;
           if (target.hasPointerCapture(event.pointerId)) {

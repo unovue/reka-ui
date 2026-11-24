@@ -3,7 +3,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
 import { usePrimitiveElement } from '@/Primitive'
 import { getFocusIntent } from '@/RovingFocus/utils'
-import { createContext, findValuesBetween, useDirection, useFormControl, useKbd, useTypeahead } from '@/shared'
+import { createRekaContext, findValuesBetween, getActiveElement, useDirection, useFormControl, useKbd, useTypeahead } from '@/shared'
 import { Primitive } from '..'
 
 type ListboxRootContext<T> = {
@@ -11,15 +11,17 @@ type ListboxRootContext<T> = {
   onValueChange: (val: T) => void
   multiple: Ref<boolean>
   max: Ref<number>
+  exceedsMax: (values: Array<T>) => boolean
   orientation: Ref<DataOrientation>
   dir: Ref<Direction>
   disabled: Ref<boolean>
   highlightOnHover: Ref<boolean>
+  loop: Ref<boolean>
   highlightedElement: Ref<HTMLElement | null>
   isVirtual: Ref<boolean>
-  virtualFocusHook: EventHook<Event | null | undefined>
+  virtualFocusHook: EventHook<{ event?: Event, scroll: boolean, keepFocus?: boolean, isStale?: () => boolean }>
   virtualKeydownHook: EventHook<KeyboardEvent>
-  virtualHighlightHook: EventHook<any>
+  virtualHighlightHook: EventHook<{ value: any, focus?: boolean }>
   by?: string | ((a: T, b: T) => boolean)
   firstValue?: Ref<T | undefined>
   selectionBehavior?: Ref<'toggle' | 'replace'>
@@ -28,29 +30,46 @@ type ListboxRootContext<T> = {
 
   onLeave: (event: Event) => void
   onEnter: (event: Event) => void
-  changeHighlight: (el: HTMLElement, scrollIntoView?: boolean) => void
+  changeHighlight: (el: HTMLElement, scrollIntoView?: boolean, focus?: boolean) => void
   onKeydownNavigation: (event: KeyboardEvent) => void
   onKeydownEnter: (event: KeyboardEvent) => void
   onKeydownTypeAhead: (event: KeyboardEvent) => void
   onCompositionStart: () => void
   onCompositionEnd: () => void
-  highlightFirstItem: (event: InputEvent) => void
+  highlightFirstItem: () => void
 }
 
 export const [injectListboxRootContext, provideListboxRootContext]
-  = createContext<ListboxRootContext<AcceptableValue>>('ListboxRoot')
+  = createRekaContext<ListboxRootContext<AcceptableValue>>('ListboxRoot')
+
+/** Controls highlight scrolling while a parent composite is being positioned. */
+type ListboxHighlightScrollContext = {
+  suppressHighlightScroll: Readonly<Ref<boolean>>
+  onHighlightScrollRequest: (scroll: (() => void) | undefined) => void
+}
+
+export const [injectListboxHighlightScrollContext, provideListboxHighlightScrollContext]
+  = createRekaContext<ListboxHighlightScrollContext>('ListboxHighlightScroll')
+
+export interface ListboxHighlightItemOptions {
+  /**
+   * Whether to move focus to the highlighted item.
+   * @defaultValue true
+   */
+  focus?: boolean
+}
 
 export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, FormFieldProps {
-  /** The controlled value of the listbox. Can be binded with with `v-model`. */
+  /** The controlled value of the listbox. Can be binded with `v-model`. */
   modelValue?: T | Array<T>
   /** The value of the listbox when initially rendered. Use when you do not need to control the state of the Listbox */
   defaultValue?: T | Array<T>
   /** Whether multiple options can be selected or not. */
   multiple?: boolean
   /**
-   * Maximum number of options that can be selected.
-   * Only applies when `multiple` is `true`.
-   * When `0`, there is no limit.
+   * Maximum number of options the user can select. Only applies when `multiple` is `true`.
+   * A selection that would go over it (click, <kbd>Enter</kbd>, range or select-all) is blocked
+   * and emits `invalid`. `0` means no limit. It does not clamp a `modelValue` set programmatically.
    *
    * @defaultValue 0
    */
@@ -68,8 +87,19 @@ export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, F
   selectionBehavior?: 'toggle' | 'replace'
   /** When `true`, hover over item will trigger highlight */
   highlightOnHover?: boolean
+  /** When `true`, keyboard navigation will loop from last item to first, and vice versa. */
+  loop?: boolean
   /** Use this to compare objects by a particular field, or pass your own comparison function for complete control over how objects are compared. */
   by?: string | ((a: T, b: T) => boolean)
+  /**
+   * When `true`, a programmatic `modelValue` change made while focus is outside the listbox
+   * (e.g. on a text input) highlights the selected item without focusing it or scrolling the
+   * page to it, so focus stays where it is. A virtualized list still scrolls its own viewport
+   * to the item. When focus is already inside the listbox, focus follows the new highlight as
+   * usual. User interaction (click, keyboard, typeahead) is not affected.
+   * @defaultValue false
+   */
+  keepFocusOnValueChange?: boolean
 }
 
 export type ListboxRootEmits<T = AcceptableValue> = {
@@ -81,7 +111,7 @@ export type ListboxRootEmits<T = AcceptableValue> = {
   'entryFocus': [event: CustomEvent]
   /** Event handler called when the mouse leave the container */
   'leave': [event: Event]
-  /** Event handler called when the value is invalid */
+  /** Event handler called when a selection is blocked because it would go over `max`. The payload is the first value over the limit. */
   'invalid': [payload: T]
 }
 </script>
@@ -90,6 +120,7 @@ export type ListboxRootEmits<T = AcceptableValue> = {
 import type { EventHook } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { createEventHook, useVModel } from '@vueuse/core'
+import { isClient } from '@vueuse/shared'
 import { nextTick, ref, toRefs, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -103,18 +134,25 @@ const props = withDefaults(defineProps<ListboxRootProps>(), {
 const emits = defineEmits<ListboxRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current active value */
     modelValue: typeof modelValue.value
   }) => any
 }>()
 
-const { multiple, max, highlightOnHover, orientation, disabled, selectionBehavior, dir: propDir } = toRefs(props)
-const { getItems } = useCollection<{ value: T }>({ isProvider: true })
+const { multiple, max, highlightOnHover, loop, orientation, disabled, selectionBehavior, dir: propDir } = toRefs(props)
+const { getItems, getItem } = useCollection<{ value: T }>({ isProvider: true })
 const { handleTypeaheadSearch } = useTypeahead()
 const { primitiveElement, currentElement } = usePrimitiveElement()
 const kbd = useKbd()
 const dir = useDirection(propDir)
+const highlightScrollContext = injectListboxHighlightScrollContext(null)
+
+// Prevent nested Listbox roots from inheriting this root's scroll coordination.
+provideListboxHighlightScrollContext({
+  suppressHighlightScroll: ref(false),
+  onHighlightScrollRequest: () => {},
+})
 
 const isFormControl = useFormControl(currentElement)
 
@@ -127,6 +165,15 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   deep: true,
 }) as Ref<T | T[] | undefined>
 
+// Blocks a multiple selection that would go over `max`, emitting `invalid` with the first value
+// over the limit. Returns `true` when the selection is blocked.
+function exceedsMax(values: Array<T | AcceptableValue>) {
+  if (!multiple.value || !max.value || values.length <= max.value)
+    return false
+  emits('invalid', values[max.value] as T)
+  return true
+}
+
 function onValueChange(val: T) {
   isUserAction.value = true
   if (props.multiple) {
@@ -134,10 +181,8 @@ function onValueChange(val: T) {
     const index = modelArray.findIndex(i => compare(i, val, props.by))
     if (props.selectionBehavior === 'toggle') {
       if (index === -1) {
-        if (max.value && modelArray.length >= max.value) {
-          emits('invalid', val)
+        if (exceedsMax([...modelArray, val]))
           return
-        }
         modelArray.push(val)
       }
       else {
@@ -170,43 +215,64 @@ const highlightedElement = ref<HTMLElement | null>(null)
 const previousElement = ref<HTMLElement | null>(null)
 const isVirtual = ref(false)
 const isComposing = ref(false)
-const virtualFocusHook = createEventHook<Event | null | undefined>()
+const virtualFocusHook = createEventHook<{ event?: Event, scroll: boolean, keepFocus?: boolean, isStale?: () => boolean }>()
 const virtualKeydownHook = createEventHook<KeyboardEvent>()
-const virtualHighlightHook = createEventHook<T>()
+const virtualHighlightHook = createEventHook<{ value: T, focus?: boolean }>()
 
 function getCollectionItem() {
   return getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
 }
 
-function changeHighlight(el: HTMLElement, scrollIntoView = true) {
+function changeHighlight(el: HTMLElement, scrollIntoView = true, focus?: boolean) {
   if (!el)
     return
 
   highlightedElement.value = el
-  if (focusable.value)
-    highlightedElement.value.focus()
-  if (scrollIntoView)
-    highlightedElement.value.scrollIntoView({ block: 'nearest' })
+  const suppressHighlightScroll = highlightScrollContext?.suppressHighlightScroll.value ?? false
+  if (focus ?? focusable.value) {
+    if (suppressHighlightScroll)
+      highlightedElement.value.focus({ preventScroll: true })
+    else
+      highlightedElement.value.focus()
+  }
 
-  const highlightedItem = getItems().find(i => i.ref === el)
+  if (suppressHighlightScroll) {
+    highlightScrollContext?.onHighlightScrollRequest(scrollIntoView
+      ? () => {
+          const element = highlightedElement.value
+          if (element?.isConnected)
+            element.scrollIntoView({ block: 'nearest' })
+        }
+      : undefined)
+  }
+  else if (scrollIntoView) {
+    highlightedElement.value.scrollIntoView({ block: 'nearest' })
+  }
+
+  const highlightedItem = getItem(el)
   emits('highlight', highlightedItem)
 }
 
-function highlightItem(value: T) {
+function highlightItem(value: T, options: ListboxHighlightItemOptions = {}) {
+  // `undefined` keeps the default: focus the item unless focus belongs to a filter input.
+  const focus = options.focus === false ? false : undefined
   if (isVirtual.value) {
-    virtualHighlightHook.trigger(value)
+    virtualHighlightHook.trigger({ value, focus })
   }
   else {
     const item = getItems().find(i => compare(i.value, value, props.by))
-    if (item) {
-      highlightedElement.value = item.ref
-      changeHighlight(item.ref)
-    }
+    if (item)
+      changeHighlight(item.ref, true, focus)
   }
 }
 
 function onKeydownEnter(event: KeyboardEvent) {
   if (highlightedElement.value && highlightedElement.value.isConnected) {
+    // Modifier combos (e.g. Ctrl+Enter) are not handled here —
+    // let them bubble so parent listeners can react (e.g. submit a form).
+    if (event.ctrlKey || event.metaKey || event.altKey)
+      return
+
     event.preventDefault()
     event.stopPropagation()
 
@@ -229,11 +295,14 @@ function onKeydownTypeAhead(event: KeyboardEvent) {
     if (isMetaKey && event.key === 'a' && multiple.value) {
       const collection = getItems()
       const values = collection.map(i => i.value)
-      modelValue.value = [...values]
       event.preventDefault()
-      changeHighlight(collection[collection.length - 1].ref)
+      if (!exceedsMax(values))
+        modelValue.value = [...values]
+      const lastItem = collection.at(-1)
+      if (lastItem)
+        changeHighlight(lastItem.ref)
     }
-    else if (!isMetaKey) {
+    else if (!isMetaKey && event.key.length === 1) {
       const el = handleTypeaheadSearch(event.key, getItems())
       if (el)
         changeHighlight(el)
@@ -248,7 +317,7 @@ function onCompositionStart() {
   isComposing.value = true
 }
 function onCompositionEnd() {
-  requestAnimationFrame(() => {
+  nextTick(() => {
     isComposing.value = false
   })
 }
@@ -271,6 +340,16 @@ function onLeave(event: Event) {
   emits('leave', event)
 }
 
+async function onFocusOut(event: FocusEvent) {
+  const target = (event.relatedTarget || event.target) as HTMLElement | null
+  await nextTick()
+  const root = currentElement.value
+  // A removed row loses the focus without a related target. The focus did not leave when a
+  // virtualized list has given it to the new row of the highlighted option by now.
+  if (highlightedElement.value && root && !root.contains(target) && !root.contains(getActiveElement()))
+    onLeave(event)
+}
+
 function onEnter(event: Event) {
   const entryFocusEvent = new CustomEvent('listbox.entryFocus', { bubbles: false, cancelable: true })
   event.currentTarget?.dispatchEvent(entryFocusEvent)
@@ -288,6 +367,19 @@ function onEnter(event: Event) {
   }
 }
 
+function isAtVirtualBoundary(intent: 'prev' | 'next') {
+  // A virtualized list only renders a window of items. Only wrap when that
+  // window reaches the end of the full options list; any rendered items past
+  // the highlighted one are disabled.
+  const rendered = getItems(true).map(i => i.ref)
+  const edge = intent === 'next' ? rendered.at(-1) : rendered[0]
+  if (!edge)
+    return false
+  const position = Number(edge.getAttribute('aria-posinset'))
+  const size = Number(edge.getAttribute('aria-setsize'))
+  return intent === 'next' ? position === size : position === 1
+}
+
 function onKeydownNavigation(event: KeyboardEvent) {
   const intent = getFocusIntent(event, orientation.value, dir.value)
   if (!intent)
@@ -303,7 +395,18 @@ function onKeydownNavigation(event: KeyboardEvent) {
         collection.reverse()
 
       const currentIndex = collection.indexOf(highlightedElement.value)
-      collection = collection.slice(currentIndex + 1)
+      const shouldLoop = loop.value && currentIndex === collection.length - 1
+      if (shouldLoop && isVirtual.value) {
+        if (isAtVirtualBoundary(intent)) {
+          // Let the virtualizer scroll to and highlight the opposite end.
+          const key = intent === 'next' ? kbd.HOME : kbd.END
+          return virtualKeydownHook.trigger(new KeyboardEvent('keydown', { key, shiftKey: event.shiftKey }))
+        }
+        collection = []
+      }
+      else {
+        collection = shouldLoop ? collection.slice(0, 1) : collection.slice(currentIndex + 1)
+      }
     }
     handleMultipleReplace(event, collection[0])
   }
@@ -329,48 +432,100 @@ function handleMultipleReplace(event: KeyboardEvent, targetEl: HTMLElement) {
     let lastValue = collection.find(i => i.ref === targetEl)?.value
 
     if (event.key === kbd.END)
-      lastValue = collection[collection.length - 1].value
+      lastValue = collection.at(-1)?.value
     else if (event.key === kbd.HOME)
-      lastValue = collection[0].value
+      lastValue = collection[0]?.value
 
     if (!lastValue || !firstValue.value)
       return
 
     const values = findValuesBetween(collection.map(i => i.value), firstValue.value, lastValue)
-    modelValue.value = values
+    if (!exceedsMax(values))
+      modelValue.value = values
   }
 }
 
-async function highlightSelected(event?: Event) {
+function highlightSelected(event?: Event, scroll = true) {
+  return highlightSelectedItem(event, scroll, false)
+}
+
+// `keepFocus` is set for a programmatic value change under `keepFocusOnValueChange` while focus
+// is outside the listbox. It implies `scroll` is `false`. `isStale` is set under
+// `keepFocusOnValueChange`, and is `true` once a later value change has queued its own highlight.
+async function highlightSelectedItem(event: Event | undefined, scroll: boolean, keepFocus: boolean, isStale?: () => boolean) {
+  // highlightSelected is called inside a watch with immediate set to true.
+  // This results in code execution during SSR.
+  // Ensure this code only runs in a browser environment, since it performs
+  // DOM-only side effects (focus, scrollIntoView, synthetic KeyboardEvent).
+  if (!isClient)
+    return
   await nextTick()
+  if (isStale?.())
+    return
   if (isVirtual.value) {
-    // Trigger on nextTick for Virtualizer to be mounted
-    virtualFocusHook.trigger(event)
+    // Trigger on nextTick for Virtualizer to be mounted.
+    // `scroll` is `false` on the initial mount highlight, so the virtualizer sets
+    // its roving-tabindex target without focusing/scrolling — otherwise a
+    // virtualized Listbox below the fold would pull the page to it on load.
+    virtualFocusHook.trigger({ event, scroll, keepFocus, isStale })
   }
   else {
     const collection = getCollectionItem()
     const item = collection.find(i => i.dataset.state === 'checked')
+    // On the initial (mount) highlight we only set the roving-tabindex target.
+    // Focusing/scrolling here would scroll the page to a Listbox the user never
+    // interacted with (e.g. one below the fold). Later highlights scroll as before.
+    const focus = scroll ? undefined : false
     if (item)
-      changeHighlight(item)
+      changeHighlight(item, scroll, focus)
     else if (collection.length)
-      changeHighlight(collection[0])
+      changeHighlight(collection[0], scroll, focus)
   }
 }
+
+// `false` until the initial (mount) modelValue highlight has been queued.
+// Flipped synchronously in the watcher so the "is this the mount highlight?"
+// decision never depends on nextTick ordering, which differs between a client
+// mount and SSR hydration. The intent travels with the call as an argument
+// rather than via a shared flag released on a later tick.
+let hasHighlightedOnMount = false
+
+// Counts the value-change highlights queued under `keepFocusOnValueChange`. Each one decides
+// on focus when its change is made, so an earlier one must not run after a later change.
+let highlightGeneration = 0
 
 // watch for only programmatic changes
 watch(modelValue, () => {
   if (!isUserAction.value) {
+    const scroll = hasHighlightedOnMount
+    hasHighlightedOnMount = true
+    // With `keepFocusOnValueChange`, a change made while focus is elsewhere highlights the
+    // item the way the mount highlight does: no focus, and no `scrollIntoView`, which could
+    // scroll the page away from the focused element. Read the focus now, before the update
+    // renders: it may remove the focused item, and the focus would leave with it.
+    const keepFocus = scroll && !!props.keepFocusOnValueChange && !currentElement.value?.contains(getActiveElement())
+    const generation = props.keepFocusOnValueChange ? ++highlightGeneration : undefined
+    const isStale = generation === undefined ? undefined : () => generation !== highlightGeneration
     nextTick(() => {
-      highlightSelected()
+      if (!isStale?.())
+        highlightSelectedItem(undefined, scroll && !keepFocus, keepFocus, isStale)
     })
   }
 }, { immediate: true, deep: true })
 
 defineExpose({
+  /** The currently highlighted item element. */
   highlightedElement,
+  /**
+   * Highlight the item with the given value and scroll it into view. By default it also moves
+   * focus to the item; pass `{ focus: false }` to keep focus where it is (e.g. on an input).
+   */
   highlightItem,
+  /** Highlight the first enabled item. */
   highlightFirstItem,
+  /** Highlight the selected item, or the first enabled item when nothing is selected. */
   highlightSelected,
+  /** Get the registered items. */
   getItems,
 })
 
@@ -379,10 +534,13 @@ provideListboxRootContext({
   // @ts-expect-error ignoring
   onValueChange,
   multiple,
+  max,
+  exceedsMax,
   orientation,
   dir,
   disabled,
   highlightOnHover,
+  loop,
   highlightedElement,
   isVirtual,
   virtualFocusHook,
@@ -413,13 +571,7 @@ provideListboxRootContext({
     :dir="dir"
     :data-disabled="disabled ? '' : undefined"
     @pointerleave="onLeave"
-    @focusout="async (event: FocusEvent) => {
-      const target = (event.relatedTarget || event.target) as HTMLElement | null
-      await nextTick()
-      if (highlightedElement && currentElement && !currentElement.contains(target)) {
-        onLeave(event)
-      }
-    }"
+    @focusout="onFocusOut"
   >
     <slot :model-value="modelValue" />
 

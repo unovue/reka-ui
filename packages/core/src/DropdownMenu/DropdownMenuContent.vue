@@ -4,16 +4,23 @@ import type {
   MenuContentProps,
 } from '@/Menu'
 
-export type DropdownMenuContentEmits = MenuContentEmits
+export type DropdownMenuContentEmits = Omit<MenuContentEmits, 'entryFocus'>
 
 export interface DropdownMenuContentProps extends MenuContentProps {}
 </script>
 
 <script setup lang="ts">
-import { MenuContent } from '@/Menu'
-import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
 import { ref } from 'vue'
+import { isTriggerPressInFlight } from '@/DismissableLayer/utils'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
+import { injectMenuContext, MenuContent } from '@/Menu'
+import { omitEntryFocusListener } from '@/Menu/utils'
+import { useContentId, useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
 import { injectDropdownMenuRootContext } from './DropdownMenuRoot.vue'
+
+defineOptions({
+  inheritAttrs: false,
+})
 
 const props = defineProps<DropdownMenuContentProps>()
 const emits = defineEmits<DropdownMenuContentEmits>()
@@ -23,13 +30,37 @@ useForwardExpose()
 const rootContext = injectDropdownMenuRootContext()
 
 const hasInteractedOutsideRef = ref(false)
+function handleInteractOutside(event: CustomEvent<{ originalEvent: Event }>) {
+  const target = event.target as HTMLElement
+  const trigger = rootContext.triggerElement.value
+  const originalEvent = event.detail.originalEvent
+
+  if (event.defaultPrevented)
+    return
+
+  const pointerEvent = originalEvent as PointerEvent
+  const ctrlLeftClick = pointerEvent.button === 0 && pointerEvent.ctrlKey === true
+  const isRightClick = pointerEvent.button === 2 || ctrlLeftClick
+  if (!rootContext.modal.value || isRightClick)
+    hasInteractedOutsideRef.value = true
+  if (trigger?.contains(target))
+    event.preventDefault()
+  // WebKit does not focus a pressed button but its focusable ancestor. The trigger
+  // handles its own press, so that focus move is treated like the focus the trigger
+  // itself gets in other engines (#3360).
+  else if (originalEvent.type === 'focusin' && trigger && isTriggerPressInFlight(trigger) && target.contains(trigger))
+    event.preventDefault()
+}
 
 function handleCloseAutoFocus(event: Event) {
   if (event.defaultPrevented)
     return
   if (!hasInteractedOutsideRef.value) {
+    const scope = event.target
     setTimeout(() => {
-      rootContext.triggerElement.value?.focus()
+      // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
+      if (!hasFocusLeftScope(scope))
+        rootContext.triggerElement.value?.focus()
     }, 0)
   }
   hasInteractedOutsideRef.value = false
@@ -38,12 +69,21 @@ function handleCloseAutoFocus(event: Event) {
   event.preventDefault()
 }
 
+// A content kept mounted while closed (`unmountOnHide: false`) is hidden, not unmounted, so
+// no `closeAutoFocus` returns focus. Return it to the trigger as `handleCloseAutoFocus` does.
+const menuContext = injectMenuContext()
+menuContext.onContentHide(({ container }) => {
+  if (!hasInteractedOutsideRef.value && !hasFocusLeftScope(container ?? null))
+    rootContext.triggerElement.value?.focus()
+  hasInteractedOutsideRef.value = false
+})
+
 rootContext.contentId ||= useId(undefined, 'reka-dropdown-menu-content')
+useContentId(rootContext, menuContext.content)
 </script>
 
 <template>
   <MenuContent
-    v-bind="forwarded"
     :id="rootContext.contentId"
     :aria-labelledby="rootContext?.triggerId"
     :style="{
@@ -57,16 +97,9 @@ rootContext.contentId ||= useId(undefined, 'reka-dropdown-menu-content')
       '--reka-dropdown-menu-trigger-height':
         'var(--reka-popper-anchor-height)',
     }"
+    v-bind="{ ...forwarded, ...omitEntryFocusListener($attrs) }"
     @close-auto-focus="handleCloseAutoFocus"
-    @interact-outside="(event) => {
-      if (event.defaultPrevented) return
-
-      const originalEvent = event.detail.originalEvent as PointerEvent;
-      const ctrlLeftClick = originalEvent.button === 0 && originalEvent.ctrlKey === true;
-      const isRightClick = originalEvent.button === 2 || ctrlLeftClick;
-      if (!rootContext.modal.value || isRightClick) hasInteractedOutsideRef = true;
-      if (rootContext.triggerElement.value?.contains(event.target as HTMLElement)) event.preventDefault()
-    }"
+    @interact-outside="handleInteractOutside"
   >
     <slot />
   </MenuContent>

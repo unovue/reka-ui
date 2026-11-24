@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
+import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport, ScrollAreaVirtualizer } from '..'
 import ScrollAreaCopy from './_ScrollAreaCopy.vue'
 import ScrollAreaStory from './_ScrollAreaStory.vue'
 
@@ -13,6 +14,8 @@ const contentChangeState = reactive({
   verticalCount: 1,
   horizontalCount: 1,
 })
+
+const virtualItems = Array.from({ length: 10_000 }, (_, index) => `Item ${index + 1}`)
 </script>
 
 <template>
@@ -84,14 +87,50 @@ const contentChangeState = reactive({
 
     <Variant
       auto-props-disabled
+      title="Virtualized"
+    >
+      <ScrollAreaRoot class="w-[200px] h-[200px] overflow-hidden rounded bg-white shadow-lg">
+        <ScrollAreaViewport class="w-full h-full">
+          <ScrollAreaVirtualizer
+            v-slot="{ option }"
+            :options="virtualItems"
+            :estimate-size="32"
+          >
+            <div class="h-8 px-4 flex items-center border-b border-gray-200">
+              {{ option }}
+            </div>
+          </ScrollAreaVirtualizer>
+        </ScrollAreaViewport>
+        <ScrollAreaScrollbar
+          class="flex select-none touch-none p-0.5 bg-black/10 w-2.5"
+          orientation="vertical"
+        >
+          <ScrollAreaThumb class="flex-1 bg-gray-400 rounded" />
+        </ScrollAreaScrollbar>
+      </ScrollAreaRoot>
+    </Variant>
+
+    <Variant
+      auto-props-disabled
       title="Animated"
     >
-      <ScrollAreaStory animated>
+      <ScrollAreaStory
+        animated
+        :type="state.type"
+      >
         <ScrollAreaCopy
           v-for="i in 30"
           :key="i"
         />
       </ScrollAreaStory>
+
+      <template #controls>
+        <HstSelect
+          v-model="state.type"
+          title="type"
+          :options="['auto', 'always', 'scroll', 'hover']"
+        />
+      </template>
     </Variant>
   </Story>
 </template>

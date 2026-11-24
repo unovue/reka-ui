@@ -1,8 +1,8 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { Ref } from 'vue'
-import { createContext, useForwardExpose } from '@/shared'
+import type { PrimitiveProps } from '@/Primitive'
 import { toRefs } from 'vue'
+import { createRekaContext, defineReactiveIds, useForwardExpose } from '@/shared'
 
 export interface CollapsibleRootProps extends PrimitiveProps {
   /** The open state of the collapsible when it is initially rendered. <br> Use when you do not need to control its open state. */
@@ -21,6 +21,7 @@ export type CollapsibleRootEmits = {
 }
 
 interface CollapsibleRootContext {
+  /** The id the content renders. Read by the trigger for `aria-controls`. */
   contentId: string
   disabled?: Ref<boolean>
   open: Ref<boolean>
@@ -29,12 +30,12 @@ interface CollapsibleRootContext {
 }
 
 export const [injectCollapsibleRootContext, provideCollapsibleRootContext]
-  = createContext<CollapsibleRootContext>('CollapsibleRoot')
+  = createRekaContext<CollapsibleRootContext>('CollapsibleRoot')
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { useVModel } from '@vueuse/core'
+import { Primitive } from '@/Primitive'
 
 const props = withDefaults(defineProps<CollapsibleRootProps>(), {
   open: undefined,
@@ -45,7 +46,7 @@ const props = withDefaults(defineProps<CollapsibleRootProps>(), {
 const emit = defineEmits<CollapsibleRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current open state */
     open: typeof open.value
   }) => any
@@ -58,7 +59,7 @@ const open = useVModel(props, 'open', emit, {
 
 const { disabled, unmountOnHide } = toRefs(props)
 
-provideCollapsibleRootContext({
+provideCollapsibleRootContext(defineReactiveIds({
   contentId: '',
   disabled,
   open,
@@ -69,7 +70,7 @@ provideCollapsibleRootContext({
 
     open.value = !open.value
   },
-})
+}, ['contentId']))
 
 defineExpose({ open })
 useForwardExpose()

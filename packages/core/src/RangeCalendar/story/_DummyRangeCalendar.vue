@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { RangeCalendarRootEmits, RangeCalendarRootProps } from '..'
-import { useForwardPropsEmits } from '@/shared'
 import { Icon } from '@iconify/vue'
+import { useForwardPropsEmits } from '@/shared'
 import { RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCalendarGridBody, RangeCalendarGridHead, RangeCalendarGridRow, RangeCalendarHeadCell, RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot } from '..'
 
 const props = defineProps<RangeCalendarRootProps>()

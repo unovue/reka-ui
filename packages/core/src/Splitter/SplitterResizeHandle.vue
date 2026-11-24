@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { ref, toRefs, watch, watchEffect } from 'vue'
+import { onActivated, onDeactivated, onMounted, onUnmounted, ref, toRefs, watch, watchEffect } from 'vue'
+import { useNonce } from '@/shared/useNonce'
 import { useWindowSplitterResizeHandlerBehavior } from './utils/composables/useWindowSplitterBehavior'
 
 export interface SplitterResizeHandleProps extends PrimitiveProps {
@@ -12,6 +13,10 @@ export interface SplitterResizeHandleProps extends PrimitiveProps {
   tabindex?: number
   /** Disable drag handle */
   disabled?: boolean
+  /**
+   * Will add `nonce` attribute to the style tag which can be used by Content Security Policy. <br> If omitted, inherits globally from `ConfigProvider`.
+   */
+  nonce?: string
 }
 
 export type PanelResizeHandleOnDragging = (isDragging: boolean) => void
@@ -51,6 +56,7 @@ const {
   direction,
   groupId,
   registerResizeHandle: registerResizeHandleWithParentGroup,
+  resizeHandleRegistration,
   startDragging,
   stopDragging,
   panelGroupElement,
@@ -60,6 +66,13 @@ const resizeHandleId = useId(props.id, 'reka-splitter-resize-handle')
 const state = ref<ResizeHandlerState>('inactive')
 const isFocused = ref(false)
 const resizeHandler = ref<ResizeHandler | null>(null)
+const { nonce: propNonce } = toRefs(props)
+const nonce = useNonce(propNonce)
+
+// A deactivated <KeepAlive> handle is out of the document but still mounted
+const isActive = ref(true)
+onActivated(() => isActive.value = true)
+onDeactivated(() => isActive.value = false)
 
 watch(disabled, () => {
   if (!isBrowser)
@@ -71,7 +84,7 @@ watch(disabled, () => {
 }, { immediate: true })
 
 watchEffect((onCleanup) => {
-  if (disabled.value || resizeHandler.value === null)
+  if (disabled.value || !isActive.value || resizeHandler.value === null)
     return
 
   const element = currentElement.value
@@ -125,6 +138,7 @@ watchEffect((onCleanup) => {
       // Fine inputs (e.g. mouse)
       fine: props.hitAreaMargins?.fine ?? 5,
     },
+    nonce,
     setResizeHandlerState,
   ))
 })
@@ -134,7 +148,15 @@ useWindowSplitterResizeHandlerBehavior({
   resizeHandler,
   handleId: resizeHandleId,
   panelGroupElement,
+  element: currentElement,
 })
+
+// Tell the parent group when this handle mounts or unmounts, so the
+// group-level keyboard/aria effects re-run for a handle that mounts on its
+// own after the group (e.g. with v-if). See issue #3126.
+const bumpResizeHandleRegistration = () => resizeHandleRegistration.value++
+onMounted(bumpResizeHandleRegistration)
+onUnmounted(bumpResizeHandleRegistration)
 </script>
 
 <template>
@@ -159,7 +181,7 @@ useWindowSplitterResizeHandlerBehavior({
     :data-panel-resize-handle-enabled="!disabled"
     :data-panel-resize-handle-id=" resizeHandleId"
     @blur="isFocused = false"
-    @focus="isFocused = false"
+    @focus="isFocused = true"
   >
     <slot />
   </Primitive>

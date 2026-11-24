@@ -5,6 +5,7 @@
 import type { DateValue } from '@internationalized/date'
 
 export type { DateValue }
+import type { TimeValue } from './comparators'
 import type { DATE_SEGMENT_PARTS, EDITABLE_SEGMENT_PARTS, NON_EDITABLE_SEGMENT_PARTS, TIME_SEGMENT_PARTS } from './parts'
 
 // Days of the week, starting with Sunday
@@ -13,9 +14,24 @@ export type DayOfWeek = {
   daysOfWeek: (typeof daysOfWeek)[number][]
 }
 
+export type DateStep = {
+  year?: number
+  month?: number
+  day?: number
+  hour?: number
+  minute?: number
+  second?: number
+  millisecond?: number
+}
+
 export type DateRange = {
   start: DateValue | undefined
   end: DateValue | undefined
+}
+
+export type TimeRange = {
+  start: TimeValue | undefined
+  end: TimeValue | undefined
 }
 
 export type HourCycle = 12 | 24 | undefined
@@ -38,3 +54,5 @@ export type TimeSegmentObj = {
 export type DateAndTimeSegmentObj = DateSegmentObj & TimeSegmentObj
 export type SegmentValueObj = DateSegmentObj | DateAndTimeSegmentObj
 export type SegmentContentObj = Record<EditableSegmentPart, string>
+
+export type DateInputType = 'date' | 'datetime-local'

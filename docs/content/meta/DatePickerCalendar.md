@@ -1,34 +1,52 @@
-<!-- This file was automatic generated. Do not edit it manually -->
+<!-- This file was automatically generated. Do not edit it manually -->
+
+<llm-exclude>
 
 <SlotsTable :data="[
   {
     'name': 'date',
     'description': '',
-    'type': 'any'
+    'type': 'DateValue'
   },
   {
     'name': 'grid',
     'description': '',
-    'type': 'any'
+    'type': 'Grid&lt;DateValue&gt;[]'
   },
   {
     'name': 'weekDays',
     'description': '',
-    'type': 'any'
+    'type': 'string[]'
   },
   {
     'name': 'weekStartsOn',
     'description': '',
-    'type': 'any'
+    'type': '0 | 1 | 2 | 3 | 4 | 5 | 6'
   },
   {
     'name': 'locale',
     'description': '',
-    'type': 'any'
+    'type': 'string'
   },
   {
     'name': 'fixedWeeks',
     'description': '',
-    'type': 'any'
+    'type': 'boolean'
   }
 ]" />
+</llm-exclude>
+
+<llm-only>
+
+**Slots**
+
+| Name | Description | Type |
+| --- | --- | --- |
+| `date` |  | `DateValue` |
+| `grid` |  | `Grid<DateValue>[]` |
+| `weekDays` |  | `string[]` |
+| `weekStartsOn` |  | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` |
+| `locale` |  | `string` |
+| `fixedWeeks` |  | `boolean` |
+
+</llm-only>

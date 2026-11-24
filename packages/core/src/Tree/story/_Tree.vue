@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TreeRootEmits, TreeRootProps } from '..'
-import { useForwardPropsEmits } from '@/shared'
 import { Icon } from '@iconify/vue'
+import { useForwardPropsEmits } from '@/shared'
 import { TreeItem, TreeRoot } from '..'
 
 const props = defineProps<Omit<TreeRootProps, 'items' | 'getKey'>>()

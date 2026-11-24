@@ -1,8 +1,8 @@
 <script lang="ts">
+import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
-import type { Ref } from 'vue'
-import { createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
+import { createRekaContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
 
 export interface RadioGroupRootProps extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the radio item to check. Can be binded as `v-model`. */
@@ -24,7 +24,7 @@ export interface RadioGroupRootProps extends PrimitiveProps, FormFieldProps {
 }
 export type RadioGroupRootEmits = {
   /** Event handler called when the radio group value changes */
-  'update:modelValue': [payload: string]
+  'update:modelValue': [payload: AcceptableValue]
 }
 
 interface RadioGroupRootContext {
@@ -38,15 +38,16 @@ interface RadioGroupRootContext {
 }
 
 export const [injectRadioGroupRootContext, provideRadioGroupRootContext]
-  = createContext<RadioGroupRootContext>('RadioGroupRoot')
+  = createRekaContext<RadioGroupRootContext>('RadioGroupRoot')
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
-import { RovingFocusGroup } from '@/RovingFocus'
-import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useVModel } from '@vueuse/core'
 import { toRefs } from 'vue'
+import { Primitive } from '@/Primitive'
+import { RovingFocusGroup } from '@/RovingFocus'
+import { provideRovingFocusNoActiveItem } from '@/RovingFocus/RovingFocusGroup.vue'
+import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
 const props = withDefaults(defineProps<RadioGroupRootProps>(), {
   disabled: false,
@@ -58,7 +59,7 @@ const props = withDefaults(defineProps<RadioGroupRootProps>(), {
 const emits = defineEmits<RadioGroupRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current input values */
     modelValue: typeof modelValue.value
   }) => any
@@ -85,6 +86,9 @@ provideRadioGroupRootContext({
   name: name?.value,
   required,
 })
+
+// A group with no value has no checked item.
+provideRovingFocusNoActiveItem(() => modelValue.value == null)
 </script>
 
 <template>

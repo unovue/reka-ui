@@ -16,10 +16,11 @@ export interface RovingFocusItemProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
+import { computed, nextTick, onMounted, onUnmounted, shallowRef, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
-import { useId } from '@/shared'
-import { computed, nextTick, onMounted, onUnmounted } from 'vue'
+import { useForwardExpose, useId } from '@/shared'
 import { injectRovingFocusGroupContext } from './RovingFocusGroup.vue'
 import { focusFirst, getFocusIntent, wrapArray } from './utils'
 
@@ -31,13 +32,24 @@ const props = withDefaults(defineProps<RovingFocusItemProps>(), {
 const context = injectRovingFocusGroupContext()
 const randomId = useId()
 const id = computed(() => props.tabStopId || randomId)
-const isCurrentTabStop = computed(
-  () => context.currentTabStopId.value === id.value,
-)
+// Until a tab stop is chosen, the group only becomes tabbable once its items
+// have mounted, so the server-rendered HTML would have no stop at all. Before
+// mount, the first active item stands in as the stop (one per group, even when
+// several are active, as in a multiple ToggleGroup), or the first focusable one
+// when the group has no active item; after mount the group's own tabindex takes
+// over, as before.
+const isMounted = shallowRef(false)
+const isPreMountTabStop = props.focusable && context.claimPreMountTabStop(id.value, props.active)
+const isCurrentTabStop = computed(() => {
+  if (context.currentTabStopId.value != null)
+    return context.currentTabStopId.value === id.value
+  return !isMounted.value && isPreMountTabStop
+})
 
 const { getItems, CollectionItem } = useCollection()
 
 onMounted(() => {
+  isMounted.value = true
   if (props.focusable)
     context.onFocusableItemAdd()
 })
@@ -46,7 +58,21 @@ onUnmounted(() => {
     context.onFocusableItemRemove()
 })
 
+watch(() => props.focusable, (newVal, oldVal) => {
+  if (newVal === oldVal)
+    return
+  if (newVal) {
+    context.onFocusableItemAdd()
+  }
+  else {
+    context.onFocusableItemRemove()
+  }
+})
+
 function handleKeydown(event: KeyboardEvent) {
+  if (event.defaultPrevented)
+    return
+
   if (event.key === 'Tab' && event.shiftKey) {
     context.onItemShiftTab()
     return
@@ -85,11 +111,29 @@ function handleKeydown(event: KeyboardEvent) {
     nextTick(() => focusFirst(candidateNodes))
   }
 }
+// Bound natively after mount rather than via `@keydown` so it runs after the
+// item's own handlers. An `asChild` item (e.g. a `DropdownMenuTrigger` inside a
+// `ToolbarButton`) or a consumer can then claim a key with `preventDefault()`,
+// matching Radix, where the wrapped child's handler runs first.
+const { forwardRef, currentElement } = useForwardExpose()
+const itemElement = shallowRef<HTMLElement>()
+watch(currentElement, (element) => {
+  itemElement.value = element
+}, { immediate: true, flush: 'post' })
+useEventListener(itemElement, 'keydown', handleKeydown)
+
+// An `asChild` child can replace its root element without this component
+// re-rendering, which would leave the listener on the detached element. Focus
+// reaches the item before any key does, so rebind from there.
+function handleFocusIn(event: FocusEvent) {
+  itemElement.value = event.currentTarget as HTMLElement
+}
 </script>
 
 <template>
   <CollectionItem>
     <Primitive
+      :ref="forwardRef"
       :tabindex="isCurrentTabStop ? 0 : -1"
       :data-orientation="context.orientation.value"
       :data-active="active ? '' : undefined"
@@ -97,7 +141,7 @@ function handleKeydown(event: KeyboardEvent) {
       :as="as"
       :as-child="asChild"
       @mousedown="
-        (event) => {
+        (event: MouseEvent) => {
           // We prevent focusing non-focusable items on `mousedown`.
           // Even though the item has tabIndex={-1}, that only means take it out of the tab order.
           if (!focusable) event.preventDefault();
@@ -106,7 +150,7 @@ function handleKeydown(event: KeyboardEvent) {
         }
       "
       @focus="context.onItemFocus(id)"
-      @keydown="handleKeydown"
+      @focusin="handleFocusIn"
     >
       <slot />
     </Primitive>

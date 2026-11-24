@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { DialogContentImplEmits, DialogContentImplProps } from './DialogContentImpl.vue'
+import { computed, ref, watch } from 'vue'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { useEmitAsProps, useForwardExpose } from '@/shared'
-import { ref } from 'vue'
 import DialogContentImpl from './DialogContentImpl.vue'
 import { injectDialogRootContext } from './DialogRoot.vue'
+import { getFocusedBeforeOpen, getReturnFocusElement } from './utils'
 
-const props = defineProps<DialogContentImplProps>()
+const props = defineProps<DialogContentImplProps & { present: boolean }>()
 const emits = defineEmits<DialogContentImplEmits>()
 
 const emitsAsProps = useEmitAsProps(emits)
@@ -14,17 +16,38 @@ useForwardExpose()
 const rootContext = injectDialogRootContext()
 const hasInteractedOutsideRef = ref(false)
 const hasPointerDownOutsideRef = ref(false)
+
+const forwardedProps = computed(() => {
+  const { present: _, ...rest } = props
+  return rest
+})
+
+// When `unmountOnHide` is `false` the content stays mounted on close, so
+// `close-auto-focus` never fires. Restore focus to the trigger manually once
+// the content is no longer present, unless the user interacted outside or
+// something else took focus meanwhile, e.g. a layer opened while this one was
+// animating out.
+watch(() => props.present, (isPresent, wasPresent) => {
+  if (!isPresent && wasPresent) {
+    if (!hasInteractedOutsideRef.value && !hasFocusLeftScope(rootContext.contentElement.value ?? null))
+      getReturnFocusElement(rootContext)?.focus()
+    hasInteractedOutsideRef.value = false
+    hasPointerDownOutsideRef.value = false
+  }
+})
 </script>
 
 <template>
   <DialogContentImpl
-    v-bind="{ ...props, ...emitsAsProps }"
+    v-bind="{ ...forwardedProps, ...emitsAsProps }"
+    :present="present"
     :trap-focus="false"
     :disable-outside-pointer-events="false"
     @close-auto-focus="
       (event) => {
         if (!event.defaultPrevented) {
-          if (!hasInteractedOutsideRef) rootContext.triggerElement.value?.focus();
+          // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
+          if (!hasInteractedOutsideRef && !hasFocusLeftScope(event.target)) getReturnFocusElement(rootContext)?.focus();
           // Always prevent auto focus because we either focus manually or want user agent focus
           event.preventDefault();
         }
@@ -41,11 +64,11 @@ const hasPointerDownOutsideRef = ref(false)
         }
       }
 
-      // Prevent dismissing when clicking the trigger.
-      // As the trigger is already setup to close, without doing so would
-      // cause it to close and immediately open.
+      // Prevent dismissing when clicking the trigger, or the element that opened
+      // the dialog programmatically. As it is already setup to close, without doing
+      // so would cause it to close and immediately open.
       const target = event.target as HTMLElement;
-      const targetIsTrigger = rootContext.triggerElement.value?.contains(target);
+      const targetIsTrigger = [rootContext.triggerElement.value, getFocusedBeforeOpen(rootContext)].some(element => element?.contains(target));
       if (targetIsTrigger) event.preventDefault();
 
       // On Safari if the trigger is inside a container with tabIndex={0}, when clicked

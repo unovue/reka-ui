@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Label } from '@/Label'
 import { Icon } from '@iconify/vue'
+import { Label } from '@/Label'
 import {
   DatePickerArrow,
   DatePickerCalendar,

@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { RangeCalendarNextSlot } from '@/RangeCalendar/RangeCalendarNext.vue'
 import type { RangeCalendarNextProps } from '..'
+import type { RangeCalendarNextSlot } from '@/RangeCalendar/RangeCalendarNext.vue'
 import { RangeCalendarNext } from '..'
 
 export interface DateRangePickerNextProps extends RangeCalendarNextProps {}

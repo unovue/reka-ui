@@ -16,7 +16,9 @@ export function useWindowSplitterPanelGroupBehavior({
   layout,
   panelDataArray,
   panelGroupElement,
-  setLayout,
+  resizeHandleRegistration,
+  commitLayout,
+  getPanelDataWithPercentConstraints,
 }: {
   eagerValuesRef: Ref<{
     panelDataArray: PanelData[]
@@ -25,11 +27,21 @@ export function useWindowSplitterPanelGroupBehavior({
   layout: Ref<number[]>
   panelDataArray: PanelData[]
   panelGroupElement: Ref<ParentNode | null>
-  setLayout: (sizes: number[]) => void
+  resizeHandleRegistration: Ref<number>
+  commitLayout: (sizes: number[]) => void
+  getPanelDataWithPercentConstraints: (groupSizeOverride?: number | null) => PanelData[] | null
 }): void {
   watchEffect((onCleanup) => {
+    // Re-run when a resize handle mounts or unmounts on its own, so a handle
+    // added after the group (e.g. via v-if) still gets its aria-* attributes.
+    void resizeHandleRegistration.value
+
     const _panelGroupElement = panelGroupElement.value
     if (!_panelGroupElement)
+      return
+
+    const panelDataArrayWithPercentConstraints = getPanelDataWithPercentConstraints()
+    if (!panelDataArrayWithPercentConstraints)
       return
 
     const resizeHandleElements = getResizeHandleElementsForGroup(
@@ -37,10 +49,10 @@ export function useWindowSplitterPanelGroupBehavior({
       _panelGroupElement,
     )
 
-    for (let index = 0; index < panelDataArray.length - 1; index++) {
+    for (let index = 0; index < panelDataArrayWithPercentConstraints.length - 1; index++) {
       const { valueMax, valueMin, valueNow } = calculateAriaValues({
         layout: layout.value,
-        panelsArray: panelDataArray,
+        panelsArray: panelDataArrayWithPercentConstraints,
         pivotIndices: [index, index + 1],
       })
 
@@ -50,7 +62,7 @@ export function useWindowSplitterPanelGroupBehavior({
           console.warn(`WARNING: Missing resize handle for PanelGroup "${groupId}"`)
       }
       else {
-        const panelData = panelDataArray[index]
+        const panelData = panelDataArrayWithPercentConstraints[index]
         assert(panelData)
 
         resizeHandleElement.setAttribute('aria-controls', panelData.id)
@@ -80,12 +92,20 @@ export function useWindowSplitterPanelGroupBehavior({
   })
 
   watchEffect((onCleanup) => {
+    // Re-run when a resize handle mounts or unmounts on its own, so Enter to
+    // collapse works on a handle added after the group (e.g. via v-if).
+    void resizeHandleRegistration.value
+
     const _panelGroupElement = panelGroupElement.value
     if (!_panelGroupElement)
       return
 
     const eagerValues = eagerValuesRef.value
     assert(eagerValues)
+
+    const panelDataArrayWithPercentConstraints = getPanelDataWithPercentConstraints()
+    if (!panelDataArrayWithPercentConstraints)
+      return
 
     const { panelDataArray } = eagerValues
     const groupElement = getPanelGroupElement(groupId, _panelGroupElement)
@@ -108,18 +128,19 @@ export function useWindowSplitterPanelGroupBehavior({
         return () => {}
 
       const onKeyDown = (event: KeyboardEvent) => {
-        if (event.defaultPrevented)
+        // A disabled handle ignores arrow keys and dragging, so it ignores Enter too.
+        if (event.defaultPrevented || handle.hasAttribute('data-disabled'))
           return
 
         switch (event.key) {
           case 'Enter': {
             event.preventDefault()
 
-            const index = panelDataArray.findIndex(
+            const index = panelDataArrayWithPercentConstraints.findIndex(
               panelData => panelData.id === idBefore,
             )
             if (index >= 0) {
-              const panelData = panelDataArray[index]
+              const panelData = panelDataArrayWithPercentConstraints[index]
               assert(panelData)
 
               const size = layout.value[index]
@@ -136,7 +157,7 @@ export function useWindowSplitterPanelGroupBehavior({
                     ? minSize - collapsedSize
                     : collapsedSize - size,
                   layout: layout.value,
-                  panelConstraints: panelDataArray.map(
+                  panelConstraints: panelDataArrayWithPercentConstraints.map(
                     panelData => panelData.constraints,
                   ),
                   pivotIndices: determinePivotIndices(
@@ -147,7 +168,7 @@ export function useWindowSplitterPanelGroupBehavior({
                   trigger: 'keyboard',
                 })
                 if (layout.value !== nextLayout)
-                  setLayout(nextLayout)
+                  commitLayout(nextLayout)
               }
             }
             break

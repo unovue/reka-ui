@@ -1,22 +1,26 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import type { ListboxRootProps } from '@/Listbox'
 import type { AcceptableValue, GenericComponentInstance } from '@/shared/types'
 import { usePrimitiveElement } from '@/Primitive'
-import { createContext, useDirection, useFilter } from '@/shared'
+import { createRekaContext, defineReactiveIds, useDirection, useFilter } from '@/shared'
 
 type ComboboxRootContext<T> = {
-  modelValue: Ref<T | Array<T>>
+  modelValue: Ref<T | Array<T> | undefined>
   multiple: Ref<boolean>
-  max: Ref<number>
   disabled: Ref<boolean>
   open: Ref<boolean>
   onOpenChange: (value: boolean) => void
+  onContentPositionChange: (content: symbol, position: 'inline' | 'popper') => void
+  onContentPlaced: (content: symbol) => void
+  onContentUnmount: (content: symbol) => void
   isUserInputted: Ref<boolean>
   isVirtual: Ref<boolean>
   contentId: string
   inputElement: Ref<HTMLInputElement | undefined>
   onInputElementChange: (el: HTMLInputElement) => void
+  /** Whether opening the combobox moves focus to the input. Set by `ComboboxInput`'s `focusOnOpen`. */
+  focusInputOnOpen: Ref<boolean>
   triggerElement: Ref<HTMLElement | undefined>
   onTriggerElementChange: (el: HTMLElement) => void
   highlightedElement: Ref<HTMLElement | undefined>
@@ -25,29 +29,33 @@ type ComboboxRootContext<T> = {
   onResetSearchTerm: EventHookOn
   allItems: Ref<Map<string, string>>
   allGroups: Ref<Map<string, Set<string>>>
-  filterState: {
-    search: string
-    filtered: { count: number, items: Map<string, number>, groups: Set<string> }
-  }
+  filterSearch: Ref<string>
+  filterState: ComputedRef<{ count: number, items: Map<string, number>, groups: Set<string> }>
   ignoreFilter: Ref<boolean>
+  openOnFocus: Ref<boolean>
+  openOnClick: Ref<boolean>
+  resetModelValueOnClear: Ref<boolean>
+  /** The value `ComboboxCancel` resets the model to when `resetModelValueOnClear` is `true`. */
+  getClearValue: () => T | Array<T> | null | undefined
+  unmountOnHide: Ref<boolean>
 }
 
 export const [injectComboboxRootContext, provideComboboxRootContext]
-  = createContext<ComboboxRootContext<AcceptableValue>>('ComboboxRoot')
+  = createRekaContext<ComboboxRootContext<AcceptableValue>>('ComboboxRoot')
 
-export type ComboboxRootEmits<T = AcceptableValue> = {
+export type ComboboxRootEmits<T = AcceptableValue, ClearValue = never> = {
   /** Event handler called when the value changes. */
-  'update:modelValue': [value: T]
+  'update:modelValue': [value: T | ClearValue]
   /** Event handler when highlighted element changes. */
   'highlight': [payload: { ref: HTMLElement, value: T } | undefined]
   /** Event handler called when the open state of the combobox changes. */
   'update:open': [value: boolean]
-  /** Event handler called when the value is invalid */
+  /** Event handler called when a selection is blocked because it would go over `max`. The payload is the first value over the limit. */
   'invalid': [payload: T]
 }
 
-export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior'> {
-  /** The controlled open state of the Combobox. Can be binded with with `v-model:open`. */
+export interface ComboboxRootProps<T = AcceptableValue, ClearValue = any> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'keepFocusOnValueChange'> {
+  /** The controlled open state of the Combobox. Can be binded with `v-model:open`. */
   open?: boolean
   /** The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. */
   defaultOpen?: boolean
@@ -62,29 +70,66 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
    */
   resetSearchTermOnSelect?: boolean
   /**
+   * Whether to open the combobox when the input is focused
+   * @defaultValue `false`
+   */
+  openOnFocus?: boolean
+  /**
+   * Whether to open the combobox when the input is clicked
+   * @defaultValue `false`
+   */
+  openOnClick?: boolean
+  /**
    * When `true`, disable the default filters
    */
   ignoreFilter?: boolean
+  /**
+   * When `true` the `modelValue` will be reset to `null` (or `[]` if `multiple`). <br>
+   * Use `clearValue` to reset to another value.
+   */
+  resetModelValueOnClear?: boolean
+  /**
+   * A function returning the value the `modelValue` is reset to when the combobox is cleared
+   * and `resetModelValueOnClear` is `true`, e.g. `() => undefined`. <br>
+   * When omitted, the `modelValue` is reset to `null` (or `[]` if `multiple`). <br>
+   * If `multiple`, return the array to reset to: any other result is ignored and `[]` is used.
+   *
+   * A controlled combobox that is also given a `defaultValue` falls back to that default
+   * whenever its `modelValue` is `undefined`, so do not combine the two when clearing to `undefined`.
+   */
+  clearValue?: () => ClearValue
+  /**
+   * When set to `false`, the Combobox content will not be unmounted when closed, but instead hidden with CSS. <br>
+   * Useful when you want to improve performance by not remounting the content on every open.
+   * @defaultValue true
+   */
+  unmountOnHide?: boolean
 }
 </script>
 
-<script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
+<script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, ClearValue extends T | Array<T> | null | undefined = never">
 import type { EventHookOn } from '@vueuse/core'
 import { createEventHook, useVModel } from '@vueuse/core'
-import { computed, getCurrentInstance, nextTick, onMounted, reactive, ref, toRefs, watch } from 'vue'
+import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 import { ListboxRoot } from '@/Listbox'
 import { PopperRoot } from '@/Popper'
+import { useComboboxContentPositioning } from './useComboboxContentPositioning'
 
-const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
+const props = withDefaults(defineProps<ComboboxRootProps<T, ClearValue>>(), {
   max: 0,
   open: undefined,
   resetSearchTermOnBlur: true,
   resetSearchTermOnSelect: true,
+  openOnFocus: false,
+  openOnClick: false,
+  resetModelValueOnClear: false,
+  highlightOnHover: true,
+  unmountOnHide: true,
 })
-const emits = defineEmits<ComboboxRootEmits<T>>()
+const emits = defineEmits<ComboboxRootEmits<T, ClearValue>>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current open state */
     open: typeof open.value
     /** Current active value */
@@ -93,11 +138,11 @@ defineSlots<{
 }>()
 
 const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
-const { multiple, max, disabled, ignoreFilter, resetSearchTermOnSelect, dir: propDir } = toRefs(props)
+const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir, resetModelValueOnClear, highlightOnHover, loop, unmountOnHide } = toRefs(props)
 
 const dir = useDirection(propDir)
 
-const modelValue = useVModel(props as ComboboxRootProps<T>, 'modelValue', emits, {
+const modelValue = useVModel(props as ComboboxRootProps<T, ClearValue>, 'modelValue', emits, {
   defaultValue: props.defaultValue ?? (multiple.value ? [] : undefined),
   passive: (props.modelValue === undefined) as false,
   deep: true,
@@ -108,66 +153,88 @@ const open = useVModel(props, 'open', emits, {
   passive: (props.open === undefined) as false,
 }) as Ref<boolean>
 
+// `true` while `onOpenChange` is opening the list and will highlight the selected item itself
+let isOpeningInternally = false
+
 async function onOpenChange(val: boolean) {
+  isOpeningInternally = val
   open.value = val
-  filterState.search = ''
+  filterSearch.value = ''
 
   if (val) {
     // make sure dom is ready then only highlight the selected
     await nextTick()
+    isOpeningInternally = false
     primitiveElement.value?.highlightSelected()
     isUserInputted.value = true
+    if (focusInputOnOpen.value)
+      inputElement.value?.focus()
   }
   else {
     isUserInputted.value = false
+    setTimeout(() => {
+      if (!val && props.resetSearchTermOnBlur)
+        resetSearchTerm.trigger()
+    }, 1)
   }
-
-  inputElement.value?.focus()
-  setTimeout(() => {
-    if (!val && props.resetSearchTermOnBlur)
-      resetSearchTerm.trigger()
-  }, 1)
 }
 
 const resetSearchTerm = createEventHook()
 const isUserInputted = ref(false)
 const isVirtual = ref(false)
 const inputElement = ref<HTMLInputElement>()
+const focusInputOnOpen = ref(true)
 const triggerElement = ref<HTMLElement>()
 
 const highlightedElement = computed(() => primitiveElement.value?.highlightedElement ?? undefined)
+const contentPositioning = useComboboxContentPositioning(open)
+
+watch([open, highlightedElement], ([isOpen], [wasOpen]) => {
+  const listbox = primitiveElement.value
+  if (!listbox)
+    return
+
+  if (!isOpen) {
+    // Items that stay mounted while closed (`unmountOnHide: false`) are still connected,
+    // so Enter would select the highlighted one. Nothing is highlighted while closed.
+    if (highlightedElement.value)
+      listbox.highlightedElement = null
+  }
+  // Opened by the parent through `open`: bring back the highlight those items lost while closed.
+  else if (!wasOpen && !isOpeningInternally && !highlightedElement.value && listbox.getItems().length) {
+    listbox.highlightSelected()
+  }
+})
 
 const allItems = ref<Map<string, string>>(new Map())
 const allGroups = ref<Map<string, Set<string>>>(new Map())
 
 const { contains } = useFilter({ sensitivity: 'base' })
-const filterState = reactive({
-  search: '',
-  filtered: {
-    /** The count of all visible items. */
-    count: 0,
-    /** Map from visible item id to its search score. */
-    items: new Map() as Map<string, number>,
-    /** Set of groups with at least one visible item. */
-    groups: new Set() as Set<string>,
-  },
-})
 
-function filterItems() {
-  if (!filterState.search || props.ignoreFilter || isVirtual.value) {
-    filterState.filtered.count = allItems.value.size
+const filterSearch = ref('')
+
+const filterState = computed<{
+  count: number
+  items: Map<string, number>
+  groups: Set<string>
+}>((oldValue) => {
+  if (!filterSearch.value || props.ignoreFilter || isVirtual.value) {
     // Do nothing, each item will know to show itself because search is empty
-    return
+    return {
+      count: allItems.value.size,
+      items: oldValue?.items ?? new Map(),
+      groups: oldValue?.groups ?? new Set(allGroups.value.keys()),
+    }
   }
 
-  // Reset the groups
-  filterState.filtered.groups = new Set()
   let itemCount = 0
+  const filteredItems = new Map<string, number>()
+  const filteredGroups = new Set<string>()
 
   // Check which items should be included
   for (const [id, value] of allItems.value) {
-    const score = contains(value, filterState.search)
-    filterState.filtered.items.set(id, score ? 1 : 0)
+    const score = contains(value, filterSearch.value)
+    filteredItems.set(id, score ? 1 : 0)
     if (score)
       itemCount++
   }
@@ -175,27 +242,27 @@ function filterItems() {
   // Check which groups have at least 1 item shown
   for (const [groupId, group] of allGroups.value) {
     for (const itemId of group) {
-      if (filterState.filtered.items.get(itemId)! > 0) {
-        filterState.filtered.groups.add(groupId)
+      if (filteredItems.get(itemId)! > 0) {
+        filteredGroups.add(groupId)
         break
       }
     }
   }
 
-  filterState.filtered.count = itemCount
+  return {
+    count: itemCount,
+    items: filteredItems,
+    groups: filteredGroups,
+  }
+})
+
+function getClearValue() {
+  const clearValue = props.clearValue ? props.clearValue() : null
+  // A multiple combobox always holds an array, whatever the function returns.
+  if (multiple.value)
+    return Array.isArray(clearValue) ? clearValue : []
+  return clearValue
 }
-
-watch([() => filterState.search, () => allItems.value.size], () => {
-  filterItems()
-}, { immediate: true })
-
-watch(() => open.value, () => {
-  // nextTick to allow multiple items to be mounted first
-  nextTick(() => {
-    if (open.value)
-      filterItems()
-  })
-}, { flush: 'post' })
 
 const inst = getCurrentInstance()
 onMounted(() => {
@@ -207,26 +274,27 @@ onMounted(() => {
 })
 
 defineExpose({
-  filtered: computed(() => filterState.filtered),
+  filtered: filterState,
   highlightedElement,
   highlightItem: primitiveElement.value?.highlightItem,
   highlightFirstItem: primitiveElement.value?.highlightFirstItem,
   highlightSelected: primitiveElement.value?.highlightSelected,
 })
 
-provideComboboxRootContext({
+provideComboboxRootContext(defineReactiveIds({
   modelValue,
   multiple,
-  max,
   disabled,
   open,
   onOpenChange,
+  ...contentPositioning,
   contentId: '',
   isUserInputted,
   isVirtual,
   inputElement,
   highlightedElement,
   onInputElementChange: val => inputElement.value = val,
+  focusInputOnOpen,
   triggerElement,
   onTriggerElementChange: val => triggerElement.value = val,
   parentElement,
@@ -234,13 +302,19 @@ provideComboboxRootContext({
   onResetSearchTerm: resetSearchTerm.on,
   allItems,
   allGroups,
+  filterSearch,
   filterState,
   ignoreFilter,
-})
+  openOnFocus,
+  openOnClick,
+  resetModelValueOnClear,
+  getClearValue,
+  unmountOnHide,
+}, ['contentId']))
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="combobox">
     <ListboxRoot
       ref="primitiveElement"
       v-bind="$attrs"
@@ -252,11 +326,12 @@ provideComboboxRootContext({
       :as-child="asChild"
       :dir="dir"
       :multiple="multiple"
-      :max="max"
+      :max="props.max"
       :name="name"
       :required="required"
       :disabled="disabled"
-      :highlight-on-hover="true"
+      :highlight-on-hover="highlightOnHover"
+      :loop="loop"
       :by="props.by as any"
       @invalid="emits('invalid', $event as T)"
       @highlight="emits('highlight', $event as any)"

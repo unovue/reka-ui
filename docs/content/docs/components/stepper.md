@@ -138,7 +138,7 @@ If you want to hide the title, wrap it inside our Visually Hidden utility like t
 
 An optional accessible description to be announced when the stepper trigger is focused.
 
-If you want to hide the description, wrap it inside our Visually Hidden utility like this `<VisuallyHidden asChild>`. If you want to remove the description entirely, remove this part and pass `aria-describedby="undefined"` to `StepperTrigger`.
+If you want to hide the description, wrap it inside our Visually Hidden utility like this `<VisuallyHidden asChild>`. If you want to remove the description entirely, remove this part.
 
 <!-- @include: @/meta/StepperItem.md -->
 
@@ -172,7 +172,69 @@ import { StepperDescription, StepperIndicator, StepperItem, StepperRoot, Stepper
 </template>
 ```
 
+### With controls
+
+You can add additional controls for the stepper using buttons and access the typed component instance using `useTemplateRef`.
+
+```vue line=8
+<script setup lang="ts">
+const stepper = useTemplateRef('stepper')
+</script>
+
+<template>
+  <StepperRoot
+    ref="stepper"
+    :default-value="1"
+  >
+    <StepperItem>
+      <StepperIndicator />
+      <StepperTitle />
+      <StepperDescription />
+    </StepperItem>
+    <StepperItem>
+      <StepperIndicator />
+      <StepperTitle />
+      <StepperDescription />
+    </StepperItem>
+  </StepperRoot>
+
+  <div class="flex gap-2 justify-between mt-4">
+    <button
+      :disabled="!stepper?.hasPrev()"
+      @click="stepper?.prevStep()"
+    >
+      Prev
+    </button>
+
+    <button
+      :disabled="!stepper?.hasNext()"
+      @click="stepper?.nextStep()"
+    >
+      Next
+    </button>
+  </div>
+</template>
+```
+
 ## Accessibility
+
+### Trigger name and current step
+
+`StepperTrigger` is named by the item's rendered `StepperTitle` and `StepperDescription`, in that order, through `aria-labelledby`. Only the parts that are rendered are referenced. Pass an `aria-label` or `aria-labelledby` to `StepperTrigger` to name it yourself; the description is then exposed through `aria-describedby`.
+
+The trigger of the current step has `aria-current="step"`. `StepperItem` keeps `aria-current="true"` for styling.
+
+### Step announcements
+
+The live region announces the active step's one-based position among the rendered steps, independently of its `step` value. Use `announce` to translate or replace the message:
+
+```vue
+<StepperRoot :announce="(step, total) => `Étape ${step} sur ${total}`">
+  <!-- Stepper items -->
+</StepperRoot>
+```
+
+Set `:announce="false"` when your application provides its own live announcement. No message is announced when the active value does not match a rendered step.
 
 ### Keyboard Interactions
 

@@ -1,0 +1,42 @@
+@import '@radix-ui/colors/black-alpha.css';
+@import '@radix-ui/colors/grass.css';
+@import '@radix-ui/colors/mauve.css';
+
+.ColorAreaDemo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ColorAreaValue {
+  color: var(--mauve-11);
+  font-size: 14px;
+}
+
+.ColorAreaRoot {
+  position: relative;
+}
+
+.ColorAreaArea {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.ColorAreaArea:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--grass-7);
+}
+
+.ColorAreaThumb {
+  display: block;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  background-color: white;
+  border: 2px solid var(--mauve-8);
+  border-radius: 9999px;
+  box-shadow: 0 2px 10px var(--black-a7);
+}

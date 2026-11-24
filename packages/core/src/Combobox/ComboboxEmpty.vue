@@ -14,7 +14,7 @@ const rootContext = injectComboboxRootContext()
 
 const isRender = computed(() => rootContext.ignoreFilter.value
   ? rootContext.allItems.value.size === 0
-  : !!rootContext.filterState.search && rootContext.filterState.filtered.count === 0,
+  : rootContext.filterState.value.count === 0,
 )
 </script>
 
@@ -22,6 +22,8 @@ const isRender = computed(() => rootContext.ignoreFilter.value
   <Primitive
     v-if="isRender"
     v-bind="props"
+    role="option"
+    aria-disabled="true"
   >
     <slot>No options</slot>
   </Primitive>

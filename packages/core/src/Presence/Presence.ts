@@ -2,7 +2,6 @@ import type {
   SlotsType,
   VNode,
 } from 'vue'
-import { renderSlotFragments } from '@/shared'
 import { unrefElement } from '@vueuse/core'
 import {
   defineComponent,
@@ -11,6 +10,7 @@ import {
   ref,
   toRefs,
 } from 'vue'
+import { renderSlotFragments } from '@/shared'
 import { usePresence } from './usePresence'
 
 export interface PresenceProps {
@@ -82,6 +82,10 @@ export default defineComponent({
         return h(slots.default({ present: isPresent.value })[0] as VNode, {
           ref: (v) => {
             const el = unrefElement(v as HTMLElement)
+            if (!el) {
+              node.value = undefined
+              return el
+            }
             if (typeof el?.hasAttribute === 'undefined')
               return el
 

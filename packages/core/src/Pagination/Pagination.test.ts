@@ -2,6 +2,8 @@ import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { h, nextTick } from 'vue'
+import { PaginationNext, PaginationPrev, PaginationRoot } from '.'
 import Pagination from './story/_Pagination.vue'
 
 describe('given default Pagination', () => {
@@ -257,5 +259,125 @@ describe('given 0 total value', () => {
     expect(wrapper.find('[aria-label="Previous Page"]').attributes('disabled')).toBeDefined()
     expect(wrapper.find('[aria-label="Next Page"]').attributes('disabled')).toBeDefined()
     expect(wrapper.find('[aria-label="Last Page"]').attributes('disabled')).toBeDefined()
+  })
+})
+
+describe('when the page count shrinks', () => {
+  function mountPagination(props: Record<string, unknown>) {
+    return mount(PaginationRoot, {
+      props: { total: 100, itemsPerPage: 10, ...props },
+      slots: {
+        default: ({ page }: { page: number }) => [h('output', String(page)), h(PaginationPrev), h(PaginationNext)],
+      },
+    })
+  }
+
+  it.each([
+    { model: { defaultPage: 10 }, change: { total: 20 } },
+    { model: { page: 10 }, change: { itemsPerPage: 50 } },
+  ])('keeps the page but navigates within the new page count with $model', async ({ model, change }) => {
+    const wrapper = mountPagination(model)
+
+    await wrapper.setProps(change)
+    expect(wrapper.get('output').text()).toBe('10')
+    expect(wrapper.emitted('update:page')).toBeUndefined()
+
+    const next = wrapper.get('[aria-label="Next Page"]')
+    expect(next.attributes('disabled')).toBeDefined()
+    await next.trigger('click')
+    await wrapper.get('[aria-label="Previous Page"]').trigger('click')
+    expect(wrapper.emitted('update:page')).toEqual([[2]])
+  })
+
+  it.each([
+    { model: { defaultPage: 10 }, change: { total: 20 } },
+    { model: { page: 10 }, change: { itemsPerPage: 50 } },
+  ])('moves to the new last page with `clampPage` and $model', async ({ model, change }) => {
+    const wrapper = mountPagination({ clampPage: true, ...model })
+    expect(wrapper.get('output').text()).toBe('10')
+
+    await wrapper.setProps(change)
+    expect(wrapper.get('output').text()).toBe('2')
+    expect(wrapper.emitted('update:page')).toEqual([[2]])
+
+    const next = wrapper.get('[aria-label="Next Page"]')
+    expect(next.attributes('disabled')).toBeDefined()
+    await next.trigger('click')
+    await wrapper.get('[aria-label="Previous Page"]').trigger('click')
+    expect(wrapper.emitted('update:page')).toEqual([[2], [1]])
+  })
+
+  it('brings an out-of-range page into range on mount and when `clampPage` turns on', async () => {
+    const wrapper = mountPagination({ page: 20, total: 50 })
+    expect(wrapper.get('output').text()).toBe('20')
+    expect(wrapper.emitted('update:page')).toBeUndefined()
+
+    await wrapper.setProps({ clampPage: true })
+    expect(wrapper.get('output').text()).toBe('5')
+    expect(wrapper.emitted('update:page')).toEqual([[5]])
+
+    const mounted = mountPagination({ clampPage: true, defaultPage: 20, total: 50 })
+    expect(mounted.get('output').text()).toBe('5')
+    expect(mounted.emitted('update:page')).toEqual([[5]])
+  })
+
+  describe('with `clampPage` and a `v-model:page` that starts undefined', () => {
+    function mountBound(data: { page?: number, total: number, clampPage: boolean }) {
+      const updates: number[] = []
+      const wrapper = mount({
+        components: { PaginationRoot },
+        data: () => ({ page: undefined as number | undefined, ...data }),
+        methods: {
+          onUpdate(value: number) {
+            updates.push(value)
+            this.page = value
+          },
+        },
+        template: `<PaginationRoot :page="page" :total="total" :items-per-page="10" :clamp-page="clampPage" @update:page="onUpdate" v-slot="{ page: current }">
+          <output>{{ current }}</output>
+        </PaginationRoot>`,
+      })
+      return { wrapper, updates }
+    }
+
+    it('emits the correction when the parent sets an out-of-range page', async () => {
+      const { wrapper, updates } = mountBound({ total: 50, clampPage: true })
+
+      await wrapper.setData({ page: 20 })
+      await nextTick()
+      expect(updates).toEqual([5])
+      expect(wrapper.vm.page).toBe(5)
+      expect(wrapper.get('output').text()).toBe('5')
+    })
+
+    it('emits each correction once when the page count shrinks or `clampPage` turns on', async () => {
+      const { wrapper, updates } = mountBound({ total: 50, clampPage: false })
+
+      await wrapper.setData({ page: 4 })
+      await wrapper.setData({ clampPage: true, total: 20 })
+      await nextTick()
+      expect(updates).toEqual([2])
+      expect(wrapper.vm.page).toBe(2)
+
+      await wrapper.setData({ clampPage: false })
+      await wrapper.setData({ page: 9 })
+      await wrapper.setData({ clampPage: true })
+      await nextTick()
+      expect(updates).toEqual([2, 2])
+      expect(wrapper.get('output').text()).toBe('2')
+    })
+  })
+
+  it('emits a correction once with a controlled page', async () => {
+    const wrapper = mountPagination({ clampPage: true, page: 3, total: 50 })
+
+    await wrapper.setProps({ page: 20 })
+    await nextTick()
+    expect(wrapper.emitted('update:page')).toEqual([[5]])
+
+    await wrapper.setProps({ page: 5 })
+    await wrapper.setProps({ total: 30 })
+    await nextTick()
+    expect(wrapper.emitted('update:page')).toEqual([[5], [3]])
   })
 })

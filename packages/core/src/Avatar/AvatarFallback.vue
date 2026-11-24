@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
+import { isClient } from '@vueuse/shared'
 import { useForwardExpose } from '@/shared'
 
 export interface AvatarFallbackProps extends PrimitiveProps {
@@ -9,8 +10,8 @@ export interface AvatarFallbackProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { ref, watchEffect } from 'vue'
+import { Primitive } from '@/Primitive'
 import { injectAvatarRootContext } from './AvatarRoot.vue'
 
 const props = withDefaults(defineProps<AvatarFallbackProps>(), {
@@ -23,7 +24,7 @@ useForwardExpose()
 const canRender = ref(props.delayMs === undefined)
 
 watchEffect((onCleanup) => {
-  if (props.delayMs) {
+  if (props.delayMs && isClient) {
     const timerId = window.setTimeout(() => {
       canRender.value = true
     }, props.delayMs)

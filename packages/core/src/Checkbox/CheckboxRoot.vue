@@ -1,19 +1,25 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
-import type { AcceptableValue, FormFieldProps } from '@/shared/types'
 import type { Ref } from 'vue'
 import type { CheckedState } from './utils'
-import { createContext, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose } from '@/shared'
+import type { PrimitiveProps } from '@/Primitive'
+import type { AcceptableValue, FormFieldProps } from '@/shared/types'
 import { useVModel } from '@vueuse/core'
+import { createRekaContext, disabledAttr, isNullish, isValueEqualOrExist, useFormControl, useForwardExpose, useForwardScopeId, useId } from '@/shared'
 import { injectCheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 
-export interface CheckboxRootProps extends PrimitiveProps, FormFieldProps {
+export interface CheckboxRootProps<TrueValue = boolean, FalseValue = TrueValue> extends PrimitiveProps, FormFieldProps {
   /** The value of the checkbox when it is initially rendered. Use when you do not need to control its value. */
-  defaultValue?: boolean | 'indeterminate'
+  defaultValue?: NoInfer<TrueValue | FalseValue> | 'indeterminate'
   /** The controlled value of the checkbox. Can be binded with v-model. */
-  modelValue?: boolean | 'indeterminate' | null
+  modelValue?: NoInfer<TrueValue | FalseValue> | 'indeterminate' | null
   /** When `true`, prevents the user from interacting with the checkbox */
   disabled?: boolean
+  /**
+   * When `true` inside a `CheckboxGroupRoot`, the checkbox controls the values listed in the
+   * group's `allValues`: it shows their combined state and checks or unchecks them all.
+   * Disabled checkboxes keep their value. A parent checkbox doesn't submit a value of its own.
+   */
+  parent?: boolean
   /**
    * The value given as data when submitted with a `name`.
    *  @defaultValue "on"
@@ -21,11 +27,19 @@ export interface CheckboxRootProps extends PrimitiveProps, FormFieldProps {
   value?: AcceptableValue
   /** Id of the element */
   id?: string
+  /**
+   * The value used when the checkbox is checked. Defaults to `true`.
+   */
+  trueValue?: TrueValue
+  /**
+   * The value used when the checkbox is unchecked. Defaults to `false`.
+   */
+  falseValue?: FalseValue
 }
 
-export type CheckboxRootEmits = {
+export type CheckboxRootEmits<TrueValue = boolean, FalseValue = TrueValue> = {
   /** Event handler called when the value of the checkbox changes. */
-  'update:modelValue': [value: boolean | 'indeterminate']
+  'update:modelValue': [value: TrueValue | FalseValue | 'indeterminate']
 }
 
 interface CheckboxRootContext {
@@ -34,30 +48,36 @@ interface CheckboxRootContext {
 }
 
 export const [injectCheckboxRootContext, provideCheckboxRootContext]
-  = createContext<CheckboxRootContext>('CheckboxRoot')
+  = createRekaContext<CheckboxRootContext>('CheckboxRoot')
+
+// Ids for checkboxes whose group gets `allValues` after they mount.
+let lateIdCount = 0
 </script>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="TrueValue = true, FalseValue = false">
+import { isEqual } from 'ohash'
+import { computed, onBeforeUnmount, onMounted, shallowRef, useAttrs, watch } from 'vue'
+import { injectFieldRootContext } from '@/Field'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
-import { isEqual } from 'ohash'
-import { computed } from 'vue'
-import { getState, isIndeterminate } from './utils'
+import { getParentState, getParentToggleValue, getState, isIndeterminate } from './utils'
 
 defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<CheckboxRootProps>(), {
+const props = withDefaults(defineProps<CheckboxRootProps<TrueValue, FalseValue>>(), {
   modelValue: undefined,
   value: 'on',
   as: 'button',
+  trueValue: (() => true) as unknown as undefined,
+  falseValue: (() => false) as unknown as undefined,
 })
-const emits = defineEmits<CheckboxRootEmits>()
+const emits = defineEmits<CheckboxRootEmits<TrueValue, FalseValue>>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current value */
     modelValue: typeof modelValue.value
     /** Current state */
@@ -68,27 +88,88 @@ defineSlots<{
 const { forwardRef, currentElement } = useForwardExpose()
 
 const checkboxGroupContext = injectCheckboxGroupRootContext(null)
+// A parent checkbox only means something inside a group.
+const isParent = computed(() => Boolean(checkboxGroupContext && props.parent))
+// While the group has `allValues`, its other checkboxes register for the parent and get an
+// id for its `aria-controls`. Without it, nothing registers and no id is generated.
+const isControlledChild = () => Boolean(checkboxGroupContext?.allValues.value && !props.parent)
+const generatedId = shallowRef(isControlledChild() ? useId(undefined, 'reka-checkbox') : undefined)
 
-const modelValue = useVModel(props, 'modelValue', emits, {
-  defaultValue: props.defaultValue,
+// Optional Field participation: `injectFieldRootContext(null)` returns
+// `null` (instead of throwing) outside a `FieldRoot`, so every binding below
+// is inert — and byte-for-byte identical to before — when there is no Field.
+const fieldContext = injectFieldRootContext(null)
+
+const modelValue = useVModel(props as any, 'modelValue', emits as any, {
+  defaultValue: props.defaultValue ?? props.falseValue,
   passive: (props.modelValue === undefined) as false,
-}) as Ref<CheckedState>
+}) as Ref<TrueValue | FalseValue | 'indeterminate'>
 
-const disabled = computed(() => checkboxGroupContext?.disabled.value || props.disabled)
+// An unchecked checkbox can't be added once its group has reached `max`.
+const isGroupMaxReached = computed(() => {
+  const max = checkboxGroupContext?.max.value
+  // A parent can always uncheck, and checks only up to `max`.
+  if (isNullish(max) || isParent.value)
+    return false
+  const values = checkboxGroupContext!.modelValue.value ?? []
+  return !isValueEqualOrExist(values, props.value) && values.length >= max
+})
+
+// Explicitly disabled (prop, group or Field): natively disabled and unfocusable.
+const nativeDisabled = computed(() => Boolean(checkboxGroupContext?.disabled.value || props.disabled || fieldContext?.disabled.value))
+// A checkbox blocked only by the group's `max` stays focusable and is exposed via
+// `aria-disabled` alone, so keyboard and screen reader users can still discover it.
+// `data-disabled` stays tied to native `disabled`, as `RovingFocusGroup` skips items with it.
+const disabled = computed(() => nativeDisabled.value || isGroupMaxReached.value)
+// Checkboxes inside a `CheckboxGroupRoot` share one Field, so none of them
+// takes the field's id (it would be duplicated) or acts as its control.
+const participatesAsControl = computed(() => Boolean(fieldContext) && !checkboxGroupContext)
+const resolvedId = computed(() => props.id ?? (participatesAsControl.value ? fieldContext?.fieldId.value : generatedId.value))
+const resolvedName = computed(() => props.name ?? fieldContext?.name.value)
+// `required` is a plain (non-optional-default) `Boolean` prop, so Vue casts
+// it to `false` rather than `undefined` when omitted — `props.required` can
+// never actually be `undefined`. Only fall back to the Field's `required`
+// when a Field is present, so standalone output (where this cast has always
+// applied) is untouched.
+const resolvedRequired = computed(() => (fieldContext ? (props.required || fieldContext.required.value) : props.required))
+
+const isChecked = computed(() => isEqual(modelValue.value, props.trueValue))
 
 const checkboxState = computed<CheckedState>(() => {
   if (!isNullish(checkboxGroupContext?.modelValue.value)) {
+    if (isParent.value)
+      return getParentState(checkboxGroupContext.allValues.value ?? [], checkboxGroupContext.modelValue.value)
     return isValueEqualOrExist(checkboxGroupContext.modelValue.value, props.value)
   }
   else {
-    return modelValue.value === 'indeterminate' ? 'indeterminate' : modelValue.value
+    if (modelValue.value === 'indeterminate')
+      return 'indeterminate'
+    return isChecked.value
   }
 })
 
 function handleClick() {
+  // Native `disabled` doesn't block clicks on a non-button (`asChild`), nor when
+  // the checkbox is only blocked by the group's `max`.
+  if (disabled.value)
+    return
+
+  // Captured before the update: a controlled `modelValue` only changes once
+  // the parent re-renders.
+  const nextState = checkboxState.value !== true
+
   if (!isNullish(checkboxGroupContext?.modelValue.value)) {
-    const modelValueArray = [...(checkboxGroupContext.modelValue.value || [])]
-    if (isValueEqualOrExist(modelValueArray, props.value)) {
+    let modelValueArray = [...(checkboxGroupContext.modelValue.value || [])]
+    if (isParent.value) {
+      const disabledItems = getControlledItems().filter(item => item.disabled())
+      modelValueArray = getParentToggleValue(
+        checkboxGroupContext.allValues.value ?? [],
+        modelValueArray,
+        value => disabledItems.some(item => isEqual(item.value(), value)),
+        checkboxGroupContext.max.value,
+      )
+    }
+    else if (isValueEqualOrExist(modelValueArray, props.value)) {
       const index = modelValueArray.findIndex(i => isEqual(i, props.value))
       modelValueArray.splice(index, 1)
     }
@@ -98,56 +179,163 @@ function handleClick() {
     checkboxGroupContext.modelValue.value = modelValueArray
   }
   else {
-    modelValue.value = isIndeterminate(modelValue.value) ? true : !modelValue.value
+    if (modelValue.value === 'indeterminate') {
+      modelValue.value = props.trueValue as TrueValue
+    }
+    else {
+      modelValue.value = isChecked.value ? props.falseValue as FalseValue : props.trueValue as TrueValue
+    }
+  }
+
+  if (participatesAsControl.value)
+    fieldContext?.handleControlInput({ value: nextState })
+}
+
+// A programmatic/parent-driven change updates `filled`, but isn't dirtying.
+watch(checkboxState, (state) => {
+  if (participatesAsControl.value)
+    fieldContext?.reportControlState({ filled: state === true })
+})
+
+const isFormControl = useFormControl(currentElement)
+// The hidden form input is rendered as a sibling (not nested) of the interactive
+// control to avoid the `nested-interactive` a11y violation. That makes this a
+// multi-root component, so the parent's scoped-style id must be forwarded manually.
+const scopeIdAttrs = useForwardScopeId()
+const attrs = useAttrs()
+const ariaLabel = computed(() => {
+  // An explicit `aria-label` always wins, so skip the (potentially expensive)
+  // label lookup entirely — this matters when rendering many checkboxes at once.
+  if (attrs['aria-label'])
+    return undefined
+  return resolvedId.value && currentElement.value
+    ? (document.querySelector(`[for="${resolvedId.value}"]`) as HTMLLabelElement)?.innerText
+    : undefined
+})
+
+// Field aria wiring, merged with (never overwriting) the consumer's values.
+// `attrs` isn't reactive, so this runs during render rather than in a
+// `computed`. A consumer-provided `aria-invalid` always wins — read it
+// explicitly, since our own binding below is written after the `$attrs`
+// spread and would otherwise clobber it (even with an `undefined` value).
+function getFieldAriaAttrs() {
+  const mergeIds = (consumerValue: unknown, fieldValue: string | undefined) =>
+    [consumerValue as string | undefined, fieldValue].filter(Boolean).join(' ') || undefined
+  return {
+    'aria-labelledby': mergeIds(attrs['aria-labelledby'], participatesAsControl.value ? fieldContext?.labelId.value : undefined),
+    'aria-describedby': mergeIds(attrs['aria-describedby'], fieldContext?.describedBy.value),
+    'aria-invalid': attrs['aria-invalid'] ?? (fieldContext?.invalid.value || undefined),
   }
 }
 
-const isFormControl = useFormControl(currentElement)
-const ariaLabel = computed(() => props.id && currentElement.value
-  ? (document.querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText
+function handleFocus() {
+  fieldContext?.handleControlFocus()
+}
+function handleBlur() {
+  if (participatesAsControl.value)
+    fieldContext?.handleControlBlur()
+  else
+    fieldContext?.reportControlState({ focused: false, touched: true })
+}
+
+let unregisterControl: (() => void) | undefined
+onMounted(() => {
+  if (!participatesAsControl.value)
+    return
+  unregisterControl = fieldContext?.registerControl({
+    id: () => resolvedId.value,
+    element: () => currentElement.value as HTMLElement | undefined,
+    getValue: () => checkboxState.value,
+    required: () => props.required,
+    // A required checkbox must be checked.
+    isFilled: value => value === true,
+  })
+})
+onBeforeUnmount(() => unregisterControl?.())
+
+function getControlledItems() {
+  const allValues = checkboxGroupContext!.allValues.value ?? []
+  return [...checkboxGroupContext!.items].filter(item => isValueEqualOrExist(allValues, item.value()))
+}
+
+const ariaControls = computed(() => isParent.value
+  ? getControlledItems().map(item => item.id()).filter(Boolean).join(' ') || undefined
   : undefined)
 
+if (checkboxGroupContext) {
+  const items = checkboxGroupContext!.items
+  const item = {
+    value: () => props.value,
+    disabled: () => nativeDisabled.value,
+    id: () => resolvedId.value,
+  }
+  // Reused if `allValues` (or `parent`) changes back and forth.
+  let id = generatedId.value
+  onMounted(() => {
+    if (isControlledChild())
+      items.add(item)
+  })
+  // Changed after mount: no SSR to match, so a client-side id is enough. Its own prefix
+  // keeps it apart from `useId`'s ids.
+  watch(isControlledChild, (controlled) => {
+    if (controlled) {
+      id ??= `reka-checkbox-late-${++lateIdCount}`
+      generatedId.value = id
+      items.add(item)
+    }
+    else {
+      generatedId.value = undefined
+      items.delete(item)
+    }
+  })
+  onBeforeUnmount(() => items.delete(item))
+}
+
 provideCheckboxRootContext({
-  disabled,
+  disabled: nativeDisabled,
   state: checkboxState,
 })
 </script>
 
 <template>
   <component
-    v-bind="$attrs"
+    v-bind="{ ...fieldContext?.dataAttributes.value, 'aria-controls': ariaControls, ...$attrs, ...scopeIdAttrs, ...getFieldAriaAttrs() }"
     :is="checkboxGroupContext?.rovingFocus.value ? RovingFocusItem : Primitive"
-    :id="id"
+    :id="resolvedId"
     :ref="forwardRef"
     role="checkbox"
     :as-child="asChild"
     :as="as"
     :type="as === 'button' ? 'button' : undefined"
     :aria-checked="isIndeterminate(checkboxState) ? 'mixed' : checkboxState"
-    :aria-required="required"
+    :aria-required="resolvedRequired"
     :aria-label="$attrs['aria-label'] || ariaLabel"
     :data-state="getState(checkboxState)"
-    :data-disabled="disabled ? '' : undefined"
-    :disabled="disabled"
-    :focusable="checkboxGroupContext?.rovingFocus.value ? !disabled : undefined"
+    :aria-disabled="disabled ? 'true' : undefined"
+    :data-disabled="nativeDisabled ? '' : undefined"
+    :disabled="disabledAttr(nativeDisabled, props.as, props.asChild)"
+    :focusable="checkboxGroupContext?.rovingFocus.value ? !nativeDisabled : undefined"
     @keydown.enter.prevent="() => {
       // According to WAI ARIA, Checkboxes don't activate on enter keypress
     }"
     @click="handleClick"
+    @focus="handleFocus"
+    @blur="handleBlur"
   >
     <slot
       :model-value="modelValue"
       :state="checkboxState"
     />
-
-    <VisuallyHiddenInput
-      v-if="isFormControl && name && !checkboxGroupContext"
-      type="checkbox"
-      :checked="!!checkboxState"
-      :name="name"
-      :value="value"
-      :disabled="disabled"
-      :required="required"
-    />
   </component>
+
+  <VisuallyHiddenInput
+    v-if="isFormControl && resolvedName && !checkboxGroupContext"
+    type="checkbox"
+    :checked="!!checkboxState"
+    :name="resolvedName"
+    :value="value"
+    :disabled="nativeDisabled"
+    :required="resolvedRequired"
+    v-bind="scopeIdAttrs"
+  />
 </template>

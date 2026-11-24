@@ -3,7 +3,7 @@ import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectToastProviderContext } from './ToastProvider.vue'
 
 const emits = defineEmits<{
-  focusFromOutsideViewport: [void]
+  focusFromOutsideViewport: []
 }>()
 
 const providerContext = injectToastProviderContext()
@@ -11,7 +11,6 @@ const providerContext = injectToastProviderContext()
 
 <template>
   <VisuallyHidden
-    aria-hidden="true"
     tabindex="0"
     style="position: fixed"
     @focus="(event: FocusEvent) => {

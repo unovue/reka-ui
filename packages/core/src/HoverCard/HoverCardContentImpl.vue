@@ -1,18 +1,18 @@
 <script lang="ts">
 import type { DismissableLayerEmits } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
-import { useForwardExpose, useGraceArea } from '@/shared'
 import { syncRef } from '@vueuse/shared'
+import { useForwardExpose, useForwardProps, useGraceArea } from '@/shared'
 
 export type HoverCardContentImplEmits = DismissableLayerEmits
 export interface HoverCardContentImplProps extends PopperContentProps {}
 </script>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
+import { nextTick, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { PopperContent } from '@/Popper'
-import { nextTick, onMounted, onUnmounted, ref, watchEffect } from 'vue'
-import { useForwardProps } from '..'
 import { injectHoverCardRootContext } from './HoverCardRoot.vue'
 import { getTabbableNodes } from './utils'
 
@@ -68,6 +68,12 @@ onMounted(() => {
     const tabbables = getTabbableNodes(contentElement.value)
     tabbables.forEach(tabbable => tabbable.setAttribute('tabindex', '-1'))
   }
+
+  useEventListener(window, 'scroll', (event: Event) => {
+    const target = event.target as HTMLElement
+    if (target?.contains(rootContext.triggerElement.value!))
+      rootContext.onDismiss()
+  }, { capture: true })
 })
 
 onUnmounted(() => {
@@ -84,11 +90,13 @@ onUnmounted(() => {
     @escape-key-down="emits('escapeKeyDown', $event)"
     @pointer-down-outside="emits('pointerDownOutside', $event)"
     @focus-outside.prevent="emits('focusOutside', $event)"
+    @interact-outside="emits('interactOutside', $event)"
     @dismiss="rootContext.onDismiss"
   >
     <PopperContent
       v-bind="{ ...forwarded, ...$attrs }"
       :ref="forwardRef"
+      scope="hover-card"
       :data-state="rootContext.open.value ? 'open' : 'closed'"
       :style="{
         'userSelect': containSelection ? 'text' : undefined,

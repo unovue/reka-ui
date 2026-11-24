@@ -27,6 +27,7 @@ export type {
   DateRange,
   DateSegmentObj,
   DateSegmentPart,
+  DateStep,
   DateValue,
   DayOfWeek,
   DayPeriod,
@@ -34,8 +35,10 @@ export type {
   SegmentContentObj,
   SegmentPart,
   SegmentValueObj,
+  TimeRange,
   TimeSegmentObj,
   TimeSegmentPart,
 } from './types'
 export { useDateField } from './useDateField'
+export { useSegmentNavigation } from './useSegmentNavigation'
 export * from './utils'

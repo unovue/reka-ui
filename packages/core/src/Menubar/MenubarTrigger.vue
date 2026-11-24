@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { useForwardExpose } from '@/shared'
+import { disabledAttr, useForwardExpose, useRenderedContentId, useTriggerId } from '@/shared'
 
 export interface MenubarTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -10,12 +10,13 @@ export interface MenubarTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { MenuAnchor } from '@/Menu'
+import { computed, onMounted, ref } from 'vue'
+import { trackTriggerPress } from '@/DismissableLayer/utils'
+import { injectMenuContext, MenuAnchor } from '@/Menu'
 import {
   Primitive,
 } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
-import { computed, onMounted, ref } from 'vue'
 import { injectMenubarMenuContext } from './MenubarMenu.vue'
 import { injectMenubarRootContext } from './MenubarRoot.vue'
 
@@ -31,6 +32,9 @@ const { CollectionItem } = useCollection({ key: 'Menubar' })
 const isFocused = ref(false)
 
 const open = computed(() => rootContext.modelValue.value === menuContext.value)
+
+useTriggerId(menuContext, triggerElement)
+const contentId = useRenderedContentId(menuContext, injectMenuContext())
 
 onMounted(() => {
   menuContext.triggerElement = triggerElement
@@ -49,17 +53,20 @@ onMounted(() => {
           :id="menuContext.triggerId"
           :ref="forwardRef"
           :as="as"
+          :as-child="asChild"
           :type="as === 'button' ? 'button' : undefined"
           role="menuitem"
           aria-haspopup="menu"
           :aria-expanded="open"
-          :aria-controls="open ? menuContext.contentId : undefined"
+          :aria-controls="open ? contentId : undefined"
           :data-highlighted="isFocused ? '' : undefined"
           :data-state="open ? 'open' : 'closed'"
           :data-disabled="disabled ? '' : undefined"
-          :disabled="disabled"
+          :disabled="disabledAttr(disabled, as, asChild)"
           :data-value="menuContext.value"
-          @pointerdown="(event) => {
+          @pointerdown="(event: PointerEvent) => {
+            if (event.defaultPrevented) return;
+            trackTriggerPress(event);
             // only call handler if it's the left button (mousedown gets triggered by all mouse buttons)
             // but not when the control key is pressed (avoiding MacOS right click)
             if (!disabled && event.button === 0 && event.ctrlKey === false) {
@@ -76,8 +83,8 @@ onMounted(() => {
               triggerElement?.focus()
             }
           }"
-          @keydown.enter.space.arrow-down="(event) => {
-            if (disabled) return;
+          @keydown.enter.space.arrow-down="(event: KeyboardEvent) => {
+            if (disabled || event.defaultPrevented) return;
             if (['Enter', ' '].includes(event.key)) rootContext.onMenuToggle(menuContext.value);
             if (event.key === 'ArrowDown') rootContext.onMenuOpen(menuContext.value);
             // prevent keydown from scrolling window / first focused item to execute

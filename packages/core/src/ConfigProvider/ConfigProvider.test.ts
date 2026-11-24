@@ -2,8 +2,10 @@ import type { VueWrapper } from '@vue/test-utils'
 import type vueuse from '@vueuse/core'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
+import { useId } from '@/shared'
 import ConfigProviderTest from './_ConfigProvider.vue'
+import ConfigProvider from './ConfigProvider.vue'
 
 vi.mock('@vueuse/core', async (importOriginal) => {
   const mod: typeof vueuse = await importOriginal()
@@ -28,6 +30,11 @@ describe('given a default ConfigProvider', async () => {
 
   beforeEach(() => {
     document.body.innerHTML = ''
+    // The scroll lock restores the padding/margin it captured, but earlier cases
+    // in this file mount without unmounting, so the inline values they left behind
+    // must be cleared between cases.
+    document.body.style.paddingRight = ''
+    document.body.style.marginRight = ''
     wrapper = mount(ConfigProviderTest, { attachTo: document.body })
   })
 
@@ -41,9 +48,9 @@ describe('given a default ConfigProvider', async () => {
 
   it('should add scrollBody\'s css to body', () => {
     expect(document.body.style.paddingRight).toBe('10px')
-    expect(document.body.style.marginRight).toBe('0px')
+    expect(document.body.style.marginRight).toBe('')
     expect(document.body.style.overflow).toBe('hidden')
-    expect(document.body.style.getPropertyValue('--scrollbar-width')).toBe('10px')
+    expect(document.documentElement.style.getPropertyValue('--scrollbar-width')).toBe('10px')
   })
 })
 
@@ -61,26 +68,53 @@ describe('given a dir="rtl" ConfigProvider', async () => {
 describe('given a scrollBody ConfigProvider', async () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    document.body.style.paddingRight = ''
+    document.body.style.marginRight = ''
   })
 
-  it('should set 0 padding, 0 margin body', async () => {
+  it('should leave the body padding and margin alone when false', async () => {
+    document.body.style.paddingRight = '40px'
+    document.body.style.marginRight = '24px'
     mount(ConfigProviderTest, { props: { scrollBody: false }, attachTo: document.body })
     await nextTick()
-    expect(document.body.style.paddingRight).toBe('0px')
-    expect(document.body.style.marginRight).toBe('0px')
+    expect(document.body.style.overflow).toBe('hidden')
+    expect(document.body.style.paddingRight).toBe('40px')
+    expect(document.body.style.marginRight).toBe('24px')
   })
 
-  it('should set 0 padding body', async () => {
+  it('should set the given padding and leave the margin alone', async () => {
     mount(ConfigProviderTest, { props: { scrollBody: { padding: 20 } }, attachTo: document.body })
     await nextTick()
     expect(document.body.style.paddingRight).toBe('20px')
-    expect(document.body.style.marginRight).toBe('0px')
+    expect(document.body.style.marginRight).toBe('')
   })
 
-  it('should set 0 margin body', async () => {
+  it('should set the given margin and padding', async () => {
     mount(ConfigProviderTest, { props: { scrollBody: { margin: 20, padding: 0 } }, attachTo: document.body })
     await nextTick()
     expect(document.body.style.paddingRight).toBe('0px')
     expect(document.body.style.marginRight).toBe('20px')
+  })
+})
+
+describe('given a useId ConfigProvider', () => {
+  it('uses the provided id generator before Vue useId', () => {
+    const IdConsumer = defineComponent({
+      setup() {
+        const id = useId(undefined, 'reka-test')
+        return () => h('div', { id })
+      },
+    })
+
+    const wrapper = mount(ConfigProvider, {
+      props: {
+        useId: () => 'provided-id',
+      },
+      slots: {
+        default: () => h(IdConsumer),
+      },
+    })
+
+    expect(wrapper.find('#reka-test-provided-id').exists()).toBe(true)
   })
 })

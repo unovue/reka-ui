@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { ImageLoadingStatus } from './utils'
+import type { PrimitiveProps } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
 
 export type AvatarImageEmits = {
@@ -51,7 +51,8 @@ watch(
     :as-child="asChild"
     :as="as"
     :src="src"
-    :referrer-policy="referrerPolicy"
+    :referrerpolicy="referrerPolicy"
+    :crossorigin="crossOrigin"
   >
     <slot />
   </Primitive>

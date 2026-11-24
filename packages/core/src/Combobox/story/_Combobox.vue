@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { ComboboxRootEmits, ComboboxRootProps } from '..'
-import { useFilter, useForwardPropsEmits } from '@/shared'
 import { Icon } from '@iconify/vue'
 import { computed, ref } from 'vue'
+import { useFilter, useForwardPropsEmits } from '@/shared'
 import { ComboboxAnchor, ComboboxContent, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxItemIndicator, ComboboxLabel, ComboboxRoot, ComboboxSeparator, ComboboxTrigger, ComboboxViewport } from '..'
 
 const props = defineProps<ComboboxRootProps>()

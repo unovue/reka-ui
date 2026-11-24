@@ -318,6 +318,54 @@ import { PopoverAnchor, PopoverArrow, PopoverClose, PopoverContent, PopoverPorta
 }
 ```
 
+### Close using slot props
+
+Alternatively, you can use the `close` method provided by the `PopoverRoot` slot props to programmatically close the popover.
+
+```vue line=4,8,16-20
+<script setup>
+import { PopoverAnchor, PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
+</script>
+
+<template>
+  <PopoverRoot v-slot="{ close }">
+    <PopoverTrigger>Open</PopoverTrigger>
+    <PopoverAnchor />
+    <PopoverPortal>
+      <PopoverContent>
+        <button type="submit" @click="close">
+          Submit
+        </button>
+        <PopoverArrow />
+      </PopoverContent>
+    </PopoverPortal>
+  </PopoverRoot>
+</template>
+```
+
+### Keep the content mounted when closed
+
+By default the content is removed when the popover closes. Use `:unmount-on-hide="false"` to keep it mounted and only hide it, for example to preserve the state of the elements inside it between openings.
+
+While closed, the hidden content does not act as an open popover: it does not trap focus, block pointer events outside of it, lock the body scroll or hide the rest of the page from assistive technologies. Focus still returns to the trigger when it closes.
+
+```vue line=6
+<script setup>
+import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
+</script>
+
+<template>
+  <PopoverRoot :unmount-on-hide="false">
+    <PopoverTrigger>Open</PopoverTrigger>
+    <PopoverPortal>
+      <PopoverContent>
+        …
+      </PopoverContent>
+    </PopoverPortal>
+  </PopoverRoot>
+</template>
+```
+
 ## Accessibility
 
 Adheres to the [Dialog WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).

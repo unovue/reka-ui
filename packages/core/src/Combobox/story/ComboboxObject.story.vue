@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useFilter } from '@/shared'
 import { Icon } from '@iconify/vue'
 import { computed, ref } from 'vue'
+import { useFilter } from '@/shared'
 import { ComboboxAnchor, ComboboxContent, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxItemIndicator, ComboboxLabel, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '..'
 
 const people = [

@@ -15,6 +15,7 @@ const { forwardRef } = useForwardExpose()
 
 <template>
   <PopperAnchor
+    scope="combobox"
     as-child
     :reference="reference"
   >

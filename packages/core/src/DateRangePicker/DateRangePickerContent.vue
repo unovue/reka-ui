@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { PopoverContentEmits, PopoverContentProps, PopoverPortalProps } from '..'
 import { computed } from 'vue'
+import { handleCalendarInitialFocus } from '@/shared/date'
 import { PopoverContent, PopoverPortal, useForwardPropsEmits } from '..'
 
 export interface DateRangePickerContentProps extends PopoverContentProps {
@@ -9,7 +10,7 @@ export interface DateRangePickerContentProps extends PopoverContentProps {
    */
   portal?: PopoverPortalProps
 }
-export interface DateRangePickerContentEmits extends PopoverContentEmits {}
+export type DateRangePickerContentEmits = PopoverContentEmits
 </script>
 
 <script setup lang="ts">
@@ -27,6 +28,12 @@ const forwarded = useForwardPropsEmits(propsToForward, emits)
   <PopoverPortal v-bind="portal">
     <PopoverContent
       v-bind="{ ...forwarded, ...$attrs }"
+      @open-auto-focus="event => {
+        if (!event.defaultPrevented && event.target) {
+          handleCalendarInitialFocus(event.target as HTMLElement)
+          event.preventDefault()
+        }
+      }"
     >
       <slot />
     </PopoverContent>

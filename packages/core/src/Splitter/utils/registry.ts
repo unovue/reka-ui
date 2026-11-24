@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 import type { Direction, ResizeEvent } from './types'
+import { isElement } from '@/shared'
 import { getResizeEventCoordinates } from './events'
 import { intersects } from './rects'
 import { compare } from './stackingOrder'
@@ -9,7 +10,7 @@ export type ResizeHandlerAction = 'down' | 'move' | 'up'
 export type SetResizeHandlerState = (
   action: ResizeHandlerAction,
   isActive: boolean,
-  event: ResizeEvent
+  event: ResizeEvent,
 ) => void
 
 export type PointerHitAreaMargins = {
@@ -21,6 +22,7 @@ export type ResizeHandlerData = {
   direction: Ref<Direction>
   element: HTMLElement
   hitAreaMargins: PointerHitAreaMargins
+  nonce: Ref<string | undefined>
   setResizeHandlerState: SetResizeHandlerState
 }
 
@@ -48,6 +50,7 @@ export function registerResizeHandle(
   element: HTMLElement,
   direction: Ref<Direction>,
   hitAreaMargins: PointerHitAreaMargins,
+  nonce: Ref<string | undefined>,
   setResizeHandlerState: SetResizeHandlerState,
 ) {
   const { ownerDocument } = element
@@ -56,6 +59,7 @@ export function registerResizeHandle(
     direction,
     element,
     hitAreaMargins,
+    nonce,
     setResizeHandlerState,
   }
 
@@ -69,6 +73,21 @@ export function registerResizeHandle(
   return function unregisterResizeHandle() {
     panelConstraintFlags.delete(resizeHandleId)
     registeredResizeHandlers.delete(data)
+
+    // A handle that unmounts while the pointer is over it or dragging it must not stay in
+    // the list: it would keep its element and state alive, and keep driving the cursor.
+    const intersectingIndex = intersectingHandles.indexOf(data)
+    if (intersectingIndex >= 0)
+      intersectingHandles.splice(intersectingIndex, 1)
+
+    // Without handles no listener is left to see the pointer go up, so a drag in progress
+    // would never end: the next handle to register would wait for a mouseup before its
+    // first mousedown counts
+    if (registeredResizeHandlers.size === 0) {
+      isPointerDown = false
+      intersectingHandles.splice(0)
+      panelConstraintFlags.clear()
+    }
 
     const count = ownerDocumentCounts.get(ownerDocument) ?? 1
     ownerDocumentCounts.set(ownerDocument, count - 1)
@@ -102,6 +121,13 @@ function handlePointerMove(event: ResizeEvent) {
 
   if (!isPointerDown) {
     const { target } = event
+    // While transitioning into an iframe, the browser may still dispatch a
+    // few trailing "mousemove" events in the parent document whose target
+    // resolves to the iframe itself. Ignore those so they don't trigger a
+    // bogus recalculation right before the pointer actually leaves.
+    // See https://github.com/unovue/reka-ui/issues/2968
+    if (isIframeElement(target))
+      return
 
     // Recalculate intersecting handles whenever the pointer moves, except if it has already been pressed
     // at that point, the handles may not move with the pointer (depending on constraints)
@@ -116,6 +142,26 @@ function handlePointerMove(event: ResizeEvent) {
 
   if (intersectingHandles.length > 0)
     event.preventDefault()
+}
+
+function handlePointerOut(event: MouseEvent) {
+  // Once the pointer enters an iframe, the parent document stops receiving
+  // mousemove events, so the hover state would never be cleared by
+  // handlePointerMove. The last event we do get is the "mouseout" whose
+  // relatedTarget is the iframe, so reset the hover state here.
+  // See https://github.com/unovue/reka-ui/issues/2893
+  if (isPointerDown || !isIframeElement(event.relatedTarget))
+    return
+
+  intersectingHandles.splice(0)
+  updateResizeHandlerStates('move', event)
+  updateCursor()
+}
+
+function isIframeElement(target: EventTarget | null): boolean {
+  // Avoid `instanceof Element`: the target may belong to another realm
+  // (e.g. a splitter rendered inside an iframe or a popup window)
+  return target !== null && 'tagName' in target && target.tagName === 'IFRAME'
 }
 
 function handlePointerUp(event: ResizeEvent) {
@@ -146,12 +192,17 @@ function recalculateIntersectingHandles({
 }) {
   intersectingHandles.splice(0)
 
-  let targetElement: HTMLElement | null = null
-  if (target instanceof HTMLElement)
-    targetElement = target
+  // Any element, SVG included: an icon above a handle covers it as much as a DIV does
+  const targetElement = isElement(target) ? target : null
 
   registeredResizeHandlers.forEach((data) => {
     const { element: dragHandleElement, hitAreaMargins } = data
+
+    // A handle in another document (an iframe or a popup window) lays out in another viewport,
+    // so the pointer's coordinates say nothing about it, and the stacking order of the two
+    // documents cannot be compared
+    if (targetElement !== null && dragHandleElement.ownerDocument !== targetElement.ownerDocument)
+      return
 
     const dragHandleRect = dragHandleElement.getBoundingClientRect()
     const { bottom, left, right, top } = dragHandleRect
@@ -189,7 +240,7 @@ function recalculateIntersectingHandles({
         // It's not enough to compare only the target
         // The target might be a small element inside of a larger container
         // (For example, a SPAN or a DIV inside of a larger modal dialog)
-        let currentElement: HTMLElement | null = targetElement
+        let currentElement: Element | null = targetElement
         let didIntersect = false
         while (currentElement) {
           if (currentElement.contains(dragHandleElement)) {
@@ -228,14 +279,17 @@ export function reportConstraintsViolation(
 function updateCursor() {
   let intersectsHorizontal = false
   let intersectsVertical = false
+  let nonce: string | undefined
 
   intersectingHandles.forEach((data) => {
-    const { direction } = data
+    const { direction, nonce: _nonce } = data
 
     if (direction.value === 'horizontal')
       intersectsHorizontal = true
     else
       intersectsVertical = true
+
+    nonce = _nonce.value
   })
 
   let constraintFlags = 0
@@ -244,11 +298,11 @@ function updateCursor() {
   })
 
   if (intersectsHorizontal && intersectsVertical)
-    setGlobalCursorStyle('intersection', constraintFlags)
+    setGlobalCursorStyle('intersection', constraintFlags, nonce)
   else if (intersectsHorizontal)
-    setGlobalCursorStyle('horizontal', constraintFlags)
+    setGlobalCursorStyle('horizontal', constraintFlags, nonce)
   else if (intersectsVertical)
-    setGlobalCursorStyle('vertical', constraintFlags)
+    setGlobalCursorStyle('vertical', constraintFlags, nonce)
   else
     resetGlobalCursorStyle()
 }
@@ -261,6 +315,7 @@ function updateListeners() {
     body.removeEventListener('mousedown', handlePointerDown)
     body.removeEventListener('mouseleave', handlePointerMove)
     body.removeEventListener('mousemove', handlePointerMove)
+    body.removeEventListener('mouseout', handlePointerOut)
     body.removeEventListener('touchmove', handlePointerMove)
     body.removeEventListener('touchstart', handlePointerDown)
   })
@@ -297,6 +352,7 @@ function updateListeners() {
         if (count > 0) {
           body.addEventListener('mousedown', handlePointerDown)
           body.addEventListener('mousemove', handlePointerMove)
+          body.addEventListener('mouseout', handlePointerOut)
           body.addEventListener('touchmove', handlePointerMove, {
             passive: false,
           })

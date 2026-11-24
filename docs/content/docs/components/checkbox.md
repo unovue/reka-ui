@@ -21,6 +21,7 @@ A control that allows the user to toggle between checked and not checked.
     'Supports indeterminate state.',
     'Full keyboard navigation.',
     'Can be controlled or uncontrolled.',
+    'Supports custom true/false values.',
   ]"
 />
 
@@ -58,6 +59,8 @@ import { CheckboxGroupRoot, CheckboxIndicator, CheckboxRoot } from 'reka-ui'
 ### Root
 
 Contains all the parts of a checkbox. An `input` will also render when used within a `form` to ensure events propagate correctly.
+
+When a `name` is provided, the hidden input uses the field name as its default label. The visible checkbox still needs its own label.
 
 <!-- @include: @/meta/CheckboxRoot.md -->
 
@@ -103,6 +106,42 @@ Wrapper around `CheckboxRoot` to support array of `modelValue`
 
 ## Examples
 
+### Custom Values
+
+Use the `trueValue` and `falseValue` props to specify custom values for the checked and unchecked states instead of the default `true`/`false`.
+
+```vue line=5-6,11-12
+<script setup>
+import { Icon } from '@iconify/vue'
+import { CheckboxIndicator, CheckboxRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+// With string values
+const acceptTerms = ref('no')
+
+// With number values
+const permission = ref(0)
+</script>
+
+<template>
+  <!-- String values -->
+  <CheckboxRoot v-model="acceptTerms" true-value="yes" false-value="no">
+    <CheckboxIndicator>
+      <Icon icon="radix-icons:check" />
+    </CheckboxIndicator>
+  </CheckboxRoot>
+  <span>Value: {{ acceptTerms }}</span> <!-- "yes" or "no" -->
+
+  <!-- Number values -->
+  <CheckboxRoot v-model="permission" :true-value="1" :false-value="0">
+    <CheckboxIndicator>
+      <Icon icon="radix-icons:check" />
+    </CheckboxIndicator>
+  </CheckboxRoot>
+  <span>Value: {{ permission }}</span> <!-- 1 or 0 -->
+</template>
+```
+
 ### Indeterminate
 
 You can set the checkbox to `indeterminate` by taking control of its state.
@@ -135,6 +174,50 @@ const checked = ref('indeterminate')
   >
     Toggle indeterminate
   </button>
+</template>
+```
+
+### Parent checkbox
+
+Add a `CheckboxRoot` with the `parent` prop inside a `CheckboxGroupRoot`, and list the values it controls in the group's `allValues`.
+
+- The parent is checked when every value in `allValues` is checked, unchecked when none is (or `allValues` is empty), and indeterminate otherwise.
+- Clicking an unchecked or indeterminate parent checks every value; clicking a checked parent unchecks them. If checking would change nothing, it unchecks instead.
+- Disabled checkboxes keep their value, and `max` still applies. Values not in `allValues` are left as they are.
+- The parent sets `aria-controls` to the ids of the checkboxes it controls, generating ids for checkboxes without one. It doesn't submit a value of its own.
+
+```vue line=6,11-19
+<script setup>
+import { Icon } from '@iconify/vue'
+import { CheckboxGroupRoot, CheckboxIndicator, CheckboxRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+const fruits = ['Apple', 'Banana', 'Orange']
+const selected = ref(['Banana'])
+</script>
+
+<template>
+  <CheckboxGroupRoot v-model="selected" :all-values="fruits">
+    <CheckboxRoot id="all-fruits" v-slot="{ state }" parent>
+      <CheckboxIndicator>
+        <Icon
+          v-if="state === 'indeterminate'"
+          icon="radix-icons:divider-horizontal"
+        />
+        <Icon v-else icon="radix-icons:check" />
+      </CheckboxIndicator>
+    </CheckboxRoot>
+    <label for="all-fruits">All fruits</label>
+
+    <template v-for="fruit in fruits" :key="fruit">
+      <CheckboxRoot :id="fruit" :value="fruit">
+        <CheckboxIndicator>
+          <Icon icon="radix-icons:check" />
+        </CheckboxIndicator>
+      </CheckboxRoot>
+      <label :for="fruit">{{ fruit }}</label>
+    </template>
+  </CheckboxGroupRoot>
 </template>
 ```
 

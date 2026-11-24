@@ -15,11 +15,13 @@ import NavigationMenuListItem from './_NavigationMenuListItem.vue'
 export interface TestProps {
   disableClickTrigger?: boolean
   disableHoverTrigger?: boolean
+  disablePointerLeaveClose?: boolean
 }
 
 const props = withDefaults(defineProps<TestProps>(), {
   disableClickTrigger: false,
   disableHoverTrigger: false,
+  disablePointerLeaveClose: false,
 })
 
 const currentTrigger = ref('')

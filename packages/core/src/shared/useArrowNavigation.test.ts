@@ -112,4 +112,35 @@ describe('useArrowNavigation', () => {
     const nextElement = useArrowNavigation(e, child2, parentElement)
     expect(nextElement).toStrictEqual(child1)
   })
+
+  it('should navigate to the first item when there is only one item and currentElement is not in the collection', () => {
+    const singleContainer = document.createElement('div')
+    const singleChild = document.createElement('div')
+    singleChild.setAttribute('data-reka-collection-item', '')
+    singleContainer.appendChild(singleChild)
+
+    const externalElement = document.createElement('input')
+    const e = new KeyboardEvent('keydown', { key: 'ArrowDown' })
+
+    const nextElement = useArrowNavigation(e, externalElement, singleContainer)
+    expect(nextElement).toStrictEqual(singleChild)
+  })
+
+  it('should navigate to the last item when pressing ArrowUp from an external element', () => {
+    const e = new KeyboardEvent('keydown', { key: 'ArrowUp' })
+    const multipleContainer = document.createElement('div')
+    const c1 = document.createElement('div')
+    const c2 = document.createElement('div')
+    const c3 = document.createElement('div')
+    c1.setAttribute('data-reka-collection-item', '')
+    c2.setAttribute('data-reka-collection-item', '')
+    c3.setAttribute('data-reka-collection-item', '')
+    multipleContainer.appendChild(c1)
+    multipleContainer.appendChild(c2)
+    multipleContainer.appendChild(c3)
+
+    const externalElement = document.createElement('input')
+    const nextElement = useArrowNavigation(e, externalElement, multipleContainer)
+    expect(nextElement).toStrictEqual(c3)
+  })
 })

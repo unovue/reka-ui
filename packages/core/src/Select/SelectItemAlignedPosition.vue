@@ -1,9 +1,9 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { Ref } from 'vue'
-import { useCollection } from '@/Collection'
-import { clamp, createContext, useForwardExpose } from '@/shared'
+import type { PrimitiveProps } from '@/Primitive'
 import { useResizeObserver } from '@vueuse/core'
+import { useCollection } from '@/Collection'
+import { clamp, createRekaContext, useForwardExpose } from '@/shared'
 
 interface SelectItemAlignedPositionContext {
   contentWrapper?: Ref<HTMLElement | undefined>
@@ -14,12 +14,12 @@ interface SelectItemAlignedPositionContext {
 export interface SelectItemAlignedPositionProps extends PrimitiveProps {}
 
 export const [injectSelectItemAlignedPositionContext, provideSelectItemAlignedPositionContext]
-  = createContext<SelectItemAlignedPositionContext>('SelectItemAlignedPosition')
+  = createRekaContext<SelectItemAlignedPositionContext>('SelectItemAlignedPosition')
 </script>
 
 <script setup lang="ts">
-import { Primitive } from '@/Primitive'
 import { nextTick, onMounted, ref } from 'vue'
+import { Primitive } from '@/Primitive'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
 import { CONTENT_MARGIN } from './utils'
@@ -145,7 +145,7 @@ function position() {
       = contentTopToItemMiddle <= topEdgeToTriggerMiddle
 
     if (willAlignWithoutTopOverflow) {
-      const isLastItem = selectedItem.value === items[items.length - 1]
+      const isLastItem = selectedItem.value === items.at(-1)
       contentWrapperElement.value.style.bottom = `${0}px`
       const viewportOffsetBottom
         = contentElement.value.clientHeight

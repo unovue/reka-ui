@@ -1,7 +1,7 @@
 <script lang="ts">
+import type { Side } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ArrowProps } from '@/shared/component/Arrow.vue'
-import type { Side } from './utils'
 
 const OPPOSITE_SIDE: Record<Side, Side> = {
   top: 'bottom',
@@ -14,10 +14,11 @@ export interface PopperArrowProps extends ArrowProps, PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
+import type { ComponentPublicInstance } from 'vue'
+import { computed } from 'vue'
 import { useForwardExpose } from '@/shared'
 import Arrow from '@/shared/component/Arrow.vue'
-import { computed } from 'vue'
-import { injectPopperContentContext } from './PopperContent.vue'
+import { injectPopperContentContext } from './PopperContentContext'
 
 defineOptions({
   inheritAttrs: false,
@@ -36,8 +37,8 @@ const baseSide = computed(() => OPPOSITE_SIDE[contentContext.placedSide.value])
 
 <template>
   <span
-    :ref="(el: HTMLElement) => {
-      contentContext.onArrowChange(el)
+    :ref="(el: Element | ComponentPublicInstance | null) => {
+      contentContext.onArrowChange((el as HTMLElement) ?? undefined)
       return undefined
     }"
     :style="{

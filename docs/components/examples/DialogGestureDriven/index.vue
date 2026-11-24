@@ -3,7 +3,7 @@ import { Icon } from '@iconify/vue'
 import { useWindowSize } from '@vueuse/core'
 import { animate, AnimatePresence, Motion, useMotionValue, useMotionValueEvent, useTransform } from 'motion-v'
 import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 const inertiaTransition = {
   type: 'inertia' as const,
@@ -20,7 +20,11 @@ const staticTransition = {
 const SHEET_MARGIN = 34
 const SHEET_RADIUS = 12
 
-const root = document.body.firstElementChild as HTMLElement
+let root: HTMLElement
+
+onMounted(() => {
+  root = document.body.firstElementChild as HTMLElement
+})
 
 const { height, width } = useWindowSize()
 

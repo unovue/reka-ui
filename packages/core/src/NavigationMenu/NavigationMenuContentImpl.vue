@@ -15,9 +15,10 @@ export interface NavigationMenuContentImplProps extends DismissableLayerProps {}
 </script>
 
 <script setup lang="ts">
-import { DismissableLayer } from '@/DismissableLayer'
-import { getActiveElement, useArrowNavigation, useForwardExpose } from '@/shared'
 import { computed, ref, watchEffect } from 'vue'
+import { DismissableLayer } from '@/DismissableLayer'
+import { getTabStopsAfter } from '@/FocusScope/utils'
+import { getActiveElement, useArrowNavigation, useContentId, useContentMounted, useForwardExpose } from '@/shared'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
 import {
@@ -25,8 +26,6 @@ import {
   focusFirst,
   getOpenState,
   getTabbableCandidates,
-  makeContentId,
-  makeTriggerId,
 } from './utils'
 
 const props = defineProps<NavigationMenuContentImplProps>()
@@ -38,12 +37,12 @@ const { forwardRef, currentElement } = useForwardExpose()
 const menuContext = injectNavigationMenuContext()
 const itemContext = injectNavigationMenuItemContext()
 
-const triggerId = makeTriggerId(menuContext.baseId, itemContext.value)
-const contentId = makeContentId(menuContext.baseId, itemContext.value)
+useContentId(itemContext, currentElement)
+useContentMounted(itemContext, currentElement)
 
 const prevMotionAttributeRef = ref<MotionAttribute | null>(null)
 const motionAttribute = computed(() => {
-  const values = getItems().map(i => i.ref.id.split('trigger-')[1])
+  const values = getItems().map(i => i.value)
   if (menuContext.dir.value === 'rtl')
     values.reverse()
   const index = values.indexOf(menuContext.modelValue.value)
@@ -96,6 +95,7 @@ function handleFocusOutside(ev: FocusOutsideEvent) {
 
 function handlePointerDownOutside(ev: PointerDownOutsideEvent) {
   emits('pointerDownOutside', ev)
+  emits('interactOutside', ev)
 
   if (!ev.defaultPrevented) {
     const target = ev.target as HTMLElement
@@ -103,7 +103,7 @@ function handlePointerDownOutside(ev: PointerDownOutsideEvent) {
       i.ref.contains(target),
     )
     const isRootViewport
-    = menuContext.isRootMenu && menuContext.viewport.value?.contains(target)
+      = menuContext.isRootMenu && menuContext.viewport.value?.contains(target)
 
     if (isTrigger || isRootViewport || !menuContext.isRootMenu)
       ev.preventDefault()
@@ -149,13 +149,11 @@ function handleKeydown(ev: KeyboardEvent) {
 
   if (isTabKey) {
     const focusedElement = getActiveElement()
-    const index = candidates.findIndex(
-      candidate => candidate === focusedElement,
-    )
     const isMovingBackwards = ev.shiftKey
-    const nextCandidates = isMovingBackwards
-      ? candidates.slice(0, index).reverse()
-      : candidates.slice(index + 1, candidates.length)
+    const nextCandidates = getTabStopsAfter(
+      isMovingBackwards ? [...candidates].reverse() : candidates,
+      focusedElement,
+    )
 
     if (focusFirst(nextCandidates)) {
       // prevent browser tab keydown because we've handled focus
@@ -180,6 +178,9 @@ function handleKeydown(ev: KeyboardEvent) {
 }
 
 function handleDismiss() {
+  if (menuContext.modelValue.value !== itemContext.value)
+    return
+
   const rootContentDismissEvent = new Event(EVENT_ROOT_CONTENT_DISMISS, {
     bubbles: true,
     cancelable: true,
@@ -190,9 +191,9 @@ function handleDismiss() {
 
 <template>
   <DismissableLayer
-    :id="contentId"
+    :id="itemContext.contentId"
     :ref="forwardRef"
-    :aria-labelledby="triggerId"
+    :aria-labelledby="itemContext.triggerId"
     :data-motion="motionAttribute"
     :data-state="getOpenState(menuContext.modelValue.value === itemContext.value)"
     :data-orientation="menuContext.orientation"

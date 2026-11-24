@@ -1,11 +1,11 @@
 <script lang="ts">
+import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import type { Ref } from 'vue'
-import { createContext, useArrowNavigation, useDirection, useFormControl, useForwardExpose } from '@/shared'
 import { computed, ref, toRefs } from 'vue'
+import { createRekaContext, useArrowNavigation, useDirection, useFormControl, useForwardExpose } from '@/shared'
 
-export type AcceptableInputValue = string | Record<string, any>
+export type AcceptableInputValue = string | number | bigint | Record<string, any>
 
 export interface TagsInputRootProps<T = AcceptableInputValue> extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the tags input. Can be bind as `v-model`. */
@@ -50,6 +50,7 @@ export interface TagsInputRootContext<T = AcceptableInputValue> {
   modelValue: Ref<Array<T>>
   onAddValue: (payload: string) => boolean
   onRemoveValue: (index: number) => void
+  onRemoveItem: (element: HTMLElement) => void
   onInputKeydown: (event: KeyboardEvent) => void
   selectedElement: Ref<HTMLElement | undefined>
   isInvalidInput: Ref<boolean>
@@ -65,14 +66,15 @@ export interface TagsInputRootContext<T = AcceptableInputValue> {
 }
 
 export const [injectTagsInputRootContext, provideTagsInputRootContext]
-  = createContext<TagsInputRootContext>('TagsInputRoot')
+  = createRekaContext<TagsInputRootContext>('TagsInputRoot')
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableInputValue = string">
+import { useFocusWithin, useVModel } from '@vueuse/core'
+import { isEqual } from 'ohash'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
-import { useFocusWithin, useVModel } from '@vueuse/core'
 
 const props = withDefaults(defineProps<TagsInputRootProps<T>>(), {
   defaultValue: () => [],
@@ -83,7 +85,7 @@ const props = withDefaults(defineProps<TagsInputRootProps<T>>(), {
 const emits = defineEmits<TagsInputRootEmits<T>>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current input values */
     modelValue: typeof modelValue.value
   }) => any
@@ -102,7 +104,7 @@ const { forwardRef, currentElement } = useForwardExpose()
 const { focused } = useFocusWithin(currentElement)
 const isFormControl = useFormControl(currentElement)
 
-const { getItems, CollectionSlot } = useCollection({ isProvider: true })
+const { getItem, getItems, CollectionSlot } = useCollection({ isProvider: true })
 
 const selectedElement = ref<HTMLElement>()
 const isInvalidInput = ref(false)
@@ -111,10 +113,28 @@ const currentModelValue = computed(() => Array.isArray(modelValue.value) ? [...m
 
 function handleRemoveTag(index: number) {
   if (index !== -1) {
-    const collection = getItems().filter(i => i.ref.dataset.disabled !== '')
+    const removedValue = modelValue.value[index] as T
     modelValue.value = modelValue.value.filter((_, i) => i !== index)
-    emits('removeTag', collection[index].value)
+    emits('removeTag', removedValue)
   }
+}
+
+function handleRemoveItem(element: HTMLElement) {
+  const item = getItem(element)
+  if (!item)
+    return
+
+  const { tag, modelIndex } = item.value
+  const values = currentModelValue.value
+  if (Number.isInteger(modelIndex) && modelIndex >= 0 && modelIndex < values.length && isEqual(values[modelIndex], tag))
+    return handleRemoveTag(modelIndex)
+
+  // Without a matching index, equal tags are matched in render order, including disabled tags.
+  // A stale or wrong `modelIndex` falls back here, so the delete still removes an equal tag.
+  const matchingItems = getItems(true).filter(other => isEqual(other.value.tag, tag))
+  const occurrence = matchingItems.indexOf(item)
+  let match = 0
+  handleRemoveTag(values.findIndex(value => isEqual(value, tag) && match++ === occurrence))
 }
 
 provideTagsInputRootContext({
@@ -155,7 +175,11 @@ provideTagsInputRootContext({
     return false
   },
   onRemoveValue: handleRemoveTag,
+  onRemoveItem: handleRemoveItem,
   onInputKeydown: (event) => {
+    // Don't navigate/select tags mid-composition, keys are used for IME candidate navigation
+    if (event.isComposing)
+      return
     const target = event.target as HTMLInputElement
     const collection = getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
     if (!collection.length)
@@ -169,7 +193,7 @@ provideTagsInputRootContext({
 
         if (selectedElement.value) {
           const index = collection.findIndex(i => i === selectedElement.value)
-          handleRemoveTag(index)
+          handleRemoveItem(selectedElement.value)
           selectedElement.value = selectedElement.value === lastTag ? collection.at(index - 1) : collection.at(index + 1)
           event.preventDefault()
         }

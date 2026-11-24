@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { countryList } from '@/shared/constant'
 import { computed, ref } from 'vue'
+import { countryList } from '@/shared/constant'
 import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot } from '..'
 
 const searchTerm = ref('')

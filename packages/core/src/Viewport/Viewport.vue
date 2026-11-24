@@ -1,8 +1,8 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
+import { toRefs } from 'vue'
 import { useForwardExpose } from '@/shared'
 import { useNonce } from '@/shared/useNonce'
-import { toRefs } from 'vue'
 
 export interface ViewportProps extends PrimitiveProps {
   /**

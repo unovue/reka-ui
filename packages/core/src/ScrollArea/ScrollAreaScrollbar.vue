@@ -1,7 +1,7 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { Ref } from 'vue'
-import { createContext, useForwardExpose } from '@/shared'
+import type { PrimitiveProps } from '@/Primitive'
+import { createRekaContext, useForwardExpose } from '@/shared'
 
 export interface ScrollAreaScrollbarProps extends PrimitiveProps {
   /** The orientation of the scrollbar */
@@ -13,7 +13,7 @@ export interface ScrollAreaScrollbarProps extends PrimitiveProps {
   forceMount?: boolean
 }
 
-export interface ScrollAreaScollbarContext {
+export interface ScrollAreaScrollbarContext {
   as: Ref<PrimitiveProps['as']>
   orientation: Ref<'vertical' | 'horizontal'>
   forceMount?: Ref<boolean>
@@ -22,7 +22,7 @@ export interface ScrollAreaScollbarContext {
 }
 
 export const [injectScrollAreaScrollbarContext, provideScrollAreaScrollbarContext]
-  = createContext<ScrollAreaScollbarContext>('ScrollAreaScrollbar')
+  = createRekaContext<ScrollAreaScrollbarContext>('ScrollAreaScrollbar')
 </script>
 
 <script setup lang="ts">
@@ -34,6 +34,7 @@ import {
 } from 'vue'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import ScrollAreaScrollbarAuto from './ScrollAreaScrollbarAuto.vue'
+import ScrollAreaScrollbarGlimpse from './ScrollAreaScrollbarGlimpse.vue'
 import ScrollAreaScrollbarHover from './ScrollAreaScrollbarHover.vue'
 import ScrollAreaScrollbarScroll from './ScrollAreaScrollbarScroll.vue'
 import ScrollAreaScrollbarVisible from './ScrollAreaScrollbarVisible.vue'
@@ -94,6 +95,14 @@ provideScrollAreaScrollbarContext({
   >
     <slot />
   </ScrollAreaScrollbarScroll>
+  <ScrollAreaScrollbarGlimpse
+    v-else-if="rootContext.type.value === 'glimpse'"
+    v-bind="$attrs"
+    :ref="forwardRef"
+    :force-mount="forceMount"
+  >
+    <slot />
+  </ScrollAreaScrollbarGlimpse>
   <ScrollAreaScrollbarAuto
     v-else-if="rootContext.type.value === 'auto'"
     v-bind="$attrs"

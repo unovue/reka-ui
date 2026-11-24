@@ -1,11 +1,11 @@
 <script lang="ts">
+import type { Ref } from 'vue'
 import type { RovingFocusGroupProps } from '@/RovingFocus'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
-import type { Ref } from 'vue'
-import { Primitive, usePrimitiveElement } from '@/Primitive'
-import { createContext, useDirection, useFormControl } from '@/shared'
 import { useVModel } from '@vueuse/core'
-import { computed, toRefs } from 'vue'
+import { computed, shallowReactive, toRefs } from 'vue'
+import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { createRekaContext, useDirection, useFormControl } from '@/shared'
 
 export interface CheckboxGroupRootProps<T = AcceptableValue> extends Pick<RovingFocusGroupProps, 'as' | 'asChild' | 'dir' | 'orientation' | 'loop'>, FormFieldProps {
   /** The value of the checkbox when it is initially rendered. Use when you do not need to control its value. */
@@ -16,6 +16,17 @@ export interface CheckboxGroupRootProps<T = AcceptableValue> extends Pick<Roving
   rovingFocus?: boolean
   /** When `true`, prevents the user from interacting with the checkboxes */
   disabled?: boolean
+  /**
+   * The maximum number of values that can be selected. Once reached, the unchecked
+   * checkboxes get `aria-disabled` but stay focusable, so consider telling users
+   * about the limit. Style them with `[aria-disabled="true"]`.
+   */
+  max?: number | null
+  /**
+   * Every value a parent checkbox (`CheckboxRoot` with `parent`) controls. The parent is
+   * checked when all of them are in the model, unchecked when none are, and indeterminate otherwise.
+   */
+  allValues?: T[]
 }
 
 export type CheckboxGroupRootEmits<T = AcceptableValue> = {
@@ -23,18 +34,29 @@ export type CheckboxGroupRootEmits<T = AcceptableValue> = {
   'update:modelValue': [value: T[]]
 }
 
+interface CheckboxGroupItem {
+  value: () => AcceptableValue
+  disabled: () => boolean
+  id: () => string | undefined
+}
+
 interface CheckboxGroupRootContext {
   modelValue: Ref<AcceptableValue[]>
   rovingFocus: Ref<boolean>
   disabled: Ref<boolean>
+  max: Ref<number | null | undefined>
+  allValues: Ref<AcceptableValue[] | undefined>
+  /** The mounted (non-parent) checkboxes, read by a parent checkbox. */
+  items: Set<CheckboxGroupItem>
 }
 
 export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
-  = createContext<CheckboxGroupRootContext>('CheckboxGroupRoot')
+  = createRekaContext<CheckboxGroupRootContext>('CheckboxGroupRoot')
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { RovingFocusGroup } from '@/RovingFocus'
+import { provideRovingFocusNoActiveItem } from '@/RovingFocus/RovingFocusGroup.vue'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
 const props = withDefaults(defineProps<CheckboxGroupRootProps<T>>(), {
@@ -42,7 +64,7 @@ const props = withDefaults(defineProps<CheckboxGroupRootProps<T>>(), {
 })
 const emits = defineEmits<CheckboxGroupRootEmits<T>>()
 
-const { disabled, rovingFocus, dir: propDir } = toRefs(props)
+const { disabled, max, rovingFocus, allValues, dir: propDir } = toRefs(props)
 const dir = useDirection(propDir)
 
 const { primitiveElement, currentElement } = usePrimitiveElement()
@@ -53,6 +75,10 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: (props.modelValue === undefined) as false,
 }) as Ref<T[]>
 
+// Without a `name`, render the field only while a required group is empty, so the
+// checked values never become unnamed form fields.
+const showHiddenInput = computed(() => isFormControl.value && (!!props.name || (props.required && !modelValue.value?.length)))
+
 const rovingFocusProps = computed(() => {
   return rovingFocus.value ? { loop: props.loop, dir: dir.value, orientation: props.orientation } : {}
 })
@@ -61,7 +87,13 @@ provideCheckboxGroupRootContext({
   modelValue,
   rovingFocus,
   disabled,
+  max,
+  allValues,
+  items: shallowReactive(new Set()),
 })
+
+// Checkboxes are never active. Without roving focus there is no group to tell.
+provideRovingFocusNoActiveItem(() => rovingFocus.value)
 </script>
 
 <template>
@@ -75,10 +107,11 @@ provideCheckboxGroupRootContext({
     <slot />
 
     <VisuallyHiddenInput
-      v-if="isFormControl && name"
-      :name="name"
+      v-if="showHiddenInput"
+      :name="name ?? ''"
       :value="modelValue"
       :required="required"
+      :disabled="disabled"
     />
   </component>
 </template>

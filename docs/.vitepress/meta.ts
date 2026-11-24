@@ -29,6 +29,7 @@ export const discord = 'https://chat.unovue.com'
 
 /* Avatar/Image/Sponsors servers */
 export const sponsor = 'https://github.com/sponsors/zernonia'
+export const openCollective = 'https://opencollective.com/unovue'
 export const preconnectLinks = [googleapis, gstatic]
 export const preconnectHomeLinks = [googleapis, gstatic]
 

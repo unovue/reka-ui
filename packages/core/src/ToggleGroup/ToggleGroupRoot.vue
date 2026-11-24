@@ -1,8 +1,8 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { ComputedRef, Ref } from 'vue'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps, SingleOrMultipleProps } from '../shared/types'
-import { createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
+import type { PrimitiveProps } from '@/Primitive'
+import { createRekaContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
 export interface ToggleGroupRootProps<T = AcceptableValue | AcceptableValue[]>
@@ -35,14 +35,15 @@ interface ToggleGroupRootContext {
 }
 
 export const [injectToggleGroupRootContext, provideToggleGroupRootContext]
-  = createContext<ToggleGroupRootContext>('ToggleGroupRoot')
+  = createRekaContext<ToggleGroupRootContext>('ToggleGroupRoot')
 </script>
 
 <script setup lang="ts">
+import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
+import { provideRovingFocusNoActiveItem } from '@/RovingFocus/RovingFocusGroup.vue'
 import { useSingleOrMultipleValue } from '@/shared/useSingleOrMultipleValue'
-import { toRefs } from 'vue'
 
 const props = withDefaults(defineProps<ToggleGroupRootProps>(), {
   loop: true,
@@ -52,7 +53,7 @@ const props = withDefaults(defineProps<ToggleGroupRootProps>(), {
 const emits = defineEmits<ToggleGroupRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current toggle values */
     modelValue: typeof modelValue.value
   }) => any
@@ -75,6 +76,9 @@ provideToggleGroupRootContext({
   rovingFocus,
   disabled,
 })
+
+// A group with no value has no pressed item. Without roving focus there is no group to tell.
+provideRovingFocusNoActiveItem(() => rovingFocus.value && (modelValue.value == null || (Array.isArray(modelValue.value) && modelValue.value.length === 0)))
 </script>
 
 <template>
@@ -97,6 +101,7 @@ provideToggleGroupRootContext({
         v-if="isFormControl && name"
         :name="name"
         :required="required"
+        :disabled="disabled"
         :value="modelValue"
       />
     </Primitive>

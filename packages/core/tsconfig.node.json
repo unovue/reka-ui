@@ -1,15 +1,15 @@
 {
-  "extends": "@tsconfig/node18/tsconfig.json",
+  "extends": "@tsconfig/node24/tsconfig.json",
   "compilerOptions": {
     "composite": true,
-    "module": "ESNext",
     "types": ["node"]
   },
   "include": [
+    "tsdown.config.*",
     "vite.config.*",
-    "vitest.config.*",
     "cypress.config.*",
     "nightwatch.conf.*",
-    "playwright.config.*"
+    "playwright.config.*",
+    "scripts"
   ]
 }

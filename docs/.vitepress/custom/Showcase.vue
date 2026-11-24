@@ -6,7 +6,7 @@ const { frontmatter } = useData()
 </script>
 
 <template>
-  <div class="content pb-20 px-4 md:px-0">
+  <div class="content pb-20 px-4 lg:px-6">
     <div class="mx-auto w-full">
       <div class="mt-8 mb-16 md:mt-24 md:mb-24 flex flex-col">
         <h1 class="text-4xl lg:text-5xl font-bold">

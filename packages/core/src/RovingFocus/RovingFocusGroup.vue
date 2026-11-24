@@ -1,11 +1,12 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
-import type { Ref } from 'vue'
+import type { InjectionKey, Ref } from 'vue'
 import type {
   Direction,
   Orientation,
 } from './utils'
-import { createContext, useDirection } from '@/shared'
+import type { PrimitiveProps } from '@/Primitive'
+import { inject, provide, ref, toRefs } from 'vue'
+import { createRekaContext, useDirection } from '@/shared'
 
 export interface RovingFocusGroupProps extends PrimitiveProps {
   /**
@@ -50,17 +51,29 @@ interface RovingContext {
   onItemShiftTab: () => void
   onFocusableItemAdd: () => void
   onFocusableItemRemove: () => void
+  claimPreMountTabStop: (tabStopId: string, active: boolean) => boolean
 }
 
 export const [injectRovingFocusGroupContext, provideRovingFocusGroupContext]
-  = createContext<RovingContext>('RovingFocusGroup')
+  = createRekaContext<RovingContext>('RovingFocusGroup')
+
+const NO_ACTIVE_ITEM_KEY: InjectionKey<(() => boolean) | undefined> = Symbol('RovingFocusGroupNoActiveItem')
+
+/**
+ * Internal: tells the next `RovingFocusGroup` below whether none of its items will render
+ * `active`, so that its first focusable item can be the tab stop in the HTML rendered
+ * before mount (on the server, or until hydration). Without it, only an active item can be.
+ * Must be called in the setup of a component that renders the group.
+ */
+export function provideRovingFocusNoActiveItem(getter: () => boolean) {
+  provide(NO_ACTIVE_ITEM_KEY, getter)
+}
 </script>
 
 <script setup lang="ts">
+import { useVModel } from '@vueuse/core'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
-import { useVModel } from '@vueuse/core'
-import { ref, toRefs } from 'vue'
 import { ENTRY_FOCUS, EVENT_OPTIONS, focusFirst } from './utils'
 
 const props = withDefaults(defineProps<RovingFocusGroupProps>(), {
@@ -102,10 +115,11 @@ function handleFocus(event: FocusEvent) {
     if (!entryFocusEvent.defaultPrevented) {
       const items = getItems().map(i => i.ref).filter(i => i.dataset.disabled !== '')
       const activeItem = items.find(item => item.getAttribute('data-active') === '')
+      const highlightedItem = items.find(item => item.getAttribute('data-highlighted') === '')
       const currentItem = items.find(
         item => item.id === currentTabStopId.value,
       )
-      const candidateItems = [activeItem, currentItem, ...items].filter(
+      const candidateItems = [activeItem, highlightedItem, currentItem, ...items].filter(
         Boolean,
       ) as typeof items
       focusFirst(candidateItems, props.preventScrollOnEntryFocus)
@@ -125,6 +139,11 @@ defineExpose({
   getItems,
 })
 
+// Read by this group only: a group nested in its items starts without one.
+const hasNoActiveItem = inject(NO_ACTIVE_ITEM_KEY, undefined)
+provide(NO_ACTIVE_ITEM_KEY, undefined)
+
+let preMountTabStopId: string | undefined
 provideRovingFocusGroupContext({
   loop,
   dir,
@@ -141,6 +160,16 @@ provideRovingFocusGroupContext({
   },
   onFocusableItemRemove: () => {
     focusableItemsCount.value--
+  },
+  // Before mount, the first active item to ask (setup runs in document order, on the
+  // server and when hydrating alike) is the group's only tab stop. When the group knows
+  // that no item will be active, the first focusable item is. An item can't see the
+  // items after it, so without that knowledge it can't tell whether it is the right stop.
+  claimPreMountTabStop: (tabStopId, active) => {
+    if (!active && !hasNoActiveItem?.())
+      return false
+    preMountTabStopId ??= tabStopId
+    return preMountTabStopId === tabStopId
   },
 })
 </script>

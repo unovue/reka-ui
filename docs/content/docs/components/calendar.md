@@ -61,7 +61,7 @@ import {
   CalendarHeading,
   CalendarNext,
   CalendarPrev,
-  CalendarRoot
+  CalendarRoot,
 } from 'reka-ui'
 </script>
 
@@ -287,6 +287,12 @@ This component demonstrates intuitive calendar navigation using touch-based swip
 
 <ComponentPreview name="CalendarSwipe" />
 
+### Calendar week numbers
+
+This example showcases usage of the CalendarWeek component used to display the number of the week.
+
+<ComponentPreview name="CalendarWeeks" />
+
 ## Accessibility
 
 ### Keyboard Interactions
@@ -318,6 +324,48 @@ This component demonstrates intuitive calendar navigation using touch-based swip
       description:
       `
         When the focus is on <Code>CalendarCellTrigger</Code>, it navigates the dates, changing the month/year/decade if necessary.
+      `
+    },
+    {
+      keys: ['Home'],
+      description:
+      `
+        When the focus is on <Code>CalendarCellTrigger</Code>, it moves focus to the first day of the current week.
+      `
+    },
+    {
+      keys: ['End'],
+      description:
+      `
+        When the focus is on <Code>CalendarCellTrigger</Code>, it moves focus to the last day of the current week.
+      `
+    },
+    {
+      keys: ['PageUp'],
+      description:
+      `
+        When the focus is on <Code>CalendarCellTrigger</Code>, it moves to the previous month while preserving the day of the month when possible, or clamps to the last day of the month.
+      `
+    },
+    {
+      keys: ['PageDown'],
+      description:
+      `
+        When the focus is on <Code>CalendarCellTrigger</Code>, it moves to the next month while preserving the day of the month when possible, or clamps to the last day of the month.
+      `
+    },
+    {
+      keys: ['Shift+PageUp'],
+      description:
+      `
+        When the focus is on <Code>CalendarCellTrigger</Code>, it moves to the previous year while preserving the month and day when possible, or clamps to the last day of the month.
+      `
+    },
+    {
+      keys: ['Shift+PageDown'],
+      description:
+      `
+        When the focus is on <Code>CalendarCellTrigger</Code>, it moves to the next year while preserving the month and day when possible, or clamps to the last day of the month.
       `
     }
   ]"

@@ -1,9 +1,9 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { ComputedRef, Ref } from 'vue'
 import type { DataOrientation, Direction, FormFieldProps } from '../shared/types'
+import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
-import { clamp, createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
+import { clamp, createRekaContext, getDecimalCount, useDirection, useFormControl, useForwardExpose } from '@/shared'
 
 type ThumbAlignment = 'contain' | 'overflow'
 
@@ -63,16 +63,16 @@ export interface SliderRootContext {
 }
 
 export const [injectSliderRootContext, provideSliderRootContext]
-  = createContext<SliderRootContext>('SliderRoot')
+  = createRekaContext<SliderRootContext>('SliderRoot')
 </script>
 
 <script setup lang="ts">
-import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useVModel } from '@vueuse/core'
 import { computed, ref, toRaw, toRefs } from 'vue'
+import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import SliderHorizontal from './SliderHorizontal.vue'
 import SliderVertical from './SliderVertical.vue'
-import { ARROW_KEYS, getClosestValueIndex, getDecimalCount, getNextSortedValues, hasMinStepsBetweenValues, PAGE_KEYS, roundValue } from './utils'
+import { ARROW_KEYS, getClosestValueIndex, getNextSortedValues, hasMinStepsBetweenValues, PAGE_KEYS, roundValue } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -93,7 +93,7 @@ const props = withDefaults(defineProps<SliderRootProps>(), {
 const emits = defineEmits<SliderRootEmits>()
 
 defineSlots<{
-  default: (props: {
+  default?: (props: {
     /** Current slider values */
     modelValue: typeof modelValue.value
   }) => any
@@ -134,7 +134,7 @@ function handleSlideEnd() {
 }
 
 function updateValues(value: number, atIndex: number, { commit } = { commit: false }) {
-  const decimalCount = getDecimalCount(step.value)
+  const decimalCount = Math.max(getDecimalCount(min.value), getDecimalCount(step.value))
   const snapToStep = roundValue(Math.round((value - min.value) / step.value) * step.value + min.value, decimalCount)
   const nextValue = clamp(snapToStep, min.value, max.value)
 

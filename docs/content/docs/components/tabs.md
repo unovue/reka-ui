@@ -119,6 +119,10 @@ The indicator that highlights the current active tab.
       description: 'The size of the indicator.',
     },
     {
+      cssVariable: '--reka-tabs-indicator-thickness',
+      description: 'The thickness of the indicator.',
+    },
+    {
       cssVariable: '--reka-tabs-indicator-position',
       description: 'The position of the indicator',
     },

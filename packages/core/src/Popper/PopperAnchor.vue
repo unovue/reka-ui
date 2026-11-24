@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { PrimitiveProps } from '@/Primitive'
 import type { ReferenceElement } from '@floating-ui/vue'
+import type { PrimitiveProps } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
 
 export interface PopperAnchorProps extends PrimitiveProps {
@@ -14,17 +14,18 @@ export interface PopperAnchorProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import type { PopperScope } from './PopperRootContext'
+import { watchPostEffect } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
-import { watchPostEffect } from 'vue'
-import { injectPopperRootContext } from './PopperRoot.vue'
+import { injectPopperRootContext } from './PopperRootContext'
 
-const props = defineProps<PopperAnchorProps>()
+const props = defineProps<PopperAnchorProps & { scope?: PopperScope }>()
 
 const { forwardRef, currentElement } = useForwardExpose()
 
-const rootContext = injectPopperRootContext()
+const rootContext = injectPopperRootContext(props.scope)
 
 watchPostEffect(() => {
   rootContext.onAnchorChange(props.reference ?? currentElement.value)

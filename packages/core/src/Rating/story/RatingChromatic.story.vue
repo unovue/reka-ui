@@ -1,0 +1,82 @@
+<script setup lang="ts">
+import Rating from './_Rating.vue'
+</script>
+
+<template>
+  <Story
+    title="Rating/Chromatic"
+    :layout="{ type: 'grid', width: '50%' }"
+  >
+    <Variant
+      auto-props-disabled
+      title="Steps"
+    >
+      <Rating :step="0.25" />
+    </Variant>
+    <Variant
+      auto-props-disabled
+      title="Uncontrolled"
+    >
+      <Rating
+        :default-value="3"
+      />
+    </Variant>
+    <Variant
+      auto-props-disabled
+      title="Clerable"
+    >
+      <Rating
+        :default-value="3"
+        clearable
+      />
+    </Variant>
+    <Variant
+      auto-props-disabled
+      title="Hoverable"
+    >
+      <Rating
+        hoverable
+      />
+    </Variant>
+    <Variant
+      auto-props-disabled
+      title="Length of 3"
+    >
+      <Rating
+        :length="3
+        "
+      />
+    </Variant>
+    <Variant
+      auto-props-disabled
+      title="Disabled"
+    >
+      <Rating
+        disabled
+      />
+    </Variant>
+    <Variant
+      auto-props-disabled
+      title="Combination"
+    >
+      <Rating
+        clearable
+        hoverable
+        :step="0.5"
+        :length="10"
+      />
+    </Variant>
+    <Variant
+      auto-props-disabled
+      title="Disabled combination"
+    >
+      <Rating
+        disabled
+        clearable
+        hoverable
+        :step="0.5"
+        :length="10"
+      />
+    </Variant>
+  </Story>
+</template>

@@ -3,6 +3,7 @@ import type {
   SelectContentImplEmits,
   SelectContentImplProps,
 } from './SelectContentImpl.vue'
+import { computed, onMounted, ref } from 'vue'
 
 export type SelectContentEmits = SelectContentImplEmits
 
@@ -16,9 +17,9 @@ export interface SelectContentProps extends SelectContentImplProps {
 </script>
 
 <script setup lang="ts">
+import { useCollection } from '@/Collection'
 import { Presence } from '@/Presence'
 import { useForwardPropsEmits } from '@/shared'
-import { computed, onMounted, ref } from 'vue'
 import SelectContentImpl from './SelectContentImpl.vue'
 import SelectProvider from './SelectProvider.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
@@ -33,6 +34,9 @@ const emits = defineEmits<SelectContentEmits>()
 const forwarded = useForwardPropsEmits(props, emits)
 
 const rootContext = injectSelectRootContext()
+// While closed, the items still render into the fragment below. Mark it as the
+// collection so the trigger's typeahead can find them, as Radix does.
+const { CollectionSlot } = useCollection()
 
 const fragment = ref<DocumentFragment>()
 onMounted(() => {
@@ -40,24 +44,29 @@ onMounted(() => {
 })
 
 const presenceRef = ref<InstanceType<typeof Presence>>()
-const renderPresence = computed(() => props.forceMount || rootContext.open.value)
+
+const present = computed(() => props.forceMount || rootContext.open.value)
 </script>
 
 <template>
   <Presence
-    v-if="renderPresence"
+    v-if="present || presenceRef?.present"
     ref="presenceRef"
-    :present="true"
+    :present="present"
   >
     <SelectContentImpl v-bind="{ ...forwarded, ...$attrs }">
       <slot />
     </SelectContentImpl>
   </Presence>
 
-  <div v-else-if="!presenceRef?.present && fragment">
+  <div v-else-if="fragment">
     <Teleport :to="fragment">
       <SelectProvider :context="rootContext">
-        <slot />
+        <CollectionSlot>
+          <div>
+            <slot />
+          </div>
+        </CollectionSlot>
       </SelectProvider>
     </Teleport>
   </div>
