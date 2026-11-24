@@ -16,3 +16,21 @@ export function isPlainTag(tag: unknown): tag is string {
 export function disabledAttr(disabled: boolean | undefined, as: unknown, asChild?: boolean): boolean | undefined {
   return !asChild && as !== 'template' && isPlainTag(as) ? disabled || undefined : disabled
 }
+
+// Elements the native `disabled` attribute works on
+const NATIVE_DISABLED_TAGS = ['button', 'input', 'select', 'textarea', 'fieldset', 'option', 'optgroup']
+
+/**
+ * The `aria-disabled` to add to an element rendered with the native `disabled` attribute. Only form
+ * controls support `disabled`, so on any other plain tag (`div`, `span`, `a`, …) the disabled state is
+ * only exposed with `aria-disabled="true"`. Returns `undefined` when the element isn't disabled, is a
+ * native control, a component or a custom element, or already has an `aria-disabled` (pass `null` to
+ * opt out). `Primitive` and `Slot` call it with the element they render.
+ */
+export function ariaDisabledAttr(tag: unknown, props: Record<string, any>): 'true' | undefined {
+  const disabled = props.disabled
+  return disabled != null && disabled !== false && props['aria-disabled'] === undefined && props.ariaDisabled === undefined
+    && isPlainTag(tag) && tag !== 'template' && !NATIVE_DISABLED_TAGS.includes(tag)
+    ? 'true'
+    : undefined
+}

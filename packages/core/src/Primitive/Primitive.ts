@@ -1,5 +1,6 @@
 import type { Component, PropType } from 'vue'
 import { defineComponent, h } from 'vue'
+import { ariaDisabledAttr } from '@/shared'
 import { Slot } from './Slot'
 
 export type AsTag
@@ -127,7 +128,10 @@ export const Primitive = defineComponent({
         // eslint-disable-next-line node/prefer-global/process -- bundlers replace it, the warning drops in production
         if (process.env.NODE_ENV !== 'production' && unsafe)
           warnUnsafeAs(props.as)
-        return h(unsafe ? 'div' : props.as, attrs, { default: slots.default })
+        const tag = unsafe ? 'div' : props.as
+        // Native `disabled` only works on form controls, so expose it with `aria-disabled` elsewhere
+        const ariaDisabled = ariaDisabledAttr(tag, attrs)
+        return h(tag, ariaDisabled ? { ...attrs, 'aria-disabled': ariaDisabled } : attrs, { default: slots.default })
       }
     }
 

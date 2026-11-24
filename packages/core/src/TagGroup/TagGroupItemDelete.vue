@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardExpose, useId } from '@/shared'
+import { ariaDisabledAttr, useForwardExpose, useId } from '@/shared'
 
 export interface TagGroupItemDeleteProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with the delete button. */
@@ -51,6 +51,7 @@ function handleClick(event: MouseEvent) {
     :tabindex="tabindex"
     :data-disabled="disabled ? '' : undefined"
     :disabled="props.as === 'button' ? disabled : undefined"
+    :aria-disabled="props.as !== 'button' && !props.asChild ? ariaDisabledAttr(props.as, { disabled }) : undefined"
     @click="handleClick"
   >
     <slot />

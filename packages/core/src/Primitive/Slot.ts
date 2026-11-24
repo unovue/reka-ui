@@ -1,5 +1,5 @@
 import { cloneVNode, Comment, defineComponent, mergeProps } from 'vue'
-import { isPlainTag, renderSlotFragments } from '@/shared'
+import { ariaDisabledAttr, isPlainTag, renderSlotFragments } from '@/shared'
 
 export const Slot = defineComponent({
   name: 'PrimitiveSlot',
@@ -35,6 +35,11 @@ export const Slot = defineComponent({
       // into a new object, so this doesn't touch `attrs`
       if (cloned.props!.disabled === false && isPlainTag(cloned.type))
         cloned.props!.disabled = undefined
+      // The native `disabled` only works on form controls. On any other plain tag expose the state
+      // with `aria-disabled`, unless the part or the child already sets one
+      const ariaDisabled = ariaDisabledAttr(cloned.type, cloned.props!)
+      if (ariaDisabled)
+        cloned.props!['aria-disabled'] = ariaDisabled
 
       if (children.length === 1)
         return cloned
