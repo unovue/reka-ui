@@ -34,6 +34,7 @@ interface PopoverContentImplPrivateProps extends PopoverContentImplProps {
 </script>
 
 <script setup lang="ts">
+import { onBeforeUnmount } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { PopperContent } from '@/Popper'
@@ -50,6 +51,13 @@ const rootContext = injectPopoverRootContext()
 useContentId(rootContext, currentElement)
 useContentMounted(rootContext, currentElement)
 useFocusGuards(() => props.present)
+
+// A nested content can restore focus after this content's closeAutoFocus handler,
+// while its trigger is still connected inside the content about to be removed.
+onBeforeUnmount(() => {
+  if (currentElement.value)
+    currentElement.value.inert = true
+})
 </script>
 
 <template>
