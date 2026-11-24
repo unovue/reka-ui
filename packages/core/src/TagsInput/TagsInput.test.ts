@@ -202,9 +202,9 @@ describe('given default TagsInput', () => {
       expect(event.defaultPrevented).toBe(false)
     })
 
-    it('should let keydown:tab move focus when the draft is empty', async () => {
+    it.each(['', '   '])('should let keydown:tab move focus when the draft is %j', async (draft) => {
       await wrapper.setProps({ addOnTab: true })
-      await setValueInInput('')
+      await setValueInInput(draft)
 
       const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
       input.element.dispatchEvent(event)
@@ -240,6 +240,17 @@ describe('given default TagsInput', () => {
 
       expect(wrapper.html()).toContain(tag)
       expect(tags[1].text()).toBe(tag)
+    })
+
+    it.each(['keydown.enter', 'keydown.tab', 'blur'])('should not add a whitespace-only draft on %s', async (trigger) => {
+      await wrapper.setProps({ addOnTab: true, addOnBlur: true })
+      await setValueInInput('   ')
+
+      await input.trigger(trigger)
+      await flushPromises()
+
+      expect(rootComponent.emitted('addTag')).toBeUndefined()
+      expect(wrapper.findAll('[data-reka-collection-item]').length).toBe(1)
     })
   })
 })
@@ -376,6 +387,25 @@ describe('given a TagsInput with objects', async () => {
       expect(tags[2].text()).toBe('tag2')
       expect(tags[3].text()).toBe('tag3')
       expect(tags[4].text()).toBe('tag4')
+    })
+
+    it.each([
+      [',', 'tag1,tag2,', ['tag1', 'tag2']],
+      [',', 'tag1,,tag2', ['tag1', 'tag2']],
+      [',', 'tag1, ,tag2', ['tag1', 'tag2']],
+      [',', '   ', []],
+      [/[ ,;\t\n\r]+/, 'tag1\r\ntag2\r\n', ['tag1', 'tag2']],
+      [/,(\s+)?/, 'tag1,tag2', ['tag1', 'tag2']],
+      // Not trimmed, like a typed draft
+      [',', 'tag1, tag2', ['tag1', ' tag2']],
+    ])('should add only non-blank tags on paste (delimiter %s, text %j)', async (delimiter, text, expected) => {
+      const { wrapper, input } = setupDelimiter(delimiter)
+      const user = userEvent.setup()
+
+      await user.click(input.element)
+      await user.paste(text)
+
+      expect(wrapper.getComponent({ name: 'TagsInputRoot' }).emitted('addTag')?.flat() ?? []).toEqual(expected)
     })
 
     it('should not create tag when delimiter is typed during IME composition', async () => {
@@ -586,8 +616,9 @@ describe('given TagsInput inside a form', () => {
     wrapper.unmount()
   })
 
-  it('does not prevent submission when the draft is empty', async () => {
+  it.each(['', '   '])('does not prevent submission when the draft is %j', async (draft) => {
     const { wrapper, input, values } = mountInForm()
+    input.value = draft
 
     const event = pressEnter(input)
     expect(event.defaultPrevented).toBe(false)
