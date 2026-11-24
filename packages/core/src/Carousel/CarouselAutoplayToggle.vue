@@ -6,11 +6,11 @@ export interface CarouselAutoplayToggleProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { disabledAttr, useForwardExpose } from '@/shared'
 import { injectCarouselRootContext } from './CarouselRoot.vue'
 import { getCarouselAutoplayToggleSurface } from './useCarousel'
 
-withDefaults(defineProps<CarouselAutoplayToggleProps>(), { as: 'button' })
+const props = withDefaults(defineProps<CarouselAutoplayToggleProps>(), { as: 'button' })
 
 defineSlots<{
   default?: (props: {
@@ -33,6 +33,7 @@ const surface = getCarouselAutoplayToggleSurface(rootContext)
     :as-child="asChild"
     :type="as === 'button' ? 'button' : undefined"
     v-bind="surface.attrs.value"
+    :disabled="disabledAttr(surface.state.value.disabled, props.as, props.asChild)"
   >
     <slot :playing="surface.state.value.state === 'playing'" />
   </Primitive>
