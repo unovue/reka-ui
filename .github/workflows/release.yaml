@@ -11,6 +11,14 @@ on:
       - 'v*'
   workflow_dispatch:
 
+# The dist-tag is picked from npm's current `latest` right before the publish,
+# so two releases must not interleave. Release workflows on every branch share
+# this group. `queue: max` keeps every waiting release instead of replacing an
+# older pending one, so no version is skipped; runs are never cancelled.
+concurrency:
+  group: npm-publish
+  queue: max
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -33,12 +41,6 @@ jobs:
   npm:
     runs-on: ubuntu-latest
     environment: npm
-    # The dist-tag is picked from npm's current `latest` right before the
-    # publish, so two publishes must not interleave. Release workflows on every
-    # branch share this group.
-    concurrency:
-      group: npm-publish
-      cancel-in-progress: false
     permissions:
       id-token: write
       contents: read
