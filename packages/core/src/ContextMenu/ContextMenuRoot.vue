@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { MenuEmits, MenuProps } from '@/Menu'
 import type { Direction } from '@/shared/types'
-import { createContext, useDirection, useForwardExpose } from '@/shared'
+import { createRekaContext, useDirection, useForwardExpose } from '@/shared'
 
 type ContextMenuRootContext = {
   open: Ref<boolean>
@@ -13,7 +13,7 @@ type ContextMenuRootContext = {
   pressOpenDelay: Ref<number>
 }
 
-export interface ContextMenuRootProps extends Omit<MenuProps, 'open'> {
+export interface ContextMenuRootProps extends MenuProps {
   /**
    * The duration from when the trigger is pressed until the menu opens.
    *
@@ -24,11 +24,12 @@ export interface ContextMenuRootProps extends Omit<MenuProps, 'open'> {
 export type ContextMenuRootEmits = MenuEmits
 
 export const [injectContextMenuRootContext, provideContextMenuRootContext]
-  = createContext<ContextMenuRootContext>('ContextMenuRoot')
+  = createRekaContext<ContextMenuRootContext>('ContextMenuRoot')
 </script>
 
 <script setup lang="ts">
-import { ref, toRefs, watch } from 'vue'
+import { useVModel } from '@vueuse/core'
+import { ref, toRefs } from 'vue'
 import { MenuRoot } from '@/Menu'
 
 defineOptions({
@@ -38,13 +39,18 @@ defineOptions({
 const props = withDefaults(defineProps<ContextMenuRootProps>(), {
   modal: true,
   pressOpenDelay: 700,
+  open: undefined,
+  unmountOnHide: true,
 })
 const emits = defineEmits<ContextMenuRootEmits>()
 const { dir: propDir, modal, pressOpenDelay } = toRefs(props)
 useForwardExpose()
 const dir = useDirection(propDir)
 
-const open = ref(false)
+const open = useVModel(props, 'open', emits, {
+  defaultValue: false,
+  passive: (props.open === undefined) as false,
+}) as Ref<boolean>
 const triggerElement = ref<HTMLElement>()
 
 provideContextMenuRootContext({
@@ -57,10 +63,6 @@ provideContextMenuRootContext({
   triggerElement,
   pressOpenDelay,
 })
-
-watch(open, (value) => {
-  emits('update:open', value)
-})
 </script>
 
 <template>
@@ -68,6 +70,7 @@ watch(open, (value) => {
     v-model:open="open"
     :dir="dir"
     :modal="modal"
+    :unmount-on-hide="unmountOnHide"
   >
     <slot />
   </MenuRoot>

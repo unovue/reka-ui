@@ -18,6 +18,7 @@ export interface MonthPickerPrevSlot {
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
+import { disabledAttr } from '@/shared'
 import { injectMonthPickerRootContext } from './MonthPickerRoot.vue'
 
 const props = withDefaults(defineProps<MonthPickerPrevProps>(), { as: 'button' })
@@ -42,7 +43,7 @@ function handleClick() {
     :type="props.as === 'button' ? 'button' : undefined"
     :aria-disabled="disabled || undefined"
     :data-disabled="disabled || undefined"
-    :disabled="disabled"
+    :disabled="disabledAttr(disabled, props.as, props.asChild)"
     @click="handleClick"
   >
     <slot :disabled>

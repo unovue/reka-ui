@@ -1,6 +1,24 @@
 import { CalendarDate } from '@internationalized/date'
 import { describe, expect, it } from 'vitest'
-import { getWeekNumber } from './calendar'
+import { createDecade, getWeekNumber } from './calendar'
+
+describe('createDecade', () => {
+  const dateObj = new CalendarDate(2025, 8, 18)
+
+  it.each([
+    [-2, 5, [2023, 2024, 2025, 2026, 2027, 2028, 2029]],
+    [undefined, 3, [2025, 2026, 2027]],
+    [-2, 2, [2023, 2024, 2025, 2026]],
+  ] as const)('lists the years from offset %s up to %i (exclusive)', (startIndex, endIndex, years) => {
+    expect(createDecade({ dateObj, startIndex, endIndex }))
+      .toEqual(years.map(year => new CalendarDate(year, 1, 1)))
+  })
+
+  it('keeps the years in chronological order across eras', () => {
+    const years = createDecade({ dateObj: new CalendarDate(1, 8, 18), startIndex: -2, endIndex: 2 })
+    expect(years.map(date => [date.era, date.year])).toEqual([['BC', 2], ['BC', 1], ['AD', 1], ['AD', 2]])
+  })
+})
 
 describe('getWeekNumber', () => {
   describe('iSO week (de-DE locale)', () => {

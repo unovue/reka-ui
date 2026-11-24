@@ -16,6 +16,12 @@
     'required': false
   },
   {
+    'name': 'disabled',
+    'description': '<p>When <code>true</code>, prevents the user from interacting with the item.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'level',
     'description': '<p>Level of depth</p>\n',
     'type': 'number',
@@ -24,7 +30,7 @@
   {
     'name': 'value',
     'description': '<p>Value given to this item</p>\n',
-    'type': 'Record&lt;string, any&gt;',
+    'type': 'T',
     'required': true
   }
 ]" />
@@ -33,12 +39,12 @@
   {
     'name': 'select',
     'description': '<p>Event handler called when the selecting item. &lt;br&gt; It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
-    'type': '[event: SelectEvent&lt;Record&lt;string, any&gt;&gt;]'
+    'type': '[event: SelectEvent&lt;T&gt;]'
   },
   {
     'name': 'toggle',
     'description': '<p>Event handler called when the selecting item. &lt;br&gt; It can be prevented by calling <code>event.preventDefault</code>.</p>\n',
-    'type': '[event: ToggleEvent&lt;Record&lt;string, any&gt;&gt;]'
+    'type': '[event: ToggleEvent&lt;T&gt;]'
   }
 ]" />
 
@@ -57,6 +63,11 @@
     'name': 'isIndeterminate',
     'description': '',
     'type': 'boolean | undefined'
+  },
+  {
+    'name': 'isDisabled',
+    'description': '',
+    'type': 'boolean'
   },
   {
     'name': 'handleToggle',
@@ -79,15 +90,16 @@
 | --- | --- | --- | --- | --- |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"li"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
+| `disabled` | When true, prevents the user from interacting with the item. | `boolean` | No | - |
 | `level` | Level of depth | `number` | Yes | - |
-| `value` | Value given to this item | `Record<string, any>` | Yes | - |
+| `value` | Value given to this item | `T` | Yes | - |
 
 **Events**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `select` | Event handler called when the selecting item. <br> It can be prevented by calling event.preventDefault. | `[event: SelectEvent<Record<string, any>>]` |
-| `toggle` | Event handler called when the selecting item. <br> It can be prevented by calling event.preventDefault. | `[event: ToggleEvent<Record<string, any>>]` |
+| `select` | Event handler called when the selecting item. <br> It can be prevented by calling event.preventDefault. | `[event: SelectEvent<T>]` |
+| `toggle` | Event handler called when the selecting item. <br> It can be prevented by calling event.preventDefault. | `[event: ToggleEvent<T>]` |
 
 **Slots**
 
@@ -96,6 +108,7 @@
 | `isExpanded` |  | `boolean` |
 | `isSelected` |  | `boolean` |
 | `isIndeterminate` |  | `boolean \| undefined` |
+| `isDisabled` |  | `boolean` |
 | `handleToggle` |  | `(): void` |
 | `handleSelect` |  | `(): void` |
 

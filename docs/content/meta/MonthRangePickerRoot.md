@@ -183,19 +183,6 @@
     'type': 'DateRange'
   }
 ]" />
-
-<MethodsTable :data="[
-  {
-    'name': 'isMonthDisabled',
-    'description': '<p>A function that returns whether or not a month is disabled</p>\n',
-    'type': 'Matcher'
-  },
-  {
-    'name': 'isMonthUnavailable',
-    'description': '<p>A function that returns whether or not a month is unavailable</p>\n',
-    'type': 'Matcher'
-  }
-]" />
 </llm-exclude>
 
 <llm-only>
@@ -243,12 +230,5 @@
 | `grid` | The grid of months | `Grid<DateValue>` |
 | `locale` | The calendar locale | `string` |
 | `modelValue` | The current date range | `DateRange` |
-
-**Methods**
-
-| Name | Description | Type |
-| --- | --- | --- |
-| `isMonthDisabled` | A function that returns whether or not a month is disabled | `Matcher` |
-| `isMonthUnavailable` | A function that returns whether or not a month is unavailable | `Matcher` |
 
 </llm-only>

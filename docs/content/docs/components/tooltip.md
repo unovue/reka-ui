@@ -243,6 +243,30 @@ import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from 're
 }
 ```
 
+### Fall back to a perpendicular side
+
+When the content collides on its preferred side, it flips to the opposite side. If that side collides too (for example a `side="right"` tooltip on a trigger that spans the full width of a small screen), the content stays on that axis by default. Set `fallbackAxisSideDirection` to also try the perpendicular sides: `start` tries top then bottom (or left then right), `end` tries them in the reverse order.
+
+```vue line=10
+<script setup>
+import { TooltipContent, TooltipProvider, TooltipRoot, TooltipTrigger } from 'reka-ui'
+</script>
+
+<template>
+  <TooltipRoot>
+    <TooltipTrigger>…</TooltipTrigger>
+    <TooltipContent
+      side="right"
+      fallback-axis-side-direction="start"
+    >
+      …
+    </TooltipContent>
+  </TooltipRoot>
+</template>
+```
+
+The same prop is available on the content of every other floating component, such as `PopoverContent`, `HoverCardContent`, `DropdownMenuContent` and `SelectContent`.
+
 ### Origin-aware animations
 
 We expose a CSS custom property `--reka-tooltip-content-transform-origin`. Use it to animate the content from its computed origin based on `side`, `sideOffset`, `align`, `alignOffset` and any collisions.

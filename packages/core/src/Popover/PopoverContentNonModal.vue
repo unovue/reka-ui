@@ -1,30 +1,46 @@
 <script setup lang="ts">
 import type { PopoverContentImplEmits, PopoverContentImplProps } from './PopoverContentImpl.vue'
-import { ref } from 'vue'
-import { useForwardPropsEmits } from '@/shared'
+import { ref, watch } from 'vue'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
+import { useForwardExpose, useForwardPropsEmits } from '@/shared'
 import PopoverContentImpl from './PopoverContentImpl.vue'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 
-const props = defineProps<PopoverContentImplProps>()
+const props = withDefaults(defineProps<PopoverContentImplProps & { present?: boolean }>(), { present: true })
 const emits = defineEmits<PopoverContentImplEmits>()
 const rootContext = injectPopoverRootContext()
 const hasInteractedOutsideRef = ref(false)
 const hasPointerDownOutsideRef = ref(false)
 
 const forwarded = useForwardPropsEmits(props, emits)
+const { forwardRef, currentElement } = useForwardExpose()
+
+// When `unmountOnHide` is `false` the content stays mounted on close, so
+// `close-auto-focus` never fires. Restore focus to the trigger manually once
+// the content is no longer present, unless the user interacted outside or
+// something else took focus meanwhile, e.g. a layer opened while this one was
+// animating out.
+watch(() => props.present, (isPresent, wasPresent) => {
+  if (!isPresent && wasPresent) {
+    if (!hasInteractedOutsideRef.value && !hasFocusLeftScope(currentElement.value ?? null))
+      rootContext.triggerElement.value?.focus()
+    hasInteractedOutsideRef.value = false
+    hasPointerDownOutsideRef.value = false
+  }
+})
 </script>
 
 <template>
   <PopoverContentImpl
     v-bind="forwarded"
+    :ref="forwardRef"
     :trap-focus="false"
     :disable-outside-pointer-events="false"
     @close-auto-focus="
       (event) => {
-        emits('closeAutoFocus', event);
-
         if (!event.defaultPrevented) {
-          if (!hasInteractedOutsideRef) rootContext.triggerElement.value?.focus();
+          // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
+          if (!hasInteractedOutsideRef && !hasFocusLeftScope(event.target)) rootContext.triggerElement.value?.focus();
           // Always prevent auto focus because we either focus manually or want user agent focus
           event.preventDefault();
         }
@@ -35,8 +51,6 @@ const forwarded = useForwardPropsEmits(props, emits)
     "
     @interact-outside="
       async (event) => {
-        emits('interactOutside', event);
-
         if (!event.defaultPrevented) {
           hasInteractedOutsideRef = true;
           if (event.detail.originalEvent.type === 'pointerdown') {

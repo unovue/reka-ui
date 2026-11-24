@@ -7,7 +7,7 @@
     'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
     'required': false,
-    'default': '\'div\''
+    'default': '\'span\''
   },
   {
     'name': 'asChild',
@@ -32,7 +32,7 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
+| `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"span"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 
 **Slots**

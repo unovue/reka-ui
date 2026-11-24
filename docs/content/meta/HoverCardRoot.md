@@ -17,6 +17,13 @@
     'default': 'false'
   },
   {
+    'name': 'enableTouch',
+    'description': '<p>When <code>true</code>, tapping the trigger on touch devices toggles the hover card open/closed. By default touch interactions are ignored to match pointer hover semantics.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'false'
+  },
+  {
     'name': 'open',
     'description': '<p>The controlled open state of the hover card. Can be binded as <code>v-model:open</code>.</p>\n',
     'type': 'boolean',
@@ -56,6 +63,7 @@
 | --- | --- | --- | --- | --- |
 | `closeDelay` | The duration from when the mouse leaves the trigger or content until the hover card closes. | `number` | No | `300` |
 | `defaultOpen` | The open state of the hover card when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
+| `enableTouch` | When true, tapping the trigger on touch devices toggles the hover card open/closed. By default touch interactions are ignored to match pointer hover semantics. | `boolean` | No | `false` |
 | `open` | The controlled open state of the hover card. Can be binded as v-model:open. | `boolean` | No | - |
 | `openDelay` | The duration from when the mouse enters the trigger until the hover card opens. | `number` | No | `700` |
 

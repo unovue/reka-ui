@@ -1,12 +1,14 @@
 import type { DateValue } from '@internationalized/date'
+import type { Component } from 'vue'
 import type { MonthRangePickerRootProps } from './MonthRangePickerRoot.vue'
 import type { DateRange } from '@/shared/date'
-import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+import { CalendarDate, CalendarDateTime, HebrewCalendar, JapaneseCalendar, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, h } from 'vue'
 import { useTestKbd } from '@/shared'
 import MonthRangePicker from './story/_MonthRangePicker.vue'
 
@@ -365,6 +367,36 @@ describe('month range picker - maximumMonths', () => {
     expect(getByTestId('month-4')).not.toHaveAttribute('data-highlighted')
   })
 
+  it('counts the thirteenth month of a Hebrew leap year towards maximumMonths', async () => {
+    const calendar = new HebrewCalendar()
+    const { getByTestId } = setup({
+      pickerProps: {
+        modelValue: { start: new CalendarDate(calendar, 5784, 12, 1), end: new CalendarDate(calendar, 5785, 1, 1) },
+        fixedDate: 'start',
+        maximumMonths: 3,
+      },
+    })
+
+    // The range already spans months 12, 13 and 1, so no earlier month fits.
+    expect(getByTestId('heading')).toHaveTextContent('5784')
+    expect(getByTestId('month-13')).not.toHaveAttribute('data-disabled')
+    expect(getByTestId('month-11')).toHaveAttribute('data-disabled')
+  })
+
+  it('keeps a range across the first year of a Japanese era within maximumMonths', async () => {
+    const calendar = new JapaneseCalendar()
+    const { getByTestId } = setup({
+      pickerProps: {
+        modelValue: { start: new CalendarDate(calendar, 'reiwa', 1, 12, 1), end: new CalendarDate(calendar, 'reiwa', 2, 1, 1) },
+        fixedDate: 'start',
+        maximumMonths: 2,
+      },
+    })
+
+    expect(getByTestId('month-12')).toHaveAttribute('data-selection-start')
+    expect(getByTestId('month-12')).not.toHaveAttribute('data-disabled')
+  })
+
   it('enforces maximumMonths for out-of-bounds controlled ranges with fixedDate="start"', async () => {
     const outOfBoundsRange = {
       start: new CalendarDate(1980, 1, 1),
@@ -476,5 +508,42 @@ describe('month range picker - keyboard navigation', () => {
     expect(getByTestId('heading')).toHaveTextContent('1981')
     expect(getByTestId('month-1')).toHaveAttribute('data-disabled')
     expect(getByTestId('month-2')).toHaveFocus()
+  })
+})
+
+const ButtonCell = defineComponent({
+  setup(_, { slots }) {
+    return () => h('button', { type: 'button' }, slots.default?.())
+  },
+})
+
+describe('month range picker - tabindex states', () => {
+  function renderPicker(triggerAs?: string | Component) {
+    return render(MonthRangePicker, {
+      props: {
+        pickerProps: {
+          modelValue: { start: new CalendarDate(2000, 1, 1), end: new CalendarDate(2000, 2, 1) },
+          isMonthDisabled: (date: DateValue) => date.month === 3,
+        },
+        triggerAs,
+      },
+    })
+  }
+
+  it('omits tabindex on disabled months rendered as the default div', () => {
+    const { getByTestId } = renderPicker()
+    expect(getByTestId('month-1')).toHaveAttribute('tabindex', '0')
+    expect(getByTestId('month-2')).toHaveAttribute('tabindex', '-1')
+    expect(getByTestId('month-3')).not.toHaveAttribute('tabindex')
+  })
+
+  it.each([
+    ['a button', 'button'],
+    ['a component that renders a button', ButtonCell],
+  ])('sets tabindex -1 on disabled months rendered as %s', (_, triggerAs) => {
+    const { getByTestId } = renderPicker(triggerAs)
+    expect(getByTestId('month-1')).toHaveAttribute('tabindex', '0')
+    expect(getByTestId('month-3').tagName).toBe('BUTTON')
+    expect(getByTestId('month-3')).toHaveAttribute('tabindex', '-1')
   })
 })

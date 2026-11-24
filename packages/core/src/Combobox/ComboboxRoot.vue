@@ -3,19 +3,24 @@ import type { ComputedRef, Ref } from 'vue'
 import type { ListboxRootProps } from '@/Listbox'
 import type { AcceptableValue, GenericComponentInstance } from '@/shared/types'
 import { usePrimitiveElement } from '@/Primitive'
-import { createContext, useDirection, useFilter } from '@/shared'
+import { createRekaContext, defineReactiveIds, useDirection, useFilter } from '@/shared'
 
 type ComboboxRootContext<T> = {
-  modelValue: Ref<T | Array<T>>
+  modelValue: Ref<T | Array<T> | undefined>
   multiple: Ref<boolean>
   disabled: Ref<boolean>
   open: Ref<boolean>
   onOpenChange: (value: boolean) => void
+  onContentPositionChange: (content: symbol, position: 'inline' | 'popper') => void
+  onContentPlaced: (content: symbol) => void
+  onContentUnmount: (content: symbol) => void
   isUserInputted: Ref<boolean>
   isVirtual: Ref<boolean>
   contentId: string
   inputElement: Ref<HTMLInputElement | undefined>
   onInputElementChange: (el: HTMLInputElement) => void
+  /** Whether opening the combobox moves focus to the input. Set by `ComboboxInput`'s `focusOnOpen`. */
+  focusInputOnOpen: Ref<boolean>
   triggerElement: Ref<HTMLElement | undefined>
   onTriggerElementChange: (el: HTMLElement) => void
   highlightedElement: Ref<HTMLElement | undefined>
@@ -30,21 +35,24 @@ type ComboboxRootContext<T> = {
   openOnFocus: Ref<boolean>
   openOnClick: Ref<boolean>
   resetModelValueOnClear: Ref<boolean>
+  /** The value `ComboboxCancel` resets the model to when `resetModelValueOnClear` is `true`. */
+  getClearValue: () => T | Array<T> | null | undefined
+  unmountOnHide: Ref<boolean>
 }
 
 export const [injectComboboxRootContext, provideComboboxRootContext]
-  = createContext<ComboboxRootContext<AcceptableValue>>('ComboboxRoot')
+  = createRekaContext<ComboboxRootContext<AcceptableValue>>('ComboboxRoot')
 
-export type ComboboxRootEmits<T = AcceptableValue> = {
+export type ComboboxRootEmits<T = AcceptableValue, ClearValue = never> = {
   /** Event handler called when the value changes. */
-  'update:modelValue': [value: T]
+  'update:modelValue': [value: T | ClearValue]
   /** Event handler when highlighted element changes. */
   'highlight': [payload: { ref: HTMLElement, value: T } | undefined]
   /** Event handler called when the open state of the combobox changes. */
   'update:open': [value: boolean]
 }
 
-export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior'> {
+export interface ComboboxRootProps<T = AcceptableValue, ClearValue = any> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'keepFocusOnValueChange'> {
   /** The controlled open state of the Combobox. Can be binded with `v-model:open`. */
   open?: boolean
   /** The open state of the combobox when it is initially rendered. <br> Use when you do not need to control its open state. */
@@ -74,20 +82,38 @@ export interface ComboboxRootProps<T = AcceptableValue> extends Omit<ListboxRoot
    */
   ignoreFilter?: boolean
   /**
-   * When `true` the `modelValue` will be reset to `null` (or `[]` if `multiple`)
+   * When `true` the `modelValue` will be reset to `null` (or `[]` if `multiple`). <br>
+   * Use `clearValue` to reset to another value.
    */
   resetModelValueOnClear?: boolean
+  /**
+   * A function returning the value the `modelValue` is reset to when the combobox is cleared
+   * and `resetModelValueOnClear` is `true`, e.g. `() => undefined`. <br>
+   * When omitted, the `modelValue` is reset to `null` (or `[]` if `multiple`). <br>
+   * If `multiple`, return the array to reset to: any other result is ignored and `[]` is used.
+   *
+   * A controlled combobox that is also given a `defaultValue` falls back to that default
+   * whenever its `modelValue` is `undefined`, so do not combine the two when clearing to `undefined`.
+   */
+  clearValue?: () => ClearValue
+  /**
+   * When set to `false`, the Combobox content will not be unmounted when closed, but instead hidden with CSS. <br>
+   * Useful when you want to improve performance by not remounting the content on every open.
+   * @defaultValue true
+   */
+  unmountOnHide?: boolean
 }
 </script>
 
-<script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
+<script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, ClearValue extends T | Array<T> | null | undefined = never">
 import type { EventHookOn } from '@vueuse/core'
 import { createEventHook, useVModel } from '@vueuse/core'
-import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs } from 'vue'
+import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 import { ListboxRoot } from '@/Listbox'
 import { PopperRoot } from '@/Popper'
+import { useComboboxContentPositioning } from './useComboboxContentPositioning'
 
-const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
+const props = withDefaults(defineProps<ComboboxRootProps<T, ClearValue>>(), {
   open: undefined,
   resetSearchTermOnBlur: true,
   resetSearchTermOnSelect: true,
@@ -95,8 +121,9 @@ const props = withDefaults(defineProps<ComboboxRootProps<T>>(), {
   openOnClick: false,
   resetModelValueOnClear: false,
   highlightOnHover: true,
+  unmountOnHide: true,
 })
-const emits = defineEmits<ComboboxRootEmits<T>>()
+const emits = defineEmits<ComboboxRootEmits<T, ClearValue>>()
 
 defineSlots<{
   default?: (props: {
@@ -108,11 +135,11 @@ defineSlots<{
 }>()
 
 const { primitiveElement, currentElement: parentElement } = usePrimitiveElement<GenericComponentInstance<typeof ListboxRoot>>()
-const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir, resetModelValueOnClear, highlightOnHover } = toRefs(props)
+const { multiple, disabled, ignoreFilter, resetSearchTermOnSelect, openOnFocus, openOnClick, dir: propDir, resetModelValueOnClear, highlightOnHover, loop, unmountOnHide } = toRefs(props)
 
 const dir = useDirection(propDir)
 
-const modelValue = useVModel(props as ComboboxRootProps<T>, 'modelValue', emits, {
+const modelValue = useVModel(props as ComboboxRootProps<T, ClearValue>, 'modelValue', emits, {
   defaultValue: props.defaultValue ?? (multiple.value ? [] : undefined),
   passive: (props.modelValue === undefined) as false,
   deep: true,
@@ -123,16 +150,22 @@ const open = useVModel(props, 'open', emits, {
   passive: (props.open === undefined) as false,
 }) as Ref<boolean>
 
+// `true` while `onOpenChange` is opening the list and will highlight the selected item itself
+let isOpeningInternally = false
+
 async function onOpenChange(val: boolean) {
+  isOpeningInternally = val
   open.value = val
   filterSearch.value = ''
 
   if (val) {
     // make sure dom is ready then only highlight the selected
     await nextTick()
+    isOpeningInternally = false
     primitiveElement.value?.highlightSelected()
     isUserInputted.value = true
-    inputElement.value?.focus()
+    if (focusInputOnOpen.value)
+      inputElement.value?.focus()
   }
   else {
     isUserInputted.value = false
@@ -147,9 +180,28 @@ const resetSearchTerm = createEventHook()
 const isUserInputted = ref(false)
 const isVirtual = ref(false)
 const inputElement = ref<HTMLInputElement>()
+const focusInputOnOpen = ref(true)
 const triggerElement = ref<HTMLElement>()
 
 const highlightedElement = computed(() => primitiveElement.value?.highlightedElement ?? undefined)
+const contentPositioning = useComboboxContentPositioning(open)
+
+watch([open, highlightedElement], ([isOpen], [wasOpen]) => {
+  const listbox = primitiveElement.value
+  if (!listbox)
+    return
+
+  if (!isOpen) {
+    // Items that stay mounted while closed (`unmountOnHide: false`) are still connected,
+    // so Enter would select the highlighted one. Nothing is highlighted while closed.
+    if (highlightedElement.value)
+      listbox.highlightedElement = null
+  }
+  // Opened by the parent through `open`: bring back the highlight those items lost while closed.
+  else if (!wasOpen && !isOpeningInternally && !highlightedElement.value && listbox.getItems().length) {
+    listbox.highlightSelected()
+  }
+})
 
 const allItems = ref<Map<string, string>>(new Map())
 const allGroups = ref<Map<string, Set<string>>>(new Map())
@@ -201,6 +253,14 @@ const filterState = computed<{
   }
 })
 
+function getClearValue() {
+  const clearValue = props.clearValue ? props.clearValue() : null
+  // A multiple combobox always holds an array, whatever the function returns.
+  if (multiple.value)
+    return Array.isArray(clearValue) ? clearValue : []
+  return clearValue
+}
+
 const inst = getCurrentInstance()
 onMounted(() => {
   if (inst?.exposed) {
@@ -218,18 +278,20 @@ defineExpose({
   highlightSelected: primitiveElement.value?.highlightSelected,
 })
 
-provideComboboxRootContext({
+provideComboboxRootContext(defineReactiveIds({
   modelValue,
   multiple,
   disabled,
   open,
   onOpenChange,
+  ...contentPositioning,
   contentId: '',
   isUserInputted,
   isVirtual,
   inputElement,
   highlightedElement,
   onInputElementChange: val => inputElement.value = val,
+  focusInputOnOpen,
   triggerElement,
   onTriggerElementChange: val => triggerElement.value = val,
   parentElement,
@@ -243,11 +305,13 @@ provideComboboxRootContext({
   openOnFocus,
   openOnClick,
   resetModelValueOnClear,
-})
+  getClearValue,
+  unmountOnHide,
+}, ['contentId']))
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="combobox">
     <ListboxRoot
       ref="primitiveElement"
       v-bind="$attrs"
@@ -263,6 +327,7 @@ provideComboboxRootContext({
       :required="required"
       :disabled="disabled"
       :highlight-on-hover="highlightOnHover"
+      :loop="loop"
       :by="props.by as any"
       @highlight="emits('highlight', $event as any)"
     >

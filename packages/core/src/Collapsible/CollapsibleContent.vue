@@ -10,7 +10,7 @@ export interface CollapsibleContentProps extends PrimitiveProps {
 }
 
 export type CollapsibleContentEmits = {
-  contentFound: [void]
+  contentFound: []
 }
 </script>
 
@@ -21,7 +21,7 @@ import { Presence } from '@/Presence'
 import {
   Primitive,
 } from '@/Primitive'
-import { useForwardExpose, useId } from '@/shared'
+import { useContentId, useForwardExpose, useId } from '@/shared'
 import { injectCollapsibleRootContext } from './CollapsibleRoot.vue'
 
 defineOptions({
@@ -36,6 +36,7 @@ rootContext.contentId ||= useId(undefined, 'reka-collapsible-content')
 
 const presentRef = ref<InstanceType<typeof Presence>>()
 const { forwardRef, currentElement } = useForwardExpose()
+useContentId(rootContext, currentElement)
 
 const width = ref(0)
 const height = ref(0)
@@ -45,6 +46,9 @@ const height = ref(0)
 const isOpen = computed(() => rootContext.open.value)
 const isMountAnimationPrevented = ref(isOpen.value)
 const currentStyle = ref<Record<string, string>>()
+// A panel mounted closed is hidden, so measuring it would only force a layout for a size the
+// animations never read: the next run, once it is shown, measures it before it animates.
+let hasBeenPresent = false
 
 watch(
   () => [isOpen.value, presentRef.value?.present],
@@ -53,10 +57,16 @@ watch(
     const node = currentElement.value
     if (!node)
       return
+    // Taken on mount, before the `animationend` handler below can write `none` over the author's
+    // inline style (a closed-state animation can end before the first open). Reading it forces
+    // no layout.
     currentStyle.value = currentStyle.value || {
       transitionDuration: node.style.transitionDuration,
       animationName: node.style.animationName,
     }
+    if (!hasBeenPresent && !presentRef.value?.present)
+      return
+    hasBeenPresent = true
     // block any animations/transitions so the element renders at its full dimensions
     node.style.transitionDuration = '0s'
     node.style.animationName = 'none'
@@ -83,6 +93,23 @@ onMounted(() => {
   requestAnimationFrame(() => {
     isMountAnimationPrevented.value = false
   })
+})
+
+// Browsers restart a CSS animation whenever its element is inserted into the document again,
+// e.g. when a keyed list moves the Collapsible. Once the open/close animation has finished,
+// block it again (as on the initial mount) so it only replays on the next toggle, which
+// restores the original style above. Deferred so Presence still reads the finished
+// animation's name in its own `animationend` handler, and skipped while another CSS animation is
+// running or paused (a running one retries on its own `animationend`). Transitions are not
+// restarted by a move, so they are ignored.
+useEventListener(currentElement, 'animationend', (ev) => {
+  const node = currentElement.value!
+  if (ev.target === node) {
+    requestAnimationFrame(() => {
+      if (!node.getAnimations?.().some(animation => 'animationName' in animation && animation.playState !== 'finished'))
+        node.style.animationName = 'none'
+    })
+  }
 })
 
 useEventListener(currentElement, 'beforematch', (ev) => {

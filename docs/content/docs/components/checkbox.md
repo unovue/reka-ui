@@ -60,6 +60,8 @@ import { CheckboxGroupRoot, CheckboxIndicator, CheckboxRoot } from 'reka-ui'
 
 Contains all the parts of a checkbox. An `input` will also render when used within a `form` to ensure events propagate correctly.
 
+When a `name` is provided, the hidden input uses the field name as its default label. The visible checkbox still needs its own label.
+
 <!-- @include: @/meta/CheckboxRoot.md -->
 
 <DataAttributesTable
@@ -172,6 +174,50 @@ const checked = ref('indeterminate')
   >
     Toggle indeterminate
   </button>
+</template>
+```
+
+### Parent checkbox
+
+Add a `CheckboxRoot` with the `parent` prop inside a `CheckboxGroupRoot`, and list the values it controls in the group's `allValues`.
+
+- The parent is checked when every value in `allValues` is checked, unchecked when none is (or `allValues` is empty), and indeterminate otherwise.
+- Clicking an unchecked or indeterminate parent checks every value; clicking a checked parent unchecks them. If checking would change nothing, it unchecks instead.
+- Disabled checkboxes keep their value, and `max` still applies. Values not in `allValues` are left as they are.
+- The parent sets `aria-controls` to the ids of the checkboxes it controls, generating ids for checkboxes without one. It doesn't submit a value of its own.
+
+```vue line=6,11-19
+<script setup>
+import { Icon } from '@iconify/vue'
+import { CheckboxGroupRoot, CheckboxIndicator, CheckboxRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+const fruits = ['Apple', 'Banana', 'Orange']
+const selected = ref(['Banana'])
+</script>
+
+<template>
+  <CheckboxGroupRoot v-model="selected" :all-values="fruits">
+    <CheckboxRoot id="all-fruits" v-slot="{ state }" parent>
+      <CheckboxIndicator>
+        <Icon
+          v-if="state === 'indeterminate'"
+          icon="radix-icons:divider-horizontal"
+        />
+        <Icon v-else icon="radix-icons:check" />
+      </CheckboxIndicator>
+    </CheckboxRoot>
+    <label for="all-fruits">All fruits</label>
+
+    <template v-for="fruit in fruits" :key="fruit">
+      <CheckboxRoot :id="fruit" :value="fruit">
+        <CheckboxIndicator>
+          <Icon icon="radix-icons:check" />
+        </CheckboxIndicator>
+      </CheckboxRoot>
+      <label :for="fruit">{{ fruit }}</label>
+    </template>
+  </CheckboxGroupRoot>
 </template>
 ```
 

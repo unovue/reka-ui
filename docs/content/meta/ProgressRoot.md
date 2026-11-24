@@ -51,8 +51,8 @@
   },
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the progress value changes</p>\n',
-    'type': '[value: string[]]'
+    'description': '<p>Called when the progress value changes. The listener receives a number, or <code>null</code> or <code>undefined</code> for indeterminate progress.</p>\n',
+    'type': '[value: number | null]'
   }
 ]" />
 
@@ -61,14 +61,6 @@
     'name': 'modelValue',
     'description': '<p>Current input values</p>\n',
     'type': 'number | null | undefined'
-  }
-]" />
-
-<MethodsTable :data="[
-  {
-    'name': 'getValueLabel',
-    'description': '<p>A function to get the accessible label text in a human-readable format.</p>\n<p>If not provided, the value label will be read as the numeric value as a percentage of the max value.</p>\n',
-    'type': '(value: number | null | undefined, max: number) =&gt; string | undefined'
   }
 ]" />
 </llm-exclude>
@@ -91,18 +83,12 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `update:max` | Event handler called when the max value changes | `[value: number]` |
-| `update:modelValue` | Event handler called when the progress value changes | `[value: string[]]` |
+| `update:modelValue` | Called when the progress value changes. The listener receives a number, or null or undefined for indeterminate progress. | `[value: number \| null]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
 | `modelValue` | Current input values | `number \| null \| undefined` |
-
-**Methods**
-
-| Name | Description | Type |
-| --- | --- | --- |
-| `getValueLabel` | A function to get the accessible label text in a human-readable format. If not provided, the value label will be read as the numeric value as a percentage of the max value. | `(value: number \| null \| undefined, max: number) => string \| undefined` |
 
 </llm-only>

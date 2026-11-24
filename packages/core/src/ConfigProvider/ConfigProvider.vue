@@ -1,18 +1,19 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { Direction, ScrollBodyOption } from '@/shared/types'
-import { createContext } from '@/shared'
+import { createRekaContext } from '@/shared'
 
 interface ConfigProviderContextValue {
   dir?: Ref<Direction>
   locale?: Ref<string>
   scrollBody?: Ref<boolean | ScrollBodyOption>
   nonce?: Ref<string | undefined>
+  teleportTo?: Ref<string | HTMLElement | undefined>
   useId?: () => string
 }
 
 export const [injectConfigProviderContext, provideConfigProviderContext]
-  = createContext<ConfigProviderContextValue>('ConfigProvider')
+  = createRekaContext<ConfigProviderContextValue>('ConfigProvider')
 
 export interface ConfigProviderProps {
   /**
@@ -26,7 +27,10 @@ export interface ConfigProviderProps {
    */
   locale?: string
   /**
-   * The global scroll body behavior of your application. This will be inherited by the related primitives.
+   * How the body makes up for the scrollbar while scroll is locked. This will be inherited by the related primitives.
+   * `true` adds the scrollbar width to the body's right padding, and `false` leaves its padding and margin alone.
+   * An object sets `padding` and `margin` separately: `true` adds the scrollbar width to the existing value,
+   * a number is in px, and a string is used as written. With only `margin: true`, the margin makes up for the scrollbar and the padding is left alone.
    * @type boolean | ScrollBodyOption
    */
   scrollBody?: boolean | ScrollBodyOption
@@ -35,6 +39,13 @@ export interface ConfigProviderProps {
    * @type string
    */
   nonce?: string
+  /**
+   * The global default teleport target for all portalled primitives (e.g. `Dialog`, `Popover`, `Tooltip`).
+   * Individual `*Portal` components can still override this via their own `to` prop.
+   * Useful when rendering inside a custom element / shadow DOM.
+   * @type string | HTMLElement
+   */
+  teleportTo?: string | HTMLElement
   /**
    * The global `useId` injection as a workaround for preventing hydration issue.
    */
@@ -54,16 +65,18 @@ const props = withDefaults(defineProps<ConfigProviderProps>(), {
   locale: 'en',
   scrollBody: true,
   nonce: undefined,
+  teleportTo: undefined,
   useId: undefined,
 })
 
-const { dir, locale, scrollBody, nonce } = toRefs(props)
+const { dir, locale, scrollBody, nonce, teleportTo } = toRefs(props)
 
 provideConfigProviderContext({
   dir,
   locale,
   scrollBody,
   nonce,
+  teleportTo,
   useId: props.useId,
 })
 </script>

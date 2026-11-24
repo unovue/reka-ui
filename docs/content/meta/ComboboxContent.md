@@ -64,6 +64,12 @@
     'required': false
   },
   {
+    'name': 'dir',
+    'description': '<p>The reading direction of the popper content when applicable. &lt;br&gt; If omitted, inherits globally from <code>ConfigProvider</code> or assumes LTR (left-to-right) reading mode.</p>\n',
+    'type': '\'ltr\' | \'rtl\'',
+    'required': false
+  },
+  {
     'name': 'disableOutsidePointerEvents',
     'description': '<p>When <code>true</code>, hover/focus/click interactions will be disabled on elements outside\nthe <code>DismissableLayer</code>. Users will need to click twice on outside elements to\ninteract with them: once to close the <code>DismissableLayer</code>, and again to trigger the element.</p>\n',
     'type': 'boolean',
@@ -73,6 +79,12 @@
     'name': 'disableUpdateOnLayoutShift',
     'description': '<p>Whether to disable the update position for the content when the layout shifted.</p>\n',
     'type': 'boolean',
+    'required': false
+  },
+  {
+    'name': 'fallbackAxisSideDirection',
+    'description': '<p>Whether to also try the perpendicular sides when neither the preferred\nside nor its opposite fits within the boundary, and which of them to try first.\nFor <code>side=&quot;left&quot;</code> or <code>&quot;right&quot;</code>, <code>start</code> tries top then bottom and <code>end</code> tries\nbottom then top. For <code>side=&quot;top&quot;</code> or <code>&quot;bottom&quot;</code>, <code>start</code> tries left then right\nand <code>end</code> tries right then left (mirrored in RTL).\n<code>none</code> keeps the content on the axis of the preferred side.</p>\n<p>Only applies when <code>avoidCollisions</code> and <code>sideFlip</code> are enabled.</p>\n',
+    'type': '\'none\' | \'start\' | \'end\'',
     'required': false
   },
   {
@@ -97,6 +109,12 @@
     'name': 'hideWhenEmpty',
     'description': '<p>When <code>true</code>, hides the content when there are no items matching the filter.</p>\n',
     'type': 'boolean',
+    'required': false
+  },
+  {
+    'name': 'memoDependencies',
+    'description': '<p>Reactive dependencies that should invalidate the memoized content subtree.</p>\n',
+    'type': 'unknown[]',
     'required': false
   },
   {
@@ -125,13 +143,13 @@
   },
   {
     'name': 'side',
-    'description': '<p>The preferred side of the trigger to render against when open.\nWill be reversed when collisions occur and avoidCollisions\nis enabled.</p>\n',
+    'description': '<p>The preferred side of the trigger to render against when open.\nWill be reversed when collisions occur and <code>avoidCollisions</code>\nis enabled. If the opposite side collides as well, the content\nstays on this axis unless <code>fallbackAxisSideDirection</code> is set.</p>\n',
     'type': '\'top\' | \'right\' | \'bottom\' | \'left\'',
     'required': false
   },
   {
     'name': 'sideFlip',
-    'description': '<p>Flip to the opposite side when colliding with boundary.</p>\n',
+    'description': '<p>Flip to the opposite side when colliding with boundary.\nOnly the opposite side is tried, unless <code>fallbackAxisSideDirection</code> is set.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -195,18 +213,21 @@
 | `bodyLock` | The document.body will be lock, and scrolling will be disabled. | `boolean` | No | - |
 | `collisionBoundary` | The element used as the collision boundary. By default this is the viewport, though you can provide additional element(s) to be included in this check. | `Element \| (Element \| null)[] \| null` | No | - |
 | `collisionPadding` | The distance in pixels from the boundary edges where collision detection should occur. Accepts a number (same for all sides), or a partial padding object, for example: { top: 20, left: 20 }. | `number \| Partial<Record<"top" \| "right" \| "bottom" \| "left", number>>` | No | - |
+| `dir` | The reading direction of the popper content when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disableOutsidePointerEvents` | When true, hover/focus/click interactions will be disabled on elements outside the DismissableLayer. Users will need to click twice on outside elements to interact with them: once to close the DismissableLayer, and again to trigger the element. | `boolean` | No | - |
 | `disableUpdateOnLayoutShift` | Whether to disable the update position for the content when the layout shifted. | `boolean` | No | - |
+| `fallbackAxisSideDirection` | Whether to also try the perpendicular sides when neither the preferred side nor its opposite fits within the boundary, and which of them to try first. For side="left" or "right", start tries top then bottom and end tries bottom then top. For side="top" or "bottom", start tries left then right and end tries right then left (mirrored in RTL). none keeps the content on the axis of the preferred side. Only applies when avoidCollisions and sideFlip are enabled. | `"none" \| "start" \| "end"` | No | - |
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
 | `hideShiftedArrow` | When true, hides the arrow when it cannot be centered to the reference element. | `boolean` | No | - |
 | `hideWhenDetached` | Whether to hide the content when the trigger becomes fully occluded. | `boolean` | No | - |
 | `hideWhenEmpty` | When true, hides the content when there are no items matching the filter. | `boolean` | No | - |
+| `memoDependencies` | Reactive dependencies that should invalidate the memoized content subtree. | `unknown[]` | No | - |
 | `position` | The positioning mode to use, <br> inline is the default and you can control the position using CSS. <br> popper positions content in the same way as our other primitives, for example Popover or DropdownMenu. | `"inline" \| "popper"` | No | - |
 | `positionStrategy` | The type of CSS position property to use. | `"fixed" \| "absolute"` | No | - |
 | `prioritizePosition` | Force content to be position within the viewport. Might overlap the reference element, which may not be desired. | `boolean` | No | - |
 | `reference` | The custom element or virtual element that will be set as the reference to position the floating element. If provided, it will replace the default anchor element. | `ReferenceElement` | No | - |
-| `side` | The preferred side of the trigger to render against when open. Will be reversed when collisions occur and avoidCollisions is enabled. | `"top" \| "right" \| "bottom" \| "left"` | No | - |
-| `sideFlip` | Flip to the opposite side when colliding with boundary. | `boolean` | No | - |
+| `side` | The preferred side of the trigger to render against when open. Will be reversed when collisions occur and avoidCollisions is enabled. If the opposite side collides as well, the content stays on this axis unless fallbackAxisSideDirection is set. | `"top" \| "right" \| "bottom" \| "left"` | No | - |
+| `sideFlip` | Flip to the opposite side when colliding with boundary. Only the opposite side is tried, unless fallbackAxisSideDirection is set. | `boolean` | No | - |
 | `sideOffset` | The distance in pixels from the trigger. | `number` | No | - |
 | `sticky` | The sticky behavior on the align axis. partial will keep the content in the boundary as long as the trigger is at least partially in the boundary whilst "always" will keep the content in the boundary regardless. | `"partial" \| "always"` | No | - |
 | `updatePositionStrategy` | Strategy to update the position of the floating element on every animation frame. | `"always" \| "optimized"` | No | - |

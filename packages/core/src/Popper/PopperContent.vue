@@ -4,18 +4,19 @@ import type {
   Placement,
   ReferenceElement,
 } from '@floating-ui/vue'
-import type { Ref } from 'vue'
 import type {
   Align,
   Side,
 } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardExpose, useSize } from '@/shared'
+import type { Direction } from '@/shared/types'
+import { useDirection, useForwardExpose, useSize } from '@/shared'
 
 export const PopperContentPropsDefaultValue = {
   side: 'bottom' as Side,
   sideOffset: 0,
   sideFlip: true,
+  fallbackAxisSideDirection: 'none' as 'none' | 'start' | 'end',
   align: 'center' as Align,
   alignOffset: 0,
   alignFlip: true,
@@ -33,9 +34,15 @@ export const PopperContentPropsDefaultValue = {
 
 export interface PopperContentProps extends PrimitiveProps {
   /**
+   * Reactive dependencies that should invalidate the memoized content subtree.
+   */
+  memoDependencies?: unknown[]
+
+  /**
    * The preferred side of the trigger to render against when open.
-   * Will be reversed when collisions occur and avoidCollisions
-   * is enabled.
+   * Will be reversed when collisions occur and `avoidCollisions`
+   * is enabled. If the opposite side collides as well, the content
+   * stays on this axis unless `fallbackAxisSideDirection` is set.
    *
    * @defaultValue "bottom"
    */
@@ -50,10 +57,25 @@ export interface PopperContentProps extends PrimitiveProps {
 
   /**
    * Flip to the opposite side when colliding with boundary.
+   * Only the opposite side is tried, unless `fallbackAxisSideDirection` is set.
    *
    * @defaultValue true
    */
   sideFlip?: boolean
+
+  /**
+   * Whether to also try the perpendicular sides when neither the preferred
+   * side nor its opposite fits within the boundary, and which of them to try first.
+   * For `side="left"` or `"right"`, `start` tries top then bottom and `end` tries
+   * bottom then top. For `side="top"` or `"bottom"`, `start` tries left then right
+   * and `end` tries right then left (mirrored in RTL).
+   * `none` keeps the content on the axis of the preferred side.
+   *
+   * Only applies when `avoidCollisions` and `sideFlip` are enabled.
+   *
+   * @defaultValue "none"
+   */
+  fallbackAxisSideDirection?: 'none' | 'start' | 'end'
 
   /**
    * The preferred alignment against the trigger.
@@ -173,21 +195,16 @@ export interface PopperContentProps extends PrimitiveProps {
    *  If provided, it will replace the default anchor element.
    */
   reference?: ReferenceElement
-}
 
-export interface PopperContentContext {
-  placedSide: Ref<Side>
-  onArrowChange: (arrow: HTMLElement | undefined) => void
-  arrowX?: Ref<number>
-  arrowY?: Ref<number>
-  shouldHideArrow: Ref<boolean>
+  /**
+   * The reading direction of the popper content when applicable. <br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode.
+   */
+  dir?: Direction
 }
-
-export const [injectPopperContentContext, providePopperContentContext]
-  = createContext<PopperContentContext>('PopperContent')
 </script>
 
 <script setup lang="ts">
+import type { PopperScope } from './PopperRootContext'
 import {
   autoUpdate,
   flip,
@@ -199,12 +216,12 @@ import {
   size,
   useFloating,
 } from '@floating-ui/vue'
-import { computedEager } from '@vueuse/core'
-import { computed, ref, watchEffect, watchPostEffect } from 'vue'
+import { computed, onActivated, onDeactivated, ref, watchEffect, watchPostEffect } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
-import { injectPopperRootContext } from './PopperRoot.vue'
+import { providePopperContentContext } from './PopperContentContext'
+import { injectPopperRootContext } from './PopperRootContext'
 import {
   getSideAndAlignFromPlacement,
   isNotNull,
@@ -215,15 +232,21 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<PopperContentProps>(), {
+const props = withDefaults(defineProps<PopperContentProps & {
+  scope?: PopperScope
+  /** Internal: kept-mounted content that is hidden should not track position. */
+  present?: boolean
+}>(), {
+  present: true,
   ...PopperContentPropsDefaultValue,
 })
 const emits = defineEmits<{
-  placed: [void]
+  placed: []
 }>()
 
-const rootContext = injectPopperRootContext()
+const rootContext = injectPopperRootContext(props.scope)
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
+const dir = useDirection(computed(() => props.dir))
 
 const floatingRef = ref<HTMLElement>()
 
@@ -261,10 +284,11 @@ const flipOptions = computed(() => {
   return {
     mainAxis: props.sideFlip,
     crossAxis: props.alignFlip,
+    fallbackAxisSideDirection: props.sideFlip ? props.fallbackAxisSideDirection : 'none',
   }
 })
 
-const computedMiddleware = computedEager(() => {
+const computedMiddleware = computed(() => {
   return [
     offset({
       mainAxis: props.sideOffset + arrowHeight.value,
@@ -317,14 +341,22 @@ const computedMiddleware = computedEager(() => {
     transformOrigin({
       arrowWidth: arrowWidth.value,
       arrowHeight: arrowHeight.value,
+      dir: dir.value,
     }),
     props.hideWhenDetached
     && hide({ strategy: 'referenceHidden', ...detectOverflowOptions.value }),
   ] as Middleware[]
 })
 
-// If provided custom reference, it will overwrite the default anchor element
-const reference = computed(() => props.reference ?? rootContext.anchor.value)
+// `KeepAlive` takes a deactivated page out of the document, anchor included.
+const isDeactivated = ref(false)
+onDeactivated(() => isDeactivated.value = true)
+onActivated(() => isDeactivated.value = false)
+
+// If provided custom reference, it will overwrite the default anchor element.
+// Content kept mounted while closed, or whose page is deactivated, drops it, which stops tracking
+// the position but keeps the last one, so that a leave transition (e.g. `v-show`) ends in place.
+const reference = computed(() => props.present && !isDeactivated.value ? (props.reference ?? rootContext.anchor.value) : undefined)
 
 const { floatingStyles, placement, isPositioned, middlewareData, update } = useFloating(
   reference,
@@ -382,6 +414,7 @@ providePopperContentContext({
   <div
     ref="floatingRef"
     data-reka-popper-content-wrapper=""
+    :dir="dir"
     :style="{
       ...floatingStyles,
       transform: isPositioned ? floatingStyles.transform : 'translate(0, -200%)', // keep off the page when measuring
@@ -402,12 +435,40 @@ providePopperContentContext({
     }"
   >
     <Primitive
+      v-if="props.memoDependencies"
+      :ref="forwardRef"
+      v-memo="[
+        props.asChild,
+        props.as,
+        placedSide,
+        placedAlign,
+        isPositioned,
+        ...Object.values($attrs),
+        ...props.memoDependencies,
+      ]"
+      v-bind="$attrs"
+      :as-child="props.asChild"
+      :as="props.as"
+      :data-side="placedSide"
+      :data-align="placedAlign"
+      :style="{
+        // if the PopperContent hasn't been placed yet (not all measurements done)
+        // we prevent animations so that users's animation don't kick in too early referring wrong sides
+        animation: !isPositioned ? 'none' : undefined,
+      }"
+    >
+      <slot />
+    </Primitive>
+
+    <Primitive
+      v-else
       :ref="forwardRef"
       v-bind="$attrs"
       :as-child="props.asChild"
-      :as="as"
+      :as="props.as"
       :data-side="placedSide"
       :data-align="placedAlign"
+      :dir="dir"
       :style="{
         // if the PopperContent hasn't been placed yet (not all measurements done)
         // we prevent animations so that users's animation don't kick in too early referring wrong sides

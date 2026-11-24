@@ -1,10 +1,12 @@
 import type { DateValue } from '@internationalized/date'
+import type { Component } from 'vue'
 import type { MonthPickerRootProps } from './MonthPickerRoot.vue'
-import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
+import { CalendarDate, CalendarDateTime, HebrewCalendar, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, h } from 'vue'
 import { useTestKbd } from '@/shared'
 import { MonthPickerHeader, MonthPickerHeading, MonthPickerNext, MonthPickerPrev, MonthPickerRoot } from '..'
 import MonthPicker from './story/_MonthPicker.vue'
@@ -37,6 +39,39 @@ it('should pass axe accessibility tests', async () => {
 })
 
 describe('month picker', async () => {
+  it('focuses and selects the thirteenth month of a Hebrew leap year', async () => {
+    const date = new CalendarDate(new HebrewCalendar(), 5784, 12, 1)
+    const { getByTestId, user } = setup({ pickerProps: { defaultPlaceholder: date, locale: 'en-US-u-ca-hebrew' } })
+
+    const lastMonth = getByTestId('month-13')
+    getByTestId('month-12').focus()
+    await user.keyboard(kbd.ARROW_RIGHT)
+    expect(lastMonth).toHaveFocus()
+    await user.keyboard(kbd.ENTER)
+    expect(lastMonth).toHaveAttribute('data-selected')
+  })
+
+  it.each([
+    { navigation: 'default', prevPage: undefined },
+    { navigation: 'custom', prevPage: (date: DateValue) => date.subtract({ years: 1 }) },
+  ])('can return to a year whose last month contains minValue with $navigation navigation', async ({ prevPage }) => {
+    const calendar = new HebrewCalendar()
+    const { getByTestId, queryByTestId, user } = setup({
+      pickerProps: {
+        defaultPlaceholder: new CalendarDate(calendar, 5785, 1, 1),
+        minValue: new CalendarDate(calendar, 5784, 13, 15),
+        prevPage,
+      },
+    })
+
+    expect(queryByTestId('month-13')).toBeNull()
+    const prev = getByTestId('prev-button')
+    expect(prev).not.toHaveAttribute('data-disabled')
+    await user.click(prev)
+    expect(getByTestId('month-13')).not.toHaveAttribute('data-disabled')
+    expect(prev).toHaveAttribute('data-disabled')
+  })
+
   it('does not forward month prop as a DOM attribute', async () => {
     const { getByTestId } = setup({ pickerProps: { placeholder: calendarDate } })
     const janMonth = getByTestId('month-1')
@@ -97,6 +132,20 @@ describe('month picker', async () => {
     expect(getByTestId('heading')).toHaveTextContent('1980')
   })
 
+  it('does not crash when modelValue is null', async () => {
+    const { picker, rerender } = setup({ pickerProps: { modelValue: null } })
+
+    expect(getSelectedMonths(picker)).toHaveLength(0)
+
+    await rerender({
+      pickerProps: {
+        modelValue: calendarDate,
+      },
+    })
+
+    expect(getSelectedMonth(picker)).toHaveTextContent('Jan')
+  })
+
   it('navigates to next year using next button', async () => {
     const { getByTestId, user } = setup({ pickerProps: { modelValue: calendarDate } })
 
@@ -108,6 +157,30 @@ describe('month picker', async () => {
     expect(heading).toHaveTextContent('1981')
     await user.click(nextBtn)
     expect(heading).toHaveTextContent('1982')
+  })
+
+  it('keeps the visible year when modelValue is a new object for the same month', async () => {
+    const selected = new CalendarDate(1980, 1, 20)
+    const { getByTestId, user, rerender } = setup({ pickerProps: { modelValue: selected } })
+    const heading = getByTestId('heading')
+
+    await user.click(getByTestId('next-button'))
+    expect(heading).toHaveTextContent('1981')
+
+    await rerender({ pickerProps: { modelValue: selected.copy() } })
+
+    expect(heading).toHaveTextContent('1981')
+  })
+
+  it('moves the visible year when the selected month changes', async () => {
+    const { getByTestId, user, rerender } = setup({ pickerProps: { modelValue: new CalendarDate(1980, 1, 20) } })
+
+    await user.click(getByTestId('next-button'))
+    expect(getByTestId('heading')).toHaveTextContent('1981')
+
+    await rerender({ pickerProps: { modelValue: new CalendarDate(1975, 6, 1) } })
+
+    expect(getByTestId('heading')).toHaveTextContent('1975')
   })
 
   it('navigates to prev year using prev button', async () => {
@@ -401,5 +474,42 @@ describe('month picker - multiple', () => {
     expect(getSelectedMonths(picker)).toHaveLength(2)
     expect(getByTestId('month-1')).toHaveAttribute('data-selected')
     expect(getByTestId('month-5')).toHaveAttribute('data-selected')
+  })
+})
+
+const ButtonCell = defineComponent({
+  setup(_, { slots }) {
+    return () => h('button', { type: 'button' }, slots.default?.())
+  },
+})
+
+describe('month picker - tabindex states', () => {
+  function renderPicker(triggerAs?: string | Component) {
+    return render(MonthPicker, {
+      props: {
+        pickerProps: {
+          modelValue: new CalendarDate(2000, 1, 1),
+          isMonthDisabled: (date: DateValue) => date.month === 3,
+        },
+        triggerAs,
+      },
+    })
+  }
+
+  it('omits tabindex on disabled months rendered as the default div', () => {
+    const { getByTestId } = renderPicker()
+    expect(getByTestId('month-1')).toHaveAttribute('tabindex', '0')
+    expect(getByTestId('month-2')).toHaveAttribute('tabindex', '-1')
+    expect(getByTestId('month-3')).not.toHaveAttribute('tabindex')
+  })
+
+  it.each([
+    ['a button', 'button'],
+    ['a component that renders a button', ButtonCell],
+  ])('sets tabindex -1 on disabled months rendered as %s', (_, triggerAs) => {
+    const { getByTestId } = renderPicker(triggerAs)
+    expect(getByTestId('month-1')).toHaveAttribute('tabindex', '0')
+    expect(getByTestId('month-3').tagName).toBe('BUTTON')
+    expect(getByTestId('month-3')).toHaveAttribute('tabindex', '-1')
   })
 })

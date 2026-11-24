@@ -1,0 +1,435 @@
+import type { VueWrapper } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
+import { afterEach, describe, expect, it } from 'vitest'
+import { cdp, userEvent } from 'vitest/browser'
+import { defineComponent, h, nextTick, ref } from 'vue'
+import { SelectContent, SelectItem, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '.'
+
+function mountSelect(initiallyDisabled: boolean) {
+  document.body.innerHTML = ''
+  const disabled = ref(initiallyDisabled)
+  const modelValue = ref('apple')
+  const Fixture = defineComponent({
+    setup() {
+      return () => h('form', [
+        h(SelectRoot, {
+          'name': 'fruit',
+          'disabled': disabled.value,
+          'modelValue': modelValue.value,
+          'onUpdate:modelValue': (value: string) => modelValue.value = value,
+        }, () => [
+          h(SelectTrigger, { 'data-testid': 'trigger' }, () => h(SelectValue)),
+          h(SelectPortal, () => h(SelectContent, { position: 'popper' }, () =>
+            h(SelectViewport, () => ['apple', 'orange'].map(value =>
+              h(SelectItem, { value, 'data-testid': value }, () => h(SelectItemText, () => value)),
+            )))),
+        ]),
+      ])
+    },
+  })
+  mount(Fixture, { attachTo: document.body })
+  return {
+    disabled,
+    modelValue,
+    get: (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`),
+    formEntries: () => Array.from(new FormData(document.querySelector('form')!).entries()),
+  }
+}
+
+describe('given a Select whose root is disabled, in a real browser', () => {
+  // A browser leaves a selected `<option disabled>` out of the form data; jsdom does not, so only this catches it.
+  it('submits its value once enabled, without ever being opened', async () => {
+    const { disabled, formEntries } = mountSelect(true)
+    await expect.poll(() => document.querySelector('select option[value="apple"]')).not.toBeNull()
+    expect(formEntries()).toEqual([])
+
+    disabled.value = false
+
+    await expect.poll(() => document.querySelector('select')?.disabled).toBe(false)
+    expect(document.querySelector<HTMLOptionElement>('select option[value="apple"]')?.disabled).toBe(false)
+    expect(formEntries()).toEqual([['fruit', 'apple']])
+  })
+
+  it('blocks selection when disabled while open, and selects again once enabled', async () => {
+    const { disabled, modelValue, get } = mountSelect(false)
+
+    await userEvent.click(get('trigger')!)
+    await expect.poll(() => get('orange')).not.toBeNull()
+
+    disabled.value = true
+    await expect.poll(() => get('orange')?.getAttribute('aria-disabled')).toBe('true')
+    expect(get('orange')?.hasAttribute('data-disabled')).toBe(true)
+
+    // `force` skips the actionability check, which would otherwise wait on the `aria-disabled` item.
+    await userEvent.click(get('orange')!, { force: true })
+    await userEvent.keyboard('{Enter}')
+    expect(modelValue.value).toBe('apple')
+    expect(get('orange')).not.toBeNull()
+
+    disabled.value = false
+    await expect.poll(() => get('orange')?.getAttribute('aria-disabled')).toBeNull()
+    await userEvent.click(get('orange')!)
+    await expect.poll(() => modelValue.value).toBe('orange')
+  })
+})
+
+// jsdom has no touch input and never follows a tap with a `click`, so which element a tap's
+// events land on can only be checked with real (CDP) pointer input.
+describe('given a Select used with a real pointer, in a real browser', () => {
+  const ITEMS = ['apple', 'banana', 'cherry', 'grape', 'melon']
+  let wrapper: VueWrapper | undefined
+
+  afterEach(() => {
+    wrapper?.unmount()
+    wrapper = undefined
+    document.body.innerHTML = ''
+  })
+
+  function mountPointerSelect(options: {
+    rootProps?: Record<string, unknown>
+    position?: 'item-aligned' | 'popper'
+    modelValue?: string | string[]
+    itemAs?: string
+    behind?: boolean
+  } = {}) {
+    const modelValue = ref<string | string[] | undefined>(options.modelValue)
+    const selects: string[] = []
+    const originalEvents: (PointerEvent | KeyboardEvent)[] = []
+    const itemClicks: string[] = []
+    let behindClicks = 0
+
+    wrapper = mount(defineComponent({
+      setup() {
+        return () => h('div', { style: 'padding: 160px 40px' }, [
+          // Sits under the open menu, the way page content does.
+          options.behind
+            ? h('button', {
+                'data-testid': 'behind',
+                'style': 'position: fixed; inset: 0; width: 100%; height: 100%',
+                'onClick': () => behindClicks++,
+              }, 'behind')
+            : null,
+          h(SelectRoot, {
+            'modelValue': modelValue.value,
+            'onUpdate:modelValue': (value: string | string[]) => modelValue.value = value,
+            ...options.rootProps,
+          }, () => [
+            h(SelectTrigger, { 'data-testid': 'trigger', 'style': 'position: relative; width: 200px; height: 36px' }, () => h(SelectValue, { placeholder: 'Pick a fruit' })),
+            h(SelectPortal, () => h(SelectContent, { position: options.position, style: 'width: 200px; background: white' }, () =>
+              h(SelectViewport, () => ITEMS.map(value =>
+                h(SelectItem, {
+                  value,
+                  'as': options.itemAs,
+                  'data-testid': value,
+                  'style': 'display: block; width: 100%; height: 36px',
+                  'onSelect': (event: CustomEvent<{ originalEvent: PointerEvent | KeyboardEvent }>) => {
+                    selects.push(value)
+                    originalEvents.push(event.detail.originalEvent)
+                  },
+                  'onClick': () => itemClicks.push(value),
+                }, () => h(SelectItemText, () => value)),
+              )))),
+          ]),
+        ])
+      },
+    }), { attachTo: document.body })
+
+    return { modelValue, selects, originalEvents, itemClicks, getBehindClicks: () => behindClicks }
+  }
+
+  const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
+  const isOpen = () => !!document.querySelector('[role=listbox]')
+
+  // The menu focuses its selected (or first) item once positioned; interacting earlier races that.
+  async function opened() {
+    await expect.poll(() => document.activeElement?.closest('[role=listbox]')).toBeTruthy()
+    await settle()
+  }
+
+  // Long enough for a selection (one tick) and the menu teardown (one macrotask) to have happened.
+  async function settle() {
+    await nextTick()
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+  }
+
+  // CDP input uses top-level viewport coordinates; the test runs inside an iframe.
+  function centerOf(element: Element) {
+    const rect = element.getBoundingClientRect()
+    const frame = window.frameElement as HTMLElement
+    const frameRect = frame.getBoundingClientRect()
+    const scale = frameRect.width / frame.offsetWidth
+    return {
+      x: Math.round(frameRect.left + (rect.left + rect.width / 2) * scale),
+      y: Math.round(frameRect.top + (rect.top + rect.height / 2) * scale),
+    }
+  }
+
+  const send = (method: string, params: Record<string, unknown>) => (cdp() as any).send(method, params)
+
+  async function tap(element: Element) {
+    await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [centerOf(element)] })
+    await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  }
+
+  describe('when tapping the trigger of an item-aligned Select', () => {
+    // The menu opens on the tap's `pointerup` and lays an item over the trigger, so the
+    // tap's trailing `click` lands on that item.
+    it.each([
+      ['without a value', undefined],
+      ['with a value', 'cherry'],
+    ])('opens and stays open without selecting, %s', async (_label, initial) => {
+      const { modelValue, selects, itemClicks } = mountPointerSelect({ modelValue: initial })
+
+      await tap(get('trigger')!)
+      await expect.poll(() => itemClicks.length).toBe(1)
+      await settle()
+
+      expect(selects).toEqual([])
+      expect(modelValue.value).toBe(initial)
+      expect(isOpen()).toBe(true)
+    })
+  })
+
+  describe('when tapping an item', () => {
+    it('selects it once and closes', async () => {
+      const { modelValue, selects, originalEvents } = mountPointerSelect({ position: 'popper', rootProps: { defaultOpen: true } })
+      await opened()
+
+      await tap(get('banana')!)
+
+      await expect.poll(() => modelValue.value).toBe('banana')
+      await expect.poll(isOpen).toBe(false)
+      expect(selects).toEqual(['banana'])
+      // The tap's own `pointerup`, as when the `pointerup` itself selected
+      expect(originalEvents.map(event => [event.type, (event as PointerEvent).pointerType])).toEqual([['pointerup', 'touch']])
+    })
+
+    it('toggles it once when `multiple`', async () => {
+      const { modelValue, selects, itemClicks } = mountPointerSelect({ position: 'popper', modelValue: [], rootProps: { defaultOpen: true, multiple: true } })
+      await opened()
+
+      await tap(get('banana')!)
+
+      await expect.poll(() => itemClicks).toEqual(['banana'])
+      await settle()
+      expect(modelValue.value).toEqual(['banana'])
+      expect(selects).toEqual(['banana'])
+      expect(isOpen()).toBe(true)
+    })
+
+    // https://github.com/unovue/reka-ui/issues/578
+    it('does not click the element behind the menu once it closes', async () => {
+      const { modelValue, getBehindClicks } = mountPointerSelect({ position: 'popper', behind: true, rootProps: { defaultOpen: true } })
+      await opened()
+      const point = centerOf(get('banana')!)
+
+      await tap(get('banana')!)
+      await expect.poll(() => modelValue.value).toBe('banana')
+      await expect.poll(isOpen).toBe(false)
+      await settle()
+
+      const frameRect = (window.frameElement as HTMLElement).getBoundingClientRect()
+      expect(document.elementFromPoint(point.x - frameRect.left, point.y - frameRect.top)).toBe(get('behind'))
+      expect(getBehindClicks()).toBe(0)
+    })
+  })
+
+  describe('when pressing the trigger, dragging onto an item and releasing', () => {
+    it.each(['mouse', 'pen'])('selects the item with a %s', async (pointerType) => {
+      const { modelValue, selects } = mountPointerSelect({ position: 'popper' })
+      const press = centerOf(get('trigger')!)
+
+      await send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...press, pointerType })
+      await send('Input.dispatchMouseEvent', { type: 'mousePressed', ...press, button: 'left', buttons: 1, clickCount: 1, pointerType })
+      await expect.poll(() => get('banana')).not.toBeNull()
+
+      const release = centerOf(get('banana')!)
+      await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: release.x, y: release.y - 4, button: 'left', buttons: 1, pointerType })
+      await send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...release, button: 'left', buttons: 1, pointerType })
+      await send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...release, button: 'left', clickCount: 1, pointerType })
+
+      await expect.poll(() => modelValue.value).toBe('banana')
+      await expect.poll(isOpen).toBe(false)
+      expect(selects).toEqual(['banana'])
+    })
+  })
+
+  describe('when clicking an item with a mouse', () => {
+    it('toggles it once when `multiple`', async () => {
+      const { modelValue, selects, itemClicks } = mountPointerSelect({ position: 'popper', modelValue: [], rootProps: { defaultOpen: true, multiple: true } })
+      await opened()
+
+      await userEvent.click(get('banana')!)
+
+      await expect.poll(() => itemClicks).toEqual(['banana'])
+      await settle()
+      expect(modelValue.value).toEqual(['banana'])
+      expect(selects).toEqual(['banana'])
+    })
+  })
+
+  describe('when an item is rendered as a button', () => {
+    // A native button turns Enter and Space into a `click` of its own.
+    it.each(['{Enter}', ' '])('toggles it once with the key "%s" when `multiple`', async (key) => {
+      const { modelValue, selects } = mountPointerSelect({ position: 'popper', itemAs: 'button', modelValue: [], rootProps: { defaultOpen: true, multiple: true } })
+      await opened()
+      get('banana')!.focus()
+
+      await userEvent.keyboard(key)
+
+      await expect.poll(() => selects.length).toBeGreaterThan(0)
+      await settle()
+      expect(modelValue.value).toEqual(['banana'])
+      expect(selects).toEqual(['banana'])
+    })
+  })
+})
+
+const PLACEHOLDER = 'Pick a fruit'
+const FRUITS = ['Apple', 'Banana', 'Cherry']
+
+function mountPlaceholderSelect(defaultValue?: string, position: 'popper' | 'item-aligned' = 'popper') {
+  document.body.innerHTML = ''
+  const Fixture = defineComponent({
+    setup() {
+      return () => h(SelectRoot, { defaultValue }, () => [
+        h(SelectTrigger, { 'data-testid': 'trigger' }, () => h(SelectValue, { placeholder: PLACEHOLDER })),
+        h(SelectPortal, null, () => h(SelectContent, { position }, () => h(SelectViewport, null, () => FRUITS.map(fruit =>
+          h(SelectItem, { 'key': fruit, 'value': fruit, 'data-testid': `item-${fruit}` }, () => h(SelectItemText, null, () => fruit)),
+        )))),
+      ])
+    },
+  })
+  mount(Fixture, { attachTo: document.body })
+  return {
+    trigger: () => document.querySelector<HTMLElement>('[data-testid="trigger"]')!,
+    item: (fruit: string) => document.querySelector<HTMLElement>(`[data-testid="item-${fruit}"]`)!,
+  }
+}
+
+function recordTriggerText(trigger: HTMLElement) {
+  const seen: string[] = []
+  const push = () => {
+    const text = trigger.textContent?.trim() ?? ''
+    if (seen.at(-1) !== text)
+      seen.push(text)
+  }
+  push()
+
+  const observer = new MutationObserver(push)
+  observer.observe(trigger, { childList: true, subtree: true, characterData: true })
+
+  let frame = requestAnimationFrame(function tick() {
+    push()
+    frame = requestAnimationFrame(tick)
+  })
+
+  return {
+    seen,
+    stop: () => {
+      observer.disconnect()
+      cancelAnimationFrame(frame)
+    },
+  }
+}
+
+const settleTriggerText = () => new Promise(resolve => setTimeout(resolve, 100))
+
+describe.each(['popper', 'item-aligned'] as const)('given Select with a placeholder and position=%s, in a real browser', (position) => {
+  it('never shows the placeholder while the first selection closes the content', async () => {
+    const { trigger, item } = mountPlaceholderSelect(undefined, position)
+    await userEvent.click(trigger())
+    await expect.poll(() => item('Banana')).not.toBeNull()
+
+    const recorder = recordTriggerText(trigger())
+    await userEvent.click(item('Banana'))
+    await expect.poll(() => document.querySelector('[role="listbox"]')).toBeNull()
+    await settleTriggerText()
+    recorder.stop()
+
+    expect(recorder.seen).toEqual([PLACEHOLDER, 'Banana'])
+  })
+
+  it('never shows the placeholder while switching from one option to another', async () => {
+    const { trigger, item } = mountPlaceholderSelect('Apple', position)
+    await userEvent.click(trigger())
+    await expect.poll(() => item('Cherry')).not.toBeNull()
+
+    const recorder = recordTriggerText(trigger())
+    await userEvent.click(item('Cherry'))
+    await expect.poll(() => document.querySelector('[role="listbox"]')).toBeNull()
+    await settleTriggerText()
+    recorder.stop()
+
+    expect(recorder.seen).toEqual(['Apple', 'Cherry'])
+  })
+})
+
+describe('given a multiple, required Select in a form, in a real browser', () => {
+  let wrapper: VueWrapper | undefined
+
+  afterEach(() => {
+    wrapper?.unmount()
+    wrapper = undefined
+    document.body.innerHTML = ''
+  })
+
+  function mountMultipleRequired(initial: string[]) {
+    const modelValue = ref(initial)
+    const submitted: string[][] = []
+    wrapper = mount(defineComponent({
+      setup() {
+        return () => h('form', {
+          onSubmit: (event: SubmitEvent) => {
+            event.preventDefault()
+            submitted.push(new FormData(event.target as HTMLFormElement).getAll('fruit') as string[])
+          },
+        }, [
+          h(SelectRoot, {
+            'name': 'fruit',
+            'multiple': true,
+            'required': true,
+            'modelValue': modelValue.value,
+            'onUpdate:modelValue': (value: string[]) => modelValue.value = value,
+          }, () => [
+            h(SelectTrigger, { 'data-testid': 'trigger' }, () => h(SelectValue)),
+            h(SelectPortal, () => h(SelectContent, { position: 'popper' }, () =>
+              h(SelectViewport, () => ['apple', 'banana', 'cherry'].map(value =>
+                h(SelectItem, { value, 'data-testid': value }, () => h(SelectItemText, () => value)),
+              )))),
+          ]),
+          h('button', { 'type': 'submit', 'data-testid': 'submit' }, 'Submit'),
+        ])
+      },
+    }), { attachTo: document.body })
+    return { modelValue, submitted }
+  }
+
+  const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)!
+  const optionsRendered = () => expect.poll(() => document.querySelectorAll('select option').length).toBe(3)
+
+  it('submits every value picked in the menu', async () => {
+    const { modelValue, submitted } = mountMultipleRequired([])
+
+    await userEvent.click(get('trigger'))
+    await expect.poll(() => document.activeElement?.closest('[role=listbox]')).toBeTruthy()
+    await userEvent.click(get('apple'))
+    await userEvent.click(get('cherry'))
+    await expect.poll(() => modelValue.value).toEqual(['apple', 'cherry'])
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => document.querySelector('[role=listbox]')).toBeNull()
+
+    await userEvent.click(get('submit'))
+    await expect.poll(() => submitted).toEqual([['apple', 'cherry']])
+  })
+
+  it('blocks the submit while nothing is selected', async () => {
+    const { submitted } = mountMultipleRequired([])
+    await optionsRendered()
+
+    await userEvent.click(get('submit'))
+    await new Promise(resolve => setTimeout(resolve, 100))
+    expect(submitted).toEqual([])
+    expect(document.querySelector('select')!.validity.valueMissing).toBe(true)
+  })
+})

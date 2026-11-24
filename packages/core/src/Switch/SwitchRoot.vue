@@ -2,13 +2,13 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { FormFieldProps } from '@/shared/types'
-import { createContext, useFormControl, useForwardExpose } from '@/shared'
+import { createRekaContext, disabledAttr, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 
-export interface SwitchRootProps<T = boolean> extends PrimitiveProps, FormFieldProps {
+export interface SwitchRootProps<TrueValue = boolean, FalseValue = TrueValue> extends PrimitiveProps, FormFieldProps {
   /** The state of the switch when it is initially rendered. Use when you do not need to control its state. */
-  defaultValue?: T
+  defaultValue?: NoInfer<TrueValue | FalseValue>
   /** The controlled state of the switch. Can be bind as `v-model`. */
-  modelValue?: T | null
+  modelValue?: NoInfer<TrueValue | FalseValue> | null
   /** When `true`, prevents the user from interacting with the switch. */
   disabled?: boolean
   id?: string
@@ -17,16 +17,16 @@ export interface SwitchRootProps<T = boolean> extends PrimitiveProps, FormFieldP
   /**
    * The value used when the switch is on. Defaults to `true`.
    */
-  trueValue?: T
+  trueValue?: TrueValue
   /**
    * The value used when the switch is off. Defaults to `false`.
    */
-  falseValue?: T
+  falseValue?: FalseValue
 }
 
-export type SwitchRootEmits<T = boolean> = {
+export type SwitchRootEmits<TrueValue = boolean, FalseValue = TrueValue> = {
   /** Event handler called when the value of the switch changes. */
-  'update:modelValue': [payload: T]
+  'update:modelValue': [payload: TrueValue | FalseValue]
 }
 
 export interface SwitchRootContext {
@@ -36,23 +36,27 @@ export interface SwitchRootContext {
 }
 
 export const [injectSwitchRootContext, provideSwitchRootContext]
-  = createContext<SwitchRootContext>('SwitchRoot')
+  = createRekaContext<SwitchRootContext>('SwitchRoot')
 </script>
 
-<script setup lang="ts" generic="T = boolean">
+<script setup lang="ts" generic="TrueValue = true, FalseValue = false">
 import { useVModel } from '@vueuse/core'
 import { computed, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
-const props = withDefaults(defineProps<SwitchRootProps<T>>(), {
+defineOptions({
+  inheritAttrs: false,
+})
+
+const props = withDefaults(defineProps<SwitchRootProps<TrueValue, FalseValue>>(), {
   as: 'button',
   modelValue: undefined,
   value: 'on',
   trueValue: (() => true) as unknown as undefined,
   falseValue: (() => false) as unknown as undefined,
 })
-const emit = defineEmits<SwitchRootEmits<T>>()
+const emit = defineEmits<SwitchRootEmits<TrueValue, FalseValue>>()
 
 defineSlots<{
   default?: (props: {
@@ -68,7 +72,7 @@ const { disabled } = toRefs(props)
 const modelValue = useVModel(props as any, 'modelValue', emit as any, {
   defaultValue: props.defaultValue ?? props.falseValue,
   passive: (props.modelValue === undefined) as false,
-}) as Ref<T>
+}) as Ref<TrueValue | FalseValue>
 
 const checked = computed(() => modelValue.value === props.trueValue)
 
@@ -76,11 +80,14 @@ function toggleCheck() {
   if (disabled.value)
     return
 
-  modelValue.value = checked.value ? props.falseValue as T : props.trueValue as T
+  modelValue.value = checked.value ? props.falseValue as FalseValue : props.trueValue as TrueValue
 }
 
 const { forwardRef, currentElement } = useForwardExpose()
 const isFormControl = useFormControl(currentElement)
+// Hidden form input is a sibling (not nested) of the control to avoid the
+// `nested-interactive` a11y violation; forward the parent scope id for scoped styles.
+const scopeIdAttrs = useForwardScopeId()
 const ariaLabel = computed(() => props.id && currentElement.value ? (document.querySelector(`[for="${props.id}"]`) as HTMLLabelElement)?.innerText : undefined)
 
 provideSwitchRootContext({
@@ -92,7 +99,6 @@ provideSwitchRootContext({
 
 <template>
   <Primitive
-    v-bind="$attrs"
     :id="id"
     :ref="forwardRef"
     role="switch"
@@ -105,7 +111,8 @@ provideSwitchRootContext({
     :data-disabled="disabled ? '' : undefined"
     :as-child="asChild"
     :as="as"
-    :disabled="disabled"
+    :disabled="disabledAttr(disabled, props.as, props.asChild)"
+    v-bind="{ ...scopeIdAttrs, ...$attrs }"
     @click="toggleCheck"
     @keydown.enter.prevent="toggleCheck"
   >
@@ -113,15 +120,16 @@ provideSwitchRootContext({
       :model-value="modelValue"
       :checked="checked"
     />
-
-    <VisuallyHiddenInput
-      v-if="isFormControl && name"
-      type="checkbox"
-      :name="name"
-      :disabled="disabled"
-      :required="required"
-      :value="value"
-      :checked="checked"
-    />
   </Primitive>
+
+  <VisuallyHiddenInput
+    v-if="isFormControl && name"
+    type="checkbox"
+    :name="name"
+    :disabled="disabled"
+    :required="required"
+    :value="value"
+    :checked="checked"
+    v-bind="scopeIdAttrs"
+  />
 </template>

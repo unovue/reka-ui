@@ -10,7 +10,7 @@ import { isEqualDay } from '@internationalized/date'
 import { useCalendar } from '@/Calendar/useCalendar'
 import { getWeekStartsOn, isBefore } from '@/date'
 import {
-  createContext,
+  createRekaContext,
   useDirection,
   useKbd,
   useLocale,
@@ -145,7 +145,7 @@ export type RangeCalendarRootEmits = {
 }
 
 export const [injectRangeCalendarRootContext, provideRangeCalendarRootContext]
-  = createContext<RangeCalendarRootContext>('RangeCalendarRoot')
+  = createRekaContext<RangeCalendarRootContext>('RangeCalendarRoot')
 </script>
 
 <script setup lang="ts">

@@ -8,13 +8,17 @@ import type { PopperContentProps } from '@/Popper'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
 import {
-  createContext,
+  createRekaContext,
+  useContentId,
+  useContentMounted,
   useFocusGuards,
+  useForwardExpose,
   useForwardProps,
   useHideOthers,
   useTypeahead,
 } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
+import { wrapArray } from '@/shared/useTypeahead'
 import { valueComparator } from './utils'
 
 export interface SelectContentContext {
@@ -74,14 +78,19 @@ export interface SelectContentImplProps extends PopperContentProps, DismissableL
    * @defaultValue true
    */
   bodyLock?: boolean
+  /**
+   * When `true`, keyboard navigation will loop from last item to first, and vice versa.
+   * @defaultValue false
+   */
+  loop?: boolean
 }
 
 export const [injectSelectContentContext, provideSelectContentContext]
-  = createContext<SelectContentContext>('SelectContent')
+  = createRekaContext<SelectContentContext>('SelectContent')
 </script>
 
 <script setup lang="ts">
-import { unrefElement } from '@vueuse/core'
+import { reactiveOmit, unrefElement } from '@vueuse/core'
 import {
   computed,
   ref,
@@ -90,6 +99,7 @@ import {
 } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { focusFirst } from '@/Menu/utils'
 import SelectItemAlignedPosition from './SelectItemAlignedPosition.vue'
 import SelectPopperPosition from './SelectPopperPosition.vue'
@@ -110,7 +120,12 @@ useBodyScrollLock(props.bodyLock)
 const { CollectionSlot, getItems } = useCollection()
 
 const content = ref<HTMLElement>()
+// The item-aligned position renders a wrapper around the content. Expose the content as `$el`,
+// so that `Presence` watches the element that carries the exit animation.
+const { forwardRef } = useForwardExpose()
 useHideOthers(content)
+useContentId(rootContext, content)
+useContentMounted(rootContext, content)
 
 const { search, handleTypeaheadSearch } = useTypeahead()
 
@@ -190,6 +205,14 @@ function handleKeyDown(event: KeyboardEvent) {
   if (event.key === 'Tab')
     event.preventDefault()
 
+  // Space selects the item when no search is in progress; otherwise it's part of the search
+  if (event.code === 'Space') {
+    if (search.value === '')
+      return
+    // SelectItem skips Space during a search, so prevent the scroll here
+    event.preventDefault()
+  }
+
   if (!isModifierKey && event.key.length === 1)
     handleTypeaheadSearch(event.key, getItems())
 
@@ -203,16 +226,20 @@ function handleKeyDown(event: KeyboardEvent) {
     if (['ArrowUp', 'ArrowDown'].includes(event.key)) {
       const currentElement = event.target as HTMLElement
       const currentIndex = candidateNodes.indexOf(currentElement)
-      candidateNodes = candidateNodes.slice(currentIndex + 1)
+      candidateNodes = props.loop
+        ? wrapArray(candidateNodes, currentIndex + 1)
+        : candidateNodes.slice(currentIndex + 1)
     }
     setTimeout(() => focusFirst(candidateNodes))
     event.preventDefault()
   }
 }
 
+// `loop` drives keyboard navigation here and is not a positioning prop
+const positionProps = reactiveOmit(props, 'loop')
 const pickedProps = computed(() => {
   if (props.position === 'popper')
-    return props
+    return positionProps
   else return {}
 })
 
@@ -279,7 +306,8 @@ provideSelectContentContext({
         (event) => {
           emits('closeAutoFocus', event);
           if (event.defaultPrevented) return;
-          rootContext.triggerElement.value?.focus({ preventScroll: true });
+          // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
+          if (!hasFocusLeftScope(event.target)) rootContext.triggerElement.value?.focus({ preventScroll: true });
           event.preventDefault();
         }
       "
@@ -302,6 +330,7 @@ provideSelectContentContext({
           :id="rootContext.contentId"
           :ref="
             (vnode: Element | ComponentPublicInstance | null) => {
+              forwardRef(vnode)
               if (!vnode) return undefined
               const el = unrefElement(vnode as ComponentPublicInstance) as HTMLElement | undefined
               // special case for PopperContent

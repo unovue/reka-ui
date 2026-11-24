@@ -44,6 +44,12 @@ export default antfu(
     },
   },
   {
+    files: ['**/*.md', '**/*.md/**'],
+    rules: {
+      'no-console': 'off', // allow console.log in documentation examples
+    },
+  },
+  {
     files: ['*.story.vue'],
     rules: {
       'no-console': 'off',

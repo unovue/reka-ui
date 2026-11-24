@@ -53,7 +53,10 @@ export function normalizeDateStep(props?: GetDefaultDateStepProps): DateStep {
   } satisfies DateStep)
 }
 
-export function handleCalendarInitialFocus(calendar: HTMLElement) {
+export function handleCalendarInitialFocus(calendar: HTMLElement | undefined) {
+  if (!calendar)
+    return
+
   const selectedDay = calendar.querySelector<HTMLElement>('[data-selected]')
   if (selectedDay)
     return selectedDay.focus()
@@ -62,7 +65,7 @@ export function handleCalendarInitialFocus(calendar: HTMLElement) {
   if (today)
     return today.focus()
 
-  const firstDay = calendar.querySelector<HTMLElement>('[data-reka-calendar-day]')
+  const firstDay = calendar.querySelector<HTMLElement>('[data-value]:not([data-outside-view]):not([data-disabled])')
   if (firstDay)
     return firstDay.focus()
 }

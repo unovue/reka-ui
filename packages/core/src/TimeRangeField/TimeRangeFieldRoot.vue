@@ -8,9 +8,9 @@ import type { Formatter } from '@/shared'
 import type { DateStep, HourCycle, SegmentPart, SegmentValueObj, TimeValue } from '@/shared/date'
 import type { TimeRange } from '@/shared/date/types'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { getLocalTimeZone, Time, toCalendarDateTime, today } from '@internationalized/date'
+import { getLocalTimeZone, isSameDay, Time, toCalendarDateTime, today } from '@internationalized/date'
 import { areAllDaysBetweenValid, isBefore, isBeforeOrSame } from '@/date'
-import { createContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
+import { createRekaContext, isNullish, useDateFormatter, useDirection, useKbd, useLocale } from '@/shared'
 import {
   createContent,
   getDefaultTime,
@@ -24,6 +24,7 @@ import {
 
   syncTimeSegmentValues,
 
+  useSegmentNavigation,
 } from '@/shared/date'
 
 type TimeRangeFieldRootContext = {
@@ -77,6 +78,18 @@ export interface TimeRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   dir?: Direction
   /** A function that returns whether or not a time is unavailable */
   isTimeUnavailable?: Matcher
+  /**
+   * Whether a range whose end is earlier than its start is allowed, for a daily window that wraps
+   * past midnight such as `22:00` to `06:00`.
+   *
+   * Wrapping only applies when both values fall on the same calendar day, which is always the case
+   * for `Time` values. When the values carry a date and the end is on an earlier day than the start,
+   * the range stays invalid.
+   *
+   * `minValue` and `maxValue` still bound the start and the end separately, so they cannot describe
+   * a window that crosses midnight.
+   */
+  allowWrap?: boolean
 }
 
 export type TimeRangeFieldRootEmits = {
@@ -87,7 +100,7 @@ export type TimeRangeFieldRootEmits = {
 }
 
 export const [injectTimeRangeFieldRootContext, provideTimeRangeFieldRootContext]
-  = createContext<TimeRangeFieldRootContext>('TimeRangeFieldRoot')
+  = createRekaContext<TimeRangeFieldRootContext>('TimeRangeFieldRoot')
 
 function convertValue(value: TimeValue, date: DateValue = today(getLocalTimeZone())) {
   if (value && 'day' in value) {
@@ -114,6 +127,7 @@ const props = withDefaults(defineProps<TimeRangeFieldRootProps>(), {
   readonly: false,
   placeholder: undefined,
   isTimeUnavailable: undefined,
+  allowWrap: false,
 })
 const emits = defineEmits<TimeRangeFieldRootEmits>()
 defineSlots<{
@@ -200,10 +214,16 @@ const isInvalid = computed(() => {
     end: convertValue(modelValue.value.end),
   }
 
-  if (!isBeforeOrSame(convertedModelValue.start, convertedModelValue.end))
+  const wraps = !isBeforeOrSame(convertedModelValue.start, convertedModelValue.end)
+
+  // Only a time-of-day wrap within the same calendar day is allowed. `Time` values are converted
+  // to today, so they always qualify; date-carrying values on different days stay invalid.
+  if (wraps && !(props.allowWrap && isSameDay(convertedModelValue.start, convertedModelValue.end)))
     return true
 
-  if (propsIsTimeUnavailable.value !== undefined) {
+  // `areAllDaysBetweenValid` walks forward from start to end, so it has nothing to walk
+  // over once the range wraps past midnight.
+  if (!wraps && propsIsTimeUnavailable.value !== undefined) {
     const allValid = areAllDaysBetweenValid(
       convertedModelValue.start,
       convertedModelValue.end,
@@ -321,20 +341,27 @@ const segmentContents = computed(() => ({
 
 const editableSegmentContents = computed(() => ({ start: segmentContents.value.start.filter(({ part }) => part !== 'literal'), end: segmentContents.value.end.filter(({ part }) => part !== 'literal') }))
 
-watch(convertedModelValue, (_modelValue) => {
-  const isStartChanged = _modelValue?.start && convertedStartValue.value
-    ? _modelValue.start.compare(convertedStartValue.value) !== 0
-    : _modelValue?.start !== convertedStartValue.value
+watch(modelValue, (_modelValue) => {
+  const isStartChanged = _modelValue?.start && startValue.value
+    ? convertValue(_modelValue.start).compare(convertValue(startValue.value)) !== 0
+    : _modelValue?.start !== startValue.value
   if (isStartChanged) {
-    convertedStartValue.value = _modelValue?.start?.copy()
+    startValue.value = _modelValue?.start?.copy()
   }
 
-  const isEndChanged = _modelValue?.end && convertedEndValue.value
-    ? _modelValue.end.compare(convertedEndValue.value) !== 0
-    : _modelValue?.end !== convertedEndValue.value
+  const isEndChanged = _modelValue?.end && endValue.value
+    ? convertValue(_modelValue.end).compare(convertValue(endValue.value)) !== 0
+    : _modelValue?.end !== endValue.value
   if (isEndChanged) {
-    convertedEndValue.value = _modelValue?.end?.copy()
+    endValue.value = _modelValue?.end?.copy()
   }
+})
+
+// The value the hidden native input submits. Only a complete range is a value:
+// while either end is missing it stays empty, so `required` reports `valueMissing`.
+const inputValue = computed(() => {
+  const { start, end } = modelValue.value ?? {}
+  return start && end ? `${start.toString()} - ${end.toString()}` : ''
 })
 
 watch([convertedStartValue, locale], ([_startValue]) => {
@@ -376,32 +403,19 @@ watch([convertedEndValue, locale], ([_endValue]) => {
 
 const currentFocusedElement = ref<HTMLElement | null>(null)
 
-const currentSegmentIndex = computed(() => Array.from(segmentElements.value).findIndex(el =>
-  el.getAttribute('data-reka-time-field-segment') === currentFocusedElement.value?.getAttribute('data-reka-time-field-segment')
-  && el.getAttribute('data-reka-time-range-field-segment-type') === currentFocusedElement.value?.getAttribute('data-reka-time-range-field-segment-type')))
-
-const nextFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const nextCondition = sign < 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (nextCondition)
-    return null
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value + sign]
-  return segmentToFocus
-})
-
-const prevFocusableSegment = computed(() => {
-  const sign = dir.value === 'rtl' ? -1 : 1
-  const prevCondition = sign > 0 ? currentSegmentIndex.value < 0 : currentSegmentIndex.value > segmentElements.value.size - 1
-  if (prevCondition)
-    return null
-
-  const segmentToFocus = Array.from(segmentElements.value)[currentSegmentIndex.value - sign]
-  return segmentToFocus
+const { nextFocusableSegment, prevFocusableSegment, focusNext } = useSegmentNavigation({
+  segmentElements,
+  currentFocusedElement,
+  dir,
+  segmentAttributes: ['data-reka-time-field-segment', 'data-reka-time-range-field-segment-type'],
 })
 
 const kbd = useKbd()
 
 function handleKeydown(e: KeyboardEvent) {
+  // Don't navigate between segments mid-composition, arrow keys are used for IME candidate navigation
+  if (e.isComposing)
+    return
   if (!isSegmentNavigationKey(e.key))
     return
   if (e.key === kbd.ARROW_LEFT)
@@ -429,9 +443,7 @@ provideTimeRangeFieldRootContext({
   segmentContents: editableSegmentContents,
   elements: segmentElements,
   setFocusedElement,
-  focusNext() {
-    nextFocusableSegment.value?.focus()
-  },
+  focusNext,
 })
 
 defineExpose({
@@ -462,8 +474,9 @@ defineExpose({
       :id="id"
       as="input"
       feature="focusable"
+      aria-hidden="true"
       tabindex="-1"
-      :value="`${modelValue?.start?.toString()} - ${modelValue?.end?.toString()}`"
+      :value="inputValue"
       :name="name"
       :disabled="disabled"
       :required="required"

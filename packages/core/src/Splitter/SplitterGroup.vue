@@ -2,7 +2,7 @@
 import type { CSSProperties, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { computed, ref, toRefs, watch, watchEffect } from 'vue'
-import { areEqual, createContext, useDirection, useForwardExpose, useId } from '@/shared'
+import { areEqual, createRekaContext, useDirection, useForwardExpose, useId } from '@/shared'
 import { useWindowSplitterPanelGroupBehavior } from './utils/composables/useWindowSplitterPanelGroupBehavior'
 import {
   initializeDefaultStorage,
@@ -58,6 +58,8 @@ export type PanelGroupContext = {
   stopDragging: () => void
   unregisterPanel: (panelData: PanelData) => void
   panelGroupElement: Ref<ParentNode | null>
+  /** Bumped when a resize handle mounts or unmounts, so group-level effects re-run */
+  resizeHandleRegistration: Ref<number>
 
   // Exposed function for child component
   collapsePanel: (panelData: PanelData) => void
@@ -68,7 +70,7 @@ export type PanelGroupContext = {
   getPanelStyle: (panelData: PanelData, defaultSize: number | undefined) => CSSProperties
 }
 
-export const [injectPanelGroupContext, providePanelGroupContext] = createContext<PanelGroupContext>('PanelGroup')
+export const [injectPanelGroupContext, providePanelGroupContext] = createRekaContext<PanelGroupContext>('PanelGroup')
 </script>
 
 <script setup lang="ts">
@@ -126,6 +128,9 @@ const layout = ref<number[]>([])
 const panelIdToLastNotifiedSizeMapRef = ref<Record<string, number>>({})
 const panelSizeBeforeCollapseRef = ref<Map<string, number>>(new Map())
 const prevDeltaRef = ref<number>(0)
+// Bumped whenever a resize handle mounts or unmounts, so the group-level
+// keyboard/aria effects re-run for a handle added after the group (e.g. v-if).
+const resizeHandleRegistration = ref(0)
 
 const committedValuesRef = computed(() => ({
   autoSaveId: props.autoSaveId,
@@ -208,12 +213,27 @@ function convertLayoutToNativeUnits(internalLayout: number[]): number[] {
   })
 }
 
+function commitLayout(nextLayout: number[]) {
+  setLayout(nextLayout)
+
+  eagerValuesRef.value.layout = nextLayout
+  emits('layout', convertLayoutToNativeUnits(nextLayout))
+
+  callPanelCallbacks(
+    eagerValuesRef.value.panelDataArray,
+    nextLayout,
+    panelIdToLastNotifiedSizeMapRef.value,
+    getGroupSizeInPixels(),
+  )
+}
+
 useWindowSplitterPanelGroupBehavior({
   eagerValuesRef,
   groupId,
   layout,
   panelDataArray: eagerValuesRef.value.panelDataArray,
-  setLayout,
+  resizeHandleRegistration,
+  commitLayout,
   panelGroupElement: panelGroupElementRef,
   getPanelDataWithPercentConstraints,
 })
@@ -847,7 +867,9 @@ function isPanelCollapsed(panelData: PanelData) {
     return constraints.defaultSize === constraints.collapsedSize
   }
   else {
-    return panelSize === collapsedSize
+    // Fuzzy compare: px sizeUnit converts constraints px→% and renormalizes the
+    // layout, so panelSize drifts from collapsedSize by a float epsilon.
+    return fuzzyCompareNumbers(panelSize, collapsedSize) <= 0
   }
 }
 
@@ -872,7 +894,7 @@ function isPanelExpanded(panelData: PanelData) {
     `Panel size not found for panel "${panelData.id}"`,
   )
 
-  return !collapsible || panelSize > collapsedSize
+  return !collapsible || fuzzyCompareNumbers(panelSize, collapsedSize) > 0
 }
 
 providePanelGroupContext({
@@ -887,6 +909,7 @@ providePanelGroupContext({
   stopDragging,
   unregisterPanel,
   panelGroupElement: panelGroupElementRef,
+  resizeHandleRegistration,
 
   collapsePanel,
   expandPanel,

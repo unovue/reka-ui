@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { Color, ColorChannel, ColorChannel as ColorChannelType, ColorSpace } from '@/shared/color'
 import type { DataOrientation, Direction, FormFieldProps } from '@/shared/types'
-import { createContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
+import { createRekaContext, useDirection, useFormControl, useForwardExpose } from '@/shared'
 
 export interface ColorSliderRootProps extends PrimitiveProps, FormFieldProps {
   /** The color value (controlled). Can be a hex string or Color object. */
@@ -47,7 +47,7 @@ export interface ColorSliderRootContext {
 }
 
 export const [injectColorSliderRootContext, provideColorSliderRootContext]
-  = createContext<ColorSliderRootContext>('ColorSliderRoot')
+  = createRekaContext<ColorSliderRootContext>('ColorSliderRoot')
 </script>
 
 <script setup lang="ts">

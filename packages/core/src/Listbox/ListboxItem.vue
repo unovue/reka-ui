@@ -1,5 +1,5 @@
 <script lang="ts">
-import { createContext, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
+import { createRekaContext, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
 
 export interface ListboxItemProps<T = AcceptableValue> extends PrimitiveProps {
   /** The value given as data when submitted with a `name`. */
@@ -21,14 +21,14 @@ interface ListboxItemContext {
 }
 
 export const [injectListboxItemContext, provideListboxItemContext]
-  = createContext<ListboxItemContext>('ListboxItem')
+  = createRekaContext<ListboxItemContext>('ListboxItem')
 </script>
 
 <script setup lang="ts"  generic="T extends AcceptableValue = AcceptableValue">
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '..'
 import type { AcceptableValue } from '@/shared/types'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '..'
 import { injectListboxRootContext } from './ListboxRoot.vue'
@@ -39,15 +39,29 @@ const props = withDefaults(defineProps<ListboxItemProps<T>>(), {
 })
 const emits = defineEmits<ListboxItemEmits<T>>()
 
+defineSlots<{
+  default?: (props: {
+    /** Whether the item is currently selected */
+    selected: boolean
+  }) => any
+}>()
+
 const id = useId(undefined, 'reka-listbox-item')
 const { CollectionItem } = useCollection()
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectListboxRootContext()
 
-const isHighlighted = computed(() => currentElement.value === rootContext.highlightedElement.value)
+const isHighlighted = computed(() => currentElement.value != null && currentElement.value === rootContext.highlightedElement.value)
 const isSelected = computed(() => valueComparator(rootContext.modelValue.value, props.value, rootContext.by))
 
 const disabled = computed(() => rootContext.disabled.value || props.disabled)
+
+// `aria-activedescendant` names the highlighted item. An item that leaves the document releases the highlight.
+// A virtualized list unmounts rows as it scrolls, so `ListboxVirtualizer` owns the highlight there.
+onBeforeUnmount(() => {
+  if (!rootContext.isVirtual.value && rootContext.highlightedElement.value === currentElement.value)
+    rootContext.highlightedElement.value = null
+})
 
 async function handleSelect(ev: SelectEvent<T>) {
   emits('select', ev)
@@ -76,10 +90,11 @@ provideListboxItemContext({
       :id="id"
       v-bind="$attrs"
       :ref="forwardRef"
-      v-memo="[isHighlighted, isSelected]"
+      v-memo="[isHighlighted, isSelected, disabled, rootContext.focusable.value, ...Object.entries($attrs).flat()]"
       role="option"
       :tabindex="rootContext.focusable.value ? isHighlighted ? '0' : '-1' : -1"
       :aria-selected="isSelected"
+      :aria-disabled="disabled || undefined"
       :as="as"
       :as-child="asChild"
       :disabled="disabled ? '' : undefined"
@@ -96,7 +111,7 @@ provideListboxItemContext({
           rootContext.changeHighlight(currentElement, false, false)
       }"
     >
-      <slot />
+      <slot :selected="isSelected" />
     </Primitive>
   </CollectionItem>
 </template>

@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, useForwardExpose } from '@/shared'
+import { clamp, createRekaContext, useForwardExpose } from '@/shared'
 
 type PaginationRootContext = {
   page: Ref<number>
@@ -31,6 +31,12 @@ export interface PaginationRootProps extends PrimitiveProps {
   disabled?: boolean
   /** When `true`, always show first page, last page, and ellipsis */
   showEdges?: boolean
+  /**
+   * When `true`, keeps the page within the page count. If `total` or `itemsPerPage` drops below
+   * the current page, the page moves to the last page and `update:page` is emitted. A `total` of
+   * `0` resets the page to `1`, so keep the previous `total` while new data loads.
+   */
+  clampPage?: boolean
 }
 
 export type PaginationRootEmits = {
@@ -39,12 +45,12 @@ export type PaginationRootEmits = {
 }
 
 export const [injectPaginationRootContext, providePaginationRootContext]
-  = createContext<PaginationRootContext>('PaginationRoot')
+  = createRekaContext<PaginationRootContext>('PaginationRoot')
 </script>
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { computed, toRefs } from 'vue'
+import { computed, nextTick, toRefs, watch } from 'vue'
 import { Primitive } from '@/Primitive'
 
 const props = withDefaults(defineProps<PaginationRootProps>(), {
@@ -68,12 +74,36 @@ defineSlots<{
 const { siblingCount, disabled, showEdges } = toRefs(props)
 
 useForwardExpose()
-const page = useVModel(props, 'page', emits, {
+// A clamp correction is emitted directly: in passive mode (`page` starts undefined) `useVModel`
+// drops emits while it syncs a new `page` prop, so an out-of-range page set by the parent would
+// never be corrected. `useVModel` then skips its own emit for that value, so it is emitted once.
+let emittedCorrection: number | undefined
+const modelPage = useVModel(props, 'page', emits, {
   defaultValue: props.defaultPage,
   passive: (props.page === undefined) as false,
+  shouldEmit: value => value !== emittedCorrection,
 }) as Ref<number>
 
 const pageCount = computed(() => Math.max(1, Math.ceil(props.total / (props.itemsPerPage || 1))))
+
+// Navigation always lands within the page count. Moving an out-of-range page back into range is
+// opt-in, because a `total` that drops while data loads would otherwise lose the current page.
+const page = computed({
+  get: () => props.clampPage ? clamp(modelPage.value, 1, pageCount.value) : modelPage.value,
+  set(value: number) {
+    modelPage.value = clamp(value, 1, pageCount.value)
+  },
+})
+
+watch([() => props.clampPage, modelPage, pageCount], ([clampPage, value, count]) => {
+  const clamped = clamp(value, 1, count)
+  if (!clampPage || value === clamped)
+    return
+  emittedCorrection = clamped
+  emits('update:page', clamped)
+  modelPage.value = clamped
+  nextTick(() => emittedCorrection = undefined)
+}, { immediate: true })
 
 providePaginationRootContext({
   page,

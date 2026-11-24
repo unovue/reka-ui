@@ -11,8 +11,8 @@ export interface ScrollAreaScrollbarImplProps {
 </script>
 
 <script setup lang="ts">
-import { useResizeObserver } from '@vueuse/core'
-import { onMounted, onUnmounted, ref } from 'vue'
+import { useEventListener, useResizeObserver } from '@vueuse/core'
+import { ref } from 'vue'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
@@ -49,8 +49,8 @@ function handlePointerDown(event: PointerEvent) {
     // so we remove text selection manually when scrolling
     prevWebkitUserSelectRef.value = document.body.style.webkitUserSelect
     document.body.style.webkitUserSelect = 'none'
-    if (rootContext.viewport)
-      rootContext.viewport.value!.style.scrollBehavior = 'auto'
+    if (rootContext.viewport.value)
+      rootContext.viewport.value.style.scrollBehavior = 'auto'
 
     handleDragScroll(event)
   }
@@ -66,28 +66,24 @@ function handlePointerUp(event: PointerEvent) {
     element.releasePointerCapture(event.pointerId)
 
   document.body.style.webkitUserSelect = prevWebkitUserSelectRef.value
-  if (rootContext.viewport)
-    rootContext.viewport.value!.style.scrollBehavior = ''
+  if (rootContext.viewport.value)
+    rootContext.viewport.value.style.scrollBehavior = ''
 
   rectRef.value = undefined
 }
 
 function handleWheel(event: WheelEvent) {
-  const element = event.target as HTMLElement
-  const isScrollbarWheel = scrollbar.value?.contains(element)
   const maxScrollPos
     = scrollbarVisibleContext.sizes.value.content
       - scrollbarVisibleContext.sizes.value.viewport
-  if (isScrollbarWheel)
-    scrollbarVisibleContext.handleWheelScroll(event, maxScrollPos)
+  scrollbarVisibleContext.handleWheelScroll(event, maxScrollPos)
 }
 
-onMounted(() => {
-  document.addEventListener('wheel', handleWheel, { passive: false })
-})
-onUnmounted(() => {
-  document.removeEventListener('wheel', handleWheel)
-})
+// Listen on the scrollbar itself rather than on the document: in WebKit, a
+// non-passive wheel listener on the document makes every wheel scroll on the
+// page wait for the main thread. Non-passive, so `handleWheelScroll` can keep
+// the page from scrolling while the wheel moves this scroll area.
+useEventListener(scrollbar, 'wheel', handleWheel, { passive: false })
 
 function handleSizeChange() {
   if (!scrollbar.value)

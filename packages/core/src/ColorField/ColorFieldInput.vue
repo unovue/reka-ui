@@ -9,6 +9,7 @@ export interface ColorFieldInputProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { Primitive } from '@/Primitive'
+import { disabledAttr, useComposing } from '@/shared'
 import { injectColorFieldRootContext } from './ColorFieldRoot.vue'
 
 const props = withDefaults(defineProps<ColorFieldInputProps>(), {
@@ -18,6 +19,7 @@ const props = withDefaults(defineProps<ColorFieldInputProps>(), {
 const rootContext = injectColorFieldRootContext()
 
 const isFocused = ref(false)
+const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing()
 
 const inputType = computed(() => {
   return rootContext.channel.value ? 'text' : 'text'
@@ -48,6 +50,11 @@ function handleWheel(event: WheelEvent) {
 }
 
 function handleKeydown(event: KeyboardEvent) {
+  // Don't step/commit mid-composition, keys are used for IME candidate navigation and commit.
+  // `isComposing` stays true until the tick after `compositionend`, so the commit keydown
+  // (which can report `event.isComposing === false`) is still skipped.
+  if (isComposing.value || event.isComposing)
+    return
   switch (event.key) {
     case 'ArrowUp':
       event.preventDefault()
@@ -82,6 +89,8 @@ function handleKeydown(event: KeyboardEvent) {
 
 // Handle numeric key validation for channel mode
 function handleBeforeInput(event: InputEvent) {
+  if (event.isComposing)
+    return
   if (!rootContext.channel.value)
     return // No validation for hex mode
 
@@ -118,7 +127,7 @@ function handleBeforeInput(event: InputEvent) {
     :inputmode="inputMode"
     :value="rootContext.inputValue.value"
     :placeholder="rootContext.placeholder.value"
-    :disabled="rootContext.disabled.value"
+    :disabled="disabledAttr(rootContext.disabled.value, props.as, props.asChild)"
     :readonly="rootContext.readonly.value"
     :data-disabled="rootContext.disabled.value ? '' : undefined"
     :data-readonly="rootContext.readonly.value ? '' : undefined"
@@ -129,6 +138,8 @@ function handleBeforeInput(event: InputEvent) {
     @keydown="handleKeydown"
     @wheel="handleWheel"
     @beforeinput="handleBeforeInput"
+    @compositionstart="handleCompositionStart"
+    @compositionend="handleCompositionEnd"
   >
     <slot />
   </Primitive>

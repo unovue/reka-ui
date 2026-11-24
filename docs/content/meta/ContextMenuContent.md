@@ -56,6 +56,12 @@
     'required': false
   },
   {
+    'name': 'fallbackAxisSideDirection',
+    'description': '<p>Whether to also try the perpendicular sides when neither the preferred\nside nor its opposite fits within the boundary, and which of them to try first.\nFor <code>side=&quot;left&quot;</code> or <code>&quot;right&quot;</code>, <code>start</code> tries top then bottom and <code>end</code> tries\nbottom then top. For <code>side=&quot;top&quot;</code> or <code>&quot;bottom&quot;</code>, <code>start</code> tries left then right\nand <code>end</code> tries right then left (mirrored in RTL).\n<code>none</code> keeps the content on the axis of the preferred side.</p>\n<p>Only applies when <code>avoidCollisions</code> and <code>sideFlip</code> are enabled.</p>\n',
+    'type': '\'none\' | \'start\' | \'end\'',
+    'required': false
+  },
+  {
     'name': 'forceMount',
     'description': '<p>Used to force mounting when more control is needed. Useful when\ncontrolling animation with Vue animation libraries.</p>\n',
     'type': 'boolean',
@@ -81,6 +87,12 @@
     'required': false
   },
   {
+    'name': 'memoDependencies',
+    'description': '<p>Reactive dependencies that should invalidate the memoized content subtree.</p>\n',
+    'type': 'unknown[]',
+    'required': false
+  },
+  {
     'name': 'positionStrategy',
     'description': '<p>The type of CSS position property to use.</p>\n',
     'type': '\'fixed\' | \'absolute\'',
@@ -100,7 +112,13 @@
   },
   {
     'name': 'sideFlip',
-    'description': '<p>Flip to the opposite side when colliding with boundary.</p>\n',
+    'description': '<p>Flip to the opposite side when colliding with boundary.\nOnly the opposite side is tried, unless <code>fallbackAxisSideDirection</code> is set.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
+    'name': 'spaceExtendsTypeahead',
+    'description': '<p>When <code>true</code>, Space pressed while a typeahead search is in progress is added to the search\ninstead of selecting the focused item, so that labels with several words, like &quot;New Private Window&quot;,\ncan be reached by typing. With no search in progress, Space still selects the focused item.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -135,6 +153,11 @@
     'type': '[event: PointerDownOutsideEvent | FocusOutsideEvent]'
   },
   {
+    'name': 'openAutoFocus',
+    'description': '<p>Event handler called when auto-focusing on open.\nCan be prevented.</p>\n',
+    'type': '[event: Event]'
+  },
+  {
     'name': 'pointerDownOutside',
     'description': '<p>Event handler called when a <code>pointerdown</code> event happens outside of the <code>DismissableLayer</code>.\nCan be prevented.</p>\n',
     'type': '[event: PointerDownOutsideEvent]'
@@ -156,14 +179,17 @@
 | `collisionBoundary` | The element used as the collision boundary. By default this is the viewport, though you can provide additional element(s) to be included in this check. | `Element \| (Element \| null)[] \| null` | No | `[]` |
 | `collisionPadding` | The distance in pixels from the boundary edges where collision detection should occur. Accepts a number (same for all sides), or a partial padding object, for example: { top: 20, left: 20 }. | `number \| Partial<Record<"top" \| "right" \| "bottom" \| "left", number>>` | No | `0` |
 | `disableUpdateOnLayoutShift` | Whether to disable the update position for the content when the layout shifted. | `boolean` | No | - |
+| `fallbackAxisSideDirection` | Whether to also try the perpendicular sides when neither the preferred side nor its opposite fits within the boundary, and which of them to try first. For side="left" or "right", start tries top then bottom and end tries bottom then top. For side="top" or "bottom", start tries left then right and end tries right then left (mirrored in RTL). none keeps the content on the axis of the preferred side. Only applies when avoidCollisions and sideFlip are enabled. | `"none" \| "start" \| "end"` | No | - |
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
 | `hideShiftedArrow` | When true, hides the arrow when it cannot be centered to the reference element. | `boolean` | No | - |
 | `hideWhenDetached` | Whether to hide the content when the trigger becomes fully occluded. | `boolean` | No | `false` |
 | `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
+| `memoDependencies` | Reactive dependencies that should invalidate the memoized content subtree. | `unknown[]` | No | - |
 | `positionStrategy` | The type of CSS position property to use. | `"fixed" \| "absolute"` | No | - |
 | `prioritizePosition` | Force content to be position within the viewport. Might overlap the reference element, which may not be desired. | `boolean` | No | - |
 | `reference` | The custom element or virtual element that will be set as the reference to position the floating element. If provided, it will replace the default anchor element. | `ReferenceElement` | No | - |
-| `sideFlip` | Flip to the opposite side when colliding with boundary. | `boolean` | No | - |
+| `sideFlip` | Flip to the opposite side when colliding with boundary. Only the opposite side is tried, unless fallbackAxisSideDirection is set. | `boolean` | No | - |
+| `spaceExtendsTypeahead` | When true, Space pressed while a typeahead search is in progress is added to the search instead of selecting the focused item, so that labels with several words, like "New Private Window", can be reached by typing. With no search in progress, Space still selects the focused item. | `boolean` | No | - |
 | `sticky` | The sticky behavior on the align axis. partial will keep the content in the boundary as long as the trigger is at least partially in the boundary whilst "always" will keep the content in the boundary regardless. | `"partial" \| "always"` | No | `"partial"` |
 
 **Events**
@@ -174,6 +200,7 @@
 | `escapeKeyDown` | Event handler called when the escape key is down. Can be prevented. | `[event: KeyboardEvent]` |
 | `focusOutside` | Event handler called when the focus moves outside of the DismissableLayer. Can be prevented. | `[event: FocusOutsideEvent]` |
 | `interactOutside` | Event handler called when an interaction happens outside the DismissableLayer. Specifically, when a pointerdown event happens outside or focus moves outside of it. Can be prevented. | `[event: PointerDownOutsideEvent \| FocusOutsideEvent]` |
+| `openAutoFocus` | Event handler called when auto-focusing on open. Can be prevented. | `[event: Event]` |
 | `pointerDownOutside` | Event handler called when a pointerdown event happens outside of the DismissableLayer. Can be prevented. | `[event: PointerDownOutsideEvent]` |
 
 </llm-only>

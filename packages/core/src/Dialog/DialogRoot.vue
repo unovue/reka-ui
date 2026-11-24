@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import { createContext } from '@/shared'
+import { createRekaContext, defineReactiveIds } from '@/shared'
 
 export interface DialogRootProps {
   /** The controlled open state of the dialog. Can be binded as `v-model:open`. */
@@ -12,6 +12,12 @@ export interface DialogRootProps {
    * interaction with outside elements will be disabled and only dialog content will be visible to screen readers.
    */
   modal?: boolean
+  /**
+   * When set to `false`, the dialog content will not be unmounted when closed, but instead hidden with CSS. <br>
+   * Useful for SEO or when you want to improve performance by not remounting the component on every open.
+   * @defaultValue true
+   */
+  unmountOnHide?: boolean
 }
 
 export type DialogRootEmits = {
@@ -22,18 +28,21 @@ export type DialogRootEmits = {
 export interface DialogRootContext {
   open: Readonly<Ref<boolean>>
   modal: Ref<boolean>
+  unmountOnHide: Ref<boolean>
   openModal: () => void
   onOpenChange: (value: boolean) => void
   onOpenToggle: () => void
   triggerElement: Ref<HTMLElement | undefined>
   contentElement: Ref<HTMLElement | undefined>
+  /** Whether a `DialogOverlay` is present, which is what locks body scroll. */
+  overlayPresent: Ref<boolean>
   contentId: string
   titleId: string
   descriptionId: string
 }
 
 export const [injectDialogRootContext, provideDialogRootContext]
-  = createContext<DialogRootContext>('DialogRoot')
+  = createRekaContext<DialogRootContext>('DialogRoot')
 </script>
 
 <script setup lang="ts">
@@ -48,6 +57,7 @@ const props = withDefaults(defineProps<DialogRootProps>(), {
   open: undefined,
   defaultOpen: false,
   modal: true,
+  unmountOnHide: true,
 })
 const emit = defineEmits<DialogRootEmits>()
 
@@ -67,11 +77,13 @@ const open = useVModel(props, 'open', emit, {
 
 const triggerElement = ref<HTMLElement>()
 const contentElement = ref<HTMLElement>()
-const { modal } = toRefs(props)
+const overlayPresent = ref(false)
+const { modal, unmountOnHide } = toRefs(props)
 
-provideDialogRootContext({
+provideDialogRootContext(defineReactiveIds({
   open,
   modal,
+  unmountOnHide,
   openModal: () => {
     open.value = true
   },
@@ -86,7 +98,8 @@ provideDialogRootContext({
   descriptionId: '',
   triggerElement,
   contentElement,
-})
+  overlayPresent,
+}, ['contentId']))
 </script>
 
 <template>

@@ -46,6 +46,18 @@
     'required': false
   },
   {
+    'name': 'keepFocusOnValueChange',
+    'description': '<p>When <code>true</code>, a programmatic <code>modelValue</code> change made while focus is outside the listbox\n(e.g. on a text input) highlights the selected item without focusing it or scrolling the\npage to it, so focus stays where it is. A virtualized list still scrolls its own viewport\nto the item. When focus is already inside the listbox, focus follows the new highlight as\nusual. User interaction (click, keyboard, typeahead) is not affected.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
+    'name': 'loop',
+    'description': '<p>When <code>true</code>, keyboard navigation will loop from last item to first, and vice versa.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'modelValue',
     'description': '<p>The controlled value of the listbox. Can be binded with <code>v-model</code>.</p>\n',
     'type': 'AcceptableValue | AcceptableValue[]',
@@ -112,7 +124,7 @@
   {
     'name': 'modelValue',
     'description': '<p>Current active value</p>\n',
-    'type': 'AcceptableValue | AcceptableValue[] | undefined'
+    'type': 'T | T[] | undefined'
   }
 ]" />
 </llm-exclude>
@@ -130,6 +142,8 @@
 | `dir` | The reading direction of the listbox when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disabled` | When true, prevents the user from interacting with listbox | `boolean` | No | - |
 | `highlightOnHover` | When true, hover over item will trigger highlight | `boolean` | No | - |
+| `keepFocusOnValueChange` | When true, a programmatic modelValue change made while focus is outside the listbox (e.g. on a text input) highlights the selected item without focusing it or scrolling the page to it, so focus stays where it is. A virtualized list still scrolls its own viewport to the item. When focus is already inside the listbox, focus follows the new highlight as usual. User interaction (click, keyboard, typeahead) is not affected. | `boolean` | No | - |
+| `loop` | When true, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
 | `modelValue` | The controlled value of the listbox. Can be binded with v-model. | `AcceptableValue \| AcceptableValue[]` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
@@ -150,6 +164,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `modelValue` | Current active value | `AcceptableValue \| AcceptableValue[] \| undefined` |
+| `modelValue` | Current active value | `T \| T[] \| undefined` |
 
 </llm-only>

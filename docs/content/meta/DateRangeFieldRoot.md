@@ -131,7 +131,7 @@
   {
     'name': 'update:modelValue',
     'description': '<p>Event handler called whenever the model value changes</p>\n',
-    'type': '[DateRange]'
+    'type': '[date: DateRange]'
   },
   {
     'name': 'update:placeholder',
@@ -159,11 +159,6 @@
 ]" />
 
 <MethodsTable :data="[
-  {
-    'name': 'isDateUnavailable',
-    'description': '<p>A function that returns whether or not a date is unavailable</p>\n',
-    'type': 'Matcher'
-  },
   {
     'name': 'setFocusedElement',
     'description': '',
@@ -203,7 +198,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called whenever the model value changes | `[DateRange]` |
+| `update:modelValue` | Event handler called whenever the model value changes | `[date: DateRange]` |
 | `update:placeholder` | Event handler called whenever the placeholder value changes | `[date: DateValue]` |
 
 **Slots**
@@ -218,7 +213,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `isDateUnavailable` | A function that returns whether or not a date is unavailable | `Matcher` |
 | `setFocusedElement` |  | `(el: HTMLElement) => void` |
 
 </llm-only>

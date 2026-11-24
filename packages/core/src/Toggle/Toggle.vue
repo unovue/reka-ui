@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import type { FormFieldProps } from '@/shared/types'
-import { useFormControl, useForwardExpose } from '@/shared'
+import { disabledAttr, useFormControl, useForwardExpose, useForwardScopeId } from '@/shared'
 import { injectToggleGroupRootContext } from '@/ToggleGroup/ToggleGroupRoot.vue'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
@@ -34,6 +34,10 @@ import { useVModel } from '@vueuse/core'
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
 
+defineOptions({
+  inheritAttrs: false,
+})
+
 const props = withDefaults(defineProps<ToggleProps>(), {
   modelValue: undefined,
   disabled: false,
@@ -56,6 +60,9 @@ defineSlots<{
 }>()
 
 const { forwardRef, currentElement } = useForwardExpose()
+// Hidden form input is a sibling (not nested) of the control to avoid the
+// `nested-interactive` a11y violation; forward the parent scope id for scoped styles.
+const scopeIdAttrs = useForwardScopeId()
 const toggleGroupContext = injectToggleGroupRootContext(null)
 
 const modelValue = useVModel(props, 'modelValue', emits, {
@@ -83,7 +90,8 @@ const isFormControl = useFormControl(currentElement)
     :aria-pressed="modelValue"
     :data-state="dataState"
     :data-disabled="disabled ? '' : undefined"
-    :disabled="disabled"
+    :disabled="disabledAttr(disabled, props.as, props.asChild)"
+    v-bind="{ ...scopeIdAttrs, ...$attrs }"
     @click="togglePressed"
   >
     <slot
@@ -92,13 +100,16 @@ const isFormControl = useFormControl(currentElement)
       :pressed="modelValue"
       :state="dataState"
     />
-
-    <VisuallyHiddenInput
-      v-if="isFormControl && name && !toggleGroupContext"
-      type="checkbox"
-      :name="name"
-      :value="modelValue"
-      :required="required"
-    />
   </Primitive>
+
+  <VisuallyHiddenInput
+    v-if="isFormControl && name && !toggleGroupContext"
+    type="checkbox"
+    :name="name"
+    :value="modelValue"
+    :checked="!!modelValue"
+    :disabled="disabled"
+    :required="required"
+    v-bind="scopeIdAttrs"
+  />
 </template>

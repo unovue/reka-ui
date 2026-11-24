@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Ref } from 'vue'
-import { createContext, useForwardExpose } from '@/shared'
+import { createRekaContext, defineReactiveIds, useForwardExpose } from '@/shared'
 
 export interface TooltipRootProps {
   /**
@@ -67,12 +67,12 @@ export interface TooltipContext {
 }
 
 export const [injectTooltipRootContext, provideTooltipRootContext]
-  = createContext<TooltipContext>('TooltipRoot')
+  = createRekaContext<TooltipContext>('TooltipRoot')
 </script>
 
 <script setup lang="ts">
 import { useTimeoutFn, useVModel } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, onDeactivated, ref, watch } from 'vue'
 import { PopperRoot } from '@/Popper'
 import { injectTooltipProviderContext } from './TooltipProvider.vue'
 import { TOOLTIP_OPEN } from './utils'
@@ -152,7 +152,10 @@ function handleDelayedOpen() {
   startTimer()
 }
 
-provideTooltipRootContext({
+// A pending open of a `KeepAlive` page that is left would fire on the page shown instead.
+onDeactivated(clearTimer)
+
+provideTooltipRootContext(defineReactiveIds({
   contentId: '',
   open,
   stateAttribute,
@@ -180,11 +183,11 @@ provideTooltipRootContext({
   disableClosingTrigger,
   disabled: disableTooltip,
   ignoreNonKeyboardFocus,
-})
+}, ['contentId']))
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="tooltip">
     <slot :open="open" />
   </PopperRoot>
 </template>
