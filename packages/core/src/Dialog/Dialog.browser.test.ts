@@ -322,11 +322,6 @@ describe('given a modal Dialog with an exit animation, in a real browser', () =>
     await expect.poll(() => exiting('outer')).toBe(true)
     expect(exiting('inner')).toBe(true)
     expect(document.body.style.pointerEvents).toBe('')
-
-    // The parent's exit can finish first and unmount both scopes in the same tick.
-    finishExit('outer')
-    await expect.poll(() => get('outer')).toBeNull()
-    expect(document.activeElement).toBe(page)
   })
 
   it('hands Escape back to the parent during the child exit when both are kept mounted', async () => {

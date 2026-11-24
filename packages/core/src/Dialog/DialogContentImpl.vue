@@ -35,7 +35,7 @@ export interface DialogContentImplProps extends DismissableLayerProps {
 
 <script setup lang="ts">
 import { isClient } from '@vueuse/shared'
-import { onBeforeUnmount, onMounted, onUnmounted, shallowRef, watch } from 'vue'
+import { onMounted, onUnmounted, shallowRef, watch } from 'vue'
 import { DismissableLayer } from '@/DismissableLayer'
 import { FocusScope } from '@/FocusScope'
 import { getOpenState } from '@/Menu/utils'
@@ -58,13 +58,6 @@ rootContext.descriptionId ||= useId(undefined, 'reka-dialog-description')
 
 onMounted(() => {
   rootContext.contentElement = contentElement
-})
-
-// A nested scope can restore focus after this scope's closeAutoFocus handler,
-// while its trigger is still connected inside the content about to be removed.
-onBeforeUnmount(() => {
-  if (contentElement.value)
-    contentElement.value.inert = true
 })
 
 // Record where focus was on every open, before the content moves it: a content kept

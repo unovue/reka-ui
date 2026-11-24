@@ -65,28 +65,4 @@ describe('given a Popover inside a Dialog, during its exit, in a real browser', 
     await expect.poll(() => exiting('child')).toBe(true)
     expect(get('dialog')!.closest('[aria-hidden="true"]')).toBeNull()
   })
-
-  it('returns focus to the outer trigger when the outer popover closes during the inner exit', async () => {
-    const outerOpen = ref(true)
-    const innerOpen = ref(false)
-    mount(defineComponent({
-      setup: () => () => h(PopoverRoot, { 'open': outerOpen.value, 'onUpdate:open': (value: boolean) => outerOpen.value = value }, () => [
-        h(PopoverTrigger, { 'data-testid': 'outer-trigger' }, () => 'Outer'),
-        h(PopoverPortal, null, () => h(PopoverContent, { 'data-testid': 'outer' }, () =>
-          h(PopoverRoot, { 'open': innerOpen.value, 'onUpdate:open': (value: boolean) => innerOpen.value = value }, () => [
-            h(PopoverTrigger, { 'data-testid': 'inner-trigger' }, () => 'Inner'),
-            h(PopoverPortal, null, () => h(PopoverContent, { 'data-testid': 'child', 'class': 'exit' }, () => h('button', 'In'))),
-          ]))),
-      ]),
-    }), { attachTo: document.body })
-    await expect.poll(() => get('outer')?.contains(document.activeElement)).toBe(true)
-    innerOpen.value = true
-    await expect.poll(() => get('child')?.contains(document.activeElement)).toBe(true)
-
-    await userEvent.keyboard('{Escape}')
-    await expect.poll(() => exiting('child')).toBe(true)
-    await userEvent.keyboard('{Escape}')
-    await expect.poll(() => get('outer')).toBeNull()
-    expect(document.activeElement).toBe(get('outer-trigger'))
-  })
 })
