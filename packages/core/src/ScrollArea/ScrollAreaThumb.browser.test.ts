@@ -69,3 +69,25 @@ describe('scroll area thumb in a real browser', () => {
     }
   })
 })
+
+describe('scroll area scrollbar in a real browser', () => {
+  it.each(['vertical', 'horizontal'] as const)('scrolls the viewport when the wheel is used over the %s scrollbar', async (orientation) => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ScrollAreaRoot, { type: 'always', style: 'width: 200px; height: 200px;' }, () => [
+        h(ScrollAreaViewport, { style: 'width: 100%; height: 100%;' }, () => h('div', { style: 'width: 2000px; height: 2000px;' })),
+        h(ScrollAreaScrollbar, { 'orientation': orientation, 'data-testid': 'scrollbar', 'style': orientation === 'vertical' ? 'width: 10px; height: 200px;' : 'width: 200px; height: 10px;' }, () => h(ScrollAreaThumb)),
+      ]),
+    }), { attachTo: document.body })
+    const viewport = wrapper.get('[data-reka-scroll-area-viewport]').element as HTMLElement
+    const scrollbar = wrapper.get('[data-testid=scrollbar]').element as HTMLElement
+    const offset = orientation === 'vertical' ? 'scrollTop' : 'scrollLeft'
+    try {
+      // The scrollbar maps the vertical wheel delta onto its own axis.
+      await userEvent.wheel(scrollbar, { delta: { y: 100 }, times: 3 })
+      await expect.poll(() => viewport[offset]).toBeGreaterThan(0)
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+})
