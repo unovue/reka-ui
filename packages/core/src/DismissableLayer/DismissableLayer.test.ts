@@ -1,7 +1,7 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import { sleep } from '@/test'
@@ -715,6 +715,36 @@ describe('given a DismissableLayer and a focus move during a press outside', () 
     expect(events).toEqual(['focusOutside:focusin', 'dismiss'])
 
     wrapper.unmount()
+  })
+
+  it('keeps no click listener from a cancelled touch press', async () => {
+    const { wrapper, outside } = await setup()
+    const captureClickListeners = new Set<unknown>()
+    const add = vi.spyOn(document, 'addEventListener').mockImplementation(function (this: Document, type, listener, options) {
+      if (type === 'click' && options === true)
+        captureClickListeners.add(listener)
+      return EventTarget.prototype.addEventListener.call(this, type, listener, options)
+    })
+    const remove = vi.spyOn(document, 'removeEventListener').mockImplementation(function (this: Document, type, listener, options) {
+      if (type === 'click' && options === true)
+        captureClickListeners.delete(listener)
+      return EventTarget.prototype.removeEventListener.call(this, type, listener, options)
+    })
+    onTestFinished(() => {
+      add.mockRestore()
+      remove.mockRestore()
+    })
+
+    for (let i = 0; i < 3; i++) {
+      outside.dispatchEvent(pointerEvent('pointerdown', 'touch'))
+      outside.dispatchEvent(pointerEvent('pointercancel', 'touch'))
+    }
+    expect(captureClickListeners.size).toBe(0)
+
+    outside.dispatchEvent(pointerEvent('pointerdown', 'touch'))
+    expect(captureClickListeners.size).toBe(1)
+    wrapper.unmount()
+    expect(captureClickListeners.size).toBe(0)
   })
 
   it('handles the focus move before the next press when the last one never ended', async () => {

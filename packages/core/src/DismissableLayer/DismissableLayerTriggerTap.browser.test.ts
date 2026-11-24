@@ -174,3 +174,21 @@ describe('given a layer whose trigger sits inside a focusable container (#3360)'
     })
   })
 })
+
+// The focus a trigger press gives an ancestor is only ignored while that press is in
+// flight: the same focus move on its own still dismisses, as before.
+describe('given an open layer and focus moving to an ancestor of its trigger without a press (#3360)', () => {
+  it('closes a non-modal DropdownMenu after a right-click on the trigger', async () => {
+    mountInFocusableContainer('non-modal menu')
+    await press('mouse')
+    expect(isOpen()).toBe(true)
+
+    // A right-click does not toggle the menu, so it is no press of the trigger's own
+    // (WebKit already closes the menu on it).
+    await userEvent.click(get('trigger')!, { button: 'right' })
+    await settle()
+    get('container')!.focus()
+    await settle()
+    expect(isOpen()).toBe(false)
+  })
+})

@@ -87,11 +87,12 @@ export function usePointerDownOutside(
    * `pointerdown` and the `click` its `pointerDownOutside` is deferred to.
    */
   let isTouchPressPending = false
-  let touchPressId = 0
   let heldUntilTouchPressEnds: Array<() => void> = []
+  let removeStoppedClickListener = () => {}
 
   function endTouchPress() {
     isTouchPressPending = false
+    removeStoppedClickListener()
     const held = heldUntilTouchPressEnds
     heldUntilTouchPressEnds = []
     held.forEach(run => run())
@@ -191,11 +192,17 @@ export function usePointerDownOutside(
           // A `click` whose propagation is stopped before it reaches the document
           // still ends the press, in the next task so the listener above, when it
           // does run, keeps handling `pointerDownOutside` first.
-          const pressId = ++touchPressId
-          ownerDocument.addEventListener('click', () => window.setTimeout(() => {
-            if (pressId === touchPressId && isTouchPressPending)
-              endTouchPress()
-          }), { capture: true, once: true })
+          removeStoppedClickListener()
+          let timerId: number | undefined
+          const handleClickCapture = () => {
+            timerId = window.setTimeout(endTouchPress)
+          }
+          ownerDocument.addEventListener('click', handleClickCapture, true)
+          removeStoppedClickListener = () => {
+            window.clearTimeout(timerId)
+            ownerDocument.removeEventListener('click', handleClickCapture, true)
+            removeStoppedClickListener = () => {}
+          }
         }
         else {
           handleAndDispatchPointerDownOutsideEvent()
@@ -236,6 +243,7 @@ export function usePointerDownOutside(
       // The layer is gone or no longer listening: drop what the press held back.
       isTouchPressPending = false
       heldUntilTouchPressEnds = []
+      removeStoppedClickListener()
     })
   })
 
@@ -303,6 +311,53 @@ export function useFocusOutside(
       isFocusInsideDOMTree.value = false
     },
   }
+}
+
+let pressedTrigger: Element | undefined
+let endTrackedPress = () => {}
+
+/**
+ * Records a primary-button press on a trigger, from its `pointerdown` until the
+ * task after its `click` (or `pointercancel`, or the next press). WebKit does not
+ * focus a pressed button but its focusable ancestor, so a layer uses this to tell
+ * that focus move apart from focus moving on its own (#3360).
+ */
+export function trackTriggerPress(event: PointerEvent) {
+  endTrackedPress()
+  const trigger = event.currentTarget as Element | null
+  if (!isClient || !trigger || event.button !== 0)
+    return
+  const ownerDocument = trigger.ownerDocument
+  let timerId: number | undefined
+  // Kept until the next task, so a focus move handled during the `click` (e.g. one
+  // a layer held back until it) still counts as part of the press.
+  function handleEnd() {
+    removeListeners()
+    timerId = window.setTimeout(release)
+  }
+  function removeListeners() {
+    ownerDocument.removeEventListener('click', handleEnd, true)
+    ownerDocument.removeEventListener('pointercancel', handleEnd, true)
+    ownerDocument.removeEventListener('pointerdown', release, true)
+  }
+  function release() {
+    window.clearTimeout(timerId)
+    removeListeners()
+    if (pressedTrigger === trigger)
+      pressedTrigger = undefined
+    endTrackedPress = () => {}
+  }
+  ownerDocument.addEventListener('click', handleEnd, true)
+  ownerDocument.addEventListener('pointercancel', handleEnd, true)
+  // Added while this `pointerdown` is past the document, so only a later press ends it.
+  ownerDocument.addEventListener('pointerdown', release, true)
+  pressedTrigger = trigger
+  endTrackedPress = release
+}
+
+/** Whether a press tracked by `trackTriggerPress` on `trigger` is in flight. */
+export function isTriggerPressInFlight(trigger: Element | undefined | null) {
+  return !!trigger && pressedTrigger === trigger
 }
 
 export function dispatchUpdate() {
