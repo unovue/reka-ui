@@ -18,7 +18,7 @@ import { MenuAnchor } from '@/Menu'
 import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
 import { injectContextMenuRootContext } from './ContextMenuRoot.vue'
-import { isTouchOrPen } from './utils'
+import { claimedLongPressEvents, isTouchOrPen } from './utils'
 
 defineOptions({
   inheritAttrs: false,
@@ -108,6 +108,10 @@ async function handlePointerDown(event: PointerEvent) {
     if (isTouchOrPen(event) && !event.defaultPrevented) {
       // clear the long press here in case there's multiple touch points
       clearLongPress()
+      // Nested triggers all get the same press: only the innermost enabled one starts a long press.
+      if (claimedLongPressEvents.has(event))
+        return
+      claimedLongPressEvents.add(event)
       longPressTimer.value = window.setTimeout(handleOpen, rootContext.pressOpenDelay.value, event)
     }
   }

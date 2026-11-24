@@ -38,6 +38,13 @@ defineExpose({
   viewportElement,
 })
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
+
+function getViewportAttrs(attrs: Record<string, unknown>): Record<string, unknown> {
+  // Vue's server renderer lowercases both spellings, so merge them under one key.
+  // `tabindex` stays last, so the attribute order is the same as without an override.
+  const { tabIndex, tabindex, ...rest } = attrs
+  return { ...rest, tabindex: 'tabindex' in attrs ? tabindex : 'tabIndex' in attrs ? tabIndex : 0 }
+}
 </script>
 
 <template>
@@ -59,8 +66,7 @@ const { forwardRef, currentElement: contentElement } = useForwardExpose()
       overflowX: rootContext.scrollbarXEnabled.value ? 'scroll' : 'hidden',
       overflowY: rootContext.scrollbarYEnabled.value ? 'scroll' : 'hidden',
     }"
-    v-bind="$attrs"
-    :tabindex="0"
+    v-bind="getViewportAttrs($attrs)"
   >
     <Primitive
       :ref="forwardRef"

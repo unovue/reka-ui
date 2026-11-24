@@ -50,6 +50,7 @@ interface RovingContext {
   onItemShiftTab: () => void
   onFocusableItemAdd: () => void
   onFocusableItemRemove: () => void
+  claimPreMountTabStop: (tabStopId: string) => boolean
 }
 
 export const [injectRovingFocusGroupContext, provideRovingFocusGroupContext]
@@ -126,6 +127,7 @@ defineExpose({
   getItems,
 })
 
+let preMountTabStopId: string | undefined
 provideRovingFocusGroupContext({
   loop,
   dir,
@@ -142,6 +144,12 @@ provideRovingFocusGroupContext({
   },
   onFocusableItemRemove: () => {
     focusableItemsCount.value--
+  },
+  // Before mount, the first active item to ask (setup runs in document order, on the
+  // server and when hydrating alike) is the group's only tab stop.
+  claimPreMountTabStop: (tabStopId) => {
+    preMountTabStopId ??= tabStopId
+    return preMountTabStopId === tabStopId
   },
 })
 </script>

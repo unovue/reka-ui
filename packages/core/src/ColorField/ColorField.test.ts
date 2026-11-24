@@ -295,6 +295,33 @@ describe('keyboard interactions', () => {
       await input.trigger('keydown', { key: 'Home' })
       expect(input.element.value).toBe('#000000')
     })
+
+    it('should keep the alpha channel when stepping', async () => {
+      const wrapper = mount(ColorField, {
+        props: {
+          defaultValue: '#7f007f80',
+        },
+      })
+      const input = wrapper.find('input')
+      expect(input.element.value).toBe('#7f007f80')
+      await input.trigger('keydown', { key: 'ArrowUp' })
+      expect(input.element.value).toBe('#7f008080')
+      await input.trigger('keydown', { key: 'ArrowDown' })
+      expect(input.element.value).toBe('#7f007f80')
+    })
+
+    it('should keep the alpha channel on Home and End', async () => {
+      const wrapper = mount(ColorField, {
+        props: {
+          defaultValue: '#33669980',
+        },
+      })
+      const input = wrapper.find('input')
+      await input.trigger('keydown', { key: 'End' })
+      expect(input.element.value).toBe('#ffffff80')
+      await input.trigger('keydown', { key: 'Home' })
+      expect(input.element.value).toBe('#00000080')
+    })
   })
 
   it('should commit on Enter key', async () => {
@@ -307,6 +334,18 @@ describe('keyboard interactions', () => {
     await input.setValue('#00ff00')
     await input.trigger('keydown', { key: 'Enter' })
     expect(input.element.value).toBe('#00ff00')
+  })
+
+  it('should commit an out-of-range rgb() value as a clamped hex on Enter', async () => {
+    const wrapper = mount(ColorField, {
+      props: {
+        defaultValue: '#000000',
+      },
+    })
+    const input = wrapper.find('input')
+    await input.setValue('rgb(300, 0, 0)')
+    await input.trigger('keydown', { key: 'Enter' })
+    expect(input.element.value).toBe('#ff0000')
   })
 
   it('should not increment when disabled', async () => {

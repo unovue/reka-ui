@@ -1086,3 +1086,168 @@ describe('given a Select root that stays mounted', () => {
     wrapper.unmount()
   })
 })
+
+function mountFruitsInForm(modelValue: { value: unknown }, rootProps: Record<string, unknown> = {}, items: unknown[] = ['apple', 'banana', 'cherry']) {
+  return mount(defineComponent({
+    setup() {
+      return () => h('form', [
+        h(SelectRoot, {
+          'name': 'fruit',
+          'multiple': true,
+          ...rootProps,
+          'modelValue': modelValue.value,
+          'onUpdate:modelValue': (value: unknown) => { modelValue.value = value },
+        }, () => [
+          h(SelectTrigger, () => h(SelectValue)),
+          h(SelectContent, () => h(SelectViewport, () => items.map(value =>
+            h(SelectItem, { value }, () => h(SelectItemText, () => JSON.stringify(value))),
+          ))),
+        ]),
+      ])
+    },
+  }), { attachTo: document.body })
+}
+
+describe('given a multiple Select in a form', () => {
+  let wrapper: VueWrapper | undefined
+  const form = () => wrapper!.get('form').element as HTMLFormElement
+  const submitted = () => new FormData(form()).getAll('fruit')
+  const selectedOptions = () => Array.from(form().querySelectorAll('option')).map(option => option.selected)
+
+  afterEach(() => {
+    wrapper?.unmount()
+    wrapper = undefined
+    document.body.innerHTML = ''
+  })
+
+  it('submits every selected value', async () => {
+    wrapper = mountFruitsInForm(ref(['apple', 'cherry']))
+    await nextTick()
+
+    expect(submitted()).toEqual(['apple', 'cherry'])
+  })
+
+  it('submits the new selection after the value is replaced or changed in place', async () => {
+    const modelValue = ref(['apple'])
+    wrapper = mountFruitsInForm(modelValue)
+    await nextTick()
+
+    modelValue.value = ['apple', 'banana']
+    await flushPromises()
+    expect(submitted()).toEqual(['apple', 'banana'])
+
+    modelValue.value.push('cherry')
+    await flushPromises()
+    expect(submitted()).toEqual(['apple', 'banana', 'cherry'])
+  })
+
+  it('bubbles a `change` that reads the new selection', async () => {
+    const modelValue = ref(['apple'])
+    wrapper = mountFruitsInForm(modelValue)
+    await nextTick()
+    const seen: FormDataEntryValue[][] = []
+    form().addEventListener('change', () => seen.push(submitted()))
+
+    modelValue.value = ['apple', 'cherry']
+    await flushPromises()
+
+    expect(seen).toEqual([['apple', 'cherry']])
+  })
+
+  it('selects the options of object values, compared with `by`', async () => {
+    wrapper = mountFruitsInForm(ref([{ id: 1 }, { id: 3 }]), { by: 'id' }, [{ id: 1 }, { id: 2 }, { id: 3 }])
+    await nextTick()
+
+    expect(selectedOptions()).toEqual([true, false, true])
+  })
+
+  it('is valid when `required` and more than one value is selected', async () => {
+    wrapper = mountFruitsInForm(ref(['apple', 'banana']), { required: true })
+    await nextTick()
+
+    expect(form().checkValidity()).toBe(true)
+  })
+
+  it('is invalid when `required` and nothing is selected', async () => {
+    wrapper = mountFruitsInForm(ref([]), { required: true })
+    await nextTick()
+
+    expect(form().checkValidity()).toBe(false)
+  })
+
+  it('keeps the selection and reads it in `change` when `multiple` is turned on', async () => {
+    const multiple = ref(false)
+    const modelValue = ref<unknown>('apple')
+    wrapper = mount(defineComponent({
+      setup() {
+        return () => h('form', [
+          h(SelectRoot, {
+            'name': 'fruit',
+            'multiple': multiple.value,
+            'modelValue': modelValue.value,
+            'onUpdate:modelValue': (value: unknown) => { modelValue.value = value },
+          }, () => [
+            h(SelectTrigger, () => h(SelectValue)),
+            h(SelectContent, () => h(SelectViewport, () => ['apple', 'banana', 'cherry'].map(value =>
+              h(SelectItem, { value }, () => h(SelectItemText, () => value)),
+            ))),
+          ]),
+        ])
+      },
+    }), { attachTo: document.body })
+    await flushPromises()
+    expect(submitted()).toEqual(['apple'])
+
+    multiple.value = true
+    modelValue.value = ['apple']
+    await flushPromises()
+    expect(submitted()).toEqual(['apple'])
+
+    const seen: FormDataEntryValue[][] = []
+    form().addEventListener('change', () => seen.push(submitted()))
+    multiple.value = false
+    modelValue.value = 'apple'
+    await flushPromises()
+    seen.length = 0
+    multiple.value = true
+    modelValue.value = ['cherry']
+    await flushPromises()
+    expect(submitted()).toEqual(['cherry'])
+    // The mode and the value changed in one update: `change` still fires, with the new selection
+    expect(seen).toEqual([['cherry']])
+    modelValue.value = ['banana', 'cherry']
+    await flushPromises()
+    expect(seen.at(-1)).toEqual(['banana', 'cherry'])
+
+    seen.length = 0
+    multiple.value = false
+    modelValue.value = 'banana'
+    await flushPromises()
+    expect(seen).toEqual([['banana']])
+  })
+
+  it('keeps submitting the empty `nullableValue` while the value is nullish', async () => {
+    wrapper = mountFruitsInForm(ref(null))
+    await nextTick()
+
+    expect(submitted()).toEqual([''])
+  })
+})
+
+describe('given a single Select in a form', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('submits the empty `nullableValue` once the value is cleared', async () => {
+    const modelValue = ref<string | null>('apple')
+    const wrapper = mountFruitsInForm(modelValue, { multiple: false })
+    await nextTick()
+
+    modelValue.value = null
+    await flushPromises()
+
+    expect(new FormData(wrapper.get('form').element).getAll('fruit')).toEqual([''])
+    wrapper.unmount()
+  })
+})
