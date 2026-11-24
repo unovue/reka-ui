@@ -336,6 +336,18 @@ describe('keyboard interactions', () => {
     expect(input.element.value).toBe('#00ff00')
   })
 
+  it('should commit an out-of-range rgb() value as a clamped hex on Enter', async () => {
+    const wrapper = mount(ColorField, {
+      props: {
+        defaultValue: '#000000',
+      },
+    })
+    const input = wrapper.find('input')
+    await input.setValue('rgb(300, 0, 0)')
+    await input.trigger('keydown', { key: 'Enter' })
+    expect(input.element.value).toBe('#ff0000')
+  })
+
   it('should not increment when disabled', async () => {
     const wrapper = mount(ColorField, {
       props: {
