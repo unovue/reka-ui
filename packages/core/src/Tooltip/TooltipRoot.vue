@@ -72,7 +72,7 @@ export const [injectTooltipRootContext, provideTooltipRootContext]
 
 <script setup lang="ts">
 import { useTimeoutFn, useVModel } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, onDeactivated, ref, watch } from 'vue'
 import { PopperRoot } from '@/Popper'
 import { injectTooltipProviderContext } from './TooltipProvider.vue'
 import { TOOLTIP_OPEN } from './utils'
@@ -151,6 +151,9 @@ function handleClose() {
 function handleDelayedOpen() {
   startTimer()
 }
+
+// A pending open of a `KeepAlive` page that is left would fire on the page shown instead.
+onDeactivated(clearTimer)
 
 provideTooltipRootContext(defineReactiveIds({
   contentId: '',

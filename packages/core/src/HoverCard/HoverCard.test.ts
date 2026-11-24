@@ -2,7 +2,7 @@ import type { VueWrapper } from '@vue/test-utils'
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, KeepAlive, nextTick, ref } from 'vue'
 import { sleep } from '@/test'
 import HoverCardContent from './HoverCardContent.vue'
 import HoverCardRoot, { injectHoverCardRootContext } from './HoverCardRoot.vue'
@@ -421,5 +421,38 @@ describe('given a controlled HoverCard that is dismissed', () => {
     await wrapper.find('button').trigger('click')
     expect(onUpdateOpen).not.toHaveBeenCalled()
     wrapper.unmount()
+  })
+})
+
+function mountInKeepAlivePage(root: Record<string, unknown>) {
+  const onPage = ref(true)
+  const Page = defineComponent({
+    name: 'Page',
+    setup: () => () => h(HoverCardRoot, root, () => h(HoverCardTrigger, { href: '#' }, () => 'trigger')),
+  })
+  const wrapper = mount(defineComponent({
+    setup: () => () => h(KeepAlive, null, () => onPage.value ? h(Page) : h('p', 'other page')),
+  }), { attachTo: document.body })
+  return { wrapper, onPage }
+}
+
+describe('given a hover card waiting to open in a KeepAlive page', () => {
+  it('does not open once the page is deactivated', async () => {
+    vi.useFakeTimers()
+    const onUpdateOpen = vi.fn()
+    const { wrapper, onPage } = mountInKeepAlivePage({ 'openDelay': 50, 'onUpdate:open': onUpdateOpen })
+    try {
+      await wrapper.find('a').trigger('pointerenter', { pointerType: 'mouse' })
+      onPage.value = false
+      await nextTick()
+      vi.advanceTimersByTime(100)
+      await nextTick()
+
+      expect(onUpdateOpen).not.toHaveBeenCalled()
+    }
+    finally {
+      wrapper.unmount()
+      vi.useRealTimers()
+    }
   })
 })
