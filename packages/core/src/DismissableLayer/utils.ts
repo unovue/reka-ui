@@ -195,6 +195,7 @@ export function usePointerDownOutside(
           removeStoppedClickListener()
           let timerId: number | undefined
           const handleClickCapture = () => {
+            window.clearTimeout(timerId)
             timerId = window.setTimeout(endTouchPress)
           }
           ownerDocument.addEventListener('click', handleClickCapture, true)
