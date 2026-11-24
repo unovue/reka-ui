@@ -161,6 +161,8 @@ watchEffect((cleanupFn) => {
   const viewport = providerContext.viewport.value
   if (viewport) {
     const handleResume = () => {
+      if (!props.open)
+        return
       startTimer(closeTimerRemainingTimeRef.value)
       remainingRaf.resume()
       emits('resume')
@@ -186,6 +188,8 @@ watchEffect((cleanupFn) => {
 // so it could reopen before being completely unmounted
 const restartKey = computed(() => props.toast ? providerContext.toastStore.getRestartKey(props.toast.id) : 0)
 watch([() => props.open, duration, restartKey], () => {
+  if (isClient)
+    window.clearTimeout(closeTimerRef.value)
   // Reset the timer when the toast is rerendered with the new duration
   closeTimerRemainingTimeRef.value = duration.value
 
@@ -215,6 +219,7 @@ onMounted(() => {
   measureHeight()
 })
 onUnmounted(() => {
+  window.clearTimeout(closeTimerRef.value)
   providerContext.onToastRemove()
   unregisterToast?.()
 })

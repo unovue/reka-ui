@@ -1056,3 +1056,92 @@ describe('given a ToastViewport hotkey', () => {
     expect(document.activeElement).toBe(viewport)
   })
 })
+
+describe('given a toast closed by its open prop while its content stays mounted', () => {
+  let wrapper: VueWrapper | undefined
+
+  function mountToast(duration = 1000) {
+    const open = ref(true)
+    const onUpdateOpen = vi.fn()
+    wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ToastProvider, { duration }, () => [
+          h(ToastRoot, {
+            'open': open.value,
+            'forceMount': true,
+            'onUpdate:open': onUpdateOpen,
+          }, () => h(ToastDescription, null, () => 'Closing toast')),
+          h(ToastViewport),
+        ])
+      },
+    }), { attachTo: document.body })
+    return { open, onUpdateOpen, viewport: () => wrapper!.find<HTMLElement>('ol').element }
+  }
+
+  async function runDuration(ms: number) {
+    vi.advanceTimersByTime(ms)
+    await nextTick()
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    wrapper?.unmount()
+    wrapper = undefined
+    vi.useRealTimers()
+  })
+
+  it('does not request another close once its duration elapses', async () => {
+    const { open, onUpdateOpen } = mountToast(1000)
+    await nextTick()
+    await runDuration(400)
+
+    open.value = false
+    await nextTick()
+    await runDuration(1000)
+
+    expect(onUpdateOpen).not.toHaveBeenCalled()
+  })
+
+  it('does not request a close when the pointer leaves the viewport after it closed', async () => {
+    const { open, onUpdateOpen, viewport } = mountToast(1000)
+    await nextTick()
+
+    await fireEvent.pointerMove(viewport())
+    open.value = false
+    await nextTick()
+    await fireEvent.pointerLeave(viewport())
+    await runDuration(1500)
+
+    expect(onUpdateOpen).not.toHaveBeenCalled()
+  })
+})
+
+describe('given an open toast with a close timer running', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('leaves no timer pending once the provider unmounts', async () => {
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(ToastProvider, { duration: 4000 }, () => [
+          h(ToastRoot, { open: true }, () => h(ToastDescription, null, () => 'Timed toast')),
+          h(ToastViewport),
+        ])
+      },
+    }), { attachTo: document.body })
+    await nextTick()
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+
+    wrapper.unmount()
+
+    expect(vi.getTimerCount()).toBe(0)
+  })
+})
