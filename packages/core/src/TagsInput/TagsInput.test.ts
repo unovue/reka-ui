@@ -355,6 +355,7 @@ describe('given a TagsInput with objects', async () => {
       [',', 'tag1, ,tag2', ['tag1', 'tag2']],
       [',', '   ', []],
       [/[ ,;\t\n\r]+/, 'tag1\r\ntag2\r\n', ['tag1', 'tag2']],
+      [/,(\s+)?/, 'tag1,tag2', ['tag1', 'tag2']],
       // Not trimmed, like a typed draft
       [',', 'tag1, tag2', ['tag1', ' tag2']],
     ])('should add only non-blank tags on paste (delimiter %s, text %j)', async (delimiter, text, expected) => {

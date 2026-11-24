@@ -142,7 +142,8 @@ function handlePaste(event: ClipboardEvent) {
     // Other pieces are added as pasted, like a typed draft.
     const delimiter = context.delimiter.value
     const texts = (delimiter ? value.split(delimiter) : [value])
-      .filter(text => text.trim() !== '')
+      // A RegExp delimiter's unmatched capture group splits out `undefined`.
+      .filter((text): text is string => typeof text === 'string' && text.trim() !== '')
     texts.forEach((text) => {
       context.onAddValue(text)
     })
