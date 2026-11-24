@@ -364,3 +364,72 @@ describe.each(['popper', 'item-aligned'] as const)('given Select with a placehol
     expect(recorder.seen).toEqual(['Apple', 'Cherry'])
   })
 })
+
+describe('given a multiple, required Select in a form, in a real browser', () => {
+  let wrapper: VueWrapper | undefined
+
+  afterEach(() => {
+    wrapper?.unmount()
+    wrapper = undefined
+    document.body.innerHTML = ''
+  })
+
+  function mountMultipleRequired(initial: string[]) {
+    const modelValue = ref(initial)
+    const submitted: string[][] = []
+    wrapper = mount(defineComponent({
+      setup() {
+        return () => h('form', {
+          onSubmit: (event: SubmitEvent) => {
+            event.preventDefault()
+            submitted.push(new FormData(event.target as HTMLFormElement).getAll('fruit') as string[])
+          },
+        }, [
+          h(SelectRoot, {
+            'name': 'fruit',
+            'multiple': true,
+            'required': true,
+            'modelValue': modelValue.value,
+            'onUpdate:modelValue': (value: string[]) => modelValue.value = value,
+          }, () => [
+            h(SelectTrigger, { 'data-testid': 'trigger' }, () => h(SelectValue)),
+            h(SelectPortal, () => h(SelectContent, { position: 'popper' }, () =>
+              h(SelectViewport, () => ['apple', 'banana', 'cherry'].map(value =>
+                h(SelectItem, { value, 'data-testid': value }, () => h(SelectItemText, () => value)),
+              )))),
+          ]),
+          h('button', { 'type': 'submit', 'data-testid': 'submit' }, 'Submit'),
+        ])
+      },
+    }), { attachTo: document.body })
+    return { modelValue, submitted }
+  }
+
+  const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)!
+  const optionsRendered = () => expect.poll(() => document.querySelectorAll('select option').length).toBe(3)
+
+  it('submits every value picked in the menu', async () => {
+    const { modelValue, submitted } = mountMultipleRequired([])
+
+    await userEvent.click(get('trigger'))
+    await expect.poll(() => document.activeElement?.closest('[role=listbox]')).toBeTruthy()
+    await userEvent.click(get('apple'))
+    await userEvent.click(get('cherry'))
+    await expect.poll(() => modelValue.value).toEqual(['apple', 'cherry'])
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => document.querySelector('[role=listbox]')).toBeNull()
+
+    await userEvent.click(get('submit'))
+    await expect.poll(() => submitted).toEqual([['apple', 'cherry']])
+  })
+
+  it('blocks the submit while nothing is selected', async () => {
+    const { submitted } = mountMultipleRequired([])
+    await optionsRendered()
+
+    await userEvent.click(get('submit'))
+    await new Promise(resolve => setTimeout(resolve, 100))
+    expect(submitted).toEqual([])
+    expect(document.querySelector('select')!.validity.valueMissing).toBe(true)
+  })
+})

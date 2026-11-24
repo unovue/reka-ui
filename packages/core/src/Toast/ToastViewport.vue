@@ -3,6 +3,7 @@ import type { ComponentPublicInstance } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection } from '@/Collection'
 import { getActiveElement, useForwardExpose } from '@/shared'
+import { resolveElement } from '@/shared/resolveElement'
 
 export interface ToastViewportProps extends PrimitiveProps {
   /**
@@ -80,10 +81,22 @@ onMounted(() => {
   providerContext.onViewportChange(currentElement.value)
   viewportElement.value = currentElement.value
   observer = new MutationObserver(() => {
-    const element = unrefElement(primitiveRef as ComponentPublicInstance)
+    // A slot that renders several nodes (e.g. an element next to a `v-if` comment) has a
+    // fragment anchor as its root, so read the element inside it.
+    const element = resolveElement(primitiveRef)
     // An `asChild` slot that renders nothing leaves a comment anchor, which can't hold toasts.
-    if (element instanceof HTMLElement)
+    if (element instanceof HTMLElement) {
       viewportElement.value = element
+    }
+    // An emptied `asChild` slot takes any hover or focus inside it along, as a replaced
+    // element does below. A window-blur pause is kept.
+    else if (viewportElement.value) {
+      // A removed focused element sends no `focusout`.
+      providerContext.focused.value = false
+      pendingPointerLeave.value = true
+      if (!isPausedByWindowBlur())
+        releasePause(viewportElement.value)
+    }
   })
   observer.observe(unrefElement(branchRef)!, { childList: true })
 })
@@ -98,8 +111,13 @@ const pendingPointerLeave = ref(false)
 // current element when the element is replaced after mount.
 watch(viewportElement, (element) => {
   const previous = providerContext.viewport.value
-  if (!element || !previous || element === previous)
+  if (!element || element === previous)
     return
+  // An `asChild` viewport that mounted empty publishes its first element here.
+  if (!previous) {
+    providerContext.onViewportChange(element)
+    return
+  }
 
   // The pause listeners on the old element are gone, and focus or hover inside it went
   // with it, so release its pause while the toasts still listen there. A window-blur

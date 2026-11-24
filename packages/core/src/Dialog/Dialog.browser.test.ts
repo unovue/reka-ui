@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { AlertDialogCancel, AlertDialogContent, AlertDialogOverlay, AlertDialogPortal, AlertDialogRoot, AlertDialogTitle } from '@/AlertDialog'
@@ -95,6 +95,7 @@ describe('given a modal Dialog with an exit animation, in a real browser', () =>
     contentExit?: boolean
     forceMountOverlay?: boolean
     forceMountContent?: boolean
+    unmountOnHide?: boolean
   }
 
   let sheet: HTMLStyleElement
@@ -156,8 +157,8 @@ describe('given a modal Dialog with an exit animation, in a real browser', () =>
   const finishExit = (id: string) => get(id)!.getAnimations().forEach(animation => animation.finish())
 
   function dialog(id: string, open: { value: boolean }, options: Options = {}, children?: () => unknown) {
-    const { parts = Dialog, modal, overlay = true, overlayExit, contentExit, forceMountOverlay, forceMountContent } = options
-    return h(parts.Root as typeof DialogRoot, { 'open': open.value, 'onUpdate:open': (value: boolean) => open.value = value, modal }, () => [
+    const { parts = Dialog, modal, overlay = true, overlayExit, contentExit, forceMountOverlay, forceMountContent, unmountOnHide } = options
+    return h(parts.Root as typeof DialogRoot, { 'open': open.value, 'onUpdate:open': (value: boolean) => open.value = value, modal, unmountOnHide }, () => [
       h(parts.Portal, null, () => [
         overlay
           ? h(parts.Overlay, { 'data-testid': `${id}-overlay`, 'class': overlayExit ? 'exit' : undefined, 'forceMount': forceMountOverlay, 'style': 'position: fixed; inset: 0;' })
@@ -293,6 +294,65 @@ describe('given a modal Dialog with an exit animation, in a real browser', () =>
     finishExit('content')
     await expect.poll(lock).toEqual(UNLOCKED)
     expect(overflow).toEqual(['', 'hidden', ''])
+  })
+
+  it('hands Escape and accessibility back to the parent during the child exit', async () => {
+    vi.stubEnv('MODE', 'development') // Exercise useHideOthers in the browser.
+    onTestFinished(() => vi.unstubAllEnvs())
+    const outerOpen = ref(false)
+    const innerOpen = ref(false)
+    // Omit overlays so the layer is the only owner of the body pointer lock.
+    const options = { overlay: false, contentExit: true }
+    mount(defineComponent({
+      setup: () => () => dialog('outer', outerOpen, options, () => dialog('inner', innerOpen, options)),
+    }), { attachTo: document.body })
+    page.tabIndex = -1
+    page.focus()
+    outerOpen.value = true
+    await expect.poll(() => get('outer')?.contains(document.activeElement)).toBe(true)
+    innerOpen.value = true
+    await expect.poll(() => get('outer')?.getAttribute('aria-hidden')).toBe('true')
+
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => exiting('inner')).toBe(true)
+    expect(get('outer')!.closest('[aria-hidden="true"]')).toBeNull()
+    expect(document.body.style.pointerEvents).toBe('none')
+
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => exiting('outer')).toBe(true)
+    expect(exiting('inner')).toBe(true)
+    expect(document.body.style.pointerEvents).toBe('')
+  })
+
+  it('hands Escape back to the parent during the child exit when both are kept mounted', async () => {
+    const outerOpen = ref(false)
+    const innerOpen = ref(false)
+    const options = { overlay: false, contentExit: true, unmountOnHide: false }
+    mount(defineComponent({
+      setup: () => () => dialog('outer', outerOpen, options, () => dialog('inner', innerOpen, options)),
+    }), { attachTo: document.body })
+    outerOpen.value = true
+    await expect.poll(() => get('outer')?.contains(document.activeElement)).toBe(true)
+    innerOpen.value = true
+    await expect.poll(() => get('inner')?.contains(document.activeElement)).toBe(true)
+
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(() => exiting('inner')).toBe(true)
+    await userEvent.keyboard('{Escape}')
+    expect(outerOpen.value).toBe(false)
+    finishExit('inner')
+    finishExit('outer')
+    await expect.poll(() => get('outer')?.style.display).toBe('none')
+    expect(get('inner')?.style.display).toBe('none')
+
+    // Reopened, the kept-mounted child registers its layer again and takes Escape first.
+    outerOpen.value = true
+    await expect.poll(() => get('outer')?.contains(document.activeElement)).toBe(true)
+    innerOpen.value = true
+    await expect.poll(() => get('inner')?.contains(document.activeElement)).toBe(true)
+    await userEvent.keyboard('{Escape}')
+    expect(innerOpen.value).toBe(false)
+    expect(outerOpen.value).toBe(true)
   })
 
   it('keeps the outer lock when a nested dialog has finished its exit', async () => {

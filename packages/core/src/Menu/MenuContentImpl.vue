@@ -85,6 +85,13 @@ export interface MenuContentImplProps
    * @defaultValue false
    */
   loop?: boolean
+  /**
+   * When `true`, Space pressed while a typeahead search is in progress is added to the search
+   * instead of selecting the focused item, so that labels with several words, like "New Private Window",
+   * can be reached by typing. With no search in progress, Space still selects the focused item.
+   * @defaultValue false
+   */
+  spaceExtendsTypeahead?: boolean
 }
 
 export interface MenuRootContentTypeProps
@@ -94,6 +101,7 @@ export interface MenuRootContentTypeProps
 <script setup lang="ts">
 import { unrefElement } from '@vueuse/core'
 import {
+  computed,
   onBeforeUnmount,
   ref,
   shallowRef,
@@ -148,7 +156,7 @@ const focusScopeRef = ref<ComponentPublicInstance>()
 const { forwardRef, currentElement: contentElement } = useForwardExpose()
 // Lets the trigger of this menu know that its content is in the document.
 useContentMounted(menuContext, contentElement)
-const { handleTypeaheadSearch, resetTypeahead } = useTypeahead()
+const { search, handleTypeaheadSearch, resetTypeahead } = useTypeahead()
 
 const highlightedElement = ref<HTMLElement>()
 
@@ -288,11 +296,24 @@ function handleKeyDown(event: KeyboardEvent) {
   if (el)
     return el?.focus()
 
-  // prevent "Space" taken account into handleTypeahead
-  if (event.code === 'Space')
-    return
-
   const collectionItems = rovingFocusGroupRef.value?.getItems() ?? []
+
+  // With `spaceExtendsTypeahead`, Space selects the item when no search is in progress;
+  // otherwise it's part of the search.
+  // Only on this menu's own items (or the content): other controls in it, and a submenu's
+  // key bubbling up, keep Space as is.
+  if (!props.spaceExtendsTypeahead) {
+    // prevent "Space" taken account into handleTypeahead
+    if (event.code === 'Space')
+      return
+  }
+  else if (event.key === ' ' || event.code === 'Space') {
+    const isOnItem = target === event.currentTarget || collectionItems.some(item => item.ref === target)
+    if (search.value === '' || !isKeyDownInside || !isOnItem)
+      return
+    // MenuItem skips Space during a search, so prevent the scroll here
+    event.preventDefault()
+  }
 
   if (isKeyDownInside) {
     if (event.key === 'Tab' && rootContext.modal.value)
@@ -375,7 +396,8 @@ provideMenuContentContext({
     else
       return false
   },
-  searchRef,
+  // Items skip Space while the filter has text or, with `spaceExtendsTypeahead`, a typeahead search is in progress.
+  searchRef: computed({ get: () => (props.spaceExtendsTypeahead && search.value) || searchRef.value, set: (value: string) => { searchRef.value = value } }),
   highlightedElement,
   onKeydownNavigation,
   onKeydownEnter,

@@ -90,6 +90,7 @@ onUnmounted(() => {
     @escape-key-down="emits('escapeKeyDown', $event)"
     @pointer-down-outside="emits('pointerDownOutside', $event)"
     @focus-outside.prevent="emits('focusOutside', $event)"
+    @interact-outside="emits('interactOutside', $event)"
     @dismiss="rootContext.onDismiss"
   >
     <PopperContent

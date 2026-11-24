@@ -59,7 +59,7 @@ const hasChildren = computed(() => !!rootContext.getChildren(props.value))
 
 const isExpanded = computed(() => {
   const key = rootContext.getKey(props.value)
-  return rootContext.expanded.value.includes(key)
+  return rootContext.expandedKeys.value.has(key)
 })
 
 const isSelected = computed(() => {
