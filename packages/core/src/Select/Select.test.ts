@@ -1175,6 +1175,49 @@ describe('given a multiple Select in a form', () => {
     expect(form().checkValidity()).toBe(false)
   })
 
+  it('keeps the selection and reads it in `change` when `multiple` is turned on', async () => {
+    const multiple = ref(false)
+    const modelValue = ref<unknown>('apple')
+    wrapper = mount(defineComponent({
+      setup() {
+        return () => h('form', [
+          h(SelectRoot, {
+            'name': 'fruit',
+            'multiple': multiple.value,
+            'modelValue': modelValue.value,
+            'onUpdate:modelValue': (value: unknown) => { modelValue.value = value },
+          }, () => [
+            h(SelectTrigger, () => h(SelectValue)),
+            h(SelectContent, () => h(SelectViewport, () => ['apple', 'banana', 'cherry'].map(value =>
+              h(SelectItem, { value }, () => h(SelectItemText, () => value)),
+            ))),
+          ]),
+        ])
+      },
+    }), { attachTo: document.body })
+    await flushPromises()
+    expect(submitted()).toEqual(['apple'])
+
+    multiple.value = true
+    modelValue.value = ['apple']
+    await flushPromises()
+    expect(submitted()).toEqual(['apple'])
+
+    const seen: FormDataEntryValue[][] = []
+    form().addEventListener('change', () => seen.push(submitted()))
+    multiple.value = false
+    modelValue.value = 'apple'
+    await flushPromises()
+    seen.length = 0
+    multiple.value = true
+    modelValue.value = ['cherry']
+    await flushPromises()
+    expect(submitted()).toEqual(['cherry'])
+    modelValue.value = ['banana', 'cherry']
+    await flushPromises()
+    expect(seen.at(-1)).toEqual(['banana', 'cherry'])
+  })
+
   it('keeps submitting the empty `nullableValue` while the value is nullish', async () => {
     wrapper = mountFruitsInForm(ref(null))
     await nextTick()

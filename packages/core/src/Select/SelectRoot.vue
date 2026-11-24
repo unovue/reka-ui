@@ -153,11 +153,12 @@ const optionsSet = ref<Set<SelectOption>>(new Set())
 // `option` is rendered as a child **at the same time** as itself.
 // Because it might take a few renders for our items to gather the information to build
 // the native `option`(s), we generate a key on the `select` to make sure Vue re-builds it
-// each time the options change.
+// each time the options change. It also changes with `multiple`, as the two modes bind
+// the selection differently (`value` vs `option.selected`).
 const nativeSelectKey = computed(() => {
-  return Array.from(optionsSet.value)
+  return `${multiple.value ? 'multiple' : 'single'}:${Array.from(optionsSet.value)
     .map(option => option.value)
-    .join(';')
+    .join(';')}`
 })
 
 function handleValueChange(value: T) {
