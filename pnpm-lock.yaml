@@ -22,7 +22,7 @@ importers:
     devDependencies:
       '@antfu/eslint-config':
         specifier: ^8.0.0
-        version: 8.0.0(@typescript-eslint/rule-tester@8.56.1(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3))(@typescript-eslint/typescript-estree@8.58.0(typescript@5.8.3))(@typescript-eslint/utils@8.58.0(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3))(@vue/compiler-sfc@3.5.46)(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3)(vitest@5.1.1)
+        version: 8.0.0(@typescript-eslint/rule-tester@8.56.1(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3))(@typescript-eslint/typescript-estree@8.58.0(typescript@5.8.3))(@typescript-eslint/utils@8.58.0(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3))(@vue/compiler-sfc@3.5.46)(eslint-plugin-vuejs-accessibility@2.5.0(eslint@10.2.0(jiti@2.6.1))(globals@17.4.0))(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3)(vitest@5.1.1)
       '@commitlint/cli':
         specifier: ^21.0.2
         version: 21.0.2(@types/node@26.6.6)(conventional-commits-parser@6.4.0)(typescript@5.8.3)
@@ -35,6 +35,9 @@ importers:
       eslint:
         specifier: ^10.2.0
         version: 10.2.0(jiti@2.6.1)
+      eslint-plugin-vuejs-accessibility:
+        specifier: ^2.5.0
+        version: 2.5.0(eslint@10.2.0(jiti@2.6.1))(globals@17.4.0)
       lint-staged:
         specifier: ^16.4.0
         version: 16.4.0
@@ -68,7 +71,7 @@ importers:
     devDependencies:
       '@antfu/eslint-config':
         specifier: ^8.0.0
-        version: 8.0.0(@typescript-eslint/rule-tester@8.56.1(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3))(@typescript-eslint/typescript-estree@8.58.0(typescript@5.8.3))(@typescript-eslint/utils@8.58.0(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3))(@vue/compiler-sfc@3.5.46)(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3)(vitest@5.1.1)
+        version: 8.0.0(@typescript-eslint/rule-tester@8.56.1(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3))(@typescript-eslint/typescript-estree@8.58.0(typescript@5.8.3))(@typescript-eslint/utils@8.58.0(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3))(@vue/compiler-sfc@3.5.46)(eslint-plugin-vuejs-accessibility@2.5.0(eslint@10.2.0(jiti@2.6.1))(globals@17.4.0))(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3)(vitest@5.1.1)
       '@floating-ui/vue':
         specifier: ^2.0.1
         version: 2.0.1(vue@3.5.44(typescript@5.8.3))
@@ -3788,6 +3791,13 @@ packages:
       '@typescript-eslint/parser':
         optional: true
 
+  eslint-plugin-vuejs-accessibility@2.5.0:
+    resolution: {integrity: sha512-oZ2fL4tS91Cm/ezH3BueNP+FtpbbeS627OSqqgp9/lsN//glmoPcLBT6D53xwGocLtyBybaT99tX4ThBh8+ytA==}
+    engines: {node: '>=16.0.0'}
+    peerDependencies:
+      eslint: ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0
+      globals: '>= 13.12.1'
+
   eslint-plugin-yml@3.3.1:
     resolution: {integrity: sha512-isntsZchaTqDMNNkD+CakrgA/pdUoJ45USWBKpuqfAW1MCuw731xX/vrXfoJFZU3tTFr24nCbDYmDfT2+g4QtQ==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24.0.0}
@@ -7376,7 +7386,7 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@antfu/eslint-config@8.0.0(@typescript-eslint/rule-tester@8.56.1(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3))(@typescript-eslint/typescript-estree@8.58.0(typescript@5.8.3))(@typescript-eslint/utils@8.58.0(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3))(@vue/compiler-sfc@3.5.46)(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3)(vitest@5.1.1)':
+  '@antfu/eslint-config@8.0.0(@typescript-eslint/rule-tester@8.56.1(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3))(@typescript-eslint/typescript-estree@8.58.0(typescript@5.8.3))(@typescript-eslint/utils@8.58.0(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3))(@vue/compiler-sfc@3.5.46)(eslint-plugin-vuejs-accessibility@2.5.0(eslint@10.2.0(jiti@2.6.1))(globals@17.4.0))(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3)(vitest@5.1.1)':
     dependencies:
       '@antfu/install-pkg': 1.1.0
       '@clack/prompts': 1.2.0
@@ -7415,6 +7425,8 @@ snapshots:
       toml-eslint-parser: 1.0.3
       vue-eslint-parser: 10.4.0(eslint@10.2.0(jiti@2.6.1))
       yaml-eslint-parser: 2.0.0
+    optionalDependencies:
+      eslint-plugin-vuejs-accessibility: 2.5.0(eslint@10.2.0(jiti@2.6.1))(globals@17.4.0)
     transitivePeerDependencies:
       - '@eslint/json'
       - '@typescript-eslint/rule-tester'
@@ -10839,6 +10851,15 @@ snapshots:
     optionalDependencies:
       '@stylistic/eslint-plugin': 5.10.0(eslint@10.2.0(jiti@2.6.1))
       '@typescript-eslint/parser': 8.58.0(eslint@10.2.0(jiti@2.6.1))(typescript@5.8.3)
+
+  eslint-plugin-vuejs-accessibility@2.5.0(eslint@10.2.0(jiti@2.6.1))(globals@17.4.0):
+    dependencies:
+      aria-query: 5.3.0
+      eslint: 10.2.0(jiti@2.6.1)
+      globals: 17.4.0
+      vue-eslint-parser: 10.4.0(eslint@10.2.0(jiti@2.6.1))
+    transitivePeerDependencies:
+      - supports-color
 
   eslint-plugin-yml@3.3.1(eslint@10.2.0(jiti@2.6.1)):
     dependencies:
