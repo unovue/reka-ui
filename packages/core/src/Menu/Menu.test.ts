@@ -75,54 +75,71 @@ describe('given a default Menu', () => {
       expect(document.activeElement?.textContent?.trim()).toBe('Beef')
     }
 
-    // A virtual keyboard may report Space without `code`.
-    it.each([
-      ['with', { code: 'Space' }],
-      ['without', {}],
-    ])('should append Space %s code to an in-progress search instead of selecting', async (_, init) => {
+    it('should select with Space during a search by default', async () => {
       await typeBeef()
-      const space = await press(' ', init)
-      expect(space.defaultPrevented).toBe(true)
-      expect(wrapper.emitted('select')).toBeUndefined()
-
-      await press('w')
-      expect(document.activeElement?.textContent?.trim()).toBe('Beef with sauce')
-      expect(wrapper.emitted('select')).toBeUndefined()
-    })
-
-    it('should select with Space when no search is in progress', async () => {
-      (await findAllByRole(document.body, 'menuitem'))[0].focus()
-      await nextTick()
-      const space = await press(' ', { code: 'Space' })
-      expect(space.defaultPrevented).toBe(true)
-      expect(wrapper.emitted('select')?.length).toBe(1)
-    })
-
-    // An IME may report an ideographic space with the Space `code`; it must not start a search.
-    it('should not start a search with another space reported as Space', async () => {
-      (await findAllByRole(document.body, 'menuitem'))[0].focus()
-      await nextTick()
-      await press('　', { code: 'Space' })
       await press(' ', { code: 'Space' })
       expect(wrapper.emitted('select')?.length).toBe(1)
     })
 
-    it.each([
-      ['a text field', () => document.createElement('input')],
-      ['a button that is not one of its items', () => {
-        const button = document.createElement('button')
-        // Another family's roving item carries the same attribute.
-        button.setAttribute('data-reka-collection-item', '')
-        return button
-      }],
-    ])('should leave Space to %s in the menu while a search is in progress', async (_, create) => {
-      await typeBeef()
-      const control = create()
-      document.querySelector('[data-reka-menu-content]')!.appendChild(control)
-      control.focus()
-      const space = await press(' ', { code: 'Space' })
-      expect(space.defaultPrevented).toBe(false)
-      control.remove()
+    describe('with spaceExtendsTypeahead', () => {
+      beforeEach(() => {
+        wrapper.unmount()
+        document.body.innerHTML = ''
+        wrapper = mount(Menu, {
+          attachTo: document.body,
+          attrs: { spaceExtendsTypeahead: true },
+        })
+      })
+
+      // A virtual keyboard may report Space without `code`.
+      it.each([
+        ['with', { code: 'Space' }],
+        ['without', {}],
+      ])('should append Space %s code to an in-progress search instead of selecting', async (_, init) => {
+        await typeBeef()
+        const space = await press(' ', init)
+        expect(space.defaultPrevented).toBe(true)
+        expect(wrapper.emitted('select')).toBeUndefined()
+
+        await press('w')
+        expect(document.activeElement?.textContent?.trim()).toBe('Beef with sauce')
+        expect(wrapper.emitted('select')).toBeUndefined()
+      })
+
+      it('should select with Space when no search is in progress', async () => {
+        (await findAllByRole(document.body, 'menuitem'))[0].focus()
+        await nextTick()
+        const space = await press(' ', { code: 'Space' })
+        expect(space.defaultPrevented).toBe(true)
+        expect(wrapper.emitted('select')?.length).toBe(1)
+      })
+
+      // An IME may report an ideographic space with the Space `code`; it must not start a search.
+      it('should not start a search with another space reported as Space', async () => {
+        (await findAllByRole(document.body, 'menuitem'))[0].focus()
+        await nextTick()
+        await press('　', { code: 'Space' })
+        await press(' ', { code: 'Space' })
+        expect(wrapper.emitted('select')?.length).toBe(1)
+      })
+
+      it.each([
+        ['a text field', () => document.createElement('input')],
+        ['a button that is not one of its items', () => {
+          const button = document.createElement('button')
+          // Another family's roving item carries the same attribute.
+          button.setAttribute('data-reka-collection-item', '')
+          return button
+        }],
+      ])('should leave Space to %s in the menu while a search is in progress', async (_, create) => {
+        await typeBeef()
+        const control = create()
+        document.querySelector('[data-reka-menu-content]')!.appendChild(control)
+        control.focus()
+        const space = await press(' ', { code: 'Space' })
+        expect(space.defaultPrevented).toBe(false)
+        control.remove()
+      })
     })
   })
 })

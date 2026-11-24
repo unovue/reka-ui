@@ -29,7 +29,7 @@ const families: Record<string, Family> = {
 const get = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`)
 const active = () => document.activeElement?.textContent?.trim()
 
-async function openMenu(familyName: string, extra: () => any[] = () => []) {
+async function openMenu(familyName: string, extra: () => any[] = () => [], spaceExtendsTypeahead = true) {
   const family = families[familyName]
   const onSelect = vi.fn()
   // The part of this family, like `DropdownMenuItem` for 'Item'
@@ -37,14 +37,14 @@ async function openMenu(familyName: string, extra: () => any[] = () => []) {
   const item = (name: string) => h(part('Item'), { onSelect: () => onSelect(name) }, () => name)
   const content = () => [
     h(part('Trigger'), { 'data-testid': 'trigger', 'style': 'display: block; width: 120px; height: 40px;' }, () => 'File'),
-    h(part('Portal'), null, () => h(part('Content'), { 'data-testid': 'content' }, () => [
+    h(part('Portal'), null, () => h(part('Content'), { 'data-testid': 'content', spaceExtendsTypeahead }, () => [
       item('New Tab'),
       item('New Window'),
       item('New Private Window'),
       h(part('Sub'), null, () => [
         h(part('SubTrigger'), null, () => 'More Tools'),
         // Not portalled, so its keys bubble through the parent content.
-        h(part('SubContent'), { 'data-testid': 'sub-content' }, () => [item('Save Page'), item('Developer Tools')]),
+        h(part('SubContent'), { 'data-testid': 'sub-content', spaceExtendsTypeahead }, () => [item('Save Page'), item('Developer Tools')]),
       ]),
       item('More Settings'),
       ...extra(),
@@ -60,6 +60,17 @@ async function openMenu(familyName: string, extra: () => any[] = () => []) {
 }
 
 describe.each(Object.keys(families))('%s typeahead with Space, in a real browser', (name) => {
+  it('selects the focused item with Space during a search by default', async () => {
+    const onSelect = await openMenu(name, undefined, false)
+
+    await userEvent.keyboard('new')
+    await expect.poll(active).toMatch(/^New /)
+    const highlighted = active()
+    await userEvent.keyboard(' ')
+    await expect.poll(() => onSelect.mock.calls).toEqual([[highlighted]])
+    await expect.poll(() => get('content')).toBeNull()
+  })
+
   it('extends an in-progress search instead of selecting the focused item', async () => {
     const onSelect = await openMenu(name)
 

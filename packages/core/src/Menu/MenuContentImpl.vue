@@ -85,6 +85,13 @@ export interface MenuContentImplProps
    * @defaultValue false
    */
   loop?: boolean
+  /**
+   * When `true`, Space pressed while a typeahead search is in progress is added to the search
+   * instead of selecting the focused item, so that labels with several words, like "New Private Window",
+   * can be reached by typing. With no search in progress, Space still selects the focused item.
+   * @defaultValue false
+   */
+  spaceExtendsTypeahead?: boolean
 }
 
 export interface MenuRootContentTypeProps
@@ -291,10 +298,16 @@ function handleKeyDown(event: KeyboardEvent) {
 
   const collectionItems = rovingFocusGroupRef.value?.getItems() ?? []
 
-  // Space selects the item when no search is in progress; otherwise it's part of the search.
+  // With `spaceExtendsTypeahead`, Space selects the item when no search is in progress;
+  // otherwise it's part of the search.
   // Only on this menu's own items (or the content): other controls in it, and a submenu's
   // key bubbling up, keep Space as is.
-  if (event.key === ' ' || event.code === 'Space') {
+  if (!props.spaceExtendsTypeahead) {
+    // prevent "Space" taken account into handleTypeahead
+    if (event.code === 'Space')
+      return
+  }
+  else if (event.key === ' ' || event.code === 'Space') {
     const isOnItem = target === event.currentTarget || collectionItems.some(item => item.ref === target)
     if (search.value === '' || !isKeyDownInside || !isOnItem)
       return
@@ -383,8 +396,8 @@ provideMenuContentContext({
     else
       return false
   },
-  // Items skip Space while the filter has text or a typeahead search is in progress.
-  searchRef: computed({ get: () => search.value || searchRef.value, set: (value: string) => { searchRef.value = value } }),
+  // Items skip Space while the filter has text or, with `spaceExtendsTypeahead`, a typeahead search is in progress.
+  searchRef: computed({ get: () => (props.spaceExtendsTypeahead && search.value) || searchRef.value, set: (value: string) => { searchRef.value = value } }),
   highlightedElement,
   onKeydownNavigation,
   onKeydownEnter,
