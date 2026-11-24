@@ -128,9 +128,15 @@ import {
 const props = withDefaults(defineProps<MenuContentImplProps & {
   /** Internal: whether a content kept mounted while closed (`unmountOnHide: false`) is shown. */
   present?: boolean
+  /**
+   * Internal: whether the dismissal layer and the modal hiding of the page apply. A content
+   * that is only still mounted for its exit animation hands them back at once.
+   */
+  layerPresent?: boolean
 }>(), {
   ...PopperContentPropsDefaultValue,
   present: true,
+  layerPresent: undefined,
 })
 const emits = defineEmits<MenuContentImplPrivateEmits>()
 const menuContext = injectMenuContext()
@@ -425,7 +431,7 @@ provideMenuContentContext({
     <DismissableLayer
       as-child
       :disable-outside-pointer-events="disableOutsidePointerEvents"
-      :present="present"
+      :present="layerPresent ?? present"
       @escape-key-down="emits('escapeKeyDown', $event)"
       @pointer-down-outside="emits('pointerDownOutside', $event)"
       @focus-outside="emits('focusOutside', $event)"

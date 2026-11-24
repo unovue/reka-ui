@@ -39,9 +39,17 @@ import { PopperContent } from '@/Popper'
 import { Primitive } from '@/Primitive'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
-const props = withDefaults(defineProps<ComboboxContentImplProps & { present?: boolean }>(), {
+const props = withDefaults(defineProps<ComboboxContentImplProps & {
+  present?: boolean
+  /**
+   * Internal: whether the dismissal layer and the modal hiding of the page apply. A content
+   * that is only still mounted for its exit animation hands them back at once.
+   */
+  layerPresent?: boolean
+}>(), {
   position: 'inline',
   present: true,
+  layerPresent: undefined,
 })
 const emits = defineEmits<ComboboxContentImplEmits>()
 
@@ -62,12 +70,12 @@ useContentMounted(rootContext, currentElement)
 const scrollLocked = useBodyScrollLock(props.present && props.bodyLock)
 watch([() => props.present, () => props.bodyLock], ([present, bodyLock]) => scrollLocked.value = present && bodyLock)
 useFocusGuards()
-const ariaHiddenTarget = computed(() => props.present ? rootContext.parentElement.value : undefined)
+const ariaHiddenTarget = computed(() => (props.layerPresent ?? props.present) ? rootContext.parentElement.value : undefined)
 useHideOthers(ariaHiddenTarget)
 
 const pickedProps = computed(() => {
   if (props.position === 'popper') {
-    const { present: _, ...forwardedProps } = props
+    const { present: _, layerPresent: __, ...forwardedProps } = props
     return forwardedProps
   }
   else {
@@ -162,7 +170,7 @@ const popperContentEvents = {
     >
       <DismissableLayer
         as-child
-        :present="props.present"
+        :present="props.layerPresent ?? props.present"
         :disable-outside-pointer-events="disableOutsidePointerEvents"
         @dismiss="rootContext.onOpenChange(false)"
         @focus-outside="(ev) => {

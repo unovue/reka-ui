@@ -40,6 +40,10 @@ const staysMounted = computed(() => !rootContext.unmountOnHide.value)
 // `unmountOnHide` while open keeps the content and its state.
 const hidesWhenClosed = computed(() => staysMounted.value && !props.forceMount)
 const keptArg = computed(() => hidesWhenClosed.value ? 'kept' : null)
+// A closing content still mounted for its exit animation hands Escape, outside interaction
+// and the accessibility tree back to the layer below at once. A force-mounted content keeps
+// its layer while closed, as before.
+const layerPresent = computed(() => menuContext.open.value || !!props.forceMount)
 const contentComponent = computed(() => rootContext.modal.value ? MenuRootContentModal : MenuRootContentNonModal)
 </script>
 
@@ -54,6 +58,7 @@ const contentComponent = computed(() => rootContext.modal.value ? MenuRootConten
       v-show-when-kept:[keptArg]="hidesWhenClosed ? present : true"
       v-bind="{ ...$attrs, ...forwarded }"
       :present="staysMounted ? present : true"
+      :layer-present="(staysMounted ? present : true) && layerPresent"
     >
       <slot />
     </component>
