@@ -1235,6 +1235,21 @@ describe('given a multiple Listbox with `max`', () => {
     expect(wrapper.emitted('invalid')).toEqual([[items[2].text()]])
   })
 
+  it('should still highlight a programmatic change after a click blocked by `max`', async () => {
+    await setup({ max: 1, modelValue: [] })
+    const first = items[0].text()
+    await wrapper.setProps({ modelValue: [first] })
+    await new Promise(r => setTimeout(r, 5))
+    await items[1].trigger('click')
+    expect(wrapper.emitted('invalid')).toEqual([[items[1].text()]])
+    await new Promise(r => setTimeout(r, 5))
+    await wrapper.setProps({ modelValue: [items[3].text()] })
+    await nextTick()
+    await nextTick()
+    await nextTick()
+    expect(items[3].attributes('data-highlighted')).toBe('')
+  })
+
   it('should not limit the selection without `max`', async () => {
     await setup({})
     await content.trigger('keydown', { key: 'a', ctrlKey: true })

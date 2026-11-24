@@ -175,14 +175,16 @@ function exceedsMax(values: Array<T | AcceptableValue>) {
 }
 
 function onValueChange(val: T) {
-  isUserAction.value = true
   if (props.multiple) {
     const modelArray = Array.isArray(modelValue.value) ? [...modelValue.value] : []
     const index = modelArray.findIndex(i => compare(i, val, props.by))
+    // Check before flagging a user action: a blocked selection changes nothing, so the flag
+    // would never be released and later programmatic changes would skip the highlight.
+    if (props.selectionBehavior === 'toggle' && index === -1 && exceedsMax([...modelArray, val]))
+      return
+    isUserAction.value = true
     if (props.selectionBehavior === 'toggle') {
       if (index === -1) {
-        if (exceedsMax([...modelArray, val]))
-          return
         modelArray.push(val)
       }
       else {
@@ -196,6 +198,7 @@ function onValueChange(val: T) {
     }
   }
   else {
+    isUserAction.value = true
     if (props.selectionBehavior === 'toggle') {
       if (compare(modelValue.value, val, props.by))
         modelValue.value = undefined
