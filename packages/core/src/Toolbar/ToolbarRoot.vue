@@ -26,6 +26,7 @@ export const [injectToolbarRootContext, provideToolbarRootContext]
 import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
+import { provideRovingFocusNoActiveItem } from '@/RovingFocus/RovingFocusGroup.vue'
 
 const props = withDefaults(defineProps<ToolbarRootProps>(), {
   orientation: 'horizontal',
@@ -35,6 +36,9 @@ const dir = useDirection(propDir)
 const { forwardRef } = useForwardExpose()
 
 provideToolbarRootContext({ orientation, dir })
+
+// Toolbar items are never active.
+provideRovingFocusNoActiveItem(() => true)
 </script>
 
 <template>

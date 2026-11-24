@@ -78,6 +78,7 @@ import { injectFieldRootContext } from '@/Field'
 import { compare, valueComparator } from '@/Listbox/utils'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
+import { provideRovingFocusNoActiveItem } from '@/RovingFocus/RovingFocusGroup.vue'
 
 const props = withDefaults(defineProps<TagGroupRootProps<T>>(), {
   selectionMode: 'none',
@@ -263,6 +264,9 @@ provideTagGroupRootContext({
   onFocusedItemUnmount,
   handleTypeahead,
 })
+
+// Tags are never active.
+provideRovingFocusNoActiveItem(() => true)
 </script>
 
 <template>

@@ -49,6 +49,7 @@ import { useVModel } from '@vueuse/core'
 import { ref, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
+import { provideRovingFocusNoActiveItem } from '@/RovingFocus/RovingFocusGroup.vue'
 
 const props = withDefaults(defineProps<MenubarRootProps>(), {
   loop: false,
@@ -94,6 +95,9 @@ provideMenubarRootContext({
     currentTabStopId.value = value
   },
 })
+
+// Menubar triggers are never active.
+provideRovingFocusNoActiveItem(() => true)
 </script>
 
 <template>

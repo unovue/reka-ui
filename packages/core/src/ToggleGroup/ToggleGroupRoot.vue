@@ -42,6 +42,7 @@ export const [injectToggleGroupRootContext, provideToggleGroupRootContext]
 import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
+import { provideRovingFocusNoActiveItem } from '@/RovingFocus/RovingFocusGroup.vue'
 import { useSingleOrMultipleValue } from '@/shared/useSingleOrMultipleValue'
 
 const props = withDefaults(defineProps<ToggleGroupRootProps>(), {
@@ -75,6 +76,9 @@ provideToggleGroupRootContext({
   rovingFocus,
   disabled,
 })
+
+// A group with no value has no pressed item. Without roving focus there is no group to tell.
+provideRovingFocusNoActiveItem(() => rovingFocus.value && (modelValue.value == null || (Array.isArray(modelValue.value) && modelValue.value.length === 0)))
 </script>
 
 <template>

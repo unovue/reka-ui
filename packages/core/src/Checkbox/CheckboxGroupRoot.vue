@@ -56,6 +56,7 @@ export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { RovingFocusGroup } from '@/RovingFocus'
+import { provideRovingFocusNoActiveItem } from '@/RovingFocus/RovingFocusGroup.vue'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
 const props = withDefaults(defineProps<CheckboxGroupRootProps<T>>(), {
@@ -90,6 +91,9 @@ provideCheckboxGroupRootContext({
   allValues,
   items: shallowReactive(new Set()),
 })
+
+// Checkboxes are never active. Without roving focus there is no group to tell.
+provideRovingFocusNoActiveItem(() => rovingFocus.value)
 </script>
 
 <template>
