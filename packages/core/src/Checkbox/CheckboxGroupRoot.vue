@@ -92,8 +92,8 @@ provideCheckboxGroupRootContext({
   items: shallowReactive(new Set()),
 })
 
-// Checkboxes are never active.
-provideRovingFocusNoActiveItem(() => true)
+// Checkboxes are never active. Without roving focus there is no group to tell.
+provideRovingFocusNoActiveItem(() => rovingFocus.value)
 </script>
 
 <template>

@@ -77,8 +77,8 @@ provideToggleGroupRootContext({
   disabled,
 })
 
-// A group with no value has no pressed item.
-provideRovingFocusNoActiveItem(() => modelValue.value == null || (Array.isArray(modelValue.value) && modelValue.value.length === 0))
+// A group with no value has no pressed item. Without roving focus there is no group to tell.
+provideRovingFocusNoActiveItem(() => rovingFocus.value && (modelValue.value == null || (Array.isArray(modelValue.value) && modelValue.value.length === 0)))
 </script>
 
 <template>

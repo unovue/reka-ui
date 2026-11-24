@@ -6,6 +6,7 @@ import { createSSRApp, defineComponent, h, nextTick } from 'vue'
 import { CheckboxGroupRoot, CheckboxRoot } from '@/Checkbox'
 import { MenubarMenu, MenubarRoot, MenubarTrigger } from '@/Menubar'
 import { RadioGroupItem, RadioGroupRoot } from '@/RadioGroup'
+import { RovingFocusGroup, RovingFocusItem } from '@/RovingFocus'
 import { TabsList, TabsRoot, TabsTrigger } from '@/Tabs'
 import { TagGroupItem, TagGroupRoot } from '@/TagGroup'
 import { ToggleGroupItem, ToggleGroupRoot } from '@/ToggleGroup'
@@ -106,5 +107,21 @@ describe('a group with a value that matches a later item', () => {
     const container = document.createElement('div')
     container.innerHTML = await renderToString(createSSRApp(defineComponent({ setup: () => render })))
     expect(tabindexes(container)).toEqual(['-1', '-1', '0', '-1'])
+  })
+})
+
+describe('a root without roving focus', () => {
+  const directGroup = () => h(RovingFocusGroup, group, () => [
+    h(RovingFocusItem, item, () => 'a'),
+    h(RovingFocusItem, { ...item, active: true }, () => 'b'),
+  ])
+
+  it.each([
+    ['CheckboxGroup', () => h(CheckboxGroupRoot, { rovingFocus: false }, directGroup)],
+    ['ToggleGroup', () => h(ToggleGroupRoot, { type: 'single', rovingFocus: false }, directGroup)],
+  ])('%s does not pass its hint to a group below it', async (_, render) => {
+    const container = document.createElement('div')
+    container.innerHTML = await renderToString(createSSRApp(defineComponent({ setup: () => render })))
+    expect(tabindexes(container)).toEqual(['-1', '-1', '0'])
   })
 })

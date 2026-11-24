@@ -5,7 +5,7 @@ import type {
   Orientation,
 } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
-import { inject, onMounted, provide, ref, toRefs } from 'vue'
+import { inject, provide, ref, toRefs } from 'vue'
 import { createRekaContext, useDirection } from '@/shared'
 
 export interface RovingFocusGroupProps extends PrimitiveProps {
@@ -144,10 +144,6 @@ const hasNoActiveItem = inject(NO_ACTIVE_ITEM_KEY, undefined)
 provide(NO_ACTIVE_ITEM_KEY, undefined)
 
 let preMountTabStopId: string | undefined
-let isGroupMounted = false
-onMounted(() => {
-  isGroupMounted = true
-})
 provideRovingFocusGroupContext({
   loop,
   dir,
@@ -170,7 +166,7 @@ provideRovingFocusGroupContext({
   // that no item will be active, the first focusable item is. An item can't see the
   // items after it, so without that knowledge it can't tell whether it is the right stop.
   claimPreMountTabStop: (tabStopId, active) => {
-    if (isGroupMounted || !(active || hasNoActiveItem?.()))
+    if (!active && !hasNoActiveItem?.())
       return false
     preMountTabStopId ??= tabStopId
     return preMountTabStopId === tabStopId
