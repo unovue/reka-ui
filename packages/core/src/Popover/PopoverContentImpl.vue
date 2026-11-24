@@ -63,7 +63,7 @@ useFocusGuards(() => props.present)
   >
     <DismissableLayer
       as-child
-      :present="present"
+      :present="rootContext.open.value && present"
       :disable-outside-pointer-events="disableOutsidePointerEvents"
       @pointer-down-outside="emits('pointerDownOutside', $event)"
       @interact-outside="emits('interactOutside', $event)"
