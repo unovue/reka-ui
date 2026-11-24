@@ -9,7 +9,9 @@ import {
   MenuRoot,
 } from '..'
 
-interface Props extends MenuProps {}
+interface Props extends MenuProps {
+  spaceExtendsTypeahead?: boolean
+}
 const props = withDefaults(defineProps<Props>(), {
   open: true,
 })
@@ -27,6 +29,7 @@ const open = useVModel(props, 'open')
       <MenuContent
         class="inline-block box-border min-w-[130px] bg-white border border-gray-100 rounded-[6px] p-[5px] shadow-md font-sans text-[13px] focus-within:border-black"
         align="start"
+        :space-extends-typeahead="spaceExtendsTypeahead"
         @close-auto-focus.prevent
       >
         <slot />

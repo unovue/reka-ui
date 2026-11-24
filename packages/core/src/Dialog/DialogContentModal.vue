@@ -34,7 +34,7 @@ const emitsAsProps = useEmitAsProps(emits)
 
 const { forwardRef, currentElement } = useForwardExpose()
 
-const ariaHiddenTarget = computed(() => props.present ? currentElement.value : undefined)
+const ariaHiddenTarget = computed(() => rootContext.open.value && props.present ? currentElement.value : undefined)
 useHideOthers(ariaHiddenTarget)
 
 const forwardedProps = computed(() => {

@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import DropdownMenuWithFilter from './story/_DropdownMenuWithFilter.vue'
 
@@ -142,6 +142,52 @@ describe('given DropdownMenu with Filter', () => {
       const filterInput = document.querySelector('[role="searchbox"]')
       expect(filterInput?.hasAttribute('disabled')).toBe(true)
       expect(filterInput?.getAttribute('data-disabled')).toBe('')
+    })
+  })
+
+  // The filter's text is not a typeahead search: it doesn't run out after a second,
+  // and a letter typed on an item starts a search of its own.
+  describe('with text in the filter', () => {
+    const itemFocus = (label: string) => {
+      const item = [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(el => el.textContent?.trim() === label)!
+      item.focus()
+      return item
+    }
+    const press = async (key: string, init: KeyboardEventInit = {}) => {
+      document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init }))
+      await nextTick()
+    }
+
+    beforeEach(async () => {
+      // Only the timeouts the typeahead resets its search with
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      await wrapper.find('button').trigger('click')
+      await nextTick()
+      const filterInput = document.querySelector('[role="searchbox"]') as HTMLInputElement
+      filterInput.value = 'o'
+      filterInput.dispatchEvent(new Event('input'))
+      await nextTick()
+      // New Window, Show Bookmarks and Show History
+      expect(document.querySelectorAll('[role="menuitem"]').length).toBe(3)
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('should search items without the filter text', async () => {
+      itemFocus('New Window')
+      await press('s')
+      expect(document.activeElement?.textContent?.trim()).toBe('Show Bookmarks')
+    })
+
+    it('should not select an item with Space a second later', async () => {
+      const onClick = vi.fn()
+      itemFocus('Show Bookmarks').addEventListener('click', onClick)
+      vi.advanceTimersByTime(1100)
+      await press(' ', { code: 'Space' })
+      expect(onClick).not.toHaveBeenCalled()
+      expect(document.querySelector('[role="menu"]')).not.toBeNull()
     })
   })
 

@@ -12,6 +12,7 @@ export interface ComboboxContentProps extends ComboboxContentImplProps {
 </script>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Presence } from '@/Presence'
 import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
 import ComboboxContentImpl from './ComboboxContentImpl.vue'
@@ -25,6 +26,11 @@ const { forwardRef } = useForwardExpose()
 const rootContext = injectComboboxRootContext()
 
 rootContext.contentId ||= useId(undefined, 'reka-combobox-content')
+
+// A closing content still mounted for its exit animation hands Escape, outside interaction
+// and the accessibility tree back to the layer below at once. A force-mounted content keeps
+// its layer while closed, as before.
+const layerPresent = computed(() => rootContext.open.value || !!props.forceMount)
 </script>
 
 <template>
@@ -38,6 +44,7 @@ rootContext.contentId ||= useId(undefined, 'reka-combobox-content')
       v-bind="{ ...forwarded, ...$attrs }"
       :ref="forwardRef"
       :present="rootContext.unmountOnHide.value || present"
+      :layer-present="(rootContext.unmountOnHide.value || present) && layerPresent"
     >
       <slot />
     </ComboboxContentImpl>

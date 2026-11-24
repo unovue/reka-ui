@@ -744,3 +744,62 @@ describe('given a Tree with a controlled `expanded`', () => {
       .toEqual(['false', 'true', undefined])
   })
 })
+
+describe('given a multiple Tree with many selected keys', () => {
+  interface Node { id: string, children?: Node[] }
+
+  function build(depth: number, prefix: string): Node[] {
+    return Array.from({ length: 4 }, (_, i) => {
+      const id = `${prefix}-${i}`
+      return depth > 0 ? { id, children: build(depth - 1, id) } : { id }
+    })
+  }
+  const items = build(3, 'n')
+  const all: Node[] = []
+  const collect = (nodes: Node[]) => nodes.forEach((n) => {
+    all.push(n)
+    collect(n.children ?? [])
+  })
+  collect(items)
+  const descendants = (n: Node): Node[] => (n.children ?? []).flatMap(c => [c, ...descendants(c)])
+  // Every third node, plus a duplicate and an unknown key
+  const selected = [...all.filter((_, i) => i % 3 === 0), all[0], { id: 'unknown' }]
+  const selectedIds = selected.map(n => n.id)
+
+  function render(props: Record<string, any>) {
+    const states: Record<string, { selected: boolean, indeterminate: boolean | undefined }> = {}
+    mount(defineComponent({
+      setup: () => () => h(TreeRoot as any, {
+        items,
+        getKey: (n: Node) => n.id,
+        multiple: true,
+        modelValue: selected,
+        expanded: all.map(n => n.id),
+        ...props,
+      }, {
+        default: ({ flattenItems }: any) => flattenItems.map((item: any) => h(TreeItem as any, { key: item._id, ...item.bind }, {
+          default: ({ isSelected, isIndeterminate }: any) => {
+            states[item._id] = { selected: isSelected, indeterminate: isIndeterminate }
+            return item._id
+          },
+        })),
+      }),
+    }))
+    return states
+  }
+
+  it.each(['bubbleSelect', 'propagateSelect'])('matches a direct search of the model value with %s', (mode) => {
+    const states = render({ [mode]: true })
+    expect(Object.keys(states)).toHaveLength(all.length)
+    for (const node of all) {
+      const isSelected = selectedIds.includes(node.id)
+      const kids = descendants(node)
+      let indeterminate: boolean | undefined
+      if (kids.length && mode === 'bubbleSelect')
+        indeterminate = kids.some(k => selectedIds.includes(k.id)) && !kids.every(k => selectedIds.includes(k.id))
+      else if (kids.length && isSelected)
+        indeterminate = !kids.every(k => selectedIds.includes(k.id))
+      expect(states[node.id], node.id).toEqual({ selected: isSelected, indeterminate })
+    }
+  })
+})

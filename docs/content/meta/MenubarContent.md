@@ -137,6 +137,12 @@
     'required': false
   },
   {
+    'name': 'spaceExtendsTypeahead',
+    'description': '<p>When <code>true</code>, Space pressed while a typeahead search is in progress is added to the search\ninstead of selecting the focused item, so that labels with several words, like &quot;New Private Window&quot;,\ncan be reached by typing. With no search in progress, Space still selects the focused item.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'sticky',
     'description': '<p>The sticky behavior on the align axis. <code>partial</code> will keep the\ncontent in the boundary as long as the trigger is at least partially\nin the boundary whilst &quot;always&quot; will keep the content in the boundary\nregardless.</p>\n',
     'type': '\'partial\' | \'always\'',
@@ -212,6 +218,7 @@
 | `side` | The preferred side of the trigger to render against when open. Will be reversed when collisions occur and avoidCollisions is enabled. If the opposite side collides as well, the content stays on this axis unless fallbackAxisSideDirection is set. | `"top" \| "right" \| "bottom" \| "left"` | No | - |
 | `sideFlip` | Flip to the opposite side when colliding with boundary. Only the opposite side is tried, unless fallbackAxisSideDirection is set. | `boolean` | No | - |
 | `sideOffset` | The distance in pixels from the trigger. | `number` | No | - |
+| `spaceExtendsTypeahead` | When true, Space pressed while a typeahead search is in progress is added to the search instead of selecting the focused item, so that labels with several words, like "New Private Window", can be reached by typing. With no search in progress, Space still selects the focused item. | `boolean` | No | - |
 | `sticky` | The sticky behavior on the align axis. partial will keep the content in the boundary as long as the trigger is at least partially in the boundary whilst "always" will keep the content in the boundary regardless. | `"partial" \| "always"` | No | - |
 | `updatePositionStrategy` | Strategy to update the position of the floating element on every animation frame. | `"always" \| "optimized"` | No | - |
 
