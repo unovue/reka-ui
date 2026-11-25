@@ -21,8 +21,7 @@ Generate random id
 
 1. Explicit ID passed to `useId(id)`.
 2. The `useId` function provided by `ConfigProvider`.
-3. Vue's native `useId` when available.
-4. Reka UI's fallback counter for older Vue versions.
+3. Vue's native `useId`.
 
 Use `ConfigProvider` when your framework provides its own SSR-stable ID source, such as Nuxt's `useId`.
 
