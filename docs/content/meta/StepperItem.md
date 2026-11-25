@@ -41,7 +41,7 @@
   {
     'name': 'state',
     'description': '<p>The current state of the stepper item</p>\n',
-    'type': '\'active\' | \'completed\' | \'inactive\''
+    'type': '\'active\' | \'inactive\' | \'completed\''
   }
 ]" />
 </llm-exclude>
@@ -62,6 +62,6 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `state` | The current state of the stepper item | `"active" \| "completed" \| "inactive"` |
+| `state` | The current state of the stepper item | `"active" \| "inactive" \| "completed"` |
 
 </llm-only>

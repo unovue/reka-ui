@@ -1,15 +1,39 @@
 name: Build
 
+# Root files that change what gets installed, built or tested are listed next to
+# `packages/**`, so a lockfile bump or a workflow edit is tested too. Docs-only
+# changes stay out: they are covered by the Lint workflow.
 on:
   push:
     branches:
-      - main
+      - v2
     paths:
       - 'packages/**'
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - eslint.config.mjs
+      - '.github/workflows/**'
+      - '.github/actions/**'
 
   pull_request:
     paths:
       - 'packages/**'
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - eslint.config.mjs
+      - '.github/workflows/**'
+      - '.github/actions/**'
+
+  # The Release workflow calls this one and publishes only when every job passes.
+  workflow_call:
+
+# A new push to a pull request replaces the run in progress. Every other run
+# (a push to v2, a release) gets a group of its own and is never cancelled.
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -25,8 +49,10 @@ jobs:
       - name: Setup (Install node & pnpm)
         uses: ./.github/actions/setup
 
+      # The whole workspace: reka-ui, then the plugins package, which writes
+      # `dist/nuxt`, `dist/resolver` and `dist/namespaced` into packages/core/dist
       - name: Build
-        run: pnpm --filter reka-ui build
+        run: pnpm build
 
       - name: Upload dist artifact
         uses: actions/upload-artifact@v7
