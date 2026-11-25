@@ -2,7 +2,7 @@ import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import { h, nextTick } from 'vue'
+import { h, nextTick, ref } from 'vue'
 import { PaginationEllipsis, PaginationNext, PaginationPrev, PaginationRoot } from '.'
 import Pagination from './story/_Pagination.vue'
 
@@ -433,6 +433,32 @@ describe('given a PaginationEllipsis', () => {
     await nextTick()
     expect(button.attributes('aria-hidden')).toBeUndefined()
     expect(nested.attributes('aria-hidden')).toBeUndefined()
+  })
+
+  it.each([
+    ['a button with a negative tabindex', undefined, { as: 'button', tabindex: '-1' }],
+    ['a disclosure', () => h('details', [h('summary', '\u2026')]), {}],
+  ])('should stay exposed as %s', async (_name, slot, props) => {
+    const wrapper = mountEllipsis(slot as any, props)
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBeUndefined()
+  })
+
+  it('should follow its content when it changes', async () => {
+    const interactive = ref(false)
+    const wrapper = mount(() => h(PaginationEllipsis, null, () => interactive.value ? h('button', '\u2026') : '\u2026'), { attachTo: document.body })
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBe('true')
+
+    interactive.value = true
+    await nextTick()
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBeUndefined()
+
+    interactive.value = false
+    await nextTick()
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBe('true')
   })
 
   it('should let a consumer `aria-hidden` win', async () => {
