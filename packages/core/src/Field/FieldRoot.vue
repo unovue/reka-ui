@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { FieldValidateFn, FieldValidationMode, FieldValidityState } from './useFieldValidation'
 import type { PrimitiveProps } from '@/Primitive'
-import { createRekaContext, useForwardExpose, useId } from '@/shared'
+import { createRekaContext, getReferencedId, useForwardExpose, useId } from '@/shared'
 
 export interface FieldRootProps extends PrimitiveProps {
   /**
@@ -97,6 +97,8 @@ export interface FieldRootContext {
   getControlId: () => string
   /** Id of the mounted `FieldLabel`, if any. */
   labelId: ComputedRef<string | undefined>
+  /** @internal The id a `FieldLabel` renders without a consumer `id`. */
+  generatedLabelId: string
   name: Ref<string | undefined>
   disabled: Ref<boolean>
   required: Ref<boolean>
@@ -180,7 +182,8 @@ const { disabled, required, name } = toRefs(props)
 const fieldId = ref(useId(undefined, 'reka-field'))
 const labelIdBase = useId(undefined, 'reka-field-label')
 const labelMounted = ref(false)
-const labelId = computed(() => labelMounted.value ? labelIdBase : undefined)
+// A consumer `id` on `FieldLabel` replaces the generated one.
+const labelId: ComputedRef<string | undefined> = computed(() => labelMounted.value ? getReferencedId(labelId, 'id', labelIdBase) : undefined)
 
 const touchedState = ref(false)
 const dirtyState = ref(false)
@@ -471,6 +474,7 @@ provideFieldRootContext({
   fieldId,
   getControlId,
   labelId,
+  generatedLabelId: labelIdBase,
   name,
   disabled,
   required,

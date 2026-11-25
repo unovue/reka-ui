@@ -69,7 +69,6 @@ const { CollectionItem } = useCollection()
 const isSelected = computed(() => valueComparator(rootContext.modelValue?.value, props.value, rootContext.by))
 const isFocused = ref(false)
 const textValue = ref(props.textValue ?? '')
-const textId = useId(undefined, 'reka-select-item-text')
 
 const SELECT_SELECT = 'select.select'
 
@@ -219,12 +218,13 @@ onMounted(() => {
   )
 })
 
-provideSelectItemContext({
+// The template reads `textId` through the context, which follows a consumer `id` on `SelectItemText`.
+const itemContext = provideSelectItemContext({
   value: props.value,
   // The item's own state only: `SelectItemText` registers the native `<option>` once on mount,
   // so the root's `disabled` must not leak in (the native `<select>` already carries it).
   disabled: computed(() => Boolean(props.disabled)),
-  textId,
+  textId: useId(undefined, 'reka-select-item-text'),
   isSelected,
   onItemTextChange: (node) => {
     textValue.value = ((textValue.value || node?.textContent) ?? '').trim()
@@ -237,7 +237,7 @@ provideSelectItemContext({
     <Primitive
       :ref="forwardRef"
       role="option"
-      :aria-labelledby="textId"
+      :aria-labelledby="itemContext.textId"
       :data-highlighted="isFocused ? '' : undefined"
       :aria-selected="isSelected"
       :data-state="isSelected ? 'checked' : 'unchecked'"
