@@ -3,7 +3,7 @@ import type { Component } from 'vue'
 import type { CalendarRootProps } from './CalendarRoot.vue'
 import { CalendarDate, CalendarDateTime, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
-import { render } from '@testing-library/vue'
+import { fireEvent, render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h } from 'vue'
@@ -1613,5 +1613,28 @@ describe('calendar - tabindex states', () => {
 
     expect(getByTestId('date-1-15')).toHaveAttribute('tabindex', '-1')
     expect(getByTestId('date-12-31')).toHaveAttribute('tabindex', '-1')
+  })
+})
+
+describe('calendar - numeric keypad', () => {
+  it('selects a date with the numeric keypad Enter', async () => {
+    const { getByTestId, calendar } = setup({ calendarProps: { placeholder: new CalendarDate(1980, 1, 20) } })
+    const cell = getByTestId('date-1-2')
+    cell.focus()
+
+    await fireEvent.keyDown(cell, { key: 'Enter', code: 'NumpadEnter' })
+
+    expect(getSelectedDay(calendar)).toHaveTextContent('2')
+  })
+
+  // Without NumLock the keypad sends the navigation keys with a `Numpad*` code.
+  it('moves focus with the numeric keypad arrows', async () => {
+    const { getByTestId } = setup({ calendarProps: { placeholder: new CalendarDate(1980, 1, 20) } })
+    const cell = getByTestId('date-1-2')
+    cell.focus()
+
+    await fireEvent.keyDown(cell, { key: 'ArrowRight', code: 'Numpad6' })
+
+    expect(getByTestId('date-1-3')).toHaveFocus()
   })
 })
