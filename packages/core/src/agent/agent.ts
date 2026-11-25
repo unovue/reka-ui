@@ -416,11 +416,13 @@ export function createAgent(options: AgentOptions = {}): Agent {
       return undefined
     const { entry } = holder
     const { adapter, source } = entry
-    const itemEl = itemsOf(entry)?.find(other => isEqual(other.value as any, item.value as any))?.el
-    // Looking opens nothing a person must approve: a marked place takes a step of its own.
-    if (confirmOf([...own(holder.parts), itemEl]))
-      return undefined
     const before = stateOf(entry)
+    const itemEl = itemsOf(entry)?.find(other => isEqual(other.value as any, item.value as any))?.el
+    // A swap also closes the tab it leaves.
+    const leaving = swaps ? itemsOf(entry)?.find(other => isEqual(other.value as any, before.value as any))?.el : undefined
+    // Looking opens nothing a person must approve: a marked place, or a marked tab it would leave, takes a step of its own.
+    if (confirmOf([...own(holder.parts), itemEl, leaving]))
+      return undefined
     const collapsible = source.kind === 'collapsible'
     const action = collapsible ? 'setOpen' : swaps ? 'setValue' : 'open'
     const step: AgentAction = { ref, component: adapter.component(source), label: entry.label, action, args: [item.value] }
@@ -566,19 +568,27 @@ export function createAgent(options: AgentOptions = {}): Agent {
         throw partial ? missing : notFound(unfound.get(missing as Error)!)
       }
       const backs: (() => Promise<void>)[] = []
-      for (const place of way) {
-        const back = await enter(place)
-        if (back)
-          backs.unshift(back)
+      const restore = async () => {
+        for (const back of backs)
+          await back()
       }
-      const found: Found & { restore?: () => Promise<void> } = find(name, action, usable)
-      // A check changes nothing, so what it opened to look closes again.
-      if (action === 'expect') {
-        found.restore = async () => {
-          for (const back of backs)
-            await back()
+      let found: Found & { restore?: () => Promise<void> }
+      try {
+        for (const place of way) {
+          const back = await enter(place)
+          if (back)
+            backs.unshift(back)
         }
+        found = find(name, action, usable)
       }
+      catch (gone) {
+        // What it opened goes back when what it came for is gone.
+        await restore()
+        throw gone
+      }
+      // A check changes nothing, so what it opened to look closes again.
+      if (action === 'expect')
+        found.restore = restore
       return found
     }
   }
@@ -667,7 +677,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
   }
 
   // The items an action takes out of a list's value or closes, like the section `closeAll` shuts.
-  function removedBy(value: unknown, action: string, arg: unknown, items: Item[]) {
+  function removedBy(value: unknown, action: string, arg: unknown, items: Item[]): Item[] {
     const list = (v: unknown) => (Array.isArray(v) ? v : v == null || v === '' ? [] : [v])
     const has = (values: unknown[], v: unknown) => values.some(other => isEqual(other as any, v as any))
     const held = list(value)
@@ -675,8 +685,8 @@ export function createAgent(options: AgentOptions = {}): Agent {
       ? list(arg)
       : action === 'close' || (action === 'toggle' && has(held, arg))
         ? held.filter(v => !isEqual(v as any, arg as any))
-        : action === 'closeAll' ? [] : held
-    return items.filter(item => has(held, item.value) && !has(next, item.value)).map(item => item.el)
+        : action === 'closeAll' || action === 'clear' ? [] : held
+    return items.filter(item => has(held, item.value) && !has(next, item.value))
   }
 
   // An `expect`: the component's value, that value's label or its row text is what the step says.
@@ -827,6 +837,10 @@ export function createAgent(options: AgentOptions = {}): Agent {
           throw new Error(`${component.component} ${entry.ref} takes a number, not ${quoted(value)}.`)
         return number
       }
+      // A field with one number takes one, even from a list of one, like [30].
+      const scalar = !Array.isArray(state.value) && source.kind !== 'slider'
+      if (scalar && Array.isArray(args[0]) && args[0].length !== 1)
+        throw new Error(`setValue on ${nameFor(entry)} takes one number, not ${quoted(args[0])}.`)
       const numbers = (Array.isArray(args[0]) ? args[0] : [args[0]]).map(toNumber)
       const { min, max } = state as { min?: number, max?: number }
       const low = typeof min === 'number' && Number.isFinite(min)
@@ -834,24 +848,41 @@ export function createAgent(options: AgentOptions = {}): Agent {
       const outside = numbers.find(value => (low && value < min!) || (high && value > max!))
       if (outside !== undefined)
         throw new Error(`setValue on ${nameFor(entry)} takes a number ${low && high ? `from ${min} to ${max}` : low ? `of ${min} or more` : `of ${max} or less`}, not ${outside}.`)
-      args = [Array.isArray(args[0]) ? numbers : numbers[0], ...args.slice(1)]
+      args = [Array.isArray(args[0]) && !scalar ? numbers : numbers[0], ...args.slice(1)]
     }
     if (BOOLEAN_SETTER.test(action) && typeof args[0] !== 'boolean')
       throw new Error(`${action} on ${nameFor(entry)} takes true or false, not ${quoted(args[0])}.`)
     // Replacing a value also asks about the items it takes out or closes, so dropping a marked choice needs a person too.
-    const targets = [...own(parts), ...chosen.map(item => ('el' in item ? item.el : undefined)), ...(items && (takesItem || action === 'closeAll') ? removedBy(state.value, action, args[0], items) : [])]
+    const affects = items && (takesItem || action === 'closeAll' || action === 'clear')
+    const removing = (value: unknown, list: Item[]) => (affects ? removedBy(value, action, args[0], list).map(item => keyOf(item.value)).sort() : [])
+    const removed = affects ? removedBy(state.value, action, args[0], items!) : []
+    const targets = [...own(parts), ...chosen.map(item => ('el' in item ? item.el : undefined)), ...removed.map(item => item.el)]
     const approved = confirmOf(targets)
+    const marks = new Set(targets.map(el => confirmOf([el])).filter(Boolean))
     // A closed list's items aren't on the page; what was is checked again after the answer.
     const shown = targets.filter((el): el is HTMLElement => !!el?.isConnected)
     await ask(args, targets, 'make this change')
     stillThere(entry, targets, approved, shown)
+    // What the change takes out is worked out again from the value now: one that grew while it waited wasn't asked about.
+    const current = itemsOf(entry)
+    if (affects && JSON.stringify(removing(stateOf(entry).value, current?.length ? current : items!)) !== JSON.stringify(removing(state.value, items!)))
+      throw new Error(`${nameFor(entry)} changed while the step waited for an answer, so this change would take out more than was asked. Run the step again.`)
+    // Each later toggle of one change checks its item's mark, which an earlier toggle can add.
+    const guard = (value: unknown) => {
+      const el = (itemsOf(entry) ?? []).find(item => isEqual(item.value as any, value as any))?.el
+      const mark = confirmOf([el])
+      if (el && isOffLimits([el]))
+        throw new Error(`${entry.ref} isn't available to agents now.`)
+      if (mark && !marks.has(mark))
+        throw new Error(`An item of ${nameFor(entry)} needs a person now: "${mark}". The change stopped there. Run the step again to ask.`)
+    }
     const setKey = SETTER.test(action) ? action[3]!.toLowerCase() + action.slice(4) : undefined
     const was = setKey ? state[setKey] : undefined
     agentWindow.open = true
     agentWindow.action = action
     try {
       try {
-        await fresh(() => adapter.run(source, action, args))
+        await fresh(() => adapter.run(source, action, args, guard))
       }
       catch (error) {
         throw entry.secret ? new Error(`${action} on ${nameFor(entry)} failed: [redacted]`) : error
@@ -1177,7 +1208,8 @@ export function createAgent(options: AgentOptions = {}): Agent {
     subscribe: (listener) => {
       if (destroyed)
         return () => {}
-      const stop = listen(listener)
+      // Its own listener in the registry, so the same callback on two bridges is two subscriptions.
+      const stop = listen(change => listener(change))
       const unsubscribe = () => {
         subscriptions.delete(unsubscribe)
         stop()

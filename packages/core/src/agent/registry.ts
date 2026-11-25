@@ -277,6 +277,8 @@ function formKey(owner: object | null) {
   return String(key)
 }
 
+const radioKey = (radio: HTMLInputElement) => (radio.name ? `${formKey(radio.form)}|${radio.name}` : `radio:${formKey(radio)}`)
+
 /** Brings the native entries up to date with the page and retires the ones that left. */
 export function scanNative(live: Entry[]) {
   const owned: HTMLElement[] = []
@@ -304,7 +306,7 @@ export function scanNative(live: Entry[]) {
       continue
     if (kind === 'radio') {
       const radio = el as HTMLInputElement
-      const name = radio.name ? `${formKey(radio.form)}|${radio.name}` : `radio:${formKey(radio)}`
+      const name = radioKey(radio)
       groups.set(name, [...(groups.get(name) ?? []), radio])
       continue
     }
@@ -442,12 +444,19 @@ function observeNative() {
     const key = entry.adapter.keys[0]
     return key ? { key, value: state[key] } : undefined
   }
-  const lookup = (target: HTMLElement) => bySource.get(target) ?? [...radioGroups.values()].find(group => group.source.radios?.includes(target as HTMLInputElement))
+  // A radio belongs to the group of its form and name now, which can differ from when it was scanned.
+  const lookup = (target: HTMLElement) => {
+    if ((target as HTMLInputElement).type === 'radio' && target.localName === 'input') {
+      const group = radioGroups.get(radioKey(target as HTMLInputElement))
+      return group?.source.radios?.includes(target as HTMLInputElement) ? group : undefined
+    }
+    return bySource.get(target)
+  }
   const onInput = (event: Event) => {
     const target = event.target as HTMLElement
     let entry = lookup(target)
     // A field the bridge hasn't scanned yet is found now, so its first change is heard.
-    if (!entry?.alive && target.matches?.(NATIVE)) {
+    if ((!entry || !entry.alive) && target.matches?.(NATIVE)) {
       scanNative([...entries.values()].filter(entry => entry.alive))
       entry = lookup(target)
     }
@@ -476,7 +485,8 @@ function observeNative() {
   }
   const remembering = (event: Event) => {
     const target = event.target as Element
-    if (target.matches?.(NATIVE) && !baselines.has(target))
+    // What it holds when a person comes to it, which the app can have changed since it was first seen.
+    if (target.matches?.(NATIVE))
       baseline(target)
   }
   // Fields on the page now and the ones added later start from what they hold.

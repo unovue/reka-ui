@@ -170,10 +170,14 @@ function handleClick(target?: unknown) {
       const disabledItems = getControlledItems().filter(item => item.disabled())
       const isDisabledValue = (value: unknown) => disabledItems.some(item => isEqual(item.value(), value))
       const allValues = checkboxGroupContext.allValues.value ?? []
+      const toggled = getParentToggleValue(allValues, modelValueArray, isDisabledValue, checkboxGroupContext.max.value)
+      // Checking only adds: a group with no room left stays as it is, where a click would clear it.
+      if (to === true && toggled.length <= modelValueArray.length)
+        return
       // Unchecking a mixed parent clears what it can, the way a click on a checked one does.
       modelValueArray = to === false && checkboxState.value !== true
         ? modelValueArray.filter(value => isDisabledValue(value) || !isValueEqualOrExist(allValues, value))
-        : getParentToggleValue(allValues, modelValueArray, isDisabledValue, checkboxGroupContext.max.value)
+        : toggled
     }
     else if (isValueEqualOrExist(modelValueArray, props.value)) {
       const index = modelValueArray.findIndex(i => isEqual(i, props.value))

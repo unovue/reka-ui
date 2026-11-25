@@ -57,7 +57,8 @@ export interface Adapter {
   closed?: boolean
   disabled: (s: Source) => boolean
   actions: (s: Source) => string[]
-  run: (s: Source, action: string, args: unknown[]) => unknown
+  /** `guard` runs before each later toggle of one change, and throws to stop it, like a mark that needs a person. */
+  run: (s: Source, action: string, args: unknown[], guard?: (value: unknown) => void) => unknown
   /** What it hides while closed: a tab list's other tabs, an accordion's sections, a collapsible. */
   reveals?: boolean
   modal?: (s: Source) => boolean
@@ -110,7 +111,7 @@ function registered(s: Source): Item[] {
 }
 
 // A list's value by toggling, the way a person picks and unpicks items: `toggle` adds or takes out one.
-function toggleTo(current: unknown, target: unknown, multiple: boolean, toggle: (value: unknown) => unknown) {
+function toggleTo(current: unknown, target: unknown, multiple: boolean, toggle: (value: unknown) => unknown, guard?: (value: unknown) => void) {
   if (!multiple) {
     if (target == null || target === '') {
       if (current != null && current !== '')
@@ -131,8 +132,11 @@ function toggleTo(current: unknown, target: unknown, multiple: boolean, toggle: 
   // Each toggle builds on the one before, so a controlled model gets its render in between, as clicks would.
   return (async () => {
     for (const [index, value] of changes.entries()) {
-      if (index)
+      if (index) {
         await nextTick()
+        // What the last toggle did can mark the next item, so each is checked before its own.
+        guard?.(value)
+      }
       toggle(value)
     }
   })()
@@ -149,7 +153,7 @@ function clickItem(list: Source, value: unknown) {
   return true
 }
 
-const frame = () => new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+const pause = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
 
 const field = (keys: string[], adapter: Omit<Adapter, 'keys'>): Adapter => ({ keys, ...adapter })
 
@@ -218,20 +222,22 @@ function numberTo(s: Source, value: number) {
 }
 
 // A combobox's items show while it's open, so it opens to click them, as a person does, then closes if it was closed.
-async function comboboxTo(s: Source, value: unknown) {
+async function comboboxTo(s: Source, value: unknown, guard?: (value: unknown) => void) {
   const multiple = !!unref(s.ctx.multiple)
   const current = unref(s.ctx.modelValue)
   const wanted = toList(value)
   const was = !!unref(s.ctx.open)
-  if (!was && (wanted.length || multiple)) {
-    s.ctx.onOpenChange(true)
-    for (let tries = 0; tries < 30 && !(s.inner && registered(s.inner).length); tries++)
-      await frame()
-  }
   try {
+    if (!was && (wanted.length || multiple)) {
+      s.ctx.onOpenChange(true)
+      // A timer, not frames: a hidden page renders no frames, and a wait on one would hold every later call.
+      const deadline = Date.now() + 1000
+      while (!(s.inner && registered(s.inner).length) && Date.now() < deadline)
+        await pause(16)
+    }
     const listbox = s.inner
     const pick = (v: unknown) => (listbox && clickItem(listbox, v)) || (listbox ? listbox.ctx.onValueChange(v) : (s.ctx.modelValue.value = v))
-    await toggleTo(current, value, multiple, pick)
+    await toggleTo(current, value, multiple, pick, guard)
   }
   finally {
     if (!was && unref(s.ctx.open))
@@ -283,12 +289,12 @@ export const adapters: Record<string, Adapter> = {
     closed: true,
     disabled: s => !!unref(s.ctx.disabled),
     actions: () => ['setValue', 'setOpen'],
-    run: (s, action, [value]) => {
+    run: (s, action, [value], guard) => {
       if (action === 'setValue') {
         // A person can't empty a single select, only pick another item.
         if (!unref(s.ctx.multiple) && (value == null || value === ''))
           return fail('select can\'t be emptied. Pick one of its items.')
-        return toggleTo(unref(s.ctx.modelValue), value, !!unref(s.ctx.multiple), v => s.ctx.onValueChange(v))
+        return toggleTo(unref(s.ctx.modelValue), value, !!unref(s.ctx.multiple), v => s.ctx.onValueChange(v), guard)
       }
       return adapters.popover.run(s, action, [value])
     },
@@ -309,9 +315,9 @@ export const adapters: Record<string, Adapter> = {
     closed: true,
     disabled: s => !!unref(s.ctx.disabled),
     actions: () => ['setValue', 'setOpen', 'setQuery', 'clear'],
-    run: (s, action, [value]) => {
+    run: (s, action, [value], guard) => {
       if (action === 'setValue') {
-        return comboboxTo(s, value)
+        return comboboxTo(s, value, guard)
       }
       if (action === 'clear') {
         s.ctx.modelValue.value = s.ctx.getClearValue?.() ?? (unref(s.ctx.multiple) ? [] : undefined)
@@ -338,13 +344,13 @@ export const adapters: Record<string, Adapter> = {
     closed: true,
     disabled: s => !!unref(s.ctx.disabled),
     actions: s => (unref(s.ctx.multiple) ? ['setValue', 'clear'] : ['setValue']),
-    run: (s, action, [value]) => {
+    run: (s, action, [value], guard) => {
       const multiple = !!unref(s.ctx.multiple)
       if (action === 'clear')
-        return toggleTo(unref(s.ctx.modelValue), multiple ? [] : undefined, multiple, v => clickItem(s, v) || s.ctx.onValueChange(v))
+        return toggleTo(unref(s.ctx.modelValue), multiple ? [] : undefined, multiple, v => clickItem(s, v) || s.ctx.onValueChange(v), guard)
       if (action !== 'setValue')
         return fail(`listbox takes setValue, not ${action}.`)
-      return toggleTo(unref(s.ctx.modelValue), value, multiple, v => clickItem(s, v) || s.ctx.onValueChange(v))
+      return toggleTo(unref(s.ctx.modelValue), value, multiple, v => clickItem(s, v) || s.ctx.onValueChange(v), guard)
     },
   }),
 
@@ -376,7 +382,7 @@ export const adapters: Record<string, Adapter> = {
     reveals: true,
     disabled: s => !!unref(s.ctx.disabled),
     actions: s => (unref(s.ctx.isSingle) ? ['setValue', 'open', 'close', 'toggle'] : ['setValue', 'open', 'close', 'toggle', 'openAll', 'closeAll']),
-    run: (s, action, [value]) => {
+    run: (s, action, [value], guard) => {
       const single = !!unref(s.ctx.isSingle)
       const current = unref(s.ctx.modelValue)
       const open = toList(current)
@@ -390,7 +396,7 @@ export const adapters: Record<string, Adapter> = {
         case 'setValue':
           if (single && (value == null || value === ''))
             closing(current)
-          return toggleTo(current, value, !single, change)
+          return toggleTo(current, value, !single, change, guard)
         case 'open':
           return has(open, value) ? undefined : change(value)
         case 'close':
@@ -401,9 +407,9 @@ export const adapters: Record<string, Adapter> = {
             closing(value)
           return change(value)
         case 'openAll':
-          return toggleTo(current, all, true, change)
+          return toggleTo(current, all, true, change, guard)
         case 'closeAll':
-          return toggleTo(current, [], true, change)
+          return toggleTo(current, [], true, change, guard)
       }
       return fail(`accordion takes setValue, open, close or toggle, not ${action}.`)
     },
@@ -494,12 +500,12 @@ export const adapters: Record<string, Adapter> = {
     closed: true,
     disabled: s => !!unref(s.ctx.disabled),
     actions: () => ['setValue', 'toggle'],
-    run: (s, action, [value]) => {
+    run: (s, action, [value], guard) => {
       if (action === 'toggle')
         return s.ctx.changeModelValue(value)
       if (action !== 'setValue')
         return fail(`toggle-group takes setValue or toggle, not ${action}.`)
-      return toggleTo(unref(s.ctx.modelValue), value, !unref(s.ctx.isSingle), v => s.ctx.changeModelValue(v))
+      return toggleTo(unref(s.ctx.modelValue), value, !unref(s.ctx.isSingle), v => s.ctx.changeModelValue(v), guard)
     },
   }),
 
