@@ -870,6 +870,18 @@ describe('given a Tree whose items carry their subtree', () => {
     expect(emitted[1].map((n: Node) => n.id)).toEqual(['b'])
   })
 
+  it('should emit when a field of an item in a multiple selection is changed in place', async () => {
+    const { items } = build()
+    const selected = ref<Node[]>([{ ...items[0] }])
+    const { emitted } = mountTree({ multiple: true, modelValue: selected.value }, items)
+
+    selected.value[0].label = 'renamed'
+    await nextTick()
+
+    expect(emitted).toHaveLength(1)
+    expect(emitted[0][0].label).toBe('renamed')
+  })
+
   it('should emit when a field of the selected item is changed in place', async () => {
     const { items } = build()
     const selected = ref<Node>({ ...items[0] })
