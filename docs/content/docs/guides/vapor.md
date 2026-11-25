@@ -64,7 +64,7 @@ const enabled = ref(false)
 </template>
 ```
 
-The entry is ESM-only. Its types are the same as `reka-ui`.
+The entry is ESM-only. In Node, both `import` and `require` resolve to a stub that throws the server-side rendering error (see [Limitations](#limitations)). Its types are the same as `reka-ui`.
 
 <Callout type="info" title="Do not mix the two entries">
 
@@ -74,7 +74,7 @@ The entry is ESM-only. Its types are the same as `reka-ui`.
 
 ## Supported components
 
-These families are exported and covered by a browser test suite that runs on every pull request: rendering, `v-model`, keyboard interaction, ARIA attributes, focus management, both `asChild` forms, and an axe check.
+These families are exported and covered by a browser test suite. It runs on every pull request that changes the library, against both the sources and the built package, and covers rendering, `v-model`, keyboard interaction, ARIA attributes, focus management, both `asChild` forms, and an axe check.
 
 | Family | Notes |
 |---|---|
@@ -91,7 +91,7 @@ These families are exported and covered by a browser test suite that runs on eve
 | Toast | |
 | Tree | `TreeVirtualizer` included |
 
-`Primitive`, `useForwardExpose`, `useForwardProps`, `useEmitAsProps` and `useForwardPropsEmits` are exported too.
+`ConfigProvider` (`dir`, `useId`, `teleportTo` and the other options), `Primitive`, `useForwardExpose`, `useForwardProps`, `useEmitAsProps` and `useForwardPropsEmits` are exported too.
 
 Not supported yet: Autocomplete, Calendar and the other date and time families, Carousel, the Color families, `ComboboxVirtualizer`, Drawer, Field, Form, Rating, SliderArea, TagGroup and Toolbar. Use them from `reka-ui` through the interop plugin (see below) until they are added.
 
@@ -127,8 +127,10 @@ The same template also renders with `reka-ui`. There `props` is empty and the ch
 
 - **No server-side rendering.** The entry needs a DOM. Importing it on the server throws `reka-ui/vapor does not support server-side rendering`. Render Reka UI components client-only (for example inside `<ClientOnly>` in Nuxt), or use `reka-ui` for SSR.
 - **Browser-only tests.** Node resolves `reka-ui/vapor` to the same server-side error, so a test runner that executes in Node with jsdom or happy-dom cannot load it. Test components in a real browser, for example with Vitest browser mode.
-- **Vue internals.** Vapor mode has no public API yet for a few things Reka UI needs, such as forwarding a template ref or finding a component's root element. The entry reads them from Vue internals and checks at import that they are there. On an untested Vue version it throws `reka-ui/vapor needs Vue 3.6.0-rc.16+` instead of failing later.
+- **Vue 3.6 only.** On Vue 3.5 or older, the components cannot load, because Vue does not have the Vapor runtime they are compiled against. A production build fails with an error like `"defineVaporComponent" is not exported by "node_modules/vue/dist/vue.runtime.esm-bundler.js"`, and in development the browser reports the same missing export. The `reka-ui/vapor needs Vue 3.6.0-rc.16+` check below never gets to run. Install `vue@3.6.0-rc.16` or newer.
+- **Vue internals.** Vapor mode has no public API yet for a few things Reka UI needs, such as forwarding a template ref or finding a component's root element. The entry reads them from Vue internals and checks at import that they are there. If a later Vue 3.6 release removes one, the import throws `reka-ui/vapor needs Vue 3.6.0-rc.16+ (…); vue@<version> has no "<name>" export` instead of failing later.
 - **Release candidate.** Vue 3.6 is a release candidate. A new RC may change Vapor behavior. Each Reka UI release names the Vue version it was tested against.
+- **TypeScript and `v-slot="{ props }"`.** The slot types come from `reka-ui` and do not list `props` yet, so `vue-tsc` reports `Property 'props' does not exist` on that form. The template still works. Until the types include it, silence the error with `<!-- @vue-expect-error -->` on the line before the component, or bind `v-slot="slot"` and read `(slot as any).props`.
 - **`asChild` attributes set after mount.** With the template form, an attribute that your element does not have when it mounts and gains later loses to Reka UI's value. Use the `v-slot="{ props }"` form if you need that.
 
 ## Alternative: the interop plugin
