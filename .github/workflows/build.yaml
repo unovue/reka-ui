@@ -74,6 +74,30 @@ jobs:
       - name: Test (browser)
         run: pnpm --filter reka-ui test:browser
 
+  # Experimental `reka-ui/vapor` entry: its own suite, compiled in Vapor mode against Vue 3.6.
+  test-vapor:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup (Install node & pnpm)
+        uses: ./.github/actions/setup
+
+      - name: Install Chromium
+        run: pnpm --filter reka-ui exec playwright install --with-deps chromium
+
+      - name: Test (Vapor)
+        run: pnpm --filter reka-ui test:vapor
+
+      # The same tests against the VDOM components, so a failure that is not Vapor-specific shows up here too
+      - name: Test (VDOM parity)
+        run: pnpm --filter reka-ui test:vapor
+        env:
+          VAPOR_PARITY: vdom
+
   # The Carousel rests on native scroll snapping, smooth scrolling and `scrollend`,
   # where Firefox and WebKit differ from Chromium, so its browser tests run in both.
   test-browser-carousel:
