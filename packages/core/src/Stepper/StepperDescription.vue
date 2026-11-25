@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { onBeforeUnmount, onMounted } from 'vue'
-import { useForwardExpose, useReferencedId } from '@/shared'
+import { claimReferencedId, useForwardExpose } from '@/shared'
 import { injectStepperItemContext } from './StepperItem.vue'
 </script>
 
@@ -12,9 +12,9 @@ export interface StepperDescriptionProps extends PrimitiveProps { }
 
 const props = withDefaults(defineProps<StepperDescriptionProps>(), { as: 'p' })
 
-const { forwardRef, currentElement } = useForwardExpose()
+useForwardExpose()
 const itemContext = injectStepperItemContext()
-useReferencedId(itemContext, 'descriptionId', currentElement)
+claimReferencedId(itemContext, 'descriptionId')
 
 onMounted(() => {
   itemContext.hasDescription.value = true
@@ -28,7 +28,6 @@ onBeforeUnmount(() => {
   <Primitive
     v-bind="props"
     :id="itemContext.descriptionId"
-    :ref="forwardRef"
   >
     <slot />
   </Primitive>

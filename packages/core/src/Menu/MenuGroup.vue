@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { createRekaContext, defineReactiveIds, useId } from '@/shared'
+import { createRekaContext, useId } from '@/shared'
 
 export interface MenuGroupProps extends PrimitiveProps {}
 
@@ -17,8 +17,8 @@ import { Primitive } from '@/Primitive'
 
 const props = defineProps<MenuGroupProps>()
 
-// The label's id, which follows a consumer `id` on the label.
-const context = provideMenuGroupContext(defineReactiveIds({ id: useId(undefined, 'reka-menu-group') }, ['id']))
+// The template reads the id through the context, which follows a consumer `id` on the label.
+const context = provideMenuGroupContext({ id: useId(undefined, 'reka-menu-group') })
 </script>
 
 <template>

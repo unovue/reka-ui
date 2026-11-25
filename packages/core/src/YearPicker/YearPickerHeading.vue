@@ -6,7 +6,7 @@ export interface YearPickerHeadingProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
-import { useForwardExpose, useReferencedId } from '@/shared'
+import { claimReferencedId } from '@/shared'
 import { injectYearPickerRootContext } from './YearPickerRoot.vue'
 
 const props = withDefaults(defineProps<YearPickerHeadingProps>(), { as: 'div' })
@@ -19,15 +19,13 @@ defineSlots<{
 }>()
 
 const rootContext = injectYearPickerRootContext()
-const { forwardRef, currentElement } = useForwardExpose()
-useReferencedId(rootContext, 'headingId', currentElement)
+claimReferencedId(rootContext, 'headingId')
 </script>
 
 <template>
   <Primitive
     v-bind="props"
     :id="rootContext.headingId"
-    :ref="forwardRef"
     role="heading"
     aria-level="2"
     :data-disabled="rootContext.disabled.value ? '' : undefined"

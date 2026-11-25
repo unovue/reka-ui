@@ -18,25 +18,22 @@ export interface FieldLabelProps extends LabelProps {
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
 import { Label } from '@/Label'
-import { defineReactiveIds, useForwardExpose, useReferencedId } from '@/shared'
+import { claimReferencedId, useForwardExpose } from '@/shared'
 import { injectFieldRootContext } from './FieldRoot.vue'
 
 const props = withDefaults(defineProps<FieldLabelProps>(), {
   nativeLabel: true,
 })
 
-const { forwardRef, currentElement } = useForwardExpose()
+useForwardExpose()
 
 const fieldContext = injectFieldRootContext()
-
-// A consumer `id` on the label replaces the field's generated one, which the control's
-// `aria-labelledby` then follows.
-const label = defineReactiveIds({ id: '' }, ['id'])
-useReferencedId(label, 'id', currentElement)
+// The claim is read by `FieldRoot`, so `labelId` keeps naming the label for every control.
+claimReferencedId(fieldContext.labelId, 'id', false)
 
 let unregister: (() => void) | undefined
 onMounted(() => {
-  unregister = fieldContext.registerLabel(() => label.id || undefined)
+  unregister = fieldContext.registerLabel()
 })
 onBeforeUnmount(() => unregister?.())
 
@@ -53,8 +50,7 @@ function handleClick(event: MouseEvent) {
 <template>
   <Label
     v-bind="fieldContext.dataAttributes.value"
-    :id="fieldContext.labelId.value ?? undefined"
-    :ref="forwardRef"
+    :id="fieldContext.labelId.value && fieldContext.generatedLabelId"
     :as="as"
     :as-child="asChild"
     :for="nativeLabel ? (props.for ?? fieldContext.getControlId()) : undefined"

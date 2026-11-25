@@ -6,7 +6,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { Direction } from '@/shared/types'
 import { focusedDateValue, isSameDateSelection, isSameYear } from '@/date'
-import { createRekaContext, defineReactiveIds, useDirection, useId, useLocale } from '@/shared'
+import { createRekaContext, useDirection, useId, useLocale } from '@/shared'
 import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
 import { useYearPicker, useYearPickerState } from './useYearPicker'
 
@@ -255,7 +255,7 @@ onMounted(() => {
     handleCalendarInitialFocus(parentElement.value)
 })
 
-provideYearPickerRootContext(defineReactiveIds({
+provideYearPickerRootContext({
   isYearUnavailable,
   dir,
   isYearDisabled,
@@ -284,7 +284,7 @@ provideYearPickerRootContext(defineReactiveIds({
   minValue,
   maxValue,
   yearsPerPage,
-}, ['headingId']))
+})
 </script>
 
 <template>

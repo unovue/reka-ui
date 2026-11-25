@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
-import { createRekaContext, defineReactiveIds, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
+import { createRekaContext, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
 
 interface SelectItemContext<T = AcceptableValue> {
   value: T
@@ -69,7 +69,6 @@ const { CollectionItem } = useCollection()
 const isSelected = computed(() => valueComparator(rootContext.modelValue?.value, props.value, rootContext.by))
 const isFocused = ref(false)
 const textValue = ref(props.textValue ?? '')
-const textId = useId(undefined, 'reka-select-item-text')
 
 const SELECT_SELECT = 'select.select'
 
@@ -219,17 +218,18 @@ onMounted(() => {
   )
 })
 
-const itemContext = provideSelectItemContext(defineReactiveIds({
+// The template reads `textId` through the context, which follows a consumer `id` on `SelectItemText`.
+const itemContext = provideSelectItemContext({
   value: props.value,
   // The item's own state only: `SelectItemText` registers the native `<option>` once on mount,
   // so the root's `disabled` must not leak in (the native `<select>` already carries it).
   disabled: computed(() => Boolean(props.disabled)),
-  textId,
+  textId: useId(undefined, 'reka-select-item-text'),
   isSelected,
   onItemTextChange: (node) => {
     textValue.value = ((textValue.value || node?.textContent) ?? '').trim()
   },
-}, ['textId']))
+})
 </script>
 
 <template>

@@ -32,55 +32,41 @@ export function defineReactiveIds<T extends object, K extends keyof T>(context: 
 }
 
 /**
- * Resolves the id a referenced part renders and stores it on `context[key]`, which the
- * part that references it reads (`aria-labelledby`, `aria-describedby`, `aria-controls`).
- * Back `context[key]` with a ref, as `defineReactiveIds` does, so the reference follows.
+ * Resolves the id a trigger renders and stores it on `context.triggerId`, which the
+ * related content reads for `aria-labelledby`.
  *
- * - An `id` the consumer passes to the part wins.
+ * - An `id` the consumer passes to the trigger wins.
  * - Otherwise the id already on the context is kept, or `generate` fills it.
  * - Once mounted, and after every update, the id the element really rendered wins:
  *   with `asChild`, an `id` on the child element overrides the one passed down, and a
  *   consumer `id` that changes after mount is picked up.
- */
-export function useReferencedId<K extends string>(
-  context: { [P in K]: string },
-  key: K,
-  element: Readonly<Ref<HTMLElement | undefined>>,
-  generate?: () => string,
-) {
-  const attrs = useAttrs()
-  let consumerId = attrs.id
-  if (typeof consumerId === 'string' && consumerId)
-    context[key] = consumerId
-  else if (!context[key] && generate)
-    context[key] = generate()
-
-  onBeforeUpdate(() => {
-    if (attrs.id === consumerId)
-      return
-    consumerId = attrs.id
-    if (typeof consumerId === 'string' && consumerId)
-      context[key] = consumerId
-  })
-  const syncRendered = () => {
-    const renderedId = element.value?.id
-    if (renderedId && renderedId !== context[key])
-      context[key] = renderedId
-  }
-  onMounted(syncRendered)
-  onUpdated(syncRendered)
-}
-
-/**
- * Resolves the id a trigger renders and stores it on `context.triggerId`, which the
- * related content reads for `aria-labelledby`. See `useReferencedId`.
  */
 export function useTriggerId(
   context: { triggerId: string },
   element: Readonly<Ref<HTMLElement | undefined>>,
   generate?: () => string,
 ) {
-  useReferencedId(context, 'triggerId', element, generate)
+  const attrs = useAttrs()
+  let consumerId = attrs.id
+  if (typeof consumerId === 'string' && consumerId)
+    context.triggerId = consumerId
+  else if (!context.triggerId && generate)
+    context.triggerId = generate()
+
+  onBeforeUpdate(() => {
+    if (attrs.id === consumerId)
+      return
+    consumerId = attrs.id
+    if (typeof consumerId === 'string' && consumerId)
+      context.triggerId = consumerId
+  })
+  const syncRendered = () => {
+    const renderedId = element.value?.id
+    if (renderedId && renderedId !== context.triggerId)
+      context.triggerId = renderedId
+  }
+  onMounted(syncRendered)
+  onUpdated(syncRendered)
 }
 
 /**
@@ -93,7 +79,14 @@ export function useContentId(
   context: { contentId: string },
   element: Readonly<Ref<HTMLElement | undefined>>,
 ) {
-  useReferencedId(context, 'contentId', element)
+  useTriggerId({
+    get triggerId() {
+      return context.contentId
+    },
+    set triggerId(id) {
+      context.contentId = id
+    },
+  }, element)
   useContentElement(context, element)
 }
 

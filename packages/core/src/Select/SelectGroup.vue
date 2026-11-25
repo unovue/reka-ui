@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { createRekaContext, defineReactiveIds, useId } from '@/shared'
+import { createRekaContext, useId } from '@/shared'
 
 export interface SelectGroupProps extends PrimitiveProps {}
 
@@ -17,8 +17,8 @@ import { Primitive } from '@/Primitive'
 
 const props = defineProps<SelectGroupProps>()
 
-// The label's id, which follows a consumer `id` on the label.
-const context = provideSelectGroupContext(defineReactiveIds({ id: useId(undefined, 'reka-select-group') }, ['id']))
+// The template reads the id through the context, which follows a consumer `id` on the label.
+const context = provideSelectGroupContext({ id: useId(undefined, 'reka-select-group') })
 </script>
 
 <template>

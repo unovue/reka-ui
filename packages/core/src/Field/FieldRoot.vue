@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { FieldValidateFn, FieldValidationMode, FieldValidityState } from './useFieldValidation'
 import type { PrimitiveProps } from '@/Primitive'
-import { createRekaContext, useForwardExpose, useId } from '@/shared'
+import { createRekaContext, getReferencedId, useForwardExpose, useId } from '@/shared'
 
 export interface FieldRootProps extends PrimitiveProps {
   /**
@@ -97,6 +97,8 @@ export interface FieldRootContext {
   getControlId: () => string
   /** Id of the mounted `FieldLabel`, if any. */
   labelId: ComputedRef<string | undefined>
+  /** @internal The id a `FieldLabel` renders without a consumer `id`. */
+  generatedLabelId: string
   name: Ref<string | undefined>
   disabled: Ref<boolean>
   required: Ref<boolean>
@@ -126,11 +128,8 @@ export interface FieldRootContext {
   describedBy: Ref<string | undefined>
   /** Registers a description/error part's id. Returns an unregister function. */
   registerDescription: (id: string) => () => void
-  /**
-   * Registers the `FieldLabel`. `id` returns the id the label renders when it is not the
-   * generated one, such as a consumer `id`. Returns an unregister function.
-   */
-  registerLabel: (id?: () => string | undefined) => () => void
+  /** Registers the `FieldLabel`. Returns an unregister function. */
+  registerLabel: () => () => void
   /** Registers the field's control. Returns an unregister function. */
   registerControl: (control: FieldControlRegistration) => () => void
   /** Moves focus to the registered control. */
@@ -183,8 +182,8 @@ const { disabled, required, name } = toRefs(props)
 const fieldId = ref(useId(undefined, 'reka-field'))
 const labelIdBase = useId(undefined, 'reka-field-label')
 const labelMounted = ref(false)
-const labelIdSource = shallowRef<() => string | undefined>()
-const labelId = computed(() => labelMounted.value ? (labelIdSource.value?.() || labelIdBase) : undefined)
+// A consumer `id` on `FieldLabel` replaces the generated one.
+const labelId: ComputedRef<string | undefined> = computed(() => labelMounted.value ? getReferencedId(labelId, 'id', labelIdBase) : undefined)
 
 const touchedState = ref(false)
 const dirtyState = ref(false)
@@ -292,13 +291,10 @@ function registerDescription(id: string) {
   }
 }
 
-function registerLabel(id?: () => string | undefined) {
+function registerLabel() {
   labelMounted.value = true
-  labelIdSource.value = id
   return () => {
     labelMounted.value = false
-    if (labelIdSource.value === id)
-      labelIdSource.value = undefined
   }
 }
 
@@ -478,6 +474,7 @@ provideFieldRootContext({
   fieldId,
   getControlId,
   labelId,
+  generatedLabelId: labelIdBase,
   name,
   disabled,
   required,
