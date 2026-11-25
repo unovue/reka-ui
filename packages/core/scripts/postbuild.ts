@@ -23,6 +23,7 @@ const DEV_WARNINGS = [
   'createAgent ran after an app mounted',
 ]
 const DEV_GUARD = 'process.env.NODE_ENV !== "production"'
+const GUARD_LOOKBACK = 3
 
 function checkDevWarnings(path = new URL('../dist/', import.meta.url), found = new Set<string>(), root = true) {
   for (const file of readdirSync(path)) {
@@ -34,11 +35,13 @@ function checkDevWarnings(path = new URL('../dist/', import.meta.url), found = n
       const code = readFileSync(url, 'utf8')
       if (code.includes('import.meta.env'))
         throw new Error(`[postbuild] ${url.pathname} still reads import.meta.env. Use process.env.NODE_ENV !== 'production' in src.`)
-      for (const line of code.split('\n')) {
+      const lines = code.split('\n')
+      for (const [index, line] of lines.entries()) {
         const warning = DEV_WARNINGS.find(text => line.includes(text))
         if (!warning)
           continue
-        if (!line.includes(DEV_GUARD))
+        // The guard is on the warning's own line, or opens a block a few lines above it.
+        if (!lines.slice(Math.max(0, index - GUARD_LOOKBACK), index + 1).some(l => l.includes(DEV_GUARD)))
           throw new Error(`[postbuild] ${url.pathname}: the "${warning}" warning is not behind ${DEV_GUARD}, so it would also run in production.`)
         found.add(warning)
       }
