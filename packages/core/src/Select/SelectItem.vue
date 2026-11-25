@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
-import { createRekaContext, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
+import { createRekaContext, defineReactiveIds, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
 
 interface SelectItemContext<T = AcceptableValue> {
   value: T
@@ -219,7 +219,7 @@ onMounted(() => {
   )
 })
 
-provideSelectItemContext({
+const itemContext = provideSelectItemContext(defineReactiveIds({
   value: props.value,
   // The item's own state only: `SelectItemText` registers the native `<option>` once on mount,
   // so the root's `disabled` must not leak in (the native `<select>` already carries it).
@@ -229,7 +229,7 @@ provideSelectItemContext({
   onItemTextChange: (node) => {
     textValue.value = ((textValue.value || node?.textContent) ?? '').trim()
   },
-})
+}, ['textId']))
 </script>
 
 <template>
@@ -237,7 +237,7 @@ provideSelectItemContext({
     <Primitive
       :ref="forwardRef"
       role="option"
-      :aria-labelledby="textId"
+      :aria-labelledby="itemContext.textId"
       :data-highlighted="isFocused ? '' : undefined"
       :aria-selected="isSelected"
       :data-state="isSelected ? 'checked' : 'unchecked'"

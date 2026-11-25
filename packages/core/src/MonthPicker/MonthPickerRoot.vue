@@ -6,7 +6,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { Formatter } from '@/shared'
 import type { Direction } from '@/shared/types'
 import { focusedDateValue, isSameDateSelection, isSameYearMonth } from '@/date'
-import { createRekaContext, useDirection, useId, useLocale } from '@/shared'
+import { createRekaContext, defineReactiveIds, useDirection, useId, useLocale } from '@/shared'
 import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
 import { useMonthPicker, useMonthPickerState } from './useMonthPicker'
 
@@ -253,7 +253,7 @@ onMounted(() => {
     handleCalendarInitialFocus(parentElement.value)
 })
 
-provideMonthPickerRootContext({
+provideMonthPickerRootContext(defineReactiveIds({
   isMonthUnavailable,
   dir,
   isMonthDisabled,
@@ -281,7 +281,7 @@ provideMonthPickerRootContext({
   onMonthChange,
   minValue,
   maxValue,
-})
+}, ['headingId']))
 </script>
 
 <template>

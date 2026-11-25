@@ -4,7 +4,7 @@ import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { computed, ref, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
-import { createRekaContext, useForwardExpose, useId } from '@/shared'
+import { createRekaContext, defineReactiveIds, useForwardExpose, useId } from '@/shared'
 import { injectStepperRootContext } from './StepperRoot.vue'
 
 export const [injectStepperItemContext, provideStepperItemContext] = createRekaContext<StepperItemContext>('StepperItem')
@@ -82,7 +82,7 @@ const isFocusable = computed(() => {
 const hasTitle = ref(false)
 const hasDescription = ref(false)
 
-provideStepperItemContext({
+provideStepperItemContext(defineReactiveIds({
   titleId,
   descriptionId,
   hasTitle,
@@ -92,7 +92,7 @@ provideStepperItemContext({
   disabled,
   step,
   isFocusable,
-})
+}, ['titleId', 'descriptionId']))
 </script>
 
 <template>

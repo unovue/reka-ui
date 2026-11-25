@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { AcceptableInputValue } from './TagsInputRoot.vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { computed, toRefs } from 'vue'
-import { createRekaContext, useForwardExpose } from '@/shared'
+import { createRekaContext, defineReactiveIds, useForwardExpose } from '@/shared'
 import { injectTagsInputRootContext } from './TagsInputRoot.vue'
 
 export interface TagsInputItemProps extends PrimitiveProps {
@@ -43,14 +43,14 @@ const isSelected = computed(() => context.selectedElement.value === currentEleme
 
 const disabled = computed(() => props.disabled || context.disabled.value)
 
-const itemContext = provideTagsInputItemContext({
+const itemContext = provideTagsInputItemContext(defineReactiveIds({
   value,
   isSelected,
   disabled,
   onRemove: () => context.onRemoveItem(currentElement.value),
   textId: '',
   displayValue: computed(() => context.displayValue(value.value)),
-})
+}, ['textId']))
 </script>
 
 <template>

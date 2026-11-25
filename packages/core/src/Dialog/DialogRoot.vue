@@ -99,7 +99,7 @@ provideDialogRootContext(defineReactiveIds({
   triggerElement,
   contentElement,
   overlayPresent,
-}, ['contentId']))
+}, ['contentId', 'titleId', 'descriptionId']))
 </script>
 
 <template>

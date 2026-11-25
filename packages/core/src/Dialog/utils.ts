@@ -10,8 +10,9 @@ export type WarningProps = {
   titleName?: string
   contentName?: string
   componentLink?: string
-  titleId: string
-  descriptionId: string
+  /** Read on mount, after a consumer `id` on the title or description has been applied. */
+  titleId: () => string
+  descriptionId: () => string
   contentElement: Ref<HTMLElement | undefined>
 }
 
@@ -32,14 +33,14 @@ For more information, see https://www.reka-ui.com/docs/components/${componentLin
   const DESCRIPTION_MESSAGE = `Warning: Missing \`Description\` or \`aria-describedby="undefined"\` for ${contentName}.`
 
   onMounted(() => {
-    const hasTitle = document.getElementById(titleId)
+    const hasTitle = document.getElementById(titleId())
     if (!hasTitle)
       console.warn(TITLE_MESSAGE)
 
     const describedById = contentElement.value?.getAttribute('aria-describedby')
     // if we have an id and the user hasn't set aria-describedby="undefined"
-    if (descriptionId && describedById) {
-      const hasDescription = document.getElementById(descriptionId)
+    if (descriptionId() && describedById) {
+      const hasDescription = document.getElementById(descriptionId())
       if (!hasDescription)
         console.warn(DESCRIPTION_MESSAGE)
     }

@@ -18,20 +18,25 @@ export interface FieldLabelProps extends LabelProps {
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
 import { Label } from '@/Label'
-import { useForwardExpose } from '@/shared'
+import { defineReactiveIds, useForwardExpose, useReferencedId } from '@/shared'
 import { injectFieldRootContext } from './FieldRoot.vue'
 
 const props = withDefaults(defineProps<FieldLabelProps>(), {
   nativeLabel: true,
 })
 
-useForwardExpose()
+const { forwardRef, currentElement } = useForwardExpose()
 
 const fieldContext = injectFieldRootContext()
 
+// A consumer `id` on the label replaces the field's generated one, which the control's
+// `aria-labelledby` then follows.
+const label = defineReactiveIds({ id: '' }, ['id'])
+useReferencedId(label, 'id', currentElement)
+
 let unregister: (() => void) | undefined
 onMounted(() => {
-  unregister = fieldContext.registerLabel()
+  unregister = fieldContext.registerLabel(() => label.id || undefined)
 })
 onBeforeUnmount(() => unregister?.())
 
@@ -49,6 +54,7 @@ function handleClick(event: MouseEvent) {
   <Label
     v-bind="fieldContext.dataAttributes.value"
     :id="fieldContext.labelId.value ?? undefined"
+    :ref="forwardRef"
     :as="as"
     :as-child="asChild"
     :for="nativeLabel ? (props.for ?? fieldContext.getControlId()) : undefined"

@@ -7,7 +7,7 @@ import type { Formatter } from '@/shared'
 import type { DateRange } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { isSameYear } from '@/date'
-import { createRekaContext, useDirection, useId, useKbd, useLocale } from '@/shared'
+import { createRekaContext, defineReactiveIds, useDirection, useId, useKbd, useLocale } from '@/shared'
 import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
 import { useYearPicker } from '@/YearPicker/useYearPicker'
 import { useRangeYearPickerState } from './useRangeYearPicker'
@@ -312,7 +312,7 @@ useEventListener(parentElement, 'keydown', (ev) => {
   }
 })
 
-provideYearRangePickerRootContext({
+provideYearRangePickerRootContext(defineReactiveIds({
   isYearUnavailable,
   startValue,
   endValue,
@@ -351,7 +351,7 @@ provideYearRangePickerRootContext({
   minValue,
   maxValue,
   yearsPerPage,
-})
+}, ['headingId']))
 
 onMounted(() => {
   if (initialFocus.value)

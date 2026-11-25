@@ -236,7 +236,7 @@ provideDrawerRootContext(defineReactiveIds({
   contentId,
   titleId,
   descriptionId,
-}, ['contentId']))
+}, ['contentId', 'titleId', 'descriptionId']))
 
 function handleClose() {
   handleOpenChange(false, 'close-press')

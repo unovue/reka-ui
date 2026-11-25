@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { createRekaContext, useId } from '@/shared'
+import { createRekaContext, defineReactiveIds, useId } from '@/shared'
 
 export interface MenuGroupProps extends PrimitiveProps {}
 
@@ -17,15 +17,15 @@ import { Primitive } from '@/Primitive'
 
 const props = defineProps<MenuGroupProps>()
 
-const id = useId(undefined, 'reka-menu-group')
-provideMenuGroupContext({ id })
+// The label's id, which follows a consumer `id` on the label.
+const context = provideMenuGroupContext(defineReactiveIds({ id: useId(undefined, 'reka-menu-group') }, ['id']))
 </script>
 
 <template>
   <Primitive
     role="group"
     v-bind="props"
-    :aria-labelledby="id"
+    :aria-labelledby="context.id"
   >
     <slot />
   </Primitive>

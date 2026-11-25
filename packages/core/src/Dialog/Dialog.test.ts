@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref, Transition } from 'vue'
 import { sleep } from '@/test'
-import { DialogClose, DialogContent, DialogOverlay, DialogRoot, DialogTitle, DialogTrigger, injectDialogRootContext } from '.'
+import { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogRoot, DialogTitle, DialogTrigger, injectDialogRootContext } from '.'
 
 const OPEN_TEXT = 'Open'
 const CLOSE_TEXT = 'Close'
@@ -526,6 +526,27 @@ describe('given a modal Dialog (#2677)', () => {
     await nextTick()
 
     expect(document.body.style.pointerEvents).toBe('none')
+    wrapper.unmount()
+  })
+})
+
+describe('given a Dialog whose title and description have consumer ids', () => {
+  it('points aria-labelledby and aria-describedby at them, without a missing-title warning', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    onTestFinished(() => warn.mockRestore())
+    const wrapper = mount(defineComponent({
+      render: () => h(DialogRoot, { defaultOpen: true }, () => h(DialogContent, () => [
+        h(DialogTitle, { id: 'my-title' }, () => TITLE_TEXT),
+        h(DialogDescription, { id: 'my-description' }, () => 'Description'),
+      ])),
+    }), { attachTo: document.body })
+    await flushPromises()
+
+    const content = document.querySelector('[role="dialog"]')!
+    expect(content.getAttribute('aria-labelledby')).toBe('my-title')
+    expect(content.getAttribute('aria-describedby')).toBe('my-description')
+    expect(document.getElementById('my-title')?.textContent).toBe(TITLE_TEXT)
+    expect(warn.mock.calls.flat().join('\n')).not.toContain('requires a `DialogTitle`')
     wrapper.unmount()
   })
 })

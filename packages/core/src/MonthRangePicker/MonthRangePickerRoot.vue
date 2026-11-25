@@ -8,7 +8,7 @@ import type { DateRange } from '@/shared/date'
 import type { Direction } from '@/shared/types'
 import { compareYearMonth, isSameYearMonth } from '@/date'
 import { useMonthPicker } from '@/MonthPicker/useMonthPicker'
-import { createRekaContext, useDirection, useId, useKbd, useLocale } from '@/shared'
+import { createRekaContext, defineReactiveIds, useDirection, useId, useKbd, useLocale } from '@/shared'
 import { getDefaultDate, handleCalendarInitialFocus } from '@/shared/date'
 import { useRangeMonthPickerState } from './useRangeMonthPicker'
 
@@ -313,7 +313,7 @@ useEventListener(parentElement, 'keydown', (ev) => {
   }
 })
 
-provideMonthRangePickerRootContext({
+provideMonthRangePickerRootContext(defineReactiveIds({
   isMonthUnavailable,
   startValue,
   endValue,
@@ -351,7 +351,7 @@ provideMonthRangePickerRootContext({
   maximumMonths,
   minValue,
   maxValue,
-})
+}, ['headingId']))
 
 onMounted(() => {
   if (initialFocus.value)

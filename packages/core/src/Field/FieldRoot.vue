@@ -126,8 +126,11 @@ export interface FieldRootContext {
   describedBy: Ref<string | undefined>
   /** Registers a description/error part's id. Returns an unregister function. */
   registerDescription: (id: string) => () => void
-  /** Registers the `FieldLabel`. Returns an unregister function. */
-  registerLabel: () => () => void
+  /**
+   * Registers the `FieldLabel`. `id` returns the id the label renders when it is not the
+   * generated one, such as a consumer `id`. Returns an unregister function.
+   */
+  registerLabel: (id?: () => string | undefined) => () => void
   /** Registers the field's control. Returns an unregister function. */
   registerControl: (control: FieldControlRegistration) => () => void
   /** Moves focus to the registered control. */
@@ -180,7 +183,8 @@ const { disabled, required, name } = toRefs(props)
 const fieldId = ref(useId(undefined, 'reka-field'))
 const labelIdBase = useId(undefined, 'reka-field-label')
 const labelMounted = ref(false)
-const labelId = computed(() => labelMounted.value ? labelIdBase : undefined)
+const labelIdSource = shallowRef<() => string | undefined>()
+const labelId = computed(() => labelMounted.value ? (labelIdSource.value?.() || labelIdBase) : undefined)
 
 const touchedState = ref(false)
 const dirtyState = ref(false)
@@ -288,10 +292,13 @@ function registerDescription(id: string) {
   }
 }
 
-function registerLabel() {
+function registerLabel(id?: () => string | undefined) {
   labelMounted.value = true
+  labelIdSource.value = id
   return () => {
     labelMounted.value = false
+    if (labelIdSource.value === id)
+      labelIdSource.value = undefined
   }
 }
 

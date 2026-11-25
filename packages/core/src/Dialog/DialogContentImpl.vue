@@ -80,8 +80,8 @@ if (process.env.NODE_ENV !== 'production') {
     titleName: 'DialogTitle',
     contentName: 'DialogContent',
     componentLink: 'dialog.html#title',
-    titleId: rootContext.titleId,
-    descriptionId: rootContext.descriptionId,
+    titleId: () => rootContext.titleId,
+    descriptionId: () => rootContext.descriptionId,
     contentElement,
   })
 }
