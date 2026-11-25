@@ -89,6 +89,9 @@ jobs:
       - name: Install Chromium
         run: pnpm --filter reka-ui exec playwright install --with-deps chromium
 
+      - name: Test (Vapor build plugins, Node)
+        run: pnpm --filter reka-ui test:vapor:node
+
       - name: Test (Vapor)
         run: pnpm --filter reka-ui test:vapor
 

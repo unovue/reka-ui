@@ -44,10 +44,14 @@ const ALREADY_PURE = /\/\*\s*[#@]__PURE__\s*\*\/\s*$/
 function pureAnnotations() {
   return {
     name: 'reka-vapor-pure-annotations',
-    renderChunk(code) {
-      const out = code.replace(PURE_PATTERN, (match, _fn, _suffix, offset) =>
-        ALREADY_PURE.test(code.slice(Math.max(0, offset - 30), offset)) ? match : `/*#__PURE__*/ ${match}`)
-      return out === code ? null : { code: out, map: null }
+    renderChunk(code, chunk) {
+      const s = new compiler.MagicString(code)
+      for (const m of code.matchAll(PURE_PATTERN)) {
+        if (!ALREADY_PURE.test(code.slice(Math.max(0, m.index - 30), m.index)))
+          s.appendLeft(m.index, '/*#__PURE__*/ ')
+      }
+      // A source map for the inserted text, so the columns after it still map back to the source
+      return s.hasChanged() ? { code: s.toString(), map: s.generateMap({ hires: 'boundary', source: chunk.fileName, includeContent: false }) } : null
     },
   }
 }

@@ -28,9 +28,30 @@ export const compiler = require('vue-vapor/compiler-sfc')
 // Cross-file prop types (`extends PrimitiveProps`) need TypeScript
 compiler.registerTS(() => require('typescript'))
 
-const SRC = resolve(core, 'src')
-const src = p => resolve(SRC, p)
-const rel = id => relative(SRC, id.split('?')[0]).replaceAll('\\', '/')
+/**
+ * Path helpers for comparing module ids. Vite ids use forward slashes on every platform, while
+ * `path.resolve()` returns backslashes on Windows, so both sides go through `toPosix` first. (Vite's
+ * own `normalizePath` converts only on Windows; this one always does, so it is testable anywhere.)
+ */
+export const toPosix = p => p.replaceAll('\\', '/')
+export function createPaths(srcDir) {
+  const root = toPosix(srcDir).replace(/\/$/, '')
+  const clean = id => toPosix(id.split('?')[0])
+  return {
+    root,
+    /** Whether `id` (a Vite id or a file path, any separator) is a module under `srcDir`. */
+    isSrc: id => clean(id).startsWith(`${root}/`),
+    /** `id` relative to `srcDir`, with forward slashes. */
+    rel: id => clean(id).slice(root.length + 1),
+    /** The comparable form of a path under `srcDir`. */
+    key: p => toPosix(resolve(srcDir, p)),
+  }
+}
+
+const paths = createPaths(resolve(core, 'src'))
+const isSrc = paths.isSrc
+const src = paths.key
+const rel = paths.rel
 const INTERNALS = JSON.stringify(resolve(here, 'src/shared/internals.ts'))
 const README = 'packages/core/vapor/README.md'
 
@@ -76,7 +97,7 @@ function newStats() {
   return { totals: {}, overrides: {}, vueuse: {}, files: {} }
 }
 function count(id, key, n = 1) {
-  if (!id.startsWith(SRC))
+  if (!isSrc(id))
     return
   const file = rel(id)
   stats.totals[key] = (stats.totals[key] ?? 0) + n
@@ -151,6 +172,11 @@ export function transformExpectations() {
 // ---------------------------------------------------------------------------------------------
 // Module overrides
 
+/** The Vapor module that replaces `id` (a Vite id, any separator), if any. */
+export function overrideFor(id) {
+  return MODULE_OVERRIDES[toPosix(id.split('?')[0])]
+}
+
 function overrides() {
   return {
     name: 'reka-vapor-overrides',
@@ -159,11 +185,12 @@ function overrides() {
       if (!importer || id.includes('?'))
         return null
       const r = await this.resolve(id, importer, { ...opts, skipSelf: true })
-      if (!r || !MODULE_OVERRIDES[r.id])
+      const target = r && overrideFor(r.id)
+      if (!target)
         return null
       const key = rel(r.id)
       stats.overrides[key] = (stats.overrides[key] ?? 0) + 1
-      return MODULE_OVERRIDES[r.id]
+      return target
     },
   }
 }
@@ -239,7 +266,7 @@ function rewriteImports(code, id) {
         else if (isVueUse && VUEUSE_SHIMMED.has(name)) {
           added.push(`import { ${name} as ${local} } from ${VUEUSE_SHIM}`)
           count(id, 'vueuse')
-          if (id.startsWith(SRC))
+          if (isSrc(id))
             stats.vueuse[name] = (stats.vueuse[name] ?? 0) + 1
           changed = true
         }
@@ -620,7 +647,7 @@ function srcTransformsPlugin() {
     name: 'reka-vapor-src-transforms',
     enforce: 'pre',
     transform(code, id) {
-      if (!id.startsWith(SRC) || id.includes('?') || !/\.(?:vue|ts)$/.test(id))
+      if (!isSrc(id) || id.includes('?') || !/\.(?:vue|ts)$/.test(id))
         return null
       let out = rewriteImports(code, id)
       if (id.endsWith('.vue')) {
@@ -651,7 +678,7 @@ function exposeElementPlugin() {
       if (!/\.vue(?:\?vue&type=script|$)/.test(id) || !/__vapor|defineVaporComponent/.test(code))
         return null
       if (!SETUP.test(code)) {
-        if (id.startsWith(SRC))
+        if (isSrc(id))
           throw new Error(`[reka-vapor] exposeElementPlugin (vapor/plugins.mjs): no \`setup(__props…) {\` in the Vapor output of ${rel(id)}, so it would lose its default \`$el\` expose. The compiler output changed: update SETUP in vapor/plugins.mjs.`)
         return null
       }
