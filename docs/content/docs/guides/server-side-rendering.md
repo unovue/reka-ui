@@ -19,7 +19,7 @@ You should be able to use all of our primitives with both approaches, for exampl
 
 ## Stable ids
 
-Reka UI generates the `id` attributes that link its parts together (`aria-controls`, `aria-labelledby`, …), and these must be identical in the server render and the client render. They come from Vue's [`useId`](https://vuejs.org/api/composition-api-helpers.html#useid), which is stable across both, so no setup is needed. Reka UI requires Vue 3.5 or later.
+Reka UI generates the `id` attributes that link its parts together (`aria-controls`, `aria-labelledby`, …), and these must be identical in the server render and the client render. They come from Vue's [`useId`](https://vuejs.org/api/composition-api-helpers.html#useid), which is stable across both, so no setup is needed. Reka UI requires Vue 3.5.22 or later.
 
 If you render more than one Vue app instance on the same page, give each one a distinct [`app.config.idPrefix`](https://vuejs.org/api/application.html#app-config-idprefix) so their ids don't collide.
 

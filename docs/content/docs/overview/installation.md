@@ -8,7 +8,7 @@ A quick tutorial to walk through installing the packages, as well as the support
 
 <InstallationTabs value="reka-ui" />
 
-Reka UI requires Vue 3.5 or later.
+Reka UI requires Vue 3.5.22 or later.
 
 ## Nuxt modules
 

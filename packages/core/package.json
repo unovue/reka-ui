@@ -103,7 +103,7 @@
     "vapor:expectations": "vite build -c vapor/vite.config.mjs --mode update-expectations"
   },
   "peerDependencies": {
-    "vue": ">= 3.5.0"
+    "vue": ">= 3.5.22"
   },
   "dependencies": {
     "@floating-ui/vue": "^2.0.1",
