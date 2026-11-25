@@ -15,6 +15,7 @@ export interface TabsTriggerProps extends PrimitiveProps {
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
+import { useSelectorKey } from '@/shared/createKeyedSelector'
 import { useAgentItem } from '@/shared/useAgentRegistration'
 import { injectTabsRootContext } from './TabsRoot.vue'
 import { makeContentId, makeTriggerId, useTabsPartId } from './utils'
@@ -33,14 +34,14 @@ const contentId = computed(() => rootContext.contentIds.value.has(props.value)
   ? rootContext.renderedContentIds.value.get(props.value) ?? makeContentId(rootContext.baseId, props.value)
   : undefined)
 
-const isSelected = computed(() => props.value === rootContext.modelValue.value)
+const isSelected = useSelectorKey(rootContext.selection, () => props.value)
 </script>
 
 <template>
   <RovingFocusItem
     as-child
     :focusable="!disabled"
-    :active="isSelected"
+    :active="isSelected()"
   >
     <Primitive
       :id="triggerId"
@@ -49,9 +50,9 @@ const isSelected = computed(() => props.value === rootContext.modelValue.value)
       :type="as === 'button' ? 'button' : undefined"
       :as="as"
       :as-child="asChild"
-      :aria-selected="isSelected ? 'true' : 'false'"
+      :aria-selected="isSelected() ? 'true' : 'false'"
       :aria-controls="contentId"
-      :data-state="isSelected ? 'active' : 'inactive'"
+      :data-state="isSelected() ? 'active' : 'inactive'"
       :disabled="disabledAttr(disabled, props.as, props.asChild)"
       :data-disabled="disabled ? '' : undefined"
       :data-orientation="rootContext.orientation.value"
@@ -74,7 +75,7 @@ const isSelected = computed(() => props.value === rootContext.modelValue.value)
         // handle 'automatic' activation if necessary
         // ie. activate tab following focus
         const isAutomaticActivation = rootContext.activationMode !== 'manual';
-        if (!isSelected && !disabled && isAutomaticActivation) {
+        if (!isSelected() && !disabled && isAutomaticActivation) {
           rootContext.changeModelValue(value);
         }
       }"
