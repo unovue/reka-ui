@@ -275,6 +275,14 @@ Interactable container for displaying the cell years. Clicking it selects the ye
       `
     },
     {
+      keys: ['Home'],
+      description: 'When the focus is on <Code>YearPickerCellTrigger</Code>, it moves to the first year of the row.'
+    },
+    {
+      keys: ['End'],
+      description: 'When the focus is on <Code>YearPickerCellTrigger</Code>, it moves to the last year of the row.'
+    },
+    {
       keys: ['PageUp'],
       description: 'When the focus is on <Code>YearPickerCellTrigger</Code>, it navigates to the previous page of years.'
     },
