@@ -131,6 +131,7 @@ The same template also renders with `reka-ui`. There `props` is empty and the ch
 - **Vue internals.** Vapor mode has no public API yet for a few things Reka UI needs, such as forwarding a template ref or finding a component's root element. The entry reads them from Vue internals and checks at import that they are there. If a later Vue 3.6 release removes one, the import throws `reka-ui/vapor needs Vue 3.6.0-rc.16+ (…); vue@<version> has no "<name>" export` instead of failing later.
 - **Release candidate.** Vue 3.6 is a release candidate. A new RC may change Vapor behavior. Each Reka UI release names the Vue version it was tested against.
 - **TypeScript and `v-slot="{ props }"`.** The slot types come from `reka-ui` and do not list `props` yet, so `vue-tsc` reports `Property 'props' does not exist` on that form. The template still works. Until the types include it, silence the error with `<!-- @vue-expect-error -->` on the line before the component, or bind `v-slot="slot"` and read `(slot as any).props`.
+- **No agent bridge yet.** The agent bridge in `reka-ui/agent` doesn't see components from `reka-ui/vapor`. A bridge on the page does no harm: the components render and work as usual, and the bridge lists only the native fields and buttons they render.
 - **`asChild` attributes set after mount.** With the template form, an attribute that your element does not have when it mounts and gains later loses to Reka UI's value. Use the `v-slot="{ props }"` form if you need that.
 
 ## Alternative: the interop plugin

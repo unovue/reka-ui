@@ -235,9 +235,17 @@ export function remember(entry: Entry, parts: Part[]) {
 
 const nameOfType = (type: unknown) => (type as { __name?: string, name?: string } | undefined)?.__name ?? (type as { name?: string } | undefined)?.name
 
+// The component being set up, if it's a VDOM one. A Vapor component has none to read, so the bridge
+// doesn't see components from \`reka-ui/vapor\` yet, and their calls do nothing.
+function vdomInstance() {
+  const instance = getCurrentInstance()
+  // A Vapor build may stand in an object with only a vnode for it; a VDOM instance has its number and subtree.
+  return instance && !(instance as { vapor?: boolean }).vapor && typeof instance.uid === 'number' && 'subTree' in instance ? instance : null
+}
+
 function onRoot(kind: string, ctx: unknown, props: unknown, element?: unknown, extra?: unknown) {
   const adapter = adapters[kind]
-  const instance = getCurrentInstance()
+  const instance = vdomInstance()
   if (kind === 'portal' && instance) {
     // A portal's content is read as inside the place the portal sits, for the marks around it.
     portals.add(instance as never)
@@ -269,7 +277,7 @@ function onRoot(kind: string, ctx: unknown, props: unknown, element?: unknown, e
 
 function onItem(rootContext: unknown, props: unknown, element: unknown, part?: string) {
   const set = rootContext ? itemSets.get(rootContext as object) : undefined
-  const instance = getCurrentInstance()
+  const instance = vdomInstance()
   if (!set || !instance)
     return
   // The instance stands in for a part whose element ref isn't bound, by the element it rendered.

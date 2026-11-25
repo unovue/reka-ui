@@ -120,6 +120,8 @@ A step fails when its change didn't take, for example when a controlled `v-model
 
 Native fields are set the way typing does — the value, then `input` and `change` events — so `v-model` hears them. A Combobox only knows its items while it is open: a `setValue` with an item's label opens it for a moment to read them, asking `allow` first. Components that aren't listed are read through their native elements where they have them.
 
+The bridge sees components from `reka-ui`, not yet from the experimental `reka-ui/vapor` entry: on a Vapor page it creates fine and the components work as usual, but they aren't listed, only the native fields and buttons they render.
+
 A component that is disabled, read-only, inside a disabled `<fieldset>` or an `inert` element, or behind an open modal dialog or menu reports `disabled: true` and no actions, and a step that names something behind an open modal fails with the modal's name and buttons.
 
 ## Marks

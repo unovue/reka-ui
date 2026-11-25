@@ -10,7 +10,7 @@ import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, Accord
 import { CheckboxRoot } from '@/Checkbox'
 import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from '@/Collapsible'
 import { ComboboxAnchor, ComboboxCancel, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxRoot, ComboboxViewport } from '@/Combobox'
-import { DialogContent, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from '@/Dialog'
+import { DialogContent, DialogDescription, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from '@/Dialog'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
 import { ListboxContent, ListboxItem, ListboxRoot } from '@/Listbox'
 import { NumberFieldDecrement, NumberFieldIncrement, NumberFieldInput, NumberFieldRoot } from '@/NumberField'
@@ -1470,5 +1470,19 @@ describe('sixth review findings', () => {
     ]))
     expect((await agent.act({ steps: [{ ref: 'Doc', action: 'setOpen', args: [false] }] })).ok).toBe(true)
     expect(open.value).toBe(false)
+  })
+})
+
+describe('merged with v2', () => {
+  it('a dialog whose title and description carry the app\'s own ids is still named and read by them', async () => {
+    const agent = createAgent()
+    agents.push(agent)
+    mount(defineComponent({ render: () => h(DialogRoot, { defaultOpen: true, modal: false }, () => [
+      h(DialogTrigger, () => 'Open'),
+      h(DialogPortal, () => h(DialogContent, () => [h(DialogTitle, { id: 'my-title' }, () => 'Mail'), h(DialogDescription, { id: 'my-description' }, () => 'Your inbox')])),
+    ]) }), { attachTo: document.body })
+    await settle()
+    expect(document.querySelector('[role=dialog]')!.getAttribute('aria-labelledby')).toBe('my-title')
+    expect(agent.snapshot().find(c => c.component === 'dialog')).toMatchObject({ label: 'Mail', text: ['Mail', 'Your inbox'] })
   })
 })
