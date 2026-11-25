@@ -13,6 +13,9 @@ const excludedComposables: string[] = [
   'useId',
 ]
 
+/** Below anything Nuxt assigns to scanned composables, including those of extended layers. */
+const COMPOSABLE_PRIORITY = -1000
+
 export interface ModuleOptions {
   /**
    * Auto-import components. Pass an object to enable only some component groups.
@@ -67,8 +70,9 @@ export default defineNuxtModule<ModuleOptions>({
           .map(name => ({
             name,
             from: 'reka-ui',
-            // Let the app's own composables, and those of other modules, win a name clash.
-            priority: -1,
+            // Lowest priority: the app's own composables, those of its layers (which Nuxt
+            // registers at -1, -2, ...) and those of other modules win a name clash.
+            priority: COMPOSABLE_PRIORITY,
           })),
       )
     }

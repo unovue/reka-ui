@@ -35,11 +35,13 @@ describe('nuxt module', () => {
     expect(importedNames()).toEqual(utilities.utilities.filter(name => name !== 'useId'))
   })
 
-  it('imports composables from reka-ui, below the priority of the app\'s own imports', async () => {
+  it('imports composables from reka-ui, below the priority of app and layer composables', async () => {
     await setup()
 
     for (const entry of addImports.mock.calls.flatMap(([imports]) => imports)) {
-      expect(entry).toEqual({ name: entry.name, from: 'reka-ui', priority: -1 })
+      expect(entry).toEqual({ name: entry.name, from: 'reka-ui', priority: -1000 })
+      // Nuxt registers the composables of extended layers at -1, -2, ...
+      expect(entry.priority).toBeLessThan(-100)
       expect(RekaUI).toHaveProperty(entry.name)
     }
   })
