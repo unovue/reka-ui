@@ -112,10 +112,48 @@ export function adopt(el: Element, getProps: () => Record<string, any>, { overri
     if (!prop || !(prop in el))
       return false
     if (prop === 'value')
-      (el as any).value = value == null ? '' : String(value)
+      (el as any).value = value == null || value === false ? '' : String(value)
     else
       (el as any)[prop] = !!value || value === ''
     return true
+  }
+  /** Clears a live property: `value` to empty, a boolean to `false`. */
+  const clearLive = (attr: string) => setLive(attr, LIVE_PROPS[attr] === 'value' ? null : false)
+
+  const applyClass = (value: unknown) => {
+    const next = new Set(normalizeClass(value))
+    for (const c of addedClasses) {
+      if (!next.has(c)) {
+        el.classList.remove(c)
+        addedClasses.delete(c)
+      }
+    }
+    for (const c of next) {
+      if (!childClasses.has(c) && !el.classList.contains(c)) {
+        el.classList.add(c)
+        addedClasses.add(c)
+      }
+    }
+  }
+  const applyStyle = (value: unknown) => {
+    const style = (el as HTMLElement).style
+    if (!style)
+      return
+    const next = normalizeStyle(value)
+    const names = new Set(Object.keys(next).map(cssName))
+    for (const name of ownedStyles) {
+      if (!names.has(name)) {
+        style.removeProperty(name)
+        ownedStyles.delete(name)
+      }
+    }
+    for (const k in next) {
+      const name = cssName(k)
+      if (!override && childStyles.has(name))
+        continue
+      style.setProperty(name, next[k] == null ? '' : String(next[k]))
+      ownedStyles.add(name)
+    }
   }
 
   renderEffect(() => {
@@ -128,7 +166,8 @@ export function adopt(el: Element, getProps: () => Record<string, any>, { overri
         if (!value)
           continue
         const { type, options } = eventName(key)
-        const id = `${type}|${options.capture ? 1 : 0}`
+        // keyed by the prop, so `onClick` and `onClickOnce` stay two listeners with their own options
+        const id = key
         seen.add(id)
         const existing = listeners.get(id)
         if (existing) {
@@ -150,52 +189,20 @@ export function adopt(el: Element, getProps: () => Record<string, any>, { overri
         el.addEventListener(type, entry.invoker, options)
         continue
       }
-      if (key === 'class') {
-        const next = new Set(normalizeClass(value))
-        for (const c of addedClasses) {
-          if (!next.has(c)) {
-            el.classList.remove(c)
-            addedClasses.delete(c)
-          }
-        }
-        for (const c of next) {
-          if (!childClasses.has(c) && !el.classList.contains(c)) {
-            el.classList.add(c)
-            addedClasses.add(c)
-          }
-        }
+      // reconciled after the loop, also when the props no longer have them
+      if (key === 'class' || key === 'style')
         continue
-      }
-      if (key === 'style') {
-        const style = (el as HTMLElement).style
-        const next = normalizeStyle(value)
-        const names = new Set(Object.keys(next).map(cssName))
-        for (const name of ownedStyles) {
-          if (!names.has(name)) {
-            style.removeProperty(name)
-            ownedStyles.delete(name)
-          }
-        }
-        for (const k in next) {
-          const name = cssName(k)
-          if (!override && childStyles.has(name))
-            continue
-          style.setProperty(name, next[k] == null ? '' : String(next[k]))
-          ownedStyles.add(name)
-        }
-        continue
-      }
       const attr = key.startsWith('aria') || key.startsWith('data') ? hyphenate(key) : key
       if (childOwned.has(attr))
         continue
       keys.add(attr)
       // Drop `disabled: false` on plain tags, as v2's `Slot` does
       if (attr === 'disabled' && value === false && isPlainTag(el.tagName.toLowerCase())) {
-        setLive(attr, false)
+        clearLive(attr)
         el.removeAttribute('disabled')
       }
       else if (value == null || (value === false && !attr.startsWith('aria-'))) {
-        setLive(attr, false)
+        clearLive(attr)
         el.removeAttribute(attr)
       }
       // A boolean the element has as a property (`checked`, `disabled`, …) is set as that property
@@ -205,6 +212,8 @@ export function adopt(el: Element, getProps: () => Record<string, any>, { overri
         el.setAttribute(attr, value === true ? (attr.startsWith('aria-') ? 'true' : '') : String(value))
       }
     }
+    applyClass(props.class)
+    applyStyle(props.style)
     for (const [id, entry] of listeners) {
       if (!seen.has(id)) {
         el.removeEventListener(entry.type, entry.invoker, entry.options)
@@ -213,7 +222,7 @@ export function adopt(el: Element, getProps: () => Record<string, any>, { overri
     }
     for (const k of prevKeys) {
       if (!keys.has(k)) {
-        setLive(k, false)
+        clearLive(k)
         el.removeAttribute(k)
       }
     }

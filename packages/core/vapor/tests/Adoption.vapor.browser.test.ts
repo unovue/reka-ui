@@ -7,6 +7,9 @@ import { byId, exposed, mount, text, until } from './utils'
 declare const __VAPOR__: boolean
 
 interface State {
+  inputValue: string | null
+  decorated: boolean
+  nestedSwapped: boolean
   withListener: boolean
   checked: boolean
   parentClass: string
@@ -33,6 +36,43 @@ describe('asChild adoption (Vapor)', () => {
     await nextTick()
     await userEvent.click(byId('listener'))
     expect(text('clicks')).toBe('1')
+  })
+
+  it('keeps a plain and a once listener for the same event apart', async () => {
+    await mount(Fixture)
+    await userEvent.click(byId('once'))
+    await userEvent.click(byId('once'))
+    await until(() => expect(text('plain-clicks')).toBe('2'))
+    expect(text('once-clicks')).toBe('1')
+  })
+
+  it('clears an adopted input value to empty', async () => {
+    await mount(Fixture)
+    const input = byId<HTMLInputElement>('value-input')
+    expect(input.value).toBe('abc')
+    state().inputValue = null
+    await until(() => expect(input.value).toBe(''))
+    expect(input.hasAttribute('value')).toBe(false)
+  })
+
+  it('takes adopted class and style off when the props drop them', async () => {
+    await mount(Fixture)
+    const el = byId('decorated')
+    expect([...el.classList].sort()).toEqual(['own', 'parent'])
+    expect(el.style.color).toBe('blue')
+    state().decorated = false
+    await nextTick()
+    expect([...el.classList]).toEqual(['own'])
+    expect(el.style.color).toBe('')
+  })
+
+  it('nested asChild Primitives both follow a root their shared slot replaces', async () => {
+    await mount(Fixture)
+    state().nestedSwapped = true
+    await until(() => expect(document.getElementById('nested-b')).not.toBeNull())
+    const el = byId('nested-b')
+    expect(el.dataset.inner).toBe('yes')
+    expect(el.dataset.outer).toBe('yes')
   })
 
   it('resets a live boolean property, not only its attribute', async () => {

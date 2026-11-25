@@ -11,6 +11,11 @@ const color = ref('blue')
 const swapped = ref(false)
 const swapClicks = ref(0)
 const afterLeaves = ref(0)
+const plainClicks = ref(0)
+const onceClicks = ref(0)
+const inputValue = ref<string | null>('abc')
+const decorated = ref(true)
+const nestedSwapped = ref(false)
 
 // A row, a radio item and popover content whose slot root swaps while they stay mounted
 const rowSwapped = ref(false)
@@ -26,7 +31,7 @@ const contentTag = ref('div')
 const nav = ref('')
 const rows = Array.from({ length: 100 }, (_, i) => `Row ${i}`)
 
-defineExpose({ withListener, checked, parentClass, color, swapped, rowSwapped, radioSwapped, popoverOpen, popoverSwapped, collapsibleOpen, contentTag, nav })
+defineExpose({ inputValue, decorated, nestedSwapped, withListener, checked, parentClass, color, swapped, rowSwapped, radioSwapped, popoverOpen, popoverSwapped, collapsibleOpen, contentTag, nav })
 </script>
 
 <template>
@@ -39,6 +44,56 @@ defineExpose({ withListener, checked, parentClass, color, swapped, rowSwapped, r
     </button>
   </Primitive>
   <span id="clicks">{{ clicks }}</span>
+
+  <Primitive
+    as-child
+    v-bind="{ onClick: () => plainClicks++, onClickOnce: () => onceClicks++ }"
+  >
+    <button id="once">
+      once
+    </button>
+  </Primitive>
+  <span id="plain-clicks">{{ plainClicks }}</span>
+  <span id="once-clicks">{{ onceClicks }}</span>
+
+  <Primitive
+    as-child
+    :value="inputValue"
+  >
+    <input
+      id="value-input"
+      aria-label="Adopted value"
+    >
+  </Primitive>
+
+  <Primitive
+    as-child
+    v-bind="decorated ? { class: 'parent', style: { color: 'blue' } } : {}"
+  >
+    <span
+      id="decorated"
+      class="own"
+    >decorated</span>
+  </Primitive>
+
+  <Primitive
+    as-child
+    data-outer="yes"
+  >
+    <Primitive
+      as-child
+      data-inner="yes"
+    >
+      <span
+        v-if="!nestedSwapped"
+        id="nested-a"
+      >a</span>
+      <em
+        v-else
+        id="nested-b"
+      >b</em>
+    </Primitive>
+  </Primitive>
 
   <Primitive
     as-child

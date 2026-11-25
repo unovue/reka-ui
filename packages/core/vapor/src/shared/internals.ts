@@ -184,20 +184,33 @@ function fragmentsToElement(block: any, out: any[]): boolean {
  */
 export function trackRootElement(block: unknown, onChange?: (next: Element | null, previous: Element | null) => void): ShallowRef<Element | null> {
   const root = shallowRef(findElement(block))
-  let hooked: any[] = []
+  // Vue runs a fragment's `u` hooks by index over the live array, so the array is never changed in
+  // place: adding or removing this tracker swaps in a copy, which the running dispatch doesn't see
+  let hooked = new Set<any>()
+  const add = (fragment: any) => {
+    fragment.u = [...(fragment.u ?? []), update]
+  }
+  const drop = (fragment: any) => {
+    if (fragment.u?.includes(update))
+      fragment.u = fragment.u.filter((h: unknown) => h !== update)
+  }
   const unhook = () => {
-    for (const fragment of hooked) {
-      const i = fragment.u?.indexOf(update) ?? -1
-      if (i >= 0)
-        fragment.u.splice(i, 1)
-    }
-    hooked = []
+    hooked.forEach(drop)
+    hooked = new Set()
   }
   const hook = () => {
-    unhook()
-    fragmentsToElement(block, hooked)
-    for (const fragment of hooked)
-      (fragment.u ??= []).push(update)
+    const path: any[] = []
+    fragmentsToElement(block, path)
+    const next = new Set(path)
+    for (const fragment of hooked) {
+      if (!next.has(fragment))
+        drop(fragment)
+    }
+    for (const fragment of next) {
+      if (!hooked.has(fragment))
+        add(fragment)
+    }
+    hooked = next
   }
   function update() {
     hook()
