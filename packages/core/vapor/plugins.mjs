@@ -8,11 +8,16 @@
 // What the plugins do:
 //   1. compile the *unchanged* v2 SFCs from `src/` with `features.vapor` (same source, second output);
 //   2. swap the VDOM-only modules for Vapor versions (MODULE_OVERRIDES);
-//   3. rewrite `asChild` templates so slot props reach the consumer (`asChildSlotProps`,
-//      `asChildComponentChains`), a build-time stand-in for editing ~260 templates by hand;
+//   3. rewrite imports (`defineAsyncComponent`, `getCurrentInstance`, a few VueUse helpers) and
+//      templates (`asChild` slot props and component chains, Presence `$attrs`, `v-show` on components);
 //   4. give every compiled SFC a default `$el` expose (`exposeElementPlugin`).
+//
+// Every transform counts what it rewrote, per file. The build compares the counts with
+// `vapor/transform-expectations.json` and fails on any difference, so a `src/` change that a
+// transform no longer understands cannot ship silently (see vapor/README.md).
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { dirname, resolve } from 'node:path'
+import { dirname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import vue from '@vitejs/plugin-vue'
 
@@ -23,7 +28,12 @@ export const compiler = require('vue-vapor/compiler-sfc')
 // Cross-file prop types (`extends PrimitiveProps`) need TypeScript
 compiler.registerTS(() => require('typescript'))
 
-const src = p => resolve(core, 'src', p)
+const SRC = resolve(core, 'src')
+const src = p => resolve(SRC, p)
+const rel = id => relative(SRC, id.split('?')[0]).replaceAll('\\', '/')
+const INTERNALS = JSON.stringify(resolve(here, 'src/shared/internals.ts'))
+const README = 'packages/core/vapor/README.md'
+
 const MODULE_OVERRIDES = {
   [src('Primitive/Primitive.ts')]: resolve(here, 'src/Primitive.ts'),
   [src('Presence/Presence.ts')]: resolve(here, 'src/Presence.ts'),
@@ -35,6 +45,111 @@ const MODULE_OVERRIDES = {
   [src('shared/useTriggerId.ts')]: resolve(here, 'src/shared/useTriggerId.ts'),
   [src('shared/useForwardRef.ts')]: resolve(here, 'src/shared/useForwardRef.ts'),
 }
+for (const [from, to] of Object.entries(MODULE_OVERRIDES)) {
+  if (!existsSync(from))
+    throw new Error(`[reka-vapor] MODULE_OVERRIDES in vapor/plugins.mjs: src/${rel(from)} no longer exists. Point the override at the module that replaced it, or remove it if the module is gone (see ${README}).`)
+  if (!existsSync(to))
+    throw new Error(`[reka-vapor] MODULE_OVERRIDES in vapor/plugins.mjs: the Vapor version ${relative(core, to)} of src/${rel(from)} is missing.`)
+}
+
+// ---------------------------------------------------------------------------------------------
+// Transform counts
+
+/** What each counter means, and where its transform lives, for the failure message. */
+const TRANSFORMS = {
+  sfcs: 'SFCs from src/ compiled in Vapor mode',
+  patches: 'per-file patches applied (PATCHES)',
+  slotProps: 'Primitive default slots given the asChild `props` (asChildSlotProps)',
+  chains: 'asChild component chains rewritten (asChildComponentChains)',
+  presenceAttrs: 'Presence children given `$attrs` (presenceRootAttrs)',
+  vShow: '`v-show` on components turned into a display style (vShowOnComponents)',
+  vShowWhenKept: '`v-show-when-kept` on components turned into a display style (vShowOnComponents)',
+  asyncComponents: '`defineAsyncComponent` imports swapped for `defineVaporAsyncComponent` (rewriteImports)',
+  getCurrentInstance: '`getCurrentInstance` imports swapped for the Vapor compat (rewriteImports)',
+  vueuse: 'VueUse imports pointed at the Vapor shims (rewriteImports)',
+  exposeElement: 'compiled SFCs given the default `$el` expose (exposeElementPlugin)',
+  overrides: 'imports resolved to a Vapor module (MODULE_OVERRIDES)',
+}
+
+let stats = newStats()
+function newStats() {
+  return { totals: {}, overrides: {}, vueuse: {}, files: {} }
+}
+function count(id, key, n = 1) {
+  if (!id.startsWith(SRC))
+    return
+  const file = rel(id)
+  stats.totals[key] = (stats.totals[key] ?? 0) + n
+  const entry = stats.files[file] ??= {}
+  entry[key] = (entry[key] ?? 0) + n
+}
+
+const EXPECTATIONS = resolve(here, 'transform-expectations.json')
+
+function sortKeys(obj) {
+  return Object.fromEntries(Object.keys(obj).sort().map(k => [k, obj[k] && typeof obj[k] === 'object' ? sortKeys(obj[k]) : obj[k]]))
+}
+
+function diffStats(expected, actual) {
+  const lines = []
+  const cmp = (label, e = {}, a = {}, describe = k => TRANSFORMS[k] ?? k) => {
+    for (const key of new Set([...Object.keys(e), ...Object.keys(a)])) {
+      if ((e[key] ?? 0) !== (a[key] ?? 0))
+        lines.push(`  ${label}${describe(key)}: expected ${e[key] ?? 0}, got ${a[key] ?? 0}`)
+    }
+  }
+  const files = new Set([...Object.keys(expected.files ?? {}), ...Object.keys(actual.files)])
+  for (const file of [...files].sort())
+    cmp(`src/${file}: `, expected.files?.[file], actual.files[file])
+  cmp('MODULE_OVERRIDES ', expected.overrides, actual.overrides, k => `src/${k} (imports resolved to its Vapor version)`)
+  cmp('VueUse shim ', expected.vueuse, actual.vueuse, k => `\`${k}\``)
+  cmp('total ', expected.totals, actual.totals)
+  return lines
+}
+
+/**
+ * Build only: fails when the counts differ from `transform-expectations.json`. `vite build -c
+ * vapor/vite.config.mjs --mode update-expectations` (`pnpm vapor:expectations`) rewrites the file.
+ */
+export function transformExpectations() {
+  let update = false
+  return {
+    name: 'reka-vapor-transform-expectations',
+    apply: 'build',
+    configResolved(config) {
+      update = config.mode === 'update-expectations'
+    },
+    buildStart() {
+      stats = newStats()
+    },
+    buildEnd(error) {
+      if (error)
+        return
+      const actual = sortKeys(stats)
+      if (update) {
+        writeFileSync(EXPECTATIONS, `${JSON.stringify(actual, null, 2)}\n`)
+        console.log(`[reka-vapor] wrote ${relative(core, EXPECTATIONS)}`)
+        return
+      }
+      const expected = existsSync(EXPECTATIONS) ? JSON.parse(readFileSync(EXPECTATIONS, 'utf8')) : {}
+      const lines = diffStats(expected, actual)
+      if (lines.length) {
+        this.error([
+          `[reka-vapor] The Vapor build transforms (packages/core/vapor/plugins.mjs) rewrote src/ differently than vapor/transform-expectations.json records:`,
+          ...lines.slice(0, 40),
+          ...(lines.length > 40 ? [`  … and ${lines.length - 40} more`] : []),
+          '',
+          'If the src/ change explains the difference (a template gained an asChild Primitive, a family was added to the Vapor entry, …),',
+          'update the file with `pnpm --filter reka-ui vapor:expectations` and commit it. If a count dropped although the src/ code still',
+          `needs the rewrite, the transform no longer recognises it: fix it in vapor/plugins.mjs. See ${README}.`,
+        ].join('\n'))
+      }
+    },
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Module overrides
 
 function overrides() {
   return {
@@ -44,12 +159,140 @@ function overrides() {
       if (!importer || id.includes('?'))
         return null
       const r = await this.resolve(id, importer, { ...opts, skipSelf: true })
-      return r && MODULE_OVERRIDES[r.id] ? MODULE_OVERRIDES[r.id] : null
+      if (!r || !MODULE_OVERRIDES[r.id])
+        return null
+      const key = rel(r.id)
+      stats.overrides[key] = (stats.overrides[key] ?? 0) + 1
+      return MODULE_OVERRIDES[r.id]
     },
   }
 }
 
-const stats = { files: 0, chains: 0, slotProps: 0, presenceAttrs: 0 }
+// ---------------------------------------------------------------------------------------------
+// Import rewrites (AST)
+
+// VueUse helpers that decide "inside a component?" with `getCurrentInstance()` (null in Vapor). reka's
+// own imports of them are pointed at Vapor-safe versions (`vapor/src/shared/vueuse.ts`); every other
+// VueUse import stays as it is, so bundlers still tree-shake VueUse.
+const VUEUSE_SHIMMED = new Set(['useMounted', 'tryOnMounted', 'tryOnBeforeUnmount', 'tryOnUnmounted', 'useParentElement'])
+const VUEUSE_SHIM = JSON.stringify(resolve(here, 'src/shared/vueuse.ts'))
+
+/** Script blocks of an SFC (or the whole module for `.ts`) as `{ offset, content }`. */
+function scriptBlocks(code, id) {
+  if (!id.endsWith('.vue'))
+    return [{ offset: 0, content: code }]
+  const { descriptor, errors } = compiler.parse(code, { filename: id })
+  if (errors.length)
+    throw new Error(`[reka-vapor] ${id}: ${errors[0].message}`)
+  return [descriptor.script, descriptor.scriptSetup].filter(Boolean).map(b => ({ offset: b.loc.start.offset, content: b.content }))
+}
+
+/** Applies `[start, end, text]` edits (absolute offsets, non-overlapping). */
+function applyEdits(code, edits) {
+  for (const [start, end, text] of edits.sort((a, b) => b[0] - a[0]))
+    code = code.slice(0, start) + text + code.slice(end)
+  return code
+}
+
+/**
+ * Parses each script's imports (Babel AST, so formatting doesn't matter) and rewrites:
+ *   - `defineAsyncComponent` from 'vue' → `defineVaporAsyncComponent` (a VDOM async wrapper can't render
+ *     in a Vapor app without interop);
+ *   - `getCurrentInstance` from 'vue' → the Vapor-aware `getCurrentInstanceCompat` (internals.ts);
+ *   - the shimmed VueUse helpers → `vapor/src/shared/vueuse.ts`.
+ */
+function rewriteImports(code, id) {
+  if (!/\b(?:defineAsyncComponent|getCurrentInstance)\b|@vueuse\//.test(code))
+    return code
+  const edits = []
+  for (const block of scriptBlocks(code, id)) {
+    const ast = compiler.babelParse(block.content, { sourceType: 'module', plugins: ['typescript'] })
+    for (const node of ast.program.body) {
+      if (node.type !== 'ImportDeclaration' || node.importKind === 'type')
+        continue
+      const from = node.source.value
+      const isVue = from === 'vue'
+      const isVueUse = from === '@vueuse/core' || from === '@vueuse/shared'
+      if (!isVue && !isVueUse)
+        continue
+      const keep = []
+      const added = []
+      let changed = false
+      for (const s of node.specifiers) {
+        const text = block.content.slice(s.start, s.end)
+        if (s.type !== 'ImportSpecifier' || s.importKind === 'type') {
+          keep.push({ s, text })
+          continue
+        }
+        const name = s.imported.name ?? s.imported.value
+        const local = s.local.name
+        if (isVue && name === 'defineAsyncComponent') {
+          keep.push({ s, text: `defineVaporAsyncComponent as ${local}` })
+          count(id, 'asyncComponents')
+          changed = true
+        }
+        else if (isVue && name === 'getCurrentInstance') {
+          added.push(`import { getCurrentInstanceCompat as ${local} } from ${INTERNALS}`)
+          count(id, 'getCurrentInstance')
+          changed = true
+        }
+        else if (isVueUse && VUEUSE_SHIMMED.has(name)) {
+          added.push(`import { ${name} as ${local} } from ${VUEUSE_SHIM}`)
+          count(id, 'vueuse')
+          if (id.startsWith(SRC))
+            stats.vueuse[name] = (stats.vueuse[name] ?? 0) + 1
+          changed = true
+        }
+        else {
+          keep.push({ s, text })
+        }
+      }
+      if (!changed)
+        continue
+      const named = keep.filter(k => k.s.type === 'ImportSpecifier').map(k => k.text)
+      const other = keep.filter(k => k.s.type !== 'ImportSpecifier').map(k => k.text)
+      const head = [...other, ...(named.length ? [`{ ${named.join(', ')} }`] : [])]
+      const decl = head.length ? `import ${head.join(', ')} from ${JSON.stringify(from)}` : ''
+      edits.push([block.offset + node.start, block.offset + node.end, [decl, ...added].filter(Boolean).join('\n')])
+    }
+  }
+  return edits.length ? applyEdits(code, edits) : code
+}
+
+// ---------------------------------------------------------------------------------------------
+// Template rewrites
+
+/** The compiler's template AST, whose offsets are absolute in `code`. */
+function templateAst(code, id) {
+  const { descriptor, errors } = compiler.parse(code, { filename: id })
+  if (errors.length)
+    throw new Error(`[reka-vapor] ${id}: ${errors[0].message}`)
+  return descriptor
+}
+
+function walkElements(node, fn) {
+  for (const child of node.children ?? []) {
+    if (child.type === 1) {
+      fn(child)
+      walkElements(child, fn)
+    }
+    else if (child.branches) {
+      for (const b of child.branches) walkElements(b, fn)
+    }
+  }
+}
+
+const ELEMENT = 1
+const DIRECTIVE = 7
+const COMPONENT = 1
+
+/** The quote an attribute value is written in, and the other one for string literals inside it. */
+function quotes(code, attr) {
+  const q = code[attr.exp.loc.start.offset - 1]
+  if (q !== '"' && q !== '\'')
+    throw new Error(`unquoted attribute value \`${attr.loc.source}\``)
+  return { q, inner: q === '"' ? '\'' : '"' }
+}
 
 /** End index of the tag that opens at `start`, skipping `>` inside quoted attribute values. */
 function tagEnd(code, start) {
@@ -75,7 +318,7 @@ function tagEnd(code, start) {
  * so the `props` Primitive hands its slot in `asChild` mode reach the consumer's slot. Only the first
  * Primitive (or `<component :is>` that may be Primitive) of each template is rewritten.
  */
-function asChildSlotProps(code) {
+function asChildSlotProps(code, id) {
   const tplStart = code.indexOf('<template>')
   if (tplStart < 0)
     return code
@@ -105,7 +348,7 @@ function asChildSlotProps(code) {
     }
     if (close < 0)
       return code
-    stats.slotProps++
+    count(id, 'slotProps')
     const inner = code.slice(end + 1, close).replace(/<slot\b(?![^>]*\b(?:name=|v-bind=))/g, '<slot v-bind="__rkc"')
     return `${code.slice(0, end)} v-slot="__rkc"${code.slice(end, end + 1)}${inner}${code.slice(close)}`
   }
@@ -179,58 +422,101 @@ function rowAttrs(item: VirtualItem) {
  * `$attrs` keep their own placement.
  */
 function presenceRootAttrs(code, id) {
-  const tpl = code.indexOf('<template>')
-  const root = /^\s*<(\w+)/.exec(code.slice(tpl + '<template>'.length))
-  if (tpl < 0 || root?.[1] !== 'Presence')
+  const descriptor = templateAst(code, id)
+  const roots = (descriptor.template?.ast.children ?? []).filter(n => n.type === ELEMENT)
+  if (roots.length !== 1 || roots[0].tag !== 'Presence')
     return code
-  const template = code.slice(tpl)
-  if (!template.includes('$attrs')) {
-    const presenceEnd = tagEnd(code, code.indexOf('<Presence', tpl))
-    const child = /<[A-Z][\w.]*\b/gi
-    child.lastIndex = presenceEnd
-    const m = child.exec(code)
-    if (!m)
-      throw new Error(`[reka-vapor] ${id}: no child under <Presence>`)
-    let end = tagEnd(code, m.index)
-    const head = code.slice(m.index, end + 1)
-    const bind = /\sv-bind="([^"]*)"/.exec(head)
+  const edits = []
+  if (!descriptor.template.content.includes('$attrs')) {
+    const child = roots[0].children.find(n => n.type === ELEMENT)
+    if (!child)
+      throw new Error(`[reka-vapor] presenceRootAttrs (vapor/plugins.mjs): ${id} is rooted in <Presence> but has no child element to forward $attrs to. Forward them by hand in the template (v-bind="$attrs").`)
+    const bind = child.props.find(p => p.type === DIRECTIVE && p.name === 'bind' && !p.arg)
     if (bind) {
       // One object `v-bind` per tag: merge into it. Bindings written after it now win over `$attrs`
-      code = code.slice(0, m.index) + head.replace(bind[0], ` v-bind="{ ...(${bind[1]}), ...$attrs }"`) + code.slice(end + 1)
+      const { q } = quotes(code, bind)
+      edits.push([bind.loc.start.offset, bind.loc.end.offset, `v-bind=${q}{ ...(${bind.exp.loc.source}), ...$attrs }${q}`])
     }
     else {
+      let end = tagEnd(code, child.loc.start.offset)
       if (code[end - 1] === '/')
         end--
-      code = `${code.slice(0, end)} v-bind="$attrs"${code.slice(end)}`
+      edits.push([end, end, ' v-bind="$attrs"'])
     }
-    stats.presenceAttrs++
+    count(id, 'presenceAttrs')
   }
-  if (/defineOptions\(\{[^}]*inheritAttrs:\s*false/.test(code))
-    return code
-  if (code.includes('defineOptions({'))
-    return code.replace('defineOptions({', 'defineOptions({ inheritAttrs: false,')
-  return code.replace(/<script setup[^>]*>/, s => `${s}\ndefineOptions({ inheritAttrs: false })`)
+  const setup = descriptor.scriptSetup
+  if (!setup)
+    throw new Error(`[reka-vapor] presenceRootAttrs (vapor/plugins.mjs): ${id} has no <script setup> to declare inheritAttrs: false in.`)
+  const ast = compiler.babelParse(setup.content, { sourceType: 'module', plugins: ['typescript'] })
+  const call = ast.program.body.find(n => n.type === 'ExpressionStatement' && n.expression.type === 'CallExpression' && n.expression.callee.name === 'defineOptions')?.expression
+  if (call) {
+    const options = call.arguments[0]
+    if (options?.type !== 'ObjectExpression')
+      throw new Error(`[reka-vapor] presenceRootAttrs (vapor/plugins.mjs): ${id} calls defineOptions without an object literal; add inheritAttrs: false by hand.`)
+    if (!options.properties.some(p => (p.key?.name ?? p.key?.value) === 'inheritAttrs'))
+      edits.push([setup.loc.start.offset + options.start + 1, setup.loc.start.offset + options.start + 1, ' inheritAttrs: false,'])
+  }
+  else {
+    edits.push([setup.loc.start.offset, setup.loc.start.offset, '\ndefineOptions({ inheritAttrs: false })'])
+  }
+  return applyEdits(code, edits)
 }
 
 /**
  * `v-show` (and v2's VDOM-only `v-show-when-kept` directive) on a *component* lands on its root element
  * in VDOM. In Vapor a directive can't pass an `asChild` slot root, so the display goes on as a style,
- * which reaches the element like any fallthrough attribute.
+ * which reaches the element like any fallthrough attribute. Matched on the template AST, so quoting and
+ * attribute order don't matter.
  */
-function vShowOnComponents(code) {
-  const tpl = code.indexOf('<template>')
-  if (tpl < 0)
+function vShowOnComponents(code, id) {
+  if (!/\sv-show/.test(code))
     return code
-  return code.slice(0, tpl) + code.slice(tpl)
-    .replace(/(<(?:[A-Z][\w.]*|component)\b[^>]*?)\sv-show="([^"]*)"/g, (_, head, value) => `${head} :style="(${value}) ? undefined : { display: 'none' }"`)
-    .replace(/(<(?:[A-Z][\w.]*|component)\b[^>]*?)\sv-show-when-kept:\[(\w+)\]="([^"]*)"/g, (_, head, arg, value) => `${head} :style="${arg} === 'kept' && !(${value}) ? { display: 'none' } : undefined"`)
+  const descriptor = templateAst(code, id)
+  if (!descriptor.template)
+    return code
+  const edits = []
+  walkElements(descriptor.template.ast, (el) => {
+    if (el.tagType !== COMPONENT)
+      return
+    for (const p of el.props) {
+      if (p.type !== DIRECTIVE || (p.name !== 'show' && p.name !== 'show-when-kept'))
+        continue
+      const fail = why => new Error(`[reka-vapor] vShowOnComponents (vapor/plugins.mjs): ${id}, <${el.tag} ${p.loc.source}>: ${why}`)
+      if (!p.exp)
+        throw fail('no expression')
+      if (el.props.some(o => o.type === DIRECTIVE && o.name === 'bind' && o.arg?.content === 'style'))
+        throw fail('the component also binds :style; merge the display into that binding by hand')
+      let q, inner
+      try {
+        ({ q, inner } = quotes(code, p))
+      }
+      catch (e) {
+        throw fail(e.message)
+      }
+      const none = `{ display: ${inner}none${inner} }`
+      const value = p.exp.loc.source
+      if (p.name === 'show') {
+        edits.push([p.loc.start.offset, p.loc.end.offset, `:style=${q}(${value}) ? undefined : ${none}${q}`])
+        count(id, 'vShow')
+      }
+      else {
+        if (!p.arg || p.arg.isStatic)
+          throw fail('expected a dynamic argument (v-show-when-kept:[forceMount])')
+        edits.push([p.loc.start.offset, p.loc.end.offset, `:style=${q}${p.arg.content} === ${inner}kept${inner} && !(${value}) ? ${none} : undefined${q}`])
+        count(id, 'vShowWhenKept')
+      }
+    }
+  })
+  return edits.length ? applyEdits(code, edits) : code
 }
 
 function applyPatches(code, id) {
   for (const [from, to] of PATCHES[id] ?? []) {
     if (from instanceof RegExp ? !from.test(code) : !code.includes(from))
-      throw new Error(`[reka-vapor] patch for ${id} no longer applies: ${from}`)
+      throw new Error(`[reka-vapor] PATCHES (vapor/plugins.mjs): the patch for ${id} no longer applies, ${from} is not in the file. Update the patch to the new source.`)
     code = code.replace(from, to)
+    count(id, 'patches')
   }
   return code
 }
@@ -243,8 +529,7 @@ function applyPatches(code, id) {
  * (child wins, like v2's `mergeProps(attrs, child.props)`):
  *   <A as-child><B :x="1" /></A>  →  <A as-child v-slot="{ props: __rkp0 }"><B v-bind="__rkp0" :x="1" /></A>
  */
-
-function asChildComponentChains(code) {
+function asChildComponentChains(code, id) {
   const tplStart = code.indexOf('<template>')
   if (tplStart < 0)
     return code
@@ -302,7 +587,7 @@ function asChildComponentChains(code) {
     if (code.slice(childClose + 1, close).trim())
       continue
     const name = `__rkp${n++}`
-    stats.chains++
+    count(id, 'chains')
     let childHead = code.slice(childStart, childEnd + 1)
     const ownBind = /\sv-bind="([^"]*)"/.exec(childHead)
     childHead = ownBind
@@ -329,29 +614,31 @@ function asChildComponentChains(code) {
   return code.replaceAll(' __rkp ', ' ').replaceAll(' __rkp\n', '\n').replaceAll(' data-rkp-done', '')
 }
 
-// `getCurrentInstance()` is `null` in Vapor; the few v2 SFCs that call it get a Vapor-aware stand-in
-const GET_CURRENT_INSTANCE_IMPORT = /import \{([^}]*?)\bgetCurrentInstance,?([^}]*)\} from 'vue'/
-
-function asChildSlotPropsPlugin() { // also applies PATCHES and swaps defineAsyncComponent
+/** Rewrites reka's own `src/` modules: patches, imports, then templates. */
+function srcTransformsPlugin() {
   return {
-    name: 'reka-vapor-aschild-slot-props',
-    buildEnd() {
-      if (process.env.REKA_VAPOR_STATS)
-        console.log(`[reka-vapor] ${stats.files} SFCs, ${stats.slotProps} Primitive slots given asChild props, ${stats.chains} asChild component chains rewritten, ${stats.presenceAttrs} Presence children given $attrs`)
-    },
+    name: 'reka-vapor-src-transforms',
     enforce: 'pre',
     transform(code, id) {
-      if (!id.endsWith('.vue') || !id.startsWith(resolve(core, 'src')))
+      if (!id.startsWith(SRC) || id.includes('?') || !/\.(?:vue|ts)$/.test(id))
         return null
-      stats.files++
-      // VDOM async wrappers can't render in a Vapor app without interop
-      const out = asChildSlotProps(asChildComponentChains(vShowOnComponents(presenceRootAttrs(applyPatches(code, id), id)))).replace(/\bdefineAsyncComponent\b(?=[^\n]*from 'vue')/, 'defineVaporAsyncComponent as defineAsyncComponent').replace(GET_CURRENT_INSTANCE_IMPORT, (_, before, after) => `import {${before}${after}} from 'vue'\nimport { getCurrentInstanceCompat as getCurrentInstance } from ${JSON.stringify(resolve(here, 'src/shared/internals.ts'))}`)
+      let out = rewriteImports(code, id)
+      if (id.endsWith('.vue')) {
+        count(id, 'sfcs')
+        out = applyPatches(out, id)
+        out = presenceRootAttrs(out, id)
+        out = vShowOnComponents(out, id)
+        out = asChildComponentChains(out, id)
+        out = asChildSlotProps(out, id)
+      }
       if (process.env.DUMP_SFC && id.includes(process.env.DUMP_SFC))
-        console.log(out.slice(out.indexOf('<template>')))
+        console.log(out)
       return out === code ? null : { code: out, map: null }
     },
   }
 }
+
+const SETUP = /(setup\(__props[^)]*\)\s*\{)/
 
 /** Injects `exposeElement()` at the start of every compiled Vapor SFC `setup` (see exposeElement.ts). */
 function exposeElementPlugin() {
@@ -363,37 +650,16 @@ function exposeElementPlugin() {
       // `?vue&type=script` sub-module in a build, the `.vue` module itself under the dev server
       if (!/\.vue(?:\?vue&type=script|$)/.test(id) || !/__vapor|defineVaporComponent/.test(code))
         return null
-      const out = code
-        .replace(/(setup\(__props[^)]*\)\s*\{)/, '$1\n__rekaExposeElement();')
-        .replace(/\b__expose\(/g, '__rekaExposeWithElement(__expose, ')
-      return out === code ? null : { code: `import { exposeElement as __rekaExposeElement, exposeWithElement as __rekaExposeWithElement } from ${JSON.stringify(helper)};\n${out}`, map: null }
-    },
-  }
-}
-
-// VueUse helpers that decide "inside a component?" with `getCurrentInstance()` (null in Vapor). reka's
-// own imports of them are pointed at Vapor-safe versions (`vapor/src/shared/vueuse.ts`); every other
-// VueUse import stays as it is, so bundlers still tree-shake VueUse.
-const VUEUSE_SHIMMED = new Set(['useMounted', 'tryOnMounted', 'tryOnBeforeUnmount', 'tryOnUnmounted', 'useParentElement'])
-const VUEUSE_IMPORT = /import\s*\{([^}]*)\}\s*from\s*'@vueuse\/(?:core|shared)'/g
-
-function vueuseImports() {
-  const shim = JSON.stringify(resolve(here, 'src/shared/vueuse.ts'))
-  return {
-    name: 'reka-vapor-vueuse-imports',
-    enforce: 'pre',
-    transform(code, id) {
-      if (!id.startsWith(resolve(core, 'src')) || !/\.(?:vue|ts)$/.test(id) || !code.includes('@vueuse/'))
+      if (!SETUP.test(code)) {
+        if (id.startsWith(SRC))
+          throw new Error(`[reka-vapor] exposeElementPlugin (vapor/plugins.mjs): no \`setup(__props…) {\` in the Vapor output of ${rel(id)}, so it would lose its default \`$el\` expose. The compiler output changed: update SETUP in vapor/plugins.mjs.`)
         return null
-      const out = code.replace(VUEUSE_IMPORT, (all, list) => {
-        const names = list.split(',').map(n => n.trim()).filter(Boolean)
-        const shimmed = names.filter(n => VUEUSE_SHIMMED.has(n.replace(/^type\s+/, '').split(/\s+as\s+/)[0]))
-        if (!shimmed.length)
-          return all
-        const rest = names.filter(n => !shimmed.includes(n))
-        return `${rest.length ? all.replace(list, ` ${rest.join(', ')} `) : ''}\nimport { ${shimmed.join(', ')} } from ${shim}`
-      })
-      return out === code ? null : { code: out, map: null }
+      }
+      count(id, 'exposeElement')
+      const out = code
+        .replace(SETUP, '$1\n__rekaExposeElement();')
+        .replace(/\b__expose\(/g, '__rekaExposeWithElement(__expose, ')
+      return { code: `import { exposeElement as __rekaExposeElement, exposeWithElement as __rekaExposeWithElement } from ${JSON.stringify(helper)};\n${out}`, map: null }
     },
   }
 }
@@ -402,8 +668,7 @@ function vueuseImports() {
 export function rekaVaporPlugins() {
   return [
     overrides(),
-    vueuseImports(),
-    asChildSlotPropsPlugin(),
+    srcTransformsPlugin(),
     vue({ compiler, features: { vapor: true } }),
     exposeElementPlugin(),
   ]

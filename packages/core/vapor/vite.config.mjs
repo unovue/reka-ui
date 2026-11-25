@@ -1,8 +1,8 @@
 // Builds the experimental `reka-ui/vapor` entry into `dist/vapor/` (run by `pnpm build-only`, after
 // tsdown, so the main entries are untouched). ESM only, plus the declaration and CJS stub below.
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
-import { core, isExternal, rekaVaporPlugins } from './plugins.mjs'
+import { relative, resolve } from 'node:path'
+import { compiler, core, isExternal, rekaVaporPlugins, transformExpectations } from './plugins.mjs'
 
 const { version } = JSON.parse(readFileSync(resolve(core, 'package.json'), 'utf8'))
 const DOCS = 'https://reka-ui.com/docs/guides/vapor'
@@ -66,12 +66,72 @@ function vaporEntryFiles() {
   }
 }
 
+// VDOM-only `vue` exports. A Vapor module importing one means a transform missed it (or a module
+// needs a Vapor version in MODULE_OVERRIDES): the build fails rather than ship a VDOM path.
+const VDOM_ONLY = new Set([
+  'h',
+  'cloneVNode',
+  'createVNode',
+  'createElementVNode',
+  'createBlock',
+  'createElementBlock',
+  'openBlock',
+  'renderSlot',
+  'withCtx',
+  'resolveComponent',
+  'resolveDynamicComponent',
+  'defineAsyncComponent',
+  'defineComponent',
+  'getCurrentInstance',
+  'isVNode',
+  'Fragment',
+  'Comment',
+  'Text',
+])
+
+/** Names a module imports (or re-exports) from 'vue', from its AST. */
+function vueImports(code) {
+  const names = []
+  for (const node of compiler.babelParse(code, { sourceType: 'module' }).program.body) {
+    if ((node.type === 'ImportDeclaration' || node.type === 'ExportNamedDeclaration' || node.type === 'ExportAllDeclaration') && node.source?.value === 'vue') {
+      if (node.type === 'ExportAllDeclaration')
+        names.push('*')
+      for (const s of node.specifiers ?? [])
+        names.push(s.type === 'ImportSpecifier' ? (s.imported.name ?? s.imported.value) : s.type === 'ExportSpecifier' ? (s.local.name ?? s.local.value) : '*')
+    }
+  }
+  return names
+}
+
+function noVdomImports() {
+  return {
+    name: 'reka-vapor-no-vdom-imports',
+    generateBundle(_, bundle) {
+      const found = []
+      for (const chunk of Object.values(bundle)) {
+        if (chunk.type !== 'chunk')
+          continue
+        const bad = vueImports(chunk.code).filter(name => VDOM_ONLY.has(name))
+        if (bad.length)
+          found.push(`  ${chunk.fileName} (from ${chunk.facadeModuleId ? relative(core, chunk.facadeModuleId) : '?'}): ${bad.join(', ')}`)
+      }
+      if (found.length) {
+        this.error([
+          '[reka-vapor] dist/vapor would import VDOM-only Vue APIs:',
+          ...found,
+          'A transform in vapor/plugins.mjs no longer rewrites the source, or the module needs a Vapor version in MODULE_OVERRIDES. See packages/core/vapor/README.md.',
+        ].join('\n'))
+      }
+    },
+  }
+}
+
 export default {
   root: core,
   configFile: false,
   logLevel: 'warn',
   resolve: { alias: { '@': resolve(core, 'src') } },
-  plugins: [...rekaVaporPlugins(), vaporEntryFiles(), pureAnnotations()],
+  plugins: [...rekaVaporPlugins(), transformExpectations(), noVdomImports(), vaporEntryFiles(), pureAnnotations()],
   // Its own context keys: a page mixing the VDOM and Vapor builds keeps their contexts apart
   define: { __REKA_UI_VERSION__: JSON.stringify(`${version}+vapor`) },
   build: {
