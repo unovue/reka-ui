@@ -1,0 +1,59 @@
+name: Lint
+
+# No path filter: ESLint also covers the docs (Markdown, JSON, YAML), and the
+# generated API docs can go stale from either side.
+on:
+  push:
+    branches:
+      - v2
+
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lint-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup (Install node & pnpm)
+        uses: ./.github/actions/setup
+
+      - name: Lint
+        run: pnpm lint
+
+  # `docs/content/meta` is generated from the component sources by `pnpm docs:gen`.
+  # This fails when the committed files differ from a fresh run.
+  docs-meta:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup (Install node & pnpm)
+        uses: ./.github/actions/setup
+
+      # The generator imports `reka-ui/constant` from the built dist
+      - name: Build
+        run: pnpm --filter reka-ui build-only
+
+      - name: Generate API docs
+        run: pnpm docs:gen
+
+      - name: Check for drift
+        run: |
+          if [ -n "$(git status --porcelain -- docs/content/meta)" ]; then
+            git status --short -- docs/content/meta
+            git diff -- docs/content/meta
+            echo "::error::docs/content/meta is out of date. Run 'pnpm --filter reka-ui build && pnpm docs:gen' and commit the result."
+            exit 1
+          fi
