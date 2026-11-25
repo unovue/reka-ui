@@ -245,7 +245,7 @@ When used, portals your overlay and content parts into the `body`.
 ### Overlay
 
 A layer that covers the inert portion of the view when the drawer is open. Only
-rendered when the drawer is `modal`.
+rendered when the drawer is `modal`. Also exported as `DrawerBackdrop`.
 
 <PresenceCallout />
 
@@ -272,7 +272,7 @@ rendered when the drawer is `modal`.
 
 Contains the content to be rendered in the open drawer. Owns the swipe gesture
 and exposes the drag offset through CSS custom properties (see [Animating the
-drawer](#animating-the-drawer)). Also aliased as `DrawerPopup` for Base UI parity.
+drawer](#animating-the-drawer)). Also exported as `DrawerPopup`.
 
 <PresenceCallout />
 
@@ -359,8 +359,7 @@ listens on the opposite side of the Root's `swipeDirection`.
 
 ### Viewport
 
-An optional wrapper around `DrawerContent`. Mirrors Base UI's `Drawer.Viewport`
-and carries a `data-drawer-viewport` attribute for downstream selectors.
+An optional wrapper around `DrawerContent`. It carries a `data-drawer-viewport` attribute for downstream selectors.
 Required when using `VirtualKeyboardProvider`, which measures the keyboard
 against it.
 
@@ -372,6 +371,17 @@ Makes the drawer react to the software keyboard: it keeps the focused field
 visible and exposes `--drawer-keyboard-inset` on `DrawerViewport`, which it
 requires (see [Soft keyboard](#soft-keyboard)). Takes no props and renders no
 markup of its own.
+
+<!-- @include: @/meta/DrawerVirtualKeyboardProvider.md -->
+
+### Provider
+
+Shares drawer state with parts rendered outside of `DrawerRoot`. Wrap the page
+content and the drawers in it so `Indent` and `IndentBackground` can tell when
+a drawer is open and follow its swipe progress. Takes no props and renders no
+markup of its own.
+
+<!-- @include: @/meta/DrawerProvider.md -->
 
 ### Indent
 

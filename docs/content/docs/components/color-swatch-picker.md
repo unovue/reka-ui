@@ -96,3 +96,56 @@ The component that displays the color swatch within an item.
 The component that indicates the selected color swatch within an item.
 
 <!-- @include: @/meta/ColorSwatchPickerItemIndicator.md -->
+
+## Accessibility
+
+Adheres to the [Listbox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/). The root renders with `role="listbox"` and each item with `role="option"`, labelled with the name of its color.
+
+Focus is managed with a roving tabindex, so the picker is a single tab stop. Moving focus with the arrow keys does not change the selection; press <kbd>Space</kbd> or <kbd>Enter</kbd> to select.
+
+### Keyboard Interactions
+
+<KeyboardTable
+  :data="[
+    {
+      keys: ['Tab'],
+      description: 'Moves focus into or out of the picker.',
+    },
+    {
+      keys: ['ArrowRight'],
+      description: '<span>Moves focus to the next item when <code>orientation</code> is <code>horizontal</code> (default). Reversed when <code>dir</code> is <code>rtl</code>.</span>',
+    },
+    {
+      keys: ['ArrowLeft'],
+      description: '<span>Moves focus to the previous item when <code>orientation</code> is <code>horizontal</code> (default). Reversed when <code>dir</code> is <code>rtl</code>.</span>',
+    },
+    {
+      keys: ['ArrowDown'],
+      description: '<span>Moves focus to the next item when <code>orientation</code> is <code>vertical</code>.</span>',
+    },
+    {
+      keys: ['ArrowUp'],
+      description: '<span>Moves focus to the previous item when <code>orientation</code> is <code>vertical</code>.</span>',
+    },
+    {
+      keys: ['Home'],
+      description: 'Moves focus to the first item.',
+    },
+    {
+      keys: ['End'],
+      description: 'Moves focus to the last item.',
+    },
+    {
+      keys: ['Space'],
+      description: 'Selects the focused item.',
+    },
+    {
+      keys: ['Enter'],
+      description: 'Selects the focused item.',
+    },
+    {
+      keys: ['Ctrl/Cmd + A'],
+      description: '<span>Selects all items when <code>multiple</code> is set.</span>',
+    },
+  ]"
+/>

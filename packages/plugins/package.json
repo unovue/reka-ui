@@ -2,7 +2,7 @@
   "name": "plugins",
   "type": "module",
   "version": "2.11.0",
-  "description": "Nuxt module for Radix Vue",
+  "description": "Build-tool integrations for Reka UI: Nuxt module, component resolver and namespaced components.",
   "license": "MIT",
   "keywords": [
     "radix",

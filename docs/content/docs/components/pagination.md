@@ -79,7 +79,7 @@ Used to show the list of pages. It also makes pagination accessible to assistive
 
 Used to render the button that changes the current page.
 
-<!-- @include: @/meta/PaginationItem.md -->
+<!-- @include: @/meta/PaginationListItem.md -->
 
 <DataAttributesTable
   :data="[

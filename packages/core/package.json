@@ -2,7 +2,7 @@
   "name": "reka-ui",
   "type": "module",
   "version": "2.11.0",
-  "description": "Vue port for Radix UI Primitives.",
+  "description": "Craft accessible web apps with Vue. Unstyled, accessible Vue components and primitives.",
   "author": "UnoVue Contributors (https://github.com/unovue)",
   "license": "MIT",
   "funding": [

@@ -17,6 +17,7 @@
     "docs:dev": "pnpm --filter docs docs:dev",
     "docs:build": "pnpm --filter docs docs:build",
     "docs:gen": "pnpm --filter docs docs:gen",
+    "docs:check": "pnpm --filter docs docs:check",
     "docs:contributors": "pnpm --filter docs docs:contributors",
     "docs:sponsors": "pnpm --filter docs docs:sponsors",
     "prepare": "pnpm simple-git-hooks",
