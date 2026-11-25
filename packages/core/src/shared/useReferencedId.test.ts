@@ -2,7 +2,7 @@ import type { VNode } from 'vue'
 import { renderToString } from '@vue/server-renderer'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeAll, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
+import { createSSRApp, defineComponent, h, nextTick, ref, Suspense } from 'vue'
 import { AlertDialogContent, AlertDialogDescription, AlertDialogPortal, AlertDialogRoot, AlertDialogTitle } from '@/AlertDialog'
 import { ComboboxAnchor, ComboboxContent, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxLabel, ComboboxRoot } from '@/Combobox'
 import { DialogContent, DialogDescription, DialogPortal, DialogRoot, DialogTitle } from '@/Dialog'
@@ -327,8 +327,9 @@ describe.each(Object.entries(cases))('%s', (name, { generatedId, attribute, rend
     const shown = ref(true)
     const wrapper = mount(defineComponent({
       render: () => render([
-        ...(shown.value ? [{ ...part, id: 'first-id' }] : []),
-        { ...second, id: 'second-id' },
+        // Keyed, so the first part really unmounts instead of being patched into the second.
+        ...(shown.value ? [{ ...part, id: 'first-id', key: 'first' }] : []),
+        { ...second, id: 'second-id', key: 'second' },
       ], referrer),
     }), { attachTo: document.body })
     await settle()
@@ -474,6 +475,87 @@ describe('a referring part rendered before the part that claims a consumer id', 
     await settle()
     expect(document.getElementById('consumer-id')).toBeTruthy()
     expect(references(find('referrer'), attribute)).toContain('consumer-id')
+    wrapper.unmount()
+  })
+})
+
+describe('consumer ids around Suspense and asChild', () => {
+  function deferred() {
+    let resolve!: () => void
+    const promise = new Promise<void>(r => resolve = r)
+    return { promise, resolve }
+  }
+
+  function asyncPart(promise: Promise<void>) {
+    return defineComponent({
+      async setup() {
+        await promise
+        return () => h('span', 'async')
+      },
+    })
+  }
+
+  it('skips a part whose async setup is pending and references the claim once it resolves', async () => {
+    const { promise, resolve } = deferred()
+    const Async = asyncPart(promise)
+    const wrapper = mount(defineComponent({
+      render: () => h(Suspense, null, () => h(MonthPickerRoot, null, () => [
+        h(Async),
+        h(MonthPickerGrid, { 'data-testid': 'referrer' }),
+        h(MonthPickerHeader, () => h(MonthPickerHeading, { id: 'consumer-id' })),
+      ])),
+    }), { attachTo: document.body })
+    await settle()
+    resolve()
+    await settle()
+    expect(references(find('referrer'), 'aria-labelledby')).toContain('consumer-id')
+    wrapper.unmount()
+  })
+
+  it('updates a referring part waiting in a Suspense boundary\'s pending branch', async () => {
+    const { promise, resolve } = deferred()
+    const Async = asyncPart(promise)
+    const wrapper = mount(defineComponent({
+      components: { MonthPickerRoot, MonthPickerGrid, MonthPickerHeader, MonthPickerHeading, Async },
+      template: `<MonthPickerRoot>
+        <Suspense><div><MonthPickerGrid data-testid="referrer" /><Async /></div></Suspense>
+        <MonthPickerHeader><MonthPickerHeading id="consumer-id" /></MonthPickerHeader>
+      </MonthPickerRoot>`,
+    }), { attachTo: document.body })
+    await settle()
+    resolve()
+    await settle()
+    expect(references(find('referrer'), 'aria-labelledby')).toContain('consumer-id')
+    wrapper.unmount()
+  })
+
+  it('references an id on the child element of an asChild part', async () => {
+    const wrapper = mount(defineComponent({
+      render: () => h(ListboxRoot, null, () => h(ListboxContent, () => h(ListboxGroup, { 'data-testid': 'referrer' }, () => [
+        h(ListboxGroupLabel, { asChild: true }, () => h('span', { id: 'child-label' }, 'Group')),
+        h(ListboxItem, { value: 'a' }, () => 'A'),
+      ]))),
+    }), { attachTo: document.body })
+    await settle()
+    expect(document.getElementById('child-label')).toBeTruthy()
+    expect(references(find('referrer'), 'aria-labelledby')).toContain('child-label')
+    wrapper.unmount()
+  })
+
+  it('follows an asChild title whose child element changes its id', async () => {
+    const id = ref('first-title')
+    const wrapper = mount(defineComponent({
+      render: () => h(DialogRoot, { defaultOpen: true }, () => h(DialogContent, { 'data-testid': 'referrer' }, () => [
+        h(DialogTitle, { asChild: true }, () => h('h2', { id: id.value }, 'Title')),
+        h(DialogDescription, () => 'Description'),
+      ])),
+    }), { attachTo: document.body })
+    await settle()
+    expect(find('referrer').getAttribute('aria-labelledby')).toBe('first-title')
+    id.value = 'second-title'
+    await settle()
+    expect(document.getElementById('second-title')).toBeTruthy()
+    expect(find('referrer').getAttribute('aria-labelledby')).toBe('second-title')
     wrapper.unmount()
   })
 })

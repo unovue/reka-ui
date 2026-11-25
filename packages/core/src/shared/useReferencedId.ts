@@ -1,5 +1,5 @@
 import type { ComponentInternalInstance, ConcreteComponent, ShallowRef, VNode } from 'vue'
-import { getCurrentInstance, onBeforeUnmount, onBeforeUpdate, shallowRef } from 'vue'
+import { getCurrentInstance, onBeforeUnmount, onBeforeUpdate, onMounted, onUpdated, shallowRef } from 'vue'
 
 // A part whose id another part references (a title, a label, a heading) renders the id a
 // context holds for it, and the referring part reads the same context value. A consumer
@@ -85,7 +85,9 @@ function forEachRendered(vnode: VNode | null | undefined, visit: (instance: Comp
     forEachRendered(vnode.component.subTree, visit)
   }
   else if (vnode.suspense) {
+    // While the boundary waits, what it renders is in the pending branch, out of the document.
     forEachRendered(vnode.suspense.activeBranch, visit)
+    forEachRendered(vnode.suspense.pendingBranch, visit)
   }
   else if (Array.isArray(vnode.children)) {
     for (const child of vnode.children)
@@ -106,33 +108,29 @@ function updateProviderTree(instance: ComponentInternalInstance, context: object
     return
   provider.proxy?.$forceUpdate()
   forEachRendered(provider.subTree, (rendered) => {
-    if (rendered !== instance)
+    // A component whose async setup has not resolved yet has no update to schedule, and
+    // renders for the first time after the claim.
+    if (rendered !== instance && !rendered.isUnmounted && (rendered.update as typeof rendered.update | undefined))
       rendered.proxy?.$forceUpdate()
   })
 }
 
 /**
- * Called in the setup of a part whose id another part references through `context[key]`.
- * A consumer `id` on the part is claimed for that reference, so the referring part points
- * at it. With several such parts, the first one wins; when it unmounts or drops its id,
- * the next one does, or the reference falls back to the generated id. Changes to the `id`
- * after mount are followed, as long as the part had one when it was set up.
- *
- * Without a consumer `id`, this does nothing.
- *
- * `reflect: false` leaves `context[key]` as it is, for a caller that reads the claim with
- * `getReferencedId` instead.
+ * With `asChild`, an `id` on the child element wins over the one the part passes down. It
+ * is the child's own when it differs from that one.
  */
-export function claimReferencedId(context: object, key: string, reflect = true) {
-  const instance = getCurrentInstance()
-  if (!instance || !getConsumerId(instance))
-    return
+function getChildId(instance: ComponentInternalInstance) {
+  const element = instance.subTree?.el as Element | null | undefined
+  const id = element?.id
+  return id && id !== instance.subTree.props?.id ? id : undefined
+}
 
+function track(instance: ComponentInternalInstance, context: object, key: string, reflect: boolean, asChild: boolean, inSetup: boolean) {
   const isFirstClaim = !entries.get(context)?.[key]
   const entry = getEntry(context, key, reflect)
   entry.types.add(instance.type)
   const claim = () => {
-    const id = getConsumerId(instance)
+    const id = (asChild && getChildId(instance)) || getConsumerId(instance)
     if (id)
       entry.claims.set(instance, id)
     else
@@ -142,11 +140,66 @@ export function claimReferencedId(context: object, key: string, reflect = true) 
   claim()
   if (isFirstClaim && reflect)
     updateProviderTree(instance, context)
-  onBeforeUpdate(claim)
+  let observer: MutationObserver | undefined
+  let observed: Element | undefined
+  if (asChild) {
+    // The child element, and any id of its own, exists once rendered. The child renders in
+    // the slot, which can change its id without updating this part, so the element is watched.
+    const observe = () => {
+      claim()
+      const element = instance.subTree?.el as Element | null | undefined
+      if (element === observed || typeof MutationObserver === 'undefined')
+        return
+      observed = element ?? undefined
+      observer ??= new MutationObserver(claim)
+      observer.disconnect()
+      if (element instanceof Element)
+        observer.observe(element, { attributes: true, attributeFilter: ['id'] })
+    }
+    if (inSetup)
+      onMounted(observe, instance)
+    else
+      observe()
+    onUpdated(observe, instance)
+  }
+  else {
+    onBeforeUpdate(claim, instance)
+  }
   onBeforeUnmount(() => {
+    observer?.disconnect()
     entry.claims.delete(instance)
     syncEntry(entry)
-  })
+  }, instance)
+}
+
+/**
+ * Called in the setup of a part whose id another part references through `context[key]`.
+ * A consumer `id` on the part, or with `asChild` on its child element, is claimed for that
+ * reference, so the referring part points at it. With several such parts, the first one
+ * wins; when it unmounts or drops its id, the next one does, or the reference falls back to
+ * the generated id. Changes to the `id` after mount are followed, as long as the part had
+ * one when it mounted.
+ *
+ * Without a consumer `id`, this does nothing; with `asChild`, it only looks for an id on the
+ * child element once mounted.
+ *
+ * `reflect: false` leaves `context[key]` as it is, for a caller that reads the claim with
+ * `getReferencedId` instead.
+ */
+export function claimReferencedId(context: object, key: string, reflect = true) {
+  const instance = getCurrentInstance()
+  if (!instance)
+    return
+  const asChild = !!instance.props.asChild
+  if (getConsumerId(instance)) {
+    track(instance, context, key, reflect, asChild, true)
+  }
+  else if (asChild) {
+    onMounted(() => {
+      if (getChildId(instance))
+        track(instance, context, key, reflect, true, false)
+    })
+  }
 }
 
 /** The id a part claimed for `context[key]` with `claimReferencedId`, otherwise `generated`. */
