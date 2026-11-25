@@ -3,8 +3,8 @@
 // components were VDOM-specific: they render `h(Slot, …)` to clone the slot child with a ref and the
 // item marker. Here they render the slot and take its first element, the same way the Vapor
 // `Primitive` handles `asChild` (attrs adopted onto that element, the child's own attributes win).
-import type { Ref } from 'vue'
-import { computed, inject, markRaw, onScopeDispose, provide, ref, shallowRef, watchEffect } from 'vue'
+import type { Ref, ShallowRef } from 'vue'
+import { computed, inject, markRaw, provide, ref, watchEffect } from 'vue'
 import { renderAsChildSlot } from './Primitive'
 import { defineVaporComponent } from './shared/internals'
 
@@ -15,10 +15,13 @@ interface CollectionContext<ItemData = {}> {
 
 const ITEM_DATA_ATTR = 'data-reka-collection-item'
 
-/** Renders the default slot as `asChild` (slot `props` or DOM adoption) and returns its first element. */
+/**
+ * Renders the default slot as `asChild` (slot `props` or DOM adoption). `root` follows its first
+ * element, also when the slot replaces it while mounted.
+ */
 function renderSlotElement(attrs: Record<string, any>, extra: Record<string, any> = {}) {
-  const { block, element } = renderAsChildSlot(() => ({ ...attrs, ...extra }))
-  return { block, el: element as HTMLElement | null }
+  const { block, root } = renderAsChildSlot(() => ({ ...attrs, ...extra }))
+  return { block, root: root as ShallowRef<HTMLElement | null> }
 }
 
 export function useCollection<ItemData = {}>(options: { key?: string, isProvider?: boolean } = {}) {
@@ -59,15 +62,22 @@ export function useCollection<ItemData = {}>(options: { key?: string, isProvider
     name: 'CollectionSlot',
     inheritAttrs: false,
     setup(_, { attrs, expose }) {
-      const { block, el } = renderSlotElement(attrs)
-      expose({ $el: el })
-      if (el) {
+      const { block, root } = renderSlotElement(attrs)
+      expose({
+        get $el() {
+          return root.value
+        },
+      })
+      watchEffect((cleanup) => {
+        const el = root.value
+        if (!el)
+          return
         context.collectionRef.value = el
-        onScopeDispose(() => {
+        cleanup(() => {
           if (context.collectionRef.value === el)
             context.collectionRef.value = undefined
         })
-      }
+      }, { flush: 'sync' })
       return block
     },
   })
@@ -77,11 +87,14 @@ export function useCollection<ItemData = {}>(options: { key?: string, isProvider
     inheritAttrs: false,
     props: { value: { validator: () => true } },
     setup(props, { attrs, expose }) {
-      const { block, el } = renderSlotElement(attrs, { [ITEM_DATA_ATTR]: '' })
-      expose({ $el: el })
-      const element = shallowRef(el)
+      const { block, root } = renderSlotElement(attrs, { [ITEM_DATA_ATTR]: '' })
+      expose({
+        get $el() {
+          return root.value
+        },
+      })
       watchEffect((cleanup) => {
-        const node = element.value
+        const node = root.value
         if (node) {
           const k = markRaw(node)
           // @ts-expect-error item data is filled by the caller's ItemData

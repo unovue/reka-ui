@@ -10,8 +10,9 @@
 //      patched onto the first element the slot rendered. Attributes the child already rendered win
 //      (snapshot at mount), classes/styles merge, listeners are added next to the child's.
 import type { Component, PropType } from 'vue'
+import { effectScope, onScopeDispose } from 'vue'
 import { ariaDisabledAttr, isPlainTag } from '@/shared/disabledAttr'
-import { createDynamicComponent, createSlot, defineVaporComponent, findElement, renderEffect } from './shared/internals'
+import { createDynamicComponent, createSlot, defineVaporComponent, findElement, renderEffect, trackRootElement } from './shared/internals'
 
 export { findElement }
 
@@ -27,7 +28,7 @@ const TAG_NAME = /^[a-z][\w.-]*$/i
 const BLOCKED_TAG = /^(?:script|iframe|frame|frameset|object|embed|applet|base|link|meta|noscript)$/i
 const ON_RE = /^on[A-Z]/
 const WHITESPACE_RE = /\s+/
-const BOOLEAN_PROPS = new Set(['disabled', 'checked', 'selected', 'multiple', 'readOnly', 'required'])
+const BOOLEAN_PROPS = new Set(['disabled', 'checked', 'selected', 'multiple', 'readonly', 'readOnly', 'required', 'indeterminate'])
 const OPTION_SUFFIX_RE = /(?:Once|Passive|Capture)$/
 
 function safeTag(as: unknown) {
@@ -51,70 +52,137 @@ function normalizeClass(value: any): string[] {
   return Object.keys(value).filter(k => value[k]).flatMap(normalizeClass)
 }
 
+const STYLE_DECLARATION_RE = /;(?![^(]*\))/g
+const STYLE_PROPERTY_RE = /:([\s\S]+)/
+const STYLE_COMMENT_RE = /\/\*[\s\S]*?\*\//g
+
+/** A `style` value (object, string or array of them) as a `{ property: value }` map, as Vue normalizes it. */
+function normalizeStyle(value: any): Record<string, any> {
+  if (!value)
+    return {}
+  if (Array.isArray(value))
+    return Object.assign({}, ...value.map(normalizeStyle))
+  if (typeof value === 'string') {
+    const out: Record<string, string> = {}
+    for (const declaration of value.replace(STYLE_COMMENT_RE, '').split(STYLE_DECLARATION_RE)) {
+      const [property, rest] = declaration.split(STYLE_PROPERTY_RE)
+      if (property?.trim() && rest !== undefined)
+        out[property.trim()] = rest.trim()
+    }
+    return out
+  }
+  return typeof value === 'object' ? value : {}
+}
+
+const cssName = (key: string) => key.startsWith('--') ? key : hyphenate(key)
+
+/** Attributes whose live DOM property must follow the value too (setting the attribute alone doesn't). */
+const LIVE_PROPS: Record<string, string> = { checked: 'checked', selected: 'selected', value: 'value', indeterminate: 'indeterminate', disabled: 'disabled', multiple: 'multiple', readonly: 'readOnly', required: 'required', readOnly: 'readOnly' }
+
+/** The DOM event a listener prop names, as Vue's runtime parses it (`onAfterLeave` → `after-leave`). */
+function eventName(key: string) {
+  let name = key.slice(2)
+  const options: AddEventListenerOptions = {}
+  let m: RegExpMatchArray | null
+  // eslint-disable-next-line no-cond-assign
+  while ((m = name.match(OPTION_SUFFIX_RE))) {
+    name = name.slice(0, name.length - m[0].length);
+    (options as any)[m[0].toLowerCase()] = true
+  }
+  return { type: name[0] === ':' ? name.slice(1) : hyphenate(name), options }
+}
+
 /**
- * Patches `attrs` onto an element the slot owns. Keys the element already rendered when it was
- * adopted belong to the child and are skipped (child precedence, like v2's `mergeProps(attrs, child)`).
+ * Patches `attrs` onto an element the slot owns. Keys, classes and styles the element already had when
+ * it was adopted belong to the child and are left alone (child precedence, like v2's
+ * `mergeProps(attrs, child)`). Returns a function that takes the patched listeners off again.
  */
 export function adopt(el: Element, getProps: () => Record<string, any>, { override = false } = {}) {
   // `override`: fallthrough semantics (the incoming attrs win), used by `Presence`
   const childOwned = new Set(override ? [] : el.getAttributeNames())
-  const listeners = new Map<string, { handler: any, invoker: EventListener }>()
+  const childClasses = new Set(override ? [] : el.classList)
+  const childStyles = new Set(override ? [] : Array.from((el as HTMLElement).style ?? []))
+  const listeners = new Map<string, { handler: any, invoker: EventListener, type: string, options: AddEventListenerOptions }>()
   let prevKeys = new Set<string>()
-  let prevClasses: string[] = []
-  let prevStyleKeys: string[] = []
+  const addedClasses = new Set<string>()
+  const ownedStyles = new Set<string>()
+
+  const setLive = (attr: string, value: any) => {
+    const prop = LIVE_PROPS[attr]
+    if (!prop || !(prop in el))
+      return false
+    if (prop === 'value')
+      (el as any).value = value == null ? '' : String(value)
+    else
+      (el as any)[prop] = !!value || value === ''
+    return true
+  }
 
   renderEffect(() => {
     const props = getProps()
     const keys = new Set<string>()
+    const seen = new Set<string>()
     for (const key in props) {
       const value = props[key]
       if (ON_RE.test(key)) {
-        let name = key.slice(2)
-        const options: AddEventListenerOptions = {}
-        let m: RegExpMatchArray | null
-        // eslint-disable-next-line no-cond-assign
-        while ((m = name.match(OPTION_SUFFIX_RE))) {
-          name = name.slice(0, name.length - m[0].length);
-          (options as any)[m[0].toLowerCase()] = true
-        }
-        const type = name[0].toLowerCase() + name.slice(1)
+        if (!value)
+          continue
+        const { type, options } = eventName(key)
         const id = `${type}|${options.capture ? 1 : 0}`
+        seen.add(id)
         const existing = listeners.get(id)
         if (existing) {
           existing.handler = value
+          continue
         }
-        else if (value) {
-          const entry = {
-            handler: value,
-            invoker: (e: Event) => {
-              const h = entry.handler
-              if (Array.isArray(h))
-                h.forEach(fn => fn?.(e))
-              else h?.(e)
-            },
-          }
-          listeners.set(id, entry)
-          el.addEventListener(type, entry.invoker, options)
+        const entry = {
+          handler: value,
+          type,
+          options,
+          invoker: (e: Event) => {
+            const h = entry.handler
+            if (Array.isArray(h))
+              h.forEach(fn => fn?.(e))
+            else h?.(e)
+          },
         }
+        listeners.set(id, entry)
+        el.addEventListener(type, entry.invoker, options)
         continue
       }
       if (key === 'class') {
-        const next = normalizeClass(value)
-        prevClasses.forEach(c => !next.includes(c) && el.classList.remove(c))
-        next.forEach(c => el.classList.add(c))
-        prevClasses = next
+        const next = new Set(normalizeClass(value))
+        for (const c of addedClasses) {
+          if (!next.has(c)) {
+            el.classList.remove(c)
+            addedClasses.delete(c)
+          }
+        }
+        for (const c of next) {
+          if (!childClasses.has(c) && !el.classList.contains(c)) {
+            el.classList.add(c)
+            addedClasses.add(c)
+          }
+        }
         continue
       }
       if (key === 'style') {
         const style = (el as HTMLElement).style
-        const next = value && typeof value === 'object' ? value : {}
-        prevStyleKeys.forEach(k => !(k in next) && style.removeProperty(k.startsWith('--') ? k : hyphenate(k)))
-        for (const k in next) {
-          const prop = k.startsWith('--') ? k : hyphenate(k)
-          if (override || !style.getPropertyValue(prop) || prevStyleKeys.includes(k))
-            style.setProperty(prop, next[k] == null ? '' : String(next[k]))
+        const next = normalizeStyle(value)
+        const names = new Set(Object.keys(next).map(cssName))
+        for (const name of ownedStyles) {
+          if (!names.has(name)) {
+            style.removeProperty(name)
+            ownedStyles.delete(name)
+          }
         }
-        prevStyleKeys = Object.keys(next)
+        for (const k in next) {
+          const name = cssName(k)
+          if (!override && childStyles.has(name))
+            continue
+          style.setProperty(name, next[k] == null ? '' : String(next[k]))
+          ownedStyles.add(name)
+        }
         continue
       }
       const attr = key.startsWith('aria') || key.startsWith('data') ? hyphenate(key) : key
@@ -122,23 +190,71 @@ export function adopt(el: Element, getProps: () => Record<string, any>, { overri
         continue
       keys.add(attr)
       // Drop `disabled: false` on plain tags, as v2's `Slot` does
-      if (attr === 'disabled' && value === false && isPlainTag(el.tagName.toLowerCase()))
+      if (attr === 'disabled' && value === false && isPlainTag(el.tagName.toLowerCase())) {
+        setLive(attr, false)
         el.removeAttribute('disabled')
-      else if (value == null || (value === false && !attr.startsWith('aria-')))
+      }
+      else if (value == null || (value === false && !attr.startsWith('aria-'))) {
+        setLive(attr, false)
         el.removeAttribute(attr)
-      else if (BOOLEAN_PROPS.has(attr) && attr in el)
-        (el as any)[attr] = !!value || value === ''
-      else
+      }
+      // A boolean the element has as a property (`checked`, `disabled`, …) is set as that property
+      else if (!(BOOLEAN_PROPS.has(attr) && setLive(attr, value))) {
+        if (attr === 'value')
+          setLive(attr, value)
         el.setAttribute(attr, value === true ? (attr.startsWith('aria-') ? 'true' : '') : String(value))
+      }
     }
-    prevKeys.forEach(k => !keys.has(k) && el.removeAttribute(k))
+    for (const [id, entry] of listeners) {
+      if (!seen.has(id)) {
+        el.removeEventListener(entry.type, entry.invoker, entry.options)
+        listeners.delete(id)
+      }
+    }
+    for (const k of prevKeys) {
+      if (!keys.has(k)) {
+        setLive(k, false)
+        el.removeAttribute(k)
+      }
+    }
     prevKeys = keys
   })
+
+  return () => {
+    for (const entry of listeners.values())
+      el.removeEventListener(entry.type, entry.invoker, entry.options)
+    listeners.clear()
+  }
+}
+
+/**
+ * Adopts `getProps()` onto the first element of `block`, and onto its replacement whenever the slot
+ * swaps that element while it stays mounted (the previous one is released). Returns the current root.
+ */
+export function adoptRoot(block: unknown, getProps: (el: Element) => Record<string, any>, options?: { override?: boolean }, map: (el: Element | null) => Element | null = el => el) {
+  let release: (() => void) | undefined
+  const start = (el: Element | null) => {
+    release?.()
+    release = undefined
+    if (!el)
+      return
+    const scope = effectScope()
+    const stopListeners = scope.run(() => adopt(el, () => getProps(el), options))
+    release = () => {
+      scope.stop()
+      stopListeners?.()
+    }
+  }
+  const root = trackRootElement(block, next => start(map(next)))
+  start(map(root.value))
+  onScopeDispose(() => release?.())
+  return root
 }
 
 /**
  * The `asChild` render: the default slot gets `props` (a lazy view of `getProps()`); when the slot
- * doesn't read it, the props are adopted onto the first element it rendered.
+ * doesn't read it, the props are adopted onto the first element it rendered (and onto whichever
+ * element replaces it). `root` follows that element.
  * Shared by `Primitive` and the Vapor `CollectionSlot` / `CollectionItem`.
  */
 export function renderAsChildSlot(getProps: () => Record<string, any>, adoptProps?: (el: Element) => Record<string, any>) {
@@ -159,12 +275,10 @@ export function renderAsChildSlot(getProps: () => Record<string, any>, adoptProp
   })
   const slotProps = { props }
   const block = createSlot('default', { $: [() => slotProps] })
-  const element = findElement(block)
-  if (!consumed && element) {
-    const el = element
-    adopt(el, adoptProps ? () => adoptProps(el) : getProps)
-  }
-  return { block, element, consumed }
+  const root = consumed
+    ? trackRootElement(block)
+    : adoptRoot(block, el => adoptProps ? adoptProps(el) : getProps())
+  return { block, root, consumed }
 }
 
 export const Primitive = defineVaporComponent({
@@ -176,17 +290,17 @@ export const Primitive = defineVaporComponent({
   },
   setup(props, { attrs, expose }) {
     let block: any
-    let element: Element | null = null
+    let root: { value: Element | null } | undefined
     expose({
       get $el() {
-        return element ?? findElement(block)
+        return root ? root.value : findElement(block)
       },
     })
 
     if (props.asChild || props.as === 'template') {
       const r = renderAsChildSlot(() => ({ ...attrs }), el => withAriaDisabled(el.tagName.toLowerCase(), attrs))
       block = r.block
-      element = r.element
+      root = r.root
       return block
     }
 

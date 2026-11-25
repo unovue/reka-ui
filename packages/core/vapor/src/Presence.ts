@@ -4,10 +4,10 @@
 // "extraneous attrs"); VDOM fallthrough reaches the slotted child. Components rooted in Presence
 // forward `$attrs` to the child themselves (`presenceRootAttrs` in plugins.mjs); attrs given to
 // Presence itself are patched onto the node.
-import { onScopeDispose, ref, toRefs } from 'vue'
+import { ref, toRefs, watchEffect } from 'vue'
 import { usePresence } from '@/Presence/usePresence'
-import { adopt } from './Primitive'
-import { createIf, createSlot, defineVaporComponent, findElement } from './shared/internals'
+import { adoptRoot } from './Primitive'
+import { createIf, createSlot, defineVaporComponent, trackRootElement } from './shared/internals'
 
 export interface PresenceProps {
   present: boolean
@@ -32,18 +32,22 @@ export const Presence = defineVaporComponent({
       () => forceMount.value || present.value || isPresent.value,
       () => {
         const block = createSlot('default', { present: () => isPresent.value })
-        const el = findElement(block) as HTMLElement | null
-        node.value = el?.hasAttribute('data-reka-popper-content-wrapper')
-          ? el.firstElementChild as HTMLElement
-          : el ?? undefined
+        // The node is the slot's first element (inside a popper wrapper, its content), and follows
+        // it when the slot replaces it while mounted (a dynamic `as`, a `v-if` root)
+        const toNode = (el: Element | null) => (el?.hasAttribute('data-reka-popper-content-wrapper') ? el.firstElementChild : el) as HTMLElement | null
         // VDOM fallthrough puts Presence's attrs on the slotted child: the listeners for the custom
         // `enter` / `after-leave` events usePresence dispatches on the node, mostly
-        if (node.value && Object.keys(attrs).length)
-          adopt(node.value, () => attrs, { override: true })
-        onScopeDispose(() => {
-          if (node.value === el || node.value === el?.firstElementChild)
-            node.value = undefined
-        })
+        const root = Object.keys(attrs).length
+          ? adoptRoot(block, () => attrs, { override: true }, toNode)
+          : trackRootElement(block)
+        watchEffect((cleanup) => {
+          const el = toNode(root.value) ?? undefined
+          node.value = el
+          cleanup(() => {
+            if (node.value === el)
+              node.value = undefined
+          })
+        }, { flush: 'sync' })
         return block
       },
     )

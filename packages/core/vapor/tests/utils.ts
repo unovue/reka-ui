@@ -7,6 +7,7 @@ import { nextTick } from 'vue'
 declare const __VAPOR__: boolean
 
 const mounted: { app: App, host: HTMLElement }[] = []
+let lastRoot: any
 
 /** Vue warnings logged since the last `unmountAll()`. */
 export const warnings: string[] = []
@@ -19,10 +20,15 @@ export async function mount(component: any, props?: Record<string, any>) {
   app.config.warnHandler = (msg: string) => {
     warnings.push(msg)
   }
-  app.mount(host)
+  lastRoot = app.mount(host)
   mounted.push({ app, host })
   await nextTick()
   return host
+}
+
+/** What the last mounted root component exposes (its `defineExpose`, refs unwrapped). */
+export function exposed<T = Record<string, any>>(): T {
+  return lastRoot
 }
 
 export function unmountAll() {

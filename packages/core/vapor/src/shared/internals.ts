@@ -8,6 +8,8 @@
 //   - Instance fields: `vapor`, `exposed` (assigned before the expose proxy is first read), `block`,
 //     `props`, `scopeId`, `rawKeys()`, `type`, `parent`, `isDeactivated`, `vnode.el` (VDOM parents).
 //   - Block shape: `instance.block` and `fragment.nodes`, walked by `findElement`.
+//   - Fragment update hooks: `fragment.u` (called after a `v-if` / dynamic branch swaps its nodes),
+//     used by `trackRootElement` to follow an `asChild` slot's root element.
 // Exported and typed, but compiler-output helpers rather than documented API:
 //   `createSlot`, `createIf`, `createDynamicComponent`, `renderEffect`, `isFragment`,
 //   `isVaporComponent`, plus the slot/root flags (`4` FORWARDED, `1` SINGLE_ROOT, `{ _: 1 }`).
@@ -16,21 +18,62 @@
 //   `useAttrs`, `useId`, lifecycle hooks, `onScopeDispose`.
 //
 // Static member reads only (`vue.x`, never `vue[key]`), so bundlers can still tree-shake `vue`.
-import type { ExtractPropTypes } from 'vue'
+import type { ExtractPropTypes, ShallowRef } from 'vue'
 import * as vue from 'vue'
+import { shallowRef } from 'vue'
 
 /** The Vue range `reka-ui/vapor` is tested against. */
 export const SUPPORTED_VUE = '>=3.6.0-rc.16'
 
-const VERSION_RE = /^(\d+)\.(\d+)/
+const VERSION_RE = /^(\d+)\.(\d+)\.(\d+)(?:-([\w.-]+))?/
+const MINIMUM_RELEASE = [3, 6, 0]
+const MINIMUM_PRERELEASE = 'rc.16'
+const NUMERIC_RE = /^\d+$/
 
 function unsupported(reason: string): never {
   throw new Error(`reka-ui/vapor needs Vue 3.6.0-rc.16+ (${SUPPORTED_VUE}); ${reason}. Install vue@3.6 or import from "reka-ui" instead.`)
 }
 
+/** Compares two prerelease tags as semver does: dot-separated, numeric parts numerically. */
+function comparePrerelease(a: string, b: string) {
+  const pa = a.split('.')
+  const pb = b.split('.')
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    if (pa[i] === undefined)
+      return -1
+    if (pb[i] === undefined)
+      return 1
+    const na = NUMERIC_RE.test(pa[i]) ? +pa[i] : Number.NaN
+    const nb = NUMERIC_RE.test(pb[i]) ? +pb[i] : Number.NaN
+    if (pa[i] === pb[i])
+      continue
+    if (!Number.isNaN(na) && !Number.isNaN(nb))
+      return na - nb
+    if (!Number.isNaN(na))
+      return -1
+    if (!Number.isNaN(nb))
+      return 1
+    return pa[i] < pb[i] ? -1 : 1
+  }
+  return 0
+}
+
+/** Whether `version` is at least 3.6.0-rc.16 (a stable release sorts after its prereleases). */
+export function isSupportedVue(version: string): boolean {
+  const m = VERSION_RE.exec(version)
+  if (!m)
+    return false
+  const parts = [+m[1], +m[2], +m[3]]
+  for (let i = 0; i < 3; i++) {
+    if (parts[i] !== MINIMUM_RELEASE[i])
+      return parts[i] > MINIMUM_RELEASE[i]
+  }
+  // 3.6.0 itself: stable, or a prerelease from rc.16 on
+  return m[4] === undefined || comparePrerelease(m[4], MINIMUM_PRERELEASE) >= 0
+}
+
 const v = vue as any
-const [, major, minor] = VERSION_RE.exec(String(v.version)) ?? []
-if (!major || +major < 3 || (+major === 3 && +minor < 6))
+if (!isSupportedVue(String(v.version)))
   unsupported(`found vue@${v.version}`)
 
 // Vapor renders straight to the DOM, and `asChild` patches the slotted element: there is no server
@@ -113,6 +156,61 @@ export function findElement(block: any): Element | null {
   if (v.isFragment(block))
     return findElement(block.nodes)
   return null
+}
+
+/** The fragments `findElement` walks through on its way to the first element (all of them if none). */
+function fragmentsToElement(block: any, out: any[]): boolean {
+  if (!block)
+    return false
+  if (block instanceof Element)
+    return true
+  if (Array.isArray(block))
+    return block.some(b => fragmentsToElement(b, out))
+  if (v.isVaporComponent(block))
+    return fragmentsToElement(block.block, out)
+  if (v.isFragment(block)) {
+    out.push(block)
+    return fragmentsToElement(block.nodes, out)
+  }
+  return false
+}
+
+/**
+ * The first element of `block` as a ref that follows it while the block stays mounted: a `v-if`
+ * branch, a keyed node or a dynamic `as` inside the slot can replace it without re-running the
+ * enclosing setup. Vapor has no public signal for that, so this registers on the internal update
+ * hooks (`u`) of every fragment on the way to the element, and walks again after each update.
+ * `onChange(next, previous)` runs synchronously, before the update returns.
+ */
+export function trackRootElement(block: unknown, onChange?: (next: Element | null, previous: Element | null) => void): ShallowRef<Element | null> {
+  const root = shallowRef(findElement(block))
+  let hooked: any[] = []
+  const unhook = () => {
+    for (const fragment of hooked) {
+      const i = fragment.u?.indexOf(update) ?? -1
+      if (i >= 0)
+        fragment.u.splice(i, 1)
+    }
+    hooked = []
+  }
+  const hook = () => {
+    unhook()
+    fragmentsToElement(block, hooked)
+    for (const fragment of hooked)
+      (fragment.u ??= []).push(update)
+  }
+  function update() {
+    hook()
+    const next = findElement(block)
+    if (next !== root.value) {
+      const previous = root.value
+      root.value = next
+      onChange?.(next, previous)
+    }
+  }
+  hook()
+  v.onScopeDispose(unhook)
+  return root
 }
 
 /** Root element of an instance: its Vapor block, or a VDOM instance's `vnode.el`. */

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import Fixture from './fixtures/Switch.vue'
-import { byId, expectNoAxeViolations, mount, until } from './utils'
+import { byId, expectNoAxeViolations, exposed, mount, until } from './utils'
 
 describe('switch (Vapor)', () => {
   it('renders a switch with its label, thumb and hidden form input', async () => {
@@ -37,8 +37,10 @@ describe('switch (Vapor)', () => {
   })
 
   it('resolves a template ref to its element', async () => {
-    const host = await mount(Fixture)
-    expect(host.querySelector('#airplane')).toBe(byId('airplane'))
+    await mount(Fixture)
+    const rootRef = exposed<{ rootRef: { $el: Element } | null }>().rootRef
+    expect(rootRef).toBeTruthy()
+    expect(rootRef!.$el).toBe(byId('airplane'))
   })
 
   it('asChild (template form): adopts the child, the child\'s attributes win', async () => {
