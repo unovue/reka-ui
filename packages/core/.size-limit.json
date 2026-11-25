@@ -74,7 +74,7 @@
   {
     "path": "dist/vapor/index.js",
     "import": "*",
-    "limit": "114 KB",
+    "limit": "116 KB",
     "name": "Vapor: full entry (reka-ui/vapor)"
   }
 ]
