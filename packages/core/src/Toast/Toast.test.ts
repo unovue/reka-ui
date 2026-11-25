@@ -1021,6 +1021,78 @@ describe('given a ToastViewport whose element is replaced', () => {
   })
 })
 
+describe('given a toast that unmounts before its close timer fires', () => {
+  const DURATION = 60_000
+  const App = defineComponent({
+    props: { show: { type: Boolean, default: true } },
+    setup(props) {
+      const open = ref(true)
+      return () => h(ToastProvider, { duration: DURATION }, {
+        default: () => [
+          props.show
+            ? h(ToastRoot, { 'open': open.value, 'onUpdate:open': (value: boolean) => (open.value = value) }, {
+                default: () => [h(ToastTitle, null, { default: () => 'Saved' }), h(ToastClose, null, { default: () => CLOSE_TEXT })],
+              })
+            : null,
+          h(ToastViewport),
+        ],
+      })
+    },
+  })
+  let wrapper: VueWrapper<InstanceType<typeof App>>
+
+  async function flush() {
+    await nextTick()
+    await nextTick()
+  }
+
+  beforeEach(async () => {
+    vi.useFakeTimers()
+    document.body.innerHTML = ''
+    wrapper = mount(App, { attachTo: document.body })
+    await flush()
+  })
+
+  afterEach(() => {
+    wrapper.unmount()
+    vi.restoreAllMocks()
+    vi.useRealTimers()
+  })
+
+  it('should have a pending close timer while mounted', () => {
+    expect(document.querySelector('li')).toBeTruthy()
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+  })
+
+  it('should clear the close timer when the app unmounts', () => {
+    wrapper.unmount()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('should clear the close timer when the toast is removed from the tree', async () => {
+    await wrapper.setProps({ show: false })
+    await flush()
+    expect(document.querySelector('li')).toBeNull()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('should clear the close timer when the toast is closed', async () => {
+    await fireEvent.click(document.querySelector('li button')!)
+    await flush()
+    expect(document.querySelector('li')).toBeNull()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('should still close the toast when the timer fires while mounted', async () => {
+    vi.advanceTimersByTime(DURATION - 1)
+    await flush()
+    expect(document.querySelector('li')).toBeTruthy()
+    vi.advanceTimersByTime(1)
+    await flush()
+    expect(document.querySelector('li')).toBeNull()
+  })
+})
+
 describe('given a ToastViewport hotkey', () => {
   let wrapper: VueWrapper
 
