@@ -275,11 +275,11 @@ Interactable container for displaying the cell months. Clicking it selects the m
     },
     {
       keys: ['Home'],
-      description: 'When the focus is on <Code>MonthPickerCellTrigger</Code>, it moves to the first month of the row.'
+      description: 'When the focus is on <Code>MonthPickerCellTrigger</Code>, it moves to the first enabled month of the row.'
     },
     {
       keys: ['End'],
-      description: 'When the focus is on <Code>MonthPickerCellTrigger</Code>, it moves to the last month of the row.'
+      description: 'When the focus is on <Code>MonthPickerCellTrigger</Code>, it moves to the last enabled month of the row.'
     },
     {
       keys: ['PageUp'],
