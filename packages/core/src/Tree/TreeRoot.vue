@@ -123,7 +123,7 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: true,
   // Emit when the selection is changed in place (`push`, `splice`, a field of the selected item), without
   // walking the selected items' own `children`: a selected item carries its whole subtree, and a full
-  // deep watch visits every node of it on each selection. Vue 3.4 reads the depth as `true`.
+  // deep watch visits every node of it on each selection.
   deep: 1 as unknown as boolean,
 }) as Ref<U | U[]>
 
