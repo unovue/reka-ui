@@ -102,7 +102,11 @@ the same build, the spread table is the noise floor of the machine.
 
 Measured noise floor (the baseline run twice on the same build, see `results/`):
 
-<!-- noise-floor -->
+- **Heap**: max 0.2% between two runs (median 0.0%, p90 0.1%) over 67 metrics.
+- **Counts** (component updates, mounts,  calls, DOM nodes, listeners): identical.
+- **Timings**: not established yet. The only A/A pair so far was taken on a machine with a load
+  average above 30: median 6.4%, p90 24.6%, max 50% (). The 15% default
+  is provisional until the pair is repeated on a quiet machine.
 
 The default thresholds follow from that: timings must move by more than 15%, more than twice
 their standard deviation, and more than 0.1 ms. Heap must move by more than 2% and 0.1 KB.
