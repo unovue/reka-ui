@@ -12,7 +12,7 @@ export interface SelectViewportProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { onMounted, ref, toRefs } from 'vue'
+import { getCurrentInstance, onMounted, ref, toRefs, useAttrs } from 'vue'
 import {
   Primitive,
 } from '@/Primitive'
@@ -67,11 +67,28 @@ function handleScroll(event: WheelEvent) {
   }
   prevScrollTopRef.value = viewport.scrollTop
 }
+
+// The items render inside the viewport's element. The content above the viewport renders
+// several times while it opens, is positioned and closes, and each of those renders used to
+// reach the element and, from there, every item of a list written with `v-for`. The element
+// is memoized on what it is given: it renders again when an attribute or a prop changed, or
+// when the slot may have. A slot the compiler marked as stable (`_: 1`) reads nothing but
+// reactive state, which the element follows by itself; any other slot renders every time.
+const instance = getCurrentInstance()
+const attrs = useAttrs()
+let slotVersion = 0
+function viewportMemo() {
+  const hasStableSlots = (instance?.vnode?.children as { _?: number } | null | undefined)?._ === 1
+  if (!hasStableSlots)
+    slotVersion++
+  return [slotVersion, props.as, props.asChild, props.nonce, ...Object.keys(attrs), ...Object.values(attrs)]
+}
 </script>
 
 <template>
   <Primitive
     :ref="forwardRef"
+    v-memo="viewportMemo()"
     data-reka-select-viewport
     role="presentation"
     v-bind="{ ...$attrs, ...props }"
