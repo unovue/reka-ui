@@ -1,22 +1,50 @@
-// SPIKE: experimental `reka-ui/vapor` entry. The component SFCs are the unchanged v2 sources from
-// `src/`, compiled in Vapor mode; only the VDOM-only modules are swapped (see `vapor/vite.config.mjs`).
+/**
+ * `reka-ui/vapor`: the v2 component SFCs from `src/`, compiled in Vapor mode, with the VDOM-only
+ * modules swapped for Vapor versions (see `vapor/plugins.mjs`).
+ *
+ * @experimental Needs vue >=3.6.0-rc.16, client-side only. Export a family here only once its tests in
+ * `vapor/tests/` pass.
+ */
+// First: checks the Vue version, the internals and the environment before any component loads
+import './shared/internals'
+
 export { Primitive } from './Primitive'
-export { useEmitAsProps, useForwardProps, useForwardScopeId } from './shared/forwarding'
+export { useEmitAsProps, useForwardProps } from './shared/forwarding'
 export { useForwardExpose } from './shared/useForwardExpose'
 export { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger } from '@/Accordion'
 export { AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogOverlay, AlertDialogPortal, AlertDialogRoot, AlertDialogTitle, AlertDialogTrigger } from '@/AlertDialog'
+export { AspectRatio } from '@/AspectRatio'
+export { AvatarFallback, AvatarImage, AvatarRoot } from '@/Avatar'
 export { CheckboxIndicator, CheckboxRoot } from '@/Checkbox'
 export { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from '@/Collapsible'
 export { ComboboxAnchor, ComboboxArrow, ComboboxCancel, ComboboxContent, ComboboxEmpty, ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxItemIndicator, ComboboxLabel, ComboboxPortal, ComboboxRoot, ComboboxSeparator, ComboboxTrigger, ComboboxViewport } from '@/Combobox'
+export { ContextMenuArrow, ContextMenuCheckboxItem, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuItemIndicator, ContextMenuLabel, ContextMenuPortal, ContextMenuRadioGroup, ContextMenuRadioItem, ContextMenuRoot, ContextMenuSeparator, ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger } from '@/ContextMenu'
 export { DialogClose, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from '@/Dialog'
 export { DropdownMenuArrow, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuFilter, DropdownMenuGroup, DropdownMenuItem, DropdownMenuItemIndicator, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuRoot, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/DropdownMenu'
+export { EditableArea, EditableCancelTrigger, EditableEditTrigger, EditableInput, EditablePreview, EditableRoot, EditableSubmitTrigger } from '@/Editable'
+export { HoverCardArrow, HoverCardContent, HoverCardPortal, HoverCardRoot, HoverCardTrigger } from '@/HoverCard'
 export { Label } from '@/Label'
 export { ListboxContent, ListboxFilter, ListboxGroup, ListboxGroupLabel, ListboxItem, ListboxItemIndicator, ListboxRoot, ListboxVirtualizer } from '@/Listbox'
+export { MenubarArrow, MenubarCheckboxItem, MenubarContent, MenubarGroup, MenubarItem, MenubarItemIndicator, MenubarLabel, MenubarMenu, MenubarPortal, MenubarRadioGroup, MenubarRadioItem, MenubarRoot, MenubarSeparator, MenubarSub, MenubarSubContent, MenubarSubTrigger, MenubarTrigger } from '@/Menubar'
+export { NavigationMenuContent, NavigationMenuIndicator, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuRoot, NavigationMenuSub, NavigationMenuTrigger, NavigationMenuViewport } from '@/NavigationMenu'
+export { NumberFieldDecrement, NumberFieldIncrement, NumberFieldInput, NumberFieldRoot } from '@/NumberField'
+export { PaginationEllipsis, PaginationFirst, PaginationLast, PaginationList, PaginationListItem, PaginationNext, PaginationPrev, PaginationRoot } from '@/Pagination'
+export { PinInputInput, PinInputRoot } from '@/PinInput'
 export { PopoverArrow, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '@/Popover'
+export { ProgressIndicator, ProgressRoot } from '@/Progress'
 export { RadioGroupIndicator, RadioGroupItem, RadioGroupRoot } from '@/RadioGroup'
+export { ScrollAreaCorner, ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaScrollbarGlimpse, ScrollAreaThumb, ScrollAreaViewport, ScrollAreaVirtualizer } from '@/ScrollArea'
 export { SelectArrow, SelectContent, SelectGroup, SelectIcon, SelectItem, SelectItemIndicator, SelectItemText, SelectLabel, SelectPortal, SelectRoot, SelectScrollDownButton, SelectScrollUpButton, SelectSeparator, SelectTrigger, SelectValue, SelectViewport } from '@/Select'
 export { Separator } from '@/Separator'
+export { useForwardPropsEmits } from '@/shared/useForwardPropsEmits'
+export { SliderRange, SliderRoot, SliderThumb, SliderTrack } from '@/Slider'
+export { SplitterGroup, SplitterPanel, SplitterResizeHandle } from '@/Splitter'
+export { StepperDescription, StepperIndicator, StepperItem, StepperRoot, StepperSeparator, StepperTitle, StepperTrigger } from '@/Stepper'
 export { SwitchRoot, SwitchThumb } from '@/Switch'
 export { TabsContent, TabsIndicator, TabsList, TabsRoot, TabsTrigger } from '@/Tabs'
+export { TagsInputClear, TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot } from '@/TagsInput'
+export { ToastAction, ToastArrow, ToastClose, ToastDescription, ToastPortal, ToastPositioner, ToastProvider, ToastRoot, ToastTitle, ToastViewport } from '@/Toast'
 export { Toggle } from '@/Toggle'
 export { ToggleGroupItem, ToggleGroupRoot } from '@/ToggleGroup'
+export { TooltipArrow, TooltipContent, TooltipPortal, TooltipProvider, TooltipRoot, TooltipTrigger } from '@/Tooltip'
+export { TreeItem, TreeRoot, TreeVirtualizer } from '@/Tree'

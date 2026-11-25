@@ -1,14 +1,12 @@
-// SPIKE: VueUse 14 decides "am I in a component?" with `getCurrentInstance()`, which is `null` in a
+// VueUse 14 decides "am I in a component?" with `getCurrentInstance()`, which is `null` in a
 // Vapor component. So `useMounted()` never turns true (reka's Teleport never renders its portal), and
 // `tryOnMounted` / `tryOnBeforeUnmount` run immediately or not at all. The Vapor build points reka's
-// `@vueuse/core` / `@vueuse/shared` imports at these shims; upstream VueUse needs the same fix.
+// imports of these five at the versions below (`vueuseImports` in plugins.mjs); upstream VueUse needs
+// the same fix.
 import type { MaybeElementRef } from '@vueuse/core'
 import { unrefElement } from '@vueuse/core'
 import { hasInjectionContext, onBeforeUnmount, onMounted, onUnmounted, onUpdated, shallowRef, watch } from 'vue'
-import { findElement } from '../Primitive'
-import { getGenericInstance } from './internals'
-
-export * from '@vueuse/core'
+import { getGenericInstance, instanceElement } from './internals'
 
 export function useMounted() {
   const isMounted = shallowRef(false)
@@ -42,7 +40,7 @@ export function useParentElement(element?: MaybeElementRef) {
   const instance = getGenericInstance()
   const parent = shallowRef<HTMLElement | SVGElement | null | undefined>()
   const update = () => {
-    const el = element ? unrefElement(element) : findElement(instance?.block)
+    const el = element ? unrefElement(element) : instanceElement(instance)
     parent.value = (el as Element | null | undefined)?.parentElement ?? undefined
   }
   if (instance) {

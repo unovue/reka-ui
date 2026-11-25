@@ -1,4 +1,4 @@
-// SPIKE: Vapor-mode `Primitive`. Replaces `src/Primitive/Primitive.ts` + `Slot.ts` in the
+// Vapor-mode `Primitive`. Replaces `src/Primitive/Primitive.ts` + `Slot.ts` in the
 // `reka-ui/vapor` build (see `vapor/vite.config.mjs`). Needs Vue >= 3.6 (Vapor runtime).
 //
 // Non-`asChild`: renders `as` through Vapor's dynamic component, like `<component :is>`.
@@ -10,8 +10,10 @@
 //      patched onto the first element the slot rendered. Attributes the child already rendered win
 //      (snapshot at mount), classes/styles merge, listeners are added next to the child's.
 import type { Component, PropType } from 'vue'
-import { createDynamicComponent, createSlot, defineVaporComponent, extend, isFragment, isVaporComponent, renderEffect } from 'vue'
 import { ariaDisabledAttr, isPlainTag } from '@/shared/disabledAttr'
+import { createDynamicComponent, createSlot, defineVaporComponent, findElement, renderEffect } from './shared/internals'
+
+export { findElement }
 
 export type AsTag = 'a' | 'button' | 'div' | 'form' | 'h2' | 'h3' | 'img' | 'input' | 'label' | 'li' | 'nav' | 'ol' | 'p' | 'span' | 'svg' | 'ul' | 'template' | ({} & string)
 
@@ -30,27 +32,6 @@ const OPTION_SUFFIX_RE = /(?:Once|Passive|Capture)$/
 
 function safeTag(as: unknown) {
   return typeof as === 'string' && (!TAG_NAME.test(as) || BLOCKED_TAG.test(as)) ? 'div' : as
-}
-
-/** First element of a Vapor block (element, fragment, component instance or array). */
-export function findElement(block: any): Element | null {
-  if (!block)
-    return null
-  if (block instanceof Element)
-    return block
-  if (Array.isArray(block)) {
-    for (const b of block) {
-      const el = findElement(b)
-      if (el)
-        return el
-    }
-    return null
-  }
-  if (isVaporComponent(block))
-    return findElement((block as any).block)
-  if (isFragment(block))
-    return findElement((block as any).nodes)
-  return null
 }
 
 function withAriaDisabled(tag: unknown, attrs: Record<string, any>) {
@@ -214,7 +195,7 @@ export const Primitive = defineVaporComponent({
     block = createDynamicComponent(
       tag,
       { $: [() => withAriaDisabled(tag(), attrs)] },
-      selfClosing ? null : extend(() => createSlot('default', null, undefined, 4 /* FORWARDED */), { _: 1 }),
+      selfClosing ? null : Object.assign(() => createSlot('default', null, undefined, 4 /* FORWARDED */), { _: 1 }),
       1, /* SINGLE_ROOT */
     )
     return block

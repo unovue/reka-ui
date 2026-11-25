@@ -1,11 +1,12 @@
-// SPIKE: Vapor `useCollection`. v2 already registers items by element and orders them by a DOM query
+// Vapor `useCollection`. v2 already registers items by element and orders them by a DOM query
 // on the collection root (`querySelectorAll('[data-reka-collection-item]')`), so only the two wrapper
 // components were VDOM-specific: they render `h(Slot, …)` to clone the slot child with a ref and the
 // item marker. Here they render the slot and take its first element, the same way the Vapor
 // `Primitive` handles `asChild` (attrs adopted onto that element, the child's own attributes win).
 import type { Ref } from 'vue'
-import { computed, defineVaporComponent, inject, markRaw, onScopeDispose, provide, ref, shallowRef, watchEffect } from 'vue'
+import { computed, inject, markRaw, onScopeDispose, provide, ref, shallowRef, watchEffect } from 'vue'
 import { renderAsChildSlot } from './Primitive'
+import { defineVaporComponent } from './shared/internals'
 
 interface CollectionContext<ItemData = {}> {
   collectionRef: Ref<HTMLElement | undefined>

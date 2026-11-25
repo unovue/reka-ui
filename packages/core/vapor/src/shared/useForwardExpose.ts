@@ -1,4 +1,4 @@
-// SPIKE: Vapor-safe `useForwardExpose`. `getCurrentInstance()` returns `null` inside a Vapor
+// Vapor-safe `useForwardExpose`. `getCurrentInstance()` returns `null` inside a Vapor
 // component (3.6: `currentInstance && !currentInstance.vapor ? … : currentRenderingInstance`), so this
 // reads Vue's internal `currentInstance` (exported at runtime, `@internal` in the types). A shipped
 // version needs a public hook from Vue or an explicit `defineExpose(useForwardExpose().exposed)`.
@@ -7,10 +7,7 @@
 // `instance.exposed` when the forwarded child changes, expose one Proxy that resolves lazily.
 import type { ComponentPublicInstance } from 'vue'
 import { computed, onMounted, ref } from 'vue'
-import { findElement } from '../Primitive'
-import { getGenericInstance } from './internals'
-
-export { getGenericInstance }
+import { findElement, getExposed, getGenericInstance, setExposed } from './internals'
 
 function toElement(target: any): HTMLElement | undefined {
   if (!target)
@@ -22,11 +19,11 @@ function toElement(target: any): HTMLElement | undefined {
 }
 
 export function useForwardExpose<T extends ComponentPublicInstance>() {
-  const instance = getGenericInstance() as any
+  const instance = getGenericInstance()!
   const currentRef = ref<Element | T | null>()
   const currentElement = computed(() => toElement(currentRef.value))
 
-  const local: Record<string, any> = { ...instance?.exposed }
+  const local: Record<string, any> = { ...(instance && getExposed(instance)) }
   const resolve = (key: PropertyKey) => {
     if (key === '$el')
       return currentElement.value ?? findElement(instance.block)
@@ -40,12 +37,12 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
   const keys = () => [...new Set(['$el', ...Object.keys(local), ...Object.keys(instance.props)])]
 
   if (instance) {
-    instance.exposed = new Proxy({}, {
+    setExposed(instance, new Proxy({}, {
       get: (_, key) => resolve(key),
       has: (_, key) => key === '$el' || key in local || key in instance.props || (!!currentRef.value && key in (currentRef.value as any)),
       ownKeys: () => keys(),
       getOwnPropertyDescriptor: (_, key) => ({ enumerable: true, configurable: true, value: resolve(key) }),
-    })
+    }))
   }
 
   // Vapor runs template-ref setters synchronously while rendering, before the block is inserted.
