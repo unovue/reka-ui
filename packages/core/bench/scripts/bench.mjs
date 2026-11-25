@@ -116,6 +116,8 @@ function sleepEvents(from, to) {
   }
 }
 
+// bench/dist does not exist in a fresh checkout when --out points elsewhere
+mkdirSync(join(BENCH_ROOT, 'dist'), { recursive: true })
 const pageRoot = mkdtempSync(join(BENCH_ROOT, 'dist', 'page-'))
 process.on('exit', () => rmSync(pageRoot, { recursive: true, force: true }))
 for (const [sig, code] of [['SIGINT', 130], ['SIGTERM', 143], ['SIGHUP', 129]])
