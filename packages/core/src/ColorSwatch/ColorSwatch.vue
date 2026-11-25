@@ -66,7 +66,8 @@ const colorContrast = computed(() => {
     return getColorContrast(colorString.value)
   }
   catch {
-    if (import.meta.env.DEV) {
+    // Only for a color that can't be read at all: no color, `transparent` and non-hex formats are valid input.
+    if (process.env.NODE_ENV !== 'production' && colorString.value && colorString.value !== 'transparent' && !colorObj.value) {
       console.warn(`WARNING: Unable to resolve contrast color for "${colorString.value}".
            Please check that the color provided is a valid hex color.`)
     }

@@ -59,7 +59,6 @@ export default defineConfig({
    * @see https://github.com/rolldown/tsdown/issues/370
    */
   define: {
-    'import.meta.env.DEV': 'undefined',
     'import.meta.env.MODE': 'undefined',
     // Keys reka-ui's internal contexts by exact version, see `shared/createContext.ts`
     '__REKA_UI_VERSION__': JSON.stringify(version),
