@@ -30,3 +30,4 @@ dist
 
 test-results/
 playwright-report/
+dist-vapor

@@ -131,6 +131,10 @@ export default defineConfig({
             link: '/docs/guides/virtualization',
           },
           {
+            text: `Vapor Mode ${BadgeHTML('Experimental')}`,
+            link: '/docs/guides/vapor',
+          },
+          {
             text: `Migration ${BadgeHTML('New')}`,
             link: '/docs/guides/migration',
           },

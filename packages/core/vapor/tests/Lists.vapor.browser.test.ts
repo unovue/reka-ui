@@ -1,0 +1,107 @@
+import { describe, expect, it } from 'vitest'
+import { userEvent } from 'vitest/browser'
+import Fixture from './fixtures/Lists.vue'
+import { byId, expectAdopted, expectNoAxeViolations, expectSlotted, mount, text, until } from './utils'
+
+const active = () => document.activeElement?.id
+const highlighted = (root: string) => byId(root).querySelector('[data-highlighted]')?.id
+
+describe('select, listbox, combobox (Vapor)', () => {
+  it('select: keyboard open, pick, focus return, typeahead, Escape', async () => {
+    await mount(Fixture)
+    const trigger = byId('select-trigger')
+    expect(trigger.getAttribute('role')).toBe('combobox')
+    trigger.focus()
+    await userEvent.keyboard('{Enter}')
+    await until(() => expect(document.getElementById('select-content')).not.toBeNull())
+    expect(trigger.getAttribute('aria-expanded')).toBe('true')
+    await until(() => expect(active()).toBe('select-apple'))
+    await userEvent.keyboard('{ArrowDown}')
+    await until(() => expect(active()).toBe('select-banana'))
+    await userEvent.keyboard('{ArrowDown}')
+    await until(() => expect(active()).toBe('select-cherry'))
+    await userEvent.keyboard('{Enter}')
+    await until(() => expect(text('fruit')).toBe('cherry'))
+    await until(() => expect(document.getElementById('select-content')).toBeNull())
+    expect(active()).toBe('select-trigger')
+    await until(() => expect(byId('form').querySelector('select')?.value).toBe('cherry'))
+    await userEvent.keyboard('b')
+    await until(() => expect(text('fruit')).toBe('banana'))
+    await userEvent.click(trigger)
+    await until(() => expect(document.getElementById('select-content')).not.toBeNull())
+    await userEvent.keyboard('{Escape}')
+    await until(() => expect(document.getElementById('select-content')).toBeNull())
+  })
+
+  it('listbox: click, arrows, Enter, typeahead; asChild in both forms', async () => {
+    await mount(Fixture)
+    expect(byId('listbox').getAttribute('role')).toBe('listbox')
+    expectSlotted('lb-cherry', { 'role': 'option', 'aria-selected': 'false' })
+    expectAdopted('lb-date', { 'role': 'option', 'aria-selected': 'false' })
+    await userEvent.click(byId('lb-banana'))
+    await until(() => expect(text('picked')).toBe('banana'))
+    expect(byId('lb-banana').getAttribute('aria-selected')).toBe('true')
+    await userEvent.keyboard('{ArrowDown}')
+    await until(() => expect(highlighted('listbox')).toBe('lb-cherry'))
+    await userEvent.keyboard('{Enter}')
+    await until(() => expect(text('picked')).toBe('cherry'))
+    await userEvent.keyboard('{End}')
+    await until(() => expect(highlighted('listbox')).toBe('lb-date'))
+    await userEvent.keyboard('a')
+    await until(() => expect(highlighted('listbox')).toBe('lb-apple'))
+  })
+
+  it('listbox virtualizer: renders a window of 1000 rows, End/Home/typeahead reach any row', async () => {
+    await mount(Fixture)
+    await until(() => expect(document.getElementById('v-alpha-0')).not.toBeNull())
+    const rows = byId('vlistbox').querySelectorAll('[role=option]').length
+    expect(rows).toBeGreaterThan(0)
+    expect(rows).toBeLessThan(60)
+    const first = byId('v-alpha-0')
+    expect(first.getAttribute('aria-setsize')).toBe('1000')
+    expect(first.getAttribute('aria-posinset')).toBe('1')
+    expect(first.style.position).toBe('absolute')
+    await userEvent.click(first)
+    await until(() => expect(text('virtual')).toBe('alpha-0'))
+    await userEvent.keyboard('{End}')
+    await until(() => expect(highlighted('vlistbox')).toBe('v-echo-999'))
+    await userEvent.keyboard('{Enter}')
+    await until(() => expect(text('virtual')).toBe('echo-999'))
+    await userEvent.keyboard('{Home}')
+    await until(() => expect(highlighted('vlistbox')).toBe('v-alpha-0'))
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}')
+    await until(() => expect(highlighted('vlistbox')).toBe('v-charlie-2'))
+    await userEvent.keyboard('d')
+    await until(() => expect(highlighted('vlistbox')).toBe('v-delta-3'))
+  })
+
+  it('combobox: typing filters and opens, arrows + Enter pick, trigger, Escape', async () => {
+    await mount(Fixture)
+    const input = byId<HTMLInputElement>('combo-input')
+    await userEvent.click(input)
+    await userEvent.keyboard('ban')
+    await until(() => expect(document.getElementById('combo-content')).not.toBeNull())
+    await until(() => expect(['apple', 'banana', 'cherry'].filter(f => document.getElementById(`combo-${f}`)).join()).toBe('banana'))
+    expect(input.getAttribute('aria-expanded')).toBe('true')
+    await userEvent.keyboard('{ArrowDown}{Enter}')
+    await until(() => expect(text('search')).toBe('banana'))
+    expect(input.value).toBe('banana')
+    await userEvent.click(byId('combo-trigger'))
+    await until(() => expect(document.getElementById('combo-content')).not.toBeNull())
+    await userEvent.keyboard('{Escape}')
+    await until(() => expect(document.getElementById('combo-content')).toBeNull())
+  })
+
+  it('combobox: the exposed highlight methods work on a template ref', async () => {
+    await mount(Fixture)
+    await userEvent.click(byId('combo-trigger'))
+    await until(() => expect(document.getElementById('combo-content')).not.toBeNull())
+    byId('combo-highlight').click()
+    await until(() => expect(highlighted('combo-content')).toBe('combo-cherry'))
+  })
+
+  it('has no axe violations', async () => {
+    await mount(Fixture)
+    await expectNoAxeViolations()
+  })
+})

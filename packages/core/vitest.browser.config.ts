@@ -36,6 +36,8 @@ export default defineConfig({
   test: {
     globals: true,
     include: ['./**/*.browser.test.{ts,js}'],
+    // The Vapor build has its own suite and config (`vitest.vapor.config.ts`).
+    exclude: ['**/node_modules/**', './vapor/**'],
     setupFiles: './vitest.browser.setup.ts',
     browser: {
       enabled: true,

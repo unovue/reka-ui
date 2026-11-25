@@ -64,5 +64,17 @@
     "import": "*",
     "limit": "187 KB",
     "name": "Full library"
+  },
+  {
+    "path": "dist/vapor/index.js",
+    "import": "{ DialogRoot, DialogContent, DialogOverlay, DialogTrigger }",
+    "limit": "15 KB",
+    "name": "Vapor: Dialog (reka-ui/vapor)"
+  },
+  {
+    "path": "dist/vapor/index.js",
+    "import": "*",
+    "limit": "114 KB",
+    "name": "Vapor: full entry (reka-ui/vapor)"
   }
 ]
