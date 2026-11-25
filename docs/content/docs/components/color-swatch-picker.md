@@ -101,7 +101,7 @@ The component that indicates the selected color swatch within an item.
 
 Adheres to the [Listbox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/). The root renders with `role="listbox"` and each item with `role="option"`, labelled with the name of its color. The picker itself has no built-in label, so give `ColorSwatchPickerRoot` an accessible name with `aria-label` or `aria-labelledby`.
 
-Focus is managed with a roving tabindex, so the picker is a single tab stop. Moving focus with the arrow keys does not change the selection; press <kbd>Space</kbd> or <kbd>Enter</kbd> to select. The one exception is `multiple` combined with `selectionBehavior="replace"`, where holding <kbd>Shift</kbd> while moving focus extends the selection.
+Focus is managed with a roving tabindex, so the picker is a single tab stop. Moving focus with the arrow keys does not change the selection; press <kbd>Space</kbd> or <kbd>Enter</kbd> to select. The one exception is `multiple` combined with `selectionBehavior="replace"`, where holding <kbd>Shift</kbd> while moving focus extends the selection from the item you last selected, as long as the range stays within `max`.
 
 ### Keyboard Interactions
 
