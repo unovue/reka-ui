@@ -75,6 +75,11 @@ export function retire(entry: Entry) {
   entry.stop?.()
   if (entries.get(entry.ref) === entry)
     entries.delete(entry.ref)
+  // Marks the app wrote since the last scan count too, so nothing private is kept.
+  const elements = markedBy(entry)
+  if (isOffLimits(elements))
+    entry.offLimits = true
+  entry.secret ||= isSecret(elements)
   if (!entry.key || !entry.shown || entry.secret || entry.offLimits)
     return
   const queue = retired.get(entry.key) ?? []
@@ -154,11 +159,15 @@ export function remember(entry: Entry, parts: Part[]) {
   if (!first)
     return
   const queue = retired.get(entry.key)
-  const ref = queue?.shift()
-  if (!ref)
+  if (!queue?.length)
     return
-  if (!queue!.length)
-    retired.delete(entry.key)
+  retired.delete(entry.key)
+  // Two that left with the same name can't be told apart when one comes back, so neither ref is reused.
+  if (queue.length > 1) {
+    queue.forEach(ref => offPage.delete(ref))
+    return
+  }
+  const ref = queue[0]!
   offPage.delete(ref)
   if (entries.has(ref))
     return
@@ -169,14 +178,14 @@ export function remember(entry: Entry, parts: Part[]) {
 
 const nameOfType = (type: unknown) => (type as { __name?: string, name?: string } | undefined)?.__name ?? (type as { name?: string } | undefined)?.name
 
-function onRoot(kind: string, ctx: unknown, props: unknown, element?: unknown, extra?: unknown, model?: unknown) {
+function onRoot(kind: string, ctx: unknown, props: unknown, element?: unknown, extra?: unknown) {
   const adapter = adapters[kind]
   const instance = getCurrentInstance()
   if (!adapter || !instance || typeof document === 'undefined' || !ctx)
     return
   const parent = instance.parent
   const parentName = nameOfType(parent?.type)
-  const source: Source = { kind, ctx, props, element, extra, model, items: new Set(), parentName, instance }
+  const source: Source = { kind, ctx, props, element, extra, items: new Set(), parentName, instance }
   itemSets.set(ctx as object, source.items)
   // A root another component renders, a few components up, like a combobox's listbox inside its popper root.
   const hosted = HOSTED[kind]
@@ -256,6 +265,18 @@ function nativeKind(el: HTMLElement) {
   return 'input'
 }
 
+// Radios group by their form element and name, as browsers group them, so each form gets its own key.
+const formKeys = new WeakMap<object, number>()
+let formCount = 0
+function formKey(owner: object | null) {
+  if (!owner)
+    return 'page'
+  let key = formKeys.get(owner)
+  if (key === undefined)
+    formKeys.set(owner, key = ++formCount)
+  return String(key)
+}
+
 /** Brings the native entries up to date with the page and retires the ones that left. */
 export function scanNative(live: Entry[]) {
   const owned: HTMLElement[] = []
@@ -283,7 +304,7 @@ export function scanNative(live: Entry[]) {
       continue
     if (kind === 'radio') {
       const radio = el as HTMLInputElement
-      const name = `${radio.form?.id ?? ''}|${radio.name || radio.id}`
+      const name = radio.name ? `${formKey(radio.form)}|${radio.name}` : `radio:${formKey(radio)}`
       groups.set(name, [...(groups.get(name) ?? []), radio])
       continue
     }
@@ -349,7 +370,7 @@ function markedBy(entry: Entry) {
 function emit(entry: Entry, key: string, value: unknown, previous: unknown) {
   // Marks are read as the change happens: a component can change before any snapshot has named it.
   const elements = markedBy(entry)
-  if (entry.offLimits || isOffLimits(elements))
+  if (!elements.length || entry.offLimits || isOffLimits(elements))
     return
   const secret = (entry.secret ||= isSecret(elements))
   const { source, reason } = sourceNow()
@@ -389,23 +410,61 @@ function observe(entry: Entry) {
   entry.stop = () => scope.stop()
 }
 
+// What each native field held before its next change, so the first change it reports has its `previous`.
+const baselines = new WeakMap<Element, unknown>()
+
+function baseline(el: Element) {
+  const kind = nativeKind(el as HTMLElement)
+  if (!kind || kind === 'button')
+    return
+  if (kind === 'radio') {
+    baselines.set(el, (el as HTMLInputElement).checked)
+    return
+  }
+  try {
+    const adapter = native[kind]!
+    baselines.set(el, adapter.state({ kind, ctx: el, props: {}, items: new Set(), native: el as HTMLElement })[adapter.keys[0]!])
+  }
+  catch {}
+}
+
+function baselineAll(root: Node) {
+  if (!(root instanceof Element))
+    return
+  if (root.matches(NATIVE))
+    baseline(root)
+  root.querySelectorAll(NATIVE).forEach(baseline)
+}
+
 function observeNative() {
-  const values = new WeakMap<Element, unknown>()
   const read = (entry: Entry) => {
     const state = entry.adapter.state(entry.source)
     const key = entry.adapter.keys[0]
     return key ? { key, value: state[key] } : undefined
   }
+  const lookup = (target: HTMLElement) => bySource.get(target) ?? [...radioGroups.values()].find(group => group.source.radios?.includes(target as HTMLInputElement))
   const onInput = (event: Event) => {
     const target = event.target as HTMLElement
-    const entry = bySource.get(target) ?? [...radioGroups.values()].find(group => group.source.radios?.includes(target as HTMLInputElement))
+    let entry = lookup(target)
+    // A field the bridge hasn't scanned yet is found now, so its first change is heard.
+    if (!entry?.alive && target.matches?.(NATIVE)) {
+      scanNative([...entries.values()].filter(entry => entry.alive))
+      entry = lookup(target)
+    }
     if (!entry?.alive)
       return
     const now = read(entry)
-    const holder = entry.source.radios?.[0] ?? target
-    const before = values.has(holder) ? values.get(holder) : undefined
-    if (now && JSON.stringify(now.value) !== JSON.stringify(before)) {
-      values.set(holder, now.value)
+    if (!now)
+      return
+    const radios = entry.source.radios
+    const before = radios
+      ? radios.find(radio => baselines.get(radio) === true)?.value ?? null
+      : baselines.has(target) ? baselines.get(target) : null
+    if (JSON.stringify(now.value) !== JSON.stringify(before)) {
+      if (radios)
+        radios.forEach(radio => baselines.set(radio, radio.checked))
+      else
+        baselines.set(target, now.value)
       emit(entry, now.key, now.value, before ?? null)
     }
   }
@@ -416,20 +475,23 @@ function observeNative() {
     lastInput = { source: 'keyboard', at: performance.now() }
   }
   const remembering = (event: Event) => {
-    const target = event.target as HTMLElement
-    const entry = bySource.get(target)
-    if (entry?.alive && !values.has(target)) {
-      const now = read(entry)
-      if (now)
-        values.set(target, now.value)
-    }
+    const target = event.target as Element
+    if (target.matches?.(NATIVE) && !baselines.has(target))
+      baseline(target)
   }
+  // Fields on the page now and the ones added later start from what they hold.
+  baselineAll(document.documentElement)
+  const added = typeof MutationObserver === 'undefined'
+    ? undefined
+    : new MutationObserver(records => records.forEach(record => record.addedNodes.forEach(baselineAll)))
+  added?.observe(document.documentElement, { childList: true, subtree: true })
   document.addEventListener('focusin', remembering, true)
   document.addEventListener('input', onInput, true)
   document.addEventListener('change', onInput, true)
   document.addEventListener('pointerdown', onPointer, true)
   document.addEventListener('keydown', onKey, true)
   stopInput = () => {
+    added?.disconnect()
     document.removeEventListener('focusin', remembering, true)
     document.removeEventListener('input', onInput, true)
     document.removeEventListener('change', onInput, true)

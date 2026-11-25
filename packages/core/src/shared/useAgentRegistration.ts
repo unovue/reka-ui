@@ -9,7 +9,7 @@
  */
 export interface AgentRegistrar {
   /** A component root: its kind, its root context, its props, its element ref and one extra handle it owns. */
-  root?: (kind: string, context: unknown, props: unknown, element?: unknown, extra?: unknown, model?: unknown) => void
+  root?: (kind: string, context: unknown, props: unknown, element?: unknown, extra?: unknown) => void
   /** An item of a list-like root (a tab, a radio, an accordion section…), keyed by the root's context. */
   item?: (rootContext: unknown, props: unknown, element: unknown) => void
 }
@@ -18,8 +18,8 @@ const KEY = Symbol.for('reka-ui:agent')
 
 export const agentRegistrar: AgentRegistrar = ((globalThis as any)[KEY] ||= {})
 
-export function useAgentRegistration(kind: string, context: unknown, props: unknown, element?: unknown, extra?: unknown, model?: unknown) {
-  agentRegistrar.root?.(kind, context, props, element, extra, model)
+export function useAgentRegistration(kind: string, context: unknown, props: unknown, element?: unknown, extra?: unknown) {
+  agentRegistrar.root?.(kind, context, props, element, extra)
 }
 
 export function useAgentItem(rootContext: unknown, props: unknown, element: unknown) {

@@ -149,26 +149,31 @@ const checkboxState = computed<CheckedState>(() => {
   }
 })
 
-function handleClick() {
+// A click toggles. Called with `true` or `false` (the agent bridge does), it sets that state instead,
+// so an indeterminate checkbox can be unchecked in one change.
+function handleClick(target?: unknown) {
   // Native `disabled` doesn't block clicks on a non-button (`asChild`), nor when
   // the checkbox is only blocked by the group's `max`.
   if (disabled.value)
     return
+  const to = typeof target === 'boolean' ? target : undefined
+  if (to !== undefined && checkboxState.value === to)
+    return
 
   // Captured before the update: a controlled `modelValue` only changes once
   // the parent re-renders.
-  const nextState = checkboxState.value !== true
+  const nextState = to ?? checkboxState.value !== true
 
   if (!isNullish(checkboxGroupContext?.modelValue.value)) {
     let modelValueArray = [...(checkboxGroupContext.modelValue.value || [])]
     if (isParent.value) {
       const disabledItems = getControlledItems().filter(item => item.disabled())
-      modelValueArray = getParentToggleValue(
-        checkboxGroupContext.allValues.value ?? [],
-        modelValueArray,
-        value => disabledItems.some(item => isEqual(item.value(), value)),
-        checkboxGroupContext.max.value,
-      )
+      const isDisabledValue = (value: unknown) => disabledItems.some(item => isEqual(item.value(), value))
+      const allValues = checkboxGroupContext.allValues.value ?? []
+      // Unchecking a mixed parent clears what it can, the way a click on a checked one does.
+      modelValueArray = to === false && checkboxState.value !== true
+        ? modelValueArray.filter(value => isDisabledValue(value) || !isValueEqualOrExist(allValues, value))
+        : getParentToggleValue(allValues, modelValueArray, isDisabledValue, checkboxGroupContext.max.value)
     }
     else if (isValueEqualOrExist(modelValueArray, props.value)) {
       const index = modelValueArray.findIndex(i => isEqual(i, props.value))
@@ -181,7 +186,7 @@ function handleClick() {
   }
   else {
     if (modelValue.value === 'indeterminate') {
-      modelValue.value = props.trueValue as TrueValue
+      modelValue.value = to === false ? props.falseValue as FalseValue : props.trueValue as TrueValue
     }
     else {
       modelValue.value = isChecked.value ? props.falseValue as FalseValue : props.trueValue as TrueValue
@@ -296,7 +301,7 @@ const agentContext = provideCheckboxRootContext({
   disabled: nativeDisabled,
   state: checkboxState,
 })
-useAgentRegistration('checkbox', agentContext, props, currentElement, handleClick, modelValue)
+useAgentRegistration('checkbox', agentContext, props, currentElement, handleClick)
 </script>
 
 <template>

@@ -2,9 +2,9 @@
 // context the component already provides, calling the same functions a
 // person's click or keypress calls, so `update:*` emits fire as usual.
 import { isEqual } from 'ohash'
-import { unref } from 'vue'
+import { nextTick, unref } from 'vue'
 import { clamp, snapValueToStep } from '@/shared/clamp'
-import { isDisabledElement, nameOf, textOf, textOrName } from './dom'
+import { fold, isDisabledElement, nameOf, textOf, textOrName } from './dom'
 
 /** An item of a list-like component, with its own value. */
 export interface Item {
@@ -27,8 +27,6 @@ export interface Source {
   props: any
   element?: any
   extra?: any
-  /** The component's own model ref, for a value its handlers can only toggle, like an indeterminate checkbox's. */
-  model?: any
   /** Items that registered against this component's context. */
   items: Set<{ props: any, element: any }>
   /** A listbox a combobox renders, whose items are the combobox's. */
@@ -84,6 +82,16 @@ const same = (a: unknown, b: unknown) => a === b || isEqual(a as any, b as any)
 const has = (list: unknown[], value: unknown) => list.some(item => same(item, value))
 const toList = (value: unknown) => (Array.isArray(value) ? value : value == null || value === '' ? [] : [value])
 
+/** Whether a value names an item of the list that is inside `data-agent-hidden`. */
+export function hiddenItem(s: Source, value: unknown) {
+  for (const { props, element } of [...s.items, ...(s.inner?.items ?? [])]) {
+    const node = el(element)
+    if (node?.isConnected && node.closest('[data-agent-hidden]') && (same(props.value, value) || (typeof value === 'string' && fold(textOrName(node)) === fold(value))))
+      return true
+  }
+  return false
+}
+
 function registered(s: Source): Item[] {
   return Array.from(s.items, ({ props, element }) => {
     const node = el(element)
@@ -96,7 +104,8 @@ function registered(s: Source): Item[] {
       el: trigger,
     }
   })
-    .filter(item => item.el?.isConnected)
+    // An item inside `data-agent-hidden` isn't the agent's to see or pick, even in a list that is.
+    .filter(item => item.el?.isConnected && !item.el.closest('[data-agent-hidden]'))
     .sort((a, b) => (a.el!.compareDocumentPosition(b.el!) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
 }
 
@@ -114,11 +123,33 @@ function toggleTo(current: unknown, target: unknown, multiple: boolean, toggle: 
   }
   const now = toList(current)
   const want = toList(target)
-  for (const value of now.filter(value => !has(want, value)))
-    toggle(value)
-  for (const value of want.filter(value => !has(now, value)))
-    toggle(value)
+  const changes = [...now.filter(value => !has(want, value)), ...want.filter(value => !has(now, value))]
+  if (changes.length <= 1) {
+    changes.forEach(toggle)
+    return
+  }
+  // Each toggle builds on the one before, so a controlled model gets its render in between, as clicks would.
+  return (async () => {
+    for (const [index, value] of changes.entries()) {
+      if (index)
+        await nextTick()
+      toggle(value)
+    }
+  })()
 }
+
+// Picks an item the way a click on it does, so its `select` event fires and `preventDefault` there stops it.
+function clickItem(list: Source, value: unknown) {
+  const item = registered(list).find(item => same(item.value, value))
+  if (!item?.el)
+    return false
+  if (item.disabled)
+    return fail(`"${item.label}" is disabled now.`)
+  item.el.click()
+  return true
+}
+
+const frame = () => new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
 
 const field = (keys: string[], adapter: Omit<Adapter, 'keys'>): Adapter => ({ keys, ...adapter })
 
@@ -143,16 +174,9 @@ function checkable(component: string, key: 'checked' | 'pressed', read: (s: Sour
   })
 }
 
-// A click takes an indeterminate checkbox to checked, so unchecking one sets its model to the unchecked value.
+// A checkbox's own handler sets the asked state, so a group, an indeterminate state and its Field all follow a click's path.
 function checkTo(s: Source, value: unknown) {
-  if (unref(s.ctx.state) === 'indeterminate' && value === false && s.model && !unref(s.ctx.disabled)) {
-    s.model.value = s.props.falseValue ?? false
-    return
-  }
-  s.extra()
-  // A group's parent goes from indeterminate to all checked first; a second click unchecks them.
-  if (unref(s.ctx.state) !== value)
-    s.extra()
+  s.extra(value)
 }
 
 function popup(component: (s: Source) => string, trigger: (s: Source) => HTMLElement | undefined, content: (s: Source) => HTMLElement | undefined, extra: Partial<Adapter> = {}): Adapter {
@@ -191,6 +215,28 @@ function numberTo(s: Source, value: number) {
   if (step === undefined || Number.isNaN(step) || s.props.stepSnapping === false)
     return clamp(value, min, max)
   return snapValueToStep(value, min, max, step)
+}
+
+// A combobox's items show while it's open, so it opens to click them, as a person does, then closes if it was closed.
+async function comboboxTo(s: Source, value: unknown) {
+  const multiple = !!unref(s.ctx.multiple)
+  const current = unref(s.ctx.modelValue)
+  const wanted = toList(value)
+  const was = !!unref(s.ctx.open)
+  if (!was && (wanted.length || multiple)) {
+    s.ctx.onOpenChange(true)
+    for (let tries = 0; tries < 30 && !(s.inner && registered(s.inner).length); tries++)
+      await frame()
+  }
+  try {
+    const listbox = s.inner
+    const pick = (v: unknown) => (listbox && clickItem(listbox, v)) || (listbox ? listbox.ctx.onValueChange(v) : (s.ctx.modelValue.value = v))
+    await toggleTo(current, value, multiple, pick)
+  }
+  finally {
+    if (!was && unref(s.ctx.open))
+      s.ctx.onOpenChange(false)
+  }
 }
 
 const rootOf = (s: Source) => el(s.element) ?? el(s.instance?.vnode.el)
@@ -265,9 +311,7 @@ export const adapters: Record<string, Adapter> = {
     actions: () => ['setValue', 'setOpen', 'setQuery', 'clear'],
     run: (s, action, [value]) => {
       if (action === 'setValue') {
-        const listbox = s.inner?.ctx
-        const pick = (v: unknown) => (listbox ? listbox.onValueChange(v) : (s.ctx.modelValue.value = v))
-        return toggleTo(unref(s.ctx.modelValue), value, !!unref(s.ctx.multiple), pick)
+        return comboboxTo(s, value)
       }
       if (action === 'clear') {
         s.ctx.modelValue.value = s.ctx.getClearValue?.() ?? (unref(s.ctx.multiple) ? [] : undefined)
@@ -297,10 +341,10 @@ export const adapters: Record<string, Adapter> = {
     run: (s, action, [value]) => {
       const multiple = !!unref(s.ctx.multiple)
       if (action === 'clear')
-        return toggleTo(unref(s.ctx.modelValue), multiple ? [] : undefined, multiple, v => s.ctx.onValueChange(v))
+        return toggleTo(unref(s.ctx.modelValue), multiple ? [] : undefined, multiple, v => clickItem(s, v) || s.ctx.onValueChange(v))
       if (action !== 'setValue')
         return fail(`listbox takes setValue, not ${action}.`)
-      return toggleTo(unref(s.ctx.modelValue), value, multiple, v => s.ctx.onValueChange(v))
+      return toggleTo(unref(s.ctx.modelValue), value, multiple, v => clickItem(s, v) || s.ctx.onValueChange(v))
     },
   }),
 
@@ -587,7 +631,7 @@ export const native: Record<string, Adapter> = {
         ? { value: Array.from(select.selectedOptions, option => option.value), multiple: true }
         : { value: select.value === '' ? null : select.value }
     },
-    items: s => Array.from((s.native as HTMLSelectElement).options, option => ({ value: option.value, label: textOf(option) || option.value, disabled: option.disabled })),
+    items: s => Array.from((s.native as HTMLSelectElement).options, option => ({ value: option.value, label: textOf(option) || option.value, disabled: option.disabled || (option.parentElement?.localName === 'optgroup' && (option.parentElement as HTMLOptGroupElement).disabled) })),
     closed: true,
     disabled: s => (s.native as HTMLSelectElement).disabled,
     actions: () => ['setValue'],

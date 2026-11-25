@@ -6,7 +6,8 @@ import type { Entry } from './registry'
 import type { Agent, AgentAction, AgentActResult, AgentAllow, AgentChange, AgentComponent, AgentOptions, AgentQuery, AgentStep } from './types'
 import { isEqual } from 'ohash'
 import { nextTick } from 'vue'
-import { buttonsIn, byPosition, confirmOf, fold, isOffLimits, isShown, textOf, textOrName, wordsOf } from './dom'
+import { hiddenItem } from './adapters'
+import { buttonsIn, byPosition, confirmOf, fold, isDisabledElement, isOffLimits, isShown, textOf, textOrName, wordsOf } from './dom'
 import { agentWindow, anchorOf, asAgent, entries, install, listen, offPage, partsOf, placeOf, remember, scanNative, stateKeys, uninstall } from './registry'
 import { agentTools } from './tools'
 
@@ -123,6 +124,9 @@ function redact(entry: Entry, value: unknown, key = 'value') {
 
 const wire = (items: Item[]) => items.map(item => ({ value: keyOf(item.value), label: item.label }))
 
+// A private list's items read without their labels on every path, and text never matches them.
+const shownItems = (entry: Entry, items: Item[]) => (entry.secret ? wire(items).map(item => ({ ...item, label: '[redacted]' })) : wire(items))
+
 // Each agent's `act` and `query` with a second `allow` beside its own, for `registerTools`.
 export const allowing = new WeakMap<Agent, {
   act: (input: { steps: AgentStep[] }, allow: AgentAllow, signal?: AbortSignal) => Promise<AgentActResult>
@@ -173,6 +177,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
 
   // The components on the page, read once until the code next waits: names and rows walk the page.
   let scanned: Found[] | undefined
+  let destroyed = false
   const live = () => {
     if (!scanned) {
       scanned = scan()
@@ -246,7 +251,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
     const items = itemsOf(entry)
     if (items?.length) {
       if (items.length <= 10)
-        out.items = entry.secret ? wire(items).map(item => ({ ...item, label: '[redacted]' })) : wire(items)
+        out.items = shownItems(entry, items)
       else
         out.more = items.length
     }
@@ -427,7 +432,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
       const now = stateOf(entry)
       return collapsible ? now.open !== true : !differs(before.value, now.value)
     }
-    fresh(go)
+    await fresh(go)
     await frames()
     for (let tries = 0; tries < PATIENCE && shut() && !callerSignal?.aborted; tries++)
       await frames()
@@ -435,12 +440,14 @@ export function createAgent(options: AgentOptions = {}): Agent {
     if (shut())
       return undefined
     return async () => {
-      fresh(back)
+      await fresh(back)
       await frames()
       // The same wait going back, or the next place would go back to this one.
       for (let tries = 0; tries < PATIENCE && !shut() && !callerSignal?.aborted; tries++)
         await frames()
       scanned = undefined
+      if (!shut())
+        throw new Error(`${nameFor(entry)} didn't go back to how it was after a look behind it: it is ${JSON.stringify(redact(entry, collapsible ? stateOf(entry).open : stateOf(entry).value) ?? null)} now. Nothing else was opened.`)
     }
   }
 
@@ -558,9 +565,21 @@ export function createAgent(options: AgentOptions = {}): Agent {
           throw wrongGuess(`No "${name}" in a section or tab named like "${scope.place}".`)
         throw partial ? missing : notFound(unfound.get(missing as Error)!)
       }
-      for (const place of way)
-        await enter(place)
-      return find(name, action, usable)
+      const backs: (() => Promise<void>)[] = []
+      for (const place of way) {
+        const back = await enter(place)
+        if (back)
+          backs.unshift(back)
+      }
+      const found: Found & { restore?: () => Promise<void> } = find(name, action, usable)
+      // A check changes nothing, so what it opened to look closes again.
+      if (action === 'expect') {
+        found.restore = async () => {
+          for (const back of backs)
+            await back()
+        }
+      }
+      return found
     }
   }
 
@@ -632,6 +651,52 @@ export function createAgent(options: AgentOptions = {}): Agent {
     return { button, opened, close, pressed: `Pressed "${textOrName(button)}"` }
   }
 
+  // Just before a step commits, after any wait on `allow`: the same target is still there, still the agent's,
+  // not behind what opened meanwhile, and the answer was about what it does now.
+  function stillThere(entry: Entry, elements: (Element | undefined | null)[], approved: string | undefined, shown: Element[]) {
+    const els = elements.filter((el): el is Element => !!el)
+    if (!entry.alive || shown.some(el => !el.isConnected))
+      throw new Error(`${nameFor(entry)} left the page while the step waited for an answer.`)
+    const now = partsOf(entry)
+    if (isOffLimits([...els, ...now.map(part => part.el)]))
+      throw new Error(`${entry.ref} isn't available to agents now.`)
+    if (isInert(now))
+      throw new Error(`${nameFor(entry)} is behind what opened while the step waited. Finish that or close it first.`)
+    if (confirmOf(els) !== approved)
+      throw new Error(`What ${nameFor(entry)} does changed while the step waited for an answer. Run the step again.`)
+  }
+
+  // The items an action takes out of a list's value or closes, like the section `closeAll` shuts.
+  function removedBy(value: unknown, action: string, arg: unknown, items: Item[]) {
+    const list = (v: unknown) => (Array.isArray(v) ? v : v == null || v === '' ? [] : [v])
+    const has = (values: unknown[], v: unknown) => values.some(other => isEqual(other as any, v as any))
+    const held = list(value)
+    const next = action === 'setValue'
+      ? list(arg)
+      : action === 'close' || (action === 'toggle' && has(held, arg))
+        ? held.filter(v => !isEqual(v as any, arg as any))
+        : action === 'closeAll' ? [] : held
+    return items.filter(item => has(held, item.value) && !has(next, item.value)).map(item => item.el)
+  }
+
+  // An `expect`: the component's value, that value's label or its row text is what the step says.
+  function check({ entry }: Found, args: unknown[]) {
+    const state = stateOf(entry)
+    const key = fieldKey(stateKeys(entry, state))
+    const value = key ? state[key] : undefined
+    if (redact(entry, value) !== value)
+      throw new Error(`${nameFor(entry)} is private, so expect can't check it.`)
+    const shown = itemsOf(entry)?.find(item => isEqual(item.value as any, value as any))?.label
+    const words = typeof args[0] === 'string' ? wordsOf(args[0]) : ''
+    const onRow = !!words.trim() && wordsOf(`${entry.label ?? ''} ${entry.row ?? ''}`).includes(words)
+    const fits = !!key && (sameValue(value, args[0]) || (shown !== undefined && sameValue(shown, args[0])))
+    if (!fits && !onRow) {
+      const now = words && entry.row ? entry.row : key ? value : entry.row
+      throw new Error(`${nameFor(entry)} is ${JSON.stringify(now ?? null)}, not ${JSON.stringify(args[0])}.`)
+    }
+    return { ref: entry.ref, result: null }
+  }
+
   // Runs one step as the agent, once `allow` lets it, and waits for the page to render it.
   async function perform(ref: string, action: string, args: unknown[], onFound?: () => void) {
     const found = await reveal(ref, action)
@@ -639,20 +704,12 @@ export function createAgent(options: AgentOptions = {}): Agent {
     const { entry, parts } = found
     const { adapter, source } = entry
     if (action === 'expect') {
-      const state = stateOf(entry)
-      const key = fieldKey(stateKeys(entry, state))
-      const value = key ? state[key] : undefined
-      if (redact(entry, value) !== value)
-        throw new Error(`${nameFor(entry)} is private, so expect can't check it.`)
-      const shown = itemsOf(entry)?.find(item => isEqual(item.value as any, value as any))?.label
-      const words = typeof args[0] === 'string' ? wordsOf(args[0]) : ''
-      const onRow = !!words.trim() && wordsOf(`${entry.label ?? ''} ${entry.row ?? ''}`).includes(words)
-      const fits = !!key && (sameValue(value, args[0]) || (shown !== undefined && sameValue(shown, args[0])))
-      if (!fits && !onRow) {
-        const now = words && entry.row ? entry.row : key ? value : entry.row
-        throw new Error(`${nameFor(entry)} is ${JSON.stringify(now ?? null)}, not ${JSON.stringify(args[0])}.`)
+      try {
+        return check(found, args)
       }
-      return { ref: entry.ref, result: null }
+      finally {
+        await (found as { restore?: () => Promise<void> }).restore?.()
+      }
     }
     if (isInert(parts)) {
       const over = above()?.entry
@@ -696,7 +753,13 @@ export function createAgent(options: AgentOptions = {}): Agent {
       const text = typeof args[0] === 'string' ? args[0] : undefined
       const press = await pressing(found, text, () => ask(args, own(parts), `press "${text}"`))
       try {
-        await ask(args, [press.button, ...own(parts)], `press "${textOrName(press.button)}"`)
+        const targets = [press.button, ...own(parts)]
+        const approved = confirmOf(targets)
+        const shown = targets.filter(el => el.isConnected)
+        await ask(args, targets, `press "${textOrName(press.button)}"`)
+        stillThere(entry, targets, approved, shown)
+        if (isDisabledElement(press.button))
+          throw new Error(`"${textOrName(press.button)}" in ${entry.ref} is disabled now.`)
       }
       catch (refused) {
         if (press.opened)
@@ -721,7 +784,8 @@ export function createAgent(options: AgentOptions = {}): Agent {
       throw new Error(`${component.component} ${entry.ref} takes no ${action} now. It takes: ${actions.join(', ') || 'nothing'}.${actions.includes('press') ? ' press takes the text of a button inside it, and opens it first to find the button.' : ''}`)
     }
     const state = stateOf(entry)
-    const items = adapter.items ? await listItems(entry, () => ask(args, own(parts), 'make this change')) : undefined
+    // Only a choice needs a closed list's items, so nothing else opens it to look.
+    const items = adapter.items ? await listItems(entry, action === 'setValue' ? () => ask(args, own(parts), 'make this change') : undefined) : undefined
     const itemFor = (value: unknown) => {
       if (!items)
         return { value }
@@ -745,6 +809,8 @@ export function createAgent(options: AgentOptions = {}): Agent {
       if (action !== 'setValue' && args[0] === undefined && Array.isArray(state.value))
         throw new Error(`${action} on ${nameFor(entry)} takes one of its items: ${items!.map(item => item.label).join(', ') || 'none'}.`)
       const values = Array.isArray(args[0]) ? args[0] : [args[0]]
+      if (values.some(value => hiddenItem(source, value)))
+        throw new Error(`${entry.ref} isn't available to agents here. Ask the person.`)
       chosen = args[0] == null || args[0] === '' ? [] : values.map(itemFor)
       const blocked = chosen.find(item => 'disabled' in item && item.disabled && !(Array.isArray(state.value) ? state.value : [state.value]).some(v => isEqual(v as any, item.value as any)))
       if (blocked)
@@ -772,18 +838,20 @@ export function createAgent(options: AgentOptions = {}): Agent {
     }
     if (BOOLEAN_SETTER.test(action) && typeof args[0] !== 'boolean')
       throw new Error(`${action} on ${nameFor(entry)} takes true or false, not ${quoted(args[0])}.`)
-    // Replacing a value also asks about the items it takes out, so dropping a marked choice needs a person too.
-    const targets = [...own(parts), ...chosen.map(item => ('el' in item ? item.el : undefined))]
+    // Replacing a value also asks about the items it takes out or closes, so dropping a marked choice needs a person too.
+    const targets = [...own(parts), ...chosen.map(item => ('el' in item ? item.el : undefined)), ...(items && (takesItem || action === 'closeAll') ? removedBy(state.value, action, args[0], items) : [])]
+    const approved = confirmOf(targets)
+    // A closed list's items aren't on the page; what was is checked again after the answer.
+    const shown = targets.filter((el): el is HTMLElement => !!el?.isConnected)
     await ask(args, targets, 'make this change')
-    if (isOffLimits(targets.filter((el): el is HTMLElement => !!el)))
-      throw new Error(`${entry.ref} isn't available to agents now.`)
+    stillThere(entry, targets, approved, shown)
     const setKey = SETTER.test(action) ? action[3]!.toLowerCase() + action.slice(4) : undefined
     const was = setKey ? state[setKey] : undefined
     agentWindow.open = true
     agentWindow.action = action
     try {
       try {
-        fresh(() => adapter.run(source, action, args))
+        await fresh(() => adapter.run(source, action, args))
       }
       catch (error) {
         throw entry.secret ? new Error(`${action} on ${nameFor(entry)} failed: [redacted]`) : error
@@ -942,8 +1010,8 @@ export function createAgent(options: AgentOptions = {}): Agent {
     const touched = new Set<string>()
     let error: AgentActResult['error'] = invalid
     for (const [index, step] of steps.entries()) {
-      if (callerSignal?.aborted) {
-        error = { step: index, message: `${step.action} on ${step.ref} was cancelled.` }
+      if (callerSignal?.aborted || destroyed) {
+        error = { step: index, message: destroyed ? `This agent was destroyed before ${step.action} on ${step.ref}.` : `${step.action} on ${step.ref} was cancelled.` }
         break
       }
       held.clear()
@@ -1014,8 +1082,8 @@ export function createAgent(options: AgentOptions = {}): Agent {
     if (within) {
       try {
         const found = find(within)
-        const items = wire(itemsOf(found.entry) ?? [])
-        const component = withItems(describe(found), matching(items, text), from)
+        const items = shownItems(found.entry, itemsOf(found.entry) ?? [])
+        const component = withItems(describe(found), found.entry.secret && text ? [] : matching(items, text), from)
         if (!items.length && found.entry.adapter.itemsWhileOpen && !isOpen(found.entry))
           component.note = `Its items show while it's open. act's setValue takes an item's label and opens ${found.entry.ref} to find it.`
         return [component]
@@ -1034,6 +1102,9 @@ export function createAgent(options: AgentOptions = {}): Agent {
       try {
         await behind(() => false)
       }
+      catch (stuck) {
+        return { error: messageOf(stuck) }
+      }
       finally {
         noted = undefined
       }
@@ -1048,7 +1119,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
       if (isNamed(component)) {
         found.push(component)
       }
-      else if (text) {
+      else if (text && !item.entry.secret) {
         const items = matching(wire(itemsOf(item.entry) ?? []), text)
         if (items.length)
           found.push(withItems(component, items))
@@ -1067,8 +1138,9 @@ export function createAgent(options: AgentOptions = {}): Agent {
 
   // One `act` or `query` at a time, in the order they were called, so an agent can't press a confirm while it waits.
   let queue: Promise<unknown> = Promise.resolve()
+  // A call still waiting when the bridge is destroyed never runs.
   const inTurn = <T>(run: () => Promise<T>) => {
-    const next = queue.then(run)
+    const next = queue.then(() => (destroyed ? Promise.reject(new Error('This agent was destroyed.')) : run()))
     queue = next.catch(() => {})
     return next
   }
@@ -1086,7 +1158,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
       }
     })
 
-  let destroyed = false
+  const subscriptions = new Set<() => void>()
   const agent: Agent = {
     snapshot: () => {
       scanned = undefined
@@ -1102,11 +1174,23 @@ export function createAgent(options: AgentOptions = {}): Agent {
     },
     act: (input, actOptions) => askingToo(undefined, actOptions?.signal, () => act(input)),
     query: input => inTurn(() => query(input ?? {})),
-    subscribe: listener => listen(listener),
+    subscribe: (listener) => {
+      if (destroyed)
+        return () => {}
+      const stop = listen(listener)
+      const unsubscribe = () => {
+        subscriptions.delete(unsubscribe)
+        stop()
+      }
+      subscriptions.add(unsubscribe)
+      return unsubscribe
+    },
     tools: agentTools,
     destroy: () => {
       if (!destroyed) {
         destroyed = true
+        // Only this bridge's listeners go: another bridge on the page keeps its own.
+        subscriptions.forEach(unsubscribe => unsubscribe())
         uninstall()
       }
     },

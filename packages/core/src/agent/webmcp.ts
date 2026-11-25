@@ -37,6 +37,8 @@ export function registerTools(agent: Agent, { allow }: { allow: AgentAllow }) {
   if (!context || !own)
     return () => controller.abort()
   const registered: { unregister?: () => unknown }[] = []
+  // Names registered without a handle back, for the legacy `unregisterTool(name)` cleanup.
+  const named = new Set<string>()
   for (const tool of agentTools) {
     const definition = {
       ...tool,
@@ -57,8 +59,12 @@ export function registerTools(agent: Agent, { allow }: { allow: AgentAllow }) {
       const result = context.registerTool(definition, { signal: controller.signal }) as { unregister?: () => unknown, catch?: (handler: (error: unknown) => void) => unknown } | undefined
       if (result && typeof result.unregister === 'function')
         registered.push(result)
+      else
+        named.add(tool.name)
       // A page whose permissions policy turns WebMCP off, or an unregister before the browser finished, isn't a mistake.
       result?.catch?.((error: unknown) => {
+        // A name this call didn't get, like one another registration holds, is never this call's to unregister.
+        named.delete(tool.name)
         const name = (error as { name?: string } | undefined)?.name
         if (import.meta.env.DEV && name !== 'NotAllowedError' && name !== 'AbortError')
           console.warn(`[reka-ui] registerTools couldn't register ${tool.name}.`, error)
@@ -79,10 +85,10 @@ export function registerTools(agent: Agent, { allow }: { allow: AgentAllow }) {
       }
       catch {}
     }
-    if (!registered.length && typeof context.unregisterTool === 'function') {
-      for (const tool of agentTools) {
+    if (typeof context.unregisterTool === 'function') {
+      for (const name of named) {
         try {
-          context.unregisterTool(tool.name)
+          context.unregisterTool(name)
         }
         catch {}
       }
