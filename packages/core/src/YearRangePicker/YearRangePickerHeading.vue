@@ -6,6 +6,7 @@ export interface YearRangePickerHeadingProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
+import { claimReferencedId } from '@/shared'
 import { injectYearRangePickerRootContext } from './YearRangePickerRoot.vue'
 
 const props = withDefaults(defineProps<YearRangePickerHeadingProps>(), { as: 'div' })
@@ -18,6 +19,7 @@ defineSlots<{
 }>()
 
 const rootContext = injectYearRangePickerRootContext()
+claimReferencedId(rootContext, 'headingId')
 </script>
 
 <template>

@@ -6,6 +6,7 @@ export interface MonthPickerHeadingProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
+import { claimReferencedId } from '@/shared'
 import { injectMonthPickerRootContext } from './MonthPickerRoot.vue'
 
 const props = withDefaults(defineProps<MonthPickerHeadingProps>(), { as: 'div' })
@@ -18,6 +19,7 @@ defineSlots<{
 }>()
 
 const rootContext = injectMonthPickerRootContext()
+claimReferencedId(rootContext, 'headingId')
 </script>
 
 <template>

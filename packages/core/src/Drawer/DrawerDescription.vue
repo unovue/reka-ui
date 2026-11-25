@@ -6,12 +6,13 @@ export interface DrawerDescriptionProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
-import { useForwardExpose } from '@/shared'
+import { claimReferencedId, useForwardExpose } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 
 const props = withDefaults(defineProps<DrawerDescriptionProps>(), { as: 'p' })
 useForwardExpose()
 const rootContext = injectDrawerRootContext()
+claimReferencedId(rootContext, 'descriptionId')
 </script>
 
 <template>
