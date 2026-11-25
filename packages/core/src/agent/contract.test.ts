@@ -263,9 +263,11 @@ const families: Family[] = [
 
 // Where the component sits: in the page, in a popover's portal, or in a popover inside a dialog's portal.
 type Wrap = (inner: () => VNode | VNode[]) => VNode
+// Each placement puts the component inside `[data-placed]`, which the setup waits to see on the page.
+const placed = (inner: () => VNode | VNode[]) => h('div', { 'data-placed': '' }, [inner()].flat())
 const placements: Record<string, Wrap> = {
-  'inline': inner => h('div', inner()),
-  'portal': inner => h(PopoverRoot, { defaultOpen: true }, () => [h(PopoverTrigger, () => 'Holder'), h(PopoverPortal, () => h(PopoverContent, inner))]),
+  'inline': inner => placed(inner),
+  'portal': inner => h(PopoverRoot, { defaultOpen: true }, () => [h(PopoverTrigger, () => 'Holder'), h(PopoverPortal, () => h(PopoverContent, () => placed(inner)))]),
   'nested portal': inner => h(DialogRoot, { defaultOpen: true, modal: false }, () => h(DialogPortal, () => h(DialogContent, () => [
     h(DialogTitle, () => 'Shell'),
     placements.portal!(inner),
@@ -322,12 +324,25 @@ afterEach(() => {
 })
 enableAutoUnmount(afterEach)
 
-// Popups mount their content a few ticks after they open, the first one on the page slowest.
-async function settle() {
-  for (let round = 0; round < 3; round++) {
-    for (let tick = 0; tick < 4; tick++)
-      await nextTick()
-    await new Promise(resolve => setTimeout(resolve, 10))
+// Popups render their content after timers of their own (a portal waits for mount, presence for a frame),
+// so a slow run can take several. Each waits on what it needs, not on a fixed time: the page settles once
+// `ready` holds and nothing in the document has changed for a few timer turns.
+async function settle(ready: () => boolean = () => true) {
+  let changed = true
+  const observer = new MutationObserver(() => (changed = true))
+  // Positioning rewrites `style` on every frame, which says nothing of what is on the page.
+  observer.observe(document.body, { subtree: true, childList: true, characterData: true, attributeFilter: ['hidden', 'inert', 'disabled', 'data-state', 'aria-hidden', 'id'] })
+  try {
+    for (let quiet = 0, turns = 0; quiet < 2 && turns < 200; turns++) {
+      for (let tick = 0; tick < 4; tick++)
+        await nextTick()
+      await new Promise(resolve => setTimeout(resolve, 10))
+      quiet = changed || !ready() ? 0 : quiet + 1
+      changed = false
+    }
+  }
+  finally {
+    observer.disconnect()
   }
 }
 
@@ -346,7 +361,7 @@ async function build(family: Family, place: Wrap, mark: Mark, allow?: (step: any
     return mark.around ? h(mark.around.tag ?? 'div', mark.around.attrs, wrapped) : wrapped
   }
   const wrapper = mount(defineComponent({ render: () => h('div', mark.ancestor ?? {}, [place(component), h('button', 'Elsewhere')]) }), { attachTo: document.body })
-  await settle()
+  await settle(() => !!document.querySelector('[data-placed]'))
   return { agent, model, wrapper }
 }
 
