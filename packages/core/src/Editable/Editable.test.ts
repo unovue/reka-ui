@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, nextTick } from 'vue'
 import { useTestKbd } from '@/shared'
-import { EditableArea, EditableInput, EditablePreview, EditableRoot } from '.'
+import { EditableArea, EditableEditTrigger, EditableInput, EditablePreview, EditableRoot } from '.'
 import Editable from './story/_Editable.vue'
 
 const kbd = useTestKbd()
@@ -217,10 +217,20 @@ describe('given a disabled Editable', () => {
 
   it('should take the preview out of the tab order', async () => {
     const { preview, rerender } = setup({ editableProps: { disabled: true } })
-    expect(preview).not.toHaveAttribute('tabindex')
+    expect(preview).toHaveAttribute('tabindex', '-1')
 
     await rerender({ editableProps: { disabled: false } })
     expect(preview).toHaveAttribute('tabindex', '0')
+  })
+})
+
+describe('given a disabled Editable with a natively focusable preview', () => {
+  it('should take a button preview out of the tab order', () => {
+    const { getByTestId } = render(defineComponent({
+      components: { EditableRoot, EditableArea, EditablePreview, EditableInput },
+      template: `<EditableRoot disabled><EditableArea><EditablePreview as="button" data-testid="preview" /><EditableInput /></EditableArea></EditableRoot>`,
+    }))
+    expect(getByTestId('preview').tabIndex).toBe(-1)
   })
 })
 
@@ -260,5 +270,27 @@ describe('given the Editable input name', () => {
     await nextTick()
     expect(getByTestId('input')).not.toHaveAttribute('aria-label')
     expect(getByTestId('input')).toHaveAccessibleName('Project title')
+  })
+})
+
+describe('given a label added after the Editable input mounts', () => {
+  it('should drop the default name once editing starts', async () => {
+    const { getByTestId, container } = render(defineComponent({
+      components: { EditableRoot, EditableArea, EditablePreview, EditableInput, EditableEditTrigger },
+      template: `<div><EditableRoot id="late"><EditableArea><EditablePreview /><EditableInput data-testid="input" /></EditableArea><EditableEditTrigger data-testid="edit" /></EditableRoot></div>`,
+    }))
+    const input = getByTestId('input')
+    expect(input).toHaveAttribute('aria-label', 'editable input')
+
+    const label = document.createElement('label')
+    label.htmlFor = 'late'
+    label.textContent = 'Late label'
+    container.prepend(label)
+
+    await userEvent.click(getByTestId('edit'))
+    await nextTick()
+
+    expect(input).not.toHaveAttribute('aria-label')
+    expect(input).toHaveAccessibleName('Late label')
   })
 })

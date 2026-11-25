@@ -31,9 +31,14 @@ const attrs = useAttrs()
 const hasLabelElement = ref(false)
 const ariaLabel = computed(() => (attrs['aria-labelledby'] || hasLabelElement.value) ? undefined : 'editable input')
 
+// Checked on mount and each time editing starts, which is when the input is shown, so a label added later counts.
+function updateHasLabelElement() {
+  hasLabelElement.value = !!(inputRef.value as HTMLInputElement | undefined)?.labels?.length
+}
+
 onMounted(() => {
   context.inputRef.value = inputRef.value as HTMLInputElement
-  hasLabelElement.value = !!(inputRef.value as HTMLInputElement | undefined)?.labels?.length
+  updateHasLabelElement()
   if (context.startWithEditMode.value) {
     context.inputRef.value?.focus({ preventScroll: true })
     if (context.selectOnFocus.value)
@@ -43,6 +48,7 @@ onMounted(() => {
 
 watch(context.isEditing, (value) => {
   if (value) {
+    updateHasLabelElement()
     nextTick(() => {
       context.inputRef.value?.focus({ preventScroll: true })
       if (context.selectOnFocus.value)

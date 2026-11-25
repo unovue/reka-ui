@@ -28,7 +28,7 @@ function handleDoubleClick() {
 <template>
   <Primitive
     v-bind="props"
-    :tabindex="context.disabled.value ? undefined : 0"
+    :tabindex="context.disabled.value ? -1 : 0"
     :data-placeholder-shown="context.isEditing.value ? undefined : ''"
     :hidden="context.autoResize.value ? undefined : context.isEditing.value"
     :style="context.autoResize.value ? {
