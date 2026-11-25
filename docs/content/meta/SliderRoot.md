@@ -98,7 +98,7 @@
   {
     'name': 'thumbAlignment',
     'description': '<p>The alignment of the slider thumb.</p>\n<ul>\n<li><code>contain</code>: thumbs will be contained within the bounds of the track.</li>\n<li><code>overflow</code>: thumbs will not be bound by the track. No extra offset will be added.</li>\n</ul>\n',
-    'type': '\'contain\' | \'overflow\'',
+    'type': '\'overflow\' | \'contain\'',
     'required': false,
     'default': '\'contain\''
   }
@@ -146,7 +146,7 @@
 | `orientation` | The orientation of the slider. | `"vertical" \| "horizontal"` | No | `"horizontal"` |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `step` | The stepping interval. | `number` | No | `1` |
-| `thumbAlignment` | The alignment of the slider thumb.  contain: thumbs will be contained within the bounds of the track. overflow: thumbs will not be bound by the track. No extra offset will be added. | `"contain" \| "overflow"` | No | `"contain"` |
+| `thumbAlignment` | The alignment of the slider thumb.  contain: thumbs will be contained within the bounds of the track. overflow: thumbs will not be bound by the track. No extra offset will be added. | `"overflow" \| "contain"` | No | `"contain"` |
 
 **Events**
 

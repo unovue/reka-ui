@@ -17,10 +17,14 @@ Static rendering is another similar approach. Instead it pre-renders pages to HT
 
 You should be able to use all of our primitives with both approaches, for example with [Nuxt.js](https://nuxt.com/).
 
-## Nuxt Hydration issue (Vue < 3.5)
+## Stable ids
 
-Reka UI offers a [Nuxt module](/docs/overview/installation.html#nuxt-modules) that supports auto importing components. However, if you are using Vue < 3.5, minor hydration issues might arise because as of vue <= 3.4 there is [currently no way](https://github.com/vuejs/rfcs/discussions/557) to ensure consistent DOM element `id` between the client and server renders. This is something that Reka UI relies on.
+Reka UI generates the `id` attributes that link its parts together (`aria-controls`, `aria-labelledby`, …), and these must be identical in the server render and the client render. They come from Vue's [`useId`](https://vuejs.org/api/composition-api-helpers.html#useid), which is stable across both, so no setup is needed. Reka UI requires Vue 3.5 or later.
 
-As a temporary workaround, we expose a way to allow Nuxt (with version > `3.10`) inject it's `useId` implementation to `reka-ui`.
+If you render more than one Vue app instance on the same page, give each one a distinct [`app.config.idPrefix`](https://vuejs.org/api/application.html#app-config-idprefix) so their ids don't collide.
 
-To provide a custom `useId` implementation, please follow this [guide](/docs/utilities/config-provider.html#hydration-issue-vue-3-5).
+## Nuxt
+
+Reka UI offers a [Nuxt module](/docs/overview/installation.html#nuxt-modules) that supports auto importing components.
+
+A prerendered page and the hydrating client can end up with different Vue app id prefixes, which shows up as an `id` hydration mismatch. If you run into this, pass Nuxt's [`useId`](https://nuxt.com/docs/api/composables/use-id) to `ConfigProvider`, and every id Reka UI generates will come from it instead. See the [ConfigProvider guide](/docs/utilities/config-provider.html#hydration-issue).
