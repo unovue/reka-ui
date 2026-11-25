@@ -43,6 +43,12 @@ new `.ts` module renders VNodes and needs a Vapor version in `MODULE_OVERRIDES`.
 
 A module that has a Vapor version was moved or renamed. Point the override at its new path.
 
+**"src claims '…': add it to REFERENCED_KEYS"** (`pnpm test:vapor:node`)
+
+A part in `src/` calls `claimReferencedId` with a new context key. The Vapor version
+(`vapor/src/shared/useReferencedId.ts`) prepares those keys when the context is provided, so add the
+key to `REFERENCED_KEYS` there.
+
 **Other `presenceRootAttrs`, `vShowOnComponents` or `exposeElementPlugin` errors**
 
 The message says what the transform could not handle and how to fix the template by hand.

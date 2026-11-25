@@ -1,6 +1,7 @@
-// Node unit tests for the Vapor build's path handling: `node --test vapor/tests/plugins.node.test.mjs`
+// Node unit tests for the Vapor build's path handling and its sync with src: `node --test vapor/tests/plugins.node.test.mjs`
 /* eslint-disable test/no-import-node-test -- runs under `node --test` (Node-side build code, no Vitest config) */
 import assert from 'node:assert/strict'
+import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { test } from 'node:test'
 import { core, createPaths, overrideFor, toPosix } from '../plugins.mjs'
@@ -29,4 +30,20 @@ test('finds a module override from an id with either separator', () => {
   assert.equal(overrideFor(id.replaceAll('/', '\\')), expected)
   assert.equal(overrideFor(`${toPosix(id)}?v=123`), expected)
   assert.equal(overrideFor(resolve(core, 'src/Dialog/DialogRoot.vue')), undefined)
+})
+
+test('prepares every context key that src parts claim with claimReferencedId', () => {
+  const vapor = readFileSync(resolve(core, 'vapor/src/shared/useReferencedId.ts'), 'utf8')
+  const prepared = new Set(JSON.parse(`[${/REFERENCED_KEYS = \[([^\]]*)\]/.exec(vapor)[1].replaceAll('\'', '"')}]`))
+  const claimed = new Set()
+  for (const file of readdirSync(resolve(core, 'src'), { recursive: true })) {
+    if (!/\.(?:vue|ts)$/.test(file) || file.endsWith('.test.ts'))
+      continue
+    // `reflect: false` claims are read with `getReferencedId`, which needs no getter.
+    for (const m of readFileSync(resolve(core, 'src', file), 'utf8').matchAll(/claimReferencedId\([^,]+,\s*'(\w+)'\s*\)/g))
+      claimed.add(m[1])
+  }
+  assert.ok(claimed.size > 0)
+  for (const key of claimed)
+    assert.ok(prepared.has(key), `src claims '${key}': add it to REFERENCED_KEYS in vapor/src/shared/useReferencedId.ts`)
 })

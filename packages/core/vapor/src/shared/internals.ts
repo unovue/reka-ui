@@ -122,6 +122,7 @@ export interface GenericInstance {
   vapor?: true
   type: { props?: Record<string, any>, emits?: string[] | Record<string, any>, __name?: string }
   props: Record<string, any>
+  attrs?: Record<string, any>
   exposed: Record<string, any> | null
   block?: unknown
   scopeId?: string | null

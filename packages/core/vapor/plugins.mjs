@@ -65,6 +65,7 @@ const MODULE_OVERRIDES = {
   [src('shared/useEmitAsProps.ts')]: resolve(here, 'src/shared/forwarding.ts'),
   [src('shared/useTriggerId.ts')]: resolve(here, 'src/shared/useTriggerId.ts'),
   [src('shared/useForwardRef.ts')]: resolve(here, 'src/shared/useForwardRef.ts'),
+  [src('shared/useReferencedId.ts')]: resolve(here, 'src/shared/useReferencedId.ts'),
 }
 for (const [from, to] of Object.entries(MODULE_OVERRIDES)) {
   if (!existsSync(from))
@@ -382,8 +383,14 @@ function asChildSlotProps(code, id) {
   return code
 }
 
-/** Per-file template patches: the edits the real migration would make by hand. */
+/** Per-file patches: the edits the real migration would make by hand. */
 const PATCHES = {
+  // Contexts get their referenced-id getters when provided, before any part reads them (see
+  // vapor/src/shared/useReferencedId.ts: Vapor cannot re-render the parts that read them earlier).
+  [src('shared/createContext.ts')]: [
+    ['import { inject, provide } from \'vue\'', `import { inject, provide } from 'vue'\nimport { prepareReferencedIds } from ${JSON.stringify(resolve(here, 'src/shared/useReferencedId.ts'))}`],
+    ['provide(injectionKey, contextValue)', 'provide(injectionKey, prepareReferencedIds(contextValue))'],
+  ],
   [src('ScrollArea/ScrollAreaVirtualizer.vue')]: [
     [/\/\/ not a computed: slots aren't reactive[^\n]*\nfunction getVirtualizedItems\(\) \{[\s\S]*?\n\}\n/, `function rowAttrs(item: VirtualItem) {
   const start = item.start - scrollMargin.value
@@ -649,10 +656,9 @@ function srcTransformsPlugin() {
     transform(code, id) {
       if (!isSrc(id) || id.includes('?') || !/\.(?:vue|ts)$/.test(id))
         return null
-      let out = rewriteImports(code, id)
+      let out = applyPatches(rewriteImports(code, id), id)
       if (id.endsWith('.vue')) {
         count(id, 'sfcs')
-        out = applyPatches(out, id)
         out = presenceRootAttrs(out, id)
         out = vShowOnComponents(out, id)
         out = asChildComponentChains(out, id)
