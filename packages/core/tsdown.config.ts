@@ -40,6 +40,7 @@ export default defineConfig({
     index: './src/index.ts',
     internal: './src/internal.ts',
     date: './src/date/index.ts',
+    agent: './src/agent/index.ts',
     constant: './constant/index.ts',
     shared: './src/shared/index.ts',
   },

@@ -46,6 +46,10 @@
       "import": "./dist/date.js",
       "require": "./dist/date.cjs"
     },
+    "./agent": {
+      "import": "./dist/agent.js",
+      "require": "./dist/agent.cjs"
+    },
     "./namespaced": {
       "import": "./dist/namespaced/index.mjs",
       "require": "./dist/namespaced/index.cjs"
@@ -66,6 +70,7 @@
   "files": [
     "src",
     "dist",
+    "NOTICE",
     "!src/**/*.story.vue",
     "!src/**/*.test.*",
     "!src/**/_*.vue",
