@@ -50,7 +50,7 @@ export const [injectPaginationRootContext, providePaginationRootContext]
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { computed, nextTick, toRefs, watch } from 'vue'
+import { computed, nextTick, toRefs, useAttrs, watch } from 'vue'
 import { Primitive } from '@/Primitive'
 
 const props = withDefaults(defineProps<PaginationRootProps>(), {
@@ -70,6 +70,10 @@ defineSlots<{
     pageCount: typeof pageCount.value
   }) => any
 }>()
+// A `<nav>` is a landmark, and landmarks need a name to be told apart. The default steps aside for a
+// consumer `aria-label` (it falls through and wins) or `aria-labelledby`, and is only set on the `<nav>` itself.
+const attrs = useAttrs()
+const ariaLabel = computed(() => (props.as === 'nav' && !props.asChild && !attrs['aria-labelledby']) ? 'pagination' : undefined)
 
 const { siblingCount, disabled, showEdges } = toRefs(props)
 
@@ -121,6 +125,7 @@ providePaginationRootContext({
   <Primitive
     :as="as"
     :as-child="asChild"
+    :aria-label="ariaLabel"
   >
     <slot
       :page="page"

@@ -228,6 +228,20 @@ const total = ref(100)
 </template>
 ```
 
+## Accessibility
+
+`PaginationRoot` renders a `<nav>` landmark named `pagination`. Give it your own name with `aria-label` or `aria-labelledby`, for example when a page has more than one pagination.
+
+```vue
+<template>
+  <PaginationRoot aria-label="Search results pages">
+    …
+  </PaginationRoot>
+</template>
+```
+
+A `PaginationEllipsis` that only holds `…` or an icon is hidden from assistive technology. One with its own text or a focusable element is left as it is.
+
 ## Keyboard Interactions
 
 <KeyboardTable
