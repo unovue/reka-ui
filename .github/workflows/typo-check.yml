@@ -3,7 +3,7 @@ name: Typo check
 on:
   push:
     branches:
-      - main
+      - v2
 
   pull_request:
     types: [opened, reopened, synchronize]
@@ -17,4 +17,4 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Writes changes in the local checkout
-        uses: crate-ci/typos@master
+        uses: crate-ci/typos@v1.52.2
