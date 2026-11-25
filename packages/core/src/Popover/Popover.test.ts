@@ -4,7 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
-import { PopoverClose, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '.'
+import { PopoverAnchor, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '.'
 import Popover from './story/_Popover.vue'
 
 describe('given default Popover', () => {
@@ -260,6 +260,48 @@ describe('given a Popover whose content has no tabbable children (#2803)', () =>
 
     expect(openLog).toEqual([true])
     expect(wrapper.get('button').attributes('aria-expanded')).toBe('true')
+    wrapper.unmount()
+  })
+})
+
+describe('popover opened from its anchor', () => {
+  async function openFrom(template: string) {
+    const open = ref(false)
+    const wrapper = mount(defineComponent({
+      components: { PopoverRoot, PopoverAnchor, PopoverTrigger, PopoverContent, PopoverPortal },
+      setup: () => ({ open }),
+      template: `<PopoverRoot v-model:open="open">${template}<PopoverPortal><PopoverContent>content</PopoverContent></PopoverPortal></PopoverRoot>`,
+    }), { attachTo: document.body })
+    return { wrapper, open }
+  }
+
+  it('keeps focus in an anchor input that opens it', async () => {
+    const { wrapper, open } = await openFrom('<PopoverAnchor as-child><input id="anchor-input" @focus="open = true" /></PopoverAnchor>')
+    ;(document.getElementById('anchor-input') as HTMLInputElement).focus()
+    await flushPromises()
+    await new Promise(resolve => setTimeout(resolve))
+    expect(open.value).toBe(true)
+    expect(document.activeElement?.id).toBe('anchor-input')
+    wrapper.unmount()
+  })
+
+  it('moves focus into the content when a trigger inside the anchor opens it', async () => {
+    const { wrapper } = await openFrom('<PopoverAnchor><input /><PopoverTrigger id="anchor-trigger">open</PopoverTrigger></PopoverAnchor>')
+    const trigger = document.getElementById('anchor-trigger') as HTMLButtonElement
+    trigger.focus()
+    trigger.click()
+    await flushPromises()
+    await new Promise(resolve => setTimeout(resolve))
+    expect(document.activeElement?.closest('[role="dialog"]')).not.toBeNull()
+    wrapper.unmount()
+  })
+
+  it('still moves focus into the content when opened from the trigger', async () => {
+    const { wrapper } = await openFrom('<PopoverAnchor><span>anchor</span></PopoverAnchor><PopoverTrigger>open</PopoverTrigger>')
+    await wrapper.find('button').trigger('click')
+    await flushPromises()
+    await new Promise(resolve => setTimeout(resolve))
+    expect(document.activeElement?.closest('[role="dialog"]')).not.toBeNull()
     wrapper.unmount()
   })
 })

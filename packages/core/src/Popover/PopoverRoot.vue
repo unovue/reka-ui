@@ -68,6 +68,8 @@ export interface PopoverRootContext {
   /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
   onOpenToggle: (reason?: PopoverOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   hasCustomAnchor: Ref<boolean>
+  /** The `PopoverAnchor` element, when there is one. */
+  anchorElement: Ref<HTMLElement | undefined>
   /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
   notifyOpenComplete?: (value: boolean) => void
 }
