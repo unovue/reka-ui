@@ -31,7 +31,7 @@ describe('without the agent entry', () => {
     useAgentRegistration('switch', context, {})
     agentRegistrar.root = undefined
     expect(spy).toHaveBeenCalledOnce()
-    expect(spy).toHaveBeenCalledWith('switch', context, {}, undefined, undefined)
+    expect(spy).toHaveBeenCalledWith('switch', context, {}, undefined, undefined, undefined)
   })
 
   it('a bridge created after mount sees native fields but not components set up before it', async () => {

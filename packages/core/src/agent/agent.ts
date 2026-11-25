@@ -794,7 +794,8 @@ export function createAgent(options: AgentOptions = {}): Agent {
         if (entry.secret || !setKey)
           return false
         const now = stateOf(entry)[setKey]
-        return !differs(was, now) && !sameValue(now, args[0])
+        // A number the component moves to its step is told below; anything else must end at what was asked.
+        return numeric ? !differs(was, now) && !sameValue(now, args[0]) : !sameValue(now, args[0])
       }
       for (let tries = 0; tries < PATIENCE && stays() && !callerSignal?.aborted; tries++)
         await frames()

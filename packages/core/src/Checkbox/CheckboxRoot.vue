@@ -296,7 +296,7 @@ const agentContext = provideCheckboxRootContext({
   disabled: nativeDisabled,
   state: checkboxState,
 })
-useAgentRegistration('checkbox', agentContext, props, currentElement, handleClick)
+useAgentRegistration('checkbox', agentContext, props, currentElement, handleClick, modelValue)
 </script>
 
 <template>

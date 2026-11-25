@@ -3,6 +3,7 @@
 // person's click or keypress calls, so `update:*` emits fire as usual.
 import { isEqual } from 'ohash'
 import { unref } from 'vue'
+import { clamp, snapValueToStep } from '@/shared/clamp'
 import { isDisabledElement, nameOf, textOf, textOrName } from './dom'
 
 /** An item of a list-like component, with its own value. */
@@ -26,6 +27,8 @@ export interface Source {
   props: any
   element?: any
   extra?: any
+  /** The component's own model ref, for a value its handlers can only toggle, like an indeterminate checkbox's. */
+  model?: any
   /** Items that registered against this component's context. */
   items: Set<{ props: any, element: any }>
   /** A listbox a combobox renders, whose items are the combobox's. */
@@ -120,7 +123,7 @@ function toggleTo(current: unknown, target: unknown, multiple: boolean, toggle: 
 const field = (keys: string[], adapter: Omit<Adapter, 'keys'>): Adapter => ({ keys, ...adapter })
 
 // Checkbox, Switch and Toggle: one button that holds a boolean.
-function checkable(component: string, key: 'checked' | 'pressed', read: (s: Source) => unknown, flip: (s: Source) => void, disabled: (s: Source) => boolean): Adapter {
+function checkable(component: string, key: 'checked' | 'pressed', read: (s: Source) => unknown, flip: (s: Source) => void, disabled: (s: Source) => boolean, set: (s: Source, value: unknown) => void = flip): Adapter {
   const setter = key === 'checked' ? 'setChecked' : 'setPressed'
   return field([key], {
     component: () => component,
@@ -135,9 +138,21 @@ function checkable(component: string, key: 'checked' | 'pressed', read: (s: Sour
       if (action !== setter)
         return fail(`${component} takes ${setter} or toggle, not ${action}.`)
       if (read(s) !== value)
-        flip(s)
+        set(s, value)
     },
   })
+}
+
+// A click takes an indeterminate checkbox to checked, so unchecking one sets its model to the unchecked value.
+function checkTo(s: Source, value: unknown) {
+  if (unref(s.ctx.state) === 'indeterminate' && value === false && s.model && !unref(s.ctx.disabled)) {
+    s.model.value = s.props.falseValue ?? false
+    return
+  }
+  s.extra()
+  // A group's parent goes from indeterminate to all checked first; a second click unchecks them.
+  if (unref(s.ctx.state) !== value)
+    s.extra()
 }
 
 function popup(component: (s: Source) => string, trigger: (s: Source) => HTMLElement | undefined, content: (s: Source) => HTMLElement | undefined, extra: Partial<Adapter> = {}): Adapter {
@@ -148,7 +163,11 @@ function popup(component: (s: Source) => string, trigger: (s: Source) => HTMLEle
     owns: s => parts(['trigger', trigger(s)]).map(p => p.el),
     content,
     state: s => ({ open: !!unref(s.ctx.open) }),
-    disabled: () => false,
+    // A closed popup whose trigger is disabled can't be opened, so nothing inside it can be pressed.
+    disabled: (s) => {
+      const opener = trigger(s)
+      return !unref(s.ctx.open) && !!opener && isDisabledElement(opener)
+    },
     actions: () => ['setOpen', 'press'],
     run: (s, action, [value]) => {
       const open = action === 'open' ? true : action === 'close' ? false : action === 'toggle' ? !unref(s.ctx.open) : value
@@ -162,12 +181,24 @@ function popup(component: (s: Source) => string, trigger: (s: Source) => HTMLEle
   }
 }
 
+// A number the way the field takes typed text: kept in range and on its step, unless the field allows any value.
+function numberTo(s: Source, value: number) {
+  const min = unref(s.ctx.min) as number | undefined
+  const max = unref(s.ctx.max) as number | undefined
+  if (s.props.allowInvalid)
+    return value
+  const step = s.props.step
+  if (step === undefined || Number.isNaN(step) || s.props.stepSnapping === false)
+    return clamp(value, min, max)
+  return snapValueToStep(value, min, max, step)
+}
+
 const rootOf = (s: Source) => el(s.element) ?? el(s.instance?.vnode.el)
 
 const menuContent = (s: Source) => (unref(s.ctx.open) ? byId(s.ctx.contentId) : undefined)
 
 export const adapters: Record<string, Adapter> = {
-  'checkbox': checkable('checkbox', 'checked', s => unref(s.ctx.state), s => s.extra(), s => !!unref(s.ctx.disabled)),
+  'checkbox': checkable('checkbox', 'checked', s => unref(s.ctx.state), s => s.extra(), s => !!unref(s.ctx.disabled), checkTo),
   'switch': checkable('switch', 'checked', s => !!unref(s.ctx.checked), s => s.ctx.toggleCheck(), s => !!unref(s.ctx.disabled)),
   'toggle': checkable('toggle', 'pressed', s => !!unref(s.ctx), (s) => { s.ctx.value = !s.ctx.value }, s => !!s.props.disabled),
 
@@ -207,8 +238,12 @@ export const adapters: Record<string, Adapter> = {
     disabled: s => !!unref(s.ctx.disabled),
     actions: () => ['setValue', 'setOpen'],
     run: (s, action, [value]) => {
-      if (action === 'setValue')
+      if (action === 'setValue') {
+        // A person can't empty a single select, only pick another item.
+        if (!unref(s.ctx.multiple) && (value == null || value === ''))
+          return fail('select can\'t be emptied. Pick one of its items.')
         return toggleTo(unref(s.ctx.modelValue), value, !!unref(s.ctx.multiple), v => s.ctx.onValueChange(v))
+      }
       return adapters.popover.run(s, action, [value])
     },
   }),
@@ -402,7 +437,7 @@ export const adapters: Record<string, Adapter> = {
         return s.ctx.applyInputValue('')
       if (action !== 'setValue')
         return fail(`number-field takes setValue, not ${action}.`)
-      s.ctx.modelValue.value = value
+      s.ctx.modelValue.value = numberTo(s, value as number)
     },
   }),
 

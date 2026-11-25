@@ -7,7 +7,7 @@ import type { AgentComponent, ChangeSource, ObservedChange } from './types'
 import { effectScope, getCurrentInstance, onBeforeUnmount, watch } from 'vue'
 import { agentRegistrar } from '@/shared/useAgentRegistration'
 import { adapters, native } from './adapters'
-import { isDisabledElement, isOffLimits, isSecret, isShown, nameOf, rowOf, sectionsOf, textOf } from './dom'
+import { isOffLimits, isSecret, isShown, nameOf, rowOf, sectionsOf, textOf } from './dom'
 
 export interface Entry {
   ref: string
@@ -169,14 +169,14 @@ export function remember(entry: Entry, parts: Part[]) {
 
 const nameOfType = (type: unknown) => (type as { __name?: string, name?: string } | undefined)?.__name ?? (type as { name?: string } | undefined)?.name
 
-function onRoot(kind: string, ctx: unknown, props: unknown, element?: unknown, extra?: unknown) {
+function onRoot(kind: string, ctx: unknown, props: unknown, element?: unknown, extra?: unknown, model?: unknown) {
   const adapter = adapters[kind]
   const instance = getCurrentInstance()
   if (!adapter || !instance || typeof document === 'undefined' || !ctx)
     return
   const parent = instance.parent
   const parentName = nameOfType(parent?.type)
-  const source: Source = { kind, ctx, props, element, extra, items: new Set(), parentName, instance }
+  const source: Source = { kind, ctx, props, element, extra, model, items: new Set(), parentName, instance }
   itemSets.set(ctx as object, source.items)
   // A root another component renders, a few components up, like a combobox's listbox inside its popper root.
   const hosted = HOSTED[kind]
@@ -221,8 +221,11 @@ export function uninstall() {
     return
   agentRegistrar.root = undefined
   agentRegistrar.item = undefined
-  for (const entry of [...entries.values()])
+  // A component still on the page retires into nothing once the bridge is gone.
+  for (const entry of [...entries.values()]) {
+    entry.alive = false
     entry.stop?.()
+  }
   entries.clear()
   radioGroups.clear()
   retired.clear()
@@ -306,12 +309,6 @@ export function scanNative(live: Entry[]) {
   }
 }
 
-/** Whether a component can be used now, as far as its own elements say. */
-export function elementDisabled(parts: Part[]) {
-  const controls = parts.filter(part => part.slot === 'root' || part.slot === 'control' || part.slot === 'trigger' || part.slot === 'input')
-  return controls.length > 0 && controls.every(part => isDisabledElement(part.el) && !part.el.matches('[data-state][data-disabled=""]:not(:disabled)'))
-}
-
 export { isShown }
 
 // Changes, for `subscribe`: watchers on each registered component's state,
@@ -339,9 +336,23 @@ function sourceNow(): { source: ChangeSource, reason: string } {
   return { source: 'programmatic', reason: 'programmatic' }
 }
 
+/** The component's elements now, and the element around it, for the marks that decide what an agent may hear. */
+function markedBy(entry: Entry) {
+  const elements: Element[] = partsOf(entry).map(part => part.el)
+  const anchor = entry.source.instance?.vnode.el as Node | null | undefined
+  const around = anchor && (anchor.nodeType === 1 ? anchor as Element : anchor.parentElement)
+  if (around)
+    elements.push(around)
+  return elements
+}
+
 function emit(entry: Entry, key: string, value: unknown, previous: unknown) {
+  // Marks are read as the change happens: a component can change before any snapshot has named it.
+  const elements = markedBy(entry)
+  if (entry.offLimits || isOffLimits(elements))
+    return
+  const secret = (entry.secret ||= isSecret(elements))
   const { source, reason } = sourceNow()
-  const secret = entry.secret
   const change: ObservedChange = {
     ref: entry.ref,
     component: entry.adapter.component(entry.source),
@@ -356,8 +367,7 @@ function emit(entry: Entry, key: string, value: unknown, previous: unknown) {
     change.label = entry.label
   if (entry.row)
     change.row = entry.row
-  if (!entry.offLimits)
-    listeners.forEach(listener => listener(change))
+  listeners.forEach(listener => listener(change))
 }
 
 function observe(entry: Entry) {
