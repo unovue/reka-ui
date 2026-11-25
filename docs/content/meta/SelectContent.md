@@ -84,7 +84,7 @@
   {
     'name': 'fallbackAxisSideDirection',
     'description': '<p>Whether to also try the perpendicular sides when neither the preferred\nside nor its opposite fits within the boundary, and which of them to try first.\nFor <code>side=&quot;left&quot;</code> or <code>&quot;right&quot;</code>, <code>start</code> tries top then bottom and <code>end</code> tries\nbottom then top. For <code>side=&quot;top&quot;</code> or <code>&quot;bottom&quot;</code>, <code>start</code> tries left then right\nand <code>end</code> tries right then left (mirrored in RTL).\n<code>none</code> keeps the content on the axis of the preferred side.</p>\n<p>Only applies when <code>avoidCollisions</code> and <code>sideFlip</code> are enabled.</p>\n',
-    'type': '\'none\' | \'start\' | \'end\'',
+    'type': '\'start\' | \'end\' | \'none\'',
     'required': false
   },
   {
@@ -211,7 +211,7 @@
 | `dir` | The reading direction of the popper content when applicable. <br> If omitted, inherits globally from ConfigProvider or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disableOutsidePointerEvents` | When true, hover/focus/click interactions will be disabled on elements outside the DismissableLayer. Users will need to click twice on outside elements to interact with them: once to close the DismissableLayer, and again to trigger the element. | `boolean` | No | - |
 | `disableUpdateOnLayoutShift` | Whether to disable the update position for the content when the layout shifted. | `boolean` | No | - |
-| `fallbackAxisSideDirection` | Whether to also try the perpendicular sides when neither the preferred side nor its opposite fits within the boundary, and which of them to try first. For side="left" or "right", start tries top then bottom and end tries bottom then top. For side="top" or "bottom", start tries left then right and end tries right then left (mirrored in RTL). none keeps the content on the axis of the preferred side. Only applies when avoidCollisions and sideFlip are enabled. | `"none" \| "start" \| "end"` | No | - |
+| `fallbackAxisSideDirection` | Whether to also try the perpendicular sides when neither the preferred side nor its opposite fits within the boundary, and which of them to try first. For side="left" or "right", start tries top then bottom and end tries bottom then top. For side="top" or "bottom", start tries left then right and end tries right then left (mirrored in RTL). none keeps the content on the axis of the preferred side. Only applies when avoidCollisions and sideFlip are enabled. | `"start" \| "end" \| "none"` | No | - |
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
 | `hideShiftedArrow` | When true, hides the arrow when it cannot be centered to the reference element. | `boolean` | No | - |
 | `hideWhenDetached` | Whether to hide the content when the trigger becomes fully occluded. | `boolean` | No | - |

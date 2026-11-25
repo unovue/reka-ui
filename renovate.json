@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base",
+    "config:recommended",
     "schedule:weekly",
     "group:allNonMajor"
   ],
@@ -12,7 +12,7 @@
   "rangeStrategy": "bump",
   "packageRules": [
     {
-      "depTypeList": [
+      "matchDepTypes": [
         "peerDependencies"
       ],
       "enabled": false
@@ -22,22 +22,18 @@
       "matchPackageNames": [
         "vitest",
         "jsdom",
-        "@vue/test-utils"
-      ],
-      "matchPackagePrefixes": [
-        "@vitest",
-        "@testing-library",
-        "vitest"
+        "@vue/test-utils",
+        "@vitest{/,}**",
+        "@testing-library{/,}**",
+        "vitest{/,}**"
       ]
     },
     {
       "groupName": "build",
       "matchPackageNames": [
-        "vite"
-      ],
-      "matchPackagePrefixes": [
-        "vite-",
-        "@vitejs"
+        "vite",
+        "vite-{/,}**",
+        "@vitejs{/,}**"
       ]
     },
     {
@@ -46,24 +42,18 @@
         "eslint",
         "simple-git-hooks",
         "lint-staged",
-        "@antfu/eslint-config"
-      ],
-      "matchPackagePrefixes": [
-        "eslint"
+        "@antfu/eslint-config",
+        "eslint{/,}**"
       ]
     },
     {
       "groupName": "vue",
       "matchPackageNames": [
         "vue",
-        "vue-tsc"
-      ],
-      "matchPackagePrefixes": [
-        "@vue/",
-        "vue-"
-      ],
-      "excludePackageNames": [
-        "@vue/test-utils"
+        "vue-tsc",
+        "@vue/{/,}**",
+        "vue-{/,}**",
+        "!@vue/test-utils"
       ]
     }
   ],
