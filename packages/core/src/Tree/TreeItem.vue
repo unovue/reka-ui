@@ -48,13 +48,13 @@ defineSlots<{
     isExpanded: boolean
     /** Whether the item is currently selected */
     isSelected: boolean
-    /** Whether some, but not all, of the item's descendants are selected. Only computed for items with children when `bubbleSelect` or `propagateSelect` is enabled on the root, `undefined` otherwise. */
+    /** Whether the item is partially selected. With `bubbleSelect`: some, but not all, of its descendants are selected. With `propagateSelect`: the item is selected but not all of its descendants are. `undefined` when neither applies. */
     isIndeterminate: boolean | undefined
     /** Whether the item is disabled, either by its own `disabled` prop or by the root */
     isDisabled: boolean
     /** Toggle the expanded state of the item */
     handleToggle: () => void
-    /** Toggle the selected state of the item */
+    /** Select the item, following the root's `selectionBehavior` */
     handleSelect: () => void
   }) => any
 }>()

@@ -61,7 +61,7 @@
   },
   {
     'name': 'isIndeterminate',
-    'description': '<p>Whether some, but not all, of the item\'s descendants are selected. Only computed for items with children when <code>bubbleSelect</code> or <code>propagateSelect</code> is enabled on the root, <code>undefined</code> otherwise.</p>\n',
+    'description': '<p>Whether the item is partially selected. With <code>bubbleSelect</code>: some, but not all, of its descendants are selected. With <code>propagateSelect</code>: the item is selected but not all of its descendants are. <code>undefined</code> when neither applies.</p>\n',
     'type': 'boolean | undefined'
   },
   {
@@ -76,7 +76,7 @@
   },
   {
     'name': 'handleSelect',
-    'description': '<p>Toggle the selected state of the item</p>\n',
+    'description': '<p>Select the item, following the root\'s <code>selectionBehavior</code></p>\n',
     'type': '(): void'
   }
 ]" />
@@ -107,9 +107,9 @@
 | --- | --- | --- |
 | `isExpanded` | Whether the item is currently expanded | `boolean` |
 | `isSelected` | Whether the item is currently selected | `boolean` |
-| `isIndeterminate` | Whether some, but not all, of the item's descendants are selected. Only computed for items with children when bubbleSelect or propagateSelect is enabled on the root, undefined otherwise. | `boolean \| undefined` |
+| `isIndeterminate` | Whether the item is partially selected. With bubbleSelect: some, but not all, of its descendants are selected. With propagateSelect: the item is selected but not all of its descendants are. undefined when neither applies. | `boolean \| undefined` |
 | `isDisabled` | Whether the item is disabled, either by its own disabled prop or by the root | `boolean` |
 | `handleToggle` | Toggle the expanded state of the item | `(): void` |
-| `handleSelect` | Toggle the selected state of the item | `(): void` |
+| `handleSelect` | Select the item, following the root's selectionBehavior | `(): void` |
 
 </llm-only>

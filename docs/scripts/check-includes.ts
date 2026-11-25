@@ -13,7 +13,7 @@
  * Run with `pnpm docs:check`.
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { join, relative, resolve } from 'node:path'
+import { basename, join, relative, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import fg from 'fast-glob'
@@ -68,6 +68,10 @@ interface Include {
   heading: string
   /** Line of the heading, identifies the section even when heading texts repeat. */
   headingLine: number
+}
+
+function kebabCase(name: string) {
+  return name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
 }
 
 function readFamilies() {
@@ -169,10 +173,16 @@ for (const [family, parts] of families) {
       errors.push(`${family}: no docs page includes any of its parts (${parts.join(', ')})`)
     continue
   }
+  // A family with a page of its own (`ToggleGroup` -> `toggle-group.md`) must document its
+  // parts there: an include that strayed onto another family's page does not count.
+  const ownPage = [...pages].find(page => basename(page, '.md') === kebabCase(family))
+  const documented = ownPage
+    ? new Set(includes.filter(include => include.page === ownPage).map(include => include.name))
+    : includedParts
   for (const part of parts) {
-    if (includedParts.has(part) || part in UNDOCUMENTED_PARTS)
+    if (documented.has(part) || part in UNDOCUMENTED_PARTS)
       continue
-    errors.push(`${[...pages].join(', ')}: ${part} is exported from ${family}/index.ts but has no API section`)
+    errors.push(`${ownPage ?? [...pages].join(', ')}: ${part} is exported from ${family}/index.ts but has no API section`)
   }
 }
 
