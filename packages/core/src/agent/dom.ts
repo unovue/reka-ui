@@ -202,6 +202,8 @@ const SECRET_FIELD = /\b(?:password|current-password|new-password|one-time-code|
 export function isSecret(elements: Element[]) {
   return elements.some(el =>
     !!closestMarked(el, '[data-agent-secret]')
+    // A PinInput's boxes, even read as plain fields by a bridge made after it mounted.
+    || el.hasAttribute('data-reka-pin-input')
     || SECRET_FIELD.test(`${el.getAttribute('type') ?? ''} ${el.getAttribute('autocomplete') ?? ''}`),
   )
 }

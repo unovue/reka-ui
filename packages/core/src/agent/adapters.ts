@@ -35,6 +35,8 @@ export interface Source {
   parentName?: string
   /** The component instance, for the element it rendered when it holds no element ref. */
   instance?: { vnode: { el: unknown } }
+  /** Values of items seen inside `data-agent-hidden`, kept for a list whose items show only while it's open. */
+  hiddenSeen?: unknown[]
   /** A native element, or a native radio group's radios. */
   native?: HTMLElement
   radios?: HTMLInputElement[]
@@ -130,6 +132,28 @@ export function hiddenItem(s: Source, value: unknown) {
   return false
 }
 
+/** Whether a value is one of a list's items that is off-limits now or was when last seen. */
+function isHiddenValue(s: Source, value: unknown) {
+  if (s.native?.localName === 'select')
+    return Array.from((s.native as HTMLSelectElement).options).some(option => option.value === value && isOffLimits([option]))
+  if (s.radios)
+    return s.radios.some(radio => radio.value === value && isOffLimits([radio]))
+  registered(s, true)
+  if (s.inner)
+    registered(s.inner, true)
+  return [...(s.hiddenSeen ?? []), ...(s.inner?.hiddenSeen ?? [])].some(seen => same(seen, value))
+}
+
+/**
+ * A list's value without the items an agent mustn't see: a hidden item that is chosen is reported as not chosen,
+ * on every path, so its value is never shown or used to name the list.
+ */
+export function withoutHidden(s: Source, value: unknown) {
+  if (Array.isArray(value))
+    return value.some(v => isHiddenValue(s, v)) ? value.filter(v => !isHiddenValue(s, v)) : value
+  return value != null && value !== '' && isHiddenValue(s, value) ? null : value
+}
+
 /** The elements of the component's registered `part` controls, like its increment buttons, for `value` when given. */
 export function partsNamed(s: Source, name: string, value?: { of: unknown }) {
   return Array.from(s.items).flatMap(({ props, element, part, instance }) => {
@@ -141,7 +165,7 @@ export function partsNamed(s: Source, name: string, value?: { of: unknown }) {
 // The items that registered against the list, each with its element: an item the list only knows by value
 // isn't one an agent can see or pick. `detached` keeps items rendered off the page, like a closed select's.
 function registered(s: Source, detached = false): Item[] {
-  return Array.from(s.items).filter(item => !item.part).map(({ props, element }) => {
+  const all = Array.from(s.items).filter(item => !item.part).map(({ props, element }) => {
     const node = el(element)
     const trigger = node?.matches('[role=tab], [role=option], [role=radio], button, [aria-controls]') ? node : node?.querySelector<HTMLElement>('[aria-controls], button') ?? node
     return {
@@ -151,7 +175,16 @@ function registered(s: Source, detached = false): Item[] {
       // The element a person presses for it, like an accordion section's trigger.
       el: trigger,
     }
-  }).filter(item => !!item.el && (detached || item.el.isConnected) && !isOffLimits([item.el])).filter((item, _, all) => item.el!.isConnected || !all.some(other => other.el!.isConnected)).sort((a, b) => (a.el!.compareDocumentPosition(b.el!) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
+  })
+  // A hidden item's value is remembered, so it stays out of what the list reports after its items leave.
+  for (const item of all) {
+    if (!item.el)
+      continue
+    const seen = (s.hiddenSeen ??= []).findIndex(value => same(value, item.value))
+    if (isOffLimits([item.el]) ? seen === -1 : seen !== -1)
+      isOffLimits([item.el]) ? s.hiddenSeen.push(item.value) : s.hiddenSeen.splice(seen, 1)
+  }
+  return all.filter(item => !!item.el && (detached || item.el.isConnected) && !isOffLimits([item.el])).filter((item, _, all) => item.el!.isConnected || !all.some(other => other.el!.isConnected)).sort((a, b) => (a.el!.compareDocumentPosition(b.el!) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
 }
 
 // A list's value by toggling, the way a person picks and unpicks items: `toggle` adds or takes out one.

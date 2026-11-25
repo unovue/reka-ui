@@ -272,7 +272,7 @@ const placements: Record<string, Wrap> = {
   ]))),
 }
 
-type Expect = 'hidden' | 'secret' | 'confirm' | 'disabled' | 'item-hidden' | 'none'
+type Expect = 'hidden' | 'secret' | 'confirm' | 'disabled' | 'item-hidden' | 'selected-hidden' | 'none'
 interface Mark {
   expect: Expect
   /** Around the whole placement, outside its portals. */
@@ -282,6 +282,8 @@ interface Mark {
   /** A wrapper of its own around the component, like a row with text beside it. */
   wrap?: (inner: VNode[]) => VNode
   item?: Attrs
+  /** The item `item` goes on, `bravo` unless said. */
+  itemOn?: string
   /** The selected item, `secret`, is disabled. */
   selectedDisabled?: boolean
   part?: Attrs
@@ -302,6 +304,9 @@ const marks: Record<string, Mark> = {
   'disabled by prop': { expect: 'disabled', disabled: true, applies: f => !f.noDisabledProp },
   'disabled by fieldset': { expect: 'disabled', around: { tag: 'fieldset', attrs: { disabled: true } } },
   'disabled by inert': { expect: 'disabled', around: { attrs: { inert: '' } } },
+  // A list whose items show only while it's open can't know a chosen item is hidden before it has opened once.
+  'hidden on the selected item': { expect: 'selected-hidden', item: { 'data-agent-hidden': '' }, itemOn: 'secret', applies: f => !!f.itemStep && f.name !== 'menu' && f.name !== 'combobox' },
+  'secret on the selected item': { expect: 'secret', item: { 'data-agent-secret': '' }, itemOn: 'secret', applies: f => !!f.itemStep && f.name !== 'menu' && f.name !== 'combobox' },
   'secret text in its row': { expect: 'none', wrap: inner => h('ul', h('li', [h('span', { 'data-agent-secret': '' }, `Balance ${NEARBY}`), ...inner])) },
   'secret text in its section name': { expect: 'none', wrap: inner => h('fieldset', [h('legend', [h('span', { 'data-agent-secret': '' }, NEARBY), ' Group']), ...inner]) },
   'secret ancestor around its row': { expect: 'secret', ancestor: { 'data-agent-secret': '' }, wrap: inner => h('ul', h('li', [h('span', `Balance ${NEARBY}`), ...inner])) },
@@ -331,7 +336,7 @@ async function build(family: Family, place: Wrap, mark: Mark, allow?: (step: any
   agents.push(agent)
   const model = ref(family.initial())
   const m: Marks = {
-    item: value => (value === 'bravo' && mark.item ? mark.item : value === 'secret' && mark.selectedDisabled ? { disabled: true } : {}),
+    item: value => (value === (mark.itemOn ?? 'bravo') && mark.item ? mark.item : value === 'secret' && mark.selectedDisabled ? { disabled: true } : {}),
     part: mark.part ?? {},
     disabled: !!mark.disabled,
   }
@@ -433,6 +438,20 @@ describe('agent contract', () => {
             await settle()
           }
           outputs.push(events)
+          break
+        }
+        case 'selected-hidden': {
+          expect(found, 'the list is still on the page').toBeTruthy()
+          for (const step of family.actions)
+            outputs.push(await agent.act({ steps: [{ ref: 'Target', ...step }] }))
+          // The app moves the value back to the hidden item and on, so subscribe hears both ways.
+          model.value = JSON.parse(json(initial))
+          await settle()
+          family.poke?.(model) ?? (model.value = Array.isArray(initial) ? ['alpha'] : 'alpha')
+          await settle()
+          outputs.push(agent.snapshot(), events)
+          expect(json(outputs)).not.toContain(SECRET)
+          expect(json(outputs)).not.toContain('"secret"')
           break
         }
         case 'item-hidden': {
@@ -784,5 +803,144 @@ describe('third review findings', () => {
     const snapshot = agent.snapshot()
     expect(snapshot.find(c => c.label === 'Off one')?.checked).toBe('[redacted]')
     expect(snapshot.find(c => c.label === 'On one')?.checked).toBe('[redacted]')
+  })
+})
+
+// Each finding of the fourth review, as the case that showed it.
+describe('fourth review findings', () => {
+  const page = async (render: () => VNode | VNode[], options: Parameters<typeof createAgent>[0] = {}) => {
+    const agent = createAgent(options)
+    agents.push(agent)
+    const wrapper = mount(defineComponent({ render }), { attachTo: document.body })
+    await settle()
+    return { agent, wrapper }
+  }
+
+  it('1: an unlabelled select whose chosen item is hidden is neither valued nor named by it', async () => {
+    const model = ref('secret')
+    const { agent } = await page(() => h(SelectRoot, v(model), () => [
+      h(SelectTrigger, () => h(SelectValue)),
+      h(SelectPortal, () => h(SelectContent, () => h(SelectViewport, () => ITEMS.map(([value, label]) => h(SelectItem, { value, ...(value === 'secret' ? { 'data-agent-hidden': '' } : {}) }, () => h(SelectItemText, () => label)))))),
+    ]))
+    const snapshot = agent.snapshot()
+    expect(json(snapshot)).not.toMatch(new RegExp(`${SECRET}|"secret"`))
+    expect(snapshot.find(c => c.component === 'select')).toMatchObject({ value: null })
+  })
+
+  it('2: a private combobox takes no setQuery, so its filter can\'t test its labels', async () => {
+    const model = ref<string[]>([])
+    const { agent } = await page(() => h('div', { 'data-agent-secret': '' }, h(ComboboxRoot, { ...v(model), multiple: true }, () => [
+      h(ComboboxAnchor, () => h(ComboboxInput, target)),
+      h(ComboboxContent, () => h(ComboboxViewport, () => ITEMS.map(([value, label]) => h(ComboboxItem, { value }, () => label)))),
+    ])))
+    expect(targetOf(agent.snapshot())?.actions).not.toContain('setQuery')
+    expect((await agent.act({ steps: [{ ref: 'Target', action: 'setQuery', args: ['zqx'] }] })).ok).toBe(false)
+  })
+
+  it('3: a press whose button the page renamed while allow answered presses nothing', async () => {
+    const labels = ref(['Archive'])
+    const pressedLabels: string[] = []
+    const { agent } = await page(() => h(DialogRoot, { defaultOpen: true, modal: false }, () => [
+      h(DialogTrigger, target, () => 'Open'),
+      h(DialogPortal, () => h(DialogContent, () => [h(DialogTitle, () => 'Mail'), ...labels.value.map(label => h('button', { onClick: () => pressedLabels.push(label) }, label))])),
+    ]), {
+      allow: async (step) => {
+        if (step.action === 'press') {
+          labels.value = ['Delete']
+          await settle()
+        }
+        return true
+      },
+    })
+    const result = await agent.act({ steps: [{ ref: 'Mail', action: 'press', args: ['Archive'] }] })
+    expect(result.error?.message).toContain('changed while the step waited')
+    expect(pressedLabels).toEqual([])
+  })
+
+  it('4a: an argless press that closes a dialog is held to its marked buttons', async () => {
+    const open = ref(true)
+    const { agent } = await page(() => h(DialogRoot, { 'open': open.value, 'onUpdate:open': (value: boolean) => (open.value = value), 'modal': false }, () => [
+      h(DialogTrigger, target, () => 'Open'),
+      h(DialogPortal, () => h(DialogContent, () => [h(DialogTitle, () => 'Transfer'), h('button', { 'data-agent-confirm': CONFIRM }, 'Cancel transfer')])),
+    ]))
+    // An open dialog is named by its title.
+    const result = await agent.act({ steps: [{ ref: 'Transfer', action: 'press' }] })
+    expect(result.error?.message).toContain('Needs a person')
+    expect(open.value).toBe(true)
+  })
+
+  it('5: a dialog\'s buttons never list a private select\'s trigger by what it shows', async () => {
+    const model = ref('secret')
+    const { agent } = await page(() => h(DialogRoot, { defaultOpen: true, modal: false }, () => [
+      h(DialogTrigger, () => 'Open'),
+      h(DialogPortal, () => h(DialogContent, () => [h(DialogTitle, () => 'Pay'), h(SelectRoot, v(model), () => [
+        h(SelectTrigger, target, () => h(SelectValue)),
+        h(SelectPortal, () => h(SelectContent, () => h(SelectViewport, () => ITEMS.map(([value, label]) => h(SelectItem, { value, 'data-agent-secret': '' }, () => h(SelectItemText, () => label)))))),
+      ])])),
+    ]))
+    expect(json(agent.snapshot())).not.toContain(SECRET)
+    expect((await agent.act({ steps: [{ ref: 'Pay', action: 'press', args: [SECRET] }] })).ok).toBe(false)
+  })
+
+  it('6: a private component offers only the actions whose outcome says nothing of it', async () => {
+    const { agent } = await page(() => h('div', { 'data-agent-secret': '' }, [
+      h(NumberFieldRoot, { defaultValue: 3, max: 5 }, () => [h(NumberFieldInput, { 'aria-label': 'Count' }), h(NumberFieldIncrement, () => '+')]),
+      h(TagsInputRoot, { defaultValue: ['a'] }, () => [h(TagsInputInput, { 'aria-label': 'Tags' })]),
+      h(AccordionRoot, { 'type': 'single', 'aria-label': 'Sections', 'defaultValue': 'one' }, () => ['one', 'two'].map(value => h(AccordionItem, { value }, () => [h(AccordionHeader, () => h(AccordionTrigger, () => value)), h(AccordionContent, () => value)]))),
+    ]))
+    const actions = Object.fromEntries(agent.snapshot().map(c => [c.label, c.actions]))
+    expect(actions.Count).toEqual(['setValue', 'clear'])
+    expect(actions.Tags).toEqual(['setValue', 'clear'])
+    expect(actions.Sections).toEqual(['setValue'])
+    for (const step of [{ ref: 'Count', action: 'increment' }, { ref: 'Tags', action: 'add', args: ['a'] }, { ref: 'Sections', action: 'close', args: ['one'] }])
+      expect((await agent.act({ steps: [step] })).ok, step.action).toBe(false)
+  })
+
+  it('7: a destroyed bridge reads nothing, and takes its WebMCP tools back', async () => {
+    const unregistered = vi.fn()
+    const context = { registerTool: vi.fn(() => ({ unregister: unregistered })) };
+    (document as { modelContext?: unknown }).modelContext = context
+    try {
+      const { agent } = await page(() => h('input', { 'aria-label': 'Name', 'value': 'Ada' }))
+      const { registerTools } = await import('.')
+      registerTools(agent, { allow: () => true })
+      agent.destroy()
+      expect(agent.snapshot()).toEqual([])
+      expect(await agent.query({ text: 'Name' })).toEqual([])
+      expect(await agent.act({ steps: [{ ref: 'Name', action: 'setValue', args: ['Eve'] }] })).toMatchObject({ ok: false })
+      expect(unregistered).toHaveBeenCalledTimes(3)
+    }
+    finally {
+      delete (document as { modelContext?: unknown }).modelContext
+    }
+  })
+
+  it('8: two bridges take turns, and a step waiting when its bridge is destroyed commits nothing', async () => {
+    const on = ref(false)
+    let answer!: (yes: boolean) => void
+    const first = createAgent({ allow: () => new Promise<boolean>(resolve => (answer = resolve)) })
+    const second = createAgent()
+    agents.push(first, second)
+    mount(defineComponent({ render: () => h('div', { 'data-agent-confirm': CONFIRM }, h(SwitchRoot, { 'aria-label': 'Wire', ...v(on) })) }), { attachTo: document.body })
+    await settle()
+    const waiting = first.act({ steps: [{ ref: 'Wire', action: 'setChecked', args: [true] }] })
+    let secondDone = false
+    const queued = second.query({ text: 'Wire' }).then(() => (secondDone = true))
+    await settle()
+    expect(secondDone).toBe(false)
+    first.destroy()
+    answer(true)
+    expect((await waiting).ok).toBe(false)
+    await queued
+    expect(on.value).toBe(false)
+  })
+
+  it('9: a pin input mounted before the bridge never shows its digits', async () => {
+    mount(defineComponent({ render: () => h(PinInputRoot, { 'defaultValue': ['4', '2'], 'aria-label': 'Code' }, () => [0, 1].map(index => h(PinInputInput, { index }))) }), { attachTo: document.body })
+    await settle()
+    const agent = createAgent()
+    agents.push(agent)
+    const snapshot = agent.snapshot()
+    expect(snapshot.filter(c => c.value === '4' || c.value === '2')).toEqual([])
   })
 })

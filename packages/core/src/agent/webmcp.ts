@@ -1,5 +1,5 @@
 import type { Agent, AgentAllow } from './types'
-import { allowing } from './agent'
+import { allowing, onDestroy } from './agent'
 import { agentTools } from './tools'
 
 interface ModelContext {
@@ -75,10 +75,14 @@ export function registerTools(agent: Agent, { allow }: { allow: AgentAllow }) {
         console.warn(`[reka-ui] registerTools couldn't register ${tool.name}.`, error)
     }
   }
-  return () => {
+  // Destroying the agent takes its tools back from the browser too.
+  const hooks = onDestroy.get(agent) ?? new Set()
+  onDestroy.set(agent, hooks)
+  const cleanup = () => {
     if (controller.signal.aborted)
       return
     controller.abort()
+    hooks.delete(cleanup)
     for (const handle of registered) {
       try {
         handle.unregister?.()
@@ -94,4 +98,6 @@ export function registerTools(agent: Agent, { allow }: { allow: AgentAllow }) {
       }
     }
   }
+  hooks.add(cleanup)
+  return cleanup
 }

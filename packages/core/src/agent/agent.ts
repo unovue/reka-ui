@@ -8,7 +8,7 @@ import { isEqual } from 'ohash'
 import { nextTick } from 'vue'
 import { hiddenItem } from './adapters'
 import { buttonsIn, byPosition, confirmOf, fold, isDisabledElement, isOffLimits, isShown, textOf, textOrName, wordsOf } from './dom'
-import { agentWindow, anchorOf, asAgent, entries, install, listen, offPage, partsOf, placeOf, reachable, remember, scanNative, stateKeys, uninstall } from './registry'
+import { agentWindow, anchorOf, asAgent, entries, install, listen, offPage, partsOf, placeOf, reachable, remember, scanNative, scrub, stateKeys, uninstall } from './registry'
 import { agentTools } from './tools'
 
 interface Found { entry: Entry, parts: Part[] }
@@ -144,6 +144,24 @@ const wire = (items: Item[]) => items.map(item => ({ value: keyOf(item.value), l
 // A private list's items read without their labels on every path, and text never matches them.
 const shownItems = (entry: Entry, items: Item[]) => (entry.secret ? wire(items).map(item => ({ ...item, label: '[redacted]' })) : wire(items))
 
+// What a private component takes: the actions whose success or failure says nothing of what it holds.
+// A count of increments until one fails, an `add` that fails only for a tag it has, or a `close` that
+// fails only for the open section would each tell an agent what the component holds.
+const PRIVATE_ACTIONS: Record<string, string[]> = {
+  'accordion': ['setValue'],
+  'combobox': ['setValue', 'setOpen', 'clear'],
+  'number-field': ['setValue', 'clear'],
+  'slider': ['setValue'],
+  'tags-input': ['setValue', 'clear'],
+}
+
+// One `act` or `query` at a time on the page, across every bridge, in the order they were called,
+// so no agent can press a confirm while another call waits on a person.
+let pageQueue: Promise<unknown> = Promise.resolve()
+
+/** What runs when an agent is destroyed, like the WebMCP tools `registerTools` gave the browser. */
+export const onDestroy = new WeakMap<Agent, Set<() => void>>()
+
 // Each agent's `act` and `query` with a second `allow` beside its own, for `registerTools`.
 export const allowing = new WeakMap<Agent, {
   act: (input: { steps: AgentStep[] }, allow: AgentAllow, signal?: AbortSignal) => Promise<AgentActResult>
@@ -238,8 +256,18 @@ export function createAgent(options: AgentOptions = {}): Agent {
       .sort((a, b) => byPosition(a.content, b.content))
     return open.map(layer => ({ ...layer, modal: !!layer.entry.adapter.modal?.(layer.entry.source) }))
   }
-  const covered = (el: HTMLElement, stack: ReturnType<typeof layers>) =>
+  // A native `<dialog>` opened with `showModal()` makes the rest of the page inert without an attribute.
+  const modalDialog = () => {
+    try {
+      return [...document.querySelectorAll('dialog')].filter(dialog => dialog.matches(':modal')).at(-1)
+    }
+    catch {
+      return undefined
+    }
+  }
+  const covered = (el: HTMLElement, stack: ReturnType<typeof layers>, dialog = modalDialog()) =>
     !!el.closest('[inert], [data-aria-hidden]')
+    || (!!dialog && !dialog.contains(el))
     || stack.some((layer, index) => layer.modal && !layer.content.contains(el) && !stack.slice(index + 1).some(above => above.content.contains(el)))
   const isInert = (parts: Part[], stack = layers()) => {
     const shown = parts.filter(part => isShown(part.el))
@@ -248,9 +276,24 @@ export function createAgent(options: AgentOptions = {}): Agent {
   const above = () => layers().filter(layer => layer.modal).at(-1)
 
   const own = (parts: Part[]) => parts.filter(part => part.slot !== 'item' && part.slot !== 'content').map(part => part.el)
+  // A popup's buttons, leaving out the ones that are another component's own, like a select's trigger in a dialog:
+  // that one is listed as itself, named by its own rule, never by the item it shows.
   const buttonsOf = (entry: Entry, parts: Part[]) => {
     const content = parts.find(part => part.slot === 'content')?.el
-    return content && isOpen(entry) ? buttonsIn([content]) : []
+    if (!content || !isOpen(entry))
+      return []
+    const others = new Set<Element>()
+    for (const other of entries.values()) {
+      if (other !== entry && other.alive && !other.source.native)
+        partsOf(other).forEach(part => part.slot !== 'content' && part.slot !== 'item' && others.add(part.el))
+    }
+    return buttonsIn([content]).filter(button => ![...others].some(part => part === button || part.contains(button)))
+  }
+  // The actions a component takes now: a private one takes only those that say nothing of what it holds.
+  const actionsOf = (entry: Entry) => {
+    const actions = entry.adapter.actions(entry.source)
+    const allowed = entry.secret ? PRIVATE_ACTIONS[entry.source.kind] : undefined
+    return allowed ? actions.filter(action => allowed.includes(action)) : actions
   }
   const itemsOf = (entry: Entry): Item[] | undefined => {
     const { adapter, source } = entry
@@ -281,7 +324,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
     if (entry.row)
       out.row = entry.row
     for (const [key, value] of Object.entries(state))
-      out[key] = redact(entry, value, key)
+      out[key] = redact(entry, scrub(entry, key, value), key)
     const items = itemsOf(entry)
     if (items?.length) {
       if (items.length <= 10)
@@ -305,13 +348,13 @@ export function createAgent(options: AgentOptions = {}): Agent {
     catch {}
     if (disabled || isInert(parts, stack) || controlsOff(parts))
       out.disabled = true
-    out.actions = out.disabled ? [] : adapter.actions(source)
+    out.actions = out.disabled ? [] : actionsOf(entry)
     return out
   }
 
   // Whether a step's action works on a component: one it lists, or a synonym of one.
   const can = (entry: Entry, action: string) => {
-    const actions = entry.adapter.actions(entry.source)
+    const actions = actionsOf(entry)
     return actions.includes(action) || (Object.hasOwn(SYNONYMS, action) && SYNONYMS[action]!.some(of => actions.includes(of)))
   }
 
@@ -460,7 +503,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
     const collapsible = source.kind === 'collapsible'
     const action = collapsible ? 'setOpen' : swaps ? 'setValue' : 'open'
     const step: AgentAction = { ref, component: adapter.component(source), label: entry.label, action, args: [item.value] }
-    if (!(await allowed(step)) || !entry.alive)
+    if (!(await allowed(step)) || !entry.alive || destroyed)
       return undefined
     // The page can change while `allow` answers: the place must still be one to open, with the same marks.
     scanned = undefined
@@ -717,6 +760,9 @@ export function createAgent(options: AgentOptions = {}): Agent {
   // not behind what opened meanwhile, and the answer was about what it does now.
   function stillThere(entry: Entry, elements: (Element | undefined | null)[], approved: string | undefined, shown: Element[], remembered: string[] = []) {
     const els = elements.filter((el): el is Element => !!el)
+    // A bridge destroyed while a step waited on a person commits nothing.
+    if (destroyed)
+      throw plainly('This agent was destroyed while the step waited for an answer. Nothing was changed.')
     if (!entry.alive || shown.some(el => !el.isConnected))
       throw plainly(`${nameFor(entry)} left the page while the step waited for an answer.`)
     const now = partsOf(entry)
@@ -751,7 +797,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
   function check({ entry }: Found, args: unknown[]) {
     const state = stateOf(entry)
     const key = fieldKey(stateKeys(entry, state))
-    const value = key ? state[key] : undefined
+    const value = key ? scrub(entry, key, state[key]) : undefined
     if (redact(entry, value) !== value)
       throw new Error(`${nameFor(entry)} is private, so expect can't check it.`)
     const shown = itemsOf(entry)?.find(item => isEqual(item.value as any, value as any))?.label
@@ -834,11 +880,18 @@ export function createAgent(options: AgentOptions = {}): Agent {
       const text = typeof args[0] === 'string' ? args[0] : undefined
       const press = await pressing(found, text, () => ask(args, own(parts), `press "${text}"`))
       try {
-        const targets = [press.button, ...own(parts)]
+        // A press on an open popup's own trigger closes it, which is held to its buttons' marks as setOpen(false) is.
+        const closes = text === undefined && adapter.keys.includes('open') && isOpen(entry) && press.button === parts.find(part => part.slot === 'trigger')?.el
+        const inside = closes ? buttonsIn([adapter.content?.(source)].filter((el): el is HTMLElement => !!el)) : []
+        const targets = [press.button, ...own(parts), ...inside]
         const approved = confirmsOf(targets)
         const shown = targets.filter(el => el.isConnected)
-        await ask(args, targets, `press "${textOrName(press.button)}"`)
+        const named = textOrName(press.button)
+        await ask(args, targets, `press "${named}"`)
         stillThere(entry, targets, approved, shown)
+        // The button pressed is the one the person was asked about, not what the page made of it meanwhile.
+        if (textOrName(press.button) !== named)
+          throw plainly(`"${named}" in ${nameFor(entry)} changed while the step waited for an answer. Run the step again.`)
         if (isDisabledElement(press.button))
           throw new Error(`"${textOrName(press.button)}" in ${entry.ref} is disabled now.`)
       }
@@ -963,9 +1016,14 @@ export function createAgent(options: AgentOptions = {}): Agent {
     const current = itemsOf(entry)
     if (affects && JSON.stringify(removing(stateOf(entry).value, current?.length ? current : items!)) !== JSON.stringify(removing(state.value, items!)))
       throw new Error(`${nameFor(entry)} changed while the step waited for an answer, so this change would take out more than was asked. Run the step again.`)
+    // The label each item had when the person was asked, so an item the page renamed meanwhile isn't picked.
+    const labelsAsked = new Map([...chosen, ...removed].flatMap(item => ('label' in item ? [[keyOf(item.value), item.label] as const] : [])))
     // Each later toggle of one change checks its item's mark, which an earlier toggle can add.
     const guard = (value: unknown) => {
-      const el = (itemsOf(entry) ?? []).find(item => isEqual(item.value as any, value as any))?.el
+      const now = (itemsOf(entry) ?? []).find(item => isEqual(item.value as any, value as any))
+      const el = now?.el
+      if (now && labelsAsked.has(keyOf(value)) && labelsAsked.get(keyOf(value)) !== now.label)
+        throw plainly(`An item of ${nameFor(entry)} changed while the step waited for an answer. The change stopped there. Run the step again.`)
       const mark = confirmOf([el])
       // An item an earlier toggle hid stops the change, the way one hidden from the start never starts it.
       if ((el && isOffLimits([el])) || hiddenItem(source, value))
@@ -1061,7 +1119,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
         continue
       const was = before.states.get(entry.ref)
       listed.add(entry.ref)
-      fields.push({ ref: entry.ref, label: entry.label ?? entry.adapter.component(entry.source), section: entry.sections?.at(-1), value: redact(entry, state[key] ?? null), first: touched.has(entry.ref) || !was || differs(was[key], state[key]) })
+      fields.push({ ref: entry.ref, label: entry.label ?? entry.adapter.component(entry.source), section: entry.sections?.at(-1), value: redact(entry, scrub(entry, key, state[key]) ?? null), first: touched.has(entry.ref) || !was || differs(was[key], state[key]) })
     }
     for (const component of offPage.values()) {
       const key = fieldKey(Object.keys(component))
@@ -1098,7 +1156,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
       const state = stateOf(entry)
       for (const key of stateKeys(entry, state)) {
         if (differs(was[key], state[key]))
-          changes.push({ component: entry.adapter.component(entry.source), label: entry.label, key, value: redact(entry, state[key], key) })
+          changes.push({ component: entry.adapter.component(entry.source), label: entry.label, key, value: redact(entry, scrub(entry, key, state[key]), key) })
       }
       const name = before.names.get(entry.ref) ?? found?.names.get(entry.ref)
       if (name && entry.row !== name.row)
@@ -1277,15 +1335,14 @@ export function createAgent(options: AgentOptions = {}): Agent {
     return capped(apart(found))
   }
 
-  // One `act` or `query` at a time, in the order they were called, so an agent can't press a confirm while it waits.
-  let queue: Promise<unknown> = Promise.resolve()
-  // A call still waiting when the bridge is destroyed never runs.
-  const inTurn = <T>(run: () => Promise<T>) => {
-    const next = queue.then(() => (destroyed ? Promise.reject(new Error('This agent was destroyed.')) : run()))
-    queue = next.catch(() => {})
+  // A call still waiting when the bridge is destroyed never runs, and answers as a destroyed bridge does.
+  const inTurn = <T>(run: () => Promise<T>, gone: () => T) => {
+    const next = pageQueue.then(() => (destroyed ? gone() : run()))
+    pageQueue = next.catch(() => {})
     return next
   }
-  const askingToo = <T>(allow: AgentAllow | undefined, signal: AbortSignal | undefined, run: () => Promise<T>) =>
+  const gone = (): AgentActResult => ({ ok: false, error: { step: 0, message: 'This agent was destroyed. No step ran.' }, steps: [], appeared: [], values: {} })
+  const askingToo = <T>(allow: AgentAllow | undefined, signal: AbortSignal | undefined, run: () => Promise<T>, none: () => T) =>
     inTurn(async () => {
       callerAllow = allow
       callerSignal = signal
@@ -1297,14 +1354,14 @@ export function createAgent(options: AgentOptions = {}): Agent {
         callerSignal = undefined
         scanned = undefined
       }
-    })
+    }, none)
 
   const pageless = (): AgentActResult => ({ ok: false, error: { step: 0, message: 'No page: there is no document to act on here, as during server rendering. No step ran.' }, steps: [], appeared: [], values: {} })
 
   const subscriptions = new Set<() => void>()
   const agent: Agent = {
     snapshot: () => {
-      if (noPage())
+      if (noPage() || destroyed)
         return []
       scanned = undefined
       const found = live()
@@ -1317,8 +1374,8 @@ export function createAgent(options: AgentOptions = {}): Agent {
       const kept = new Set([...open, ...rest])
       return [...all.filter(component => kept.has(component)), moreOf(all.length - kept.size)]
     },
-    act: (input, actOptions) => askingToo(undefined, actOptions?.signal, () => (noPage() ? Promise.resolve(pageless()) : act(input))),
-    query: input => inTurn(() => (noPage() ? Promise.resolve([]) : query(isRecord(input) ? input : {}))),
+    act: (input, actOptions) => askingToo(undefined, actOptions?.signal, () => (noPage() ? Promise.resolve(pageless()) : act(input)), gone),
+    query: input => inTurn(() => (noPage() ? Promise.resolve([]) : query(isRecord(input) ? input : {})), () => []),
     subscribe: (listener) => {
       if (destroyed)
         return () => {}
@@ -1337,13 +1394,14 @@ export function createAgent(options: AgentOptions = {}): Agent {
         destroyed = true
         // Only this bridge's listeners go: another bridge on the page keeps its own.
         subscriptions.forEach(unsubscribe => unsubscribe())
+        onDestroy.get(agent)?.forEach(run => run())
         uninstall()
       }
     },
   }
   allowing.set(agent, {
-    act: (input, allow, signal) => askingToo(allow, signal, () => (noPage() ? Promise.resolve(pageless()) : act(input))),
-    query: (input, allow, signal) => askingToo(allow, signal, () => (noPage() ? Promise.resolve([]) : query(isRecord(input) ? input : {}))),
+    act: (input, allow, signal) => askingToo(allow, signal, () => (noPage() ? Promise.resolve(pageless()) : act(input)), gone),
+    query: (input, allow, signal) => askingToo(allow, signal, () => (noPage() ? Promise.resolve([]) : query(isRecord(input) ? input : {})), () => []),
   })
   return agent
 }

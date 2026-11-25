@@ -57,3 +57,28 @@ describe('the agent benchmark\'s settings screen, in a real browser', () => {
     agent.destroy()
   }, 30_000)
 })
+
+describe('a native modal dialog, in a real browser', () => {
+  it('covers the rest of the page while it is open with showModal()', async () => {
+    const agent = createAgent()
+    const behind = vi.fn()
+    const page = document.createElement('div')
+    page.innerHTML = '<input aria-label="Behind field" value="x"><button>Behind button</button><dialog><input aria-label="In dialog" value="y"></dialog>'
+    document.body.append(page)
+    page.querySelector('button')!.addEventListener('click', behind)
+    page.querySelector('dialog')!.showModal()
+    try {
+      const snapshot = agent.snapshot()
+      expect(snapshot.find(c => c.label === 'Behind field')).toMatchObject({ disabled: true, actions: [] })
+      expect(snapshot.find(c => c.label === 'In dialog')?.disabled).toBeUndefined()
+      const result = await agent.act({ steps: [{ ref: 'Behind button', action: 'press' }] })
+      expect(result.ok).toBe(false)
+      expect(behind).not.toHaveBeenCalled()
+    }
+    finally {
+      page.querySelector('dialog')!.close()
+      page.remove()
+      agent.destroy()
+    }
+  })
+})

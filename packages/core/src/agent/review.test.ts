@@ -276,7 +276,8 @@ describe('bridges', () => {
     first.destroy()
     answer(false)
     await waiting
-    await expect(queued).rejects.toThrow('destroyed')
+    // A call still queued answers as a destroyed bridge does, without running.
+    expect(await queued).toMatchObject({ ok: false, error: { message: expect.stringContaining('destroyed') } })
     on.value = true
     await nextTick()
     expect(heardFirst).not.toHaveBeenCalled()

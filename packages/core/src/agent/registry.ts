@@ -6,7 +6,7 @@ import type { Adapter, Part, Source } from './adapters'
 import type { AgentComponent, ChangeSource, ObservedChange } from './types'
 import { effectScope, getCurrentInstance, onBeforeUnmount, unref, watch } from 'vue'
 import { agentRegistrar } from '@/shared/useAgentRegistration'
-import { adapters, native } from './adapters'
+import { adapters, native, withoutHidden } from './adapters'
 import { isOffLimits, isSecret, isShown, nameOf, portals, rowOf, sectionsOf, textOf } from './dom'
 
 export interface Entry {
@@ -66,6 +66,11 @@ function add(source: Source, adapter: Adapter, key: object) {
   return entry
 }
 
+/** A state value as an agent may hear it: a list's value leaves out the chosen items it mustn't see. */
+export function scrub(entry: Entry, key: string, value: unknown) {
+  return key === 'value' ? withoutHidden(entry.source, value) : value
+}
+
 export function stateKeys(entry: Entry, state: Record<string, unknown>) {
   return entry.adapter.keys.filter(key => key in state)
 }
@@ -112,7 +117,7 @@ export function retire(entry: Entry) {
   if (entry.row)
     last.row = entry.row
   for (const key of keys)
-    last[key] = state[key] ?? null
+    last[key] = scrub(entry, key, state[key]) ?? null
   if (entry.sections?.length)
     placeOf.set(last, entry.sections)
   offPage.delete(entry.ref)
@@ -148,8 +153,16 @@ function itemElements(entry: Entry): Element[] {
 /** An accessible name for the component, from its label, its own element, a title or its trigger. */
 export function labelOf(entry: Entry, parts: Part[]) {
   const find = (slot: string) => parts.find(part => part.slot === slot)?.el
-  // A private component is named only by what names it, never by what it shows, like a select's chosen item.
-  const name = (el: Element | undefined) => (el ? nameOf(el, { content: !entry.secret }).slice(0, 80) : '')
+  // A private component is named only by what names it, never by what it shows, like a select's chosen item,
+  // and neither is a list whose chosen item is one an agent mustn't see.
+  let shows = !entry.secret
+  try {
+    const value = entry.adapter.state(entry.source).value
+    if (shows && value !== undefined && JSON.stringify(withoutHidden(entry.source, value)) !== JSON.stringify(value))
+      shows = false
+  }
+  catch {}
+  const name = (el: Element | undefined) => (el ? nameOf(el, { content: shows }).slice(0, 80) : '')
   const kind = entry.source.kind
   if (entry.source.radios)
     return name(entry.source.radios[0]?.closest('fieldset, [role=radiogroup]') ?? undefined) || undefined
@@ -415,8 +428,8 @@ function emit(entry: Entry, key: string, value: unknown, previous: unknown) {
     component: entry.adapter.component(entry.source),
     id: entry.id,
     key,
-    value: secret ? '[redacted]' : value,
-    previous: secret ? '[redacted]' : previous,
+    value: secret ? '[redacted]' : scrub(entry, key, value),
+    previous: secret ? '[redacted]' : scrub(entry, key, previous),
     reason,
     source,
   }
