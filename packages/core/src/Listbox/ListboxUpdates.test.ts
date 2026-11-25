@@ -1,7 +1,8 @@
 import type { ComponentPublicInstance } from 'vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, nextTick } from 'vue'
+import { ListboxContent, ListboxItem, ListboxRoot } from '.'
 import ListboxLong from './story/_ListboxLong.vue'
 
 // How many components re-render for one interaction on a long list. An item that reads the shared
@@ -82,5 +83,63 @@ describe('given a Listbox with many items', () => {
     expect(updates.of('ListboxItem')).toBe(0)
     expect(updates.total()).toBeGreaterThan(0)
     expect(updates.total()).toBeLessThan(20)
+  })
+
+  it('re-renders only the items a selection changes', async () => {
+    const { updates, content, items, model } = setup()
+    await nextTick()
+    await nextTick()
+    await content.trigger('focus')
+    await items[10].trigger('click')
+    await nextTick()
+    expect(model.value).toBe('Option 10')
+
+    updates.reset()
+    await items[20].trigger('click')
+    await nextTick()
+    expect(model.value).toBe('Option 20')
+    expect(items[10].attributes('data-state')).toBe('unchecked')
+    expect(items[20].attributes('data-state')).toBe('checked')
+    expect(items[20].attributes('data-highlighted')).toBe('')
+    expect(updates.of('ListboxItem')).toBe(0)
+    expect(updates.total()).toBeGreaterThan(0)
+    expect(updates.total()).toBeLessThan(30)
+  })
+
+  it('re-renders only the item a multiple selection toggles', async () => {
+    const { updates, content, items, model } = setup({ multiple: true })
+    await nextTick()
+    await nextTick()
+    await content.trigger('focus')
+    await items[10].trigger('click')
+    await nextTick()
+
+    updates.reset()
+    await items[20].trigger('click')
+    await nextTick()
+    expect(model.value).toEqual(['Option 10', 'Option 20'])
+    expect(items[10].attributes('data-state')).toBe('checked')
+    expect(items[20].attributes('data-state')).toBe('checked')
+    expect(updates.of('ListboxItem')).toBe(0)
+    expect(updates.total()).toBeGreaterThan(0)
+    expect(updates.total()).toBeLessThan(30)
+  })
+
+  it('still updates a root slot that uses `modelValue`', async () => {
+    const wrapper = mount(defineComponent({
+      components: { ListboxRoot, ListboxContent, ListboxItem },
+      template: `
+        <ListboxRoot v-slot="{ modelValue }">
+          <output>{{ modelValue ?? 'none' }}</output>
+          <ListboxContent>
+            <ListboxItem value="a">A</ListboxItem>
+            <ListboxItem value="b">B</ListboxItem>
+          </ListboxContent>
+        </ListboxRoot>`,
+    }), { attachTo: document.body })
+    expect(wrapper.find('output').text()).toBe('none')
+
+    await wrapper.findAll('[role=option]')[1].trigger('click')
+    expect(wrapper.find('output').text()).toBe('b')
   })
 })

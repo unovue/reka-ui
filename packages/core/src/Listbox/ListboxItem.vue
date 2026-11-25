@@ -28,7 +28,7 @@ export const [injectListboxItemContext, provideListboxItemContext]
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '..'
 import type { AcceptableValue } from '@/shared/types'
-import { computed, onBeforeUnmount } from 'vue'
+import { computed, onBeforeUnmount, onScopeDispose } from 'vue'
 import { useCollection } from '@/Collection'
 import { useSelectorKey } from '@/shared/createKeyedSelector'
 import { useAgentItem } from '@/shared/useAgentRegistration'
@@ -60,7 +60,14 @@ useAgentItem(rootContext, props, currentElement)
 const isHighlighted = computed(rootContext.highlight
   ? useSelectorKey(rootContext.highlight, () => currentElement.value)
   : () => currentElement.value != null && currentElement.value === rootContext.highlightedElement.value)
-const isSelected = computed(() => valueComparator(rootContext.modelValue.value, props.value, rootContext.by))
+// Likewise for the selection: the root's selector notifies the items that entered or left it.
+const selection = rootContext.selection
+const selectionHold = selection?.createHold()
+if (selectionHold)
+  onScopeDispose(() => selectionHold.release())
+const isSelected = computed(() => selection
+  ? selection.isSelected(props.value, selectionHold)
+  : valueComparator(rootContext.modelValue.value, props.value, rootContext.by))
 
 const disabled = computed(() => rootContext.disabled.value || props.disabled)
 

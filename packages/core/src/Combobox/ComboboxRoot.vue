@@ -154,6 +154,17 @@ const open = useVModel(props, 'open', emits, {
   passive: (props.open === undefined) as false,
 }) as Ref<boolean>
 
+// Read when a consumer slot uses them, not when the slot is rendered: the slot is rendered by the
+// root's element, and a read there re-renders it, and through it everything in the combobox.
+const slotProps = {
+  get open() {
+    return open.value
+  },
+  get modelValue() {
+    return modelValue.value
+  },
+}
+
 // `true` while `onOpenChange` is opening the list and will highlight the selected item itself
 let isOpeningInternally = false
 
@@ -338,10 +349,7 @@ useAgentRegistration('combobox', agentContext, props, parentElement)
       @invalid="emits('invalid', $event as T)"
       @highlight="emits('highlight', $event as any)"
     >
-      <slot
-        :open="open"
-        :model-value="modelValue"
-      />
+      <slot v-bind="slotProps" />
     </ListboxRoot>
   </PopperRoot>
 </template>
