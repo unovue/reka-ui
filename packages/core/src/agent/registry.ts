@@ -6,8 +6,8 @@ import type { Adapter, Part, Source } from './adapters'
 import type { AgentComponent, ChangeSource, ObservedChange } from './types'
 import { effectScope, getCurrentInstance, onBeforeUnmount, unref, watch } from 'vue'
 import { agentRegistrar } from '@/shared/useAgentRegistration'
-import { adapters, native, withoutHidden } from './adapters'
-import { isOffLimits, isSecret, isShown, nameOf, portals, rowOf, sectionsOf, textOf } from './dom'
+import { adapters, contentMarks, native, withoutHidden } from './adapters'
+import { isOffLimits, isSecret, isShown, nameOf, onConceal, portals, rowOf, sectionsOf, textOf } from './dom'
 
 export interface Entry {
   ref: string
@@ -87,7 +87,7 @@ export function retire(entry: Entry) {
   const connected = partsOf(entry).length > 0
   if (isOffLimits(elements))
     entry.offLimits = true
-  entry.secret ||= isSecret([...elements, ...itemElements(entry)])
+  entry.secret ||= privateBy(entry, elements)
   if (!entry.key || !entry.shown || entry.secret || entry.offLimits)
     return
   // Only what an agent could see as it left is kept: shown then, or, for one already gone from the page
@@ -142,13 +142,40 @@ export function anchorOf(parts: Part[]) {
 
 /** The elements of the items registered against the component, for the marks on them. */
 function itemElements(entry: Entry): Element[] {
-  const all = [...entry.source.items, ...(entry.source.inner?.items ?? [])]
-  return all.flatMap(({ element }) => {
+  const { source } = entry
+  // A native select's options and a native group's radios are its items too.
+  const natives: Element[] = source.native?.localName === 'select' ? [...(source.native as HTMLSelectElement).options] : source.radios ?? []
+  const all = [...source.items, ...(source.inner?.items ?? [])]
+  return [...natives, ...all.flatMap(({ element }) => {
     const value = unref(element) as { $el?: unknown } | Element | null | undefined
     const node = value instanceof Element ? value : value?.$el
     return node instanceof Element ? [node] : []
-  })
+  })]
 }
+
+/** Private by its own marks, its items' marks, or the marks on its list content. */
+function privateBy(entry: Entry, elements: Element[]) {
+  return isSecret([...elements, ...itemElements(entry)]) || !!contentMarks(entry.source).secret
+}
+
+// A select shows its chosen item's label on its trigger. While that item is hidden or private, or the select is,
+// the label is no text to read: not as a neighbour's row, a query's text or a popup's buttons.
+onConceal(() => [...entries.values()].flatMap((entry) => {
+  const { source } = entry
+  if (!entry.alive || source.kind !== 'select' || source.native)
+    return []
+  try {
+    const value = entry.adapter.state(source).value
+    if (!entry.secret && !privateBy(entry, []) && JSON.stringify(withoutHidden(source, value)) === JSON.stringify(value))
+      return []
+  }
+  catch {
+    return []
+  }
+  const ctx = source.ctx as { valueElement?: unknown, triggerElement?: unknown }
+  const shown = unref(ctx.valueElement) ?? unref(ctx.triggerElement)
+  return shown instanceof Element ? [shown] : []
+}))
 
 /** An accessible name for the component, from its label, its own element, a title or its trigger. */
 export function labelOf(entry: Entry, parts: Part[]) {
@@ -179,7 +206,7 @@ export function remember(entry: Entry, parts: Part[]) {
   const elements = parts.map(part => part.el)
   entry.offLimits = isOffLimits(elements)
   // A list whose items sit inside `data-agent-secret` is private too, whatever is around its trigger.
-  entry.secret ||= isSecret([...elements, ...itemElements(entry)])
+  entry.secret ||= privateBy(entry, elements)
   // Nothing off-limits is named, so a step that names it reads the same as a name that isn't on the page.
   entry.label = entry.offLimits ? undefined : labelOf(entry, parts)
   const anchor = anchorOf(parts)
@@ -421,7 +448,7 @@ function emit(entry: Entry, key: string, value: unknown, previous: unknown) {
   const elements = markedBy(entry)
   if (!reachable(entry, elements))
     return
-  const secret = (entry.secret ||= isSecret([...elements, ...itemElements(entry)]))
+  const secret = (entry.secret ||= privateBy(entry, elements))
   const { source, reason } = sourceNow()
   const change: ObservedChange = {
     ref: entry.ref,

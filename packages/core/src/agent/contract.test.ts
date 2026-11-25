@@ -45,6 +45,10 @@ interface Marks {
   /** On the control an action stands for, like the increment button. */
   part: Attrs
   disabled: boolean
+  /** On the list's content part, like a closed select's content. */
+  content: Attrs
+  /** Whether the app's filter leaves out the chosen item, `secret`. */
+  filtered: () => boolean
 }
 
 interface Family {
@@ -67,6 +71,12 @@ interface Family {
   alwaysSecret?: boolean
   /** Whether a step changed it, from its model, or a spy. */
   changed?: (model: Ref<any>, initial: unknown) => boolean
+  /** Takes `m.content` on its list content. */
+  content?: boolean
+  /** Renders only the items `m.filtered` leaves, and this step takes the chosen one out. */
+  replaceStep?: Omit<AgentStep, 'ref'>
+  /** One chosen item: `strict` always holds one, `empties` can hold none. */
+  single?: 'strict' | 'empties'
 }
 
 const v = (model: Ref<any>) => ({ 'modelValue': model.value, 'onUpdate:modelValue': (value: unknown) => (model.value = value) })
@@ -93,6 +103,7 @@ const families: Family[] = [
     render: (m, model) => h('select', { ...target, value: model.value, disabled: m.disabled, onChange: (e: Event) => (model.value = (e.target as HTMLSelectElement).value) }, ITEMS.map(([value, label]) => h('option', { value, selected: model.value === value, ...m.item(value) }, label))),
     actions: [{ action: 'setValue', args: ['bravo'] }],
     itemStep: { action: 'setValue', args: ['bravo'] },
+    single: 'strict',
   },
   {
     name: 'native radio',
@@ -100,6 +111,7 @@ const families: Family[] = [
     render: (m, model) => h('fieldset', target, ITEMS.map(([value, label]) => h('label', [h('input', { type: 'radio', name: 'contract', value, checked: model.value === value, disabled: m.disabled, onChange: () => (model.value = value), ...m.item(value) }), label]))),
     actions: [{ action: 'setValue', args: ['bravo'] }],
     itemStep: { action: 'setValue', args: ['bravo'] },
+    single: 'strict',
   },
   {
     name: 'switch',
@@ -119,34 +131,41 @@ const families: Family[] = [
     render: (m, model) => h(RadioGroupRoot, { ...target, ...v(model), disabled: m.disabled }, () => ITEMS.map(([value, label]) => h(RadioGroupItem, { value, ...m.item(value) }, () => label))),
     actions: [{ action: 'setValue', args: ['bravo'] }],
     itemStep: { action: 'setValue', args: ['bravo'] },
+    single: 'strict',
   },
   {
     name: 'select',
     initial: () => 'secret',
     render: (m, model) => h(SelectRoot, { ...v(model), disabled: m.disabled }, () => [
       h(SelectTrigger, target, () => h(SelectValue)),
-      h(SelectPortal, () => h(SelectContent, () => h(SelectViewport, () => ITEMS.map(([value, label]) => h(SelectItem, { value, ...m.item(value) }, () => h(SelectItemText, () => label)))))),
+      h(SelectPortal, () => h(SelectContent, m.content, () => h(SelectViewport, () => ITEMS.map(([value, label]) => h(SelectItem, { value, ...m.item(value) }, () => h(SelectItemText, () => label)))))),
     ]),
     actions: [{ action: 'setValue', args: ['bravo'] }, { action: 'setOpen', args: [true] }],
     itemStep: { action: 'setValue', args: ['bravo'] },
+    content: true,
+    single: 'strict',
   },
   {
     name: 'combobox',
     initial: () => ['secret'],
     render: (m, model) => h(ComboboxRoot, { ...v(model), multiple: true, disabled: m.disabled }, () => [
       h(ComboboxAnchor, () => [h(ComboboxInput, target), h(ComboboxCancel, m.part, () => 'Clear')]),
-      h(ComboboxContent, () => h(ComboboxViewport, () => ITEMS.map(([value, label]) => h(ComboboxItem, { value, ...m.item(value) }, () => label)))),
+      h(ComboboxContent, m.content, () => h(ComboboxViewport, () => ITEMS.filter(([value]) => !(m.filtered() && value === 'secret')).map(([value, label]) => h(ComboboxItem, { value, ...m.item(value) }, () => label)))),
     ]),
     actions: [{ action: 'setValue', args: [['secret', 'bravo']] }, { action: 'setOpen', args: [true] }, { action: 'setQuery', args: ['a'] }, { action: 'clear' }],
     itemStep: { action: 'setValue', args: [['secret', 'bravo']] },
     partStep: { action: 'clear' },
+    content: true,
+    replaceStep: { action: 'setValue', args: [['bravo']] },
   },
   {
     name: 'listbox',
     initial: () => 'secret',
-    render: (m, model) => h(ListboxRoot, { ...target, ...v(model), disabled: m.disabled }, () => h(ListboxContent, () => ITEMS.map(([value, label]) => h(ListboxItem, { value, ...m.item(value) }, () => label)))),
+    render: (m, model) => h(ListboxRoot, { ...target, ...v(model), disabled: m.disabled }, () => h(ListboxContent, () => ITEMS.filter(([value]) => !(m.filtered() && value === 'secret')).map(([value, label]) => h(ListboxItem, { value, ...m.item(value) }, () => label)))),
     actions: [{ action: 'setValue', args: ['bravo'] }],
     itemStep: { action: 'setValue', args: ['bravo'] },
+    replaceStep: { action: 'setValue', args: ['bravo'] },
+    single: 'strict',
   },
   {
     name: 'tabs',
@@ -158,6 +177,7 @@ const families: Family[] = [
     ]),
     actions: [{ action: 'setValue', args: ['bravo'] }],
     itemStep: { action: 'setValue', args: ['bravo'] },
+    single: 'strict',
   },
   {
     name: 'accordion',
@@ -168,6 +188,7 @@ const families: Family[] = [
     ]))),
     actions: [{ action: 'setValue', args: ['bravo'] }, { action: 'open', args: ['bravo'] }, { action: 'close', args: ['secret'] }, { action: 'toggle', args: ['bravo'] }],
     itemStep: { action: 'open', args: ['bravo'] },
+    single: 'empties',
   },
   {
     name: 'toggle-group',
@@ -175,6 +196,7 @@ const families: Family[] = [
     render: (m, model) => h(ToggleGroupRoot, { ...target, ...v(model), type: 'single', disabled: m.disabled }, () => ITEMS.map(([value, label]) => h(ToggleGroupItem, { value, ...m.item(value) }, () => label))),
     actions: [{ action: 'setValue', args: ['bravo'] }, { action: 'toggle', args: ['bravo'] }],
     itemStep: { action: 'setValue', args: ['bravo'] },
+    single: 'empties',
   },
   {
     name: 'collapsible',
@@ -274,7 +296,7 @@ const placements: Record<string, Wrap> = {
   ]))),
 }
 
-type Expect = 'hidden' | 'secret' | 'confirm' | 'disabled' | 'item-hidden' | 'selected-hidden' | 'none'
+type Expect = 'hidden' | 'secret' | 'confirm' | 'disabled' | 'item-hidden' | 'selected-hidden' | 'filtered-confirm' | 'none'
 interface Mark {
   expect: Expect
   /** Around the whole placement, outside its portals. */
@@ -290,6 +312,10 @@ interface Mark {
   selectedDisabled?: boolean
   part?: Attrs
   disabled?: boolean
+  /** On the list's content part. */
+  content?: Attrs
+  /** The app's filter leaves out the chosen item: after the agent has seen it, or from the start. */
+  filtered?: 'later' | 'always'
   applies?: (family: Family) => boolean
 }
 const marks: Record<string, Mark> = {
@@ -299,6 +325,16 @@ const marks: Record<string, Mark> = {
   'aria-hidden on component': { expect: 'hidden', around: { attrs: { 'aria-hidden': 'true' } } },
   '[hidden] on component': { expect: 'hidden', around: { attrs: { hidden: '' } } },
   'hidden on item': { expect: 'item-hidden', item: { 'data-agent-hidden': '' }, applies: f => !!f.itemStep },
+  // An item hidden from everyone is no item to an agent either, by the same rule as a component.
+  '[hidden] on item': { expect: 'item-hidden', item: { hidden: '' }, applies: f => !!f.itemStep && f.name !== 'menu' },
+  'aria-hidden on item': { expect: 'item-hidden', item: { 'aria-hidden': 'true' }, applies: f => !!f.itemStep && f.name !== 'menu' },
+  // Marks on a list's content apply to its items while it's closed and they render elsewhere.
+  'confirm on content': { expect: 'confirm', content: { 'data-agent-confirm': CONFIRM }, applies: f => !!f.content },
+  'secret on content': { expect: 'secret', content: { 'data-agent-secret': '' }, applies: f => !!f.content },
+  'hidden on content': { expect: 'item-hidden', content: { 'data-agent-hidden': '' }, applies: f => !!f.content },
+  // A chosen item the app's filter leaves out keeps its mark: taking it out still asks, or can't go ahead unseen.
+  'confirm on the selected item, filtered out': { expect: 'filtered-confirm', item: { 'data-agent-confirm': CONFIRM }, itemOn: 'secret', filtered: 'later', applies: f => !!f.replaceStep },
+  'confirm on the selected item, never shown': { expect: 'filtered-confirm', item: { 'data-agent-confirm': CONFIRM }, itemOn: 'secret', filtered: 'always', applies: f => !!f.replaceStep },
   'secret on component': { expect: 'secret', around: { attrs: { 'data-agent-secret': '' } } },
   'secret on ancestor': { expect: 'secret', ancestor: { 'data-agent-secret': '' } },
   'confirm on item': { expect: 'confirm', item: { 'data-agent-confirm': CONFIRM }, applies: f => !!f.itemStep },
@@ -350,19 +386,23 @@ async function build(family: Family, place: Wrap, mark: Mark, allow?: (step: any
   const agent = createAgent(allow ? { allow } : {})
   agents.push(agent)
   const model = ref(family.initial())
+  const filtered = ref(mark.filtered === 'always')
   const m: Marks = {
     item: value => (value === (mark.itemOn ?? 'bravo') && mark.item ? mark.item : value === 'secret' && mark.selectedDisabled ? { disabled: true } : {}),
     part: mark.part ?? {},
     disabled: !!mark.disabled,
+    content: mark.content ?? {},
+    filtered: () => filtered.value,
   }
   const component = () => {
     const inner = [family.render(m, model)].flat()
     const wrapped = mark.wrap ? [mark.wrap(inner)] : inner
     return mark.around ? h(mark.around.tag ?? 'div', mark.around.attrs, wrapped) : wrapped
   }
-  const wrapper = mount(defineComponent({ render: () => h('div', mark.ancestor ?? {}, [place(component), h('button', 'Elsewhere')]) }), { attachTo: document.body })
+  const errors: unknown[] = []
+  const wrapper = mount(defineComponent({ render: () => h('div', mark.ancestor ?? {}, [place(component), h('button', 'Elsewhere')]) }), { attachTo: document.body, global: { config: { errorHandler: error => errors.push(error) } } })
   await settle(() => !!document.querySelector('[data-placed]'))
-  return { agent, model, wrapper }
+  return { agent, model, wrapper, filtered, errors }
 }
 
 const targetOf = (list: AgentComponent[]) => list.find(c => c.label === 'Target')
@@ -392,7 +432,7 @@ describe('agent contract', () => {
 
   for (const { family, placeName, place, markName, mark } of cases) {
     it(`${family.name} · ${placeName} · ${markName}`, async () => {
-      const { agent, model, wrapper } = await build(family, place, mark)
+      const { agent, model, wrapper, filtered } = await build(family, place, mark)
       const initial = JSON.parse(json(model.value))
       const changed = () => (family.changed ? family.changed(model, initial) : json(model.value) !== json(initial))
       const outputs: unknown[] = []
@@ -495,6 +535,28 @@ describe('agent contract', () => {
           const refused = await asked.agent.act({ steps: [{ ref: 'Target', ...step }] })
           expect(refused.ok).toBe(false)
           expect(allow.mock.calls.some(([s]: any[]) => String(s.confirm).includes(CONFIRM))).toBe(true)
+          break
+        }
+        case 'filtered-confirm': {
+          if (mark.filtered === 'later') {
+            // The agent sees the list, and its items' marks, before the app's filter leaves the chosen one out.
+            expect((await agent.act({ steps: [{ ref: 'Target', action: 'setOpen', args: [true] }] })).ok || !family.actions.some(a => a.action === 'setOpen')).toBe(true)
+            await agent.act({ steps: [{ ref: 'Target', action: 'setOpen', args: [false] }] })
+            outputs.push(agent.snapshot())
+            filtered.value = true
+            await settle()
+          }
+          const result = await agent.act({ steps: [{ ref: 'Target', ...family.replaceStep! }] })
+          outputs.push(result)
+          expect(result.ok).toBe(false)
+          expect(result.error?.message).toMatch(mark.filtered === 'later' ? /Needs a person/ : /Needs a person|needs the list unfiltered/)
+          expect(changed()).toBe(false)
+          const clears = family.actions.find(a => a.action === 'clear')
+          if (clears) {
+            const cleared = await agent.act({ steps: [{ ref: 'Target', ...clears }] })
+            expect(cleared.ok).toBe(false)
+            expect(changed()).toBe(false)
+          }
           break
         }
         case 'disabled': {
@@ -957,5 +1019,228 @@ describe('fourth review findings', () => {
     agents.push(agent)
     const snapshot = agent.snapshot()
     expect(snapshot.filter(c => c.value === '4' || c.value === '2')).toEqual([])
+  })
+})
+
+// Arguments of the wrong shape, for every family and every action it takes: none may write the model or
+// leave the page unable to render. A single list never takes a list, a multiple list never a nested one,
+// and an action that takes an item never runs without one.
+function fuzzOf(family: Family, step: Omit<AgentStep, 'ref'>): { name: string, args: unknown[] }[] {
+  const args = step.args ?? []
+  const out = [
+    { name: 'one value too many', args: [...(args.length ? args : ['x']), 'extra'] },
+    { name: 'a nested list', args: [[['bravo']]] },
+  ]
+  if (!args.length)
+    out.push({ name: 'a value it takes none of', args: ['bravo'] })
+  else
+    out.push({ name: 'no value', args: [] })
+  if (step.action === 'setValue' && family.single)
+    out.push({ name: 'a list for a single list', args: [['bravo']] })
+  if (step.action === 'setValue' && family.single === 'strict')
+    out.push({ name: 'nothing for a list that always holds one', args: [null] })
+  if (step.action !== 'setValue' && args.length && typeof args[0] === 'string')
+    out.push({ name: 'a list for one item', args: [['bravo']] })
+  return out
+}
+const fuzzCases = families.flatMap(family => family.actions
+  .filter(step => step.action !== 'press')
+  .flatMap(step => fuzzOf(family, step).map(fuzz => ({ family, step, fuzz }))))
+
+describe('argument fuzz', () => {
+  it('covers every family and action', () => {
+    expect(fuzzCases.length).toBeGreaterThan(100)
+  })
+  for (const { family, step, fuzz } of fuzzCases) {
+    it(`${family.name} · ${step.action} · ${fuzz.name}`, async () => {
+      const { agent, model, errors } = await build(family, placements.inline!, marks['no mark']!)
+      const initial = json(model.value)
+      const result = await agent.act({ steps: [{ ref: 'Target', action: step.action, args: fuzz.args }] })
+      await settle()
+      expect(result.ok, json(result)).toBe(false)
+      expect(json(model.value)).toBe(initial)
+      expect(errors).toEqual([])
+      expect(document.querySelector('[data-placed]')).toBeTruthy()
+      // It still works with the right arguments afterwards.
+      expect(targetOf(agent.snapshot())).toBeTruthy()
+    })
+  }
+})
+
+describe('fifth review findings', () => {
+  const page = async (render: () => VNode | VNode[], options: Parameters<typeof createAgent>[0] = {}) => {
+    const agent = createAgent(options)
+    agents.push(agent)
+    const wrapper = mount(defineComponent({ render }), { attachTo: document.body })
+    await settle()
+    return { agent, wrapper }
+  }
+  const marked = (value: string) => (value === 'bravo' ? { 'data-agent-confirm': CONFIRM } : {})
+  const combobox = (model: Ref<any>, multiple: boolean) => h(ComboboxRoot, { ...v(model), multiple }, () => [
+    h(ComboboxAnchor, () => h(ComboboxInput, target)),
+    h(ComboboxContent, () => h(ComboboxViewport, () => ITEMS.map(([value, label]) => h(ComboboxItem, { value, ...marked(value) }, () => label)))),
+  ])
+
+  it('1a: a combobox filter that leaves out a marked chosen item still asks before it is taken out', async () => {
+    const model = ref<string[]>(['bravo'])
+    const { agent } = await page(() => combobox(model, true))
+    // The agent opens the list once and sees every item and its mark.
+    await agent.act({ steps: [{ ref: 'Target', action: 'setOpen', args: [true] }] })
+    await agent.act({ steps: [{ ref: 'Target', action: 'setOpen', args: [false] }] })
+    await agent.act({ steps: [{ ref: 'Target', action: 'setQuery', args: ['alp'] }] })
+    await settle()
+    for (const step of [{ action: 'setValue', args: [['alpha']] }, { action: 'clear' }]) {
+      const result = await agent.act({ steps: [{ ref: 'Target', ...step }] })
+      expect(result.error?.message, step.action).toContain('Needs a person')
+      expect(model.value).toEqual(['bravo'])
+    }
+  })
+
+  it('1b: a single combobox replacing a marked chosen item its filter left out asks first', async () => {
+    const model = ref('bravo')
+    const { agent } = await page(() => combobox(model, false))
+    await agent.act({ steps: [{ ref: 'Target', action: 'setOpen', args: [true] }] })
+    await agent.act({ steps: [{ ref: 'Target', action: 'setOpen', args: [false] }] })
+    await agent.act({ steps: [{ ref: 'Target', action: 'setQuery', args: ['alp'] }] })
+    await settle()
+    const result = await agent.act({ steps: [{ ref: 'Target', action: 'setValue', args: ['alpha'] }] })
+    expect(result.error?.message).toContain('Needs a person')
+    expect(model.value).toBe('bravo')
+  })
+
+  it('1c: a chosen item a filter has kept off the page from the start stops the change', async () => {
+    const model = ref<string[]>(['bravo'])
+    const query = ref('alp')
+    const { agent } = await page(() => h(ListboxRoot, { ...target, ...v(model), multiple: true }, () => h(ListboxContent, () => ITEMS.filter(([, label]) => label.toLowerCase().includes(query.value)).map(([value, label]) => h(ListboxItem, { value, ...marked(value) }, () => label)))))
+    const result = await agent.act({ steps: [{ ref: 'Target', action: 'setValue', args: [['alpha']] }] })
+    expect(result.error?.message).toContain('needs the list unfiltered')
+    expect(model.value).toEqual(['bravo'])
+    // With the filter cleared the item shows, and the change asks about its mark.
+    query.value = ''
+    await settle()
+    expect((await agent.act({ steps: [{ ref: 'Target', action: 'setValue', args: [['alpha']] }] })).error?.message).toContain('Needs a person')
+  })
+
+  it('2: arguments of the wrong shape write nothing', async () => {
+    const tab = ref('alpha')
+    const radio = ref('alpha')
+    const section = ref('alpha')
+    const toggles = ref<string[]>(['alpha'])
+    const tags = ref<string[]>(['alpha'])
+    const { agent } = await page(() => [
+      h(TabsRoot, v(tab), () => h(TabsList, { 'aria-label': 'Tabs' }, () => ITEMS.map(([value, label]) => h(TabsTrigger, { value }, () => label)))),
+      h(RadioGroupRoot, { 'aria-label': 'Radios', ...v(radio) }, () => ITEMS.map(([value, label]) => h(RadioGroupItem, { value }, () => label))),
+      h(AccordionRoot, { 'aria-label': 'Sections', ...v(section), 'type': 'single' }, () => ITEMS.map(([value, label]) => h(AccordionItem, { value }, () => [h(AccordionHeader, () => h(AccordionTrigger, () => label)), h(AccordionContent, () => label)]))),
+      h(ToggleGroupRoot, { 'aria-label': 'Toggles', ...v(toggles), 'type': 'multiple' }, () => ITEMS.map(([value, label]) => h(ToggleGroupItem, { value }, () => label))),
+      h(TagsInputRoot, v(tags), () => [h(TagsInputInput, { 'aria-label': 'Tags' })]),
+    ])
+    const before = json([tab.value, radio.value, section.value, toggles.value, tags.value])
+    const steps: AgentStep[] = [
+      { ref: 'Tabs', action: 'setValue', args: [['bravo']] },
+      { ref: 'Tabs', action: 'setValue', args: [null] },
+      { ref: 'Radios', action: 'setValue', args: [['bravo']] },
+      { ref: 'Sections', action: 'setValue', args: [['bravo']] },
+      { ref: 'Toggles', action: 'toggle', args: [['bravo']] },
+      { ref: 'Tags', action: 'add' },
+      { ref: 'Tags', action: 'add', args: [['x']] },
+    ]
+    for (const step of steps)
+      expect((await agent.act({ steps: [step] })).ok, json(step)).toBe(false)
+    expect(json([tab.value, radio.value, section.value, toggles.value, tags.value])).toBe(before)
+  })
+
+  it('3: allow is told the whole text of the button a press resolves to, and an exact match wins', async () => {
+    const seen: unknown[] = []
+    const presses: string[] = []
+    const { agent } = await page(() => h(DialogRoot, { defaultOpen: true, modal: false }, () => [
+      h(DialogTrigger, () => 'Open'),
+      h(DialogPortal, () => h(DialogContent, () => [h(DialogTitle, () => 'Plan'), h('button', { onClick: () => presses.push('long') }, 'Cancel my subscription')])),
+    ]), { allow: (step) => {
+      seen.push(step.args)
+      return step.args?.[0] !== 'Cancel my subscription'
+    } })
+    const result = await agent.act({ steps: [{ ref: 'Plan', action: 'press', args: ['Cancel'] }] })
+    expect(result.ok).toBe(false)
+    expect(seen).toContainEqual(['Cancel my subscription'])
+    expect(presses).toEqual([])
+  })
+
+  it('4: an item hidden with `hidden` or `aria-hidden` is neither listed nor picked', async () => {
+    const tab = ref('alpha')
+    const { agent } = await page(() => h(TabsRoot, v(tab), () => h(TabsList, { 'aria-label': 'Tabs' }, () => ITEMS.map(([value, label]) => h(TabsTrigger, { value, ...(value === 'bravo' ? { hidden: '' } : value === 'secret' ? { 'aria-hidden': 'true' } : {}) }, () => label)))))
+    expect(json(agent.snapshot())).not.toMatch(/Bravo|ZQXSECRET/)
+    expect((await agent.act({ steps: [{ ref: 'Tabs', action: 'setValue', args: ['bravo'] }] })).ok).toBe(false)
+    expect(tab.value).toBe('alpha')
+  })
+
+  it('5a: marks on a closed select\'s content apply to its items', async () => {
+    const model = ref('alpha')
+    const { agent } = await page(() => h(SelectRoot, v(model), () => [
+      h(SelectTrigger, target, () => h(SelectValue)),
+      h(SelectPortal, () => h(SelectContent, { 'data-agent-confirm': CONFIRM }, () => h(SelectViewport, () => ITEMS.map(([value, label]) => h(SelectItem, { value }, () => h(SelectItemText, () => label)))))),
+    ]))
+    expect((await agent.act({ steps: [{ ref: 'Target', action: 'setValue', args: ['bravo'] }] })).error?.message).toContain('Needs a person')
+    expect(model.value).toBe('alpha')
+  })
+
+  it('5b: a secret mark on a combobox\'s content or on a native option makes the list private', async () => {
+    const model = ref<string[]>([])
+    const pick = ref('alpha')
+    const { agent } = await page(() => [
+      h(ComboboxRoot, { ...v(model), multiple: true }, () => [
+        h(ComboboxAnchor, () => h(ComboboxInput, target)),
+        h(ComboboxContent, { 'data-agent-secret': '' }, () => h(ComboboxViewport, () => ITEMS.map(([value, label]) => h(ComboboxItem, { value }, () => label)))),
+      ]),
+      h('select', { 'aria-label': 'Native', 'value': pick.value }, ITEMS.map(([value, label]) => h('option', { value, ...(value === 'secret' ? { 'data-agent-secret': '' } : {}) }, label))),
+    ])
+    // The combobox reads its content's marks once its items have rendered.
+    await agent.act({ steps: [{ ref: 'Target', action: 'setOpen', args: [true] }] })
+    await agent.act({ steps: [{ ref: 'Target', action: 'setOpen', args: [false] }] })
+    const snapshot = agent.snapshot()
+    expect(json(snapshot)).not.toContain(SECRET)
+    expect(targetOf(snapshot)?.actions).not.toContain('setQuery')
+    expect(snapshot.find(c => c.label === 'Native')?.items?.every(item => item.label === '[redacted]')).toBe(true)
+  })
+
+  it('6: a hidden or private chosen item\'s label never leaks through what the select\'s trigger shows', async () => {
+    const model = ref('secret')
+    const { agent } = await page(() => h('div', [h(DialogRoot, { defaultOpen: true }, () => [
+      h(DialogTrigger, () => 'Open'),
+      h(DialogPortal, () => h(DialogContent, () => [h(DialogTitle, () => 'Pay'), h('ul', h('li', [
+        h(SelectRoot, v(model), () => [
+          h(SelectTrigger, { 'aria-label': 'Account' }, () => h(SelectValue)),
+          h(SelectPortal, () => h(SelectContent, () => h(SelectViewport, () => ITEMS.map(([value, label]) => h(SelectItem, { value, ...(value === 'secret' ? { 'data-agent-hidden': '' } : {}) }, () => h(SelectItemText, () => label)))))),
+        ]),
+        h(SwitchRoot, { 'aria-label': 'Wire' }),
+      ])), h('button', 'OK')])),
+    ]), h('button', 'Behind')]))
+    const outputs = [agent.snapshot(), await agent.query({ text: SECRET }), await agent.query({ text: 'Wire' })]
+    // A step on a name that isn't there lists the open modal's buttons.
+    const behind = await agent.act({ steps: [{ ref: 'Nowhere', action: 'press' }] })
+    expect(behind.error?.message).toContain('open over the rest of the page')
+    outputs.push(behind)
+    expect(json(outputs)).not.toContain(SECRET)
+    expect(await agent.query({ text: SECRET })).toEqual([])
+  })
+
+  it('note: ids with selector characters, newlines included, are compared, not put in a selector', async () => {
+    const { agent } = await page(() => [
+      h('label', { for: 'a\nb"]' }, 'Odd'),
+      h('input', { id: 'a\nb"]', value: 'x' }),
+    ])
+    expect(() => agent.snapshot()).not.toThrow()
+    expect(agent.snapshot().find(c => c.label === 'Odd')).toBeTruthy()
+    expect((await agent.act({ steps: [{ ref: 'Odd', action: 'setValue', args: ['y'] }] })).ok).toBe(true)
+    expect(await agent.query({ text: 'Odd' })).toHaveLength(1)
+  })
+
+  it('note: a multiple list keeps a hidden chosen item through a change that doesn\'t touch it', async () => {
+    const model = ref<string[]>(['secret', 'alpha'])
+    const { agent } = await page(() => h(ListboxRoot, { ...target, ...v(model), multiple: true }, () => h(ListboxContent, () => ITEMS.map(([value, label]) => h(ListboxItem, { value, ...(value === 'secret' ? { 'data-agent-hidden': '' } : {}) }, () => label)))))
+    expect(targetOf(agent.snapshot())?.value).toEqual(['alpha'])
+    const result = await agent.act({ steps: [{ ref: 'Target', action: 'setValue', args: [['bravo']] }] })
+    expect(result.error).toBeUndefined()
+    expect([...model.value].sort()).toEqual(['bravo', 'secret'])
+    expect(json(result)).not.toContain('secret')
   })
 })

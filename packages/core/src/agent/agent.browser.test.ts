@@ -82,3 +82,25 @@ describe('a native modal dialog, in a real browser', () => {
     }
   })
 })
+
+describe('ids with selector characters, in a real browser', () => {
+  it('reads and changes a field whose id holds a newline and quotes, which a selector would reject', async () => {
+    const page = document.createElement('div')
+    // In a row, so the bridge looks for a \`label[for]\` by its id to keep the field's own label out of the row.
+    page.innerHTML = '<ul><li>Row <input aria-label="Odd" value="x"></li></ul>'
+    page.querySelector('input')!.id = 'a\nb"]\\'
+    document.body.append(page)
+    const agent = createAgent()
+    try {
+      expect(() => agent.snapshot()).not.toThrow()
+      expect(agent.snapshot().find(c => c.label === 'Odd')).toMatchObject({ value: 'x' })
+      expect((await agent.act({ steps: [{ ref: 'Odd', action: 'setValue', args: ['y'] }] })).ok).toBe(true)
+      expect(page.querySelector('input')!.value).toBe('y')
+      expect(await agent.query({ text: 'Odd' })).toHaveLength(1)
+    }
+    finally {
+      page.remove()
+      agent.destroy()
+    }
+  })
+})

@@ -4,7 +4,7 @@
 import { isEqual } from 'ohash'
 import { nextTick, unref } from 'vue'
 import { clamp, snapValueToStep } from '@/shared/clamp'
-import { fold, isDisabledElement, isOffLimits, nameOf, textOf, textOrName } from './dom'
+import { confirmOf, fold, isDisabledElement, isOffLimits, nameOf, textOf, textOrName } from './dom'
 
 /** An item of a list-like component, with its own value. */
 export interface Item {
@@ -37,6 +37,10 @@ export interface Source {
   instance?: { vnode: { el: unknown } }
   /** Values of items seen inside `data-agent-hidden`, kept for a list whose items show only while it's open. */
   hiddenSeen?: unknown[]
+  /** The `data-agent-confirm` sentence each item had when last seen, by its value, for items not on the page now. */
+  marksSeen?: Map<string, string>
+  /** Every item value seen rendered, so an item off the page now is known to have had no mark then. */
+  valuesSeen?: Set<string>
   /** A native element, or a native radio group's radios. */
   native?: HTMLElement
   radios?: HTMLInputElement[]
@@ -81,8 +85,6 @@ function el(ref: unknown): HTMLElement | undefined {
   const node = value instanceof Element ? value : value.$el
   return node instanceof HTMLElement ? node : undefined
 }
-const QUOTED = /["\\]/g
-
 interface VNodeLike { el?: unknown, component?: { subTree?: VNodeLike } | null, children?: unknown, suspense?: { activeBranch?: VNodeLike } | null }
 
 // Whether Vue rendered `target` as part of the component, through child components, slots and portals.
@@ -106,8 +108,9 @@ function byId(s: Source, id: unknown) {
   if (typeof id !== 'string' || !id)
     return undefined
   const tree = (s.instance as { subTree?: VNodeLike } | undefined)?.subTree
-  for (const node of document.querySelectorAll<HTMLElement>(`[id="${id.replace(QUOTED, '\\$&')}"]`)) {
-    if (renders(tree, node))
+  // Compared, not put in a selector: an id can hold any character, a newline included.
+  for (const node of document.querySelectorAll<HTMLElement>('[id]')) {
+    if (node.id === id && renders(tree, node))
       return node
   }
   return undefined
@@ -126,18 +129,58 @@ const toList = (value: unknown) => (Array.isArray(value) ? value : value == null
 export function hiddenItem(s: Source, value: unknown) {
   for (const { props, element, part } of [...s.items, ...(s.inner?.items ?? [])]) {
     const node = el(element)
-    if (!part && node && isOffLimits([node]) && (same(unref(props.value), value) || (typeof value === 'string' && fold(node.textContent ?? '') === fold(value))))
+    if (!part && node && itemOff(node, s) && (same(unref(props.value), value) || (typeof value === 'string' && fold(node.textContent ?? '') === fold(value))))
       return true
   }
   return false
 }
 
+/**
+ * Whether an item is one an agent mustn't see: inside `data-agent-hidden`, hidden from everyone with `hidden`
+ * or `aria-hidden`, the same rule a component is held to, or in a list content the app marked hidden.
+ */
+export function itemOff(el: Element, s?: Source) {
+  return isOffLimits([el]) || !!el.closest('[hidden], [aria-hidden="true"]:not([data-aria-hidden])') || (!!s && !!contentMarks(s).hidden)
+}
+
+const keyOfValue = (value: unknown) => (value !== null && typeof value === 'object' ? JSON.stringify(value) : String(value))
+
+/** The marks an app wrote on a list's content part, known while it's closed and its items render elsewhere. */
+export function contentMarks(s: Source) {
+  const marks: { hidden?: boolean, secret?: boolean, confirm?: string } = {}
+  for (const { props, part } of [...s.items, ...(s.inner?.items ?? [])]) {
+    if (part !== 'content' || !props)
+      continue
+    if (props['data-agent-hidden'] !== undefined && props['data-agent-hidden'] !== false)
+      marks.hidden = true
+    if (props['data-agent-secret'] !== undefined && props['data-agent-secret'] !== false)
+      marks.secret = true
+    if (typeof props['data-agent-confirm'] === 'string')
+      marks.confirm = props['data-agent-confirm'].trim() || 'Confirm this change.'
+  }
+  return marks
+}
+
+/** The confirm sentence of the item with this value when it was last seen. */
+export function markSeen(s: Source, value: unknown) {
+  const key = keyOfValue(value)
+  return s.marksSeen?.get(key) ?? s.inner?.marksSeen?.get(key)
+}
+
+/** Whether an item with this value was ever seen rendered, so its marks then are known. */
+export function seenBefore(s: Source, value: unknown) {
+  const key = keyOfValue(value)
+  return !!(s.valuesSeen?.has(key) || s.inner?.valuesSeen?.has(key))
+}
+
 /** Whether a value is one of a list's items that is off-limits now or was when last seen. */
 function isHiddenValue(s: Source, value: unknown) {
   if (s.native?.localName === 'select')
-    return Array.from((s.native as HTMLSelectElement).options).some(option => option.value === value && isOffLimits([option]))
+    return Array.from((s.native as HTMLSelectElement).options).some(option => option.value === value && itemOff(option))
   if (s.radios)
-    return s.radios.some(radio => radio.value === value && isOffLimits([radio]))
+    return s.radios.some(radio => radio.value === value && itemOff(radio))
+  if (contentMarks(s).hidden)
+    return true
   registered(s, true)
   if (s.inner)
     registered(s.inner, true)
@@ -180,11 +223,22 @@ function registered(s: Source, detached = false): Item[] {
   for (const item of all) {
     if (!item.el)
       continue
+    const off = itemOff(item.el, s)
     const seen = (s.hiddenSeen ??= []).findIndex(value => same(value, item.value))
-    if (isOffLimits([item.el]) ? seen === -1 : seen !== -1)
-      isOffLimits([item.el]) ? s.hiddenSeen.push(item.value) : s.hiddenSeen.splice(seen, 1)
+    if (off && seen === -1)
+      s.hiddenSeen.push(item.value)
+    else if (!off && seen !== -1)
+      s.hiddenSeen.splice(seen, 1)
+    // Its mark is remembered by value, for when a filter or a closed list takes it off the page.
+    s.valuesSeen ??= new Set()
+    s.valuesSeen.add(keyOfValue(item.value))
+    const mark = confirmOf([item.el]) ?? contentMarks(s).confirm
+    if (mark)
+      (s.marksSeen ??= new Map()).set(keyOfValue(item.value), mark)
+    else
+      s.marksSeen?.delete(keyOfValue(item.value))
   }
-  return all.filter(item => !!item.el && (detached || item.el.isConnected) && !isOffLimits([item.el])).filter((item, _, all) => item.el!.isConnected || !all.some(other => other.el!.isConnected)).sort((a, b) => (a.el!.compareDocumentPosition(b.el!) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
+  return all.filter(item => !!item.el && (detached || item.el.isConnected) && !itemOff(item.el, s)).filter((item, _, all) => item.el!.isConnected || !all.some(other => other.el!.isConnected)).sort((a, b) => (a.el!.compareDocumentPosition(b.el!) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
 }
 
 // A list's value by toggling, the way a person picks and unpicks items: `toggle` adds or takes out one.
@@ -694,7 +748,7 @@ export const adapters: Record<string, Adapter> = {
 function collapsibleTrigger(s: Source) {
   const root = rootOf(s)
   const id = s.ctx.contentId
-  return (id && root?.querySelector<HTMLElement>(`[aria-controls="${id}"]`)) || root?.querySelector<HTMLElement>('button') || undefined
+  return (id && [...(root?.querySelectorAll<HTMLElement>('[aria-controls]') ?? [])].find(el => el.getAttribute('aria-controls') === id)) || root?.querySelector<HTMLElement>('button') || undefined
 }
 
 /** Sets a native field's value the way typing does, so `v-model` and listeners hear it. */
@@ -710,8 +764,8 @@ export function setNativeValue(input: HTMLInputElement | HTMLTextAreaElement | H
 }
 
 const optionText = (option: HTMLOptionElement) => textOf(option) || (option.closest('[data-agent-secret]') ? '' : option.value)
-const shownOptions = (select: HTMLSelectElement) => Array.from(select.options).filter(option => !isOffLimits([option]))
-const radiosOf = (s: Source) => (s.radios ?? []).filter(radio => !isOffLimits([radio]))
+const shownOptions = (select: HTMLSelectElement) => Array.from(select.options).filter(option => !itemOff(option))
+const radiosOf = (s: Source) => (s.radios ?? []).filter(radio => !itemOff(radio))
 
 // Native fields and buttons on the page that no component owns.
 export const native: Record<string, Adapter> = {
@@ -768,7 +822,7 @@ export const native: Record<string, Adapter> = {
         : { value: select.value === '' ? null : select.value }
     },
     // An option inside `data-agent-hidden` isn't one an agent sees or picks.
-    items: s => Array.from((s.native as HTMLSelectElement).options).filter(option => !isOffLimits([option])).map(option => ({ value: option.value, label: optionText(option), disabled: option.disabled || (option.parentElement?.localName === 'optgroup' && (option.parentElement as HTMLOptGroupElement).disabled), el: option })),
+    items: s => shownOptions(s.native as HTMLSelectElement).map(option => ({ value: option.value, label: optionText(option), disabled: option.disabled || (option.parentElement?.localName === 'optgroup' && (option.parentElement as HTMLOptGroupElement).disabled), el: option })),
     closed: true,
     disabled: s => isDisabledElement(s.native!),
     actions: () => ['setValue'],

@@ -12,9 +12,10 @@ export interface ComboboxContentProps extends ComboboxContentImplProps {
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useAttrs } from 'vue'
 import { Presence } from '@/Presence'
 import { useForwardExpose, useForwardPropsEmits, useId } from '@/shared'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import ComboboxContentImpl from './ComboboxContentImpl.vue'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
@@ -24,6 +25,8 @@ const forwarded = useForwardPropsEmits(props, emits)
 const { forwardRef } = useForwardExpose()
 
 const rootContext = injectComboboxRootContext()
+// The agent marks written on the content are known while it's closed and its items aren't rendered.
+useAgentItem(rootContext, useAttrs(), undefined, 'content')
 
 rootContext.contentId ||= useId(undefined, 'reka-combobox-content')
 

@@ -6,8 +6,8 @@ import type { Entry } from './registry'
 import type { Agent, AgentAction, AgentActResult, AgentAllow, AgentChange, AgentComponent, AgentOptions, AgentQuery, AgentStep } from './types'
 import { isEqual } from 'ohash'
 import { nextTick } from 'vue'
-import { hiddenItem } from './adapters'
-import { buttonsIn, byPosition, confirmOf, fold, isDisabledElement, isOffLimits, isShown, textOf, textOrName, wordsOf } from './dom'
+import { hiddenItem, itemOff, markSeen, seenBefore, withoutHidden } from './adapters'
+import { buttonsIn, byPosition, confirmOf, fold, forgetConcealed, isDisabledElement, isOffLimits, isShown, textOf, textOrName, wordsOf } from './dom'
 import { agentWindow, anchorOf, asAgent, entries, install, listen, offPage, partsOf, placeOf, reachable, remember, scanNative, scrub, stateKeys, uninstall } from './registry'
 import { agentTools } from './tools'
 
@@ -61,6 +61,7 @@ function quoted(value: unknown) {
   const text = JSON.stringify(value) ?? 'nothing'
   return text.length > 60 ? `${text.slice(0, 60)}…` : text
 }
+const toList = (value: unknown) => (Array.isArray(value) ? value : value == null || value === '' ? [] : [value])
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 const moreOf = (more: number): AgentComponent => ({ ref: 'more', component: 'more', more, use: 'query', actions: [] })
 const fieldKey = (keys: string[]) => (keys.includes('checked') ? 'checked' : keys.includes('pressed') ? 'pressed' : keys.includes('value') ? 'value' : undefined)
@@ -119,6 +120,53 @@ function malformed(input: unknown) {
     if ((SETTER.test(action) || action === 'expect') && args?.[0] === undefined)
       return fail(index, `${action} on "${ref}" needs ${action === 'expect' ? 'what to check' : 'its value'}, as "args": [value].`)
   }
+  return undefined
+}
+
+// What each action takes, checked before anything is written: how many values, and of what shape.
+// A single list takes one item and a multiple list a list of items, so no model ends up a shape
+// its component never holds, like an array in a tab list or an item nested in a toggle group.
+const ARGLESS = ['clear', 'openAll', 'closeAll', 'increment', 'decrement']
+const isItemValue = (value: unknown) => typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || (isRecord(value) && !Array.isArray(value))
+// The single lists a person can leave with nothing chosen.
+const EMPTIES = ['toggle-group', 'accordion', 'combobox']
+function argsProblem(entry: Entry, action: string, args: unknown[], state: Record<string, unknown>): string | undefined {
+  const { source, adapter } = entry
+  const on = `${action} on ${entry.ref}`
+  const [value] = args
+  const list = !!adapter.items && !source.native
+  const multiple = state.multiple === true || (list && Array.isArray(state.value)) || source.kind === 'tags-input'
+  const single = !!adapter.items
+  if (args.length > 1)
+    return `${on} takes one value in "args", not ${args.length}.`
+  // An open, close or toggle on a list names an item; on anything else, like a popup or a switch, it takes none.
+  const onItem = (action === 'toggle' || action === 'open' || action === 'close') && !!adapter.items && adapter.actions(source).includes(action)
+  if (ARGLESS.includes(action) || ((action === 'toggle' || action === 'open' || action === 'close') && !onItem)) {
+    return value === undefined ? undefined : `${on} takes no value, not ${quoted(value)}.`
+  }
+  if (action === 'add' || action === 'remove')
+    return (typeof value === 'string' && value.trim()) || typeof value === 'number' ? undefined : `${on} takes one tag as text, not ${quoted(value)}.`
+  if (action === 'setQuery')
+    return typeof value === 'string' ? undefined : `${on} takes text, not ${quoted(value)}.`
+  if (onItem)
+    return isItemValue(value) && value !== '' ? undefined : `${on} takes one of its items, not ${quoted(value)}.`
+  if (action !== 'setValue')
+    return undefined
+  if (multiple) {
+    if (value == null || value === '' || isItemValue(value))
+      return undefined
+    return Array.isArray(value) && value.every(isItemValue) ? undefined : `${on} takes a list of its items, not ${quoted(value)}.`
+  }
+  if (single) {
+    if (value == null || value === '') {
+      const empty = EMPTIES.includes(source.kind) || (source.kind === 'select' && !!source.native && Array.from((source.native as HTMLSelectElement).options).some(option => option.value === ''))
+      return empty ? undefined : `${on} can't be emptied. Pick one of its items.`
+    }
+    return isItemValue(value) ? undefined : `${on} takes one of its items, not a list or ${quoted(value)}.`
+  }
+  // A text field takes text, never a list or an object it would print as one.
+  if ((source.kind === 'input' && source.native) || source.kind === 'pin-input')
+    return value == null || typeof value === 'string' || typeof value === 'number' ? undefined : `${on} takes text, not ${quoted(value)}.`
   return undefined
 }
 
@@ -235,6 +283,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
     }
     finally {
       scanned = undefined
+      forgetConcealed()
     }
   }
 
@@ -887,7 +936,8 @@ export function createAgent(options: AgentOptions = {}): Agent {
         const approved = confirmsOf(targets)
         const shown = targets.filter(el => el.isConnected)
         const named = textOrName(press.button)
-        await ask(args, targets, `press "${named}"`)
+        // \`allow\` is told the button that will be pressed, by its whole text, not the words the agent gave.
+        await ask(text === undefined ? args : [named], targets, `press "${named}"`)
         stillThere(entry, targets, approved, shown)
         // The button pressed is the one the person was asked about, not what the page made of it meanwhile.
         if (textOrName(press.button) !== named)
@@ -918,6 +968,9 @@ export function createAgent(options: AgentOptions = {}): Agent {
       throw new Error(`${component.component} ${entry.ref} takes no ${action} now. It takes: ${actions.join(', ') || 'nothing'}.${actions.includes('press') ? ' press takes the text of a button inside it, and opens it first to find the button.' : ''}`)
     }
     const state = stateOf(entry)
+    const misfit = argsProblem(entry, action, args, state)
+    if (misfit)
+      throw plainly(misfit)
     // Whatever changes which items are chosen or open loads them first, so each one's marks are asked about.
     const loads = ['setValue', 'clear', 'open', 'close', 'toggle', 'openAll', 'closeAll'].includes(action)
     const items = adapter.items ? await listItems(entry, loads ? () => ask(args, own(parts), 'make this change') : undefined) : undefined
@@ -986,7 +1039,19 @@ export function createAgent(options: AgentOptions = {}): Agent {
     // Replacing a value also asks about the items it takes out or closes, so dropping a marked choice needs a person too.
     const affects = items && (takesItem || action === 'openAll' || action === 'closeAll' || action === 'clear')
     const removing = (value: unknown, list: Item[]) => (affects ? changedBy(value, action, args[0], list).map(item => keyOf(item.value)).sort() : [])
+    // Chosen items that aren't rendered now, like ones a filter or a virtual list leaves out. A hidden one stays
+    // chosen through a change to a multiple list, since the agent can't name it to keep it.
+    const offList = affects ? toList(state.value).filter(v => !items!.some(item => isEqual(item.value as any, v as any))) : []
+    const hiddenHeld = offList.filter(v => !toList(withoutHidden(source, [v])).length)
+    if (action === 'setValue' && Array.isArray(state.value) && hiddenHeld.length && takesItem)
+      args = [[...toList(args[0]), ...hiddenHeld.filter(v => !toList(args[0]).some(other => isEqual(other as any, v as any)))], ...args.slice(1)]
     const removed = affects ? changedBy(state.value, action, args[0], items!) : []
+    // One the change takes out is held to the mark it had when last seen. One never seen has marks no one
+    // knows, so the change doesn't go ahead without it on the page.
+    const unrendered = affects ? changedBy(state.value, action, args[0], offList.filter(v => !hiddenHeld.includes(v)).map(value => ({ value, label: '', disabled: false }))) : []
+    if (unrendered.some(item => !seenBefore(source, item.value)) && (source.kind === 'combobox' || source.kind === 'listbox'))
+      throw plainly(`A chosen item of ${nameFor(entry)} isn't shown now, like one its filter leaves out, so what taking it out needs isn't known. This change needs the list unfiltered: clear its filter and run the step again.`)
+    const seenMarks = unrendered.flatMap(item => markSeen(source, item.value) ?? [])
     const stuck = removed.find(item => item.disabled)
     if (stuck)
       throw new Error(`"${stuck.label}" in ${nameFor(entry)} is disabled now.`)
@@ -996,7 +1061,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
     const inside = closing ? buttonsIn([adapter.content!(source)].filter((el): el is HTMLElement => !!el)) : []
     // The controls the action does the work of are held to their own marks, as a press on them would be.
     const standIns = adapter.actionParts?.(source, action, args) ?? []
-    if (standIns.some(el => isOffLimits([el])))
+    if (standIns.some(el => itemOff(el)))
       throw new Error(`${action} on ${nameFor(entry)} isn't available to agents.`)
     if (standIns.length && standIns.every(el => isDisabledElement(el)))
       throw new Error(`${action} on ${nameFor(entry)} is disabled now.`)
@@ -1004,7 +1069,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
     const everyItem = entry.secret && items ? items : []
     const targets = [...own(parts), ...chosen.map(item => ('el' in item ? item.el : undefined)), ...removed.map(item => item.el), ...everyItem.map(item => item.el), ...inside, ...standIns]
     // Marks read while a closed list's items showed count as theirs.
-    const remembered = marksOfItems([...chosen, ...removed, ...everyItem])
+    const remembered = [...new Set([...marksOfItems([...chosen, ...removed, ...everyItem]), ...seenMarks])]
     const approved = [...new Set([...marksOf(targets), ...remembered])].join(' ') || undefined
     // Only the marks the person was shown are approved: an item that gains another stops the change.
     const marks = new Set([...marksOf(targets), ...remembered])
@@ -1050,12 +1115,16 @@ export function createAgent(options: AgentOptions = {}): Agent {
           return false
         const now = stateOf(entry)[setKey]
         // A number the component moves to its step is told below; anything else must end at what was asked.
-        return numeric ? !differs(was, now) && !sameValue(now, args[0]) : !sameValue(now, args[0])
+        // A list ends holding what was asked, in whatever order the component keeps it.
+        const took = Array.isArray(now) && Array.isArray(args[0]) && !numeric
+          ? now.length === args[0].length && now.every(v => (args[0] as unknown[]).some(other => isEqual(other as any, v as any)))
+          : sameValue(now, args[0])
+        return numeric ? !differs(was, now) && !took : !took
       }
       for (let tries = 0; tries < PATIENCE && stays() && !callerSignal?.aborted; tries++)
         await frames()
       if (stays())
-        throw new Error(`${action} on ${nameFor(entry)} didn't take: it is still ${JSON.stringify(redact(entry, stateOf(entry)[setKey!]) ?? null)}.`)
+        throw new Error(`${action} on ${nameFor(entry)} didn't take: it is still ${JSON.stringify(redact(entry, scrub(entry, setKey!, stateOf(entry)[setKey!])) ?? null)}.`)
     }
     finally {
       agentWindow.open = false

@@ -3,7 +3,7 @@ import type {
   SelectContentImplEmits,
   SelectContentImplProps,
 } from './SelectContentImpl.vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, useAttrs } from 'vue'
 
 export type SelectContentEmits = SelectContentImplEmits
 
@@ -46,6 +46,11 @@ onMounted(() => {
 const presenceRef = ref<InstanceType<typeof Presence>>()
 
 const present = computed(() => props.forceMount || rootContext.open.value)
+
+// The agent marks written on the content still cover its items while they render off the page.
+const attrs = useAttrs()
+// Read on each render: attrs aren't reactive, and a change to them renders the component again.
+const agentMarks = () => Object.fromEntries(Object.entries(attrs).filter(([key]) => key.startsWith('data-agent-')))
 </script>
 
 <template>
@@ -63,7 +68,7 @@ const present = computed(() => props.forceMount || rootContext.open.value)
     <Teleport :to="fragment">
       <SelectProvider :context="rootContext">
         <CollectionSlot>
-          <div>
+          <div v-bind="agentMarks()">
             <slot />
           </div>
         </CollectionSlot>

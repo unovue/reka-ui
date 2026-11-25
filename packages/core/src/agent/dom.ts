@@ -100,6 +100,34 @@ export function wordsOf(text: string) {
 const WHITESPACE = /\s+/
 const squash = (text: string) => text.replace(/\s+/g, ' ').trim()
 
+// What a component shows that no text read may carry, like a select's trigger while its chosen item is hidden
+// or private. The registry supplies them; they're worked out once per task.
+let concealer: () => Element[] = () => []
+let concealed: Element[] | undefined
+let concealing = false
+export function onConceal(find: () => Element[]) {
+  concealer = find
+  concealed = undefined
+}
+export function forgetConcealed() {
+  concealed = undefined
+}
+function isConcealed(node: Node) {
+  if (concealing)
+    return false
+  if (!concealed) {
+    concealing = true
+    try {
+      concealed = concealer()
+    }
+    finally {
+      concealing = false
+    }
+    queueMicrotask(() => (concealed = undefined))
+  }
+  return concealed.some(el => el.contains(node))
+}
+
 /** Visible text inside `el`, leaving out what is inside `skip` and anything an agent mustn't read. */
 export function textOf(el: Element | null | undefined, skip: Element[] = []): string {
   if (!el || closestMarked(el, MARKED) || isUnattributed(el))
@@ -113,7 +141,7 @@ export function textOf(el: Element | null | undefined, skip: Element[] = []): st
     if (skip.some(other => other !== el && other.contains(node)))
       continue
     // Text inside a hidden or private part of the page never reaches an agent, whichever element reads it.
-    if (closestMarked(parent, MARKED))
+    if (closestMarked(parent, MARKED) || isConcealed(node))
       continue
     if (node.textContent?.trim())
       words.push(node.textContent)
@@ -123,10 +151,6 @@ export function textOf(el: Element | null | undefined, skip: Element[] = []): st
 
 const NAMED_BY_CONTENT = 'button, a[href], summary, legend, h1, h2, h3, h4, h5, h6, [role=button], [role=tab], [role^=menuitem], [role=option], [role=radio], [role=switch], [role=checkbox], [role=link], [role=heading], [role=treeitem]'
 
-function escapeAttr(value: string) {
-  return value.replace(/["\\]/g, '\\$&')
-}
-
 /** The labels that name a field: its `labels`, a `label[for]` for a custom control, or the label around it. */
 export function labelsOf(el: Element): Element[] {
   const own = (el as HTMLInputElement).labels
@@ -134,7 +158,8 @@ export function labelsOf(el: Element): Element[] {
     return [...own]
   const found: Element[] = []
   if (el.id)
-    found.push(...el.ownerDocument.querySelectorAll(`label[for="${escapeAttr(el.id)}"]`))
+    // Compared, not put in a selector: an id can hold any character, a newline included.
+    found.push(...[...el.ownerDocument.querySelectorAll('label[for]')].filter(label => label.getAttribute('for') === el.id))
   if (!found.length) {
     const around = el.parentElement?.closest('label')
     if (around)
@@ -237,7 +262,7 @@ export function rowOf(anchor: HTMLElement | undefined, own: Element[]) {
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     const parent = node.parentElement
     // The same rule as `textOf`: nothing inside a hidden or private place, through portals, is read.
-    if (!parent || mine.some(el => el.contains(node)) || parent.closest(UNREAD) || closestMarked(parent, MARKED))
+    if (!parent || mine.some(el => el.contains(node)) || parent.closest(UNREAD) || closestMarked(parent, MARKED) || isConcealed(node))
       continue
     if (node.textContent?.trim())
       words.push(node.textContent.trim())
