@@ -122,8 +122,17 @@ function malformed(input: unknown) {
   return undefined
 }
 
+// A private field shows only whether it's filled. A private boolean shows neither state.
 function redact(entry: Entry, value: unknown, key = 'value') {
-  return entry.secret && key !== 'open' && value !== '' && value != null && value !== false ? '[redacted]' : value
+  return entry.secret && key !== 'open' && value !== '' && value != null ? '[redacted]' : value
+}
+
+// Errors that say nothing of what a component holds, like a person's refusal: the rest are reworded for a private one.
+const plain = new WeakSet<Error>()
+function plainly(message: string) {
+  const error = new Error(message)
+  plain.add(error)
+  return error
 }
 
 /** Every distinct `data-agent-confirm` sentence over the elements, so a person answers all that a change touches. */
@@ -183,6 +192,10 @@ export function createAgent(options: AgentOptions = {}): Agent {
         continue
       found.push({ entry, parts })
       entry.shown = true
+      try {
+        entry.seen = { ...entry.adapter.state(entry.source) }
+      }
+      catch {}
       shownInCall.add(entry.ref)
     }
     return found.sort((a, b) => byPosition(anchorOf(a.parts), anchorOf(b.parts)))
@@ -406,7 +419,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
       if (typeof ok === 'boolean')
         return ok
       controller.abort()
-      throw new Error(ok === 'cancelled' ? `${step.action} on ${step.ref} was cancelled.` : `No answer to ${step.action} on ${step.ref} in ${Math.round(wait / 1000)} seconds.`)
+      throw plainly(ok === 'cancelled' ? `${step.action} on ${step.ref} was cancelled.` : `No answer to ${step.action} on ${step.ref} in ${Math.round(wait / 1000)} seconds.`)
     }
     finally {
       clearTimeout(timer)
@@ -705,14 +718,14 @@ export function createAgent(options: AgentOptions = {}): Agent {
   function stillThere(entry: Entry, elements: (Element | undefined | null)[], approved: string | undefined, shown: Element[], remembered: string[] = []) {
     const els = elements.filter((el): el is Element => !!el)
     if (!entry.alive || shown.some(el => !el.isConnected))
-      throw new Error(`${nameFor(entry)} left the page while the step waited for an answer.`)
+      throw plainly(`${nameFor(entry)} left the page while the step waited for an answer.`)
     const now = partsOf(entry)
     if (isOffLimits([...els, ...now.map(part => part.el)]))
-      throw new Error(`${entry.ref} isn't available to agents now.`)
+      throw plainly(`${entry.ref} isn't available to agents now.`)
     if (isInert(now))
-      throw new Error(`${nameFor(entry)} is behind what opened while the step waited. Finish that or close it first.`)
+      throw plainly(`${nameFor(entry)} is behind what opened while the step waited. Finish that or close it first.`)
     if (([...new Set([...marksOf(els), ...remembered])].join(' ') || undefined) !== approved)
-      throw new Error(`What ${nameFor(entry)} does changed while the step waited for an answer. Run the step again.`)
+      throw plainly(`What ${nameFor(entry)} does changed while the step waited for an answer. Run the step again.`)
   }
 
   // The items an action puts in or takes out of a list's value, like the sections `openAll` opens or `closeAll` shuts.
@@ -756,6 +769,19 @@ export function createAgent(options: AgentOptions = {}): Agent {
   async function perform(ref: string, action: string, args: unknown[], onFound?: () => void) {
     const found = await reveal(ref, action)
     onFound?.()
+    try {
+      return await performOn(found, ref, action, args)
+    }
+    catch (error) {
+      // Why a change to a private component failed can say what it holds, like an item that's disabled,
+      // a bound it's at or the value it kept, so every such reason reads the same.
+      if (found.entry.secret && !plain.has(error as Error))
+        throw plainly(`${action} on ${nameFor(found.entry)} can't be done that way. It is private, so why isn't said.`)
+      throw error
+    }
+  }
+
+  async function performOn(found: Found, ref: string, action: string, args: unknown[]) {
     const { entry, parts } = found
     const { adapter, source } = entry
     if (action === 'expect') {
@@ -797,9 +823,9 @@ export function createAgent(options: AgentOptions = {}): Agent {
       if (confirm)
         step.confirm = confirm
       if (confirm && !options.allow && !callerAllow)
-        throw new Error(`Needs a person: "${confirm}". Ask them to ${what} themselves.`)
+        throw plainly(`Needs a person: "${confirm}". Ask them to ${what} themselves.`)
       if (!(await allowed(step)))
-        throw new Error(confirm && refusedBy === options.allow ? `The person said no to "${confirm}".` : `The app refused ${action} on ${entry.ref}.`)
+        throw plainly(confirm && refusedBy === options.allow ? `The person said no to "${confirm}".` : `The app refused ${action} on ${entry.ref}.`)
       asked.add(key)
     }
     if (action === 'press') {
@@ -921,9 +947,11 @@ export function createAgent(options: AgentOptions = {}): Agent {
       throw new Error(`${action} on ${nameFor(entry)} isn't available to agents.`)
     if (standIns.length && standIns.every(el => isDisabledElement(el)))
       throw new Error(`${action} on ${nameFor(entry)} is disabled now.`)
-    const targets = [...own(parts), ...chosen.map(item => ('el' in item ? item.el : undefined)), ...removed.map(item => item.el), ...inside, ...standIns]
+    // A private list's change carries every item's mark, so which one asks never says which item is chosen.
+    const everyItem = entry.secret && items ? items : []
+    const targets = [...own(parts), ...chosen.map(item => ('el' in item ? item.el : undefined)), ...removed.map(item => item.el), ...everyItem.map(item => item.el), ...inside, ...standIns]
     // Marks read while a closed list's items showed count as theirs.
-    const remembered = marksOfItems([...chosen, ...removed])
+    const remembered = marksOfItems([...chosen, ...removed, ...everyItem])
     const approved = [...new Set([...marksOf(targets), ...remembered])].join(' ') || undefined
     // Only the marks the person was shown are approved: an item that gains another stops the change.
     const marks = new Set([...marksOf(targets), ...remembered])
@@ -1126,6 +1154,11 @@ export function createAgent(options: AgentOptions = {}): Agent {
         scanned = undefined
         touched.add(ref)
         const { changes, gone } = since(prior, ref, false, found)
+        // A change to a private field always reads as one, so a guess equal to its value can't be told by no change.
+        const done = entries.get(ref)
+        const key = done && fieldKey(done.adapter.keys)
+        if (done?.secret && key && !['press', 'expect', 'setOpen'].includes(step.action) && !changes.some(change => change.key === key && change.label === done.label))
+          changes.push({ component: done.adapter.component(done.source), label: done.label, key, value: '[redacted]' })
         log.push({
           step: index,
           ref,

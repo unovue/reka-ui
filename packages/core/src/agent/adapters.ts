@@ -79,7 +79,37 @@ function el(ref: unknown): HTMLElement | undefined {
   const node = value instanceof Element ? value : value.$el
   return node instanceof HTMLElement ? node : undefined
 }
-const byId = (id: unknown) => (typeof id === 'string' && id ? document.getElementById(id) ?? undefined : undefined)
+const QUOTED = /["\\]/g
+
+interface VNodeLike { el?: unknown, component?: { subTree?: VNodeLike } | null, children?: unknown, suspense?: { activeBranch?: VNodeLike } | null }
+
+// Whether Vue rendered `target` as part of the component, through child components, slots and portals.
+function renders(node: VNodeLike | null | undefined, target: Element, depth = 0): boolean {
+  if (!node || depth > 500)
+    return false
+  if (node.el === target)
+    return true
+  if (node.component)
+    return renders(node.component.subTree, target, depth + 1)
+  if (node.suspense)
+    return renders(node.suspense.activeBranch, target, depth + 1)
+  return Array.isArray(node.children) && node.children.some(child => typeof child === 'object' && renders(child as VNodeLike, target, depth + 1))
+}
+
+/**
+ * The element with a component's id, only when the component rendered it: page content can carry any id,
+ * like HTML a user wrote, and an element that only shares the id is never taken for the component's part.
+ */
+function byId(s: Source, id: unknown) {
+  if (typeof id !== 'string' || !id)
+    return undefined
+  const tree = (s.instance as { subTree?: VNodeLike } | undefined)?.subTree
+  for (const node of document.querySelectorAll<HTMLElement>(`[id="${id.replace(QUOTED, '\\$&')}"]`)) {
+    if (renders(tree, node))
+      return node
+  }
+  return undefined
+}
 function parts(...list: [string, HTMLElement | undefined | null][]) {
   return list.filter((entry): entry is [string, HTMLElement] => !!entry[1]).map(([slot, el]) => ({ slot, el }))
 }
@@ -268,7 +298,7 @@ async function comboboxTo(s: Source, value: unknown, guard?: (value: unknown) =>
 
 const rootOf = (s: Source) => el(s.element) ?? el(s.instance?.vnode.el)
 
-const menuContent = (s: Source) => (unref(s.ctx.open) ? byId(s.ctx.contentId) : undefined)
+const menuContent = (s: Source) => (unref(s.ctx.open) ? byId(s, s.ctx.contentId) : undefined)
 
 export const adapters: Record<string, Adapter> = {
   'checkbox': checkable('checkbox', 'checked', s => unref(s.ctx.state), s => s.extra(), s => !!unref(s.ctx.disabled), checkTo),
@@ -294,8 +324,8 @@ export const adapters: Record<string, Adapter> = {
 
   'select': field(['value', 'open'], {
     component: () => 'select',
-    parts: s => parts(['trigger', el(s.ctx.triggerElement)], ['content', unref(s.ctx.open) ? byId(s.ctx.contentId) : undefined]),
-    owns: s => parts(['trigger', el(s.ctx.triggerElement)], ['content', byId(s.ctx.contentId)]).map(p => p.el),
+    parts: s => parts(['trigger', el(s.ctx.triggerElement)], ['content', unref(s.ctx.open) ? byId(s, s.ctx.contentId) : undefined]),
+    owns: s => parts(['trigger', el(s.ctx.triggerElement)], ['content', byId(s, s.ctx.contentId)]).map(p => p.el),
     state: s => ({
       value: unref(s.ctx.modelValue) ?? null,
       open: !!unref(s.ctx.open),
@@ -328,8 +358,8 @@ export const adapters: Record<string, Adapter> = {
 
   'combobox': field(['value', 'open'], {
     component: () => 'combobox',
-    parts: s => parts(['root', el(s.element)], ['input', el(s.ctx.inputElement)], ['trigger', el(s.ctx.triggerElement)], ['content', unref(s.ctx.open) ? byId(s.ctx.contentId) : undefined]),
-    owns: s => parts(['root', el(s.element)], ['content', byId(s.ctx.contentId)]).map(p => p.el),
+    parts: s => parts(['root', el(s.element)], ['input', el(s.ctx.inputElement)], ['trigger', el(s.ctx.triggerElement)], ['content', unref(s.ctx.open) ? byId(s, s.ctx.contentId) : undefined]),
+    owns: s => parts(['root', el(s.element)], ['content', byId(s, s.ctx.contentId)]).map(p => p.el),
     state: s => ({
       value: unref(s.ctx.modelValue) ?? null,
       open: !!unref(s.ctx.open),
@@ -617,8 +647,8 @@ export const adapters: Record<string, Adapter> = {
       parts: s => parts(
         ['trigger', el(s.ctx.triggerElement)],
         ['content', unref(s.ctx.open) ? el(s.ctx.contentElement) : undefined],
-        ['title', unref(s.ctx.open) ? byId(s.ctx.titleId) : undefined],
-        ['description', unref(s.ctx.open) ? byId(s.ctx.descriptionId) : undefined],
+        ['title', unref(s.ctx.open) ? byId(s, s.ctx.titleId) : undefined],
+        ['description', unref(s.ctx.open) ? byId(s, s.ctx.descriptionId) : undefined],
       ),
     },
   ),

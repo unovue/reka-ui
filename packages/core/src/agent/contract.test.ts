@@ -33,6 +33,8 @@ globalThis.ResizeObserver ??= class {
 } as unknown as typeof ResizeObserver
 
 const SECRET = 'ZQXSECRET'
+// Private text beside a component, in its row or its section's name, that no output may carry.
+const NEARBY = 'ZQXNEARBY'
 const CONFIRM = 'Changes something that matters.'
 type Attrs = Record<string, unknown>
 
@@ -55,6 +57,8 @@ interface Family {
   itemStep?: Omit<AgentStep, 'ref'>
   /** A step the marked part stands for. */
   partStep?: Omit<AgentStep, 'ref'>
+  /** Steps that fail for a reason, like a missing item or a bound, whose error must not say what a private one holds. */
+  probes?: Omit<AgentStep, 'ref'>[]
   /** No `disabled` prop to set. */
   noDisabledProp?: boolean
   /** Changes it the way the app would, for `subscribe`. */
@@ -184,18 +188,20 @@ const families: Family[] = [
     initial: () => [40],
     render: (m, model) => h(SliderRoot, { ...target, ...v(model), disabled: m.disabled }, () => [h(SliderTrack, () => h(SliderRange)), h(SliderThumb, target)]),
     actions: [{ action: 'setValue', args: [50] }, { action: 'increment' }, { action: 'decrement' }],
+    probes: [{ action: 'setValue', args: [1000] }],
     poke: model => (model.value = [60]),
   },
   {
     name: 'number-field',
     initial: () => 4242,
-    render: (m, model) => h(NumberFieldRoot, { ...v(model), disabled: m.disabled }, () => [
+    render: (m, model) => h(NumberFieldRoot, { ...v(model), max: 5000, disabled: m.disabled }, () => [
       h(NumberFieldDecrement, () => '-'),
       h(NumberFieldInput, target),
       h(NumberFieldIncrement, m.part, () => '+'),
     ]),
     actions: [{ action: 'setValue', args: [5] }, { action: 'increment' }, { action: 'decrement' }, { action: 'clear' }],
     partStep: { action: 'increment' },
+    probes: [{ action: 'setValue', args: [99999] }],
     poke: model => (model.value = 7),
   },
   {
@@ -273,7 +279,11 @@ interface Mark {
   ancestor?: Attrs
   /** Around the component, inside its placement. */
   around?: { tag?: string, attrs: Attrs }
+  /** A wrapper of its own around the component, like a row with text beside it. */
+  wrap?: (inner: VNode[]) => VNode
   item?: Attrs
+  /** The selected item, `secret`, is disabled. */
+  selectedDisabled?: boolean
   part?: Attrs
   disabled?: boolean
   applies?: (family: Family) => boolean
@@ -292,6 +302,10 @@ const marks: Record<string, Mark> = {
   'disabled by prop': { expect: 'disabled', disabled: true, applies: f => !f.noDisabledProp },
   'disabled by fieldset': { expect: 'disabled', around: { tag: 'fieldset', attrs: { disabled: true } } },
   'disabled by inert': { expect: 'disabled', around: { attrs: { inert: '' } } },
+  'secret text in its row': { expect: 'none', wrap: inner => h('ul', h('li', [h('span', { 'data-agent-secret': '' }, `Balance ${NEARBY}`), ...inner])) },
+  'secret text in its section name': { expect: 'none', wrap: inner => h('fieldset', [h('legend', [h('span', { 'data-agent-secret': '' }, NEARBY), ' Group']), ...inner]) },
+  'secret ancestor around its row': { expect: 'secret', ancestor: { 'data-agent-secret': '' }, wrap: inner => h('ul', h('li', [h('span', `Balance ${NEARBY}`), ...inner])) },
+  'secret, with its selected item disabled': { expect: 'secret', ancestor: { 'data-agent-secret': '' }, selectedDisabled: true, applies: f => !!f.itemStep && f.name !== 'menu' },
 }
 
 let agents: Agent[] = []
@@ -317,13 +331,14 @@ async function build(family: Family, place: Wrap, mark: Mark, allow?: (step: any
   agents.push(agent)
   const model = ref(family.initial())
   const m: Marks = {
-    item: value => (value === 'bravo' && mark.item ? mark.item : {}),
+    item: value => (value === 'bravo' && mark.item ? mark.item : value === 'secret' && mark.selectedDisabled ? { disabled: true } : {}),
     part: mark.part ?? {},
     disabled: !!mark.disabled,
   }
   const component = () => {
-    const inner = family.render(m, model)
-    return mark.around ? h(mark.around.tag ?? 'div', mark.around.attrs, [inner].flat()) : inner
+    const inner = [family.render(m, model)].flat()
+    const wrapped = mark.wrap ? [mark.wrap(inner)] : inner
+    return mark.around ? h(mark.around.tag ?? 'div', mark.around.attrs, wrapped) : wrapped
   }
   const wrapper = mount(defineComponent({ render: () => h('div', mark.ancestor ?? {}, [place(component), h('button', 'Elsewhere')]) }), { attachTo: document.body })
   await settle()
@@ -332,6 +347,14 @@ async function build(family: Family, place: Wrap, mark: Mark, allow?: (step: any
 
 const targetOf = (list: AgentComponent[]) => list.find(c => c.label === 'Target')
 const json = (value: unknown) => JSON.stringify(value)
+
+// A list's probe names an item it doesn't have.
+for (const family of families) {
+  if (family.itemStep && !family.probes) {
+    const many = Array.isArray(family.itemStep.args?.[0])
+    family.probes = [{ action: family.itemStep.action, args: [many ? ['nonexistent'] : 'nonexistent'] }]
+  }
+}
 
 const cases = Object.entries(families).flatMap(([, family]) =>
   Object.entries(placements).flatMap(([placeName, place]) =>
@@ -396,6 +419,11 @@ describe('agent contract', () => {
         }
         case 'secret': {
           expect(found, 'a private component is still on the page').toBeTruthy()
+          for (const step of family.probes ?? []) {
+            const result = await agent.act({ steps: [{ ref: 'Target', ...step }] })
+            outputs.push(result)
+            expect(result.ok, `${step.action} fails`).toBe(false)
+          }
           for (const step of family.actions) {
             outputs.push(await agent.act({ steps: [{ ref: 'Target', ...step }] }))
             outputs.push(agent.snapshot())
@@ -446,6 +474,8 @@ describe('agent contract', () => {
         }
       }
       stop()
+      // Private text beside a component never reaches any output.
+      expect(json([outputs, agent.snapshot(), events])).not.toContain(NEARBY)
       // Nothing private reaches any output, for every mark.
       if (mark.expect === 'hidden' || mark.expect === 'secret' || family.alwaysSecret)
         expect(json(outputs)).not.toContain(SECRET)
@@ -621,5 +651,138 @@ describe('review findings', () => {
     finally {
       vi.unstubAllGlobals()
     }
+  })
+})
+
+// Each finding of the third review, as the case that showed it.
+describe('third review findings', () => {
+  const page = async (render: () => VNode | VNode[]) => {
+    const agent = createAgent()
+    agents.push(agent)
+    const wrapper = mount(defineComponent({ render }), { attachTo: document.body })
+    await settle()
+    return { agent, wrapper }
+  }
+  const secretSelect = (model: Ref<any>, item: (value: string) => Attrs = () => ({})) => h('div', { 'data-agent-secret': '' }, h(SelectRoot, v(model), () => [
+    h(SelectTrigger, target, () => h(SelectValue)),
+    h(SelectPortal, () => h(SelectContent, () => h(SelectViewport, () => ITEMS.map(([value, label]) => h(SelectItem, { value, ...item(value) }, () => h(SelectItemText, () => label)))))),
+  ]))
+
+  it('1: a row inside a private popover is never read, on any path', async () => {
+    const show = ref(false)
+    const { agent } = await page(() => h('div', { 'data-agent-secret': '' }, h(PopoverRoot, { defaultOpen: true }, () => [
+      h(PopoverTrigger, () => 'Account'),
+      h(PopoverPortal, () => h(PopoverContent, () => h('ul', h('li', [h('span', `Balance ${SECRET}`), h(SwitchRoot, { 'aria-label': 'Show', ...v(show) })])))),
+    ])))
+    const events: ObservedChange[] = []
+    agent.subscribe(change => events.push(change))
+    const outputs = [agent.snapshot(), await agent.query({ text: SECRET }), await agent.query({ text: 'Balance' })]
+    outputs.push(await agent.act({ steps: [{ ref: 'Show', action: 'setChecked', args: [true] }, { ref: 'Show', action: 'expect', args: [SECRET] }] }))
+    expect(json([outputs, events])).not.toContain(SECRET)
+    expect(outputs[1]).toEqual([])
+  })
+
+  it('2: a private select\'s errors never name its items or value', async () => {
+    const model = ref('secret')
+    const { agent } = await page(() => secretSelect(model, value => (value === 'secret' ? { disabled: true } : {})))
+    for (const args of [['bravo'], ['nonexistent']]) {
+      const result = await agent.act({ steps: [{ ref: 'Target', action: 'setValue', args }] })
+      expect(result.ok).toBe(false)
+      expect(json(result)).not.toContain(SECRET)
+    }
+  })
+
+  it('3: a native field hidden and changed after it was seen keeps no value once it leaves', async () => {
+    const { agent } = await page(() => h('section', [h('input', { 'aria-label': 'Note', 'value': 'public' })]))
+    expect(agent.snapshot().find(c => c.label === 'Note')).toMatchObject({ value: 'public' })
+    const input = document.querySelector<HTMLInputElement>('input[aria-label=Note]')!
+    const wrapper = document.createElement('div')
+    wrapper.setAttribute('data-agent-hidden', '')
+    input.replaceWith(wrapper)
+    wrapper.append(input)
+    input.value = SECRET
+    wrapper.remove()
+    expect(json(agent.snapshot())).not.toContain(SECRET)
+  })
+
+  it('4: a switch hidden, changed and unmounted leaves nothing of the change behind', async () => {
+    const hidden = ref(false)
+    const here = ref(true)
+    const on = ref(false)
+    const { agent } = await page(() => h('div', { hidden: hidden.value || undefined }, here.value ? h(SwitchRoot, { 'aria-label': 'Quiet', ...v(on) }) : null))
+    expect(agent.snapshot().find(c => c.label === 'Quiet')).toMatchObject({ checked: false })
+    hidden.value = true
+    await settle()
+    on.value = true
+    await settle()
+    here.value = false
+    await settle()
+    expect(agent.snapshot().filter(c => c.label === 'Quiet' && c.checked === true)).toEqual([])
+  })
+
+  it('5: a private number field fails the same way at its bound and out of range', async () => {
+    const model = ref(10)
+    const { agent } = await page(() => h('div', { 'data-agent-secret': '' }, h(NumberFieldRoot, { ...v(model), min: 0, max: 10 }, () => [h(NumberFieldInput, target), h(NumberFieldIncrement, () => '+')])))
+    const messages: string[] = []
+    for (const step of [{ action: 'increment' }, { action: 'setValue', args: [99] }]) {
+      const result = await agent.act({ steps: [{ ref: 'Target', ...step }] })
+      expect(result.ok).toBe(false)
+      messages.push(result.error!.message.replace(step.action, 'ACTION'))
+    }
+    expect(messages[0]).toBe(messages[1])
+    expect(messages.join(' ')).not.toMatch(/\b10\b|disabled/)
+  })
+
+  it('6a: a change to a private field reads the same whether the guess equals its value', async () => {
+    const results: unknown[] = []
+    for (const guess of ['secret', 'bravo']) {
+      const model = ref('secret')
+      const { agent, wrapper } = await page(() => secretSelect(model))
+      const result = await agent.act({ steps: [{ ref: 'Target', action: 'setValue', args: [guess] }] })
+      results.push(JSON.parse(json(result).replace(/c\d+/g, 'REF')))
+      wrapper.unmount()
+      agent.destroy()
+    }
+    expect(results[0]).toEqual(results[1])
+  })
+
+  it('6b: a mark on a private list\'s chosen item doesn\'t say which item is chosen', async () => {
+    const messages: (string | undefined)[] = []
+    for (const chosen of ['alpha', 'secret']) {
+      const model = ref(chosen)
+      const { agent, wrapper } = await page(() => secretSelect(model, value => (value === 'alpha' ? { 'data-agent-confirm': CONFIRM } : {})))
+      messages.push((await agent.act({ steps: [{ ref: 'Target', action: 'setValue', args: ['bravo'] }] })).error?.message)
+      wrapper.unmount()
+      agent.destroy()
+    }
+    expect(messages[0]).toContain('Needs a person')
+    expect(messages[1]).toBe(messages[0])
+  })
+
+  it('7: page content that copies a menu\'s content id is never taken for the menu', async () => {
+    const archived = vi.fn()
+    const { agent } = await page(() => h(DropdownMenuRoot, { defaultOpen: true, modal: false }, () => [
+      h(DropdownMenuTrigger, target, () => 'Open'),
+      h(DropdownMenuPortal, () => h(DropdownMenuContent, () => h(DropdownMenuItem, { onSelect: archived }, () => 'Archive'))),
+    ]))
+    const id = document.querySelector('[role=menu]')!.id
+    const fake = document.createElement('div')
+    fake.id = id
+    const sent = vi.fn()
+    fake.innerHTML = '<button>Send money</button><div role="menuitem">Archive</div>'
+    fake.querySelector('button')!.addEventListener('click', sent)
+    fake.querySelector('[role=menuitem]')!.addEventListener('click', sent)
+    document.querySelector('[data-v-app]')!.prepend(fake)
+    expect(targetOf(agent.snapshot())?.buttons).toEqual(['Archive'])
+    await agent.act({ steps: [{ ref: 'Target', action: 'press', args: ['Archive'] }] })
+    expect(sent).not.toHaveBeenCalled()
+    expect(archived).toHaveBeenCalled()
+  })
+
+  it('a private switch hides both of its states', async () => {
+    const { agent } = await page(() => h('div', { 'data-agent-secret': '' }, [h(SwitchRoot, { 'aria-label': 'Off one' }), h(SwitchRoot, { 'aria-label': 'On one', 'defaultValue': true })]))
+    const snapshot = agent.snapshot()
+    expect(snapshot.find(c => c.label === 'Off one')?.checked).toBe('[redacted]')
+    expect(snapshot.find(c => c.label === 'On one')?.checked).toBe('[redacted]')
   })
 })

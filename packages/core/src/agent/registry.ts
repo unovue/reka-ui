@@ -21,6 +21,8 @@ export interface Entry {
   sections?: string[]
   /** Whether an agent has had it on the page. */
   shown?: boolean
+  /** Its state the last time an agent could see it, for one that leaves while it can't be checked. */
+  seen?: Record<string, unknown>
   secret?: boolean
   offLimits?: boolean
   alive: boolean
@@ -77,10 +79,15 @@ export function retire(entry: Entry) {
     entries.delete(entry.ref)
   // Marks the app wrote since the last scan count too, so nothing private is kept.
   const elements = markedBy(entry)
+  const connected = partsOf(entry).length > 0
   if (isOffLimits(elements))
     entry.offLimits = true
   entry.secret ||= isSecret([...elements, ...itemElements(entry)])
   if (!entry.key || !entry.shown || entry.secret || entry.offLimits)
+    return
+  // Only what an agent could see as it left is kept: shown then, or, for one already gone from the page
+  // whose marks can't be read any more, what it held the last time an agent saw it.
+  if (connected ? !elements.some(el => isShown(el as HTMLElement)) : !entry.seen)
     return
   const queue = retired.get(entry.key) ?? []
   queue.push(entry.ref)
@@ -91,7 +98,7 @@ export function retire(entry: Entry) {
   // Values and checks are worth keeping. A closed menu's `open: false` isn't.
   let state: Record<string, unknown>
   try {
-    state = entry.adapter.state(entry.source)
+    state = connected ? entry.adapter.state(entry.source) : entry.seen!
   }
   catch {
     return

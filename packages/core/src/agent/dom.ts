@@ -227,14 +227,15 @@ function headerRow(row: Element) {
 /** Text on the component's row that isn't its own, like the name beside a member's menu. */
 export function rowOf(anchor: HTMLElement | undefined, own: Element[]) {
   const row = anchor?.closest(ROW)
-  if (!row || headerRow(row) || own.some(el => el.contains(row)))
+  if (!row || headerRow(row) || own.some(el => el.contains(row)) || isUnattributed(row))
     return undefined
   const mine = own.flatMap(el => [el, ...labelsOf(el)])
   const words: string[] = []
   const walker = row.ownerDocument.createTreeWalker(row, NodeFilter.SHOW_TEXT)
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     const parent = node.parentElement
-    if (!parent || mine.some(el => el.contains(node)) || parent.closest(UNREAD))
+    // The same rule as `textOf`: nothing inside a hidden or private place, through portals, is read.
+    if (!parent || mine.some(el => el.contains(node)) || parent.closest(UNREAD) || closestMarked(parent, MARKED))
       continue
     if (node.textContent?.trim())
       words.push(node.textContent.trim())
