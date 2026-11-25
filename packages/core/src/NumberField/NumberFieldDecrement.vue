@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { computed } from 'vue'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { injectNumberFieldRootContext } from './NumberFieldRoot.vue'
 import { usePressedHold } from './utils'
 
@@ -20,6 +21,7 @@ const rootContext = injectNumberFieldRootContext()
 const isDisabled = computed(() => rootContext.disabled?.value || rootContext.readonly.value || props.disabled || rootContext.isDecreaseDisabled.value)
 
 const { primitiveElement, currentElement } = usePrimitiveElement()
+useAgentItem(rootContext, props, currentElement, 'decrement')
 const { isPressed, onTrigger } = usePressedHold({ target: currentElement, disabled: isDisabled })
 
 onTrigger(() => {

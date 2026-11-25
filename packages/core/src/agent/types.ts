@@ -132,8 +132,11 @@ export interface AgentTool {
 }
 
 export interface Agent {
-  /** Every component on the page, then the ones that left it with `offPage: true`. */
-  snapshot: () => AgentComponent[]
+  /**
+   * Every component on the page, then the ones that left it with `offPage: true`.
+   * It takes the tool's input, `{}`, so `agent[call.name](call.input)` works for every tool; the input is ignored.
+   */
+  snapshot: (input?: unknown) => AgentComponent[]
   /** Runs steps in order, as the agent, and reports what they changed together. */
   act: (input: { steps: AgentStep[] }, options?: { signal?: AbortSignal }) => Promise<AgentActResult>
   /** Finds components and list items without listing the page. */

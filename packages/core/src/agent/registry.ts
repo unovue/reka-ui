@@ -4,7 +4,7 @@
 // when the same component returns, like a closed tab's fields.
 import type { Adapter, Part, Source } from './adapters'
 import type { AgentComponent, ChangeSource, ObservedChange } from './types'
-import { effectScope, getCurrentInstance, onBeforeUnmount, watch } from 'vue'
+import { effectScope, getCurrentInstance, onBeforeUnmount, unref, watch } from 'vue'
 import { agentRegistrar } from '@/shared/useAgentRegistration'
 import { adapters, native } from './adapters'
 import { isOffLimits, isSecret, isShown, nameOf, portals, rowOf, sectionsOf, textOf } from './dom'
@@ -79,7 +79,7 @@ export function retire(entry: Entry) {
   const elements = markedBy(entry)
   if (isOffLimits(elements))
     entry.offLimits = true
-  entry.secret ||= isSecret(elements)
+  entry.secret ||= isSecret([...elements, ...itemElements(entry)])
   if (!entry.key || !entry.shown || entry.secret || entry.offLimits)
     return
   const queue = retired.get(entry.key) ?? []
@@ -128,15 +128,26 @@ export function anchorOf(parts: Part[]) {
   return (parts.find(part => part.slot === 'trigger' || part.slot === 'root' || part.slot === 'control' || part.slot === 'input' || part.slot === 'list') ?? parts[0])?.el
 }
 
+/** The elements of the items registered against the component, for the marks on them. */
+function itemElements(entry: Entry): Element[] {
+  const all = [...entry.source.items, ...(entry.source.inner?.items ?? [])]
+  return all.flatMap(({ element }) => {
+    const value = unref(element) as { $el?: unknown } | Element | null | undefined
+    const node = value instanceof Element ? value : value?.$el
+    return node instanceof Element ? [node] : []
+  })
+}
+
 /** An accessible name for the component, from its label, its own element, a title or its trigger. */
 export function labelOf(entry: Entry, parts: Part[]) {
   const find = (slot: string) => parts.find(part => part.slot === slot)?.el
-  const name = (el: Element | undefined) => (el ? nameOf(el).slice(0, 80) : '')
+  // A private component is named only by what names it, never by what it shows, like a select's chosen item.
+  const name = (el: Element | undefined) => (el ? nameOf(el, { content: !entry.secret }).slice(0, 80) : '')
   const kind = entry.source.kind
   if (entry.source.radios)
     return name(entry.source.radios[0]?.closest('fieldset, [role=radiogroup]') ?? undefined) || undefined
   if (kind === 'dialog')
-    return textOf(find('title')).slice(0, 80) || name(find('trigger')) || name(find('content')) || undefined
+    return (entry.secret ? '' : textOf(find('title')).slice(0, 80)) || name(find('trigger')) || name(find('content')) || undefined
   if (kind === 'menu' || kind === 'popover')
     return name(find('trigger')) || name(find('content')) || undefined
   return name(find('input')) || name(find('control')) || name(find('root')) || name(find('list')) || name(find('trigger')) || undefined
@@ -147,14 +158,13 @@ export function remember(entry: Entry, parts: Part[]) {
   const first = !entry.key
   const elements = parts.map(part => part.el)
   entry.offLimits = isOffLimits(elements)
-  // Off-limits components are never shown, but a step that names one is told it's off-limits, so it stops looking.
-  entry.label = entry.offLimits
-    ? (anchorOf(parts)?.getAttribute('aria-label') ?? anchorOf(parts)?.textContent ?? '').trim().slice(0, 80) || undefined
-    : labelOf(entry, parts)
+  // A list whose items sit inside `data-agent-secret` is private too, whatever is around its trigger.
+  entry.secret ||= isSecret([...elements, ...itemElements(entry)])
+  // Nothing off-limits is named, so a step that names it reads the same as a name that isn't on the page.
+  entry.label = entry.offLimits ? undefined : labelOf(entry, parts)
   const anchor = anchorOf(parts)
-  entry.row = rowOf(anchor, elements)
-  entry.sections = sectionsOf(anchor, elements)
-  entry.secret ||= isSecret(elements)
+  entry.row = entry.offLimits ? undefined : rowOf(anchor, elements)
+  entry.sections = entry.offLimits ? [] : sectionsOf(anchor, elements)
   entry.key = `${entry.adapter.component(entry.source)}|${entry.label}|${entry.row}|${entry.sections.join('>')}`
   if (!first)
     return
@@ -210,11 +220,13 @@ function onRoot(kind: string, ctx: unknown, props: unknown, element?: unknown, e
   onBeforeUnmount(() => retire(entry))
 }
 
-function onItem(rootContext: unknown, props: unknown, element: unknown) {
+function onItem(rootContext: unknown, props: unknown, element: unknown, part?: string) {
   const set = rootContext ? itemSets.get(rootContext as object) : undefined
-  if (!set || !getCurrentInstance())
+  const instance = getCurrentInstance()
+  if (!set || !instance)
     return
-  const item = { props, element }
+  // The instance stands in for a part whose element ref isn't bound, by the element it rendered.
+  const item = { props, element, part, instance }
   set.add(item)
   onBeforeUnmount(() => set.delete(item))
 }
@@ -235,8 +247,8 @@ export function uninstall() {
   if (installs === 0 || --installs > 0)
     return
   agentRegistrar.root = undefined
-  portals.clear()
   agentRegistrar.item = undefined
+  // Portals stay known: each leaves the set when it unmounts, and a bridge made later still places their content.
   // A component still on the page retires into nothing once the bridge is gone.
   for (const entry of [...entries.values()]) {
     entry.alive = false
@@ -376,12 +388,20 @@ function markedBy(entry: Entry) {
   return elements
 }
 
+/**
+ * The one test of whether an agent may hear of a component, on every path: alive, nothing of it inside
+ * `data-agent-hidden` or in content no portal claims, and some of it showing on the page.
+ */
+export function reachable(entry: Entry, elements: Element[]) {
+  return entry.alive && elements.length > 0 && !isOffLimits(elements) && elements.some(el => isShown(el as HTMLElement))
+}
+
 function emit(entry: Entry, key: string, value: unknown, previous: unknown) {
   // Marks are read as the change happens: a component can change before any snapshot has named it.
   const elements = markedBy(entry)
-  if (!elements.length || entry.offLimits || isOffLimits(elements))
+  if (!reachable(entry, elements))
     return
-  const secret = (entry.secret ||= isSecret(elements))
+  const secret = (entry.secret ||= isSecret([...elements, ...itemElements(entry)]))
   const { source, reason } = sourceNow()
   const change: ObservedChange = {
     ref: entry.ref,

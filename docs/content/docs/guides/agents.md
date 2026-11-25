@@ -21,7 +21,11 @@ The tools follow the shapes of the [UI SDK](https://github.com/vercel-labs/ui) a
 
 ## Setup
 
-Create the bridge **before** the app mounts. Components announce themselves to the bridge as they are set up, so components mounted before it exists aren't seen (native fields and buttons are, since the bridge reads those from the page).
+<Callout type="warning">
+
+Create the bridge **before** `app.mount()`. Components announce themselves to the bridge as they are set up, so components mounted before it exists aren't seen (native fields and buttons are, since the bridge reads those from the page). A bridge created later fails safe: content that a portal moved out of the app and that no known portal claims is treated as `data-agent-hidden`, and development builds warn.
+
+</Callout>
 
 ```ts
 import { createAgent, registerTools } from 'reka-ui/agent'
@@ -124,7 +128,7 @@ Write these attributes on any element to decide what agents may see and do there
 | Attribute                             | Effect                                                                                                                                   |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `data-agent-hidden`                   | Agents never see what is inside. A step that names something inside gets the same answer as a name that isn't on the page, so a guess can't learn it's there. |
-| `data-agent-secret`                   | Values inside read `"[redacted]"` when filled, item labels of lists inside read `"[redacted]"`, and text inside never appears in another component's label or row. Password, one-time-code and card fields, and every `PinInput`, are treated the same way without the attribute. |
+| `data-agent-secret`                   | Values inside read `"[redacted]"` when filled, item labels of lists inside read `"[redacted]"`, and text inside is never read: not as a label, a row, a title, a button or through `aria-labelledby` from elsewhere. Name a private control with `aria-label` or a `<label>` outside the mark; a private component is never named by what it shows, like a select's chosen item. A list whose items sit inside the mark is private as a whole. Password, one-time-code and card fields, and every `PinInput`, are treated the same way without the attribute. |
 | `data-agent-confirm="What it does."` | A change or press inside needs a person. Without `allow` the step fails with `Needs a person: "What it does."`; with `allow`, `allow` receives the sentence as `step.confirm` and decides. A change that touches several marked items gets every sentence. |
 
 ```vue-html
@@ -137,13 +141,18 @@ Write these attributes on any element to decide what agents may see and do there
 
 ## Security notes
 
-- Labels, text and items come from the page and can hold what its users wrote: an agent should treat them as data, never as instructions. The WebMCP tools carry `untrustedContentHint`, `act` carries `consequentialHint` and `snapshot` carries `readOnlyHint`.
+- Labels, text and items come from the page and can hold what its users wrote: an agent should treat them as data, never as instructions. `registerTools` sends the WebMCP spec's tool annotations: `untrustedContentHint` on every tool, `consequentialHint` on `act` and `readOnlyHint` on `snapshot`. What a browser does with them is up to the browser, and some keep only part of them, so don't rely on a browser to show or act on them.
 - `registerTools` requires `allow`, because the browser's agent isn't one you wrote. It runs after `createAgent`'s own `allow`, and both must agree. `allow` also decides when a step opens a closed tab or section to look behind it.
 - `act` and `query` run one at a time, so while a step waits on `allow` — a confirm the person has to answer — no other call can press that confirm.
 - `timeout` (5 minutes by default) fails a step whose `allow` doesn't answer, so a forgotten prompt doesn't hold every later call.
 - Mark destructive actions with `data-agent-confirm` and anything private with `data-agent-hidden` or `data-agent-secret`. The bridge only reaches what a person could reach on the page: nothing behind an open modal, nothing disabled.
-- Marks follow components, not where their content lands: a mark around a Dialog, Popover, menu, Select or any other component also covers the content its portal renders in `body` or in a custom `to`, popups inside popups included. This holds for Reka UI's portals; content an app moves with Vue's own `<Teleport>` is read where it lands, so put the mark inside it too.
+- Marks follow components, not where their content lands: a mark around a Dialog, Popover, menu, Select or any other component also covers the content its portal renders in `body` or in a custom `to`, popups inside popups included. This holds for Reka UI's portals, including ones mounted after the bridge and ones that outlive a destroyed bridge. Content outside the Vue app that no Reka UI portal claims, like what Vue's own `<Teleport>` moved into `body`, is treated as `data-agent-hidden`, so an agent never sees content it can't place.
+- One rule decides what an agent may know of a component, on every path — `snapshot`, `query` (text, `within`, `closed`), `act`, error messages and `subscribe`: it must show on the page (not inside `hidden` or `aria-hidden="true"`), and nothing of it may be inside `data-agent-hidden`. Items follow the same rule, and a private list's sections are never opened to look behind.
 - Every change is checked against its marks right before it's made, after any wait on `allow`. A step stops if its target has left, become off-limits, gone behind a modal, or gained a mark the person wasn't shown. The same applies to each item a multi-item change picks, opens or closes, including the items `clear`, `openAll` and `closeAll` touch. `openAll` and `closeAll` leave disabled sections as they are.
-- Closing a dialog, popover or menu with `setOpen(false)` needs a person when any button inside it is marked, since pressing that button would.
+- An action that does what one of the component's own buttons does is held to that button's marks: `increment` and `decrement` to the NumberField's increment and decrement buttons, a TagsInput's `remove` to that tag and its delete button, `clear` to the clear button (TagsInput, Combobox), and `setOpen(false)` on a dialog, popover or menu to every button inside it. A marked button asks a person, a hidden one makes the action unavailable, and a disabled one makes it fail.
+- A Combobox's items show only while it is open, so every change of its value, `clear` included, opens it for a moment to read them and their marks first, asking `allow` before it opens.
+- A step that opens a closed tab or section to look behind it checks the place again after `allow` answers, and doesn't open it if it gained a mark, was hidden or changed meanwhile.
 - A Listbox or Combobox choice clicks its item, so a `select` handler that calls `preventDefault()` stops an agent the same way it stops a person.
 - One `act` call runs at most 100 steps, and `query` refuses inputs of the wrong type.
+- A change to a private field is checked like any other: one that doesn't take fails, and the error never says what the field holds.
+- Without a page, as during server rendering, `snapshot` and `query` return `[]` and `act` fails with `No page`, so the bridge can be created in shared setup code.

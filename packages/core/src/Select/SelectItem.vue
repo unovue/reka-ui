@@ -4,6 +4,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollection } from '@/Collection'
 import { createRekaContext, getActiveElement, handleAndDispatchCustomEvent, useForwardExpose, useId } from '@/shared'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 
 interface SelectItemContext<T = AcceptableValue> {
   value: T
@@ -64,6 +65,7 @@ const rootContext = injectSelectRootContext()
 const disabled = computed(() => Boolean(props.disabled || rootContext.disabled?.value))
 const contentContext = injectSelectContentContext()
 const { forwardRef, currentElement } = useForwardExpose()
+useAgentItem(rootContext, props, currentElement)
 const { CollectionItem } = useCollection()
 
 const isSelected = computed(() => valueComparator(rootContext.modelValue?.value, props.value, rootContext.by))

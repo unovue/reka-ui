@@ -15,7 +15,7 @@ export const portals = new Set<PortalInstance>()
 
 // Each top element a portal put somewhere else, with the element its portal sits in.
 function portalOwners() {
-  const owners = new Map<Element, Element>()
+  const found = new Map<Element, Element>()
   for (const portal of portals) {
     const teleport = portal.subTree
     if (!teleport || !(teleport.type as { __isTeleport?: boolean } | undefined)?.__isTeleport || teleport.props?.disabled)
@@ -26,36 +26,60 @@ function portalOwners() {
     if (teleport.targetStart && teleport.targetAnchor) {
       for (let node = teleport.targetStart.nextSibling; node && node !== teleport.targetAnchor; node = node.nextSibling) {
         if (node.nodeType === 1)
-          owners.set(node as Element, home)
+          found.set(node as Element, home)
       }
     }
     else if (Array.isArray(teleport.children)) {
       for (const child of teleport.children as { el?: Node | null }[]) {
         if (child?.el?.nodeType === 1)
-          owners.set(child.el as Element, home)
+          found.set(child.el as Element, home)
       }
     }
   }
-  return owners
+  return found
+}
+
+// The page's portal owners, worked out once until the code next waits.
+let owning: Map<Element, Element> | undefined
+function owners() {
+  if (!owning) {
+    owning = portalOwners()
+    queueMicrotask(() => (owning = undefined))
+  }
+  return owning
+}
+
+/** The element an element sits in as the app nests it: its parent, or for a portal's content, where the portal is. */
+export function logicalParent(node: Element): Element | null {
+  return owners().get(node) ?? node.parentElement
 }
 
 /** `closest`, through portals: the nearest element around `el` that matches, as the app nests it. */
 export function closestMarked(el: Element | null | undefined, selector: string): Element | null {
-  if (!el)
-    return null
-  const owners = portals.size ? portalOwners() : undefined
-  for (let node: Element | null = el; node;) {
-    const hit = node.closest(selector)
-    if (hit || !owners?.size)
-      return hit
-    // The top of this part of the page, then the place its portal sits in.
-    let top: Element = node
-    while (top.parentElement && !owners.has(top))
-      top = top.parentElement
-    node = owners.get(top) ?? null
+  for (let node: Element | null = el ?? null; node; node = logicalParent(node)) {
+    if (node.matches(selector))
+      return node
   }
   return null
 }
+
+const APP = '[data-v-app]'
+
+/**
+ * Content on the page that no Vue app here rendered where it sits and no Reka UI portal claims, like what an
+ * unregistered portal moved into `body`. It's read as off-limits, so a bridge that can't place content never shows it.
+ */
+export function isUnattributed(el: Element) {
+  if (!el.isConnected || !el.ownerDocument.querySelector(APP))
+    return false
+  for (let node: Element | null = el; node; node = logicalParent(node)) {
+    if (node.matches(APP))
+      return false
+  }
+  return true
+}
+
+const MARKED = '[data-agent-hidden], [data-agent-secret]'
 
 /** Folds text for comparison: case, accents and `ß`, so "lodz" finds "Łódź". */
 export function fold(text: string) {
@@ -78,7 +102,7 @@ const squash = (text: string) => text.replace(/\s+/g, ' ').trim()
 
 /** Visible text inside `el`, leaving out what is inside `skip` and anything an agent mustn't read. */
 export function textOf(el: Element | null | undefined, skip: Element[] = []): string {
-  if (!el || closestMarked(el, '[data-agent-hidden]'))
+  if (!el || closestMarked(el, MARKED) || isUnattributed(el))
     return ''
   const words: string[] = []
   const walker = el.ownerDocument.createTreeWalker(el, NodeFilter.SHOW_TEXT)
@@ -87,6 +111,9 @@ export function textOf(el: Element | null | undefined, skip: Element[] = []): st
     if (!parent || (parent !== el && parent.closest(UNREAD) && el.contains(parent.closest(UNREAD))))
       continue
     if (skip.some(other => other !== el && other.contains(node)))
+      continue
+    // Text inside a hidden or private part of the page never reaches an agent, whichever element reads it.
+    if (closestMarked(parent, MARKED))
       continue
     if (node.textContent?.trim())
       words.push(node.textContent)
@@ -117,8 +144,8 @@ export function labelsOf(el: Element): Element[] {
 }
 
 /** An element's accessible name, the way a screen reader reads it, near enough for an agent to name it. */
-export function nameOf(el: Element | null | undefined): string {
-  if (!el || closestMarked(el, '[data-agent-hidden]'))
+export function nameOf(el: Element | null | undefined, { content = true }: { content?: boolean } = {}): string {
+  if (!el || closestMarked(el, '[data-agent-hidden]') || isUnattributed(el))
     return ''
   const doc = el.ownerDocument
   const labelledBy = el.getAttribute('aria-labelledby')
@@ -140,11 +167,14 @@ export function nameOf(el: Element | null | undefined): string {
     if (legend)
       return textOf(legend)
   }
-  if (el.matches(NAMED_BY_CONTENT)) {
+  if (content && el.matches(NAMED_BY_CONTENT)) {
     const text = textOf(el)
     if (text)
       return text
   }
+  // A private field's title or placeholder can hold what it holds, so only its aria-label names it.
+  if (closestMarked(el, '[data-agent-secret]'))
+    return ''
   return squash(el.getAttribute('title') ?? el.getAttribute('placeholder') ?? el.getAttribute('alt') ?? '')
 }
 
@@ -164,7 +194,7 @@ export function isShown(el: HTMLElement | undefined | null): el is HTMLElement {
 }
 
 /** Off-limits to agents: inside `data-agent-hidden`. */
-export const isOffLimits = (elements: Element[]) => elements.some(el => !!closestMarked(el, '[data-agent-hidden]'))
+export const isOffLimits = (elements: Element[]) => elements.some(el => !!closestMarked(el, '[data-agent-hidden]') || isUnattributed(el))
 
 const SECRET_FIELD = /\b(?:password|current-password|new-password|one-time-code|cc-[a-z-]+)\b/i
 

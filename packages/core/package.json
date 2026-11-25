@@ -76,7 +76,8 @@
     "!src/**/_*.vue",
     "!src/**/__snapshots__",
     "!src/**/stories",
-    "!src/**/story"
+    "!src/**/story",
+    "!src/agent/test"
   ],
   "scripts": {
     "build": "pnpm type-check && pnpm build-only",

@@ -4,7 +4,7 @@
 import { isEqual } from 'ohash'
 import { nextTick, unref } from 'vue'
 import { clamp, snapValueToStep } from '@/shared/clamp'
-import { fold, isDisabledElement, nameOf, textOf, textOrName } from './dom'
+import { fold, isDisabledElement, isOffLimits, nameOf, textOf, textOrName } from './dom'
 
 /** An item of a list-like component, with its own value. */
 export interface Item {
@@ -27,8 +27,8 @@ export interface Source {
   props: any
   element?: any
   extra?: any
-  /** Items that registered against this component's context. */
-  items: Set<{ props: any, element: any }>
+  /** Items that registered against this component's context, and with `part`, the controls its actions stand for. */
+  items: Set<{ props: any, element: any, part?: string, instance?: { vnode: { el: unknown } } }>
   /** A listbox a combobox renders, whose items are the combobox's. */
   inner?: Source
   /** The name of the component that rendered this one, like `AlertDialogRoot`. */
@@ -61,6 +61,11 @@ export interface Adapter {
   actions: (s: Source) => string[]
   /** `guard` runs before each later toggle of one change, and throws to stop it, like a mark that needs a person. */
   run: (s: Source, action: string, args: unknown[], guard?: (value: unknown) => void) => unknown
+  /**
+   * The controls an action does the work of, like a number field's increment button for `increment`:
+   * the action is held to their marks, so a marked, hidden or disabled button can't be gone around.
+   */
+  actionParts?: (s: Source, action: string, args: unknown[]) => HTMLElement[]
   /** What it hides while closed: a tab list's other tabs, an accordion's sections, a collapsible. */
   reveals?: boolean
   modal?: (s: Source) => boolean
@@ -85,31 +90,38 @@ const same = (a: unknown, b: unknown) => a === b || isEqual(a as any, b as any)
 const has = (list: unknown[], value: unknown) => list.some(item => same(item, value))
 const toList = (value: unknown) => (Array.isArray(value) ? value : value == null || value === '' ? [] : [value])
 
-/** Whether a value names an item of the list that is inside `data-agent-hidden`. */
+/** Whether a value names an item of the list that is off-limits, like one inside `data-agent-hidden`. */
 export function hiddenItem(s: Source, value: unknown) {
-  for (const { props, element } of [...s.items, ...(s.inner?.items ?? [])]) {
+  for (const { props, element, part } of [...s.items, ...(s.inner?.items ?? [])]) {
     const node = el(element)
-    if (node?.isConnected && node.closest('[data-agent-hidden]') && (same(props.value, value) || (typeof value === 'string' && fold(textOrName(node)) === fold(value))))
+    if (!part && node && isOffLimits([node]) && (same(unref(props.value), value) || (typeof value === 'string' && fold(node.textContent ?? '') === fold(value))))
       return true
   }
   return false
 }
 
-function registered(s: Source): Item[] {
-  return Array.from(s.items, ({ props, element }) => {
+/** The elements of the component's registered `part` controls, like its increment buttons, for `value` when given. */
+export function partsNamed(s: Source, name: string, value?: { of: unknown }) {
+  return Array.from(s.items).flatMap(({ props, element, part, instance }) => {
+    const node = el(element) ?? el(instance?.vnode.el)
+    return part === name && node && (!value || same(unref(props?.value), value.of)) ? [node] : []
+  })
+}
+
+// The items that registered against the list, each with its element: an item the list only knows by value
+// isn't one an agent can see or pick. `detached` keeps items rendered off the page, like a closed select's.
+function registered(s: Source, detached = false): Item[] {
+  return Array.from(s.items).filter(item => !item.part).map(({ props, element }) => {
     const node = el(element)
     const trigger = node?.matches('[role=tab], [role=option], [role=radio], button, [aria-controls]') ? node : node?.querySelector<HTMLElement>('[aria-controls], button') ?? node
     return {
-      value: props.value,
-      label: trigger ? textOrName(trigger) : String(props.value),
+      value: unref(props.value),
+      label: trigger ? textOrName(trigger) : '',
       disabled: !!props.disabled || (!!trigger && isDisabledElement(trigger)),
       // The element a person presses for it, like an accordion section's trigger.
       el: trigger,
     }
-  })
-    // An item inside `data-agent-hidden` isn't the agent's to see or pick, even in a list that is.
-    .filter(item => item.el?.isConnected && !item.el.closest('[data-agent-hidden]'))
-    .sort((a, b) => (a.el!.compareDocumentPosition(b.el!) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
+  }).filter(item => !!item.el && (detached || item.el.isConnected) && !isOffLimits([item.el])).filter((item, _, all) => item.el!.isConnected || !all.some(other => other.el!.isConnected)).sort((a, b) => (a.el!.compareDocumentPosition(b.el!) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
 }
 
 // A list's value by toggling, the way a person picks and unpicks items: `toggle` adds or takes out one.
@@ -157,6 +169,8 @@ function clickItem(list: Source, value: unknown) {
   item.el.click()
   return true
 }
+
+const DIGIT = /^\d$/
 
 const pause = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
 
@@ -288,11 +302,8 @@ export const adapters: Record<string, Adapter> = {
       ...(unref(s.ctx.multiple) && { multiple: true }),
       ...(unref(s.ctx.required) && { required: true }),
     }),
-    items: s => Array.from(unref(s.ctx.optionsSet) as Set<{ value: unknown, textContent: string, disabled?: boolean }>, option => ({
-      value: option.value,
-      label: option.textContent.trim(),
-      disabled: !!option.disabled,
-    })),
+    // Its items render while it's closed too, off the page, so their elements and marks are known.
+    items: s => registered(s, true),
     closed: true,
     disabled: s => !!unref(s.ctx.disabled),
     actions: () => ['setValue', 'setOpen'],
@@ -301,7 +312,15 @@ export const adapters: Record<string, Adapter> = {
         // A person can't empty a single select, only pick another item.
         if (!unref(s.ctx.multiple) && (value == null || value === ''))
           return fail('select can\'t be emptied. Pick one of its items.')
-        return toggleTo(unref(s.ctx.modelValue), value, !!unref(s.ctx.multiple), v => s.ctx.onValueChange(v), guard)
+        const pick = (v: unknown) => {
+          const item = registered(s, true).find(item => same(item.value, v))
+          if (!item)
+            return fail(`No item ${JSON.stringify(v)} to pick in this list now.`)
+          if (item.disabled)
+            return fail(`"${item.label}" is disabled now.`)
+          return s.ctx.onValueChange(v)
+        }
+        return toggleTo(unref(s.ctx.modelValue), value, !!unref(s.ctx.multiple), pick, guard)
       }
       return adapters.popover.run(s, action, [value])
     },
@@ -322,6 +341,7 @@ export const adapters: Record<string, Adapter> = {
     closed: true,
     disabled: s => !!unref(s.ctx.disabled),
     actions: () => ['setValue', 'setOpen', 'setQuery', 'clear'],
+    actionParts: (s, action) => (action === 'clear' ? partsNamed(s, 'clear') : []),
     run: (s, action, [value], guard) => {
       if (action === 'setValue') {
         return comboboxTo(s, value, guard)
@@ -402,6 +422,8 @@ export const adapters: Record<string, Adapter> = {
         if (single && !s.ctx.collapsible && has(open, target))
           fail('This accordion keeps one section open: open another instead.')
       }
+      if ((action === 'open' || action === 'close' || action === 'toggle') && (value == null || value === ''))
+        fail(`${action} on an accordion takes one of its sections.`)
       switch (action) {
         case 'setValue':
           if (single && (value == null || value === ''))
@@ -489,6 +511,7 @@ export const adapters: Record<string, Adapter> = {
     }),
     disabled: s => !!unref(s.ctx.disabled) || !!unref(s.ctx.readonly),
     actions: () => ['setValue', 'increment', 'decrement', 'clear'],
+    actionParts: (s, action) => (action === 'increment' || action === 'decrement' ? partsNamed(s, action) : []),
     run: (s, action, [value]) => {
       if (action === 'increment')
         return s.ctx.handleIncrease()
@@ -514,7 +537,13 @@ export const adapters: Record<string, Adapter> = {
       if (action !== 'setValue' && action !== 'clear')
         return fail(`pin-input takes setValue or clear, not ${action}.`)
       const chars = action === 'clear' || value == null ? [] : [...String(value)]
-      s.ctx.modelValue.value = unref(s.ctx.isNumericMode) ? chars.map(Number) : chars
+      const boxes = (unref(s.ctx.inputElements) as Set<HTMLElement> | undefined)?.size ?? rootOf(s)?.querySelectorAll('input').length ?? 0
+      if (boxes && chars.length > boxes)
+        fail(`pin-input takes at most ${boxes} characters.`)
+      const numeric = !!unref(s.ctx.isNumericMode)
+      if (numeric && chars.some(char => !DIGIT.test(char)))
+        fail('pin-input takes digits only.')
+      s.ctx.modelValue.value = numeric ? chars.map(Number) : chars
     },
   }),
 
@@ -543,6 +572,13 @@ export const adapters: Record<string, Adapter> = {
     state: s => ({ value: [...(unref(s.ctx.modelValue) ?? [])], ...(unref(s.ctx.max) && { max: unref(s.ctx.max) }) }),
     disabled: s => !!unref(s.ctx.disabled),
     actions: () => ['setValue', 'add', 'remove', 'clear'],
+    // Taking a tag out does what its tag's delete button does, and clearing what the clear button does.
+    actionParts: (s, action, [value]) => {
+      const now = [...(unref(s.ctx.modelValue) ?? [])] as unknown[]
+      const out = action === 'remove' ? [value] : action === 'clear' ? now : action === 'setValue' ? now.filter(tag => !has(toList(value), tag)) : []
+      const items = Array.from(s.items).filter(item => !item.part && out.some(tag => same(unref(item.props.value), tag))).flatMap(item => el(item.element) ?? [])
+      return [...items, ...out.flatMap(tag => partsNamed(s, 'delete', { of: tag })), ...(action === 'clear' ? partsNamed(s, 'clear') : [])]
+    },
     run: (s, action, [value]) => {
       const tags = () => [...(unref(s.ctx.modelValue) ?? [])] as unknown[]
       const add = (tag: unknown) => {
@@ -610,6 +646,10 @@ export function setNativeValue(input: HTMLInputElement | HTMLTextAreaElement | H
   input.dispatchEvent(new Event('change', { bubbles: true }))
 }
 
+const optionText = (option: HTMLOptionElement) => textOf(option) || (option.closest('[data-agent-secret]') ? '' : option.value)
+const shownOptions = (select: HTMLSelectElement) => Array.from(select.options).filter(option => !isOffLimits([option]))
+const radiosOf = (s: Source) => (s.radios ?? []).filter(radio => !isOffLimits([radio]))
+
 // Native fields and buttons on the page that no component owns.
 export const native: Record<string, Adapter> = {
   input: field(['value'], {
@@ -664,7 +704,8 @@ export const native: Record<string, Adapter> = {
         ? { value: Array.from(select.selectedOptions, option => option.value), multiple: true }
         : { value: select.value === '' ? null : select.value }
     },
-    items: s => Array.from((s.native as HTMLSelectElement).options, option => ({ value: option.value, label: textOf(option) || option.value, disabled: option.disabled || (option.parentElement?.localName === 'optgroup' && (option.parentElement as HTMLOptGroupElement).disabled) })),
+    // An option inside `data-agent-hidden` isn't one an agent sees or picks.
+    items: s => Array.from((s.native as HTMLSelectElement).options).filter(option => !isOffLimits([option])).map(option => ({ value: option.value, label: optionText(option), disabled: option.disabled || (option.parentElement?.localName === 'optgroup' && (option.parentElement as HTMLOptGroupElement).disabled), el: option })),
     closed: true,
     disabled: s => isDisabledElement(s.native!),
     actions: () => ['setValue'],
@@ -674,28 +715,34 @@ export const native: Record<string, Adapter> = {
         return fail(`select takes setValue, not ${action}.`)
       if (select.multiple) {
         const want = toList(value).map(String)
-        for (const option of select.options)
+        for (const option of shownOptions(select))
           option.selected = want.includes(option.value)
         select.dispatchEvent(new Event('input', { bubbles: true }))
         select.dispatchEvent(new Event('change', { bubbles: true }))
         return
       }
+      if (value != null && value !== '' && !shownOptions(select).some(option => option.value === String(value)))
+        return fail(`No item ${JSON.stringify(value)} to pick in this list now.`)
       setNativeValue(select, value == null ? '' : String(value))
     },
   }),
   radio: field(['value'], {
     component: () => 'radio-group',
-    parts: s => (s.radios ?? []).map(radio => ({ slot: 'item', el: radio })),
+    // A radio inside `data-agent-hidden` isn't one of the group's for an agent; the others still are.
+    parts: s => radiosOf(s).map(radio => ({ slot: 'item', el: radio })),
     owns: () => [],
     state: s => ({ value: s.radios?.find(radio => radio.checked)?.value ?? null }),
-    items: s => (s.radios ?? []).map(radio => ({ value: radio.value, label: nameOf(radio) || radio.value, disabled: isDisabledElement(radio), el: radio })),
+    items: s => radiosOf(s).map(radio => ({ value: radio.value, label: nameOf(radio) || radio.value, disabled: isDisabledElement(radio), el: radio })),
     closed: true,
-    disabled: s => !!s.radios?.every(radio => isDisabledElement(radio)),
+    disabled: s => radiosOf(s).every(radio => isDisabledElement(radio)),
     actions: () => ['setValue'],
     run: (s, action, [value]) => {
       if (action !== 'setValue')
         return fail(`radio-group takes setValue, not ${action}.`)
-      s.radios?.find(radio => radio.value === String(value))?.click()
+      const radio = radiosOf(s).find(radio => radio.value === String(value))
+      if (!radio)
+        return fail(`No item ${JSON.stringify(value)} to pick in this list now.`)
+      radio.click()
     },
   }),
   button: field([], {
