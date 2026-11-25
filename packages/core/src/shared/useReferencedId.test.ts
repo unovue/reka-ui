@@ -14,7 +14,7 @@ import { MonthPickerGrid, MonthPickerHeader, MonthPickerHeading, MonthPickerRoot
 import { MonthRangePickerGrid, MonthRangePickerHeader, MonthRangePickerHeading, MonthRangePickerRoot } from '@/MonthRangePicker'
 import { SelectContent, SelectGroup, SelectItem, SelectItemText, SelectLabel, SelectPortal, SelectRoot, SelectTrigger, SelectViewport } from '@/Select'
 import { StepperDescription, StepperItem, StepperRoot, StepperTitle, StepperTrigger } from '@/Stepper'
-import { TagsInputItem, TagsInputItemText, TagsInputRoot } from '@/TagsInput'
+import { TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot } from '@/TagsInput'
 import { YearPickerGrid, YearPickerHeader, YearPickerHeading, YearPickerRoot } from '@/YearPicker'
 import { YearRangePickerGrid, YearRangePickerHeader, YearRangePickerHeading, YearRangePickerRoot } from '@/YearRangePicker'
 
@@ -381,5 +381,99 @@ describe('server render and hydration with consumer ids', () => {
     expect(document.querySelector('[data-testid="group"]')!.getAttribute('aria-labelledby')).toBe('my-group-label')
     expect(document.querySelector('[data-testid="item"]')!.getAttribute('aria-labelledby')).toBe('my-item-text')
     expect(container).toBeTruthy()
+  })
+})
+
+// Compiled templates, whose slots are stable: a parent that re-renders does not re-render
+// the children, so a referring part rendered before the claiming one has to be updated itself.
+describe('a referring part rendered before the part that claims a consumer id', () => {
+  const components = {
+    MonthPickerRoot,
+    MonthPickerHeader,
+    MonthPickerHeading,
+    MonthPickerGrid,
+    MonthRangePickerRoot,
+    MonthRangePickerHeader,
+    MonthRangePickerHeading,
+    MonthRangePickerGrid,
+    YearPickerRoot,
+    YearPickerHeader,
+    YearPickerHeading,
+    YearPickerGrid,
+    YearRangePickerRoot,
+    YearRangePickerHeader,
+    YearRangePickerHeading,
+    YearRangePickerGrid,
+    StepperRoot,
+    StepperItem,
+    StepperTrigger,
+    StepperTitle,
+    StepperDescription,
+    TagsInputRoot,
+    TagsInputItem,
+    TagsInputItemDelete,
+    TagsInputItemText,
+    SelectRoot,
+    SelectTrigger,
+    SelectContent,
+    SelectViewport,
+    SelectGroup,
+    SelectLabel,
+    SelectItem,
+    SelectItemText,
+    ListboxRoot,
+    ListboxContent,
+    ListboxGroup,
+    ListboxGroupLabel,
+    ListboxItem,
+    DropdownMenuRoot,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuLabel,
+    DropdownMenuItem,
+  }
+
+  const picker = (name: string) => `<${name}Root>
+    <${name}Grid data-testid="referrer" />
+    <${name}Header><${name}Heading id="consumer-id" /></${name}Header>
+  </${name}Root>`
+
+  const templates: Record<string, { template: string, attribute?: string }> = {
+    'MonthPickerHeading': { template: picker('MonthPicker') },
+    'MonthRangePickerHeading': { template: picker('MonthRangePicker') },
+    'YearPickerHeading': { template: picker('YearPicker') },
+    'YearRangePickerHeading': { template: picker('YearRangePicker') },
+    'StepperTitle (trigger first)': { template: `<StepperRoot :default-value="1"><StepperItem :step="1">
+      <StepperTrigger data-testid="referrer" /><StepperTitle id="consumer-id">Title</StepperTitle>
+    </StepperItem></StepperRoot>` },
+    'StepperTitle (trigger last)': { template: `<StepperRoot :default-value="1"><StepperItem :step="1">
+      <StepperTitle id="consumer-id">Title</StepperTitle><StepperTrigger data-testid="referrer" />
+    </StepperItem></StepperRoot>` },
+    'StepperDescription (trigger first)': { template: `<StepperRoot :default-value="1"><StepperItem :step="1">
+      <StepperTrigger data-testid="referrer" /><StepperDescription id="consumer-id">Description</StepperDescription>
+    </StepperItem></StepperRoot>` },
+    'TagsInputItemText (delete first)': { template: `<TagsInputRoot :default-value="['a']"><TagsInputItem value="a">
+      <TagsInputItemDelete data-testid="referrer" /><TagsInputItemText id="consumer-id" />
+    </TagsInputItem></TagsInputRoot>` },
+    'SelectLabel (items first)': { template: `<SelectRoot :default-open="true"><SelectTrigger>Open</SelectTrigger>
+      <SelectContent position="popper"><SelectViewport><SelectGroup data-testid="referrer">
+        <SelectItem value="a"><SelectItemText>A</SelectItemText></SelectItem><SelectLabel id="consumer-id">Group</SelectLabel>
+      </SelectGroup></SelectViewport></SelectContent></SelectRoot>` },
+    'ListboxGroupLabel (items first)': { template: `<ListboxRoot><ListboxContent><ListboxGroup data-testid="referrer">
+      <ListboxItem value="a">A</ListboxItem><ListboxGroupLabel id="consumer-id">Group</ListboxGroupLabel>
+    </ListboxGroup></ListboxContent></ListboxRoot>` },
+    'DropdownMenuLabel (items first)': { template: `<DropdownMenuRoot :default-open="true"><DropdownMenuTrigger>Open</DropdownMenuTrigger>
+      <DropdownMenuContent><DropdownMenuGroup data-testid="referrer">
+        <DropdownMenuItem>A</DropdownMenuItem><DropdownMenuLabel id="consumer-id">Group</DropdownMenuLabel>
+      </DropdownMenuGroup></DropdownMenuContent></DropdownMenuRoot>` },
+  }
+
+  it.each(Object.entries(templates))('%s', async (_, { template, attribute = 'aria-labelledby' }) => {
+    const wrapper = mount(defineComponent({ components, template }), { attachTo: document.body })
+    await settle()
+    expect(document.getElementById('consumer-id')).toBeTruthy()
+    expect(references(find('referrer'), attribute)).toContain('consumer-id')
+    wrapper.unmount()
   })
 })
