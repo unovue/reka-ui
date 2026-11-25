@@ -104,3 +104,19 @@ describe('ids with selector characters, in a real browser', () => {
     }
   })
 })
+
+describe('text hidden with CSS, in a real browser', () => {
+  it('leaves text a stylesheet hides out of a row', async () => {
+    const page = document.createElement('div')
+    page.innerHTML = '<style>.gone { display: none }</style><ul><li><span class="gone">ZQXNEARBY</span> Shown <input aria-label="Note"></li></ul>'
+    document.body.append(page)
+    const agent = createAgent()
+    try {
+      expect(agent.snapshot().find(c => c.label === 'Note')).toMatchObject({ row: 'Shown' })
+    }
+    finally {
+      page.remove()
+      agent.destroy()
+    }
+  })
+})

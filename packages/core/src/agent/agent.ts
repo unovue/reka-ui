@@ -6,7 +6,7 @@ import type { Entry } from './registry'
 import type { Agent, AgentAction, AgentActResult, AgentAllow, AgentChange, AgentComponent, AgentOptions, AgentQuery, AgentStep } from './types'
 import { isEqual } from 'ohash'
 import { nextTick } from 'vue'
-import { hiddenItem, itemOff, markSeen, seenBefore, withoutHidden } from './adapters'
+import { hiddenItem, itemOff, markSeen, partsNamed, seenBefore, withoutHidden } from './adapters'
 import { buttonsIn, byPosition, confirmOf, fold, forgetConcealed, isDisabledElement, isOffLimits, isShown, textOf, textOrName, wordsOf } from './dom'
 import { agentWindow, anchorOf, asAgent, entries, install, listen, offPage, partsOf, placeOf, reachable, remember, scanNative, scrub, stateKeys, uninstall } from './registry'
 import { agentTools } from './tools'
@@ -84,6 +84,7 @@ function notFound(message: string, looked = message) {
 }
 
 const SETTER = /^set[A-Z]/
+const DECIMAL = /^\s*[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?\s*$/i
 const BOOLEAN_SETTER = /^set(?:Checked|Open|Pressed)$/
 const STEP_SHAPE = '{ "ref": "…", "action": "…", "args": […] }'
 /** The most steps one `act` runs, so one call can't hold the page for long. */
@@ -130,10 +131,20 @@ const ARGLESS = ['clear', 'openAll', 'closeAll', 'increment', 'decrement']
 const isItemValue = (value: unknown) => typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || (isRecord(value) && !Array.isArray(value))
 // The single lists a person can leave with nothing chosen.
 const EMPTIES = ['toggle-group', 'accordion', 'combobox']
-function argsProblem(entry: Entry, action: string, args: unknown[], state: Record<string, unknown>): string | undefined {
+// The kind of a value, for telling a list's items' kind from what a step gives.
+const kindOf = (value: unknown) => (value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value)
+
+function argsProblem(entry: Entry, action: string, args: unknown[], state: Record<string, unknown>, known: unknown[] | undefined): string | undefined {
   const { source, adapter } = entry
   const on = `${action} on ${entry.ref}`
   const [value] = args
+  // An item is of the kinds the list's items and chosen values are, like text for a TagsInput's tags. A list
+  // that knows none of its items yet, like a closed Combobox, takes any item; a TagsInput holding none, text.
+  const kinds = new Set((known ?? []).filter(v => v != null && v !== '').map(kindOf))
+  if (source.kind === 'tags-input' && !kinds.size)
+    kinds.add('string')
+  // Text always fits: a snapshot gives every item's value as text, and a label names an item too.
+  const fits = (v: unknown) => isItemValue(v) && v !== '' && (typeof v === 'string' || !kinds.size || kinds.has(kindOf(v)))
   const list = !!adapter.items && !source.native
   const multiple = state.multiple === true || (list && Array.isArray(state.value)) || source.kind === 'tags-input'
   const single = !!adapter.items
@@ -145,24 +156,24 @@ function argsProblem(entry: Entry, action: string, args: unknown[], state: Recor
     return value === undefined ? undefined : `${on} takes no value, not ${quoted(value)}.`
   }
   if (action === 'add' || action === 'remove')
-    return (typeof value === 'string' && value.trim()) || typeof value === 'number' ? undefined : `${on} takes one tag as text, not ${quoted(value)}.`
+    return fits(value) && (typeof value !== 'string' || value.trim()) ? undefined : `${on} takes one tag${kinds.has('string') ? ' as text' : ''}, not ${quoted(value)}.`
   if (action === 'setQuery')
     return typeof value === 'string' ? undefined : `${on} takes text, not ${quoted(value)}.`
   if (onItem)
-    return isItemValue(value) && value !== '' ? undefined : `${on} takes one of its items, not ${quoted(value)}.`
+    return fits(value) ? undefined : `${on} takes one of its items, not ${quoted(value)}.`
   if (action !== 'setValue')
     return undefined
   if (multiple) {
-    if (value == null || value === '' || isItemValue(value))
+    if (value == null || value === '' || fits(value))
       return undefined
-    return Array.isArray(value) && value.every(isItemValue) ? undefined : `${on} takes a list of its items, not ${quoted(value)}.`
+    return Array.isArray(value) && value.every(fits) ? undefined : `${on} takes a list of its items, not ${quoted(value)}.`
   }
   if (single) {
     if (value == null || value === '') {
       const empty = EMPTIES.includes(source.kind) || (source.kind === 'select' && !!source.native && Array.from((source.native as HTMLSelectElement).options).some(option => option.value === ''))
       return empty ? undefined : `${on} can't be emptied. Pick one of its items.`
     }
-    return isItemValue(value) ? undefined : `${on} takes one of its items, not a list or ${quoted(value)}.`
+    return fits(value) ? undefined : `${on} takes one of its items, not ${quoted(value)}.`
   }
   // A text field takes text, never a list or an object it would print as one.
   if ((source.kind === 'input' && source.native) || source.kind === 'pin-input')
@@ -927,6 +938,10 @@ export function createAgent(options: AgentOptions = {}): Agent {
       if (!actions.includes('press'))
         throw new Error(`${component.component} ${entry.ref} has nothing to press now.${disabled ? ' It is disabled.' : ''}`)
       const text = typeof args[0] === 'string' ? args[0] : undefined
+      // A press names a button by its text, or names none to press the component's own: never by empty text,
+      // which every unnamed button would match, or by something that isn't text.
+      if (args.length && (text === undefined || !text.trim()))
+        throw plainly(`press on ${entry.ref} takes a button's text, not ${quoted(args[0])}. Leave "args" out to press ${entry.ref} itself.`)
       const press = await pressing(found, text, () => ask(args, own(parts), `press "${text}"`))
       try {
         // A press on an open popup's own trigger closes it, which is held to its buttons' marks as setOpen(false) is.
@@ -968,7 +983,8 @@ export function createAgent(options: AgentOptions = {}): Agent {
       throw new Error(`${component.component} ${entry.ref} takes no ${action} now. It takes: ${actions.join(', ') || 'nothing'}.${actions.includes('press') ? ' press takes the text of a button inside it, and opens it first to find the button.' : ''}`)
     }
     const state = stateOf(entry)
-    const misfit = argsProblem(entry, action, args, state)
+    const known = adapter.items || source.kind === 'tags-input' ? [...(itemsOf(entry) ?? []).map(item => item.value), ...toList(state.value)] : undefined
+    const misfit = argsProblem(entry, action, args, state, known)
     if (misfit)
       throw plainly(misfit)
     // Whatever changes which items are chosen or open loads them first, so each one's marks are asked about.
@@ -1006,6 +1022,9 @@ export function createAgent(options: AgentOptions = {}): Agent {
       if (hidden !== undefined)
         throw wrongGuess(noItem(hidden, items ?? []))
       chosen = args[0] == null || args[0] === '' ? [] : values.map(itemFor)
+      // A native radio group can span an open modal: a radio behind it is no more the agent's than a person's.
+      if (source.radios && chosen.some(item => 'el' in item && !!item.el && covered(item.el as HTMLElement, layers())))
+        throw new Error(`That radio of ${nameFor(entry)} is behind ${above() ? nameFor(above()!.entry) : 'what is open'}. Finish that or close it first.`)
       const blocked = chosen.find(item => 'disabled' in item && item.disabled && !(Array.isArray(state.value) ? state.value : [state.value]).some(v => isEqual(v as any, item.value as any)))
       if (blocked)
         throw new Error(`"${(blocked as Item).label}" in ${nameFor(entry)} is disabled now.`)
@@ -1013,11 +1032,13 @@ export function createAgent(options: AgentOptions = {}): Agent {
       args = [Array.isArray(args[0]) || (action === 'setValue' && Array.isArray(state.value) && args[0] != null) ? picked : picked[0] ?? args[0], ...args.slice(1)]
     }
     // Numbers, for a slider or a number field, from text like "90"; never past their range.
-    const numeric = source.kind === 'number-field' || typeof state.min === 'number' || typeof state.max === 'number' || typeof state.value === 'number' || (Array.isArray(state.value) && source.kind === 'slider')
+    const numeric = source.kind === 'number-field' || (source.kind === 'input' && ['number', 'range'].includes((source.native as HTMLInputElement).type)) || typeof state.min === 'number' || typeof state.max === 'number' || typeof state.value === 'number' || (Array.isArray(state.value) && source.kind === 'slider')
     if (action === 'setValue' && numeric) {
+      // Only a finite decimal number, from a number or from text like "90" or "-1.5e3": never Infinity,
+      // NaN, "0x10" or text too large to hold, which a component would store as NaN or a bound.
       const toNumber = (value: unknown) => {
-        const number = typeof value === 'string' && value.trim() ? Number(value) : value
-        if (typeof number !== 'number' || Number.isNaN(number))
+        const number = typeof value === 'string' && DECIMAL.test(value) ? Number(value) : value
+        if (typeof number !== 'number' || !Number.isFinite(number))
           throw new Error(`${component.component} ${entry.ref} takes a number, not ${quoted(value)}.`)
         return number
       }
@@ -1040,11 +1061,20 @@ export function createAgent(options: AgentOptions = {}): Agent {
     const affects = items && (takesItem || action === 'openAll' || action === 'closeAll' || action === 'clear')
     const removing = (value: unknown, list: Item[]) => (affects ? changedBy(value, action, args[0], list).map(item => keyOf(item.value)).sort() : [])
     // Chosen items that aren't rendered now, like ones a filter or a virtual list leaves out. A hidden one stays
-    // chosen through a change to a multiple list, since the agent can't name it to keep it.
+    // chosen through a change or a clear, since the agent can't name it to keep it: a clear takes out the rest.
+    const tags = source.kind === 'tags-input'
     const offList = affects ? toList(state.value).filter(v => !items!.some(item => isEqual(item.value as any, v as any))) : []
-    const hiddenHeld = offList.filter(v => !toList(withoutHidden(source, [v])).length)
-    if (action === 'setValue' && Array.isArray(state.value) && hiddenHeld.length && takesItem)
+    const hiddenHeld = (affects ? offList : tags ? toList(state.value) : []).filter(v => !toList(withoutHidden(source, [v])).length)
+    let runAction = action
+    if (action === 'setValue' && Array.isArray(state.value) && hiddenHeld.length && (takesItem || tags))
       args = [[...toList(args[0]), ...hiddenHeld.filter(v => !toList(args[0]).some(other => isEqual(other as any, v as any)))], ...args.slice(1)]
+    if (action === 'clear' && hiddenHeld.length) {
+      // A single list whose chosen item is hidden already reads as empty: there's nothing of the agent's to clear.
+      if (!Array.isArray(state.value))
+        return { ref: entry.ref, result: null }
+      runAction = 'setValue'
+      args = [hiddenHeld]
+    }
     const removed = affects ? changedBy(state.value, action, args[0], items!) : []
     // One the change takes out is held to the mark it had when last seen. One never seen has marks no one
     // knows, so the change doesn't go ahead without it on the page.
@@ -1060,7 +1090,8 @@ export function createAgent(options: AgentOptions = {}): Agent {
       && ((action === 'setOpen' && args[0] === false) || action === 'close' || action === 'toggle')
     const inside = closing ? buttonsIn([adapter.content!(source)].filter((el): el is HTMLElement => !!el)) : []
     // The controls the action does the work of are held to their own marks, as a press on them would be.
-    const standIns = adapter.actionParts?.(source, action, args) ?? []
+    // A clear that keeps a hidden item is still held to the clear button, and to the parts of what it takes out.
+    const standIns = [...new Set([...(adapter.actionParts?.(source, runAction, args) ?? []), ...(runAction !== action ? partsNamed(source, 'clear') : [])])]
     if (standIns.some(el => itemOff(el)))
       throw new Error(`${action} on ${nameFor(entry)} isn't available to agents.`)
     if (standIns.length && standIns.every(el => isDisabledElement(el)))
@@ -1102,7 +1133,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
     agentWindow.action = action
     try {
       try {
-        await fresh(() => adapter.run(source, action, args, guard))
+        await fresh(() => adapter.run(source, runAction, args, guard))
       }
       catch (error) {
         throw entry.secret ? new Error(`${action} on ${nameFor(entry)} failed: [redacted]`) : error

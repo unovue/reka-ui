@@ -4,7 +4,7 @@
 import { isEqual } from 'ohash'
 import { nextTick, unref } from 'vue'
 import { clamp, snapValueToStep } from '@/shared/clamp'
-import { confirmOf, fold, isDisabledElement, isOffLimits, nameOf, textOf, textOrName } from './dom'
+import { confirmOf, fold, hiddenFromAll, isDisabledElement, isOffLimits, nameOf, textOf, textOrName } from './dom'
 
 /** An item of a list-like component, with its own value. */
 export interface Item {
@@ -140,7 +140,7 @@ export function hiddenItem(s: Source, value: unknown) {
  * or `aria-hidden`, the same rule a component is held to, or in a list content the app marked hidden.
  */
 export function itemOff(el: Element, s?: Source) {
-  return isOffLimits([el]) || !!el.closest('[hidden], [aria-hidden="true"]:not([data-aria-hidden])') || (!!s && !!contentMarks(s).hidden)
+  return isOffLimits([el]) || hiddenFromAll(el) || (!!s && !!contentMarks(s).hidden)
 }
 
 const keyOfValue = (value: unknown) => (value !== null && typeof value === 'object' ? JSON.stringify(value) : String(value))
@@ -751,16 +751,26 @@ function collapsibleTrigger(s: Source) {
   return (id && [...(root?.querySelectorAll<HTMLElement>('[aria-controls]') ?? [])].find(el => el.getAttribute('aria-controls') === id)) || root?.querySelector<HTMLElement>('button') || undefined
 }
 
-/** Sets a native field's value the way typing does, so `v-model` and listeners hear it. */
-export function setNativeValue(input: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, value: string) {
+// Fields whose value the browser cleans, so what they hold can differ from what was set.
+const CLEANED = ['date', 'time', 'datetime-local', 'month', 'week', 'color', 'range', 'number']
+
+function setValue(input: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, value: string) {
   const proto = Object.getPrototypeOf(input)
   const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set
   if (setter)
     setter.call(input, value)
   else
     input.value = value
+}
+function announce(input: Element) {
   input.dispatchEvent(new Event('input', { bubbles: true }))
   input.dispatchEvent(new Event('change', { bubbles: true }))
+}
+
+/** Sets a native field's value the way typing does, so `v-model` and listeners hear it. */
+export function setNativeValue(input: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, value: string) {
+  setValue(input, value)
+  announce(input)
 }
 
 const optionText = (option: HTMLOptionElement) => textOf(option) || (option.closest('[data-agent-secret]') ? '' : option.value)
@@ -775,11 +785,12 @@ export const native: Record<string, Adapter> = {
     owns: () => [],
     state: (s) => {
       const input = s.native as HTMLInputElement
-      const out: Record<string, unknown> = { value: input.type === 'number' ? (input.value === '' ? null : input.valueAsNumber) : input.value }
-      if (input.type === 'number' && input.min !== '')
-        out.min = Number(input.min)
-      if (input.type === 'number' && input.max !== '')
-        out.max = Number(input.max)
+      const range = input.type === 'range'
+      const out: Record<string, unknown> = { value: input.type === 'number' || range ? (input.value === '' ? null : input.valueAsNumber) : input.value }
+      if ((input.type === 'number' || range) && (input.min !== '' || range))
+        out.min = input.min === '' ? 0 : Number(input.min)
+      if ((input.type === 'number' || range) && (input.max !== '' || range))
+        out.max = input.max === '' ? 100 : Number(input.max)
       if (input.placeholder)
         out.placeholder = input.placeholder
       if (input.required)
@@ -793,7 +804,20 @@ export const native: Record<string, Adapter> = {
         return setNativeValue(s.native as HTMLInputElement, '')
       if (action !== 'setValue')
         return fail(`input takes setValue or clear, not ${action}.`)
-      setNativeValue(s.native as HTMLInputElement, value == null ? '' : String(value))
+      const input = s.native as HTMLInputElement
+      const text = value == null ? '' : String(value)
+      // As typing would: no more than its maxlength allows.
+      if (input.maxLength >= 0 && text.length > input.maxLength)
+        return fail(`${input.localName} takes at most ${input.maxLength} characters.`)
+      // A date, color or range field cleans what it's given, like "tomorrow" in a date field to "". What it
+      // wouldn't take leaves the value it had, with nothing heard by the app.
+      const was = input.value
+      setValue(input, text)
+      if (CLEANED.includes(input.type) && input.value !== text && !(input.type === 'range' && Number(input.value) === Number(text)) && !(input.type === 'color' && input.value === text.toLowerCase())) {
+        setValue(input, was)
+        return fail(`${input.type} input doesn't take ${JSON.stringify(text)}.`)
+      }
+      announce(input)
     },
   }),
   checkbox: field(['checked'], {

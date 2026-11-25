@@ -15,6 +15,8 @@ export interface AgentRegistrar {
    * or with `part`, a control of the root that an action stands for, like a number field's increment button.
    */
   item?: (rootContext: unknown, props: unknown, element: unknown, part?: string) => void
+  /** Just before a modal hides the rest of the page from screen readers. */
+  hiding?: () => void
 }
 
 const KEY = Symbol.for('reka-ui:agent')

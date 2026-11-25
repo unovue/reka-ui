@@ -2,7 +2,61 @@
 // visibility and the `data-agent-*` marks an app writes on its elements.
 
 /** Text that never reaches an agent: marked off-limits or private, hidden by the app, a field's own text, or not content. */
-const UNREAD = '[data-agent-hidden], [data-agent-secret], [aria-hidden="true"]:not([data-aria-hidden]), script, style, template, [hidden], textarea, select, option'
+const UNREAD = '[data-agent-hidden], [data-agent-secret], script, style, template, [hidden], textarea, select, option'
+
+// \`aria-hidden\` the app wrote, as against what a modal adds to the rest of the page. A modal's hideOthers marks
+// every element it hides with \`data-aria-hidden\`, the ones the app had hidden already too, so the bridge remembers
+// the app's own: whenever it sees one unmarked, and just before a modal hides the rest.
+const authorHidden = new WeakSet<Element>()
+const ARIA_HIDDEN = '[aria-hidden="true"]'
+export function noteAuthorHidden(root: ParentNode = document) {
+  root.querySelectorAll(`${ARIA_HIDDEN}:not([data-aria-hidden])`).forEach(el => authorHidden.add(el))
+}
+
+/** The nearest element around \`el\` that the app hid from screen readers, not one only a modal hid. */
+export function ariaHiddenBy(el: Element): Element | null {
+  for (let node = el.closest(ARIA_HIDDEN); node; node = node.parentElement?.closest(ARIA_HIDDEN) ?? null) {
+    if (!node.hasAttribute('data-aria-hidden'))
+      authorHidden.add(node)
+    if (authorHidden.has(node))
+      return node
+  }
+  return null
+}
+
+/** Hidden from everyone: inside \`hidden\`, or inside \`aria-hidden="true"\` the app wrote. */
+export const hiddenFromAll = (el: Element) => !!el.closest('[hidden]') || !!ariaHiddenBy(el)
+
+// Text an app hides with CSS, like \`v-show\`, is no more read than text inside \`hidden\`. A browser says so for
+// any CSS; without one, an inline \`display: none\` up to \`root\` does.
+function styleHidden(parent: Element, root: Element, seen: Map<Element, boolean>) {
+  if (!parent.isConnected)
+    return false
+  let hidden = seen.get(parent)
+  if (hidden === undefined) {
+    const check = (parent as HTMLElement & { checkVisibility?: () => boolean }).checkVisibility
+    if (typeof check === 'function') {
+      hidden = !check.call(parent)
+    }
+    else {
+      hidden = false
+      for (let node: Element | null = parent; node; node = node === root ? null : node.parentElement) {
+        if ((node as HTMLElement).style?.display === 'none') {
+          hidden = true
+          break
+        }
+      }
+    }
+    seen.set(parent, hidden)
+  }
+  return hidden
+}
+
+// Whether a text node's parent sits inside something unread, inside \`within\` when given.
+function unread(parent: Element, within?: Element) {
+  const around = [parent.closest(UNREAD), ariaHiddenBy(parent)]
+  return around.some(node => !!node && (!within || within.contains(node)))
+}
 
 // Portals render a component's content elsewhere in the page, so the marks around the component
 // would miss it. Each reka-ui portal registers while a bridge exists, and an element is read as
@@ -51,7 +105,14 @@ function owners() {
 
 /** The element an element sits in as the app nests it: its parent, or for a portal's content, where the portal is. */
 export function logicalParent(node: Element): Element | null {
-  return owners().get(node) ?? node.parentElement
+  // An app mounted in a shadow root sits where its host does, so marks around the host cover it.
+  return owners().get(node) ?? node.parentElement ?? hostOf(node)
+}
+
+/** The shadow host of the root an element sits in, if it sits in one. */
+export function hostOf(node: Node): Element | null {
+  const root = node.getRootNode?.()
+  return root && root !== node && 'host' in root ? (root as ShadowRoot).host : null
 }
 
 /** `closest`, through portals: the nearest element around `el` that matches, as the app nests it. */
@@ -133,10 +194,11 @@ export function textOf(el: Element | null | undefined, skip: Element[] = []): st
   if (!el || closestMarked(el, MARKED) || isUnattributed(el))
     return ''
   const words: string[] = []
+  const seen = new Map<Element, boolean>()
   const walker = el.ownerDocument.createTreeWalker(el, NodeFilter.SHOW_TEXT)
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     const parent = node.parentElement
-    if (!parent || (parent !== el && parent.closest(UNREAD) && el.contains(parent.closest(UNREAD))))
+    if (!parent || (parent !== el && unread(parent, el)) || styleHidden(parent, el, seen))
       continue
     if (skip.some(other => other !== el && other.contains(node)))
       continue
@@ -210,7 +272,7 @@ export const textOrName = (el: Element) => textOf(el) || nameOf(el)
 export function isShown(el: HTMLElement | undefined | null): el is HTMLElement {
   if (!el || !el.isConnected)
     return false
-  if (el.closest('[hidden], [aria-hidden="true"]:not([data-aria-hidden])'))
+  if (hiddenFromAll(el))
     return false
   const check = (el as HTMLElement & { checkVisibility?: (options: object) => boolean }).checkVisibility
   if (typeof check === 'function' && !el.closest('[data-aria-hidden], [inert]'))
@@ -226,11 +288,29 @@ const SECRET_FIELD = /\b(?:password|current-password|new-password|one-time-code|
 /** A password, card or one-time code, or a field inside `data-agent-secret`, which shows only whether it's filled. */
 export function isSecret(elements: Element[]) {
   return elements.some(el =>
-    !!closestMarked(el, '[data-agent-secret]')
+    // First, so every password seen is remembered, whatever else makes it private.
+    wasPassword(el)
+    || !!closestMarked(el, '[data-agent-secret]')
     // A PinInput's boxes, even read as plain fields by a bridge made after it mounted.
     || el.hasAttribute('data-reka-pin-input')
     || SECRET_FIELD.test(`${el.getAttribute('type') ?? ''} ${el.getAttribute('autocomplete') ?? ''}`),
   )
+}
+
+// A password a show toggle turned into text, or one a \`v-if\` swapped for a text field with its id or name,
+// is still a password: what it held once is what it holds.
+const passwords = new WeakSet<Element>()
+const passwordKeys = new Set<string>()
+function wasPassword(el: Element) {
+  if (el.localName !== 'input')
+    return false
+  const keys = [el.id && `#${el.id}`, el.getAttribute('name') && `@${el.getAttribute('name')}`].filter((key): key is string => !!key)
+  if ((el as HTMLInputElement).type === 'password') {
+    passwords.add(el)
+    keys.forEach(key => passwordKeys.add(key))
+    return true
+  }
+  return passwords.has(el) || keys.some(key => passwordKeys.has(key))
 }
 
 /** What `data-agent-confirm` says a change does, from the nearest mark around any of the elements. */
@@ -258,11 +338,12 @@ export function rowOf(anchor: HTMLElement | undefined, own: Element[]) {
     return undefined
   const mine = own.flatMap(el => [el, ...labelsOf(el)])
   const words: string[] = []
+  const seen = new Map<Element, boolean>()
   const walker = row.ownerDocument.createTreeWalker(row, NodeFilter.SHOW_TEXT)
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     const parent = node.parentElement
     // The same rule as `textOf`: nothing inside a hidden or private place, through portals, is read.
-    if (!parent || mine.some(el => el.contains(node)) || parent.closest(UNREAD) || closestMarked(parent, MARKED) || isConcealed(node))
+    if (!parent || mine.some(el => el.contains(node)) || unread(parent) || styleHidden(parent, row, seen) || closestMarked(parent, MARKED) || isConcealed(node))
       continue
     if (node.textContent?.trim())
       words.push(node.textContent.trim())

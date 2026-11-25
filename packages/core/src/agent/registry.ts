@@ -7,7 +7,7 @@ import type { AgentComponent, ChangeSource, ObservedChange } from './types'
 import { effectScope, getCurrentInstance, onBeforeUnmount, unref, watch } from 'vue'
 import { agentRegistrar } from '@/shared/useAgentRegistration'
 import { adapters, contentMarks, native, withoutHidden } from './adapters'
-import { isOffLimits, isSecret, isShown, nameOf, onConceal, portals, rowOf, sectionsOf, textOf } from './dom'
+import { isOffLimits, isSecret, isShown, nameOf, noteAuthorHidden, onConceal, portals, rowOf, sectionsOf, textOf } from './dom'
 
 export interface Entry {
   ref: string
@@ -280,6 +280,10 @@ function onItem(rootContext: unknown, props: unknown, element: unknown, part?: s
 
 let installs = 0
 
+/** The shadow roots the bridge's components live in, searched for native fields too. */
+const shadows = new Set<ShadowRoot>()
+let shadowAdded: ((root: ShadowRoot) => void) | undefined
+
 /** Starts hearing components as they're made. */
 export function install() {
   if (typeof document === 'undefined')
@@ -287,6 +291,14 @@ export function install() {
   installs++
   agentRegistrar.root = onRoot
   agentRegistrar.item = onItem
+  agentRegistrar.hiding = noteHidden
+  noteHidden()
+}
+
+// What the app hid from screen readers itself, on the page and in the shadow roots its components live in.
+function noteHidden() {
+  noteAuthorHidden(document)
+  shadows.forEach(root => noteAuthorHidden(root))
 }
 
 /** Stops hearing components once every bridge is gone, and forgets them. */
@@ -295,6 +307,7 @@ export function uninstall() {
     return
   agentRegistrar.root = undefined
   agentRegistrar.item = undefined
+  agentRegistrar.hiding = undefined
   // Portals stay known: each leaves the set when it unmounts, and a bridge made later still places their content.
   // A component still on the page retires into nothing once the bridge is gone.
   for (const entry of [...entries.values()]) {
@@ -303,6 +316,7 @@ export function uninstall() {
   }
   entries.clear()
   radioGroups.clear()
+  shadows.clear()
   retired.clear()
   offPage.clear()
   listeners.clear()
@@ -362,7 +376,16 @@ export function scanNative(live: Entry[]) {
   }
   const found = new Set<Entry>()
   const groups = new Map<string, HTMLInputElement[]>()
-  for (const el of document.querySelectorAll<HTMLElement>(NATIVE)) {
+  // An app mounted in a shadow root keeps its fields there, out of the document's reach.
+  for (const el of [...owned, ...popups]) {
+    const root = el.getRootNode()
+    if (root !== document && 'host' in root && !shadows.has(root as ShadowRoot)) {
+      shadows.add(root as ShadowRoot)
+      shadowAdded?.(root as ShadowRoot)
+    }
+  }
+  const fields = [document, ...[...shadows].filter(root => root.host.isConnected)].flatMap(root => [...root.querySelectorAll<HTMLElement>(NATIVE)])
+  for (const el of fields) {
     // A widget role says it's a component's part, like a switch or a tab, which no native action drives.
     const role = el.getAttribute('role')
     if (el.getAttribute('aria-hidden') === 'true' || (role && role !== 'button') || owned.some(own => own.contains(el)))
@@ -505,11 +528,10 @@ function baseline(el: Element) {
 }
 
 function baselineAll(root: Node) {
-  if (!(root instanceof Element))
-    return
-  if (root.matches(NATIVE))
+  if (root instanceof Element && root.matches(NATIVE))
     baseline(root)
-  root.querySelectorAll(NATIVE).forEach(baseline)
+  if (root instanceof Element || (typeof ShadowRoot !== 'undefined' && root instanceof ShadowRoot))
+    (root as ParentNode).querySelectorAll(NATIVE).forEach(baseline)
 }
 
 function observeNative() {
@@ -527,7 +549,8 @@ function observeNative() {
     return bySource.get(target)
   }
   const onInput = (event: Event) => {
-    const target = event.target as HTMLElement
+    // Inside a shadow root the event reads as its host's, so the field is the first on its path.
+    const target = (event.composedPath?.()[0] ?? event.target) as HTMLElement
     let entry = lookup(target)
     // A field the bridge hasn't scanned yet is found now, so its first change is heard.
     if ((!entry || !entry.alive) && target.matches?.(NATIVE)) {
@@ -558,7 +581,7 @@ function observeNative() {
     lastInput = { source: 'keyboard', at: performance.now() }
   }
   const remembering = (event: Event) => {
-    const target = event.target as Element
+    const target = (event.composedPath?.()[0] ?? event.target) as Element
     // What it holds when a person comes to it, which the app can have changed since it was first seen.
     if (target.matches?.(NATIVE))
       baseline(target)
@@ -569,6 +592,11 @@ function observeNative() {
     ? undefined
     : new MutationObserver(records => records.forEach(record => record.addedNodes.forEach(baselineAll)))
   added?.observe(document.documentElement, { childList: true, subtree: true })
+  shadowAdded = (root) => {
+    baselineAll(root)
+    added?.observe(root, { childList: true, subtree: true })
+  }
+  shadows.forEach(shadowAdded)
   document.addEventListener('focusin', remembering, true)
   document.addEventListener('input', onInput, true)
   document.addEventListener('change', onInput, true)
@@ -576,6 +604,7 @@ function observeNative() {
   document.addEventListener('keydown', onKey, true)
   stopInput = () => {
     added?.disconnect()
+    shadowAdded = undefined
     document.removeEventListener('focusin', remembering, true)
     document.removeEventListener('input', onInput, true)
     document.removeEventListener('change', onInput, true)

@@ -77,6 +77,8 @@ interface Family {
   replaceStep?: Omit<AgentStep, 'ref'>
   /** One chosen item: `strict` always holds one, `empties` can hold none. */
   single?: 'strict' | 'empties'
+  /** Takes numbers in `setValue`. */
+  numeric?: boolean
 }
 
 const v = (model: Ref<any>) => ({ 'modelValue': model.value, 'onUpdate:modelValue': (value: unknown) => (model.value = value) })
@@ -90,6 +92,29 @@ const families: Family[] = [
     initial: () => SECRET,
     render: (m, model) => h('input', { ...target, value: model.value, disabled: m.disabled, onInput: (e: Event) => (model.value = (e.target as HTMLInputElement).value) }),
     actions: [{ action: 'setValue', args: ['new'] }, { action: 'clear' }],
+  },
+  {
+    name: 'native number',
+    initial: () => 42,
+    render: (m, model) => h('input', { ...target, type: 'number', value: model.value, disabled: m.disabled, onInput: (e: Event) => (model.value = (e.target as HTMLInputElement).valueAsNumber) }),
+    actions: [{ action: 'setValue', args: [7] }],
+    probes: [{ action: 'setValue', args: ['Infinity'] }],
+    numeric: true,
+  },
+  {
+    name: 'native range',
+    initial: () => '40',
+    render: (m, model) => h('input', { ...target, type: 'range', value: model.value, disabled: m.disabled, onInput: (e: Event) => (model.value = (e.target as HTMLInputElement).value) }),
+    actions: [{ action: 'setValue', args: [50] }],
+    probes: [{ action: 'setValue', args: [1000] }],
+    numeric: true,
+  },
+  {
+    name: 'native date',
+    initial: () => '2024-01-01',
+    render: (m, model) => h('input', { ...target, type: 'date', value: model.value, disabled: m.disabled, onInput: (e: Event) => (model.value = (e.target as HTMLInputElement).value) }),
+    actions: [{ action: 'setValue', args: ['2024-02-02'] }, { action: 'clear' }],
+    probes: [{ action: 'setValue', args: ['tomorrow'] }],
   },
   {
     name: 'native checkbox',
@@ -212,6 +237,7 @@ const families: Family[] = [
     actions: [{ action: 'setValue', args: [50] }, { action: 'increment' }, { action: 'decrement' }],
     probes: [{ action: 'setValue', args: [1000] }],
     poke: model => (model.value = [60]),
+    numeric: true,
   },
   {
     name: 'number-field',
@@ -225,6 +251,7 @@ const families: Family[] = [
     partStep: { action: 'increment' },
     probes: [{ action: 'setValue', args: [99999] }],
     poke: model => (model.value = 7),
+    numeric: true,
   },
   {
     name: 'tags-input',
@@ -296,7 +323,7 @@ const placements: Record<string, Wrap> = {
   ]))),
 }
 
-type Expect = 'hidden' | 'secret' | 'confirm' | 'disabled' | 'item-hidden' | 'selected-hidden' | 'filtered-confirm' | 'none'
+type Expect = 'hidden' | 'secret' | 'confirm' | 'disabled' | 'item-hidden' | 'selected-hidden' | 'filtered-confirm' | 'clear-keeps-hidden' | 'none'
 interface Mark {
   expect: Expect
   /** Around the whole placement, outside its portals. */
@@ -334,6 +361,8 @@ const marks: Record<string, Mark> = {
   'hidden on content': { expect: 'item-hidden', content: { 'data-agent-hidden': '' }, applies: f => !!f.content },
   // A chosen item the app's filter leaves out keeps its mark: taking it out still asks, or can't go ahead unseen.
   'confirm on the selected item, filtered out': { expect: 'filtered-confirm', item: { 'data-agent-confirm': CONFIRM }, itemOn: 'secret', filtered: 'later', applies: f => !!f.replaceStep },
+  // Clearing a list takes out what the agent sees: a hidden chosen item stays chosen.
+  'clear with a hidden selected item': { expect: 'clear-keeps-hidden', item: { 'data-agent-hidden': '' }, itemOn: 'secret', applies: f => f.actions.some(a => a.action === 'clear') && Array.isArray(f.initial()) && (!!f.itemStep || f.name === 'tags-input') },
   'confirm on the selected item, never shown': { expect: 'filtered-confirm', item: { 'data-agent-confirm': CONFIRM }, itemOn: 'secret', filtered: 'always', applies: f => !!f.replaceStep },
   'secret on component': { expect: 'secret', around: { attrs: { 'data-agent-secret': '' } } },
   'secret on ancestor': { expect: 'secret', ancestor: { 'data-agent-secret': '' } },
@@ -535,6 +564,15 @@ describe('agent contract', () => {
           const refused = await asked.agent.act({ steps: [{ ref: 'Target', ...step }] })
           expect(refused.ok).toBe(false)
           expect(allow.mock.calls.some(([s]: any[]) => String(s.confirm).includes(CONFIRM))).toBe(true)
+          break
+        }
+        case 'clear-keeps-hidden': {
+          const result = await agent.act({ steps: [{ ref: 'Target', action: 'clear' }] })
+          outputs.push(result)
+          expect(result.error).toBeUndefined()
+          expect(model.value).toContain('secret')
+          // A Combobox learns its hidden items when it first opens, which the clear does: from then on it's left out.
+          expect(json([result, agent.snapshot()])).not.toContain('"secret"')
           break
         }
         case 'filtered-confirm': {
@@ -1041,6 +1079,18 @@ function fuzzOf(family: Family, step: Omit<AgentStep, 'ref'>): { name: string, a
     out.push({ name: 'nothing for a list that always holds one', args: [null] })
   if (step.action !== 'setValue' && args.length && typeof args[0] === 'string')
     out.push({ name: 'a list for one item', args: [['bravo']] })
+  // Numbers no component can hold, from values and from text.
+  if (step.action === 'setValue' && family.numeric) {
+    for (const [name, value] of [['NaN', Number.NaN], ['Infinity', Number.POSITIVE_INFINITY], ['-Infinity', Number.NEGATIVE_INFINITY], ['"Infinity"', 'Infinity'], ['"-Infinity"', '-Infinity'], ['"1e999"', '1e999'], ['empty text', ''], ['blank text', ' '], ['"0x10"', '0x10'], ['huge text', '9'.repeat(400)], ['"NaN"', 'NaN']] as const)
+      out.push({ name: `the number ${name}`, args: [value] })
+  }
+  // An item of a kind the list's items aren't, alone or among items it has: objects, booleans and numbers
+  // for a list of text.
+  const takesItems = typeof args[0] === 'string' || (Array.isArray(args[0]) && typeof args[0][0] === 'string')
+  if (takesItems && !family.numeric && !family.name.startsWith('native input') && family.name !== 'native date' && family.name !== 'pin-input' && family.name !== 'menu') {
+    for (const [name, odd] of [['an object', { x: 1 }], ['a boolean', true], ['a number', 5]] as const)
+      out.push({ name: `${name} for an item`, args: [Array.isArray(args[0]) ? [args[0][0], odd] : odd] })
+  }
   return out
 }
 const fuzzCases = families.flatMap(family => family.actions
@@ -1242,5 +1292,183 @@ describe('fifth review findings', () => {
     expect(result.error).toBeUndefined()
     expect([...model.value].sort()).toEqual(['bravo', 'secret'])
     expect(json(result)).not.toContain('secret')
+  })
+})
+
+describe('sixth review findings', () => {
+  const page = async (render: () => VNode | VNode[], options: Parameters<typeof createAgent>[0] = {}) => {
+    const agent = createAgent(options)
+    agents.push(agent)
+    const wrapper = mount(defineComponent({ render }), { attachTo: document.body })
+    await settle()
+    return { agent, wrapper }
+  }
+
+  it('1: no number field, slider or native number takes a number it can\'t hold', async () => {
+    const count = ref(3)
+    const level = ref([40])
+    const amount = ref(5)
+    const { agent } = await page(() => [
+      h(NumberFieldRoot, v(count), () => h(NumberFieldInput, { 'aria-label': 'Count' })),
+      h(SliderRoot, { ...v(level), 'aria-label': 'Level' }, () => [h(SliderTrack, () => h(SliderRange)), h(SliderThumb, { 'aria-label': 'Level' })]),
+      h('input', { 'aria-label': 'Amount', 'type': 'number', 'value': amount.value, 'onInput': (e: Event) => (amount.value = (e.target as HTMLInputElement).valueAsNumber) }),
+    ])
+    for (const [ref, value] of [['Count', 'Infinity'], ['Count', '1e999'], ['Count', '0x10'], ['Level', '-Infinity'], ['Amount', 'Infinity'], ['Amount', ' ']] as const)
+      expect((await agent.act({ steps: [{ ref, action: 'setValue', args: [value] }] })).ok, `${ref} ${value}`).toBe(false)
+    expect([count.value, level.value, amount.value]).toEqual([3, [40], 5])
+  })
+
+  it('2: a TagsInput takes only text tags', async () => {
+    const tags = ref(['a'])
+    const { agent } = await page(() => h(TagsInputRoot, v(tags), () => [h(TagsInputInput, { 'aria-label': 'Tags' })]))
+    for (const step of [{ action: 'setValue', args: [['a', { x: 1 }]] }, { action: 'setValue', args: [['a', true]] }, { action: 'add', args: [5] }])
+      expect((await agent.act({ steps: [{ ref: 'Tags', ...step }] })).ok, json(step)).toBe(false)
+    expect(tags.value).toEqual(['a'])
+  })
+
+  it('3: clearing a multiple Combobox keeps its hidden chosen item', async () => {
+    const model = ref<string[]>(['secret', 'alpha'])
+    const { agent } = await page(() => h(ComboboxRoot, { ...v(model), multiple: true }, () => [
+      h(ComboboxAnchor, () => h(ComboboxInput, target)),
+      h(ComboboxContent, () => h(ComboboxViewport, () => ITEMS.map(([value, label]) => h(ComboboxItem, { value, ...(value === 'secret' ? { 'data-agent-hidden': '' } : {}) }, () => label)))),
+    ]))
+    const result = await agent.act({ steps: [{ ref: 'Target', action: 'clear' }] })
+    expect(result.error).toBeUndefined()
+    expect(model.value).toEqual(['secret'])
+  })
+
+  it('4: marks around a shadow host cover an app mounted in its shadow root', async () => {
+    for (const mark of ['data-agent-hidden', 'data-agent-secret', 'data-agent-confirm']) {
+      const outer = document.createElement('div')
+      outer.setAttribute(mark, mark === 'data-agent-confirm' ? CONFIRM : '')
+      const host = document.createElement('div')
+      outer.append(host)
+      document.body.append(outer)
+      const root = host.attachShadow({ mode: 'open' })
+      const mountPoint = document.createElement('div')
+      root.append(mountPoint)
+      const on = ref(true)
+      const agent = createAgent()
+      agents.push(agent)
+      const app = mount(defineComponent({ render: () => [h(SwitchRoot, { 'aria-label': 'Wire', ...v(on) }), h('input', { 'aria-label': 'Note', 'value': SECRET })] }), { attachTo: mountPoint })
+      await settle()
+      const snapshot = agent.snapshot()
+      const result = await agent.act({ steps: [{ ref: 'Wire', action: 'setChecked', args: [false] }] })
+      if (mark === 'data-agent-hidden')
+        expect(snapshot.filter(c => c.label === 'Wire' || c.label === 'Note'), mark).toEqual([])
+      if (mark === 'data-agent-secret')
+        expect(json(snapshot), mark).not.toContain(SECRET)
+      if (mark !== 'data-agent-secret')
+        expect(result.ok, mark).toBe(false)
+      if (mark === 'data-agent-confirm')
+        expect(result.error?.message).toContain('Needs a person')
+      expect(on.value === false, mark).toBe(mark === 'data-agent-secret')
+      app.unmount()
+      agent.destroy()
+      outer.remove()
+    }
+    // Unmarked, the app's native fields are found in its shadow root.
+    const host = document.createElement('div')
+    document.body.append(host)
+    const mountPoint = document.createElement('div')
+    host.attachShadow({ mode: 'open' }).append(mountPoint)
+    const agent = createAgent()
+    agents.push(agent)
+    mount(defineComponent({ render: () => [h(SwitchRoot, { 'aria-label': 'Wire' }), h('input', { 'aria-label': 'Note', 'value': 'x' })] }), { attachTo: mountPoint })
+    await settle()
+    expect(agent.snapshot().find(c => c.label === 'Note')).toMatchObject({ value: 'x' })
+    host.remove()
+  })
+
+  it('5: a section the app hid stays hidden when a modal hides everything else', async () => {
+    const { hideOthers } = await import('aria-hidden')
+    const { agentRegistrar } = await import('@/shared/useAgentRegistration')
+    const { agent } = await page(() => h('div', [
+      h('section', { 'aria-hidden': 'true' }, [h(SwitchRoot, { 'aria-label': 'Hidden wire' })]),
+      h('div', { id: 'modal' }, h('button', 'Modal')),
+    ]))
+    // What a modal does: the bridge hears it first, then the rest of the page is hidden from screen readers.
+    agentRegistrar.hiding?.()
+    const undo = hideOthers(document.getElementById('modal')!)
+    try {
+      expect(document.querySelector('section')!.hasAttribute('data-aria-hidden')).toBe(true)
+      expect(json(agent.snapshot())).not.toContain('Hidden wire')
+    }
+    finally {
+      undo()
+    }
+  })
+
+  it('note: text a CSS rule or v-show hides is never read into a row', async () => {
+    const { agent } = await page(() => h('ul', h('li', [h('span', { style: { display: 'none' } }, NEARBY), 'Shown', h(SwitchRoot, { 'aria-label': 'Wire' })])))
+    const wire = agent.snapshot().find(c => c.label === 'Wire')
+    expect(wire?.row).toBe('Shown')
+    expect(json(await agent.query({ text: NEARBY }))).not.toContain('Wire')
+  })
+
+  it('note: press "" presses no unnamed button', async () => {
+    const pressedIcon = vi.fn()
+    const { agent } = await page(() => h(DialogRoot, { defaultOpen: true, modal: false }, () => [
+      h(DialogTrigger, () => 'Open'),
+      h(DialogPortal, () => h(DialogContent, () => [h(DialogTitle, () => 'Tools'), h('button', { onClick: pressedIcon }, h('svg'))])),
+    ]))
+    expect((await agent.act({ steps: [{ ref: 'Tools', action: 'press', args: [''] }] })).ok).toBe(false)
+    expect((await agent.act({ steps: [{ ref: 'Tools', action: 'press', args: [5] }] })).ok).toBe(false)
+    expect(pressedIcon).not.toHaveBeenCalled()
+  })
+
+  it('note: a password stays private after a show toggle or a swap to a text field', async () => {
+    const shown = ref(false)
+    const swapped = ref(false)
+    const { agent } = await page(() => [
+      h('input', { 'aria-label': 'Password', 'type': shown.value ? 'text' : 'password', 'value': SECRET }),
+      swapped.value
+        // Keyed apart, so the swap renders a new element, as a \`v-if\` between two fields does.
+        ? h('input', { 'key': 'text', 'aria-label': 'PIN', 'id': 'pin', 'type': 'text', 'value': SECRET })
+        : h('input', { 'key': 'password', 'aria-label': 'PIN', 'id': 'pin', 'type': 'password', 'value': SECRET }),
+    ])
+    expect(json(agent.snapshot())).not.toContain(SECRET)
+    shown.value = true
+    swapped.value = true
+    await settle()
+    expect(json(agent.snapshot())).not.toContain(SECRET)
+  })
+
+  it('note: a native radio group spanning an open modal picks no radio behind it', async () => {
+    const picked = ref('inside')
+    const { agent } = await page(() => [
+      h('label', [h('input', { type: 'radio', name: 'plan', value: 'behind', checked: picked.value === 'behind', onChange: () => (picked.value = 'behind') }), 'Behind']),
+      h(DialogRoot, { defaultOpen: true }, () => h(DialogPortal, () => h(DialogContent, () => [
+        h(DialogTitle, () => 'Plan'),
+        h('label', [h('input', { type: 'radio', name: 'plan', value: 'inside', checked: picked.value === 'inside', onChange: () => (picked.value = 'inside') }), 'Inside']),
+      ]))),
+    ])
+    const group = agent.snapshot().find(c => c.component === 'radio-group')
+    expect(group).toBeTruthy()
+    expect((await agent.act({ steps: [{ ref: group!.ref, action: 'setValue', args: ['behind'] }] })).ok).toBe(false)
+    expect(picked.value).toBe('inside')
+  })
+
+  it('note: a date, color or range field keeps its value when it won\'t take one, and maxlength holds', async () => {
+    const heard: string[] = []
+    const { agent } = await page(() => [
+      h('input', { 'aria-label': 'Day', 'type': 'date', 'value': '2024-01-01', 'onInput': (e: Event) => heard.push((e.target as HTMLInputElement).value) }),
+      h('input', { 'aria-label': 'Code', 'maxlength': 3, 'value': 'abc', 'onInput': (e: Event) => heard.push((e.target as HTMLInputElement).value) }),
+    ])
+    expect((await agent.act({ steps: [{ ref: 'Day', action: 'setValue', args: ['tomorrow'] }] })).ok).toBe(false)
+    expect((document.querySelector('[aria-label=Day]') as HTMLInputElement).value).toBe('2024-01-01')
+    expect((await agent.act({ steps: [{ ref: 'Code', action: 'setValue', args: ['abcd'] }] })).ok).toBe(false)
+    expect((document.querySelector('[aria-label=Code]') as HTMLInputElement).value).toBe('abc')
+    expect(heard).toEqual([])
+  })
+
+  it('note: closing a dialog with a hidden button in it goes ahead, since closing presses none', async () => {
+    const open = ref(true)
+    const { agent } = await page(() => h(DialogRoot, { 'open': open.value, 'onUpdate:open': (value: boolean) => (open.value = value), 'modal': false }, () => [
+      h(DialogTrigger, () => 'Open'),
+      h(DialogPortal, () => h(DialogContent, () => [h(DialogTitle, () => 'Doc'), h('button', { 'data-agent-hidden': '' }, 'Delete')])),
+    ]))
+    expect((await agent.act({ steps: [{ ref: 'Doc', action: 'setOpen', args: [false] }] })).ok).toBe(true)
+    expect(open.value).toBe(false)
   })
 })
