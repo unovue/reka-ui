@@ -69,6 +69,7 @@ export const [injectSliderRootContext, provideSliderRootContext]
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
 import { computed, ref, toRaw, toRefs } from 'vue'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import SliderHorizontal from './SliderHorizontal.vue'
 import SliderVertical from './SliderVertical.vue'
@@ -154,7 +155,7 @@ function updateValues(value: number, atIndex: number, { commit } = { commit: fal
 }
 
 const thumbElements = ref<HTMLElement[]>([])
-provideSliderRootContext({
+const agentContext = provideSliderRootContext({
   modelValue,
   currentModelValue,
   valueIndexToChangeRef,
@@ -165,6 +166,7 @@ provideSliderRootContext({
   disabled,
   thumbAlignment,
 })
+useAgentRegistration('slider', agentContext, props, currentElement, updateValues)
 </script>
 
 <template>

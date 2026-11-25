@@ -74,6 +74,7 @@ import { useFocusWithin, useVModel } from '@vueuse/core'
 import { isEqual } from 'ohash'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
 const props = withDefaults(defineProps<TagsInputRootProps<T>>(), {
@@ -137,7 +138,7 @@ function handleRemoveItem(element: HTMLElement) {
   handleRemoveTag(values.findIndex(value => isEqual(value, tag) && match++ === occurrence))
 }
 
-provideTagsInputRootContext({
+const agentContext = provideTagsInputRootContext({
   modelValue,
   onAddValue: (_payload) => {
     const array = [...currentModelValue.value]
@@ -258,6 +259,7 @@ provideTagsInputRootContext({
   id,
   displayValue: props.displayValue as (value: AcceptableInputValue) => string,
 })
+useAgentRegistration('tags-input', agentContext, props, currentElement)
 </script>
 
 <template>

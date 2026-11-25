@@ -113,6 +113,7 @@ import { createEventHook, useVModel } from '@vueuse/core'
 import { computed, getCurrentInstance, nextTick, onMounted, ref, toRefs, watch } from 'vue'
 import { ListboxRoot } from '@/Listbox'
 import { PopperRoot } from '@/Popper'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { useComboboxContentPositioning } from './useComboboxContentPositioning'
 
 const props = withDefaults(defineProps<ComboboxRootProps<T, ClearValue>>(), {
@@ -281,7 +282,7 @@ defineExpose({
   highlightSelected: primitiveElement.value?.highlightSelected,
 })
 
-provideComboboxRootContext(defineReactiveIds({
+const agentContext = provideComboboxRootContext(defineReactiveIds({
   modelValue,
   multiple,
   disabled,
@@ -311,6 +312,7 @@ provideComboboxRootContext(defineReactiveIds({
   getClearValue,
   unmountOnHide,
 }, ['contentId']))
+useAgentRegistration('combobox', agentContext, props, parentElement)
 </script>
 
 <template>

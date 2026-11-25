@@ -138,6 +138,10 @@ export default defineConfig({
             text: `Migration ${BadgeHTML('New')}`,
             link: '/docs/guides/migration',
           },
+          {
+            text: `Agents & WebMCP ${BadgeHTML('New')}`,
+            link: '/docs/guides/agents',
+          },
 
           { text: `llms.txt ${BadgeHTML('New')}`, link: '/llms.txt' },
         ],

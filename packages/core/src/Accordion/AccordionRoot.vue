@@ -69,6 +69,7 @@ export const [injectAccordionRootContext, provideAccordionRootContext]
 <script setup lang="ts" generic="T extends (string | string[]), ExplicitType extends SingleOrMultipleType">
 import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { useSingleOrMultipleValue } from '@/shared/useSingleOrMultipleValue'
 
 const props = withDefaults(defineProps<AccordionRootProps<T>>(), {
@@ -94,7 +95,7 @@ const { modelValue, changeModelValue, isSingle } = useSingleOrMultipleValue(prop
 
 const { forwardRef, currentElement: parentElement } = useForwardExpose()
 
-provideAccordionRootContext({
+const agentContext = provideAccordionRootContext({
   disabled,
   direction,
   orientation: props.orientation,
@@ -105,6 +106,7 @@ provideAccordionRootContext({
   changeModelValue,
   unmountOnHide,
 })
+useAgentRegistration('accordion', agentContext, props, parentElement)
 </script>
 
 <template>

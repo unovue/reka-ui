@@ -123,6 +123,7 @@ import { createEventHook, useVModel } from '@vueuse/core'
 import { isClient } from '@vueuse/shared'
 import { nextTick, ref, toRefs, watch } from 'vue'
 import { useCollection } from '@/Collection'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { compare } from './utils'
 
@@ -532,7 +533,7 @@ defineExpose({
   getItems,
 })
 
-provideListboxRootContext({
+const agentContext = provideListboxRootContext({
   modelValue,
   // @ts-expect-error ignoring
   onValueChange,
@@ -564,6 +565,7 @@ provideListboxRootContext({
   onCompositionEnd,
   highlightFirstItem,
 })
+useAgentRegistration('listbox', agentContext, props, currentElement)
 </script>
 
 <template>

@@ -7,6 +7,7 @@ export interface ComboboxCancelProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { Primitive } from '@/Primitive'
 import { useForwardExpose } from '@/shared'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 
 const props = withDefaults(defineProps<ComboboxCancelProps>(), {
@@ -15,6 +16,7 @@ const props = withDefaults(defineProps<ComboboxCancelProps>(), {
 
 useForwardExpose()
 const rootContext = injectComboboxRootContext()
+useAgentItem(rootContext, props, undefined, 'clear')
 
 function handleClick() {
   if (rootContext.inputElement.value) {

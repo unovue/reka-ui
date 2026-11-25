@@ -42,6 +42,7 @@ export const [injectAccordionItemContext, provideAccordionItemContext]
 <script setup lang="ts">
 import { computed } from 'vue'
 import { CollapsibleRoot } from '@/Collapsible'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 
 const props = withDefaults(
   defineProps<AccordionItemProps>(),
@@ -78,6 +79,7 @@ const dataState = computed(() =>
 
 defineExpose({ open, dataDisabled })
 const { currentRef, currentElement } = useForwardExpose()
+useAgentItem(rootContext, props, currentElement)
 
 provideAccordionItemContext(defineReactiveIds({
   open,

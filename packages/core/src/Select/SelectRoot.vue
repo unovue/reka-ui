@@ -69,6 +69,7 @@ import { useVModel } from '@vueuse/core'
 import { computed, ref, toRefs, watch } from 'vue'
 import { injectFieldRootContext } from '@/Field'
 import { PopperRoot } from '@/Popper'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import BubbleSelect from './BubbleSelect.vue'
 
 defineOptions({
@@ -198,7 +199,7 @@ function getOption(value: SelectOption['value']) {
     .find(option => valueComparator(value, option.value, props.by))
 }
 
-provideSelectRootContext(defineReactiveIds({
+const agentContext = provideSelectRootContext(defineReactiveIds({
   triggerElement,
   onTriggerChange: (node) => {
     triggerElement.value = node
@@ -240,6 +241,7 @@ provideSelectRootContext(defineReactiveIds({
     }
   },
 }, ['contentId']))
+useAgentRegistration('select', agentContext, props)
 </script>
 
 <template>

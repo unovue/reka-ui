@@ -64,6 +64,7 @@ export const [injectTabsRootContext, provideTabsRootContext]
 <script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">
 import { ref, shallowRef, toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 
 const props = withDefaults(defineProps<TabsRootProps<T>>(), {
   orientation: 'horizontal',
@@ -93,7 +94,7 @@ const contentIds = shallowRef<Set<StringOrNumber>>(new Set())
 const triggerIds = ref(new Map<StringOrNumber, string>())
 const renderedContentIds = ref(new Map<StringOrNumber, string>())
 
-provideTabsRootContext({
+const agentContext = provideTabsRootContext({
   modelValue,
   changeModelValue: (value: StringOrNumber) => {
     modelValue.value = value as T
@@ -116,6 +117,7 @@ provideTabsRootContext({
   triggerIds,
   renderedContentIds,
 })
+useAgentRegistration('tabs', agentContext, props)
 </script>
 
 <template>

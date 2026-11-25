@@ -60,6 +60,7 @@ import { computed, onBeforeUnmount, onMounted, shallowRef, useAttrs, watch } fro
 import { injectFieldRootContext } from '@/Field'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { getParentState, getParentToggleValue, getState, isIndeterminate } from './utils'
 
@@ -148,26 +149,35 @@ const checkboxState = computed<CheckedState>(() => {
   }
 })
 
-function handleClick() {
+// A click toggles. Called with `true` or `false` (the agent bridge does), it sets that state instead,
+// so an indeterminate checkbox can be unchecked in one change.
+function handleClick(target?: unknown) {
   // Native `disabled` doesn't block clicks on a non-button (`asChild`), nor when
   // the checkbox is only blocked by the group's `max`.
   if (disabled.value)
     return
+  const to = typeof target === 'boolean' ? target : undefined
+  if (to !== undefined && checkboxState.value === to)
+    return
 
   // Captured before the update: a controlled `modelValue` only changes once
   // the parent re-renders.
-  const nextState = checkboxState.value !== true
+  const nextState = to ?? checkboxState.value !== true
 
   if (!isNullish(checkboxGroupContext?.modelValue.value)) {
     let modelValueArray = [...(checkboxGroupContext.modelValue.value || [])]
     if (isParent.value) {
       const disabledItems = getControlledItems().filter(item => item.disabled())
-      modelValueArray = getParentToggleValue(
-        checkboxGroupContext.allValues.value ?? [],
-        modelValueArray,
-        value => disabledItems.some(item => isEqual(item.value(), value)),
-        checkboxGroupContext.max.value,
-      )
+      const isDisabledValue = (value: unknown) => disabledItems.some(item => isEqual(item.value(), value))
+      const allValues = checkboxGroupContext.allValues.value ?? []
+      const toggled = getParentToggleValue(allValues, modelValueArray, isDisabledValue, checkboxGroupContext.max.value)
+      // Checking only adds: a group with no room left stays as it is, where a click would clear it.
+      if (to === true && toggled.length <= modelValueArray.length)
+        return
+      // Unchecking a mixed parent clears what it can, the way a click on a checked one does.
+      modelValueArray = to === false && checkboxState.value !== true
+        ? modelValueArray.filter(value => isDisabledValue(value) || !isValueEqualOrExist(allValues, value))
+        : toggled
     }
     else if (isValueEqualOrExist(modelValueArray, props.value)) {
       const index = modelValueArray.findIndex(i => isEqual(i, props.value))
@@ -180,7 +190,7 @@ function handleClick() {
   }
   else {
     if (modelValue.value === 'indeterminate') {
-      modelValue.value = props.trueValue as TrueValue
+      modelValue.value = to === false ? props.falseValue as FalseValue : props.trueValue as TrueValue
     }
     else {
       modelValue.value = isChecked.value ? props.falseValue as FalseValue : props.trueValue as TrueValue
@@ -291,10 +301,11 @@ if (checkboxGroupContext) {
   onBeforeUnmount(() => items.delete(item))
 }
 
-provideCheckboxRootContext({
+const agentContext = provideCheckboxRootContext({
   disabled: nativeDisabled,
   state: checkboxState,
 })
+useAgentRegistration('checkbox', agentContext, props, currentElement, handleClick)
 </script>
 
 <template>

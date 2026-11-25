@@ -4,6 +4,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { computed, ref, toRefs, watch, watchEffect } from 'vue'
 import { createRekaContext, useDirection, useForwardExpose } from '@/shared'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import VisuallyHiddenInputBubble from '@/VisuallyHidden/VisuallyHiddenInputBubble.vue'
 
 export type PinInputType = 'text' | 'number'
@@ -143,7 +144,7 @@ watch(modelValue, () => {
     emits('complete', mountedValues.value)
 }, { deep: true, flush: 'post' })
 
-providePinInputRootContext({
+const agentContext = providePinInputRootContext({
   modelValue,
   currentModelValue: currentModelValue as ComputedRef<PinInputValue<Type>>,
   mask,
@@ -158,6 +159,7 @@ providePinInputRootContext({
   onInputElementChange,
   isNumericMode,
 })
+useAgentRegistration('pin-input', agentContext, props)
 </script>
 
 <template>

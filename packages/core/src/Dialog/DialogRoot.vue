@@ -48,6 +48,7 @@ export const [injectDialogRootContext, provideDialogRootContext]
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
 import { ref, toRefs } from 'vue'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 
 defineOptions({
   inheritAttrs: false,
@@ -80,7 +81,7 @@ const contentElement = ref<HTMLElement>()
 const overlayPresent = ref(false)
 const { modal, unmountOnHide } = toRefs(props)
 
-provideDialogRootContext(defineReactiveIds({
+const agentContext = provideDialogRootContext(defineReactiveIds({
   open,
   modal,
   unmountOnHide,
@@ -100,6 +101,7 @@ provideDialogRootContext(defineReactiveIds({
   contentElement,
   overlayPresent,
 }, ['contentId']))
+useAgentRegistration('dialog', agentContext, props)
 </script>
 
 <template>

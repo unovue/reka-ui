@@ -30,6 +30,7 @@ import type { PrimitiveProps } from '..'
 import type { AcceptableValue } from '@/shared/types'
 import { computed, onBeforeUnmount } from 'vue'
 import { useCollection } from '@/Collection'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { Primitive } from '..'
 import { injectListboxRootContext } from './ListboxRoot.vue'
 import { valueComparator } from './utils'
@@ -50,6 +51,7 @@ const id = useId(undefined, 'reka-listbox-item')
 const { CollectionItem } = useCollection()
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectListboxRootContext()
+useAgentItem(rootContext, props, currentElement)
 
 const isHighlighted = computed(() => currentElement.value != null && currentElement.value === rootContext.highlightedElement.value)
 const isSelected = computed(() => valueComparator(rootContext.modelValue.value, props.value, rootContext.by))

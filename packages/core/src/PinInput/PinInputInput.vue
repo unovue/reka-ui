@@ -295,6 +295,7 @@ watch([currentElement, () => props.index], ([element], _, onCleanup) => {
     :disabled="disabledAttr(disabled, props.as, props.asChild)"
     :data-disabled="disabled ? '' : undefined"
     :data-complete="context.isCompleted.value ? '' : undefined"
+    data-reka-pin-input=""
     :aria-label="mountedPosition < 0 ? 'pin input' : `pin input ${mountedPosition + 1} of ${inputElements.length}`"
     @input="handleInput($event as InputEvent)"
     @keydown.left.right.up.down.home.end="handleKeydown"
