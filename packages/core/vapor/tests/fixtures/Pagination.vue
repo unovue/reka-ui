@@ -54,6 +54,7 @@ defineExpose({ page })
           ›
         </button>
       </PaginationNext>
+      <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
       <PaginationLast
         v-slot="{ props }"
         as-child

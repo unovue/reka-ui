@@ -53,6 +53,7 @@ const section = ref<string>()
           C
         </button>
       </TabsTrigger>
+      <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
       <TabsTrigger
         v-slot="{ props }"
         value="d"
@@ -143,6 +144,7 @@ const section = ref<string>()
         I
       </button>
     </ToggleGroupItem>
+    <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
     <ToggleGroupItem
       v-slot="{ props }"
       value="underline"
@@ -179,6 +181,7 @@ const section = ref<string>()
       </AccordionContent>
     </AccordionItem>
     <AccordionItem value="three">
+      <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
       <AccordionHeader
         v-slot="{ props }"
         as-child

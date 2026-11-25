@@ -62,6 +62,7 @@ const clicks = ref(0)
       adopted
     </button>
   </CheckboxRoot>
+  <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
   <Toggle
     v-slot="{ props, modelValue }"
     v-model="slotted"

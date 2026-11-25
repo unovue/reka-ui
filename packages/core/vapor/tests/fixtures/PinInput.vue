@@ -43,6 +43,7 @@ defineExpose({ value })
         data-state="mine"
       >
     </PinInputInput>
+    <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
     <PinInputInput
       v-slot="{ props }"
       as-child

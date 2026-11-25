@@ -46,6 +46,7 @@ defineExpose({ step })
       </StepperTrigger>
     </StepperItem>
     <StepperItem :step="2">
+      <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
       <StepperTrigger
         v-slot="{ props }"
         as-child

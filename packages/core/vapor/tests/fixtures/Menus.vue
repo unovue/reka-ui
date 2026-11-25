@@ -82,6 +82,7 @@ const bookmarks = ref(false)
 
   <ContextMenuRoot>
     <!-- asChild, v-slot form -->
+    <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
     <ContextMenuTrigger
       v-slot="{ props }"
       as-child

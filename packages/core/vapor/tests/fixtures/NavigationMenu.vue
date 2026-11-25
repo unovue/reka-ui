@@ -53,6 +53,7 @@ const current = ref('')
       </NavigationMenuItem>
       <NavigationMenuItem>
         <!-- asChild, v-slot form -->
+        <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
         <NavigationMenuLink
           v-slot="{ props }"
           as-child

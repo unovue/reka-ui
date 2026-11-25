@@ -70,6 +70,7 @@ const many = Array.from({ length: 1000 }, (_, i) => `Item ${i}`)
   <span id="sizes">{{ sizes.map(Math.round).join() }}</span>
 
   <!-- asChild, v-slot form -->
+  <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
   <ScrollAreaRoot
     v-slot="{ props }"
     as-child

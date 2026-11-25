@@ -38,6 +38,7 @@ defineExpose({ value })
           Save
         </button>
       </EditableSubmitTrigger>
+      <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
       <EditableCancelTrigger
         v-slot="{ props }"
         as-child

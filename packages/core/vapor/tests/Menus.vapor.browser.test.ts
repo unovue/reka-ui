@@ -96,6 +96,8 @@ describe('dropdown menu, context menu, menubar (Vapor)', () => {
     await expectNoAxeViolations()
     await userEvent.click(byId('menu-trigger'))
     await shown('menu-content')
-    await expectNoAxeViolations()
+    // The open menu only: a modal menu sets aria-hidden on the rest of the page (the built entry runs
+    // `useHideOthers`, which the source build skips in test mode), and the page keeps its focusables
+    await expectNoAxeViolations(byId('menu-content'))
   })
 })

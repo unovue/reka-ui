@@ -55,6 +55,7 @@ defineExpose({ value, range })
         style="display: block; width: 16px; height: 16px"
       />
     </SliderThumb>
+    <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
     <SliderThumb
       v-slot="{ props }"
       as-child

@@ -62,19 +62,20 @@ const virtualSelected = ref<Node>()
     aria-label="Many files"
     style="height: 150px; overflow: auto"
   >
-    <!-- asChild, v-slot form (no comment inside the virtualizer slot: v2 takes its first node) -->
+    <!-- asChild, v-slot form. No comment inside the virtualizer slot (v2 takes its first node), so
+         instead of `@vue-expect-error` the untyped `props` is read through a cast (see the Vapor guide) -->
     <TreeVirtualizer
       v-slot="{ item }"
       :text-content="(node: any) => node.title"
       :estimate-size="25"
     >
       <TreeItem
-        v-slot="{ props }"
+        v-slot="row"
         v-bind="item.bind"
         as-child
       >
         <li
-          v-bind="props"
+          v-bind="(row as any).props"
           :id="`v-${item.value.title}`"
           style="height: 25px"
         >

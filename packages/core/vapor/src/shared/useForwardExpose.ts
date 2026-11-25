@@ -32,7 +32,7 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
     const child = currentRef.value as any
     if (child && !(child instanceof Element) && key in child)
       return child[key]
-    return instance.props[key]
+    return instance.props[key as string]
   }
   const keys = () => [...new Set(['$el', ...Object.keys(local), ...Object.keys(instance.props)])]
 

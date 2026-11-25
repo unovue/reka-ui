@@ -50,6 +50,7 @@ const card = ref(false)
       :close-delay="0"
     >
       <!-- asChild, v-slot form -->
+      <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
       <HoverCardTrigger
         v-slot="{ props }"
         as-child

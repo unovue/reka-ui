@@ -98,6 +98,16 @@ jobs:
         env:
           VAPOR_PARITY: vdom
 
+      # The published files: the same tests against the built dist/vapor, plus Node-side checks (SSR stub, exports)
+      - name: Download dist artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: reka-ui-dist
+          path: packages/core/dist
+
+      - name: Test (Vapor, built dist)
+        run: pnpm --filter reka-ui test:vapor:dist
+
   # The Carousel rests on native scroll snapping, smooth scrolling and `scrollend`,
   # where Firefox and WebKit differ from Chromium, so its browser tests run in both.
   test-browser-carousel:

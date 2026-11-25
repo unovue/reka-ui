@@ -74,6 +74,7 @@ const actions = ref(0)
 
   <DialogRoot v-model:open="dialog">
     <!-- asChild, v-slot form -->
+    <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
     <DialogTrigger
       v-slot="{ props }"
       as-child

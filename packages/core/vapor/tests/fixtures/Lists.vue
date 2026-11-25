@@ -82,6 +82,7 @@ const combo = ref<any>()
         {{ f }}
       </ListboxItem>
       <!-- asChild, both forms -->
+      <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
       <ListboxItem
         v-slot="{ props }"
         value="cherry"

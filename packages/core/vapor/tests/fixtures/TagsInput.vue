@@ -35,6 +35,7 @@ defineExpose({ tags })
         aria-label="Add tag"
       />
       <!-- asChild, v-slot form -->
+      <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
       <TagsInputClear
         v-slot="{ props }"
         as-child

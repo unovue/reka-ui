@@ -16,6 +16,7 @@
 //   `useAttrs`, `useId`, lifecycle hooks, `onScopeDispose`.
 //
 // Static member reads only (`vue.x`, never `vue[key]`), so bundlers can still tree-shake `vue`.
+import type { ExtractPropTypes } from 'vue'
 import * as vue from 'vue'
 
 /** The Vue range `reka-ui/vapor` is tested against. */
@@ -58,7 +59,21 @@ export const createSlot: (name: string, rawProps?: Record<string, any> | null, f
 export const createIf: (condition: () => any, b1: () => any, b2?: () => any) => any = v.createIf
 export const createDynamicComponent: (getter: () => any, rawProps?: Record<string, any> | null, rawSlots?: Record<string, any> | null, flags?: number) => any = v.createDynamicComponent
 export const renderEffect: (fn: () => void) => void = v.renderEffect
-export const defineVaporComponent: <T>(options: T) => T = v.defineVaporComponent
+/** The setup context a Vapor component receives (the subset reka's hand-written components use). */
+export interface VaporSetupContext {
+  attrs: Record<string, any>
+  slots: Record<string, any>
+  emit: (event: string, ...args: any[]) => void
+  expose: (exposed?: Record<string, any>) => void
+}
+export interface VaporComponentOptions<P extends Record<string, any>> {
+  name?: string
+  inheritAttrs?: boolean
+  props?: P
+  setup: (props: ExtractPropTypes<P>, ctx: VaporSetupContext) => any
+}
+/** Public types come from the main entry's declarations (see vapor/vite.config.mjs), so this returns `any`. */
+export const defineVaporComponent: <P extends Record<string, any> = Record<string, never>>(options: VaporComponentOptions<P>) => any = v.defineVaporComponent
 
 export interface GenericInstance {
   vapor?: true

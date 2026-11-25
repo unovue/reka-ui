@@ -45,6 +45,7 @@ defineExpose({ on, adopted, slotted, clicks, rootRef })
   </SwitchRoot>
 
   <!-- asChild, scoped-slot form: the consumer binds `props` and picks precedence by order -->
+  <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
   <SwitchRoot
     v-slot="{ props }"
     v-model="slotted"

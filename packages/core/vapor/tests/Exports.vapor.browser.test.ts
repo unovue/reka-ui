@@ -1,0 +1,21 @@
+import * as reka from '#reka'
+import { describe, expect, it } from 'vitest'
+import entrySource from '../src/index.ts?raw'
+
+declare const __VAPOR__: boolean
+
+const EXPORT_LIST = /export\s*\{([^}]*)\}/g
+const declared = [...entrySource.matchAll(EXPORT_LIST)].flatMap(m => m[1].split(',').map(s => s.trim()).filter(Boolean)).sort()
+
+describe('entry exports (Vapor)', () => {
+  it.runIf(__VAPOR__)('exports exactly what vapor/src/index.ts lists, each defined', () => {
+    expect(Object.keys(reka).sort()).toEqual(declared)
+    for (const name of declared)
+      expect(reka[name as keyof typeof reka], name).toBeDefined()
+  })
+
+  it('every listed export exists in the entry under test', () => {
+    for (const name of declared)
+      expect(name in reka, name).toBe(true)
+  })
+})

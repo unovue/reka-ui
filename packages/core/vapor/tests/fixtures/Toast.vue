@@ -31,6 +31,7 @@ const undone = ref(0)
         </p>
       </ToastDescription>
       <!-- asChild, v-slot form -->
+      <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
       <ToastAction
         v-slot="{ props }"
         alt-text="Undo the change"

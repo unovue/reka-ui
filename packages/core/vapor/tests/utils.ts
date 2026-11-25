@@ -41,8 +41,11 @@ export function byId<T extends HTMLElement = HTMLElement>(id: string): T {
   return el as T
 }
 
-/** Polls `fn` until it stops throwing (expect.poll for plain assertions). */
-export async function until(fn: () => void, timeout = 1000) {
+/**
+ * Polls `fn` every `interval` ms until it stops throwing (expect.poll for plain assertions). The
+ * timeout is generous so a slow CI runner doesn't flake; a passing check returns on the first poll.
+ */
+export async function until(fn: () => void, timeout = 3000, interval = 16) {
   const start = performance.now()
   for (;;) {
     try {
@@ -52,7 +55,7 @@ export async function until(fn: () => void, timeout = 1000) {
     catch (e) {
       if (performance.now() - start > timeout)
         throw e
-      await new Promise(r => requestAnimationFrame(r))
+      await new Promise(r => setTimeout(r, interval))
     }
   }
 }

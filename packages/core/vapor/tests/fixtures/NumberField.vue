@@ -43,6 +43,7 @@ defineExpose({ value })
       </button>
     </NumberFieldDecrement>
     <NumberFieldInput aria-label="Other" />
+    <!-- @vue-expect-error the slot types don't list `props` yet (see the Vapor guide) -->
     <NumberFieldIncrement
       v-slot="{ props }"
       as-child
