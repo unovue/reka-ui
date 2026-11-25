@@ -182,7 +182,7 @@ export interface ComboboxRootProps<T = AcceptableValue, I = T> extends Omit<List
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false, I = T">
-import { mergeProps, toRef, watch } from 'vue'
+import { camelize, mergeProps, toRef, useAttrs, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { provideListboxRootContext } from '@/Listbox/ListboxRoot.vue'
@@ -216,6 +216,15 @@ defineSlots<{
     modelValue: ComboboxModelValue<T, M>
   }) => any
 }>()
+
+// The root has no `searchTerm` model: the typed text is `ComboboxInput`'s
+// `v-model`. Vue passes an unknown `v-model:search-term` through as attributes
+// without a warning, so a search bound to it would never run (#3276).
+if (process.env.NODE_ENV !== 'production') {
+  if (Object.keys(useAttrs()).some(key => ['searchTerm', 'onUpdate:searchTerm'].includes(camelize(key)))) {
+    console.warn('[reka-ui] ComboboxRoot: `search-term` / `update:search-term` (`v-model:search-term`) is not a prop or event of `ComboboxRoot` and is ignored. Bind the typed text with `v-model` on `ComboboxInput` instead.')
+  }
+}
 
 const { getItems, getItem } = useCollection<{ value: T }>({ isProvider: true })
 const { forwardRef, currentElement, expose } = useForwardElement()
