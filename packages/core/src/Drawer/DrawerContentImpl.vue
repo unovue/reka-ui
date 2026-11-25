@@ -42,9 +42,10 @@ import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { computeSwipeReleaseScalar, DRAWER_CSS_VARS, getDisplacement, onAnimationsFinished, registerDrawerCssProperties } from './utils'
 
 const props = withDefaults(defineProps<DrawerContentImplProps & {
-  /** Whether the content is currently visible. Forwarded to `FocusScope` and
-   * `DismissableLayer` so a force-mounted drawer auto-focuses on open and
-   * leaves the layer and scope stacks while closed. */
+  /** Whether the content is present, including while it animates out. Forwarded
+   * to `FocusScope` so a force-mounted drawer auto-focuses on open and leaves the
+   * scope stack while closed. The `DismissableLayer` is released as soon as the
+   * drawer closes, so the layer below takes Escape and presses during the exit. */
   present?: boolean
 }>(), {
   initialFocus: true,
@@ -446,7 +447,7 @@ if (process.env.NODE_ENV !== 'production') {
       :ref="forwardRef"
       :as="as"
       :as-child="asChild"
-      :present="props.present"
+      :present="rootContext.open.value && props.present"
       :disable-outside-pointer-events="disableOutsidePointerEvents"
       role="dialog"
       :aria-describedby="rootContext.descriptionId"
