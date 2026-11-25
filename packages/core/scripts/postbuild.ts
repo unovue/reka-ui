@@ -23,7 +23,29 @@ const DEV_WARNINGS = [
   'createAgent ran after an app mounted',
 ]
 const DEV_GUARD = 'process.env.NODE_ENV !== "production"'
-const GUARD_LOOKBACK = 3
+
+// Whether the code at `index` runs only under the nearest dev guard above it: either inside the block
+// the guard opens, or in the single statement that follows it.
+function isBehindDevGuard(code: string, index: number) {
+  const guard = code.lastIndexOf(DEV_GUARD, index)
+  if (guard === -1)
+    return false
+  let depth = 0
+  let opened = false
+  for (const char of code.slice(guard + DEV_GUARD.length, index)) {
+    if (char === '{') {
+      depth++
+      opened = true
+    }
+    else if (char === '}') {
+      depth--
+    }
+    // The guarded block closed, or the guarded statement ended, before the warning.
+    if (depth < 0 || (opened && depth === 0) || (!opened && char === ';'))
+      return false
+  }
+  return true
+}
 
 function checkDevWarnings(path = new URL('../dist/', import.meta.url), found = new Set<string>(), root = true) {
   for (const file of readdirSync(path)) {
@@ -35,15 +57,12 @@ function checkDevWarnings(path = new URL('../dist/', import.meta.url), found = n
       const code = readFileSync(url, 'utf8')
       if (code.includes('import.meta.env'))
         throw new Error(`[postbuild] ${url.pathname} still reads import.meta.env. Use process.env.NODE_ENV !== 'production' in src.`)
-      const lines = code.split('\n')
-      for (const [index, line] of lines.entries()) {
-        const warning = DEV_WARNINGS.find(text => line.includes(text))
-        if (!warning)
-          continue
-        // The guard is on the warning's own line, or opens a block a few lines above it.
-        if (!lines.slice(Math.max(0, index - GUARD_LOOKBACK), index + 1).some(l => l.includes(DEV_GUARD)))
-          throw new Error(`[postbuild] ${url.pathname}: the "${warning}" warning is not behind ${DEV_GUARD}, so it would also run in production.`)
-        found.add(warning)
+      for (const warning of DEV_WARNINGS) {
+        for (let index = code.indexOf(warning); index !== -1; index = code.indexOf(warning, index + 1)) {
+          if (!isBehindDevGuard(code, index))
+            throw new Error(`[postbuild] ${url.pathname}: the "${warning}" warning is not behind ${DEV_GUARD}, so it would also run in production.`)
+          found.add(warning)
+        }
       }
     }
   }
