@@ -4,11 +4,11 @@
 // component refs in many places (`usePrimitiveElement`, `unrefElement(componentRef)`), so the Vapor
 // build gives every SFC a default `$el` expose. It is injected at the top of each compiled `setup`
 // (`vapor/vite.config.mjs`); an explicit `defineExpose` / `useForwardExpose` later replaces it.
-import * as vue from 'vue'
 import { findElement } from '../Primitive'
+import { getGenericInstance } from './internals'
 
 export function exposeElement() {
-  const instance = (vue as any).currentInstance
+  const instance = getGenericInstance() as any
   if (instance && !instance.exposed) {
     instance.exposed = {
       get $el() {
@@ -16,4 +16,20 @@ export function exposeElement() {
       },
     }
   }
+}
+
+/**
+ * `defineExpose(obj)` replaces the default expose above, which drops `$el` (a ListboxRoot ref then
+ * resolves to the expose proxy instead of an element). The build rewrites the compiled
+ * `__expose(obj)` to `exposeWithElement(__expose, obj)`, which keeps a `$el` getter on `obj`.
+ */
+export function exposeWithElement(expose: (exposed: Record<string, any>) => void, exposed: Record<string, any> = {}) {
+  const instance = getGenericInstance() as any
+  if (instance && !('$el' in exposed)) {
+    Object.defineProperty(exposed, '$el', {
+      configurable: true,
+      get: () => findElement(instance.block),
+    })
+  }
+  expose(exposed)
 }

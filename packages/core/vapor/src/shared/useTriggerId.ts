@@ -6,7 +6,7 @@ import { computed, onActivated, onBeforeMount, onBeforeUnmount, onBeforeUpdate, 
 // How many content elements are rendered for a context. Kept beside the context rather
 // than on it, so the context types stay as they are.
 import { findElement } from '../Primitive'
-import { getGenericInstance } from './useForwardExpose'
+import { getGenericInstance } from './internals'
 
 const mountedContents = new WeakMap<object, Ref<number>>()
 
@@ -128,7 +128,7 @@ export function useContentElement(
  */
 export function useContentMounted(key: object, element: Readonly<Ref<HTMLElement | undefined>>) {
   const count = useMountedContents(key)
-  const instance = getGenericInstance()
+  const instance = getGenericInstance() as any
   let isCounted = false
   const setCounted = (value: boolean) => {
     if (value === isCounted)

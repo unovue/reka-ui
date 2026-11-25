@@ -6,13 +6,11 @@
 // Vapor caches the expose proxy on first access (`getExposed`), so instead of reassigning
 // `instance.exposed` when the forwarded child changes, expose one Proxy that resolves lazily.
 import type { ComponentPublicInstance } from 'vue'
-import * as vue from 'vue'
 import { computed, onMounted, ref } from 'vue'
 import { findElement } from '../Primitive'
+import { getGenericInstance } from './internals'
 
-export function getGenericInstance(): any {
-  return (vue as any).currentInstance
-}
+export { getGenericInstance }
 
 function toElement(target: any): HTMLElement | undefined {
   if (!target)
@@ -24,7 +22,7 @@ function toElement(target: any): HTMLElement | undefined {
 }
 
 export function useForwardExpose<T extends ComponentPublicInstance>() {
-  const instance = getGenericInstance()
+  const instance = getGenericInstance() as any
   const currentRef = ref<Element | T | null>()
   const currentElement = computed(() => toElement(currentRef.value))
 

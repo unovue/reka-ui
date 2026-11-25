@@ -2,7 +2,7 @@
 // Each file below is swapped in for its `src/shared/*` counterpart by `vapor/vite.config.mjs`.
 import type { MaybeRefOrGetter } from 'vue'
 import { camelize, computed, toHandlerKey, toRef } from 'vue'
-import { getGenericInstance } from './useForwardExpose'
+import { getGenericInstance } from './internals'
 
 /** v2 reads `vnode.scopeId`; a Vapor instance carries the same id as `instance.scopeId`. */
 export function useForwardScopeId(): Record<string, string> {
@@ -15,7 +15,7 @@ export function useForwardScopeId(): Record<string, string> {
  * `rawKeys()` lists the keys of its raw props (static and dynamic sources).
  */
 export function useForwardProps<T extends Record<string, any>>(props: MaybeRefOrGetter<T>) {
-  const vm = getGenericInstance()
+  const vm = getGenericInstance() as any
   const options = vm?.type.props ?? {}
   const defaults = Object.keys(options).filter(k => options[k]?.default !== undefined)
   const refProps = toRef(props)
@@ -32,7 +32,7 @@ export function useForwardProps<T extends Record<string, any>>(props: MaybeRefOr
 }
 
 export function useEmitAsProps(emit: (name: any, ...args: any[]) => void) {
-  const vm = getGenericInstance()
+  const vm = getGenericInstance() as any
   const events: string[] = Array.isArray(vm?.type.emits) ? vm.type.emits : Object.keys(vm?.type.emits ?? {})
   const result: Record<string, any> = {}
   events.forEach((ev) => {

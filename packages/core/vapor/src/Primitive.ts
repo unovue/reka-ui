@@ -155,6 +155,37 @@ export function adopt(el: Element, getProps: () => Record<string, any>, { overri
   })
 }
 
+/**
+ * The `asChild` render: the default slot gets `props` (a lazy view of `getProps()`); when the slot
+ * doesn't read it, the props are adopted onto the first element it rendered.
+ * Shared by `Primitive` and the Vapor `CollectionSlot` / `CollectionItem`.
+ */
+export function renderAsChildSlot(getProps: () => Record<string, any>, adoptProps?: (el: Element) => Record<string, any>) {
+  let consumed = false
+  // Components spread their slot props through `mergeProps`, which copies the `props` reference
+  // without reading it, so only the consumer's `v-bind` marks it as used.
+  const props = new Proxy({}, {
+    get: (_, key) => {
+      consumed = true
+      return getProps()[key as string]
+    },
+    has: (_, key) => key in getProps(),
+    ownKeys: () => {
+      consumed = true
+      return Reflect.ownKeys(getProps())
+    },
+    getOwnPropertyDescriptor: (_, key) => ({ enumerable: true, configurable: true, value: getProps()[key as string] }),
+  })
+  const slotProps = { props }
+  const block = createSlot('default', { $: [() => slotProps] })
+  const element = findElement(block)
+  if (!consumed && element) {
+    const el = element
+    adopt(el, adoptProps ? () => adoptProps(el) : getProps)
+  }
+  return { block, element, consumed }
+}
+
 export const Primitive = defineVaporComponent({
   name: 'Primitive',
   inheritAttrs: false,
@@ -172,29 +203,9 @@ export const Primitive = defineVaporComponent({
     })
 
     if (props.asChild || props.as === 'template') {
-      let consumed = false
-      const childProps = () => ({ ...attrs })
-      // A lazy view of the attrs: components spread their slot props through `mergeProps`, which
-      // copies the `props` reference without reading it, so only the consumer's `v-bind` marks it.
-      const props = new Proxy({}, {
-        get: (_, key) => {
-          consumed = true
-          return childProps()[key as string]
-        },
-        has: (_, key) => key in childProps(),
-        ownKeys: () => {
-          consumed = true
-          return Reflect.ownKeys(childProps())
-        },
-        getOwnPropertyDescriptor: (_, key) => ({ enumerable: true, configurable: true, value: childProps()[key as string] }),
-      })
-      const slotProps = { props }
-      block = createSlot('default', { $: [() => slotProps] })
-      element = findElement(block)
-      if (!consumed && element) {
-        const el = element
-        adopt(el, () => withAriaDisabled(el.tagName.toLowerCase(), childProps()))
-      }
+      const r = renderAsChildSlot(() => ({ ...attrs }), el => withAriaDisabled(el.tagName.toLowerCase(), attrs))
+      block = r.block
+      element = r.element
       return block
     }
 
