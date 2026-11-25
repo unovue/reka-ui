@@ -68,6 +68,8 @@ interface Include {
   line: number
   name: string
   heading: string
+  /** Line of the heading, identifies the section even when heading texts repeat. */
+  headingLine: number
 }
 
 function readFamilies() {
@@ -94,13 +96,16 @@ function readIncludes() {
   const pages = fg.sync('**/*.md', { cwd: PAGES_DIR, absolute: true }).sort()
   for (const page of pages) {
     let heading = ''
+    let headingLine = 0
     let fence: string | null = null
     readFileSync(page, 'utf8').split('\n').forEach((text, index) => {
       const fenceMatch = text.match(FENCE_RE)
       if (fenceMatch) {
+        const marker = fenceMatch[1]
         if (!fence)
-          fence = fenceMatch[1][0]
-        else if (fenceMatch[1][0] === fence)
+          fence = marker
+        // A fence closes on the same character, at least as long as the opening, with nothing after it.
+        else if (marker[0] === fence[0] && marker.length >= fence.length && text.trim() === marker)
           fence = null
         return
       }
@@ -109,6 +114,7 @@ function readIncludes() {
       const headingMatch = text.match(HEADING_RE)
       if (headingMatch) {
         heading = headingMatch[2].trim()
+        headingLine = index + 1
         return
       }
       const includeMatch = text.match(INCLUDE_RE)
@@ -118,6 +124,7 @@ function readIncludes() {
           line: index + 1,
           name: includeMatch[1],
           heading,
+          headingLine,
         })
       }
     })
@@ -180,7 +187,7 @@ for (const include of includes) {
     seen.set(key, include)
     continue
   }
-  if (previous.heading !== include.heading) {
+  if (previous.headingLine !== include.headingLine) {
     errors.push(
       `${include.page}:${include.line} includes @/meta/${include.name}.md under "${include.heading}", `
       + `already included at line ${previous.line} under "${previous.heading}"`,

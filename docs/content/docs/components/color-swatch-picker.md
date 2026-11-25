@@ -99,9 +99,9 @@ The component that indicates the selected color swatch within an item.
 
 ## Accessibility
 
-Adheres to the [Listbox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/). The root renders with `role="listbox"` and each item with `role="option"`, labelled with the name of its color.
+Adheres to the [Listbox WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/). The root renders with `role="listbox"` and each item with `role="option"`, labelled with the name of its color. The picker itself has no built-in label, so give `ColorSwatchPickerRoot` an accessible name with `aria-label` or `aria-labelledby`.
 
-Focus is managed with a roving tabindex, so the picker is a single tab stop. Moving focus with the arrow keys does not change the selection; press <kbd>Space</kbd> or <kbd>Enter</kbd> to select.
+Focus is managed with a roving tabindex, so the picker is a single tab stop. Moving focus with the arrow keys does not change the selection; press <kbd>Space</kbd> or <kbd>Enter</kbd> to select. The one exception is `multiple` combined with `selectionBehavior="replace"`, where holding <kbd>Shift</kbd> while moving focus extends the selection.
 
 ### Keyboard Interactions
 
@@ -137,15 +137,15 @@ Focus is managed with a roving tabindex, so the picker is a single tab stop. Mov
     },
     {
       keys: ['Space'],
-      description: 'Selects the focused item.',
+      description: '<span>Selects the focused item. With the default <code>selectionBehavior</code> of <code>toggle</code>, deselects it when it is already selected.</span>',
     },
     {
       keys: ['Enter'],
-      description: 'Selects the focused item.',
+      description: '<span>Selects the focused item. With the default <code>selectionBehavior</code> of <code>toggle</code>, deselects it when it is already selected.</span>',
     },
     {
       keys: ['Ctrl/Cmd + A'],
-      description: '<span>Selects all items when <code>multiple</code> is set.</span>',
+      description: '<span>Selects all items when <code>multiple</code> is set, unless that would exceed <code>max</code>.</span>',
     },
   ]"
 />
