@@ -54,7 +54,11 @@ function toSingleQuotedJson(obj: unknown): string {
 const allComponents = fg.sync(['src/**/*.vue', '!src/**/story/*.vue', '!src/**/*.story.vue'], {
   cwd: resolve(__dirname, '../../packages/core'),
   absolute: true,
-})
+// TypeScript prints union members in the order it first met them, so the
+// output depends on the order the components are read in. Directory order
+// differs between file systems; sorting keeps the result the same everywhere
+// (CI fails when `docs/content/meta` is out of date).
+}).sort()
 
 const listOfComponents = Object.values(components).flatMap(i => i)
 const primitiveComponents = allComponents.filter((i) => {
