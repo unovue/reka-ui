@@ -5,11 +5,11 @@ import { addComponent, addImports, defineNuxtModule } from '@nuxt/kit'
 import { components as allComponents, utilities as allUtilities } from 'reka-ui/constant'
 
 /**
- * Utilities that are not auto-imported because Nuxt already auto-imports a
- * function with the same name. Import these from `reka-ui` explicitly.
+ * Utilities that are not auto-imported because their name clashes with a
+ * function Nuxt can auto-import itself. Import these from `reka-ui` explicitly.
  */
 const excludedComposables: string[] = [
-  // Vue's own `useId` is auto-imported by Nuxt.
+  // Recent Nuxt versions auto-import a `useId` of their own or Vue's.
   'useId',
 ]
 

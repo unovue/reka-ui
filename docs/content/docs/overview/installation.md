@@ -40,7 +40,7 @@ export default defineNuxtConfig({
 
 <Callout type="tip">
 
-`useId` is not auto-imported, because Nuxt already auto-imports Vue's `useId`. Import it from `reka-ui` when you need Reka UI's version. If your app or another module provides a composable with the same name as one from Reka UI, that one is used.
+`useId` is not auto-imported, so it never clashes with the `useId` that Nuxt or Vue provides. Import it from `reka-ui` explicitly when you need Reka UI's version. If your app or another module provides a composable with the same name as one from Reka UI, that one is used.
 
 </Callout>
 

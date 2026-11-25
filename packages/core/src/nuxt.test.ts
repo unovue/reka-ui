@@ -46,7 +46,7 @@ describe('nuxt module', () => {
     }
   })
 
-  it('leaves out useId, which Nuxt already auto-imports from Vue', async () => {
+  it('leaves out useId, which clashes with the one Nuxt auto-imports', async () => {
     await setup()
 
     expect(importedNames()).not.toContain('useId')
