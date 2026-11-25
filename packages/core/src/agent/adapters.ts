@@ -41,6 +41,8 @@ export interface Source {
 }
 
 export interface Adapter {
+  /** Always private, like a PIN's boxes, whatever marks are around it. */
+  secret?: true
   component: (s: Source) => string
   parts: (s: Source) => Part[]
   /** Elements whose insides are the component's own, so the native scan leaves them out. */
@@ -111,7 +113,12 @@ function registered(s: Source): Item[] {
 }
 
 // A list's value by toggling, the way a person picks and unpicks items: `toggle` adds or takes out one.
-function toggleTo(current: unknown, target: unknown, multiple: boolean, toggle: (value: unknown) => unknown, guard?: (value: unknown) => void) {
+function toggleTo(current: unknown, target: unknown, multiple: boolean, pick: (value: unknown) => unknown, guard?: (value: unknown) => void) {
+  // Every choice is checked just before it's made, the first one too: what the page did since can mark it.
+  const toggle = (value: unknown) => {
+    guard?.(value)
+    return pick(value)
+  }
   if (!multiple) {
     if (target == null || target === '') {
       if (current != null && current !== '')
@@ -132,21 +139,19 @@ function toggleTo(current: unknown, target: unknown, multiple: boolean, toggle: 
   // Each toggle builds on the one before, so a controlled model gets its render in between, as clicks would.
   return (async () => {
     for (const [index, value] of changes.entries()) {
-      if (index) {
+      if (index)
         await nextTick()
-        // What the last toggle did can mark the next item, so each is checked before its own.
-        guard?.(value)
-      }
       toggle(value)
     }
   })()
 }
 
 // Picks an item the way a click on it does, so its `select` event fires and `preventDefault` there stops it.
+// An item that isn't there to click, or that the agent mustn't see, isn't picked any other way.
 function clickItem(list: Source, value: unknown) {
   const item = registered(list).find(item => same(item.value, value))
   if (!item?.el)
-    return false
+    return fail(`No item ${JSON.stringify(value)} to pick in this list now.`)
   if (item.disabled)
     return fail(`"${item.label}" is disabled now.`)
   item.el.click()
@@ -228,7 +233,7 @@ async function comboboxTo(s: Source, value: unknown, guard?: (value: unknown) =>
   const wanted = toList(value)
   const was = !!unref(s.ctx.open)
   try {
-    if (!was && (wanted.length || multiple)) {
+    if (!was && (wanted.length || multiple || current != null)) {
       s.ctx.onOpenChange(true)
       // A timer, not frames: a hidden page renders no frames, and a wait on one would hold every later call.
       const deadline = Date.now() + 1000
@@ -236,8 +241,10 @@ async function comboboxTo(s: Source, value: unknown, guard?: (value: unknown) =>
         await pause(16)
     }
     const listbox = s.inner
-    const pick = (v: unknown) => (listbox && clickItem(listbox, v)) || (listbox ? listbox.ctx.onValueChange(v) : (s.ctx.modelValue.value = v))
-    await toggleTo(current, value, multiple, pick, guard)
+    if (!listbox)
+      return fail('combobox has no list to pick from.')
+    // The guard runs after the wait, on what the list shows then.
+    await toggleTo(current, value, multiple, v => clickItem(listbox, v), guard)
   }
   finally {
     if (!was && unref(s.ctx.open))
@@ -347,10 +354,10 @@ export const adapters: Record<string, Adapter> = {
     run: (s, action, [value], guard) => {
       const multiple = !!unref(s.ctx.multiple)
       if (action === 'clear')
-        return toggleTo(unref(s.ctx.modelValue), multiple ? [] : undefined, multiple, v => clickItem(s, v) || s.ctx.onValueChange(v), guard)
+        return toggleTo(unref(s.ctx.modelValue), multiple ? [] : undefined, multiple, v => clickItem(s, v), guard)
       if (action !== 'setValue')
         return fail(`listbox takes setValue, not ${action}.`)
-      return toggleTo(unref(s.ctx.modelValue), value, multiple, v => clickItem(s, v) || s.ctx.onValueChange(v), guard)
+      return toggleTo(unref(s.ctx.modelValue), value, multiple, v => clickItem(s, v), guard)
     },
   }),
 
@@ -386,7 +393,10 @@ export const adapters: Record<string, Adapter> = {
       const single = !!unref(s.ctx.isSingle)
       const current = unref(s.ctx.modelValue)
       const open = toList(current)
-      const change = (v: unknown) => s.ctx.changeModelValue(v)
+      const change = (v: unknown) => {
+        guard?.(v)
+        return s.ctx.changeModelValue(v)
+      }
       const all = registered(s).filter(item => !item.disabled).map(item => item.value)
       const closing = (target: unknown) => {
         if (single && !s.ctx.collapsible && has(open, target))
@@ -396,7 +406,7 @@ export const adapters: Record<string, Adapter> = {
         case 'setValue':
           if (single && (value == null || value === ''))
             closing(current)
-          return toggleTo(current, value, !single, change, guard)
+          return toggleTo(current, value, !single, change)
         case 'open':
           return has(open, value) ? undefined : change(value)
         case 'close':
@@ -407,9 +417,10 @@ export const adapters: Record<string, Adapter> = {
             closing(value)
           return change(value)
         case 'openAll':
-          return toggleTo(current, all, true, change, guard)
+          return toggleTo(current, [...open, ...all.filter(v => !has(open, v))], true, change)
         case 'closeAll':
-          return toggleTo(current, [], true, change, guard)
+          // A disabled section stays open, as `close` leaves it.
+          return toggleTo(current, registered(s).filter(item => item.disabled && has(open, item.value)).map(item => item.value), true, change)
       }
       return fail(`accordion takes setValue, open, close or toggle, not ${action}.`)
     },
@@ -488,6 +499,22 @@ export const adapters: Record<string, Adapter> = {
       if (action !== 'setValue')
         return fail(`number-field takes setValue, not ${action}.`)
       s.ctx.modelValue.value = numberTo(s, value as number)
+    },
+  }),
+
+  'pin-input': field(['value'], {
+    component: () => 'pin-input',
+    secret: true,
+    parts: s => parts(['root', rootOf(s)]),
+    owns: s => parts(['root', rootOf(s)]).map(p => p.el),
+    state: s => ({ value: (unref(s.ctx.modelValue) ?? []).join('') }),
+    disabled: s => !!unref(s.ctx.disabled),
+    actions: () => ['setValue', 'clear'],
+    run: (s, action, [value]) => {
+      if (action !== 'setValue' && action !== 'clear')
+        return fail(`pin-input takes setValue or clear, not ${action}.`)
+      const chars = action === 'clear' || value == null ? [] : [...String(value)]
+      s.ctx.modelValue.value = unref(s.ctx.isNumericMode) ? chars.map(Number) : chars
     },
   }),
 
@@ -602,7 +629,7 @@ export const native: Record<string, Adapter> = {
         out.required = true
       return out
     },
-    disabled: s => (s.native as HTMLInputElement).disabled || (s.native as HTMLInputElement).readOnly,
+    disabled: s => isDisabledElement(s.native!) || (s.native as HTMLInputElement).readOnly,
     actions: () => ['setValue', 'clear'],
     run: (s, action, [value]) => {
       if (action === 'clear')
@@ -617,7 +644,7 @@ export const native: Record<string, Adapter> = {
     parts: s => parts(['control', s.native]),
     owns: () => [],
     state: s => ({ checked: (s.native as HTMLInputElement).indeterminate ? 'indeterminate' : (s.native as HTMLInputElement).checked }),
-    disabled: s => (s.native as HTMLInputElement).disabled,
+    disabled: s => isDisabledElement(s.native!),
     actions: () => ['setChecked', 'toggle'],
     run: (s, action, [value]) => {
       const box = s.native as HTMLInputElement
@@ -639,7 +666,7 @@ export const native: Record<string, Adapter> = {
     },
     items: s => Array.from((s.native as HTMLSelectElement).options, option => ({ value: option.value, label: textOf(option) || option.value, disabled: option.disabled || (option.parentElement?.localName === 'optgroup' && (option.parentElement as HTMLOptGroupElement).disabled) })),
     closed: true,
-    disabled: s => (s.native as HTMLSelectElement).disabled,
+    disabled: s => isDisabledElement(s.native!),
     actions: () => ['setValue'],
     run: (s, action, [value]) => {
       const select = s.native as HTMLSelectElement
@@ -661,9 +688,9 @@ export const native: Record<string, Adapter> = {
     parts: s => (s.radios ?? []).map(radio => ({ slot: 'item', el: radio })),
     owns: () => [],
     state: s => ({ value: s.radios?.find(radio => radio.checked)?.value ?? null }),
-    items: s => (s.radios ?? []).map(radio => ({ value: radio.value, label: nameOf(radio) || radio.value, disabled: radio.disabled, el: radio })),
+    items: s => (s.radios ?? []).map(radio => ({ value: radio.value, label: nameOf(radio) || radio.value, disabled: isDisabledElement(radio), el: radio })),
     closed: true,
-    disabled: s => !!s.radios?.every(radio => radio.disabled),
+    disabled: s => !!s.radios?.every(radio => isDisabledElement(radio)),
     actions: () => ['setValue'],
     run: (s, action, [value]) => {
       if (action !== 'setValue')

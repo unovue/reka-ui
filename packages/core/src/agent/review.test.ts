@@ -51,7 +51,8 @@ describe('privacy', () => {
     expect((await agent.query({ within: 'Fruits' }) as AgentComponent[])[0]!.items).toHaveLength(2)
     const result = await agent.act({ steps: [{ ref: 'Fruits', action: 'setValue', args: ['banana'] }] })
     expect(result.ok).toBe(false)
-    expect(result.error!.message).toContain('isn\'t available to agents')
+    expect(result.error!.message).toContain('No item "banana"')
+    expect(result.error!.message).not.toContain('Banana')
     expect(wrapper.findComponent(ListboxRoot).emitted('update:modelValue')).toBeUndefined()
   })
 

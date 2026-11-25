@@ -104,6 +104,7 @@ A step fails when its change didn't take, for example when a controlled `v-model
 | Slider                       | `slider`                      | `value`, `min`, `max`, `step`        | `setValue`, `increment`, `decrement`                      |
 | NumberField                  | `number-field`                | `value`, `min`, `max`, `step`        | `setValue`, `increment`, `decrement`, `clear`             |
 | TagsInput                    | `tags-input`                  | `value`                              | `setValue`, `add`, `remove`, `clear`                      |
+| PinInput                     | `pin-input`                   | `value` (always `"[redacted]"` when filled) | `setValue`, `clear`                          |
 | Dialog, AlertDialog          | `dialog`, `alert-dialog`      | `open`, `text`, `buttons`            | `setOpen`, `press`                                        |
 | DropdownMenu                 | `menu`                        | `open`, `buttons`                    | `setOpen`, `press` (opens the menu to press an item)     |
 | Popover                      | `popover`                     | `open`, `buttons`                    | `setOpen`, `press`                                        |
@@ -114,7 +115,7 @@ A step fails when its change didn't take, for example when a controlled `v-model
 
 Native fields are set the way typing does — the value, then `input` and `change` events — so `v-model` hears them. A Combobox only knows its items while it is open: a `setValue` with an item's label opens it for a moment to read them, asking `allow` first. Components that aren't listed are read through their native elements where they have them.
 
-A component that is disabled, read-only, or behind an open modal dialog or menu reports `disabled: true` and no actions, and a step that names something behind an open modal fails with the modal's name and buttons.
+A component that is disabled, read-only, inside a disabled `<fieldset>` or an `inert` element, or behind an open modal dialog or menu reports `disabled: true` and no actions, and a step that names something behind an open modal fails with the modal's name and buttons.
 
 ## Marks
 
@@ -122,9 +123,9 @@ Write these attributes on any element to decide what agents may see and do there
 
 | Attribute                             | Effect                                                                                                                                   |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `data-agent-hidden`                   | Agents never see what is inside. A step that names it fails with "isn't available to agents here. Ask the person."                       |
-| `data-agent-secret`                   | Values inside read `"[redacted]"` when filled. Password, one-time-code and card fields are treated the same way without the attribute. |
-| `data-agent-confirm="What it does."` | A change or press inside needs a person. Without `allow` the step fails with `Needs a person: "What it does."`; with `allow`, `allow` receives the sentence as `step.confirm` and decides. |
+| `data-agent-hidden`                   | Agents never see what is inside. A step that names something inside gets the same answer as a name that isn't on the page, so a guess can't learn it's there. |
+| `data-agent-secret`                   | Values inside read `"[redacted]"` when filled, item labels of lists inside read `"[redacted]"`, and text inside never appears in another component's label or row. Password, one-time-code and card fields, and every `PinInput`, are treated the same way without the attribute. |
+| `data-agent-confirm="What it does."` | A change or press inside needs a person. Without `allow` the step fails with `Needs a person: "What it does."`; with `allow`, `allow` receives the sentence as `step.confirm` and decides. A change that touches several marked items gets every sentence. |
 
 ```vue-html
 <section data-agent-hidden>…</section>
@@ -141,3 +142,8 @@ Write these attributes on any element to decide what agents may see and do there
 - `act` and `query` run one at a time, so while a step waits on `allow` — a confirm the person has to answer — no other call can press that confirm.
 - `timeout` (5 minutes by default) fails a step whose `allow` doesn't answer, so a forgotten prompt doesn't hold every later call.
 - Mark destructive actions with `data-agent-confirm` and anything private with `data-agent-hidden` or `data-agent-secret`. The bridge only reaches what a person could reach on the page: nothing behind an open modal, nothing disabled.
+- Marks follow components, not where their content lands: a mark around a Dialog, Popover, menu, Select or any other component also covers the content its portal renders in `body` or in a custom `to`, popups inside popups included. This holds for Reka UI's portals; content an app moves with Vue's own `<Teleport>` is read where it lands, so put the mark inside it too.
+- Every change is checked against its marks right before it's made, after any wait on `allow`. A step stops if its target has left, become off-limits, gone behind a modal, or gained a mark the person wasn't shown. The same applies to each item a multi-item change picks, opens or closes, including the items `clear`, `openAll` and `closeAll` touch. `openAll` and `closeAll` leave disabled sections as they are.
+- Closing a dialog, popover or menu with `setOpen(false)` needs a person when any button inside it is marked, since pressing that button would.
+- A Listbox or Combobox choice clicks its item, so a `select` handler that calls `preventDefault()` stops an agent the same way it stops a person.
+- One `act` call runs at most 100 steps, and `query` refuses inputs of the wrong type.

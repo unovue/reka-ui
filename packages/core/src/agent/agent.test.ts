@@ -114,11 +114,12 @@ describe('act', () => {
 })
 
 describe('marks', () => {
-  it('leaves out what is inside data-agent-hidden, and says so when a step names it', async () => {
+  it('leaves out what is inside data-agent-hidden, and a step naming it hears what a missing name does', async () => {
     const { agent } = await setup(() => [labelled('Visible'), h('div', { 'data-agent-hidden': '' }, [labelled('Internal flag')])])
     expect(agent.snapshot().map(component => component.label)).toEqual(['Visible'])
-    const result = await agent.act({ steps: [{ ref: 'Internal flag', action: 'setChecked', args: [true] }] })
-    expect(result.error!.message).toContain('"Internal flag" isn\'t available to agents here. Ask the person.')
+    const hidden = await agent.act({ steps: [{ ref: 'Internal flag', action: 'setChecked', args: [true] }] })
+    const missing = await agent.act({ steps: [{ ref: 'Nothing here', action: 'setChecked', args: [true] }] })
+    expect(hidden.error!.message).toBe(missing.error!.message.replace('Nothing here', 'Internal flag'))
   })
 
   it('redacts secret and password values', async () => {

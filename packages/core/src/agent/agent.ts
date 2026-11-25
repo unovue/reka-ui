@@ -85,6 +85,8 @@ function notFound(message: string, looked = message) {
 const SETTER = /^set[A-Z]/
 const BOOLEAN_SETTER = /^set(?:Checked|Open|Pressed)$/
 const STEP_SHAPE = '{ "ref": "…", "action": "…", "args": […] }'
+/** The most steps one `act` runs, so one call can't hold the page for long. */
+const MAX_STEPS = 100
 
 // What is wrong with the shape of an `act` call, checked on every step before the first runs.
 function malformed(input: unknown) {
@@ -96,6 +98,8 @@ function malformed(input: unknown) {
   const extra = Object.keys(input).find(key => key !== 'steps')
   if (extra)
     return fail(0, `act takes "steps" and nothing else, not "${extra}".`)
+  if (input.steps.length > MAX_STEPS)
+    return fail(0, `act takes at most ${MAX_STEPS} steps in one call, not ${input.steps.length}. Split the task into calls.`)
   for (const [index, step] of (input.steps as unknown[]).entries()) {
     const at = `steps[${index}]`
     if (!isRecord(step))
@@ -121,6 +125,10 @@ function malformed(input: unknown) {
 function redact(entry: Entry, value: unknown, key = 'value') {
   return entry.secret && key !== 'open' && value !== '' && value != null && value !== false ? '[redacted]' : value
 }
+
+/** Every distinct `data-agent-confirm` sentence over the elements, so a person answers all that a change touches. */
+const marksOf = (elements: (Element | undefined | null)[]) => [...new Set(elements.map(el => confirmOf([el])).filter((mark): mark is string => !!mark))]
+const confirmsOf = (elements: (Element | undefined | null)[]) => marksOf(elements).join(' ') || undefined
 
 const wire = (items: Item[]) => items.map(item => ({ value: keyOf(item.value), label: item.label }))
 
@@ -238,6 +246,12 @@ export function createAgent(options: AgentOptions = {}): Agent {
     }
   }
 
+  // A component whose own controls are all disabled on the page, like a switch inside a disabled fieldset.
+  const controlsOff = (parts: Part[]) => {
+    const controls = parts.filter(part => part.slot === 'root' || part.slot === 'control' || part.slot === 'input')
+    return controls.length > 0 && controls.every(part => isDisabledElement(part.el))
+  }
+
   function describe({ entry, parts }: Found, stack = layers()): AgentComponent {
     const { adapter, source } = entry
     const state = stateOf(entry)
@@ -269,7 +283,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
       disabled = adapter.disabled(source)
     }
     catch {}
-    if (disabled || isInert(parts, stack))
+    if (disabled || isInert(parts, stack) || controlsOff(parts))
       out.disabled = true
     out.actions = out.disabled ? [] : adapter.actions(source)
     return out
@@ -296,7 +310,8 @@ export function createAgent(options: AgentOptions = {}): Agent {
     const words = wordsOf(ref)
     const tiers = [
       shown.filter(({ entry }) => (entry.label && fold(entry.label) === needle) || (words.trim() && wordsOf(`${entry.label ?? ''} ${entry.row ?? ''}`).includes(words))),
-      shown.filter(({ entry }) => itemsOf(entry)?.some(item => fold(item.label) === needle)),
+      // A private list's item labels never name it: whether one matched would say what it holds.
+      shown.filter(({ entry }) => !entry.secret && itemsOf(entry)?.some(item => fold(item.label) === needle)),
       shown.filter(({ entry }) => {
         const kind = fold(entry.adapter.component(entry.source))
         return kind === needle || kind.endsWith(`-${needle}`)
@@ -321,12 +336,10 @@ export function createAgent(options: AgentOptions = {}): Agent {
         throw new Error(`"${ref}" names ${near.length} components: ${near.map(placed).join(', ')}. Use a ref${section ? `, or put its section first, like "${section} > ${ref}"` : ''}. A page tells them apart with a word in one label the other lacks, like a verb or the row's name.`)
       }
     }
-    const offLimits = [...entries.values()].some(entry => entry.alive && entry.offLimits && (fold(entry.label ?? '') === needle || (words.trim() && wordsOf(`${entry.label ?? ''} ${entry.row ?? ''}`).includes(words))))
-    if (offLimits)
-      throw new Error(`"${ref}" isn't available to agents here. Ask the person.`)
+    // What is off-limits is never matched, so naming it reads the same as a name that isn't on the page.
     const labels = [...new Set(shown.map(({ entry }) => entry.label).filter(Boolean))]
     const closed = shown.flatMap(({ entry }) => {
-      if (!entry.adapter.reveals)
+      if (!entry.adapter.reveals || entry.secret)
         return []
       const state = stateOf(entry)
       if (entry.source.kind === 'collapsible')
@@ -397,7 +410,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
   interface Place { ref: string, item: { value: unknown, label: string }, swaps: boolean }
   const places = (known?: Set<string>): Place[] =>
     live().flatMap(({ entry, parts }) => {
-      if (!entry.adapter.reveals || known?.has(entry.ref) || entry.adapter.disabled(entry.source) || isInert(parts))
+      if (!entry.adapter.reveals || known?.has(entry.ref) || entry.adapter.disabled(entry.source) || controlsOff(parts) || isInert(parts))
         return []
       const state = stateOf(entry)
       if (entry.source.kind === 'collapsible')
@@ -672,21 +685,27 @@ export function createAgent(options: AgentOptions = {}): Agent {
       throw new Error(`${entry.ref} isn't available to agents now.`)
     if (isInert(now))
       throw new Error(`${nameFor(entry)} is behind what opened while the step waited. Finish that or close it first.`)
-    if (confirmOf(els) !== approved)
+    if (confirmsOf(els) !== approved)
       throw new Error(`What ${nameFor(entry)} does changed while the step waited for an answer. Run the step again.`)
   }
 
-  // The items an action takes out of a list's value or closes, like the section `closeAll` shuts.
-  function removedBy(value: unknown, action: string, arg: unknown, items: Item[]): Item[] {
+  // The items an action puts in or takes out of a list's value, like the sections `openAll` opens or `closeAll` shuts.
+  // The all-at-once actions leave disabled items as they are, as the component does.
+  function changedBy(value: unknown, action: string, arg: unknown, items: Item[]): Item[] {
     const list = (v: unknown) => (Array.isArray(v) ? v : v == null || v === '' ? [] : [v])
     const has = (values: unknown[], v: unknown) => values.some(other => isEqual(other as any, v as any))
     const held = list(value)
+    const all = action === 'openAll' || action === 'closeAll'
     const next = action === 'setValue'
       ? list(arg)
-      : action === 'close' || (action === 'toggle' && has(held, arg))
-        ? held.filter(v => !isEqual(v as any, arg as any))
-        : action === 'closeAll' || action === 'clear' ? [] : held
-    return items.filter(item => has(held, item.value) && !has(next, item.value))
+      : action === 'open' || (action === 'toggle' && !has(held, arg))
+        ? [...held, arg]
+        : action === 'close' || action === 'toggle'
+          ? held.filter(v => !isEqual(v as any, arg as any))
+          : action === 'openAll'
+            ? [...held, ...items.filter(item => !item.disabled).map(item => item.value)]
+            : action === 'closeAll' || action === 'clear' ? [] : held
+    return items.filter(item => has(held, item.value) !== has(next, item.value) && !(all && item.disabled))
   }
 
   // An `expect`: the component's value, that value's label or its row text is what the step says.
@@ -744,7 +763,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
     // Every step asks once, with what it changes and the mark on it, if any.
     const asked = new Set<string>()
     const ask = async (stepArgs: unknown[], targets: (Element | undefined)[], what: string) => {
-      const confirm = confirmOf(targets)
+      const confirm = confirmsOf(targets)
       const key = JSON.stringify([stepArgs, confirm ?? null])
       if (asked.has(key))
         return
@@ -764,7 +783,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
       const press = await pressing(found, text, () => ask(args, own(parts), `press "${text}"`))
       try {
         const targets = [press.button, ...own(parts)]
-        const approved = confirmOf(targets)
+        const approved = confirmsOf(targets)
         const shown = targets.filter(el => el.isConnected)
         await ask(args, targets, `press "${textOrName(press.button)}"`)
         stillThere(entry, targets, approved, shown)
@@ -796,13 +815,17 @@ export function createAgent(options: AgentOptions = {}): Agent {
     const state = stateOf(entry)
     // Only a choice needs a closed list's items, so nothing else opens it to look.
     const items = adapter.items ? await listItems(entry, action === 'setValue' ? () => ask(args, own(parts), 'make this change') : undefined) : undefined
+    // A private list's items are never listed in an error: its snapshot gives their values.
+    const noItem = (value: unknown, list: Item[]) => entry.secret
+      ? `No item ${JSON.stringify(value)} in ${nameFor(entry)}. Its items are private: use a value from its snapshot.`
+      : `No item ${JSON.stringify(value)} in ${nameFor(entry)}. Its items: ${list.slice(0, 20).map(item => item.label).join(', ') || 'none'}${list.length > 20 ? ', …' : ''}.`
     const itemFor = (value: unknown) => {
       if (!items)
         return { value }
       const byValue = items.find(item => isEqual(item.value as any, value as any) || keyOf(item.value) === keyOf(value))
       if (byValue)
         return byValue
-      if (typeof value === 'string') {
+      if (typeof value === 'string' && !entry.secret) {
         const byLabel = items.filter(item => fold(item.label) === fold(value))
         if (byLabel.length > 1)
           throw new Error(`"${value}" names ${byLabel.length} items in ${nameFor(entry)}: ${byLabel.map(item => keyOf(item.value)).join(', ')}. Use a value.`)
@@ -810,17 +833,19 @@ export function createAgent(options: AgentOptions = {}): Agent {
           return byLabel[0]!
       }
       if (adapter.closed && (items.length || adapter.itemsWhileOpen))
-        throw wrongGuess(`No item ${JSON.stringify(value)} in ${nameFor(entry)}. Its items: ${items.slice(0, 20).map(item => item.label).join(', ') || 'none'}${items.length > 20 ? ', …' : ''}.`)
+        throw wrongGuess(noItem(value, items))
       return { value }
     }
     const takesItem = ['setValue', 'open', 'close', 'toggle'].includes(action) && !!items && !adapter.keys.includes('checked') && !adapter.keys.includes('pressed')
     let chosen: (Item | { value: unknown })[] = []
     if (takesItem && !(source.kind === 'collapsible' || ((action === 'open' || action === 'close' || action === 'toggle') && adapter.keys.includes('open') && !adapter.reveals))) {
       if (action !== 'setValue' && args[0] === undefined && Array.isArray(state.value))
-        throw new Error(`${action} on ${nameFor(entry)} takes one of its items: ${items!.map(item => item.label).join(', ') || 'none'}.`)
+        throw new Error(`${action} on ${nameFor(entry)} takes one of its items${entry.secret ? ', by value' : `: ${items!.map(item => item.label).join(', ') || 'none'}`}.`)
       const values = Array.isArray(args[0]) ? args[0] : [args[0]]
-      if (values.some(value => hiddenItem(source, value)))
-        throw new Error(`${entry.ref} isn't available to agents here. Ask the person.`)
+      // A hidden item reads as no item at all, so a guess can't learn it's there.
+      const hidden = values.find(value => hiddenItem(source, value))
+      if (hidden !== undefined)
+        throw wrongGuess(noItem(hidden, items ?? []))
       chosen = args[0] == null || args[0] === '' ? [] : values.map(itemFor)
       const blocked = chosen.find(item => 'disabled' in item && item.disabled && !(Array.isArray(state.value) ? state.value : [state.value]).some(v => isEqual(v as any, item.value as any)))
       if (blocked)
@@ -829,7 +854,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
       args = [Array.isArray(args[0]) || (action === 'setValue' && Array.isArray(state.value) && args[0] != null) ? picked : picked[0] ?? args[0], ...args.slice(1)]
     }
     // Numbers, for a slider or a number field, from text like "90"; never past their range.
-    const numeric = typeof state.min === 'number' || typeof state.max === 'number' || typeof state.value === 'number' || (Array.isArray(state.value) && source.kind === 'slider')
+    const numeric = source.kind === 'number-field' || typeof state.min === 'number' || typeof state.max === 'number' || typeof state.value === 'number' || (Array.isArray(state.value) && source.kind === 'slider')
     if (action === 'setValue' && numeric) {
       const toNumber = (value: unknown) => {
         const number = typeof value === 'string' && value.trim() ? Number(value) : value
@@ -838,7 +863,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
         return number
       }
       // A field with one number takes one, even from a list of one, like [30].
-      const scalar = !Array.isArray(state.value) && source.kind !== 'slider'
+      const scalar = source.kind !== 'slider'
       if (scalar && Array.isArray(args[0]) && args[0].length !== 1)
         throw new Error(`setValue on ${nameFor(entry)} takes one number, not ${quoted(args[0])}.`)
       const numbers = (Array.isArray(args[0]) ? args[0] : [args[0]]).map(toNumber)
@@ -853,12 +878,20 @@ export function createAgent(options: AgentOptions = {}): Agent {
     if (BOOLEAN_SETTER.test(action) && typeof args[0] !== 'boolean')
       throw new Error(`${action} on ${nameFor(entry)} takes true or false, not ${quoted(args[0])}.`)
     // Replacing a value also asks about the items it takes out or closes, so dropping a marked choice needs a person too.
-    const affects = items && (takesItem || action === 'closeAll' || action === 'clear')
-    const removing = (value: unknown, list: Item[]) => (affects ? removedBy(value, action, args[0], list).map(item => keyOf(item.value)).sort() : [])
-    const removed = affects ? removedBy(state.value, action, args[0], items!) : []
-    const targets = [...own(parts), ...chosen.map(item => ('el' in item ? item.el : undefined)), ...removed.map(item => item.el)]
-    const approved = confirmOf(targets)
-    const marks = new Set(targets.map(el => confirmOf([el])).filter(Boolean))
+    const affects = items && (takesItem || action === 'openAll' || action === 'closeAll' || action === 'clear')
+    const removing = (value: unknown, list: Item[]) => (affects ? changedBy(value, action, args[0], list).map(item => keyOf(item.value)).sort() : [])
+    const removed = affects ? changedBy(state.value, action, args[0], items!) : []
+    const stuck = removed.find(item => item.disabled)
+    if (stuck)
+      throw new Error(`"${stuck.label}" in ${nameFor(entry)} is disabled now.`)
+    // Closing a popup any other way skips what pressing a marked button in it would ask.
+    const closing = adapter.keys.includes('open') && !!adapter.content && isOpen(entry)
+      && ((action === 'setOpen' && args[0] === false) || action === 'close' || action === 'toggle')
+    const inside = closing ? buttonsIn([adapter.content!(source)].filter((el): el is HTMLElement => !!el)) : []
+    const targets = [...own(parts), ...chosen.map(item => ('el' in item ? item.el : undefined)), ...removed.map(item => item.el), ...inside]
+    const approved = confirmsOf(targets)
+    // Only the marks the person was shown are approved: an item that gains another stops the change.
+    const marks = new Set(marksOf(targets))
     // A closed list's items aren't on the page; what was is checked again after the answer.
     const shown = targets.filter((el): el is HTMLElement => !!el?.isConnected)
     await ask(args, targets, 'make this change')
@@ -871,8 +904,9 @@ export function createAgent(options: AgentOptions = {}): Agent {
     const guard = (value: unknown) => {
       const el = (itemsOf(entry) ?? []).find(item => isEqual(item.value as any, value as any))?.el
       const mark = confirmOf([el])
-      if (el && isOffLimits([el]))
-        throw new Error(`${entry.ref} isn't available to agents now.`)
+      // An item an earlier toggle hid stops the change, the way one hidden from the start never starts it.
+      if ((el && isOffLimits([el])) || hiddenItem(source, value))
+        throw new Error(`An item of ${nameFor(entry)} isn't available to agents now. The change stopped there.`)
       if (mark && !marks.has(mark))
         throw new Error(`An item of ${nameFor(entry)} needs a person now: "${mark}". The change stopped there. Run the step again to ask.`)
     }
@@ -1105,6 +1139,13 @@ export function createAgent(options: AgentOptions = {}): Agent {
 
   async function query({ text, within, kind, closed, from }: AgentQuery): Promise<AgentComponent[] | { error: string }> {
     scanned = undefined
+    // A tool call's input is the model's, so its shape is checked before anything reads it.
+    for (const [key, value] of Object.entries({ text, within, kind }) as [string, unknown][]) {
+      if (value !== undefined && typeof value !== 'string')
+        return { error: `query takes ${key} as text, not ${quoted(value)}.` }
+    }
+    if (closed !== undefined && typeof closed !== 'boolean')
+      return { error: `query takes closed as true or false, not ${quoted(closed)}.` }
     if (!text && !within && !kind && !closed)
       return { error: 'query takes text, within, kind or closed. snapshot lists what is on the page.' }
     if (from !== undefined && (!within || !Number.isInteger(from) || from < 0))
@@ -1204,7 +1245,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
       return [...all.filter(component => kept.has(component)), moreOf(all.length - kept.size)]
     },
     act: (input, actOptions) => askingToo(undefined, actOptions?.signal, () => act(input)),
-    query: input => inTurn(() => query(input ?? {})),
+    query: input => inTurn(() => query(isRecord(input) ? input : {})),
     subscribe: (listener) => {
       if (destroyed)
         return () => {}
@@ -1229,7 +1270,7 @@ export function createAgent(options: AgentOptions = {}): Agent {
   }
   allowing.set(agent, {
     act: (input, allow, signal) => askingToo(allow, signal, () => act(input)),
-    query: (input, allow, signal) => askingToo(allow, signal, () => query(input ?? {})),
+    query: (input, allow, signal) => askingToo(allow, signal, () => query(isRecord(input) ? input : {})),
   })
   return agent
 }

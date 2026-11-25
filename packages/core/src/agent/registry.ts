@@ -7,7 +7,7 @@ import type { AgentComponent, ChangeSource, ObservedChange } from './types'
 import { effectScope, getCurrentInstance, onBeforeUnmount, watch } from 'vue'
 import { agentRegistrar } from '@/shared/useAgentRegistration'
 import { adapters, native } from './adapters'
-import { isOffLimits, isSecret, isShown, nameOf, rowOf, sectionsOf, textOf } from './dom'
+import { isOffLimits, isSecret, isShown, nameOf, portals, rowOf, sectionsOf, textOf } from './dom'
 
 export interface Entry {
   ref: string
@@ -56,7 +56,7 @@ const HOSTED: Record<string, RegExp> = {
 }
 
 function add(source: Source, adapter: Adapter, key: object) {
-  const entry: Entry = { ref: `c${++count}`, id: `agent-${++ids}`, source, adapter, alive: true }
+  const entry: Entry = { ref: `c${++count}`, id: `agent-${++ids}`, source, adapter, alive: true, secret: adapter.secret }
   entries.set(entry.ref, entry)
   bySource.set(key, entry)
   if (listeners.size)
@@ -181,6 +181,12 @@ const nameOfType = (type: unknown) => (type as { __name?: string, name?: string 
 function onRoot(kind: string, ctx: unknown, props: unknown, element?: unknown, extra?: unknown) {
   const adapter = adapters[kind]
   const instance = getCurrentInstance()
+  if (kind === 'portal' && instance) {
+    // A portal's content is read as inside the place the portal sits, for the marks around it.
+    portals.add(instance as never)
+    onBeforeUnmount(() => portals.delete(instance as never))
+    return
+  }
   if (!adapter || !instance || typeof document === 'undefined' || !ctx)
     return
   const parent = instance.parent
@@ -229,6 +235,7 @@ export function uninstall() {
   if (installs === 0 || --installs > 0)
     return
   agentRegistrar.root = undefined
+  portals.clear()
   agentRegistrar.item = undefined
   // A component still on the page retires into nothing once the bridge is gone.
   for (const entry of [...entries.values()]) {
