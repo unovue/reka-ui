@@ -183,6 +183,8 @@ function handleDecrease(multiplier = 1) {
 }
 
 function handleMinMaxValue(type: 'min' | 'max') {
+  if (props.disabled || props.readonly)
+    return
   if (type === 'min' && min.value !== undefined)
     modelValue.value = clampInputValue(min.value)
   else if (type === 'max' && max.value !== undefined)
