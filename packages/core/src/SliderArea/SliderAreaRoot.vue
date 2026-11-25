@@ -331,7 +331,10 @@ function handlePointerMove(event: PointerEvent) {
   const target = event.target as HTMLElement
   if (target.hasPointerCapture(event.pointerId)) {
     // Touch and pen keep the capture of a press made while disabled, so such a slide starts on its first move.
-    slidingPointerIds.add(event.pointerId)
+    if (!slidingPointerIds.has(event.pointerId)) {
+      slidingPointerIds.add(event.pointerId)
+      valuesBeforeSlideStartRef.value = currentModelValue.value
+    }
     handleSlideMove(event)
   }
 }

@@ -385,6 +385,22 @@ describe('given default SliderArea', () => {
 
       expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toEqual([[30, 30]])
     })
+
+    it('should commit a slide back to where the slide before it started', async () => {
+      const root = wrapper.find('[aria-disabled]')
+      vi.spyOn(root.element, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 100))
+      await root.trigger('pointerdown', { clientX: 50, clientY: 50, pointerId: 1 })
+      await root.trigger('pointermove', { clientX: 70, clientY: 70, pointerId: 1 })
+      await root.trigger('pointerup', { pointerId: 1 })
+      await wrapper.setProps({ disabled: true })
+      await root.trigger('pointerdown', { clientX: 70, clientY: 70, pointerId: 2 })
+      await wrapper.setProps({ disabled: false })
+
+      await root.trigger('pointermove', { clientX: 50, clientY: 50, pointerId: 2 })
+      await root.trigger('pointerup', { pointerId: 2 })
+
+      expect(wrapper.emitted('valueCommit')).toEqual([[[[70, 70]]], [[[50, 50]]]])
+    })
   })
 
   describe('after pressing navigation key', () => {
