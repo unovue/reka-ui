@@ -18,6 +18,7 @@ export interface TabsContentProps extends PrimitiveProps {
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Presence } from '@/Presence'
 import { Primitive } from '@/Primitive'
+import { useSelectorKey } from '@/shared/createKeyedSelector'
 import { injectTabsRootContext } from './TabsRoot.vue'
 import { makeContentId, makeTriggerId, useTabsPartId } from './utils'
 
@@ -28,9 +29,9 @@ const rootContext = injectTabsRootContext()
 const triggerId = computed(() => rootContext.triggerIds.value.get(props.value) ?? makeTriggerId(rootContext.baseId, props.value))
 const contentId = useTabsPartId(rootContext.renderedContentIds, props, currentElement, () => makeContentId(rootContext.baseId, props.value))
 
-const isSelected = computed(() => props.value === rootContext.modelValue.value)
+const isSelected = useSelectorKey(rootContext.selection, () => props.value)
 
-const isMountAnimationPreventedRef = ref(isSelected.value)
+const isMountAnimationPreventedRef = ref(isSelected())
 
 onMounted(() => {
   rootContext.registerContent(props.value)
@@ -52,7 +53,7 @@ onBeforeUnmount(() => {
 <template>
   <Presence
     v-slot="{ present }"
-    :present="forceMount || isSelected"
+    :present="forceMount || isSelected()"
     force-mount
   >
     <Primitive
@@ -61,7 +62,7 @@ onBeforeUnmount(() => {
       :as-child="asChild"
       :as="as"
       role="tabpanel"
-      :data-state="isSelected ? 'active' : 'inactive'"
+      :data-state="isSelected() ? 'active' : 'inactive'"
       :data-orientation="rootContext.orientation.value"
       :aria-labelledby="triggerId"
       :hidden="!present"
