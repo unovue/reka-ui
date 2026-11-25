@@ -60,6 +60,7 @@ import { computed, onBeforeUnmount, onMounted, shallowRef, useAttrs, watch } fro
 import { injectFieldRootContext } from '@/Field'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { getParentState, getParentToggleValue, getState, isIndeterminate } from './utils'
 
@@ -291,10 +292,11 @@ if (checkboxGroupContext) {
   onBeforeUnmount(() => items.delete(item))
 }
 
-provideCheckboxRootContext({
+const agentContext = provideCheckboxRootContext({
   disabled: nativeDisabled,
   state: checkboxState,
 })
+useAgentRegistration('checkbox', agentContext, props, currentElement, handleClick)
 </script>
 
 <template>

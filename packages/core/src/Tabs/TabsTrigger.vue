@@ -15,6 +15,7 @@ export interface TabsTriggerProps extends PrimitiveProps {
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusItem } from '@/RovingFocus'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { injectTabsRootContext } from './TabsRoot.vue'
 import { makeContentId, makeTriggerId, useTabsPartId } from './utils'
 
@@ -25,6 +26,7 @@ const props = withDefaults(defineProps<TabsTriggerProps>(), {
 
 const { forwardRef, currentElement } = useForwardExpose()
 const rootContext = injectTabsRootContext()
+useAgentItem(rootContext, props, currentElement)
 
 const triggerId = useTabsPartId(rootContext.triggerIds, props, currentElement, () => makeTriggerId(rootContext.baseId, props.value))
 const contentId = computed(() => rootContext.contentIds.value.has(props.value)

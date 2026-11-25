@@ -51,6 +51,7 @@ export const [injectPopoverRootContext, providePopoverRootContext]
 import { useVModel } from '@vueuse/core'
 import { ref, toRefs } from 'vue'
 import { PopperRoot } from '@/Popper'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 
 const props = withDefaults(defineProps<PopoverRootProps>(), {
   defaultOpen: false,
@@ -79,7 +80,7 @@ const open = useVModel(props, 'open', emit, {
 const triggerElement = ref<HTMLElement>()
 const hasCustomAnchor = ref(false)
 
-providePopoverRootContext(defineReactiveIds({
+const agentContext = providePopoverRootContext(defineReactiveIds({
   contentId: '',
   triggerId: '',
   modal,
@@ -94,6 +95,7 @@ providePopoverRootContext(defineReactiveIds({
   triggerElement,
   hasCustomAnchor,
 }, ['triggerId', 'contentId']))
+useAgentRegistration('popover', agentContext, props)
 </script>
 
 <template>

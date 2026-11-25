@@ -75,6 +75,7 @@ export const [injectNumberFieldRootContext, provideNumberFieldRootContext] = cre
 
 <script setup lang="ts">
 import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { handleDecimalOperation, useNumberFormatter, useNumberParser } from './utils'
 
@@ -262,7 +263,7 @@ function applyInputValue(val: string) {
   return setInputValue(textValue.value)
 }
 
-provideNumberFieldRootContext({
+const agentContext = provideNumberFieldRootContext({
   modelValue,
   handleDecrease,
   handleIncrease,
@@ -283,6 +284,7 @@ provideNumberFieldRootContext({
   isIncreaseDisabled,
   id,
 })
+useAgentRegistration('number-field', agentContext, props, currentElement)
 </script>
 
 <template>

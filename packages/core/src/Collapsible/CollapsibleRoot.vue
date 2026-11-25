@@ -36,6 +36,7 @@ export const [injectCollapsibleRootContext, provideCollapsibleRootContext]
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
 import { Primitive } from '@/Primitive'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 
 const props = withDefaults(defineProps<CollapsibleRootProps>(), {
   open: undefined,
@@ -59,7 +60,7 @@ const open = useVModel(props, 'open', emit, {
 
 const { disabled, unmountOnHide } = toRefs(props)
 
-provideCollapsibleRootContext(defineReactiveIds({
+const agentContext = provideCollapsibleRootContext(defineReactiveIds({
   contentId: '',
   disabled,
   open,
@@ -71,6 +72,7 @@ provideCollapsibleRootContext(defineReactiveIds({
     open.value = !open.value
   },
 }, ['contentId']))
+useAgentRegistration('collapsible', agentContext, props)
 
 defineExpose({ open })
 useForwardExpose()

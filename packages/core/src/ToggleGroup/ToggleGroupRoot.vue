@@ -43,6 +43,7 @@ import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { provideRovingFocusNoActiveItem } from '@/RovingFocus/RovingFocusGroup.vue'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { useSingleOrMultipleValue } from '@/shared/useSingleOrMultipleValue'
 
 const props = withDefaults(defineProps<ToggleGroupRootProps>(), {
@@ -66,7 +67,7 @@ const { forwardRef, currentElement } = useForwardExpose()
 const { modelValue, changeModelValue, isSingle } = useSingleOrMultipleValue(props, emits)
 const isFormControl = useFormControl(currentElement)
 
-provideToggleGroupRootContext({
+const agentContext = provideToggleGroupRootContext({
   isSingle,
   modelValue,
   changeModelValue,
@@ -76,6 +77,7 @@ provideToggleGroupRootContext({
   rovingFocus,
   disabled,
 })
+useAgentRegistration('toggle-group', agentContext, props, currentElement)
 
 // A group with no value has no pressed item. Without roving focus there is no group to tell.
 provideRovingFocusNoActiveItem(() => rovingFocus.value && (modelValue.value == null || (Array.isArray(modelValue.value) && modelValue.value.length === 0)))

@@ -47,6 +47,7 @@ import { toRefs } from 'vue'
 import { Primitive } from '@/Primitive'
 import { RovingFocusGroup } from '@/RovingFocus'
 import { provideRovingFocusNoActiveItem } from '@/RovingFocus/RovingFocusGroup.vue'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 
 const props = withDefaults(defineProps<RadioGroupRootProps>(), {
@@ -75,7 +76,7 @@ const { disabled, loop, orientation, name, required, dir: propDir } = toRefs(pro
 const dir = useDirection(propDir)
 const isFormControl = useFormControl(currentElement)
 
-provideRadioGroupRootContext({
+const agentContext = provideRadioGroupRootContext({
   modelValue,
   changeModelValue: (value) => {
     modelValue.value = value
@@ -86,6 +87,7 @@ provideRadioGroupRootContext({
   name: name?.value,
   required,
 })
+useAgentRegistration('radio-group', agentContext, props, currentElement)
 
 // A group with no value has no checked item.
 provideRovingFocusNoActiveItem(() => modelValue.value == null)
