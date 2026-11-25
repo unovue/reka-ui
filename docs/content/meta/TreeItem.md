@@ -51,32 +51,32 @@
 <SlotsTable :data="[
   {
     'name': 'isExpanded',
-    'description': '',
+    'description': '<p>Whether the item is currently expanded</p>\n',
     'type': 'boolean'
   },
   {
     'name': 'isSelected',
-    'description': '',
+    'description': '<p>Whether the item is currently selected</p>\n',
     'type': 'boolean'
   },
   {
     'name': 'isIndeterminate',
-    'description': '',
+    'description': '<p>Whether some, but not all, of the item\'s descendants are selected. Only computed for items with children when <code>bubbleSelect</code> or <code>propagateSelect</code> is enabled on the root, <code>undefined</code> otherwise.</p>\n',
     'type': 'boolean | undefined'
   },
   {
     'name': 'isDisabled',
-    'description': '',
+    'description': '<p>Whether the item is disabled, either by its own <code>disabled</code> prop or by the root</p>\n',
     'type': 'boolean'
   },
   {
     'name': 'handleToggle',
-    'description': '',
+    'description': '<p>Toggle the expanded state of the item</p>\n',
     'type': '(): void'
   },
   {
     'name': 'handleSelect',
-    'description': '',
+    'description': '<p>Toggle the selected state of the item</p>\n',
     'type': '(): void'
   }
 ]" />
@@ -105,11 +105,11 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `isExpanded` |  | `boolean` |
-| `isSelected` |  | `boolean` |
-| `isIndeterminate` |  | `boolean \| undefined` |
-| `isDisabled` |  | `boolean` |
-| `handleToggle` |  | `(): void` |
-| `handleSelect` |  | `(): void` |
+| `isExpanded` | Whether the item is currently expanded | `boolean` |
+| `isSelected` | Whether the item is currently selected | `boolean` |
+| `isIndeterminate` | Whether some, but not all, of the item's descendants are selected. Only computed for items with children when bubbleSelect or propagateSelect is enabled on the root, undefined otherwise. | `boolean \| undefined` |
+| `isDisabled` | Whether the item is disabled, either by its own disabled prop or by the root | `boolean` |
+| `handleToggle` | Toggle the expanded state of the item | `(): void` |
+| `handleSelect` | Toggle the selected state of the item | `(): void` |
 
 </llm-only>

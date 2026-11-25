@@ -23,7 +23,7 @@
   },
   {
     'name': 'defaultValue',
-    'description': '',
+    'description': '<p>The value of the number field when initially rendered. Use when you do not need to control the state of the number field.</p>\n',
     'type': 'number',
     'required': false
   },
@@ -90,7 +90,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '',
+    'description': '<p>The controlled value of the number field. Can be bound as <code>v-model</code>.</p>\n',
     'type': 'number | null',
     'required': false
   },
@@ -170,7 +170,7 @@
 | `allowInvalid` | When true, a typed value is kept as-is even if invalid (out of min/max range or off the step grid); step interactions still clamp and snap. The field does not flag the value as invalid (no aria-invalid/data-invalid), so validating and surfacing the error is up to the consumer. | `boolean` | No | - |
 | `as` | The element or component this component should render as. Can be overwritten by asChild. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `defaultValue` |  | `number` | No | - |
+| `defaultValue` | The value of the number field when initially rendered. Use when you do not need to control the state of the number field. | `number` | No | - |
 | `disabled` | When true, prevents the user from interacting with the Number Field. | `boolean` | No | - |
 | `disableWheelChange` | When true, prevents the value from changing on wheel scroll. | `boolean` | No | - |
 | `focusOnChange` | When true, the input will be focused when the value changes. | `boolean` | No | `true` |
@@ -181,7 +181,7 @@
 | `locale` | The locale to use for formatting and currencies | `string` | No | - |
 | `max` | The largest value allowed for the input. | `number` | No | - |
 | `min` | The smallest value allowed for the input. | `number` | No | - |
-| `modelValue` |  | `number \| null` | No | - |
+| `modelValue` | The controlled value of the number field. Can be bound as v-model. | `number \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `readonly` | When true, the Number Field is read-only. | `boolean` | No | - |
 | `required` | When true, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |

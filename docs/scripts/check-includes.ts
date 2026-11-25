@@ -29,9 +29,7 @@ const PAGES_DIR = join(ROOT, 'docs/content/docs')
  * these is tolerated; remove the entry once the file is generated (the checker
  * warns when an entry is stale).
  */
-const PENDING_META: Record<string, string> = {
-  DrawerProvider: 'not generated yet, comes with the next full docs:gen',
-}
+const PENDING_META: Record<string, string> = {}
 
 /**
  * Exported parts that intentionally have no API section of their own.
