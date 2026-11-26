@@ -66,7 +66,8 @@ function deriveColorSwatch(color: string | Color | undefined, customLabel: strin
       colorContrast = getColorContrast(colorString)
     }
     catch {
-      if (process.env.NODE_ENV !== 'production') {
+      // Only for a color that can't be read at all: no color, `transparent` and non-hex formats are valid input.
+      if (process.env.NODE_ENV !== 'production' && colorString !== 'transparent' && !colorObj) {
         console.warn(`WARNING: Unable to resolve contrast color for "${colorString}".
              Please check that the color provided is a valid hex color.`)
       }

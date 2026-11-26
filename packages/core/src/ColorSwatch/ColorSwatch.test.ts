@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { ColorSwatch } from '.'
 
@@ -144,6 +144,30 @@ describe('colorSwatch', () => {
       })
       expect(wrapper.text()).toContain('#E5484D')
       expect(wrapper.text()).toContain('1')
+    })
+  })
+
+  describe('dev warning', () => {
+    it.each(['', 'transparent', 'rgb(229, 72, 77)', 'hsl(358, 75%, 59%)'])('does not warn for the readable color %j', (color) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        mount(ColorSwatch, { props: { color } })
+        expect(warn).not.toHaveBeenCalled()
+      }
+      finally {
+        warn.mockRestore()
+      }
+    })
+
+    it('warns for a color it cannot read', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        mount(ColorSwatch, { props: { color: 'not-a-color' } })
+        expect(warn).toHaveBeenCalledTimes(1)
+      }
+      finally {
+        warn.mockRestore()
+      }
     })
   })
 })
