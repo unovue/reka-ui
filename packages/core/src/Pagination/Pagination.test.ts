@@ -461,6 +461,18 @@ describe('given a PaginationEllipsis', () => {
     expect(wrapper.attributes('aria-hidden')).toBe('true')
   })
 
+  it('should follow an attribute that makes its content focusable', async () => {
+    const href = ref<string>()
+    const wrapper = mount(() => h(PaginationEllipsis, null, () => h('a', { href: href.value }, '\u2026')), { attachTo: document.body })
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBe('true')
+
+    href.value = '#more'
+    await nextTick()
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBeUndefined()
+  })
+
   it('should let a consumer `aria-hidden` win', async () => {
     const wrapper = mountEllipsis(undefined, { 'aria-hidden': 'false' })
     await nextTick()

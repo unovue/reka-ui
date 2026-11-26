@@ -31,7 +31,13 @@ function updateIsDecorative() {
 
 // Slot content can change without this component updating, so the element itself is watched.
 onMounted(updateIsDecorative)
-useMutationObserver(currentElement, updateIsDecorative, { childList: true, subtree: true, characterData: true })
+useMutationObserver(currentElement, updateIsDecorative, {
+  childList: true,
+  subtree: true,
+  characterData: true,
+  // What can make existing content focusable. Not `aria-hidden`, which is this component's own output.
+  attributeFilter: ['href', 'tabindex', 'contenteditable'],
+})
 </script>
 
 <template>
