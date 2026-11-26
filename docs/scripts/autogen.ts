@@ -545,8 +545,11 @@ function generateDependencies(componentPath: string) {
 
     traverse(result, {
       ImportDeclaration: (path) => {
-        const value = path.node.source.value.split('/').at(-1)
-        if (value && STARTS_WITH_UPPERCASE_RE.test(value) && !value.includes('vue')) {
+        // A family import names its folder: `@/Popper` and `@/Popper/PopperRootContext` are both
+        // `Popper`. A relative import stays inside the family, so it adds no dependency.
+        const source = path.node.source.value
+        const value = source.startsWith('.') ? undefined : source.startsWith('@/') ? source.split('/')[1] : source.split('/').at(-1)
+        if (value && value !== dir && STARTS_WITH_UPPERCASE_RE.test(value) && !value.includes('vue')) {
           const prev = depTree.get(dir) ?? []
           depTree.set(dir, [...new Set([...prev, value])])
         }
@@ -559,6 +562,9 @@ function getDependencies(dir: string, list = new Set<string>()) {
   const deps = depTree.get(dir)
 
   deps?.forEach((dep) => {
+    // Families can import each other, so walk each one once.
+    if (list.has(dep))
+      return
     list.add(dep)
     getDependencies(dep, list)
   })
