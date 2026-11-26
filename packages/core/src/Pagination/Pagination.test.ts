@@ -438,6 +438,8 @@ describe('given a PaginationEllipsis', () => {
   it.each([
     ['a button with a negative tabindex', undefined, { as: 'button', tabindex: '-1' }],
     ['a disclosure', () => h('details', [h('summary', '\u2026')]), {}],
+    ['an image with alternative text', () => h('img', { alt: 'More pages' }), {}],
+    ['an icon with an ARIA name', () => h('svg', { 'aria-label': 'More pages' }), {}],
   ])('should stay exposed as %s', async (_name, slot, props) => {
     const wrapper = mountEllipsis(slot as any, props)
     await nextTick()

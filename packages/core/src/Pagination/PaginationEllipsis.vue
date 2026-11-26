@@ -16,6 +16,8 @@ const { forwardRef, currentElement } = useForwardExpose()
 // A bare "…" (or an icon) is a visual cue that reads as noise, so it is hidden from assistive technology.
 // Content with its own text, or anything focusable, is left alone. An `aria-hidden` attribute overrides this.
 const isDecorative = ref(false)
+// Content named without text: an image with alternative text, or an ARIA or `title` name.
+const NAMED = 'img[alt]:not([alt=""]), [aria-label], [aria-labelledby], [title]'
 const FOCUSABLE = 'a[href], button, input, select, textarea, summary, [tabindex], [contenteditable]'
 
 function updateIsDecorative() {
@@ -26,7 +28,8 @@ function updateIsDecorative() {
   }
   const text = element.textContent?.trim() ?? ''
   const isFocusable = element.matches(FOCUSABLE) || !!element.querySelector(FOCUSABLE)
-  isDecorative.value = !isFocusable && (text === '' || text === '\u2026' || text === '...')
+  const isNamed = element.matches(NAMED) || !!element.querySelector(NAMED)
+  isDecorative.value = !isFocusable && !isNamed && (text === '' || text === '\u2026' || text === '...')
 }
 
 // Slot content can change without this component updating, so the element itself is watched.
@@ -35,8 +38,8 @@ useMutationObserver(currentElement, updateIsDecorative, {
   childList: true,
   subtree: true,
   characterData: true,
-  // What can make existing content focusable. Not `aria-hidden`, which is this component's own output.
-  attributeFilter: ['href', 'tabindex', 'contenteditable'],
+  // What can make existing content focusable or named. Not `aria-hidden`, which is this component's own output.
+  attributeFilter: ['href', 'tabindex', 'contenteditable', 'alt', 'aria-label', 'aria-labelledby', 'title'],
 })
 </script>
 
