@@ -1,4 +1,6 @@
-import { getActiveElement } from '@/shared'
+import type { MenuContentHideEvent } from './MenuRoot.vue'
+import { getCurrentScope, onScopeDispose } from 'vue'
+import { containsComposed, getActiveElement } from '@/shared'
 
 export type CheckedState = boolean | 'indeterminate'
 export type Direction = 'ltr' | 'rtl'
@@ -94,4 +96,47 @@ export function isPointerInGraceArea(event: PointerEvent, area?: Polygon) {
 
 export function isMouseEvent(event: PointerEvent) {
   return event.pointerType === 'mouse'
+}
+
+/**
+ * A minimal event hook for `MenuContext.onContentHide` / `contentHidden`: the
+ * handlers of the parts that return focus when a kept-mounted content hides.
+ * Inside a scope a handler is removed with it.
+ */
+export function createContentHideHook() {
+  const handlers = new Set<(event: MenuContentHideEvent) => void>()
+  return {
+    on(handler: (event: MenuContentHideEvent) => void) {
+      handlers.add(handler)
+      if (getCurrentScope())
+        onScopeDispose(() => handlers.delete(handler))
+    },
+    trigger(event: MenuContentHideEvent) {
+      handlers.forEach(handler => handler(event))
+    },
+  }
+}
+
+/**
+ * Whether focus moved on, out of `container`, to another element (another layer
+ * opened), so a kept-mounted content that hides must not take it back. Focus on
+ * the body (the hidden content had it), inside the container or inside one of
+ * `related` (the contents of the same menu's submenus, which may be portalled) has not.
+ */
+export function hasFocusLeftContent(container: HTMLElement | undefined, related?: Iterable<HTMLElement>): boolean {
+  const ownerDocument = container?.ownerDocument
+  if (!ownerDocument)
+    return false
+  let activeElement = ownerDocument.activeElement
+  while (activeElement?.shadowRoot?.activeElement)
+    activeElement = activeElement.shadowRoot.activeElement
+  if (!activeElement || activeElement === ownerDocument.body || activeElement === ownerDocument.documentElement)
+    return false
+  if (containsComposed(container!, activeElement))
+    return false
+  for (const element of related ?? []) {
+    if (containsComposed(element, activeElement))
+      return false
+  }
+  return true
 }

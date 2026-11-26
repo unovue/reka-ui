@@ -233,7 +233,10 @@ defineOptions({
 const props = withDefaults(defineProps<PopperContentProps & {
   /** Internal: the component family whose root positions this content. */
   scope?: PopperScope
+  /** Internal: kept-mounted content that is hidden should not track position. */
+  present?: boolean
 }>(), {
+  present: true,
   ...PopperContentPropsDefaultValue,
 })
 const emits = defineEmits<{
@@ -351,9 +354,9 @@ onDeactivated(() => isDeactivated.value = true)
 onActivated(() => isDeactivated.value = false)
 
 // If provided custom reference, it will overwrite the default anchor element.
-// Content whose page is deactivated drops it, which stops tracking the
-// position but keeps the last one.
-const reference = computed(() => isDeactivated.value ? undefined : (props.reference ?? rootContext.anchor.value))
+// Content kept mounted while closed, or whose page is deactivated, drops it, which stops tracking
+// the position but keeps the last one, so that a leave transition (e.g. `v-show`) ends in place.
+const reference = computed(() => props.present && !isDeactivated.value ? (props.reference ?? rootContext.anchor.value) : undefined)
 
 const { floatingStyles, placement, isPositioned, middlewareData, update } = useFloating(
   reference,

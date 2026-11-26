@@ -4,13 +4,16 @@ import { useForwardElement, useForwardPropsEmits } from '@/shared'
 import MenuContentImpl from './MenuContentImpl.vue'
 import { injectMenuContext } from './MenuRoot.vue'
 
-const props = defineProps<MenuRootContentNonModalProps>()
+const props = withDefaults(defineProps<MenuRootContentNonModalProps>(), { present: true })
 const emits = defineEmits<MenuRootContentModalEmits>()
 const forwarded = useForwardPropsEmits(props, emits)
 
 const menuContext = injectMenuContext()
 
-interface MenuRootContentNonModalProps extends MenuRootContentTypeProps {}
+interface MenuRootContentNonModalProps extends MenuRootContentTypeProps {
+  /** Internal: whether a kept-mounted content is currently shown. */
+  present?: boolean
+}
 type MenuRootContentModalEmits = MenuContentImplEmits
 
 const { forwardRef, expose } = useForwardElement()

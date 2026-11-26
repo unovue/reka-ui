@@ -5,19 +5,24 @@ import { useForwardElement, useForwardPropsEmits, useHideOthers } from '@/shared
 import MenuContentImpl from './MenuContentImpl.vue'
 import { injectMenuContext } from './MenuRoot.vue'
 
-const props = defineProps<MenuRootContentModalProps>()
+const props = withDefaults(defineProps<MenuRootContentModalProps>(), { present: true })
 const emits = defineEmits<MenuRootContentModalEmits>()
 const forwarded = useForwardPropsEmits(props, emits)
 
 const menuContext = injectMenuContext()
 
-interface MenuRootContentModalProps extends MenuRootContentTypeProps {}
+interface MenuRootContentModalProps extends MenuRootContentTypeProps {
+  /** Internal: whether a kept-mounted content is currently shown. */
+  present?: boolean
+}
 type MenuRootContentModalEmits = MenuContentImplEmits
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 // Only while open: a `forceMount`ed content that is closed hides nothing.
-useHideOthers(computed(() => menuContext.open.value ? currentElement.value : undefined))
+// A content kept mounted while closed (`unmountOnHide: false`) hides the page from
+// assistive technology only while it is shown.
+useHideOthers(computed(() => props.present && menuContext.open.value ? currentElement.value : undefined))
 </script>
 
 <template>

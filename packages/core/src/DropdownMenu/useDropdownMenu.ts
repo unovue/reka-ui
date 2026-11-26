@@ -3,7 +3,7 @@ import type { DropdownMenuRootContext } from './DropdownMenuRoot.vue'
 import type { DropdownMenuHandle } from './handle'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { MenuOpenChangeReason, UseMenuRootProps } from '@/Menu'
-import type { MenuContext, MenuRootContext } from '@/Menu/MenuRoot.vue'
+import type { MenuContentHideEvent, MenuContext, MenuRootContext } from '@/Menu/MenuRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { PopupRootStore } from '@/shared/popupHandle'
 import { computed, nextTick, ref, toValue } from 'vue'
@@ -88,6 +88,11 @@ export interface DropdownMenuContentSurface extends PartSurface<Record<string, n
   onCloseAutoFocus: (event: Event) => void
   /** `MenuContent` `interactOutside`: a press on the trigger never dismisses (the trigger toggles). */
   onInteractOutside: (event: PointerDownOutsideEvent | FocusOutsideEvent) => void
+  /**
+   * `MenuContext.onContentHide`: a content kept mounted while closed (`unmountOnHide: false`)
+   * is hidden, not unmounted, so no `closeAutoFocus` returns focus. Returns it to the trigger as `onCloseAutoFocus` does.
+   */
+  onContentHide: (event: MenuContentHideEvent) => void
 }
 
 /**
@@ -148,7 +153,13 @@ export function createDropdownMenuContentSurface(
       event.preventDefault()
   }
 
-  return { ...surface, onCloseAutoFocus, onInteractOutside }
+  function onContentHide({ focusLeft }: MenuContentHideEvent) {
+    if (!hasInteractedOutside.value && !focusLeft)
+      context.triggerElement.value?.focus()
+    hasInteractedOutside.value = false
+  }
+
+  return { ...surface, onCloseAutoFocus, onInteractOutside, onContentHide }
 }
 
 export interface UseDropdownMenuProps<Payload = unknown> extends Omit<UseMenuRootProps, 'onBeforeUpdate' | 'onUpdate'> {

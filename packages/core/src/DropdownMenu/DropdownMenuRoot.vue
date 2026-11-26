@@ -51,6 +51,7 @@ import { useDropdownMenu } from './useDropdownMenu'
 const props = withDefaults(defineProps<DropdownMenuRootProps<Payload>>(), {
   modal: true,
   open: undefined,
+  unmountOnHide: true,
   triggerId: undefined,
   defaultTriggerId: undefined,
 })
@@ -79,6 +80,7 @@ const { open, context, menuContext, menuRootContext, payload, activeTriggerId, h
   defaultOpen: props.defaultOpen ?? false,
   dir,
   modal,
+  unmountOnHide: () => props.unmountOnHide,
   baseId: useId(undefined, 'reka-dropdown-menu'),
   emit,
   onOpenComplete: value => emit('update:openComplete', value),

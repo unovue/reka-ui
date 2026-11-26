@@ -13,6 +13,25 @@ export interface MenuContext {
   onContentChange: (content: HTMLElement | undefined) => void
   /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
   notifyOpenComplete?: (value: boolean) => void
+  /**
+   * Internal: registers a handler for when a content kept mounted while closed
+   * (`unmountOnHide: false`) is hidden, which no unmount reports.
+   */
+  onContentHide: (handler: (event: MenuContentHideEvent) => void) => void
+  /** Internal: called by the content when it is hidden while kept mounted. */
+  contentHidden: (event: MenuContentHideEvent) => void
+}
+
+export interface MenuContentHideEvent {
+  /** The content element that was hidden. */
+  container: HTMLElement | undefined
+  /**
+   * Whether focus moved on to an element outside this menu and its submenus. Focus that was
+   * merely dropped (on `body`) has not moved on.
+   */
+  focusLeft: boolean
+  /** The element that had focus before the content was shown, which an unmount would focus back. */
+  focusedBeforeShow: HTMLElement | null
 }
 
 export interface MenuRootContext {
@@ -21,6 +40,10 @@ export interface MenuRootContext {
   dir: Ref<Direction>
   isUsingKeyboardRef: Ref<boolean>
   modal: Ref<boolean>
+  /** When `false`, the content and its submenus stay mounted while closed, hidden with CSS. */
+  unmountOnHide: Ref<boolean>
+  /** Internal: the mounted content elements of this menu and its submenus. */
+  contentElements?: Set<HTMLElement>
 }
 
 export interface MenuProps {
@@ -43,6 +66,13 @@ export interface MenuProps {
    * @defaultValue true
    */
   modal?: boolean
+  /**
+   * When set to `false`, the menu content and its submenus will not be unmounted when closed, but instead hidden with CSS.
+   *
+   * Useful when you want to keep the state of the content, or to improve performance by not remounting it on every open.
+   * @defaultValue true
+   */
+  unmountOnHide?: boolean
 }
 
 export type MenuEmits = {
@@ -70,6 +100,7 @@ const props = withDefaults(defineProps<MenuProps>(), {
   open: undefined,
   defaultOpen: false,
   modal: true,
+  unmountOnHide: true,
 })
 const emits = defineEmits<MenuEmits>()
 // `useDirection` (ConfigProvider-aware) stays in the shell; the composable owns
@@ -82,6 +113,7 @@ const { menuContext, menuRootContext } = useMenuRoot({
   defaultOpen: props.defaultOpen,
   dir,
   modal,
+  unmountOnHide: () => props.unmountOnHide,
   emit: emits,
   onOpenComplete: value => emits('update:openComplete', value),
 })

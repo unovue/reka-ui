@@ -41,6 +41,7 @@ const props = withDefaults(defineProps<ContextMenuRootProps>(), {
   modal: true,
   pressOpenDelay: 700,
   open: undefined,
+  unmountOnHide: true,
 })
 const emits = defineEmits<ContextMenuRootEmits>()
 const { dir: propDir, modal, pressOpenDelay } = toRefs(props)
@@ -55,6 +56,7 @@ const { context, menuContext, menuRootContext } = useContextMenu({
   defaultOpen: props.defaultOpen ?? false,
   dir,
   modal,
+  unmountOnHide: () => props.unmountOnHide,
   pressOpenDelay,
   emit: emits,
   onOpenComplete: value => emits('update:openComplete', value),

@@ -2,7 +2,7 @@ import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { ContextMenuRootContext } from './ContextMenuRoot.vue'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { MenuOpenChangeReason, UseMenuRootProps } from '@/Menu'
-import type { MenuContext, MenuRootContext } from '@/Menu/MenuRoot.vue'
+import type { MenuContentHideEvent, MenuContext, MenuRootContext } from '@/Menu/MenuRoot.vue'
 import type { Point } from '@/Menu/utils'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import { computed, nextTick, ref, toValue, watch } from 'vue'
@@ -172,6 +172,11 @@ export interface ContextMenuContentHandlers {
   onCloseAutoFocus: (event: Event) => void
   /** `MenuContent` `interactOutside`: a right click on the trigger re-positions instead of dismissing. */
   onInteractOutside: (event: PointerDownOutsideEvent | FocusOutsideEvent) => void
+  /**
+   * `MenuContext.onContentHide`: a content kept mounted while closed (`unmountOnHide: false`)
+   * is hidden, not unmounted, so no `closeAutoFocus` returns focus. Returns it to where it was before opening, as an unmount would.
+   */
+  onContentHide: (event: MenuContentHideEvent) => void
 }
 
 /**
@@ -200,6 +205,11 @@ export function createContextMenuContentHandlers(
         event.preventDefault()
       if (!event.defaultPrevented && !context.modal.value)
         hasInteractedOutside = true
+    },
+    onContentHide: ({ focusedBeforeShow, focusLeft }) => {
+      if (!hasInteractedOutside && !focusLeft)
+        focusedBeforeShow?.focus({ preventScroll: true })
+      hasInteractedOutside = false
     },
   }
 }

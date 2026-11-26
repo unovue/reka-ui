@@ -104,10 +104,12 @@ export interface MenuContentImplProps
    * @defaultValue true
    */
   spaceExtendsTypeahead?: boolean
+  /** Internal: whether a content kept mounted while closed (`unmountOnHide: false`) is shown. */
+  present?: boolean
 }
 
 export interface MenuRootContentTypeProps
-  extends Omit<MenuContentImplProps, 'disableOutsidePointerEvents' | 'disableOutsideScroll' | 'trapFocus'> {}
+  extends Omit<MenuContentImplProps, 'disableOutsidePointerEvents' | 'disableOutsideScroll' | 'trapFocus' | 'present'> {}
 </script>
 
 <script setup lang="ts">
@@ -140,6 +142,7 @@ defineOptions({
 const props = withDefaults(defineProps<MenuContentImplProps>(), {
   ...PopperContentPropsDefaultValue,
   spaceExtendsTypeahead: true,
+  present: true,
 })
 const emits = defineEmits<MenuContentImplPrivateEmits>()
 const menuContext = injectMenuContext()
@@ -152,8 +155,9 @@ const { trapFocus, disableOutsidePointerEvents, loop } = toRefs(props)
 // useMenuContent(). The roving focus group is a composable bound on the
 // content's element.
 // Base UI `MenuPositioner`: a modal root menu locks page scroll while open.
-const scrollLocked = useBodyScrollLock(!!disableOutsidePointerEvents.value)
-watch(disableOutsidePointerEvents, value => scrollLocked.value = !!value)
+// A content kept mounted while closed (`unmountOnHide: false`) holds the lock only while shown.
+const scrollLocked = useBodyScrollLock(props.present && !!disableOutsidePointerEvents.value)
+watch(() => props.present && !!disableOutsidePointerEvents.value, value => scrollLocked.value = value)
 const backdropCutout = injectMenuBackdropCutoutContext(null)
 const backdropCutoutElement = computed(() => backdropCutout?.value)
 
@@ -161,7 +165,7 @@ const { forwardRef, currentElement: contentElement, expose } = useForwardElement
 defineExpose(expose)
 
 // Shadow-safe focus guards scoped to the content's root (#2794).
-useFocusGuards(contentElement)
+useFocusGuards(() => props.present ? contentElement.value : null)
 
 const { content, contentContext, handleMountAutoFocus, currentItemId } = useMenuContent({
   menuContext: menuContext!,
@@ -170,6 +174,7 @@ const { content, contentContext, handleMountAutoFocus, currentItemId } = useMenu
   getItems: () => roving.getItems(),
   loop,
   spaceExtendsTypeahead: () => props.spaceExtendsTypeahead,
+  present: () => props.present,
   onOpenAutoFocus: event => emits('openAutoFocus', event),
 })
 
@@ -202,6 +207,7 @@ const instance = getCurrentInstance()!
 const focusScopeWrapper = computed(() => splitWrapperAttrs(mergeProps({
   asChild: true,
   trapped: trapFocus.value,
+  present: props.present,
   onMountAutoFocus: handleMountAutoFocus,
   onUnmountAutoFocus: (event: Event) => emits('closeAutoFocus', event),
 }, roving.consumerAttrs(instance.proxy!.$attrs)), FOCUS_SCOPE_WRAPPER))
@@ -209,6 +215,7 @@ const scope = useFocusScope(focusScopeOptions(contentElement, () => focusScopeWr
 const layerWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeProps(scope.attrs(), focusScopeWrapper.value.rest), {
   asChild: true,
   disableOutsidePointerEvents: disableOutsidePointerEvents.value,
+  present: props.present,
   backdropCutout: backdropCutoutElement.value,
   onEscapeKeyDown: (event: KeyboardEvent) => emits('escapeKeyDown', event),
   onPointerDownOutside: (event: PointerDownOutsideEvent) => emits('pointerDownOutside', event),
@@ -223,6 +230,7 @@ const layer = useDismissableLayer(dismissableLayerOptions(contentElement, () => 
   <PopperContent
     :ref="forwardRef"
     scope="menu"
+    :present="present"
     :as="as"
     :as-child="asChild"
     :memo-dependencies="memoDependencies"

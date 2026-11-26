@@ -2,7 +2,7 @@ import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { MenubarMenuContext } from './MenubarMenu.vue'
 import type { MenubarRootContext } from './MenubarRoot.vue'
 import type { MenuOpenChangeReason } from '@/Menu'
-import type { MenuContext, MenuRootContext } from '@/Menu/MenuRoot.vue'
+import type { MenuContentHideEvent, MenuContext, MenuRootContext } from '@/Menu/MenuRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Direction } from '@/shared/types'
 import { computed, ref, toValue, watch } from 'vue'
@@ -59,6 +59,8 @@ export interface UseMenubarProps {
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** Loop keyboard navigation between menus. @defaultValue `false` */
   loop?: MaybeRefOrGetter<boolean | undefined>
+  /** When `false`, each menu's content and submenus stay mounted while closed. @defaultValue `true` */
+  unmountOnHide?: MaybeRefOrGetter<boolean | undefined>
   /** Component `emit`; receives `beforeUpdate:modelValue` then `update:modelValue`. */
   emit?: (event: any, ...args: any[]) => void
   /** Called before a change commits; `details.cancel()` vetoes it. */
@@ -131,6 +133,7 @@ export function useMenubar(props: UseMenubarProps = {}): UseMenubarReturn {
     modelValue,
     dir: dir as Ref<Direction>,
     loop: loop as Ref<boolean>,
+    unmountOnHide: computed(() => toValue(props.unmountOnHide) ?? true) as Ref<boolean>,
     onMenuOpen,
     onMenuClose,
     onMenuToggle,
@@ -211,6 +214,7 @@ export function useMenubarMenu(rootContext: MenubarRootContext, options: UseMenu
     open,
     modal: false,
     dir: rootContext.dir,
+    unmountOnHide: rootContext.unmountOnHide,
     // Menu only requests a change when dismissing, so close the menubar on
     // the same events (and with the same reason).
     onUpdate: (next, details) => {
@@ -358,6 +362,11 @@ export interface MenubarContentSurface extends PartSurface<Record<string, never>
   onEntryFocus: (event: Event) => void
   /** ArrowLeft/ArrowRight inside the menu switches to the neighbouring menu (`list-navigation`). */
   onKeydown: (event: KeyboardEvent) => void
+  /**
+   * `MenuContext.onContentHide`: a content kept mounted while closed (`unmountOnHide: false`)
+   * is hidden, not unmounted, so no `closeAutoFocus` returns focus. Returns it to the trigger as on unmount, unless another menu of the menubar opened in its place, or focus moved on to another layer.
+   */
+  onContentHide: (event: MenuContentHideEvent) => void
 }
 
 /**
@@ -433,6 +442,12 @@ export function createMenubarContentSurface(
         event.preventDefault()
     },
     onKeydown,
+    onContentHide: ({ focusLeft }) => {
+      const menubarOpen = Boolean(rootContext.modelValue.value)
+      if (!menubarOpen && !hasInteractedOutside && !focusLeft)
+        menuContext.triggerElement.value?.focus()
+      hasInteractedOutside = false
+    },
   }
 }
 
