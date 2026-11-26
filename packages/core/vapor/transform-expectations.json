@@ -1053,6 +1053,12 @@
       "sfcs": 1,
       "slotProps": 1
     },
+    "ScrollArea/ScrollAreaVirtualizer.vue": {
+      "exposeElement": 1,
+      "patches": 3,
+      "sfcs": 1,
+      "slotProps": 1
+    },
     "Select/BubbleSelect.vue": {
       "exposeElement": 1,
       "sfcs": 1
@@ -1527,13 +1533,13 @@
     "shared/useTriggerId.ts": 1
   },
   "totals": {
-    "exposeElement": 290,
+    "exposeElement": 291,
     "getCurrentInstance": 25,
-    "patches": 12,
+    "patches": 15,
     "presenceAttrs": 8,
     "renderAs": 128,
-    "sfcs": 290,
-    "slotProps": 150,
+    "sfcs": 291,
+    "slotProps": 151,
     "vShow": 5,
     "vueuse": 5
   },

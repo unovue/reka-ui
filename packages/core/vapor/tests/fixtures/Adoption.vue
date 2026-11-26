@@ -1,8 +1,7 @@
 <script setup vapor lang="ts">
-import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger, NavigationMenuContent, NavigationMenuItem, NavigationMenuList, NavigationMenuRoot, NavigationMenuTrigger, NavigationMenuViewport, PopoverContent, PopoverRoot, PopoverTrigger, Primitive, RadioGroupItem, RadioGroupRoot, ScrollAreaRoot, ScrollAreaViewport } from '#reka'
+import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger, NavigationMenuContent, NavigationMenuItem, NavigationMenuList, NavigationMenuRoot, NavigationMenuTrigger, NavigationMenuViewport, PopoverContent, PopoverRoot, PopoverTrigger, Primitive, RadioGroupItem, RadioGroupRoot, ScrollAreaRoot, ScrollAreaViewport, ScrollAreaVirtualizer } from '#reka'
 import { ref } from 'vue'
 // Not exported from `src/ScrollArea/index.ts` on v3 yet, so not from the Vapor entry either
-import ScrollAreaVirtualizer from '@/ScrollArea/ScrollAreaVirtualizer.vue'
 
 // `asChild` DOM adoption (the template form) as the parent's props and the child's root change
 const withListener = ref(true)
