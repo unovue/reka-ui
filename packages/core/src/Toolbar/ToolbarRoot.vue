@@ -47,6 +47,8 @@ provideToolbarRootContext(context)
 
 // Arrow-key navigation between the toolbar's items.
 const roving = useRovingFocusGroup({
+  // Toolbar items are never active: the first focusable one is the tab stop before mount.
+  noActiveItem: () => true,
   consumerAttrs: true,
   element: currentElement,
   orientation: () => props.orientation,

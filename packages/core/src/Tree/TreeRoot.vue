@@ -160,6 +160,8 @@ provideTreeRootContext(context)
 
 const isVirtual = context.isVirtual
 const roving = useRovingFocusGroup({
+  // Tree items are never active: the first focusable one is the tab stop before mount.
+  noActiveItem: () => true,
   consumerAttrs: true,
   element: currentElement,
   orientation: () => 'vertical',
