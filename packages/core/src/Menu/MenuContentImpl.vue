@@ -18,6 +18,7 @@ import type { KeyedSelector } from '@/shared/createKeyedSelector'
 
 import {
   createRekaContext,
+  useContentMounted,
   useFocusGuards,
   useForwardElement,
 } from '@/shared'
@@ -169,6 +170,8 @@ const backdropCutoutElement = computed(() => backdropCutout?.value)
 
 const { forwardRef, currentElement: contentElement, expose } = useForwardElement()
 defineExpose(expose)
+// Triggers reference the content (`useRenderedContentId`) only while this element is rendered.
+useContentMounted(menuContext, contentElement)
 
 // Shadow-safe focus guards scoped to the content's root (#2794).
 useFocusGuards(() => props.present ? contentElement.value : null)

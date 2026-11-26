@@ -19,7 +19,7 @@ export interface MenuSubContentProps extends Omit<MenuContentImplProps, 'disable
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Presence } from '@/Presence'
-import { useForwardElement, useForwardPropsEmits } from '@/shared'
+import { useContentId, useForwardElement, useForwardPropsEmits } from '@/shared'
 import { vShowWhenKept } from '@/shared/vShowWhenKept'
 import MenuContentImpl, { injectMenuContentContext } from './MenuContentImpl.vue'
 import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
@@ -40,6 +40,8 @@ const parentContentContext = injectMenuContentContext()
 
 const { forwardRef, currentElement: subContentElement, expose } = useForwardElement()
 defineExpose(expose)
+// A consumer `id` is the content's id, which the trigger's `aria-controls` references.
+useContentId(menuSubContext, subContentElement)
 
 // As in `MenuContent`: a submenu follows its root's `unmountOnHide`.
 const staysMounted = computed(() => !rootContext.unmountOnHide.value)

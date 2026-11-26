@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { MenuContext } from './MenuRoot.vue'
 import type { MenuOpenChangeReason } from './useMenu'
 import type { ChangeEventDetails } from '@/shared'
-import { createRekaContext, useControllableState, useId } from '@/shared'
+import { createRekaContext, defineReactiveIds, useControllableState, useId } from '@/shared'
 
 export interface MenuSubContext {
   contentId: string
@@ -78,7 +78,8 @@ provideMenuContext({
   contentHidden: contentHide.trigger,
 })
 
-provideMenuSubContext({
+// Reactive: the trigger and the content adopt a consumer `id`, which the other one references.
+provideMenuSubContext(defineReactiveIds<MenuSubContext, 'triggerId' | 'contentId'>({
   triggerId: '',
   // Allocated here, not by the content: a closed submenu's portal mounts no
   // content, and the trigger's `aria-controls` must name it on the first open.
@@ -87,7 +88,7 @@ provideMenuSubContext({
   onTriggerChange: (element) => {
     trigger.value = element
   },
-})
+}, ['triggerId', 'contentId']))
 </script>
 
 <template>
