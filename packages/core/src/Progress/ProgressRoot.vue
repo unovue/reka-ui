@@ -41,7 +41,7 @@ export type { ProgressState }
 </script>
 
 <script setup lang="ts">
-import { nextTick, watch } from 'vue'
+import { watch, watchPostEffect } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { DEFAULT_MAX, useProgress } from './useProgress'
 
@@ -73,16 +73,11 @@ const { value: modelValue, max, root, context } = useProgress({
 // corrected straight away; the parent is told once so a `v-model` follows.
 // The value is validated against the corrected `max`, so a `max` that drops
 // below the value also reports `null`.
-watch(
-  () => [props.modelValue, props.max] as const,
-  async ([value]) => {
-    if (modelValue.value !== value) {
-      await nextTick()
-      emit('update:modelValue', null)
-    }
-  },
-  { immediate: true },
-)
+// After the render, so the parent is told in the same flush the corrected value renders in.
+watchPostEffect(() => {
+  if (modelValue.value !== props.modelValue)
+    emit('update:modelValue', null)
+})
 watch(
   () => props.max,
   (value) => {
