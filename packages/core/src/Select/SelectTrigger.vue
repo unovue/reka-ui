@@ -39,7 +39,7 @@ const { trigger } = useSelectTrigger({
 // The positioning anchor: what `PopperAnchor` did, without its components.
 // Both follow the element (an `as` change replaces it), so the root, and a
 // Field focusing its control, always reach the rendered trigger.
-const popperRootContext = injectPopperRootContext()
+const popperRootContext = injectPopperRootContext('select')
 watchPostEffect(() => {
   rootContext.onTriggerChange(triggerElement.value)
   popperRootContext.onAnchorChange(props.reference ?? triggerElement.value)

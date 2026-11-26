@@ -244,7 +244,7 @@ const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="combobox">
     <component
       :is="renderAs(as, asChild)"
       :ref="forwardRef"

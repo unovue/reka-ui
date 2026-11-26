@@ -283,6 +283,7 @@ const itemAlignedStyle = {
   <PopperContent
     v-if="position === 'popper'"
     :ref="forwardRef"
+    scope="select"
     v-bind="mergeProps({ collisionPadding: CONTENT_MARGIN, style: popperStyle }, positionAttrs)"
     @placed="isPositioned = true"
   >

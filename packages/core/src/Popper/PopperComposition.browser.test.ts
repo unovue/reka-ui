@@ -104,7 +104,7 @@ async function expectPositioned(clickTrigger = true) {
 // TODO(v3-port): #3213 these families' roots and anchors still need `scope` (PopoverRoot/PopoverTrigger/
 // PopoverAnchor/PopoverContentImpl 'popover', SelectRoot/SelectTrigger/SelectContentImpl 'select',
 // ComboboxRoot/ComboboxAnchor/ComboboxContentImpl and AutocompleteRoot 'combobox'), outside the floating lane.
-const NEEDS_SCOPE = new Set<string>(['Popover', 'Select', 'Combobox', 'Autocomplete'])
+const NEEDS_SCOPE = new Set<string>(['Popover'])
 
 describe('floating triggers inside TooltipRoot', () => {
   describe.each(['Popover', 'DropdownMenu'] as const)('%s', (family) => {

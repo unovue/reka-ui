@@ -323,6 +323,7 @@ const layer = useDismissableLayer(dismissableLayerOptions(currentElement, () => 
     :is="position === 'popper' ? PopperContent : renderAs(as, asChild)"
     v-bind="mergeProps(mergeProps(layer.attrs(), layerWrapper.rest), { ...$attrs, ...forwardedProps, ...surface.attrs.value })"
     :ref="forwardRef"
+    :scope="position === 'popper' ? 'combobox' : undefined"
     :memo-dependencies="popperMemoDependencies"
     :style="{
       // flex layout so we can place the scroll buttons properly

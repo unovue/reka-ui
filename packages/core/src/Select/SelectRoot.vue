@@ -347,7 +347,7 @@ provideFormResetOwner((event: Event) => { resetControllableState(isControlled, e
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="select">
     <slot
       :model-value="modelValue"
       :open="open"
