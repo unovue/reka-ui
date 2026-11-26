@@ -3,7 +3,7 @@ import type { Ref, ShallowRef } from 'vue'
 import type { EditableChangeReason } from './useEditable'
 import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
-import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, Translate } from '@/shared'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { createRekaContext, mergeExpose, useDirection, useFormControl, useForwardElement } from '@/shared'
 
@@ -33,6 +33,8 @@ export type EditableRootContext = {
   isEmpty: Ref<boolean>
   readonly: Ref<boolean>
   autoResize: Ref<boolean>
+  /** The nearest `ConfigProvider`'s translate function, for the built-in labels. */
+  t: Translate
 }
 
 export interface EditableRootProps extends PrimitiveProps, FormFieldProps {

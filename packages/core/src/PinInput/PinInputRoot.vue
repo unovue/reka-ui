@@ -2,7 +2,7 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { PinInputChangeReason } from './usePinInput'
 import type { PrimitiveProps } from '@/Primitive'
-import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, Translate } from '@/shared'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { createRekaContext, useDirection, useForwardElement } from '@/shared'
 import VisuallyHiddenInputBubble from '@/VisuallyHidden/VisuallyHiddenInputBubble.vue'
@@ -73,6 +73,8 @@ export interface PinInputRootContext<Type extends PinInputType = 'text'> {
   setModelValue: (value: PinInputContextValue<Type>, reason?: PinInputChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Writes one input's value (`''` clears it). Returns `false` when unchanged or cancelled. */
   updateModelValueAt: (index: number, value: string, reason?: PinInputChangeReason | BaseChangeReason, event?: Event) => boolean
+  /** The nearest `ConfigProvider`'s translate function, for the built-in labels. */
+  t: Translate
 }
 
 export const [injectPinInputRootContext, providePinInputRootContext]

@@ -3,7 +3,7 @@ import type { ComputedRef, CSSProperties, Ref } from 'vue'
 import type { ColorAreaAxis, ColorAreaChangeReason } from './useColorArea'
 import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
-import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, Translate } from '@/shared'
 import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
 import type { Direction, FormFieldProps } from '@/shared/types'
 import { createRekaContext, useDirection, useFormControl, useForwardElement } from '@/shared'
@@ -65,6 +65,8 @@ export interface ColorAreaRootContext {
   focusInput: (axis?: ColorAreaAxis) => void
   updateValues: (x: number, y: number, reason?: ColorAreaChangeReason | BaseChangeReason, event?: Event) => boolean
   commitValues: () => void
+  /** The nearest `ConfigProvider`'s translate function, for the built-in labels. */
+  t: Translate
 }
 
 export const [injectColorAreaRootContext, provideColorAreaRootContext]

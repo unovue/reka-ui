@@ -3,7 +3,7 @@ import type { HTMLAttributes, Ref } from 'vue'
 import type { NumberFieldChangeReason } from './useNumberField'
 import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
-import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, Translate } from '@/shared'
 import type { FormFieldProps } from '@/shared/types'
 import { createRekaContext, useFormControl, useForwardElement, useLocale } from '@/shared'
 
@@ -82,6 +82,8 @@ export interface NumberFieldRootContext {
   isDecreaseDisabled: Ref<boolean>
   isIncreaseDisabled: Ref<boolean>
   id: Ref<string | undefined>
+  /** The nearest `ConfigProvider`'s translate function, for the built-in labels. */
+  t: Translate
 }
 
 export const [injectNumberFieldRootContext, provideNumberFieldRootContext] = createRekaContext<NumberFieldRootContext>('NumberFieldRoot')

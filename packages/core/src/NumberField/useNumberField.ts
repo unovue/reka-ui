@@ -1,8 +1,9 @@
 import type { ComputedRef, HTMLAttributes, MaybeRefOrGetter, Ref } from 'vue'
 import type { NumberFieldRootContext } from './NumberFieldRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
-import { computed, mergeProps, ref, shallowRef, toValue, watch } from 'vue'
-import { clamp, createPartSurface, getActiveElement, getterRef, isNullish, snapValueToStep, useComposing, useControllableState } from '@/shared'
+import { computed, hasInjectionContext, mergeProps, ref, shallowRef, toValue, watch } from 'vue'
+import { clamp, createPartSurface, getActiveElement, getterRef, isNullish, snapValueToStep, useComposing, useControllableState, useTranslations } from '@/shared'
+import { defaultTranslate } from '@/shared/translations'
 import { resetControllableState } from '@/shared/useControllableState'
 import { handleDecimalOperation, useNumberFormatter, useNumberParser } from './utils'
 
@@ -399,8 +400,11 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
     set: value => setModelValue(value),
   })
 
+  // Outside setup() (a pure call) there is no provider to inject: use the English labels.
+  const t = hasInjectionContext() ? useTranslations() : defaultTranslate
   const context: NumberFieldRootContext = {
     modelValue: contextModelValue,
+    t,
     handleDecrease,
     handleIncrease,
     handleMinMaxValue,
@@ -623,7 +627,7 @@ export function createNumberFieldInputSurface(rootContext: NumberFieldRootContex
       'autocomplete': 'off',
       'autocorrect': 'off',
       'spellcheck': 'false',
-      'aria-roledescription': 'Number field',
+      'aria-roledescription': rootContext.t('numberFieldRoleDescription'),
       'aria-valuenow': rootContext.modelValue.value,
       'aria-valuemin': rootContext.min.value,
       'aria-valuemax': rootContext.max.value,
@@ -658,7 +662,7 @@ export function getNumberFieldButtonSurface(
   return createPartSurface<NumberFieldButtonState>(
     () => ({
       'tabindex': '-1',
-      'aria-label': direction === 'increase' ? 'Increase' : 'Decrease',
+      'aria-label': rootContext.t(direction === 'increase' ? 'numberFieldIncrement' : 'numberFieldDecrement'),
       'style': { userSelect: isPressed() ? 'none' : undefined },
       'disabled': isDisabled() ? '' : undefined,
       'onContextmenu': preventDefault,

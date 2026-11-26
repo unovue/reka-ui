@@ -3,8 +3,9 @@ import type { SliderRootContext } from './SliderRoot.vue'
 import type { SliderOrientation } from './utils'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { DataOrientation, Direction } from '@/shared/types'
-import { computed, ref, toRaw, toValue } from 'vue'
-import { clamp, createPartSurface, fieldRef, getDecimalCount, getterRef, useControllableState } from '@/shared'
+import { computed, hasInjectionContext, ref, toRaw, toValue } from 'vue'
+import { clamp, createPartSurface, fieldRef, getDecimalCount, getterRef, useControllableState, useTranslations } from '@/shared'
+import { defaultTranslate } from '@/shared/translations'
 import { resolveDirection } from '@/shared/useDirection'
 import {
   ARROW_KEYS,
@@ -109,7 +110,7 @@ export interface SliderThumbSurfaceOptions {
  * @internal
  */
 export function getSliderThumbSurface(
-  context: Pick<SliderRootContext, 'disabled' | 'orientation' | 'modelValue' | 'min' | 'max' | 'thumbAlignment' | 'valueIndexToChangeRef'>,
+  context: Pick<SliderRootContext, 'disabled' | 'orientation' | 'modelValue' | 'min' | 'max' | 'thumbAlignment' | 'valueIndexToChangeRef' | 't'>,
   orientation: Pick<SliderOrientation, 'startEdge' | 'direction'>,
   options: SliderThumbSurfaceOptions,
 ): PartSurface<SliderThumbState> {
@@ -138,7 +139,7 @@ export function getSliderThumbSurface(
         'role': 'slider',
         'tabindex': context.disabled.value ? undefined : 0,
         'aria-disabled': context.disabled.value || undefined,
-        'aria-label': toValue(options.ariaLabel) || getLabel(index, context.modelValue?.value?.length ?? 0),
+        'aria-label': toValue(options.ariaLabel) || getLabel(index, context.modelValue?.value?.length ?? 0, context.t),
         'aria-valuenow': value,
         'aria-valuemin': context.min.value,
         'aria-valuemax': context.max.value,
@@ -405,7 +406,10 @@ export function useSlider(props: UseSliderProps = {}): UseSliderReturn {
     }
   }
 
+  // Outside setup() (a pure call) there is no provider to inject: use the English labels.
+  const t = hasInjectionContext() ? useTranslations() : defaultTranslate
   const context: SliderRootContext = {
+    t,
     modelValue,
     currentModelValue,
     valueIndexToChangeRef,

@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { DataOrientation, Direction, FormFieldProps } from '../shared/types'
 import type { SliderChangeReason } from './useSlider'
 import type { PrimitiveProps } from '@/Primitive'
-import type { ChangeEventDetails } from '@/shared'
+import type { ChangeEventDetails, Translate } from '@/shared'
 import { useCollection, useCollectionSlot } from '@/Collection'
 import { createRekaContext, useDirection, useFormControl, useForwardElement } from '@/shared'
 
@@ -64,6 +64,8 @@ export interface SliderRootContext {
   valueIndexToChangeRef: Ref<number>
   thumbElements: Ref<HTMLElement[]>
   thumbAlignment: Ref<ThumbAlignment>
+  /** The nearest `ConfigProvider`'s translate function, for the built-in labels. */
+  t: Translate
 }
 
 export const [injectSliderRootContext, provideSliderRootContext]

@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { ColorSliderChangeReason } from './useColorSlider'
 import type { PrimitiveProps } from '@/Primitive'
-import type { ChangeEventDetails } from '@/shared'
+import type { ChangeEventDetails, Translate } from '@/shared'
 import type { Color, ColorChannel, ColorSpace } from '@/shared/color'
 import type { DataOrientation, Direction, FormFieldProps } from '@/shared/types'
 import { createRekaContext, useDirection, useFormControl, useForwardElement } from '@/shared'
@@ -55,6 +55,8 @@ export interface ColorSliderRootContext {
   min: ComputedRef<number>
   max: ComputedRef<number>
   step: ComputedRef<number>
+  /** The nearest `ConfigProvider`'s translate function, for the built-in labels. */
+  t: Translate
 }
 
 export const [injectColorSliderRootContext, provideColorSliderRootContext]

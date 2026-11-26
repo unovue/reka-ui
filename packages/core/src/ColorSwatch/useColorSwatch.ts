@@ -1,9 +1,10 @@
 import type { ComputedRef, MaybeRefOrGetter } from 'vue'
-import type { PartSurface } from '@/shared'
+import type { PartSurface, Translate } from '@/shared'
 import type { Color } from '@/shared/color'
-import { computed, toValue } from 'vue'
-import { createPartSurface, fieldRef } from '@/shared'
+import { computed, hasInjectionContext, toValue } from 'vue'
+import { createPartSurface, fieldRef, useTranslations } from '@/shared'
 import { colorToString, getColorContrast, getColorName, normalizeColor } from '@/shared/color'
+import { defaultTranslate } from '@/shared/translations'
 
 export interface UseColorSwatchProps {
   color?: MaybeRefOrGetter<string | Color | undefined>
@@ -29,7 +30,7 @@ interface ColorSwatchInfo {
   colorContrast: string | undefined
 }
 
-function deriveColorSwatch(color: string | Color | undefined, customLabel: string | undefined): ColorSwatchInfo {
+function deriveColorSwatch(color: string | Color | undefined, customLabel: string | undefined, t: Translate): ColorSwatchInfo {
   const colorString = !color ? '' : typeof color === 'string' ? color : colorToString(color, 'hex')
 
   let colorObj: Readonly<Color> | null = null
@@ -48,14 +49,14 @@ function deriveColorSwatch(color: string | Color | undefined, customLabel: strin
   }
   // Match React Aria: transparent colors get "transparent" label
   else if (!colorObj || colorObj.alpha === 0) {
-    label = 'transparent'
+    label = t('colorSwatchTransparent')
   }
   else {
     try {
       label = getColorName(colorString)
     }
     catch {
-      label = colorString || 'transparent'
+      label = colorString || t('colorSwatchTransparent')
     }
   }
 
@@ -84,13 +85,15 @@ function deriveColorSwatch(color: string | Color | undefined, customLabel: strin
  * @lifecycle pure
  */
 export function useColorSwatch(props: UseColorSwatchProps = {}): UseColorSwatchReturn {
-  const info = computed(() => deriveColorSwatch(toValue(props.color), toValue(props.label)))
+  // Outside setup() (a pure call) there is no provider to inject: use the English labels.
+  const t = hasInjectionContext() ? useTranslations() : defaultTranslate
+  const info = computed(() => deriveColorSwatch(toValue(props.color), toValue(props.label), t))
   const root = createPartSurface<ColorSwatchState>(() => {
     const { label, colorString, alpha } = info.value
     return {
       'role': 'img',
       'aria-label': label,
-      'aria-roledescription': 'color swatch',
+      'aria-roledescription': t('colorSwatchRoleDescription'),
       'style': {
         '--reka-color-swatch-color': colorString,
         '--reka-color-swatch-alpha': String(alpha),

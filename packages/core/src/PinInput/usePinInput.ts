@@ -2,8 +2,9 @@ import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { PinInputContextValue, PinInputRootContext, PinInputType } from './PinInputRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Direction } from '@/shared/types'
-import { computed, nextTick, ref, shallowRef, toValue, triggerRef, watch } from 'vue'
-import { createPartSurface, getActiveElement, useArrowNavigation, useComposing, useControllableState } from '@/shared'
+import { computed, hasInjectionContext, nextTick, ref, shallowRef, toValue, triggerRef, watch } from 'vue'
+import { createPartSurface, getActiveElement, useArrowNavigation, useComposing, useControllableState, useTranslations } from '@/shared'
+import { defaultTranslate } from '@/shared/translations'
 import { resolveDirection } from '@/shared/useDirection'
 
 /**
@@ -243,8 +244,11 @@ export function usePinInput(props: UsePinInputProps = {}): UsePinInputReturn {
     props.emit?.('complete', committedMountedValues.value)
   }, { deep: true, flush: 'post' })
 
+  // Outside setup() (a pure call) there is no provider to inject: use the English labels.
+  const t = hasInjectionContext() ? useTranslations() : defaultTranslate
   const context: PinInputRootContext<PinInputType> = {
     modelValue,
+    t,
     currentModelValue,
     mask,
     otp,
@@ -584,7 +588,7 @@ export function createPinInputInputSurface(
       'placeholder': context.placeholder.value,
       'value': currentValue.value,
       'disabled': disabled.value,
-      'aria-label': position.value < 0 ? 'pin input' : `pin input ${position.value + 1} of ${inputElements.value.length}`,
+      'aria-label': position.value < 0 ? context.t('pinInputLabel') : context.t('pinInputLabelIndexed', { index: position.value + 1, total: inputElements.value.length }),
       'onInput': (event: Event) => handleInput(event as InputEvent),
       'onKeydown': onKeydown,
       'onMousedown': onMousedown,
