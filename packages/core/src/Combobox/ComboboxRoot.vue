@@ -156,10 +156,20 @@ export interface ComboboxRootProps<T = AcceptableValue, I = T> extends Omit<List
   filter?: ListboxFilterFunction<T> | null
   /**
    * Whether `ComboboxCancel` also clears the selected value, resetting `modelValue` to `null` (or `[]` if `multiple`).
-   * Set to `false` to clear only the search text and keep the selection.
+   * Set to `false` to clear only the search text and keep the selection. Use `clearValue` to reset to another value.
    * @defaultValue true
    */
   resetModelValueOnClear?: boolean
+  /**
+   * A function returning the value `modelValue` is reset to when `ComboboxCancel` clears the combobox and
+   * `resetModelValueOnClear` is `true`, e.g. `() => undefined`. <br>
+   * When omitted, `modelValue` is reset to `null` (or `[]` if `multiple`). <br>
+   * If `multiple`, return the array to reset to: any other result is ignored and `[]` is used.
+   *
+   * A controlled combobox that is also given a `defaultValue` falls back to that default
+   * whenever its `modelValue` is `undefined`, so do not combine the two when clearing to `undefined`.
+   */
+  clearValue?: () => T | T[] | null | undefined
   /**
    * When set to `false`, the Combobox content will not be unmounted when closed, but instead hidden with CSS. <br>
    * Useful when you want to improve performance by not remounting the content on every open.
@@ -285,6 +295,7 @@ const combobox = useComboboxRoot<AcceptableValue>({
   openOnFocus: () => props.openOnFocus,
   openOnClick: () => props.openOnClick,
   resetModelValueOnClear: () => props.resetModelValueOnClear,
+  clearValue: () => props.clearValue,
   unmountOnHide: () => props.unmountOnHide,
   displayValue: props.displayValue && (value => props.displayValue!(value as T)),
   items: () => props.items as ComboboxItems<any, AcceptableValue> | undefined,
