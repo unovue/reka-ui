@@ -45,11 +45,15 @@ watch(() => props.present, (isPresent, wasPresent) => {
     :trap-focus="rootContext.open.value"
     :disable-outside-pointer-events="rootContext.open.value"
     :backdrop-cutout="rootContext.triggerElement.value"
-    @close-auto-focus.prevent="
+    @close-auto-focus="
       (event) => {
-        // Hidden kept-mounted content returned focus when it hid; its final unmount leaves focus alone.
-        // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there.
-        if (!isRightClickOutsideRef && present && !hasFocusLeftScope(event.target)) rootContext.triggerElement.value?.focus();
+        // A consumer that prevented it handles the focus itself.
+        if (!event.defaultPrevented) {
+          event.preventDefault();
+          // Hidden kept-mounted content returned focus when it hid; its final unmount leaves focus alone.
+          // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there.
+          if (!isRightClickOutsideRef && present && !hasFocusLeftScope(event.target)) rootContext.triggerElement.value?.focus();
+        }
       }
     "
     @pointer-down-outside="
