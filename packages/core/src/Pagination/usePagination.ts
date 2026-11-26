@@ -1,8 +1,10 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { PaginationRootContext } from './PaginationRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
+import type { Translate, TranslationKey } from '@/shared/translations'
 import { computed, toValue } from 'vue'
-import { createPartSurface, useControllableState } from '@/shared'
+import { clamp, createPartSurface, useControllableState } from '@/shared'
+import { defaultTranslate } from '@/shared/translations'
 import { getRange, transform } from './utils'
 
 /**
@@ -27,11 +29,11 @@ export type PaginationEllipsisState = { type: 'ellipsis' }
 /** One entry of the visible page range. */
 export type PaginationItem = { type: 'ellipsis' } | { type: 'page', value: number }
 
-const NAVIGATION: Record<PaginationNavigation, { label: string, reason: PaginationChangeReason }> = {
-  first: { label: 'First Page', reason: 'first-press' },
-  prev: { label: 'Previous Page', reason: 'prev-press' },
-  next: { label: 'Next Page', reason: 'next-press' },
-  last: { label: 'Last Page', reason: 'last-press' },
+const NAVIGATION: Record<PaginationNavigation, { label: TranslationKey, reason: PaginationChangeReason }> = {
+  first: { label: 'paginationFirst', reason: 'first-press' },
+  prev: { label: 'paginationPrev', reason: 'prev-press' },
+  next: { label: 'paginationNext', reason: 'next-press' },
+  last: { label: 'paginationLast', reason: 'last-press' },
 }
 
 function navigationTarget(context: PaginationRootContext, kind: PaginationNavigation) {
@@ -44,9 +46,10 @@ function navigationTarget(context: PaginationRootContext, kind: PaginationNaviga
 }
 
 function isNavigationDisabled(context: PaginationRootContext, kind: PaginationNavigation) {
+  // `<=` / `>=`: without `clampPage` the page may sit past a page count that shrank.
   const atEdge = kind === 'first' || kind === 'prev'
-    ? context.page.value === 1
-    : context.page.value === context.pageCount.value
+    ? context.page.value <= 1
+    : context.page.value >= context.pageCount.value
   return atEdge || context.disabled.value
 }
 
@@ -58,7 +61,7 @@ export function getPaginationNavigationSurface(context: PaginationRootContext, k
   const disabled = computed(() => isNavigationDisabled(context, kind))
   return createPartSurface<PaginationNavigationState>(
     () => ({
-      'aria-label': NAVIGATION[kind].label,
+      'aria-label': context.t(NAVIGATION[kind].label),
       'disabled': disabled.value,
       'onClick': (event: MouseEvent) => {
         if (disabled.value)
@@ -78,7 +81,7 @@ export function getPaginationListItemSurface(context: PaginationRootContext, val
   const disabled = computed(() => context.disabled.value)
   return createPartSurface<PaginationListItemState>(
     () => ({
-      'aria-label': `Page ${toValue(value)}`,
+      'aria-label': context.t('paginationPage', { page: toValue(value) }),
       'aria-current': isSelected.value ? 'page' : undefined,
       'disabled': disabled.value,
       'onClick': (event: MouseEvent) => {
@@ -132,6 +135,13 @@ export interface UsePaginationProps {
   disabled?: MaybeRefOrGetter<boolean | undefined>
   /** When `true`, always show the first page, the last page and the ellipses. @defaultValue `false` */
   showEdges?: MaybeRefOrGetter<boolean | undefined>
+  /**
+   * When `true`, `page` reads within the page count. Moving the model back into range is the
+   * caller's job (`PaginationRoot` does it with `setPage`). @defaultValue `false`
+   */
+  clampPage?: MaybeRefOrGetter<boolean | undefined>
+  /** Looks up the built-in labels; `PaginationRoot` passes the `ConfigProvider` one. @defaultValue the English labels */
+  translate?: Translate
   /** Component `emit`; receives `beforeUpdate:page` then `update:page`. */
   emit?: (event: any, ...args: any[]) => void
   /** Called before a change commits; `details.cancel()` vetoes it. */
@@ -142,6 +152,8 @@ export interface UsePaginationProps {
 
 export interface UsePaginationReturn {
   page: ComputedRef<number>
+  /** The page the model holds, which may be past the page count unless `clampPage` is set. */
+  modelPage: ComputedRef<number>
   pageCount: ComputedRef<number>
   /** The visible page range (pages and ellipses). */
   items: ComputedRef<PaginationItem[]>
@@ -171,7 +183,7 @@ export interface UsePaginationReturn {
  * @lifecycle pure
  */
 export function usePagination(props: UsePaginationProps): UsePaginationReturn {
-  const { state: page, setState, lastChangeDetails, isControlled } = useControllableState<number, PaginationChangeReason>({
+  const { state: modelPage, setState, lastChangeDetails, isControlled } = useControllableState<number, PaginationChangeReason>({
     prop: props.page,
     defaultValue: props.defaultPage ?? 1,
     name: 'page',
@@ -184,9 +196,12 @@ export function usePagination(props: UsePaginationProps): UsePaginationReturn {
   const siblingCount = computed(() => toValue(props.siblingCount) ?? 2)
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const showEdges = computed(() => toValue(props.showEdges) ?? false)
+  // Navigation always lands within the page count. Reading an out-of-range page back into range
+  // is opt-in, because a `total` that drops while data loads would otherwise lose the current page.
+  const page = computed(() => toValue(props.clampPage) ? clamp(modelPage.value, 1, pageCount.value) : modelPage.value)
 
   function setPage(value: number, reason: PaginationChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
-    return setState(value, reason, event)
+    return setState(clamp(value, 1, pageCount.value), reason, event)
   }
 
   const context: PaginationRootContext = {
@@ -196,10 +211,12 @@ export function usePagination(props: UsePaginationProps): UsePaginationReturn {
     siblingCount,
     disabled,
     showEdges,
+    t: props.translate ?? defaultTranslate,
   }
 
   return {
     page,
+    modelPage,
     pageCount,
     items: getPaginationItems(context),
     setPage,
