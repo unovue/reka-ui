@@ -1,5 +1,6 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
 import type { Mock, MockInstance } from 'vitest'
+import type { DialogRootContext } from './DialogRoot.vue'
 import type { ChangeEventDetails } from '@/shared'
 import { createEvent, findByText, fireEvent, render } from '@testing-library/vue'
 import { flushPromises, mount } from '@vue/test-utils'
@@ -927,10 +928,10 @@ describe('given a Dialog that opens while another modal Dialog holds focus', () 
 
 describe('given a Dialog root that stays mounted', () => {
   function mountDialog(props: Record<string, unknown>, contentProps: Record<string, unknown> = {}) {
-    let rootContext!: ReturnType<typeof injectDialogRootContext>
+    let rootContext!: DialogRootContext
     const ContextProbe = defineComponent({
       setup() {
-        rootContext = injectDialogRootContext()
+        rootContext = injectDialogRootContext()!
         return () => null
       },
     })

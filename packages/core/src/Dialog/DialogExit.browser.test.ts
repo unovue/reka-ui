@@ -122,7 +122,9 @@ describe('given a modal Dialog with an exit animation, in a real browser', () =>
 
   it('hands Escape and accessibility back to the parent during the child exit', async () => {
     vi.stubEnv('MODE', 'development') // Exercise useHideOthers in the browser.
-    onTestFinished(() => vi.unstubAllEnvs())
+    onTestFinished(() => {
+      vi.unstubAllEnvs()
+    })
     const outerOpen = ref(false)
     const innerOpen = ref(false)
     const options = { overlay: false, contentExit: true }

@@ -158,12 +158,13 @@ function trackCutouts(backdrop: HTMLElement, cutouts: Element[], view: Window): 
  * backdrop in tree order. Returns the restore.
  */
 function liftStaticAnchor(anchor: Element, view: Window): (() => void) | undefined {
-  if (!(anchor instanceof view.HTMLElement) || view.getComputedStyle(anchor).position !== 'static')
+  if (!(anchor as Partial<HTMLElement>).style || view.getComputedStyle(anchor).position !== 'static')
     return undefined
-  const original = anchor.style.position
-  anchor.style.position = 'relative'
+  const { style } = anchor as HTMLElement
+  const original = style.position
+  style.position = 'relative'
   return () => {
-    anchor.style.position = original
+    style.position = original
   }
 }
 
