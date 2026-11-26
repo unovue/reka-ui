@@ -65,6 +65,19 @@ it('reads the incomplete PIN message from the `ConfigProvider` translations', as
   wrapper.unmount()
 })
 
+it('keeps the English incomplete PIN message for an empty translation', async () => {
+  const wrapper = mount(() => h(ConfigProvider, { translations: { pinInputIncomplete: '' } }, () => h('form', [
+    h(PinInputRoot, { name: 'pin', required: true, defaultValue: ['1', ''] }, () =>
+      Array.from({ length: 2 }, (_, index) => h(PinInputInput, { index }))),
+  ])), { attachTo: document.body })
+  await nextTick()
+  const form = document.querySelector('form')!
+  const formInput = form.elements.namedItem('pin') as HTMLInputElement
+  expect(formInput.validationMessage).toBe('Please fill in every PIN field.')
+  expect(form.checkValidity()).toBe(false)
+  wrapper.unmount()
+})
+
 it.each([false, true])('submits the full PIN synchronously from the complete handler (requireComplete: %s)', async (requireComplete) => {
   const form = ref<HTMLFormElement>()
   const onSubmit = vi.fn((event: SubmitEvent) => {

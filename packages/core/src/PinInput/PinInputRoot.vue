@@ -100,6 +100,7 @@ import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { usePrimitiveElement } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { formResetBinder } from '@/shared/formReset'
+import { defaultTranslations } from '@/shared/translations'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { orderInputElements, usePinInput } from './usePinInput'
@@ -206,7 +207,7 @@ const { primitiveElement: formInputRef, currentElement: formInput } = usePrimiti
 watchEffect((onCleanup) => {
   const input = formInput.value as HTMLInputElement | undefined
   if (input && resolvedRequired() && props.requireComplete && !isCompleted.value) {
-    input.setCustomValidity(context.t('pinInputIncomplete'))
+    input.setCustomValidity(context.t('pinInputIncomplete') || defaultTranslations.pinInputIncomplete)
     onCleanup(() => input.setCustomValidity(''))
   }
 })
