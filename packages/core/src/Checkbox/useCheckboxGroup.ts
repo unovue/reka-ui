@@ -2,8 +2,8 @@ import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { CheckboxGroupItem, CheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue } from '@/shared/types'
-import { computed, shallowReactive, toValue } from 'vue'
-import { useControllableState } from '@/shared'
+import { computed, isRef, shallowReactive, toValue } from 'vue'
+import { getterRef, useControllableState } from '@/shared'
 import { toggleArrayValue } from './utils'
 
 /**
@@ -81,7 +81,10 @@ export function useCheckboxGroup<T extends AcceptableValue = AcceptableValue>(pr
   const disabled = computed(() => toValue(props.disabled) ?? false)
   const rovingFocus = computed(() => toValue(props.rovingFocus) ?? true)
   const max = computed(() => toValue(props.max))
-  const allValues = computed(() => toValue(props.allValues))
+  // A getter ref rather than a computed: no effect or cached value per group.
+  const allValues = isRef(props.allValues)
+    ? props.allValues
+    : getterRef(typeof props.allValues === 'function' ? props.allValues : () => toValue(props.allValues))
 
   function changeModelValue(value: T[], reason: CheckboxGroupChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
     return setState(value, reason, event)

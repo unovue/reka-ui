@@ -40,11 +40,12 @@ export type CheckboxGroupRootEmits<T = AcceptableValue> = {
   'update:modelValue': [value: T[], details: ChangeEventDetails<CheckboxGroupChangeReason>]
 }
 
-/** A (non-parent) checkbox of the group, as a parent checkbox reads it. @internal */
+/** A checkbox of the group, as a parent checkbox reads it. @internal */
 export interface CheckboxGroupItem {
   value: () => AcceptableValue
   disabled: () => boolean
   id: () => string | undefined
+  isParent: () => boolean
 }
 
 export interface CheckboxGroupRootContext {
@@ -54,7 +55,7 @@ export interface CheckboxGroupRootContext {
   max: Ref<number | null | undefined>
   /** The values a parent checkbox controls (`allValues`). */
   allValues: Ref<AcceptableValue[] | undefined>
-  /** The mounted (non-parent) checkboxes while the group has `allValues`, read by a parent checkbox. */
+  /** The group's checkboxes, read by a parent checkbox. */
   items: Set<CheckboxGroupItem>
   /**
    * Route every write through the group's model (`beforeUpdate` + `update`);
