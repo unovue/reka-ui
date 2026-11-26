@@ -6,7 +6,7 @@ export interface ColorSliderThumbProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { getChannelName } from '@/shared/color'
+import { translationKey, useTranslations } from '@/shared'
 import { SliderThumb } from '@/Slider'
 import { injectColorSliderRootContext } from './ColorSliderRoot.vue'
 
@@ -23,10 +23,12 @@ defineSlots<{
   }) => any
 }>()
 
+const t = useTranslations()
+
 const rootContext = injectColorSliderRootContext()
 
 const ariaLabel = computed(() => {
-  return getChannelName(rootContext.channel.value)
+  return t(translationKey('colorChannel', rootContext.channel.value))
 })
 
 const ariaValueText = computed(() => {

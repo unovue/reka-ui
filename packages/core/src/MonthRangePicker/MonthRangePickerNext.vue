@@ -18,11 +18,14 @@ export interface MonthRangePickerNextSlot {
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
-import { disabledAttr } from '@/shared'
+import { disabledAttr, useTranslations } from '@/shared'
 import { injectMonthRangePickerRootContext } from './MonthRangePickerRoot.vue'
 
 const props = withDefaults(defineProps<MonthRangePickerNextProps>(), { as: 'button' })
+
 defineSlots<MonthRangePickerNextSlot>()
+
+const t = useTranslations()
 
 const rootContext = injectMonthRangePickerRootContext()
 
@@ -39,7 +42,7 @@ function handleClick() {
   <Primitive
     :as="props.as"
     :as-child="props.asChild"
-    aria-label="Next year"
+    :aria-label="t('monthPickerNext')"
     :type="props.as === 'button' ? 'button' : undefined"
     :aria-disabled="disabled || undefined"
     :data-disabled="disabled || undefined"

@@ -70,7 +70,7 @@ const { CollectionItem } = useCollection()
 
 const isSelected = computed(() => valueComparator(rootContext.modelValue?.value, props.value, rootContext.by))
 const isFocused = ref(false)
-const textValue = ref(props.textValue ?? '')
+let textValue = props.textValue ?? ''
 
 const SELECT_SELECT = 'select.select'
 
@@ -210,6 +210,19 @@ if (props.value === '') {
   )
 }
 
+// What the collection knows about this item. It is one object for the item's whole life, read
+// when a key is typed: a new object per render would register the item again, and a reactive
+// `textValue` would render every item a second time right after it mounts.
+const collectionValue = {
+  get textValue() {
+    return textValue
+  },
+  get value() {
+    return props.value
+  },
+  typeaheadSelect: handleTypeaheadSelect,
+}
+
 onMounted(() => {
   if (!currentElement.value)
     return
@@ -229,13 +242,13 @@ const itemContext = provideSelectItemContext({
   textId: useId(undefined, 'reka-select-item-text'),
   isSelected,
   onItemTextChange: (node) => {
-    textValue.value = ((textValue.value || node?.textContent) ?? '').trim()
+    textValue = ((textValue || node?.textContent) ?? '').trim()
   },
 })
 </script>
 
 <template>
-  <CollectionItem :value="{ textValue, value, typeaheadSelect: handleTypeaheadSelect }">
+  <CollectionItem :value="collectionValue">
     <Primitive
       :ref="forwardRef"
       role="option"
