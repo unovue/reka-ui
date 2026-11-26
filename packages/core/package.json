@@ -73,6 +73,18 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "internal": ["./dist/internal.d.ts"],
+      "constant": ["./dist/constant.d.ts"],
+      "date": ["./dist/date.d.ts"],
+      "agent": ["./dist/agent.d.ts"],
+      "namespaced": ["./dist/namespaced/index.d.cts"],
+      "nuxt": ["./dist/nuxt/index.d.cts"],
+      "resolver": ["./dist/resolver/index.d.cts"],
+      "vapor": ["./dist/vapor/index.d.ts"]
+    }
+  },
   "files": [
     "src",
     "dist",
