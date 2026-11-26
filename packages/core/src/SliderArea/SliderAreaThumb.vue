@@ -9,7 +9,7 @@ import { useMounted } from '@vueuse/core'
 import { computed } from 'vue'
 import { useCollection } from '@/Collection'
 import { Primitive } from '@/Primitive'
-import { useForwardExpose, useSize } from '@/shared'
+import { useForwardExpose, useSize, useTranslations } from '@/shared'
 import { convertValueToPercentage, getLabel, getThumbInBoundsOffset } from '../Slider/utils'
 import { injectSliderAreaRootContext } from './SliderAreaRoot.vue'
 
@@ -21,6 +21,8 @@ const props = withDefaults(defineProps<SliderAreaThumbProps>(), {
   as: 'div',
 })
 
+const t = useTranslations()
+
 const rootContext = injectSliderAreaRootContext()
 const { forwardRef, currentElement } = useForwardExpose()
 const { CollectionItem, getItems } = useCollection()
@@ -30,7 +32,7 @@ const index = computed(() => currentElement.value ? getItems(true).findIndex(i =
 const value = computed(() => rootContext.modelValue?.value?.[index.value])
 const percentX = computed(() => value.value === undefined ? 0 : convertValueToPercentage(value.value[0], rootContext.minX.value ?? 0, rootContext.maxX.value ?? 100))
 const percentY = computed(() => value.value === undefined ? 0 : convertValueToPercentage(value.value[1], rootContext.minY.value ?? 0, rootContext.maxY.value ?? 100))
-const label = computed(() => getLabel(index.value, rootContext.modelValue?.value?.length ?? 0))
+const label = computed(() => getLabel(index.value, rootContext.modelValue?.value?.length ?? 0, t))
 
 const size = useSize(currentElement)
 const thumbInBoundsOffsetX = computed(() => {
@@ -60,7 +62,7 @@ const isMounted = useMounted()
       :aria-valuemin="rootContext.minX.value"
       :aria-valuemax="rootContext.maxX.value"
       :data-disabled="rootContext.disabled.value ? '' : undefined"
-      aria-roledescription="2D slider"
+      :aria-roledescription="t('sliderAreaRoleDescription')"
       :as-child="asChild"
       :as="as"
       :style="{

@@ -3,6 +3,7 @@ import type { ComputedRef, Ref, ShallowRef } from 'vue'
 import type { CarouselAutoplayOptions, CarouselAutoScrollOptions } from './useCarousel'
 import type { CarouselAlign, CarouselContainScroll, CarouselItemSnapStyle, CarouselSlidesToScroll, CarouselSnap } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
+import type { Translate } from '@/shared'
 import type { DataOrientation, Direction } from '@/shared/types'
 import { createRekaContext, useDirection, useForwardExpose, useId } from '@/shared'
 
@@ -23,6 +24,8 @@ export interface CarouselResolvedOptions {
 export interface CarouselRootContext {
   baseId: string
   contentId: string
+  /** Looks up the built-in labels, which `ConfigProvider` can translate. */
+  t: Translate
   /** The current snap index. Read-only: call `changeModelValue` to change it. */
   modelValue: ComputedRef<number>
   /** Returns `false` when the index is unchanged or out of range. */
@@ -247,7 +250,7 @@ watch(currentElement, el => context.rootElement.value = (el as HTMLElement | und
     :as-child="asChild"
     :dir="dir"
     role="region"
-    aria-roledescription="carousel"
+    :aria-roledescription="context.t('carouselRoleDescription')"
     :data-orientation="context.orientation.value"
     :data-playing="playing ? '' : undefined"
     :data-paused="paused ? '' : undefined"

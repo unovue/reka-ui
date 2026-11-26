@@ -155,6 +155,11 @@ function isEventTargetWithinCombobox(target: EventTarget | null) {
   return !!control && !!rootContext.parentElement.value?.contains(control)
 }
 
+// Turns on the memo of `PopperContent`'s subtree, so a position update does not re-render the
+// options. Nothing of the filter belongs in it: the items, groups and the empty state each follow
+// the filter themselves, and a filter dependency here re-rendered every item on each keystroke.
+const POPPER_MEMO_DEPENDENCIES: unknown[] = []
+
 const popperContentEvents = {
   placed: () => rootContext.onContentPlaced(contentId),
 }
@@ -192,9 +197,7 @@ const popperContentEvents = {
           :id="rootContext.contentId"
           :ref="forwardRef"
           :scope="position === 'popper' ? 'combobox' : undefined"
-          :memo-dependencies="position === 'popper'
-            ? [rootContext.filterSearch.value, rootContext.filterState.value]
-            : undefined"
+          :memo-dependencies="position === 'popper' ? POPPER_MEMO_DEPENDENCIES : undefined"
           :data-state="rootContext.open.value ? 'open' : 'closed'"
           :data-empty="isEmpty ? '' : undefined"
           :style="{

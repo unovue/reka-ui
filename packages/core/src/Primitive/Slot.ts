@@ -1,10 +1,13 @@
-import { cloneVNode, Comment, defineComponent, mergeProps } from 'vue'
+import { cloneVNode, Comment, defineComponent, getCurrentInstance, mergeProps } from 'vue'
 import { ariaDisabledAttr, isPlainTag, renderSlotFragments } from '@/shared'
 
 export const Slot = defineComponent({
   name: 'PrimitiveSlot',
   inheritAttrs: false,
-  setup(_, { attrs, slots }) {
+  // No setup context and untracked attrs, as in `Primitive`
+  setup() {
+    const { attrs, slots } = getCurrentInstance()!
+
     return () => {
       if (!slots.default)
         return null
