@@ -214,8 +214,7 @@ describe('given a RadioGroupItem whose label is not found', () => {
   })
 })
 
-// TODO(v3-port): #3303 omit `required` on radios of an optional group (RadioGroup source resolved to v3)
-describe.skip('given the required prop', () => {
+describe('given the required prop', () => {
   function mountGroup(required: boolean) {
     return mount({
       components: { RadioGroupItem, RadioGroupRoot },
