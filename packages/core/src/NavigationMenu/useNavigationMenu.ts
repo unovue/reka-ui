@@ -1244,6 +1244,7 @@ export function useNavigationMenuViewport(options: UseNavigationMenuViewportOpti
 
   const size = ref<{ width: number, height: number }>()
   const position = ref<{ left: number, top: number, crossOffset: number }>()
+  let rootSize: { target: Element, width: number, height: number } | undefined
 
   const open = computed(() => !!menuContext.modelValue.value)
 
@@ -1270,12 +1271,19 @@ export function useNavigationMenuViewport(options: UseNavigationMenuViewportOpti
       const bodyWidth = document.documentElement.offsetWidth
       const bodyHeight = document.documentElement.offsetHeight
       const rootRect = rootNavigationMenu.value.getBoundingClientRect()
+      // Rectangles include transforms; ResizeObserver border boxes retain the
+      // fractional, untransformed layout size (unlike offsetWidth/offsetHeight).
+      // A root without a box on an axis (`display: contents`, zero width or height) is
+      // never measured, or measures 0: there is no scale to read, so assume none.
+      const layoutSize = rootSize?.target === rootNavigationMenu.value ? rootSize : undefined
+      const scaleX = (layoutSize?.width && rootRect.width / layoutSize.width) || 1
+      const scaleY = (layoutSize?.height && rootRect.height / layoutSize.height) || 1
       const rect = activeTrigger.value.getBoundingClientRect()
       const { offsetWidth, offsetHeight } = content.value
 
       // Find the beginning of the position of the menu item
-      const startPositionLeft = rect.left - rootRect.left
-      const startPositionTop = rect.top - rootRect.top
+      const startPositionLeft = (rect.left - rootRect.left) / scaleX
+      const startPositionTop = (rect.top - rootRect.top) / scaleY
 
       // Aligning to specified alignment
       let posLeft = null
@@ -1286,50 +1294,24 @@ export function useNavigationMenuViewport(options: UseNavigationMenuViewportOpti
           posTop = startPositionTop
           break
         case 'end':
-          posLeft = startPositionLeft - offsetWidth + rect.width
-          posTop = startPositionTop - offsetHeight + rect.height
+          posLeft = startPositionLeft - offsetWidth + rect.width / scaleX
+          posTop = startPositionTop - offsetHeight + rect.height / scaleY
           break
         default:
           // center
-          posLeft = startPositionLeft - offsetWidth / 2 + rect.width / 2
-          posTop = startPositionTop - offsetHeight / 2 + rect.height / 2
+          posLeft = startPositionLeft - offsetWidth / 2 + rect.width / scaleX / 2
+          posTop = startPositionTop - offsetHeight / 2 + rect.height / scaleY / 2
       }
 
       const screenOffset = 10
 
-      // Do not let go of the left side of the screen
-      if (posLeft + rootRect.left < screenOffset) {
-        posLeft = screenOffset - rootRect.left
-      }
-
-      // Now also check the right side of the screen
-      const rightOffset = posLeft + rootRect.left + offsetWidth
-      if (rightOffset > bodyWidth - screenOffset) {
-        posLeft -= rightOffset - bodyWidth + screenOffset
-
-        // Recheck the left side of the screen
-        if (posLeft < screenOffset - rootRect.left) {
-          // Just set the menu to the full width of the screen
-          posLeft = screenOffset - rootRect.left
-        }
-      }
-
-      // Do not let go of the top side of the screen
-      if (posTop + rootRect.top < screenOffset) {
-        posTop = screenOffset - rootRect.top
-      }
-
-      // Now also check the bottom side of the screen
-      const bottomOffset = posTop + rootRect.top + offsetHeight
-      if (bottomOffset > bodyHeight - screenOffset) {
-        posTop -= bottomOffset - bodyHeight + screenOffset
-
-        // Recheck the top side of the screen
-        if (posTop < screenOffset - rootRect.top) {
-          // Just set the menu to the full height of the screen
-          posTop = screenOffset - rootRect.top
-        }
-      }
+      // Convert the screen bounds to local coordinates before clamping.
+      const minLeft = (screenOffset - rootRect.left) / scaleX
+      const maxLeft = (bodyWidth - screenOffset - rootRect.left) / scaleX - offsetWidth
+      const minTop = (screenOffset - rootRect.top) / scaleY
+      const maxTop = (bodyHeight - screenOffset - rootRect.top) / scaleY - offsetHeight
+      posLeft = Math.max(minLeft, Math.min(posLeft, maxLeft))
+      posTop = Math.max(minTop, Math.min(posTop, maxTop))
 
       // Possible blurring font with decimal values
       posLeft = Math.round(posLeft)
@@ -1342,10 +1324,10 @@ export function useNavigationMenuViewport(options: UseNavigationMenuViewportOpti
         // edge: its bottom when horizontal, so a wrapped row gets the viewport
         // under it; its inline-end edge (from the inline start) when vertical.
         crossOffset: Math.round(menuContext.orientation === 'horizontal'
-          ? rect.bottom - rootRect.top
+          ? (rect.bottom - rootRect.top) / scaleY
           : menuContext.dir.value === 'rtl'
-            ? rootRect.right - rect.left
-            : rect.right - rootRect.left),
+            ? (rootRect.right - rect.left) / scaleX
+            : (rect.right - rootRect.left) / scaleX),
       }
     }
   }
@@ -1360,9 +1342,29 @@ export function useNavigationMenuViewport(options: UseNavigationMenuViewportOpti
     }
   })
 
-  useResizeObserver([globalThis.document?.body, rootNavigationMenu], () => {
+  useResizeObserver([globalThis.document?.body, rootNavigationMenu], (entries) => {
+    const entry = entries.find(entry => entry.target === rootNavigationMenu.value)
+    if (entry) {
+      const borderBox = Array.isArray(entry.borderBoxSize) ? entry.borderBoxSize[0] : entry.borderBoxSize
+      const style = getComputedStyle(entry.target)
+      // ResizeObserver sizes use logical axes, whereas client rects use physical axes.
+      const vertical = style.writingMode.startsWith('vertical') || style.writingMode.startsWith('sideways')
+      // Older observers may omit borderBoxSize. Resolved CSS dimensions also
+      // retain fractions; include padding and borders for a content-box root.
+      const extraWidth = style.boxSizing === 'border-box'
+        ? 0
+        : Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight) + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth)
+      const extraHeight = style.boxSizing === 'border-box'
+        ? 0
+        : Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom) + Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth)
+      rootSize = {
+        target: entry.target,
+        width: borderBox ? (vertical ? borderBox.blockSize : borderBox.inlineSize) : Number.parseFloat(style.width) + extraWidth,
+        height: borderBox ? (vertical ? borderBox.inlineSize : borderBox.blockSize) : Number.parseFloat(style.height) + extraHeight,
+      }
+    }
     updatePosition()
-  })
+  }, { box: 'border-box' })
 
   return {
     open,
