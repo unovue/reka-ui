@@ -793,12 +793,12 @@ const translated: Record<string, { translations: Partial<Translations>, checks: 
   },
 }
 
-// TODO(v3-port): #3418 only Carousel and SliderArea call useTranslations in v3; the other parts keep hard-coded labels
-const TRANSLATED_IN_V3 = new Set(['Carousel', 'CarouselTabs', 'SliderArea'])
+// TODO(v3-port): #3418 the families that look their labels up in v3 so far; the other parts keep hard-coded labels
+const TRANSLATED_IN_V3 = new Set(['Carousel', 'CarouselTabs', 'Pagination', 'SliderArea'])
 // TODO(v3-port): #3418 the Month/Year pickers are deleted in v3
 const DELETED_IN_V3 = new Set(['MonthPicker', 'MonthRangePicker', 'YearPicker', 'YearRangePicker'])
-// TODO(v3-port): #3418 #3388 v3's ColorArea and PaginationRoot have no built-in roledescription / aria-label
-const NO_DEFAULT_LABEL_IN_V3 = new Set(['ColorArea', 'Pagination'])
+// TODO(v3-port): #3418 #3388 v3's ColorArea has no built-in roledescription
+const NO_DEFAULT_LABEL_IN_V3 = new Set(['ColorArea'])
 // TODO(v3-port): #3116 v3's StepperRoot has no `announce` prop
 const NO_CONSUMER_LABEL_IN_V3 = new Set(['Stepper'])
 const itDefaults = (name: string) => DELETED_IN_V3.has(name) || NO_DEFAULT_LABEL_IN_V3.has(name) ? it.skip : it
@@ -855,8 +855,7 @@ describe('translations on ConfigProvider', () => {
     expect(createTranslate(() => translated.PinInput.translations)('pinInputLabel')).toBe('PIN')
   })
 
-  // TODO(v3-port): #3418 v3's Pagination parts do not call useTranslations
-  it.skip('follows a change of the messages', async () => {
+  it('follows a change of the messages', async () => {
     const config = reactive<{ translations: Partial<Translations> }>({ translations: { paginationNext: 'Weiter' } })
     await mountFixture(fixtures.Pagination, fixtures.Pagination.template, config)
     expect(read(['[data-next]', 'aria-label', ''])).toBe('Weiter')
@@ -870,8 +869,7 @@ describe('translations on ConfigProvider', () => {
     expect(read(['[data-next]', 'aria-label', ''])).toBe('Next Page')
   })
 
-  // TODO(v3-port): #3418 v3's Pagination parts do not call useTranslations
-  it.skip('inherits the keys a nested provider leaves out', async () => {
+  it('inherits the keys a nested provider leaves out', async () => {
     document.body.innerHTML = ''
     mount(defineComponent({
       components: reka as unknown as Record<string, Component>,
