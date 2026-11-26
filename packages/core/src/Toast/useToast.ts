@@ -4,7 +4,7 @@ import type { ToastProviderContext, ToastStackEntry, ToastStackState } from './T
 import type { ToastStore } from './useToastStore'
 import type { SwipeDirection, SwipeEvent } from './utils'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
-import { onKeyStroke, useEventListener, useRafFn } from '@vueuse/core'
+import { useEventListener, useRafFn } from '@vueuse/core'
 import { isClient } from '@vueuse/shared'
 import { computed, getCurrentScope, onMounted, onScopeDispose, ref, shallowReactive, shallowRef, toValue, watch, watchEffect } from 'vue'
 import { focusFirst, getTabbableCandidates, getTabStopsAfter } from '@/FocusScope/utils'
@@ -741,8 +741,13 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
       releasePause(viewportElement.value)
   }, { immediate: true, flush: 'post' })
 
-  onKeyStroke(hotkey, () => {
-    viewportElement.value?.focus()
+  // The hotkey is a key combination: every entry must be pressed, a modifier (`altKey`,
+  // `ctrlKey`, …) or the `code` of the key itself.
+  useEventListener('keydown', (event: KeyboardEvent) => {
+    const isHotkeyPressed = hotkey.length !== 0
+      && hotkey.every(key => event[key as keyof KeyboardEvent] || event.code === key)
+    if (isHotkeyPressed)
+      viewportElement.value?.focus()
   })
 
   onMounted(() => {
