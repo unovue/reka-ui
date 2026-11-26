@@ -543,7 +543,7 @@ export function createPinInputInputSurface(
   const surface = createPartSurface<PinInputInputState>(
     () => ({
       'autocapitalize': 'none',
-      'autocomplete': context.otp.value ? 'one-time-code' : 'false',
+      'autocomplete': context.otp.value ? 'one-time-code' : 'off',
       'type': context.mask.value ? 'password' : 'text',
       'inputmode': context.isNumericMode.value ? 'numeric' : 'text',
       'pattern': context.isNumericMode.value ? '[0-9]*' : undefined,

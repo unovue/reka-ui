@@ -149,7 +149,7 @@ describe('usePinInput — standalone render', () => {
     const inputs = [...container.querySelectorAll('input')]
     await nextTick()
     expect(inputs[0].getAttribute('aria-label')).toBe('pin input 1 of 3')
-    expect(inputs[0].getAttribute('autocomplete')).toBe('false')
+    expect(inputs[0].getAttribute('autocomplete')).toBe('off')
     expect(await axe(container)).toHaveNoViolations()
 
     inputs[0].focus()

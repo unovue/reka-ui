@@ -26,6 +26,18 @@ describe('given default PinInput', () => {
     expect(await axe(wrapper.element)).toHaveNoViolations()
   })
 
+  it('should turn autocomplete off with a valid token', () => {
+    for (const input of inputs)
+      expect(input.attributes('autocomplete')).toBe('off')
+  })
+
+  it('should ask for a one-time code in otp mode', () => {
+    const otp = mount(PinInput, { attachTo: document.body, props: { otp: true } })
+    for (const input of otp.findAll('input:not([aria-hidden])'))
+      expect(input.attributes('autocomplete')).toBe('one-time-code')
+    otp.unmount()
+  })
+
   it('should display input placeholders', () => {
     expect(inputs[0].element.placeholder).toBe('') // first input was focused thus not showing placeholder
     expect(inputs[1].element.placeholder).toBe('*')
