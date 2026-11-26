@@ -474,3 +474,46 @@ describe('resize handle keyboard behavior without a group element', () => {
     expect(event.defaultPrevented).toBe(false)
   })
 })
+
+describe('resize handle separator semantics', () => {
+  let wrapper: VueWrapper
+
+  afterEach(() => {
+    wrapper.unmount()
+    document.body.innerHTML = ''
+  })
+
+  function mountGroup(direction: 'horizontal' | 'vertical', disabled = false) {
+    wrapper = mount(defineComponent({
+      components: { SplitterGroup, SplitterPanel, SplitterResizeHandle },
+      setup: () => ({ direction, disabled: ref(disabled) }),
+      template: `
+        <SplitterGroup :direction="direction">
+          <SplitterPanel id="side" :order="1" :default-size="30" />
+          <SplitterResizeHandle id="handle" :disabled="disabled" />
+          <SplitterPanel id="main" :order="2" />
+        </SplitterGroup>
+      `,
+    }), { attachTo: document.body })
+    return wrapper.find('[role=separator]')
+  }
+
+  // The separator runs across the direction the panels are laid out in.
+  it.each([
+    ['horizontal', 'vertical'],
+    ['vertical', 'horizontal'],
+  ] as const)('should be a %s group\'s %s separator', (direction, orientation) => {
+    const handle = mountGroup(direction)
+    expect(handle.attributes('aria-orientation')).toBe(orientation)
+    expect(handle.attributes('data-orientation')).toBe(direction)
+  })
+
+  it('should expose its disabled state', async () => {
+    const handle = mountGroup('horizontal', true)
+    expect(handle.attributes('aria-disabled')).toBe('true')
+
+    ;(wrapper.vm as any).disabled = false
+    await nextTick()
+    expect(handle.attributes('aria-disabled')).toBeUndefined()
+  })
+})
