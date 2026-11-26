@@ -209,7 +209,8 @@ describe('given default TagsInput', () => {
     })
 
     it('should let keydown:tab move focus when max is reached', async () => {
-      await wrapper.setProps({ addOnTab: true, max: 1 })
+      // The story forwards `max` to TagsInputRoot through its attrs.
+      await wrapper.setProps({ addOnTab: true, max: 1 } as Record<string, unknown>)
       await setValueInInput('tag:tab')
 
       const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
