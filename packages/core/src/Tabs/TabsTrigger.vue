@@ -23,7 +23,7 @@ import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { useAgentItem } from '@/shared/useAgentRegistration'
 import { injectTabsRootContext } from './TabsRoot.vue'
 import { getTabsTriggerSurface } from './useTabs'
-import { isInsideKeepAlive, useTabsPartId } from './utils'
+import { isInsideKeepAlive, useHydratedId, useTabsPartId } from './utils'
 
 defineOptions({
   // `$attrs` are merged under the roving and trigger bindings: the precedence
@@ -39,7 +39,6 @@ const props = withDefaults(defineProps<TabsTriggerProps>(), {
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectTabsRootContext()
-useTabsPartId(rootContext.customTriggerIds, () => props.value, () => props.id)
 // Registered for the root's automatic selection of the first enabled tab.
 const entry = { element: currentElement, props }
 useAgentItem(rootContext, props, currentElement)
@@ -57,6 +56,8 @@ if (isInsideKeepAlive()) {
 // shared surface builder (single source with `useTabs()`); the roving item
 // (arrow-key nav, as a composable) and the tag-dependent `type` stay in the SFC.
 const surface = getTabsTriggerSurface(rootContext, () => props.value, () => props.disabled)
+const hydratedId = useHydratedId(currentElement, () => surface.attrs.value.id)
+useTabsPartId(rootContext.customTriggerIds, () => props.value, () => props.id || hydratedId.value)
 
 const roving = useRovingFocusItem({
   element: currentElement,

@@ -26,21 +26,22 @@ import { renderAs } from '@/Primitive/renderAs'
 import { onNextFrame } from '@/shared/timeout'
 import { injectTabsRootContext } from './TabsRoot.vue'
 import { getTabsContentSurface } from './useTabs'
-import { useTabsPartId } from './utils'
+import { useHydratedId, useTabsPartId } from './utils'
 
 const props = defineProps<TabsContentProps>()
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectTabsRootContext()
-useTabsPartId(rootContext.customContentIds, () => props.value, () => props.id)
+const surface = getTabsContentSurface(rootContext, () => props.value)
+const hydratedId = useHydratedId(currentElement, () => surface.attrs.value.id)
+useTabsPartId(rootContext.customContentIds, () => props.value, () => props.id || hydratedId.value)
 
 // id/role/aria-labelledby/tabindex + data-state/data-orientation from the shared
 // surface builder (selection is read from its `state`, not re-derived); the
 // Presence wrapper (an inactive panel leaves the DOM, element and all,
 // unless `unmountOnHide` is off: #2476), the registration, `hidden`,
 // and the mount-animation `style` stay in the SFC.
-const surface = getTabsContentSurface(rootContext, () => props.value)
 
 // No mount animation either while the root has yet to select its first tab
 // (`undefined`): the automatic selection lands before the next frame.

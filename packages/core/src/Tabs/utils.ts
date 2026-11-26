@@ -1,6 +1,6 @@
 import type { MaybeRefOrGetter, Ref } from 'vue'
 import type { StringOrNumber } from '@/shared/types'
-import { getCurrentInstance, onScopeDispose, toValue, watch } from 'vue'
+import { getCurrentInstance, onMounted, onScopeDispose, shallowRef, toValue, watch } from 'vue'
 
 /**
  * Whether the current component renders inside a `KeepAlive`, so that it can
@@ -24,6 +24,25 @@ export function makeTriggerId(baseId: string, value: StringOrNumber) {
 
 export function makeContentId(baseId: string, value: StringOrNumber) {
   return `${baseId}-content-${value}`
+}
+
+/**
+ * The id a part's element kept from the server render when it differs from the
+ * one the client generated (the ids diverge when something else consumed ids
+ * before the tabs on one side only). Hydration keeps the server's attribute, so
+ * the paired part's reference has to follow the element, not the client id.
+ * Pass it to `useTabsPartId` after the consumer `id`.
+ *
+ * @lifecycle setup
+ */
+export function useHydratedId(element: Readonly<Ref<HTMLElement | null>>, generated: () => string | undefined) {
+  const id = shallowRef<string>()
+  onMounted(() => {
+    const rendered = element.value?.id
+    if (rendered && rendered !== generated())
+      id.value = rendered
+  })
+  return id
 }
 
 /**

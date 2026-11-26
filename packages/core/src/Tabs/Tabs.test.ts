@@ -114,8 +114,7 @@ describe('ssr hydration', () => {
     })
   }
 
-  // TODO(v3-port): #2866 aria-controls follows the rendered content id across hydration (Tabs source resolved to v3)
-  it.skip('points aria-controls at the hydrated content when server and client ids diverge', async () => {
+  it('points aria-controls at the hydrated content when server and client ids diverge', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -130,23 +129,26 @@ describe('ssr hydration', () => {
     await flushPromises()
 
     const triggers = Array.from(container.querySelectorAll('[role="tab"]'))
-    const panels = Array.from(container.querySelectorAll('[role="tabpanel"]'))
-    // Hydration keeps the ids of the server render.
-    expect(panels.map(panel => panel.id)).toEqual(serverPanelIds)
-    expect(triggers.map(trigger => trigger.getAttribute('aria-controls'))).toEqual(serverPanelIds)
-    expect(panels.map(panel => panel.getAttribute('aria-labelledby'))).toEqual(triggers.map(trigger => trigger.id))
+    const panels = () => Array.from(container.querySelectorAll('[role="tabpanel"]'))
+    // Hydration keeps the ids of the server render. v3 renders only the active panel, and a
+    // trigger references its panel only while the panel is rendered.
+    expect(panels().map(panel => panel.id)).toEqual(serverPanelIds)
+    expect(triggers.map(trigger => trigger.getAttribute('aria-controls'))).toEqual([serverPanelIds[0], null])
+    expect(panels().map(panel => panel.getAttribute('aria-labelledby'))).toEqual([triggers[0].id])
 
-    triggers[1].dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
+    triggers[1].dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0 }))
     await flushPromises()
     expect(triggers[1].getAttribute('aria-selected')).toBe('true')
-    expect(triggers.map(trigger => trigger.getAttribute('aria-controls'))).toEqual(serverPanelIds)
-    expect(panels.map(panel => panel.id)).toEqual(serverPanelIds)
+    // The newly rendered panel is the client's; every reference still resolves.
+    const controlled = triggers[1].getAttribute('aria-controls')
+    expect(controlled && container.querySelector(`#${controlled}`)?.getAttribute('aria-labelledby')).toBe(triggers[1].id)
+    expect(triggers[0].getAttribute('aria-controls')).toBeNull()
 
     app.unmount()
   })
 
-  // TODO(v3-port): #2866 inline snapshots of v2 SSR/hydrated markup (v3 renders checked/unchecked, unmounts inactive content)
-  it.skip('keeps the default output when ids do not diverge', async () => {
+  // Inline snapshots regenerated for v3 (checked/unchecked, inactive content unmounted).
+  it('keeps the default output when ids do not diverge', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     // The mount animation guard is lifted in an animation frame, which changes `style`.
@@ -157,7 +159,7 @@ describe('ssr hydration', () => {
     }
 
     const server = await renderToString(createSSRApp(createTabsFixture()))
-    expect(server).toMatchInlineSnapshot(`"<div dir="ltr" data-orientation="horizontal"><!--[--><div tabindex="-1" data-orientation="horizontal" dir="ltr" style="outline:none;" role="tablist" aria-orientation="horizontal"><!--[--><button data-reka-collection-item tabindex="0" data-orientation="horizontal" data-active id="reka-tabs-v-0-trigger-account" role="tab" type="button" aria-selected="true" data-state="active"><!--[-->Account<!--]--></button><button data-reka-collection-item tabindex="-1" data-orientation="horizontal" id="reka-tabs-v-0-trigger-password" role="tab" type="button" aria-selected="false" data-state="inactive"><!--[-->Password<!--]--></button><!--]--></div><div id="reka-tabs-v-0-content-account" role="tabpanel" data-state="active" data-orientation="horizontal" aria-labelledby="reka-tabs-v-0-trigger-account" tabindex="0" style="animation-duration:0s;"><!--[-->Account content<!--]--></div><div id="reka-tabs-v-0-content-password" role="tabpanel" data-state="inactive" data-orientation="horizontal" aria-labelledby="reka-tabs-v-0-trigger-password" hidden tabindex="0" style=""><!--v-if--></div><!--]--></div>"`)
+    expect(server).toMatchInlineSnapshot(`"<div data-orientation="horizontal" dir="ltr"><!--[--><div tabindex="-1" data-orientation="horizontal" dir="ltr" style="outline:none;" role="tablist" aria-orientation="horizontal"><!--[--><button data-reka-collection-item tabindex="-1" data-orientation="horizontal" data-active type="button" data-state="checked" id="reka-tabs-v-0-trigger-account" role="tab" aria-selected="true"><!--[-->Account<!--]--></button><button data-reka-collection-item tabindex="-1" data-orientation="horizontal" type="button" data-state="unchecked" id="reka-tabs-v-0-trigger-password" role="tab" aria-selected="false"><!--[-->Password<!--]--></button><!--]--></div><div data-state="checked" data-orientation="horizontal" id="reka-tabs-v-0-content-account" role="tabpanel" aria-labelledby="reka-tabs-v-0-trigger-account" tabindex="0" style="animation-duration:0s;"><!--[-->Account content<!--]--></div><!----><!--]--></div>"`)
 
     const container = document.createElement('div')
     container.innerHTML = server
@@ -166,7 +168,7 @@ describe('ssr hydration', () => {
     const hydrated = createSSRApp(createTabsFixture())
     hydrated.mount(container)
     await settled()
-    expect(container.innerHTML).toMatchInlineSnapshot(`"<div dir="ltr" data-orientation="horizontal"><!--[--><div tabindex="0" data-orientation="horizontal" dir="ltr" style="outline:none;" role="tablist" aria-orientation="horizontal"><!--[--><button data-reka-collection-item="" tabindex="-1" data-orientation="horizontal" data-active="" id="reka-tabs-v-0-trigger-account" role="tab" type="button" aria-selected="true" data-state="active" aria-controls="reka-tabs-v-0-content-account"><!--[-->Account<!--]--></button><button data-reka-collection-item="" tabindex="-1" data-orientation="horizontal" id="reka-tabs-v-0-trigger-password" role="tab" type="button" aria-selected="false" data-state="inactive" aria-controls="reka-tabs-v-0-content-password"><!--[-->Password<!--]--></button><!--]--></div><div id="reka-tabs-v-0-content-account" role="tabpanel" data-state="active" data-orientation="horizontal" aria-labelledby="reka-tabs-v-0-trigger-account" tabindex="0" style=""><!--[-->Account content<!--]--></div><div id="reka-tabs-v-0-content-password" role="tabpanel" data-state="inactive" data-orientation="horizontal" aria-labelledby="reka-tabs-v-0-trigger-password" hidden="" tabindex="0" style=""><!--v-if--></div><!--]--></div>"`)
+    expect(container.innerHTML).toMatchInlineSnapshot(`"<div data-orientation="horizontal" dir="ltr"><!--[--><div tabindex="0" data-orientation="horizontal" dir="ltr" style="outline:none;" role="tablist" aria-orientation="horizontal"><!--[--><button data-reka-collection-item="" tabindex="-1" data-orientation="horizontal" data-active="" type="button" data-state="checked" id="reka-tabs-v-0-trigger-account" role="tab" aria-selected="true" aria-controls="reka-tabs-v-0-content-account"><!--[-->Account<!--]--></button><button data-reka-collection-item="" tabindex="-1" data-orientation="horizontal" type="button" data-state="unchecked" id="reka-tabs-v-0-trigger-password" role="tab" aria-selected="false"><!--[-->Password<!--]--></button><!--]--></div><div data-state="checked" data-orientation="horizontal" id="reka-tabs-v-0-content-account" role="tabpanel" aria-labelledby="reka-tabs-v-0-trigger-account" tabindex="0" style=""><!--[-->Account content<!--]--></div><!----><!--]--></div>"`)
     expect([...warn.mock.calls, ...error.mock.calls]).toEqual([])
     hydrated.unmount()
 
@@ -175,7 +177,7 @@ describe('ssr hydration', () => {
     const client = createApp(createTabsFixture())
     client.mount(clientContainer)
     await settled()
-    expect(clientContainer.innerHTML).toMatchInlineSnapshot(`"<div dir="ltr" data-orientation="horizontal"><div tabindex="0" data-orientation="horizontal" dir="ltr" style="outline: medium;" role="tablist" aria-orientation="horizontal"><button data-reka-collection-item="" tabindex="-1" data-orientation="horizontal" data-active="" id="reka-tabs-v-0-trigger-account" role="tab" type="button" aria-selected="true" data-state="active" aria-controls="reka-tabs-v-0-content-account">Account</button><button data-reka-collection-item="" tabindex="-1" data-orientation="horizontal" id="reka-tabs-v-0-trigger-password" role="tab" type="button" aria-selected="false" data-state="inactive" aria-controls="reka-tabs-v-0-content-password">Password</button></div><div id="reka-tabs-v-0-content-account" role="tabpanel" data-state="active" data-orientation="horizontal" aria-labelledby="reka-tabs-v-0-trigger-account" tabindex="0" style="">Account content</div><div id="reka-tabs-v-0-content-password" role="tabpanel" data-state="inactive" data-orientation="horizontal" aria-labelledby="reka-tabs-v-0-trigger-password" hidden="" tabindex="0"><!--v-if--></div></div>"`)
+    expect(clientContainer.innerHTML).toMatchInlineSnapshot(`"<div data-orientation="horizontal" dir="ltr"><div tabindex="0" data-orientation="horizontal" dir="ltr" style="outline: none;" role="tablist" aria-orientation="horizontal"><button data-reka-collection-item="" tabindex="-1" data-orientation="horizontal" data-active="" type="button" data-state="checked" id="reka-tabs-v-0-trigger-account" role="tab" aria-selected="true" aria-controls="reka-tabs-v-0-content-account">Account</button><button data-reka-collection-item="" tabindex="-1" data-orientation="horizontal" type="button" data-state="unchecked" id="reka-tabs-v-0-trigger-password" role="tab" aria-selected="false">Password</button></div><div data-state="checked" data-orientation="horizontal" id="reka-tabs-v-0-content-account" role="tabpanel" aria-labelledby="reka-tabs-v-0-trigger-account" tabindex="0" style="">Account content</div><!----></div>"`)
     client.unmount()
   })
 })
