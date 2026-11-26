@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { useForwardElement } from '@/shared'
+import { SharedMutationObserver } from '@/shared/SharedMutationObserver'
 
 export interface PaginationEllipsisProps extends PrimitiveProps {}
 
@@ -16,28 +17,8 @@ const OBSERVE: MutationObserverInit = {
   attributeFilter: ['href', 'tabindex', 'contenteditable', 'alt', 'aria-label', 'aria-labelledby', 'title'],
 }
 
-// One observer for every ellipsis, and the update of each observed element.
-const updaters = new WeakMap<Node, () => void>()
-let observer: MutationObserver | undefined
-
-function onMutations(records: MutationRecord[]) {
-  const pending = new Set<() => void>()
-  for (const record of records) {
-    for (let node: Node | null = record.target; node; node = node.parentNode) {
-      const update = updaters.get(node)
-      if (update)
-        pending.add(update)
-    }
-  }
-  pending.forEach(update => update())
-}
-
-function observe(element: Element, update: () => void) {
-  if (typeof MutationObserver === 'undefined')
-    return
-  updaters.set(element, update)
-  ;(observer ??= new MutationObserver(onMutations)).observe(element, OBSERVE)
-}
+// One observer for every ellipsis.
+const observer = new SharedMutationObserver(OBSERVE)
 </script>
 
 <script setup lang="ts">
@@ -76,10 +57,10 @@ function setRef(el: Element | ComponentPublicInstance | null) {
   const element = currentElement.value
   if (element !== observed) {
     if (observed)
-      updaters.delete(observed)
+      observer.unobserve(observed)
     observed = element ?? undefined
     if (observed)
-      observe(observed, updateIsDecorative)
+      observer.observe(observed, updateIsDecorative)
     updateIsDecorative()
   }
 }
