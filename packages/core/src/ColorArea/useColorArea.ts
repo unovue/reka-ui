@@ -272,14 +272,23 @@ export function createColorAreaAreaSurface(rootContext: ColorAreaRootContext, ar
     }
   }
 
+  // A drag ends on `pointerup`, but also when the browser cancels the pointer or takes the capture away
+  // (a touch turning into a scroll, a system gesture, an alert). Each of them commits once.
+  function endDrag() {
+    if (!isDragging.value)
+      return
+    isDragging.value = false
+    rootContext.commitValues()
+  }
+
   function handlePointerUp(event: PointerEvent) {
     if (!isDragging.value)
       return
 
     const target = event.target as HTMLElement
+    // Ends the drag first, so the `lostpointercapture` that the release fires finds nothing to commit.
+    endDrag()
     target.releasePointerCapture(event.pointerId)
-    isDragging.value = false
-    rootContext.commitValues()
   }
 
   // Keyboard navigation
@@ -359,6 +368,8 @@ export function createColorAreaAreaSurface(rootContext: ColorAreaRootContext, ar
     onPointerdown: handlePointerDown,
     onPointermove: handlePointerMove,
     onPointerup: handlePointerUp,
+    onPointercancel: endDrag,
+    onLostpointercapture: endDrag,
   }), () => ({ disabled: rootContext.disabled.value }))
 }
 
