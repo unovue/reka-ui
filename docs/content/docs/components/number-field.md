@@ -217,6 +217,24 @@ The starting value is clamped to `min` and `max`, but it is not snapped to `step
 </template>
 ```
 
+### Keeping the value on unparsable input
+
+By default, committing text that cannot be parsed as a number (pressing <kbd>Enter</kbd> or leaving the field with a lone `.` or `-`, for example) clears the value.
+
+Use `keepValueOnUnparsableInput` to keep it instead: the field goes back to the value it had when the edit began, and the input shows that value formatted again. The value follows the typing, so if the edit changed it on the way, for example by emptying the input first, `update:modelValue` fires once more with the restored value.
+
+```vue line=3
+<template>
+  <NumberFieldRoot
+    keep-value-on-unparsable-input
+  >
+    …
+  </NumberFieldRoot>
+</template>
+```
+
+Empty or whitespace-only input still clears the value. Text with no digits left, such as the `$` of a currency field, counts as unparsable and keeps the value, so delete all the text to clear the field.
+
 ## Real-world examples
 
 - [Slider with Number Field](/examples/slider-number-field): Render a Slider with a Number Field that shows and interact with the values of the Slider.
