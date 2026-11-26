@@ -5,8 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { createSSRApp, defineComponent, getCurrentInstance, h } from 'vue'
 import { useForwardExpose } from './useForwardExpose'
 
-// TODO(v3-port): #3057 v3's useForwardExpose still builds `exposed` on the server
-describe.skip('given useForwardExpose rendered on the server', () => {
+describe('given useForwardExpose rendered on the server', () => {
   it('does not build `exposed`', async () => {
     let instance: ComponentInternalInstance | null = null
     const comp = defineComponent({

@@ -7,8 +7,7 @@ import { Primitive } from '../Primitive'
 import { useForwardExpose } from './useForwardExpose'
 
 describe('useForwardRef', async () => {
-  // TODO(v3-port): #3202 v3's useForwardExpose does not release or re-merge the forwarded ref this way
-  it.skip.each([null, undefined])('should fall back to the root when a forwarded $el becomes %s', async (emptyElement) => {
+  it.each([null, undefined])('should fall back to the root when a forwarded $el becomes %s', async (emptyElement) => {
     let forwarded!: ReturnType<typeof useForwardExpose>
     const show = ref(true)
     const wrapper = mount(defineComponent({
@@ -43,8 +42,7 @@ describe('useForwardRef', async () => {
     }
   })
 
-  // TODO(v3-port): #3202 v3's useForwardExpose does not release or re-merge the forwarded ref this way
-  it.skip('should safely read cached child exposures after forwarding a $el-only ref', async () => {
+  it('should safely read cached child exposures after forwarding a $el-only ref', async () => {
     const showComponent = ref(true)
     const Child = defineComponent({
       setup(_, { expose }) {
@@ -82,8 +80,7 @@ describe('useForwardRef', async () => {
     }
   })
 
-  // TODO(v3-port): #3202 v3's useForwardExpose does not release or re-merge the forwarded ref this way
-  it.skip.each(['element', 'component'])('should release a forwarded %s when its child unmounts', async (kind) => {
+  it.each(['element', 'component'])('should release a forwarded %s when its child unmounts', async (kind) => {
     const show = ref(true)
     let forwarded!: ReturnType<typeof useForwardExpose>
     const Child = defineComponent({
@@ -127,8 +124,7 @@ describe('useForwardRef', async () => {
     wrapper.unmount()
   })
 
-  // TODO(v3-port): #3202 v3's useForwardExpose does not release or re-merge the forwarded ref this way
-  it.skip('should keep parent props reactive when merging a child expose', async () => {
+  it('should keep parent props reactive when merging a child expose', async () => {
     const Child = defineComponent({
       setup(_, { expose }) {
         expose({ childValue: 'child' })
@@ -441,8 +437,7 @@ describe('useForwardRef', async () => {
     expect(parentRef.value?.$el).toBeInstanceOf(HTMLButtonElement)
   })
 
-  // TODO(v3-port): #3419 v3's useForwardExpose rebuilds the exposed object on every forward
-  it.skip('should keep the merged expose while the forwarded component stays the same', async () => {
+  it('should keep the merged expose while the forwarded component stays the same', async () => {
     const Child = defineComponent({
       setup(_, { expose }) {
         expose({ childValue: 'child' })
@@ -656,8 +651,7 @@ describe('given a forwarded child without a single element root', () => {
     expect(forwarded.currentElement.value).toBeUndefined()
   })
 
-  // TODO(v3-port): #3223 v3's useForwardExpose resolves the next sibling element of a child without an element root
-  it.skip.each([
+  it.each([
     ['comment root', COMMENT_ROOT],
     ['text root', TEXT_ROOT],
     ['fragment of comments', `<!-- a --><!-- b -->`],
@@ -669,8 +663,7 @@ describe('given a forwarded child without a single element root', () => {
     ['comment root', COMMENT_ROOT],
     ['text root', TEXT_ROOT],
   ])('should resolve undefined for a %s with no following element', async (_, template) => {
-    // v3 resolves `null` rather than `undefined`; either way no element.
-    expect(await resolveCurrentElement(defineComponent({ template }), true)).toBeFalsy()
+    expect(await resolveCurrentElement(defineComponent({ template }), true)).toBeUndefined()
   })
 
   it('should resolve the first element of a fragment that starts with text', async () => {
@@ -694,8 +687,7 @@ describe('given a forwarded child without a single element root', () => {
     expect((await resolveCurrentElement(Inner))?.id).toBe('own')
   })
 
-  // TODO(v3-port): #3223 v3's useForwardExpose resolves the next sibling element of a child without an element root
-  it.skip('should not resolve to an element outside a component that wraps a comment root', async () => {
+  it('should not resolve to an element outside a component that wraps a comment root', async () => {
     const Empty = defineComponent({ template: COMMENT_ROOT })
     const Hoc = defineComponent({ components: { Empty }, template: `<Empty />` })
     expect(await resolveCurrentElement(Hoc)).toBeUndefined()
