@@ -99,6 +99,9 @@ describe('given a DropdownMenu with many items', () => {
     await open(wrapper)
 
     expect(items().every(item => item.hasAttribute('data-reka-collection-item'))).toBe(true)
+    // What the collection itself holds: every item, in the order they render in
+    const group = wrapper.findComponent({ name: 'RovingFocusGroup' }).vm as unknown as { getItems: () => { ref: HTMLElement }[] }
+    expect(group.getItems().map(item => item.ref)).toEqual(items())
     // Home on the content focuses the first registered item, End the last.
     menu().focus()
     keydown(menu(), 'End')
