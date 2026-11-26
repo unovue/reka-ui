@@ -28,10 +28,11 @@ export interface StepperItemContext {
   isCurrent: Readonly<Ref<boolean>>
   disabled: Readonly<Ref<boolean>>
   isFocusable: Readonly<Ref<boolean>>
-  /** Whether a `StepperTitle` is rendered for this item. */
-  hasTitle: Ref<boolean>
-  /** Whether a `StepperDescription` is rendered for this item. */
-  hasDescription: Ref<boolean>
+  /**
+   * Which of the item's parts are rendered, as `STEPPER_PARTS` flags: its `StepperTitle`, its
+   * `StepperDescription`, and whether its `StepperTrigger` has mounted. One ref for all three.
+   */
+  parts: Ref<number>
 }
 
 export interface StepperItemProps extends PrimitiveProps {

@@ -1,7 +1,9 @@
 <script lang="ts">
+import type { VNode } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
-import { onMounted, ref, useAttrs, watchPostEffect } from 'vue'
 import { useForwardElement } from '@/shared'
+import { vnodeElement } from '@/shared/SharedMutationObserver'
+import { useUntrackedAttrs } from '@/shared/splitWrapperAttrs'
 
 export interface StepperTriggerProps extends PrimitiveProps {
 }
@@ -11,7 +13,7 @@ export interface StepperTriggerProps extends PrimitiveProps {
 import { Primitive } from '@/Primitive'
 import { injectStepperItemContext } from './StepperItem.vue'
 import { injectStepperRootContext } from './StepperRoot.vue'
-import { getStepperTriggerSurface } from './useStepper'
+import { getStepperTriggerSurface, STEPPER_PARTS } from './useStepper'
 
 withDefaults(defineProps<StepperTriggerProps>(), {
   as: 'button',
@@ -23,29 +25,33 @@ const itemContext = injectStepperItemContext()
 // data-state/tabindex/aria and the mousedown/keydown handlers come from the
 // shared surface builder (single source with `useStepper().getItem`); the
 // tag-dependent `type` and the trigger registration stay in the SFC.
-const isMounted = ref(false)
-onMounted(() => {
-  isMounted.value = true
-})
-const surface = getStepperTriggerSurface(rootContext, itemContext, { attrs: useAttrs(), isMounted })
+// The attrs are read in render, and a change of them re-renders the trigger: no tracking needed.
+const surface = getStepperTriggerSurface(rootContext, itemContext, { attrs: useUntrackedAttrs() })
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
-// Follows the element: an `asChild` trigger can swap its element without unmounting.
-watchPostEffect((cleanup) => {
-  const element = currentElement.value
-  if (!element)
+// Registered from the element's vnode hooks (mounted, updated, unmounted) rather than from
+// lifecycle hooks or a watcher, so it follows the element: an `asChild` trigger can swap its
+// element without unmounting.
+let registered: HTMLElement | undefined
+function sync(vnode: VNode | null) {
+  const element = vnode ? (vnodeElement(vnode) ?? currentElement.value ?? undefined) : undefined
+  if (element === registered)
     return
-  rootContext.itemDisabled.set(element, () => itemContext.disabled.value)
-  rootContext.stepperItemValues.set(element, () => itemContext.step.value)
-  rootContext.totalStepperItems.value.add(element)
-  cleanup(() => {
-    rootContext.itemDisabled.delete(element)
-    rootContext.stepperItemValues.delete(element)
-    rootContext.totalStepperItems.value.delete(element)
-  })
-})
+  if (registered) {
+    rootContext.itemDisabled.delete(registered)
+    rootContext.stepperItemValues.delete(registered)
+    rootContext.totalStepperItems.value.delete(registered)
+  }
+  registered = element
+  if (element) {
+    rootContext.itemDisabled.set(element, () => itemContext.disabled.value)
+    rootContext.stepperItemValues.set(element, itemContext.step)
+    rootContext.totalStepperItems.value.add(element)
+    itemContext.parts.value |= STEPPER_PARTS.TRIGGER_MOUNTED
+  }
+}
 </script>
 
 <template>
@@ -55,6 +61,9 @@ watchPostEffect((cleanup) => {
     :as="as"
     :as-child="asChild"
     v-bind="surface.attrs.value"
+    @vue:mounted="sync"
+    @vue:updated="sync"
+    @vue:unmounted="sync(null)"
   >
     <slot />
   </Primitive>
