@@ -116,33 +116,49 @@ describe('createContext (public)', () => {
 })
 
 describe('internal call sites', () => {
-  // TODO(v3-port): #2763 families whose call sites are not switched yet. Remove a family once its
-  // contexts use createRekaContext; the test then guards it.
-  const PENDING = new Set([
-    'AlertDialog',
-    'Autocomplete',
-    'Combobox',
-    'Dialog',
-    'Drawer',
-    'Listbox',
-    'Popover',
-    'RovingFocus',
-    'Select',
-    'TagGroup',
-    'TagsInput',
-    'Toast',
-    'ToggleGroup',
-    'Toolbar',
-    'Tree',
-  ])
+  const srcDir = join(__dirname, '..')
+  const sources = readdirSync(srcDir, { recursive: true, encoding: 'utf8' })
+    .filter(file => /\.(?:ts|vue)$/.test(file) && !/\.(?:test|story)\./.test(file) && !file.includes('createContext.ts'))
+    .map(file => ({ file: relative(srcDir, join(srcDir, file)), text: readFileSync(join(srcDir, file), 'utf8') }))
 
   it('use createRekaContext, never the public createContext', () => {
-    const srcDir = join(__dirname, '..')
-    const offenders = readdirSync(srcDir, { recursive: true, encoding: 'utf8' })
-      .filter(file => /\.(?:ts|vue)$/.test(file) && !/\.(?:test|story)\./.test(file) && !file.includes('createContext.ts'))
-      .filter(file => !PENDING.has(file.split(/[\\/]/)[0]))
-      .filter(file => /\bcreateContext\s*[<(]/.test(readFileSync(join(srcDir, file), 'utf8')))
-      .map(file => relative(srcDir, join(srcDir, file)))
+    const offenders = sources.filter(({ text }) => /\bcreateContext\s*[<(]/.test(text)).map(({ file }) => file)
     expect(offenders).toEqual([])
+  })
+
+  // `createRekaContext` keys a context by its name alone (`Symbol.for`), so two call sites with the
+  // same name would provide and inject each other's values.
+  it('give every context its own key', () => {
+    const keys = new Map<string, string[]>()
+    for (const { file, text } of sources) {
+      // The arguments of each call, after the (possibly nested, multi-line) type argument
+      for (const match of text.matchAll(/\bcreateRekaContext\b/g)) {
+        let i = match.index + match[0].length
+        if (text[i] === '<') {
+          for (let depth = 1, j = i + 1; j < text.length; j++) {
+            if (text[j] === '<')
+              depth++
+            else if (text[j] === '>' && text[j - 1] !== '=' && --depth === 0) {
+              i = j + 1
+              break
+            }
+          }
+        }
+        if (text[i] !== '(')
+          continue
+        const args = text.slice(i + 1, text.indexOf(')', i))
+        // A name built at runtime (Popper's scoped contexts) is keyed by its scope
+        if (args.includes('`'))
+          continue
+        const [, names, contextName] = args.match(/^\s*\[([^\]]*)\]\s*(?:,\s*'([^']*)')?/) ?? []
+        const strings = [...args.matchAll(/'([^']*)'/g)].map(m => m[1])
+        const key = names !== undefined
+          ? contextName ?? [...names.matchAll(/'([^']*)'/g)].map(m => m[1]).join('/')
+          : strings[1] ?? `${strings[0]}Context`
+        keys.set(key, [...keys.get(key) ?? [], file])
+      }
+    }
+    expect(keys.size).toBeGreaterThan(100)
+    expect([...keys].filter(([, files]) => files.length > 1)).toEqual([])
   })
 })
