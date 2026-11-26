@@ -3,8 +3,8 @@ import type { TabsRootContext } from './TabsRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface, SelectionState } from '@/shared'
 import type { DataOrientation, Direction, StringOrNumber } from '@/shared/types'
 import { computed, ref, shallowReactive, shallowRef, toValue, watchEffect } from 'vue'
-import { createPartSurface, selectionState, useControllableState } from '@/shared'
-import { createKeyedSelector, createKeyedSetSelector, useSelectorKey } from '@/shared/createKeyedSelector'
+import { createPartSurface, getterRef, selectionState, useControllableState } from '@/shared'
+import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
 import { resolveDirection } from '@/shared/useDirection'
 import { makeContentId, makeTriggerId } from './utils'
 
@@ -56,11 +56,6 @@ export function getTabsTriggerSurface(
   disabled?: MaybeRefOrGetter<boolean | undefined>,
 ): PartSurface<TabsTriggerState> {
   const isSelected = isTabSelected(context, value)
-  // Its own cell: a tab change mounts one content and unmounts another, which must not re-render
-  // every trigger.
-  const hasContent = context.renderedContents
-    ? useSelectorKey(context.renderedContents, () => toValue(value))
-    : () => context.contentIds.value.has(toValue(value))
   const isDisabled = () => toValue(disabled) ?? false
 
   // A tab is selected on click, once the press is released over it (#842).
@@ -134,7 +129,9 @@ export function getTabsTriggerSurface(
         'id': getTabsTriggerId(context, tab),
         'role': 'tab',
         'aria-selected': isSelected() ? 'true' : 'false',
-        'aria-controls': hasContent() ? getTabsContentId(context, tab) : undefined,
+        // A reactive set tracks `has` per key: a tab change mounts one content and unmounts another,
+        // which re-renders only their triggers.
+        'aria-controls': context.contentIds.value.has(tab) ? getTabsContentId(context, tab) : undefined,
         'disabled': isDisabled(),
         'onMousedown': onMousedown,
         'onClick': onClick,
@@ -272,24 +269,23 @@ export function useTabs(props: UseTabsProps = {}): UseTabsReturn {
   const unmountOnHide = computed<boolean>(() => toValue(props.unmountOnHide) ?? true)
 
   const tabsList = ref<HTMLElement>()
-  const contentIds = shallowRef<Set<StringOrNumber>>(new Set())
+  // Changed in place, and never replaced: see the trigger's `aria-controls`.
+  const contentSet = shallowReactive(new Set<StringOrNumber>())
+  const contentIds = getterRef(() => contentSet) as unknown as Ref<Set<StringOrNumber>>
 
   function selectTab(value: StringOrNumber, reason: TabsChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
     return setState(value, reason, event)
   }
   function registerContent(value: StringOrNumber) {
-    contentIds.value = new Set([...contentIds.value, value])
+    contentSet.add(value)
   }
   function unregisterContent(value: StringOrNumber) {
-    const next = new Set(contentIds.value)
-    next.delete(value)
-    contentIds.value = next
+    contentSet.delete(value)
   }
 
   const context: TabsRootContext = {
     modelValue,
     selected: createKeyedSelector(() => modelValue.value),
-    renderedContents: createKeyedSetSelector(() => contentIds.value),
     changeModelValue: selectTab,
     orientation: orientation as Ref<DataOrientation>,
     dir: dir as Ref<Direction>,
