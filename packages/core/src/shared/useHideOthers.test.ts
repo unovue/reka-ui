@@ -34,15 +34,21 @@ function setup() {
   return { target, wrapper }
 }
 
+// The lock hides the background two ticks after the target is set, once the content's auto-focus ran
+async function settle() {
+  for (let i = 0; i < 3; i++)
+    await nextTick()
+}
+
 describe('useHideOthers', () => {
   it('runs each undo once: when the target goes away, not again on unmount', async () => {
     const { target, wrapper } = setup()
     target.value = document.createElement('div')
-    await nextTick()
+    await settle()
     expect(hideOthers).toHaveBeenCalledTimes(1)
 
     target.value = undefined
-    await nextTick()
+    await settle()
     expect(undos[0]).toHaveBeenCalledTimes(1)
 
     wrapper.unmount()
@@ -52,9 +58,9 @@ describe('useHideOthers', () => {
   it('releases the previous target before hiding around a new one', async () => {
     const { target, wrapper } = setup()
     target.value = document.createElement('div')
-    await nextTick()
+    await settle()
     target.value = document.createElement('div')
-    await nextTick()
+    await settle()
     expect(undos[0]).toHaveBeenCalledTimes(1)
     expect(hideOthers).toHaveBeenCalledTimes(2)
 
@@ -75,7 +81,7 @@ describe('useHideOthers', () => {
 
     const { target, wrapper } = setup()
     target.value = element
-    await nextTick()
+    await settle()
     expect(vi.mocked(hideOthers).mock.calls).toEqual([
       [element, innerRoot],
       [innerHost, outerRoot],

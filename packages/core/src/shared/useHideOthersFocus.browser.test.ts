@@ -88,9 +88,11 @@ afterEach(() => {
   vi.unstubAllEnvs()
 })
 
-// TODO(v3-port): #3259 v3's useHideOthers hides the background before the content's auto-focus and restores it on unmount
-describe.skip('modal focus and aria-hidden ordering', () => {
-  it.each(CASES)('keeps focus exposed when $name opens, closes and reopens', async ({ parts, rootProps, contentProps, modal }) => {
+describe('modal focus and aria-hidden ordering', () => {
+  // TODO(v3-port): #3060 floating lane: v3's DropdownMenuTrigger keeps its generated id over the consumer's `id="trigger"`
+  it.for(CASES)('keeps focus exposed when $name opens, closes and reopens', async ({ name, parts, rootProps, contentProps, modal }, { skip }) => {
+    if (name === 'DropdownMenu')
+      return skip()
     const host = createHost()
     mount(defineComponent({
       setup: () => () => h(parts.Root, rootProps, () => [
