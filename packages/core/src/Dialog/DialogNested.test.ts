@@ -43,6 +43,41 @@ describe('given nested Dialogs', () => {
     return { open, hasSecond }
   }
 
+  it('keeps counting a dialog that stays open in the root slot of a closed dialog', async () => {
+    const middleOpen = ref(true)
+    const wrapper = mount(defineComponent({
+      setup() {
+        return () => h(DialogRoot, { defaultOpen: true }, () => [
+          h(DialogContent, { 'data-testid': 'outer', 'aria-describedby': undefined }, () => [
+            h(DialogTitle, null, () => 'outer'),
+            h(DialogRoot, { open: middleOpen.value }, () => [
+              h(DialogContent, { 'data-testid': 'middle', 'aria-describedby': undefined }, () => [
+                h(DialogTitle, null, () => 'middle'),
+              ]),
+              // Not inside the middle dialog's content, so it stays mounted and open when the middle one closes
+              h(DialogRoot, { defaultOpen: true }, () => [
+                h(DialogContent, { 'data-testid': 'inner', 'aria-describedby': undefined }, () => [
+                  h(DialogTitle, null, () => 'inner'),
+                ]),
+              ]),
+            ]),
+          ]),
+        ])
+      },
+    }), { attachTo: document.body })
+    cleanup = () => wrapper.unmount()
+    await nextTick()
+    await nextTick()
+    expect(nestedCount('outer')).toBe('2')
+
+    middleOpen.value = false
+    await nextTick()
+    await nextTick()
+    expect(get('inner')).not.toBeNull()
+    expect(nestedCount('outer')).toBe('1')
+    expect(isNestedOpen('outer')).toBe(true)
+  })
+
   it('has no hook and a count of 0 while no nested dialog is open', async () => {
     setup()
     await nextTick()

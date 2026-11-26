@@ -43,7 +43,7 @@ export interface DialogRootContext {
   nestedOpenDialogCount: Ref<number>
   /**
    * Called by a dialog nested in this one with the number of open dialogs it
-   * stands for: itself and the ones nested in it, or `0` once it is closed.
+   * stands for: itself while it is open, plus the open ones nested in it.
    */
   onNestedOpenChange: (id: symbol, count: number) => void
 }
@@ -99,7 +99,9 @@ if (parentContext) {
   const nestedId = Symbol('nestedDialog')
   watch(
     [open, nestedOpenDialogCount],
-    ([isOpen, nestedCount]) => parentContext.onNestedOpenChange(nestedId, isOpen ? nestedCount + 1 : 0),
+    // A closed dialog still passes on the dialogs open below it: one in its root slot,
+    // outside its content, can stay open after this one closes.
+    ([isOpen, nestedCount]) => parentContext.onNestedOpenChange(nestedId, nestedCount + (isOpen ? 1 : 0)),
     { immediate: true },
   )
   onBeforeUnmount(() => parentContext.onNestedOpenChange(nestedId, 0))
