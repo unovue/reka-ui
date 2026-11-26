@@ -58,7 +58,7 @@ const openTimerRef = ref<number | null>(null)
 
 // A consumer `id` (or an `id` on the asChild child) is the trigger's id, which the content's
 // `aria-labelledby` follows. `aria-controls` references the content only while it is rendered.
-useTriggerId(subContext, subContext.trigger, () => useId(undefined, 'reka-menu-sub-trigger'))
+useTriggerId(subContext, subContext.trigger, () => useId(undefined, 'reka-menu-sub-trigger'), true)
 const contentId = useRenderedContentId(subContext, menuContext)
 
 function clearOpenTimer() {

@@ -58,14 +58,20 @@ function getClaims(context: object, key: string) {
  * @internal
  * @lifecycle setup
  */
-/** Whether the part in setup may render an element id other than the one it passes. */
-function rendersForeignId() {
+/**
+ * Whether the part in setup may render an element id other than the one it passes: one
+ * that renders another element (`asChild`, `as="template"`, a component as `as`), or one
+ * that hydrates server HTML, whose element keeps the id the server rendered.
+ *
+ * @internal
+ */
+export function rendersForeignId() {
   const instance = getCurrentInstance()
   if (!instance)
     return true
   const { as, asChild } = instance.props as { as?: unknown, asChild?: boolean }
   // Hydration assigns the server element to the vnode before the component's setup runs.
-  return !!instance.vnode.el || !!asChild || as === 'template' || (as != null && typeof as !== 'string')
+  return !!instance.vnode?.el || !!asChild || as === 'template' || (as != null && typeof as !== 'string')
 }
 
 export function usePartId<K extends string>(

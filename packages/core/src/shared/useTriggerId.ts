@@ -1,4 +1,5 @@
 import type { ComputedRef, Ref } from 'vue'
+import { rendersForeignId } from './usePartId'
 import { getCurrentInstance, onActivated, onBeforeMount, onBeforeUnmount, onBeforeUpdate, onDeactivated, onMounted, onUpdated, ref, shallowRef, toRaw, useAttrs, watch } from 'vue'
 
 // How many content elements are rendered for a context. Kept beside the context rather
@@ -68,11 +69,16 @@ export function defineReactiveIds<T extends object, K extends keyof T & string>(
  * - Once mounted, and after every update, the id the element really rendered wins:
  *   with `asChild`, an `id` on the child element overrides the one passed down, and a
  *   consumer `id` that changes after mount is picked up.
+ *
+ * `rendered: false` skips that last check, for a trigger that renders `context.triggerId`
+ * itself on its own element; by default it only runs for a part that may render another id
+ * (see `rendersForeignId`).
  */
 export function useTriggerId(
   context: { triggerId: string },
   element: Readonly<Ref<HTMLElement | undefined>>,
   generate?: () => string,
+  rendered: boolean = rendersForeignId(),
 ) {
   const attrs = useAttrs()
   let consumerId = attrs.id
@@ -88,6 +94,8 @@ export function useTriggerId(
     if (typeof consumerId === 'string' && consumerId)
       context.triggerId = consumerId
   })
+  if (!rendered)
+    return
   const syncRendered = () => {
     const renderedId = element.value?.id
     if (renderedId && renderedId !== context.triggerId)
@@ -114,7 +122,7 @@ export function useContentId(
     set triggerId(id) {
       context.contentId = id
     },
-  }, element)
+  }, element, undefined, true)
   useContentElement(context, element)
 }
 
