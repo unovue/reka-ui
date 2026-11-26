@@ -14,13 +14,13 @@
   {
     "path": "dist/index.js",
     "import": "{ SelectRoot, SelectTrigger, SelectContent, SelectItem, SelectViewport, SelectPortal }",
-    "limit": "37.5 KB",
+    "limit": "42 KB",
     "name": "Select"
   },
   {
     "path": "dist/index.js",
     "import": "{ ComboboxRoot, ComboboxInput, ComboboxContent, ComboboxItem, ComboboxVirtualizer }",
-    "limit": "42.5 KB",
+    "limit": "48 KB",
     "name": "Combobox"
   },
   {
@@ -32,49 +32,67 @@
   {
     "path": "dist/index.js",
     "import": "{ DateFieldRoot, DateFieldInput }",
-    "limit": "19 KB",
+    "limit": "21 KB",
     "name": "DateField"
   },
   {
     "path": "dist/index.js",
     "import": "{ TreeRoot, TreeItem, TreeVirtualizer }",
-    "limit": "16.6 KB",
+    "limit": "19 KB",
     "name": "Tree"
   },
   {
     "path": "dist/index.js",
     "import": "{ PopoverRoot, PopoverTrigger, PopoverContent, PopoverPortal }",
-    "limit": "25.5 KB",
+    "limit": "29 KB",
     "name": "Popover"
   },
   {
     "path": "dist/index.js",
     "import": "{ TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent }",
-    "limit": "21.5 KB",
+    "limit": "24 KB",
     "name": "Tooltip"
   },
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, switchElements }",
-    "limit": "16.8 KB",
+    "limit": "18 KB",
     "name": "Elements: runtime + Switch"
   },
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, dialogElements }",
-    "limit": "27.2 KB",
+    "limit": "31 KB",
     "name": "Elements: Dialog"
   },
   {
     "path": "dist/elements.js",
     "import": "{ defineRekaElements, rekaElementFamilies }",
-    "limit": "201.8 KB",
+    "limit": "216 KB",
     "name": "Elements: all supported families"
   },
   {
     "path": "dist/index.js",
+    "import": "{ CarouselRoot, CarouselViewport, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, CarouselIndicatorGroup, CarouselIndicator, CarouselAutoplayToggle }",
+    "limit": "15 KB",
+    "name": "Carousel"
+  },
+  {
+    "path": "dist/index.js",
     "import": "*",
-    "limit": "202.3 KB",
+    "limit": "229 KB",
     "name": "Full library"
+  },
+  {
+    "path": "dist/vapor/index.js",
+    "import": "{ DialogRoot, DialogContent, DialogOverlay, DialogTrigger }",
+    "limit": "21 KB",
+    "name": "Vapor: Dialog (reka-ui/vapor)"
+  },
+  {
+    "path": "dist/vapor/index.js",
+    "import": "*",
+    "limit": "155 KB",
+    "name": "Vapor: full entry (reka-ui/vapor)"
   }
 ]

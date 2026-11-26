@@ -1,4 +1,5 @@
 import type { OutputPlugin } from 'rolldown'
+import { readFileSync } from 'node:fs'
 import { defineConfig } from 'tsdown'
 import { GENERATED_ENTRIES_DIR, getComponentFamilies, writeGeneratedEntries } from './scripts/families.ts'
 
@@ -10,16 +11,18 @@ const familyKeys = new Set(Object.keys(familyEntries))
 /** Entries that only re-export, so their bare side-effect imports can go (see the plugin below). */
 const reExportEntries = new Set([...familyKeys, 'elements'])
 
-// Match `defineComponent(`, `createContext(`, `reactive(` at word boundaries,
+// Match `defineComponent(`, `createContext(`, `createRekaContext(`, `reactive(` at word boundaries,
 // skipping calls already preceded by a PURE annotation or prefixed with a
 // word character (e.g. _defineComponent), or preceded by `function` keyword
 // (function declarations should not be annotated).
-const PURE_PATTERN = /(?<!function\s)(?<=^|[^.\w$])(defineComponent|createContext|reactive)\s*\(/g
+const PURE_PATTERN = /(?<!function\s)(?<=^|[^.\w$])(defineComponent|createContext|createRekaContext|reactive)\s*\(/g
 const ALREADY_PURE = /\/\*\s*[#@]__PURE__\s*\*\/\s*$/
 const PATH_SEP = /[\\/]/g
 const SIDE_EFFECT_IMPORT = /^import\s*"\.[^"]*";?\r?\n/gm
 const GENERATED_ENTRY = new RegExp(`[\\\\/]\\${GENERATED_ENTRIES_DIR}[\\\\/]`)
 const DTS_FILE = /\.d\.c?ts$/
+
+const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string }
 
 /**
  * Rolldown output plugin that inserts `/*#__PURE__* /` annotations before
@@ -69,6 +72,7 @@ export default defineConfig({
     index: './src/index.ts',
     internal: './src/internal.ts',
     date: './src/date/index.ts',
+    agent: './src/agent/index.ts',
     constant: './constant/index.ts',
     shared: './src/shared/index.ts',
     // `reka-ui/elements`: custom elements, kept out of the root barrel (#3080)
@@ -93,8 +97,9 @@ export default defineConfig({
    * instead (same convention as Vue's own esm-bundler build).
    */
   define: {
-    'import.meta.env.DEV': 'undefined',
     'import.meta.env.MODE': 'undefined',
+    // Keys reka-ui's internal contexts by exact version, see `shared/createContext.ts`
+    '__REKA_UI_VERSION__': JSON.stringify(version),
   },
 
   inputOptions: {

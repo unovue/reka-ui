@@ -2,7 +2,7 @@ import type { RangeCalendarRootProps } from './RangeCalendarRoot.vue'
 import type { DateValue } from '@/date'
 import type { DateRange } from '@/shared/date'
 import userEvent from '@testing-library/user-event'
-import { render } from '@testing-library/vue'
+import { fireEvent, render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { useTestKbd } from '@/shared'
@@ -112,6 +112,52 @@ describe('range calendar — granularity="month" (replaces MonthRangePicker)', (
     await user.keyboard(kbd.END)
     expect(getByTestId('cell-2026-11-01')).toHaveFocus()
     expect(getByTestId('heading')).toHaveTextContent('2026')
+  })
+})
+
+describe('range calendar — month view, ported MonthRangePicker cases', () => {
+  const cells = (calendar: HTMLElement) => calendar.querySelectorAll<HTMLElement>('[data-reka-calendar-cell-trigger]')
+
+  it('counts the thirteenth month of a Hebrew leap year towards maximumLength', () => {
+    const hebrew = (year: number, month: number) => Temporal.PlainDate.from({ calendar: 'hebrew', year, month, day: 1 })
+    const { calendar, getByTestId } = setupUnit({
+      granularity: 'month',
+      modelValue: { start: hebrew(5784, 12), end: hebrew(5785, 1) },
+      fixedDate: 'start',
+      maximumLength: 3,
+      locale: 'en-US-u-ca-hebrew',
+    })
+
+    // The range already spans months 12, 13 and 1, so no earlier month fits.
+    expect(getByTestId('heading')).toHaveTextContent('5784')
+    expect(cells(calendar)).toHaveLength(13)
+    expect(cells(calendar)[12]).not.toHaveAttribute('data-disabled')
+    expect(cells(calendar)[10]).toHaveAttribute('data-disabled')
+  })
+
+  it('keeps a range across the first year of a Japanese era within maximumLength', () => {
+    const japanese = (era: string, eraYear: number, month: number) => Temporal.PlainDate.from({ calendar: 'japanese', era, eraYear, month, day: 1 })
+    const { calendar } = setupUnit({
+      granularity: 'month',
+      modelValue: { start: japanese('reiwa', 1, 12), end: japanese('reiwa', 2, 1) },
+      fixedDate: 'start',
+      maximumLength: 2,
+    })
+
+    const december = cells(calendar)[11]
+    expect(december).toHaveAttribute('data-selection-start')
+    expect(december).not.toHaveAttribute('data-disabled')
+  })
+
+  it('handles the numeric keypad: keypad arrows move and Enter starts a range', async () => {
+    const { getByTestId, calendar } = setupUnit({ granularity: 'month', defaultPlaceholder: sep5 })
+    const cell = getByTestId('cell-2026-09-01')
+    cell.focus()
+
+    await fireEvent.keyDown(cell, { key: 'ArrowRight', code: 'Numpad6' })
+    expect(getByTestId('cell-2026-10-01')).toHaveFocus()
+    await fireEvent.keyDown(getByTestId('cell-2026-10-01'), { key: 'Enter', code: 'NumpadEnter' })
+    expect(calendar.querySelector('[data-selection-start]')).toBe(getByTestId('cell-2026-10-01'))
   })
 })
 

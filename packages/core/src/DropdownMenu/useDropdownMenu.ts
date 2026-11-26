@@ -3,13 +3,15 @@ import type { DropdownMenuRootContext } from './DropdownMenuRoot.vue'
 import type { DropdownMenuHandle } from './handle'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { MenuOpenChangeReason, UseMenuRootProps } from '@/Menu'
-import type { MenuContext, MenuRootContext } from '@/Menu/MenuRoot.vue'
+import type { MenuContentHideEvent, MenuContext, MenuRootContext } from '@/Menu/MenuRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { PopupRootStore } from '@/shared/popupHandle'
 import { computed, nextTick, ref, toValue } from 'vue'
+import { isTriggerPressInFlight, trackTriggerPresses } from '@/DismissableLayer/utils'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { useMenuRoot } from '@/Menu/useMenu'
 import { containsComposed, createPartSurface } from '@/shared'
-import { createPopupRootStore, getPopupRootStore, setPopupRootStore } from '@/shared/popupHandle'
+import { createPopupRootStore, definePopupRootIds, getPopupRootStore } from '@/shared/popupHandle'
 
 // =============================================================================
 // Headless composable for the DropdownMenu family — issue #2723.
@@ -44,6 +46,8 @@ export function getDropdownMenuTriggerSurface(
   disabled?: MaybeRefOrGetter<boolean | undefined>,
 ): PartSurface<DropdownMenuTriggerState> {
   const isDisabled = () => toValue(disabled) ?? false
+  // Lets the content tell the focus WebKit gives an ancestor of the pressed trigger (#3360).
+  trackTriggerPresses()
   return createPartSurface<DropdownMenuTriggerState>(
     () => ({
       'id': context.triggerId,
@@ -88,6 +92,11 @@ export interface DropdownMenuContentSurface extends PartSurface<Record<string, n
   onCloseAutoFocus: (event: Event) => void
   /** `MenuContent` `interactOutside`: a press on the trigger never dismisses (the trigger toggles). */
   onInteractOutside: (event: PointerDownOutsideEvent | FocusOutsideEvent) => void
+  /**
+   * `MenuContext.onContentHide`: a content kept mounted while closed (`unmountOnHide: false`)
+   * is hidden, not unmounted, so no `closeAutoFocus` returns focus. Returns it to the trigger as `onCloseAutoFocus` does.
+   */
+  onContentHide: (event: MenuContentHideEvent) => void
 }
 
 /**
@@ -114,8 +123,11 @@ export function createDropdownMenuContentSurface(
     if (event.defaultPrevented)
       return
     if (!hasInteractedOutside.value) {
+      const scope = event.target
       setTimeout(() => {
-        context.triggerElement.value?.focus()
+        // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
+        if (!hasFocusLeftScope(scope))
+          context.triggerElement.value?.focus()
       }, 0)
     }
     hasInteractedOutside.value = false
@@ -144,11 +156,23 @@ export function createDropdownMenuContentSurface(
     if (!context.modal.value || isRightClick)
       hasInteractedOutside.value = true
     const trigger = context.triggerElement.value
-    if (trigger && containsComposed(trigger, event.target as Node))
+    const target = event.target as Node
+    if (trigger && containsComposed(trigger, target))
+      event.preventDefault()
+    // WebKit does not focus a pressed button but its focusable ancestor. The trigger
+    // handles its own press, so that focus move is treated like the focus the trigger
+    // itself gets in other engines (#3360).
+    else if (event.detail.originalEvent.type === 'focusin' && trigger && isTriggerPressInFlight(trigger) && containsComposed(target, trigger))
       event.preventDefault()
   }
 
-  return { ...surface, onCloseAutoFocus, onInteractOutside }
+  function onContentHide({ focusLeft }: MenuContentHideEvent) {
+    if (!hasInteractedOutside.value && !focusLeft)
+      context.triggerElement.value?.focus()
+    hasInteractedOutside.value = false
+  }
+
+  return { ...surface, onCloseAutoFocus, onInteractOutside, onContentHide }
 }
 
 export interface UseDropdownMenuProps<Payload = unknown> extends Omit<UseMenuRootProps, 'onBeforeUpdate' | 'onUpdate'> {
@@ -220,11 +244,16 @@ export function useDropdownMenu<Payload = unknown>(props: UseDropdownMenuProps<P
     return onOpenChange(!open.value, reason, event)
   }
 
+  // Writable: the trigger and the content adopt a consumer `id` (`useTriggerId`,
+  // `useContentId`), which the other one references.
+  const ownTriggerId = ref(`${baseId}-trigger`)
+  const contentId = ref(`${baseId}-content`)
   const handleStore = createPopupRootStore<Payload>({
     handle: () => toValue(props.handle),
     open,
     setState: onOpenChange,
     baseId,
+    contentId,
     triggerId: props.triggerId,
     defaultTriggerId: props.defaultTriggerId,
   })
@@ -237,31 +266,20 @@ export function useDropdownMenu<Payload = unknown>(props: UseDropdownMenuProps<P
       ownTriggerElement.value = element
     },
   })
-  const ownTriggerId = `${baseId}-trigger`
 
-  const context: DropdownMenuRootContext = {
+  // The ids are added after the literal, which keeps the context on fast properties.
+  const context = definePopupRootIds<DropdownMenuRootContext>({
     open,
-    onOpenChange: (value, reason = 'trigger-press', event) => {
+    onOpenChange: (value: boolean, reason: MenuOpenChangeReason | BaseChangeReason = 'trigger-press', event?: Event) => {
       onOpenChange(value, reason, event)
     },
-    onOpenToggle: (reason = 'trigger-press', event) => {
+    onOpenToggle: (reason: MenuOpenChangeReason | BaseChangeReason = 'trigger-press', event?: Event) => {
       onOpenToggle(reason, event)
     },
-    // With a `handle`, the content's `aria-labelledby` follows the active
-    // trigger while it is mounted, and is dropped (`''`) while no mounted
-    // trigger owns the menu, so it never points at a missing id.
-    get triggerId() {
-      if (!handleStore.handle.value)
-        return ownTriggerId
-      return handleStore.activeTriggerElement.value ? handleStore.activeTriggerId.value! : ''
-    },
     triggerElement,
-    contentId: `${baseId}-content`,
     modal: menuRootContext.modal,
     dir: menuRootContext.dir,
-  }
-
-  setPopupRootStore(context, handleStore)
+  }, handleStore, ownTriggerId, contentId)
 
   // The part surfaces are for standalone consumers (the part SFCs build their
   // own from the context), so each is built on first read.

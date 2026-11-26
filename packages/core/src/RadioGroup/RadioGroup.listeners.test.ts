@@ -41,6 +41,8 @@ describe('radioGroup window listeners', () => {
 
     // A focus without an arrow key held does not check.
     window.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowDown' }))
+    // The keyup clears the flag after `RovingFocusGroup`'s `nextTick` focus move.
+    await nextTick()
     const third = wrapper.get<HTMLElement>('[data-testid=radio-0-2]').element
     third.focus()
     await new Promise(resolve => setTimeout(resolve))

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { reactive, ref } from 'vue'
+import { ref } from 'vue'
 import {
   NavigationMenuContent,
   NavigationMenuIndicator,
@@ -14,10 +14,9 @@ import LinkGroup from './_LinkGroup.vue'
 import StoryFrame from './_StoryFrame.vue'
 
 const currentTrigger = ref('')
-const state = reactive({
-  delayDuration: 600,
-  skipDelayDuration: 1000,
-})
+// Refs, not a `reactive` object: vue-tsc reports a bogus `.value` access on a reactive `state` read in this Variant's `#controls` slot.
+const delayDuration = ref(600)
+const skipDelayDuration = ref(1000)
 </script>
 
 <template>
@@ -26,8 +25,8 @@ const state = reactive({
       <StoryFrame>
         <NavigationMenuRoot
           v-model="currentTrigger"
-          :delay-duration="state.delayDuration"
-          :skip-delay-duration="state.skipDelayDuration"
+          :delay-duration="delayDuration"
+          :skip-delay-duration="skipDelayDuration"
           class="relative z-[1] flex w-full justify-center"
         >
           <NavigationMenuList
@@ -118,11 +117,11 @@ const state = reactive({
 
       <template #controls>
         <HstNumber
-          v-model="state.delayDuration"
+          v-model="delayDuration"
           title="Delay Duration"
         />
         <HstNumber
-          v-model="state.skipDelayDuration"
+          v-model="skipDelayDuration"
           title="Skip Delay Duration"
         />
       </template>

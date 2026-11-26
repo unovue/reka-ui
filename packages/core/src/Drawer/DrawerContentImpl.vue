@@ -33,7 +33,7 @@ import { computed, getCurrentInstance, mergeProps } from 'vue'
 import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer } from '@/DismissableLayer/useDismissableLayer'
 import { FOCUS_SCOPE_WRAPPER, focusScopeOptions, useFocusScope } from '@/FocusScope/useFocusScope'
 import { renderAs } from '@/Primitive/renderAs'
-import { useForwardElement } from '@/shared'
+import { useContentElement, useContentMounted, useForwardElement } from '@/shared'
 import { splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { useDrawerContent } from './useDrawer'
@@ -43,14 +43,24 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<DrawerContentImplProps>(), {
+const props = withDefaults(defineProps<DrawerContentImplProps & {
+  /** Whether the content is currently visible. Forwarded to the focus scope and
+   * the dismissable layer, so a force-mounted drawer auto-focuses on open and
+   * stays out of the layer and scope stacks while closed. */
+  present?: boolean
+}>(), {
   initialFocus: true,
   finalFocus: true,
+  present: true,
 })
 const emits = defineEmits<DrawerContentImplEmits>()
 
 const rootContext = injectDrawerRootContext()
 const { forwardRef, currentElement, expose } = useForwardElement()
+// The trigger's `aria-controls` points at the id this element rendered (a hydrated element
+// keeps the server's), and only while it is rendered.
+useContentElement(rootContext, currentElement)
+useContentMounted(rootContext, currentElement)
 defineExpose(expose)
 
 registerDrawerCssProperties()
@@ -89,6 +99,7 @@ const focusScopeWrapper = computed(() => splitWrapperAttrs(mergeProps({
   asChild: true,
   loop: true,
   trapped: props.trapFocus,
+  present: props.present,
   onMountAutoFocus,
   onUnmountAutoFocus: (event: Event) => emits('closeAutoFocus', event),
 }, instance.proxy!.$attrs), FOCUS_SCOPE_WRAPPER))
@@ -96,6 +107,7 @@ const scope = useFocusScope(focusScopeOptions(currentElement, () => focusScopeWr
 const layerWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeProps(scope.attrs(), focusScopeWrapper.value.rest), mergeProps({
   as: props.as,
   asChild: props.asChild,
+  present: props.present,
   disableOutsidePointerEvents: props.disableOutsidePointerEvents,
 }, mergeProps(content.attrs.value, instance.proxy!.$attrs), {
   onDismiss,

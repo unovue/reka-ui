@@ -1,5 +1,5 @@
 import type { ElementSourceLike } from '@/Collection/Collection'
-import { getCurrentInstance, getCurrentScope, onBeforeUnmount, onMounted, onScopeDispose, onUpdated } from 'vue'
+import { getCurrentInstance, getCurrentScope, inject, onBeforeUnmount, onMounted, onScopeDispose, onUpdated, shallowRef, ssrContextKey } from 'vue'
 import { COLLECTION_ITEM_ATTRS, useCollectionItem } from '@/Collection/Collection'
 import { SelectorHold } from '@/shared/createKeyedSelector'
 import { useId } from '@/shared/useId'
@@ -72,6 +72,19 @@ export function useRovingFocusItem(options: UseRovingFocusItemOptions) {
     context.onFocusableItemAdd()
 
   const tabStop = new SelectorHold(context.tabStop)
+
+  // Until a tab stop is chosen, the group only becomes tabbable once its items
+  // have set up, so the server-rendered HTML would have no stop at all. Before
+  // mount, one item per group stands in as the stop (see `claimPreMountTabStop`);
+  // after mount the group's own tabindex takes over. Only that item holds a ref.
+  // A client-side mount (not hydrating) is never seen before it mounts, so it skips this.
+  const instance = getCurrentInstance()
+  const rendersBeforeMount = !instance || !!instance.vnode.el || !!inject(ssrContextKey, null)
+  const preMountTabStop = rendersBeforeMount && isFocusable() && context.claimPreMountTabStop(getId(), !!options.active?.())
+    ? shallowRef(true)
+    : undefined
+  if (preMountTabStop && instance)
+    onMounted(() => preMountTabStop.value = false)
   if (getCurrentScope()) {
     onScopeDispose(() => {
       tabStop.release()
@@ -132,7 +145,7 @@ export function useRovingFocusItem(options: UseRovingFocusItemOptions) {
       return {
         // First, where the `CollectionItem` wrapper put it.
         ...COLLECTION_ITEM_ATTRS,
-        'tabindex': tabStop.read(getId()) ? 0 : -1,
+        'tabindex': tabStop.read(getId()) || (preMountTabStop?.value && context.currentTabStopId.value == null) ? 0 : -1,
         'data-orientation': context.orientation.value,
         'data-active': options.active?.() ? '' : undefined,
         'data-disabled': !focusable ? '' : undefined,

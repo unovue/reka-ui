@@ -12,14 +12,16 @@ const gatedParts = [MenuContent, MenuSubContent]
 <script setup lang="ts">
 import { TeleportPrimitive } from '@/Teleport'
 import { createPortalGate } from '@/Teleport/portalGate'
-import { injectMenuContext } from './MenuRoot.vue'
+import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
 
 const props = defineProps<MenuPortalProps>()
 
 // A closed popup renders no portal until it first opens (or its content is
-// force-mounted); afterwards the portal stays.
+// force-mounted, or kept mounted while closed with `unmountOnHide: false`);
+// afterwards the portal stays.
 const rootContext = injectMenuContext(null)
-const shouldRender = createPortalGate(rootContext, () => !!rootContext?.open.value, gatedParts)
+const menuRootContext = injectMenuRootContext(null)
+const shouldRender = createPortalGate(rootContext, () => !!rootContext?.open.value || menuRootContext?.unmountOnHide.value === false, gatedParts)
 </script>
 
 <template>

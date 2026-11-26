@@ -141,7 +141,7 @@ The button that clears the selected value and the search term. Set `:reset-model
 
 ### Empty
 
-Shown when none of the items match the query.
+Shown when none of the items match the query. Renders as a disabled option that cannot be selected or highlighted.
 
 <!-- @include: @/meta/ComboboxEmpty.md -->
 
@@ -514,6 +514,30 @@ const selectedPeople = ref([people[0], people[1]])
 </template>
 ```
 
+### Limiting the selection
+
+`max` caps how many values a `multiple` combobox can hold. A press, <kbd>Enter</kbd>, a <kbd>Shift</kbd> range or a select-all that would go over it is blocked, the value stays as it is, and `invalid` is emitted with the first value over the limit. Selected items can still be deselected. `0`, the default, means no limit. A `modelValue` you set from code is not clamped.
+
+```vue line=12-13
+<script setup lang="ts">
+import { ComboboxRoot } from 'reka-ui'
+import { ref } from 'vue'
+
+const toppings = ref<string[]>([])
+</script>
+
+<template>
+  <ComboboxRoot
+    v-model="toppings"
+    multiple
+    :max="2"
+    @invalid="value => console.warn(`Pick at most two toppings, ${value} was not added`)"
+  >
+    …
+  </ComboboxRoot>
+</template>
+```
+
 ### Clearing the value
 
 `null` is the empty value. Set `v-model` to `null` to clear the selection and empty the input.
@@ -524,7 +548,7 @@ To let users clear a single selection from the list, add an item with a `null` v
 
 The `ComboboxRoot` `displayValue` is not called for `null`. A `displayValue` on `ComboboxInput` is called with every value, `null` included, so it must handle `null` (return `''` to keep the input empty).
 
-`ComboboxCancel` clears the value too: it sets it to `null` (`[]` with `multiple`) and empties the input (reason `'clear-press'`). With `:reset-model-value-on-clear="false"` it only empties the input.
+`ComboboxCancel` clears the value too: it sets it to `null` (`[]` with `multiple`) and empties the input (reason `'clear-press'`). With `:reset-model-value-on-clear="false"` it only empties the input. To reset to another value, see [Custom clear value](#custom-clear-value).
 
 The keyboard clears the value as well:
 
@@ -573,6 +597,53 @@ const fruits = [
 ```
 
 In a form, `null` and `''` both submit an empty string. With `required`, both are missing a value: the hidden input carries the submitted string, which is empty for both. With `multiple`, any selection satisfies `required`, `['']` included; `null` and `''` are ordinary values that toggle in the array, and `[]` is empty. Inside a `Field`, `null` and `''` are different values for `dirty` (an unset value counts as `null`).
+
+### Custom clear value
+
+Pass a function to `clearValue` to make `ComboboxCancel` reset the value to what it returns instead of `null`. For example, `:clear-value="() => undefined"` clears a single selection to `undefined`. With `multiple`, return the array to reset to: any other result is ignored and the value resets to `[]`.
+
+`clearValue` only applies to `ComboboxCancel` while `resetModelValueOnClear` is `true` (the default). Emptying the input and Escape still clear the value to `null`.
+
+```vue line=12,18
+<script setup lang="ts">
+import {
+  ComboboxCancel,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxPortal,
+  ComboboxRoot,
+} from 'reka-ui'
+import { ref } from 'vue'
+
+const selectedPerson = ref<string | undefined>('Durward Reynolds')
+</script>
+
+<template>
+  <ComboboxRoot
+    v-model="selectedPerson"
+    :clear-value="() => undefined"
+  >
+    <ComboboxInput placeholder="Search person..." />
+    <ComboboxCancel>Clear</ComboboxCancel>
+    <ComboboxPortal>
+      <ComboboxContent>
+        <ComboboxItem value="Durward Reynolds">
+          Durward Reynolds
+        </ComboboxItem>
+        <ComboboxItem value="Kenton Towne">
+          Kenton Towne
+        </ComboboxItem>
+        <ComboboxItem value="Therese Wunsch">
+          Therese Wunsch
+        </ComboboxItem>
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>
+</template>
+```
+
+A controlled combobox that is also given a `defaultValue` falls back to that default while its `modelValue` is `undefined`, so don't combine the two when clearing to `undefined`.
 
 ### Custom filtering
 
@@ -855,6 +926,37 @@ Where focus goes depends on where `ComboboxInput` is:
         <ComboboxInput placeholder="Search…" />
         <ComboboxViewport>
           …
+        </ComboboxViewport>
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>
+</template>
+```
+
+`focusOnOpen` on `ComboboxInput` is the input's own switch. Set `:focus-on-open="false"` to keep opening from moving focus to the input, wherever it is: a mouse press on the trigger no longer focuses an input outside the content, and an input inside the content is not focused when it opens. Use it to keep the on-screen keyboard closed on touch devices. An `initialFocus` on `ComboboxContent` takes precedence over it. The user can still focus the input to type and navigate, and while the combobox is open, <kbd>ArrowDown</kbd> or <kbd>ArrowUp</kbd> on a focused `ComboboxTrigger` moves focus to the input.
+
+`ComboboxTrigger` is left out of the tab order by default (`tabindex="-1"`). When the input sits inside `ComboboxContent`, the trigger is usually the only control that opens the list, so give it `tabindex="0"` to let keyboard users reach it.
+
+```vue line=7,12
+<script setup lang="ts">
+import { ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from 'reka-ui'
+</script>
+
+<template>
+  <ComboboxRoot>
+    <ComboboxTrigger tabindex="0">
+      Select a fruit
+    </ComboboxTrigger>
+    <ComboboxPortal>
+      <ComboboxContent>
+        <ComboboxInput :focus-on-open="false" placeholder="Search..." />
+        <ComboboxViewport>
+          <ComboboxItem value="Apple">
+            Apple
+          </ComboboxItem>
+          <ComboboxItem value="Banana">
+            Banana
+          </ComboboxItem>
         </ComboboxViewport>
       </ComboboxContent>
     </ComboboxPortal>

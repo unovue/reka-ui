@@ -1,4 +1,5 @@
 import antfu from '@antfu/eslint-config'
+import pluginVueA11y from 'eslint-plugin-vuejs-accessibility'
 
 export default antfu(
   {
@@ -67,6 +68,32 @@ export default antfu(
           { name: '..', message: 'Import from the owning family (`@/<Family>`) or `@/shared`, not the root barrel.' },
           { name: '@/index', message: 'Import from the owning family (`@/<Family>`) or `@/shared`, not the root barrel.' },
         ],
+      }],
+    },
+  },
+  {
+    files: ['packages/core/src/**/*.vue'],
+    plugins: {
+      'vuejs-accessibility': pluginVueA11y,
+    },
+    // Adopt the recommended preset at `warn` while existing violations are
+    // fixed incrementally; flip to `error` once the codebase is clean.
+    rules: Object.fromEntries(
+      Object.keys(pluginVueA11y.configs['flat/recommended'][1].rules)
+        .map(rule => [rule, 'warn']),
+    ),
+  },
+  {
+    files: ['packages/core/src/**/*.{ts,vue}'],
+    ignores: ['**/*.test.ts'],
+    rules: {
+      // Dev-only warnings are guarded with `process.env.NODE_ENV !== 'production'`: it survives the
+      // published build and the consumer's bundler drops it. The build has no `import.meta.env`.
+      'node/prefer-global/process': 'off',
+      // The two strings are the preset's own entries, which setting this rule would otherwise drop.
+      'no-restricted-syntax': ['error', 'TSEnumDeclaration[const=true]', 'TSExportAssignment', {
+        selector: 'MemberExpression[property.name=\'DEV\'][object.property.name=\'env\'][object.object.type=\'MetaProperty\']',
+        message: 'Use `process.env.NODE_ENV !== \'production\'`: `import.meta.env.DEV` does not exist in the published build, so the code behind it never runs.',
       }],
     },
   },

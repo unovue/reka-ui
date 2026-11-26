@@ -1,13 +1,15 @@
 import type { RenderResult } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { defineComponent, nextTick, onMounted, reactive, ref, useTemplateRef, watch } from 'vue'
 import { getActiveElement } from '@/shared'
 import { FocusScope } from '.'
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxPortal, ComboboxRoot, ComboboxTrigger, ComboboxViewport } from '../Combobox'
 import { DialogContent, DialogRoot, DialogTitle, DialogTrigger } from '../Dialog'
 import { SelectContent, SelectItem, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '../Select'
+import { createFocusScopesStack } from './stack'
 
 const INNER_NAME_INPUT_LABEL = 'Name'
 const INNER_EMAIL_INPUT_LABEL = 'Email'
@@ -552,5 +554,271 @@ describe('given a FocusScope that unmounts before its mount effect settles, insi
     await nextTick()
     expect(input).toHaveFocus()
     dialog.unmount()
+  })
+})
+
+describe('given a FocusScope that unmounts', () => {
+  const Unmounting = defineComponent({
+    components: { FocusScope },
+    props: { open: Boolean },
+    emits: ['unmountAutoFocus'],
+    template: `
+      <button data-testid="before">before</button>
+      <button data-testid="elsewhere">elsewhere</button>
+      <FocusScope v-if="open" @unmount-auto-focus="$emit('unmountAutoFocus', $event)">
+        <input data-testid="inside">
+      </FocusScope>
+    `,
+  })
+
+  async function setup(onUnmountAutoFocus = vi.fn((event: Event) => event.defaultPrevented)) {
+    const rendered = render(Unmounting, { props: { open: false, onUnmountAutoFocus } })
+    rendered.getByTestId('before').focus()
+    await rendered.rerender({ open: true })
+    await vi.waitFor(() => expect(rendered.getByTestId('inside')).toHaveFocus())
+    return { rendered, onUnmountAutoFocus }
+  }
+
+  /** The unmount auto-focus is deferred by a timer; one queued after it runs after it. */
+  const afterUnmountAutoFocus = () => new Promise(resolve => setTimeout(resolve))
+
+  it('should return focus to the element focused before it mounted', async () => {
+    const { rendered, onUnmountAutoFocus } = await setup()
+
+    await rendered.rerender({ open: false })
+    await afterUnmountAutoFocus()
+
+    expect(rendered.getByTestId('before')).toHaveFocus()
+    expect(onUnmountAutoFocus).toHaveBeenCalledTimes(1)
+  })
+
+  it('should leave focus where it has moved to outside the scope, and still emit `unmountAutoFocus`', async () => {
+    const { rendered, onUnmountAutoFocus } = await setup()
+    rendered.getByTestId('elsewhere').focus()
+
+    await rendered.rerender({ open: false })
+    await afterUnmountAutoFocus()
+
+    expect(rendered.getByTestId('elsewhere')).toHaveFocus()
+    expect(onUnmountAutoFocus).toHaveBeenCalledTimes(1)
+    expect(onUnmountAutoFocus).toHaveReturnedWith(false)
+  })
+
+  it('should leave focus to a handler that prevents `unmountAutoFocus`', async () => {
+    const { rendered } = await setup(vi.fn((event: Event) => {
+      event.preventDefault()
+      return true
+    }))
+
+    await rendered.rerender({ open: false })
+    await afterUnmountAutoFocus()
+
+    expect(document.body).toHaveFocus()
+  })
+})
+
+describe('given a scope that unmounts before its mount effect has finished', () => {
+  const ActiveScope = defineComponent({
+    components: { FocusScope },
+    template: `<div>
+      <FocusScope trapped><input data-testid="inside" /></FocusScope>
+      <button data-testid="outside">outside</button>
+    </div>`,
+  })
+  const OtherScope = defineComponent({
+    components: { FocusScope },
+    template: `<FocusScope trapped><input /></FocusScope>`,
+  })
+
+  it('should leave the other scope trapping focus', async () => {
+    const active = render(ActiveScope)
+    await nextTick()
+    await nextTick()
+
+    // Unmount one microtask after mounting, while the effect still awaits `nextTick()`.
+    const other = render(OtherScope)
+    await Promise.resolve()
+    other.unmount()
+    await new Promise(resolve => setTimeout(resolve, 20))
+
+    const inside = active.getByTestId('inside') as HTMLInputElement
+    inside.focus()
+    active.getByTestId('outside').focus()
+    await nextTick()
+
+    expect(inside).toHaveFocus()
+  })
+})
+
+describe('given a scope re-added to the stack while it is paused', () => {
+  // reactive like FocusScope's own scope object, so the deep stack ref keeps the same proxy
+  function scope() {
+    return reactive({
+      paused: false,
+      pause() {
+        this.paused = true
+      },
+      resume() {
+        this.paused = false
+      },
+    })
+  }
+
+  it('should resume it, since the scope at the top of the stack is the active one', () => {
+    const stack = createFocusScopesStack()
+    const parent = scope()
+    const nested = scope()
+    stack.add(parent)
+    stack.add(nested)
+    expect(parent.paused).toBe(true)
+
+    // The parent hides (`present: false`) and shows again while the nested scope stays open.
+    stack.remove(parent)
+    stack.add(parent)
+    expect(parent.paused).toBe(false)
+    expect(nested.paused).toBe(true)
+
+    stack.remove(nested)
+    expect(parent.paused).toBe(false)
+    stack.remove(parent)
+  })
+})
+
+describe('given a paused scope whose focused element is removed', () => {
+  const Harness = defineComponent({
+    components: { FocusScope },
+    emits: ['upperUnmountAutoFocus'],
+    setup() {
+      return { rowVisible: ref(true), upperOpen: ref(false) }
+    },
+    template: `<div>
+      <FocusScope trapped data-testid="lower">
+        <button v-if="rowVisible" data-testid="row">row</button>
+        <input data-testid="lower-input" />
+        <div data-testid="shadow-host" />
+      </FocusScope>
+      <FocusScope v-if="upperOpen" trapped data-testid="upper" @unmount-auto-focus="$emit('upperUnmountAutoFocus', $event)">
+        <button data-testid="confirm">confirm</button>
+      </FocusScope>
+    </div>`,
+  })
+
+  async function settle() {
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 0))
+    await nextTick()
+  }
+
+  it('should not pull focus into its container while another scope is on top', async () => {
+    const wrapper = mount(Harness, { attachTo: document.body })
+    await settle()
+    const lower = document.querySelector<HTMLElement>('[data-testid="lower"]')!
+    document.querySelector<HTMLButtonElement>('[data-testid="row"]')!.focus()
+
+    wrapper.vm.upperOpen = true
+    await settle()
+    const confirm = document.querySelector<HTMLButtonElement>('[data-testid="confirm"]')!
+    expect(confirm).toHaveFocus()
+
+    // In a browser the covered container is `aria-hidden` here (e.g. under a modal), so even a
+    // focus attempt that the top scope immediately takes back triggers a warning.
+    const focusMovesIntoLower: EventTarget[] = []
+    confirm.addEventListener('focusout', (event) => {
+      if (event.relatedTarget instanceof Node && lower.contains(event.relatedTarget))
+        focusMovesIntoLower.push(event.relatedTarget)
+    })
+    wrapper.vm.rowVisible = false
+    await settle()
+
+    expect(focusMovesIntoLower).toEqual([])
+    expect(confirm).toHaveFocus()
+    wrapper.unmount()
+  })
+
+  it('should move focus to its container once it is back on top', async () => {
+    const wrapper = mount(Harness, { attachTo: document.body })
+    await settle()
+    const lower = document.querySelector<HTMLElement>('[data-testid="lower"]')!
+    document.querySelector<HTMLButtonElement>('[data-testid="row"]')!.focus()
+
+    wrapper.vm.upperOpen = true
+    await settle()
+    wrapper.vm.rowVisible = false
+    await settle()
+    wrapper.vm.upperOpen = false
+    await settle()
+
+    expect(lower).toHaveFocus()
+    wrapper.unmount()
+  })
+
+  it('should keep focus that was moved into a shadow root inside it before it resumed', async () => {
+    const shadowInput = document.createElement('input')
+    const wrapper = mount(Harness, {
+      attachTo: document.body,
+      props: {
+        // The app takes over the unmount auto-focus and focuses a field of a web component in the lower scope.
+        onUpperUnmountAutoFocus: (event: Event) => {
+          event.preventDefault()
+          shadowInput.focus()
+        },
+      },
+    })
+    await settle()
+    const host = document.querySelector<HTMLElement>('[data-testid="shadow-host"]')!
+    host.attachShadow({ mode: 'open' }).append(shadowInput)
+    document.querySelector<HTMLButtonElement>('[data-testid="row"]')!.focus()
+
+    wrapper.vm.upperOpen = true
+    await settle()
+    wrapper.vm.rowVisible = false
+    await settle()
+    wrapper.vm.upperOpen = false
+    await settle()
+
+    // `document.activeElement` stops at the shadow host.
+    expect(document.activeElement).toBe(host)
+    expect(host.shadowRoot!.activeElement).toBe(shadowInput)
+
+    // The removed row must not stay the recovery target, or focus could leave the scope.
+    const outside = document.createElement('button')
+    document.body.append(outside)
+    outside.focus()
+    await settle()
+    expect(document.activeElement).toBe(host)
+    expect(host.shadowRoot!.activeElement).toBe(shadowInput)
+    outside.remove()
+    wrapper.unmount()
+  })
+
+  it('should keep focus that was moved inside it before it resumed trapped there', async () => {
+    const wrapper = mount(Harness, {
+      attachTo: document.body,
+      props: {
+        onUpperUnmountAutoFocus: (event: Event) => {
+          event.preventDefault()
+          document.querySelector<HTMLInputElement>('[data-testid="lower-input"]')!.focus()
+        },
+      },
+    })
+    await settle()
+    const lowerInput = document.querySelector<HTMLInputElement>('[data-testid="lower-input"]')!
+    document.querySelector<HTMLButtonElement>('[data-testid="row"]')!.focus()
+
+    wrapper.vm.upperOpen = true
+    await settle()
+    wrapper.vm.rowVisible = false
+    await settle()
+    wrapper.vm.upperOpen = false
+    await settle()
+    expect(lowerInput).toHaveFocus()
+
+    const outside = document.createElement('button')
+    document.body.append(outside)
+    outside.focus()
+    await settle()
+    expect(lowerInput).toHaveFocus()
+    outside.remove()
+    wrapper.unmount()
   })
 })

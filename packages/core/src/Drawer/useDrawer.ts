@@ -10,7 +10,7 @@ import type { DrawerSnapPoint, SwipeDirection } from './utils'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import { useResizeObserver } from '@vueuse/core'
-import { computed, nextTick, onMounted, onUnmounted, ref, toValue, watch } from 'vue'
+import { computed, nextTick, onMounted, onScopeDispose, onUnmounted, ref, toValue, watch } from 'vue'
 import { isOwnBackdropPress } from '@/DismissableLayer/internalBackdrop'
 import { focus } from '@/FocusScope/utils'
 import { containsComposed, createPartSurface, disclosureState, getActiveElement, getElementByIdFrom, isHTMLElement, setGeneratedIds, useControllableState } from '@/shared'
@@ -22,6 +22,11 @@ import {
   DRAWER_CSS_VARS,
   getDisplacement,
 } from './utils'
+
+// Swipe release without snap points: the smallest drag that can dismiss, and the
+// gesture speed (px/ms) that dismisses regardless of distance.
+const MIN_SWIPE_THRESHOLD = 10
+const FAST_SWIPE_VELOCITY = 0.5
 
 // =============================================================================
 // Headless composables for the Drawer (overlay) family — issue #2723.
@@ -293,6 +298,13 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
     onUpdate: props.onSnapPointUpdate as ((value: DrawerSnapPoint | null | undefined, details: ChangeEventDetails<DrawerSnapPointChangeReason>) => void) | undefined,
   })
 
+  // The root's scope stops before its popup unmounts, so a popup removed along
+  // with the root does not report a close.
+  let isDisposed = false
+  onScopeDispose(() => {
+    isDisposed = true
+  }, true)
+
   const modal = computed<DrawerModal>(() => toValue(props.modal) ?? true)
   const swipeDirection = computed<SwipeDirection>(() => toValue(props.swipeDirection) ?? 'down')
   const snapPoints = computed(() => toValue(props.snapPoints))
@@ -368,7 +380,9 @@ export function useDrawer(props: UseDrawerProps = {}): UseDrawerReturn {
     onOpenChange,
     onOpenToggle,
     notifyOpenComplete(value) {
-      props.onOpenComplete?.(value)
+      // A drawer that is being removed altogether has not completed a close.
+      if (!isDisposed)
+        props.onOpenComplete?.(value)
     },
     setActiveSnapPoint,
     onPopupHeightChange(h) {
@@ -562,7 +576,10 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
       return
     if (rootContext.hasNestedDrawer.value && rootContext.popupHeight.value > 0)
       return
-    const h = entry.contentRect.height
+    // The border box, as the snap offsets translate the whole popup: the content
+    // box leaves a padded or bordered popup short of its snap points. Without
+    // layout (jsdom) the entry's size stands in.
+    const h = currentElement.value?.offsetHeight || entry.contentRect.height
     rootContext.onPopupHeightChange(h)
     currentElement.value?.style.setProperty(DRAWER_CSS_VARS.height, `${h}px`)
   })
@@ -639,7 +656,7 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
           restoreSwipe()
       })
     },
-    onRelease(velocity) {
+    onRelease(velocity, details) {
       // Write the `--drawer-swipe-strength` CSS var so consumer transitions can
       // scale their duration with release velocity. Ported from BaseUI
       // `DrawerViewport.tsx:resolveSwipeRelease`.
@@ -698,7 +715,21 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
       // For snap-point drawers, this callback fully decides the open/close +
       // transform outcome above, so tell finishSwipe to skip its own
       // dismiss-vs-cancel branch.
-      return hasSnapPoints.value
+      if (hasSnapPoints.value)
+        return true
+
+      // Without snap points the drawer closes on a fast swipe, or when released
+      // past half of its size; a shorter, slower drag settles back open.
+      const { direction } = details
+      if (!el || !direction)
+        return { dismiss: false }
+      const directionalDelta = getDisplacement(direction, details.deltaX, details.deltaY)
+      if (directionalDelta <= 0)
+        return { dismiss: false }
+      if (getDisplacement(direction, details.velocityX, details.velocityY) >= FAST_SWIPE_VELOCITY)
+        return { dismiss: true }
+      const size = (direction === 'left' || direction === 'right') ? el.offsetWidth : el.offsetHeight
+      return { dismiss: directionalDelta > Math.max(size * 0.5, MIN_SWIPE_THRESHOLD) }
     },
     onSwipingChange(swiping) {
       rootContext.onSwipingChange(swiping)
@@ -781,9 +812,11 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
   // parent "in reverse" while the child swipes away. Ported from BaseUI
   // `DrawerPopup.tsx` (useIsoLayoutEffect subscribing to nestedSwipeProgressStore).
   let unsubscribeNestedProgress: (() => void) | undefined
+  let registeredElement: HTMLElement | undefined
 
   onMounted(() => {
-    rootContext.contentElement.value = currentElement.value as HTMLElement | undefined
+    registeredElement = currentElement.value as HTMLElement | undefined
+    rootContext.contentElement.value = registeredElement
     rootContext.notifyParentHasNestedDrawer?.(true)
 
     // Initial frontmost height. Required on reopen, when the height is already
@@ -813,13 +846,17 @@ export function useDrawerContent(options: UseDrawerContentOptions): UseDrawerCon
   })
 
   onUnmounted(() => {
+    // Release the element so the root, which stays mounted, does not keep it after close.
+    if (rootContext.contentElement.value === registeredElement)
+      rootContext.contentElement.value = undefined
+    registeredElement = undefined
     rootContext.notifyParentHasNestedDrawer?.(false)
     releaseFrontmostHeight()
     unsubscribeNestedProgress?.()
   })
 
   // Dev warning for missing DrawerTitle
-  // eslint-disable-next-line node/prefer-global/process
+
   if (process.env.NODE_ENV !== 'production') {
     onMounted(() => {
       if (!getElementByIdFrom(currentElement.value, rootContext.titleId)) {

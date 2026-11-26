@@ -82,11 +82,17 @@ function syncSelection() {
  *
  * We use `VisuallyHidden` rather than `display: "none"` because Safari autofill
  * won't work otherwise.
+ *
+ * Use the form field name as a default label for checkers that also inspect
+ * aria-hidden controls (#3217).
  */
 </script>
 
 <template>
-  <VisuallyHidden as-child>
+  <VisuallyHidden
+    as-child
+    :aria-label="name || undefined"
+  >
     <select
       ref="selectElement"
       v-bind="selectProps"

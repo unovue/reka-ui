@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { PopoverHandle } from './handle'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { createContext, useId } from '@/shared'
+import { createRekaContext, useId } from '@/shared'
 
 /** Why the popover's `open` state changed (#2828); the `reason` of `ChangeEventDetails`. */
 export type PopoverOpenChangeReason
@@ -30,6 +30,12 @@ export interface PopoverRootProps<Payload = unknown> {
    * @defaultValue false
    */
   modal?: boolean
+  /**
+   * When set to `false`, the popover content will not be unmounted when closed, but instead hidden with CSS. <br>
+   * Useful when you want to keep the state of the content, or to improve performance by not remounting it on every open.
+   * @defaultValue true
+   */
+  unmountOnHide?: boolean
   /**
    * A handle from `createPopoverHandle()` that connects detached
    * `PopoverTrigger`s rendered anywhere in the app. The popover anchors to,
@@ -63,6 +69,7 @@ export interface PopoverRootContext {
   contentId: string
   open: ComputedRef<boolean>
   modal: Ref<boolean>
+  unmountOnHide: Ref<boolean>
   /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
   onOpenChange: (value: boolean, reason?: PopoverOpenChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:open`. */
@@ -73,18 +80,20 @@ export interface PopoverRootContext {
 }
 
 export const [injectPopoverRootContext, providePopoverRootContext]
-  = createContext<PopoverRootContext>('PopoverRoot')
+  = createRekaContext<PopoverRootContext>('PopoverRoot')
 </script>
 
 <script setup lang="ts" generic="Payload = unknown">
 import { PopperRoot } from '@/Popper'
 import { usePopupHandleAttachment } from '@/shared/popupHandle'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { usePopover } from './usePopover'
 
 const props = withDefaults(defineProps<PopoverRootProps<Payload>>(), {
   defaultOpen: false,
   open: undefined,
   modal: false,
+  unmountOnHide: true,
   triggerId: undefined,
   defaultTriggerId: undefined,
 })
@@ -111,6 +120,7 @@ const { open, onOpenChange, context, payload, activeTriggerId, handleStore } = u
   open: () => props.open,
   defaultOpen: props.defaultOpen,
   modal: () => props.modal,
+  unmountOnHide: () => props.unmountOnHide,
   baseId: useId(undefined, 'reka-popover'),
   emit,
   onOpenComplete: value => emit('update:openComplete', value),
@@ -120,12 +130,16 @@ const { open, onOpenChange, context, payload, activeTriggerId, handleStore } = u
 })
 
 providePopoverRootContext(context)
+useAgentRegistration('popover', context, props)
 // Client-only: the Root's state reaches a (possibly module-scope) handle only once mounted.
 usePopupHandleAttachment(handleStore)
 </script>
 
 <template>
-  <PopperRoot :reference="handleStore.handle.value ? handleStore.anchor.value : undefined">
+  <PopperRoot
+    scope="popover"
+    :reference="handleStore.handle.value ? handleStore.anchor.value : undefined"
+  >
     <slot
       :open="open"
       :close="() => onOpenChange(false)"

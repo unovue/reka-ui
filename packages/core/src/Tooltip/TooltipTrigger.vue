@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { DisclosureState } from '@/shared'
-import { useForwardElement } from '@/shared'
+import { useForwardElement, useRenderedContentId } from '@/shared'
 
 export type TooltipTriggerDataState = DisclosureState
 
@@ -11,7 +11,7 @@ export interface TooltipTriggerProps extends PopperAnchorProps {}
 import type { PopperAnchorProps } from '@/Popper'
 import { mergeProps, watch } from 'vue'
 import { usePopperAnchor } from '@/Popper/usePopperAnchor'
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { injectTooltipRootContext } from './TooltipRoot.vue'
 import { createTooltipTriggerSurface } from './useTooltip'
 
@@ -37,8 +37,10 @@ defineExpose(expose)
 // `$attrs` merge BEFORE the element's own props, so a consumer `@click`
 // still runs before the surface's `onClick`.
 const trigger = createTooltipTriggerSurface(rootContext)
+// `aria-describedby` references the content only while its element is rendered.
+const contentId = useRenderedContentId(rootContext)
 
-usePopperAnchor({ element: triggerElement, reference: () => props.reference })
+usePopperAnchor({ element: triggerElement, reference: () => props.reference, scope: 'tooltip' })
 
 watch(triggerElement, (el) => {
   rootContext.onTriggerChange(el)
@@ -47,9 +49,10 @@ watch(triggerElement, (el) => {
 
 <template>
   <component
-    :is="renderAs(as, asChild)"
+    :is="renderAsControl(as, asChild)"
     :ref="forwardRef"
     v-bind="mergeProps({ type: !asChild && as === 'button' ? 'button' : undefined }, $attrs, trigger.attrs.value)"
+    :aria-describedby="rootContext.open.value ? contentId : undefined"
   >
     <slot />
   </component>

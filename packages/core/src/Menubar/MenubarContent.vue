@@ -8,9 +8,9 @@ export interface MenubarContentProps extends MenuContentProps {}
 </script>
 
 <script setup lang="ts">
-import { MenuContent } from '@/Menu'
+import { injectMenuContext, MenuContent } from '@/Menu'
 import { omitEntryFocusListener } from '@/Menu/utils'
-import { useForwardElement, useForwardPropsEmits } from '@/shared'
+import { useContentId, useForwardElement, useForwardPropsEmits } from '@/shared'
 import { injectMenubarMenuContext } from './MenubarMenu.vue'
 import { injectMenubarRootContext } from './MenubarRoot.vue'
 import { createMenubarContentSurface } from './useMenubar'
@@ -24,11 +24,13 @@ const props = withDefaults(defineProps<MenubarContentProps>(), {
 })
 const emits = defineEmits<MenubarContentEmits>()
 const forwarded = useForwardPropsEmits(props, emits)
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
 const rootContext = injectMenubarRootContext()
 const menuContext = injectMenubarMenuContext()
+// A consumer `id` is the content's id, which the trigger's `aria-controls` references.
+useContentId(menuContext, currentElement)
 
 const { getItems } = useCollection({ key: 'Menubar' })
 
@@ -37,6 +39,7 @@ const { getItems } = useCollection({ key: 'Menubar' })
 // (no handlers) spread BEFORE the forwarded props and `$attrs`, so a consumer
 // `id` still wins; its handlers bind AFTER the forwarded emits, as before.
 const content = createMenubarContentSurface(rootContext, menuContext, { getItems })
+injectMenuContext().onContentHide(content.onContentHide)
 </script>
 
 <template>

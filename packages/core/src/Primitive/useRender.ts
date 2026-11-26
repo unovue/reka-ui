@@ -8,6 +8,7 @@ import { computed, getCurrentInstance, toValue } from 'vue'
 import { mergeStateAttrs } from '../shared/stateToDataAttrs'
 import { useForwardElement } from '../shared/useForwardElement'
 import { SELF_CLOSING_TAGS } from './Primitive'
+import { isUnsafeAs, warnUnsafeAs } from './safeAs'
 import { Slot } from './Slot'
 
 /** Alias of the shared `PartState`; kept so existing `useRender` imports keep working. */
@@ -60,8 +61,8 @@ export function useRender<S extends PrimitiveState = PrimitiveState>(
 
   // Dev-only: `#render` slot takes precedence over `asChild`/`as="template"`.
   // Warn when both are provided so the ignored `asChild` isn't a silent surprise.
-  // Uses process.env.NODE_ENV (not import.meta.env.DEV, which is neutered in dist).
-  // eslint-disable-next-line node/prefer-global/process
+  // Uses process.env.NODE_ENV (not Vite's dev flag, which is neutered in dist).
+
   if (process.env.NODE_ENV !== 'production')
     warnRenderSlotWithAsChild(resolveTag() === Slot)
 
@@ -104,7 +105,12 @@ export function useRender<S extends PrimitiveState = PrimitiveState>(
   }
 }
 
-/** `as` / `asChild` → the rendered target; the `Slot` component when renderless. @internal */
+/**
+ * `as` / `asChild` → the rendered target; the `Slot` component when renderless.
+ * An unsafe `as` (a tag that runs or loads code, a malformed tag name, or an
+ * object Vue would compile from a template) renders a `div` instead.
+ * @internal
+ */
 export function resolveRenderTag(
   as: AsTag | Component | undefined,
   asChild: boolean | undefined,
@@ -112,7 +118,14 @@ export function resolveRenderTag(
 ): AsTag | Component {
   if (asChild || as === Slot || as === 'template')
     return Slot
-  return as ?? defaultTagName
+  if (as == null)
+    return defaultTagName
+  if (isUnsafeAs(as)) {
+    if (process.env.NODE_ENV !== 'production')
+      warnUnsafeAs(as)
+    return 'div'
+  }
+  return as
 }
 
 /** 'area' | 'img' | 'input' render with no children. @internal */

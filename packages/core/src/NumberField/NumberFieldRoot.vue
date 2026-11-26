@@ -3,12 +3,14 @@ import type { HTMLAttributes, Ref } from 'vue'
 import type { NumberFieldChangeReason } from './useNumberField'
 import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
-import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, Translate } from '@/shared'
 import type { FormFieldProps } from '@/shared/types'
-import { createContext, useFormControl, useForwardElement, useLocale } from '@/shared'
+import { createRekaContext, useFormControl, useForwardElement, useLocale } from '@/shared'
 
 export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
+  /** The value of the number field when initially rendered. Use when you do not need to control the state of the number field. */
   defaultValue?: number
+  /** The controlled value of the number field. Can be bound as `v-model`. */
   modelValue?: number | null
   /** The smallest value allowed for the input. */
   min?: number
@@ -20,6 +22,8 @@ export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   stepSnapping?: boolean
   /** When `true`, a typed value is kept as-is even if invalid (out of `min`/`max` range or off the step grid); step interactions still clamp and snap. The field does not flag the value as invalid (no `aria-invalid`/`data-invalid`), so validating and surfacing the error is up to the consumer. */
   allowInvalid?: boolean
+  /** When `true`, committing text that cannot be parsed as a number (e.g. a lone `.` or `-`) keeps the current value and restores its formatted text, instead of clearing the value. Empty or whitespace-only input still clears the value. */
+  keepValueOnUnparsableInput?: boolean
   /** When `true`, the input will be focused when the value changes. */
   focusOnChange?: boolean
   /** Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user. */
@@ -80,13 +84,15 @@ export interface NumberFieldRootContext {
   isDecreaseDisabled: Ref<boolean>
   isIncreaseDisabled: Ref<boolean>
   id: Ref<string | undefined>
+  /** The nearest `ConfigProvider`'s translate function, for the built-in labels. */
+  t: Translate
 }
 
-export const [injectNumberFieldRootContext, provideNumberFieldRootContext] = createContext<NumberFieldRootContext>('NumberFieldRoot')
+export const [injectNumberFieldRootContext, provideNumberFieldRootContext] = createRekaContext<NumberFieldRootContext>('NumberFieldRoot')
 
 /** @internal The root's Field binding, for `NumberFieldInput`. Only provided inside a `FieldRoot`. */
 export const [injectNumberFieldFieldControl, provideNumberFieldFieldControl]
-  = createContext<FieldControlBinding | null>('NumberFieldRoot', 'NumberFieldFieldControl')
+  = createRekaContext<FieldControlBinding | null>('NumberFieldRoot', 'NumberFieldFieldControl')
 </script>
 
 <script setup lang="ts">
@@ -95,6 +101,7 @@ import { createPendingFieldInput } from '@/Field/pendingFieldInput'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { renderAs } from '@/Primitive/renderAs'
 import { formResetBinder } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { VisuallyHidden, VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useNumberField } from './useNumberField'
 
@@ -148,6 +155,7 @@ const { modelValue, textValue, readonly, disabled, root, context, resetValue } =
   step: () => props.step,
   stepSnapping: () => props.stepSnapping,
   allowInvalid: () => props.allowInvalid,
+  keepValueOnUnparsableInput: () => props.keepValueOnUnparsableInput,
   focusOnChange: () => props.focusOnChange,
   formatOptions: () => props.formatOptions,
   locale,
@@ -162,6 +170,7 @@ const { modelValue, textValue, readonly, disabled, root, context, resetValue } =
 })
 
 provideNumberFieldRootContext(context)
+useAgentRegistration('number-field', context, props, currentElement)
 
 // A native reset of the owning form puts the value back to `defaultValue`.
 function onFormReset(event: Event) { resetValue(event) }

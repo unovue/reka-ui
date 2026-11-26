@@ -1,6 +1,8 @@
 import type { ComputedRef } from 'vue'
 import type { FieldControlBinding } from '@/Field/useFieldBinding'
-import { clamp, createContext } from '@/shared'
+import type { Translate } from '@/shared/translations'
+import { clamp, createRekaContext } from '@/shared'
+import { defaultTranslate } from '@/shared/translations'
 
 export function getNextSortedValues(prevValues: number[] = [], nextValue: number, atIndex: number) {
   const nextValues = [...prevValues]
@@ -18,12 +20,12 @@ export function convertValueToPercentage(value: number, min: number, max: number
 /**
  * Returns a label for each thumb when there are two or more thumbs
  */
-export function getLabel(index: number, totalValues: number) {
+export function getLabel(index: number, totalValues: number, t: Translate = defaultTranslate) {
   if (totalValues > 2)
-    return `Value ${index + 1} of ${totalValues}`
+    return t('sliderValue', { index: index + 1, total: totalValues })
 
   else if (totalValues === 2)
-    return ['Minimum', 'Maximum'][index]
+    return [t('sliderMinimum'), t('sliderMaximum')][index]
 
   else
     return undefined
@@ -98,13 +100,11 @@ export function linearScale(input: readonly [number, number], output: readonly [
   }
 }
 
-export function getDecimalCount(value: number) {
-  return (String(value).split('.')[1] || '').length
-}
-
 export function roundValue(value: number, decimalCount: number) {
   const rounder = 10 ** decimalCount
-  return Math.round(value * rounder) / rounder
+  // A step as small as `Number.MIN_VALUE` needs more digits than a double can scale by.
+  const scaled = value * rounder
+  return Number.isFinite(scaled) ? Math.round(scaled) / rounder : value
 }
 
 export type Direction = 'ltr' | 'rtl'
@@ -175,7 +175,7 @@ export function getSliderThumbTransform(orientation: 'horizontal' | 'vertical', 
 }
 
 export const [injectSliderOrientationContext, provideSliderOrientationContext]
-  = createContext<SliderOrientation>('SliderRoot')
+  = createRekaContext<SliderOrientation>('SliderRoot', 'SliderOrientationContext')
 
 /**
  * A slider's participation in an ancestor `FieldRoot` (`null` outside one).
@@ -185,4 +185,4 @@ export const [injectSliderOrientationContext, provideSliderOrientationContext]
  * @internal
  */
 export const [injectSliderFieldContext, provideSliderFieldContext]
-  = createContext<FieldControlBinding | null>('SliderRoot', 'SliderFieldContext')
+  = createRekaContext<FieldControlBinding | null>('SliderRoot', 'SliderFieldContext')

@@ -4,14 +4,14 @@
 <PropsTable :data="[
   {
     'name': 'defaultOpen',
-    'description': '',
+    'description': '<p>The open state of the drawer when it is initially rendered. Use when you do not need to control its open state.</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'false'
   },
   {
     'name': 'defaultSnapPoint',
-    'description': '',
+    'description': '<p>The snap point that is active when the drawer is initially rendered. Use when you do not need to control the active snap point.</p>\n',
     'type': 'null | string | number',
     'required': false
   },
@@ -24,13 +24,13 @@
   },
   {
     'name': 'open',
-    'description': '<p>v-model:open</p>\n',
+    'description': '<p>The controlled open state of the drawer. Can be bound as <code>v-model:open</code>.</p>\n',
     'type': 'boolean',
     'required': false
   },
   {
     'name': 'snapPoint',
-    'description': '<p>v-model:snapPoint</p>\n',
+    'description': '<p>The controlled active snap point. Can be bound as <code>v-model:snapPoint</code>.</p>\n',
     'type': 'null | string | number',
     'required': false
   },
@@ -50,7 +50,7 @@
   {
     'name': 'swipeDirection',
     'description': '<p>Direction to swipe to dismiss.</p>\n',
-    'type': '\'right\' | \'left\' | \'down\' | \'up\'',
+    'type': '\'left\' | \'right\' | \'down\' | \'up\'',
     'required': false,
     'default': '\'down\''
   }
@@ -74,7 +74,7 @@
   },
   {
     'name': 'update:openComplete',
-    'description': '<p>Called once the popup\'s open (<code>true</code>) or close (<code>false</code>) transitions and animations have finished; on close, right\nbefore the popup unmounts. Infinite and cancelled animations are not waited for, and with none running it fires\nwithout waiting. A newer open change supersedes a pending one.</p>\n',
+    'description': '<p>Called once the popup\'s open (<code>true</code>) or close (<code>false</code>) transitions and animations have finished; on close, right\nbefore the popup unmounts, or once it is removed before they finish. Infinite and cancelled animations are not waited for, and with none running it fires\nwithout waiting. A newer open change supersedes a pending one.</p>\n',
     'type': '[value: boolean]'
   },
   {
@@ -87,12 +87,12 @@
 <SlotsTable :data="[
   {
     'name': 'open',
-    'description': '',
+    'description': '<p>Current open state</p>\n',
     'type': 'boolean'
   },
   {
     'name': 'close',
-    'description': '',
+    'description': '<p>Close the drawer</p>\n',
     'type': '(): void'
   }
 ]" />
@@ -104,14 +104,14 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
-| `defaultOpen` |  | `boolean` | No | `false` |
-| `defaultSnapPoint` |  | `null \| string \| number` | No | - |
+| `defaultOpen` | The open state of the drawer when it is initially rendered. Use when you do not need to control its open state. | `boolean` | No | `false` |
+| `defaultSnapPoint` | The snap point that is active when the drawer is initially rendered. Use when you do not need to control the active snap point. | `null \| string \| number` | No | - |
 | `modal` | Modality of the drawer.  `true` (default): modal with focus trap, scroll lock, and outside-press dismiss `'trap-focus'`: traps focus but allows outside pointer events (non-modal side panels) `false`: non-modal | `false \| true \| "trap-focus"` | No | `true` |
-| `open` | v-model:open | `boolean` | No | - |
-| `snapPoint` | v-model:snapPoint | `null \| string \| number` | No | - |
+| `open` | The controlled open state of the drawer. Can be bound as `v-model:open`. | `boolean` | No | - |
+| `snapPoint` | The controlled active snap point. Can be bound as `v-model:snapPoint`. | `null \| string \| number` | No | - |
 | `snapPoints` | Preset snap positions (fractions 0-1, pixels >1, or '148px'/'30rem' strings) | `DrawerSnapPoint[]` | No | - |
 | `snapToSequentialPoints` | When true, snaps to the next sequential snap point (one step at a time). When false, snaps to the nearest snap point by distance. | `boolean` | No | `false` |
-| `swipeDirection` | Direction to swipe to dismiss. | `"right" \| "left" \| "down" \| "up"` | No | `"down"` |
+| `swipeDirection` | Direction to swipe to dismiss. | `"left" \| "right" \| "down" \| "up"` | No | `"down"` |
 
 **Events**
 
@@ -120,14 +120,14 @@
 | `beforeUpdate:open` | Called before the open state changes; `details.cancel()` keeps the current state. | `[value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason, Event>]` |
 | `beforeUpdate:snapPoint` | Called before the active snap point changes; `details.cancel()` keeps the current snap point. Cancelling the `null` a swipe past the last snap point requests keeps the drawer open. | `[value: DrawerSnapPoint \| null, details: ChangeEventDetails<DrawerOpenChangeReason, Event>]` |
 | `update:open` | Called when the open state changed. | `[value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason, Event>]` |
-| `update:openComplete` | Called once the popup's open (`true`) or close (`false`) transitions and animations have finished; on close, right before the popup unmounts. Infinite and cancelled animations are not waited for, and with none running it fires without waiting. A newer open change supersedes a pending one. | `[value: boolean]` |
+| `update:openComplete` | Called once the popup's open (`true`) or close (`false`) transitions and animations have finished; on close, right before the popup unmounts, or once it is removed before they finish. Infinite and cancelled animations are not waited for, and with none running it fires without waiting. A newer open change supersedes a pending one. | `[value: boolean]` |
 | `update:snapPoint` | Called when the active snap point changed. | `[value: DrawerSnapPoint \| null, details: ChangeEventDetails<DrawerOpenChangeReason, Event>]` |
 
 **Slots**
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `open` |  | `boolean` |
-| `close` |  | `(): void` |
+| `open` | Current open state | `boolean` |
+| `close` | Close the drawer | `(): void` |
 
 </llm-only>

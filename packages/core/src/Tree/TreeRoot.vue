@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
 import type { Direction } from '@/shared/types'
-import { createContext, useDirection, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useForwardElement } from '@/shared'
 
 export interface TreeRootProps<T = Record<string, any>, U extends Record<string, any> = Record<string, any>, M extends boolean = false> extends PrimitiveProps {
   /** The controlled value of the tree. Can be binded with `v-model`. */
@@ -95,7 +95,7 @@ export type FlattenedItem<T> = {
   }
 }
 
-export const [injectTreeRootContext, provideTreeRootContext] = createContext<TreeRootContext<any>>('TreeRoot')
+export const [injectTreeRootContext, provideTreeRootContext] = createRekaContext<TreeRootContext<any>>('TreeRoot')
 </script>
 
 <script setup lang="ts" generic="T extends Record<string, any>, U extends Record<string, any>, M extends boolean = false">
@@ -107,6 +107,7 @@ import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { mergeProps } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusGroup } from '@/RovingFocus/useRovingFocusGroup'
+import { MAP_KEY_TO_FOCUS_INTENT } from '@/RovingFocus/utils'
 import { useTree } from './useTree'
 
 defineOptions({
@@ -160,19 +161,38 @@ provideTreeRootContext(context)
 
 const isVirtual = context.isVirtual
 const roving = useRovingFocusGroup({
+  // Tree items are never active: the first focusable one is the tab stop before mount.
+  noActiveItem: () => true,
   consumerAttrs: true,
   element: currentElement,
   orientation: () => 'vertical',
   dir: () => dir.value,
   loop: () => props.loop && !isVirtual.value,
 })
+// Only a window of a virtual tree is rendered. `TreeVirtualizer` moves focus to the
+// first or last item of the whole list, so the group must not also focus the edge of
+// the window: that focus scrolls the window back and the virtualizer focuses its new edge.
+function rovingAttrs() {
+  const attrs = roving.attrs()
+  if (!isVirtual.value)
+    return attrs
+  const onKeydown = attrs.onKeydown as (event: KeyboardEvent) => void
+  return {
+    ...attrs,
+    onKeydown: (event: KeyboardEvent) => {
+      const intent = MAP_KEY_TO_FOCUS_INTENT[event.key]
+      if (intent !== 'first' && intent !== 'last')
+        onKeydown(event)
+    },
+  }
+}
 </script>
 
 <template>
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps(roving.consumerAttrs($attrs), roving.attrs(), root.attrs.value)"
+    v-bind="mergeProps(roving.consumerAttrs($attrs), rovingAttrs(), root.attrs.value)"
   >
     <slot
       :flatten-items="flattenItems"

@@ -3,7 +3,8 @@ name: Typo check
 on:
   push:
     branches:
-      - main
+      - v2
+      - v3
 
   pull_request:
     types: [opened, reopened, synchronize]
@@ -18,4 +19,4 @@ jobs:
 
       - name: Writes changes in the local checkout
         # A fixed release, so a new typos dictionary cannot fail unrelated PRs.
-        uses: crate-ci/typos@v1.52.1
+        uses: crate-ci/typos@v1.52.2

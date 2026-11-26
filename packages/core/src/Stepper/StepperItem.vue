@@ -3,11 +3,11 @@ import type { Ref } from 'vue'
 
 import type { PrimitiveProps } from '@/Primitive'
 import { Primitive } from '@/Primitive'
-import { createContext, useForwardElement, useId } from '@/shared'
+import { createRekaContext, useForwardElement, useId } from '@/shared'
 import { injectStepperRootContext } from './StepperRoot.vue'
 import { getStepperItemContext, getStepperItemSurface } from './useStepper'
 
-export const [injectStepperItemContext, provideStepperItemContext] = createContext<StepperItemContext>('StepperItem')
+export const [injectStepperItemContext, provideStepperItemContext] = createRekaContext<StepperItemContext>('StepperItem')
 
 /**
  * Stepper is one of the multi-value `data-state` machines grandfathered by
@@ -24,8 +24,15 @@ export interface StepperItemContext {
   descriptionId: string
   step: Readonly<Ref<number>>
   state: Readonly<Ref<StepperState>>
+  /** Whether this is the current step (`step` equals the root value), whatever its `completed` state. */
+  isCurrent: Readonly<Ref<boolean>>
   disabled: Readonly<Ref<boolean>>
   isFocusable: Readonly<Ref<boolean>>
+  /**
+   * Which of the item's parts are rendered, as `STEPPER_PARTS` flags: its `StepperTitle`, its
+   * `StepperDescription`, and whether its `StepperTrigger` has mounted. One ref for all three.
+   */
+  parts: Ref<number>
 }
 
 export interface StepperItemProps extends PrimitiveProps {

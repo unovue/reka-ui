@@ -5,7 +5,7 @@ import type { RadioGroupRootProps } from '@/RadioGroup'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { reactiveOmit } from '@vueuse/core'
 import { RadioGroupRoot } from '@/RadioGroup'
-import { createContext, useForwardElement } from '@/shared'
+import { createRekaContext, useForwardElement } from '@/shared'
 
 export interface RatingRootContext {
   /** Read-only; write through `changeModelValue`. */
@@ -43,7 +43,7 @@ export type RatingRootEmits = {
 }
 
 export const [injectRatingRootContext, provideRatingRootContext]
-  = createContext<RatingRootContext>('RatingRoot')
+  = createRekaContext<RatingRootContext>('RatingRoot')
 </script>
 
 <script setup lang="ts">

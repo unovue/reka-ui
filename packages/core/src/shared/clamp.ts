@@ -23,16 +23,32 @@ export function clamp(value: number, min: number = Number.NEGATIVE_INFINITY, max
  * rounded to the nearest half.
  * @returns the `roundedValue` after rounding it to the precision specified by the `step`.
  */
-export function roundToStepPrecision(value: number, step: number) {
+export function roundToStepPrecision(value: number, step: number, min?: number) {
   let roundedValue = value
   const stepString = step.toString()
   const pointIndex = stepString.indexOf('.')
-  const precision = pointIndex >= 0 ? stepString.length - pointIndex : 0
+  let precision = pointIndex >= 0 ? stepString.length - pointIndex : 0
+  // Steps are counted from `min`, so a grid value carries the decimals of `min` as well as of `step`
+  // (min 0.025 with step 0.1 gives 0.125).
+  if (min !== undefined && !Number.isNaN(min))
+    precision = Math.max(precision, getDecimalCount(min))
   if (precision > 0) {
     const pow = 10 ** precision
-    roundedValue = Math.round(roundedValue * pow) / pow
+    const scaled = roundedValue * pow
+    if (Number.isFinite(scaled))
+      roundedValue = Math.round(scaled) / pow
   }
   return roundedValue
+}
+
+/**
+ * Returns the number of decimal places in `value`, including values written in exponent notation
+ * (`1.5e-7` has 8).
+ */
+export function getDecimalCount(value: number) {
+  const [coefficient, exponent = '0'] = String(value).split('e')
+  const fractionDigits = coefficient.split('.')[1]?.length ?? 0
+  return Math.max(0, fractionDigits - Number(exponent))
 }
 
 /**
@@ -55,7 +71,7 @@ export function snapValueToStep(value: number, min: number | undefined, max: num
   const remainder = ((value - (Number.isNaN(min) ? 0 : min)) % step)
   let snappedValue = roundToStepPrecision(Math.abs(remainder) * 2 >= step
     ? value + Math.sign(remainder) * (step - Math.abs(remainder))
-    : value - remainder, step)
+    : value - remainder, step, min)
 
   if (!Number.isNaN(min)) {
     if (snappedValue < min)
@@ -68,7 +84,7 @@ export function snapValueToStep(value: number, min: number | undefined, max: num
   }
 
   // correct floating point behavior by rounding to step precision
-  snappedValue = roundToStepPrecision(snappedValue, step)
+  snappedValue = roundToStepPrecision(snappedValue, step, min)
 
   return snappedValue
 }

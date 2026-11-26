@@ -12,8 +12,10 @@ export interface ComboboxContentProps extends ComboboxContentImplProps {
 </script>
 
 <script setup lang="ts">
+import { computed, useAttrs } from 'vue'
 import { Presence } from '@/Presence'
 import { useForwardElement, useForwardPropsEmits } from '@/shared'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { isPortalOpening } from '@/Teleport/portalGate'
 import ComboboxContentImpl from './ComboboxContentImpl.vue'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
@@ -25,6 +27,13 @@ const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
 const rootContext = injectComboboxRootContext()
+rootContext.watchHighlight?.()
+useAgentItem(rootContext, useAttrs(), undefined, 'content')
+
+// A closing content still mounted for its exit animation hands Escape, outside interaction
+// and the accessibility tree back to the layer below at once. A force-mounted content keeps
+// its layer while closed, as before.
+const layerPresent = computed(() => rootContext.open.value || !!props.forceMount)
 </script>
 
 <template>
@@ -40,6 +49,7 @@ const rootContext = injectComboboxRootContext()
       v-bind="{ ...forwarded, ...$attrs }"
       :ref="forwardRef"
       :present="forceMount || rootContext.unmountOnHide.value || present"
+      :layer-present="(rootContext.unmountOnHide.value || present) && layerPresent"
     >
       <slot />
     </ComboboxContentImpl>

@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { Sizes } from './types'
-import { createContext, useForwardElement } from '@/shared'
+import { createRekaContext, useForwardElement } from '@/shared'
 
 export interface ScrollAreaScrollbarVisibleContext {
   sizes: Ref<Sizes>
@@ -19,7 +19,7 @@ export interface ScrollAreaScrollbarVisibleContext {
 }
 
 export const [injectScrollAreaScrollbarVisibleContext, provideScrollAreaScrollbarVisibleContext]
-  = createContext<ScrollAreaScrollbarVisibleContext>('ScrollAreaScrollbarVisible')
+  = createRekaContext<ScrollAreaScrollbarVisibleContext>('ScrollAreaScrollbarVisible')
 </script>
 
 <script setup lang="ts">

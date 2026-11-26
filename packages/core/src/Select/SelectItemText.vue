@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardElement } from '@/shared'
+import { claimReferencedId, useForwardElement } from '@/shared'
 import { injectSelectRootContext } from './SelectRoot.vue'
 
 export interface SelectItemTextProps extends PrimitiveProps {}
@@ -24,6 +24,8 @@ const props = withDefaults(defineProps<SelectItemTextProps>(), {
 const rootContext = injectSelectRootContext()
 const contentContext = injectSelectContentContext()
 const itemContext = injectSelectItemContext()
+// A consumer `id` (or one on the asChild child) is the id the item's `aria-labelledby` references.
+claimReferencedId(itemContext, 'textId')
 
 const { forwardRef, currentElement: itemTextElement, expose } = useForwardElement()
 defineExpose(expose)

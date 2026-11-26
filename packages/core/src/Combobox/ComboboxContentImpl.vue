@@ -4,7 +4,7 @@ import type { ComboboxInteractionType } from './useCombobox'
 import type { DismissableLayerDismissDetails, DismissableLayerEmits, DismissableLayerProps, FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { PopperContentProps } from '@/Popper'
 
-import { createContext, getActiveElement, getOwnerDocument, isHTMLElement, useFocusGuards, useForwardElement, useForwardProps, useHideOthers } from '@/shared'
+import { createRekaContext, getActiveElement, getOwnerDocument, isHTMLElement, useContentId, useContentMounted, useFocusGuards, useForwardElement, useForwardProps, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 
 export type ComboboxContentImplEmits = DismissableLayerEmits
@@ -59,7 +59,7 @@ export type ComboboxFocusTarget
     | ((interactionType: ComboboxInteractionType) => boolean | HTMLElement | null | undefined | void)
 
 export const [injectComboboxContentContext, provideComboboxContentContext]
-  = createContext<{
+  = createRekaContext<{
     position: Ref<'inline' | 'popper'>
   }>('ComboboxContent')
 </script>
@@ -84,9 +84,17 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<ComboboxContentImplProps & { present?: boolean }>(), {
+const props = withDefaults(defineProps<ComboboxContentImplProps & {
+  present?: boolean
+  /**
+   * Internal: whether the dismissal layer and the modal hiding of the page apply. A content
+   * that is only still mounted for its exit animation hands them back at once.
+   */
+  layerPresent?: boolean
+}>(), {
   position: 'inline',
   present: true,
+  layerPresent: undefined,
   // Not cast to `false` when absent: `undefined` picks the default.
   initialFocus: undefined,
   finalFocus: undefined,
@@ -122,12 +130,16 @@ defineExpose(expose)
 const scrollLocked = useBodyScrollLock(props.present && props.bodyLock)
 watch([() => props.present, () => props.bodyLock], ([present, bodyLock]) => scrollLocked.value = present && bodyLock)
 useFocusGuards(currentElement)
-const ariaHiddenTarget = computed(() => props.present ? rootContext.parentElement.value : undefined)
+// A consumer `id` is the content's id, which the input's and trigger's `aria-controls`
+// reference while the element is rendered.
+useContentId(rootContext, currentElement)
+useContentMounted(rootContext, currentElement)
+const ariaHiddenTarget = computed(() => (props.layerPresent ?? props.present) ? rootContext.parentElement.value : undefined)
 useHideOthers(ariaHiddenTarget)
 
 const pickedProps = computed(() => {
   if (props.position === 'popper') {
-    const { present: _, initialFocus: _initialFocus, finalFocus: _finalFocus, ...forwardedProps } = props
+    const { present: _, layerPresent: _layerPresent, initialFocus: _initialFocus, finalFocus: _finalFocus, ...forwardedProps } = props
     return forwardedProps
   }
   // Inline, the content renders its own element (`as` / `asChild`).
@@ -182,6 +194,12 @@ function focusOnOpen() {
   const content = currentElement.value as HTMLElement | undefined
   const input = rootContext.inputElement.value
   isInputInside = contains(input)
+  // `ComboboxInput`'s `focusOnOpen: false` leaves focus where it is (read after the
+  // tick: the input may get its new value in this same update).
+  if (props.initialFocus === undefined && !rootContext.focusInputOnOpen.value) {
+    rootContext.interactionType.value = ''
+    return
+  }
   const { value, interactionType } = resolveFocusTarget(props.initialFocus, isInputInside)
   if (!content || !value || contains(getActiveElement(content)))
     return
@@ -290,7 +308,7 @@ const focusScopeWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeProps
 const scope = useFocusScope(focusScopeOptions(currentElement, () => focusScopeWrapper.value))
 const layerWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeProps(scope.attrs(), focusScopeWrapper.value.rest), {
   asChild: true,
-  present: props.present,
+  present: props.layerPresent ?? props.present,
   disableOutsidePointerEvents: props.disableOutsidePointerEvents,
   backdropCutout: rootContext.parentElement.value,
   onDismiss: ({ reason, event }: DismissableLayerDismissDetails) => rootContext.onOpenChange(false, reason, event),
@@ -317,6 +335,7 @@ const layer = useDismissableLayer(dismissableLayerOptions(currentElement, () => 
     :is="position === 'popper' ? PopperContent : renderAs(as, asChild)"
     v-bind="mergeProps(mergeProps(layer.attrs(), layerWrapper.rest), { ...$attrs, ...forwardedProps, ...surface.attrs.value })"
     :ref="forwardRef"
+    :scope="position === 'popper' ? 'combobox' : undefined"
     :memo-dependencies="popperMemoDependencies"
     :style="{
       // flex layout so we can place the scroll buttons properly

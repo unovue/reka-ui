@@ -1,0 +1,1534 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`tabs vs v2 > interaction automatic unmountOnHide=false forceMount=false 1`] = `
+[
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked::cb",
+      "unchecked::cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "unchecked::ca",
+      "checked:shown:cb",
+      "unchecked::cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:checked:true:0",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "b",
+  {
+    "c": [
+      "unchecked::ca",
+      "unchecked::cb",
+      "checked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:unchecked:false:-1",
+      "c:checked:true:0",
+    ],
+  },
+  "c",
+  "c",
+  {
+    "c": [
+      "unchecked::ca",
+      "unchecked::cb",
+      "checked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:unchecked:false:-1",
+      "c:checked:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "unchecked::ca",
+      "unchecked::cb",
+      "checked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:unchecked:false:-1",
+      "c:checked:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked::cb",
+      "unchecked::cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:0",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked::cb",
+      "unchecked::cc",
+    ],
+    "t": [
+      "a:checked:true:0",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "unchecked::ca",
+      "checked:shown:cb",
+      "unchecked::cc",
+    ],
+    "t": [
+      "a:unchecked:false:0",
+      "b:checked:true:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "b",
+]
+`;
+
+exports[`tabs vs v2 > interaction automatic unmountOnHide=false forceMount=true 1`] = `
+[
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "unchecked:shown:ca",
+      "checked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:checked:true:0",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "b",
+  {
+    "c": [
+      "unchecked:shown:ca",
+      "unchecked:shown:cb",
+      "checked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:unchecked:false:-1",
+      "c:checked:true:0",
+    ],
+  },
+  "c",
+  "c",
+  {
+    "c": [
+      "unchecked:shown:ca",
+      "unchecked:shown:cb",
+      "checked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:unchecked:false:-1",
+      "c:checked:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "unchecked:shown:ca",
+      "unchecked:shown:cb",
+      "checked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:unchecked:false:-1",
+      "c:checked:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:0",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:checked:true:0",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "unchecked:shown:ca",
+      "checked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:0",
+      "b:checked:true:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "b",
+]
+`;
+
+exports[`tabs vs v2 > interaction automatic unmountOnHide=true forceMount=false 1`] = `
+[
+  {
+    "c": [
+      "checked:shown:ca",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:cb",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:checked:true:0",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "b",
+  {
+    "c": [
+      "checked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:unchecked:false:-1",
+      "c:checked:true:0",
+    ],
+  },
+  "c",
+  "c",
+  {
+    "c": [
+      "checked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:unchecked:false:-1",
+      "c:checked:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "checked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:unchecked:false:-1",
+      "c:checked:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "checked:shown:ca",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:0",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:ca",
+    ],
+    "t": [
+      "a:checked:true:0",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:cb",
+    ],
+    "t": [
+      "a:unchecked:false:0",
+      "b:checked:true:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "b",
+]
+`;
+
+exports[`tabs vs v2 > interaction automatic unmountOnHide=true forceMount=true 1`] = `
+[
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "unchecked:shown:ca",
+      "checked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:checked:true:0",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "b",
+  {
+    "c": [
+      "unchecked:shown:ca",
+      "unchecked:shown:cb",
+      "checked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:unchecked:false:-1",
+      "c:checked:true:0",
+    ],
+  },
+  "c",
+  "c",
+  {
+    "c": [
+      "unchecked:shown:ca",
+      "unchecked:shown:cb",
+      "checked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:unchecked:false:-1",
+      "c:checked:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "unchecked:shown:ca",
+      "unchecked:shown:cb",
+      "checked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:unchecked:false:-1",
+      "c:checked:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:0",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:checked:true:0",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "unchecked:shown:ca",
+      "checked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:0",
+      "b:checked:true:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "b",
+]
+`;
+
+exports[`tabs vs v2 > interaction manual unmountOnHide=false forceMount=false 1`] = `
+[
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked::cb",
+      "unchecked::cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked::cb",
+      "unchecked::cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:0",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked::cb",
+      "unchecked::cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:0",
+    ],
+  },
+  "a",
+  "c",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked::cb",
+      "unchecked::cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:0",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "unchecked::ca",
+      "unchecked::cb",
+      "checked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:unchecked:false:-1",
+      "c:checked:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked::cb",
+      "unchecked::cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:0",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked::cb",
+      "unchecked::cc",
+    ],
+    "t": [
+      "a:checked:true:0",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "unchecked::ca",
+      "checked:shown:cb",
+      "unchecked::cc",
+    ],
+    "t": [
+      "a:unchecked:false:0",
+      "b:checked:true:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "b",
+]
+`;
+
+exports[`tabs vs v2 > interaction manual unmountOnHide=false forceMount=true 1`] = `
+[
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:0",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:0",
+    ],
+  },
+  "a",
+  "c",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:0",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "unchecked:shown:ca",
+      "unchecked:shown:cb",
+      "checked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:unchecked:false:-1",
+      "c:checked:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:0",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:checked:true:0",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "unchecked:shown:ca",
+      "checked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:0",
+      "b:checked:true:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "b",
+]
+`;
+
+exports[`tabs vs v2 > interaction manual unmountOnHide=true forceMount=false 1`] = `
+[
+  {
+    "c": [
+      "checked:shown:ca",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:ca",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:0",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:ca",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:0",
+    ],
+  },
+  "a",
+  "c",
+  {
+    "c": [
+      "checked:shown:ca",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:0",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:unchecked:false:-1",
+      "c:checked:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "checked:shown:ca",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:0",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:ca",
+    ],
+    "t": [
+      "a:checked:true:0",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:cb",
+    ],
+    "t": [
+      "a:unchecked:false:0",
+      "b:checked:true:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "b",
+]
+`;
+
+exports[`tabs vs v2 > interaction manual unmountOnHide=true forceMount=true 1`] = `
+[
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:0",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:0",
+    ],
+  },
+  "a",
+  "c",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:0",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "unchecked:shown:ca",
+      "unchecked:shown:cb",
+      "checked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:unchecked:false:-1",
+      "c:checked:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:checked:true:-1",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:0",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "checked:shown:ca",
+      "unchecked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:checked:true:0",
+      "b:unchecked:false:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "unchecked:shown:ca",
+      "checked:shown:cb",
+      "unchecked:shown:cc",
+    ],
+    "t": [
+      "a:unchecked:false:0",
+      "b:checked:true:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  "b",
+]
+`;
+
+exports[`tabs vs v2 > value changes on mounted parts, add/remove, unmount selected 1`] = `
+[
+  {
+    "c": [
+      "checked:shown:cb",
+    ],
+    "t": [
+      "a:unchecked:false:-1",
+      "b:checked:true:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  {
+    "c": [
+      "checked:shown:cb",
+    ],
+    "t": [
+      "b:checked:true:-1",
+      "x:unchecked:false:-1",
+      "c:unchecked:false:-1",
+    ],
+  },
+  {
+    "c": [
+      "checked:shown:cb",
+    ],
+    "t": [
+      "x:unchecked:false:-1",
+      "y:unchecked:false:-1",
+      "b:checked:true:-1",
+    ],
+  },
+  {
+    "c": [],
+    "t": [
+      "x:unchecked:false:-1",
+      "y:unchecked:false:-1",
+    ],
+  },
+  {
+    "c": [
+      "checked:shown:cb",
+      "checked:shown:cb",
+    ],
+    "t": [
+      "x:unchecked:false:-1",
+      "y:unchecked:false:-1",
+      "b:checked:true:-1",
+      "b:checked:true:-1",
+    ],
+  },
+  {
+    "c": [
+      "checked:shown:cy",
+    ],
+    "t": [
+      "x:unchecked:false:-1",
+      "y:checked:true:-1",
+      "b:unchecked:false:-1",
+      "b:unchecked:false:-1",
+    ],
+  },
+  {
+    "c": [
+      "checked:shown:cy",
+    ],
+    "t": [
+      "x:unchecked:false:-1",
+      "b:unchecked:false:-1",
+      "b:unchecked:false:-1",
+      "y:checked:true:-1",
+    ],
+  },
+  {
+    "c": [],
+    "t": [],
+  },
+  {
+    "c": [
+      "checked:shown:cq",
+    ],
+    "t": [
+      "p:unchecked:false:-1",
+      "q:checked:true:-1",
+    ],
+  },
+]
+`;
+
+exports[`tabs vs v2 > value shapes 1`] = `
+[
+  [
+    "undefined",
+    {
+      "c": [],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "a",
+    {
+      "c": [
+        "checked:shown:ca",
+        "checked:shown:ca",
+      ],
+      "t": [
+        "a:checked:true:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:checked:true:-1",
+      ],
+    },
+  ],
+  [
+    "b",
+    {
+      "c": [
+        "checked:shown:cb",
+      ],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:checked:true:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "1",
+    {
+      "c": [
+        "checked:shown:c1",
+      ],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:checked:true:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "1",
+    {
+      "c": [
+        "checked:shown:c1",
+      ],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:checked:true:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "0",
+    {
+      "c": [
+        "checked:shown:c0",
+      ],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:checked:true:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "",
+    {
+      "c": [
+        "checked:shown:c",
+      ],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":checked:true:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "null",
+    {
+      "c": [],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "NaN",
+    {
+      "c": [],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "2",
+    {
+      "c": [
+        "checked:shown:c2",
+      ],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:checked:true:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "zzz",
+    {
+      "c": [],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "undefined",
+    {
+      "c": [],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "a",
+    {
+      "c": [
+        "checked:shown:ca",
+        "checked:shown:ca",
+      ],
+      "t": [
+        "a:checked:true:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:checked:true:-1",
+      ],
+    },
+  ],
+  [
+    "live a",
+    {
+      "c": [
+        "checked:shown:ca",
+        "checked:shown:ca",
+      ],
+      "t": [
+        "a:checked:true:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:checked:true:-1",
+      ],
+    },
+  ],
+  [
+    "live b",
+    {
+      "c": [
+        "checked:shown:cb",
+      ],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:checked:true:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "live 1",
+    {
+      "c": [
+        "checked:shown:c1",
+      ],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:checked:true:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "live 1",
+    {
+      "c": [
+        "checked:shown:c1",
+      ],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:checked:true:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "live 0",
+    {
+      "c": [
+        "checked:shown:c0",
+      ],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:checked:true:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "live ",
+    {
+      "c": [
+        "checked:shown:c",
+      ],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":checked:true:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "live null",
+    {
+      "c": [],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "live NaN",
+    {
+      "c": [],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "live 1",
+    {
+      "c": [
+        "checked:shown:c1",
+      ],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:checked:true:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "live NaN",
+    {
+      "c": [],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "live 2",
+    {
+      "c": [
+        "checked:shown:c2",
+      ],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:checked:true:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "live zzz",
+    {
+      "c": [],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "live undefined",
+    {
+      "c": [],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "live a",
+    {
+      "c": [
+        "checked:shown:ca",
+        "checked:shown:ca",
+      ],
+      "t": [
+        "a:checked:true:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:checked:true:-1",
+      ],
+    },
+  ],
+  [
+    "live null",
+    {
+      "c": [],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+  [
+    "live b",
+    {
+      "c": [
+        "checked:shown:cb",
+      ],
+      "t": [
+        "a:unchecked:false:-1",
+        "b:checked:true:-1",
+        "1:unchecked:false:-1",
+        "1:unchecked:false:-1",
+        "0:unchecked:false:-1",
+        ":unchecked:false:-1",
+        "null:unchecked:false:-1",
+        "undefined:unchecked:false:-1",
+        "NaN:unchecked:false:-1",
+        "2:unchecked:false:-1",
+        "a:unchecked:false:-1",
+      ],
+    },
+  ],
+]
+`;

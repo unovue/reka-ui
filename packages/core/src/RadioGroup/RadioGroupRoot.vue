@@ -4,7 +4,7 @@ import type { RadioGroupChangeReason } from './useRadioGroup'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
-import { createContext, useDirection, useFormControl, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useFormControl, useForwardElement } from '@/shared'
 
 export interface RadioGroupRootProps extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the radio item to check. Can be binded as `v-model`. */
@@ -43,7 +43,7 @@ export interface RadioGroupRootContext {
 }
 
 export const [injectRadioGroupRootContext, provideRadioGroupRootContext]
-  = createContext<RadioGroupRootContext>('RadioGroupRoot')
+  = createRekaContext<RadioGroupRootContext>('RadioGroupRoot')
 </script>
 
 <script setup lang="ts">
@@ -53,6 +53,7 @@ import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusGroup } from '@/RovingFocus/useRovingFocusGroup'
 import { formResetBinder } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useRadioGroup } from './useRadioGroup'
@@ -129,6 +130,7 @@ const { modelValue, disabled, root, context, isControlled } = useRadioGroup({
 })
 
 provideRadioGroupRootContext(context)
+useAgentRegistration('radio-group', context, props, currentElement)
 
 // A native reset of the owning form puts the value back to `defaultValue`.
 function onFormReset(event: Event) { resetControllableState(isControlled, event) }
@@ -146,6 +148,8 @@ const roving = useRovingFocusGroup({
   orientation: () => props.orientation,
   dir: () => dir.value,
   loop: () => props.loop,
+  // A group with no value has no checked item: the first focusable one is the tab stop before mount.
+  noActiveItem: () => modelValue.value == null,
 })
 
 // The window arrow-key flag the items read on focus (one shared pair of

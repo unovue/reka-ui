@@ -4,7 +4,7 @@ import type { TagGroupChangeReason } from './useTagGroup'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, Direction } from '@/shared/types'
-import { createContext, useDirection, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useForwardElement } from '@/shared'
 
 export type TagGroupSelectionMode = 'none' | 'single' | 'multiple'
 
@@ -74,7 +74,7 @@ export interface TagGroupRootContext<T = AcceptableValue> {
 }
 
 export const [injectTagGroupRootContext, provideTagGroupRootContext]
-  = createContext<TagGroupRootContext>('TagGroupRoot')
+  = createRekaContext<TagGroupRootContext>('TagGroupRoot')
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
@@ -149,6 +149,8 @@ provideTagGroupRootContext(context as unknown as TagGroupRootContext)
 
 // The roving group owns the tab stop; the tags read it to make their delete button tabbable.
 const roving = useRovingFocusGroup({
+  // Tags are never active: the first focusable one is the tab stop before mount.
+  noActiveItem: () => true,
   consumerAttrs: true,
   element: currentElement,
   dir: () => dir.value,

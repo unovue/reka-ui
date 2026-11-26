@@ -122,22 +122,31 @@ function preventScrollOverlayScrollbars(doc: Document) {
 
 /**
  * Explicit `ConfigProvider` `scrollBody: { padding, margin }` compensation: hide
- * the overflow and offset `<body>` by the given amounts (`true` = the measured
- * scrollbar width). Kept as the escape hatch for layouts that relied on it.
+ * the overflow and offset `<body>`. Kept as the escape hatch for layouts that relied on it.
+ *
+ * The padding makes up for the scrollbar by default and the margin is only written when asked
+ * for; `margin: true` on its own leaves the padding out, so the scrollbar is made up for once
+ * rather than twice. `true` adds the scrollbar width to what the body already has (from a
+ * stylesheet or inline); a value is used as written. Only what is written is put back.
  */
 function preventScrollWithBodyOffset(doc: Document, option: ScrollBodyOption) {
   const win = doc.defaultView ?? window
   const body = doc.body
   const scrollbarWidth = Math.max(0, win.innerWidth - doc.documentElement.clientWidth)
-  const toCss = (value: boolean | number | string | undefined, fallback: number) => {
-    const resolved = value === undefined ? fallback : value === true ? scrollbarWidth : value === false ? 0 : value
-    return typeof resolved === 'number' ? `${resolved}px` : resolved
-  }
+  const { padding = option.margin !== true, margin = false } = option
+  const computed = win.getComputedStyle(body)
+  const resolve = (value: true | number | string, existing: string) => value === true
+    ? `${(Number.parseFloat(existing) || 0) + scrollbarWidth}px`
+    : typeof value === 'number' ? `${value}px` : String(value)
+  const paddingRight = padding === false || (padding === true && !scrollbarWidth) ? undefined : resolve(padding, computed.paddingRight)
+  const marginRight = margin === false || (margin === true && !scrollbarWidth) ? undefined : resolve(margin, computed.marginRight)
 
   const original = snapshot(body, ['paddingRight', 'marginRight'])
   const restoreOverflow = preventScrollOverlayScrollbars(doc)
-  body.style.paddingRight = toCss(option.padding, scrollbarWidth)
-  body.style.marginRight = toCss(option.margin, 0)
+  if (paddingRight !== undefined)
+    body.style.paddingRight = paddingRight
+  if (marginRight !== undefined)
+    body.style.marginRight = marginRight
 
   return () => {
     restoreOverflow()

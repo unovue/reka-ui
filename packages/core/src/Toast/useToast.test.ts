@@ -430,7 +430,8 @@ describe('toastRoot — reasons', () => {
   it('reports escape-key', async () => {
     const { byTestId, reasons } = mountToast()
     await vi.waitFor(() => expect(byTestId('toast')).not.toBeNull())
-    await fireEvent.keyDown(window, { key: 'Escape' })
+    // Only an Escape from inside the toast closes it (#3185).
+    await fireEvent.keyDown(byTestId('toast')!, { key: 'Escape' })
     expect(reasons()).toEqual(['escape-key'])
   })
 
@@ -677,7 +678,7 @@ describe('toastViewport', () => {
   it('focuses the viewport on the hotkey', async () => {
     const { byTestId } = mountToast()
     await vi.waitFor(() => expect(byTestId('toast')).not.toBeNull())
-    await fireEvent.keyDown(window, { key: 'F8' })
+    await fireEvent.keyDown(window, { key: 'F8', code: 'F8' })
     expect(document.activeElement).toBe(byTestId('viewport'))
     expect(byTestId('viewport')!.closest('[role="region"]')!.getAttribute('aria-label')).toBe('Notifications (F8)')
   })

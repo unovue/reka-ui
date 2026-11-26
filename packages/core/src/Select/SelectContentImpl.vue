@@ -6,7 +6,9 @@ import type { AcceptableValue } from '@/shared/types'
 import { useCollection, useCollectionSlot } from '@/Collection'
 import {
   containsComposed,
-  createContext,
+  createRekaContext,
+  useContentId,
+  useContentMounted,
   useFocusGuards,
   useForwardElement,
   useForwardProps,
@@ -104,7 +106,7 @@ export interface SelectContentImplProps extends PopperContentProps, DismissableL
 }
 
 export const [injectSelectContentContext, provideSelectContentContext]
-  = createContext<SelectContentContext>('SelectContent')
+  = createRekaContext<SelectContentContext>('SelectContent')
 </script>
 
 <script setup lang="ts">
@@ -113,6 +115,7 @@ import { reactiveOmit } from '@vueuse/core'
 import { computed, getCurrentInstance, mergeProps, watch } from 'vue'
 import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer } from '@/DismissableLayer/useDismissableLayer'
 import { FOCUS_SCOPE_WRAPPER, focusScopeOptions, useFocusScope } from '@/FocusScope/useFocusScope'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { PopperContent } from '@/Popper'
 import { renderAs } from '@/Primitive/renderAs'
 import { createWrapperEmit, splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
@@ -151,6 +154,10 @@ const { getItems } = useCollection()
 const { forwardRef, currentElement: content, expose } = useForwardElement()
 defineExpose(expose)
 useCollectionSlot(content)
+// A consumer `id` is the content's id, which the trigger's `aria-controls` references
+// while the element is rendered.
+useContentId(rootContext, content)
+useContentMounted(rootContext, content)
 // Scope focus guards to the content's root (shadow-safe).
 useFocusGuards(content)
 useHideOthers(computed(() => present.value ? content.value : undefined))
@@ -191,9 +198,11 @@ const { content: surface, contentContext, isPositioned, hasFocusedOut } = useSel
 
 provideSelectContentContext(contentContext)
 
-// `loop` drives keyboard navigation here and is not a positioning prop.
+// `loop`, `position`, `bodyLock` and `disableOutsidePointerEvents` are the
+// content's own props, not positioning props: `PopperContent` doesn't declare
+// them, so forwarding them would render them as DOM attributes.
 // Item-aligned, the content renders its own element (`as` / `asChild`).
-const positionProps = reactiveOmit(props, 'loop')
+const positionProps = reactiveOmit(props, 'loop', 'position', 'bodyLock', 'disableOutsidePointerEvents')
 const forwardedProps = useForwardProps(computed(() => props.position === 'popper' ? positionProps : {}))
 
 // The content was `<CollectionSlot>` around `<FocusScope as-child>` around
@@ -208,6 +217,14 @@ const forwardedProps = useForwardProps(computed(() => props.position === 'popper
 // tracks.) The attrs are bound once: the content also bound them on the
 // positioning part, so a consumer listener on the content ran twice.
 const instance = getCurrentInstance()!
+// The trigger focus returns to. A layer around the Select that closes with it (a
+// selection that closes a Popover) unmounts the trigger, which lets go of it, before
+// the content: focus must still move there, off the outer layer's own trigger.
+let returnFocusTo: HTMLElement | undefined
+watch(() => rootContext.triggerElement.value, (trigger) => {
+  if (trigger)
+    returnFocusTo = trigger
+}, { immediate: true })
 const focusScopeWrapper = computed(() => splitWrapperAttrs(mergeProps(instance.proxy!.$attrs, {
   asChild: true,
   present: present.value,
@@ -216,9 +233,10 @@ const focusScopeWrapper = computed(() => splitWrapperAttrs(mergeProps(instance.p
     emits('closeAutoFocus', event)
     if (event.defaultPrevented)
       return
-    // Tab already moved focus past the trigger (Base UI): leave it there.
-    if (!hasFocusedOut())
-      rootContext.triggerElement.value?.focus({ preventScroll: true })
+    // Tab already moved focus past the trigger (Base UI): leave it there. So does
+    // focus that something else took meanwhile, e.g. a layer opened by the same click.
+    if (!hasFocusedOut() && !hasFocusLeftScope(event.target))
+      (rootContext.triggerElement.value ?? returnFocusTo)?.focus({ preventScroll: true })
     event.preventDefault()
   },
 }), FOCUS_SCOPE_WRAPPER))
@@ -281,6 +299,7 @@ const itemAlignedStyle = {
   <PopperContent
     v-if="position === 'popper'"
     :ref="forwardRef"
+    scope="select"
     v-bind="mergeProps({ collisionPadding: CONTENT_MARGIN, style: popperStyle }, positionAttrs)"
     @placed="isPositioned = true"
   >

@@ -4,7 +4,7 @@ import type { AcceptableValue, DataOrientation, Direction, FormFieldProps, Singl
 import type { ToggleGroupChangeReason } from './useToggleGroup'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { createContext, useDirection, useFormControl, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useFormControl, useForwardElement } from '@/shared'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
 export interface ToggleGroupRootProps<T = AcceptableValue | AcceptableValue[]>
@@ -40,7 +40,7 @@ export interface ToggleGroupRootContext {
 }
 
 export const [injectToggleGroupRootContext, provideToggleGroupRootContext]
-  = createContext<ToggleGroupRootContext>('ToggleGroupRoot')
+  = createRekaContext<ToggleGroupRootContext>('ToggleGroupRoot')
 </script>
 
 <script setup lang="ts">
@@ -50,7 +50,9 @@ import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { Slot } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { RovingFocusGroup } from '@/RovingFocus'
+import { provideRovingFocusNoActiveItem } from '@/RovingFocus/useRovingFocusGroup'
 import { formResetBinder } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { useToggleGroup } from './useToggleGroup'
 
@@ -123,6 +125,9 @@ const { modelValue, root, context, isControlled } = useToggleGroup({
 const isFormControl = useFormControl(currentElement)
 
 provideToggleGroupRootContext(context)
+// A group with no value has no pressed item. Without roving focus there is no group to tell.
+provideRovingFocusNoActiveItem(() => props.rovingFocus && (modelValue.value == null || (Array.isArray(modelValue.value) && modelValue.value.length === 0)))
+useAgentRegistration('toggle-group', context, props, currentElement)
 
 // A native reset of the owning form puts the value back to `defaultValue`.
 function onFormReset(event: Event) { resetControllableState(isControlled, event) }

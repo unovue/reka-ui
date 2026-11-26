@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import ts from 'typescript'
 import { expect, it } from 'vitest'
 import { components, utilities } from '../constant'
 import * as RekaUI from './index'
@@ -32,4 +35,66 @@ it('finds the exported components', () => {
 
 it.each(exportedVueComponents)('lists the exported component %s in constant/components.ts', (component) => {
   expect(listedComponents.has(component)).toBe(true)
+})
+
+// `packages/plugins/src/namespaced/index.ts` is generated from the registry. Regenerate it with
+// `pnpm --filter plugins generate` (after `pnpm --filter reka-ui build`) and `eslint --fix` it.
+it('keeps the committed namespaced entry in sync with the registry', () => {
+  // Same groups as `excludedComponents` in `packages/plugins/src/namespaced/generate.ts`
+  const excluded = ['configProvider', 'primitive', 'visuallyHidden']
+  const expected = Object.entries(components)
+    .filter(([group]) => !excluded.includes(group))
+    .flatMap(([, names]) => names as readonly string[])
+  const source = readFileSync(resolve(__dirname, '../../plugins/src/namespaced/index.ts'), 'utf-8')
+  const imported = source.match(/^import \{([^}]*)\} from 'reka-ui'/)![1].split(',').map(name => name.trim())
+  expect([...imported].sort()).toEqual([...expected].sort())
+})
+
+/**
+ * Every name the entry exports, type-only ones included. Types do not exist at runtime, so the
+ * names are read from the module's export table through the TypeScript compiler. Only binding is
+ * needed for that: nothing is type-checked and the default library is not loaded.
+ */
+function getStaticExportNames() {
+  const entry = resolve(__dirname, 'index.ts')
+  const program = ts.createProgram([entry], {
+    allowJs: false,
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    noLib: true,
+    noResolve: false,
+    skipLibCheck: true,
+    target: ts.ScriptTarget.ESNext,
+    types: [],
+  })
+  const checker = program.getTypeChecker()
+  const moduleSymbol = checker.getSymbolAtLocation(program.getSourceFile(entry)!)!
+  return checker.getExportsOfModule(moduleSymbol).map(symbol => symbol.getName())
+}
+
+const sortNames = (names: string[]) => [...new Set(names)].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+
+// A rename or removal of a public export, value or type, shows up as a diff of the snapshot file.
+// After an intended change, update it with `pnpm --filter reka-ui exec vitest run src/index.test.ts -u`
+it('keeps the public export names', async () => {
+  const runtimeNames = sortNames(Object.keys(RekaUI))
+  const staticNames = sortNames(getStaticExportNames())
+
+  // The static list has to see at least everything that exists at runtime, otherwise an export
+  // the compiler could not follow would silently drop its types from the snapshot
+  expect(runtimeNames.filter(name => !staticNames.includes(name))).toEqual([])
+
+  const typeNames = staticNames.filter(name => !runtimeNames.includes(name))
+  expect(typeNames.length).toBeGreaterThan(0)
+
+  const content = [
+    `# values (${runtimeNames.length})`,
+    ...runtimeNames,
+    '',
+    `# types (${typeNames.length})`,
+    ...typeNames,
+    '',
+  ].join('\n')
+
+  await expect(content).toMatchFileSnapshot('./__snapshots__/index.exports.txt')
 })

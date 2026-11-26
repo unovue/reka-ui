@@ -3,8 +3,8 @@ import type { ColorAreaRootContext, ColorAreaRootProps } from './ColorAreaRoot.v
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Color, ColorChannel } from '@/shared/color'
 import { computed, nextTick, ref, toValue } from 'vue'
-import { createPartSurface, getterRef, useControllableState } from '@/shared'
-import { colorToHex, convertToSpace, getAreaBackgroundStyle, getChannelColorSpace, getChannelName, getChannelRange, getChannelValue, isEqualColor, normalizeColor, setChannelValues } from '@/shared/color'
+import { createPartSurface, getterRef, translationKey, useControllableState, useTranslations } from '@/shared'
+import { colorToHex, convertToSpace, getAreaBackgroundStyle, getChannelColorSpace, getChannelRange, getChannelValue, isEqualColor, normalizeColor, setChannelValues } from '@/shared/color'
 import { createChangeEndTracker } from '@/shared/color/changeEnd'
 import { resolveDirection } from '@/shared/useDirection'
 import { convertValueToPercentage, linearScale } from './utils'
@@ -154,7 +154,9 @@ export function useColorArea(props: UseColorAreaProps = {}): UseColorAreaReturn 
       thumbRef.value?.focus()
   }
 
+  const t = useTranslations()
   const context: ColorAreaRootContext = {
+    t,
     color: workingColor,
     xValue,
     yValue,
@@ -272,14 +274,23 @@ export function createColorAreaAreaSurface(rootContext: ColorAreaRootContext, ar
     }
   }
 
+  // A drag ends on `pointerup`, but also when the browser cancels the pointer or takes the capture away
+  // (a touch turning into a scroll, a system gesture, an alert). Each of them commits once.
+  function endDrag() {
+    if (!isDragging.value)
+      return
+    isDragging.value = false
+    rootContext.commitValues()
+  }
+
   function handlePointerUp(event: PointerEvent) {
     if (!isDragging.value)
       return
 
     const target = event.target as HTMLElement
+    // Ends the drag first, so the `lostpointercapture` that the release fires finds nothing to commit.
+    endDrag()
     target.releasePointerCapture(event.pointerId)
-    isDragging.value = false
-    rootContext.commitValues()
   }
 
   // Keyboard navigation
@@ -359,6 +370,8 @@ export function createColorAreaAreaSurface(rootContext: ColorAreaRootContext, ar
     onPointerdown: handlePointerDown,
     onPointermove: handlePointerMove,
     onPointerup: handlePointerUp,
+    onPointercancel: endDrag,
+    onLostpointercapture: endDrag,
   }), () => ({ disabled: rootContext.disabled.value }))
 }
 
@@ -475,10 +488,10 @@ export function getColorAreaInputSurface(rootContext: ColorAreaRootContext, axis
       'value': value,
       'disabled': rootContext.disabled.value,
       'tabindex': rootContext.focusedAxis.value === axis ? 0 : -1,
-      'aria-label': getChannelName(isX ? rootContext.xChannel.value : rootContext.yChannel.value),
-      'aria-roledescription': '2D slider',
+      'aria-label': rootContext.t(translationKey('colorChannel', isX ? rootContext.xChannel.value : rootContext.yChannel.value)),
+      'aria-roledescription': rootContext.t('sliderAreaRoleDescription'),
       'aria-orientation': isX ? 'horizontal' : 'vertical',
-      'aria-valuetext': `${value}, ${getChannelName(otherChannel)} ${Math.round(otherValue)}`,
+      'aria-valuetext': `${value}, ${rootContext.t(translationKey('colorChannel', otherChannel))} ${Math.round(otherValue)}`,
       'style': toValue(anchor) === 'area' ? { ...VISUALLY_HIDDEN_STYLE, ...position.value } : INPUT_STYLE_IN_THUMB,
       'onFocus': handleFocus,
       'onInput': handleInput,

@@ -1,11 +1,12 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { Ref, VNode } from 'vue'
 import type { DataOrientation, Direction } from '../shared/types'
 import type { StepperChangeReason } from './useStepper'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { Primitive } from '@/Primitive'
-import { createContext, mergeExpose, useDirection, useForwardElement } from '@/shared'
+import { createRekaContext, mergeExpose, useDirection, useForwardElement, useTranslations } from '@/shared'
+import { SharedMutationObserver, vnodeElement } from '@/shared/SharedMutationObserver'
 import { useStepper } from './useStepper'
 
 export interface StepperRootContext {
@@ -23,6 +24,8 @@ export interface StepperRootContext {
    * to its rendered `disabled` attribute.
    */
   itemDisabled: WeakMap<HTMLElement, () => boolean>
+  /** The step each registered trigger belongs to, which the announcement reads in DOM order. */
+  stepperItemValues: Map<HTMLElement, Readonly<Ref<number>>>
 }
 
 export interface StepperRootProps extends PrimitiveProps {
@@ -44,6 +47,8 @@ export interface StepperRootProps extends PrimitiveProps {
   modelValue?: number
   /** Whether or not the steps must be completed in order. */
   linear?: boolean
+  /** Customize the live announcement using the active step's one-based position and total. Set to `false` to disable the built-in live region. */
+  announce?: ((step: number, total: number) => string) | false
 }
 export type StepperRootEmits = {
   /** Event handler called before the step changes; call `details.cancel()` to keep the current step. */
@@ -53,14 +58,20 @@ export type StepperRootEmits = {
 }
 
 export const [injectStepperRootContext, provideStepperRootContext]
-  = createContext<StepperRootContext>('StepperRoot')
+  = createRekaContext<StepperRootContext>('StepperRoot')
+
+// One observer for every stepper.
+const stepperObserver = new SharedMutationObserver({ childList: true, subtree: true })
 </script>
 
 <script setup lang="ts">
+import { computed, shallowRef } from 'vue'
+
 const props = withDefaults(defineProps<StepperRootProps>(), {
   orientation: 'horizontal',
   linear: true,
   defaultValue: 1,
+  announce: undefined,
 })
 const emits = defineEmits<StepperRootEmits>()
 
@@ -95,6 +106,7 @@ defineSlots<{
 // owns the step model (`useControllableState`), the step navigation and the
 // next/previous-trigger watchers.
 const dir = useDirection(() => props.dir)
+const t = useTranslations()
 
 const {
   modelValue,
@@ -116,12 +128,49 @@ const {
   orientation: () => props.orientation,
   dir,
   linear: () => props.linear,
+  translate: t,
   emit: emits,
 })
 
 provideStepperRootContext(context)
 
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
+
+// Announce the current step by its position among the rendered steps, not by its value.
+function announcementText() {
+  const orderedItems = [...context.totalStepperItems.value]
+    .sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
+  const step = orderedItems.findIndex(item => context.stepperItemValues.get(item)?.value === modelValue.value) + 1
+  if (!step || props.announce === false)
+    return ''
+  // Anything that is not a function (e.g. a bare `announce` attribute cast to `true`) uses the default text.
+  const custom = typeof props.announce === 'function' ? props.announce(step, orderedItems.length) : undefined
+  return custom ?? t('stepperAnnouncement', { step, total: orderedItems.length })
+}
+// Bumped when the steps' DOM order changes the text: keyed moves inside nested components do
+// not update the root or the registration set.
+const domOrder = shallowRef(0)
+const announcement = computed(() => {
+  void domOrder.value
+  return announcementText()
+})
+function onMutation() {
+  if (announcementText() !== announcement.value)
+    domOrder.value++
+}
+// Observed from the element's vnode hooks (mounted, updated, unmounted).
+let observed: Element | undefined
+function sync(vnode: VNode | null) {
+  const element = vnode ? (vnodeElement(vnode) ?? currentElement.value ?? undefined) : undefined
+  if (element === observed)
+    return
+  if (observed)
+    stepperObserver.unobserve(observed)
+  observed = element
+  if (element)
+    stepperObserver.observe(element, onMutation)
+}
+
 defineExpose(mergeExpose(expose, {
   goToStep,
   nextStep,
@@ -143,6 +192,9 @@ defineExpose(mergeExpose(expose, {
     :as="as"
     :as-child="asChild"
     v-bind="root.attrs.value"
+    @vue:mounted="sync"
+    @vue:updated="sync"
+    @vue:unmounted="sync(null)"
   >
     <slot
       :model-value="modelValue"
@@ -159,6 +211,7 @@ defineExpose(mergeExpose(expose, {
     />
 
     <div
+      v-if="announce !== false"
       aria-live="polite"
       aria-atomic="true"
       role="status"
@@ -170,7 +223,7 @@ defineExpose(mergeExpose(expose, {
         margin: 0,
       }"
     >
-      Step {{ modelValue }} of {{ totalSteps }}
+      {{ announcement }}
     </div>
   </Primitive>
 </template>

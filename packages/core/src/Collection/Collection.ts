@@ -291,8 +291,13 @@ export function useCollectionSlot(element: ElementSourceLike, options: { key?: s
   context.root = element
   context.invalidate()
   onScopeDispose(() => {
-    if (context.root === element)
+    if (context.root === element) {
       context.root = undefined
+      // Let go of the unmounted root: the observer and the cached order hold
+      // its elements (a closed Select or Combobox content, #3202).
+      context.dispose()
+      context.stale()
+    }
   })
 }
 

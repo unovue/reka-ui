@@ -80,3 +80,15 @@ export function createWrapperEmit(wrapper: () => SplitWrapperAttrs, instance = g
     }
   }
 }
+
+/**
+ * The current component's fallthrough attrs, read without tracking. `useAttrs()` tracks every
+ * read, which costs each instance a dependency map of its own; a read in render needs none,
+ * since an attrs change re-renders the component. Empty outside a component.
+ *
+ * @internal
+ * @lifecycle setup
+ */
+export function useUntrackedAttrs(): Readonly<Record<string, unknown>> {
+  return getCurrentInstance()?.attrs ?? {}
+}

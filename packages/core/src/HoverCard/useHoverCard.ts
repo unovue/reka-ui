@@ -1,7 +1,7 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { HoverCardOpenChangeReason, HoverCardRootContext } from './HoverCardRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
-import { computed, getCurrentScope, onScopeDispose, ref, toValue } from 'vue'
+import { computed, getCurrentInstance, getCurrentScope, onDeactivated, onScopeDispose, ref, toValue } from 'vue'
 import { createPartSurface, disclosureState, useControllableState } from '@/shared'
 import { excludeTouch } from './utils'
 
@@ -37,6 +37,9 @@ export type HoverCardContentState = { state: DisclosureState }
  * cancels a pending delayed open (`onClose` clears the open timer; the
  * scheduled `setState(false)` is a no-op on an already-closed card).
  */
+/** The requester of an open that names none (`useHoverCard().onOpen()`). */
+const ANONYMOUS_REQUESTER = {}
+
 function cancelPendingOpenOnLeave(context: HoverCardRootContext, event: PointerEvent) {
   if (!context.isPointerInTransitRef.value && !context.open.value)
     context.onClose('trigger-leave', event)
@@ -54,12 +57,34 @@ function cancelPendingOpenOnLeave(context: HoverCardRootContext, event: PointerE
  * `pointerup` is the touch toggle behind `enableTouch`.
  */
 export function getHoverCardTriggerSurface(context: HoverCardRootContext): PartSurface<HoverCardTriggerState> {
+  let leaveTimer = 0
+  // This trigger, as the requester of the opens it starts (see `onCancelOpen`). Created on
+  // the trigger's first hover or focus, with the cleanup below: a surface that is never
+  // rendered (the one `useHoverCard` returns) then holds nothing.
+  let owner: object | undefined
+  const scope = getCurrentScope()
+  function requester() {
+    if (!owner) {
+      const self = owner = {}
+      // A trigger unmounted with an open pending (or its leave check) withdraws
+      // its own request only, and never writes `open`.
+      if (scope?.active) {
+        scope.run(() => onScopeDispose(() => {
+          clearTimeout(leaveTimer)
+          context.onCancelOpen?.(self)
+        }))
+      }
+    }
+    return owner
+  }
   return createPartSurface<HoverCardTriggerState>(
     () => ({
       'data-grace-area-trigger': '',
-      'onPointerenter': excludeTouch((event: PointerEvent) => context.onOpen('trigger-hover', event)),
+      'onPointerenter': excludeTouch((event: PointerEvent) => context.onOpen('trigger-hover', event, requester())),
       'onPointerleave': excludeTouch((event: PointerEvent) => {
-        setTimeout(cancelPendingOpenOnLeave, 0, context, event)
+        clearTimeout(leaveTimer)
+        requester()
+        leaveTimer = window.setTimeout(cancelPendingOpenOnLeave, 0, context, event)
       }),
       'onPointerup': (event: PointerEvent) => {
         if (!context.enableTouch.value || event.pointerType !== 'touch')
@@ -70,7 +95,7 @@ export function getHoverCardTriggerSurface(context: HoverCardRootContext): PartS
         else
           context.onOpenChange(true, 'trigger-press', event)
       },
-      'onFocus': (event: FocusEvent) => context.onOpen('trigger-focus', event),
+      'onFocus': (event: FocusEvent) => context.onOpen('trigger-focus', event, requester()),
       'onBlur': (event: FocusEvent) => context.onClose('trigger-blur', event),
     }),
     () => ({ popupOpen: context.open.value }),
@@ -131,7 +156,7 @@ export interface UseHoverCardReturn {
    * deferred, so its outcome is only known when the timer fires; `reason`/`event`
    * travel with it into `beforeUpdate:open` / `update:open`.
    */
-  onOpen: (reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event) => void
+  onOpen: (reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event, owner?: object) => void
   /**
    * Cancels a pending open and closes after `closeDelay`, unless text is being
    * selected (`hasSelectionRef`) or the pointer is down on the content
@@ -164,13 +189,14 @@ export interface UseHoverCardReturn {
  * `onDismiss(reason, event)` from whatever layer the consumer composes.
  *
  * SSR-safe: no `document`/`window` at call scope — the `window.setTimeout`
- * calls only run inside `onOpen` / `onClose`, i.e. from browser events. No
- * lifecycle hooks, so it is callable outside `setup()`; inside a component or
- * `effectScope` the pending timers are cleared when that scope is disposed,
+ * calls only run inside `onOpen` / `onClose`, i.e. from browser events. Its
+ * lifecycle hooks are guarded, so it is callable outside `setup()`; inside a component or
+ * `effectScope` the pending timers are cleared when that scope is disposed (and a
+ * pending open when a `KeepAlive` deactivates the component),
  * standalone they are cancelled by the next `onOpen` / `onClose` / `onDismiss`.
  *
  * @experimental Signatures may change in 3.x minors.
- * @lifecycle pure — the only scope hook is the guarded timer cleanup above.
+ * @lifecycle pure — the only hooks are the guarded timer cleanups above.
  */
 export function useHoverCard(props: UseHoverCardProps = {}): UseHoverCardReturn {
   // Every write to `open` — the delayed hover/focus timers, the touch toggle
@@ -202,17 +228,49 @@ export function useHoverCard(props: UseHoverCardProps = {}): UseHoverCardReturn 
     return setState(value, reason, event)
   }
 
-  function onOpen(reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event) {
-    // Re-arming replaces a pending open too: `pointerenter` then `focus` must
-    // leave ONE timer for the following `onClose` to cancel, or the first one
-    // opens the card after the pointer has left.
+  // Who asked for the pending open (the trigger, the content, ...): a trigger
+  // that unmounts withdraws its own request, and the timer stops once no
+  // requester is left.
+  // Created on the first open request, like the deactivation hook below.
+  let openRequesters: Set<object> | undefined
+  const instance = getCurrentInstance()
+
+  function clearOpenTimer() {
     clearTimeout(openTimer)
+    openTimer = 0
+    openRequesters?.clear()
+  }
+
+  function openNow(reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event) {
+    openTimer = 0
+    openRequesters?.clear()
+    setState(true, reason, event)
+  }
+
+  function onOpen(reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event, owner: object = ANONYMOUS_REQUESTER) {
     clearTimeout(closeTimer)
-    openTimer = window.setTimeout(setState, openDelay.value, true, reason, event)
+    if (!openRequesters) {
+      openRequesters = new Set()
+      // A pending open of a `KeepAlive` page that is left would fire on the page shown instead.
+      if (instance)
+        onDeactivated(clearOpenTimer, instance)
+    }
+    openRequesters.add(owner)
+    // One timer, and the deadline of an already pending open is kept:
+    // `pointerenter` then `focus` opens when the hover alone would have.
+    if (openTimer)
+      return
+    openTimer = window.setTimeout(openNow, openDelay.value, reason, event)
+  }
+
+  function onCancelOpen(owner: object) {
+    openRequesters?.delete(owner)
+    if (!openRequesters?.size)
+      clearOpenTimer()
   }
 
   function onClose(reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event) {
-    clearTimeout(openTimer)
+    clearOpenTimer()
     // Re-arming replaces a pending close: trigger-leave then content-leave
     // must leave ONE timer for a re-entering `onOpen` to cancel.
     if (!hasSelectionRef.value && !isPointerDownOnContentRef.value) {
@@ -222,7 +280,7 @@ export function useHoverCard(props: UseHoverCardProps = {}): UseHoverCardReturn 
   }
 
   function onDismiss(reason?: HoverCardOpenChangeReason | BaseChangeReason, event?: Event): boolean {
-    clearTimeout(openTimer)
+    clearOpenTimer()
     return setState(false, reason, event)
   }
 
@@ -232,7 +290,7 @@ export function useHoverCard(props: UseHoverCardProps = {}): UseHoverCardReturn 
   // `onClose` / `onDismiss` is what cancels a pending timer.
   if (getCurrentScope()) {
     onScopeDispose(() => {
-      clearTimeout(openTimer)
+      clearOpenTimer()
       clearTimeout(closeTimer)
     })
   }
@@ -241,6 +299,7 @@ export function useHoverCard(props: UseHoverCardProps = {}): UseHoverCardReturn 
     open,
     onOpenChange,
     onOpen,
+    onCancelOpen,
     onClose,
     onDismiss,
     hasSelectionRef,

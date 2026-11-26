@@ -2,7 +2,7 @@
 import type { ComponentPublicInstance, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { useCollection, useCollectionSlot } from '@/Collection'
-import { useForwardElement } from '@/shared'
+import { useForwardElement, useTranslations } from '@/shared'
 
 export interface ToastViewportProps extends PrimitiveProps {
   /**
@@ -14,7 +14,8 @@ export interface ToastViewportProps extends PrimitiveProps {
    * An author-localized label for the toast viewport to provide context for screen reader users
    * when navigating page landmarks. The available `{hotkey}` placeholder will be replaced for you.
    * Alternatively, you can pass in a custom function to generate the label.
-   * @defaultValue 'Notifications ({hotkey})'
+   * Defaults to the `toastViewportLabel` message of `ConfigProvider`.
+   * @default 'Notifications ({hotkey})'
    */
   label?: string | ((hotkey: string) => string)
 }
@@ -35,7 +36,6 @@ defineOptions({
 
 const props = withDefaults(defineProps<ToastViewportProps>(), {
   hotkey: () => ['F8'], // from VIEWPORT_DEFAULT_HOTKEY
-  label: 'Notifications ({hotkey})',
   as: 'ol',
 })
 
@@ -44,6 +44,7 @@ useCollectionSlot(currentElement)
 defineExpose(expose)
 const { getItems } = useCollection()
 const providerContext = injectToastProviderContext()
+const t = useTranslations()
 const headFocusProxyRef = ref<HTMLElement>()
 const tailFocusProxyRef = ref<HTMLElement>()
 
@@ -53,8 +54,8 @@ const tailFocusProxyRef = ref<HTMLElement>()
 const { hasToasts, region, viewport, onHeadProxyFocus, onTailProxyFocus } = useToastViewport({
   providerContext,
   viewportElement: currentElement as Ref<HTMLElement | undefined>,
-  hotkey: props.hotkey,
-  label: () => props.label,
+  hotkey: () => props.hotkey,
+  label: () => props.label ?? ((hotkey: string) => t('toastViewportLabel', { hotkey })),
   getToasts: () => getItems().map(i => i.ref),
   headFocusProxy: headFocusProxyRef,
   tailFocusProxy: tailFocusProxyRef,

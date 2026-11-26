@@ -37,6 +37,11 @@
 
 <EmitsTable :data="[
   {
+    'name': 'update:open',
+    'description': '<p>Event handler called when the trigger asks for the item to open or close, or its closed content is\nfound in the page. The accordion\'s <code>modelValue</code> holds the open state.</p>\n',
+    'type': '[value: boolean, details: ChangeEventDetails&lt;AccordionChangeReason, Event&gt;]'
+  },
+  {
     'name': 'update:openComplete',
     'description': '<p>Event handler called after the open or close animations of the content have finished.</p>\n',
     'type': '[value: boolean]'
@@ -68,6 +73,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
+| `update:open` | Event handler called when the trigger asks for the item to open or close, or its closed content is found in the page. The accordion's `modelValue` holds the open state. | `[value: boolean, details: ChangeEventDetails<AccordionChangeReason, Event>]` |
 | `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |
 
 **Slots**

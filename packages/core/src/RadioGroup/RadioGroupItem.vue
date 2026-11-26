@@ -2,7 +2,7 @@
 import type { ComputedRef } from 'vue'
 import type { RadioProps } from './Radio.vue'
 import type { SelectEvent } from './utils'
-import { createContext, useForwardElement, useForwardScopeId } from '@/shared'
+import { createRekaContext, useForwardElement, useForwardScopeId } from '@/shared'
 
 export interface RadioGroupItemProps extends Omit<RadioProps, 'checked'> {}
 export type RadioGroupItemEmits = {
@@ -15,12 +15,13 @@ export interface RadioGroupItemContext {
 }
 
 export const [injectRadioGroupItemContext, provideRadiogroupItemContext]
-  = createContext<RadioGroupItemContext>('RadioGroupItem')
+  = createRekaContext<RadioGroupItemContext>('RadioGroupItem')
 </script>
 
 <script setup lang="ts">
 import { mergeProps } from 'vue'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import Radio from './Radio.vue'
 import { injectRadioGroupRootContext } from './RadioGroupRoot.vue'
 import { getRadioGroupItemState, preventEnterKeydown } from './useRadioGroup'
@@ -60,16 +61,24 @@ const rootContext = injectRadioGroupRootContext()
 const { checked, disabled, required } = getRadioGroupItemState(rootContext, () => props.value, () => props.disabled, () => props.required)
 
 provideRadiogroupItemContext({ disabled, checked })
+useAgentItem(rootContext, props, currentElement)
 
 function handleFocus() {
+  // Read now: a fast tap's keyup can land before the deferred selection runs.
+  const triggeredByArrowKey = isArrowKeyPressed()
   setTimeout(() => {
     /**
      * Our `RovingFocusGroup` will focus the radio when navigating with arrow keys
      * and we need to 'check' it in that case. We click it to 'check' it (instead
      * of updating `context.value`) so that the radio change event fires.
      */
-    if (isArrowKeyPressed())
-      currentElement.value?.click()
+    const element = currentElement.value
+    if (!triggeredByArrowKey || !element?.isConnected || disabled.value)
+      return
+    // Read focus from the radio's own root so this also works inside a closed shadow root.
+    const root = element.getRootNode() as Document | ShadowRoot
+    if (root.activeElement === element)
+      element.click()
   }, 0)
 }
 // `RadioGroupItem` sets `inheritAttrs: false` and wraps the multi-root `Radio`, so the

@@ -167,6 +167,24 @@ In this case, we want to submit only when user click on `EditableSubmitTrigger`,
 
 ## Accessibility
 
+### Labelling
+
+`EditableInput` is named `editable input` by default. Give it a real name with a `<label>` that points at the `id` of `EditableRoot`, or with `aria-label` or `aria-labelledby` on `EditableInput`. Any of them replaces the default.
+
+```vue
+<template>
+  <label for="project-title">Project title</label>
+  <EditableRoot id="project-title">
+    <EditableArea>
+      <EditablePreview />
+      <EditableInput />
+    </EditableArea>
+  </EditableRoot>
+</template>
+```
+
+A disabled field does not enter edit mode, and its preview leaves the tab order.
+
 ### Keyboard Interactions
 
 <KeyboardTable

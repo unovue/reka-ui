@@ -3,6 +3,12 @@
 <llm-exclude>
 <PropsTable :data="[
   {
+    'name': 'allValues',
+    'description': '<p>Every value a parent checkbox (<code>CheckboxRoot</code> with <code>parent</code>) controls. The parent is\nchecked when all of them are in the model, unchecked when none are, and indeterminate otherwise.</p>\n',
+    'type': 'AcceptableValue[]',
+    'required': false
+  },
+  {
     'name': 'as',
     'description': '<p>The element or component this component should render as. Can be overwritten by <code>asChild</code>.</p>\n',
     'type': 'AsTag | Component',
@@ -98,6 +104,7 @@
 
 | Name | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
+| `allValues` | Every value a parent checkbox (`CheckboxRoot` with `parent`) controls. The parent is checked when all of them are in the model, unchecked when none are, and indeterminate otherwise. | `AcceptableValue[]` | No | - |
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `defaultValue` | The value of the checkbox when it is initially rendered. Use when you do not need to control its value. | `AcceptableValue[]` | No | - |

@@ -17,11 +17,12 @@ import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { getDrawerDescriptionSurface } from './useDrawer'
 
 const props = withDefaults(defineProps<DrawerDescriptionProps>(), { as: 'p' })
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectDrawerRootContext()
 // Rendered on the element; mirrored into the context for the content's `aria-*`.
-const id = usePartId(() => props.id, rootContext, 'descriptionId')
+// With `asChild`, an id on the child element wins.
+const id = usePartId(() => props.id, rootContext, 'descriptionId', currentElement)
 const description = getDrawerDescriptionSurface(rootContext)
 </script>
 

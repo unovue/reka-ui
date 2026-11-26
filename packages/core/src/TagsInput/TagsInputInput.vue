@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardElement } from '@/shared'
+import { ariaDisabledAttr, isPlainTag, useForwardElement } from '@/shared'
 
 export interface TagsInputInputProps extends PrimitiveProps {
   /** The placeholder character to use for empty tags input. */
@@ -39,9 +39,11 @@ const input = createTagsInputInputSurface(context, {
 })
 
 onMounted(() => {
-  const inputEl = currentElement.value.nodeName === 'INPUT'
-    ? currentElement.value
-    : currentElement.value.querySelector('input')
+  // `null` for an as-child input that rendered no element (#3223).
+  const element = currentElement.value as HTMLElement | null
+  const inputEl = element?.nodeName === 'INPUT'
+    ? element
+    : element?.querySelector?.('input')
 
   if (!inputEl)
     return
@@ -81,6 +83,19 @@ if (fieldContext) {
   onUpdated(labelWrappedInput)
 }
 
+// Rendered as a plain non-control tag (a wrapper `div`), the element has no `disabled` property:
+// drop `disabled: false` (it would render `disabled="false"`) and expose the disabled state with
+// `aria-disabled`, as `Primitive` does. `asChild` renders `Slot`, which does the same for its child.
+function controlAttrs(attrs: Record<string, unknown>) {
+  const tag = props.asChild ? undefined : props.as
+  if (!isPlainTag(tag) || tag === 'template')
+    return attrs
+  const ariaDisabled = ariaDisabledAttr(tag, attrs)
+  if (attrs.disabled !== false && !ariaDisabled)
+    return attrs
+  return { ...attrs, 'disabled': attrs.disabled || undefined, 'aria-disabled': ariaDisabled ?? attrs['aria-disabled'] }
+}
+
 // The Field's state attributes fill in what the input leaves unset; its
 // aria ids are merged with the consumer's.
 function fieldAttrs(attrs: Record<string, unknown>) {
@@ -101,7 +116,7 @@ function fieldAttrs(attrs: Record<string, unknown>) {
   <component
     :is="renderAsEmpty(as, asChild)"
     :ref="forwardRef"
-    v-bind="fieldContext ? fieldAttrs($attrs) : mergeProps(input.attrs.value, $attrs)"
+    v-bind="controlAttrs(fieldContext ? fieldAttrs($attrs) : mergeProps(input.attrs.value, $attrs))"
   >
     <template
       v-if="rendersChildren(as, asChild)"

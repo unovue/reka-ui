@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { DialogHandle } from './handle'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { createContext, useId } from '@/shared'
+import { createRekaContext, useId } from '@/shared'
 
 /** Why the dialog's `open` state changed (#2828); the `reason` of `ChangeEventDetails`. */
 export type DialogOpenChangeReason
@@ -72,10 +72,17 @@ export interface DialogRootContext {
   descriptionId: string
   /** Called by the content once its open/close transitions finish; emits `update:openComplete`. */
   notifyOpenComplete?: (value: boolean) => void
+  /** How many dialogs nested in this one are open, at any depth. */
+  nestedOpenDialogCount?: Ref<number>
+  /**
+   * Called by a dialog nested in this one with the number of open dialogs it
+   * stands for: itself while it is open, plus the open ones nested in it.
+   */
+  onNestedOpenChange?: (id: symbol, count: number) => void
 }
 
 export const [injectDialogRootContext, provideDialogRootContext]
-  = createContext<DialogRootContext>('DialogRoot')
+  = createRekaContext<DialogRootContext>('DialogRoot')
 
 /**
  * The mounted `DialogOverlay` element. A press on it (or on the content's
@@ -84,12 +91,14 @@ export const [injectDialogRootContext, provideDialogRootContext]
  * `DialogRootContext` shape.
  */
 export const [injectDialogOverlayElementContext, provideDialogOverlayElementContext]
-  = createContext<Ref<HTMLElement | undefined>>('DialogRoot', 'DialogOverlayElementContext')
+  = createRekaContext<Ref<HTMLElement | undefined>>('DialogRoot', 'DialogOverlayElementContext')
 </script>
 
 <script setup lang="ts" generic="Payload = unknown">
 import { ref } from 'vue'
 import { usePopupHandleAttachment } from '@/shared/popupHandle'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
+import { useNestedDialogs } from './nestedDialogs'
 import { useDialog } from './useDialog'
 
 defineOptions({
@@ -136,7 +145,9 @@ const { open, onOpenChange, context, payload, activeTriggerId, handleStore } = u
   defaultTriggerId: props.defaultTriggerId,
 })
 
+useNestedDialogs(context, injectDialogRootContext(null))
 provideDialogRootContext(context)
+useAgentRegistration('dialog', context, props)
 provideDialogOverlayElementContext(ref())
 // Client-only: the Root's state reaches a (possibly module-scope) handle only once mounted.
 usePopupHandleAttachment(handleStore)

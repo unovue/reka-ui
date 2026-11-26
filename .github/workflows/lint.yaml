@@ -30,3 +30,35 @@ jobs:
 
       - name: Lint
         run: pnpm lint
+
+  # `docs/content/meta` is generated from the component sources by `pnpm docs:gen`.
+  # This fails when the committed files differ from a fresh run.
+  docs-meta:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup (Install node & pnpm)
+        uses: ./.github/actions/setup
+
+      # The generator imports `reka-ui/constant` from the built dist
+      - name: Build
+        run: pnpm --filter reka-ui build-only
+
+      - name: Generate API docs
+        run: pnpm docs:gen
+
+      # Every API table include resolves, and every exported part has an API section
+      - name: Check API table includes
+        run: pnpm docs:check
+
+      - name: Check for drift
+        run: |
+          if [ -n "$(git status --porcelain -- docs/content/meta)" ]; then
+            git status --short -- docs/content/meta
+            git diff -- docs/content/meta
+            echo "::error::docs/content/meta is out of date. Run 'pnpm --filter reka-ui build && pnpm docs:gen' and commit the result."
+            exit 1
+          fi

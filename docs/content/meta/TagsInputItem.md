@@ -22,6 +22,12 @@
     'required': false
   },
   {
+    'name': 'modelIndex',
+    'description': '<p>The zero-based index in the root\'s model. Pass the original index for each tag when filtering or reordering duplicates.</p>\n',
+    'type': 'number',
+    'required': false
+  },
+  {
     'name': 'value',
     'description': '<p>Value associated with the tags</p>\n',
     'type': 'string | number | bigint | Record&lt;string, any&gt;',
@@ -39,6 +45,7 @@
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `disabled` | When `true`, prevents the user from interacting with the tags input. | `boolean` | No | - |
+| `modelIndex` | The zero-based index in the root's model. Pass the original index for each tag when filtering or reordering duplicates. | `number` | No | - |
 | `value` | Value associated with the tags | `string \| number \| bigint \| Record<string, any>` | Yes | - |
 
 </llm-only>

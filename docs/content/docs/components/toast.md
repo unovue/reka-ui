@@ -549,6 +549,8 @@ function copy(event: MouseEvent) {
 
 Override the default hotkey using the `event.code` value for each key from [keycode.info](https://keycode.info/).
 
+The hotkey is a key combination: every entry must be pressed at once. An entry is either a modifier flag (`altKey`, `ctrlKey`, `metaKey`, `shiftKey`) or the `event.code` of a key. Key names such as `'t'` or `'/'` (`event.key` values) don't match: use `'KeyT'` and `'Slash'`.
+
 ```vue line=4
 <template>
   <ToastProvider>
@@ -567,6 +569,25 @@ Customise the duration of a toast to override the provider value.
   <ToastRoot :duration="3000">
     <ToastDescription>Saved!</ToastDescription>
   </ToastRoot>
+</template>
+```
+
+### Pausing the timer
+
+Toasts stop counting down while the pointer is over the viewport, while keyboard focus is inside it, and while the window is not focused. The hover and window pauses can each be turned off on `ToastProvider`:
+
+- `disableHoverPause` keeps the timer running while the pointer is over the viewport.
+- `disableWindowBlurPause` keeps the timer running while the window is not focused.
+
+Keyboard focus inside the viewport always pauses the toasts, and so does a press or swipe on a toast, so a toast never closes while it is being used. Neither can be turned off.
+
+Without the hover pause, a toast can disappear while a pointer user is still reading it. Keep it to short status toasts that have no actions.
+
+```vue line=2
+<template>
+  <ToastProvider disable-hover-pause disable-window-blur-pause>
+    <Toaster />
+  </ToastProvider>
 </template>
 ```
 
@@ -776,7 +797,7 @@ When providing an icon (or font icon), remember to label it correctly for screen
       keys: ['Esc'],
       description: `
         <span>
-          When focus is on a <Code>Toast</Code>, closes the toast
+          When focus is in a <Code>Toast</Code>, closes that toast only. The key stops there, so a dialog or popover around the toast stays open.
         </span> `
     },
   ]"

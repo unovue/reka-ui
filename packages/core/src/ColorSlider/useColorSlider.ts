@@ -4,8 +4,8 @@ import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared
 import type { Color } from '@/shared/color'
 import type { SliderRootProps } from '@/Slider'
 import { computed, toValue } from 'vue'
-import { createPartSurface, useControllableState } from '@/shared'
-import { colorToHex, convertToSpace, getChannelColorSpace, getChannelName, getChannelRange, getChannelValue, getSliderBackgroundStyle, isEqualColor, normalizeColor, setChannelValue } from '@/shared/color'
+import { createPartSurface, translationKey, useControllableState, useTranslations } from '@/shared'
+import { colorToHex, convertToSpace, getChannelColorSpace, getChannelRange, getChannelValue, getSliderBackgroundStyle, isEqualColor, normalizeColor, setChannelValue } from '@/shared/color'
 import { createChangeEndTracker } from '@/shared/color/changeEnd'
 import { resolveDirection } from '@/shared/useDirection'
 
@@ -147,7 +147,9 @@ export function useColorSlider(props: UseColorSliderProps): UseColorSliderReturn
     changeEnd.commit()
   }
 
+  const t = useTranslations()
   const context: ColorSliderRootContext = {
+    t,
     color,
     channelValue,
     channel,
@@ -229,7 +231,7 @@ export type ColorSliderThumbState = Record<string, never>
  */
 export function getColorSliderThumbSurface(rootContext: ColorSliderRootContext) {
   const ariaLabel = computed(() => {
-    return getChannelName(rootContext.channel.value)
+    return rootContext.t(translationKey('colorChannel', rootContext.channel.value))
   })
 
   const ariaValueText = computed(() => {

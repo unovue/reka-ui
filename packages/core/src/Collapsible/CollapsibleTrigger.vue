@@ -9,7 +9,7 @@ export interface CollapsibleTriggerProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { injectCollapsibleRootContext } from './CollapsibleRoot.vue'
 import { getCollapsibleTriggerSurface } from './useCollapsible'
 
@@ -25,7 +25,7 @@ const surface = getCollapsibleTriggerSurface(rootContext)
 
 <template>
   <component
-    :is="renderAs(as, props.asChild)"
+    :is="renderAsControl(as, props.asChild)"
     :id="props.id"
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"

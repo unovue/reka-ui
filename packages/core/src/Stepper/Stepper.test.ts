@@ -3,8 +3,9 @@ import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
-import { nextTick } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 import { useTestKbd } from '@/shared'
+import { StepperDescription, StepperItem, StepperRoot, StepperTitle, StepperTrigger } from '.'
 import Stepper from './story/_Stepper.vue'
 import StepperDynamic from './story/_StepperDynamic.vue'
 
@@ -211,5 +212,140 @@ describe('stepper', async () => {
     await rerender({ visibleSteps: 5 })
     await nextTick()
     expect(totalSteps).toHaveTextContent('5')
+  })
+})
+
+const parts = { StepperRoot, StepperItem, StepperTrigger, StepperTitle, StepperDescription }
+
+describe('stepper trigger accessibility', () => {
+  it('names the trigger by its title and description', async () => {
+    const { getByTestId, getByRole } = setup({ stepperProps: { steps } })
+    await nextTick()
+    const trigger = getByTestId('stepper-item-trigger-1')
+    const titleId = getByTestId('stepper-item-title-1').id
+    const descriptionId = getByTestId('stepper-item-description-1').id
+
+    expect(trigger).toHaveAttribute('aria-labelledby', `${titleId} ${descriptionId}`)
+    expect(trigger).not.toHaveAttribute('aria-describedby')
+    expect(trigger).toHaveAccessibleName('Address Add your address here')
+    expect(getByRole('button', { name: 'Address Add your address here' })).toBe(trigger)
+    // axe's `label-content-name-mismatch` cannot be evaluated here: jsdom has no layout, so the
+    // rule sees no visible text and passes either way. The name assertions above cover it.
+  })
+
+  it('only references the parts that are rendered', async () => {
+    const { getByTestId } = render(defineComponent({
+      components: parts,
+      template: `
+        <StepperRoot :default-value="1">
+          <StepperItem :step="1">
+            <StepperTrigger data-testid="title-only"><StepperTitle>Title</StepperTitle></StepperTrigger>
+          </StepperItem>
+          <StepperItem :step="2">
+            <StepperTrigger data-testid="description-only"><StepperDescription>Desc</StepperDescription></StepperTrigger>
+          </StepperItem>
+          <StepperItem :step="3">
+            <StepperTrigger data-testid="bare">3</StepperTrigger>
+          </StepperItem>
+        </StepperRoot>`,
+    }))
+    await nextTick()
+
+    const titleOnly = getByTestId('title-only')
+    expect(titleOnly.getAttribute('aria-labelledby')).not.toContain(' ')
+    expect(titleOnly).not.toHaveAttribute('aria-describedby')
+    expect(titleOnly).toHaveAccessibleName('Title')
+
+    const descriptionOnly = getByTestId('description-only')
+    expect(descriptionOnly).not.toHaveAttribute('aria-describedby')
+    expect(descriptionOnly).toHaveAccessibleName('Desc')
+
+    const bare = getByTestId('bare')
+    expect(bare).not.toHaveAttribute('aria-labelledby')
+    expect(bare).not.toHaveAttribute('aria-describedby')
+    expect(bare).toHaveAccessibleName('3')
+  })
+
+  it('lets a consumer aria-label name the trigger', async () => {
+    const { getByTestId } = render(defineComponent({
+      components: parts,
+      template: `
+        <StepperRoot :default-value="1">
+          <StepperItem :step="1">
+            <StepperTrigger data-testid="trigger" aria-label="First step">
+              <StepperTitle>Title</StepperTitle>
+              <StepperDescription>Desc</StepperDescription>
+            </StepperTrigger>
+          </StepperItem>
+        </StepperRoot>`,
+    }))
+    await nextTick()
+
+    const trigger = getByTestId('trigger')
+    expect(trigger).not.toHaveAttribute('aria-labelledby')
+    expect(trigger).toHaveAccessibleName('First step')
+    expect(trigger).toHaveAccessibleDescription('Desc')
+  })
+
+  it('marks only the current step trigger with aria-current="step"', async () => {
+    const { getByTestId, user } = setup({ stepperProps: { steps, defaultValue: 2 } })
+
+    for (const { step } of steps) {
+      const trigger = getByTestId(`stepper-item-trigger-${step}`)
+      if (step === 2)
+        expect(trigger).toHaveAttribute('aria-current', 'step')
+      else
+        expect(trigger).not.toHaveAttribute('aria-current')
+    }
+    // kept on the item for backward compatibility
+    expect(getByTestId('stepper-item-2')).toHaveAttribute('aria-current', 'true')
+
+    await user.click(getByTestId('stepper-item-trigger-3'))
+    expect(getByTestId('stepper-item-trigger-3')).toHaveAttribute('aria-current', 'step')
+    expect(getByTestId('stepper-item-trigger-2')).not.toHaveAttribute('aria-current')
+  })
+
+  it('keeps the description when a consumer aria-labelledby names the trigger', async () => {
+    const { getByTestId } = render(defineComponent({
+      components: parts,
+      template: `
+        <span id="external">External</span>
+        <StepperRoot :default-value="1">
+          <StepperItem :step="1">
+            <StepperTrigger data-testid="trigger" aria-labelledby="external">
+              <StepperTitle>Title</StepperTitle>
+              <StepperDescription>Desc</StepperDescription>
+            </StepperTrigger>
+          </StepperItem>
+        </StepperRoot>`,
+    }))
+    await nextTick()
+
+    const trigger = getByTestId('trigger')
+    expect(trigger).toHaveAttribute('aria-labelledby', 'external')
+    expect(trigger).toHaveAccessibleName('External')
+    expect(trigger).toHaveAccessibleDescription('Desc')
+  })
+
+  it('marks the current step even when it is completed', async () => {
+    const { getByTestId } = render(defineComponent({
+      components: parts,
+      template: `
+        <StepperRoot :model-value="2">
+          <StepperItem :step="1" data-testid="item-1">
+            <StepperTrigger data-testid="trigger-1">1</StepperTrigger>
+          </StepperItem>
+          <StepperItem :step="2" completed data-testid="item-2">
+            <StepperTrigger data-testid="trigger-2">2</StepperTrigger>
+          </StepperItem>
+        </StepperRoot>`,
+    }))
+    await nextTick()
+
+    expect(getByTestId('trigger-2')).toHaveAttribute('aria-current', 'step')
+    expect(getByTestId('item-2')).toHaveAttribute('aria-current', 'true')
+    expect(getByTestId('item-2')).toHaveAttribute('data-state', 'completed')
+    expect(getByTestId('trigger-1')).not.toHaveAttribute('aria-current')
+    expect(getByTestId('item-1')).not.toHaveAttribute('aria-current')
   })
 })

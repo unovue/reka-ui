@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PopoverHandle } from './handle'
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardElement, useId, usePartId } from '@/shared'
+import { useForwardElement, useId, usePartId, useRenderedContentId } from '@/shared'
 
 export interface PopoverTriggerProps<Payload = unknown> extends PrimitiveProps {
   /**
@@ -23,7 +23,7 @@ export interface PopoverTriggerProps<Payload = unknown> extends PrimitiveProps {
 <script setup lang="ts" generic="Payload = unknown">
 import { computed, mergeProps, watch } from 'vue'
 import { usePopperAnchor } from '@/Popper/usePopperAnchor'
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { getPopupRootStore, usePopupHandleTrigger } from '@/shared/popupHandle'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 import { getPopoverOwnTriggerSlot, getPopoverTriggerSurface } from './usePopover'
@@ -85,17 +85,22 @@ const trigger = rootContext ? getPopoverTriggerSurface(rootContext) : getDetache
 
 // Without a `handle`, the trigger renders its own id (its `id` prop, else the
 // Root's generated trigger id) and mirrors it into the Root, so the content's
-// `aria-labelledby` follows.
+// `aria-labelledby` follows. With `asChild`, an id on the child element wins.
 const ownTriggerSlot = rootContext ? getPopoverOwnTriggerSlot(rootContext) : undefined
-const ownTriggerId = ownTriggerSlot ? usePartId(() => props.id, ownTriggerSlot, 'triggerId') : undefined
+const ownTriggerId = ownTriggerSlot ? usePartId(() => props.id, ownTriggerSlot, 'triggerId', triggerElement) : undefined
+// `aria-controls` references the content only while its element is rendered.
+const contentId = rootContext ? useRenderedContentId(rootContext) : undefined
 const attrs = computed(() => detached.enabled.value
   ? getDetachedTrigger().attrs.value
-  : ownTriggerId ? { ...trigger.attrs.value, id: ownTriggerId.value } : trigger.attrs.value)
+  : ownTriggerId
+    ? { ...trigger.attrs.value, 'id': ownTriggerId.value, 'aria-controls': rootContext!.open.value ? contentId!.value : undefined }
+    : trigger.attrs.value)
 
 // The popper's anchor, unless a `PopoverAnchor` is (or the trigger is detached).
 const anchor = usePopperAnchor({
   consumerAttrs: true,
   element: triggerElement,
+  scope: 'popover',
   enabled: () => !detached.enabled.value && !rootContext?.hasCustomAnchor.value,
 })
 
@@ -114,7 +119,7 @@ if (rootContext) {
 
 <template>
   <component
-    :is="renderAs(as, props.asChild)"
+    :is="renderAsControl(as, props.asChild)"
     :ref="forwardRef"
     v-bind="mergeProps(anchor.consumerAttrs($attrs), attrs, { type: as === 'button' ? 'button' : undefined })"
   >

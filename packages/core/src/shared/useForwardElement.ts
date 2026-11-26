@@ -136,8 +136,8 @@ function exposeElementSource<E extends Element>(
     element,
     $el: linked ? element : new ElRefView(source, instance),
   } as unknown as ElementExpose<E>
-  // Uses process.env.NODE_ENV (not import.meta.env.DEV, which is neutered in dist).
-  // eslint-disable-next-line node/prefer-global/process
+  // Uses process.env.NODE_ENV (not Vite's dev flag, which is neutered in dist).
+
   if (process.env.NODE_ENV !== 'production' && instance && !linked)
     return createDevExpose(exposed, instance)
   return exposed

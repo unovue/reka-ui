@@ -16,7 +16,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import { computed, getCurrentInstance, mergeProps } from 'vue'
 import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer } from '@/DismissableLayer/useDismissableLayer'
 import { renderAs } from '@/Primitive/renderAs'
-import { useForwardElement } from '@/shared'
+import { useContentId, useContentMounted, useForwardElement } from '@/shared'
 import { splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
@@ -35,6 +35,10 @@ defineExpose(expose)
 
 const menuContext = injectNavigationMenuContext()
 const itemContext = injectNavigationMenuItemContext()
+// A consumer `id` is the content's id; the trigger's `aria-controls` references it only while
+// this element is rendered.
+useContentId(itemContext, currentElement)
+useContentMounted(itemContext, currentElement)
 
 const {
   content,

@@ -1,8 +1,39 @@
 import type { ShallowRef } from 'vue'
 import type { By } from './compare'
-import { shallowRef } from 'vue'
+import { isClient } from '@vueuse/shared'
+import { isReactive, shallowRef } from 'vue'
 import { serializeValue, valueComparator } from './compare'
 import { KeyedSelectorImpl, lazySelector, SelectorHold } from './createKeyedSelector'
+
+const KEYED_OBJECTS = new Set(['[object Object]', '[object Array]', '[object Map]', '[object Set]'])
+
+/**
+ * Whether Vue reports every change inside `value`: no object in it is of a
+ * kind Vue leaves alone. With `reactive`, every object in it must also be a
+ * reactive proxy: a raw object (`markRaw`, or one held by a `shallowRef`)
+ * changes in place unseen.
+ */
+function isTracked(value: unknown, seen: Set<object>, reactive: boolean): boolean {
+  if (value === null || typeof value !== 'object' || seen.has(value))
+    return true
+  const tag = Object.prototype.toString.call(value)
+  if (!KEYED_OBJECTS.has(tag) || (reactive && !isReactive(value)))
+    return false
+  seen.add(value)
+  if (tag === '[object Map]') {
+    for (const [key, entry] of value as Map<unknown, unknown>) {
+      if (!isTracked(key, seen, reactive) || !isTracked(entry, seen, reactive))
+        return false
+    }
+    return true
+  }
+  const entries = tag === '[object Object]' ? Object.values(value) : value as Iterable<unknown>
+  for (const entry of entries) {
+    if (!isTracked(entry, seen, reactive))
+      return false
+  }
+  return true
+}
 
 /**
  * The key `compare(a, b, by)` matches on: `compare(a, b, by)` holds exactly
@@ -13,12 +44,18 @@ import { KeyedSelectorImpl, lazySelector, SelectorHold } from './createKeyedSele
  *   anything else (no `by`) by its `serializeValue` form, which is what `isEqual`
  *   compares;
  * - `undefined` when no key is exact (a function `by`, a missing,
- *   non-primitive or `NaN` `value[by]`, a non-object under a key `by`):
- *   compare instead.
+ *   non-primitive or `NaN` `value[by]`, a non-object under a key `by`), or
+ *   when the key could go stale: a value that is or holds an object Vue does
+ *   not track (a `Date`, a `URL`, a typed array, a DOM node), a model object
+ *   that is not a reactive proxy (`markRaw`, or held by a `shallowRef`), or a
+ *   value that throws when read: compare instead.
+ *
+ * `isModelValue`: the value is (part of) the model, whose key is kept until Vue
+ * reports a change, so its objects must be ones Vue tracks.
  *
  * @internal
  */
-export function compareKey<T>(value: T, by?: By<T>): string | null | undefined {
+export function compareKey<T>(value: T, by?: By<T>, isModelValue = false): string | null | undefined {
   if (value === undefined)
     return null
   if (typeof by === 'function')
@@ -30,13 +67,31 @@ export function compareKey<T>(value: T, by?: By<T>): string | null | undefined {
   if (typeof by === 'string') {
     if (typeof value !== 'object')
       return undefined
-    const key: unknown = (value as Record<string, unknown>)[by]
+    if (isModelValue && !isReactive(value))
+      return undefined
+    let key: unknown
+    try {
+      key = (value as Record<string, unknown>)[by]
+    }
+    catch {
+      return undefined
+    }
     const type = typeof key
     if (type === 'string' || type === 'bigint' || type === 'boolean' || (type === 'number' && !Number.isNaN(key)))
       return `k:${type}:${String(key)}`
     return undefined
   }
-  return `h:${serializeValue(value)}`
+  // Vue only makes plain objects, arrays, maps and sets reactive. Any other
+  // object can change in place unseen, and so can one nested in the value: its
+  // key would go stale.
+  try {
+    if (!isTracked(value, new Set(), isModelValue))
+      return undefined
+    return `h:${serializeValue(value)}`
+  }
+  catch {
+    return undefined
+  }
 }
 
 /**
@@ -60,7 +115,11 @@ export class SelectionSelector<T> {
   keyed: ShallowRef<boolean> | undefined = undefined
 
   constructor(readonly model: () => T | T[] | undefined, readonly by?: By<T>) {
-    if (typeof by === 'function')
+    // No selector on the server: its watcher starts while an item renders,
+    // outside `setup`, so the server renderer would never stop it, and a model
+    // that outlives the request would keep that render alive. A server render
+    // reads each item once; it compares.
+    if (typeof by === 'function' || !isClient)
       return
     const selector = this.selector = new KeyedSelectorImpl<string>(true)
     lazySelector(selector, () => this.modelKeys(), (next) => {
@@ -90,7 +149,7 @@ export class SelectionSelector<T> {
   }
 
   addKey(keys: Set<string>, value: T): boolean {
-    const key = compareKey(value, this.by)
+    const key = compareKey(value, this.by, true)
     if (key === undefined)
       return false
     if (key !== null)
@@ -105,16 +164,26 @@ export class SelectionSelector<T> {
 
   /** Tracked: whether `value` is (part of) the selection, matched with `by`. */
   isSelected(value: T, hold?: SelectorHold<string>): boolean {
-    const key = this.selector ? compareKey(value, this.by) : undefined
+    const selector = this.selector
+    if (!selector)
+      return valueComparator(this.model(), value, this.by)
+    selector.init()
+    if (!this.keyed!.value) {
+      hold?.release()
+      return valueComparator(this.model(), value, this.by)
+    }
+    // Nothing is selected: no key is needed yet, and an object value's key is the costly part.
+    if (hold?.key == null && !selector.active)
+      return false
+    const key = compareKey(value, this.by)
     if (key === null) {
       hold?.release()
       return false
     }
-    this.selector?.init()
-    if (key === undefined || !this.keyed!.value) {
+    if (key === undefined) {
       hold?.release()
       return valueComparator(this.model(), value, this.by)
     }
-    return hold ? hold.read(key) : this.selector!.is(key)
+    return hold ? hold.read(key) : selector.is(key)
   }
 }

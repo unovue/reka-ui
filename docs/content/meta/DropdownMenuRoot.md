@@ -44,6 +44,13 @@
     'description': '<p>The id of the trigger that owns the menu, for a controlled menu with\ndetached triggers. Use with <code>open</code>.</p>\n',
     'type': 'string | null',
     'required': false
+  },
+  {
+    'name': 'unmountOnHide',
+    'description': '<p>When set to <code>false</code>, the menu content and its submenus will not be unmounted when closed, but instead hidden with CSS.</p>\n<p>Useful when you want to keep the state of the content, or to improve performance by not remounting it on every open.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'true'
   }
 ]" />
 
@@ -97,6 +104,7 @@
 | `modal` | The modality of the dropdown menu. When `true`, page scroll is locked, the rest of the page (except the trigger) is covered by an internal backdrop that closes the menu on press, and only the menu content is visible to screen readers. | `boolean` | No | `true` |
 | `open` | The controlled open state of the menu. Can be used as `v-model:open`. | `boolean` | No | - |
 | `triggerId` | The id of the trigger that owns the menu, for a controlled menu with detached triggers. Use with `open`. | `string \| null` | No | - |
+| `unmountOnHide` | When set to `false`, the menu content and its submenus will not be unmounted when closed, but instead hidden with CSS. Useful when you want to keep the state of the content, or to improve performance by not remounting it on every open. | `boolean` | No | `true` |
 
 **Events**
 

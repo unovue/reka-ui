@@ -2,12 +2,13 @@ import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { MenubarMenuContext } from './MenubarMenu.vue'
 import type { MenubarRootContext } from './MenubarRoot.vue'
 import type { MenuOpenChangeReason } from '@/Menu'
-import type { MenuContext, MenuRootContext } from '@/Menu/MenuRoot.vue'
+import type { MenuContentHideEvent, MenuContext, MenuRootContext } from '@/Menu/MenuRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Direction } from '@/shared/types'
-import { computed, ref, toValue, watch } from 'vue'
+import { computed, nextTick, ref, toValue, watch } from 'vue'
+import { isTriggerPressInFlight, trackTriggerPress } from '@/DismissableLayer/utils'
 import { useMenuRoot } from '@/Menu/useMenu'
-import { createPartSurface, useControllableState } from '@/shared'
+import { createPartSurface, defineReactiveIds, getterRef, peekReactiveId, useControllableState } from '@/shared'
 import { isDisabledItem } from '@/shared/isDisabledItem'
 import { resolveDirection } from '@/shared/useDirection'
 import { wrapArray } from '@/shared/useTypeahead'
@@ -59,6 +60,8 @@ export interface UseMenubarProps {
   dir?: MaybeRefOrGetter<Direction | undefined>
   /** Loop keyboard navigation between menus. @defaultValue `false` */
   loop?: MaybeRefOrGetter<boolean | undefined>
+  /** When `false`, each menu's content and submenus stay mounted while closed. @defaultValue `true` */
+  unmountOnHide?: MaybeRefOrGetter<boolean | undefined>
   /** Component `emit`; receives `beforeUpdate:modelValue` then `update:modelValue`. */
   emit?: (event: any, ...args: any[]) => void
   /** Called before a change commits; `details.cancel()` vetoes it. */
@@ -108,22 +111,37 @@ export function useMenubar(props: UseMenubarProps = {}): UseMenubarReturn {
   const loop = computed<boolean>(() => toValue(props.loop) ?? false)
   const currentTabStopId = ref<string | null>(null)
 
+  /**
+   * Move the tab stop to `value` once the menu is open: a cancelled or no-op
+   * request (or a controlled parent that ignored it) leaves it alone. A
+   * controlled parent applies the new value when it re-renders, so it is
+   * checked again after that flush.
+   */
+  function moveTabStopWhenOpen(value: string) {
+    if (modelValue.value === value) {
+      currentTabStopId.value = value
+      return
+    }
+    nextTick(() => {
+      if (modelValue.value === value)
+        currentTabStopId.value = value
+    })
+  }
   function onMenuOpen(value: string, reason?: MenubarChangeReason | BaseChangeReason, event?: Event) {
     const changed = setState(value, reason, event)
-    // Move the tab stop only when the menu actually opened: a cancelled or
-    // no-op request (or a controlled parent that ignored it) leaves it alone.
-    if (changed && modelValue.value === value)
-      currentTabStopId.value = value
+    if (changed)
+      moveTabStopWhenOpen(value)
     return changed
   }
   function onMenuClose(reason?: MenubarChangeReason | BaseChangeReason, event?: Event) {
     return setState('', reason, event)
   }
   function onMenuToggle(value: string, reason?: MenubarChangeReason | BaseChangeReason, event?: Event) {
-    const changed = setState(modelValue.value ? '' : value, reason, event)
+    const opening = !modelValue.value
+    const changed = setState(opening ? value : '', reason, event)
     // Same rule as `onMenuOpen`: only an open that went through moves the tab stop.
-    if (changed && modelValue.value === value)
-      currentTabStopId.value = value
+    if (changed && opening)
+      moveTabStopWhenOpen(value)
     return changed
   }
 
@@ -131,6 +149,8 @@ export function useMenubar(props: UseMenubarProps = {}): UseMenubarReturn {
     modelValue,
     dir: dir as Ref<Direction>,
     loop: loop as Ref<boolean>,
+    // A getter, not a computed: it only reads a prop.
+    unmountOnHide: getterRef(() => toValue(props.unmountOnHide) ?? true) as Ref<boolean>,
     onMenuOpen,
     onMenuClose,
     onMenuToggle,
@@ -211,6 +231,7 @@ export function useMenubarMenu(rootContext: MenubarRootContext, options: UseMenu
     open,
     modal: false,
     dir: rootContext.dir,
+    unmountOnHide: rootContext.unmountOnHide,
     // Menu only requests a change when dismissing, so close the menubar on
     // the same events (and with the same reason).
     onUpdate: (next, details) => {
@@ -220,13 +241,12 @@ export function useMenubarMenu(rootContext: MenubarRootContext, options: UseMenu
     onOpenComplete: options.onOpenComplete,
   })
 
-  const context: MenubarMenuContext = {
+  // Reactive ids: the trigger and the content adopt a consumer `id`, which the other one references.
+  const context = defineReactiveIds<MenubarMenuContext, 'triggerId' | 'contentId'>({
     value,
     triggerElement: ref<HTMLElement>(),
-    triggerId: value,
-    contentId: options.contentId ?? `${value}-content`,
     wasKeyboardTriggerOpenRef,
-  }
+  }, { triggerId: value, contentId: options.contentId ?? `${value}-content` })
 
   return {
     open,
@@ -268,7 +288,8 @@ export function createMenubarTriggerSurface(
 
   return createPartSurface<MenubarTriggerState>(
     () => ({
-      'id': menuContext.triggerId,
+      // Untracked: the trigger writes its id itself (`useTriggerIdInRender`), before it renders.
+      'id': peekReactiveId(menuContext, 'triggerId'),
       'role': 'menuitem',
       'aria-haspopup': 'menu',
       'aria-expanded': open.value,
@@ -279,6 +300,8 @@ export function createMenubarTriggerSurface(
       'onPointerdown': (event: PointerEvent) => {
         if (event.defaultPrevented)
           return
+        // Lets the content tell the focus WebKit gives the menubar for this press (#3360).
+        trackTriggerPress(event)
         // only call handler if it's the left button (mousedown gets triggered by all mouse buttons)
         // but not when the control key is pressed (avoiding MacOS right click)
         if (!isDisabled() && event.button === 0 && event.ctrlKey === false) {
@@ -306,9 +329,15 @@ export function createMenubarTriggerSurface(
           : rootContext.onMenuToggle(menuContext.value, 'trigger-press', event)
         // Mark a keyboard open only when this key actually opened the menu: a
         // cancelled or no-op request must not leave the flag set for a later
-        // pointer open (which would then get keyboard entry focus).
-        if (changed && open.value)
+        // pointer open (which would then get keyboard entry focus). A controlled
+        // parent applies the open when it re-renders, so it is checked after that flush.
+        if (changed) {
           menuContext.wasKeyboardTriggerOpenRef.value = true
+          nextTick(() => {
+            if (!open.value)
+              menuContext.wasKeyboardTriggerOpenRef.value = false
+          })
+        }
         // prevent keydown from scrolling window / first focused item to execute
         // that keydown (inadvertently closing the menu)
         event.preventDefault()
@@ -358,6 +387,11 @@ export interface MenubarContentSurface extends PartSurface<Record<string, never>
   onEntryFocus: (event: Event) => void
   /** ArrowLeft/ArrowRight inside the menu switches to the neighbouring menu (`list-navigation`). */
   onKeydown: (event: KeyboardEvent) => void
+  /**
+   * `MenuContext.onContentHide`: a content kept mounted while closed (`unmountOnHide: false`)
+   * is hidden, not unmounted, so no `closeAutoFocus` returns focus. Returns it to the trigger as on unmount, unless another menu of the menubar opened in its place, or focus moved on to another layer.
+   */
+  onContentHide: (event: MenuContentHideEvent) => void
 }
 
 /**
@@ -407,18 +441,26 @@ export function createMenubarContentSurface(
   return {
     ...surface,
     onCloseAutoFocus: (event) => {
-      const menubarOpen = Boolean(rootContext.modelValue.value)
-      if (!menubarOpen && !hasInteractedOutside)
-        menuContext.triggerElement.value?.focus()
+      // A consumer `closeAutoFocus` listener that prevented it keeps the focus where it is.
+      if (!event.defaultPrevented) {
+        const menubarOpen = Boolean(rootContext.modelValue.value)
+        if (!menubarOpen && !hasInteractedOutside)
+          menuContext.triggerElement.value?.focus()
+
+        // Always prevent auto focus because we either focus manually or want user agent focus
+        event.preventDefault()
+      }
 
       hasInteractedOutside = false
-      // Always prevent auto focus because we either focus manually or want user agent focus
-      event.preventDefault()
     },
     onFocusOutside: (event) => {
       const target = event.target as HTMLElement
       const isMenubarTrigger = options.getItems().filter(i => !isDisabledItem(i.ref)).some(i => i.ref.contains(target))
-      if (isMenubarTrigger)
+      // WebKit does not focus a pressed button but its focusable ancestor: pressing a
+      // trigger focuses the menubar itself, which must not close the menu it opens (#3360).
+      const trigger = menuContext.triggerElement.value
+      const isMenubar = isTriggerPressInFlight(trigger) && target === trigger?.closest('[role=menubar]')
+      if (isMenubarTrigger || isMenubar)
         event.preventDefault()
     },
     onInteractOutside: () => {
@@ -429,6 +471,12 @@ export function createMenubarContentSurface(
         event.preventDefault()
     },
     onKeydown,
+    onContentHide: ({ focusLeft }) => {
+      const menubarOpen = Boolean(rootContext.modelValue.value)
+      if (!menubarOpen && !hasInteractedOutside && !focusLeft)
+        menuContext.triggerElement.value?.focus()
+      hasInteractedOutside = false
+    },
   }
 }
 

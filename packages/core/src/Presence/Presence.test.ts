@@ -1,6 +1,6 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, onMounted, ref } from 'vue'
+import { defineComponent, h, nextTick, onMounted, ref } from 'vue'
 import { Presence } from '.'
 
 const CONTENT = 'Content'
@@ -343,6 +343,50 @@ describe('given a Presence in an environment with Web Animations', () => {
     expect(joined.length).toBeGreaterThan(0)
     for (const settled of joined)
       expect(settled.status === 'fulfilled' ? settled.value : []).not.toContain(exit)
+    wrapper.unmount()
+  })
+})
+
+// v3's Presence reads `getAnimations()` and adds no animation listeners, so v2's listener cleanup
+// (#3202) has no counterpart; these check that the closed or replaced element is not retained.
+describe('given a Presence that stays mounted after closing', () => {
+  it('should release each unmounted child', async () => {
+    const present = ref(true)
+    const presence = ref<InstanceType<typeof Presence>>()
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(Presence, { present: present.value, ref: presence }, () => h('div', CONTENT)),
+    }))
+    await flushPromises()
+
+    for (let cycle = 0; cycle < 2; cycle++) {
+      const element = wrapper.get('div').element
+      expect((presence.value as any).element).toBe(element)
+      present.value = false
+      await flushPromises()
+
+      expect(wrapper.find('div').exists()).toBe(false)
+      expect((presence.value as any).element).toBeNull()
+
+      present.value = true
+      await flushPromises()
+      expect(wrapper.get('div').element).not.toBe(element)
+    }
+
+    wrapper.unmount()
+  })
+
+  it('should follow the child element when it is replaced', async () => {
+    const tag = ref('div')
+    const presence = ref<InstanceType<typeof Presence>>()
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(Presence, { present: true, ref: presence }, () => h(tag.value, CONTENT)),
+    }))
+    await nextTick()
+
+    tag.value = 'span'
+    await nextTick()
+    expect(wrapper.get('span').text()).toBe(CONTENT)
+    expect((presence.value as any).element).toBe(wrapper.get('span').element)
     wrapper.unmount()
   })
 })

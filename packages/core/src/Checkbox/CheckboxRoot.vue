@@ -1,12 +1,16 @@
 <script lang="ts">
 import type { Ref } from 'vue'
+import type { CheckboxGroupItem, CheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
 import type { CheckboxChangeReason } from './useCheckbox'
 import type { CheckedState } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, FormFieldProps } from '@/shared/types'
-import { createContext, getRootNode, useFormControl, useForwardElement, useForwardScopeId } from '@/shared'
+import { computed, getCurrentScope, mergeProps, onScopeDispose, useAttrs, watch } from 'vue'
+import { createRekaContext, disabledAttr, getRootNode, useFormControl, useForwardElement, useForwardScopeId } from '@/shared'
+import { useId } from '@/shared/useId'
 import { injectCheckboxGroupRootContext } from './CheckboxGroupRoot.vue'
+import { controlledCheckboxes, useCheckbox } from './useCheckbox'
 
 export interface CheckboxRootProps<TrueValue = boolean, FalseValue = TrueValue> extends PrimitiveProps, FormFieldProps {
   /** The value of the checkbox when it is initially rendered. Use when you do not need to control its value. */
@@ -15,6 +19,12 @@ export interface CheckboxRootProps<TrueValue = boolean, FalseValue = TrueValue> 
   modelValue?: NoInfer<TrueValue | FalseValue> | 'indeterminate' | null
   /** When `true`, prevents the user from interacting with the checkbox */
   disabled?: boolean
+  /**
+   * When `true` inside a `CheckboxGroupRoot`, the checkbox controls the values listed in the
+   * group's `allValues`: it shows their combined state and checks or unchecks them all.
+   * Disabled checkboxes keep their value. A parent checkbox doesn't submit a value of its own.
+   */
+  parent?: boolean
   /**
    * The value given as data when submitted with a `name`.
    *  @defaultValue "on"
@@ -45,19 +55,79 @@ export interface CheckboxRootContext {
 }
 
 export const [injectCheckboxRootContext, provideCheckboxRootContext]
-  = createContext<CheckboxRootContext>('CheckboxRoot')
+  = createRekaContext<CheckboxRootContext>('CheckboxRoot')
+
+// Ids for checkboxes whose group gets `allValues` after they mount.
+let lateIdCount = 0
+const noId = () => undefined
+
+/**
+ * A grouped checkbox as the group's parent checkbox reads it. Methods live on the prototype.
+ *
+ * While the group has `allValues`, its other checkboxes get an id for the parent's
+ * `aria-controls`; without it, no id is generated. One controlled from setup takes a `useId`
+ * id (stable across SSR). One controlled only later has no SSR to match, so a client-side id
+ * is enough: its own prefix keeps it apart from `useId`'s ids, and it is reused if
+ * `allValues` (or `parent`) changes back and forth.
+ */
+class GroupItem implements CheckboxGroupItem {
+  private generatedId: string | undefined
+  private disabledRef: Ref<boolean> | undefined
+  private listed = false
+  private readonly scope = getCurrentScope()
+  id: () => string | undefined = noId
+
+  constructor(
+    private readonly group: CheckboxGroupRootContext,
+    // `value` defaults to `'on'`.
+    private readonly props: { value: AcceptableValue, parent?: boolean },
+  ) {
+    if (this.isControlled())
+      this.generatedId = useId(undefined, 'reka-checkbox')
+  }
+
+  bind(disabled: Ref<boolean>, id: () => string | undefined) {
+    this.disabledRef = disabled
+    this.id = id
+  }
+
+  /**
+   * Called on render: lists the checkbox in its group once the group has `allValues`
+   * (until then a parent controls nothing), and until the checkbox's scope is disposed.
+   */
+  sync() {
+    if (this.listed || !this.group.allValues.value)
+      return
+    this.listed = true
+    const items = this.group.items
+    items.add(this)
+    this.scope?.run(() => onScopeDispose(() => items.delete(this)))
+  }
+
+  value() { return this.props.value }
+  disabled() { return !!this.disabledRef?.value }
+  isParent() { return !!this.props.parent }
+  isControlled() { return !!this.group.allValues.value && !this.props.parent }
+  controlledId() {
+    return this.isControlled() ? (this.generatedId ??= `reka-checkbox-late-${++lateIdCount}`) : undefined
+  }
+}
+
+// A parent's `aria-controls`: the ids of the checkboxes it controls.
+function ariaControlsOf(group: CheckboxGroupRootContext) {
+  return controlledCheckboxes(group).map(item => item.id()).filter(Boolean).join(' ') || undefined
+}
 </script>
 
 <script setup lang="ts" generic="TrueValue = true, FalseValue = false">
-import { computed, mergeProps, useAttrs, watch } from 'vue'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { renderAs } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { isEqual } from '@/shared/compare'
 import { formResetBinder } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
-import { useCheckbox } from './useCheckbox'
 
 defineOptions({
   inheritAttrs: false,
@@ -86,6 +156,9 @@ defineExpose(expose)
 
 const checkboxGroupContext = injectCheckboxGroupRootContext(null)
 
+// Every grouped checkbox is listed for a parent checkbox, which reads only the ones it controls.
+const groupItem = checkboxGroupContext ? new GroupItem(checkboxGroupContext, props) : undefined
+
 // Optional Field participation: `null` outside a `FieldRoot`, so every binding
 // below is inert when there is no Field. Also `null` inside another control of
 // the field (e.g. in a Combobox item), which owns it. Checkboxes inside a
@@ -104,7 +177,7 @@ const field = useFieldBinding({
   groupField: checkboxGroupContext?.field,
 })
 // Getters rather than computeds: cheap, and free for a standalone checkbox.
-const resolvedId = () => field ? field.id() : props.id
+const resolvedId = () => field ? field.id() : (props.id ?? groupItem?.controlledId())
 const resolvedName = () => field ? field.name(props.name) : props.name
 const resolvedRequired = () => field ? field.required(props.required) : props.required
 
@@ -113,7 +186,7 @@ const resolvedRequired = () => field ? field.required(props.required) : props.re
 // Group membership (checked state + press toggling, the group's `max`) lives
 // there too, keyed on the injected group context. `disabled` is the explicit
 // one (prop, group or Field): natively disabled and unfocusable.
-const { modelValue, checkedState: checkboxState, disabled, root, context, isControlled } = useCheckbox<TrueValue | FalseValue>({
+const { modelValue, checkedState: checkboxState, disabled, root, context, isControlled, setChecked } = useCheckbox<TrueValue | FalseValue>({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   emit: emits,
@@ -126,8 +199,11 @@ const { modelValue, checkedState: checkboxState, disabled, root, context, isCont
   value: () => props.value,
   trueValue: () => props.trueValue as TrueValue,
   falseValue: () => props.falseValue as FalseValue,
+  parent: () => props.parent,
   group: checkboxGroupContext,
 })
+
+groupItem?.bind(disabled, resolvedId)
 
 // A programmatic/parent-driven change updates `filled`, but isn't dirtying.
 // Both contexts are injected once, so outside a Field (or inside a group) the
@@ -158,6 +234,7 @@ const ariaLabel = computed(() => {
 })
 
 provideCheckboxRootContext(context)
+useAgentRegistration('checkbox', context, props, currentElement, setChecked)
 
 // In a `rovingFocus` group the checkbox is a roving item, as a composable (the
 // former `RovingFocusItem` wrapper). The group renders `RovingFocusGroup` only
@@ -172,16 +249,24 @@ const roving = checkboxGroupContext?.rovingFocus.value
 // `aria-invalid` wins: the binding reads it explicitly, since it merges after
 // `attrs` here.
 function renderAttrs() {
+  groupItem?.sync()
   const own = {
     'id': resolvedId(),
     'type': props.as === 'button' ? 'button' : undefined,
     'aria-label': attrs['aria-label'] || ariaLabel.value,
     'onFocus': field?.onFocus,
     'onBlur': field?.onBlur,
+    // An enabled plain non-button tag gets no `disabled="false"`; a component still receives `false`.
+    'disabled': disabledAttr(disabled.value, props.as, props.asChild),
   }
+  // A parent's `aria-controls` comes first, so a consumer's wins.
+  // Only a parent gets the key: an `undefined` one would still be merged into every checkbox.
+  const controls = props.parent && checkboxGroupContext ? { 'aria-controls': ariaControlsOf(checkboxGroupContext) } : undefined
   const merged = field
-    ? mergeProps(field.dataAttributes(), attrs, scopeIdAttrs, { ...field.ariaAttrs(attrs, disabled.value) }, root.attrs.value, own)
-    : mergeProps(attrs, scopeIdAttrs, root.attrs.value, own)
+    ? mergeProps(controls ?? {}, field.dataAttributes(), attrs, scopeIdAttrs, { ...field.ariaAttrs(attrs, disabled.value) }, root.attrs.value, own)
+    : controls
+      ? mergeProps(controls, attrs, scopeIdAttrs, root.attrs.value, own)
+      : mergeProps(attrs, scopeIdAttrs, root.attrs.value, own)
   // The roving bindings merge last, as the wrapper merged them over its attrs.
   return roving ? mergeProps(merged, roving.attrs()) : merged
 }

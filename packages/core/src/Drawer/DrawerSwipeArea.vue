@@ -13,7 +13,7 @@ export interface DrawerSwipeAreaProps extends PrimitiveProps {
 <script setup lang="ts">
 import { mergeProps } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
-import { useForwardElement } from '@/shared'
+import { disabledAttr, useForwardElement } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { useDrawerSwipeArea } from './useDrawer'
 
@@ -36,7 +36,7 @@ const { swipeArea } = useDrawerSwipeArea(rootContext, {
 <template>
   <component
     :is="renderAs(as, asChild)"
-    v-bind="mergeProps({ swipeDirection: props.swipeDirection, disabled: props.disabled }, swipeArea.attrs.value)"
+    v-bind="mergeProps({ swipeDirection: props.swipeDirection, disabled: disabledAttr(props.disabled, as, asChild), ariaDisabled: null }, swipeArea.attrs.value)"
     :ref="forwardRef"
   >
     <slot />

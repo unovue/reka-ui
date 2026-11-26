@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { findByText, fireEvent, render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import {
   DrawerBackdrop,
   DrawerClose,
@@ -11,11 +11,13 @@ import {
   DrawerPopup,
   DrawerPortal,
   DrawerRoot,
+  DrawerSwipeArea,
   DrawerTitle,
   DrawerTrigger,
   DrawerViewport,
   DrawerVirtualKeyboardProvider,
 } from '.'
+import { injectDrawerRootContext } from './DrawerRoot.vue'
 
 const OPEN_TEXT = 'Open Drawer'
 const CLOSE_TEXT = 'Close Drawer'
@@ -691,5 +693,222 @@ describe('given nested Drawers', () => {
     await fireEvent.click(getByText('Open parent'))
     await nextTick()
     expect(frontmostHeight(getByTestId('parent'))).toBe(`${PARENT_HEIGHT}px`)
+  })
+})
+
+describe('given a force-mounted DrawerPopup', () => {
+  function renderDrawer(modal: boolean | 'trap-focus') {
+    const open = ref(false)
+    const result = render(defineComponent({
+      setup: () => () => h('div', [
+        h('button', { 'data-testid': 'outside' }, 'Outside'),
+        h(DrawerRoot, { 'open': open.value, modal, 'onUpdate:open': (value: boolean) => open.value = value }, () => [
+          h(DrawerTrigger, () => OPEN_TEXT),
+          h(DrawerPopup, { forceMount: true }, () => [
+            h(DrawerTitle, () => TITLE_TEXT),
+            h('input', { 'data-testid': 'field' }),
+            h(DrawerClose, () => CLOSE_TEXT),
+          ]),
+        ]),
+      ]),
+    }))
+    return { ...result, open }
+  }
+
+  // v3 covers the page under a fully modal drawer with an internal backdrop, not `<body>` pointer-events.
+  const isPageBlocked = () => !!document.querySelector('[data-reka-internal-backdrop]')
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it.each([true, 'trap-focus', false] as const)('acts as an open drawer only while open (modal %s)', async (modal) => {
+    const user = userEvent.setup()
+    const { getByTestId, getByText, open, unmount } = renderDrawer(modal)
+    const content = document.querySelector('[role="dialog"]')!
+    await new Promise(resolve => setTimeout(resolve))
+    expect(content.getAttribute('data-state')).toBe('closed')
+    expect.soft(document.activeElement).toBe(document.body)
+    expect.soft(isPageBlocked()).toBe(false)
+    expect.soft(content.hasAttribute('forcemount')).toBe(false)
+
+    await user.click(getByText(OPEN_TEXT))
+    await vi.waitFor(() => expect(document.activeElement).toBe(getByTestId('field')))
+    expect(isPageBlocked()).toBe(modal === true)
+
+    await user.click(getByText(CLOSE_TEXT))
+    expect(open.value).toBe(false)
+    await vi.waitFor(() => expect(document.activeElement).toBe(getByText(OPEN_TEXT)))
+    expect(document.querySelector('[role="dialog"]')).toBe(content)
+    expect(isPageBlocked()).toBe(false)
+
+    unmount()
+  })
+})
+
+describe('update:openComplete', () => {
+  const DrawerWithOpenComplete = defineComponent({
+    components: { DrawerRoot, DrawerTrigger, DrawerPortal, DrawerPopup, DrawerTitle, DrawerClose },
+    props: {
+      onOpenComplete: { type: Function, required: true },
+    },
+    template: `
+      <DrawerRoot @update:open-complete="onOpenComplete">
+        <DrawerTrigger>Open</DrawerTrigger>
+        <DrawerPortal>
+          <DrawerPopup>
+            <DrawerTitle>T</DrawerTitle>
+            <DrawerClose>Close</DrawerClose>
+          </DrawerPopup>
+        </DrawerPortal>
+      </DrawerRoot>
+    `,
+  })
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    delete (HTMLElement.prototype as Partial<HTMLElement>).getAnimations
+  })
+
+  const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve))
+
+  // jsdom has no `getAnimations`: stub one animation whose end the test controls.
+  function stubAnimation() {
+    let finish!: () => void
+    const finished = new Promise<void>(resolve => finish = resolve)
+    // Reports `finished` once it has ended, so that the re-read after `finished` sees it done.
+    const animation = { playState: 'running', effect: { getComputedTiming: () => ({ endTime: 100 }) }, finished }
+    finished.then(() => animation.playState = 'finished')
+    HTMLElement.prototype.getAnimations = () => [animation as unknown as Animation]
+    return { finish }
+  }
+
+  it('emits true once the enter animation ends', async () => {
+    const enter = stubAnimation()
+    const onOpenComplete = vi.fn()
+    const { getByText } = render(DrawerWithOpenComplete, { props: { onOpenComplete } })
+    await fireEvent.click(getByText('Open'))
+    await nextFrame()
+    await nextTick()
+    expect(onOpenComplete).not.toHaveBeenCalled()
+
+    enter.finish()
+    await vi.waitFor(() => expect(onOpenComplete.mock.calls).toEqual([[true]]))
+  })
+
+  it('emits nothing for an opening that is interrupted by a close', async () => {
+    const animation = stubAnimation()
+    const onOpenComplete = vi.fn()
+    const { getByText } = render(DrawerWithOpenComplete, { props: { onOpenComplete } })
+    await fireEvent.click(getByText('Open'))
+    await nextFrame()
+    await fireEvent.click(getByText('Close'))
+    await nextFrame()
+    await nextTick()
+    // v3 waits for the running animation before it reports the close.
+    expect(onOpenComplete).not.toHaveBeenCalled()
+
+    animation.finish()
+    await vi.waitFor(() => expect(onOpenComplete.mock.calls).toEqual([[false]]))
+  })
+
+  it('emits true and then false when there is no animation to wait for', async () => {
+    const onOpenComplete = vi.fn()
+    const { getByText, queryByRole } = render(DrawerWithOpenComplete, { props: { onOpenComplete } })
+    await fireEvent.click(getByText('Open'))
+    await nextTick()
+    expect(onOpenComplete.mock.calls).toEqual([[true]])
+
+    await fireEvent.click(getByText('Close'))
+    await nextTick()
+    await nextTick()
+    expect(queryByRole('dialog')).toBeNull()
+    expect(onOpenComplete.mock.calls).toEqual([[true], [false]])
+  })
+
+  it('emits nothing when the root unmounts', async () => {
+    const onOpenComplete = vi.fn()
+    const { getByText, unmount } = render(DrawerWithOpenComplete, { props: { onOpenComplete } })
+    await fireEvent.click(getByText('Open'))
+    await nextTick()
+    unmount()
+    await nextTick()
+
+    expect(onOpenComplete.mock.calls).toEqual([[true]])
+  })
+})
+
+describe('given a Drawer root that stays mounted', () => {
+  function renderDrawer(contentProps: Record<string, unknown> = {}) {
+    let rootContext!: NonNullable<ReturnType<typeof injectDrawerRootContext>>
+    const ContextProbe = defineComponent({
+      setup() {
+        rootContext = injectDrawerRootContext()
+        return () => null
+      },
+    })
+    const open = ref(false)
+    const result = render(defineComponent({
+      setup: () => () => h(DrawerRoot, { open: open.value }, () => [
+        h(ContextProbe),
+        h(DrawerTrigger, () => OPEN_TEXT),
+        h(DrawerPopup, contentProps, () => [h(DrawerTitle, () => TITLE_TEXT), h(DrawerDescription, () => 'Description text')]),
+      ]),
+    }))
+    return { ...result, open, context: () => rootContext }
+  }
+
+  it('should release the closed content element', async () => {
+    const { open, context, unmount } = renderDrawer()
+
+    for (let cycle = 0; cycle < 2; cycle++) {
+      open.value = true
+      await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull())
+      expect(context().contentElement.value).toBe(document.querySelector('[role="dialog"]'))
+
+      open.value = false
+      await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeNull())
+      expect(context().contentElement.value).toBeUndefined()
+    }
+
+    unmount()
+  })
+
+  it('should keep a force-mounted content element registered while closed', async () => {
+    const { open, context, unmount } = renderDrawer({ forceMount: true })
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull())
+    const content = document.querySelector('[role="dialog"]')
+    expect(context().contentElement.value).toBe(content)
+
+    open.value = true
+    await nextTick()
+    open.value = false
+    await nextTick()
+    await nextTick()
+    expect(document.querySelector('[role="dialog"]')).toBe(content)
+    expect(context().contentElement.value).toBe(content)
+
+    unmount()
+  })
+})
+
+describe('given a DrawerSwipeArea', () => {
+  const renderArea = (props: Record<string, unknown>) => {
+    const { container } = render(() => h(DrawerRoot, () => h(DrawerSwipeArea, { 'data-testid': 'area', ...props })))
+    return container.querySelector<HTMLElement>('[data-testid="area"]')!
+  }
+
+  it.each(['div', 'span'])('renders no disabled attribute while enabled (%s)', (as) => {
+    expect(renderArea({ as }).hasAttribute('disabled')).toBe(false)
+  })
+
+  it('keeps the disabled attribute while disabled, without aria-disabled', () => {
+    const area = renderArea({ disabled: true })
+    expect(area.getAttribute('disabled')).toBe('true')
+    // The swipe area is not a control, so its disabled state is not announced.
+    expect(area.hasAttribute('aria-disabled')).toBe(false)
   })
 })

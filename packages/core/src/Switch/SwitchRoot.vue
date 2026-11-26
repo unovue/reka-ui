@@ -4,7 +4,7 @@ import type { SwitchChangeReason } from './useSwitch'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import type { FormFieldProps } from '@/shared/types'
-import { createContext, getRootNode, useFormControl, useForwardElement, useForwardScopeId } from '@/shared'
+import { createRekaContext, disabledAttr, getRootNode, useFormControl, useForwardElement, useForwardScopeId } from '@/shared'
 
 export interface SwitchRootProps<TrueValue = boolean, FalseValue = TrueValue> extends PrimitiveProps, FormFieldProps {
   /** The state of the switch when it is initially rendered. Use when you do not need to control its state. */
@@ -40,14 +40,15 @@ export interface SwitchRootContext {
 }
 
 export const [injectSwitchRootContext, provideSwitchRootContext]
-  = createContext<SwitchRootContext>('SwitchRoot')
+  = createRekaContext<SwitchRootContext>('SwitchRoot')
 </script>
 
 <script setup lang="ts" generic="TrueValue = true, FalseValue = false">
 import { computed, mergeProps, watch } from 'vue'
 import { useFieldBinding } from '@/Field/useFieldBinding'
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { formResetBinder } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useSwitch } from './useSwitch'
@@ -117,6 +118,7 @@ const { modelValue, checked, disabled, root, context, isControlled } = useSwitch
 })
 
 provideSwitchRootContext(context)
+useAgentRegistration('switch', context, props, currentElement)
 
 // A native reset of the owning form puts the value back to `defaultValue`.
 function onFormReset(event: Event) { resetControllableState(isControlled, event) }
@@ -138,13 +140,16 @@ const rootAttrs = computed(() => {
 // state attributes fill in what the switch leaves unset; its aria ids are
 // merged with the consumer's.
 function renderAttrs(attrs: Record<string, unknown>) {
+  // An enabled plain non-button tag gets no `disabled="false"`; a component still receives `false`.
+  const disabledBinding = { disabled: disabledAttr(disabled.value, props.as, props.asChild) }
   if (!field)
-    return mergeProps(rootAttrs.value, scopeIdAttrs, attrs)
+    return mergeProps(rootAttrs.value, scopeIdAttrs, attrs, disabledBinding)
   return field.fillDataAttributes(mergeProps(
     rootAttrs.value,
     scopeIdAttrs,
     attrs,
     { ...field.ariaAttrs(attrs, disabled.value), onFocus: field.onFocus, onBlur: field.onBlur },
+    disabledBinding,
   ))
 }
 
@@ -153,7 +158,7 @@ const bindFormReset = formResetBinder(onFormReset)
 
 <template>
   <component
-    :is="renderAs(as, asChild)"
+    :is="renderAsControl(as, asChild)"
     :id="resolvedId()"
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"

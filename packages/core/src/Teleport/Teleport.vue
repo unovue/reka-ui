@@ -35,8 +35,10 @@ import { isClient } from '@vueuse/shared'
 import { computed, getCurrentInstance, onMounted, ref, shallowRef } from 'vue'
 import { injectConfigProviderContext } from '@/ConfigProvider/ConfigProvider.vue'
 import { getRootNode, resolveTeleportTarget } from '@/shared'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 
 const props = defineProps<TeleportProps>()
+useAgentRegistration('portal', props, props)
 
 const configContext = injectConfigProviderContext({})
 

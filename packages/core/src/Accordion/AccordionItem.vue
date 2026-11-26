@@ -1,8 +1,9 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
 import type { CollapsibleRootProps } from '../Collapsible'
-import type { DisclosureState } from '@/shared'
-import { createContext, mergeExpose, setGeneratedIds, useForwardElement, useId } from '@/shared'
+import type { AccordionChangeReason } from './useAccordion'
+import type { ChangeEventDetails, DisclosureState } from '@/shared'
+import { createChangeEventDetails, createRekaContext, mergeExpose, setGeneratedIds, useForwardElement, useId } from '@/shared'
 import { injectAccordionRootContext } from './AccordionRoot.vue'
 
 export interface AccordionItemProps
@@ -21,6 +22,11 @@ export interface AccordionItemProps
 }
 
 export type AccordionItemEmits = {
+  /**
+   * Event handler called when the trigger asks for the item to open or close, or its closed content is
+   * found in the page. The accordion's `modelValue` holds the open state.
+   */
+  'update:open': [value: boolean, details: ChangeEventDetails<AccordionChangeReason>]
   /** Event handler called after the open or close animations of the content have finished. */
   'update:openComplete': [value: boolean]
 }
@@ -37,12 +43,15 @@ interface AccordionItemContext {
 }
 
 export const [injectAccordionItemContext, provideAccordionItemContext]
-  = createContext<AccordionItemContext>('AccordionItem')
+  = createRekaContext<AccordionItemContext>('AccordionItem')
 </script>
 
 <script setup lang="ts">
+import type { CollapsibleRootContext } from '@/Collapsible/CollapsibleRoot.vue'
 import { computed, ref, shallowRef } from 'vue'
-import { CollapsibleRoot } from '@/Collapsible'
+import { provideCollapsibleRootContext } from '@/Collapsible/CollapsibleRoot.vue'
+import { renderAs } from '@/Primitive/renderAs'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { getAccordionItemState } from './useAccordion'
 
 const props = withDefaults(
@@ -104,19 +113,38 @@ const itemContext: AccordionItemContext = {
 }
 setGeneratedIds(itemContext, { triggerId: triggerId.value })
 provideAccordionItemContext(itemContext)
+useAgentItem(rootContext, props, expose.element)
+
+// The item is its own collapsible root: `AccordionTrigger` and `AccordionContent` read this context as
+// they would under a `CollapsibleRoot`, without that component and its model state in between. The open
+// state belongs to the accordion, so a toggle only reports the state it asks for as `update:open`, at
+// the moments `CollapsibleRoot` emitted it.
+function reportOpen(value: boolean, reason: AccordionChangeReason, event?: Event) {
+  if (!disabled.value && value !== open.value)
+    emits('update:open', value, createChangeEventDetails<AccordionChangeReason>(reason, event))
+}
+// Allocated here rather than in the content: the trigger renders first and reads it for `aria-controls`.
+const contentId = ref(useId(undefined, 'reka-collapsible-content'))
+const collapsibleContext: CollapsibleRootContext = {
+  get contentId() { return contentId.value },
+  set contentId(value) { contentId.value = value },
+  disabled,
+  open,
+  unmountOnHide,
+  onOpenToggle: event => reportOpen(!open.value, 'trigger-press', event),
+  onContentFound: event => reportOpen(true, 'content-found', event),
+  notifyOpenComplete: value => emits('update:openComplete', value),
+}
+setGeneratedIds(collapsibleContext, { contentId: contentId.value })
+provideCollapsibleRootContext(collapsibleContext)
 </script>
 
 <template>
-  <CollapsibleRoot
+  <component
+    :is="renderAs(props.as, props.asChild)"
     :ref="forwardRef"
-    :as="props.as"
-    :as-child="props.asChild"
-    :open="open"
-    :disabled="disabled"
-    :unmount-on-hide="unmountOnHide"
     v-bind="surface.item.attrs.value"
-    @update:open-complete="emits('update:openComplete', $event)"
   >
     <slot :open="open" />
-  </CollapsibleRoot>
+  </component>
 </template>

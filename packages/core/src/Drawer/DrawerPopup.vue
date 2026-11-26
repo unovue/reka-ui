@@ -22,7 +22,7 @@ export interface DrawerPopupProps extends Omit<DrawerContentImplProps, 'trapFocu
 </script>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, onUnmounted, watch } from 'vue'
 import { Presence } from '@/Presence'
 import { useBodyScrollLock, useEmitAsProps, useForwardElement, useHideOthers, usePartId } from '@/shared'
 import { isPortalOpening } from '@/Teleport/portalGate'
@@ -41,6 +41,11 @@ const rootContext = injectDrawerRootContext()
 // mirrored into the context for the trigger's `aria-controls`.
 const contentId = usePartId(() => props.id, rootContext, 'contentId')
 const emitsAsProps = useEmitAsProps(emits)
+// `forceMount` belongs to the `Presence` here, not to the content element.
+const forwardedProps = computed(() => {
+  const { forceMount: _, ...rest } = props
+  return rest
+})
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
@@ -69,10 +74,45 @@ watch(() => rootContext.open.value, (isOpen, wasOpen) => {
   if (props.forceMount && wasOpen && !isOpen)
     onCloseWhileMounted()
 }, { flush: 'post' })
+
+// A closed force-mounted content removed later has already returned focus on
+// close (above): its final unmount leaves focus where it is.
+function skipsUnmountFocus() {
+  return props.forceMount && !rootContext.open.value
+}
+function onCloseAutoFocusModalOnce(event: Event) {
+  if (skipsUnmountFocus()) {
+    event.preventDefault()
+    return
+  }
+  onCloseAutoFocusModal(event)
+}
+function onCloseAutoFocusNonModalOnce(event: Event) {
+  if (skipsUnmountFocus()) {
+    event.preventDefault()
+    return
+  }
+  onCloseAutoFocusNonModal(event)
+}
 // Only while open: a `forceMount`ed drawer that is closed hides nothing and
 // mounts no backdrop.
 const shouldHideOthers = computed(() => isFullModal.value && rootContext.open.value ? currentElement.value : undefined)
 useHideOthers(shouldHideOthers)
+
+// A close is reported once the exit animation ends. When the popup is removed
+// before that (its parent stopped rendering it), the close is complete.
+let isClosePending = false
+watch(() => rootContext.open.value, (open) => {
+  isClosePending = !open
+})
+function onPresenceComplete(value: boolean) {
+  isClosePending = false
+  rootContext.notifyOpenComplete?.(value)
+}
+onUnmounted(() => {
+  if (isClosePending && !rootContext.open.value)
+    rootContext.notifyOpenComplete?.(false)
+})
 
 // BaseUI parity (`useDialogRoot`): only a fully modal drawer locks page scroll,
 // with or without a `DrawerBackdrop`; `'trap-focus'` leaves the page scrollable.
@@ -84,18 +124,20 @@ watch(() => isFullModal.value && rootContext.open.value, (locked) => {
 
 <template>
   <Presence
+    v-slot="{ present }"
     :appear="isPortalOpening(rootContext)"
     :present="rootContext.open.value"
     :force-mount="forceMount"
-    @complete="rootContext.notifyOpenComplete"
+    @complete="onPresenceComplete"
   >
     <DrawerContentImpl
       v-if="isFullModal"
       :ref="forwardRef"
-      v-bind="{ ...props, ...emitsAsProps, ...$attrs, id: contentId }"
+      v-bind="{ ...forwardedProps, ...emitsAsProps, ...$attrs, id: contentId }"
+      :present="forceMount ? present : true"
       :trap-focus="shouldTrapFocus"
       :disable-outside-pointer-events="rootContext.open.value"
-      @close-auto-focus="onCloseAutoFocusModal"
+      @close-auto-focus="onCloseAutoFocusModalOnce"
       @pointer-down-outside="onPointerDownOutsideModal"
       @focus-outside="onFocusOutsideModal"
     >
@@ -105,10 +147,11 @@ watch(() => isFullModal.value && rootContext.open.value, (locked) => {
     <DrawerContentImpl
       v-else
       :ref="forwardRef"
-      v-bind="{ ...props, ...emitsAsProps, ...$attrs, id: contentId }"
+      v-bind="{ ...forwardedProps, ...emitsAsProps, ...$attrs, id: contentId }"
+      :present="forceMount ? present : true"
       :trap-focus="shouldTrapFocus"
       :disable-outside-pointer-events="false"
-      @close-auto-focus="onCloseAutoFocusNonModal"
+      @close-auto-focus="onCloseAutoFocusNonModalOnce"
       @interact-outside="onInteractOutsideNonModal"
     >
       <slot />

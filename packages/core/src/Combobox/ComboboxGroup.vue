@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { ListboxGroupProps } from '@/Listbox'
-import { createContext, useForwardElement, useId } from '@/shared'
+import { createRekaContext, useForwardElement, useId } from '@/shared'
 
 export interface ComboboxGroupProps extends ListboxGroupProps {}
 
@@ -10,7 +10,7 @@ type ComboboxGroupContext = {
 }
 
 export const [injectComboboxGroupContext, provideComboboxGroupContext]
-  = createContext<ComboboxGroupContext>('ComboboxGroup')
+  = createRekaContext<ComboboxGroupContext>('ComboboxGroup')
 </script>
 
 <script setup lang="ts">

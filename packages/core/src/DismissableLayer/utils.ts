@@ -81,13 +81,22 @@ export function isLayerExist(
   const nodeList = snapshot ?? layerElements()
   const mainIndex = nodeList.indexOf(mainLayer)
 
+  // Another Editable is a sibling, not a layer above this one: focusing or
+  // pressing it ends this one's edit (#3047). Unless it sits in a layer (a
+  // Dialog, a Popover) that this Editable is not in, which is above it.
+  const domTargetLayer = targetElement.closest('[data-dismissable-layer]')
+  if (mainLayer.hasAttribute('data-editable-root') && domTargetLayer?.hasAttribute('data-editable-root')) {
+    const isInAnotherLayer = nodeList.some(layer => containsComposed(layer, targetElement) && !containsComposed(layer, mainLayer))
+    if (!isInAnotherLayer)
+      return false
+  }
+
   // An unregistered `mainLayer` (e.g. an Editable, which only subscribes and
   // never registers a `StackLayer`) has no stack index, so fall back to the
   // document-order rule the `querySelectorAll` snapshot used to encode: a layer
   // that FOLLOWS it in the document counts as above it. This keeps an Editable
   // inside a Dialog ending its edit on a click elsewhere in that Dialog.
   if (mainIndex === -1) {
-    const domTargetLayer = targetElement.closest('[data-dismissable-layer]')
     return !!domTargetLayer
       && !!(mainLayer.compareDocumentPosition(domTargetLayer) & Node.DOCUMENT_POSITION_FOLLOWING)
   }
@@ -119,6 +128,74 @@ export function usePointerDownOutside(
   element?: Readonly<Ref<HTMLElement | null | undefined>>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {
+  /**
+   * Work held back while a touch press outside is in flight, i.e. between its
+   * `pointerdown` and the `click` its `pointerDownOutside` is deferred to. The
+   * listeners that end the press live only while one is pending.
+   */
+  let isTouchPressPending = false
+  let heldUntilTouchPressEnds: Array<() => void> = []
+  let removePressEndListeners = () => {}
+
+  function endTouchPress() {
+    if (!isTouchPressPending)
+      return
+    isTouchPressPending = false
+    removePressEndListeners()
+    const held = heldUntilTouchPressEnds
+    heldUntilTouchPressEnds = []
+    held.forEach(run => run())
+  }
+
+  function dropTouchPress() {
+    isTouchPressPending = false
+    heldUntilTouchPressEnds = []
+    removePressEndListeners()
+  }
+
+  function startTouchPress(ownerDocument: Document) {
+    removePressEndListeners()
+    isTouchPressPending = true
+    let timerId: number | undefined
+    // A press that turns into a scroll or a long press is cancelled instead of
+    // clicked, and a press can end without its `click` reaching the document
+    // (its propagation stopped): whatever it held back runs then, the latter in
+    // the next task so that the deferred `pointerDownOutside` still runs first.
+    // The next press ends it too, before anything handles that press.
+    const handleClickCapture = () => {
+      window.clearTimeout(timerId)
+      timerId = window.setTimeout(endTouchPress)
+    }
+    const handleEnd = () => endTouchPress()
+    ownerDocument.addEventListener('click', handleClickCapture, true)
+    ownerDocument.addEventListener('pointercancel', handleEnd, true)
+    ownerDocument.addEventListener('pointerdown', handleEnd, true)
+    removePressEndListeners = () => {
+      window.clearTimeout(timerId)
+      ownerDocument.removeEventListener('click', handleClickCapture, true)
+      ownerDocument.removeEventListener('pointercancel', handleEnd, true)
+      ownerDocument.removeEventListener('pointerdown', handleEnd, true)
+      removePressEndListeners = () => {}
+    }
+  }
+
+  /**
+   * Runs `callback` once the touch press outside in flight has ended (right away
+   * when there is none), after its deferred `pointerDownOutside`.
+   *
+   * iOS WebKit fires a tap's compatibility mouse events in a later task than its
+   * pointer events, and its `mousedown` focuses the tapped button's focusable
+   * ancestor. That focus move belongs to the press, so it must not be handled
+   * before the press is: with a mouse, `pointerDownOutside` comes first, and a
+   * trigger in a focusable container relies on that to close its own layer (#3360).
+   */
+  function runAfterTouchPress(callback: () => void) {
+    if (isTouchPressPending)
+      heldUntilTouchPressEnds.push(callback)
+    else
+      callback()
+  }
+
   const subscriber: OutsideSubscriber = {
     armed: false, // set true a macrotask after registration by the manager
     isPointerInside: false,
@@ -169,10 +246,17 @@ export function usePointerDownOutside(
          * `deferTouch` replaces the previous pending dispatch (= the "continuously
          * remove the previous listener" behavior) via the manager's shared click listener.
          */
-        if (event.pointerType === 'touch')
-          ctx.deferTouch(subscriber, handleAndDispatchPointerDownOutsideEvent)
-        else
+        if (event.pointerType === 'touch') {
+          // Added during this `pointerdown`'s bubble phase, so only a later press ends it.
+          startTouchPress(target.ownerDocument ?? globalThis.document)
+          ctx.deferTouch(subscriber, () => {
+            handleAndDispatchPointerDownOutsideEvent()
+            endTouchPress()
+          })
+        }
+        else {
           handleAndDispatchPointerDownOutsideEvent()
+        }
       }
       else {
         // Cancel a pending deferred dispatch when the outside click was canceled.
@@ -186,7 +270,12 @@ export function usePointerDownOutside(
   watchEffect((cleanupFn) => {
     if (!isClient || !toValue(enabled))
       return
-    cleanupFn(registerOutsideSubscriber(subscriber))
+    const unregister = registerOutsideSubscriber(subscriber)
+    cleanupFn(() => {
+      unregister()
+      // The layer is gone or no longer listening: drop what the press held back.
+      dropTouchPress()
+    })
   })
   useOwnerDocumentListeners(element, enabled)
 
@@ -196,6 +285,7 @@ export function usePointerDownOutside(
         return
       subscriber.isPointerInside = true
     },
+    runAfterTouchPress,
   }
 }
 
@@ -259,4 +349,123 @@ export function useFocusOutside(
     cleanupFn(registerOutsideSubscriber(subscriber))
   })
   useOwnerDocumentListeners(element, enabled)
+}
+
+let pressedTrigger: Element | undefined
+let endTrackedPress = () => {}
+
+/**
+ * Records a primary-button press on a trigger, from its `pointerdown` until the
+ * task after its `click` (or `pointercancel`, or the next press). WebKit does not
+ * focus a pressed button but its focusable ancestor, so a layer uses this to tell
+ * that focus move apart from focus moving on its own (#3360).
+ */
+export function trackTriggerPress(event: PointerEvent) {
+  startTriggerPress(event.currentTarget as Element | null, event)
+}
+
+function startTriggerPress(trigger: Element | null | undefined, event: PointerEvent) {
+  endTrackedPress()
+  if (!isClient || !trigger || event.button !== 0)
+    return
+  const ownerDocument = trigger.ownerDocument
+  let timerId: number | undefined
+  // Kept until the next task, so a focus move handled during the `click` (e.g. one
+  // a layer held back until it) still counts as part of the press.
+  function handleEnd() {
+    removeListeners()
+    timerId = window.setTimeout(release)
+  }
+  function removeListeners() {
+    ownerDocument.removeEventListener('click', handleEnd, true)
+    ownerDocument.removeEventListener('pointercancel', handleEnd, true)
+    ownerDocument.removeEventListener('pointerdown', release, true)
+  }
+  function release() {
+    window.clearTimeout(timerId)
+    removeListeners()
+    if (pressedTrigger === trigger)
+      pressedTrigger = undefined
+    endTrackedPress = () => {}
+  }
+  ownerDocument.addEventListener('click', handleEnd, true)
+  ownerDocument.addEventListener('pointercancel', handleEnd, true)
+  // Added while this `pointerdown` is past the document, so only a later press ends it.
+  ownerDocument.addEventListener('pointerdown', release, true)
+  pressedTrigger = trigger
+  endTrackedPress = release
+}
+
+const pressTrackedDocuments = new WeakSet<Document>()
+
+function findPopupTrigger(event: PointerEvent) {
+  for (const target of event.composedPath()) {
+    if (target instanceof Element && target.hasAttribute('aria-haspopup'))
+      return target
+  }
+}
+
+/**
+ * `trackTriggerPress` for every popup trigger (an element with `aria-haspopup`) in
+ * `ownerDocument`, from one capture listener on the document added on the first call, for
+ * triggers without a `pointerdown` handler of their own: no listener per trigger.
+ */
+export function trackTriggerPresses(ownerDocument: Document | undefined = isClient ? document : undefined) {
+  if (!ownerDocument || pressTrackedDocuments.has(ownerDocument))
+    return
+  pressTrackedDocuments.add(ownerDocument)
+  ownerDocument.addEventListener('pointerdown', (event) => {
+    const trigger = findPopupTrigger(event)
+    if (trigger)
+      startTriggerPress(trigger, event)
+  }, true)
+}
+
+/** Whether a press tracked by `trackTriggerPress` on `trigger` is in flight. */
+export function isTriggerPressInFlight(trigger: Element | undefined | null) {
+  return !!trigger && pressedTrigger === trigger
+}
+
+/**
+ * Keeps the `mousedown` of an outside mouse press from moving focus, once the layer
+ * dismissed on that press (`event` was not prevented). A layer closes on the press's
+ * `pointerdown` and returns focus then; the `mousedown` that follows would move focus
+ * on to the pressed element, and a backdrop takes none, so it would be dropped on
+ * `body`. A touch press dispatches its `pointerDownOutside` after its mouse events.
+ */
+export function preventPressFocusMove(event: PointerDownOutsideEvent) {
+  const originalEvent = event.detail.originalEvent
+  if (!isClient || originalEvent.type !== 'pointerdown' || originalEvent.pointerType === 'touch')
+    return
+  const ownerDocument = (originalEvent.target as Node | null)?.ownerDocument ?? globalThis.document
+  function handleMouseDown(mouseEvent: MouseEvent) {
+    release()
+    if (!event.defaultPrevented)
+      mouseEvent.preventDefault()
+  }
+  // WebKit sends no `mousedown` once the pressed backdrop is gone, but still moves focus
+  // as that `mousedown` would, onto nothing. Put back the focus the layer returned.
+  function handleFocusOut(focusEvent: FocusEvent) {
+    const blurred = focusEvent.composedPath()[0]
+    if (focusEvent.relatedTarget || event.defaultPrevented || !(blurred instanceof HTMLElement))
+      return
+    queueMicrotask(() => {
+      const active = ownerDocument.activeElement
+      if (blurred.isConnected && (!active || active === ownerDocument.body)) {
+        release()
+        blurred.focus({ preventScroll: true })
+      }
+    })
+  }
+  // A `pointerdown` whose default was prevented has no `mousedown`.
+  function release() {
+    ownerDocument.removeEventListener('mousedown', handleMouseDown, true)
+    ownerDocument.removeEventListener('focusout', handleFocusOut, true)
+    ownerDocument.removeEventListener('pointerup', release, true)
+    ownerDocument.removeEventListener('pointercancel', release, true)
+  }
+  ownerDocument.addEventListener('mousedown', handleMouseDown, true)
+  ownerDocument.addEventListener('focusout', handleFocusOut, true)
+  ownerDocument.addEventListener('pointerup', release, true)
+  ownerDocument.addEventListener('pointercancel', release, true)
 }

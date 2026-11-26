@@ -3,6 +3,7 @@ import type { Matcher } from '@/date'
 import TimeRangeField from './_DummyTimeRangeField.vue'
 
 const defaultValue = { start: new Temporal.PlainTime(10, 0), end: new Temporal.PlainTime(12, 0) }
+const overnightValue = { start: new Temporal.PlainTime(23, 0), end: new Temporal.PlainTime(7, 0) }
 const minValue = new Temporal.PlainTime(9, 0)
 const maxValue = new Temporal.PlainTime(18, 0)
 
@@ -34,6 +35,17 @@ const isDisabledTime: Matcher = (time) => {
       <TimeRangeField
         :default-value="defaultValue"
         :is-time-disabled="isDisabledTime"
+      />
+    </Variant>
+
+    <Variant title="Overnight Range">
+      <TimeRangeField :default-value="overnightValue" />
+    </Variant>
+
+    <Variant title="Overnight Range (allowWrap)">
+      <TimeRangeField
+        allow-wrap
+        :default-value="overnightValue"
       />
     </Variant>
   </Story>

@@ -40,7 +40,7 @@ export type RovingFocusGroupEmits = {
   'update:currentTabStopId': [value: string | null | undefined]
 }
 
-export { injectRovingFocusGroupContext, provideRovingFocusGroupContext } from './useRovingFocusGroup'
+export { injectRovingFocusGroupContext, provideRovingFocusGroupContext, provideRovingFocusNoActiveItem } from './useRovingFocusGroup'
 </script>
 
 <script setup lang="ts">

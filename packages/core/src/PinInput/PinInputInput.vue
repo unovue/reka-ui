@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
 import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
-import { useForwardElement } from '@/shared'
+import { disabledAttr, useForwardElement } from '@/shared'
 import { injectPinInputFieldSlots, injectPinInputRootContext } from './PinInputRoot.vue'
 import { createPinInputInputSurface } from './usePinInput'
 
@@ -70,7 +70,9 @@ if (fieldSlots) {
   <component
     :is="renderAsEmpty(as, asChild)"
     :ref="forwardRef"
+    data-reka-pin-input=""
     v-bind="input.attrs.value"
+    :disabled="disabledAttr(input.attrs.value.disabled as boolean | undefined, as, asChild)"
   >
     <template
       v-if="rendersChildren(as, asChild)"

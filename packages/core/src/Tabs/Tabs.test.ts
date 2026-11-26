@@ -3,7 +3,7 @@ import { renderToString } from '@vue/server-renderer'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
+import { createApp, createSSRApp, defineComponent, h, nextTick, ref, useId } from 'vue'
 import { ConfigProvider } from '@/ConfigProvider'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from '.'
 import Tabs from './story/_Tabs.vue'
@@ -67,6 +67,117 @@ describe('ssr hydration', () => {
     const warnings = warn.mock.calls.flat().join('\n')
     expect(warnings).not.toContain('Hydration attribute mismatch')
     expect(error.mock.calls.flat().join('\n')).not.toContain('Hydration completed but contains mismatches')
+  })
+
+  it('makes the active trigger the tab stop in the server HTML, then hands it to the list', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const container = document.createElement('div')
+    container.innerHTML = await renderToString(createSSRApp(TabsHydrationFixture))
+    document.body.innerHTML = ''
+    document.body.append(container)
+
+    const tabindexes = () => [
+      container.querySelector('[role="tablist"]')?.getAttribute('tabindex'),
+      ...Array.from(container.querySelectorAll('[role="tab"]'), tab => tab.getAttribute('tabindex')),
+    ]
+    // before hydration the active trigger is the only stop
+    expect(tabindexes()).toEqual(['-1', '0', '-1'])
+
+    createSSRApp(TabsHydrationFixture).mount(container)
+    await nextTick()
+
+    // after mount the list is the stop again and forwards focus to the active trigger
+    expect(tabindexes()).toEqual(['0', '-1', '-1'])
+    expect(warn.mock.calls.flat().join('\n')).not.toContain('Hydration attribute mismatch')
+    expect(error.mock.calls.flat().join('\n')).not.toContain('Hydration completed but contains mismatches')
+  })
+
+  // `usedIds` stands for whatever else consumed ids before the tabs: when the server
+  // and the client disagree on it, every generated id differs between the two.
+  function createTabsFixture(usedIds = 0) {
+    return defineComponent({
+      setup() {
+        for (let i = 0; i < usedIds; i++)
+          useId()
+        return () => h(TabsRoot, { defaultValue: 'account' }, () => [
+          h(TabsList, () => [
+            h(TabsTrigger, { value: 'account' }, () => 'Account'),
+            h(TabsTrigger, { value: 'password' }, () => 'Password'),
+          ]),
+          h(TabsContent, { value: 'account' }, () => 'Account content'),
+          h(TabsContent, { value: 'password' }, () => 'Password content'),
+        ])
+      },
+    })
+  }
+
+  it('points aria-controls at the hydrated content when server and client ids diverge', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const container = document.createElement('div')
+    container.innerHTML = await renderToString(createSSRApp(createTabsFixture(5)))
+    document.body.innerHTML = ''
+    document.body.append(container)
+    const serverPanelIds = Array.from(container.querySelectorAll('[role="tabpanel"]'), panel => panel.id)
+
+    const app = createSSRApp(createTabsFixture())
+    app.mount(container)
+    await flushPromises()
+
+    const triggers = Array.from(container.querySelectorAll('[role="tab"]'))
+    const panels = () => Array.from(container.querySelectorAll('[role="tabpanel"]'))
+    // Hydration keeps the ids of the server render. v3 renders only the active panel, and a
+    // trigger references its panel only while the panel is rendered.
+    expect(panels().map(panel => panel.id)).toEqual(serverPanelIds)
+    expect(triggers.map(trigger => trigger.getAttribute('aria-controls'))).toEqual([serverPanelIds[0], null])
+    expect(panels().map(panel => panel.getAttribute('aria-labelledby'))).toEqual([triggers[0].id])
+
+    triggers[1].dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0 }))
+    await flushPromises()
+    expect(triggers[1].getAttribute('aria-selected')).toBe('true')
+    // The newly rendered panel is the client's; every reference still resolves.
+    const controlled = triggers[1].getAttribute('aria-controls')
+    expect(controlled && container.querySelector(`#${controlled}`)?.getAttribute('aria-labelledby')).toBe(triggers[1].id)
+    expect(triggers[0].getAttribute('aria-controls')).toBeNull()
+
+    app.unmount()
+  })
+
+  // Inline snapshots regenerated for v3 (checked/unchecked, inactive content unmounted).
+  it('keeps the default output when ids do not diverge', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    // The mount animation guard is lifted in an animation frame, which changes `style`.
+    const settled = async () => {
+      await flushPromises()
+      await new Promise(resolve => requestAnimationFrame(resolve))
+      await nextTick()
+    }
+
+    const server = await renderToString(createSSRApp(createTabsFixture()))
+    expect(server).toMatchInlineSnapshot(`"<div data-orientation="horizontal" dir="ltr"><!--[--><div tabindex="-1" data-orientation="horizontal" dir="ltr" style="outline:none;" role="tablist" aria-orientation="horizontal"><!--[--><button data-reka-collection-item tabindex="0" data-orientation="horizontal" data-active type="button" data-state="checked" id="reka-tabs-v-0-trigger-account" role="tab" aria-selected="true"><!--[-->Account<!--]--></button><button data-reka-collection-item tabindex="-1" data-orientation="horizontal" type="button" data-state="unchecked" id="reka-tabs-v-0-trigger-password" role="tab" aria-selected="false"><!--[-->Password<!--]--></button><!--]--></div><div data-state="checked" data-orientation="horizontal" id="reka-tabs-v-0-content-account" role="tabpanel" aria-labelledby="reka-tabs-v-0-trigger-account" tabindex="0" style="animation-duration:0s;"><!--[-->Account content<!--]--></div><!----><!--]--></div>"`)
+
+    const container = document.createElement('div')
+    container.innerHTML = server
+    document.body.innerHTML = ''
+    document.body.append(container)
+    const hydrated = createSSRApp(createTabsFixture())
+    hydrated.mount(container)
+    await settled()
+    expect(container.innerHTML).toMatchInlineSnapshot(`"<div data-orientation="horizontal" dir="ltr"><!--[--><div tabindex="0" data-orientation="horizontal" dir="ltr" style="outline:none;" role="tablist" aria-orientation="horizontal"><!--[--><button data-reka-collection-item="" tabindex="-1" data-orientation="horizontal" data-active="" type="button" data-state="checked" id="reka-tabs-v-0-trigger-account" role="tab" aria-selected="true" aria-controls="reka-tabs-v-0-content-account"><!--[-->Account<!--]--></button><button data-reka-collection-item="" tabindex="-1" data-orientation="horizontal" type="button" data-state="unchecked" id="reka-tabs-v-0-trigger-password" role="tab" aria-selected="false"><!--[-->Password<!--]--></button><!--]--></div><div data-state="checked" data-orientation="horizontal" id="reka-tabs-v-0-content-account" role="tabpanel" aria-labelledby="reka-tabs-v-0-trigger-account" tabindex="0" style=""><!--[-->Account content<!--]--></div><!----><!--]--></div>"`)
+    expect([...warn.mock.calls, ...error.mock.calls]).toEqual([])
+    hydrated.unmount()
+
+    const clientContainer = document.createElement('div')
+    document.body.append(clientContainer)
+    const client = createApp(createTabsFixture())
+    client.mount(clientContainer)
+    await settled()
+    expect(clientContainer.innerHTML).toMatchInlineSnapshot(`"<div data-orientation="horizontal" dir="ltr"><div tabindex="0" data-orientation="horizontal" dir="ltr" style="outline: none;" role="tablist" aria-orientation="horizontal"><button data-reka-collection-item="" tabindex="-1" data-orientation="horizontal" data-active="" type="button" data-state="checked" id="reka-tabs-v-0-trigger-account" role="tab" aria-selected="true" aria-controls="reka-tabs-v-0-content-account">Account</button><button data-reka-collection-item="" tabindex="-1" data-orientation="horizontal" type="button" data-state="unchecked" id="reka-tabs-v-0-trigger-password" role="tab" aria-selected="false">Password</button></div><div data-state="checked" data-orientation="horizontal" id="reka-tabs-v-0-content-account" role="tabpanel" aria-labelledby="reka-tabs-v-0-trigger-account" tabindex="0" style="">Account content</div><!----></div>"`)
+    client.unmount()
   })
 })
 
@@ -367,6 +478,77 @@ describe('given Tabs without TabsContent', () => {
     const triggers = wrapper.findAll('[role="tab"]')
     expect(triggers[0].attributes('aria-controls')).toBeDefined()
     expect(triggers[1].attributes('aria-controls')).toBeUndefined()
+  })
+
+  it('should render aria-controls matching the TabsContent id', async () => {
+    const wrapper = mount({
+      components: { TabsRoot, TabsList, TabsTrigger, TabsContent },
+      template: `
+        <TabsRoot default-value="tab1">
+          <TabsList>
+            <TabsTrigger value="tab1">Tab 1</TabsTrigger>
+          </TabsList>
+          <TabsContent id="rendered-id" value="tab1">Content 1</TabsContent>
+        </TabsRoot>
+      `,
+    })
+    await flushPromises()
+
+    const trigger = wrapper.find('[role="tab"]')
+    const content = wrapper.find('[role="tabpanel"]')
+    expect(trigger.attributes('aria-controls')).toBe(content.attributes('id'))
+  })
+
+  it('should update aria-controls when the TabsContent value changes', async () => {
+    const wrapper = mount({
+      components: { TabsRoot, TabsList, TabsTrigger, TabsContent },
+      props: { value: String },
+      template: `
+        <TabsRoot :default-value="value">
+          <TabsList>
+            <TabsTrigger :value="value">Tab 1</TabsTrigger>
+          </TabsList>
+          <TabsContent :value="value">Content 1</TabsContent>
+        </TabsRoot>
+      `,
+    }, { props: { value: 'tab1' } })
+    await flushPromises()
+
+    await wrapper.setProps({ value: 'tab2' })
+    await flushPromises()
+
+    const trigger = wrapper.find('[role="tab"]')
+    const content = wrapper.find('[role="tabpanel"]')
+    expect(trigger.attributes('aria-controls')).toBe(content.attributes('id'))
+  })
+})
+
+describe('given a TabsContent whose id changes while mounted', () => {
+  it('should keep aria-controls in sync with the id', async () => {
+    const wrapper = mount({
+      components: { TabsRoot, TabsList, TabsTrigger, TabsContent },
+      props: { panelId: String },
+      template: `
+        <TabsRoot default-value="tab1">
+          <TabsList>
+            <TabsTrigger value="tab1">Tab 1</TabsTrigger>
+          </TabsList>
+          <TabsContent :id="panelId" value="tab1">Content 1</TabsContent>
+        </TabsRoot>
+      `,
+    }, { props: { panelId: 'x' } })
+    await flushPromises()
+
+    const trigger = wrapper.find('[role="tab"]')
+    const content = wrapper.find('[role="tabpanel"]')
+    expect(content.attributes('id')).toBe('x')
+    expect(trigger.attributes('aria-controls')).toBe('x')
+
+    await wrapper.setProps({ panelId: 'y' })
+    await flushPromises()
+
+    expect(content.attributes('id')).toBe('y')
+    expect(trigger.attributes('aria-controls')).toBe('y')
   })
 })
 
@@ -669,5 +851,18 @@ describe('given TabsTrigger with consumer event listeners', () => {
     await nextTick()
     expect(value.value).toBe('one')
     expect(event.defaultPrevented).toBe(true)
+  })
+})
+
+describe('given a part whose value is undefined', () => {
+  it('should mount a trigger and a content without a value', () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(TabsRoot, () => [
+        h(TabsList, () => h(TabsTrigger, { value: undefined as unknown as string }, () => 'Tab')),
+        h(TabsContent, { value: undefined as unknown as string }, () => 'Panel'),
+      ]),
+    }))
+    expect(wrapper.find('[role="tab"]').exists()).toBe(true)
+    wrapper.unmount()
   })
 })

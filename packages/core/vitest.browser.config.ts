@@ -3,7 +3,7 @@ import process from 'node:process'
 import vue from '@vitejs/plugin-vue'
 import { playwright } from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
-import { mouseDrag, wheelAt } from './vitest.browser.commands'
+import { mouseDown, mouseDrag, mouseUp, requestGC, setReducedMotion, wheelAt } from './vitest.browser.commands'
 
 // Runs `*.browser.test.ts` in a real browser, for behaviour jsdom cannot
 // represent: trusted key events, native focus order, form submission and layout.
@@ -50,7 +50,7 @@ export default defineConfig({
       // can't move into an iframe. Its files run one after another.
       instances: (engines as Engine[]).map(browser => browser === 'firefox' ? { browser, fileParallelism: false } : { browser }),
       screenshotFailures: false,
-      commands: { mouseDrag, wheelAt },
+      commands: { mouseDown, mouseDrag, mouseUp, requestGC, setReducedMotion, wheelAt },
     },
     projects: [
       {
@@ -58,7 +58,8 @@ export default defineConfig({
         test: {
           name: 'browser',
           include: ['./**/*.browser.test.{ts,js}'],
-          exclude: [...configDefaults.exclude, REACT_TESTS],
+          // The Vapor build has its own suite and config (`vitest.vapor.config.ts`).
+          exclude: [...configDefaults.exclude, REACT_TESTS, './vapor/**'],
         },
       },
       {

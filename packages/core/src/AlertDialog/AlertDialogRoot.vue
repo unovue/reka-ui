@@ -16,9 +16,11 @@ export interface AlertDialogProps<Payload = unknown> extends Omit<DialogRootProp
 </script>
 
 <script setup lang="ts" generic="Payload = unknown">
-import { provideDialogRootContext } from '@/Dialog/DialogRoot.vue'
+import { injectDialogRootContext, provideDialogRootContext } from '@/Dialog/DialogRoot.vue'
+import { useNestedDialogs } from '@/Dialog/nestedDialogs'
 import { useId } from '@/shared'
 import { usePopupHandleAttachment } from '@/shared/popupHandle'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { useAlertDialog } from './useAlertDialog'
 
 defineOptions({
@@ -61,7 +63,9 @@ const { open, onOpenChange, context, payload, activeTriggerId, handleStore } = u
   defaultTriggerId: props.defaultTriggerId,
 })
 
+useNestedDialogs(context, injectDialogRootContext(null))
 provideDialogRootContext(context)
+useAgentRegistration('dialog', context, props)
 // Client-only: the Root's state reaches a (possibly module-scope) handle only once mounted.
 usePopupHandleAttachment(handleStore)
 </script>

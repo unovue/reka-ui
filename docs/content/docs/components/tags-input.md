@@ -195,6 +195,41 @@ const delimiter = /[ ,;\t\n\r]+/
 </template>
 ```
 
+### Duplicate tags
+
+With `duplicate`, the same value can appear more than once. Deleting a tag removes the occurrence you deleted, matched by its position among the rendered tags with that value. When you render the tags in another order than the model, or only some of them, pass each tag's index in `modelValue` as `modelIndex`, so the delete button and <kbd>Backspace</kbd> remove that entry. A `modelIndex` that does not point at an equal value is ignored, and the tag is matched by its position instead.
+
+```vue line=8,15,21
+<script setup lang="ts">
+import { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot } from 'reka-ui'
+import { computed, ref } from 'vue'
+
+const tags = ref(['Vue', 'React', 'Vue'])
+// Rendered newest first, while the model keeps the order they were added in
+const newestFirst = computed(() =>
+  tags.value.map((value, modelIndex) => ({ value, modelIndex })).reverse(),
+)
+</script>
+
+<template>
+  <TagsInputRoot
+    v-model="tags"
+    duplicate
+  >
+    <TagsInputItem
+      v-for="tag in newestFirst"
+      :key="tag.modelIndex"
+      :value="tag.value"
+      :model-index="tag.modelIndex"
+    >
+      <TagsInputItemText />
+      <TagsInputItemDelete />
+    </TagsInputItem>
+    <TagsInputInput placeholder="Add a framework..." />
+  </TagsInputRoot>
+</template>
+```
+
 ## Real-world examples
 
 - [Combobox TagsInput](/examples/combobox-tags-input): Rendering [Combobox](/docs/components/combobox) with [Tags Input](/docs/components/tags-input).
@@ -223,11 +258,11 @@ const delimiter = /[ ,;\t\n\r]+/
     },
     {
       keys: ['Home'],
-      description: '<span> Set the first tag active</span>',
+      description: '<span> When a tag is active, set the first tag active. Otherwise moves the caret in the input.</span>',
     },
     {
       keys: ['End'],
-      description: '<span> Set the last tag active</span>',
+      description: '<span> When a tag is active, set the last tag active. Otherwise moves the caret in the input.</span>',
     },
   ]"
 />

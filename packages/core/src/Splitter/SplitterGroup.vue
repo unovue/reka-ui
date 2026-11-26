@@ -6,7 +6,7 @@ import type { Direction, DragState, ResizeEvent, ResizeHandler } from './utils/t
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import type { Direction as ReadingDirection } from '@/shared/types'
-import { createContext, useDirection, useForwardElement, useId } from '@/shared'
+import { createRekaContext, useDirection, useForwardElement, useId } from '@/shared'
 
 export interface SplitterGroupProps extends Omit<PrimitiveProps, 'id'> {
   /** Group id; falls back to `useId` when not provided. */
@@ -68,7 +68,7 @@ export type PanelGroupContext = {
   getPanelStyle: (panelData: PanelData, defaultSize: number | undefined) => CSSProperties
 }
 
-export const [injectPanelGroupContext, providePanelGroupContext] = createContext<PanelGroupContext>('PanelGroup')
+export const [injectPanelGroupContext, providePanelGroupContext] = createRekaContext<PanelGroupContext>('PanelGroup')
 </script>
 
 <script setup lang="ts">

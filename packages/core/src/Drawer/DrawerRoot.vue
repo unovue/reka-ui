@@ -6,7 +6,7 @@ import type {
   SwipeDirection,
 } from './utils'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { createContext, useId } from '@/shared'
+import { createRekaContext, useId } from '@/shared'
 
 export type DrawerModal = boolean | 'trap-focus'
 
@@ -37,8 +37,9 @@ export type DrawerOpenChangeReason
 export type DrawerSnapPointChangeReason = DrawerOpenChangeReason
 
 export interface DrawerRootProps {
-  /** v-model:open */
+  /** The controlled open state of the drawer. Can be bound as `v-model:open`. */
   open?: boolean
+  /** The open state of the drawer when it is initially rendered. Use when you do not need to control its open state. */
   defaultOpen?: boolean
   /**
    * Modality of the drawer.
@@ -51,8 +52,9 @@ export interface DrawerRootProps {
   swipeDirection?: SwipeDirection
   /** Preset snap positions (fractions 0-1, pixels >1, or '148px'/'30rem' strings) */
   snapPoints?: DrawerSnapPoint[]
-  /** v-model:snapPoint */
+  /** The controlled active snap point. Can be bound as `v-model:snapPoint`. */
   snapPoint?: DrawerSnapPoint | null
+  /** The snap point that is active when the drawer is initially rendered. Use when you do not need to control the active snap point. */
   defaultSnapPoint?: DrawerSnapPoint | null
   /**
    * When true, snaps to the next sequential snap point (one step at a time).
@@ -69,7 +71,7 @@ export type DrawerRootEmits = {
   'update:open': [value: boolean, details: ChangeEventDetails<DrawerOpenChangeReason>]
   /**
    * Called once the popup's open (`true`) or close (`false`) transitions and animations have finished; on close, right
-   * before the popup unmounts. Infinite and cancelled animations are not waited for, and with none running it fires
+   * before the popup unmounts, or once it is removed before they finish. Infinite and cancelled animations are not waited for, and with none running it fires
    * without waiting. A newer open change supersedes a pending one.
    */
   'update:openComplete': [value: boolean]
@@ -124,7 +126,7 @@ export interface DrawerRootContext {
 }
 
 export const [injectDrawerRootContext, provideDrawerRootContext]
-  = createContext<DrawerRootContext>('DrawerRoot')
+  = createRekaContext<DrawerRootContext>('DrawerRoot')
 </script>
 
 <script setup lang="ts">
@@ -145,7 +147,12 @@ const props = withDefaults(defineProps<DrawerRootProps>(), {
 const emit = defineEmits<DrawerRootEmits>()
 
 defineSlots<{
-  default?: (props: { open: boolean, close: () => void }) => any
+  default?: (props: {
+    /** Current open state */
+    open: boolean
+    /** Close the drawer */
+    close: () => void
+  }) => any
 }>()
 
 // Optional parent context for nested drawer support

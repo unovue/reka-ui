@@ -8,7 +8,7 @@ import type { RangeCalendarChangeReason, RangeCalendarRootProps } from '@/RangeC
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { DateRange, DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { createContext, getElementByIdFrom, useDirection, useId, useLocale } from '@/shared'
+import { createRekaContext, getElementByIdFrom, useDirection, useId, useLocale } from '@/shared'
 
 export type DateRangePickerRootContext = {
   id: Ref<string | undefined>
@@ -71,7 +71,7 @@ export type DateRangePickerRootContext = {
  * full dates), so the calendar's `granularity` is not exposed here; the
  * drill-down views are.
  */
-export type DateRangePickerRootProps = Omit<DateRangeFieldRootProps, 'as' | 'asChild' | 'isDateUnavailable'> & Omit<PopoverRootProps, 'handle' | 'triggerId' | 'defaultTriggerId'> & Pick<RangeCalendarRootProps, 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'yearsPerPage' | 'columns'> & {
+export type DateRangePickerRootProps = Omit<DateRangeFieldRootProps, 'as' | 'asChild' | 'isDateUnavailable'> & Omit<PopoverRootProps, 'handle' | 'triggerId' | 'defaultTriggerId' | 'unmountOnHide'> & Pick<RangeCalendarRootProps, 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'isDateHighlightable' | 'allowNonContiguousRanges' | 'fixedDate' | 'yearsPerPage' | 'columns'> & {
   /** A function that returns whether or not a date is disabled. The picker's calendar always commits days, so it is called only for day-view cells (with `'day'` as its second argument); the month and year views apply only `minValue`, `maxValue` and `disabled`. */
   isDateDisabled?: Matcher
   /** A function that returns whether or not a date is unavailable. The field marks the range invalid when either end, or any day between them, is unavailable. The picker's calendar always commits days, so it is called there only for day-view cells (with `'day'` as its second argument); the month and year views apply only `minValue`, `maxValue` and `disabled`. */
@@ -123,7 +123,7 @@ export type DateRangePickerRootEmits = {
 }
 
 export const [injectDateRangePickerRootContext, provideDateRangePickerRootContext]
-  = createContext<DateRangePickerRootContext>('DateRangePickerRoot')
+  = createRekaContext<DateRangePickerRootContext>('DateRangePickerRoot')
 </script>
 
 <script setup lang="ts">
@@ -273,7 +273,7 @@ provideFormResetDefault(props.defaultValue)
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="popover">
     <slot
       :model-value="modelValue"
       :open="open"

@@ -9,6 +9,7 @@ export interface TagsInputClearProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { renderAs } from '@/Primitive/renderAs'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 
 withDefaults(defineProps<TagsInputClearProps>(), {
   as: 'button',
@@ -18,6 +19,7 @@ const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const context = injectTagsInputRootContext()
 const clear = getTagsInputClearSurface(context)
+useAgentItem(context, undefined, undefined, 'clear')
 </script>
 
 <template>

@@ -8,7 +8,7 @@ export interface SelectLabelProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { renderAs } from '@/Primitive/renderAs'
-import { useForwardElement } from '@/shared'
+import { claimReferencedId, useForwardElement } from '@/shared'
 import { injectSelectGroupContext } from './SelectGroup.vue'
 
 const props = withDefaults(defineProps<SelectLabelProps>(), {
@@ -16,6 +16,8 @@ const props = withDefaults(defineProps<SelectLabelProps>(), {
 })
 
 const groupContext = injectSelectGroupContext({ id: '' })
+// A consumer `id` (or one on the asChild child) is the id the group's `aria-labelledby` references.
+claimReferencedId(groupContext, 'id')
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)

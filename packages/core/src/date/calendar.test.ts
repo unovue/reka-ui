@@ -1,5 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import { getWeekNumber } from './calendar'
+import { createDecade, getWeekNumber } from './calendar'
+
+describe('createDecade', () => {
+  const dateObj = new Temporal.PlainDate(2025, 8, 18)
+
+  function expectYears(startIndex: number | undefined, endIndex: number, years: readonly number[]) {
+    // Temporal dates carry no enumerable fields, so compare their ISO strings.
+    expect(createDecade({ dateObj, startIndex, endIndex }).map(String))
+      .toEqual(years.map(year => String(new Temporal.PlainDate(year, 1, 1))))
+  }
+
+  it.each([
+    [-2, 5, [2023, 2024, 2025, 2026, 2027, 2028, 2029]],
+    [undefined, 3, [2025, 2026, 2027]],
+    [-2, 2, [2023, 2024, 2025, 2026]],
+  ] as const)('lists the years from offset %s up to %i (exclusive)', expectYears)
+
+  it('keeps the years in chronological order across eras', () => {
+    const years = createDecade({ dateObj: Temporal.PlainDate.from({ year: 1, month: 8, day: 18, calendar: 'gregory' }), startIndex: -2, endIndex: 2 })
+    expect(years.map(date => [date.era, date.eraYear])).toEqual([['bce', 2], ['bce', 1], ['ce', 1], ['ce', 2]])
+  })
+})
 
 describe('getWeekNumber', () => {
   describe('iSO week (de-DE locale)', () => {

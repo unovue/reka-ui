@@ -133,17 +133,11 @@ export function endOfDecade(dateObj: DateValue) {
   return endOfYear(startOfDecade(dateObj).add({ years: 9 }))
 }
 
-export function createDecade(props: SetDecadeProps): DateValue[] {
-  const { dateObj, startIndex, endIndex } = props
-
-  const decadeArray = Array.from({ length: Math.abs(startIndex ?? 0) + endIndex }, (_, i) =>
-    i <= Math.abs((startIndex ?? 0))
-      ? dateObj.subtract({ years: i }).with({ day: 1, month: 1 })
-      : dateObj.add({ years: i - endIndex }).with({ day: 1, month: 1 }))
-
-  decadeArray.sort((a: DateValue, b: DateValue) => a.year - b.year)
-
-  return decadeArray
+/** The first day of each year from `startIndex` (≤ 0) up to `endIndex` (exclusive) years away from `dateObj`, in order. */
+export function createDecade({ dateObj, startIndex = 0, endIndex }: SetDecadeProps): DateValue[] {
+  const yearsBefore = Math.abs(startIndex)
+  return Array.from({ length: yearsBefore + endIndex }, (_, i) =>
+    dateObj.add({ years: i - yearsBefore }).with({ month: 1, day: 1 }))
 }
 
 /**

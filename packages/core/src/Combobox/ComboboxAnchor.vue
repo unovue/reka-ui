@@ -12,7 +12,7 @@ const props = defineProps<ComboboxAnchorProps>()
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
-usePopperAnchor({ element: currentElement, reference: () => props.reference })
+usePopperAnchor({ element: currentElement, reference: () => props.reference, scope: 'combobox' })
 </script>
 
 <template>

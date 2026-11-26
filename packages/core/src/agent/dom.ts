@@ -1,0 +1,386 @@
+// What an agent reads from the page: text, accessible names, rows, sections,
+// visibility and the `data-agent-*` marks an app writes on its elements.
+
+/** Text that never reaches an agent: marked off-limits or private, hidden by the app, a field's own text, or not content. */
+const UNREAD = '[data-agent-hidden], [data-agent-secret], script, style, template, [hidden], textarea, select, option'
+
+// \`aria-hidden\` the app wrote, as against what a modal adds to the rest of the page. A modal's hideOthers marks
+// every element it hides with \`data-aria-hidden\`, the ones the app had hidden already too, so the bridge remembers
+// the app's own: whenever it sees one unmarked, and just before a modal hides the rest.
+const authorHidden = new WeakSet<Element>()
+const ARIA_HIDDEN = '[aria-hidden="true"]'
+export function noteAuthorHidden(root: ParentNode = document) {
+  root.querySelectorAll(`${ARIA_HIDDEN}:not([data-aria-hidden])`).forEach(el => authorHidden.add(el))
+}
+
+/** The nearest element around \`el\` that the app hid from screen readers, not one only a modal hid. */
+export function ariaHiddenBy(el: Element): Element | null {
+  for (let node = el.closest(ARIA_HIDDEN); node; node = node.parentElement?.closest(ARIA_HIDDEN) ?? null) {
+    if (!node.hasAttribute('data-aria-hidden'))
+      authorHidden.add(node)
+    if (authorHidden.has(node))
+      return node
+  }
+  return null
+}
+
+/** Hidden from everyone: inside \`hidden\`, or inside \`aria-hidden="true"\` the app wrote. */
+export const hiddenFromAll = (el: Element) => !!el.closest('[hidden]') || !!ariaHiddenBy(el)
+
+// Text an app hides with CSS, like \`v-show\`, is no more read than text inside \`hidden\`. A browser says so for
+// any CSS; without one, an inline \`display: none\` up to \`root\` does.
+function styleHidden(parent: Element, root: Element, seen: Map<Element, boolean>) {
+  if (!parent.isConnected)
+    return false
+  let hidden = seen.get(parent)
+  if (hidden === undefined) {
+    const check = (parent as HTMLElement & { checkVisibility?: () => boolean }).checkVisibility
+    if (typeof check === 'function') {
+      hidden = !check.call(parent)
+    }
+    else {
+      hidden = false
+      for (let node: Element | null = parent; node; node = node === root ? null : node.parentElement) {
+        if ((node as HTMLElement).style?.display === 'none') {
+          hidden = true
+          break
+        }
+      }
+    }
+    seen.set(parent, hidden)
+  }
+  return hidden
+}
+
+// Whether a text node's parent sits inside something unread, inside \`within\` when given.
+function unread(parent: Element, within?: Element) {
+  const around = [parent.closest(UNREAD), ariaHiddenBy(parent)]
+  return around.some(node => !!node && (!within || within.contains(node)))
+}
+
+// Portals render a component's content elsewhere in the page, so the marks around the component
+// would miss it. Each reka-ui portal registers while a bridge exists, and an element is read as
+// inside the place its portal sits in the app, not where the content landed.
+
+interface PortalInstance { subTree?: { type?: unknown, el?: Node | null, props?: Record<string, unknown> | null, children?: unknown, targetStart?: Node | null, targetAnchor?: Node | null } }
+
+/** The portals on the page now, from the shared hook. */
+export const portals = new Set<PortalInstance>()
+
+// Each top element a portal put somewhere else, with the element its portal sits in.
+function portalOwners() {
+  const found = new Map<Element, Element>()
+  for (const portal of portals) {
+    const teleport = portal.subTree
+    if (!teleport || !(teleport.type as { __isTeleport?: boolean } | undefined)?.__isTeleport || teleport.props?.disabled)
+      continue
+    const home = teleport.el?.parentElement
+    if (!home)
+      continue
+    if (teleport.targetStart && teleport.targetAnchor) {
+      for (let node = teleport.targetStart.nextSibling; node && node !== teleport.targetAnchor; node = node.nextSibling) {
+        if (node.nodeType === 1)
+          found.set(node as Element, home)
+      }
+    }
+    else if (Array.isArray(teleport.children)) {
+      for (const child of teleport.children as { el?: Node | null }[]) {
+        if (child?.el?.nodeType === 1)
+          found.set(child.el as Element, home)
+      }
+    }
+  }
+  return found
+}
+
+// The page's portal owners, worked out once until the code next waits.
+let owning: Map<Element, Element> | undefined
+function owners() {
+  if (!owning) {
+    owning = portalOwners()
+    queueMicrotask(() => (owning = undefined))
+  }
+  return owning
+}
+
+/** The element an element sits in as the app nests it: its parent, or for a portal's content, where the portal is. */
+export function logicalParent(node: Element): Element | null {
+  // An app mounted in a shadow root sits where its host does, so marks around the host cover it.
+  return owners().get(node) ?? node.parentElement ?? hostOf(node)
+}
+
+/** The shadow host of the root an element sits in, if it sits in one. */
+export function hostOf(node: Node): Element | null {
+  const root = node.getRootNode?.()
+  return root && root !== node && 'host' in root ? (root as ShadowRoot).host : null
+}
+
+/** `closest`, through portals: the nearest element around `el` that matches, as the app nests it. */
+export function closestMarked(el: Element | null | undefined, selector: string): Element | null {
+  for (let node: Element | null = el ?? null; node; node = logicalParent(node)) {
+    if (node.matches(selector))
+      return node
+  }
+  return null
+}
+
+const APP = '[data-v-app]'
+
+/**
+ * Content on the page that no Vue app here rendered where it sits and no Reka UI portal claims, like what an
+ * unregistered portal moved into `body`. It's read as off-limits, so a bridge that can't place content never shows it.
+ */
+export function isUnattributed(el: Element) {
+  if (!el.isConnected || !el.ownerDocument.querySelector(APP))
+    return false
+  for (let node: Element | null = el; node; node = logicalParent(node)) {
+    if (node.matches(APP))
+      return false
+  }
+  return true
+}
+
+const MARKED = '[data-agent-hidden], [data-agent-secret]'
+
+/** Folds text for comparison: case, accents and `ß`, so "lodz" finds "Łódź". */
+export function fold(text: string) {
+  return text
+    .replace(/[ßẞ]/g, 'ss')
+    .replace(/ł/gi, 'l')
+    .normalize('NFKD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .trim()
+}
+
+/** Folded text as its words between single spaces, with one at each end, so a match lands on whole words. */
+export function wordsOf(text: string) {
+  return ` ${fold(text)} `.replace(/[^\p{L}\p{N}]+/gu, ' ')
+}
+
+const WHITESPACE = /\s+/
+const squash = (text: string) => text.replace(/\s+/g, ' ').trim()
+
+// What a component shows that no text read may carry, like a select's trigger while its chosen item is hidden
+// or private. The registry supplies them; they're worked out once per task.
+let concealer: () => Element[] = () => []
+let concealed: Element[] | undefined
+let concealing = false
+export function onConceal(find: () => Element[]) {
+  concealer = find
+  concealed = undefined
+}
+export function forgetConcealed() {
+  concealed = undefined
+}
+function isConcealed(node: Node) {
+  if (concealing)
+    return false
+  if (!concealed) {
+    concealing = true
+    try {
+      concealed = concealer()
+    }
+    finally {
+      concealing = false
+    }
+    queueMicrotask(() => (concealed = undefined))
+  }
+  return concealed.some(el => el.contains(node))
+}
+
+/** Visible text inside `el`, leaving out what is inside `skip` and anything an agent mustn't read. */
+export function textOf(el: Element | null | undefined, skip: Element[] = []): string {
+  if (!el || closestMarked(el, MARKED) || isUnattributed(el))
+    return ''
+  const words: string[] = []
+  const seen = new Map<Element, boolean>()
+  const walker = el.ownerDocument.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const parent = node.parentElement
+    if (!parent || (parent !== el && unread(parent, el)) || styleHidden(parent, el, seen))
+      continue
+    if (skip.some(other => other !== el && other.contains(node)))
+      continue
+    // Text inside a hidden or private part of the page never reaches an agent, whichever element reads it.
+    if (closestMarked(parent, MARKED) || isConcealed(node))
+      continue
+    if (node.textContent?.trim())
+      words.push(node.textContent)
+  }
+  return squash(words.join(' '))
+}
+
+const NAMED_BY_CONTENT = 'button, a[href], summary, legend, h1, h2, h3, h4, h5, h6, [role=button], [role=tab], [role^=menuitem], [role=option], [role=radio], [role=switch], [role=checkbox], [role=link], [role=heading], [role=treeitem]'
+
+/** The labels that name a field: its `labels`, a `label[for]` for a custom control, or the label around it. */
+export function labelsOf(el: Element): Element[] {
+  const own = (el as HTMLInputElement).labels
+  if (own && own.length)
+    return [...own]
+  const found: Element[] = []
+  if (el.id)
+    // Compared, not put in a selector: an id can hold any character, a newline included.
+    found.push(...[...el.ownerDocument.querySelectorAll('label[for]')].filter(label => label.getAttribute('for') === el.id))
+  if (!found.length) {
+    const around = el.parentElement?.closest('label')
+    if (around)
+      found.push(around)
+  }
+  return found
+}
+
+/** An element's accessible name, the way a screen reader reads it, near enough for an agent to name it. */
+export function nameOf(el: Element | null | undefined, { content = true }: { content?: boolean } = {}): string {
+  if (!el || closestMarked(el, '[data-agent-hidden]') || isUnattributed(el))
+    return ''
+  const doc = el.ownerDocument
+  const labelledBy = el.getAttribute('aria-labelledby')
+  if (labelledBy) {
+    const text = squash(labelledBy.split(WHITESPACE).map(id => textOf(doc.getElementById(id))).join(' '))
+    if (text)
+      return text
+  }
+  const label = el.getAttribute('aria-label')?.trim()
+  if (label)
+    return label
+  if (el.localName !== 'label') {
+    const fromLabels = squash(labelsOf(el).map(label => textOf(label, [el])).join(' '))
+    if (fromLabels)
+      return fromLabels
+  }
+  if (el.localName === 'fieldset') {
+    const legend = el.querySelector(':scope > legend')
+    if (legend)
+      return textOf(legend)
+  }
+  if (content && el.matches(NAMED_BY_CONTENT)) {
+    const text = textOf(el)
+    if (text)
+      return text
+  }
+  // A private field's title or placeholder can hold what it holds, so only its aria-label names it.
+  if (closestMarked(el, '[data-agent-secret]'))
+    return ''
+  return squash(el.getAttribute('title') ?? el.getAttribute('placeholder') ?? el.getAttribute('alt') ?? '')
+}
+
+/** A button's text, else its accessible name, like "Close" for an icon-only ×. */
+export const textOrName = (el: Element) => textOf(el) || nameOf(el)
+
+/** Whether an element shows, as far as the page can tell: connected, not hidden and not hidden from screen readers by the app. */
+export function isShown(el: HTMLElement | undefined | null): el is HTMLElement {
+  if (!el || !el.isConnected)
+    return false
+  if (hiddenFromAll(el))
+    return false
+  const check = (el as HTMLElement & { checkVisibility?: (options: object) => boolean }).checkVisibility
+  if (typeof check === 'function' && !el.closest('[data-aria-hidden], [inert]'))
+    return check.call(el, { visibilityProperty: true, checkVisibilityCSS: true })
+  return true
+}
+
+/** Off-limits to agents: inside `data-agent-hidden`. */
+export const isOffLimits = (elements: Element[]) => elements.some(el => !!closestMarked(el, '[data-agent-hidden]') || isUnattributed(el))
+
+const SECRET_FIELD = /\b(?:password|current-password|new-password|one-time-code|cc-[a-z-]+)\b/i
+
+/** A password, card or one-time code, or a field inside `data-agent-secret`, which shows only whether it's filled. */
+export function isSecret(elements: Element[]) {
+  return elements.some(el =>
+    // First, so every password seen is remembered, whatever else makes it private.
+    wasPassword(el)
+    || !!closestMarked(el, '[data-agent-secret]')
+    // A PinInput's boxes, even read as plain fields by a bridge made after it mounted.
+    || el.hasAttribute('data-reka-pin-input')
+    || SECRET_FIELD.test(`${el.getAttribute('type') ?? ''} ${el.getAttribute('autocomplete') ?? ''}`),
+  )
+}
+
+// A password a show toggle turned into text, or one a \`v-if\` swapped for a text field with its id or name,
+// is still a password: what it held once is what it holds.
+const passwords = new WeakSet<Element>()
+const passwordKeys = new Set<string>()
+function wasPassword(el: Element) {
+  if (el.localName !== 'input')
+    return false
+  const keys = [el.id && `#${el.id}`, el.getAttribute('name') && `@${el.getAttribute('name')}`].filter((key): key is string => !!key)
+  if ((el as HTMLInputElement).type === 'password') {
+    passwords.add(el)
+    keys.forEach(key => passwordKeys.add(key))
+    return true
+  }
+  return passwords.has(el) || keys.some(key => passwordKeys.has(key))
+}
+
+/** What `data-agent-confirm` says a change does, from the nearest mark around any of the elements. */
+export function confirmOf(elements: (Element | undefined | null)[]) {
+  for (const el of elements) {
+    const marked = closestMarked(el, '[data-agent-confirm]')
+    if (marked)
+      return marked.getAttribute('data-agent-confirm')?.trim() || 'Confirm this change.'
+  }
+  return undefined
+}
+
+const ROW = 'li, tr, [role=row], [role=listitem]'
+
+// A table's header row holds column titles, not a record.
+function headerRow(row: Element) {
+  return !!row.closest('thead')
+    || (row.children.length > 0 && [...row.children].every(cell => cell.localName === 'th' || cell.getAttribute('role') === 'columnheader'))
+}
+
+/** Text on the component's row that isn't its own, like the name beside a member's menu. */
+export function rowOf(anchor: HTMLElement | undefined, own: Element[]) {
+  const row = anchor?.closest(ROW)
+  if (!row || headerRow(row) || own.some(el => el.contains(row)) || isUnattributed(row))
+    return undefined
+  const mine = own.flatMap(el => [el, ...labelsOf(el)])
+  const words: string[] = []
+  const seen = new Map<Element, boolean>()
+  const walker = row.ownerDocument.createTreeWalker(row, NodeFilter.SHOW_TEXT)
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const parent = node.parentElement
+    // The same rule as `textOf`: nothing inside a hidden or private place, through portals, is read.
+    if (!parent || mine.some(el => el.contains(node)) || unread(parent) || styleHidden(parent, row, seen) || closestMarked(parent, MARKED) || isConcealed(node))
+      continue
+    if (node.textContent?.trim())
+      words.push(node.textContent.trim())
+  }
+  return squash(words.join(' ')).slice(0, 80) || undefined
+}
+
+const REGIONS = '[role=tabpanel], [role=region], [role=group], fieldset'
+
+/** The names of the labelled regions around a component, outermost first, like `["Notifications", "Email"]`. */
+export function sectionsOf(anchor: HTMLElement | undefined, own: Element[]) {
+  const names: string[] = []
+  let region = anchor?.parentElement?.closest(REGIONS)
+  while (region) {
+    const name = !own.includes(region) && nameOf(region).slice(0, 80)
+    if (name)
+      names.unshift(name)
+    region = region.parentElement?.closest(REGIONS)
+  }
+  return names
+}
+
+/** Buttons and menu items inside elements, visible and not inside `data-agent-hidden`. */
+export function buttonsIn(elements: HTMLElement[]) {
+  const found = elements.flatMap(el => [...el.querySelectorAll<HTMLElement>('button, [role=button], [role^=menuitem], a[href]')])
+  return [...new Set(found)].filter(el => isShown(el) && !closestMarked(el, '[data-agent-hidden]'))
+}
+
+/** Disabled by itself, by a disabled fieldset around it, or by being inert. */
+export function isDisabledElement(el: Element) {
+  return el.matches(':disabled') || el.getAttribute('aria-disabled') === 'true' || el.hasAttribute('data-disabled')
+    || !!el.closest('fieldset[disabled], [inert]')
+}
+
+/** Document order, for listing components the way the page shows them. */
+export function byPosition(a: Element | undefined, b: Element | undefined) {
+  if (!a || !b || a === b)
+    return 0
+  return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
+}

@@ -1,10 +1,13 @@
+import type { Component } from 'vue'
 import type { CalendarRootProps } from './CalendarRoot.vue'
 import type { CalendarUnit, DateValue } from '@/date'
 import userEvent from '@testing-library/user-event'
-import { render } from '@testing-library/vue'
+import { fireEvent, render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, h } from 'vue'
 import { useTestKbd } from '@/shared'
+import { CalendarCell, CalendarCellTrigger, CalendarGrid, CalendarGridBody, CalendarGridRow, CalendarRoot } from '.'
 import CalendarUnitHarness from './story/_CalendarUnit.vue'
 import CalendarViews from './story/_CalendarViews.vue'
 
@@ -193,6 +196,57 @@ describe('calendar — granularity="month" (replaces MonthPicker)', () => {
     await user.keyboard(kbd.HOME)
     await user.keyboard(kbd.END)
     expect(onKeydown).not.toHaveBeenCalled()
+  })
+
+  it('focuses and selects the thirteenth month of a Hebrew leap year', async () => {
+    const date = Temporal.PlainDate.from({ calendar: 'hebrew', year: 5784, month: 12, day: 1 })
+    const onUpdate = vi.fn()
+    const { user, calendar } = setupUnit({ granularity: 'month', defaultPlaceholder: date, locale: 'en-US-u-ca-hebrew' }, { 'onUpdate:modelValue': onUpdate })
+    const cells = calendar.querySelectorAll<HTMLElement>('[data-reka-calendar-cell-trigger]')
+    expect(cells).toHaveLength(13)
+
+    cells[11].focus()
+    await user.keyboard(kbd.ARROW_RIGHT)
+    expect(cells[12]).toHaveFocus()
+    await user.keyboard(kbd.ENTER)
+    expect(cells[12]).toHaveAttribute('data-selected')
+    expect((onUpdate.mock.calls[0][0] as Temporal.PlainDate).month).toBe(13)
+  })
+
+  it.each([
+    { navigation: 'default', prevPage: undefined },
+    { navigation: 'custom', prevPage: (date: DateValue) => date.subtract({ years: 1 }) },
+  ])('can return to a year whose last month contains minValue with $navigation navigation', async ({ prevPage }) => {
+    const hebrew = (year: number, month: number, day: number) => Temporal.PlainDate.from({ calendar: 'hebrew', year, month, day })
+    const { user, calendar, getByTestId } = setupUnit({
+      granularity: 'month',
+      defaultPlaceholder: hebrew(5785, 1, 1),
+      minValue: hebrew(5784, 13, 15),
+      prevPage,
+    })
+    const cells = () => calendar.querySelectorAll<HTMLElement>('[data-reka-calendar-cell-trigger]')
+    expect(cells()).toHaveLength(12)
+    const prev = getByTestId('prev-button')
+    expect(prev).not.toHaveAttribute('data-disabled')
+    await user.click(prev)
+    expect(cells()).toHaveLength(13)
+    expect(cells()[12]).not.toHaveAttribute('data-disabled')
+    expect(prev).toHaveAttribute('data-disabled')
+  })
+
+  it('handles the numeric keypad: Enter selects, keypad arrows and Home / End move', async () => {
+    const onUpdate = vi.fn()
+    const { getByTestId } = setupUnit({ granularity: 'month', defaultPlaceholder: sep5 }, { 'onUpdate:modelValue': onUpdate })
+    const cell = getByTestId('cell-2026-09-01')
+    cell.focus()
+
+    await fireEvent.keyDown(cell, { key: 'ArrowRight', code: 'Numpad6' })
+    expect(getByTestId('cell-2026-10-01')).toHaveFocus()
+    await fireEvent.keyDown(getByTestId('cell-2026-10-01'), { key: 'Home', code: 'Numpad7' })
+    expect(getByTestId('cell-2026-01-01')).toHaveFocus()
+    await fireEvent.keyDown(getByTestId('cell-2026-01-01'), { key: 'Enter', code: 'NumpadEnter' })
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+    expect((onUpdate.mock.calls[0][0] as DateValue).toString()).toBe('2026-01-05')
   })
 
   it('passes the unit to matchers', () => {
@@ -479,5 +533,49 @@ describe('calendar — coarser views are navigation only', () => {
     expect(onPlaceholder.mock.calls.at(-1)![0].toString()).toBe('2026-10-15')
     await user.keyboard(kbd.ENTER)
     expect(getByTestId('day-2026-10-15')).toHaveFocus()
+  })
+})
+
+describe('calendar — cell tabindex in the month and year views (#3280)', () => {
+  const ButtonCell = defineComponent({
+    setup(_, { slots }) {
+      return () => h('button', { type: 'button' }, slots.default?.())
+    },
+  })
+
+  function renderPicker(granularity: 'month' | 'year', triggerAs?: string | Component) {
+    const isDateDisabled = (date: DateValue, unit?: CalendarUnit) => granularity === 'month' ? unit === 'month' && date.month === 3 : unit === 'year' && date.year === 2002
+    return render(defineComponent({
+      setup() {
+        return () => h(CalendarRoot, { granularity, modelValue: new Temporal.PlainDate(2000, 1, 1), isDateDisabled }, {
+          default: ({ grid }: { grid: { value: DateValue, rows: DateValue[][] }[] }) => grid.map(page => h(CalendarGrid, { key: page.value.toString(), value: page.value }, () =>
+            h(CalendarGridBody, () => page.rows.map((row, i) => h(CalendarGridRow, { key: i }, () => row.map(cell =>
+              h(CalendarCell, { key: cell.toString(), value: cell }, () =>
+                h(CalendarCellTrigger, { 'value': cell, 'as': triggerAs, 'data-testid': `cell-${cell.toString()}` })))))))),
+        })
+      },
+    }))
+  }
+
+  it.each(['month', 'year'] as const)('omits tabindex on disabled cells rendered as the default div (%s)', (granularity) => {
+    const { getByTestId } = renderPicker(granularity)
+    const disabled = granularity === 'month' ? '2000-03-01' : '2002-01-01'
+    const enabled = granularity === 'month' ? '2000-02-01' : '2001-01-01'
+    expect(getByTestId('cell-2000-01-01')).toHaveAttribute('tabindex', '0')
+    expect(getByTestId(`cell-${enabled}`)).toHaveAttribute('tabindex', '-1')
+    expect(getByTestId(`cell-${disabled}`)).not.toHaveAttribute('tabindex')
+  })
+
+  it.each([
+    ['month', 'a button', 'button'],
+    ['month', 'a component that renders a button', ButtonCell],
+    ['year', 'a button', 'button'],
+    ['year', 'a component that renders a button', ButtonCell],
+  ] as const)('sets tabindex -1 on disabled %s cells rendered as %s', (granularity, _, triggerAs) => {
+    const { getByTestId } = renderPicker(granularity, triggerAs)
+    const disabled = granularity === 'month' ? '2000-03-01' : '2002-01-01'
+    expect(getByTestId('cell-2000-01-01')).toHaveAttribute('tabindex', '0')
+    expect(getByTestId(`cell-${disabled}`).tagName).toBe('BUTTON')
+    expect(getByTestId(`cell-${disabled}`)).toHaveAttribute('tabindex', '-1')
   })
 })

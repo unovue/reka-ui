@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Ref } from 'vue'
 import type { TooltipContentProps } from './TooltipContent.vue'
-import { createContext } from '@/shared'
+import { createRekaContext } from '@/shared'
 
 interface TooltipProviderContext {
   isOpenDelayed: Ref<boolean>
@@ -17,7 +17,7 @@ interface TooltipProviderContext {
 }
 
 export const [injectTooltipProviderContext, provideTooltipProviderContext]
-  = createContext<TooltipProviderContext>('TooltipProvider')
+  = createRekaContext<TooltipProviderContext>('TooltipProvider')
 
 export interface TooltipProviderProps {
   /**

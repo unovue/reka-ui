@@ -12,6 +12,25 @@ import { compareDateValues, compareDays, toCalendar, toIsoString, toPlainDate } 
  */
 export const MAX_FOCUS_RETRIES = 24
 
+/**
+ * Tabindex for a calendar or picker cell trigger. The focused cell is the only
+ * tab stop; other cells get `-1` so keyboard navigation can still focus them.
+ * Skipped cells (disabled or outside the view) drop the attribute only when
+ * rendered as the default `div`. Any other tag, a component or `asChild` may
+ * render something natively focusable, so those cells keep `-1`.
+ */
+export function getCalendarCellTabindex(
+  isFocused: boolean | undefined,
+  isSkipped: boolean | undefined,
+  primitive: { as?: unknown, asChild?: boolean },
+): 0 | -1 | undefined {
+  if (isFocused)
+    return 0
+  if (isSkipped && primitive.as === 'div' && !primitive.asChild)
+    return undefined
+  return -1
+}
+
 interface FocusDateOptions {
   parentElement: HTMLElement
   target: DateValue
@@ -174,4 +193,32 @@ function tryFocusDate(
     candidateDay.setAttribute('tabindex', '-1')
 
   candidateDay.focus()
+}
+
+/**
+ * The key a calendar cell acts on, with Space spelled out.
+ * `event.code` names the physical key, so the numeric keypad's Enter (`NumpadEnter`) and, without
+ * NumLock, its arrows, Home, End and Page keys (`Numpad8`, …) would match nothing.
+ */
+export function getCalendarKey(event: KeyboardEvent): string {
+  return event.key === ' ' ? 'Space' : event.key
+}
+
+/**
+ * Finds the first (`start`) or last (`end`) enabled cell trigger in the grid row of `current`, for Home and End
+ * in the month and year grids. `offset` is its distance from `current` in cells.
+ */
+export function getRowBoundaryCell(current: HTMLElement, boundary: 'start' | 'end', selector: string): { element: HTMLElement, offset: number } | undefined {
+  const row = current.closest('[role="row"]')
+  if (!row)
+    return
+  const cells = Array.from(row.querySelectorAll<HTMLElement>(selector))
+  const currentIndex = cells.indexOf(current)
+  if (currentIndex === -1)
+    return
+  const enabled = cells.filter(cell => !cell.hasAttribute('data-disabled'))
+  const element = boundary === 'start' ? enabled[0] : enabled.at(-1)
+  if (!element)
+    return
+  return { element, offset: cells.indexOf(element) - currentIndex }
 }

@@ -5,7 +5,7 @@ import type { ListboxFilterFunction, ListboxNavigationIntent } from '@/Listbox/u
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, Direction } from '@/shared/types'
-import { createChangeEventDetails, createContext, mergeExpose, useDirection, useFormControl, useForwardElement, useId } from '@/shared'
+import { createChangeEventDetails, createRekaContext, mergeExpose, useDirection, useFormControl, useForwardElement, useId } from '@/shared'
 
 /**
  * Why the Autocomplete value (the input text) changed; carried as `details.reason` (#2828).
@@ -103,7 +103,7 @@ export type AutocompleteRootContext = {
 }
 
 export const [injectAutocompleteRootContext, provideAutocompleteRootContext]
-  = createContext<AutocompleteRootContext>('AutocompleteRoot')
+  = createRekaContext<AutocompleteRootContext>('AutocompleteRoot')
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = string">
@@ -244,7 +244,7 @@ const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="combobox">
     <component
       :is="renderAs(as, asChild)"
       :ref="forwardRef"

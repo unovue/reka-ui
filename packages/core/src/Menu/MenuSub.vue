@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { MenuContext } from './MenuRoot.vue'
 import type { MenuOpenChangeReason } from './useMenu'
 import type { ChangeEventDetails } from '@/shared'
-import { createContext, useControllableState, useId } from '@/shared'
+import { createRekaContext, defineReactiveIds, useControllableState, useId } from '@/shared'
 
 export interface MenuSubContext {
   contentId: string
@@ -14,7 +14,7 @@ export interface MenuSubContext {
 }
 
 export const [injectMenuSubContext, provideMenuSubContext]
-  = createContext<MenuSubContext>('MenuSub')
+  = createRekaContext<MenuSubContext>('MenuSub')
 
 export interface MenuSubProps {
   /** The controlled open state of the menu. Can be used as `v-model:open`. */
@@ -38,6 +38,7 @@ import {
 } from 'vue'
 import { PopperRoot } from '@/Popper'
 import { injectMenuContext, provideMenuContext } from './MenuRoot.vue'
+import { contentHidden, onContentHide } from './utils'
 
 const props = withDefaults(defineProps<MenuSubProps>(), {
   open: undefined,
@@ -72,22 +73,27 @@ provideMenuContext({
     content.value = element
   },
   notifyOpenComplete: value => emits('update:openComplete', value),
+  // Shared methods, called on the context.
+  onContentHide,
+  contentHidden,
 })
 
-provideMenuSubContext({
-  triggerId: '',
-  // Allocated here, not by the content: a closed submenu's portal mounts no
-  // content, and the trigger's `aria-controls` must name it on the first open.
-  contentId: useId(undefined, 'reka-menu-sub-content'),
+// Reactive: the trigger and the content adopt a consumer `id`, which the other one references.
+provideMenuSubContext(defineReactiveIds<MenuSubContext, 'triggerId' | 'contentId'>({
   trigger,
   onTriggerChange: (element) => {
     trigger.value = element
   },
-})
+}, {
+  triggerId: '',
+  // Allocated here, not by the content: a closed submenu's portal mounts no
+  // content, and the trigger's `aria-controls` must name it on the first open.
+  contentId: useId(undefined, 'reka-menu-sub-content'),
+}))
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="menu">
     <slot />
   </PopperRoot>
 </template>

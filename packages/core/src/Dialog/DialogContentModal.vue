@@ -3,6 +3,8 @@ import type { DialogContentImplEmits, DialogContentImplProps } from './DialogCon
 import type { PointerDownOutsideEvent } from '@/DismissableLayer'
 import { computed, watch } from 'vue'
 import { isOwnBackdropPress } from '@/DismissableLayer/internalBackdrop'
+import { preventPressFocusMove } from '@/DismissableLayer/utils'
+import { hasFocusLeftScope } from '@/FocusScope/utils'
 import { useEmitAsProps, useForwardElement, useHideOthers } from '@/shared'
 import { useBodyScrollLock } from '@/shared/useBodyScrollLock'
 import DialogContentImpl from './DialogContentImpl.vue'
@@ -22,7 +24,8 @@ const emitsAsProps = useEmitAsProps(emits)
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
-const ariaHiddenTarget = computed(() => props.present ? currentElement.value : undefined)
+// A closing content hands the accessibility tree back to the layer below at once.
+const ariaHiddenTarget = computed(() => rootContext.open.value && props.present ? currentElement.value : undefined)
 useHideOthers(ariaHiddenTarget)
 
 // A modal dialog locks page scroll whether or not it renders a `DialogOverlay`
@@ -51,13 +54,19 @@ function onPointerDownOutside(event: PointerDownOutsideEvent) {
   // backdrop such as a third-party widget (Base UI `useDialogRoot`, #2822).
   else if (!isOwnBackdropPress(event.target, currentElement.value, overlayElement?.value))
     event.preventDefault()
+  // Focus returns on this `pointerdown`; the press's `mousedown` must not drop it on
+  // `body` (the layer does the same for its internal backdrop).
+  else if (overlayElement?.value?.contains(event.target as Node))
+    preventPressFocusMove(event)
 }
 
 // When `unmountOnHide` is `false` the content stays mounted on close, so
 // `FocusScope` never unmounts and `close-auto-focus` never fires. Restore
-// focus to the trigger manually once the content is no longer present.
+// focus to the trigger manually once the content is no longer present, unless
+// something else took focus meanwhile, e.g. a layer opened while this one was
+// animating out.
 watch(() => props.present, (isPresent, wasPresent) => {
-  if (!isPresent && wasPresent)
+  if (!isPresent && wasPresent && !hasFocusLeftScope(currentElement.value ?? null))
     getReturnFocusElement(rootContext)?.focus()
 })
 </script>
@@ -73,7 +82,8 @@ watch(() => props.present, (isPresent, wasPresent) => {
       (event) => {
         if (!event.defaultPrevented) {
           event.preventDefault();
-          getReturnFocusElement(rootContext)?.focus();
+          // Focus that something else took meanwhile, e.g. a layer opened by the same click, stays there
+          if (!hasFocusLeftScope(event.target)) getReturnFocusElement(rootContext)?.focus();
         }
       }
     "

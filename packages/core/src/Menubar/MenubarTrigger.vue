@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardElement } from '@/shared'
+import { disabledAttr, useForwardElement, useRenderedContentId, useTriggerIdInRender } from '@/shared'
 
 export interface MenubarTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -11,8 +11,9 @@ export interface MenubarTriggerProps extends PrimitiveProps {
 <script setup lang="ts">
 import { mergeProps, onMounted } from 'vue'
 import { useCollectionItem } from '@/Collection'
+import { injectMenuContext } from '@/Menu'
 import { usePopperAnchor } from '@/Popper/usePopperAnchor'
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
 import { injectMenubarMenuContext } from './MenubarMenu.vue'
 import { injectMenubarRootContext } from './MenubarRoot.vue'
@@ -43,10 +44,16 @@ const trigger = createMenubarTriggerSurface(rootContext, menuContext, {
   triggerElement,
 })
 
+// A consumer `id` (or an `id` on the asChild child) is the trigger's id, which the content's
+// `aria-labelledby` follows; `aria-controls` references the content only while it is rendered.
+// Followed from the render below, which picks up a consumer `id` that changed.
+const triggerId = useTriggerIdInRender(menuContext, triggerElement)
+const contentId = useRenderedContentId(menuContext, injectMenuContext())
+
 onMounted(() => {
   menuContext.triggerElement = triggerElement
 })
-const anchor = usePopperAnchor({ consumerAttrs: true, element: triggerElement })
+const anchor = usePopperAnchor({ consumerAttrs: true, element: triggerElement, scope: 'menu' })
 
 // Arrow-key navigation (as a composable; the menubar handles the keys).
 const roving = useRovingFocusItem({
@@ -54,13 +61,25 @@ const roving = useRovingFocusItem({
   tabStopId: () => menuContext.value,
   focusable: () => !props.disabled,
 })!
+
+function renderAttrs(attrs: Record<string, unknown>) {
+  triggerId.follow(attrs)
+  const own = trigger.attrs.value
+  return mergeProps(
+    anchor.consumerAttrs(attrs),
+    roving.attrs(),
+    { type: props.as === 'button' ? 'button' : undefined },
+    own,
+    { 'disabled': disabledAttr(own.disabled as boolean | undefined, props.as, props.asChild), 'aria-controls': own['aria-controls'] ? contentId.value : undefined },
+  )
+}
 </script>
 
 <template>
   <component
-    :is="renderAs(as, asChild)"
+    :is="renderAsControl(as, asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps(anchor.consumerAttrs($attrs), roving.attrs(), { type: as === 'button' ? 'button' : undefined }, trigger.attrs.value)"
+    v-bind="renderAttrs($attrs)"
   >
     <slot />
   </component>

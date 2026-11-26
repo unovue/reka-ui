@@ -8,6 +8,13 @@ export interface SelectTypeaheadItem<T = AcceptableValue> {
   value: T
   textValue: string
   disabled?: boolean
+  /**
+   * Selects the item through its cancellable `select` event, as a press does;
+   * absent for an `items` option no `SelectItem` renders.
+   */
+  select?: (event: KeyboardEvent) => void
+  /** The rendered item, which the open trigger's typeahead focuses. */
+  element?: HTMLElement
 }
 
 export interface HarvestedItem<T> {

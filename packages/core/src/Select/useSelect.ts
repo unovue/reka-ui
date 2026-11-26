@@ -14,6 +14,7 @@ import {
   containsComposed,
   createLabelRegistry,
   createPartSurface,
+  defineReactiveIds,
   disclosureState,
   getActiveElement,
   getEventTarget,
@@ -372,9 +373,9 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
   const triggerElement = ref<HTMLElement>()
   const valueElement = ref<HTMLElement>()
 
-  const context: SelectRootContext<T> = {
+  // `contentId` follows a consumer `id` on the content (`useContentId`).
+  const context = defineReactiveIds<SelectRootContext<T>, 'contentId'>({
     baseId,
-    contentId: `${baseId}-content`,
     triggerElement,
     onTriggerChange: (node) => {
       triggerElement.value = node
@@ -409,7 +410,7 @@ export function useSelectRoot<T extends AcceptableValue = AcceptableValue>(props
     getNavigationIntent,
     virtualTypeaheadItems,
     notifyOpenComplete: value => props.onOpenComplete?.(value),
-  }
+  }, { contentId: `${baseId}-content` })
 
   return {
     modelValue,
@@ -448,6 +449,48 @@ export interface UseSelectTriggerReturn {
   /** `role="combobox"`, `aria-*`, `disabled`, `dir` and the open/typeahead handlers. The tag-dependent `type` stays in the SFC. */
   trigger: PartSurface<SelectTriggerState>
   isDisabled: ComputedRef<boolean>
+}
+
+// The trigger's typeahead helpers, at module level: no closures per trigger.
+
+// A rendered item selects itself, so its `select` event can prevent it.
+function selectMatch<T>(context: SelectRootContext<T>, item: SelectTypeaheadItem<T>, event: KeyboardEvent) {
+  if (item.select)
+    item.select(event)
+  else
+    context.setModelValue(item.value, 'typeahead', event)
+}
+
+// While open, typing on the trigger moves focus to the match without selecting it.
+function focusTypeaheadMatch(context: SelectRootContext<any>, term: string) {
+  const items = (context.closedItems?.liveItems?.() ?? []).filter(item => !item.disabled && item.element)
+  const active = getActiveElement()
+  const current = items.find(item => item.element === active)
+  getNextMatch(items, term, current, item => item.textValue)?.element?.focus()
+}
+
+// The next match, and whether only the rendered items can settle it:
+// - nothing matches: an option only a `SelectItem` has may;
+// - a repeated key's cycle wraps to its first match: the same, after the last
+//   one it knows. `items` may well list them all, but only the render can
+//   tell, so such a key renders once per focus. A jump back to another letter,
+//   or a longer search the selection still matches, renders nothing;
+// - the match depends on a `disabled` remembered from an unmounted item, which
+//   its template may have changed since.
+function findTypeaheadMatch<T>(context: SelectRootContext<T>, term: string, all: (SelectTypeaheadItem<T> & { dataOnly?: boolean, remembered?: boolean })[]) {
+  const items = all.filter(item => !item.disabled)
+  const current = items.find(item => context.isSelected(item.value))
+  // Matched by identity, so items with the same text stay distinct.
+  const match = (list: typeof all) => getNextMatch(list, term, current, item => item.textValue)
+  const next = match(items)
+  const singleKey = Array.from(term).every(char => char === term[0])
+  const prefix = (singleKey ? term[0] ?? '' : term).toLowerCase()
+  const inCycle = !!current && current.textValue.toLowerCase().startsWith(prefix)
+  const unsure = next
+    ? (inCycle && singleKey && items.indexOf(next) < items.indexOf(current!))
+    || (all.some(item => item.remembered) && match(all.filter(item => !item.disabled || item.remembered)) !== next)
+    : singleKey || !inCycle
+  return { next, unsure }
 }
 
 /**
@@ -523,7 +566,7 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
     // item can answer it (see `findTypeaheadMatch`), or the match is a record's
     // string key (the item's own value may be a number).
     if (closedItems && closedItems.canRender() && !closedItems.hasRendered()) {
-      const found = context.items?.value && findTypeaheadMatch()
+      const found = context.items?.value && findTypeaheadMatch(context, search.value, getTypeaheadItems())
       const next = found && found.next
       if (!found || found.unsure || (next && next.dataOnly && context.isRecordItems?.() && !context.isSelected(next.value))) {
         closedItems.renderThen(() => {
@@ -532,7 +575,7 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
         })
       }
       else if (next) {
-        context.setModelValue(next.value, 'typeahead', event)
+        selectMatch(context, next, event)
       }
       return
     }
@@ -552,40 +595,12 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
     }, { flush: 'post' })
   }
 
-  // The next match, and whether only the rendered items can settle it:
-  // - nothing matches: an option only a `SelectItem` has may;
-  // - a repeated key's cycle wraps to its first match: the same, after the last
-  //   one it knows. `items` may well list them all, but only the render can
-  //   tell, so such a key renders once per focus. A jump back to another letter,
-  //   or a longer search the selection still matches, renders nothing;
-  // - the match depends on a `disabled` remembered from an unmounted item, which
-  //   its template may have changed since.
-  function findTypeaheadMatch() {
-    const term = search.value
-    const all = getTypeaheadItems()
-    const items = all.filter(item => !item.disabled)
-    const current = items.find(item => context.isSelected(item.value))
-    const match = (list: typeof all) => {
-      const nextMatch = getNextMatch(list.map(item => item.textValue), term, current?.textValue)
-      return list.find(item => item.textValue === nextMatch)
-    }
-    const next = match(items)
-    const singleKey = Array.from(term).every(char => char === term[0])
-    const prefix = (singleKey ? term[0] ?? '' : term).toLowerCase()
-    const inCycle = !!current && current.textValue.toLowerCase().startsWith(prefix)
-    const unsure = next
-      ? (inCycle && singleKey && items.indexOf(next) < items.indexOf(current!))
-      || (all.some(item => item.remembered) && match(all.filter(item => !item.disabled || item.remembered)) !== next)
-      : singleKey || !inCycle
-    return { next, unsure }
-  }
-
   function matchTypeahead(event: KeyboardEvent) {
     if (context.multiple.value || context.open.value)
       return true
-    const { next } = findTypeaheadMatch()
+    const { next } = findTypeaheadMatch(context, search.value, getTypeaheadItems())
     if (next)
-      context.setModelValue(next.value, 'typeahead', event)
+      selectMatch(context, next, event)
     return !!next
   }
 
@@ -703,8 +718,12 @@ export function useSelectTrigger<T extends AcceptableValue = AcceptableValue>(op
     // or `ArrowLeft` would be appended and swallow the next `Space`.
     if (!isModifierKey && event.key.length === 1 && !isDisabled.value) {
       handleTypeaheadSearch(event.key, [])
-      if (event.key !== ' ' || isTypingAhead)
-        typeaheadSelect(event)
+      if (event.key !== ' ' || isTypingAhead) {
+        if (context.open.value && !context.multiple.value)
+          focusTypeaheadMatch(context, search.value)
+        else
+          typeaheadSelect(event)
+      }
     }
     if (isTypingAhead && event.key === ' ')
       return
@@ -1219,6 +1238,8 @@ export interface UseSelectItemReturn<T = AcceptableValue> {
   textValue: Ref<string>
   /** The context the SFC provides via `provideSelectItemContext`. */
   itemContext: SelectItemContext<T>
+  /** Selects the item for the closed trigger's typeahead, through its cancellable `select` event. */
+  typeaheadSelect: (event: KeyboardEvent) => void
 }
 
 /**
@@ -1230,20 +1251,23 @@ export interface UseSelectItemReturn<T = AcceptableValue> {
  * @experimental Signatures may change in 3.x minors.
  * @lifecycle pure
  */
-function focusItemOnPointerdown(event: PointerEvent) {
-  (event.currentTarget as HTMLElement).focus({ preventScroll: true })
-}
-
-function preventTouchend(event: TouchEvent) {
-  event.preventDefault()
-  event.stopPropagation()
+// Touch selects on `click`: iOS Safari fires `pointerup` on whatever item ends up under the
+// finger once a scroll through the list stops, while a `click` never follows a scroll.
+// Mouse and pen keep selecting on `pointerup`, so they can press the trigger, move down the
+// list and release over an item.
+function isTouch(event: PointerEvent) {
+  return event.pointerType === 'touch'
 }
 
 export function useSelectItem<T extends AcceptableValue = AcceptableValue>(options: UseSelectItemOptions<T>): UseSelectItemReturn<T> {
   const { context } = options
   const contentContext = options.contentContext
   const getValue = () => toValue(options.value)
-  const disabled = getterRef(() => toValue(options.disabled) ?? false)
+  // The item's own `disabled`: what `SelectItemText` registers for the native
+  // `<option>` (the native `<select>` already carries the root's).
+  const ownDisabled = getterRef(() => toValue(options.disabled) ?? false)
+  // A disabled root disables every item too, also while open (#3127).
+  const disabled = getterRef(() => ownDisabled.value || context.disabled.value)
   // A keyed selector cell: a selection change re-renders only the items it
   // flips, and a multiple selection is a set lookup.
   const selectionHold = context.selection?.createHold()
@@ -1257,7 +1281,7 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
   const textId = options.textId ?? `${context.baseId}-item-text-${++selectItemCount}`
 
   function handleSelectCustomEvent(ev: PointerEvent | KeyboardEvent, reason: 'item-press' | 'item-keydown') {
-    if (ev.defaultPrevented)
+    if (ev.defaultPrevented || disabled.value)
       return
     handleAndDispatchCustomEvent(
       SELECT_SELECT,
@@ -1275,6 +1299,16 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
       context.pressItem(getValue(), reason, ev.detail.originalEvent)
   }
 
+  // Whether a touch press began on this item. The trigger opens the content on a touch
+  // `pointerup`, so the `click` that ends that same tap can land on an item that was just
+  // rendered under the finger; only a tap that started here may select.
+  let touchPressStarted = false
+  // That tap's `pointerup`, handed to `select` as the `originalEvent` just as when it selected itself.
+  let tapPointerUp: PointerEvent | undefined
+  // Whether a selection key is held. An item rendered as a native button turns that key into a
+  // `click` of its own, which must not select a second time.
+  let isSelectionKeyDown = false
+
   async function onPointermove(event: PointerEvent) {
     await nextTick()
     if (event.defaultPrevented)
@@ -1282,7 +1316,7 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
     if (disabled.value) {
       contentContext?.onItemLeave?.()
     }
-    else {
+    else if (!isTouch(event)) {
       // even though safari doesn't support this option, it's acceptable
       // as it only means it might scroll a few pixels when using the pointer.
       (event.currentTarget as HTMLElement | null)?.focus({ preventScroll: true })
@@ -1298,6 +1332,8 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
   }
 
   async function onKeydown(event: KeyboardEvent) {
+    if (SELECTION_KEYS.includes(event.key))
+      isSelectionKeyDown = true
     await nextTick()
     if (event.defaultPrevented)
       return
@@ -1318,41 +1354,89 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
   }
   const onBlur = () => {
     isFocused.value = false
+    isSelectionKeyDown = false
   }
-  const onPointerup = (event: PointerEvent) => handleSelectCustomEvent(event, 'item-press')
 
-  const item = createPartSurface<SelectItemState>(
-    () => ({
-      'role': 'option',
-      'aria-labelledby': textId,
-      'aria-selected': isSelected.value,
-      'aria-disabled': disabled.value || undefined,
-      'tabindex': disabled.value ? undefined : -1,
-      'onFocus': onFocus,
-      'onBlur': onBlur,
-      'onPointerup': onPointerup,
-      'onPointerdown': focusItemOnPointerdown,
-      'onTouchend': preventTouchend,
-      'onPointermove': onPointermove,
-      'onPointerleave': onPointerleave,
-      'onKeydown': onKeydown,
-    }),
-    () => ({ state: selectionState(isSelected.value), disabled: disabled.value, highlighted: isFocused.value }),
-  )
+  const onPointerdown = (event: PointerEvent) => {
+    touchPressStarted = isTouch(event)
+    tapPointerUp = undefined
+    if (!touchPressStarted)
+      (event.currentTarget as HTMLElement).focus({ preventScroll: true })
+  }
+  const onPointerup = (event: PointerEvent) => {
+    if (!isTouch(event))
+      handleSelectCustomEvent(event, 'item-press')
+    else if (touchPressStarted)
+      tapPointerUp = event
+  }
+  const onClick = (event: MouseEvent) => {
+    const startedOnItem = touchPressStarted
+    const pointerUp = tapPointerUp
+    touchPressStarted = false
+    tapPointerUp = undefined
+    if (event.defaultPrevented)
+      return
+    // A click that no pointer produced (`detail` is 0), e.g. from assistive technology
+    const isVirtualClick = event.detail === 0 && !isSelectionKeyDown
+    // Browsers dispatch `click` as a `PointerEvent`; it stands in when there was no `pointerup`.
+    if (startedOnItem || isVirtualClick)
+      handleSelectCustomEvent(pointerUp ?? event as PointerEvent, 'item-press')
+  }
+  const onKeyup = () => {
+    // The `click` a native button makes from Space comes right after `keyup`
+    setTimeout(() => {
+      isSelectionKeyDown = false
+    })
+  }
 
   const itemContext: SelectItemContext<T> = {
     get value() {
       return getValue()
     },
     textId,
-    disabled,
+    disabled: ownDisabled,
     isSelected,
     onItemTextChange: (node) => {
       textValue.value = ((textValue.value || node?.textContent) ?? '').trim()
     },
   }
 
-  return { item, isSelected, isFocused, textValue, itemContext }
+  const item = createPartSurface<SelectItemState>(
+    () => ({
+      'role': 'option',
+      // Read through the context, which follows a consumer `id` on `SelectItemText`.
+      'aria-labelledby': itemContext.textId,
+      'aria-selected': isSelected.value,
+      'aria-disabled': disabled.value || undefined,
+      'tabindex': disabled.value ? undefined : -1,
+      'onFocus': onFocus,
+      'onBlur': onBlur,
+      'onClick': onClick,
+      'onPointerup': onPointerup,
+      'onPointerdown': onPointerdown,
+      'onPointermove': onPointermove,
+      'onPointerleave': onPointerleave,
+      'onKeydown': onKeydown,
+      'onKeyup': onKeyup,
+    }),
+    () => ({ state: selectionState(isSelected.value), disabled: disabled.value, highlighted: isFocused.value }),
+  )
+
+  return { item, isSelected, isFocused, textValue, itemContext, typeaheadSelect: createTypeaheadSelect(context, getValue, () => disabled.value, options.onSelect) }
+}
+
+// A match typed on the closed trigger: nothing is open to close, so only the value changes.
+// It still goes through `select`, so a handler that prevents it keeps the item unselected.
+function createTypeaheadSelect<T>(context: SelectRootContext<T>, getValue: () => T, isDisabled: () => boolean, onSelect: ((event: SelectEvent<T>) => void) | undefined) {
+  return (originalEvent: KeyboardEvent) => {
+    if (isDisabled())
+      return
+    handleAndDispatchCustomEvent(SELECT_SELECT, (event: SelectEvent<T>) => {
+      onSelect?.(event)
+      if (!event.defaultPrevented)
+        context.setModelValue(getValue(), 'typeahead', originalEvent)
+    }, { originalEvent, value: getValue() })
+  }
 }
 
 /**
@@ -1369,13 +1453,16 @@ export function useSelectItemLabel<T extends AcceptableValue = AcceptableValue>(
   textValue: () => string | undefined
   /** The item element: places it in document order. */
   element: () => Element | undefined
+  /** Called with the cancellable `select` event of a typeahead match. */
+  onSelect?: (event: SelectEvent<T>) => void
 }): { isSelected: Ref<boolean>, textValue: { readonly value: string }, itemContext: SelectItemContext<T> } {
   const { context, value } = options
   // The item text element, read live: the typeahead sees the current text.
   let textElement: HTMLElement | undefined
   const textValue = {
     get value() {
-      return (options.textValue() || textElement?.textContent || '').trim()
+      // An item without a `SelectItemText` matches its own text.
+      return (options.textValue() || textElement?.textContent || options.element()?.textContent || '').trim()
     },
   }
   // The keyed selector cell, as on a full item: a selection change re-renders
@@ -1400,11 +1487,13 @@ export function useSelectItemLabel<T extends AcceptableValue = AcceptableValue>(
   // Registered with the closed items directly once mounted (sorted into
   // document order when read): no collection.
   let harvested: HarvestedItem<T> | undefined
+  const typeaheadSelect = createTypeaheadSelect(context, value, () => !!options.disabled() || context.disabled.value, options.onSelect)
   onMounted(() => {
     harvested = context.closedItems?.addHarvested(() => ({
       value: value(),
       textValue: textValue.value,
       disabled: !!options.disabled(),
+      select: typeaheadSelect,
     }), options.element)
   })
   onBeforeUnmount(() => harvested && context.closedItems?.removeHarvested(harvested))

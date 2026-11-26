@@ -5,7 +5,7 @@ import type { TabsChangeReason, TabsTriggerEntry } from './useTabs'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
-import { createContext, useDirection, useForwardElement, useId } from '@/shared'
+import { createRekaContext, useDirection, useForwardElement, useId } from '@/shared'
 
 export interface TabsRootContext {
   modelValue: ComputedRef<StringOrNumber | null | undefined>
@@ -74,11 +74,13 @@ export type TabsRootEmits<T extends StringOrNumber = StringOrNumber> = {
 }
 
 export const [injectTabsRootContext, provideTabsRootContext]
-  = createContext<TabsRootContext>('TabsRoot')
+  = createRekaContext<TabsRootContext>('TabsRoot')
 </script>
 
 <script setup lang="ts" generic="T extends StringOrNumber = StringOrNumber">
 import { renderAs } from '@/Primitive/renderAs'
+import { useLazySlotProps } from '@/shared/lazySlotProps'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { useTabs, useTabsAutoSelect } from './useTabs'
 
 const props = withDefaults(defineProps<TabsRootProps<T>>(), {
@@ -118,10 +120,14 @@ const { root, context, modelValue } = tabs
 useTabsAutoSelect(tabs, props.defaultValue)
 
 provideTabsRootContext(context)
+useAgentRegistration('tabs', context, props)
 
 // The composable is untyped over `T`; narrow once here for the slot payload
 // (a `T | undefined` cast in the template reads as a deprecated filter to eslint).
 const slotModelValue = modelValue as ComputedRef<T | null | undefined>
+// Read when a consumer slot uses it, not where the slot is rendered: the slot is rendered by this
+// root's element, and a value read there re-renders it, and through it every tab, on each change.
+const slotProps = useLazySlotProps({ modelValue: () => slotModelValue.value })
 </script>
 
 <template>
@@ -130,6 +136,6 @@ const slotModelValue = modelValue as ComputedRef<T | null | undefined>
     :ref="forwardRef"
     v-bind="root.attrs.value"
   >
-    <slot :model-value="slotModelValue" />
+    <slot v-bind="slotProps()" />
   </component>
 </template>

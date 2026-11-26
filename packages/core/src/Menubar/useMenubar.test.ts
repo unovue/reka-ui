@@ -4,7 +4,7 @@ import { fireEvent, render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import * as Reka from '../index'
 import { useMenubar, useMenubarMenu } from './useMenubar'
 
@@ -195,7 +195,7 @@ describe('useMenubarMenu — trigger surface', () => {
     expect(bar.modelValue.value).toBe('')
   })
 
-  it('a cancelled or controlled-ignored request moves neither the tab stop nor the keyboard flag', () => {
+  it('a cancelled or controlled-ignored request moves neither the tab stop nor the keyboard flag', async () => {
     const cancel = { on: true }
     const bar = useMenubar({ onBeforeUpdate: (_v, d) => cancel.on && d.cancel() })
     const file = menuHarness(bar.context, { value: 'file' })
@@ -218,8 +218,24 @@ describe('useMenubarMenu — trigger surface', () => {
     const controlled = useMenubar({ modelValue: () => '', emit: vi.fn() })
     const edit = menuHarness(controlled.context, { value: 'edit' })
     edit.trigger.props.value.onKeydown(new KeyboardEvent('keydown', { key: 'ArrowDown', cancelable: true }))
+    // The parent applies a change when it re-renders: checked after that flush.
+    await nextTick()
     expect(controlled.currentTabStopId.value).toBeNull()
     expect(edit.context.wasKeyboardTriggerOpenRef.value).toBe(false)
+  })
+
+  it('a controlled parent that applies the open on its re-render still gets the keyboard open', async () => {
+    const value = ref('')
+    const controlled = useMenubar({ modelValue: () => value.value, emit: (_e: 'update:modelValue', v: string) => {
+      nextTick(() => value.value = v)
+    } })
+    const edit = menuHarness(controlled.context, { value: 'edit' })
+    edit.trigger.props.value.onKeydown(new KeyboardEvent('keydown', { key: 'ArrowDown', cancelable: true }))
+    await nextTick()
+    await nextTick()
+    expect(value.value).toBe('edit')
+    expect(controlled.currentTabStopId.value).toBe('edit')
+    expect(edit.context.wasKeyboardTriggerOpenRef.value).toBe(true)
   })
 
   it('disabled ignores pointer and keys', () => {

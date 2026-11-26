@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardElement, useId } from '@/shared'
+import { claimReferencedId, useForwardElement, useId } from '@/shared'
 import { injectTagsInputItemContext } from './TagsInputItem.vue'
 import { getTagsInputItemTextSurface } from './useTagsInput'
 
@@ -19,6 +19,8 @@ const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
 itemContext.textId ||= useId(undefined, 'reka-tags-input-item-text')
+// A consumer `id` (or one on the asChild child) is the id the delete button's `aria-labelledby` references.
+claimReferencedId(itemContext, 'textId')
 const text = getTagsInputItemTextSurface(itemContext)
 </script>
 

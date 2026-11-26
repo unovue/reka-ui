@@ -18,7 +18,7 @@ import type { ComponentPublicInstance } from 'vue'
 import { reactiveOmit } from '@vueuse/shared'
 import { mergeProps, nextTick, onUnmounted, ref, watch } from 'vue'
 import { usePopperAnchor } from '@/Popper/usePopperAnchor'
-import { useForwardElement, useId } from '@/shared'
+import { useForwardElement, useId, useRenderedContentId, useTriggerId } from '@/shared'
 import { injectMenuContentContext } from './MenuContentImpl.vue'
 import MenuItemImpl from './MenuItemImpl.vue'
 import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
@@ -56,7 +56,10 @@ watch(menuContext.open, (open) => {
 
 const openTimerRef = ref<number | null>(null)
 
-subContext.triggerId ||= useId(undefined, 'reka-menu-sub-trigger')
+// A consumer `id` (or an `id` on the asChild child) is the trigger's id, which the content's
+// `aria-labelledby` follows. `aria-controls` references the content only while it is rendered.
+useTriggerId(subContext, subContext.trigger, () => useId(undefined, 'reka-menu-sub-trigger'), true)
+const contentId = useRenderedContentId(subContext, menuContext)
 
 function clearOpenTimer() {
   if (openTimerRef.value)
@@ -152,7 +155,7 @@ async function handleKeyDown(event: KeyboardEvent) {
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
-const anchor = usePopperAnchor({ consumerAttrs: true, element: currentElement })
+const anchor = usePopperAnchor({ consumerAttrs: true, element: currentElement, scope: 'menu' })
 
 function setTriggerRef(item: Element | ComponentPublicInstance | null) {
   forwardRef(item)
@@ -168,7 +171,7 @@ function setTriggerRef(item: Element | ComponentPublicInstance | null) {
     :ref="setTriggerRef"
     aria-haspopup="menu"
     :aria-expanded="menuContext.open.value"
-    :aria-controls="subContext.contentId"
+    :aria-controls="menuContext.open.value ? contentId : undefined"
     :data-popup-open="menuContext.open.value ? '' : undefined"
     @click="
       async (event: MouseEvent) => {

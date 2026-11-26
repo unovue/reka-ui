@@ -8,7 +8,7 @@ import type { ListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import type { ListboxFilterFunction, ListboxFilterState, ListboxNavigationIntent } from '@/Listbox/useListbox'
 import type { BaseChangeReason, By, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue } from '@/shared/types'
-import { compare, createContext, mergeExpose, useDirection, useFormControl, useForwardElement, useId } from '@/shared'
+import { compare, createRekaContext, mergeExpose, useDirection, useFormControl, useForwardElement, useId } from '@/shared'
 
 /**
  * The Combobox root context. It extends the Listbox root context (#2824, the
@@ -47,6 +47,8 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
    * content rather than an input inside it, so no virtual keyboard opens.
    */
   interactionType: Ref<ComboboxInteractionType>
+  /** Whether opening the combobox moves focus to the input. Set by `ComboboxInput`'s `focusOnOpen`. */
+  focusInputOnOpen: Ref<boolean>
   parentElement: Ref<HTMLElement | undefined>
   resetSearchTermOnSelect: Ref<boolean>
   /** Called with the close reason when the popup closes and the input text should be reset. */
@@ -67,6 +69,11 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
   openOnClick: Ref<boolean>
   resetModelValueOnClear: Ref<boolean>
   unmountOnHide: Ref<boolean>
+  /**
+   * Called by `ComboboxContent` as it sets up: from then on its items exist, and the root
+   * keeps them unhighlighted while closed. @internal
+   */
+  watchHighlight?: () => void
   /** The root's `displayValue` resolver, if any. */
   displayValue?: (value: T) => string
   /** The root's `items`, if any. Read through `getComboboxInputText` / `getComboboxSelectedLabels`. */
@@ -78,7 +85,7 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
 }
 
 export const [injectComboboxRootContext, provideComboboxRootContext]
-  = createContext<ComboboxRootContext<AcceptableValue>>('ComboboxRoot')
+  = createRekaContext<ComboboxRootContext<AcceptableValue>>('ComboboxRoot')
 
 export type ComboboxRootEmits<T = AcceptableValue, M extends boolean = boolean> = {
   /**
@@ -99,6 +106,8 @@ export type ComboboxRootEmits<T = AcceptableValue, M extends boolean = boolean> 
   'update:open': [value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason>]
   /** Event handler called after the open or close animations of the content have finished. */
   'update:openComplete': [value: boolean]
+  /** Event handler called when a selection is blocked because it would go over `max`. The payload is the first value over the limit. */
+  'invalid': [payload: T]
 }
 
 /**
@@ -107,7 +116,7 @@ export type ComboboxRootEmits<T = AcceptableValue, M extends boolean = boolean> 
  */
 export type ComboboxModelValue<T, M extends boolean = boolean> = boolean extends M ? T | T[] | null : M extends true ? T[] : T | null
 
-export interface ComboboxRootProps<T = AcceptableValue, I = T> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'filter' | 'getNavigationIntent' | 'modelValue' | 'defaultValue'> {
+export interface ComboboxRootProps<T = AcceptableValue, I = T> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'keepFocusOnValueChange' | 'filter' | 'getNavigationIntent' | 'modelValue' | 'defaultValue'> {
   /**
    * The controlled value of the Combobox. Can be binded with `v-model`. An array when `multiple`; `null` is an empty
    * single selection, the value `ComboboxCancel` emits when it clears one.
@@ -154,10 +163,20 @@ export interface ComboboxRootProps<T = AcceptableValue, I = T> extends Omit<List
   filter?: ListboxFilterFunction<T> | null
   /**
    * Whether `ComboboxCancel` also clears the selected value, resetting `modelValue` to `null` (or `[]` if `multiple`).
-   * Set to `false` to clear only the search text and keep the selection.
+   * Set to `false` to clear only the search text and keep the selection. Use `clearValue` to reset to another value.
    * @defaultValue true
    */
   resetModelValueOnClear?: boolean
+  /**
+   * A function returning the value `modelValue` is reset to when `ComboboxCancel` clears the combobox and
+   * `resetModelValueOnClear` is `true`, e.g. `() => undefined`. <br>
+   * When omitted, `modelValue` is reset to `null` (or `[]` if `multiple`). <br>
+   * If `multiple`, return the array to reset to: any other result is ignored and `[]` is used.
+   *
+   * A controlled combobox that is also given a `defaultValue` falls back to that default
+   * whenever its `modelValue` is `undefined`, so do not combine the two when clearing to `undefined`.
+   */
+  clearValue?: () => T | T[] | null | undefined
   /**
    * When set to `false`, the Combobox content will not be unmounted when closed, but instead hidden with CSS. <br>
    * Useful when you want to improve performance by not remounting the content on every open.
@@ -182,13 +201,14 @@ export interface ComboboxRootProps<T = AcceptableValue, I = T> extends Omit<List
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false, I = T">
-import { camelize, mergeProps, toRef, useAttrs, watch } from 'vue'
+import { camelize, getCurrentScope, mergeProps, nextTick, toRef, useAttrs, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { provideListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import { PopperRoot } from '@/Popper'
 import { renderAs } from '@/Primitive/renderAs'
 import { formResetBinder } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { hasComboboxValue, useComboboxRoot } from './useCombobox'
@@ -269,6 +289,8 @@ const combobox = useComboboxRoot<AcceptableValue>({
   disabled: resolvedDisabled,
   highlightOnHover: () => props.highlightOnHover,
   loop: () => props.loop,
+  max: () => props.max,
+  onInvalid: value => emits('invalid', value as T),
   by: props.by as By<AcceptableValue> | undefined,
   getNavigationIntent: event => props.getNavigationIntent?.(event),
   filter: toRef(() => props.filter) as Ref<ListboxFilterFunction<AcceptableValue> | null | undefined>,
@@ -280,6 +302,7 @@ const combobox = useComboboxRoot<AcceptableValue>({
   openOnFocus: () => props.openOnFocus,
   openOnClick: () => props.openOnClick,
   resetModelValueOnClear: () => props.resetModelValueOnClear,
+  clearValue: () => props.clearValue,
   unmountOnHide: () => props.unmountOnHide,
   displayValue: props.displayValue && (value => props.displayValue!(value as T)),
   items: () => props.items as ComboboxItems<any, AcceptableValue> | undefined,
@@ -300,6 +323,52 @@ const modelValue = combobox.modelValue as unknown as Ref<ComboboxModelValue<T, M
 if (field)
   watch(modelValue, value => field.sync(value))
 
+// Items that stay mounted while closed (`unmountOnHide: false`) are still
+// connected, so Enter would select the highlighted one: nothing is highlighted
+// while closed. Opened by the parent through `open` (not `onOpenChange`, which
+// highlights itself), bring back the highlight those items lost.
+let isOpeningInternally = false
+const onOpenChange = context.onOpenChange
+context.onOpenChange = (value, reason, event) => {
+  const opening = value && !open.value
+  const changed = onOpenChange(value, reason, event)
+  // A controlled `open` arrives with the parent's next render, still before the next tick.
+  if (opening && changed) {
+    isOpeningInternally = true
+    nextTick(() => isOpeningInternally = false)
+  }
+  return changed
+}
+function onOpened() {
+  if (isOpeningInternally)
+    isOpeningInternally = false
+  else if (!highlightedElement.value)
+    highlightSelected()
+}
+// Created when the content first sets up, since no item exists before: a combobox that never
+// opens has no watcher. The content sets up at mount when it is open or kept mounted, otherwise
+// as the combobox first opens, which is handled here as the watcher would have.
+const scope = getCurrentScope()
+const openAtSetup = open.value
+let isWatchingHighlight = false
+context.watchHighlight = () => {
+  if (isWatchingHighlight)
+    return
+  isWatchingHighlight = true
+  if (open.value && !openAtSetup)
+    onOpened()
+  scope?.run(() => watch([open, highlightedElement], ([isOpen], [wasOpen]) => {
+    if (!isOpen) {
+      isOpeningInternally = false
+      if (highlightedElement.value)
+        highlightedElement.value = null
+    }
+    else if (!wasOpen) {
+      onOpened()
+    }
+  }))
+}
+
 defineExpose(mergeExpose(expose, {
   /** The filtering result: `{ search, active, count }`. */
   filtered: filterState,
@@ -311,6 +380,7 @@ defineExpose(mergeExpose(expose, {
 
 provideListboxRootContext(context)
 provideComboboxRootContext(context)
+useAgentRegistration('combobox', context, props, currentElement)
 provideComboboxField(field, context)
 
 // A native reset of the owning form puts the value back to `defaultValue`,
@@ -327,7 +397,7 @@ const bindFormReset = formResetBinder(onFormReset)
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="combobox">
     <component
       :is="renderAs(as, asChild)"
       :ref="forwardRef"

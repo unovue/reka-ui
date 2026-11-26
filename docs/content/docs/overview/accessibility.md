@@ -25,6 +25,8 @@ With many built-in form controls, the native HTML `label` element is designed to
 
 Where possible, Reka UI includes abstractions to make labelling our controls simple. The [`Label`](../components/label) primitive is designed to work with many of our controls. Ultimately it's up to you to provide those labels so that users have the proper context when navigating your application.
 
+Controls that take a `name` render a hidden native input (or select) so their value is submitted with a form. That hidden control is removed from the accessibility tree and uses the field name as its default label. The visible control still needs its own label.
+
 ## Keyboard Navigation
 
 Many complex components, like [`Tabs`](../components/tabs) and [`Dialog`](../components/dialog), come with expectations from users on how to interact with their content using a keyboard or other non-mouse input modalities. Reka UI provides basic keyboard support in accordance with the [WAI-ARIA authoring practices](https://www.w3.org/TR/wai-aria-practices-1.2/).

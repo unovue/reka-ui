@@ -2,7 +2,7 @@
 import type { PopperContentProps } from '@/Popper'
 import type { PrimitiveProps } from '@/Primitive'
 import { defu } from 'defu'
-import { containsComposed, useAncestorScroll, useForwardElement } from '@/shared'
+import { containsComposed, useAncestorScroll, useContentElement, useContentMounted, useForwardElement } from '@/shared'
 import { injectTooltipProviderContext } from './TooltipProvider.vue'
 
 export type TooltipContentImplEmits = {
@@ -18,6 +18,7 @@ export interface TooltipContentImplProps
     PopperContentProps,
     | 'side'
     | 'sideOffset'
+    | 'fallbackAxisSideDirection'
     | 'align'
     | 'alignOffset'
     | 'avoidCollisions'
@@ -43,8 +44,8 @@ export interface TooltipContentImplProps
 
 <script setup lang="ts">
 import type { DismissableLayerDismissDetails, FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
-import { useEventListener } from '@vueuse/core'
-import { computed, getCurrentInstance, mergeProps, onMounted } from 'vue'
+import { unrefElement, useEventListener } from '@vueuse/core'
+import { computed, getCurrentInstance, mergeProps, onMounted, shallowRef } from 'vue'
 import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer } from '@/DismissableLayer/useDismissableLayer'
 import { PopperContent } from '@/Popper'
 import { splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
@@ -88,6 +89,12 @@ const ariaLabel = computed(() => props.ariaLabel || currentElement.value?.textCo
 // consumer's explicit `data-state` still wins.
 const content = getTooltipContentSurface(rootContext)
 const label = getTooltipLabelSurface(rootContext)
+// The element the trigger is described by: the trigger references the id it rendered, and
+// only while it is rendered.
+const description = shallowRef<InstanceType<typeof VisuallyHidden>>()
+const descriptionElement = computed(() => unrefElement(description.value) as HTMLElement | undefined)
+useContentElement(rootContext, descriptionElement)
+useContentMounted(rootContext, descriptionElement)
 
 const popperContentProps = computed(() => {
   const { ariaLabel: _, ...restProps } = props
@@ -147,10 +154,14 @@ const layer = useDismissableLayer(dismissableLayerOptions(currentElement, () => 
 <template>
   <PopperContent
     :ref="forwardRef"
+    scope="tooltip"
     v-bind="mergeProps(mergeProps(layer.attrs(), layerWrapper.rest), mergeProps(content.attrs.value, { ...$attrs, ...popperContentProps }, { style: CONTENT_STYLE }))"
   >
     <slot />
-    <VisuallyHidden v-bind="label.attrs.value">
+    <VisuallyHidden
+      ref="description"
+      v-bind="label.attrs.value"
+    >
       {{ ariaLabel }}
     </VisuallyHidden>
   </PopperContent>

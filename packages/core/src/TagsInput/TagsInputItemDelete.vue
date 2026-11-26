@@ -10,6 +10,7 @@ export interface TagsInputItemDeleteProps extends PrimitiveProps {}
 
 <script setup lang="ts">
 import { renderAs } from '@/Primitive/renderAs'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 
 withDefaults(defineProps<TagsInputItemDeleteProps>(), {
   as: 'button',
@@ -20,6 +21,7 @@ defineExpose(expose)
 const context = injectTagsInputRootContext()
 const itemContext = injectTagsInputItemContext()
 const itemDelete = getTagsInputItemDeleteSurface(context, itemContext)
+useAgentItem(context, itemContext, undefined, 'delete')
 </script>
 
 <template>
@@ -28,6 +30,7 @@ const itemDelete = getTagsInputItemDeleteSurface(context, itemContext)
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
     v-bind="itemDelete.attrs.value"
+    :aria-labelledby="$attrs['aria-label'] ? undefined : itemDelete.attrs.value['aria-labelledby']"
   >
     <slot />
   </component>

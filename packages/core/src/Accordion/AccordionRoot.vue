@@ -4,7 +4,7 @@ import type { AccordionChangeReason, UseAccordionReturn } from './useAccordion'
 import type { PrimitiveProps } from '@/Primitive'
 import type { ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, DataOrientation, Direction, SingleOrMultipleProps, SingleOrMultipleType } from '@/shared/types'
-import { createContext, useDirection, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useForwardElement } from '@/shared'
 
 export interface AccordionRootProps<T = string | string[]>
   extends PrimitiveProps, SingleOrMultipleProps<T> {
@@ -67,11 +67,13 @@ export type AccordionRootContext<P extends AccordionRootProps> = {
 }
 
 export const [injectAccordionRootContext, provideAccordionRootContext]
-  = createContext<AccordionRootContext<AccordionRootProps>>('AccordionRoot')
+  = createRekaContext<AccordionRootContext<AccordionRootProps>>('AccordionRoot')
 </script>
 
 <script setup lang="ts" generic="T extends (string | string[]), ExplicitType extends SingleOrMultipleType">
 import { renderAs } from '@/Primitive/renderAs'
+import { useLazySlotProps } from '@/shared/lazySlotProps'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { useAccordion } from './useAccordion'
 
 const props = withDefaults(defineProps<AccordionRootProps<T>>(), {
@@ -109,6 +111,11 @@ const { context, modelValue } = useAccordion({
 })
 
 provideAccordionRootContext(context)
+useAgentRegistration('accordion', context, props, parentElement)
+
+// Read when a consumer slot uses it, not where the slot is rendered: the slot is rendered by this
+// root's element, and a value read there re-renders it, and through it every item, on each change.
+const slotProps = useLazySlotProps({ modelValue: () => modelValue.value })
 </script>
 
 <template>
@@ -116,6 +123,6 @@ provideAccordionRootContext(context)
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
   >
-    <slot :model-value="modelValue" />
+    <slot v-bind="slotProps()" />
   </component>
 </template>

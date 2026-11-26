@@ -22,6 +22,12 @@
     'required': false
   },
   {
+    'name': 'clearValue',
+    'description': '<p>A function returning the value <code>modelValue</code> is reset to when <code>ComboboxCancel</code> clears the combobox and\n<code>resetModelValueOnClear</code> is <code>true</code>, e.g. <code>() =&gt; undefined</code>. &lt;br&gt;\nWhen omitted, <code>modelValue</code> is reset to <code>null</code> (or <code>[]</code> if <code>multiple</code>). &lt;br&gt;\nIf <code>multiple</code>, return the array to reset to: any other result is ignored and <code>[]</code> is used.</p>\n<p>A controlled combobox that is also given a <code>defaultValue</code> falls back to that default\nwhenever its <code>modelValue</code> is <code>undefined</code>, so do not combine the two when clearing to <code>undefined</code>.</p>\n',
+    'type': '(() =&gt; AcceptableValue | AcceptableValue[] | null | undefined)',
+    'required': false
+  },
+  {
     'name': 'defaultOpen',
     'description': '<p>The open state of the combobox when it is initially rendered. &lt;br&gt; Use when you do not need to control its open state.</p>\n',
     'type': 'boolean',
@@ -83,6 +89,12 @@
     'required': false
   },
   {
+    'name': 'max',
+    'description': '<p>Maximum number of options the user can select. Only applies when <code>multiple</code> is <code>true</code>.\nA selection that would go over it (click, &lt;kbd&gt;Enter&lt;/kbd&gt;, range or select-all) is blocked\nand emits <code>invalid</code>. <code>0</code> means no limit. It does not clamp a <code>modelValue</code> set programmatically.</p>\n',
+    'type': 'number',
+    'required': false
+  },
+  {
     'name': 'modelValue',
     'description': '<p>The controlled value of the Combobox. Can be binded with <code>v-model</code>. An array when <code>multiple</code>; <code>null</code> is an empty\nsingle selection, the value <code>ComboboxCancel</code> emits when it clears one.</p>\n',
     'type': 'AcceptableValue | AcceptableValue[] | null',
@@ -128,7 +140,7 @@
   },
   {
     'name': 'resetModelValueOnClear',
-    'description': '<p>Whether <code>ComboboxCancel</code> also clears the selected value, resetting <code>modelValue</code> to <code>null</code> (or <code>[]</code> if <code>multiple</code>).\nSet to <code>false</code> to clear only the search text and keep the selection.</p>\n',
+    'description': '<p>Whether <code>ComboboxCancel</code> also clears the selected value, resetting <code>modelValue</code> to <code>null</code> (or <code>[]</code> if <code>multiple</code>).\nSet to <code>false</code> to clear only the search text and keep the selection. Use <code>clearValue</code> to reset to another value.</p>\n',
     'type': 'boolean',
     'required': false,
     'default': 'true'
@@ -173,6 +185,11 @@
     'type': '[payload: { ref: HTMLElement; value: AcceptableValue; } | undefined]'
   },
   {
+    'name': 'invalid',
+    'description': '<p>Event handler called when a selection is blocked because it would go over <code>max</code>. The payload is the first value over the limit.</p>\n',
+    'type': '[payload: AcceptableValue]'
+  },
+  {
     'name': 'update:modelValue',
     'description': '<p>Event handler called when the value changes. The value is an array when <code>multiple</code>, and <code>null</code> when\n<code>ComboboxCancel</code> clears a single selection.</p>\n',
     'type': '[value: ComboboxModelValue&lt;AcceptableValue, M&gt;, details: ChangeEventDetails&lt;ComboboxChangeReason, Event&gt;]'
@@ -212,6 +229,7 @@
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
 | `by` | Use this to compare objects by a particular field, or pass your own comparison function for complete control over how values are compared (a function runs for every value, strings included). Read once at setup: changing it after mount has no effect. | `string \| ((a: AcceptableValue, b: AcceptableValue) => boolean)` | No | - |
+| `clearValue` | A function returning the value `modelValue` is reset to when `ComboboxCancel` clears the combobox and `resetModelValueOnClear` is `true`, e.g. `() => undefined`. \<br> When omitted, `modelValue` is reset to `null` (or `[]` if `multiple`). \<br> If `multiple`, return the array to reset to: any other result is ignored and `[]` is used. A controlled combobox that is also given a `defaultValue` falls back to that default whenever its `modelValue` is `undefined`, so do not combine the two when clearing to `undefined`. | `(() => AcceptableValue \| AcceptableValue[] \| null \| undefined)` | No | - |
 | `defaultOpen` | The open state of the combobox when it is initially rendered. \<br> Use when you do not need to control its open state. | `boolean` | No | - |
 | `defaultValue` | The value of the Combobox when initially rendered. Use when you do not need to control the state of the Combobox. | `AcceptableValue \| AcceptableValue[] \| null` | No | - |
 | `dir` | The reading direction of the listbox when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
@@ -222,6 +240,7 @@
 | `highlightOnHover` | When `true`, hover over item will trigger highlight | `boolean` | No | `true` |
 | `items` | The items as data: an array of items, an array of groups of them (`{ items: [...] }`), or a collection made with `createComboboxItems()`. It is where the label of the selected value comes from, so the input and `ComboboxValue` need no rendered item: they are right before the first open and on the server. A collection resolves a value (an id) to its label; in an array, `by` matches an object value to its item, whose `label` is shown. `displayValue` wins over it. The `ComboboxItem`s still render the list and are what the filter matches. | `readonly T[] \| readonly ComboboxItemGroup<T>[] \| ComboboxItemCollection<T, AcceptableValue>` | No | - |
 | `loop` | When `true`, keyboard navigation will loop from last item to first, and vice versa. | `boolean` | No | - |
+| `max` | Maximum number of options the user can select. Only applies when `multiple` is `true`. A selection that would go over it (click, \<kbd>Enter\</kbd>, range or select-all) is blocked and emits `invalid`. `0` means no limit. It does not clamp a `modelValue` set programmatically. | `number` | No | - |
 | `modelValue` | The controlled value of the Combobox. Can be binded with `v-model`. An array when `multiple`; `null` is an empty single selection, the value `ComboboxCancel` emits when it clears one. | `AcceptableValue \| AcceptableValue[] \| null` | No | - |
 | `multiple` | Whether multiple options can be selected or not. | `boolean` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
@@ -229,7 +248,7 @@
 | `openOnClick` | Whether to open the combobox when the input is clicked | `boolean` | No | `false` |
 | `openOnFocus` | Whether to open the combobox when the input is focused | `boolean` | No | `false` |
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
-| `resetModelValueOnClear` | Whether `ComboboxCancel` also clears the selected value, resetting `modelValue` to `null` (or `[]` if `multiple`). Set to `false` to clear only the search text and keep the selection. | `boolean` | No | `true` |
+| `resetModelValueOnClear` | Whether `ComboboxCancel` also clears the selected value, resetting `modelValue` to `null` (or `[]` if `multiple`). Set to `false` to clear only the search text and keep the selection. Use `clearValue` to reset to another value. | `boolean` | No | `true` |
 | `resetSearchTermOnBlur` | Whether to reset the searchTerm when the Combobox input blurred | `boolean` | No | `true` |
 | `resetSearchTermOnSelect` | Whether to reset the searchTerm when the Combobox value is selected | `boolean` | No | `true` |
 | `unmountOnHide` | When set to `false`, the Combobox content will not be unmounted when closed, but instead hidden with CSS. \<br> Useful when you want to improve performance by not remounting the content on every open. | `boolean` | No | `true` |
@@ -241,6 +260,7 @@
 | `beforeUpdate:modelValue` | Event handler called before the value changes; call `details.cancel()` to keep the current value. The value is an array when `multiple`, and `null` when `ComboboxCancel` clears a single selection. | `[value: ComboboxModelValue<AcceptableValue, M>, details: ChangeEventDetails<ComboboxChangeReason, Event>]` |
 | `beforeUpdate:open` | Event handler called before the open state changes; call `details.cancel()` to keep it. | `[value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason, Event>]` |
 | `highlight` | Event handler when highlighted element changes. | `[payload: { ref: HTMLElement; value: AcceptableValue; } \| undefined]` |
+| `invalid` | Event handler called when a selection is blocked because it would go over `max`. The payload is the first value over the limit. | `[payload: AcceptableValue]` |
 | `update:modelValue` | Event handler called when the value changes. The value is an array when `multiple`, and `null` when `ComboboxCancel` clears a single selection. | `[value: ComboboxModelValue<AcceptableValue, M>, details: ChangeEventDetails<ComboboxChangeReason, Event>]` |
 | `update:open` | Event handler called when the open state of the combobox changes. | `[value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason, Event>]` |
 | `update:openComplete` | Event handler called after the open or close animations of the content have finished. | `[value: boolean]` |

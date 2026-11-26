@@ -927,6 +927,31 @@ const rowMenu = createDropdownMenuHandle<Member>()
 
 The handle itself holds no state. The mounted root owns it, and the root and the triggers only connect to the handle after they mount. A handle created at module scope is therefore safe under SSR: nothing from one request can reach another, and every trigger renders closed on the server. Prefer creating the handle in the `<script setup>` of the component that renders the root and passing it down. Use a module-scope handle when the triggers live in unrelated parts of the app. Use one mounted root per handle: a second root that mounts with the same handle takes it over and closes the first, with a dev warning. A root or trigger kept alive by `<KeepAlive>` disconnects from the handle while it is inactive.
 
+### Keep the content mounted when closed
+
+By default the content is removed when the menu closes. Use `:unmount-on-hide="false"` on `DropdownMenuRoot` to keep it, and the content of its submenus, mounted and only hide it, for example to preserve the state of the elements inside it between openings.
+
+While closed, the hidden content does not act as an open menu: it does not trap focus, take part in keyboard navigation or typeahead, track the position of its anchor, block pointer events outside of it, lock the body scroll or hide the rest of the page from assistive technologies. Focus still returns to the trigger when it closes.
+
+```vue line=6
+<script setup>
+import { DropdownMenuContent, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
+</script>
+
+<template>
+  <DropdownMenuRoot :unmount-on-hide="false">
+    <DropdownMenuTrigger>Open</DropdownMenuTrigger>
+    <DropdownMenuPortal>
+      <DropdownMenuContent>
+        …
+      </DropdownMenuContent>
+    </DropdownMenuPortal>
+  </DropdownMenuRoot>
+</template>
+```
+
+`forceMount` on the content works differently: a force-mounted content is not made inert while closed. It keeps the side effects of an open menu, as it always has, and showing or hiding it is up to you. Combine it with `:unmount-on-hide="false"` on the root to make it inert while closed.
+
 ## Real-world examples
 
 - [Searchable Menu](/examples/menu-filter): A dropdown menu with a search field, and a submenu that filters on its own, using `DropdownMenuFilter`.
@@ -948,7 +973,7 @@ Adheres to the [Menu Button WAI-ARIA design pattern](https://www.w3.org/WAI/ARIA
           When focus is on <Code>DropdownMenuTrigger</Code>, opens the dropdown
           menu and focuses the first item.
           <br />
-          When focus is on an item, activates the focused item.
+          When focus is on an item, activates the focused item. While a typeahead search is in progress, adds a space to the search instead (see <Code>spaceExtendsTypeahead</Code>).
         </span>
       `,
     },

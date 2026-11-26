@@ -66,10 +66,26 @@ const armingTimers = new Set<number>()
 /** Documents other than the top-level one (iframes), with their attach count. */
 const foreignDocuments = new Map<Document, number>()
 
+/**
+ * The highest index of a layer that disables outside pointer events, as it was
+ * when each `pointerdown` started (in the capture phase), before a handler on the
+ * target could open another layer. A layer reads its eligibility for that event
+ * from it, not from the live stack (#2741).
+ */
+const disabledIndexAtPointerDown = new WeakMap<Event, number>()
+function handlePointerDownCapture(event: Event) {
+  disabledIndexAtPointerDown.set(event, highestDisabledIndex())
+}
+/** `highestDisabledIndex()` as it was when `event` started. @internal */
+export function highestDisabledIndexAt(event: Event): number {
+  return disabledIndexAtPointerDown.get(event) ?? highestDisabledIndex()
+}
+
 function installOutsideListeners() {
   if (outsideListenersInstalled || !isClient)
     return
   outsideListenersInstalled = true
+  document.addEventListener('pointerdown', handlePointerDownCapture, true)
   document.addEventListener('pointerdown', handlePointerDown)
   document.addEventListener('focusin', handleFocusIn)
 }
@@ -77,6 +93,7 @@ function teardownOutsideListeners() {
   if (!outsideListenersInstalled)
     return
   outsideListenersInstalled = false
+  document.removeEventListener('pointerdown', handlePointerDownCapture, true)
   document.removeEventListener('pointerdown', handlePointerDown)
   document.removeEventListener('focusin', handleFocusIn)
   removeTouchClick()
@@ -234,6 +251,7 @@ export function registerBranch(el: HTMLElement): () => void {
 // document: one listener of each kind, however many layers share the frame.
 
 function addForeignListeners(doc: Document) {
+  doc.addEventListener('pointerdown', handlePointerDownCapture, true)
   doc.addEventListener('pointerdown', handlePointerDown)
   doc.addEventListener('focusin', handleFocusIn)
   doc.defaultView?.addEventListener('keydown', handleKeyDown)
@@ -241,6 +259,7 @@ function addForeignListeners(doc: Document) {
     doc.addEventListener('click', handleTouchClick)
 }
 function removeForeignListeners(doc: Document) {
+  doc.removeEventListener('pointerdown', handlePointerDownCapture, true)
   doc.removeEventListener('pointerdown', handlePointerDown)
   doc.removeEventListener('focusin', handleFocusIn)
   doc.defaultView?.removeEventListener('keydown', handleKeyDown)

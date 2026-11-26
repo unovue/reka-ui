@@ -7,7 +7,7 @@ import type { BaseChangeReason, By, ChangeEventDetails, LabelRegistry } from '@/
 import type { SelectionSelector } from '@/shared/selectionSelector'
 import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
 import { useCollection } from '@/Collection'
-import { createContext, isNullish, useDirection, useFormControl, useId } from '@/shared'
+import { createRekaContext, isNullish, useDirection, useFormControl, useId } from '@/shared'
 import { compareDocumentOrder } from '@/shared/documentOrder'
 import { isDisabledItem } from '@/shared/isDisabledItem'
 
@@ -136,7 +136,7 @@ export interface SelectRootContext<T = AcceptableValue> {
 }
 
 export const [injectSelectRootContext, provideSelectRootContext]
-  = createContext<SelectRootContext<AcceptableValue>>('SelectRoot')
+  = createRekaContext<SelectRootContext<AcceptableValue>>('SelectRoot')
 
 /**
  * The Select's binding to the Field it is the control of, for its trigger:
@@ -144,7 +144,7 @@ export const [injectSelectRootContext, provideSelectRootContext]
  * @internal
  */
 export const [injectSelectFieldContext, provideSelectFieldContext]
-  = createContext<FieldControlBinding | null>('SelectRoot', 'SelectFieldContext')
+  = createRekaContext<FieldControlBinding | null>('SelectRoot', 'SelectFieldContext')
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false">
@@ -152,6 +152,7 @@ import { computed, onBeforeUnmount, onMounted, toRef, watch } from 'vue'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { PopperRoot } from '@/Popper'
 import { provideFormResetOwner } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import BubbleSelect from './BubbleSelect.vue'
 import { useSelectRoot } from './useSelect'
@@ -199,7 +200,7 @@ const resolvedName = () => field ? field.name(props.name) : props.name
 
 // Every item registers here: the open content's and the closed ones the
 // content renders while it needs their labels.
-const { reactiveItems } = useCollection<{ value: { value: AcceptableValue, textValue: string } }>({ isProvider: true })
+const { reactiveItems } = useCollection<{ value: { value: AcceptableValue, textValue: string, select?: (event: KeyboardEvent) => void } }>({ isProvider: true })
 const dir = useDirection(toRef(() => props.dir))
 
 const select = useSelectRoot<AcceptableValue>({
@@ -245,7 +246,7 @@ closedItems.liveItems = () => {
   return items
     .slice()
     .sort((a, b) => compareDocumentOrder(a.ref, b.ref))
-    .map(item => ({ value: item.value.value, textValue: item.value.textValue, disabled: isDisabledItem(item.ref) }))
+    .map(item => ({ value: item.value.value, textValue: item.value.textValue || item.ref.textContent?.trim() || '', disabled: isDisabledItem(item.ref), select: item.value.select, element: item.ref }))
 }
 
 // The hidden native `select` of a named Select in a form offers every option
@@ -324,11 +325,16 @@ const nativeOptions = computed(() => {
   return filtered
 })
 
+// The empty selection submits `nullableValue`. A `multiple` model reads `[]`
+// for `null`, but a parent that passes `null` still submits it, as on v2 (#3345).
+// Checked inline in the template below, which needs no closure per root.
+
 // The native `select` is patched in place (each option's `selected` is bound),
 // never re-keyed: re-creating it on a model change would skip the `change`
 // event `BubbleSelect` dispatches for that change.
 
 provideSelectRootContext(context)
+useAgentRegistration('select', context, props)
 
 // A native reset of the owning form puts the value back to `defaultValue`. The
 // root renders no element: `SelectTrigger` binds it.
@@ -339,7 +345,7 @@ provideFormResetOwner((event: Event) => { resetControllableState(isControlled, e
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="select">
     <slot
       :model-value="modelValue"
       :open="open"
@@ -357,7 +363,7 @@ provideFormResetOwner((event: Event) => { resetControllableState(isControlled, e
       :value="modelValue"
     >
       <option
-        v-if="isNullish(modelValue)"
+        v-if="isNullish(modelValue) || (props.multiple && props.modelValue === null)"
         data-nullable
         :value="nullableValue"
         selected

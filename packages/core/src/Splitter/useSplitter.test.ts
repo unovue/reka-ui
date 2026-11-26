@@ -411,9 +411,10 @@ describe('splitterPanel — collapse', () => {
     expect(group.emitted('layout')!.at(-1)![0]).toEqual([5, 95])
     expect(panel.emitted('collapse')).toHaveLength(1)
 
+    // A second Enter restores the size the panel had before it collapsed, not its minimum.
     await fireEvent.keyDown(document.getElementById('h')!, { key: 'Enter' })
     await nextTick()
-    expect(panelSize('a')).toBe('20.0')
+    expect(panelSize('a')).toBe('40.0')
   })
 
   it('a cancelled collapse leaves the panel open', async () => {

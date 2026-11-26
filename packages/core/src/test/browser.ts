@@ -9,6 +9,14 @@ import { server, userEvent } from 'vitest/browser'
 export const isMacWebKit = server.browser === 'webkit' && server.platform === 'darwin'
 
 /**
+ * Whether `cdp()` is available: the Chrome DevTools Protocol exists in Chromium
+ * only. A test that needs it for what no Playwright API gives in every engine
+ * (real touch or pen input, the browser's own accessibility tree, the window
+ * losing focus) is skipped in Firefox and WebKit.
+ */
+export const hasCDP = server.browser === 'chromium'
+
+/**
  * Hovers `el` with the real mouse and returns that pointer's `pointerId`, for
  * synthetic `PointerEvent`s that call `setPointerCapture`: it throws
  * `NotFoundError` for an id no active pointer has, and the mouse's id differs by

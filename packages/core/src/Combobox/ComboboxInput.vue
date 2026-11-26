@@ -2,8 +2,8 @@
 import type { ComboboxInputChangeReason, ComboboxOpenChangeReason } from './useCombobox'
 import type { ListboxFilterProps } from '@/Listbox'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { getCurrentScope, mergeProps, nextTick, onMounted, onUnmounted, toValue, watch } from 'vue'
-import { getElementByIdFrom, useControllableState, useForwardElement } from '@/shared'
+import { getCurrentScope, mergeProps, nextTick, onMounted, onUnmounted, toRef, toValue, watch } from 'vue'
+import { getElementByIdFrom, useControllableState, useForwardElement, useRenderedContentId } from '@/shared'
 
 export type ComboboxInputEmits = {
   /** Called before the input text changes; `details.cancel()` keeps the current text. */
@@ -14,6 +14,17 @@ export type ComboboxInputEmits = {
 export interface ComboboxInputProps extends ListboxFilterProps {
   /** The display value of input for selected item. Does not work with `multiple`. */
   displayValue?: (val: any) => string
+  /**
+   * Whether to move focus to the input when the combobox opens, whether it is opened
+   * by the trigger, the keyboard or the `open` prop. <br>
+   * Set to `false` to leave focus where it is, for example to keep the on-screen keyboard closed
+   * on touch devices when the input sits inside `ComboboxContent`. The user can still focus the
+   * input to type and navigate. While the combobox is open, `ArrowDown` / `ArrowUp` on a focused
+   * `ComboboxTrigger` move focus to the input. <br>
+   * This is separate from `autoFocus`, which only focuses the input when it mounts.
+   * @defaultValue true
+   */
+  focusOnOpen?: boolean
 }
 </script>
 
@@ -29,6 +40,7 @@ defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(defineProps<ComboboxInputProps>(), {
   as: 'input',
+  focusOnOpen: true,
 })
 const emits = defineEmits<ComboboxInputEmits>()
 
@@ -40,6 +52,8 @@ defineSlots<{
 }>()
 
 const rootContext = injectComboboxRootContext()
+// Read only in event handlers: the input's prop itself, rather than a watcher copying it.
+rootContext.focusInputOnOpen = toRef(props, 'focusOnOpen')
 const fieldContext = injectComboboxFieldContext(null)
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
@@ -55,6 +69,8 @@ const { state: modelValue, setState: setText } = useControllableState<string, Co
 
 // role/aria, the open-on-type/focus/click handling, IME composition and the
 // keyboard (routed through `getNavigationIntent`) come from the shared surface.
+// `aria-controls` references the content only while its element is rendered.
+const contentId = useRenderedContentId(rootContext)
 const surface = createComboboxInputSurface(rootContext, {
   modelValue,
   setText: (value, event) => {
@@ -229,6 +245,7 @@ watch(rootContext.filterState, (_newValue, oldValue) => {
     :is="renderAsEmpty(as, asChild)"
     :ref="forwardRef"
     v-bind="fieldContext ? getComboboxInputFieldAttrs(fieldContext, surface.attrs.value, $attrs) : mergeProps(surface.attrs.value, $attrs)"
+    :aria-controls="rootContext.open.value ? contentId : undefined"
   >
     <template
       v-if="rendersChildren(as, asChild)"

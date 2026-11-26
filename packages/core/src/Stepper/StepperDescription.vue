@@ -1,8 +1,8 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardElement } from '@/shared'
+import { claimReferencedId, useForwardElement } from '@/shared'
 import { injectStepperItemContext } from './StepperItem.vue'
-import { getStepperDescriptionSurface } from './useStepper'
+import { getStepperDescriptionSurface, STEPPER_PARTS, useStepperPart } from './useStepper'
 </script>
 
 <script setup lang="ts">
@@ -15,7 +15,11 @@ const props = withDefaults(defineProps<StepperDescriptionProps>(), { as: 'p' })
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 const itemContext = injectStepperItemContext()
+// A consumer `id` on the part is followed by the trigger's reference (#3377).
+claimReferencedId(itemContext, 'descriptionId')
 const surface = getStepperDescriptionSurface(itemContext)
+
+useStepperPart(itemContext, STEPPER_PARTS.DESCRIPTION)
 </script>
 
 <template>

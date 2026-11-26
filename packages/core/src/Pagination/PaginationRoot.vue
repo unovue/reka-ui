@@ -1,9 +1,9 @@
 <script lang="ts">
-import type { Ref } from 'vue'
+import type { Ref, WatchHandle } from 'vue'
 import type { PaginationChangeReason } from './usePagination'
 import type { PrimitiveProps } from '@/Primitive'
-import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { createContext, useForwardElement } from '@/shared'
+import type { BaseChangeReason, ChangeEventDetails, Translate } from '@/shared'
+import { clamp, createRekaContext, useForwardElement, useTranslations } from '@/shared'
 
 export type PaginationRootContext = {
   /** Read-only: call `onPageChange` to change the page. */
@@ -14,6 +14,8 @@ export type PaginationRootContext = {
   siblingCount: Ref<number>
   disabled: Ref<boolean>
   showEdges: Ref<boolean>
+  /** Looks up the built-in labels, which `ConfigProvider` can translate. */
+  t: Translate
 }
 
 export interface PaginationRootProps extends PrimitiveProps {
@@ -35,6 +37,12 @@ export interface PaginationRootProps extends PrimitiveProps {
   disabled?: boolean
   /** When `true`, always show first page, last page, and ellipsis */
   showEdges?: boolean
+  /**
+   * When `true`, keeps the page within the page count. If `total` or `itemsPerPage` drops below
+   * the current page, the page moves to the last page and `update:page` is emitted. A `total` of
+   * `0` resets the page to `1`, so keep the previous `total` while new data loads.
+   */
+  clampPage?: boolean
 }
 
 export type PaginationRootEmits = {
@@ -45,11 +53,13 @@ export type PaginationRootEmits = {
 }
 
 export const [injectPaginationRootContext, providePaginationRootContext]
-  = createContext<PaginationRootContext>('PaginationRoot')
+  = createRekaContext<PaginationRootContext>('PaginationRoot')
 </script>
 
 <script setup lang="ts">
+import { onBeforeUpdate, watch } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
+import { useUntrackedAttrs } from '@/shared/splitWrapperAttrs'
 import { usePagination } from './usePagination'
 
 const props = withDefaults(defineProps<PaginationRootProps>(), {
@@ -74,7 +84,8 @@ const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
 // The composable owns the page model (`useControllableState`) and its emits.
-const { page, pageCount, context } = usePagination({
+const t = useTranslations()
+const { page, modelPage, pageCount, setPage, context } = usePagination({
   page: () => props.page,
   defaultPage: props.defaultPage,
   itemsPerPage: () => props.itemsPerPage,
@@ -82,8 +93,31 @@ const { page, pageCount, context } = usePagination({
   siblingCount: () => props.siblingCount,
   disabled: () => props.disabled,
   showEdges: () => props.showEdges,
+  clampPage: () => props.clampPage,
+  translate: t,
   emit: emits,
 })
+
+// With `clampPage`, move a model page past the page count back into range (on mount too).
+// The watcher starts once `clampPage` is set: at setup, or before the update a prop change
+// makes. Until then a pagination pays one hook for it.
+let clampWatch: WatchHandle | undefined
+function watchClampPage() {
+  if (!props.clampPage || clampWatch)
+    return
+  clampWatch = watch(() => props.clampPage && modelPage.value !== clamp(modelPage.value, 1, pageCount.value), (outOfRange) => {
+    if (outOfRange)
+      setPage(modelPage.value)
+  }, { immediate: true })
+}
+watchClampPage()
+onBeforeUpdate(watchClampPage)
+
+// A `<nav>` is a landmark, and landmarks need a name to be told apart. The default steps aside for a
+// consumer `aria-label` (it falls through and wins) or `aria-labelledby`, and is only set on the `<nav>` itself.
+// Read in render, not a computed: a change of the attrs re-renders this component.
+const attrs = useUntrackedAttrs()
+const ariaLabel = () => (props.as === 'nav' && !props.asChild && !attrs['aria-labelledby']) ? t('paginationLabel') : undefined
 
 providePaginationRootContext(context)
 </script>
@@ -92,6 +126,7 @@ providePaginationRootContext(context)
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
+    :aria-label="ariaLabel()"
   >
     <slot
       :page="page"

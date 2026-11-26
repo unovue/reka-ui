@@ -103,6 +103,8 @@ import {
 
 Contains all the parts of a Select
 
+When used in a form with a `name`, Select renders a hidden native select for submission and autofill. This hidden control uses the field name as its default label. [Label the visible trigger](#labelling) separately.
+
 <!-- @include: @/meta/SelectRoot.md -->
 
 ### Trigger
@@ -138,7 +140,7 @@ The part that reflects the selected value. By default the selected item's text w
 
 A small icon often displayed next to the value as a visual affordance for the fact it can be open. By default renders ▼ but you can use your own icon via `asChild` or use `children`.
 
-<!-- @include: @/meta/SelectItem.md -->
+<!-- @include: @/meta/SelectIcon.md -->
 
 ### Portal
 

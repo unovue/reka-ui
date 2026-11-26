@@ -264,7 +264,9 @@ describe('listboxVirtualizer group headers', () => {
   it('keeps the header of a group scrolled mid-way mounted', async () => {
     await mountScrolled()
     const rendered = options()
-    expect(rendered[0].textContent).not.toBe('Fruit 0')
+    // The window moved mid-group. The highlighted first option (the mount's tab stop) stays
+    // mounted with its neighbour (#3211), so look for the scrolled-to options instead.
+    expect(rendered.map(option => option.textContent)).toContain('Fruit 155')
     const dangling = rendered.filter(option => !document.getElementById(option.getAttribute('aria-describedby')!))
     expect(dangling.map(option => option.textContent)).toEqual([])
     expect(headers().map(header => header.textContent)).toContain('Fruits')

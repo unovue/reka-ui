@@ -1,3 +1,5 @@
+import type { MenuContentHideEvent } from './MenuRoot.vue'
+import { getCurrentScope, onScopeDispose, toRaw } from 'vue'
 import { getActiveElement } from '@/shared'
 
 export type CheckedState = boolean | 'indeterminate'
@@ -94,4 +96,30 @@ export function isPointerInGraceArea(event: PointerEvent, area?: Polygon) {
 
 export function isMouseEvent(event: PointerEvent) {
   return event.pointerType === 'mouse'
+}
+
+type ContentHideHandler = (event: MenuContentHideEvent) => void
+
+// The handlers per menu context, created with the first one: a menu whose content never
+// mounts has none, and nothing per menu is allocated for them.
+const contentHideHandlers = new WeakMap<object, Set<ContentHideHandler>>()
+
+/**
+ * `MenuContext.onContentHide`, shared by every menu context and called as its method: adds
+ * a handler of a part that returns focus when a kept-mounted content hides. Inside a scope
+ * the handler is removed with it.
+ */
+export function onContentHide(this: object, handler: ContentHideHandler) {
+  const context = toRaw(this)
+  let handlers = contentHideHandlers.get(context)
+  if (!handlers)
+    contentHideHandlers.set(context, handlers = new Set())
+  handlers.add(handler)
+  if (getCurrentScope())
+    onScopeDispose(() => handlers.delete(handler))
+}
+
+/** `MenuContext.contentHidden`, shared like `onContentHide`: calls its handlers. */
+export function contentHidden(this: object, event: MenuContentHideEvent) {
+  contentHideHandlers.get(toRaw(this))?.forEach(handler => handler(event))
 }

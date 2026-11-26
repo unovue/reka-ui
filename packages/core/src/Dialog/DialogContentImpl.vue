@@ -6,7 +6,7 @@ import type {
   FocusOutsideEvent,
   PointerDownOutsideEvent,
 } from '@/DismissableLayer'
-import { getActiveElement, useForwardElement } from '@/shared'
+import { getActiveElement, useContentElement, useContentMounted, useForwardElement } from '@/shared'
 
 export type DialogContentImplEmits = DismissableLayerEmits & {
   /**
@@ -37,12 +37,12 @@ export interface DialogContentImplProps extends DismissableLayerProps {
 </script>
 
 <script setup lang="ts">
-import { computed, getCurrentInstance, mergeProps, onMounted, watch } from 'vue'
+import { computed, getCurrentInstance, mergeProps, onMounted, onUnmounted, shallowRef, watch } from 'vue'
 import { DISMISSABLE_LAYER_WRAPPER, dismissableLayerOptions, useDismissableLayer } from '@/DismissableLayer/useDismissableLayer'
 import { FOCUS_SCOPE_WRAPPER, focusScopeOptions, useFocusScope } from '@/FocusScope/useFocusScope'
 import { renderAs } from '@/Primitive/renderAs'
 import { splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
-import { injectDialogRootContext } from './DialogRoot.vue'
+import { injectDialogOverlayElementContext, injectDialogRootContext } from './DialogRoot.vue'
 import { getDialogContentSurface } from './useDialog'
 import { endFocusRecord, recordFocusBeforeOpen, useWarning } from './utils'
 
@@ -89,7 +89,9 @@ const scope = useFocusScope(focusScopeOptions(contentElement, () => focusScopeWr
 const layerWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeProps(scope.attrs(), focusScopeWrapper.value.rest), mergeProps({
   as: props.as,
   asChild: props.asChild,
-  present: props.present,
+  // A closing content hands Escape and outside interaction back to the layer
+  // below at once, while it animates out.
+  present: rootContext.open.value && props.present !== false,
   disableOutsidePointerEvents: props.disableOutsidePointerEvents,
 }, mergeProps(content.attrs.value, instance.proxy!.$attrs), {
   onDismiss: (details: DismissableLayerDismissDetails) => rootContext.onOpenChange(false, details.reason, details.event),
@@ -98,10 +100,26 @@ const layerWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeProps(scop
   onInteractOutside: (event: PointerDownOutsideEvent | FocusOutsideEvent) => emits('interactOutside', event),
   onPointerDownOutside: (event: PointerDownOutsideEvent) => emits('pointerDownOutside', event),
 })), DISMISSABLE_LAYER_WRAPPER))
-const layer = useDismissableLayer(dismissableLayerOptions(contentElement, () => layerWrapper.value))
+// A modal content's internal backdrop goes below its `DialogOverlay`, not over it.
+const overlayElement = injectDialogOverlayElementContext(null)
+const layer = useDismissableLayer({
+  ...dismissableLayerOptions(contentElement, () => layerWrapper.value),
+  backdropBefore: () => overlayElement?.value,
+})
+
+// The trigger's `aria-controls` points at the id this element rendered (a hydrated element
+// keeps the server's), and only while it is rendered.
+useContentElement(rootContext, contentElement)
+useContentMounted(rootContext, contentElement)
 
 onMounted(() => {
   rootContext.contentElement = contentElement
+})
+// The root outlives this content, so hand it back an empty ref: this content's own
+// ref keeps its instance (and its detached element) reachable for as long as it is stored.
+onUnmounted(() => {
+  if (rootContext.contentElement === contentElement)
+    rootContext.contentElement = shallowRef<HTMLElement>()
 })
 
 // Record where focus was on every open, before the content moves it: a
@@ -133,6 +151,8 @@ if (process.env.NODE_ENV !== 'production') {
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
     v-bind="mergeProps(layer.attrs(), layerWrapper.rest)"
+    :data-nested-dialog-open="rootContext.nestedOpenDialogCount?.value ? '' : undefined"
+    :style="rootContext.nestedOpenDialogCount ? { '--nested-dialogs': rootContext.nestedOpenDialogCount.value } : undefined"
   >
     <slot />
   </component>

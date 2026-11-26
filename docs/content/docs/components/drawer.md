@@ -385,6 +385,17 @@ visible and exposes `--drawer-keyboard-inset` on `DrawerViewport`, which it
 requires (see [Soft keyboard](#soft-keyboard)). Takes no props and renders no
 markup of its own.
 
+<!-- @include: @/meta/DrawerVirtualKeyboardProvider.md -->
+
+### Provider
+
+Shares drawer state with parts rendered outside of `DrawerRoot`. Wrap the page
+content and the drawers in it so `Indent` and `IndentBackground` can tell when
+a drawer is open and follow its swipe progress. Takes no props and renders no
+markup of its own.
+
+<!-- @include: @/meta/DrawerProvider.md -->
+
 ### Indent
 
 Wraps page content that should visually shift (scale/indent) as the drawer is

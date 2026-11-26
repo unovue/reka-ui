@@ -53,6 +53,12 @@
     'required': false
   },
   {
+    'name': 'parent',
+    'description': '<p>When <code>true</code> inside a <code>CheckboxGroupRoot</code>, the checkbox controls the values listed in the\ngroup\'s <code>allValues</code>: it shows their combined state and checks or unchecks them all.\nDisabled checkboxes keep their value. A parent checkbox doesn\'t submit a value of its own.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'required',
     'description': '<p>When <code>true</code>, indicates that the user must set the value before the owning form can be submitted.</p>\n',
     'type': 'boolean',
@@ -115,6 +121,7 @@
 | `id` | Id of the element | `string` | No | - |
 | `modelValue` | The controlled value of the checkbox. Can be binded with v-model. | `"indeterminate" \| NoInfer<TrueValue \| FalseValue> \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
+| `parent` | When `true` inside a `CheckboxGroupRoot`, the checkbox controls the values listed in the group's `allValues`: it shows their combined state and checks or unchecks them all. Disabled checkboxes keep their value. A parent checkbox doesn't submit a value of its own. | `boolean` | No | - |
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
 | `trueValue` | The value used when the checkbox is checked. Defaults to `true`. | `TrueValue` | No | `(() => true) as unknown as undefined` |
 | `value` | The value given as data when submitted with a `name`. | `AcceptableValue` | No | `"on"` |

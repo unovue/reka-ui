@@ -4,9 +4,10 @@ import type { CalendarChangeReason, CalendarModelValue } from './useCalendar'
 import type { CalendarGridData, CalendarLayout, CalendarPageFunction, CalendarUnit, CalendarUnitAdapter, DateValue, Matcher, WeekDayFormat, WeekStartsOn } from '@/date'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails, Formatter } from '@/shared'
+import type { Translate } from '@/shared/translations'
 import type { Direction } from '@/shared/types'
 import { getWeekStartsOn } from '@/date'
-import { createContext, useDirection, useId, useLocale } from '@/shared'
+import { createRekaContext, useDirection, useId, useLocale } from '@/shared'
 import { handleCalendarInitialFocus, useCalendarViewFocus } from '@/shared/date'
 
 export interface CalendarRootContext {
@@ -42,6 +43,8 @@ export interface CalendarRootContext {
   layout: ComputedRef<CalendarLayout>
   headingValue: ComputedRef<string>
   fullCalendarLabel: ComputedRef<string>
+  /** Looks the built-in labels up: the nearest `ConfigProvider`'s translations, else English. */
+  translate: Translate
   isInvalid: ComputedRef<boolean>
   hasSelectedDate: ComputedRef<boolean>
   isSelectedDateDisabled: ComputedRef<boolean>
@@ -148,7 +151,7 @@ export type CalendarRootEmits = {
 }
 
 export const [injectCalendarRootContext, provideCalendarRootContext]
-  = createContext<CalendarRootContext>('CalendarRoot')
+  = createRekaContext<CalendarRootContext>('CalendarRoot')
 </script>
 
 <script setup lang="ts">

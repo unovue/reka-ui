@@ -18,11 +18,12 @@ import { getDialogDescriptionSurface } from './useDialog'
 
 const props = withDefaults(defineProps<DialogDescriptionProps>(), { as: 'p' })
 
-const { forwardRef, expose } = useForwardElement()
+const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectDialogRootContext()
 // Rendered on the element; mirrored into the context for the content's `aria-*`.
-const id = usePartId(() => props.id, rootContext, 'descriptionId')
+// With `asChild`, an id on the child element wins.
+const id = usePartId(() => props.id, rootContext, 'descriptionId', currentElement)
 // The `id` the content's `aria-describedby` points at, from the shared surface builder.
 const description = getDialogDescriptionSurface(rootContext)
 </script>

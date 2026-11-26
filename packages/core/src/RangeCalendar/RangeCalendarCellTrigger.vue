@@ -44,6 +44,7 @@ import type { Component } from 'vue'
 import { h } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
+import { withCellTriggerTabindex } from '@/shared/date'
 import { hasSlotContent } from '@/shared/renderOutlet'
 import { injectRangeCalendarGridContext } from './RangeCalendarGrid.vue'
 import { injectRangeCalendarRootContext } from './RangeCalendarRoot.vue'
@@ -98,7 +99,7 @@ function renderContent() {
 }
 
 function renderRoot() {
-  return h(renderAs(props.as, props.asChild) as Component, { ref: forwardRef, ...surface.attrs.value }, { default: renderContent })
+  return h(renderAs(props.as, props.asChild) as Component, { ref: forwardRef, ...withCellTriggerTabindex(surface.attrs.value, props) }, { default: renderContent })
 }
 </script>
 

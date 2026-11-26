@@ -25,6 +25,10 @@ export {
   type ScrollAreaViewportProps,
 } from './ScrollAreaViewport.vue'
 export {
+  default as ScrollAreaVirtualizer,
+  type ScrollAreaVirtualizerProps,
+} from './ScrollAreaVirtualizer.vue'
+export {
   useScrollArea,
   type UseScrollAreaProps,
   type UseScrollAreaReturn,

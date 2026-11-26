@@ -5,6 +5,13 @@
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
     // Keep the incremental cache apart from `tsconfig.app.json`'s.
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.check.tsbuildinfo"
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.check.tsbuildinfo",
+    // `src/nuxt.test.ts` type-checks the Nuxt module in `packages/plugins`, which imports
+    // `reka-ui/constant`. Resolve it to the source, so type-check needs no build first.
+    "paths": {
+      "@/*": ["./src/*"],
+      "@iconify/vue": ["../../.histoire/node_modules/@iconify/vue"],
+      "reka-ui/constant": ["./constant/index.ts"]
+    }
   }
 }

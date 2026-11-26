@@ -5,6 +5,7 @@ import { ContextMenuContent, ContextMenuItem, ContextMenuRoot, ContextMenuTrigge
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
 import { MenubarContent, MenubarItem, MenubarMenu, MenubarRoot, MenubarTrigger } from '@/Menubar'
 import { MenuAnchor, MenuContent, MenuItem, MenuRoot } from '.'
+import MenuContentImpl from './MenuContentImpl.vue'
 
 globalThis.ResizeObserver = class ResizeObserver {
   observe() {}
@@ -134,5 +135,36 @@ describe.each(cases)('$name emits', ({ harness, open, exposesEntryFocus }) => {
     const content = await mountMenu()
 
     expect(content.classList.contains('custom')).toBe(true)
+  })
+})
+
+describe('given a modal DropdownMenuContent with a focusOutside listener', () => {
+  it('should emit focusOutside once per outside focus', async () => {
+    document.body.innerHTML = ''
+    const onFocusOutside = vi.fn()
+    const wrapper = mount(defineComponent({
+      components: { DropdownMenuRoot, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem },
+      setup: () => ({ onFocusOutside }),
+      template: `
+        <DropdownMenuRoot :open="true" :modal="true">
+          <DropdownMenuTrigger>Open</DropdownMenuTrigger>
+          <DropdownMenuContent data-testid="content" @focus-outside="onFocusOutside">
+            <DropdownMenuItem>Item</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenuRoot>
+      `,
+    }), { attachTo: document.body })
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="content"]')).not.toBeNull())
+
+    // The focus trap pulls focus back before the layer can report it, so report it for the content
+    const event = new CustomEvent('focusOutside', { cancelable: true })
+    wrapper.getComponent(MenuContentImpl).vm.$emit('focusOutside', event)
+    await nextTick()
+
+    expect(onFocusOutside).toHaveBeenCalledTimes(1)
+    // A modal menu keeps the focus it trapped, so focus outside does not dismiss it
+    expect(event.defaultPrevented).toBe(true)
+    expect(document.querySelector('[data-testid="content"]')).not.toBeNull()
+    wrapper.unmount()
   })
 })

@@ -422,7 +422,9 @@ describe('comboboxRoot — filter', () => {
     expect(document.body.textContent).not.toContain('Nothing')
     await wrapper.find('input').setValue('xyz')
     await settle()
-    expect(optionTexts()).toEqual([])
+    // Only the empty state is left, as a disabled option (#3258).
+    expect(optionTexts()).toEqual(['Nothing'])
+    expect(document.querySelector('[role=option]')?.getAttribute('aria-disabled')).toBe('true')
     expect(document.body.textContent).toContain('Nothing')
     expect(document.querySelector('[role=listbox]')?.hasAttribute('data-empty')).toBe(true)
     wrapper.unmount()
@@ -521,7 +523,8 @@ describe('comboboxRoot — filter with ComboboxVirtualizer', () => {
     await wrapper.find('input').setValue('nope')
     await flushPromises()
     await settle()
-    expect(document.querySelectorAll('[role=option]')).toHaveLength(0)
+    // Only the empty state is left, as a disabled option (#3258).
+    expect(document.querySelectorAll('[role=option]:not([aria-disabled="true"])')).toHaveLength(0)
     expect(document.body.textContent).toContain('Nothing')
     wrapper.unmount()
   })
@@ -894,11 +897,11 @@ describe('combobox SSR', () => {
 
   it.each([false, true])('renders on the server and hydrates without mismatches (open: %s)', async (open) => {
     const html = await renderToString(createSSRApp(createSSRCombobox(open)))
-    const controls = html.match(/role="combobox"[^>]*aria-controls="([^"]+)"|aria-controls="([^"]+)"[^>]*role="combobox"/)
-    const contentId = controls?.[1] ?? controls?.[2]
-    expect(contentId).toMatch(/^reka-combobox-.+-content$/)
+    // The server renders no `aria-controls`: it is patched on once the content exists (#3235).
+    expect(html).not.toMatch(/role="combobox"[^>]*aria-controls=|aria-controls="[^"]+"[^>]*role="combobox"/)
+    const contentId = html.match(/id="(reka-combobox-[^"]+-content)"/)?.[1]
     if (open) {
-      expect(html).toContain(`id="${contentId}"`)
+      expect(contentId).toMatch(/^reka-combobox-.+-content$/)
       expect(html).toContain('Blueberry')
     }
 
@@ -914,7 +917,7 @@ describe('combobox SSR', () => {
     warn.mockRestore()
     error.mockRestore()
     expect(messages.filter(message => /hydration/i.test(message))).toEqual([])
-    expect(container.querySelector('[role=combobox]')?.getAttribute('aria-controls')).toBe(contentId)
+    expect(container.querySelector('[role=combobox]')?.getAttribute('aria-controls') ?? undefined).toBe(open ? contentId : undefined)
     app.unmount()
   })
 })

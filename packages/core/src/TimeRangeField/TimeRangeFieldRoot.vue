@@ -7,7 +7,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails, Formatter } from '@/shared'
 import type { DateStep, HourCycle, SegmentPart, SegmentValueObj, TimeRange, TimeValue } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { createContext, mergeExpose, useDirection, useLocale } from '@/shared'
+import { createRekaContext, mergeExpose, useDirection, useLocale } from '@/shared'
 
 export type TimeRangeFieldRootContext = {
   locale: Ref<string>
@@ -79,6 +79,19 @@ export interface TimeRangeFieldRootProps extends PrimitiveProps, FormFieldProps 
   isTimeUnavailable?: Matcher
   /** When combined with `isTimeUnavailable`, determines whether non-contiguous ranges, i.e. ranges containing unavailable times, are valid. The two ends are always checked. */
   allowNonContiguousRanges?: boolean
+  /**
+   * Whether a range whose end is earlier than its start is allowed, for a daily window that wraps
+   * past midnight such as `22:00` to `06:00`.
+   *
+   * Wrapping only applies when both values fall on the same calendar day, which is always the case
+   * for `PlainTime` values. When the values carry a date and the end is on an earlier day than the start,
+   * the range stays invalid.
+   *
+   * `minValue` and `maxValue` still bound the start and the end separately, so they cannot describe
+   * a window that crosses midnight.
+   * @defaultValue false
+   */
+  allowWrap?: boolean
 }
 
 export type TimeRangeFieldRootEmits = {
@@ -93,7 +106,7 @@ export type TimeRangeFieldRootEmits = {
 }
 
 export const [injectTimeRangeFieldRootContext, provideTimeRangeFieldRootContext]
-  = createContext<TimeRangeFieldRootContext>('TimeRangeFieldRoot')
+  = createRekaContext<TimeRangeFieldRootContext>('TimeRangeFieldRoot')
 </script>
 
 <script setup lang="ts">
@@ -121,6 +134,7 @@ const props = withDefaults(defineProps<TimeRangeFieldRootProps>(), {
   placeholder: undefined,
   isTimeUnavailable: undefined,
   allowNonContiguousRanges: false,
+  allowWrap: false,
   stepSnapping: false,
 })
 const emits = defineEmits<TimeRangeFieldRootEmits>()
@@ -187,6 +201,7 @@ const { root, context, modelValue, segments, isInvalid, segmentElements, setFocu
   readonly: () => props.readonly,
   isTimeUnavailable: computed(() => props.isTimeUnavailable),
   allowNonContiguousRanges: () => props.allowNonContiguousRanges,
+  allowWrap: () => props.allowWrap,
   parentElement,
   emit: emits,
   onUpdate: pendingInput?.record,

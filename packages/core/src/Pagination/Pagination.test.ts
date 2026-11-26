@@ -2,6 +2,8 @@ import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
+import { h, nextTick, ref } from 'vue'
+import { PaginationEllipsis, PaginationNext, PaginationPrev, PaginationRoot } from '.'
 import Pagination from './story/_Pagination.vue'
 
 describe('given default Pagination', () => {
@@ -257,5 +259,228 @@ describe('given 0 total value', () => {
     expect(wrapper.find('[aria-label="Previous Page"]').attributes('disabled')).toBeDefined()
     expect(wrapper.find('[aria-label="Next Page"]').attributes('disabled')).toBeDefined()
     expect(wrapper.find('[aria-label="Last Page"]').attributes('disabled')).toBeDefined()
+  })
+})
+
+describe('when the page count shrinks', () => {
+  // v3 emits `update:page` with the change details as a second argument.
+  const pages = (wrapper: { emitted: (name: string) => unknown[][] | undefined }) => wrapper.emitted('update:page')?.map(args => args[0])
+
+  function mountPagination(props: Record<string, unknown>) {
+    return mount(PaginationRoot, {
+      props: { total: 100, itemsPerPage: 10, ...props },
+      slots: {
+        default: ({ page }: { page: number }) => [h('output', String(page)), h(PaginationPrev), h(PaginationNext)],
+      },
+    })
+  }
+
+  it.each([
+    { model: { defaultPage: 10 }, change: { total: 20 } },
+    { model: { page: 10 }, change: { itemsPerPage: 50 } },
+  ])('keeps the page but navigates within the new page count with $model', async ({ model, change }) => {
+    const wrapper = mountPagination(model)
+
+    await wrapper.setProps(change)
+    expect(wrapper.get('output').text()).toBe('10')
+    expect(wrapper.emitted('update:page')).toBeUndefined()
+
+    const next = wrapper.get('[aria-label="Next Page"]')
+    expect(next.attributes('disabled')).toBeDefined()
+    await next.trigger('click')
+    await wrapper.get('[aria-label="Previous Page"]').trigger('click')
+    expect(pages(wrapper)).toEqual([2])
+  })
+
+  it.each([
+    { model: { defaultPage: 10 }, change: { total: 20 } },
+    { model: { page: 10 }, change: { itemsPerPage: 50 } },
+  ])('moves to the new last page with `clampPage` and $model', async ({ model, change }) => {
+    const wrapper = mountPagination({ clampPage: true, ...model })
+    expect(wrapper.get('output').text()).toBe('10')
+
+    await wrapper.setProps(change)
+    expect(wrapper.get('output').text()).toBe('2')
+    expect(pages(wrapper)).toEqual([2])
+
+    const next = wrapper.get('[aria-label="Next Page"]')
+    expect(next.attributes('disabled')).toBeDefined()
+    await next.trigger('click')
+    await wrapper.get('[aria-label="Previous Page"]').trigger('click')
+    expect(pages(wrapper)).toEqual([2, 1])
+  })
+
+  it('brings an out-of-range page into range on mount and when `clampPage` turns on', async () => {
+    const wrapper = mountPagination({ page: 20, total: 50 })
+    expect(wrapper.get('output').text()).toBe('20')
+    expect(wrapper.emitted('update:page')).toBeUndefined()
+
+    await wrapper.setProps({ clampPage: true })
+    expect(wrapper.get('output').text()).toBe('5')
+    expect(pages(wrapper)).toEqual([5])
+
+    const mounted = mountPagination({ clampPage: true, defaultPage: 20, total: 50 })
+    expect(mounted.get('output').text()).toBe('5')
+    expect(pages(mounted)).toEqual([5])
+  })
+
+  describe('with `clampPage` and a `v-model:page` that starts undefined', () => {
+    function mountBound(data: { page?: number, total: number, clampPage: boolean }) {
+      const updates: number[] = []
+      const wrapper = mount({
+        components: { PaginationRoot },
+        data: () => ({ page: undefined as number | undefined, ...data }),
+        methods: {
+          onUpdate(value: number) {
+            updates.push(value)
+            ;(this as { page?: number }).page = value
+          },
+        },
+        template: `<PaginationRoot :page="page" :total="total" :items-per-page="10" :clamp-page="clampPage" @update:page="onUpdate" v-slot="{ page: current }">
+          <output>{{ current }}</output>
+        </PaginationRoot>`,
+      })
+      return { wrapper, updates }
+    }
+
+    it('emits the correction when the parent sets an out-of-range page', async () => {
+      const { wrapper, updates } = mountBound({ total: 50, clampPage: true })
+
+      await wrapper.setData({ page: 20 })
+      await nextTick()
+      expect(updates).toEqual([5])
+      expect(wrapper.vm.page).toBe(5)
+      expect(wrapper.get('output').text()).toBe('5')
+    })
+
+    it('emits each correction once when the page count shrinks or `clampPage` turns on', async () => {
+      const { wrapper, updates } = mountBound({ total: 50, clampPage: false })
+
+      await wrapper.setData({ page: 4 })
+      await wrapper.setData({ clampPage: true, total: 20 })
+      await nextTick()
+      expect(updates).toEqual([2])
+      expect(wrapper.vm.page).toBe(2)
+
+      await wrapper.setData({ clampPage: false })
+      await wrapper.setData({ page: 9 })
+      await wrapper.setData({ clampPage: true })
+      await nextTick()
+      expect(updates).toEqual([2, 2])
+      expect(wrapper.get('output').text()).toBe('2')
+    })
+  })
+
+  it('emits a correction once with a controlled page', async () => {
+    const wrapper = mountPagination({ clampPage: true, page: 3, total: 50 })
+
+    await wrapper.setProps({ page: 20 })
+    await nextTick()
+    expect(pages(wrapper)).toEqual([5])
+
+    await wrapper.setProps({ page: 5 })
+    await wrapper.setProps({ total: 30 })
+    await nextTick()
+    expect(pages(wrapper)).toEqual([5, 3])
+  })
+})
+
+describe('given the Pagination landmark name', () => {
+  const mountRoot = (props: Record<string, unknown> = {}) => mount(PaginationRoot, { props: { total: 100, ...props } as any })
+
+  it('should name the nav by default', () => {
+    const wrapper = mountRoot()
+    expect(wrapper.element.tagName).toBe('NAV')
+    expect(wrapper.attributes('aria-label')).toBe('pagination')
+  })
+
+  it('should let a consumer `aria-label` win', () => {
+    expect(mountRoot({ 'aria-label': 'Search results pages' }).attributes('aria-label')).toBe('Search results pages')
+  })
+
+  it('should drop the default name for `aria-labelledby`', () => {
+    const wrapper = mountRoot({ 'aria-labelledby': 'heading' })
+    expect(wrapper.attributes('aria-label')).toBeUndefined()
+    expect(wrapper.attributes('aria-labelledby')).toBe('heading')
+  })
+
+  it('should not label an element that is not a nav', () => {
+    expect(mountRoot({ as: 'div' }).attributes('aria-label')).toBeUndefined()
+  })
+})
+
+describe('given a PaginationEllipsis', () => {
+  const mountEllipsis = (slot?: () => unknown, props: Record<string, unknown> = {}) =>
+    mount(PaginationEllipsis, { props: props as any, slots: slot ? { default: slot } : undefined, attachTo: document.body })
+
+  it.each([
+    ['its default content', undefined],
+    ['a slotted ellipsis character', () => '\u2026'],
+    ['three dots', () => '...'],
+    ['an icon', () => h('svg')],
+  ])('should be hidden from assistive technology with %s', async (_name, slot) => {
+    const wrapper = mountEllipsis(slot as any)
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBe('true')
+  })
+
+  it('should stay exposed when it carries its own text', async () => {
+    const wrapper = mountEllipsis(() => [h('svg'), h('span', 'More pages')])
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBeUndefined()
+  })
+
+  it('should stay exposed when it is focusable', async () => {
+    const button = mountEllipsis(undefined, { as: 'button' })
+    const nested = mountEllipsis(() => h('button', '\u2026'))
+    await nextTick()
+    expect(button.attributes('aria-hidden')).toBeUndefined()
+    expect(nested.attributes('aria-hidden')).toBeUndefined()
+  })
+
+  it.each([
+    ['a button with a negative tabindex', undefined, { as: 'button', tabindex: '-1' }],
+    ['a disclosure', () => h('details', [h('summary', '\u2026')]), {}],
+    ['an image with alternative text', () => h('img', { alt: 'More pages' }), {}],
+    ['an icon with an ARIA name', () => h('svg', { 'aria-label': 'More pages' }), {}],
+  ])('should stay exposed as %s', async (_name, slot, props) => {
+    const wrapper = mountEllipsis(slot as any, props)
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBeUndefined()
+  })
+
+  it('should follow its content when it changes', async () => {
+    const interactive = ref(false)
+    const wrapper = mount(() => h(PaginationEllipsis, null, () => interactive.value ? h('button', '\u2026') : '\u2026'), { attachTo: document.body })
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBe('true')
+
+    interactive.value = true
+    await nextTick()
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBeUndefined()
+
+    interactive.value = false
+    await nextTick()
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBe('true')
+  })
+
+  it('should follow an attribute that makes its content focusable', async () => {
+    const href = ref<string>()
+    const wrapper = mount(() => h(PaginationEllipsis, null, () => h('a', { href: href.value }, '\u2026')), { attachTo: document.body })
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBe('true')
+
+    href.value = '#more'
+    await nextTick()
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBeUndefined()
+  })
+
+  it('should let a consumer `aria-hidden` win', async () => {
+    const wrapper = mountEllipsis(undefined, { 'aria-hidden': 'false' })
+    await nextTick()
+    expect(wrapper.attributes('aria-hidden')).toBe('false')
   })
 })

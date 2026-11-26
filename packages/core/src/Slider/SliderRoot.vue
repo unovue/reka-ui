@@ -3,9 +3,9 @@ import type { ComputedRef, Ref } from 'vue'
 import type { DataOrientation, Direction, FormFieldProps } from '../shared/types'
 import type { SliderChangeReason } from './useSlider'
 import type { PrimitiveProps } from '@/Primitive'
-import type { ChangeEventDetails } from '@/shared'
+import type { ChangeEventDetails, Translate } from '@/shared'
 import { useCollection, useCollectionSlot } from '@/Collection'
-import { createContext, useDirection, useFormControl, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useFormControl, useForwardElement } from '@/shared'
 
 type ThumbAlignment = 'contain' | 'overflow'
 
@@ -64,10 +64,12 @@ export interface SliderRootContext {
   valueIndexToChangeRef: Ref<number>
   thumbElements: Ref<HTMLElement[]>
   thumbAlignment: Ref<ThumbAlignment>
+  /** The nearest `ConfigProvider`'s translate function, for the built-in labels. */
+  t: Translate
 }
 
 export const [injectSliderRootContext, provideSliderRootContext]
-  = createContext<SliderRootContext>('SliderRoot')
+  = createRekaContext<SliderRootContext>('SliderRoot')
 </script>
 
 <script setup lang="ts">
@@ -77,6 +79,7 @@ import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { formResetBinder, injectFormResetOwner } from '@/shared/formReset'
 import { createWrapperEmit, splitWrapperAttrs } from '@/shared/splitWrapperAttrs'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useSlider } from './useSlider'
@@ -138,7 +141,7 @@ const resolvedDisabled = () => ownField ? ownField.disabled(props.disabled) : pr
 
 // Controlled/uncontrolled + `beforeUpdate:` / `update:` / `valueCommit` emits
 // live in the composable (`modelValue === undefined` → uncontrolled).
-const { modelValue, root, orientation: orientationGeometry, startSlide, moveSlide, endSlide, context, isControlled } = useSlider({
+const { modelValue, root, orientation: orientationGeometry, startSlide, moveSlide, endSlide, context, isControlled, updateValues } = useSlider({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   disabled: resolvedDisabled,
@@ -158,6 +161,7 @@ const { modelValue, root, orientation: orientationGeometry, startSlide, moveSlid
 })
 
 provideSliderRootContext(context)
+useAgentRegistration('slider', context, props, currentElement, updateValues)
 provideSliderFieldContext(field)
 
 // A native reset of the owning form puts the value back to `defaultValue`.

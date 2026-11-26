@@ -10,8 +10,8 @@ export interface SelectTriggerProps extends PopperAnchorProps {
 import { mergeProps, onBeforeUnmount, watchPostEffect } from 'vue'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { injectPopperRootContext } from '@/Popper/PopperRoot.vue'
-import { renderAs } from '@/Primitive/renderAs'
-import { getElementByIdFrom, useForwardElement } from '@/shared'
+import { renderAsControl } from '@/Primitive/renderAs'
+import { getElementByIdFrom, useForwardElement, useRenderedContentId } from '@/shared'
 import { bindFormReset, injectFormResetOwner } from '@/shared/formReset'
 import { injectSelectFieldContext, injectSelectRootContext } from './SelectRoot.vue'
 import { useSelectTrigger } from './useSelect'
@@ -39,7 +39,7 @@ const { trigger } = useSelectTrigger({
 // The positioning anchor: what `PopperAnchor` did, without its components.
 // Both follow the element (an `as` change replaces it), so the root, and a
 // Field focusing its control, always reach the rendered trigger.
-const popperRootContext = injectPopperRootContext()
+const popperRootContext = injectPopperRootContext('select')
 watchPostEffect(() => {
   rootContext.onTriggerChange(triggerElement.value)
   popperRootContext.onAnchorChange(props.reference ?? triggerElement.value)
@@ -67,8 +67,15 @@ const field = injectSelectFieldContext(null)
 // `$attrs` isn't reactive, so the Field's wiring is read during render. Its
 // state attributes and id merge over the consumer's attributes (a consumer
 // `id` wins, and its aria ids are merged) and under the trigger's own.
+// `aria-controls` references the content only while its element is rendered.
+const contentId = useRenderedContentId(rootContext)
 function renderAttrs(attrs: Record<string, unknown>) {
-  const own = { onFocusin: focusWithin?.onFocusin, onFocusout: focusWithin?.onFocusout, type: props.as === 'button' ? 'button' : undefined }
+  const own = {
+    'onFocusin': focusWithin?.onFocusin,
+    'onFocusout': focusWithin?.onFocusout,
+    'type': props.as === 'button' ? 'button' : undefined,
+    'aria-controls': rootContext.open.value ? contentId.value : undefined,
+  }
   if (!field)
     return mergeProps(attrs, trigger.attrs.value, own)
   return mergeProps(
@@ -94,7 +101,7 @@ const focusWithin = useFieldFocusWithin(field, triggerElement, {
 
 <template>
   <component
-    :is="renderAs(as, asChild)"
+    :is="renderAsControl(as, asChild)"
     v-bind="renderAttrs($attrs)"
     :ref="forwardRef"
   >

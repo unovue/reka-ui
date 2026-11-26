@@ -4,7 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, nextTick, ref } from 'vue'
-import { TagsInputInput, TagsInputItem, TagsInputItemText, TagsInputRoot } from '.'
+import { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot } from '.'
 import TagsInput from './story/_TagsInput.vue'
 import TagsInputDisabled from './story/_TagsInputDisabled.vue'
 import TagsInputObject from './story/_TagsInputObject.vue'
@@ -62,7 +62,25 @@ describe('given default TagsInput', () => {
       expect(input.element.value).toBe('')
     })
 
+    it.each(['Home', 'End'])('should leave %s to the input when no tag is active', async (key) => {
+      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+      input.element.dispatchEvent(event)
+      await nextTick()
+
+      expect(tags.map(tag => tag.attributes('data-state'))).toEqual(tags.map(() => 'unchecked'))
+      expect(event.defaultPrevented).toBe(false)
+    })
+
     describe('after pressing on ArrowLeft on input', () => {
+      it.each(['Home', 'End'])('should keep %s away from the caret while a tag is active', async (key) => {
+        const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+        input.element.dispatchEvent(event)
+        await nextTick()
+
+        expect(event.defaultPrevented).toBe(true)
+        expect(tags.at(key === 'Home' ? 0 : -1)!.attributes('data-state')).toBe('checked')
+      })
+
       beforeEach(async () => {
         await input.trigger('keydown', {
           key: 'ArrowLeft',
@@ -178,15 +196,56 @@ describe('given default TagsInput', () => {
       expect(event.defaultPrevented).toBe(true)
     })
 
-    it('should let keydown:tab move focus when the draft is empty', async () => {
+    it('should let keydown:tab move focus when the draft is a duplicate', async () => {
       await wrapper.setProps({ addOnTab: true })
-      await setValueInInput('')
+      await setValueInInput('Test')
+
+      const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+      input.element.dispatchEvent(event)
+      await flushPromises()
+
+      expect(wrapper.findAll('[data-reka-collection-item]').length).toBe(1)
+      expect(event.defaultPrevented).toBe(false)
+    })
+
+    it('should let keydown:tab move focus when max is reached', async () => {
+      // The story forwards `max` to TagsInputRoot through its attrs.
+      await wrapper.setProps({ addOnTab: true, max: 1 } as Record<string, unknown>)
+      await setValueInInput('tag:tab')
+
+      const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+      input.element.dispatchEvent(event)
+      await flushPromises()
+
+      expect(wrapper.html()).not.toContain('tag:tab')
+      expect(event.defaultPrevented).toBe(false)
+    })
+
+    it.each(['', '   '])('should let keydown:tab move focus when the draft is %j', async (draft) => {
+      await wrapper.setProps({ addOnTab: true })
+      await setValueInInput(draft)
 
       const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
       input.element.dispatchEvent(event)
       await flushPromises()
 
       expect(event.defaultPrevented).toBe(false)
+    })
+
+    it('should emit `invalid` once when a rejected keydown:tab blurs the input', async () => {
+      await wrapper.setProps({ addOnTab: true, addOnBlur: true })
+      await setValueInInput('Test')
+
+      input.element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }))
+      await flushPromises()
+      await input.trigger('blur')
+
+      expect(rootComponent.emitted('invalid')?.flat()).toEqual(['Test'])
+
+      input.element.focus()
+      await input.trigger('blur')
+
+      expect(rootComponent.emitted('invalid')?.flat()).toEqual(['Test', 'Test'])
     })
 
     it('should add value on blur', async () => {
@@ -201,6 +260,21 @@ describe('given default TagsInput', () => {
       expect(wrapper.html()).toContain(tag)
       expect(tags[1].text()).toBe(tag)
     })
+
+    async function expectWhitespaceDraftIgnored(trigger: string) {
+      await wrapper.setProps({ addOnTab: true, addOnBlur: true })
+      await setValueInInput('   ')
+
+      await input.trigger(trigger)
+      await flushPromises()
+
+      expect(rootComponent.emitted('addTag')).toBeUndefined()
+      expect(wrapper.findAll('[data-reka-collection-item]').length).toBe(1)
+    }
+
+    it.each(['keydown.enter', 'keydown.tab'])('should not add a whitespace-only draft on %s', expectWhitespaceDraftIgnored)
+
+    it.each(['blur'])('should not add a whitespace-only draft on %s', expectWhitespaceDraftIgnored)
   })
 })
 
@@ -338,7 +412,8 @@ describe('given a TagsInput with objects', async () => {
       expect(tags[before + 1].text()).toBe('tag2')
     })
 
-    it('should trim whitespace around pasted tags', async () => {
+    // #3339: pasted pieces are added as pasted, like a typed draft.
+    it('should keep the whitespace around pasted tags', async () => {
       const { wrapper, input } = setupDelimiter(',')
       const user = userEvent.setup()
       const before = wrapper.findAll('[data-reka-collection-item]').length
@@ -350,7 +425,7 @@ describe('given a TagsInput with objects', async () => {
       expect(tags.length).toBe(before + 2)
       // `text()` trims, so assert on the emitted value instead
       const emitted = wrapper.getComponent({ name: 'TagsInputRoot' }).emitted('update:modelValue') as string[][][]
-      expect(emitted.at(-1)![0].slice(-2)).toEqual(['tag1', 'tag2'])
+      expect(emitted.at(-1)![0].slice(-2)).toEqual(['tag1', ' tag2'])
     })
 
     it('should not add a tag when pasting only whitespace', async () => {
@@ -409,6 +484,30 @@ describe('given a TagsInput with objects', async () => {
       expect(tags[3].text()).toBe('tag3')
       expect(tags[4].text()).toBe('tag4')
     })
+
+    async function expectPastedTags(delimiter: string | RegExp, text: string, expected: string[]) {
+      const { wrapper, input } = setupDelimiter(delimiter)
+      const user = userEvent.setup()
+
+      await user.click(input.element)
+      await user.paste(text)
+
+      expect(wrapper.getComponent({ name: 'TagsInputRoot' }).emitted('addTag')?.flat() ?? []).toEqual(expected)
+    }
+
+    it.each([
+      [',', 'tag1,tag2,', ['tag1', 'tag2']],
+      [',', 'tag1,,tag2', ['tag1', 'tag2']],
+      [',', 'tag1, ,tag2', ['tag1', 'tag2']],
+      [',', '   ', []],
+      [/[ ,;\t\n\r]+/, 'tag1\r\ntag2\r\n', ['tag1', 'tag2']],
+    ])('should add only non-blank tags on paste (delimiter %s, text %j)', expectPastedTags)
+
+    it.each([
+      [/,(\s+)?/, 'tag1,tag2', ['tag1', 'tag2']],
+      // Not trimmed, like a typed draft
+      [',', 'tag1, tag2', ['tag1', ' tag2']],
+    ])('should add only non-blank tags on paste (delimiter %s, text %j)', expectPastedTags)
 
     it('should not create tag when delimiter is typed during IME composition', async () => {
       const { wrapper, input } = setupDelimiter(',')
@@ -485,6 +584,96 @@ describe('given TagsInput with a disabled item before a removable one', () => {
   })
 })
 
+describe('given duplicate tags', () => {
+  it.each(['click', 'Backspace'])('uses the model index with %s when an earlier duplicate is hidden', async (action) => {
+    const wrapper = mount(defineComponent({
+      components: { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputRoot },
+      template: `<TagsInputRoot v-slot="{ modelValue }" duplicate :default-value="['a', 'b', 'a']">
+        <TagsInputItem v-for="(value, index) in modelValue.slice(1)" :key="index" :value="value" :model-index="index + 1">
+          <TagsInputItemDelete />
+        </TagsInputItem>
+        <TagsInputInput />
+      </TagsInputRoot>`,
+    }), { attachTo: document.body })
+
+    await nextTick()
+    if (action === 'click') {
+      await wrapper.findAll('button')[1].trigger('click')
+    }
+    else {
+      const input = wrapper.get('input')
+      await input.trigger('keydown', { key: 'Backspace' })
+      await input.trigger('keydown', { key: 'Backspace' })
+    }
+
+    expect(wrapper.getComponent(TagsInputRoot).emitted('update:modelValue')?.map(args => args[0])).toEqual([['a', 'b']])
+    wrapper.unmount()
+  })
+
+  it('falls back to the rendered occurrence when the model index does not match', async () => {
+    const wrapper = mount(defineComponent({
+      components: { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputRoot },
+      template: `<TagsInputRoot v-slot="{ modelValue }" :default-value="['a', 'b', 'c']">
+        <TagsInputItem v-for="(value, index) in modelValue.slice(1)" :key="value" :value="value" :model-index="index">
+          <TagsInputItemDelete />
+        </TagsInputItem>
+        <TagsInputInput />
+      </TagsInputRoot>`,
+    }), { attachTo: document.body })
+
+    await nextTick()
+    await wrapper.findAll('button')[1].trigger('click')
+
+    expect(wrapper.getComponent(TagsInputRoot).emitted('update:modelValue')?.map(args => args[0])).toEqual([['a', 'b']])
+    wrapper.unmount()
+  })
+
+  it.each(['click', 'Backspace'])('removes the selected occurrence with %s', async (action) => {
+    const wrapper = mount(defineComponent({
+      components: { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot },
+      template: `<TagsInputRoot v-slot="{ modelValue }" duplicate :default-value="['hidden', 'a', 'b', 'a']">
+        <TagsInputItem v-for="(value, index) in modelValue.slice(1)" :key="index" :value="value" :disabled="index === 0">
+          <TagsInputItemText />
+          <TagsInputItemDelete />
+        </TagsInputItem>
+        <TagsInputInput />
+      </TagsInputRoot>`,
+    }), { attachTo: document.body })
+
+    await nextTick()
+    if (action === 'click') {
+      await wrapper.findAll('button')[2].trigger('click')
+    }
+    else {
+      const input = wrapper.get('input')
+      await input.trigger('keydown', { key: 'Backspace' })
+      await input.trigger('keydown', { key: 'Backspace' })
+    }
+
+    expect(wrapper.getComponent(TagsInputRoot).emitted('update:modelValue')?.map(args => args[0])).toEqual([['hidden', 'a', 'b']])
+    wrapper.unmount()
+  })
+})
+
+describe('given a TagsInputItemDelete with an aria-label', () => {
+  it('should not override the aria-label with aria-labelledby', () => {
+    const wrapper = mount(defineComponent({
+      components: { TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot },
+      template: `<TagsInputRoot :model-value="['Me']">
+        <TagsInputItem value="Me">
+          <TagsInputItemText />
+          <TagsInputItemDelete aria-label="Remove Me" />
+        </TagsInputItem>
+      </TagsInputRoot>`,
+    }), { attachTo: document.body })
+
+    const button = wrapper.get('button')
+    expect(button.attributes('aria-label')).toBe('Remove Me')
+    expect(button.attributes('aria-labelledby')).toBeUndefined()
+    wrapper.unmount()
+  })
+})
+
 describe('given TagsInput inside a form', () => {
   function mountInForm(inputAttrs: Record<string, unknown> = {}) {
     const values = ref<string[]>([])
@@ -528,8 +717,9 @@ describe('given TagsInput inside a form', () => {
     wrapper.unmount()
   })
 
-  it('does not prevent submission when the draft is empty', async () => {
+  it.each(['', '   '])('does not prevent submission when the draft is %j', async (draft) => {
     const { wrapper, input, values } = mountInForm()
+    input.value = draft
 
     const event = pressEnter(input)
     expect(event.defaultPrevented).toBe(false)
@@ -552,5 +742,27 @@ describe('given TagsInput inside a form', () => {
     expect(values.value).toEqual([])
     expect(input.value).toBe('draft')
     wrapper.unmount()
+  })
+})
+
+describe('given a TagsInputInput rendered as-child without an element', () => {
+  it('should not auto focus an unrelated input that follows it', async () => {
+    vi.useFakeTimers()
+    const wrapper = mount(defineComponent({
+      components: { TagsInputInput, TagsInputRoot },
+      template: `<TagsInputRoot :model-value="[]">
+        <TagsInputInput as-child auto-focus><template v-if="false"><input /></template></TagsInputInput><input data-testid="outsider" />
+      </TagsInputRoot>`,
+    }), { attachTo: document.body })
+
+    try {
+      await flushPromises()
+      vi.runAllTimers()
+      expect(document.activeElement).not.toBe(wrapper.get('[data-testid="outsider"]').element)
+    }
+    finally {
+      vi.useRealTimers()
+      wrapper.unmount()
+    }
   })
 })

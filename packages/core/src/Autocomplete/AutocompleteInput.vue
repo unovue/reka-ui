@@ -19,7 +19,7 @@ import { injectComboboxRootContext } from '@/Combobox/ComboboxRoot.vue'
 import { createComboboxInputSurface } from '@/Combobox/useCombobox'
 import { getComboboxInputFieldAttrs, injectComboboxFieldContext } from '@/Combobox/useComboboxField'
 import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
-import { useControllableState, useForwardElement } from '@/shared'
+import { useControllableState, useForwardElement, useRenderedContentId } from '@/shared'
 import { injectAutocompleteRootContext } from './AutocompleteRoot.vue'
 
 // `$attrs` are merged in the render (as the fall-through did) so the Field's
@@ -60,6 +60,8 @@ if (autocompleteContext.modelValue.value)
   setText(autocompleteContext.modelValue.value, 'none')
 
 // The Combobox input surface; the typed text is also the Autocomplete value.
+// `aria-controls` references the content only while its element is rendered.
+const contentId = useRenderedContentId(rootContext)
 const surface = createComboboxInputSurface(rootContext, {
   modelValue,
   setText: (value, event) => {
@@ -118,6 +120,7 @@ watch(rootContext.filterState, (_newValue, oldValue) => {
     :is="renderAsEmpty(as, asChild)"
     :ref="forwardRef"
     v-bind="fieldContext ? getComboboxInputFieldAttrs(fieldContext, surface.attrs.value, $attrs) : mergeProps(surface.attrs.value, $attrs)"
+    :aria-controls="rootContext.open.value ? contentId : undefined"
   >
     <template
       v-if="rendersChildren(as, asChild)"

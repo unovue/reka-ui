@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { Direction, ScrollType } from './types'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, mergeExpose, useDirection, useForwardElement } from '@/shared'
+import { createRekaContext, mergeExpose, useDirection, useForwardElement } from '@/shared'
 
 export interface ScrollAreaRootContext {
   type: Ref<ScrollType>
@@ -26,7 +26,7 @@ export interface ScrollAreaRootContext {
 }
 
 export const [injectScrollAreaRootContext, provideScrollAreaRootContext]
-  = createContext<ScrollAreaRootContext>('ScrollAreaRoot')
+  = createRekaContext<ScrollAreaRootContext>('ScrollAreaRoot')
 
 export interface ScrollAreaRootProps extends PrimitiveProps {
   /**

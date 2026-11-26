@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { EventHook } from '@vueuse/core'
 import type { ComputedRef, Ref, ShallowRef } from 'vue'
-import type { ListboxChangeReason, ListboxFilterFunction, ListboxFilterItem, ListboxHighlightScroll, ListboxLabelRegistry, ListboxNavigationIntent, ListboxVirtualKeydown } from './useListbox'
+import type { ListboxChangeReason, ListboxFilterFunction, ListboxFilterItem, ListboxHighlightItemOptions, ListboxHighlightScroll, ListboxLabelRegistry, ListboxNavigationIntent, ListboxVirtualKeydown } from './useListbox'
 import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
@@ -11,7 +11,7 @@ import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from
 import {
   usePrimitiveElement,
 } from '@/Primitive'
-import { createContext, mergeExpose, useDirection, useFormControl } from '@/shared'
+import { createRekaContext, mergeExpose, useDirection, useFormControl } from '@/shared'
 
 export type ListboxRootContext<T> = {
   modelValue: Ref<T | Array<T> | undefined>
@@ -29,9 +29,9 @@ export type ListboxRootContext<T> = {
   /** The selection as a keyed selector: items read their own cell. */
   selection?: SelectionSelector<T>
   isVirtual: Ref<boolean>
-  virtualFocusHook: EventHook<{ event?: Event, scroll: boolean }>
+  virtualFocusHook: EventHook<{ event?: Event, scroll: boolean, keepFocus?: boolean, isStale?: () => boolean }>
   virtualKeydownHook: EventHook<ListboxVirtualKeydown>
-  virtualHighlightHook: EventHook<any>
+  virtualHighlightHook: EventHook<{ value: any, focus?: boolean }>
   by?: string | ((a: T, b: T) => boolean)
   firstValue?: Ref<T | undefined>
   selectionBehavior?: Ref<'toggle' | 'replace'>
@@ -51,7 +51,7 @@ export type ListboxRootContext<T> = {
 
   /** The sticky label registry (#2824): by-aware, last write wins, never auto-removed. */
   labels: ListboxLabelRegistry<T>
-  highlightItem: (value: T) => void
+  highlightItem: (value: T, options?: ListboxHighlightItemOptions) => void
   highlightSelected: (event?: Event, scroll?: boolean) => Promise<void>
   /**
    * The resolved navigation intent of a keydown (`getNavigationIntent` override first, then the default mapping):
@@ -78,7 +78,7 @@ export type ListboxRootContext<T> = {
 }
 
 export const [injectListboxRootContext, provideListboxRootContext]
-  = createContext<ListboxRootContext<AcceptableValue>>('ListboxRoot')
+  = createRekaContext<ListboxRootContext<AcceptableValue>>('ListboxRoot')
 
 /**
  * A listbox's participation in an ancestor `FieldRoot`: the root owns the
@@ -93,10 +93,10 @@ export interface ListboxFieldContext {
 }
 
 export const [injectListboxFieldContext, provideListboxFieldContext]
-  = createContext<ListboxFieldContext | null>('ListboxRoot', 'ListboxFieldContext')
+  = createRekaContext<ListboxFieldContext | null>('ListboxRoot', 'ListboxFieldContext')
 
 export const [injectListboxHighlightScrollContext, provideListboxHighlightScrollContext]
-  = createContext<ListboxHighlightScroll>('ListboxHighlightScroll')
+  = createRekaContext<ListboxHighlightScroll>('ListboxHighlightScroll')
 
 export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, FormFieldProps {
   /** The controlled value of the listbox. Can be binded with `v-model`. */
@@ -137,6 +137,23 @@ export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, F
    * Omitted or `null`, the listbox does not filter (filter the items yourself, or on a server).
    */
   filter?: ListboxFilterFunction<T> | null
+  /**
+   * When `true`, a programmatic `modelValue` change made while focus is outside the listbox
+   * (e.g. on a text input) highlights the selected item without focusing it or scrolling the
+   * page to it, so focus stays where it is. A virtualized list still scrolls its own viewport
+   * to the item. When focus is already inside the listbox, focus follows the new highlight as
+   * usual. User interaction (click, keyboard, typeahead) is not affected.
+   * @defaultValue false
+   */
+  keepFocusOnValueChange?: boolean
+  /**
+   * Maximum number of options the user can select. Only applies when `multiple` is `true`.
+   * A selection that would go over it (click, <kbd>Enter</kbd>, range or select-all) is blocked
+   * and emits `invalid`. `0` means no limit. It does not clamp a `modelValue` set programmatically.
+   *
+   * @defaultValue 0
+   */
+  max?: number
 }
 
 /**
@@ -156,6 +173,8 @@ export type ListboxRootEmits<T = AcceptableValue, M extends boolean = boolean> =
   'entryFocus': [event: CustomEvent]
   /** Event handler called when the mouse leave the container */
   'leave': [event: Event]
+  /** Event handler called when a selection is blocked because it would go over `max`. The payload is the first value over the limit. */
+  'invalid': [payload: T]
 }
 </script>
 
@@ -166,6 +185,7 @@ import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { renderAs } from '@/Primitive/renderAs'
 import { formResetBinder } from '@/shared/formReset'
+import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { useListboxRoot } from './useListbox'
@@ -230,6 +250,9 @@ const listbox = useListboxRoot<AcceptableValue>({
   selectionBehavior: () => props.selectionBehavior,
   highlightOnHover: () => props.highlightOnHover,
   loop: () => props.loop,
+  keepFocusOnValueChange: () => props.keepFocusOnValueChange,
+  max: () => props.max,
+  onInvalid: value => emits('invalid', value),
   by: props.by,
   getNavigationIntent: event => props.getNavigationIntent?.(event),
   filter: toRef(() => props.filter) as Ref<ListboxFilterFunction<AcceptableValue> | null | undefined>,
@@ -252,7 +275,7 @@ const { root, context, highlightedElement, highlightFirstItem, highlightSelected
 // The composable is typed over `AcceptableValue` (the props are); narrow once
 // here for the slot payload and the exposed `highlightItem`, as before.
 const modelValue = listbox.modelValue as ComputedRef<ListboxModelValue<T, M>>
-const highlightItem = listbox.highlightItem as (value: T) => void
+const highlightItem = listbox.highlightItem as (value: T, options?: ListboxHighlightItemOptions) => void
 
 defineExpose(mergeExpose(expose, {
   highlightedElement,
@@ -265,6 +288,7 @@ defineExpose(mergeExpose(expose, {
 }))
 
 provideListboxRootContext(context)
+useAgentRegistration('listbox', context, props, currentElement)
 
 // A native reset of the owning form puts the value back to `defaultValue`.
 // Read off the composable's return here: a closure over that object would keep

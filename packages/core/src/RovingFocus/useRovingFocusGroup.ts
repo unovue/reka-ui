@@ -1,12 +1,12 @@
-import type { Ref } from 'vue'
+import type { InjectionKey, Ref } from 'vue'
 import type { RovingFocusItemMeta } from './useRovingFocusItem'
 import type { Direction, Orientation } from './utils'
 import type { ElementSourceLike } from '@/Collection/Collection'
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
-import { computed, getCurrentInstance, nextTick, ref } from 'vue'
+import { computed, getCurrentInstance, inject, nextTick, provide, ref } from 'vue'
 import { getCollectionMeta, useCollection, useCollectionSlot } from '@/Collection'
 import { callListeners } from '@/shared/callListeners'
-import { createContext } from '@/shared/createContext'
+import { createRekaContext } from '@/shared/createContext'
 import { createKeyedSelector } from '@/shared/createKeyedSelector'
 import { isDisabledItem } from '@/shared/isDisabledItem'
 import { getterRef } from '@/shared/partSurface'
@@ -28,14 +28,42 @@ export interface RovingContext {
   rootElement: { readonly value: unknown }
   /** Arrow keys for an item outside the group's element (its keydown never reaches the group). */
   onDetachedItemKeydown: (event: KeyboardEvent) => void
+  /**
+   * Before mount, whether the item asking is the group's only tab stop: the first
+   * active item to ask (setup runs in document order, on the server and when
+   * hydrating alike), or the first focusable one when the group knows that no item
+   * will be active (`provideRovingFocusNoActiveItem`).
+   */
+  claimPreMountTabStop: (tabStopId: string, active: boolean) => boolean
 }
 
 export const [injectRovingFocusGroupContext, provideRovingFocusGroupContext]
-  = createContext<RovingContext>('RovingFocusGroup')
+  = createRekaContext<RovingContext>('RovingFocusGroup')
+
+const NO_ACTIVE_ITEM_KEY: InjectionKey<(() => boolean) | undefined> = Symbol('RovingFocusGroupNoActiveItem')
+
+/**
+ * Tells the next roving focus group below whether none of its items will render
+ * `active`, so that its first focusable item can be the tab stop in the HTML rendered
+ * before mount (on the server, or until hydration). Without it, only an active item can be.
+ * Call it in the setup of a component that renders the group.
+ *
+ * @internal
+ * @lifecycle setup
+ */
+export function provideRovingFocusNoActiveItem(getter: () => boolean) {
+  provide(NO_ACTIVE_ITEM_KEY, getter)
+}
 
 export interface UseRovingFocusGroupOptions {
   /** The group's element (its `useForwardElement().currentElement`). */
   element: ElementSourceLike
+  /**
+   * Whether none of the items will render `active`: the first focusable item is then the tab
+   * stop before mount. For a part that renders the group itself; a part that renders
+   * `RovingFocusGroup` calls `provideRovingFocusNoActiveItem` instead.
+   */
+  noActiveItem?: () => boolean
   orientation?: () => Orientation | undefined
   /** Resolved against `ConfigProvider` when unset, as the `dir` prop is. */
   dir?: () => Direction | undefined
@@ -264,6 +292,13 @@ export function useRovingFocusGroup(options: UseRovingFocusGroupOptions) {
     isTabbingBackOut.value = false
   }
 
+  // Read by this group only: a group nested in its items starts without one.
+  const inherited = getCurrentInstance() ? inject(NO_ACTIVE_ITEM_KEY, undefined) : undefined
+  if (inherited)
+    provide(NO_ACTIVE_ITEM_KEY, undefined)
+  const hasNoActiveItem = options.noActiveItem ?? inherited
+  let preMountTabStopId: string | undefined
+
   provideRovingFocusGroupContext({
     loop,
     dir,
@@ -283,6 +318,12 @@ export function useRovingFocusGroup(options: UseRovingFocusGroupOptions) {
     onDetachedItemKeydown,
     onFocusableItemRemove: () => {
       focusableItemsCount.value--
+    },
+    claimPreMountTabStop: (tabStopId, active) => {
+      if (!active && !hasNoActiveItem?.())
+        return false
+      preMountTabStopId ??= tabStopId
+      return preMountTabStopId === tabStopId
     },
   })
 

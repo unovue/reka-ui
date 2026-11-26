@@ -25,7 +25,7 @@ export interface RadioProps extends PrimitiveProps, FormFieldProps {
 
 <script setup lang="ts">
 import { computed, mergeProps } from 'vue'
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { getRootNode, useControllableState, useFormControl, useForwardElement, useForwardScopeId } from '@/shared'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { getRadioSurface } from './useRadioGroup'
@@ -96,7 +96,7 @@ const radioAttrs = computed(() => {
 
 <template>
   <component
-    :is="renderAs(as, asChild)"
+    :is="renderAsControl(as, asChild)"
     :id="id"
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"

@@ -144,24 +144,24 @@ describe('dialog part ids', () => {
     expect(utils.getByText('Two').id).toBe('d2')
   })
 
-  it('hands the slot back to a remaining part\'s id when the latest one unmounts', async () => {
-    const showSecond = ref(true)
+  it('hands the slot to the next part\'s id when the first one unmounts', async () => {
+    const showFirst = ref(true)
     const utils = render(defineComponent({
       components: { DialogRoot, DialogContent, DialogTitle, DialogDescription },
-      setup: () => ({ showSecond }),
+      setup: () => ({ showFirst }),
       template: `
         <DialogRoot :open="true">
           <DialogContent>
             <DialogTitle>T</DialogTitle>
-            <DialogDescription id="d1">One</DialogDescription>
-            <DialogDescription v-if="showSecond" id="d2">Two</DialogDescription>
+            <DialogDescription v-if="showFirst" id="d1">One</DialogDescription>
+            <DialogDescription id="d2">Two</DialogDescription>
           </DialogContent>
         </DialogRoot>`,
     }))
     await nextTick()
-    expect(utils.getByRole('dialog').getAttribute('aria-describedby')).toBe('d2')
-    showSecond.value = false
-    await nextTick()
     expect(utils.getByRole('dialog').getAttribute('aria-describedby')).toBe('d1')
+    showFirst.value = false
+    await nextTick()
+    expect(utils.getByRole('dialog').getAttribute('aria-describedby')).toBe('d2')
   })
 })

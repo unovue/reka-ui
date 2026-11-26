@@ -1,8 +1,8 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { TooltipContext, TooltipOpenChangeReason } from './TooltipRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
-import { computed, ref, toValue, watch } from 'vue'
-import { createPartSurface, disclosureState, useControllableState } from '@/shared'
+import { computed, getCurrentInstance, getCurrentScope, onDeactivated, onScopeDispose, ref, toValue, watch } from 'vue'
+import { createPartSurface, defineReactiveIds, disclosureState, useControllableState } from '@/shared'
 import { createTimeout } from '@/shared/timeout'
 
 // =============================================================================
@@ -61,8 +61,9 @@ let tooltipCount = 0
  * `pointerdown` / `click` close unless `disableClosingTrigger`.
  *
  * @experimental Signatures may change in 3.x minors.
- * @lifecycle pure — no hooks; the `pointerup` listener is attached to
- * `document` only from inside `onPointerdown`, never at call scope.
+ * @lifecycle pure — the `pointerup` listener is attached to `document` only
+ * from inside `onPointerdown`, never at call scope; inside a component or
+ * `effectScope` it is removed when that scope is disposed.
  */
 export function createTooltipTriggerSurface(context: TooltipContext): PartSurface<TooltipTriggerState> {
   const isPointerDown = ref(false)
@@ -76,12 +77,22 @@ export function createTooltipTriggerSurface(context: TooltipContext): PartSurfac
     setTimeout(resetPointerDown, 1)
   }
 
+  // A trigger unmounted while pressed must not leave its listener on `document`. The cleanup
+  // is registered on the first press: registered here, it would keep every handler of a
+  // surface that is never rendered (the one `useTooltip` returns) alive with the scope.
+  const scope = getCurrentScope()
+  let isCleanupRegistered = false
+
   function handlePointerDown(event: PointerEvent) {
     if (context.open.value && !context.disableClosingTrigger.value) {
       context.onClose('trigger-press', event)
     }
     isPointerDown.value = true
     document.addEventListener('pointerup', handlePointerUp, { once: true })
+    if (scope?.active && !isCleanupRegistered) {
+      isCleanupRegistered = true
+      scope.run(() => onScopeDispose(() => document.removeEventListener('pointerup', handlePointerUp)))
+    }
   }
 
   function handlePointerMove(event: PointerEvent) {
@@ -332,6 +343,10 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
     if (!setState(true, 'trigger-hover', event))
       wasOpenDelayedRef.value = false
   }, delayDuration)
+  // A pending open of a `KeepAlive` page that is left would fire on the page shown instead.
+  // The hook is added when the timer first starts: most tooltips never start it.
+  const instance = getCurrentInstance()
+  let isDeactivationHandled = false
 
   function handleOpen(reason?: TooltipOpenChangeReason | BaseChangeReason, event?: Event): boolean {
     timer.clear()
@@ -345,6 +360,10 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
   }
   function handleDelayedOpen(event?: PointerEvent) {
     delayedOpenEvent = event
+    if (instance && !isDeactivationHandled) {
+      isDeactivationHandled = true
+      onDeactivated(() => timer.clear(), instance)
+    }
     timer.start()
   }
   function onTriggerEnter(event?: PointerEvent) {
@@ -362,8 +381,8 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
     }
   }
 
-  const context: TooltipContext = {
-    contentId: `${baseId}-content`,
+  // `contentId` follows the id the content rendered (`useContentElement`).
+  const context = defineReactiveIds<TooltipContext, 'contentId'>({
     open,
     stateAttribute,
     isDelayed,
@@ -381,7 +400,7 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
     disabled,
     ignoreNonKeyboardFocus,
     notifyOpenComplete: value => props.onOpenComplete?.(value),
-  }
+  }, { contentId: `${baseId}-content` })
 
   return {
     open,

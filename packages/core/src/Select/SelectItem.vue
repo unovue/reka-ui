@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollectionItem } from '@/Collection'
-import { createContext, useForwardElement, useId } from '@/shared'
+import { createRekaContext, useForwardElement, useId } from '@/shared'
 
 export interface SelectItemContext<T = AcceptableValue> {
   /** The item's value (read live from the prop). */
@@ -15,7 +15,7 @@ export interface SelectItemContext<T = AcceptableValue> {
 }
 
 export const [injectSelectItemContext, provideSelectItemContext]
-  = createContext<SelectItemContext>('SelectItem')
+  = createRekaContext<SelectItemContext>('SelectItem')
 
 const DISABLED_ATTRS = Object.freeze({ 'data-disabled': '' })
 
@@ -49,6 +49,7 @@ export interface SelectItemProps<T = AcceptableValue> extends PrimitiveProps {
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">
 import { mergeProps, onMounted } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
+import { agentMarksOf, useAgentItem } from '@/shared/useAgentRegistration'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import { injectSelectRootContext } from './SelectRoot.vue'
 import { useSelectItem, useSelectItemLabel } from './useSelect'
@@ -83,6 +84,7 @@ const lean = contentContext.harvest
       disabled: () => props.disabled,
       textValue: () => props.textValue,
       element: () => currentElement.value,
+      onSelect: event => emits('select', event as SelectEvent<T>),
     })
   : undefined
 const full = lean
@@ -100,13 +102,17 @@ const { isSelected, textValue, itemContext } = (lean ?? full)!
 const item = full?.item
 
 // The detached item's attributes: the `data-disabled` the typeahead reads.
-function getLeanAttrs() {
+// With an agent bridge, its marks too, which cover the item while it renders off the page.
+function getLeanAttrs(attrs: Record<string, unknown>) {
+  const marks = agentMarksOf(attrs)
+  if (marks)
+    return props.disabled ? { ...marks, ...DISABLED_ATTRS } : marks
   return props.disabled ? DISABLED_ATTRS : undefined
 }
 
 if (!lean) {
   // Registered with the content's collection from setup; no wrapper component.
-  useCollectionItem(currentElement, () => ({ textValue: textValue.value, value: props.value }))
+  useCollectionItem(currentElement, () => ({ textValue: textValue.value, value: props.value, select: full!.typeaheadSelect }))
   onMounted(() => {
     if (!currentElement.value)
       return
@@ -119,6 +125,7 @@ if (!lean) {
 }
 
 provideSelectItemContext(itemContext)
+useAgentItem(rootContext, props, currentElement)
 </script>
 
 <template>
@@ -126,7 +133,7 @@ provideSelectItemContext(itemContext)
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
     data-reka-collection-item=""
-    v-bind="item ? mergeProps($attrs, item.attrs.value) : getLeanAttrs()"
+    v-bind="item ? mergeProps($attrs, item.attrs.value) : getLeanAttrs($attrs)"
   >
     <slot :selected="isSelected" />
   </component>

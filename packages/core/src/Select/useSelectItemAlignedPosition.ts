@@ -3,7 +3,7 @@ import type { SelectContentContext } from './SelectContentImpl.vue'
 import type { SelectRootContext } from './SelectRoot.vue'
 import { useResizeObserver } from '@vueuse/core'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
-import { clamp, createContext } from '@/shared'
+import { clamp, createRekaContext } from '@/shared'
 import { CONTENT_MARGIN } from './utils'
 
 interface SelectItemAlignedPositionContext {
@@ -13,7 +13,7 @@ interface SelectItemAlignedPositionContext {
 }
 
 export const [injectSelectItemAlignedPositionContext, provideSelectItemAlignedPositionContext]
-  = createContext<SelectItemAlignedPositionContext>('SelectItemAlignedPosition')
+  = createRekaContext<SelectItemAlignedPositionContext>('SelectItemAlignedPosition')
 
 export interface UseSelectItemAlignedPositionOptions {
   rootContext: SelectRootContext<any>

@@ -18,11 +18,12 @@ export interface TabsTriggerProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { mergeProps, onActivated, onDeactivated, onScopeDispose } from 'vue'
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { useRovingFocusItem } from '@/RovingFocus/useRovingFocusItem'
+import { useAgentItem } from '@/shared/useAgentRegistration'
 import { injectTabsRootContext } from './TabsRoot.vue'
 import { getTabsTriggerSurface } from './useTabs'
-import { isInsideKeepAlive, useTabsPartId } from './utils'
+import { isInsideKeepAlive, useHydratedId, useTabsPartId } from './utils'
 
 defineOptions({
   // `$attrs` are merged under the roving and trigger bindings: the precedence
@@ -38,9 +39,9 @@ const props = withDefaults(defineProps<TabsTriggerProps>(), {
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 const rootContext = injectTabsRootContext()
-useTabsPartId(rootContext.customTriggerIds, () => props.value, () => props.id)
 // Registered for the root's automatic selection of the first enabled tab.
 const entry = { element: currentElement, props }
+useAgentItem(rootContext, props, currentElement)
 rootContext.triggers?.add(entry)
 onScopeDispose(() => rootContext.triggers?.delete(entry))
 // A trigger cached by `KeepAlive` is out of the document while deactivated.
@@ -55,6 +56,8 @@ if (isInsideKeepAlive()) {
 // shared surface builder (single source with `useTabs()`); the roving item
 // (arrow-key nav, as a composable) and the tag-dependent `type` stay in the SFC.
 const surface = getTabsTriggerSurface(rootContext, () => props.value, () => props.disabled)
+const hydratedId = useHydratedId(currentElement, () => surface.attrs.value.id)
+useTabsPartId(rootContext.customTriggerIds, () => props.value, () => props.id || hydratedId?.value)
 
 const roving = useRovingFocusItem({
   element: currentElement,
@@ -70,7 +73,7 @@ function renderAttrs(attrs: Record<string, unknown>) {
 
 <template>
   <component
-    :is="renderAs(as, asChild)"
+    :is="renderAsControl(as, asChild)"
     :ref="forwardRef"
     v-bind="renderAttrs($attrs)"
   >

@@ -13,6 +13,13 @@ export interface NavigationMenuViewportProps extends PrimitiveProps {
    * @defaultValue 'center'
    */
   align?: 'start' | 'center' | 'end'
+  /**
+   * When `true`, keeps the viewport inside the ancestors that clip it (an `overflow` other
+   * than `visible`, or paint containment) instead of the document, and sets the position
+   * css variables in the coordinates of the viewport's containing block.
+   * @defaultValue false
+   */
+  avoidClipping?: boolean
 }
 </script>
 
@@ -41,6 +48,7 @@ const { open, viewport, reset } = useNavigationMenuViewport({
   context: menuContext,
   viewportElement: currentElement as Ref<HTMLElement | undefined>,
   align: () => props.align,
+  avoidClipping: () => props.avoidClipping,
 })
 
 // A force-mounted viewport stays shown and keeps its measurements; Presence

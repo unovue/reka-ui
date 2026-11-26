@@ -326,6 +326,91 @@ describe('timeField', () => {
     expect(input).not.toHaveAttribute('data-invalid')
   })
 
+  it('does not display data-invalid when start is after end and allowWrap is set', async () => {
+    const overnight = { start: new Temporal.PlainTime(23, 0), end: new Temporal.PlainTime(7, 0) }
+    const { input } = setup({
+      timeRangeFieldProps: { modelValue: overnight, locale: 'en-GB', allowWrap: true },
+    })
+
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('still displays data-invalid for an out-of-range bound when allowWrap is set', async () => {
+    const overnight = { start: new Temporal.PlainTime(23, 0), end: new Temporal.PlainTime(7, 0) }
+    const { input } = setup({
+      timeRangeFieldProps: {
+        modelValue: overnight,
+        locale: 'en-GB',
+        allowWrap: true,
+        maxValue: new Temporal.PlainTime(22, 0),
+      },
+    })
+
+    // allowWrap only lifts the ordering rule, start is still after the max of 22:00
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+
+  it('allows a same-day date-carrying range to wrap when allowWrap is set', async () => {
+    const { input } = setup({
+      timeRangeFieldProps: {
+        modelValue: {
+          start: new Temporal.PlainDateTime(2024, 1, 5, 22, 0),
+          end: new Temporal.PlainDateTime(2024, 1, 5, 6, 0),
+        },
+        locale: 'en-GB',
+        allowWrap: true,
+      },
+    })
+
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('does not sample the times of a wrapped range when allowWrap is set', async () => {
+    const isTimeUnavailable = vi.fn(() => false)
+    const { input } = setup({
+      timeRangeFieldProps: {
+        modelValue: { start: new Temporal.PlainTime(23, 0), end: new Temporal.PlainTime(7, 0) },
+        locale: 'en-GB',
+        allowWrap: true,
+        isTimeUnavailable,
+      },
+    })
+
+    expect(input).not.toHaveAttribute('data-invalid')
+    // Only the two ends are asked about.
+    expect(isTimeUnavailable.mock.calls.length).toBeLessThanOrEqual(4)
+  })
+
+  it('still displays data-invalid for a backwards range across days when allowWrap is set', async () => {
+    const { input } = setup({
+      timeRangeFieldProps: {
+        modelValue: {
+          start: new Temporal.PlainDateTime(2024, 1, 5, 10, 0),
+          end: new Temporal.PlainDateTime(2024, 1, 1, 9, 0),
+        },
+        locale: 'en-GB',
+        allowWrap: true,
+      },
+    })
+
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+
+  it('still displays data-invalid for a backwards zoned range across days when allowWrap is set', async () => {
+    const { input } = setup({
+      timeRangeFieldProps: {
+        modelValue: {
+          start: new Temporal.PlainDateTime(2024, 1, 5, 10, 0).toZonedDateTime('America/New_York'),
+          end: new Temporal.PlainDateTime(2024, 1, 1, 9, 0).toZonedDateTime('America/New_York'),
+        },
+        locale: 'en-GB',
+        allowWrap: true,
+      },
+    })
+
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+
   it('focuses first segment on label click', async () => {
     const { user, label, start } = setup({
       timeRangeFieldProps: { modelValue: time, locale: 'en-GB' },
@@ -383,9 +468,9 @@ describe('timeField', () => {
 describe('coderabbit review (#3088)', () => {
   const hiddenInput = (container: Element) => container.querySelector<HTMLInputElement>('input[name="range"]')!
 
-  it('submits an empty endpoint as an empty string, and an empty range as nothing', async () => {
+  it('submits nothing for a half-filled range or an empty range (#3228)', async () => {
     const partial = render(TimeField, { props: { timeRangeFieldProps: { name: 'range', modelValue: { start: new Temporal.PlainTime(9, 15), end: undefined } } } })
-    expect(hiddenInput(partial.container).value).toBe('09:15:00 - ')
+    expect(hiddenInput(partial.container).value).toBe('')
     partial.unmount()
 
     const empty = render(TimeField, { props: { timeRangeFieldProps: { name: 'range', modelValue: { start: undefined, end: undefined } } } })
@@ -400,5 +485,39 @@ describe('coderabbit review (#3088)', () => {
 
     await rerender({ timeRangeFieldProps: { modelValue: { start: start.withTimeZone('America/Chicago'), end }, locale: 'en-US' } })
     await vi.waitFor(() => expect(getByTestId('start-timeZoneName')).toHaveTextContent('CDT'))
+  })
+})
+
+describe('unavailable days inside the range', () => {
+  it.each([
+    ['PlainDateTime', calendarDateTime],
+    ['ZonedDateTime', zonedDateTime],
+  ])('does not check the next day for a same-day `%s` range', (_, { start, end }) => {
+    // The day after the range, 2 January, is unavailable.
+    const isTimeUnavailable = (value: any) => value.day === 2
+    const { input } = setup({
+      timeRangeFieldProps: { modelValue: { start, end }, locale: 'en-GB', isTimeUnavailable },
+    })
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('marks a date-time range with an unavailable day inside invalid', () => {
+    const isTimeUnavailable = (value: any) => value.day === 2
+    const { input } = setup({
+      timeRangeFieldProps: { modelValue: { start: calendarDateTime.start, end: calendarDateTime.end.add({ days: 2 }) }, locale: 'en-GB', isTimeUnavailable },
+    })
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+})
+
+describe('hidden input value', () => {
+  it.each([
+    { label: 'no value', modelValue: undefined, expected: '' },
+    { label: 'only a start', modelValue: { start: time.start, end: undefined }, expected: '' },
+    { label: 'only an end', modelValue: { start: undefined, end: time.end }, expected: '' },
+    { label: 'a complete range', modelValue: time, expected: '09:15:29 - 17:45:00' },
+  ])('is "$expected" for $label', ({ modelValue, expected }) => {
+    const { container } = setup({ timeRangeFieldProps: { modelValue, name: 'range' } })
+    expect(container.querySelector('input')).toHaveValue(expected)
   })
 })

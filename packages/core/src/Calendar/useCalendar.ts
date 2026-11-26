@@ -141,7 +141,7 @@ let calendarCount = 0
  * next, grid) read. `RangeCalendarRootContext` satisfies it too, so those
  * builders are shared by both families.
  */
-export type CalendarChromeContext = Pick<CalendarRootContext, 'disabled' | 'readonly' | 'view' | 'maxView' | 'headingId' | 'drillUp' | 'nextPage' | 'prevPage' | 'isNextButtonDisabled' | 'isPrevButtonDisabled'>
+export type CalendarChromeContext = Pick<CalendarRootContext, 'disabled' | 'readonly' | 'view' | 'maxView' | 'headingId' | 'drillUp' | 'nextPage' | 'prevPage' | 'isNextButtonDisabled' | 'isPrevButtonDisabled' | 'translate'>
 
 /** Disabled for the purpose of the root `data-invalid` / focus fallbacks: evaluated at the granularity, not the active view. */
 function isDisabledAtUnit(context: Pick<CalendarRootContext, 'disabledMatcher' | 'disabled' | 'minValue' | 'maxValue'>, adapter: CalendarUnitAdapter, date: DateValue) {
@@ -187,6 +187,12 @@ export function getCalendarViewTriggerSurface(context: CalendarChromeContext): P
   )
 }
 
+/** The message that names `CalendarPrev` / `CalendarNext` in each view: a page of months is a year. */
+const CALENDAR_NAV_KEYS = {
+  prev: { day: 'calendarPrev', month: 'monthPickerPrev', year: 'yearPickerPrev' },
+  next: { day: 'calendarNext', month: 'monthPickerNext', year: 'yearPickerNext' },
+} as const
+
 /** The `CalendarPrev` / `CalendarNext` surface. `fn` is a paging function or a ref to one (not a getter). */
 export function getCalendarNavSurface(
   context: CalendarChromeContext,
@@ -198,7 +204,7 @@ export function getCalendarNavSurface(
     : context.isPrevButtonDisabled(unref(fn))))
   return createPartSurface<CalendarNavState>(
     () => ({
-      'aria-label': direction === 'next' ? 'Next page' : 'Previous page',
+      'aria-label': context.translate(CALENDAR_NAV_KEYS[direction][context.view.value]),
       'aria-disabled': disabled.value || undefined,
       'disabled': disabled.value,
       'onClick': () => {
@@ -656,6 +662,7 @@ export function useCalendar(props: UseCalendarProps): UseCalendarReturn {
     layout: gridApi.layout,
     headingValue: gridApi.headingValue,
     fullCalendarLabel: gridApi.fullCalendarLabel,
+    translate: gridApi.translate,
     isInvalid,
     hasSelectedDate,
     isSelectedDateDisabled,

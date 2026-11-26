@@ -7,7 +7,7 @@ import type { AcceptableValue } from '@/shared/types'
 import { createEventHook, tryOnScopeDispose } from '@vueuse/core'
 import { computed, isRef, nextTick, ref, toValue } from 'vue'
 import { useListboxRoot } from '@/Listbox/useListbox'
-import { createPartSurface, disclosureState, getActiveElement, getElementByIdFrom, useComposing, useControllableState, useFilter } from '@/shared'
+import { createPartSurface, defineReactiveIds, disclosureState, getActiveElement, getElementByIdFrom, useComposing, useControllableState, useFilter, useTranslations } from '@/shared'
 import { getComboboxItemLabel } from './comboboxItems'
 import { useComboboxContentPositioning } from './useComboboxContentPositioning'
 
@@ -155,6 +155,7 @@ export function getComboboxTriggerSurface(
   disabled?: MaybeRefOrGetter<boolean | undefined>,
 ): PartSurface<ComboboxTriggerState> {
   const isDisabled = computed(() => toValue(disabled) || context.disabled.value || false)
+  const t = useTranslations()
   let pointerType: string | undefined
   // The open state when the press began: focusing the input on mousedown can
   // open the popup first (`openOnFocus`), and the press must not then close it.
@@ -162,7 +163,7 @@ export function getComboboxTriggerSurface(
   return createPartSurface<ComboboxTriggerState>(
     () => ({
       'tabindex': '-1',
-      'aria-label': 'Show popup',
+      'aria-label': t('comboboxTrigger'),
       'aria-haspopup': 'listbox',
       'aria-expanded': context.open.value,
       'aria-controls': context.contentId,
@@ -180,10 +181,20 @@ export function getComboboxTriggerSurface(
         // An input inside the content is focused by the content on open.
         const input = context.inputElement.value
         openAtPress = context.open.value
-        if (isDisabled.value || pointerType === 'touch' || !input?.isConnected || isComboboxInputInsideContent(context))
+        if (isDisabled.value || pointerType === 'touch' || !input?.isConnected || isComboboxInputInsideContent(context) || !context.focusInputOnOpen.value)
           return
         input.focus()
         event.preventDefault()
+      },
+      // With `focusOnOpen: false` opening leaves focus here, so the arrow keys move it to the input.
+      'onKeydown': (event: KeyboardEvent) => {
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp')
+          return
+        const input = context.inputElement.value
+        if (!context.open.value || context.focusInputOnOpen.value || !input)
+          return
+        event.preventDefault()
+        input.focus()
       },
       'onClick': (event: MouseEvent) => {
         // The pointer type of the press: not every engine gives the click one. A
@@ -506,6 +517,8 @@ export interface UseComboboxRootProps<T = AcceptableValue> extends Omit<UseListb
   openOnClick?: MaybeRefOrGetter<boolean | undefined>
   /** `ComboboxCancel` also clears the value; `false` clears only the search text. @defaultValue `true` */
   resetModelValueOnClear?: MaybeRefOrGetter<boolean | undefined>
+  /** Returns the value `ComboboxCancel` resets the model to (`'clear-press'`); omitted resets to `emptyValue` (or `[]` if `multiple`). */
+  clearValue?: MaybeRefOrGetter<(() => unknown) | undefined>
   /** Unmount the content when closed. @defaultValue `true` */
   unmountOnHide?: MaybeRefOrGetter<boolean | undefined>
   /** The value a cleared single selection takes. @defaultValue `null` */
@@ -692,16 +705,26 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     return true
   }
 
-  const context: ComboboxRootContext<T> = {
+  // `ComboboxCancel` resets to `clearValue()` when given; a multiple model stays an array.
+  function getClearedValue(reason: ComboboxChangeReason): any {
+    const clearValue = reason === 'clear-press' ? toValue(props.clearValue) : undefined
+    if (listbox.context.multiple.value) {
+      const value = clearValue?.()
+      return Array.isArray(value) ? value : []
+    }
+    return clearValue ? clearValue() : props.emptyValue ?? null
+  }
+
+  // `contentId` follows a consumer `id` on the content (`useContentId`).
+  const context = defineReactiveIds<ComboboxRootContext<T>, 'contentId'>({
     ...listbox.context,
     baseId,
-    contentId: `${baseId}-content`,
     open,
     onOpenChange,
     setModelValue,
     selectItem: select,
     pressItem,
-    clearModelValue: (event, reason = 'clear-press') => setModelValue(listbox.context.multiple.value ? [] : props.emptyValue ?? null, reason, event),
+    clearModelValue: (event, reason = 'clear-press') => setModelValue(getClearedValue(reason), reason, event),
     ...positioning,
     isUserInputted,
     inputElement,
@@ -709,6 +732,7 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     triggerElement,
     onTriggerElementChange: el => triggerElement.value = el,
     interactionType,
+    focusInputOnOpen: ref(true),
     parentElement: computed(() => toValue(props.element) ?? undefined),
     resetSearchTermOnSelect: bool(props.resetSearchTermOnSelect, true),
     onResetSearchTerm: resetSearchTerm.on,
@@ -736,7 +760,7 @@ export function useComboboxRoot<T extends AcceptableValue = AcceptableValue>(pro
     displayValue: props.displayValue,
     items: props.items,
     notifyOpenComplete: value => props.onOpenComplete?.(value),
-  }
+  }, { contentId: `${baseId}-content` })
 
   const root = createPartSurface<ComboboxState>(
     () => listbox.root.props.value,
