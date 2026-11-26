@@ -187,6 +187,12 @@ export function getCalendarViewTriggerSurface(context: CalendarChromeContext): P
   )
 }
 
+/** The message that names `CalendarPrev` / `CalendarNext` in each view: a page of months is a year. */
+const CALENDAR_NAV_KEYS = {
+  prev: { day: 'calendarPrev', month: 'monthPickerPrev', year: 'yearPickerPrev' },
+  next: { day: 'calendarNext', month: 'monthPickerNext', year: 'yearPickerNext' },
+} as const
+
 /** The `CalendarPrev` / `CalendarNext` surface. `fn` is a paging function or a ref to one (not a getter). */
 export function getCalendarNavSurface(
   context: CalendarChromeContext,
@@ -198,7 +204,7 @@ export function getCalendarNavSurface(
     : context.isPrevButtonDisabled(unref(fn))))
   return createPartSurface<CalendarNavState>(
     () => ({
-      'aria-label': context.translate(direction === 'next' ? 'calendarNext' : 'calendarPrev'),
+      'aria-label': context.translate(CALENDAR_NAV_KEYS[direction][context.view.value]),
       'aria-disabled': disabled.value || undefined,
       'disabled': disabled.value,
       'onClick': () => {

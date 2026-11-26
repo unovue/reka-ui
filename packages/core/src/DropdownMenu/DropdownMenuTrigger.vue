@@ -21,7 +21,7 @@ import type { ComputedRef } from 'vue'
 import { computed, mergeProps, onBeforeUpdate, shallowRef, useAttrs, watch } from 'vue'
 import { injectMenuContext } from '@/Menu'
 import { usePopperAnchor } from '@/Popper/usePopperAnchor'
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { getPopupRootStore, usePopupHandleTrigger } from '@/shared/popupHandle'
 import { injectDropdownMenuRootContext } from './DropdownMenuRoot.vue'
 import { getDropdownMenuTriggerSurface } from './useDropdownMenu'
@@ -119,7 +119,7 @@ const anchor = usePopperAnchor({ consumerAttrs: true, element: triggerElement, e
 
 <template>
   <component
-    :is="renderAs(as, props.asChild)"
+    :is="renderAsControl(as, props.asChild)"
     :ref="forwardRef"
     v-bind="mergeProps(anchor.consumerAttrs($attrs), { type: as === 'button' ? 'button' : undefined }, attrs, { disabled: disabledAttr(attrs.disabled as boolean | undefined, as, props.asChild) })"
   >

@@ -13,7 +13,7 @@ export interface NavigationMenuTriggerProps extends PrimitiveProps {
 <script setup lang="ts">
 import { unrefElement } from '@vueuse/core'
 import { mergeProps, onMounted, useAttrs } from 'vue'
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { VisuallyHidden } from '@/VisuallyHidden'
 import { injectNavigationMenuItemContext } from './NavigationMenuItem.vue'
 import { injectNavigationMenuContext } from './NavigationMenuRoot.vue'
@@ -67,7 +67,7 @@ function setFocusProxyRef(node: Element | ComponentPublicInstance | null) {
 
 <template>
   <component
-    :is="renderAs(as, props.asChild)"
+    :is="renderAsControl(as, props.asChild)"
     v-bind="mergeProps(COLLECTION_ITEM_ATTRS, { type: as === 'button' ? 'button' : undefined }, getTriggerAttrs(), { disabled: disabledAttr(trigger.attrs.value.disabled as boolean | undefined, as, props.asChild) })"
     :ref="forwardRef"
   >

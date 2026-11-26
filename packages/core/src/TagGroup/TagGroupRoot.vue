@@ -4,7 +4,7 @@ import type { TagGroupChangeReason } from './useTagGroup'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue, Direction } from '@/shared/types'
-import { createContext, useDirection, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useForwardElement } from '@/shared'
 
 export type TagGroupSelectionMode = 'none' | 'single' | 'multiple'
 
@@ -74,7 +74,7 @@ export interface TagGroupRootContext<T = AcceptableValue> {
 }
 
 export const [injectTagGroupRootContext, provideTagGroupRootContext]
-  = createContext<TagGroupRootContext>('TagGroupRoot')
+  = createRekaContext<TagGroupRootContext>('TagGroupRoot')
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">

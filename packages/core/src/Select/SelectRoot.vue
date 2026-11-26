@@ -7,7 +7,7 @@ import type { BaseChangeReason, By, ChangeEventDetails, LabelRegistry } from '@/
 import type { SelectionSelector } from '@/shared/selectionSelector'
 import type { AcceptableValue, Direction, FormFieldProps } from '@/shared/types'
 import { useCollection } from '@/Collection'
-import { createContext, isNullish, useDirection, useFormControl, useId } from '@/shared'
+import { createRekaContext, isNullish, useDirection, useFormControl, useId } from '@/shared'
 import { compareDocumentOrder } from '@/shared/documentOrder'
 import { isDisabledItem } from '@/shared/isDisabledItem'
 
@@ -136,7 +136,7 @@ export interface SelectRootContext<T = AcceptableValue> {
 }
 
 export const [injectSelectRootContext, provideSelectRootContext]
-  = createContext<SelectRootContext<AcceptableValue>>('SelectRoot')
+  = createRekaContext<SelectRootContext<AcceptableValue>>('SelectRoot')
 
 /**
  * The Select's binding to the Field it is the control of, for its trigger:
@@ -144,7 +144,7 @@ export const [injectSelectRootContext, provideSelectRootContext]
  * @internal
  */
 export const [injectSelectFieldContext, provideSelectFieldContext]
-  = createContext<FieldControlBinding | null>('SelectRoot', 'SelectFieldContext')
+  = createRekaContext<FieldControlBinding | null>('SelectRoot', 'SelectFieldContext')
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false">

@@ -5,7 +5,7 @@ export interface DialogCloseProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectDialogRootContext } from './DialogRoot.vue'
 import { getDialogCloseSurface } from './useDialog'
@@ -23,7 +23,7 @@ const close = getDialogCloseSurface(rootContext)
 
 <template>
   <component
-    :is="renderAs(as, asChild)"
+    :is="renderAsControl(as, asChild)"
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
     v-bind="close.attrs.value"

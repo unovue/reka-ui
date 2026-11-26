@@ -4,10 +4,10 @@ import type {
   DialogContentEmits,
   DialogContentProps,
 } from '@/Dialog'
-import { createContext, useEmitAsProps, useForwardElement } from '@/shared'
+import { createRekaContext, useEmitAsProps, useForwardElement } from '@/shared'
 
 export const [injectAlertDialogContentContext, provideAlertDialogContentContext]
-  = createContext<AlertDialogContentContext>('AlertDialogContent')
+  = createRekaContext<AlertDialogContentContext>('AlertDialogContent')
 
 export type AlertDialogContentEmits = DialogContentEmits
 export interface AlertDialogContentProps extends DialogContentProps {}

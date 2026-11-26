@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { DialogHandle } from './handle'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { createContext, useId } from '@/shared'
+import { createRekaContext, useId } from '@/shared'
 
 /** Why the dialog's `open` state changed (#2828); the `reason` of `ChangeEventDetails`. */
 export type DialogOpenChangeReason
@@ -82,7 +82,7 @@ export interface DialogRootContext {
 }
 
 export const [injectDialogRootContext, provideDialogRootContext]
-  = createContext<DialogRootContext>('DialogRoot')
+  = createRekaContext<DialogRootContext>('DialogRoot')
 
 /**
  * The mounted `DialogOverlay` element. A press on it (or on the content's
@@ -91,7 +91,7 @@ export const [injectDialogRootContext, provideDialogRootContext]
  * `DialogRootContext` shape.
  */
 export const [injectDialogOverlayElementContext, provideDialogOverlayElementContext]
-  = createContext<Ref<HTMLElement | undefined>>('DialogRoot', 'DialogOverlayElementContext')
+  = createRekaContext<Ref<HTMLElement | undefined>>('DialogRoot', 'DialogOverlayElementContext')
 </script>
 
 <script setup lang="ts" generic="Payload = unknown">

@@ -10,7 +10,7 @@ const ANNOUNCE_EXCLUDE = { 'data-reka-toast-announce-exclude': '', 'data-reka-to
 
 <script setup lang="ts">
 import { mergeProps } from 'vue'
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { injectToastRootContext } from './ToastRootImpl.vue'
 import { getToastCloseSurface } from './useToast'
 
@@ -42,7 +42,7 @@ function announceAttrs(attrs: Record<string, unknown>): [Record<string, unknown>
 
 <template>
   <component
-    :is="renderAs(as, asChild)"
+    :is="renderAsControl(as, asChild)"
     :ref="forwardRef"
     v-bind="mergeProps(...announceAttrs($attrs), close.attrs.value, { type: as === 'button' ? 'button' : undefined })"
   >

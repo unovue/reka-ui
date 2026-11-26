@@ -8,7 +8,7 @@ import type { ListboxRootContext } from '@/Listbox/ListboxRoot.vue'
 import type { ListboxFilterFunction, ListboxFilterState, ListboxNavigationIntent } from '@/Listbox/useListbox'
 import type { BaseChangeReason, By, ChangeEventDetails } from '@/shared'
 import type { AcceptableValue } from '@/shared/types'
-import { compare, createContext, mergeExpose, useDirection, useFormControl, useForwardElement, useId } from '@/shared'
+import { compare, createRekaContext, mergeExpose, useDirection, useFormControl, useForwardElement, useId } from '@/shared'
 
 /**
  * The Combobox root context. It extends the Listbox root context (#2824, the
@@ -80,7 +80,7 @@ export interface ComboboxRootContext<T = AcceptableValue> extends ListboxRootCon
 }
 
 export const [injectComboboxRootContext, provideComboboxRootContext]
-  = createContext<ComboboxRootContext<AcceptableValue>>('ComboboxRoot')
+  = createRekaContext<ComboboxRootContext<AcceptableValue>>('ComboboxRoot')
 
 export type ComboboxRootEmits<T = AcceptableValue, M extends boolean = boolean> = {
   /**

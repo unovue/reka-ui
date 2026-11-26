@@ -46,7 +46,7 @@ export const [injectSwitchRootContext, provideSwitchRootContext]
 <script setup lang="ts" generic="TrueValue = true, FalseValue = false">
 import { computed, mergeProps, watch } from 'vue'
 import { useFieldBinding } from '@/Field/useFieldBinding'
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { formResetBinder } from '@/shared/formReset'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
@@ -158,7 +158,7 @@ const bindFormReset = formResetBinder(onFormReset)
 
 <template>
   <component
-    :is="renderAs(as, asChild)"
+    :is="renderAsControl(as, asChild)"
     :id="resolvedId()"
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"

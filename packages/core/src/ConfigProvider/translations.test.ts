@@ -79,84 +79,84 @@ export const fixtures: Record<string, Fixture> = {
       ['[data-next]', 'aria-label', 'Later'],
     ],
   },
-  MonthPicker: {
+  CalendarMonthView: {
     data: { date },
     template: `
-      <MonthPickerRoot data-root :default-placeholder="date" locale="en">
-        <MonthPickerPrev data-prev /><MonthPickerNext data-next />
-      </MonthPickerRoot>`,
+      <CalendarRoot data-root :default-placeholder="date" locale="en" granularity="month">
+        <CalendarPrev data-prev /><CalendarNext data-next />
+      </CalendarRoot>`,
     defaults: [
       ['[data-root]', 'aria-label', 'Month Picker, 2024'],
       ['[data-prev]', 'aria-label', 'Previous year'],
       ['[data-next]', 'aria-label', 'Next year'],
     ],
     consumerTemplate: `
-      <MonthPickerRoot data-root :default-placeholder="date" locale="en" calendar-label="Billing month">
-        <MonthPickerPrev data-prev aria-label="Earlier" /><MonthPickerNext data-next aria-label="Later" />
-      </MonthPickerRoot>`,
+      <CalendarRoot data-root :default-placeholder="date" locale="en" granularity="month" calendar-label="Billing month">
+        <CalendarPrev data-prev aria-label="Earlier" /><CalendarNext data-next aria-label="Later" />
+      </CalendarRoot>`,
     consumer: [
       ['[data-root]', 'aria-label', 'Billing month, 2024'],
       ['[data-prev]', 'aria-label', 'Earlier'],
       ['[data-next]', 'aria-label', 'Later'],
     ],
   },
-  MonthRangePicker: {
+  RangeCalendarMonthView: {
     data: { date },
     template: `
-      <MonthRangePickerRoot data-root :default-placeholder="date" locale="en">
-        <MonthRangePickerPrev data-prev /><MonthRangePickerNext data-next />
-      </MonthRangePickerRoot>`,
+      <RangeCalendarRoot data-root :default-placeholder="date" locale="en" granularity="month">
+        <RangeCalendarPrev data-prev /><RangeCalendarNext data-next />
+      </RangeCalendarRoot>`,
     defaults: [
       ['[data-root]', 'aria-label', 'Month Picker, 2024'],
       ['[data-prev]', 'aria-label', 'Previous year'],
       ['[data-next]', 'aria-label', 'Next year'],
     ],
     consumerTemplate: `
-      <MonthRangePickerRoot data-root :default-placeholder="date" locale="en" calendar-label="Billing months">
-        <MonthRangePickerPrev data-prev aria-label="Earlier" /><MonthRangePickerNext data-next aria-label="Later" />
-      </MonthRangePickerRoot>`,
+      <RangeCalendarRoot data-root :default-placeholder="date" locale="en" granularity="month" calendar-label="Billing months">
+        <RangeCalendarPrev data-prev aria-label="Earlier" /><RangeCalendarNext data-next aria-label="Later" />
+      </RangeCalendarRoot>`,
     consumer: [
       ['[data-root]', 'aria-label', 'Billing months, 2024'],
       ['[data-prev]', 'aria-label', 'Earlier'],
       ['[data-next]', 'aria-label', 'Later'],
     ],
   },
-  YearPicker: {
+  CalendarYearView: {
     data: { date },
     template: `
-      <YearPickerRoot data-root :default-placeholder="date" locale="en">
-        <YearPickerPrev data-prev /><YearPickerNext data-next />
-      </YearPickerRoot>`,
+      <CalendarRoot data-root :default-placeholder="date" locale="en" granularity="year">
+        <CalendarPrev data-prev /><CalendarNext data-next />
+      </CalendarRoot>`,
     defaults: [
       ['[data-root]', 'aria-label', 'Year Picker, 2020 - 2031'],
       ['[data-prev]', 'aria-label', 'Previous page'],
       ['[data-next]', 'aria-label', 'Next page'],
     ],
     consumerTemplate: `
-      <YearPickerRoot data-root :default-placeholder="date" locale="en" calendar-label="Model year">
-        <YearPickerPrev data-prev aria-label="Earlier" /><YearPickerNext data-next aria-label="Later" />
-      </YearPickerRoot>`,
+      <CalendarRoot data-root :default-placeholder="date" locale="en" granularity="year" calendar-label="Model year">
+        <CalendarPrev data-prev aria-label="Earlier" /><CalendarNext data-next aria-label="Later" />
+      </CalendarRoot>`,
     consumer: [
       ['[data-root]', 'aria-label', 'Model year, 2020 - 2031'],
       ['[data-prev]', 'aria-label', 'Earlier'],
       ['[data-next]', 'aria-label', 'Later'],
     ],
   },
-  YearRangePicker: {
+  RangeCalendarYearView: {
     data: { date },
     template: `
-      <YearRangePickerRoot data-root :default-placeholder="date" locale="en">
-        <YearRangePickerPrev data-prev /><YearRangePickerNext data-next />
-      </YearRangePickerRoot>`,
+      <RangeCalendarRoot data-root :default-placeholder="date" locale="en" granularity="year">
+        <RangeCalendarPrev data-prev /><RangeCalendarNext data-next />
+      </RangeCalendarRoot>`,
     defaults: [
       ['[data-root]', 'aria-label', 'Year Picker, 2020 - 2031'],
       ['[data-prev]', 'aria-label', 'Previous page'],
       ['[data-next]', 'aria-label', 'Next page'],
     ],
     consumerTemplate: `
-      <YearRangePickerRoot data-root :default-placeholder="date" locale="en" calendar-label="Model years">
-        <YearRangePickerPrev data-prev aria-label="Earlier" /><YearRangePickerNext data-next aria-label="Later" />
-      </YearRangePickerRoot>`,
+      <RangeCalendarRoot data-root :default-placeholder="date" locale="en" granularity="year" calendar-label="Model years">
+        <RangeCalendarPrev data-prev aria-label="Earlier" /><RangeCalendarNext data-next aria-label="Later" />
+      </RangeCalendarRoot>`,
     consumer: [
       ['[data-root]', 'aria-label', 'Model years, 2020 - 2031'],
       ['[data-prev]', 'aria-label', 'Earlier'],
@@ -571,7 +571,7 @@ const translated: Record<string, { translations: Partial<Translations>, checks: 
       ['[data-next]', 'aria-label', 'Nächste Seite'],
     ],
   },
-  MonthPicker: {
+  CalendarMonthView: {
     translations: { monthPickerLabel: 'Monat wählen', monthPickerPrev: 'Vorheriges Jahr', monthPickerNext: 'Nächstes Jahr' },
     checks: [
       ['[data-root]', 'aria-label', 'Monat wählen, 2024'],
@@ -579,7 +579,7 @@ const translated: Record<string, { translations: Partial<Translations>, checks: 
       ['[data-next]', 'aria-label', 'Nächstes Jahr'],
     ],
   },
-  MonthRangePicker: {
+  RangeCalendarMonthView: {
     translations: { monthPickerLabel: 'Monate wählen', monthPickerPrev: 'Vorheriges Jahr', monthPickerNext: 'Nächstes Jahr' },
     checks: [
       ['[data-root]', 'aria-label', 'Monate wählen, 2024'],
@@ -587,7 +587,7 @@ const translated: Record<string, { translations: Partial<Translations>, checks: 
       ['[data-next]', 'aria-label', 'Nächstes Jahr'],
     ],
   },
-  YearPicker: {
+  CalendarYearView: {
     translations: { yearPickerLabel: 'Jahr wählen', yearPickerPrev: 'Frühere Jahre', yearPickerNext: 'Spätere Jahre' },
     checks: [
       ['[data-root]', 'aria-label', 'Jahr wählen, 2020 - 2031'],
@@ -595,7 +595,7 @@ const translated: Record<string, { translations: Partial<Translations>, checks: 
       ['[data-next]', 'aria-label', 'Spätere Jahre'],
     ],
   },
-  YearRangePicker: {
+  RangeCalendarYearView: {
     translations: { yearPickerLabel: 'Jahre wählen', yearPickerPrev: 'Frühere Jahre', yearPickerNext: 'Spätere Jahre' },
     checks: [
       ['[data-root]', 'aria-label', 'Jahre wählen, 2020 - 2031'],
@@ -793,15 +793,12 @@ const translated: Record<string, { translations: Partial<Translations>, checks: 
   },
 }
 
-// TODO(v3-port): #3418 the families that look their labels up in v3 so far; the other parts keep hard-coded labels
-const TRANSLATED_IN_V3 = new Set(['Calendar', 'Carousel', 'CarouselTabs', 'ColorSlider', 'ColorSwatch', 'DateField', 'DatePicker', 'DateRangeField', 'DateRangePicker', 'Editable', 'NumberField', 'Pagination', 'PinInput', 'RangeCalendar', 'Slider', 'SliderArea', 'Stepper', 'TimeField', 'TimeRangeField', 'Toast'])
-// TODO(v3-port): #3418 the Month/Year pickers are deleted in v3
-const DELETED_IN_V3 = new Set(['MonthPicker', 'MonthRangePicker', 'YearPicker', 'YearRangePicker'])
-// TODO(v3-port): #3418 #3388 v3's ColorArea has no built-in roledescription
+// v3's ColorArea exposes its two axes as range inputs, so no element takes v2's "Color picker" and
+// "Color thumb" role descriptions; the inputs' channel labels are covered by ColorArea's own tests.
 const NO_DEFAULT_LABEL_IN_V3 = new Set(['ColorArea'])
-const NO_CONSUMER_LABEL_IN_V3 = new Set<string>()
-const itDefaults = (name: string) => DELETED_IN_V3.has(name) || NO_DEFAULT_LABEL_IN_V3.has(name) ? it.skip : it
-const itConsumer = (name: string, fixture: Fixture) => DELETED_IN_V3.has(name) || NO_CONSUMER_LABEL_IN_V3.has(name) ? it.skip : it.runIf(fixture.consumer)
+const TRANSLATED_IN_V3 = new Set(Object.keys(fixtures).filter(name => !NO_DEFAULT_LABEL_IN_V3.has(name)))
+const itDefaults = (name: string) => NO_DEFAULT_LABEL_IN_V3.has(name) ? it.skip : it
+const itConsumer = (_name: string, fixture: Fixture) => it.runIf(fixture.consumer)
 
 describe('built-in accessible labels', () => {
   describe.each(Object.entries(fixtures))('%s', (name, fixture) => {
@@ -842,8 +839,7 @@ describe('translations on ConfigProvider', () => {
     expect(Object.keys(defaultTranslations).filter(key => !covered.has(key))).toEqual([])
   })
 
-  // TODO(v3-port): #3418 the i18n guide was resolved to v3's, which has no translations table
-  it.skip('is documented key by key, with the defaults', () => {
+  it('is documented key by key, with the defaults', () => {
     const guide = readFileSync(resolve(__dirname, '../../../../docs/content/docs/guides/i18n.md'), 'utf8')
     const missing = Object.entries(defaultTranslations).filter(([key, message]) => !guide.includes(`| \`${key}\` | \`${message}\` |`))
     expect(missing).toEqual([])

@@ -5,7 +5,7 @@ export interface DrawerCloseProps extends PrimitiveProps {}
 </script>
 
 <script setup lang="ts">
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { getDrawerCloseSurface } from './useDrawer'
@@ -20,7 +20,7 @@ const close = getDrawerCloseSurface(rootContext)
 
 <template>
   <component
-    :is="renderAs(props.as, props.asChild)"
+    :is="renderAsControl(props.as, props.asChild)"
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
     v-bind="close.attrs.value"

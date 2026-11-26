@@ -4,7 +4,7 @@ import type { AcceptableValue, DataOrientation, Direction, FormFieldProps, Singl
 import type { ToggleGroupChangeReason } from './useToggleGroup'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { createContext, useDirection, useFormControl, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useFormControl, useForwardElement } from '@/shared'
 import VisuallyHiddenInput from '@/VisuallyHidden/VisuallyHiddenInput.vue'
 
 export interface ToggleGroupRootProps<T = AcceptableValue | AcceptableValue[]>
@@ -40,7 +40,7 @@ export interface ToggleGroupRootContext {
 }
 
 export const [injectToggleGroupRootContext, provideToggleGroupRootContext]
-  = createContext<ToggleGroupRootContext>('ToggleGroupRoot')
+  = createRekaContext<ToggleGroupRootContext>('ToggleGroupRoot')
 </script>
 
 <script setup lang="ts">

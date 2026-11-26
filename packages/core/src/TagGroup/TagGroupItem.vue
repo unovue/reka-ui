@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
-import { createContext, useForwardElement, useId } from '@/shared'
+import { createRekaContext, useForwardElement, useId } from '@/shared'
 
 export interface TagGroupItemProps<T = AcceptableValue> extends PrimitiveProps {
   /** The unique value of the tag. */
@@ -22,7 +22,7 @@ export interface TagGroupItemContext {
 }
 
 export const [injectTagGroupItemContext, provideTagGroupItemContext]
-  = createContext<TagGroupItemContext>('TagGroupItem')
+  = createRekaContext<TagGroupItemContext>('TagGroupItem')
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue">

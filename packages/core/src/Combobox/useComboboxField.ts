@@ -1,7 +1,7 @@
 import type { ComboboxRootContext } from './ComboboxRoot.vue'
 import type { FieldControlBinding } from '@/Field/useFieldBinding'
 import { mergeProps, nextTick, onBeforeUnmount, watch } from 'vue'
-import { createContext, getActiveElement, getElementByIdFrom } from '@/shared'
+import { createRekaContext, getActiveElement, getElementByIdFrom } from '@/shared'
 
 /**
  * A combobox's participation in an ancestor `FieldRoot`: the root owns the
@@ -18,7 +18,7 @@ export interface ComboboxFieldContext {
 }
 
 export const [injectComboboxFieldContext, provideComboboxFieldContext]
-  = createContext<ComboboxFieldContext | null>('ComboboxRoot', 'ComboboxFieldContext')
+  = createRekaContext<ComboboxFieldContext | null>('ComboboxRoot', 'ComboboxFieldContext')
 
 /**
  * Provides the Field wiring to the input (`null` without a Field). Focus that

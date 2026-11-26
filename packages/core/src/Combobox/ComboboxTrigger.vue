@@ -9,7 +9,7 @@ export interface ComboboxTriggerProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { mergeProps, onBeforeUnmount, onMounted, watch } from 'vue'
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { useForwardElement, useRenderedContentId } from '@/shared'
 import { injectComboboxRootContext } from './ComboboxRoot.vue'
 import { getComboboxTriggerSurface } from './useCombobox'
@@ -54,7 +54,7 @@ if (fieldContext) {
 
 <template>
   <component
-    :is="renderAs(as, asChild)"
+    :is="renderAsControl(as, asChild)"
     :id="fieldContext ? `${fieldContext.field.context.fieldId.value}-trigger` : undefined"
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"

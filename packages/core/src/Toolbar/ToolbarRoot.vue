@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { DataOrientation, Direction } from '@/shared/types'
-import { createContext, useDirection, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useForwardElement } from '@/shared'
 
 export interface ToolbarRootProps extends PrimitiveProps {
   /** The orientation of the toolbar */
@@ -19,7 +19,7 @@ export interface ToolbarRootContext {
 }
 
 export const [injectToolbarRootContext, provideToolbarRootContext]
-  = createContext<ToolbarRootContext>('ToolbarRoot')
+  = createRekaContext<ToolbarRootContext>('ToolbarRoot')
 </script>
 
 <script setup lang="ts">

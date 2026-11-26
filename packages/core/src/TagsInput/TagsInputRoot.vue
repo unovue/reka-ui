@@ -7,7 +7,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { createContext, useDirection, useFocusWithin, useFormControl, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useFocusWithin, useFormControl, useForwardElement } from '@/shared'
 
 export type AcceptableInputValue = string | number | bigint | Record<string, any>
 
@@ -86,7 +86,7 @@ export interface TagsInputRootContext<T = AcceptableInputValue> {
 }
 
 export const [injectTagsInputRootContext, provideTagsInputRootContext]
-  = createContext<TagsInputRootContext>('TagsInputRoot')
+  = createRekaContext<TagsInputRootContext>('TagsInputRoot')
 
 /**
  * A tags input's participation in an ancestor `FieldRoot`: the root owns the
@@ -104,7 +104,7 @@ export interface TagsInputFieldContext {
 }
 
 export const [injectTagsInputFieldContext, provideTagsInputFieldContext]
-  = createContext<TagsInputFieldContext | null>('TagsInputRoot', 'TagsInputFieldContext')
+  = createRekaContext<TagsInputFieldContext | null>('TagsInputRoot', 'TagsInputFieldContext')
 
 /** The `input` a `TagsInputInput` element is, or renders. */
 function resolveFieldInput(element: HTMLElement | undefined) {

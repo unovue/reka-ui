@@ -9,7 +9,7 @@ export interface DrawerTriggerProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { onUnmounted, watch } from 'vue'
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { useForwardElement, useRenderedContentId } from '@/shared'
 import { injectDrawerRootContext } from './DrawerRoot.vue'
 import { getDrawerTriggerSurface } from './useDrawer'
@@ -43,7 +43,7 @@ onUnmounted(() => {
 
 <template>
   <component
-    :is="renderAs(props.as, props.asChild)"
+    :is="renderAsControl(props.as, props.asChild)"
     :id="props.id"
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"

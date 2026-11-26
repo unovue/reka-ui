@@ -11,7 +11,7 @@ export interface NumberFieldDecrementProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { useAgentItem } from '@/shared/useAgentRegistration'
 
 const props = withDefaults(defineProps<NumberFieldDecrementProps>(), {
@@ -37,7 +37,7 @@ onTrigger((event) => {
 
 <template>
   <component
-    :is="renderAs(as, asChild)"
+    :is="renderAsControl(as, asChild)"
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
     v-bind="button.attrs.value"
