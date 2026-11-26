@@ -194,7 +194,7 @@ export interface ComboboxRootProps<T = AcceptableValue, I = T> extends Omit<List
 </script>
 
 <script setup lang="ts" generic="T extends AcceptableValue = AcceptableValue, M extends boolean = false, I = T">
-import { camelize, mergeProps, toRef, useAttrs, watch } from 'vue'
+import { camelize, mergeProps, nextTick, toRef, useAttrs, watch } from 'vue'
 import { useCollection } from '@/Collection'
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { provideListboxRootContext } from '@/Listbox/ListboxRoot.vue'
@@ -315,6 +315,36 @@ const modelValue = combobox.modelValue as unknown as Ref<ComboboxModelValue<T, M
 
 if (field)
   watch(modelValue, value => field.sync(value))
+
+// Items that stay mounted while closed (`unmountOnHide: false`) are still
+// connected, so Enter would select the highlighted one: nothing is highlighted
+// while closed. Opened by the parent through `open` (not `onOpenChange`, which
+// highlights itself), bring back the highlight those items lost.
+let isOpeningInternally = false
+const onOpenChange = context.onOpenChange
+context.onOpenChange = (value, reason, event) => {
+  const opening = value && !open.value
+  const changed = onOpenChange(value, reason, event)
+  // A controlled `open` arrives with the parent's next render, still before the next tick.
+  if (opening && changed) {
+    isOpeningInternally = true
+    nextTick(() => isOpeningInternally = false)
+  }
+  return changed
+}
+watch([open, highlightedElement], ([isOpen], [wasOpen]) => {
+  if (!isOpen) {
+    isOpeningInternally = false
+    if (highlightedElement.value)
+      highlightedElement.value = null
+  }
+  else if (!wasOpen) {
+    if (isOpeningInternally)
+      isOpeningInternally = false
+    else if (!highlightedElement.value)
+      highlightSelected()
+  }
+})
 
 defineExpose(mergeExpose(expose, {
   /** The filtering result: `{ search, active, count }`. */
