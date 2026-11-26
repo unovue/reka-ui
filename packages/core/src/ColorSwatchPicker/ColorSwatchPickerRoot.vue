@@ -4,7 +4,7 @@ import type { ListboxRootEmits, ListboxRootProps } from '@/Listbox'
 import type { ChangeEventDetails } from '@/shared'
 import { useForwardElement, useForwardPropsEmits } from '@/shared'
 
-export interface ColorSwatchPickerRootProps extends Omit<ListboxRootProps<ColorSwatchPickerValue>, 'by' | 'filter' | 'modelValue' | 'defaultValue' | 'keepFocusOnValueChange'> {
+export interface ColorSwatchPickerRootProps extends Omit<ListboxRootProps<ColorSwatchPickerValue>, 'by' | 'filter' | 'modelValue' | 'defaultValue'> {
   /** The selected color, or colors with `multiple`, as color strings or `Color` objects (uncontrolled). Compared structurally with the item values. */
   defaultValue?: ColorSwatchPickerValue | ColorSwatchPickerValue[]
   /** The selected color, or colors with `multiple`, as color strings or `Color` objects (controlled). Compared structurally with the item values. */
@@ -29,6 +29,7 @@ const props = withDefaults(defineProps<ColorSwatchPickerRootProps>(), {
   defaultValue: undefined,
   dir: 'ltr',
   disabled: false,
+  keepFocusOnValueChange: true,
   loop: false,
   orientation: 'horizontal',
 })
@@ -59,7 +60,6 @@ defineExpose(expose)
   <ListboxRoot
     :ref="forwardRef"
     v-bind="mergeProps(forwarded, listboxProps)"
-    :keep-focus-on-value-change="false"
     as-child
   >
     <ListboxContent

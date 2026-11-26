@@ -1142,7 +1142,7 @@ Apart from the `forceMount` timing in the last bullet below, skip this section w
 **What changed.**
 - `keepFocusOnValueChange` on `ListboxRoot` defaults to `true` (v2: `false`). A `modelValue` set from code while focus is outside the listbox highlights the item and makes it the tab stop, without focusing it or scrolling the page to it. v2 focused the item and called `scrollIntoView`.
 - With focus inside the listbox, and for clicks, keyboard navigation and typeahead, nothing changed.
-- `useListboxRoot()` defaults `keepFocusOnValueChange` to `true` too. `ComboboxRoot`, `AutocompleteRoot`, `ColorSwatchPickerRoot` and `useComboboxRoot()` are unchanged.
+- `useListboxRoot()` defaults `keepFocusOnValueChange` to `true` too. `ColorSwatchPickerRoot` gains the same prop with the same default. `ComboboxRoot`, `AutocompleteRoot` and `useComboboxRoot()` are unchanged.
 
 **How to find it.**
 - Every `ListboxRoot` (also `Listbox.Root` and `reka-listbox-root`) and `useListboxRoot(` call. Note whether it sets `keep-focus-on-value-change`, `:keep-focus-on-value-change` or `keepFocusOnValueChange`.
