@@ -905,7 +905,9 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
       // scroll the page away from the focused element. Read the focus now, before the update
       // renders: it may remove the focused item, and the focus would leave with it.
       const keepFocusOnValueChange = toValue(props.keepFocusOnValueChange) ?? true
-      const keepFocus = scroll && keepFocusOnValueChange && !toValue(props.element)?.contains(getActiveElement())
+      // Without `element` it is unknown whether the focus is inside the listbox: move it, as before.
+      const element = toValue(props.element)
+      const keepFocus = scroll && keepFocusOnValueChange && !!element && !element.contains(getActiveElement())
       const generation = keepFocusOnValueChange ? ++highlightGeneration : undefined
       const isStale = generation === undefined ? undefined : () => generation !== highlightGeneration
       nextTick(() => {
