@@ -1,6 +1,6 @@
 import type { AcceptableValue } from '@/shared/types'
 import { isClient } from '@vueuse/shared'
-import { getCurrentScope, onScopeDispose } from 'vue'
+import { getCurrentScope, nextTick, onScopeDispose } from 'vue'
 import { handleAndDispatchCustomEvent } from '@/shared'
 
 export type SelectEvent = CustomEvent<{ originalEvent: MouseEvent, value?: AcceptableValue }>
@@ -28,7 +28,11 @@ function onWindowKeydown(event: KeyboardEvent) {
 }
 
 function onWindowKeyup() {
-  arrowKeyPressed = false
+  // Reset after `RovingFocusGroup` has moved focus (it does so in `nextTick`), so a
+  // keyup dispatched in the same task as the keydown can't erase the arrow intent.
+  nextTick(() => {
+    arrowKeyPressed = false
+  })
 }
 
 /** Installs the shared arrow-key listeners for the calling scope. @lifecycle setup */
@@ -36,12 +40,14 @@ export function useArrowKeyListeners() {
   if (!isClient || !getCurrentScope())
     return
   if (arrowKeyListeners++ === 0) {
-    window.addEventListener('keydown', onWindowKeydown)
+    // Capture phase: `RovingFocusGroup` moves focus in a microtask that a real key press runs
+    // before bubbling listeners, so the flag has to be set before then for the focus handler to see it.
+    window.addEventListener('keydown', onWindowKeydown, true)
     window.addEventListener('keyup', onWindowKeyup)
   }
   onScopeDispose(() => {
     if (--arrowKeyListeners === 0) {
-      window.removeEventListener('keydown', onWindowKeydown)
+      window.removeEventListener('keydown', onWindowKeydown, true)
       window.removeEventListener('keyup', onWindowKeyup)
       arrowKeyPressed = false
     }
