@@ -76,7 +76,8 @@ describe('nuxt module', () => {
   })
 })
 
-// TODO(v3-port): #3381 v3 exports headless use* composables (useRender, useAccordion, ...) that the utilities list does not register
+// TODO(v3-port): #3381 maintainer decision: v3 exports ~80 headless use* composables (useRender, useAccordion,
+// useToast, ...). Registering them all would add them to every Nuxt app's auto-imports; not decided yet.
 it.skip('registers every exported composable for auto-import', () => {
   const registered = new Set<string>(utilities.utilities)
   const composableNames = Object.keys(RekaUI).filter(name => /^use[A-Z]/.test(name))
