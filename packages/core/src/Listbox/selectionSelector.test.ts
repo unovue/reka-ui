@@ -1,5 +1,7 @@
+import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { effect, effectScope, reactive, ref } from 'vue'
+import { defineComponent, effect, effectScope, nextTick, reactive, ref } from 'vue'
+import { ListboxContent, ListboxItem, ListboxRoot } from '.'
 import { SelectionSelector } from './selectionSelector'
 import { valueComparator } from './utils'
 
@@ -158,5 +160,39 @@ describe('selectionSelector', () => {
       expect(selector.isSelected(value, hold)).toBe(true)
     })
     scope.stop()
+  })
+
+  it('stops following the model when the listbox unmounts', async () => {
+    let reads = 0
+    const entry = {
+      get id() {
+        reads++
+        return 1
+      },
+    }
+    const model = reactive<any[]>([entry])
+    const wrapper = mount(defineComponent({
+      components: { ListboxRoot, ListboxContent, ListboxItem },
+      setup: () => ({ model }),
+      template: `<ListboxRoot multiple by="id" :model-value="model">
+        <ListboxContent>
+          <ListboxItem v-for="v in [1, 2]" :key="v" :value="{ id: v }">{{ v }}</ListboxItem>
+        </ListboxContent>
+      </ListboxRoot>`,
+    }), { attachTo: document.body })
+    await nextTick()
+    expect(wrapper.findAll('[data-state=checked]')).toHaveLength(1)
+
+    // Mounted: the selector follows the model, and the items with it.
+    reads = 0
+    model.push({ id: 2 })
+    expect(reads).toBeGreaterThan(0)
+    await nextTick()
+    expect(wrapper.findAll('[data-state=checked]')).toHaveLength(2)
+
+    wrapper.unmount()
+    reads = 0
+    model.push({ id: 3 })
+    expect(reads).toBe(0)
   })
 })

@@ -1,4 +1,5 @@
 import type { ShallowRef } from 'vue'
+import { isClient } from '@vueuse/shared'
 import { serialize } from 'ohash'
 import { shallowRef } from 'vue'
 import { KeyedSelectorImpl, lazySelector, SelectorHold } from '@/shared/createKeyedSelector'
@@ -68,7 +69,10 @@ export class SelectionSelector<T> {
   keyed: ShallowRef<boolean> | undefined = undefined
 
   constructor(readonly model: () => T | T[] | undefined, readonly by?: By<T>) {
-    if (typeof by === 'function')
+    // No selector on the server: its watcher starts while an item renders, outside `setup`, so
+    // the server renderer would never stop it, and a model that outlives the request (app-level
+    // state) would keep that render alive. A server render reads each item once; it compares.
+    if (typeof by === 'function' || !isClient)
       return
     const selector = this.selector = new KeyedSelectorImpl<string>(true)
     lazySelector(selector, () => this.modelKeys(), (next) => {
