@@ -4,7 +4,7 @@ import type { MonthRangePickerRootProps } from './MonthRangePickerRoot.vue'
 import type { DateRange } from '@/shared/date'
 import { CalendarDate, CalendarDateTime, HebrewCalendar, JapaneseCalendar, toZoned } from '@internationalized/date'
 import userEvent from '@testing-library/user-event'
-import { render } from '@testing-library/vue'
+import { fireEvent, render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -545,5 +545,54 @@ describe('month range picker - tabindex states', () => {
     expect(getByTestId('month-1')).toHaveAttribute('tabindex', '0')
     expect(getByTestId('month-3').tagName).toBe('BUTTON')
     expect(getByTestId('month-3')).toHaveAttribute('tabindex', '-1')
+  })
+})
+
+describe('month range picker - Home, End and the numeric keypad', () => {
+  const placeholder = new CalendarDate(1980, 1, 20)
+
+  it('moves to the first and last month of the row with Home and End', async () => {
+    const { getByTestId, user } = setup({ pickerProps: { placeholder } })
+    getByTestId('month-7').focus()
+
+    await user.keyboard(kbd.END)
+    expect(getByTestId('month-8')).toHaveFocus()
+
+    await user.keyboard(kbd.HOME)
+    expect(getByTestId('month-5')).toHaveFocus()
+
+    // Already at the start of the row: stays put.
+    await user.keyboard(kbd.HOME)
+    expect(getByTestId('month-5')).toHaveFocus()
+  })
+
+  it('skips a disabled month at the row boundary', async () => {
+    const { getByTestId, user } = setup({
+      pickerProps: { placeholder, isMonthDisabled: date => date.month === 5 },
+    })
+    getByTestId('month-7').focus()
+
+    await user.keyboard(kbd.HOME)
+    expect(getByTestId('month-6')).toHaveFocus()
+  })
+
+  it('selects with the numeric keypad Enter', async () => {
+    const { getByTestId, picker } = setup({ pickerProps: { placeholder } })
+    const cell = getByTestId('month-7')
+    cell.focus()
+
+    await fireEvent.keyDown(cell, { key: 'Enter', code: 'NumpadEnter' })
+
+    expect(picker.querySelector('[data-selection-start]')).toBe(cell)
+  })
+
+  it('moves focus with the numeric keypad arrows', async () => {
+    const { getByTestId } = setup({ pickerProps: { placeholder } })
+    const cell = getByTestId('month-7')
+    cell.focus()
+
+    await fireEvent.keyDown(cell, { key: 'ArrowRight', code: 'Numpad6' })
+
+    expect(getByTestId('month-8')).toHaveFocus()
   })
 })

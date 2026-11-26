@@ -4,7 +4,7 @@ import type { GlobalToastManager } from './createToastManager'
 import type { ToastStore } from './useToastStore'
 import type { SwipeDirection } from './utils'
 import { useCollection } from '@/Collection'
-import { createRekaContext } from '@/shared'
+import { createRekaContext, useTranslations } from '@/shared'
 
 type ToastProviderContext = {
   label: Ref<string>
@@ -53,7 +53,8 @@ export interface ToastProviderProps {
   /**
    * An author-localized label for each toast. Used to help screen reader users
    * associate the interruption with a toast.
-   * @defaultValue 'Notification'
+   * Defaults to the `toastLabel` message of `ConfigProvider`.
+   * @default 'Notification'
    */
   label?: string
   /**
@@ -118,12 +119,15 @@ defineOptions({
 })
 
 const props = withDefaults(defineProps<ToastProviderProps>(), {
-  label: 'Notification',
   duration: 5000,
   swipeDirection: 'right',
   swipeThreshold: 50,
 })
-const { label, duration, disableSwipe, swipeDirection, swipeThreshold, disableHoverPause, disableWindowBlurPause } = toRefs(props)
+
+const t = useTranslations()
+
+const label = computed(() => props.label ?? t('toastLabel'))
+const { duration, disableSwipe, swipeDirection, swipeThreshold, disableHoverPause, disableWindowBlurPause } = toRefs(props)
 useCollection({ isProvider: true })
 
 const viewport = ref<HTMLElement>()

@@ -204,8 +204,16 @@ const agentContext = provideTagsInputRootContext({
         }
         break
       }
+      // With a tag selected, Home and End go to the first and last tag.
+      // With none, they stay the input's own caret keys.
       case 'Home':
-      case 'End':
+      case 'End': {
+        if (selectedElement.value) {
+          selectedElement.value = event.key === 'Home' ? collection[0] : lastTag
+          event.preventDefault()
+        }
+        break
+      }
       case 'ArrowRight':
       case 'ArrowLeft': {
         const isArrowRight = (event.key === 'ArrowRight' && dir.value === 'ltr') || (event.key === 'ArrowLeft' && dir.value === 'rtl')
