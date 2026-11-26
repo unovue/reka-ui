@@ -60,6 +60,8 @@ export interface TagsInputRootContext<T = AcceptableInputValue> {
   onAddValue: (payload: string, reason?: Reason, event?: Event) => boolean
   /** Adds several tags as one change (a paste); returns `true` when at least one was added. */
   onAddValues: (payloads: string[], reason?: Reason, event?: Event) => boolean
+  /** Whether `onAddValue(payload)` would add the tag (`max` and `duplicate`), without side effects. */
+  canAddValue?: (payload: string) => boolean
   /** Removes the tag at `index`; returns `false` when out of range, unchanged or cancelled. */
   onRemoveValue: (index: number, reason?: Reason, event?: Event) => boolean
   /** Removes every tag; returns `false` when already empty or cancelled. */

@@ -210,6 +210,17 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
     return true
   }
 
+  /** Whether `addTags([text])` would add the tag (`max` and `duplicate`), without side effects. */
+  function canAddValue(text: string): boolean {
+    const array = modelValue.value
+    if (max.value && array.length >= max.value)
+      return false
+    if (toValue(props.duplicate))
+      return true
+    const payload = props.convertValue ? props.convertValue(text) : text as T
+    return !array.includes(payload)
+  }
+
   function removeTag(index: number, reason: Reason = 'imperative-action', event?: Event): boolean {
     if (index < 0 || index >= modelValue.value.length)
       return false
@@ -310,6 +321,7 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
     modelValue,
     onAddValue: (payload, reason, event) => addTags([payload], reason, event),
     onAddValues: (payloads, reason, event) => addTags(payloads, reason, event),
+    canAddValue,
     onRemoveValue: removeTag,
     onClear: clear,
     onInputKeydown,
@@ -461,6 +473,9 @@ export function createTagsInputInputSurface(
   options: TagsInputInputSurfaceOptions = {},
 ): PartSurface<TagsInputInputState> {
   const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing()
+  // A `Tab` whose draft is rejected moves focus on: the blur it causes must not add
+  // (and report) the same draft a second time.
+  let isBlurFromRejectedTab = false
 
   /**
    * Adds the typed text as a tag and clears the input once the model actually
@@ -486,6 +501,10 @@ export function createTagsInputInputSurface(
 
   function handleBlur(event: FocusEvent) {
     context.selectedElement.value = undefined
+    const skipAdd = isBlurFromRejectedTab
+    isBlurFromRejectedTab = false
+    if (skipAdd)
+      return
 
     if (!context.addOnBlur.value)
       return
@@ -526,8 +545,13 @@ export function createTagsInputInputSurface(
     // The key's default action has to be cancelled synchronously: a form submits
     // implicitly on `Enter` as soon as the keydown dispatch finishes, and Firefox
     // moves focus on `Tab` before a microtask can cancel it. An empty or blank draft keeps
-    // the default (submitting the form, moving focus).
-    if (target.value.trim() && !isPreventedByOthers)
+    // the default (submitting the form, moving focus), and so does a `Tab` whose draft
+    // `max` or `duplicate` rejects: focus moves on, and the draft is reported invalid once.
+    const isRejectedTab = reason === 'tab-key' && !!target.value.trim() && !isPreventedByOthers
+      && !!context.canAddValue && !context.canAddValue(target.value)
+    if (isRejectedTab)
+      isBlurFromRejectedTab = true
+    else if (target.value.trim() && !isPreventedByOthers)
       nativePreventDefault()
 
     await nextTick()
@@ -543,6 +567,7 @@ export function createTagsInputInputSurface(
   function handleInput(event: InputEvent) {
     if (isComposing.value)
       return
+    isBlurFromRejectedTab = false
     context.isInvalidInput.value = false
     if (event.data === null)
       return
@@ -573,6 +598,8 @@ export function createTagsInputInputSurface(
       pending = handleCustomKeydown(event, 'tab-key')
     // `isComposing` stays true until the tick after `compositionend`, so arrow/backspace
     // tag navigation is skipped even when the commit keydown reports `event.isComposing === false`.
+    if (key !== 'tab')
+      isBlurFromRejectedTab = false
     if (!isComposing.value)
       context.onInputKeydown(event)
     // Returned so Vue's listener error handling sees a rejection (e.g. a missing `convertValue`).
