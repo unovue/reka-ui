@@ -11,7 +11,8 @@
     },
     "Accordion/AccordionItem.vue": {
       "exposeElement": 1,
-      "sfcs": 1
+      "sfcs": 1,
+      "slotProps": 1
     },
     "Accordion/AccordionRoot.vue": {
       "exposeElement": 1,
@@ -20,7 +21,8 @@
     },
     "Accordion/AccordionTrigger.vue": {
       "exposeElement": 1,
-      "sfcs": 1
+      "sfcs": 1,
+      "slotProps": 1
     },
     "AlertDialog/AlertDialogAction.vue": {
       "exposeElement": 1,
@@ -2278,7 +2280,7 @@
     "patches": 11,
     "presenceAttrs": 9,
     "sfcs": 476,
-    "slotProps": 261,
+    "slotProps": 263,
     "vShow": 3,
     "vShowWhenKept": 4,
     "vueuse": 7
