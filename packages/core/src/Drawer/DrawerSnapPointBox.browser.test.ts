@@ -14,8 +14,7 @@ const STYLES = `
 const content = () => document.querySelector<HTMLElement>('[data-testid="drawer"]')
 
 // jsdom has no layout, so the popup's box can only be measured here.
-// TODO(v3-port): #3405 v3 measures the popup's content box for snap points
-describe.skip('given a Drawer with snap points and a padded, bordered popup', () => {
+describe('given a Drawer with snap points and a padded, bordered popup', () => {
   let cleanup: (() => void) | undefined
 
   afterEach(() => {
