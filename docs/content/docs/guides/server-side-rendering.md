@@ -32,7 +32,7 @@ export default defineNuxtConfig({
 })
 ```
 
-The module registers components only. Import composables and utilities (`useForwardPropsEmits`, `useDialog`, …) from `reka-ui` yourself.
+The module also auto-imports the shared utilities (`useForwardPropsEmits`, `useFilter`, …), except `useId`, which would clash with Nuxt's. Import `useId` and the headless composables (`useDialog`, …) from `reka-ui` yourself.
 
 Then wrap the app in [`ConfigProvider`](/docs/utilities/config-provider), as you would for direction or scroll lock, and pass it Nuxt's `useId` (see [Generated ids](#generated-ids)):
 
