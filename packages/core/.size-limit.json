@@ -32,7 +32,7 @@
   {
     "path": "dist/index.js",
     "import": "{ DateFieldRoot, DateFieldInput }",
-    "limit": "20 KB",
+    "limit": "21 KB",
     "name": "DateField"
   },
   {
@@ -62,7 +62,7 @@
   {
     "path": "dist/index.js",
     "import": "*",
-    "limit": "188 KB",
+    "limit": "189 KB",
     "name": "Full library"
   },
   {

@@ -7,12 +7,15 @@ export interface ColorAreaAreaProps extends PrimitiveProps {}
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Primitive, usePrimitiveElement } from '@/Primitive'
+import { useTranslations } from '@/shared'
 import { injectColorAreaRootContext } from './ColorAreaRoot.vue'
 import { linearScale } from './utils'
 
 const props = withDefaults(defineProps<ColorAreaAreaProps>(), {
   as: 'div',
 })
+
+const t = useTranslations()
 
 const rootContext = injectColorAreaRootContext()
 const { primitiveElement, currentElement: areaElement } = usePrimitiveElement()
@@ -141,7 +144,7 @@ function handleKeyDown(event: KeyboardEvent) {
     :as-child="asChild"
     :as="as"
     role="application"
-    aria-roledescription="Color picker"
+    :aria-roledescription="t('colorAreaRoleDescription')"
     :aria-disabled="rootContext.disabled.value ? 'true' : undefined"
     :data-disabled="rootContext.disabled.value ? '' : undefined"
     :style="{
