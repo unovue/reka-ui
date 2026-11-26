@@ -22,7 +22,7 @@ export interface ToastActionProps extends ToastCloseProps {
 
 <script setup lang="ts">
 import { computed, mergeProps, useSlots } from 'vue'
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 import { injectToastRootContext } from './ToastRootImpl.vue'
 
@@ -61,7 +61,7 @@ function handleClick(event: MouseEvent) {
 
 <template>
   <component
-    :is="renderAs(as, asChild)"
+    :is="renderAsControl(as, asChild)"
     v-if="isRendered && altText"
     :ref="forwardRef"
     v-bind="mergeProps({ 'data-reka-toast-announce-exclude': '', 'data-reka-toast-announce-alt': altText || undefined }, $attrs, { type: as === 'button' ? 'button' : undefined, onClick: handleClick })"
