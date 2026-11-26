@@ -57,7 +57,7 @@ afterEach(() => {
 
 // TODO(v3-port): #3369 these roots are outside the lists lane and do not call
 // `provideRovingFocusNoActiveItem` / pass `noActiveItem` yet.
-const PENDING_ROOTS = new Set(['Menubar'])
+const PENDING_ROOTS = new Set<string>()
 
 describe.each(Object.keys(fixtures))('%s with no active item', (name) => {
   async function renderAndHydrate(disabled: string[] = []) {

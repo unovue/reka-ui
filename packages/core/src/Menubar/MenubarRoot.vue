@@ -112,6 +112,9 @@ const roving = useRovingFocusGroup({
   dir: () => dir.value,
   loop: () => loop.value,
   currentTabStopId,
+  // Before mount, the first trigger is the tab stop (#3369). The group is this component's own,
+  // so the provide-based helper can't reach it.
+  noActiveItem: () => true,
 })
 </script>
 

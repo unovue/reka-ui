@@ -160,7 +160,6 @@ function render(c: Case, disabled: boolean, as: As) {
 // non-button element gets disabled="false". Switching the part to `renderAsControl` fixes it; remove it here then.
 const OMIT_PENDING = new Set([
   'ComboboxTrigger',
-  'DrawerSwipeArea',
   'SelectTrigger',
   'TagsInputInput',
   'Toggle',
