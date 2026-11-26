@@ -91,7 +91,7 @@ provideMenuRootContext(menuRootContext)
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="menu">
     <slot />
   </PopperRoot>
 </template>

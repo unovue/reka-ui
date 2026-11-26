@@ -2,10 +2,15 @@ import type { ReferenceElement } from '@floating-ui/vue'
 import type { Ref } from 'vue'
 import { createRekaContext } from '@/shared'
 
+/**
+ * The component family a popper part belongs to. A part with a scope resolves
+ * the nearest root of its own family, through roots of other families in
+ * between (a `TooltipTrigger` composed with a `PopoverTrigger`).
+ */
 export type PopperScope = 'combobox' | 'hover-card' | 'menu' | 'popover' | 'select' | 'tooltip'
 
-interface PopperRootContext {
-  anchor: Ref<ReferenceElement | undefined>
+export interface PopperRootContext {
+  anchor: Readonly<Ref<ReferenceElement | undefined>>
   onAnchorChange: (element: ReferenceElement | undefined) => void
 }
 
@@ -22,21 +27,26 @@ const scopedContexts = new Map<PopperScope, ReturnType<typeof createRekaContext<
 function getScopedContext(scope: PopperScope) {
   let context = scopedContexts.get(scope)
   if (!context) {
-    context = createRekaContext<PopperRootContext>(`PopperRoot (${scope})`)
+    context = createRekaContext<PopperRootContext>('PopperRoot', `PopperRoot (${scope})`)
     scopedContexts.set(scope, context)
   }
   return context
 }
 
 /**
- * Inject the nearest root belonging to the requested component family.
+ * Inject the nearest root, or the nearest root of a component family.
  *
- * @param scope The family to resolve, or omit to use the nearest PopperRoot.
+ * @param scope The family to resolve. Omitted, it resolves the nearest `PopperRoot`;
+ * `null` does too, and returns `null` instead of throwing when there is none.
+ * @param fallback `null` to return `null` instead of throwing when no matching root provides one.
  * @returns The resolved root's anchor state and registration callback.
- * @throws When no matching root provides a context.
+ * @throws When no matching root provides a context and no fallback is given.
  */
-export function injectPopperRootContext(scope?: PopperScope) {
-  return (scope ? getScopedContext(scope) : defaultContext)[0]()
+export function injectPopperRootContext(scope?: PopperScope): PopperRootContext
+export function injectPopperRootContext(scope: PopperScope | null | undefined, fallback?: null): PopperRootContext | null
+export function injectPopperRootContext(scope?: PopperScope | null, fallback?: null): PopperRootContext | null {
+  const [inject] = scope ? getScopedContext(scope) : defaultContext
+  return scope === null || fallback === null ? inject(null) : inject()
 }
 
 /**

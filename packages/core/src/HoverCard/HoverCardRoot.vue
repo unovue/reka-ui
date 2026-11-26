@@ -104,7 +104,7 @@ provideHoverCardRootContext(context)
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="hover-card">
     <slot :open="open" />
   </PopperRoot>
 </template>

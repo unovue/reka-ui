@@ -187,6 +187,7 @@ export interface PopperContentProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import type { PopperScope } from './PopperRootContext'
 import {
   autoUpdate,
   flip,
@@ -201,7 +202,7 @@ import {
 import { computed, ref, watchEffect, watchPostEffect } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { providePopperContentContext } from './PopperContentContext'
-import { injectPopperRootContext } from './PopperRoot.vue'
+import { injectPopperRootContext } from './PopperRootContext'
 import {
   getSideAndAlignFromPlacement,
   isNotNull,
@@ -212,14 +213,17 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<PopperContentProps>(), {
+const props = withDefaults(defineProps<PopperContentProps & {
+  /** Internal: the component family whose root positions this content. */
+  scope?: PopperScope
+}>(), {
   ...PopperContentPropsDefaultValue,
 })
 const emits = defineEmits<{
   placed: [void]
 }>()
 
-const rootContext = injectPopperRootContext()
+const rootContext = injectPopperRootContext(props.scope)
 const { forwardRef, currentElement: contentElement, expose } = useForwardElement()
 defineExpose(expose)
 const dir = useDirection(computed(() => props.dir))

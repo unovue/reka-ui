@@ -213,6 +213,7 @@ const layer = useDismissableLayer(dismissableLayerOptions(contentElement, () => 
 <template>
   <PopperContent
     :ref="forwardRef"
+    scope="menu"
     :as="as"
     :as-child="asChild"
     :side="side"

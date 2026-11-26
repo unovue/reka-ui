@@ -145,6 +145,7 @@ onUnmounted(() => {
 
 <template>
   <PopperContent
+    scope="hover-card"
     v-bind="mergeProps(mergeProps(layer.attrs(), layerWrapper.rest), mergeProps(forwarded, $attrs, content.attrs.value))"
     :ref="forwardRef"
     :style="{

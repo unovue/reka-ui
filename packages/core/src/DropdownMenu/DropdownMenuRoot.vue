@@ -96,7 +96,7 @@ usePopupHandleAttachment(handleStore)
 </script>
 
 <template>
-  <PopperRoot :reference="handleStore.handle.value ? handleStore.anchor.value : undefined">
+  <PopperRoot scope="menu" :reference="handleStore.handle.value ? handleStore.anchor.value : undefined">
     <slot
       :open="open"
       :payload="payload"

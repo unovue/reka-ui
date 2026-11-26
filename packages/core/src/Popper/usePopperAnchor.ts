@@ -1,6 +1,7 @@
 import type { ReferenceElement } from '@floating-ui/vue'
 import { computed, getCurrentInstance, watchPostEffect } from 'vue'
-import { injectPopperRootContext } from './PopperRoot.vue'
+import type { PopperScope } from './PopperRootContext'
+import { injectPopperRootContext } from './PopperRootContext'
 
 export interface UsePopperAnchorOptions {
   /** The part's element (its `useForwardElement().currentElement`). */
@@ -16,6 +17,8 @@ export interface UsePopperAnchorOptions {
    * `consumerAttrs($attrs)` leaves it off the element.
    */
   consumerAttrs?: boolean
+  /** The component family whose root this part anchors (see `PopperScope`). */
+  scope?: PopperScope
 }
 
 /**
@@ -31,7 +34,7 @@ export interface UsePopperAnchorOptions {
 export function usePopperAnchor(options: UsePopperAnchorOptions) {
   // A part that is only sometimes the anchor (a detached trigger) may render
   // outside any popper.
-  const rootContext = options.enabled ? injectPopperRootContext(null) : injectPopperRootContext()
+  const rootContext = options.enabled ? injectPopperRootContext(options.scope, null) : injectPopperRootContext(options.scope)
   // Read through the instance proxy, which tracks `$attrs`. A computed, so the
   // effect below follows this value and not every attr change.
   const instance = options.consumerAttrs ? getCurrentInstance() : null

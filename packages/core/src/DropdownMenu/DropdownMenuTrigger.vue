@@ -100,7 +100,7 @@ const trigger = rootContext ? getDropdownMenuTriggerSurface(rootContext, () => p
 const attrs = computed(() => detached.enabled.value ? getDetachedTrigger().attrs.value : trigger.attrs.value)
 
 // The menu's anchor, unless the trigger is detached.
-const anchor = usePopperAnchor({ consumerAttrs: true, element: triggerElement, enabled: () => !detached.enabled.value })
+const anchor = usePopperAnchor({ consumerAttrs: true, element: triggerElement, enabled: () => !detached.enabled.value, scope: 'menu' })
 </script>
 
 <template>

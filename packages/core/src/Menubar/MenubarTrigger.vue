@@ -46,7 +46,7 @@ const trigger = createMenubarTriggerSurface(rootContext, menuContext, {
 onMounted(() => {
   menuContext.triggerElement = triggerElement
 })
-const anchor = usePopperAnchor({ consumerAttrs: true, element: triggerElement })
+const anchor = usePopperAnchor({ consumerAttrs: true, element: triggerElement, scope: 'menu' })
 
 // Arrow-key navigation (as a composable; the menubar handles the keys).
 const roving = useRovingFocusItem({
