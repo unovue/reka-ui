@@ -2,7 +2,7 @@ import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { TooltipContext, TooltipOpenChangeReason } from './TooltipRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import { computed, getCurrentInstance, getCurrentScope, onDeactivated, onScopeDispose, ref, toValue, watch } from 'vue'
-import { createPartSurface, disclosureState, useControllableState } from '@/shared'
+import { createPartSurface, defineReactiveIds, disclosureState, useControllableState } from '@/shared'
 import { createTimeout } from '@/shared/timeout'
 
 // =============================================================================
@@ -370,7 +370,8 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
     }
   }
 
-  const context: TooltipContext = {
+  // `contentId` follows the id the content rendered (`useContentElement`).
+  const context = defineReactiveIds<TooltipContext, 'contentId'>({
     contentId: `${baseId}-content`,
     open,
     stateAttribute,
@@ -389,7 +390,7 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
     disabled,
     ignoreNonKeyboardFocus,
     notifyOpenComplete: value => props.onOpenComplete?.(value),
-  }
+  }, ['contentId'])
 
   return {
     open,
