@@ -55,7 +55,6 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-
 describe.each(Object.keys(fixtures))('%s with no active item', (name) => {
   async function renderAndHydrate(disabled: string[] = []) {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})

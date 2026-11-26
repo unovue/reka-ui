@@ -1533,7 +1533,8 @@
       "getCurrentInstance": 1
     },
     "shared/usePartId.ts": {
-      "getCurrentInstance": 1
+      "getCurrentInstance": 1,
+      "patches": 1
     }
   },
   "overrides": {
@@ -1554,7 +1555,7 @@
   "totals": {
     "exposeElement": 291,
     "getCurrentInstance": 29,
-    "patches": 15,
+    "patches": 16,
     "presenceAttrs": 8,
     "renderAs": 130,
     "sfcs": 291,
