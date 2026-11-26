@@ -1,0 +1,1892 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`tabs vs v2 > interaction automatic unmountOnHide=false forceMount=false 1`] = `
+[
+  {
+    "c": [
+      "inactive::ca",
+      "inactive::cb",
+      "inactive::cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  undefined,
+  {
+    "c": [
+      "inactive::ca",
+      "active:shown:cb",
+      "inactive::cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:active:true:0",
+      "c:inactive:false:-1",
+    ],
+  },
+  "b",
+  {
+    "c": [
+      "inactive::ca",
+      "inactive::cb",
+      "active:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:active:true:0",
+    ],
+  },
+  "c",
+  "c",
+  {
+    "c": [
+      "inactive::ca",
+      "inactive::cb",
+      "active:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:active:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "inactive::ca",
+      "inactive::cb",
+      "active:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:active:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "active:shown:ca",
+      "inactive::cb",
+      "inactive::cc",
+    ],
+    "t": [
+      "a:active:true:0",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "active:shown:ca",
+      "inactive::cb",
+      "inactive::cc",
+    ],
+    "t": [
+      "a:active:true:0",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "inactive::ca",
+      "active:shown:cb",
+      "inactive::cc",
+    ],
+    "t": [
+      "a:inactive:false:0",
+      "b:active:true:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "b",
+]
+`;
+
+exports[`tabs vs v2 > interaction automatic unmountOnHide=false forceMount=true 1`] = `
+[
+  {
+    "c": [
+      "inactive:shown:ca",
+      "inactive:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  undefined,
+  {
+    "c": [
+      "inactive:shown:ca",
+      "active:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:active:true:0",
+      "c:inactive:false:-1",
+    ],
+  },
+  "b",
+  {
+    "c": [
+      "inactive:shown:ca",
+      "inactive:shown:cb",
+      "active:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:active:true:0",
+    ],
+  },
+  "c",
+  "c",
+  {
+    "c": [
+      "inactive:shown:ca",
+      "inactive:shown:cb",
+      "active:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:active:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "inactive:shown:ca",
+      "inactive:shown:cb",
+      "active:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:active:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "active:shown:ca",
+      "inactive:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:active:true:0",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "active:shown:ca",
+      "inactive:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:active:true:0",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "inactive:shown:ca",
+      "active:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:0",
+      "b:active:true:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "b",
+]
+`;
+
+exports[`tabs vs v2 > interaction automatic unmountOnHide=true forceMount=false 1`] = `
+[
+  {
+    "c": [
+      "inactive::",
+      "inactive::",
+      "inactive::",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  undefined,
+  {
+    "c": [
+      "inactive::",
+      "active:shown:cb",
+      "inactive::",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:active:true:0",
+      "c:inactive:false:-1",
+    ],
+  },
+  "b",
+  {
+    "c": [
+      "inactive::",
+      "inactive::",
+      "active:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:active:true:0",
+    ],
+  },
+  "c",
+  "c",
+  {
+    "c": [
+      "inactive::",
+      "inactive::",
+      "active:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:active:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "inactive::",
+      "inactive::",
+      "active:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:active:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "active:shown:ca",
+      "inactive::",
+      "inactive::",
+    ],
+    "t": [
+      "a:active:true:0",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "active:shown:ca",
+      "inactive::",
+      "inactive::",
+    ],
+    "t": [
+      "a:active:true:0",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "inactive::",
+      "active:shown:cb",
+      "inactive::",
+    ],
+    "t": [
+      "a:inactive:false:0",
+      "b:active:true:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "b",
+]
+`;
+
+exports[`tabs vs v2 > interaction automatic unmountOnHide=true forceMount=true 1`] = `
+[
+  {
+    "c": [
+      "inactive:shown:ca",
+      "inactive:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  undefined,
+  {
+    "c": [
+      "inactive:shown:ca",
+      "active:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:active:true:0",
+      "c:inactive:false:-1",
+    ],
+  },
+  "b",
+  {
+    "c": [
+      "inactive:shown:ca",
+      "inactive:shown:cb",
+      "active:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:active:true:0",
+    ],
+  },
+  "c",
+  "c",
+  {
+    "c": [
+      "inactive:shown:ca",
+      "inactive:shown:cb",
+      "active:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:active:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "inactive:shown:ca",
+      "inactive:shown:cb",
+      "active:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:active:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "active:shown:ca",
+      "inactive:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:active:true:0",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "active:shown:ca",
+      "inactive:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:active:true:0",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "inactive:shown:ca",
+      "active:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:0",
+      "b:active:true:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "b",
+]
+`;
+
+exports[`tabs vs v2 > interaction manual unmountOnHide=false forceMount=false 1`] = `
+[
+  {
+    "c": [
+      "inactive::ca",
+      "inactive::cb",
+      "inactive::cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  undefined,
+  {
+    "c": [
+      "inactive::ca",
+      "inactive::cb",
+      "inactive::cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:0",
+      "c:inactive:false:-1",
+    ],
+  },
+  undefined,
+  {
+    "c": [
+      "inactive::ca",
+      "inactive::cb",
+      "inactive::cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:inactive:false:0",
+    ],
+  },
+  undefined,
+  "c",
+  {
+    "c": [
+      "inactive::ca",
+      "inactive::cb",
+      "inactive::cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:inactive:false:0",
+    ],
+  },
+  undefined,
+  {
+    "c": [
+      "inactive::ca",
+      "inactive::cb",
+      "active:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:active:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "active:shown:ca",
+      "inactive::cb",
+      "inactive::cc",
+    ],
+    "t": [
+      "a:active:true:0",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "active:shown:ca",
+      "inactive::cb",
+      "inactive::cc",
+    ],
+    "t": [
+      "a:active:true:0",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "inactive::ca",
+      "active:shown:cb",
+      "inactive::cc",
+    ],
+    "t": [
+      "a:inactive:false:0",
+      "b:active:true:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "b",
+]
+`;
+
+exports[`tabs vs v2 > interaction manual unmountOnHide=false forceMount=true 1`] = `
+[
+  {
+    "c": [
+      "inactive:shown:ca",
+      "inactive:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  undefined,
+  {
+    "c": [
+      "inactive:shown:ca",
+      "inactive:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:0",
+      "c:inactive:false:-1",
+    ],
+  },
+  undefined,
+  {
+    "c": [
+      "inactive:shown:ca",
+      "inactive:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:inactive:false:0",
+    ],
+  },
+  undefined,
+  "c",
+  {
+    "c": [
+      "inactive:shown:ca",
+      "inactive:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:inactive:false:0",
+    ],
+  },
+  undefined,
+  {
+    "c": [
+      "inactive:shown:ca",
+      "inactive:shown:cb",
+      "active:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:active:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "active:shown:ca",
+      "inactive:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:active:true:0",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "active:shown:ca",
+      "inactive:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:active:true:0",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "inactive:shown:ca",
+      "active:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:0",
+      "b:active:true:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "b",
+]
+`;
+
+exports[`tabs vs v2 > interaction manual unmountOnHide=true forceMount=false 1`] = `
+[
+  {
+    "c": [
+      "inactive::",
+      "inactive::",
+      "inactive::",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  undefined,
+  {
+    "c": [
+      "inactive::",
+      "inactive::",
+      "inactive::",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:0",
+      "c:inactive:false:-1",
+    ],
+  },
+  undefined,
+  {
+    "c": [
+      "inactive::",
+      "inactive::",
+      "inactive::",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:inactive:false:0",
+    ],
+  },
+  undefined,
+  "c",
+  {
+    "c": [
+      "inactive::",
+      "inactive::",
+      "inactive::",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:inactive:false:0",
+    ],
+  },
+  undefined,
+  {
+    "c": [
+      "inactive::",
+      "inactive::",
+      "active:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:active:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "active:shown:ca",
+      "inactive::",
+      "inactive::",
+    ],
+    "t": [
+      "a:active:true:0",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "active:shown:ca",
+      "inactive::",
+      "inactive::",
+    ],
+    "t": [
+      "a:active:true:0",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "inactive::",
+      "active:shown:cb",
+      "inactive::",
+    ],
+    "t": [
+      "a:inactive:false:0",
+      "b:active:true:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "b",
+]
+`;
+
+exports[`tabs vs v2 > interaction manual unmountOnHide=true forceMount=true 1`] = `
+[
+  {
+    "c": [
+      "inactive:shown:ca",
+      "inactive:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  undefined,
+  {
+    "c": [
+      "inactive:shown:ca",
+      "inactive:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:0",
+      "c:inactive:false:-1",
+    ],
+  },
+  undefined,
+  {
+    "c": [
+      "inactive:shown:ca",
+      "inactive:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:inactive:false:0",
+    ],
+  },
+  undefined,
+  "c",
+  {
+    "c": [
+      "inactive:shown:ca",
+      "inactive:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:inactive:false:0",
+    ],
+  },
+  undefined,
+  {
+    "c": [
+      "inactive:shown:ca",
+      "inactive:shown:cb",
+      "active:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:inactive:false:-1",
+      "c:active:true:0",
+    ],
+  },
+  "c",
+  {
+    "c": [
+      "active:shown:ca",
+      "inactive:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:active:true:0",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "active:shown:ca",
+      "inactive:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:active:true:0",
+      "b:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "a",
+  {
+    "c": [
+      "inactive:shown:ca",
+      "active:shown:cb",
+      "inactive:shown:cc",
+    ],
+    "t": [
+      "a:inactive:false:0",
+      "b:active:true:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  "b",
+]
+`;
+
+exports[`tabs vs v2 > value changes on mounted parts, add/remove, unmount selected 1`] = `
+[
+  {
+    "c": [
+      "inactive::",
+      "active:shown:cb",
+      "inactive::",
+    ],
+    "t": [
+      "a:inactive:false:-1",
+      "b:active:true:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  {
+    "c": [
+      "active:shown:cb",
+      "inactive::",
+      "inactive::",
+    ],
+    "t": [
+      "b:active:true:-1",
+      "x:inactive:false:-1",
+      "c:inactive:false:-1",
+    ],
+  },
+  {
+    "c": [
+      "inactive::",
+      "inactive::",
+      "active:shown:cb",
+    ],
+    "t": [
+      "x:inactive:false:-1",
+      "y:inactive:false:-1",
+      "b:active:true:-1",
+    ],
+  },
+  {
+    "c": [
+      "inactive::",
+      "inactive::",
+    ],
+    "t": [
+      "x:inactive:false:-1",
+      "y:inactive:false:-1",
+    ],
+  },
+  {
+    "c": [
+      "inactive::",
+      "inactive::",
+      "active:shown:cb",
+      "active:shown:cb",
+    ],
+    "t": [
+      "x:inactive:false:-1",
+      "y:inactive:false:-1",
+      "b:active:true:-1",
+      "b:active:true:-1",
+    ],
+  },
+  {
+    "c": [
+      "inactive::",
+      "active:shown:cy",
+      "inactive::",
+      "inactive::",
+    ],
+    "t": [
+      "x:inactive:false:-1",
+      "y:active:true:-1",
+      "b:inactive:false:-1",
+      "b:inactive:false:-1",
+    ],
+  },
+  {
+    "c": [
+      "inactive::",
+      "inactive::",
+      "inactive::",
+      "active:shown:cy",
+    ],
+    "t": [
+      "x:inactive:false:-1",
+      "b:inactive:false:-1",
+      "b:inactive:false:-1",
+      "y:active:true:-1",
+    ],
+  },
+  {
+    "c": [],
+    "t": [],
+  },
+  {
+    "c": [
+      "inactive::",
+      "active:shown:cq",
+    ],
+    "t": [
+      "p:inactive:false:-1",
+      "q:active:true:-1",
+    ],
+  },
+]
+`;
+
+exports[`tabs vs v2 > value shapes 1`] = `
+[
+  [
+    "undefined",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "active:shown:cundefined",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:active:true:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "a",
+    {
+      "c": [
+        "active:shown:ca",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "active:shown:ca",
+      ],
+      "t": [
+        "a:active:true:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:active:true:-1",
+      ],
+    },
+  ],
+  [
+    "b",
+    {
+      "c": [
+        "inactive::",
+        "active:shown:cb",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:active:true:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "1",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "active:shown:c1",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:active:true:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "1",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "active:shown:c1",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:active:true:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "0",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "active:shown:c0",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:active:true:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "active:shown:c",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":active:true:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "null",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "active:shown:cnull",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:active:true:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "NaN",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "2",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "active:shown:c2",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:active:true:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "zzz",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "undefined",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "active:shown:cundefined",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:active:true:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "a",
+    {
+      "c": [
+        "active:shown:ca",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "active:shown:ca",
+      ],
+      "t": [
+        "a:active:true:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:active:true:-1",
+      ],
+    },
+  ],
+  [
+    "live a",
+    {
+      "c": [
+        "active:shown:ca",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "active:shown:ca",
+      ],
+      "t": [
+        "a:active:true:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:active:true:-1",
+      ],
+    },
+  ],
+  [
+    "live b",
+    {
+      "c": [
+        "inactive::",
+        "active:shown:cb",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:active:true:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "live 1",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "active:shown:c1",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:active:true:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "live 1",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "active:shown:c1",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:active:true:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "live 0",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "active:shown:c0",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:active:true:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "live ",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "active:shown:c",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":active:true:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "live null",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "active:shown:cnull",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:active:true:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "live NaN",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "live 1",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "active:shown:c1",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:active:true:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "live NaN",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "live 2",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "active:shown:c2",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:active:true:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "live zzz",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "live undefined",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "active:shown:cundefined",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:active:true:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "live a",
+    {
+      "c": [
+        "active:shown:ca",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "active:shown:ca",
+      ],
+      "t": [
+        "a:active:true:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:active:true:-1",
+      ],
+    },
+  ],
+  [
+    "live null",
+    {
+      "c": [
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "active:shown:cnull",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:inactive:false:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:active:true:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+  [
+    "live b",
+    {
+      "c": [
+        "inactive::",
+        "active:shown:cb",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+        "inactive::",
+      ],
+      "t": [
+        "a:inactive:false:-1",
+        "b:active:true:-1",
+        "1:inactive:false:-1",
+        "1:inactive:false:-1",
+        "0:inactive:false:-1",
+        ":inactive:false:-1",
+        "null:inactive:false:-1",
+        "undefined:inactive:false:-1",
+        "NaN:inactive:false:-1",
+        "2:inactive:false:-1",
+        "a:inactive:false:-1",
+      ],
+    },
+  ],
+]
+`;
