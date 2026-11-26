@@ -30,6 +30,7 @@ useAgentItem(context, itemContext, undefined, 'delete')
     :ref="forwardRef"
     :type="as === 'button' ? 'button' : undefined"
     v-bind="itemDelete.attrs.value"
+    :aria-labelledby="$attrs['aria-label'] ? undefined : itemDelete.attrs.value['aria-labelledby']"
   >
     <slot />
   </component>
