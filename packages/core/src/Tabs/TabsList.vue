@@ -40,6 +40,8 @@ const roving = useRovingFocusGroup({
   orientation: () => context.orientation.value,
   dir: () => context.dir.value,
   loop: () => props.loop,
+  // No tab selected: the first focusable trigger is the tab stop in the server HTML
+  noActiveItem: () => context.modelValue.value === undefined,
 })
 </script>
 
