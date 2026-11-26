@@ -171,9 +171,7 @@ describe('setters', () => {
     expect(result.ok).toBe(false)
     expect(result.error!.message).toContain('didn\'t take')
   })
-
-  // TODO(v3-port): #2073
-  it.skip('unchecks a mixed group parent through the group', async () => {
+  it('unchecks a mixed group parent through the group', async () => {
     const value = ref(['a'])
     const { agent } = await setup(() => h(CheckboxGroupRoot, { 'modelValue': value.value, 'onUpdate:modelValue': (v: any) => (value.value = v), 'allValues': ['a', 'b'] }, () => [
       h(CheckboxRoot, { 'parent': true, 'aria-label': 'All' }),
@@ -442,9 +440,7 @@ describe('second review', () => {
     input.dispatchEvent(new Event('input', { bubbles: true }))
     expect(seen).toMatchObject([{ value: 'Grace L', previous: 'Grace' }])
   })
-
-  // TODO(v3-port): #2073
-  it.skip('checking a mixed parent with no room left changes nothing, and a click still does what it did', async () => {
+  it('checking a mixed parent with no room left changes nothing, and a click still does what it did', async () => {
     const value = ref(['a'])
     const { agent } = await setup(() => h(CheckboxGroupRoot, { 'modelValue': value.value, 'onUpdate:modelValue': (v: any) => (value.value = v), 'allValues': ['a', 'b'], 'max': 1 }, () => [
       h(CheckboxRoot, { 'parent': true, 'aria-label': 'All' }),

@@ -15,6 +15,11 @@ export function renderAs(as: AsTag | Component | undefined, asChild?: boolean, d
 
 export const renderAsEmpty = renderAs
 
+/** `renderAs` for a control: a `button` by default. The Vapor `Primitive` handles `disabled` on other tags. */
+export function renderAsControl(as: AsTag | Component | undefined, asChild?: boolean, defaultTagName: AsTag = 'button'): Component | string {
+  return renderAs(as, asChild, defaultTagName)
+}
+
 export function rendersOwnElement(as: AsTag | Component | undefined, asChild?: boolean): boolean {
   return typeof resolveRenderTag(as, asChild) === 'string'
 }

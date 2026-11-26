@@ -378,7 +378,7 @@ function splitArgs(text) {
   return args
 }
 
-const RENDER_AS_CALL = /\brenderAs(?:Empty)?\(/
+const RENDER_AS_CALL = /\brenderAs(?:Empty|Control)?\(/
 
 /**
  * The parts render their own element with `<component :is="renderAs(as, asChild)">` (a VNode for
@@ -405,7 +405,7 @@ function renderAsToPrimitive(code, id) {
     if (el.props.some(p => (p.type === DIRECTIVE && p.name === 'bind' && (p.arg?.content === 'as' || p.arg?.content === 'asChild' || p.arg?.content === 'as-child')) || (p.type === 6 && (p.name === 'as' || p.name === 'as-child'))))
       throw fail('the element also binds `as` / `as-child`; rewrite it by hand')
     const source = is.exp.content
-    const m = /\brenderAs(?:Empty)?\(/.exec(source)
+    const m = /\brenderAs(?:Empty|Control)?\(/.exec(source)
     // the call's closing parenthesis
     let depth = 0
     let close = -1
@@ -420,7 +420,10 @@ function renderAsToPrimitive(code, id) {
     }
     if (close < 0)
       throw fail('unbalanced call')
-    const [as, asChild, fallback, ...rest] = splitArgs(source.slice(m.index + m[0].length, close))
+    const [as, asChild, givenFallback, ...rest] = splitArgs(source.slice(m.index + m[0].length, close))
+    // `renderAsControl` defaults to a `button`; the Vapor `Primitive` drops `disabled="false"` and adds
+    // `aria-disabled` on other plain tags, as the VDOM control type does.
+    const fallback = givenFallback ?? (m[0].startsWith('renderAsControl') ? `'button'` : undefined)
     if (!as || rest.length)
       throw fail('expected renderAs(as, asChild?, defaultTagName?)')
     const before = source.slice(0, m.index)
