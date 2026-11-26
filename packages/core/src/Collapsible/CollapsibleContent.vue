@@ -15,7 +15,6 @@ export type CollapsibleContentEmits = {
 </script>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { Presence } from '@/Presence'
 import {
@@ -102,22 +101,22 @@ onMounted(() => {
 // animation's name in its own `animationend` handler, and skipped while another CSS animation is
 // running or paused (a running one retries on its own `animationend`). Transitions are not
 // restarted by a move, so they are ignored.
-useEventListener(currentElement, 'animationend', (ev) => {
-  const node = currentElement.value!
-  if (ev.target === node) {
+function handleAnimationEnd(ev: AnimationEvent) {
+  const node = currentElement.value
+  if (node && ev.target === node) {
     requestAnimationFrame(() => {
       if (!node.getAnimations?.().some(animation => 'animationName' in animation && animation.playState !== 'finished'))
         node.style.animationName = 'none'
     })
   }
-})
+}
 
-useEventListener(currentElement, 'beforematch', (ev) => {
+function handleBeforeMatch() {
   requestAnimationFrame(() => {
     rootContext.onOpenToggle()
     emits('contentFound')
   })
-})
+}
 </script>
 
 <template>
@@ -140,6 +139,8 @@ useEventListener(currentElement, 'beforematch', (ev) => {
         [`--reka-collapsible-content-height`]: `${height}px`,
         [`--reka-collapsible-content-width`]: `${width}px`,
       }"
+      @animationend="handleAnimationEnd"
+      @beforematch="handleBeforeMatch"
     >
       <slot v-if="rootContext.unmountOnHide.value ? present : true" />
     </Primitive>
