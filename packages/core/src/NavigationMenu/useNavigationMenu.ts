@@ -6,6 +6,7 @@ import type { FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLa
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import { useDebounceFn, useEventListener, useResizeObserver } from '@vueuse/core'
 import { computed, mergeProps, nextTick, ref, toValue, watch, watchEffect } from 'vue'
+import { getTabStopsAfter } from '@/FocusScope/utils'
 import {
   createPartSurface,
   disclosureState,
@@ -20,6 +21,7 @@ import {
   EVENT_ROOT_CONTENT_DISMISS,
   focusFirst,
   getTabbableCandidates,
+  getTabbableNodes,
   LINK_SELECT,
   makeContentId,
   makeTriggerId,
@@ -552,7 +554,9 @@ export function useNavigationMenuItem(options: UseNavigationMenuItemOptions): Us
   function handleContentExit() {
     const el = getElementByIdFrom(itemContext.triggerRef.value, contentId)
     if (el) {
-      const candidates = getTabbableCandidates(el)
+      // Every radio, not only each group's tab stop: with the stop taken out of the tab
+      // order, the browser makes the other radios of its group tab stops.
+      const candidates = getTabbableNodes(el)
       if (candidates.length)
         restoreContentTabOrderRef = removeFromTabOrder(candidates)
     }
@@ -986,13 +990,11 @@ export function useNavigationMenuContent(options: UseNavigationMenuContentOption
 
     if (isTabKey) {
       const focusedElement = getActiveElement()
-      const index = candidates.findIndex(
-        candidate => candidate === focusedElement,
-      )
       const isMovingBackwards = ev.shiftKey
-      const nextCandidates = isMovingBackwards
-        ? candidates.slice(0, index).reverse()
-        : candidates.slice(index + 1, candidates.length)
+      const nextCandidates = getTabStopsAfter(
+        isMovingBackwards ? [...candidates].reverse() : candidates,
+        focusedElement,
+      )
 
       if (focusFirst(nextCandidates)) {
         // prevent browser tab keydown because we've handled focus
