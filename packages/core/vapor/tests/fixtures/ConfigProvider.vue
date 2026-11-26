@@ -15,9 +15,11 @@ defineExpose({ tab })
     :use-id="useId"
     teleport-to="#portal-target"
   >
+    <!-- arrow keys select, as the test drives them (v3 defaults to manual activation) -->
     <TabsRoot
       id="tabs"
       v-model="tab"
+      activation-mode="automatic"
     >
       <TabsList aria-label="Settings">
         <TabsTrigger

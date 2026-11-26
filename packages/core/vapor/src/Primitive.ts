@@ -1,5 +1,8 @@
-// Vapor-mode `Primitive`. Replaces `src/Primitive/Primitive.ts` + `Slot.ts` in the
-// `reka-ui/vapor` build (see `vapor/vite.config.mjs`). Needs Vue >= 3.6 (Vapor runtime).
+// Vapor-mode `Primitive` and `Slot`. Replaces `src/Primitive/Primitive.ts` + `Slot.ts` in the
+// `reka-ui/vapor` build (see `vapor/plugins.mjs`). Needs Vue >= 3.6 (Vapor runtime).
+//
+// Both satisfy the element-first ref contract: a ref on them resolves `{ element, $el }`, with
+// `element` a reactive ref that follows the rendered root (a dynamic `as`, a `v-if` in the slot).
 //
 // Non-`asChild`: renders `as` through Vapor's dynamic component, like `<component :is>`.
 // `asChild`: Vapor slots return real DOM blocks, not VNodes, so there is nothing to clone. Two modes:
@@ -10,9 +13,9 @@
 //      patched onto the first element the slot rendered. Attributes the child already rendered win
 //      (snapshot at mount), classes/styles merge, listeners are added next to the child's.
 import type { Component, PropType } from 'vue'
-import { effectScope, onScopeDispose } from 'vue'
+import { effectScope, onMounted, onScopeDispose } from 'vue'
 import { ariaDisabledAttr, isPlainTag } from '@/shared/disabledAttr'
-import { createDynamicComponent, createSlot, defineVaporComponent, findElement, renderEffect, trackRootElement } from './shared/internals'
+import { createDynamicComponent, createSlot, defineVaporComponent, findElement, getGenericInstance, renderEffect, trackRootElement, vnodeHook } from './shared/internals'
 
 export { findElement }
 
@@ -23,7 +26,7 @@ export interface PrimitiveProps {
   as?: AsTag | Component
 }
 
-const SELF_CLOSING_TAGS = ['area', 'img', 'input']
+export const SELF_CLOSING_TAGS = ['area', 'img', 'input']
 const TAG_NAME = /^[a-z][\w.-]*$/i
 const BLOCKED_TAG = /^(?:script|iframe|frame|frameset|object|embed|applet|base|link|meta|noscript)$/i
 const ON_RE = /^on[A-Z]/
@@ -298,29 +301,52 @@ export const Primitive = defineVaporComponent({
     as: { type: [String, Object] as PropType<AsTag | Component>, default: 'div' },
   },
   setup(props, { attrs, expose }) {
-    let block: any
-    let root: { value: Element | null } | undefined
-    expose({
-      get $el() {
-        return root ? root.value : findElement(block)
-      },
-    })
-
     if (props.asChild || props.as === 'template') {
       const r = renderAsChildSlot(() => ({ ...attrs }), el => withAriaDisabled(el.tagName.toLowerCase(), attrs))
-      block = r.block
-      root = r.root
-      return block
+      exposeRoot(expose, r.root)
+      return r.block
     }
 
     const tag = () => safeTag(props.as)
     const selfClosing = typeof props.as === 'string' && SELF_CLOSING_TAGS.includes(props.as)
-    block = createDynamicComponent(
+    const block = createDynamicComponent(
       tag,
       { $: [() => withAriaDisabled(tag(), attrs)] },
       selfClosing ? null : Object.assign(() => createSlot('default', null, undefined, 4 /* FORWARDED */), { _: 1 }),
       1, /* SINGLE_ROOT */
     )
+    exposeRoot(expose, trackRootElement(block))
     return block
+  },
+})
+
+/**
+ * The element-first expose (`{ element, $el }`) over the tracked root element. Also calls a
+ * `@vue:mounted` hook with the element as `vnode.el`, which Vapor calls without a vnode (the parts
+ * bind `formResetBinder` there, on the element they render).
+ */
+function exposeRoot(expose: (exposed: Record<string, any>) => void, root: { value: Element | null }) {
+  const instance = getGenericInstance()
+  if (vnodeHook(instance, 'onVnodeMounted')) {
+    onMounted(() => {
+      vnodeHook(instance, 'onVnodeMounted')?.({ el: root.value })
+    })
+  }
+  expose({
+    element: root,
+    get $el() {
+      return root.value
+    },
+  })
+}
+
+/** `asChild` without the `as` prop: merges its attrs onto the slot's single child. */
+export const Slot = defineVaporComponent({
+  name: 'PrimitiveSlot',
+  inheritAttrs: false,
+  setup(_, { attrs, expose }) {
+    const r = renderAsChildSlot(() => ({ ...attrs }), el => withAriaDisabled(el.tagName.toLowerCase(), attrs))
+    exposeRoot(expose, r.root)
+    return r.block
   },
 })

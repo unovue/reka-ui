@@ -6,8 +6,8 @@ import { byId, expectAdopted, expectNoAxeViolations, expectSlotted, mount, text,
 describe('stepper (Vapor)', () => {
   it('marks the steps by state', async () => {
     await mount(Fixture)
-    expect(byId('item-1').dataset.state).toBe('active')
-    expect(byId('item-2').dataset.state).toBe('inactive')
+    expect(byId('item-1').dataset.state).toBe('current')
+    expect(byId('item-2').dataset.state).toBe('upcoming')
     expect(byId('trigger-1').getAttribute('aria-current')).toBe('step')
   })
 
@@ -16,7 +16,7 @@ describe('stepper (Vapor)', () => {
     await userEvent.click(byId('trigger-3'))
     await until(() => expect(text('step')).toBe('3'))
     expect(byId('item-1').dataset.state).toBe('completed')
-    expect(byId('item-3').dataset.state).toBe('active')
+    expect(byId('item-3').dataset.state).toBe('current')
     await userEvent.keyboard('{ArrowLeft}')
     await until(() => expect(document.activeElement?.id).toBe('trigger-2'))
     await userEvent.keyboard('{Enter}')
@@ -26,9 +26,9 @@ describe('stepper (Vapor)', () => {
   it('asChild in both forms', async () => {
     await mount(Fixture)
     expectAdopted('trigger-adopted', { 'aria-label': 'First', 'aria-current': 'step' })
-    const second = expectSlotted('trigger-slotted', { 'aria-label': 'Second', 'data-state': 'inactive' })
+    const second = expectSlotted('trigger-slotted', { 'aria-label': 'Second', 'data-state': 'upcoming' })
     await userEvent.click(second)
-    await until(() => expect(second.dataset.state).toBe('active'))
+    await until(() => expect(second.dataset.state).toBe('current'))
   })
 
   it('has no axe violations', async () => {

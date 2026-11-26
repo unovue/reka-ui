@@ -18,7 +18,7 @@ describe('tags input (Vapor)', () => {
     await userEvent.click(byId('input'))
     await userEvent.keyboard('{Backspace}')
     await until(() => expect(byId('tag-vapor').hasAttribute('data-state')).toBe(true))
-    expect(byId('tag-vapor').dataset.state).toBe('active')
+    expect(byId('tag-vapor').dataset.state).toBe('checked')
     await userEvent.keyboard('{Backspace}')
     await until(() => expect(text('value')).toBe('vue'))
   })

@@ -131,6 +131,9 @@ export interface GenericInstance {
   proxy?: any
   parent?: GenericInstance | null
   isDeactivated?: boolean
+  isMounted?: boolean
+  root?: GenericInstance
+  provides?: Record<string | symbol, unknown>
 }
 
 /** The current VDOM or Vapor instance (Vue internal `currentInstance`). */
@@ -234,6 +237,11 @@ export function instanceElement(instance: GenericInstance | null | undefined): E
   return instance.vapor ? findElement(instance.block) : (instance.vnode?.el as Element | null) ?? null
 }
 
+/** What `provide()` / `inject()` read on the instance (its own provides, over its ancestors'). */
+export function instanceProvides(instance: GenericInstance | null | undefined): Record<string | symbol, unknown> | null {
+  return instance?.provides ?? null
+}
+
 /** Prop keys the parent passed (Vapor `rawKeys()`, VDOM `vnode.props`). */
 export function passedPropKeys(instance: GenericInstance | null | undefined): string[] {
   if (!instance)
@@ -281,21 +289,20 @@ export function forceUpdate(instance: GenericInstance) {
   instance.proxy?.$forceUpdate?.()
 }
 
-/** Makes a template ref on the instance resolve to `target` (v2 `useForwardRef`). */
-export function forwardExposed(instance: GenericInstance, target: Record<string, any>) {
-  instance.exposed = target
-  ;(instance as any).exposeProxy = target
-}
-
 /**
- * Stand-in for `getCurrentInstance()` in the v2 SFCs (the build rewrites their import). They read
- * `exposed` (to add methods after mount) and `vnode.props` (whether a listener was passed); a Vapor
- * instance has neither a public instance nor a vnode, so both are mapped onto its own fields.
+ * Stand-in for `getCurrentInstance()` in the SFCs and modules from `src/` (the build rewrites their
+ * import). They read `exposed` (to add methods after mount), `vnode.props` (whether a listener was
+ * passed), `provides` (the nearest provider, own included), `props` / `attrs` / `slots`,
+ * `proxy.$attrs` (tracked attrs), `parent` (its own fields), `isMounted` / `isUnmounted`,
+ * `appContext` (error handling, `callListeners`), and, in `Teleport`, `root.isMounted`, `vnode.el`
+ * and `subTree.el` (where the portal renders). A Vapor instance has neither a public instance nor a
+ * vnode, so these are mapped onto its own fields.
  */
 export function getCurrentInstanceCompat(): any {
   const instance = getGenericInstance()
   if (!instance?.vapor)
     return instance
+  const first = () => firstNode(instance.block)
   return {
     get exposed() {
       return instance.exposed
@@ -303,10 +310,97 @@ export function getCurrentInstanceCompat(): any {
     set exposed(value) {
       instance.exposed = value
     },
+    get provides() {
+      return instance.provides
+    },
+    get props() {
+      return instance.props
+    },
+    get attrs() {
+      return instance.attrs
+    },
+    get slots() {
+      return (instance as any).slots
+    },
+    get type() {
+      return instance.type
+    },
+    get isMounted() {
+      return !!instance.isMounted
+    },
+    get isUnmounted() {
+      return !!(instance as any).isUnmounted
+    },
+    get appContext() {
+      return (instance as any).appContext
+    },
+    get parent() {
+      return instance.parent ?? null
+    },
+    proxy: {
+      get $attrs() {
+        return instance.attrs
+      },
+    },
+    root: {
+      get isMounted() {
+        return !!instance.root?.isMounted
+      },
+    },
     vnode: {
       get props() {
         return Object.fromEntries(instance.rawKeys!().map(key => [key, true]))
       },
+      el: null,
+    },
+    subTree: {
+      get el() {
+        return first()
+      },
     },
   }
+}
+
+/**
+ * A vnode hook (`@vue:mounted` → `onVnodeMounted`) the parent passed to the instance. Vapor calls
+ * these itself, but with no vnode; reka's `formResetBinder` reads `vnode.el`, so `Primitive` calls
+ * the mounted hook again with its element (see `vapor/src/Primitive.ts`). Reads the compiled raw
+ * props: a getter per static key, and the `$` list of dynamic `v-bind` objects.
+ */
+export function vnodeHook(instance: GenericInstance | null | undefined, name: string): ((...args: any[]) => unknown) | undefined {
+  const raw = (instance as any)?.rawProps as Record<string, any> | undefined
+  if (!raw)
+    return undefined
+  const dynamic = raw.$ as any[] | undefined
+  if (dynamic) {
+    for (let i = dynamic.length - 1; i >= 0; i--) {
+      const source = typeof dynamic[i] === 'function' ? dynamic[i]() : dynamic[i]
+      if (source && name in source)
+        return source[name]
+    }
+  }
+  // A static raw prop is a getter for its value
+  const source = raw[name]
+  return typeof source === 'function' ? source() : undefined
+}
+
+/** First DOM node (element, text or comment anchor) of a Vapor block. */
+function firstNode(block: any): Node | null {
+  if (!block)
+    return null
+  if (block instanceof Node)
+    return block
+  if (Array.isArray(block)) {
+    for (const b of block) {
+      const node = firstNode(b)
+      if (node)
+        return node
+    }
+    return null
+  }
+  if (v.isVaporComponent(block))
+    return firstNode(block.block)
+  if (v.isFragment(block))
+    return firstNode(block.nodes) ?? block.anchor ?? null
+  return null
 }

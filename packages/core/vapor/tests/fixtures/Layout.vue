@@ -1,6 +1,8 @@
 <script setup vapor lang="ts">
-import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport, ScrollAreaVirtualizer, SplitterGroup, SplitterPanel, SplitterResizeHandle } from '#reka'
+import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport, SplitterGroup, SplitterPanel, SplitterResizeHandle } from '#reka'
 import { ref } from 'vue'
+// Not exported from `src/ScrollArea/index.ts` on v3 yet, so not from the Vapor entry either
+import ScrollAreaVirtualizer from '@/ScrollArea/ScrollAreaVirtualizer.vue'
 
 const sizes = ref<number[]>([])
 const rows = Array.from({ length: 50 }, (_, i) => `Row ${i}`)

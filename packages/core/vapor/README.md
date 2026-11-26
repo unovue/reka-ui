@@ -49,7 +49,7 @@ A part in `src/` calls `claimReferencedId` with a new context key. The Vapor ver
 (`vapor/src/shared/useReferencedId.ts`) prepares those keys when the context is provided, so add the
 key to `REFERENCED_KEYS` there.
 
-**Other `presenceRootAttrs`, `vShowOnComponents` or `exposeElementPlugin` errors**
+**Other `renderAsToPrimitive`, `presenceRootAttrs`, `vShowOnComponents` or `exposeElementPlugin` errors**
 
 The message says what the transform could not handle and how to fix the template by hand.
 

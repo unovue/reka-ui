@@ -36,14 +36,18 @@ test('prepares every context key that src parts claim with claimReferencedId', (
   const vapor = readFileSync(resolve(core, 'vapor/src/shared/useReferencedId.ts'), 'utf8')
   const prepared = new Set(JSON.parse(`[${/REFERENCED_KEYS = \[([^\]]*)\]/.exec(vapor)[1].replaceAll('\'', '"')}]`))
   const claimed = new Set()
+  let calls = 0
   for (const file of readdirSync(resolve(core, 'src'), { recursive: true })) {
-    if (!/\.(?:vue|ts)$/.test(file) || file.endsWith('.test.ts'))
+    if (!/\.(?:vue|ts)$/.test(file) || file.endsWith('.test.ts') || file.endsWith('useReferencedId.ts') || file.endsWith('index.ts'))
       continue
+    const code = readFileSync(resolve(core, 'src', file), 'utf8')
+    calls += code.match(/\bclaimReferencedId\(/g)?.length ?? 0
     // `reflect: false` claims are read with `getReferencedId`, which needs no getter.
-    for (const m of readFileSync(resolve(core, 'src', file), 'utf8').matchAll(/claimReferencedId\([^,]+,\s*'(\w+)'\s*\)/g))
+    for (const m of code.matchAll(/claimReferencedId\([^,]+,\s*'(\w+)'\s*\)/g))
       claimed.add(m[1])
   }
-  assert.ok(claimed.size > 0)
+  // Every call is recognised (none at all is fine: the parts may claim ids another way)
+  assert.ok(claimed.size > 0 || calls === 0, 'claimReferencedId calls in src/ that this test does not parse')
   for (const key of claimed)
     assert.ok(prepared.has(key), `src claims '${key}': add it to REFERENCED_KEYS in vapor/src/shared/useReferencedId.ts`)
 })

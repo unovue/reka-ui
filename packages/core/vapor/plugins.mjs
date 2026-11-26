@@ -6,10 +6,11 @@
 // devDependency (`npm:vue@3.6.0-rc.16`), passed to `@vitejs/plugin-vue` explicitly.
 //
 // What the plugins do:
-//   1. compile the *unchanged* v2 SFCs from `src/` with `features.vapor` (same source, second output);
+//   1. compile the *unchanged* SFCs from `src/` with `features.vapor` (same source, second output);
 //   2. swap the VDOM-only modules for Vapor versions (MODULE_OVERRIDES);
 //   3. rewrite imports (`defineAsyncComponent`, `getCurrentInstance`, a few VueUse helpers) and
-//      templates (`asChild` slot props and component chains, Presence `$attrs`, `v-show` on components);
+//      templates (`renderAs` elements, `asChild` slot props and component chains, Presence `$attrs`,
+//      `v-show` on components);
 //   4. give every compiled SFC a default `$el` expose (`exposeElementPlugin`).
 //
 // Every transform counts what it rewrote, per file. The build compares the counts with
@@ -57,14 +58,17 @@ const README = 'packages/core/vapor/README.md'
 
 const MODULE_OVERRIDES = {
   [src('Primitive/Primitive.ts')]: resolve(here, 'src/Primitive.ts'),
+  [src('Primitive/Slot.ts')]: resolve(here, 'src/Primitive.ts'),
+  [src('Primitive/renderAs.ts')]: resolve(here, 'src/renderAs.ts'),
   [src('Presence/Presence.ts')]: resolve(here, 'src/Presence.ts'),
   [src('Collection/Collection.ts')]: resolve(here, 'src/Collection.ts'),
+  [src('Teleport/portalGate.ts')]: resolve(here, 'src/portalGate.ts'),
+  [src('shared/useForwardElement.ts')]: resolve(here, 'src/shared/useForwardElement.ts'),
   [src('shared/useForwardExpose.ts')]: resolve(here, 'src/shared/useForwardExpose.ts'),
   [src('shared/useForwardScopeId.ts')]: resolve(here, 'src/shared/forwarding.ts'),
   [src('shared/useForwardProps.ts')]: resolve(here, 'src/shared/forwarding.ts'),
   [src('shared/useEmitAsProps.ts')]: resolve(here, 'src/shared/forwarding.ts'),
   [src('shared/useTriggerId.ts')]: resolve(here, 'src/shared/useTriggerId.ts'),
-  [src('shared/useForwardRef.ts')]: resolve(here, 'src/shared/useForwardRef.ts'),
   [src('shared/useReferencedId.ts')]: resolve(here, 'src/shared/useReferencedId.ts'),
 }
 for (const [from, to] of Object.entries(MODULE_OVERRIDES)) {
@@ -81,6 +85,7 @@ for (const [from, to] of Object.entries(MODULE_OVERRIDES)) {
 const TRANSFORMS = {
   sfcs: 'SFCs from src/ compiled in Vapor mode',
   patches: 'per-file patches applied (PATCHES)',
+  renderAs: '`<component :is="renderAs(…)">` elements turned into `<Primitive>` (renderAsToPrimitive)',
   slotProps: 'Primitive default slots given the asChild `props` (asChildSlotProps)',
   chains: 'asChild component chains rewritten (asChildComponentChains)',
   presenceAttrs: 'Presence children given `$attrs` (presenceRootAttrs)',
@@ -341,6 +346,124 @@ function tagEnd(code, start) {
   return -1
 }
 
+/** Top-level comma-separated arguments of a call's source text. */
+function splitArgs(text) {
+  const args = []
+  let depth = 0
+  let quote = null
+  let start = 0
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (quote) {
+      if (c === quote && text[i - 1] !== '\\')
+        quote = null
+    }
+    else if (c === '"' || c === '\'' || c === '`') {
+      quote = c
+    }
+    else if ('([{'.includes(c)) {
+      depth++
+    }
+    else if (')]}'.includes(c)) {
+      depth--
+    }
+    else if (c === ',' && depth === 0) {
+      args.push(text.slice(start, i).trim())
+      start = i + 1
+    }
+  }
+  const last = text.slice(start).trim()
+  if (last)
+    args.push(last)
+  return args
+}
+
+const RENDER_AS_CALL = /\brenderAs(?:Empty)?\(/
+
+/**
+ * The parts render their own element with `<component :is="renderAs(as, asChild)">` (a VNode for
+ * `<component :is>` to clone, or the VDOM `Slot`), which Vapor's dynamic component can't render. The
+ * Vapor `Primitive` renders the same `as` / `asChild`, so the element becomes one:
+ *   <component :is="renderAs(as, asChild, 'label')" …>  →  <Primitive :as="as ?? 'label'" :as-child="asChild" …>
+ *   <component :is="x ? Comp : renderAs(as, asChild)" …>  →  <component :is="x ? Comp : Primitive" :as="as" :as-child="asChild" …>
+ * The later transforms then see the `<Primitive>` (or `:is="…Primitive"`) as in a hand-written template.
+ */
+function renderAsToPrimitive(code, id) {
+  if (!RENDER_AS_CALL.test(code))
+    return code
+  const descriptor = templateAst(code, id)
+  if (!descriptor.template)
+    return code
+  const edits = []
+  walkElements(descriptor.template.ast, (el) => {
+    if (el.tag !== 'component')
+      return
+    const is = el.props.find(p => p.type === DIRECTIVE && p.name === 'bind' && p.arg?.content === 'is')
+    if (!is?.exp || !RENDER_AS_CALL.test(is.exp.content))
+      return
+    const fail = why => new Error(`[reka-vapor] renderAsToPrimitive (vapor/plugins.mjs): ${id}, \`${is.loc.source}\`: ${why}`)
+    if (el.props.some(p => (p.type === DIRECTIVE && p.name === 'bind' && (p.arg?.content === 'as' || p.arg?.content === 'asChild' || p.arg?.content === 'as-child')) || (p.type === 6 && (p.name === 'as' || p.name === 'as-child'))))
+      throw fail('the element also binds `as` / `as-child`; rewrite it by hand')
+    const source = is.exp.content
+    const m = /\brenderAs(?:Empty)?\(/.exec(source)
+    // the call's closing parenthesis
+    let depth = 0
+    let close = -1
+    for (let i = m.index + m[0].length - 1; i < source.length; i++) {
+      if (source[i] === '(') {
+        depth++
+      }
+      else if (source[i] === ')' && --depth === 0) {
+        close = i
+        break
+      }
+    }
+    if (close < 0)
+      throw fail('unbalanced call')
+    const [as, asChild, fallback, ...rest] = splitArgs(source.slice(m.index + m[0].length, close))
+    if (!as || rest.length)
+      throw fail('expected renderAs(as, asChild?, defaultTagName?)')
+    const before = source.slice(0, m.index)
+    const after = source.slice(close + 1)
+    let q, inner
+    try {
+      ({ q, inner } = quotes(code, is))
+    }
+    catch (e) {
+      throw fail(e.message)
+    }
+    const whole = !before.trim() && !after.trim()
+    const asValue = fallback ? `(${as}) ?? ${fallback}` : as
+    const bindings = [`:as=${q}${asValue.replaceAll(q, inner)}${q}`, ...(asChild ? [`:as-child=${q}${asChild.replaceAll(q, inner)}${q}`] : [])].join(' ')
+    if (whole) {
+      edits.push([is.loc.start.offset, is.loc.end.offset, bindings])
+      // `<component` → `<Primitive`, and its closing tag
+      edits.push([el.loc.start.offset + 1, el.loc.start.offset + 1 + 'component'.length, 'Primitive'])
+      if (!el.isSelfClosing) {
+        const end = el.loc.end.offset
+        if (code.slice(end - '</component>'.length, end) !== '</component>')
+          throw fail('no `</component>` closing tag')
+        edits.push([end - '</component>'.length + 2, end - 1, 'Primitive'])
+      }
+    }
+    else {
+      edits.push([is.loc.start.offset, is.loc.end.offset, `:is=${q}${before}Primitive${after}${q} ${bindings}`])
+    }
+    count(id, 'renderAs')
+  })
+  if (!edits.length)
+    return code
+  let out = applyEdits(code, edits)
+  if (!/\bimport\s*\{[^}]*\bPrimitive\b[^}]*\}\s*from\s*'@\/Primitive'/.test(out)) {
+    const setup = templateAst(out, id).scriptSetup
+    if (!setup)
+      throw new Error(`[reka-vapor] renderAsToPrimitive (vapor/plugins.mjs): ${id} has no <script setup> to import Primitive in.`)
+    const at = setup.loc.start.offset
+    out = `${out.slice(0, at)}\nimport { Primitive } from '@/Primitive'${out.slice(at)}`
+  }
+  return out
+}
+
 /**
  * `<Primitive …><slot :x="…" /></Primitive>` → `<Primitive … v-slot="__rkc"><slot v-bind="__rkc" :x="…" /></Primitive>`
  * so the `props` Primitive hands its slot in `asChild` mode reach the consumer's slot. Only the first
@@ -377,7 +500,14 @@ function asChildSlotProps(code, id) {
     if (close < 0)
       return code
     count(id, 'slotProps')
-    const inner = code.slice(end + 1, close).replace(/<slot\b(?![^>]*\b(?:name=|v-bind=))/g, '<slot v-bind="__rkc"')
+    let inner = code.slice(end + 1, close).replace(/<slot\b(?![^>]*\b(?:name=|v-bind=))/g, '<slot v-bind="__rkc"')
+    // A default slot written as `<template v-if="…" #default>` (parts that gate their children with
+    // `rendersChildren`) takes the slot props there: Vue rejects `v-slot` on both
+    const nested = /(<template\b[^>]*?\s)(#default|v-slot:default)(?=[\s>])/.exec(inner)
+    if (nested) {
+      inner = `${inner.slice(0, nested.index) + nested[1] + nested[2]}="__rkc"${inner.slice(nested.index + nested[0].length)}`
+      return `${code.slice(0, end + 1)}${inner}${code.slice(close)}`
+    }
     return `${code.slice(0, end)} v-slot="__rkc"${code.slice(end, end + 1)}${inner}${code.slice(close)}`
   }
   return code
@@ -390,6 +520,11 @@ const PATCHES = {
   [src('shared/createContext.ts')]: [
     ['import { inject, provide } from \'vue\'', `import { inject, provide } from 'vue'\nimport { prepareReferencedIds } from ${JSON.stringify(resolve(here, 'src/shared/useReferencedId.ts'))}`],
     ['provide(injectionKey, contextValue)', 'provide(injectionKey, prepareReferencedIds(contextValue))'],
+  ],
+  // Vapor calls a component's `@vue:mounted` hook without a vnode; `Primitive` calls it again with
+  // its element (see vapor/src/Primitive.ts), so the binder skips the call that has none
+  [src('shared/formReset.ts')]: [
+    ['vnode => bind(vnode.el as Element | null,', 'vnode => vnode && bind(vnode.el as Element | null,'],
   ],
   [src('ScrollArea/ScrollAreaVirtualizer.vue')]: [
     [/\/\/ not a computed: slots aren't reactive[^\n]*\nfunction getVirtualizedItems\(\) \{[\s\S]*?\n\}\n/, `function rowAttrs(item: VirtualItem) {
@@ -428,22 +563,48 @@ function rowAttrs(item: VirtualItem) {
       <slot :item="rootContext.expandedItems.value[item.index]" :virtualizer="virtualizer" :virtual-item="item" />
     </Primitive>`],
   ],
-  // VNode cloning (`cloneVNode(slotVNode, rowAttrs)`) becomes an `asChild` Primitive per row
-  [src('Listbox/ListboxVirtualizer.vue')]: [
-    [/const virtualizedItems = computed\(\(\) => virtualizer\.value\.getVirtualItems\(\)\.map\(\(item\) => \{[\s\S]*?\n\}\)\)\n/, `const virtualItems = computed(() => virtualizer.value.getVirtualItems())
-function rowAttrs(item: VirtualItem) {
-  return {
-    'data-index': item.index,
-    'aria-setsize': props.options.length,
-    'aria-posinset': item.index + 1,
-    'style': { position: 'absolute', top: 0, left: 0, transform: \`translateY(\${item.start}px)\`, overflowAnchor: 'none' },
+  // The shared list virtualizer clones each row's slot VNode (`renderRows`); in Vapor the row is an
+  // `asChild` Primitive that gets the same attributes (`rowAttrs`)
+  [src('Listbox/useListVirtualizer.ts')]: [
+    ['import { cloneVNode, computed, Fragment, h } from \'vue\'', 'import { computed } from \'vue\''],
+    [/ {2}function firstNode\(nodes: VNode\[\] \| undefined\) \{[\s\S]*?\n {2}\}\n\n {2}function renderRows\([\s\S]*?\n {2}\}\n\n(?= {2}\/\*\*\n {3}\* The option index typeahead)/, `  /** The attributes the element of the row at \`item\` gets (positioning, ids, set size). */
+  function rowAttrs(item: VirtualItem): Record<string, unknown> {
+    const row = rows.value[item.index]
+    const style = {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      transform: \`translateY(\${item.start}px)\`,
+      overflowAnchor: 'none',
+    }
+    if (row?.type === 'group')
+      return { 'id': row.id, 'role': 'presentation', 'data-index': item.index, 'data-reka-virtualizer-group': '', style }
+    return {
+      'data-index': item.index,
+      'aria-setsize': flatOptions.value.length,
+      'aria-posinset': row ? row.optionIndex + 1 : undefined,
+      ...(row?.groupId ? { 'aria-describedby': row.groupId } : {}),
+      ...(row?.group?.disabled ? { disabled: true } : {}),
+      style,
+    }
   }
-}
+
 `],
+    ['    renderRows,\n', '    rowAttrs,\n'],
+  ],
+  [src('Listbox/ListboxVirtualizer.vue')]: [
+    ['const virtualizedItems = list.renderRows(slots as any)\n', ''],
     ['import { useCollection } from \'@/Collection\'', 'import { useCollection } from \'@/Collection\'\nimport { Primitive } from \'@/Primitive\''],
-    [/<component\s+:is="is"\s+v-for="\{ is, item \} in virtualizedItems"\s+:key="item.index"\s*\/>/, `<Primitive v-for="item in virtualItems" :key="item.index" as-child v-bind="rowAttrs(item)">
-      <slot :option="props.options[item.index]" :virtualizer="virtualizer" :virtual-item="item" />
-    </Primitive>`],
+    [/<component\s+:is="is"\s+v-for="\{ is, item \} in virtualizedItems"\s+:key="item.index"\s*\/>/, `<template v-for="item in virtualizer.getVirtualItems()" :key="item.index">
+      <Primitive v-if="list.rows.value[item.index]?.type === 'group'" as-child v-bind="list.rowAttrs(item)">
+        <slot name="group" :group="(list.rows.value[item.index] as any).group" :virtual-item="item">
+          <div>{{ (list.rows.value[item.index] as any).group.label }}</div>
+        </slot>
+      </Primitive>
+      <Primitive v-else-if="list.rows.value[item.index]" as-child v-bind="list.rowAttrs(item)">
+        <slot :option="(list.rows.value[item.index] as any).option" :virtualizer="virtualizer" :virtual-item="item" />
+      </Primitive>
+    </template>`],
   ],
 }
 
@@ -659,6 +820,7 @@ function srcTransformsPlugin() {
       let out = applyPatches(rewriteImports(code, id), id)
       if (id.endsWith('.vue')) {
         count(id, 'sfcs')
+        out = renderAsToPrimitive(out, id)
         out = presenceRootAttrs(out, id)
         out = vShowOnComponents(out, id)
         out = asChildComponentChains(out, id)

@@ -28,11 +28,12 @@ describe('tooltip, hover card (Vapor)', () => {
 
   it('hover card: opens on hover and focus, closes on leave', async () => {
     await mount(Fixture)
-    const trigger = expectSlotted('card-trigger', { 'data-state': 'closed' })
+    // A popup trigger marks the open state with `data-popup-open`
+    const trigger = expectSlotted('card-trigger', { 'data-popup-open': null })
     await userEvent.hover(trigger)
     await shown('card-content')
     expect(text('card')).toBe('true')
-    expect(trigger.dataset.state).toBe('open')
+    expect(trigger.hasAttribute('data-popup-open')).toBe(true)
     await userEvent.hover(byId('away'))
     await gone('card-content')
     trigger.focus()

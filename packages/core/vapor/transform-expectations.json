@@ -6,23 +6,23 @@
     },
     "Accordion/AccordionHeader.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Accordion/AccordionItem.vue": {
       "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
+      "sfcs": 1
     },
     "Accordion/AccordionRoot.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Accordion/AccordionTrigger.vue": {
       "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
+      "sfcs": 1
     },
     "AlertDialog/AlertDialogAction.vue": {
       "exposeElement": 1,
@@ -62,231 +62,68 @@
     },
     "AspectRatio/AspectRatio.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
-    "Autocomplete/AutocompleteInput.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "Autocomplete/AutocompleteRoot.vue": {
-      "exposeElement": 1,
-      "getCurrentInstance": 1,
-      "sfcs": 1
-    },
     "Avatar/AvatarFallback.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Avatar/AvatarImage.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1,
       "vShow": 1
     },
     "Avatar/AvatarRoot.vue": {
       "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Calendar/CalendarCell.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Calendar/CalendarCellTrigger.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Calendar/CalendarGrid.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Calendar/CalendarGridBody.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Calendar/CalendarGridHead.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Calendar/CalendarGridRow.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Calendar/CalendarHeadCell.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Calendar/CalendarHeader.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Calendar/CalendarHeading.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Calendar/CalendarNext.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Calendar/CalendarPrev.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Calendar/CalendarRoot.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Carousel/CarouselAutoplayToggle.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Carousel/CarouselContent.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Carousel/CarouselIndicator.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Carousel/CarouselIndicatorGroup.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Carousel/CarouselItem.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Carousel/CarouselNext.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Carousel/CarouselPrevious.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Carousel/CarouselRoot.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Carousel/CarouselViewport.vue": {
-      "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Checkbox/CheckboxGroupRoot.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Checkbox/CheckboxIndicator.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Checkbox/CheckboxRoot.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Collapsible/CollapsibleContent.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Collapsible/CollapsibleRoot.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Collapsible/CollapsibleTrigger.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
-    },
-    "ColorArea/ColorAreaArea.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "ColorArea/ColorAreaRoot.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "ColorArea/ColorAreaThumb.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "ColorField/ColorFieldInput.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "ColorField/ColorFieldRoot.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "ColorSlider/ColorSliderRoot.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "ColorSlider/ColorSliderThumb.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "ColorSlider/ColorSliderTrack.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "ColorSwatch/ColorSwatch.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "ColorSwatchPicker/ColorSwatchPickerItem.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "ColorSwatchPicker/ColorSwatchPickerItemIndicator.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "ColorSwatchPicker/ColorSwatchPickerItemSwatch.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "ColorSwatchPicker/ColorSwatchPickerRoot.vue": {
-      "chains": 1,
-      "exposeElement": 1,
-      "sfcs": 1
     },
     "Combobox/ComboboxAnchor.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -296,6 +133,7 @@
     },
     "Combobox/ComboboxCancel.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -305,13 +143,15 @@
       "vShow": 1
     },
     "Combobox/ComboboxContentImpl.vue": {
-      "chains": 3,
       "exposeElement": 1,
+      "getCurrentInstance": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Combobox/ComboboxEmpty.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -321,7 +161,9 @@
     },
     "Combobox/ComboboxInput.vue": {
       "exposeElement": 1,
-      "sfcs": 1
+      "renderAs": 1,
+      "sfcs": 1,
+      "slotProps": 1
     },
     "Combobox/ComboboxItem.vue": {
       "exposeElement": 1,
@@ -333,6 +175,7 @@
     },
     "Combobox/ComboboxLabel.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -342,21 +185,29 @@
     },
     "Combobox/ComboboxRoot.vue": {
       "exposeElement": 1,
-      "getCurrentInstance": 1,
-      "sfcs": 1
+      "renderAs": 1,
+      "sfcs": 1,
+      "slotProps": 1
     },
     "Combobox/ComboboxSeparator.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Combobox/ComboboxTrigger.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
+    "Combobox/ComboboxValue.vue": {
+      "exposeElement": 1,
+      "sfcs": 1
+    },
     "Combobox/ComboboxViewport.vue": {
       "exposeElement": 1,
+      "renderAs": 2,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -430,203 +281,27 @@
     },
     "ContextMenu/ContextMenuTrigger.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
-    },
-    "DateField/DateFieldInput.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "DateField/DateFieldRoot.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "DatePicker/DatePickerAnchor.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerArrow.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerCalendar.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerCell.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerCellTrigger.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerClose.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerContent.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerField.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerGrid.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerGridBody.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerGridHead.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerGridRow.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerHeadCell.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerHeader.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerHeading.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerInput.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerNext.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerPrev.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerRoot.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DatePicker/DatePickerTrigger.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangeField/DateRangeFieldInput.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "DateRangeField/DateRangeFieldRoot.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "DateRangePicker/DateRangePickerAnchor.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerArrow.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerCalendar.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerCell.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerCellTrigger.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerClose.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerContent.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerField.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerGrid.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerGridBody.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerGridHead.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerGridRow.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerHeadCell.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerHeader.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerHeading.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerInput.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerNext.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerPrev.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerRoot.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "DateRangePicker/DateRangePickerTrigger.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
     },
     "Dialog/DialogClose.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Dialog/DialogContent.vue": {
       "exposeElement": 1,
       "sfcs": 1,
-      "vShowWhenKept": 1
+      "vShow": 2
     },
     "Dialog/DialogContentImpl.vue": {
-      "chains": 1,
       "exposeElement": 1,
-      "sfcs": 1
+      "getCurrentInstance": 1,
+      "renderAs": 1,
+      "sfcs": 1,
+      "slotProps": 1
     },
     "Dialog/DialogContentModal.vue": {
       "exposeElement": 1,
@@ -638,6 +313,7 @@
     },
     "Dialog/DialogDescription.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -648,6 +324,7 @@
     },
     "Dialog/DialogOverlayImpl.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -661,102 +338,27 @@
     },
     "Dialog/DialogTitle.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Dialog/DialogTrigger.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "DismissableLayer/DismissableLayer.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "DismissableLayer/DismissableLayerBranch.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
-    },
-    "Drawer/DrawerClose.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Drawer/DrawerContent.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "Drawer/DrawerContentImpl.vue": {
-      "chains": 1,
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "Drawer/DrawerDescription.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Drawer/DrawerHandle.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Drawer/DrawerIndent.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Drawer/DrawerIndentBackground.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Drawer/DrawerOverlay.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "Drawer/DrawerOverlayImpl.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Drawer/DrawerPortal.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "Drawer/DrawerProvider.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "Drawer/DrawerRoot.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "Drawer/DrawerSwipeArea.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Drawer/DrawerTitle.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Drawer/DrawerTrigger.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Drawer/DrawerViewport.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Drawer/DrawerVirtualKeyboardProvider.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
     },
     "DropdownMenu/DropdownMenuArrow.vue": {
       "exposeElement": 1,
@@ -772,6 +374,7 @@
     },
     "DropdownMenu/DropdownMenuFilter.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -824,8 +427,8 @@
       "sfcs": 1
     },
     "DropdownMenu/DropdownMenuTrigger.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -864,59 +467,18 @@
       "sfcs": 1,
       "slotProps": 1
     },
-    "Field/FieldControl.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Field/FieldDescription.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Field/FieldError.vue": {
-      "exposeElement": 1,
-      "presenceAttrs": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Field/FieldLabel.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "Field/FieldRoot.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Field/FieldValidity.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "FocusScope/FocusScope.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Form/FormRoot.vue": {
-      "exposeElement": 1,
-      "getCurrentInstance": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
     "HoverCard/HoverCardArrow.vue": {
       "exposeElement": 1,
       "sfcs": 1
     },
     "HoverCard/HoverCardContent.vue": {
-      "asyncComponents": 1,
       "exposeElement": 1,
       "presenceAttrs": 1,
       "sfcs": 1
     },
     "HoverCard/HoverCardContentImpl.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "getCurrentInstance": 1,
       "sfcs": 1
     },
     "HoverCard/HoverCardPortal.vue": {
@@ -928,51 +490,58 @@
       "sfcs": 1
     },
     "HoverCard/HoverCardTrigger.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Label/Label.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Listbox/ListboxContent.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "getCurrentInstance": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Listbox/ListboxFilter.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Listbox/ListboxGroup.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Listbox/ListboxGroupLabel.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Listbox/ListboxItem.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Listbox/ListboxItemIndicator.vue": {
       "exposeElement": 1,
       "presenceAttrs": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Listbox/ListboxRoot.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -983,9 +552,14 @@
       "slotProps": 1,
       "vueuse": 1
     },
+    "Listbox/useListVirtualizer.ts": {
+      "patches": 3
+    },
     "Menu/MenuAnchor.vue": {
       "exposeElement": 1,
-      "sfcs": 1
+      "renderAs": 1,
+      "sfcs": 1,
+      "slotProps": 1
     },
     "Menu/MenuArrow.vue": {
       "exposeElement": 1,
@@ -997,16 +571,16 @@
     },
     "Menu/MenuContent.vue": {
       "exposeElement": 1,
-      "sfcs": 1,
-      "vShowWhenKept": 1
+      "sfcs": 1
     },
     "Menu/MenuContentImpl.vue": {
-      "chains": 3,
       "exposeElement": 1,
+      "getCurrentInstance": 1,
       "sfcs": 1
     },
     "Menu/MenuGroup.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -1016,17 +590,20 @@
     },
     "Menu/MenuItemImpl.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Menu/MenuItemIndicator.vue": {
       "exposeElement": 1,
       "presenceAttrs": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Menu/MenuLabel.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -1056,6 +633,7 @@
     },
     "Menu/MenuSeparator.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -1066,11 +644,9 @@
     "Menu/MenuSubContent.vue": {
       "exposeElement": 1,
       "presenceAttrs": 1,
-      "sfcs": 1,
-      "vShowWhenKept": 1
+      "sfcs": 1
     },
     "Menu/MenuSubTrigger.vue": {
-      "chains": 1,
       "exposeElement": 1,
       "sfcs": 1
     },
@@ -1119,8 +695,8 @@
       "sfcs": 1
     },
     "Menubar/MenubarRoot.vue": {
-      "chains": 2,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -1141,108 +717,8 @@
       "sfcs": 1
     },
     "Menubar/MenubarTrigger.vue": {
-      "chains": 3,
       "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthPicker/MonthPickerCell.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthPicker/MonthPickerCellTrigger.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthPicker/MonthPickerGrid.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthPicker/MonthPickerGridBody.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthPicker/MonthPickerGridRow.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthPicker/MonthPickerHeader.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthPicker/MonthPickerHeading.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthPicker/MonthPickerNext.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthPicker/MonthPickerPrev.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthPicker/MonthPickerRoot.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthRangePicker/MonthRangePickerCell.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthRangePicker/MonthRangePickerCellTrigger.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthRangePicker/MonthRangePickerGrid.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthRangePicker/MonthRangePickerGridBody.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthRangePicker/MonthRangePickerGridRow.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthRangePicker/MonthRangePickerHeader.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthRangePicker/MonthRangePickerHeading.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthRangePicker/MonthRangePickerNext.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthRangePicker/MonthRangePickerPrev.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "MonthRangePicker/MonthRangePickerRoot.vue": {
-      "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -1252,125 +728,149 @@
     },
     "NavigationMenu/NavigationMenuContentImpl.vue": {
       "exposeElement": 1,
-      "sfcs": 1
+      "getCurrentInstance": 1,
+      "renderAs": 1,
+      "sfcs": 1,
+      "slotProps": 1
     },
     "NavigationMenu/NavigationMenuIndicator.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "NavigationMenu/NavigationMenuItem.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "NavigationMenu/NavigationMenuLink.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "getCurrentInstance": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "NavigationMenu/NavigationMenuList.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "NavigationMenu/NavigationMenuRoot.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "NavigationMenu/NavigationMenuSub.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "NavigationMenu/NavigationMenuTrigger.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "NavigationMenu/NavigationMenuViewport.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "NumberField/NumberFieldDecrement.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "NumberField/NumberFieldIncrement.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "NumberField/NumberFieldInput.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "NumberField/NumberFieldRoot.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Pagination/PaginationEllipsis.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Pagination/PaginationFirst.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Pagination/PaginationLast.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Pagination/PaginationList.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Pagination/PaginationListItem.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Pagination/PaginationNext.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Pagination/PaginationPrev.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Pagination/PaginationRoot.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "PinInput/PinInputInput.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "PinInput/PinInputRoot.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Popover/PopoverAnchor.vue": {
       "exposeElement": 1,
-      "sfcs": 1
+      "renderAs": 1,
+      "sfcs": 1,
+      "slotProps": 1
     },
     "Popover/PopoverArrow.vue": {
       "exposeElement": 1,
@@ -1378,19 +878,18 @@
     },
     "Popover/PopoverClose.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Popover/PopoverContent.vue": {
-      "asyncComponents": 1,
       "exposeElement": 1,
       "presenceAttrs": 1,
-      "sfcs": 1,
-      "vShowWhenKept": 1
+      "sfcs": 1
     },
     "Popover/PopoverContentImpl.vue": {
-      "chains": 2,
       "exposeElement": 1,
+      "getCurrentInstance": 1,
       "sfcs": 1
     },
     "Popover/PopoverContentModal.vue": {
@@ -1410,12 +909,14 @@
       "sfcs": 1
     },
     "Popover/PopoverTrigger.vue": {
-      "chains": 1,
       "exposeElement": 1,
-      "sfcs": 1
+      "renderAs": 1,
+      "sfcs": 1,
+      "slotProps": 1
     },
     "Popper/PopperAnchor.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -1425,6 +926,7 @@
     },
     "Popper/PopperContent.vue": {
       "exposeElement": 1,
+      "renderAs": 2,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -1432,123 +934,63 @@
       "exposeElement": 1,
       "sfcs": 1
     },
-    "Primitive/Slot.ts": {
+    "Popper/usePopperAnchor.ts": {
+      "getCurrentInstance": 1
+    },
+    "Primitive/useRender.ts": {
       "getCurrentInstance": 1
     },
     "Progress/ProgressIndicator.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Progress/ProgressRoot.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "RadioGroup/Radio.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "RadioGroup/RadioGroupIndicator.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "RadioGroup/RadioGroupItem.vue": {
-      "chains": 1,
       "exposeElement": 1,
       "sfcs": 1
     },
     "RadioGroup/RadioGroupRoot.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
-    },
-    "RangeCalendar/RangeCalendarCell.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "RangeCalendar/RangeCalendarCellTrigger.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "RangeCalendar/RangeCalendarGrid.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "RangeCalendar/RangeCalendarGridBody.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "RangeCalendar/RangeCalendarGridHead.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "RangeCalendar/RangeCalendarGridRow.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "RangeCalendar/RangeCalendarHeadCell.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "RangeCalendar/RangeCalendarHeader.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "RangeCalendar/RangeCalendarHeading.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "RangeCalendar/RangeCalendarNext.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "RangeCalendar/RangeCalendarPrev.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "RangeCalendar/RangeCalendarRoot.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Rating/RatingItem.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Rating/RatingItemIndicator.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "Rating/RatingRoot.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
     },
     "RovingFocus/RovingFocusGroup.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "RovingFocus/RovingFocusItem.vue": {
       "exposeElement": 1,
+      "getCurrentInstance": 1,
       "sfcs": 1,
       "slotProps": 1
+    },
+    "RovingFocus/useRovingFocusGroup.ts": {
+      "getCurrentInstance": 1
+    },
+    "RovingFocus/useRovingFocusItem.ts": {
+      "getCurrentInstance": 1
     },
     "ScrollArea/ScrollAreaCorner.vue": {
       "exposeElement": 1,
@@ -1611,12 +1053,6 @@
       "sfcs": 1,
       "slotProps": 1
     },
-    "ScrollArea/ScrollAreaVirtualizer.vue": {
-      "exposeElement": 1,
-      "patches": 3,
-      "sfcs": 1,
-      "slotProps": 1
-    },
     "Select/BubbleSelect.vue": {
       "exposeElement": 1,
       "sfcs": 1
@@ -1630,50 +1066,48 @@
       "sfcs": 1
     },
     "Select/SelectContentImpl.vue": {
-      "chains": 3,
       "exposeElement": 1,
-      "sfcs": 1
+      "getCurrentInstance": 1,
+      "renderAs": 1,
+      "sfcs": 1,
+      "slotProps": 1
     },
     "Select/SelectGroup.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Select/SelectIcon.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Select/SelectItem.vue": {
-      "chains": 1,
       "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Select/SelectItemAlignedPosition.vue": {
-      "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Select/SelectItemIndicator.vue": {
       "exposeElement": 1,
       "presenceAttrs": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Select/SelectItemText.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Select/SelectLabel.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
-    },
-    "Select/SelectPopperPosition.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
     },
     "Select/SelectPortal.vue": {
       "exposeElement": 1,
@@ -1689,8 +1123,8 @@
     },
     "Select/SelectScrollButtonImpl.vue": {
       "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
+      "getCurrentInstance": 1,
+      "sfcs": 1
     },
     "Select/SelectScrollDownButton.vue": {
       "exposeElement": 1,
@@ -1702,90 +1136,67 @@
     },
     "Select/SelectSeparator.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Select/SelectTrigger.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Select/SelectValue.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Select/SelectViewport.vue": {
       "exposeElement": 1,
+      "renderAs": 2,
       "sfcs": 1,
       "slotProps": 1
     },
+    "Select/SelectVirtualizer.vue": {
+      "exposeElement": 1,
+      "sfcs": 1,
+      "vueuse": 1
+    },
     "Separator/Separator.vue": {
       "exposeElement": 1,
-      "sfcs": 1
-    },
-    "Slider/SliderHorizontal.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "Slider/SliderImpl.vue": {
-      "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Slider/SliderRange.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Slider/SliderRoot.vue": {
-      "chains": 1,
       "exposeElement": 1,
-      "sfcs": 1
+      "getCurrentInstance": 1,
+      "renderAs": 1,
+      "sfcs": 1,
+      "slotProps": 1
     },
     "Slider/SliderThumb.vue": {
       "exposeElement": 1,
-      "sfcs": 1
-    },
-    "Slider/SliderThumbImpl.vue": {
-      "chains": 1,
-      "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1,
       "vueuse": 1
     },
     "Slider/SliderTrack.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
-    "Slider/SliderVertical.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "SliderArea/SliderAreaArea.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "SliderArea/SliderAreaRegion.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "SliderArea/SliderAreaRoot.vue": {
-      "chains": 1,
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "SliderArea/SliderAreaThumb.vue": {
-      "chains": 1,
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1,
-      "vueuse": 1
+    "Slider/useSliderPointer.ts": {
+      "getCurrentInstance": 1
     },
     "Splitter/SplitterGroup.vue": {
       "exposeElement": 1,
@@ -1838,129 +1249,99 @@
     },
     "Switch/SwitchRoot.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Switch/SwitchThumb.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Tabs/TabsContent.vue": {
       "exposeElement": 1,
       "presenceAttrs": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Tabs/TabsIndicator.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1,
       "vueuse": 1
     },
     "Tabs/TabsList.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Tabs/TabsRoot.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Tabs/TabsTrigger.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
-    "TagGroup/TagGroupItem.vue": {
-      "chains": 1,
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "TagGroup/TagGroupItemDelete.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "TagGroup/TagGroupItemText.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "TagGroup/TagGroupRoot.vue": {
-      "chains": 1,
-      "exposeElement": 1,
-      "getCurrentInstance": 1,
-      "sfcs": 1,
-      "slotProps": 1
+    "Tabs/utils.ts": {
+      "getCurrentInstance": 1
     },
     "TagsInput/TagsInputClear.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "TagsInput/TagsInputInput.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "TagsInput/TagsInputItem.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "TagsInput/TagsInputItemDelete.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "TagsInput/TagsInputItemText.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "TagsInput/TagsInputRoot.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Teleport/Teleport.vue": {
       "exposeElement": 1,
-      "sfcs": 1,
-      "vueuse": 1
-    },
-    "TimeField/TimeFieldInput.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "TimeField/TimeFieldRoot.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "TimeRangeField/TimeRangeFieldInput.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "TimeRangeField/TimeRangeFieldRoot.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
+      "getCurrentInstance": 1,
+      "sfcs": 1
     },
     "Toast/FocusProxy.vue": {
       "exposeElement": 1,
       "sfcs": 1
     },
     "Toast/ToastAction.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -1968,23 +1349,19 @@
       "exposeElement": 1,
       "sfcs": 1
     },
-    "Toast/ToastAnnounceExclude.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
     "Toast/ToastArrow.vue": {
       "exposeElement": 1,
       "sfcs": 1
     },
     "Toast/ToastClose.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Toast/ToastDescription.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -2005,74 +1382,44 @@
       "sfcs": 1
     },
     "Toast/ToastRootImpl.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Toast/ToastTitle.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Toast/ToastViewport.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Toggle/Toggle.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "ToggleGroup/ToggleGroupItem.vue": {
-      "chains": 1,
       "exposeElement": 1,
       "sfcs": 1
     },
     "ToggleGroup/ToggleGroupRoot.vue": {
-      "chains": 1,
       "exposeElement": 1,
-      "sfcs": 1
-    },
-    "Toolbar/ToolbarButton.vue": {
-      "chains": 1,
-      "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
-    },
-    "Toolbar/ToolbarLink.vue": {
-      "chains": 1,
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Toolbar/ToolbarRoot.vue": {
-      "chains": 1,
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "Toolbar/ToolbarSeparator.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "Toolbar/ToolbarToggleGroup.vue": {
-      "exposeElement": 1,
-      "sfcs": 1
-    },
-    "Toolbar/ToolbarToggleItem.vue": {
-      "chains": 1,
-      "exposeElement": 1,
-      "sfcs": 1
     },
     "Tooltip/TooltipArrow.vue": {
       "exposeElement": 1,
       "sfcs": 1
     },
     "Tooltip/TooltipContent.vue": {
-      "asyncComponents": 1,
       "exposeElement": 1,
       "presenceAttrs": 1,
       "sfcs": 1
@@ -2082,8 +1429,8 @@
       "sfcs": 1
     },
     "Tooltip/TooltipContentImpl.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "getCurrentInstance": 1,
       "sfcs": 1
     },
     "Tooltip/TooltipPortal.vue": {
@@ -2099,20 +1446,20 @@
       "sfcs": 1
     },
     "Tooltip/TooltipTrigger.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Tree/TreeItem.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
     "Tree/TreeRoot.vue": {
-      "chains": 1,
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -2123,13 +1470,9 @@
       "slotProps": 1,
       "vueuse": 1
     },
-    "Viewport/Viewport.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
     "VisuallyHidden/VisuallyHidden.vue": {
       "exposeElement": 1,
+      "renderAs": 1,
       "sfcs": 1,
       "slotProps": 1
     },
@@ -2141,112 +1484,7 @@
       "exposeElement": 1,
       "sfcs": 1
     },
-    "YearPicker/YearPickerCell.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearPicker/YearPickerCellTrigger.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearPicker/YearPickerGrid.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearPicker/YearPickerGridBody.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearPicker/YearPickerGridRow.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearPicker/YearPickerHeader.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearPicker/YearPickerHeading.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearPicker/YearPickerNext.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearPicker/YearPickerPrev.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearPicker/YearPickerRoot.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearRangePicker/YearRangePickerCell.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearRangePicker/YearRangePickerCellTrigger.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearRangePicker/YearRangePickerGrid.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearRangePicker/YearRangePickerGridBody.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearRangePicker/YearRangePickerGridRow.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearRangePicker/YearRangePickerHeader.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearRangePicker/YearRangePickerHeading.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearRangePicker/YearRangePickerNext.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearRangePicker/YearRangePickerPrev.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "YearRangePicker/YearRangePickerRoot.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
     "shared/component/Arrow.vue": {
-      "exposeElement": 1,
-      "sfcs": 1,
-      "slotProps": 1
-    },
-    "shared/component/BaseSeparator.vue": {
       "exposeElement": 1,
       "sfcs": 1,
       "slotProps": 1
@@ -2254,38 +1492,53 @@
     "shared/createContext.ts": {
       "patches": 2
     },
+    "shared/formReset.ts": {
+      "patches": 1
+    },
+    "shared/splitWrapperAttrs.ts": {
+      "getCurrentInstance": 1
+    },
     "shared/useBodyScrollLock.ts": {
-      "vueuse": 1
+      "getCurrentInstance": 1
+    },
+    "shared/useDirection.ts": {
+      "getCurrentInstance": 1
+    },
+    "shared/useLingeringPresence.ts": {
+      "getCurrentInstance": 1
+    },
+    "shared/usePartId.ts": {
+      "getCurrentInstance": 1
     }
   },
   "overrides": {
-    "Collection/Collection.ts": 2,
+    "Collection/Collection.ts": 6,
     "Presence/Presence.ts": 1,
-    "Primitive/Primitive.ts": 1,
+    "Primitive/Primitive.ts": 2,
+    "Primitive/Slot.ts": 2,
+    "Primitive/renderAs.ts": 126,
+    "Teleport/portalGate.ts": 19,
     "shared/useEmitAsProps.ts": 2,
-    "shared/useForwardExpose.ts": 3,
+    "shared/useForwardElement.ts": 5,
+    "shared/useForwardExpose.ts": 1,
     "shared/useForwardProps.ts": 2,
-    "shared/useForwardRef.ts": 1,
     "shared/useForwardScopeId.ts": 1,
     "shared/useReferencedId.ts": 1,
     "shared/useTriggerId.ts": 1
   },
   "totals": {
-    "asyncComponents": 3,
-    "chains": 59,
-    "exposeElement": 476,
-    "getCurrentInstance": 5,
-    "patches": 11,
-    "presenceAttrs": 9,
-    "sfcs": 476,
-    "slotProps": 263,
-    "vShow": 3,
-    "vShowWhenKept": 4,
-    "vueuse": 7
+    "exposeElement": 290,
+    "getCurrentInstance": 25,
+    "patches": 12,
+    "presenceAttrs": 8,
+    "renderAs": 128,
+    "sfcs": 290,
+    "slotProps": 150,
+    "vShow": 5,
+    "vueuse": 5
   },
   "vueuse": {
-    "tryOnBeforeUnmount": 1,
-    "useMounted": 4,
-    "useParentElement": 2
+    "useMounted": 2,
+    "useParentElement": 3
   }
 }

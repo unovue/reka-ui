@@ -28,7 +28,7 @@ describe('tabs, radio group, toggle group, accordion (Vapor)', () => {
   it('tabs: asChild in both forms', async () => {
     await mount(Fixture)
     expectAdopted('tab-c', { 'role': 'tab', 'aria-selected': 'false' })
-    expectSlotted('tab-d', { 'role': 'tab', 'aria-selected': 'false', 'data-state': 'inactive' })
+    expectSlotted('tab-d', { 'role': 'tab', 'aria-selected': 'false', 'data-state': 'unchecked' })
   })
 
   it('radio group: arrows check and roam, one tab stop, form value', async () => {
@@ -50,7 +50,7 @@ describe('tabs, radio group, toggle group, accordion (Vapor)', () => {
   it('toggle group: multiple v-model, roving focus, asChild in both forms', async () => {
     await mount(Fixture)
     expectAdopted('tg-italic', { 'aria-pressed': 'false' })
-    expectSlotted('tg-underline', { 'aria-pressed': 'false', 'data-state': 'off' })
+    expectSlotted('tg-underline', { 'aria-pressed': 'false', 'data-state': 'unchecked' })
     await userEvent.click(byId('tg-bold'))
     await until(() => expect(text('formats')).toBe('bold'))
     await userEvent.keyboard('{ArrowRight}')

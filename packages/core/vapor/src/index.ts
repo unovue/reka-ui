@@ -1,5 +1,5 @@
 /**
- * `reka-ui/vapor`: the v2 component SFCs from `src/`, compiled in Vapor mode, with the VDOM-only
+ * `reka-ui/vapor`: the component SFCs from `src/`, compiled in Vapor mode, with the VDOM-only
  * modules swapped for Vapor versions (see `vapor/plugins.mjs`).
  *
  * @experimental Needs vue >=3.6.0-rc.16, client-side only. Export a family here only once its tests in
@@ -34,7 +34,7 @@ export { PinInputInput, PinInputRoot } from '@/PinInput'
 export { PopoverArrow, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '@/Popover'
 export { ProgressIndicator, ProgressRoot } from '@/Progress'
 export { RadioGroupIndicator, RadioGroupItem, RadioGroupRoot } from '@/RadioGroup'
-export { ScrollAreaCorner, ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaScrollbarGlimpse, ScrollAreaThumb, ScrollAreaViewport, ScrollAreaVirtualizer } from '@/ScrollArea'
+export { ScrollAreaCorner, ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaScrollbarGlimpse, ScrollAreaThumb, ScrollAreaViewport } from '@/ScrollArea'
 export { SelectArrow, SelectContent, SelectGroup, SelectIcon, SelectItem, SelectItemIndicator, SelectItemText, SelectLabel, SelectPortal, SelectRoot, SelectScrollDownButton, SelectScrollUpButton, SelectSeparator, SelectTrigger, SelectValue, SelectViewport } from '@/Select'
 export { Separator } from '@/Separator'
 export { useForwardPropsEmits } from '@/shared/useForwardPropsEmits'

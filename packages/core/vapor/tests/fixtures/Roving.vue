@@ -24,7 +24,11 @@ const section = ref<string>()
 </script>
 
 <template>
-  <TabsRoot v-model="tab">
+  <!-- arrow keys select, as the test drives them (v3 defaults to manual activation) -->
+  <TabsRoot
+    v-model="tab"
+    activation-mode="automatic"
+  >
     <TabsList
       id="tabs-list"
       aria-label="Sections"

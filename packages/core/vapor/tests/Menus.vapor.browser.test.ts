@@ -55,10 +55,11 @@ describe('dropdown menu, context menu, menubar (Vapor)', () => {
 
   it('context menu: opens on right click at the pointer, arrows and Enter select', async () => {
     await mount(Fixture)
-    const area = expectSlotted('context-area', { 'data-state': 'closed' })
+    // A popup trigger marks the open state with `data-popup-open`
+    const area = expectSlotted('context-area', { 'data-popup-open': null })
     await userEvent.click(area, { button: 'right', position: { x: 20, y: 20 } })
     await shown('context-content')
-    expect(area.dataset.state).toBe('open')
+    expect(area.hasAttribute('data-popup-open')).toBe(true)
     const box = area.getBoundingClientRect()
     await until(() => expect(Math.abs(byId('context-content').getBoundingClientRect().left - (box.left + 20))).toBeLessThan(5))
     await userEvent.keyboard('{ArrowDown}{ArrowDown}')
