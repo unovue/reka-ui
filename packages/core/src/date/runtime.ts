@@ -27,7 +27,7 @@ const MISSING_TEMPORAL_MESSAGE = '[Reka UI] The date components need the Tempora
 export function getTemporal(): TemporalNamespace {
   const temporal = (globalThis as { Temporal?: TemporalNamespace }).Temporal
   if (!temporal) {
-    // `process.env.NODE_ENV`, not `import.meta.env.DEV`, which is neutered in dist.
+    // `process.env.NODE_ENV` survives the build, so the consumer's bundler drops the long message in production.
     // eslint-disable-next-line node/prefer-global/process
     throw new Error(process.env.NODE_ENV !== 'production' ? MISSING_TEMPORAL_MESSAGE : `[Reka UI] Temporal is not defined: load a polyfill. ${DOCS}`)
   }
