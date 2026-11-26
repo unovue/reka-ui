@@ -62,8 +62,7 @@ describe('given default TagsInput', () => {
       expect(input.element.value).toBe('')
     })
 
-    // TODO(v3-port): #3388 Home/End stay with the input when no tag is active (TagsInput source resolved to v3)
-    it.skip.each(['Home', 'End'])('should leave %s to the input when no tag is active', async (key) => {
+    it.each(['Home', 'End'])('should leave %s to the input when no tag is active', async (key) => {
       const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
       input.element.dispatchEvent(event)
       await nextTick()
@@ -197,8 +196,7 @@ describe('given default TagsInput', () => {
       expect(event.defaultPrevented).toBe(true)
     })
 
-    // TODO(v3-port): #3359 Tab leaves the input when addOnTab rejects the draft (TagsInput source resolved to v3)
-    it.skip('should let keydown:tab move focus when the draft is a duplicate', async () => {
+    it('should let keydown:tab move focus when the draft is a duplicate', async () => {
       await wrapper.setProps({ addOnTab: true })
       await setValueInInput('Test')
 
@@ -210,10 +208,9 @@ describe('given default TagsInput', () => {
       expect(event.defaultPrevented).toBe(false)
     })
 
-    // TODO(v3-port): #3359 Tab leaves the input when addOnTab rejects the draft (TagsInput source resolved to v3)
-    it.skip('should let keydown:tab move focus when max is reached', async () => {
-      // @ts-expect-error TODO(v3-port): #3359 v3's TagsInputRoot has no `max` prop
-      await wrapper.setProps({ addOnTab: true, max: 1 })
+    it('should let keydown:tab move focus when max is reached', async () => {
+      // The story forwards `max` to TagsInputRoot through its attrs.
+      await wrapper.setProps({ addOnTab: true, max: 1 } as Record<string, unknown>)
       await setValueInInput('tag:tab')
 
       const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
@@ -235,8 +232,7 @@ describe('given default TagsInput', () => {
       expect(event.defaultPrevented).toBe(false)
     })
 
-    // TODO(v3-port): #3359 Tab leaves the input when addOnTab rejects the draft (TagsInput source resolved to v3)
-    it.skip('should emit `invalid` once when a rejected keydown:tab blurs the input', async () => {
+    it('should emit `invalid` once when a rejected keydown:tab blurs the input', async () => {
       await wrapper.setProps({ addOnTab: true, addOnBlur: true })
       await setValueInInput('Test')
 
@@ -278,8 +274,7 @@ describe('given default TagsInput', () => {
 
     it.each(['keydown.enter', 'keydown.tab'])('should not add a whitespace-only draft on %s', expectWhitespaceDraftIgnored)
 
-    // TODO(v3-port): #3339 blank drafts are not added on blur (TagsInput source resolved to v3)
-    it.skip.each(['blur'])('should not add a whitespace-only draft on %s', expectWhitespaceDraftIgnored)
+    it.each(['blur'])('should not add a whitespace-only draft on %s', expectWhitespaceDraftIgnored)
   })
 })
 
@@ -417,7 +412,8 @@ describe('given a TagsInput with objects', async () => {
       expect(tags[before + 1].text()).toBe('tag2')
     })
 
-    it('should trim whitespace around pasted tags', async () => {
+    // #3339: pasted pieces are added as pasted, like a typed draft.
+    it('should keep the whitespace around pasted tags', async () => {
       const { wrapper, input } = setupDelimiter(',')
       const user = userEvent.setup()
       const before = wrapper.findAll('[data-reka-collection-item]').length
@@ -429,7 +425,7 @@ describe('given a TagsInput with objects', async () => {
       expect(tags.length).toBe(before + 2)
       // `text()` trims, so assert on the emitted value instead
       const emitted = wrapper.getComponent({ name: 'TagsInputRoot' }).emitted('update:modelValue') as string[][][]
-      expect(emitted.at(-1)![0].slice(-2)).toEqual(['tag1', 'tag2'])
+      expect(emitted.at(-1)![0].slice(-2)).toEqual(['tag1', ' tag2'])
     })
 
     it('should not add a tag when pasting only whitespace', async () => {
@@ -507,8 +503,7 @@ describe('given a TagsInput with objects', async () => {
       [/[ ,;\t\n\r]+/, 'tag1\r\ntag2\r\n', ['tag1', 'tag2']],
     ])('should add only non-blank tags on paste (delimiter %s, text %j)', expectPastedTags)
 
-    // TODO(v3-port): #3339 paste splits on a regex delimiter with a capture group and keeps untrimmed parts (TagsInput source resolved to v3)
-    it.skip.each([
+    it.each([
       [/,(\s+)?/, 'tag1,tag2', ['tag1', 'tag2']],
       // Not trimmed, like a typed draft
       [',', 'tag1, tag2', ['tag1', ' tag2']],
@@ -589,8 +584,7 @@ describe('given TagsInput with a disabled item before a removable one', () => {
   })
 })
 
-// TODO(v3-port): #3308 remove the selected occurrence of a duplicate tag / `modelIndex` (TagsInput source resolved to v3)
-describe.skip('given duplicate tags', () => {
+describe('given duplicate tags', () => {
   it.each(['click', 'Backspace'])('uses the model index with %s when an earlier duplicate is hidden', async (action) => {
     const wrapper = mount(defineComponent({
       components: { TagsInputInput, TagsInputItem, TagsInputItemDelete, TagsInputRoot },
@@ -612,7 +606,7 @@ describe.skip('given duplicate tags', () => {
       await input.trigger('keydown', { key: 'Backspace' })
     }
 
-    expect(wrapper.getComponent(TagsInputRoot).emitted('update:modelValue')).toEqual([[['a', 'b']]])
+    expect(wrapper.getComponent(TagsInputRoot).emitted('update:modelValue')?.map(args => args[0])).toEqual([['a', 'b']])
     wrapper.unmount()
   })
 
@@ -630,7 +624,7 @@ describe.skip('given duplicate tags', () => {
     await nextTick()
     await wrapper.findAll('button')[1].trigger('click')
 
-    expect(wrapper.getComponent(TagsInputRoot).emitted('update:modelValue')).toEqual([[['a', 'b']]])
+    expect(wrapper.getComponent(TagsInputRoot).emitted('update:modelValue')?.map(args => args[0])).toEqual([['a', 'b']])
     wrapper.unmount()
   })
 
@@ -656,14 +650,13 @@ describe.skip('given duplicate tags', () => {
       await input.trigger('keydown', { key: 'Backspace' })
     }
 
-    expect(wrapper.getComponent(TagsInputRoot).emitted('update:modelValue')).toEqual([[['hidden', 'a', 'b']]])
+    expect(wrapper.getComponent(TagsInputRoot).emitted('update:modelValue')?.map(args => args[0])).toEqual([['hidden', 'a', 'b']])
     wrapper.unmount()
   })
 })
 
 describe('given a TagsInputItemDelete with an aria-label', () => {
-  // TODO(v3-port): #3279 consumer aria-label names the item delete button (TagsInput source resolved to v3)
-  it.skip('should not override the aria-label with aria-labelledby', () => {
+  it('should not override the aria-label with aria-labelledby', () => {
     const wrapper = mount(defineComponent({
       components: { TagsInputItem, TagsInputItemDelete, TagsInputItemText, TagsInputRoot },
       template: `<TagsInputRoot :model-value="['Me']">
@@ -753,8 +746,7 @@ describe('given TagsInput inside a form', () => {
 })
 
 describe('given a TagsInputInput rendered as-child without an element', () => {
-  // TODO(v3-port): #3223 useForwardExpose never resolves to an element outside the forwarded child (shared source resolved to v3)
-  it.skip('should not auto focus an unrelated input that follows it', async () => {
+  it('should not auto focus an unrelated input that follows it', async () => {
     vi.useFakeTimers()
     const wrapper = mount(defineComponent({
       components: { TagsInputInput, TagsInputRoot },

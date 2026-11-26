@@ -200,7 +200,7 @@ const resolvedName = () => field ? field.name(props.name) : props.name
 
 // Every item registers here: the open content's and the closed ones the
 // content renders while it needs their labels.
-const { reactiveItems } = useCollection<{ value: { value: AcceptableValue, textValue: string } }>({ isProvider: true })
+const { reactiveItems } = useCollection<{ value: { value: AcceptableValue, textValue: string, select?: (event: KeyboardEvent) => void } }>({ isProvider: true })
 const dir = useDirection(toRef(() => props.dir))
 
 const select = useSelectRoot<AcceptableValue>({
@@ -246,7 +246,7 @@ closedItems.liveItems = () => {
   return items
     .slice()
     .sort((a, b) => compareDocumentOrder(a.ref, b.ref))
-    .map(item => ({ value: item.value.value, textValue: item.value.textValue, disabled: isDisabledItem(item.ref) }))
+    .map(item => ({ value: item.value.value, textValue: item.value.textValue || item.ref.textContent?.trim() || '', disabled: isDisabledItem(item.ref), select: item.value.select, element: item.ref }))
 }
 
 // The hidden native `select` of a named Select in a form offers every option
@@ -325,6 +325,12 @@ const nativeOptions = computed(() => {
   return filtered
 })
 
+// The empty selection submits `nullableValue`. A `multiple` model reads `[]`
+// for `null`, but a parent that passes `null` still submits it, as on v2 (#3345).
+function showNullableOption() {
+  return isNullish(modelValue.value) || (props.multiple && props.modelValue === null)
+}
+
 // The native `select` is patched in place (each option's `selected` is bound),
 // never re-keyed: re-creating it on a model change would skip the `change`
 // event `BubbleSelect` dispatches for that change.
@@ -341,7 +347,7 @@ provideFormResetOwner((event: Event) => { resetControllableState(isControlled, e
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="select">
     <slot
       :model-value="modelValue"
       :open="open"
@@ -359,7 +365,7 @@ provideFormResetOwner((event: Event) => { resetControllableState(isControlled, e
       :value="modelValue"
     >
       <option
-        v-if="isNullish(modelValue)"
+        v-if="showNullableOption()"
         data-nullable
         :value="nullableValue"
         selected

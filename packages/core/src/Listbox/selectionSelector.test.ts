@@ -1,9 +1,9 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, effect, effectScope, markRaw, nextTick, reactive, ref, shallowRef } from 'vue'
+import { valueComparator } from '@/shared/compare'
+import { compareKey, SelectionSelector } from '@/shared/selectionSelector'
 import { ListboxContent, ListboxItem, ListboxRoot } from '.'
-import { selectionKey, SelectionSelector } from './selectionSelector'
-import { valueComparator } from './utils'
 
 const shared = { id: 1, name: 'shared' }
 const date = new Date('2026-01-15T00:00:00Z')
@@ -71,8 +71,7 @@ function actual(selector: SelectionSelector<unknown>, value: unknown, hold = sel
 
 describe('selectionSelector', () => {
   for (const by of [undefined, 'id', 'name', (a: any, b: any) => a?.id === b?.id]) {
-    // TODO(v3-port): #3401 v3's `compare` (#2824) treats a null model with a string `by` differently; v3 src does not use this selector
-    ;(typeof by === 'string' ? it.skip : it)(`answers as valueComparator does (by: ${typeof by === 'function' ? 'function' : by})`, () => {
+    it(`answers as valueComparator does (by: ${typeof by === 'function' ? 'function' : by})`, () => {
       const scope = effectScope()
       scope.run(() => {
         for (const initial of MODELS) {
@@ -225,8 +224,8 @@ describe('selectionSelector', () => {
         throw new Error('unreadable')
       },
     }
-    expect(selectionKey(value, undefined, true)).toBeUndefined()
-    expect(selectionKey({ nested: value }, undefined, false)).toBeUndefined()
+    expect(compareKey(value, undefined, true)).toBeUndefined()
+    expect(compareKey({ nested: value }, undefined, false)).toBeUndefined()
   })
 
   it('stops following the model when the listbox unmounts', async () => {

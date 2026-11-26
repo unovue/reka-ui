@@ -101,14 +101,14 @@ describe('given a Select whose content animates with CSS, in a real browser', ()
       expect(element.isConnected).toBe(true)
       expect(element.getAttribute('data-state')).toBe('closed')
       expect(element.getAnimations().map(animation => (animation as CSSAnimation).animationName)).toEqual(['selectOut'])
-      // The scroll lock and the trigger's focus are both given back when the content goes.
-      expect(document.body.style.overflow).toBe('hidden')
+      // v3's scroll lock follows the open state (#2822), so it is given back as the exit starts;
+      // the trigger's focus comes back when the content goes.
+      expect(document.body.style.overflow).toBe('')
       expect(events).toEqual([])
 
       await expect.poll(() => content()).toBeNull()
       expect(performance.now() - closedAt).toBeGreaterThanOrEqual(DURATION - 20)
       expect(events).toEqual(['after-leave'])
-      await expect.poll(() => document.body.style.overflow).toBe('')
       await expect.poll(() => document.activeElement).toBe(get('trigger'))
     })
 

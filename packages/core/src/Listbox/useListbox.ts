@@ -7,7 +7,7 @@ import { createEventHook } from '@vueuse/core'
 import { isClient, refAutoReset } from '@vueuse/shared'
 import { computed, getCurrentScope, isRef, nextTick, onScopeDispose, ref, shallowReactive, toValue, watch } from 'vue'
 import { getFocusIntent } from '@/RovingFocus/utils'
-import { compare, createLabelRegistry, createPartSurface, findValuesBetween, handleAndDispatchCustomEvent, selectionState, useControllableState, useKbd, useListSelection, useTypeahead, valueComparator } from '@/shared'
+import { compare, createLabelRegistry, createPartSurface, findValuesBetween, getActiveElement, handleAndDispatchCustomEvent, selectionState, useControllableState, useKbd, useListSelection, useTypeahead, valueComparator } from '@/shared'
 import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
 import { isDisabledItem } from '@/shared/isDisabledItem'
 import { SelectionSelector } from '@/shared/selectionSelector'
@@ -209,6 +209,7 @@ export function getListboxItemSurface<T extends AcceptableValue = AcceptableValu
         // `rootContext.focusable.value ? isHighlighted ? '0' : '-1' : -1` — the string/number mix is intentional.
         'tabindex': context.focusable.value ? (isHighlighted() ? '0' : '-1') : -1,
         'aria-selected': isSelected(),
+        'aria-disabled': isDisabled() || undefined,
         'disabled': isDisabled() ? '' : undefined,
         onClick,
         onKeydown,
@@ -388,6 +389,19 @@ export interface UseListboxRootProps<T = AcceptableValue> {
    */
   highlightScroll?: ListboxHighlightScroll | null
   /**
+   * When `true`, a programmatic `modelValue` change made while focus is outside the listbox
+   * highlights the selected item without focusing it or scrolling the page to it.
+   * @defaultValue `false`
+   */
+  keepFocusOnValueChange?: MaybeRefOrGetter<boolean | undefined>
+  /**
+   * Maximum number of options the user can select when `multiple`; `0` (default) means no limit.
+   * A selection that would go over it is blocked and reported to `onInvalid`.
+   */
+  max?: MaybeRefOrGetter<number | undefined>
+  /** Called when a selection is blocked by `max`, with the first value over the limit. */
+  onInvalid?: (value: T) => void
+  /**
    * The root element (the SFC hands its `usePrimitiveElement` `currentElement`);
    * the root `onFocusout` leaves the highlight only when focus moved outside it.
    */
@@ -406,6 +420,14 @@ export interface UseListboxRootProps<T = AcceptableValue> {
   onLeave?: (event: Event) => void
 }
 
+export interface ListboxHighlightItemOptions {
+  /**
+   * Whether to move focus to the highlighted item.
+   * @defaultValue true
+   */
+  focus?: boolean
+}
+
 export interface UseListboxRootReturn<T = AcceptableValue> {
   modelValue: ComputedRef<T | T[] | undefined>
   /**
@@ -418,8 +440,11 @@ export interface UseListboxRootReturn<T = AcceptableValue> {
   /** Whether `value` is (part of) the current selection, matched with `by`. */
   isSelected: (value: T) => boolean
   highlightedElement: Ref<HTMLElement | null>
-  /** Highlight the item holding `value`. */
-  highlightItem: (value: T) => void
+  /**
+   * Highlight the item holding `value` and scroll it into view. By default it also moves focus
+   * to the item; pass `{ focus: false }` to keep focus where it is (e.g. on an input).
+   */
+  highlightItem: (value: T, options?: ListboxHighlightItemOptions) => void
   /** Highlight the first enabled item on the next tick. */
   highlightFirstItem: () => void
   /** Highlight the selected item (or the first one); `scroll: false` only sets the roving target. */
@@ -487,9 +512,33 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     onBeforeUpdate: props.onBeforeUpdate,
     onUpdate: props.onUpdate,
   })
-  const { modelValue, setModelValue, isSelected, firstValue, lastChangeDetails, isControlled } = selection
+  const { modelValue, isSelected, firstValue, lastChangeDetails, isControlled } = selection
+
+  // Blocks a multiple selection that would go over `max`, reporting the first value over the
+  // limit. Returns `true` when the selection is blocked. A programmatic model is never clamped.
+  function exceedsMax(values: T[]) {
+    const max = toValue(props.max) ?? 0
+    if (!multiple.value || !max || values.length <= max)
+      return false
+    props.onInvalid?.(values[max])
+    return true
+  }
+
+  // Every user-driven write of a whole selection (select-all, range) goes through `max`.
+  function setModelValue(value: T | T[] | undefined, reason?: ListboxChangeReason | BaseChangeReason, event?: Event) {
+    if ((reason === 'select-all' || reason === 'range-select') && Array.isArray(value) && exceedsMax(value))
+      return false
+    return selection.setModelValue(value, reason, event)
+  }
 
   function onValueChange(val: T, reason: ListboxChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
+    // Check before flagging a user action: a blocked selection changes nothing, so the flag
+    // would never be released and later programmatic changes would skip the highlight.
+    if (multiple.value && selectionBehavior.value === 'toggle' && !isSelected(val)) {
+      const current = Array.isArray(modelValue.value) ? modelValue.value : []
+      if (exceedsMax([...current, val]))
+        return false
+    }
     isUserAction.value = true
     const changed = selection.select(val, reason, event)
     setTimeout(() => {
@@ -504,9 +553,9 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   const previousElement = ref<HTMLElement | null>(null)
   const isVirtual = ref(false)
   const isComposing = ref(false)
-  const virtualFocusHook = createEventHook<{ event?: Event, scroll: boolean }>()
+  const virtualFocusHook = createEventHook<{ event?: Event, scroll: boolean, keepFocus?: boolean, isStale?: () => boolean }>()
   const virtualKeydownHook = createEventHook<ListboxVirtualKeydown>()
-  const virtualHighlightHook = createEventHook<T>()
+  const virtualHighlightHook = createEventHook<{ value: T, focus?: boolean }>()
 
   // `ListboxVirtualizer` still assigns `context.modelValue.value` directly for
   // its select-all and shift-range writes, so the context exposes a writable
@@ -584,17 +633,16 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     return intent === 'next' ? position === size : position === 1
   }
 
-  function highlightItem(value: T) {
+  function highlightItem(value: T, options: ListboxHighlightItemOptions = {}) {
+    // `undefined` keeps the default: focus the item unless focus belongs to a filter input.
+    const focus = options.focus === false ? false : undefined
     if (isVirtual.value) {
-      // @ts-expect-error known type issue https://github.com/vueuse/vueuse/issues/4610
-      virtualHighlightHook.trigger(value)
+      virtualHighlightHook.trigger({ value, focus })
     }
     else {
       const item = getItems().find(i => compare(i.value, value, props.by))
-      if (item) {
-        highlightedElement.value = item.ref
-        changeHighlight(item.ref)
-      }
+      if (item)
+        changeHighlight(item.ref, true, focus)
     }
   }
 
@@ -637,7 +685,9 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
         if (lastItem)
           changeHighlight(lastItem.ref)
       }
-      else if (!isMetaKey) {
+      // Only printable characters: a named key (`Shift`, `ArrowLeft`) must not
+      // extend the search.
+      else if (!isMetaKey && event.key.length === 1) {
         const el = handleTypeaheadSearch(event.key, getItems())
         if (el)
           changeHighlight(el)
@@ -796,7 +846,14 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     }
   }
 
-  async function highlightSelected(event?: Event, scroll = true) {
+  function highlightSelected(event?: Event, scroll = true) {
+    return highlightSelectedItem(event, scroll, false)
+  }
+
+  // `keepFocus` is set for a programmatic value change under `keepFocusOnValueChange` while focus
+  // is outside the listbox. It implies `scroll` is `false`. `isStale` is set under
+  // `keepFocusOnValueChange`, and is `true` once a later value change has queued its own highlight.
+  async function highlightSelectedItem(event: Event | undefined, scroll: boolean, keepFocus: boolean, isStale?: () => boolean) {
     // highlightSelected is called inside a watch with immediate set to true.
     // This results in code execution during SSR.
     // Ensure this code only runs in a browser environment, since it performs
@@ -804,12 +861,14 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     if (!isClient)
       return
     await nextTick()
+    if (isStale?.())
+      return
     if (isVirtual.value) {
       // Trigger on nextTick for Virtualizer to be mounted.
       // `scroll` is `false` on the initial mount highlight, so the virtualizer sets
       // its roving-tabindex target without focusing/scrolling — otherwise a
       // virtualized Listbox below the fold would pull the page to it on load.
-      virtualFocusHook.trigger({ event, scroll })
+      virtualFocusHook.trigger({ event, scroll, keepFocus, isStale })
     }
     else {
       const collection = getCollectionItem()
@@ -832,13 +891,26 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   // rather than via a shared flag released on a later tick.
   let hasHighlightedOnMount = false
 
+  // Counts the value-change highlights queued under `keepFocusOnValueChange`. Each one decides
+  // on focus when its change is made, so an earlier one must not run after a later change.
+  let highlightGeneration = 0
+
   // watch for only programmatic changes
   watch(modelValue, () => {
     if (!isUserAction.value) {
       const scroll = hasHighlightedOnMount
       hasHighlightedOnMount = true
+      // With `keepFocusOnValueChange`, a change made while focus is elsewhere highlights the
+      // item the way the mount highlight does: no focus, and no `scrollIntoView`, which could
+      // scroll the page away from the focused element. Read the focus now, before the update
+      // renders: it may remove the focused item, and the focus would leave with it.
+      const keepFocusOnValueChange = !!toValue(props.keepFocusOnValueChange)
+      const keepFocus = scroll && keepFocusOnValueChange && !toValue(props.element)?.contains(getActiveElement())
+      const generation = keepFocusOnValueChange ? ++highlightGeneration : undefined
+      const isStale = generation === undefined ? undefined : () => generation !== highlightGeneration
       nextTick(() => {
-        highlightSelected(undefined, scroll)
+        if (!isStale?.())
+          highlightSelectedItem(undefined, scroll && !keepFocus, keepFocus, isStale)
       })
     }
   }, { immediate: true, deep: true })
@@ -981,7 +1053,9 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
         const target = (event.relatedTarget || event.target) as HTMLElement | null
         await nextTick()
         const element = toValue(props.element)
-        if (highlightedElement.value && element && !element.contains(target)) {
+        // A removed row loses the focus without a related target. The focus did not leave when a
+        // virtualized list has given it to the new row of the highlighted option by now (#3229).
+        if (highlightedElement.value && element && !element.contains(target) && !element.contains(getActiveElement())) {
           onLeave(event)
         }
       },

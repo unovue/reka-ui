@@ -8,6 +8,8 @@ import ListboxLong from './story/_ListboxLong.vue'
 // How many components re-render for one interaction on a long list. An item that reads the shared
 // highlight or the whole model re-renders with every other item, and the cost of a key press then
 // grows with the list.
+// v3's ListboxItem renders its element itself (no inner Primitive), so the flipped items count as
+// two ListboxItem updates where v2 counted their inner element's.
 const ITEMS = 300
 
 function countUpdates() {
@@ -50,8 +52,7 @@ describe('given a Listbox with many items', () => {
     window.HTMLElement.prototype.scrollIntoView = vi.fn()
   })
 
-  // TODO(v3-port): #3400 per-item re-render counts (Listbox/ListboxItem source resolved to v3)
-  it.skip('re-renders only the two items a key press moves the highlight between', async () => {
+  it('re-renders only the two items a key press moves the highlight between', async () => {
     const { updates, content, items, highlighted } = setup()
     await nextTick()
     await nextTick()
@@ -65,13 +66,12 @@ describe('given a Listbox with many items', () => {
     expect(items[1].attributes('tabindex')).toBe('-1')
     expect(items[2].attributes('tabindex')).toBe('0')
     // The two items' element and what their slot renders, not a multiple of the list.
-    expect(updates.of('ListboxItem')).toBe(0)
+    expect(updates.of('ListboxItem')).toBe(2)
     expect(updates.total()).toBeGreaterThan(0)
     expect(updates.total()).toBeLessThan(20)
   })
 
-  // TODO(v3-port): #3400 per-item re-render counts (Listbox/ListboxItem source resolved to v3)
-  it.skip('re-renders only the two items a typeahead character moves the highlight between', async () => {
+  it('re-renders only the two items a typeahead character moves the highlight between', async () => {
     const { updates, content, highlighted } = setup()
     await nextTick()
     await nextTick()
@@ -82,13 +82,12 @@ describe('given a Listbox with many items', () => {
     await content.trigger('keydown', { key: 'o' })
     expect(highlighted()).toEqual(['Option 2'])
     // The two items' element and what their slot renders, not a multiple of the list.
-    expect(updates.of('ListboxItem')).toBe(0)
+    expect(updates.of('ListboxItem')).toBe(2)
     expect(updates.total()).toBeGreaterThan(0)
     expect(updates.total()).toBeLessThan(20)
   })
 
-  // TODO(v3-port): #3401 per-item re-render counts (Listbox/ListboxItem source resolved to v3)
-  it.skip('re-renders only the items a selection changes', async () => {
+  it('re-renders only the items a selection changes', async () => {
     const { updates, content, items, model } = setup()
     await nextTick()
     await nextTick()
@@ -104,13 +103,12 @@ describe('given a Listbox with many items', () => {
     expect(items[10].attributes('data-state')).toBe('unchecked')
     expect(items[20].attributes('data-state')).toBe('checked')
     expect(items[20].attributes('data-highlighted')).toBe('')
-    expect(updates.of('ListboxItem')).toBe(0)
+    expect(updates.of('ListboxItem')).toBe(2)
     expect(updates.total()).toBeGreaterThan(0)
     expect(updates.total()).toBeLessThan(30)
   })
 
-  // TODO(v3-port): #3401 per-item re-render counts (Listbox/ListboxItem source resolved to v3)
-  it.skip('re-renders only the item a multiple selection toggles', async () => {
+  it('re-renders only the item a multiple selection toggles', async () => {
     const { updates, content, items, model } = setup({ multiple: true })
     await nextTick()
     await nextTick()
@@ -124,7 +122,7 @@ describe('given a Listbox with many items', () => {
     expect(model.value).toEqual(['Option 10', 'Option 20'])
     expect(items[10].attributes('data-state')).toBe('checked')
     expect(items[20].attributes('data-state')).toBe('checked')
-    expect(updates.of('ListboxItem')).toBe(0)
+    expect(updates.of('ListboxItem')).toBe(2)
     expect(updates.total()).toBeGreaterThan(0)
     expect(updates.total()).toBeLessThan(30)
   })

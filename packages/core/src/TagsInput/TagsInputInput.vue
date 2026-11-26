@@ -39,9 +39,11 @@ const input = createTagsInputInputSurface(context, {
 })
 
 onMounted(() => {
-  const inputEl = currentElement.value.nodeName === 'INPUT'
-    ? currentElement.value
-    : currentElement.value.querySelector('input')
+  // `null` for an as-child input that rendered no element (#3223).
+  const element = currentElement.value as HTMLElement | null
+  const inputEl = element?.nodeName === 'INPUT'
+    ? element
+    : element?.querySelector?.('input')
 
   if (!inputEl)
     return

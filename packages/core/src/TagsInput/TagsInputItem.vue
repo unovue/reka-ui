@@ -10,6 +10,8 @@ import { createTagsInputItemContext, getTagsInputItemSurface } from './useTagsIn
 export interface TagsInputItemProps extends PrimitiveProps {
   /** Value associated with the tags */
   value: AcceptableInputValue
+  /** The zero-based index in the root's model. Pass the original index for each tag when filtering or reordering duplicates. */
+  modelIndex?: number
   /** When `true`, prevents the user from interacting with the tags input. */
   disabled?: boolean
 }
@@ -19,6 +21,10 @@ export interface TagsInputItemContext {
   displayValue: ComputedRef<string>
   isSelected: Ref<boolean>
   disabled?: Ref<boolean>
+  /** The tag's element; tells a duplicate tag apart when it is removed. */
+  element?: () => HTMLElement | null | undefined
+  /** The tag's `modelIndex`. */
+  modelIndex?: () => number | undefined
   /** Filled in by `TagsInputItemText`; backed by a ref, so assigning it updates `aria-labelledby`. */
   textId: string
 }
@@ -46,9 +52,6 @@ const value = toRef(props, 'value')
 const context = injectTagsInputRootContext()
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
-// Registered with the root's collection from setup; no wrapper component.
-useCollectionItem(currentElement, () => props.value)
-
 // A keyed selector cell: moving the selection re-renders only the old and the new tag.
 const isSelected = getterRef(context.selected
   ? useSelectorKey(context.selected, () => currentElement.value)
@@ -56,7 +59,16 @@ const isSelected = getterRef(context.selected
 
 const disabled = computed(() => props.disabled || context.disabled.value)
 
-const itemContext = provideTagsInputItemContext(createTagsInputItemContext(context, { value, isSelected, disabled }))
+const itemContext = provideTagsInputItemContext(createTagsInputItemContext(context, {
+  value,
+  isSelected,
+  disabled,
+  element: () => currentElement.value as HTMLElement | null,
+  modelIndex: () => props.modelIndex,
+}))
+// Registered with the root's collection from setup; no wrapper component. The
+// item context is its meta, so the root can read the tag's `modelIndex`.
+useCollectionItem(currentElement, () => props.value, { meta: itemContext })
 const item = getTagsInputItemSurface(itemContext)
 useAgentItem(context, props, currentElement)
 </script>

@@ -44,6 +44,7 @@ export {
   type ListboxContentState,
   type ListboxFilterFunction,
   type ListboxFilterState,
+  type ListboxHighlightItemOptions,
   type ListboxItemState,
   type ListboxNavigationIntent,
   type ListboxState,

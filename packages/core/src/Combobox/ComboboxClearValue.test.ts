@@ -1,4 +1,3 @@
-// @ts-nocheck TODO(v3-port): #2734
 import type { PropType } from 'vue'
 import type { ComboboxRootEmits, ComboboxRootProps } from '.'
 import { mount } from '@vue/test-utils'
@@ -12,7 +11,7 @@ function mountCombobox(props: Record<string, unknown>, controlled = true) {
   const value = ref<unknown>('Banana')
   const overrides = ref(props)
   const wrapper = mount(defineComponent({
-    setup: () => () => h(ComboboxRoot, {
+    setup: () => () => h(ComboboxRoot as any, {
       ...(controlled
         ? { 'modelValue': value.value, 'onUpdate:modelValue': (next: unknown) => { value.value = next } }
         : { defaultValue: 'Banana' }),
@@ -23,8 +22,7 @@ function mountCombobox(props: Record<string, unknown>, controlled = true) {
   return { wrapper, value, overrides }
 }
 
-// TODO(v3-port): #2734 `clearValue` factory on ComboboxRoot (ComboboxRoot source resolved to v3, no such prop)
-describe.skip('combobox clearValue', () => {
+describe('combobox clearValue', () => {
   it.each([
     ['omitted', {}, null],
     ['explicit undefined prop', { clearValue: undefined }, null],
@@ -37,14 +35,14 @@ describe.skip('combobox clearValue', () => {
     const { wrapper, value } = mountCombobox(props)
     await wrapper.get('button').trigger('click')
     expect(value.value).toBe(expected)
-    expect(wrapper.findComponent(ComboboxRoot).emitted('update:modelValue')?.at(-1)).toEqual([expected])
+    expect(wrapper.findComponent(ComboboxRoot).emitted('update:modelValue')?.at(-1)?.[0]).toEqual(expected)
     wrapper.unmount()
   })
 
   it('clears an uncontrolled selection to undefined', async () => {
     const { wrapper } = mountCombobox({ clearValue: () => undefined }, false)
     await wrapper.get('button').trigger('click')
-    expect(wrapper.findComponent(ComboboxRoot).emitted('update:modelValue')?.at(-1)).toEqual([undefined])
+    expect(wrapper.findComponent(ComboboxRoot).emitted('update:modelValue')?.at(-1)?.[0]).toBe(undefined)
     expect((wrapper.get('input').element as HTMLInputElement).value).toBe('')
     wrapper.unmount()
   })
@@ -154,8 +152,7 @@ const ForwardPropsEmitsWrapper = defineComponent({
   },
 })
 
-// TODO(v3-port): #2734 `clearValue` factory on ComboboxRoot (ComboboxRoot source resolved to v3, no such prop)
-describe.skip('combobox clearValue through a wrapper component', () => {
+describe('combobox clearValue through a wrapper component', () => {
   describe.each([
     ['binding its own clearValue prop', BoundWrapper],
     ['useForwardProps', ForwardPropsWrapper],
@@ -178,7 +175,7 @@ describe.skip('combobox clearValue through a wrapper component', () => {
       const { wrapper, value } = mountWrapper({})
       await wrapper.get('button').trigger('click')
       expect(value.value).toBe(null)
-      expect(wrapper.findComponent(ComboboxRoot).emitted('update:modelValue')?.at(-1)).toEqual([null])
+      expect(wrapper.findComponent(ComboboxRoot).emitted('update:modelValue')?.at(-1)?.[0]).toBe(null)
       wrapper.unmount()
     })
 
@@ -186,7 +183,7 @@ describe.skip('combobox clearValue through a wrapper component', () => {
       const { wrapper, value } = mountWrapper({ clearValue: () => undefined })
       await wrapper.get('button').trigger('click')
       expect(value.value).toBe(undefined)
-      expect(wrapper.findComponent(ComboboxRoot).emitted('update:modelValue')?.at(-1)).toEqual([undefined])
+      expect(wrapper.findComponent(ComboboxRoot).emitted('update:modelValue')?.at(-1)?.[0]).toBe(undefined)
       wrapper.unmount()
     })
   })

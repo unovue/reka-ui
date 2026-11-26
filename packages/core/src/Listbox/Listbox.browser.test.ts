@@ -56,8 +56,7 @@ async function focusInput() {
   expect(document.activeElement).toBe(input())
 }
 
-// TODO(v3-port): #3325 `keepFocusOnValueChange` (Listbox source resolved to v3, no such prop)
-describe.skip('given a Listbox whose value is set programmatically while focus is outside, in a real browser', () => {
+describe('given a Listbox whose value is set programmatically while focus is outside, in a real browser', () => {
   describe.each([['non-virtual', false], ['virtual', true]])('%s', (_, virtual) => {
     it('keeps focus on the input with `keepFocusOnValueChange`', async () => {
       const { selected } = mountListbox({ keepFocusOnValueChange: true, virtual })

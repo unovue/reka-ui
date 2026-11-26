@@ -38,6 +38,8 @@ export type TagsInputClearState = { disabled: boolean }
 export interface TagsInputCollectionItem<T = AcceptableInputValue> {
   ref: HTMLElement
   value?: T
+  /** The tag's index in the model (`TagsInputItem`'s `modelIndex`), when given. */
+  modelIndex?: number
 }
 
 type Reason = TagsInputChangeReason | BaseChangeReason
@@ -69,7 +71,7 @@ export interface UseTagsInputProps<T extends AcceptableInputValue = string> {
   /** Whether focus is inside the root (the SFC hands `useFocusWithin` from `@/shared`); drives `data-focused`. */
   focused?: MaybeRefOrGetter<boolean | undefined>
   /**
-   * The rendered tags in DOM order (the SFC injects `useCollection({ isProvider: true }).getItems`)
+   * The rendered tags in DOM order, disabled ones included (the SFC injects `useCollection({ isProvider: true }).getItems`)
    * — the seam a composable cannot own itself. Without it, arrow-key / Backspace tag
    * navigation from the input is inert.
    */
@@ -87,6 +89,8 @@ export interface UseTagsInputProps<T extends AcceptableInputValue = string> {
 
 export interface TagsInputItemSurfaceOptions {
   disabled?: MaybeRefOrGetter<boolean | undefined>
+  /** The tag's index in the model; pass it when filtering or reordering duplicates. */
+  modelIndex?: MaybeRefOrGetter<number | undefined>
   /** The tag's element, used to tell whether it is the selected tag. */
   element?: MaybeRefOrGetter<HTMLElement | null | undefined>
   /** Id for the tag text; defaults to a unique id per call. */
@@ -210,6 +214,17 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
     return true
   }
 
+  /** Whether `addTags([text])` would add the tag (`max` and `duplicate`), without side effects. */
+  function canAddValue(text: string): boolean {
+    const array = modelValue.value
+    if (max.value && array.length >= max.value)
+      return false
+    if (toValue(props.duplicate))
+      return true
+    const payload = props.convertValue ? props.convertValue(text) : text as T
+    return !array.includes(payload)
+  }
+
   function removeTag(index: number, reason: Reason = 'imperative-action', event?: Event): boolean {
     if (index < 0 || index >= modelValue.value.length)
       return false
@@ -218,6 +233,21 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
       return false
     emitEvent('removeTag', removedValue)
     return true
+  }
+
+  /**
+   * Remove a rendered tag: at its `modelIndex` when that holds an equal value,
+   * else the equal model value at the same occurrence as the tag among the
+   * rendered equal tags (disabled ones included), so a duplicate removes itself.
+   */
+  function removeItem(element: HTMLElement | null | undefined, value: T, modelIndex?: number, reason: Reason = 'imperative-action', event?: Event): boolean {
+    const values = modelValue.value
+    if (modelIndex !== undefined && Number.isInteger(modelIndex) && modelIndex >= 0 && modelIndex < values.length && isEqual(values[modelIndex], value))
+      return removeTag(modelIndex, reason, event)
+    const occurrence = element ? getItems().filter(other => isEqual(other.value, value)).findIndex(other => other.ref === element) : -1
+    let match = 0
+    const target = Math.max(occurrence, 0)
+    return removeTag(values.findIndex(other => isEqual(other, value) && match++ === target), reason, event)
   }
 
   function clear(reason: Reason = 'imperative-action', event?: Event) {
@@ -242,9 +272,9 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
         if (selectedElement.value) {
           const index = collection.findIndex(i => i === selectedElement.value)
           const selectedItem = getItems().find(i => i.ref === selectedElement.value)
-          const modelIndex = selectedItem ? modelValue.value.findIndex(v => isEqual(v, selectedItem.value)) : -1
+          const reason = event.key === 'Delete' ? 'delete-key' : 'backspace-key'
           // A cancelled (or no-op) removal keeps the current tag selected.
-          if (removeTag(modelIndex, event.key === 'Delete' ? 'delete-key' : 'backspace-key', event))
+          if (selectedItem && removeItem(selectedItem.ref, selectedItem.value as T, selectedItem.modelIndex, reason, event))
             selectedElement.value = selectedElement.value === lastTag ? collection.at(index - 1) : collection.at(index + 1)
           event.preventDefault()
         }
@@ -254,8 +284,16 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
         }
         break
       }
+      // With a tag selected, Home and End go to the first and last tag.
+      // With none, they stay the input's own caret keys.
       case 'Home':
-      case 'End':
+      case 'End': {
+        if (selectedElement.value) {
+          selectedElement.value = event.key === 'Home' ? collection[0] : lastTag
+          event.preventDefault()
+        }
+        break
+      }
       case 'ArrowRight':
       case 'ArrowLeft': {
         const isArrowRight = (event.key === 'ArrowRight' && dir.value === 'ltr') || (event.key === 'ArrowLeft' && dir.value === 'rtl')
@@ -302,7 +340,9 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
     modelValue,
     onAddValue: (payload, reason, event) => addTags([payload], reason, event),
     onAddValues: (payloads, reason, event) => addTags(payloads, reason, event),
+    canAddValue,
     onRemoveValue: removeTag,
+    onRemoveItem: removeItem,
     onClear: clear,
     onInputKeydown,
     selectedElement,
@@ -346,6 +386,8 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
         isSelected,
         disabled: itemDisabled,
         textId: options.textId ?? `reka-tags-input-item-text-${++count}`,
+        element: () => toValue(element),
+        modelIndex: () => toValue(options.modelIndex),
       })
       return {
         item: getTagsInputItemSurface(itemContext),
@@ -365,13 +407,22 @@ export function useTagsInput<T extends AcceptableInputValue = string>(props: Use
  */
 export function createTagsInputItemContext<T extends AcceptableInputValue>(
   rootContext: Pick<TagsInputRootContext<T>, 'displayValue'>,
-  options: { value: Ref<T>, isSelected: Ref<boolean>, disabled: Ref<boolean>, textId?: string },
+  options: {
+    value: Ref<T>
+    isSelected: Ref<boolean>
+    disabled: Ref<boolean>
+    textId?: string
+    element?: () => HTMLElement | null | undefined
+    modelIndex?: () => number | undefined
+  },
 ): TagsInputItemContext {
   const textId = ref(options.textId ?? '')
   return {
     value: options.value as Ref<AcceptableInputValue>,
     isSelected: options.isSelected,
     disabled: options.disabled,
+    element: options.element,
+    modelIndex: options.modelIndex,
     get textId() {
       return textId.value
     },
@@ -404,7 +455,7 @@ export function getTagsInputItemTextSurface(itemContext: TagsInputItemContext): 
 
 /** @internal */
 export function getTagsInputItemDeleteSurface(
-  rootContext: Pick<TagsInputRootContext<any>, 'modelValue' | 'disabled' | 'onRemoveValue'>,
+  rootContext: Pick<TagsInputRootContext<any>, 'modelValue' | 'disabled' | 'onRemoveValue' | 'onRemoveItem'>,
   itemContext: TagsInputItemContext,
 ): PartSurface<TagsInputItemState> {
   const disabled = computed(() => !!(itemContext.disabled?.value || rootContext.disabled.value))
@@ -416,6 +467,10 @@ export function getTagsInputItemDeleteSurface(
       'onClick': (event: MouseEvent) => {
         if (disabled.value)
           return
+        if (rootContext.onRemoveItem) {
+          rootContext.onRemoveItem(itemContext.element?.(), itemContext.value.value, itemContext.modelIndex?.(), 'item-delete-press', event)
+          return
+        }
         const index = rootContext.modelValue.value.findIndex(i => isEqual(i, itemContext.value.value))
         rootContext.onRemoveValue(index, 'item-delete-press', event)
       },
@@ -453,6 +508,9 @@ export function createTagsInputInputSurface(
   options: TagsInputInputSurfaceOptions = {},
 ): PartSurface<TagsInputInputState> {
   const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing()
+  // A `Tab` whose draft is rejected moves focus on: the blur it causes must not add
+  // (and report) the same draft a second time.
+  let isBlurFromRejectedTab = false
 
   /**
    * Adds the typed text as a tag and clears the input once the model actually
@@ -478,6 +536,10 @@ export function createTagsInputInputSurface(
 
   function handleBlur(event: FocusEvent) {
     context.selectedElement.value = undefined
+    const skipAdd = isBlurFromRejectedTab
+    isBlurFromRejectedTab = false
+    if (skipAdd)
+      return
 
     if (!context.addOnBlur.value)
       return
@@ -492,7 +554,8 @@ export function createTagsInputInputSurface(
     if (controlledId && relatedTarget?.closest(`#${CSS.escape(controlledId)}`))
       return
 
-    if (!target.value)
+    // A blank draft is not a tag.
+    if (!target.value.trim())
       return
 
     addTypedText(target, 'blur', event)
@@ -517,8 +580,13 @@ export function createTagsInputInputSurface(
     // The key's default action has to be cancelled synchronously: a form submits
     // implicitly on `Enter` as soon as the keydown dispatch finishes, and Firefox
     // moves focus on `Tab` before a microtask can cancel it. An empty or blank draft keeps
-    // the default (submitting the form, moving focus).
-    if (target.value.trim() && !isPreventedByOthers)
+    // the default (submitting the form, moving focus), and so does a `Tab` whose draft
+    // `max` or `duplicate` rejects: focus moves on, and the draft is reported invalid once.
+    const isRejectedTab = reason === 'tab-key' && !!target.value.trim() && !isPreventedByOthers
+      && !!context.canAddValue && !context.canAddValue(target.value)
+    if (isRejectedTab)
+      isBlurFromRejectedTab = true
+    else if (target.value.trim() && !isPreventedByOthers)
       nativePreventDefault()
 
     await nextTick()
@@ -534,6 +602,7 @@ export function createTagsInputInputSurface(
   function handleInput(event: InputEvent) {
     if (isComposing.value)
       return
+    isBlurFromRejectedTab = false
     context.isInvalidInput.value = false
     if (event.data === null)
       return
@@ -564,6 +633,8 @@ export function createTagsInputInputSurface(
       pending = handleCustomKeydown(event, 'tab-key')
     // `isComposing` stays true until the tick after `compositionend`, so arrow/backspace
     // tag navigation is skipped even when the commit keydown reports `event.isComposing === false`.
+    if (key !== 'tab')
+      isBlurFromRejectedTab = false
     if (!isComposing.value)
       context.onInputKeydown(event)
     // Returned so Vue's listener error handling sees a rejection (e.g. a missing `convertValue`).
@@ -579,12 +650,12 @@ export function createTagsInputInputSurface(
       return
 
     const value = clipboardData.getData('text')
-    // Blank pieces (a trailing delimiter, a paste of only spaces) are not tags,
-    // and a tag does not keep the spaces around it.
+    // Blank pieces (a trailing delimiter, a paste of only spaces) are not tags.
+    // Other pieces are added as pasted, like a typed draft.
     const delimiter = context.delimiter.value
     const texts = (delimiter ? value.split(delimiter) : [value])
-      .map(text => text.trim())
-      .filter(Boolean)
+      // A RegExp delimiter's unmatched capture group splits out `undefined`.
+      .filter((text): text is string => typeof text === 'string' && text.trim() !== '')
     if (!texts.length)
       return
     // A paste commits every tag it adds as one change.

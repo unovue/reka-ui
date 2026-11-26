@@ -116,8 +116,7 @@ describe('given a menu inside a Dialog, during its exit, in a real browser', () 
     expect(dialogOpen.value).toBe(false)
   })
 
-  // TODO(v3-port): #3371 v3 keeps a closing combobox's dismissal layer for its exit animation
-  it.skip('a Combobox hands Escape back to the dialog', async () => {
+  it('a Combobox hands Escape back to the dialog', async () => {
     const open = ref(false)
     const dialogOpen = mountInDialog(() => h(ComboboxRoot, { 'open': open.value, 'onUpdate:open': (value: boolean) => open.value = value }, () => [
       h(ComboboxAnchor, null, () => h(ComboboxInput, { 'data-testid': 'input', 'aria-label': 'pick' })),

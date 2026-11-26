@@ -78,6 +78,7 @@ export const [injectCheckboxGroupRootContext, provideCheckboxGroupRootContext]
 import { useFieldBinding } from '@/Field/useFieldBinding'
 import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { RovingFocusGroup } from '@/RovingFocus'
+import { provideRovingFocusNoActiveItem } from '@/RovingFocus/useRovingFocusGroup'
 import { formResetBinder } from '@/shared/formReset'
 import { resetControllableState } from '@/shared/useControllableState'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
@@ -97,6 +98,8 @@ const emits = defineEmits<CheckboxGroupRootEmits<T>>()
 const max = toRef(props, 'max')
 
 const rovingFocus = toRef(props, 'rovingFocus')
+// Checkboxes are never active. Without roving focus there is no group to tell.
+provideRovingFocusNoActiveItem(() => rovingFocus.value)
 
 const dir = useDirection(() => props.dir)
 

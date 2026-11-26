@@ -149,6 +149,8 @@ provideTagGroupRootContext(context as unknown as TagGroupRootContext)
 
 // The roving group owns the tab stop; the tags read it to make their delete button tabbable.
 const roving = useRovingFocusGroup({
+  // Tags are never active: the first focusable one is the tab stop before mount.
+  noActiveItem: () => true,
   consumerAttrs: true,
   element: currentElement,
   dir: () => dir.value,

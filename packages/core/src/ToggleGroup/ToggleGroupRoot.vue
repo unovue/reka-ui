@@ -50,6 +50,7 @@ import { useFieldFocusWithin } from '@/Field/useFieldFocusWithin'
 import { Slot } from '@/Primitive'
 import { renderAs } from '@/Primitive/renderAs'
 import { RovingFocusGroup } from '@/RovingFocus'
+import { provideRovingFocusNoActiveItem } from '@/RovingFocus/useRovingFocusGroup'
 import { formResetBinder } from '@/shared/formReset'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { resetControllableState } from '@/shared/useControllableState'
@@ -124,6 +125,8 @@ const { modelValue, root, context, isControlled } = useToggleGroup({
 const isFormControl = useFormControl(currentElement)
 
 provideToggleGroupRootContext(context)
+// A group with no value has no pressed item. Without roving focus there is no group to tell.
+provideRovingFocusNoActiveItem(() => props.rovingFocus && (modelValue.value == null || (Array.isArray(modelValue.value) && modelValue.value.length === 0)))
 useAgentRegistration('toggle-group', context, props, currentElement)
 
 // A native reset of the owning form puts the value back to `defaultValue`.

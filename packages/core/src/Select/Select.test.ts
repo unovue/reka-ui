@@ -31,8 +31,7 @@ describe('given default Select', () => {
     valueBox = wrapper.find('[aria-label="Customise options"]')
   })
 
-  // TODO(v3-port): #3127 disable options when the root becomes disabled (Select source resolved to v3)
-  it.skip('disables options when the select becomes disabled while open', async () => {
+  it('disables options when the select becomes disabled while open', async () => {
     wrapper.unmount()
     wrapper = mount(Select, { attachTo: document.body, props: { disabled: false } })
     await fireEvent.pointerDown(wrapper.find('button').element, { button: 0, ctrlKey: false })
@@ -50,7 +49,8 @@ describe('given default Select', () => {
     await wrapper.setProps({ disabled: false })
     await option.trigger('pointerup')
     await nextTick()
-    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['Banana'])
+    // v3 emits `(value, details)`.
+    expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toEqual('Banana')
   })
 
   it('should pass axe accessibility tests', async () => {
@@ -207,8 +207,7 @@ describe('given default Select', () => {
     })
 
     describe('touch interop', () => {
-      // TODO(v3-port): #3134 touch/pen items select on click (Select source resolved to v3)
-      it.skip('should not select the item a touch scroll ends on', async () => {
+      it('should not select the item a touch scroll ends on', async () => {
         const selection = wrapper.findAll('[role=option]')[1]
         await fireEvent.pointerDown(selection.element, { pointerType: 'touch' })
         // iOS Safari fires pointerup on the item under the finger when the scroll stops, but no click follows
@@ -251,8 +250,7 @@ describe('given default Select', () => {
         await vi.waitFor(() => expect(valueBox.html()).toContain('Banana'))
       })
 
-      // TODO(v3-port): #3134 touch/pen items select on click (Select source resolved to v3)
-      it.skip('should select on a click without pointer events', async () => {
+      it('should select on a click without pointer events', async () => {
         // Assistive technology activates with a click that no pointer produced (`detail: 0`)
         const selection = wrapper.findAll('[role=option]')[1]
         await fireEvent.click(selection.element)
@@ -547,16 +545,14 @@ describe('given typing on a Select trigger', () => {
     expect(modelValue.value).toBe(options[1])
   })
 
-  // TODO(v3-port): #3061 typeahead on the closed trigger selects the match (Select source resolved to v3)
-  it.skip('should cycle through items with the same text', async () => {
+  it('should cycle through items with the same text', async () => {
     const options = [{ id: 1, name: 'Main St' }, { id: 2, name: 'Main St' }]
     const { modelValue, trigger } = await mountSelect(options, { initialValue: options[0], label: option => option.name, rootProps: { by: 'id' } })
     await type(trigger, 'm')
     expect(modelValue.value).toBe(options[1])
   })
 
-  // TODO(v3-port): #3061 typeahead on the closed trigger selects the match (Select source resolved to v3)
-  it.skip('should match an item\'s text content when it has no `SelectItemText`', async () => {
+  it('should match an item\'s text content when it has no `SelectItemText`', async () => {
     const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { withItemText: false })
     await type(trigger, 'b')
     expect(modelValue.value).toBe('Banana')
@@ -570,8 +566,7 @@ describe('given typing on a Select trigger', () => {
     expect(onUpdateOpen).not.toHaveBeenCalled()
   })
 
-  // TODO(v3-port): #3061 typeahead on the closed trigger selects the match (Select source resolved to v3)
-  it.skip('should emit the matched item\'s `select` once, with the key event', async () => {
+  it('should emit the matched item\'s `select` once, with the key event', async () => {
     const onSelect = vi.fn()
     const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { itemProps: option => ({ onSelect: (event: CustomEvent) => onSelect(option, event) }) })
     await type(trigger, 'b')
@@ -583,8 +578,7 @@ describe('given typing on a Select trigger', () => {
     expect(event.detail.originalEvent).toBeInstanceOf(KeyboardEvent)
   })
 
-  // TODO(v3-port): #3061 typeahead on the closed trigger selects the match (Select source resolved to v3)
-  it.skip('should not select an item whose `select` is prevented', async () => {
+  it('should not select an item whose `select` is prevented', async () => {
     const onUpdateOpen = vi.fn()
     const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], {
       initialValue: 'Apple',
@@ -609,8 +603,7 @@ describe('given typing on a Select trigger', () => {
     expect(modelValue.value).toBeUndefined()
   })
 
-  // TODO(v3-port): #3061 typeahead on the closed trigger selects the match (Select source resolved to v3)
-  it.skip('should focus the match without selecting it while open', async () => {
+  it('should focus the match without selecting it while open', async () => {
     const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { rootProps: { open: true } })
     await new Promise(resolve => setTimeout(resolve))
     expect(trigger.getAttribute('aria-expanded')).toBe('true')
@@ -731,19 +724,6 @@ describe('given a Select value that no longer matches a mounted option', () => {
     await nextTick()
 
     model.value = 'Durian'
-    await nextTick()
-
-    expect(trigger().textContent).toContain(placeholder)
-    expect(trigger().textContent).not.toContain('Apple')
-  })
-
-  // TODO(v3-port): #3180 trigger label follows the mounted options (Select source resolved to v3)
-  it.skip('shows the placeholder when the selected option is removed', async () => {
-    const { options, trigger } = mountControlled({ value: 'Apple', options: ['Apple', 'Banana'] })
-    await nextTick()
-    expect(trigger().textContent).toContain('Apple')
-
-    options.value = ['Banana']
     await nextTick()
 
     expect(trigger().textContent).toContain(placeholder)
@@ -1087,9 +1067,9 @@ describe('given SelectTrigger with consumer event listeners', () => {
 })
 
 describe('given a Select root that stays mounted', () => {
-  // TODO(v3-port): #3202 release the closed content from the collection (Select source resolved to v3)
-  it.skip.each(['item-aligned', 'popper'] as const)('should release the closed content from the collection with position=%s', async (position) => {
-    let collection!: { collectionRef: { value: HTMLElement | undefined } }
+  it.each(['item-aligned', 'popper'] as const)('should release the closed content from the collection with position=%s', async (position) => {
+    // v3's collection context: `root` is the slot's element source, `observed` the element it watches.
+    let collection!: { root?: { value: Element | null | undefined }, observed: Element | null, ordered: { ref: HTMLElement }[] | null }
     const CollectionProbe = defineComponent({
       setup() {
         collection = inject('CollectionProvider')!
@@ -1107,14 +1087,14 @@ describe('given a Select root that stays mounted', () => {
     }), { attachTo: document.body })
 
     // Every open content element the collection has pointed at. None may come back.
-    const openContents: HTMLElement[] = []
+    const openContents: Element[] = []
 
     for (let cycle = 0; cycle < 2; cycle++) {
       open.value = true
       await vi.waitFor(() => expect(wrapper.find('[role="listbox"]').exists()).toBe(true))
       await flushPromises()
-      const openContent = collection.collectionRef.value!
-      expect(openContent.contains(wrapper.get('[role="listbox"]').element)).toBe(true)
+      const openContent = collection.root!.value!
+      expect(openContent).toBe(wrapper.get('[role="listbox"]').element)
       expect(openContents).not.toContain(openContent)
       expect(wrapper.findAll('[role="option"]')).toHaveLength(2)
       openContents.push(openContent)
@@ -1122,12 +1102,10 @@ describe('given a Select root that stays mounted', () => {
       open.value = false
       await vi.waitFor(() => expect(wrapper.find('[role="listbox"]').exists()).toBe(false))
       await flushPromises()
-      // While closed the collection is the detached fragment that the trigger's typeahead
-      // reads its items from, never the content that was just removed from the document.
-      const closedCollection = collection.collectionRef.value
-      expect(openContents).not.toContain(closedCollection)
-      expect(closedCollection?.isConnected).toBe(false)
-      expect(openContents.some(content => closedCollection?.contains(content) || content.contains(closedCollection!))).toBe(false)
+      // Closed, the collection holds on to none of the content that was just removed from the document.
+      expect(openContents).not.toContain(collection.root?.value)
+      expect(openContents).not.toContain(collection.observed)
+      expect(collection.ordered ?? []).toEqual([])
     }
 
     wrapper.unmount()
@@ -1273,8 +1251,7 @@ describe('given a multiple Select in a form', () => {
     expect(seen).toEqual([['banana']])
   })
 
-  // TODO(v3-port): #3345 multiple Select submits the empty `nullableValue` (Select source resolved to v3)
-  it.skip('keeps submitting the empty `nullableValue` while the value is nullish', async () => {
+  it('keeps submitting the empty `nullableValue` while the value is nullish', async () => {
     wrapper = mountFruitsInForm(ref(null))
     await nextTick()
 

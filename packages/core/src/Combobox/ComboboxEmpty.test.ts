@@ -1,4 +1,3 @@
-// @ts-nocheck TODO(v3-port): #3258
 import type { VueWrapper } from '@vue/test-utils'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -7,8 +6,7 @@ import { defineComponent, h, ref } from 'vue'
 import { AutocompleteEmpty, AutocompleteInput, AutocompleteRoot } from '@/Autocomplete'
 import { ComboboxAnchor, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxRoot, ComboboxViewport } from '.'
 
-// TODO(v3-port): #3258 render the empty state as a disabled option (ComboboxEmpty source resolved to v3)
-describe.skip.each([
+describe.each([
   { name: 'ComboboxEmpty', Root: ComboboxRoot, Input: ComboboxInput, Empty: ComboboxEmpty },
   { name: 'AutocompleteEmpty', Root: AutocompleteRoot, Input: AutocompleteInput, Empty: AutocompleteEmpty },
 ])('given $name', ({ Root, Input, Empty }) => {
@@ -22,9 +20,9 @@ describe.skip.each([
     const options = ref(initialOptions)
     const onUpdateModelValue = vi.fn()
     wrapper = mount(defineComponent({
-      setup: () => () => h(Root, {
+      setup: () => () => h(Root as any, {
         'defaultOpen': true,
-        ignoreFilter,
+        ...(ignoreFilter ? { filter: null } : {}),
         'onUpdate:modelValue': onUpdateModelValue,
       }, () => [
         h(ComboboxAnchor, null, () => h(Input, { 'aria-label': 'Fruit' })),
@@ -61,7 +59,7 @@ describe.skip.each([
     expect(await axe(wrapper.element)).toHaveNoViolations()
   })
 
-  it.each([false, true])('should pass axe with no initial options and ignoreFilter=%s', async (ignoreFilter) => {
+  it.each([false, true])('should pass axe with no initial options and filter off=%s', async (ignoreFilter) => {
     mountEmpty({ initialOptions: [], ignoreFilter })
     await flushPromises()
 

@@ -55,6 +55,10 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
+// TODO(v3-port): #3369 these roots are outside the lists lane and do not call
+// `provideRovingFocusNoActiveItem` / pass `noActiveItem` yet.
+const PENDING_ROOTS = new Set(['Menubar', 'Tabs'])
+
 describe.each(Object.keys(fixtures))('%s with no active item', (name) => {
   async function renderAndHydrate(disabled: string[] = []) {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -75,15 +79,13 @@ describe.each(Object.keys(fixtures))('%s with no active item', (name) => {
     return { server, hydrated }
   }
 
-  // TODO(v3-port): #3369 v3's roving focus groups render every item with tabindex=-1 on the server
-  it.skip('makes the first item the tab stop in the server HTML, then hands it to the group', async () => {
+  it.skipIf(PENDING_ROOTS.has(name))('makes the first item the tab stop in the server HTML, then hands it to the group', async () => {
     const { server, hydrated } = await renderAndHydrate()
     expect(server).toEqual(['-1', '0', '-1', '-1'])
     expect(hydrated).toEqual(['0', '-1', '-1', '-1'])
   })
 
-  // TODO(v3-port): #3369 v3's roving focus groups render every item with tabindex=-1 on the server
-  it.skip('skips an item that is not focusable', async () => {
+  it.skipIf(PENDING_ROOTS.has(name))('skips an item that is not focusable', async () => {
     const { server, hydrated } = await renderAndHydrate(['a'])
     expect(server).toEqual(['-1', '-1', '0', '-1'])
     expect(hydrated).toEqual(['0', '-1', '-1', '-1'])
@@ -98,8 +100,7 @@ describe.each(Object.keys(fixtures))('%s with no active item', (name) => {
 })
 
 describe('a group with a value that matches a later item', () => {
-  // TODO(v3-port): #3369 v3's roving focus groups render every item with tabindex=-1 on the server
-  it.skip.each([
+  it.each([
     ['RadioGroup', () => h(RadioGroupRoot, { ...group, defaultValue: 'b' }, () =>
       values.map(value => h(RadioGroupItem, { ...item, value }, () => value)))],
     ['Tabs', () => h(TabsRoot, { defaultValue: 'b' }, () => h(TabsList, group, () =>
@@ -119,8 +120,7 @@ describe('a root without roving focus', () => {
     h(RovingFocusItem, { ...item, active: true }, () => 'b'),
   ])
 
-  // TODO(v3-port): #3369 v3's roving focus groups render every item with tabindex=-1 on the server
-  it.skip.each([
+  it.each([
     ['CheckboxGroup', () => h(CheckboxGroupRoot, { rovingFocus: false }, directGroup)],
     ['ToggleGroup', () => h(ToggleGroupRoot, { type: 'single', rovingFocus: false }, directGroup)],
   ])('%s does not pass its hint to a group below it', async (_, render) => {

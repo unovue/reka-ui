@@ -148,6 +148,8 @@ const roving = useRovingFocusGroup({
   orientation: () => props.orientation,
   dir: () => dir.value,
   loop: () => props.loop,
+  // A group with no value has no checked item: the first focusable one is the tab stop before mount.
+  noActiveItem: () => modelValue.value == null,
 })
 
 // The window arrow-key flag the items read on focus (one shared pair of
