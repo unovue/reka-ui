@@ -6,6 +6,7 @@ import type { MenuContentHideEvent, MenuContext, MenuRootContext } from '@/Menu/
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Direction } from '@/shared/types'
 import { computed, nextTick, ref, toValue, watch } from 'vue'
+import { isTriggerPressInFlight, trackTriggerPress } from '@/DismissableLayer/utils'
 import { useMenuRoot } from '@/Menu/useMenu'
 import { createPartSurface, useControllableState } from '@/shared'
 import { isDisabledItem } from '@/shared/isDisabledItem'
@@ -298,6 +299,8 @@ export function createMenubarTriggerSurface(
       'onPointerdown': (event: PointerEvent) => {
         if (event.defaultPrevented)
           return
+        // Lets the content tell the focus WebKit gives the menubar for this press (#3360).
+        trackTriggerPress(event)
         // only call handler if it's the left button (mousedown gets triggered by all mouse buttons)
         // but not when the control key is pressed (avoiding MacOS right click)
         if (!isDisabled() && event.button === 0 && event.ctrlKey === false) {
@@ -452,7 +455,11 @@ export function createMenubarContentSurface(
     onFocusOutside: (event) => {
       const target = event.target as HTMLElement
       const isMenubarTrigger = options.getItems().filter(i => !isDisabledItem(i.ref)).some(i => i.ref.contains(target))
-      if (isMenubarTrigger)
+      // WebKit does not focus a pressed button but its focusable ancestor: pressing a
+      // trigger focuses the menubar itself, which must not close the menu it opens (#3360).
+      const trigger = menuContext.triggerElement.value
+      const isMenubar = isTriggerPressInFlight(trigger) && target === trigger?.closest('[role=menubar]')
+      if (isMenubarTrigger || isMenubar)
         event.preventDefault()
     },
     onInteractOutside: () => {
