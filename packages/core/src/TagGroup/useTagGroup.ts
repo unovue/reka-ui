@@ -4,7 +4,7 @@ import type { TagGroupItemRegistration, TagGroupRootContext, TagGroupSelectionMo
 import type { BaseChangeReason, By, ChangeEventDetails, PartSurface, SelectionState } from '@/shared'
 import type { AcceptableValue, Direction } from '@/shared/types'
 import { computed, nextTick, ref, shallowReactive, toValue } from 'vue'
-import { compare, createPartSurface, getActiveElement, selectionState, useControllableState, useTypeahead, valueComparator } from '@/shared'
+import { compare, createPartSurface, getActiveElement, selectionState, useControllableState, useTranslations, useTypeahead, valueComparator } from '@/shared'
 import { compareDocumentOrder } from '@/shared/documentOrder'
 import { resolveDirection } from '@/shared/useDirection'
 
@@ -223,11 +223,12 @@ export function getTagGroupItemDeleteSurface(
 ): PartSurface<TagGroupItemDeleteState> {
   const id = options.id ?? `${itemContext.id}-delete`
   const disabled = computed(() => Boolean(itemContext.disabled.value || toValue(options.disabled)))
+  const t = useTranslations()
 
   return createPartSurface<TagGroupItemDeleteState>(
     () => ({
       'id': id,
-      'aria-label': 'Remove',
+      'aria-label': t('tagGroupRemove'),
       'aria-labelledby': `${id} ${itemContext.id}`,
       // Only the focused tag's button is tabbable, so Tab moves from a tag to
       // its delete button and then out of the group, like React Aria.
