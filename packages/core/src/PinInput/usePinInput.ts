@@ -50,6 +50,27 @@ export function orderInputElements(inputs: Set<HTMLInputElement>): HTMLInputElem
   return ordered.map(item => item.el)
 }
 
+/**
+ * The model index an input binds to: its `index`, or its place among the
+ * registered inputs when it has none.
+ *
+ * @internal
+ */
+export function getInputModelIndex(el: HTMLInputElement, position: number): number {
+  return toValue(inputIndexes.get(el)) ?? position
+}
+
+/**
+ * The values of the mounted inputs, in their order: a slot that is not
+ * rendered contributes nothing (its entry stays in the model for when it
+ * returns).
+ *
+ * @internal
+ */
+export function getMountedValues(inputs: Set<HTMLInputElement>, value: PinInputModel): PinInputModel {
+  return orderInputElements(inputs).map((el, position) => value[getInputModelIndex(el, position)]) as PinInputModel
+}
+
 function removeTrailingEmptyStrings(input: PinInputModel) {
   let i = input.length - 1
   while (i >= 0 && input[i] === '') {
@@ -105,6 +126,8 @@ export interface UsePinInputReturn {
   modelValue: ComputedRef<PinInputModel>
   /** The model as an array (`[]` while it is `null`/`undefined`). */
   currentModelValue: ComputedRef<PinInputModel>
+  /** The values of the mounted inputs, in their order: what the form submits. */
+  mountedValues: ComputedRef<PinInputModel>
   isCompleted: ComputedRef<boolean>
   isNumericMode: ComputedRef<boolean>
   disabled: ComputedRef<boolean>
@@ -188,11 +211,11 @@ export function usePinInput(props: UsePinInputProps = {}): UsePinInputReturn {
 
   // Completeness reads the committed model only, never `pending`: a controlled
   // parent that rejects the last digit must not flash `data-complete` for a tick.
-  const isCompleted = computed(() => {
-    const committed = Array.isArray(modelValue.value) ? modelValue.value : []
-    const modelValues = committed.filter(i => !!i || (isNumericMode.value && i === 0))
-    return modelValues.length === inputElements.value.size
-  })
+  const committedMountedValues = computed(() => getMountedValues(inputElements.value, Array.isArray(modelValue.value) ? modelValue.value : []))
+  const isCompleted = computed(() => committedMountedValues.value.length > 0
+    && committedMountedValues.value.every(i => !!i || (isNumericMode.value && i === 0)))
+  // What the form submits: the digits of the mounted inputs.
+  const mountedValues = computed(() => getMountedValues(inputElements.value, currentModelValue.value))
 
   function setModelValue(value: PinInputModel, reason: PinInputChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
     const changed = setState(value, reason, event)
@@ -214,8 +237,8 @@ export function usePinInput(props: UsePinInputProps = {}): UsePinInputReturn {
   watch(modelValue, () => {
     if (!isCompleted.value)
       return
-    props.onComplete?.(modelValue.value)
-    props.emit?.('complete', modelValue.value)
+    props.onComplete?.(committedMountedValues.value)
+    props.emit?.('complete', committedMountedValues.value)
   }, { deep: true })
 
   const context: PinInputRootContext<PinInputType> = {
@@ -243,6 +266,7 @@ export function usePinInput(props: UsePinInputProps = {}): UsePinInputReturn {
   return {
     modelValue,
     currentModelValue,
+    mountedValues,
     isCompleted,
     isNumericMode,
     disabled,
@@ -289,6 +313,9 @@ export function createPinInputInputSurface(
   const inputElements = computed(() => orderInputElements(context.inputElements!.value))
   const currentValue = computed(() => context.currentModelValue.value[index()])
   const disabled = computed(() => (toValue(options.disabled) || context.disabled.value) ?? false)
+  // This input's place among the mounted inputs, which navigation, paste and the
+  // announced ordinal follow: a slot that is not rendered leaves no gap.
+  const position = computed(() => inputElements.value.findIndex((el, i) => getInputModelIndex(el, i) === index()))
 
   /** Restores the input's text to the model after a cancelled change. */
   function syncInput(target: HTMLInputElement) {
@@ -330,7 +357,8 @@ export function createPinInputInputSurface(
   }
 
   function focusNext() {
-    inputElements.value[index() + 1]?.focus()
+    if (position.value >= 0)
+      inputElements.value[position.value + 1]?.focus()
   }
 
   const { isComposing, handleCompositionStart, handleCompositionEnd } = useComposing((event) => {
@@ -402,15 +430,15 @@ export function createPinInputInputSurface(
   function getFirstEmptyInputIndex() {
     if (!context.otp.value)
       return -1
-    return inputElements.value.findIndex((_, idx) =>
-      context.currentModelValue.value[idx] === ''
-      || context.currentModelValue.value[idx] === undefined,
-    )
+    return inputElements.value.findIndex((input, position) => {
+      const value = context.currentModelValue.value[getInputModelIndex(input, position)]
+      return value === '' || value === undefined
+    })
   }
 
   function getEarlierEmptyInput() {
     const firstEmptyInputIdx = getFirstEmptyInputIndex()
-    if (firstEmptyInputIdx !== -1 && firstEmptyInputIdx < index())
+    if (firstEmptyInputIdx !== -1 && firstEmptyInputIdx < position.value)
       return inputElements.value[firstEmptyInputIdx]
     return undefined
   }
@@ -440,10 +468,11 @@ export function createPinInputInputSurface(
       writeAt(index(), '', 'backspace-key', event)
     }
     else {
-      const prevEl = inputElements.value[index() - 1]
+      const previousPosition = position.value - 1
+      const prevEl = inputElements.value[previousPosition]
       if (prevEl) {
         prevEl.focus()
-        writeAt(index() - 1, '', 'backspace-key', event)
+        writeAt(getInputModelIndex(prevEl, previousPosition), '', 'backspace-key', event)
       }
     }
   }
@@ -507,20 +536,23 @@ export function createPinInputInputSurface(
 
   function handleMultipleCharacter(values: string, reason: PinInputChangeReason, event?: Event) {
     const tempModelValue = [...context.currentModelValue.value] as PinInputModel
-    const initialIndex = values.length >= inputElements.value.length ? 0 : index()
+    const initialIndex = values.length >= inputElements.value.length ? 0 : position.value
+    if (initialIndex < 0)
+      return
     const lastIndex = Math.min(initialIndex + values.length, inputElements.value.length)
     let lastFilled: HTMLInputElement | undefined
     for (let i = initialIndex; i < lastIndex; i++) {
       const input = inputElements.value[i]
+      const modelIndex = getInputModelIndex(input, i)
       const value = values[i - initialIndex]
       if (context.isNumericMode.value) {
         const num = Number.parseInt(value)
         if (Number.isNaN(num))
           continue
-        tempModelValue[i] = num
+        tempModelValue[modelIndex] = num
       }
       else {
-        tempModelValue[i] = value
+        tempModelValue[modelIndex] = value
       }
       lastFilled = input
     }
@@ -550,7 +582,7 @@ export function createPinInputInputSurface(
       'placeholder': context.placeholder.value,
       'value': currentValue.value,
       'disabled': disabled.value,
-      'aria-label': `pin input ${index() + 1} of ${inputElements.value.length}`,
+      'aria-label': position.value < 0 ? 'pin input' : `pin input ${position.value + 1} of ${inputElements.value.length}`,
       'onInput': (event: Event) => handleInput(event as InputEvent),
       'onKeydown': onKeydown,
       'onMousedown': onMousedown,

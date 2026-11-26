@@ -172,7 +172,7 @@ function firstInput() {
 // The composable owns the model (`useControllableState`), `beforeUpdate:` /
 // `update:` and the `complete` watcher; the shell keeps `dir` resolution and
 // the hidden form input.
-const { modelValue: model, currentModelValue, root, context, isControlled } = usePinInput({
+const { modelValue: model, mountedValues, root, context, isControlled } = usePinInput({
   modelValue: () => props.modelValue,
   defaultValue: props.defaultValue,
   type: () => props.type,
@@ -244,7 +244,7 @@ const bindFormReset = formResetBinder(onFormReset)
       feature="focusable"
       aria-hidden="true"
       tabindex="-1"
-      :value="currentModelValue.join('')"
+      :value="mountedValues.join('')"
       :name="resolvedName() ?? ''"
       :disabled="resolvedDisabled()"
       :required="resolvedRequired()"
