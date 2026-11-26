@@ -20,7 +20,7 @@ describe.each([
     const options = ref(initialOptions)
     const onUpdateModelValue = vi.fn()
     wrapper = mount(defineComponent({
-      setup: () => () => h(Root, {
+      setup: () => () => h(Root as any, {
         'defaultOpen': true,
         ...(ignoreFilter ? { filter: null } : {}),
         'onUpdate:modelValue': onUpdateModelValue,

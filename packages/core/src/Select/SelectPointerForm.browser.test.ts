@@ -16,7 +16,7 @@ function mountSelect(initiallyDisabled: boolean) {
           'name': 'fruit',
           'disabled': disabled.value,
           'modelValue': modelValue.value,
-          'onUpdate:modelValue': (value: string) => modelValue.value = value,
+          'onUpdate:modelValue': (value: any) => modelValue.value = value,
         }, () => [
           h(SelectTrigger, { 'data-testid': 'trigger' }, () => h(SelectValue)),
           h(SelectPortal, () => h(SelectContent, { position: 'popper' }, () =>
@@ -111,7 +111,7 @@ describe('given a Select used with a real pointer, in a real browser', () => {
             : null,
           h(SelectRoot, {
             'modelValue': modelValue.value,
-            'onUpdate:modelValue': (value: string | string[]) => modelValue.value = value,
+            'onUpdate:modelValue': (value: any) => modelValue.value = value,
             ...options.rootProps,
           }, () => [
             h(SelectTrigger, { 'data-testid': 'trigger', 'style': 'position: relative; width: 200px; height: 36px' }, () => h(SelectValue, { placeholder: 'Pick a fruit' })),
@@ -310,7 +310,7 @@ describe('given a multiple, required Select in a form, in a real browser', () =>
             'multiple': true,
             'required': true,
             'modelValue': modelValue.value,
-            'onUpdate:modelValue': (value: string[]) => modelValue.value = value,
+            'onUpdate:modelValue': (value: any) => modelValue.value = value,
           }, () => [
             h(SelectTrigger, { 'data-testid': 'trigger' }, () => h(SelectValue)),
             h(SelectPortal, () => h(SelectContent, { position: 'popper' }, () =>
