@@ -430,7 +430,8 @@ describe('toastRoot — reasons', () => {
   it('reports escape-key', async () => {
     const { byTestId, reasons } = mountToast()
     await vi.waitFor(() => expect(byTestId('toast')).not.toBeNull())
-    await fireEvent.keyDown(window, { key: 'Escape' })
+    // Only an Escape from inside the toast closes it (#3185).
+    await fireEvent.keyDown(byTestId('toast')!, { key: 'Escape' })
     expect(reasons()).toEqual(['escape-key'])
   })
 
