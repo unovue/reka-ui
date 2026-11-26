@@ -8,7 +8,7 @@ import type { Direction } from '@/shared/types'
 import { computed, nextTick, ref, toValue, watch } from 'vue'
 import { isTriggerPressInFlight, trackTriggerPress } from '@/DismissableLayer/utils'
 import { useMenuRoot } from '@/Menu/useMenu'
-import { createPartSurface, defineReactiveIds, useControllableState } from '@/shared'
+import { createPartSurface, defineReactiveIds, getterRef, useControllableState } from '@/shared'
 import { isDisabledItem } from '@/shared/isDisabledItem'
 import { resolveDirection } from '@/shared/useDirection'
 import { wrapArray } from '@/shared/useTypeahead'
@@ -149,7 +149,8 @@ export function useMenubar(props: UseMenubarProps = {}): UseMenubarReturn {
     modelValue,
     dir: dir as Ref<Direction>,
     loop: loop as Ref<boolean>,
-    unmountOnHide: computed(() => toValue(props.unmountOnHide) ?? true) as Ref<boolean>,
+    // A getter, not a computed: it only reads a prop.
+    unmountOnHide: getterRef(() => toValue(props.unmountOnHide) ?? true) as Ref<boolean>,
     onMenuOpen,
     onMenuClose,
     onMenuToggle,

@@ -9,7 +9,7 @@ import { createPartSurface, disclosureState, getActiveElement, getterRef, useArr
 import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
 import { resolveDirection } from '@/shared/useDirection'
 import { useIsUsingKeyboard } from '@/shared/useIsUsingKeyboard'
-import { createContentHideHook, FIRST_LAST_KEYS, focusFirst, isMouseEvent, isPointerInGraceArea, ITEM_SELECT, LAST_KEYS, SELECTION_KEYS } from './utils'
+import { contentHidden, FIRST_LAST_KEYS, focusFirst, isMouseEvent, isPointerInGraceArea, ITEM_SELECT, LAST_KEYS, onContentHide, SELECTION_KEYS } from './utils'
 
 // =============================================================================
 // Headless composables for the Menu (overlay) family — issue #2723.
@@ -115,9 +115,9 @@ export function useMenuRoot(props: UseMenuRootProps = {}): UseMenuRootReturn {
   })
   const dir = resolveDirection(props.dir)
   const modal = computed<boolean>(() => toValue(props.modal) ?? true)
-  const unmountOnHide = computed<boolean>(() => toValue(props.unmountOnHide) ?? true)
+  // A getter, not a computed: it only reads a prop.
+  const unmountOnHide = getterRef<boolean>(() => toValue(props.unmountOnHide) ?? true)
   const content = ref<HTMLElement>()
-  const contentHide = createContentHideHook()
   const isUsingKeyboardRef = useIsUsingKeyboard()
 
   function onOpenChange(value: boolean, reason?: MenuOpenChangeReason | BaseChangeReason, event?: Event, options?: SetStateOptions): boolean {
@@ -135,8 +135,9 @@ export function useMenuRoot(props: UseMenuRootProps = {}): UseMenuRootReturn {
       content.value = element
     },
     notifyOpenComplete: value => props.onOpenComplete?.(value),
-    onContentHide: contentHide.on,
-    contentHidden: contentHide.trigger,
+    // Shared methods, called on the context.
+    onContentHide,
+    contentHidden,
   }
   const menuRootContext: MenuRootContext = {
     onClose,
