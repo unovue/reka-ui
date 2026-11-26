@@ -49,6 +49,10 @@ Contains the content you want to constrain to a given ratio.
 
 <!-- @include: @/meta/AspectRatio.md -->
 
+## Accessibility
+
+Aspect Ratio is a layout-only wrapper. It adds no role or ARIA attributes, is not focusable and has no keyboard interaction. The accessibility of the content placed inside it, such as the `alt` text of an image, remains your responsibility.
+
 ## Headless composable
 
 `useAspectRatio` returns the `aspect` percentage, the `wrapper` surface that reserves the space and the `root` surface that fills it.
