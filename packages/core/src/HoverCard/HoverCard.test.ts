@@ -4,6 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { defineComponent, h, KeepAlive, nextTick, ref } from 'vue'
+import { sleep } from '@/test'
 import { HoverCardContent, HoverCardRoot, HoverCardTrigger } from '.'
 import HoverCard from './story/_HoverCard.vue'
 
@@ -383,6 +384,72 @@ describe('given a hover card waiting to open in a KeepAlive page', () => {
     finally {
       wrapper.unmount()
       vi.useRealTimers()
+    }
+  })
+})
+
+describe('given a HoverCardContent with outside interaction listeners', () => {
+  function mountWithListeners(preventClose: boolean) {
+    const counts = { pointerDownOutside: 0, focusOutside: 0, interactOutside: 0 }
+    const wrapper = mount(defineComponent({
+      setup: () => () => h('div', [
+        h('button', { id: 'outside' }, 'outside'),
+        h(HoverCardRoot, { defaultOpen: true }, () => [
+          h(HoverCardTrigger, () => 'trigger'),
+          h(HoverCardContent, {
+            onPointerDownOutside: () => counts.pointerDownOutside++,
+            onFocusOutside: () => counts.focusOutside++,
+            onInteractOutside: (event: Event) => {
+              counts.interactOutside++
+              if (preventClose)
+                event.preventDefault()
+            },
+          }, () => 'content'),
+        ]),
+      ]),
+    }), { attachTo: document.body })
+    return { wrapper, counts }
+  }
+
+  async function waitForContent() {
+    await vi.waitFor(() => expect(document.querySelector('[data-dismissable-layer]')).not.toBeNull())
+    // The outside listeners are registered on the next macrotask
+    await sleep(0)
+  }
+
+  it.each([false, true])('should emit pointerDownOutside and interactOutside once per outside pointer down (preventClose=%s)', async (preventClose) => {
+    const { wrapper, counts } = mountWithListeners(preventClose)
+    try {
+      await waitForContent()
+
+      document.getElementById('outside')!.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }))
+      await flushPromises()
+
+      expect(counts.pointerDownOutside).toBe(1)
+      expect(counts.interactOutside).toBe(1)
+      expect(wrapper.find('[data-dismissable-layer]').exists()).toBe(preventClose)
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  // Focus outside never closes a hover card
+  it('should emit focusOutside and interactOutside once per outside focus and stay open', async () => {
+    const { wrapper, counts } = mountWithListeners(false)
+    try {
+      await waitForContent()
+
+      document.getElementById('outside')!.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+      // Focus outside is reported a couple of ticks after the focus event
+      await vi.waitFor(() => expect(counts.focusOutside).toBeGreaterThan(0))
+      await flushPromises()
+
+      expect(counts).toMatchObject({ focusOutside: 1, interactOutside: 1 })
+      expect(wrapper.find('[data-dismissable-layer]').exists()).toBe(true)
+    }
+    finally {
+      wrapper.unmount()
     }
   })
 })

@@ -89,6 +89,7 @@ const layerWrapper = computed(() => splitWrapperAttrs(mergeProps({
     event.preventDefault()
     emits('focusOutside', event)
   },
+  onInteractOutside: (event: PointerDownOutsideEvent | FocusOutsideEvent) => emits('interactOutside', event),
   onDismiss: handleDismiss,
 }, instance.proxy!.$attrs), DISMISSABLE_LAYER_WRAPPER))
 const layer = useDismissableLayer(dismissableLayerOptions(contentElement, () => layerWrapper.value))
