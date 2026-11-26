@@ -30,7 +30,7 @@ function mountInDialog(child: () => VNode) {
   const dialogOpen = ref(true)
   mount(defineComponent({
     setup: () => () => h(DialogRoot, { 'open': dialogOpen.value, 'onUpdate:open': (value: boolean) => dialogOpen.value = value }, () =>
-      h(DialogPortal, null, () => h(DialogContent, { 'data-testid': 'dialog', 'aria-describedby': undefined }, () => [
+      h(DialogPortal, null, () => h(DialogContent, { 'data-testid': 'dialog', 'aria-describedby': undefined, 'style': 'position: relative' }, () => [
         h(DialogTitle, null, () => 'Title'),
         child(),
       ]))),
@@ -41,8 +41,7 @@ function mountInDialog(child: () => VNode) {
 const content = { 'data-testid': 'child', 'class': 'exit' }
 
 describe('given a menu inside a Dialog, during its exit, in a real browser', () => {
-  // TODO(v3-port): #3371 v3 keeps a closing menu's dismissal layer for its exit animation
-  it.skip.each([true, false])('a DropdownMenu hands Escape back to the dialog (unmountOnHide: %s)', async (unmountOnHide) => {
+  it.each([true, false])('a DropdownMenu hands Escape back to the dialog (unmountOnHide: %s)', async (unmountOnHide) => {
     const open = ref(false)
     const dialogOpen = mountInDialog(() => h(DropdownMenuRoot, { 'open': open.value, 'onUpdate:open': (value: boolean) => open.value = value, unmountOnHide }, () => [
       h(DropdownMenuTrigger, null, () => 'Open'),
@@ -58,8 +57,7 @@ describe('given a menu inside a Dialog, during its exit, in a real browser', () 
     expect(dialogOpen.value).toBe(false)
   })
 
-  // TODO(v3-port): #3371 v3 keeps a closing menu's dismissal layer for its exit animation
-  it.skip('a DropdownMenu with an open submenu hands Escape back to the dialog', async () => {
+  it('a DropdownMenu with an open submenu hands Escape back to the dialog', async () => {
     const open = ref(false)
     const subOpen = ref(false)
     const dialogOpen = mountInDialog(() => h(DropdownMenuRoot, { 'open': open.value, 'onUpdate:open': (value: boolean) => open.value = value }, () => [
@@ -85,8 +83,7 @@ describe('given a menu inside a Dialog, during its exit, in a real browser', () 
     expect(dialogOpen.value).toBe(false)
   })
 
-  // TODO(v3-port): #3371 v3 keeps a closing menu's dismissal layer for its exit animation
-  it.skip('a ContextMenu hands Escape back to the dialog', async () => {
+  it('a ContextMenu hands Escape back to the dialog', async () => {
     const dialogOpen = mountInDialog(() => h(ContextMenuRoot, null, () => [
       h(ContextMenuTrigger, { 'data-testid': 'area', 'style': 'display: block; height: 40px' }, () => 'Area'),
       h(ContextMenuPortal, null, () => h(ContextMenuContent, content, () => h(ContextMenuItem, null, () => 'Item'))),
@@ -101,8 +98,7 @@ describe('given a menu inside a Dialog, during its exit, in a real browser', () 
     expect(dialogOpen.value).toBe(false)
   })
 
-  // TODO(v3-port): #3371 v3 keeps a closing menu's dismissal layer for its exit animation
-  it.skip('a Menubar menu hands Escape back to the dialog', async () => {
+  it('a Menubar menu hands Escape back to the dialog', async () => {
     const value = ref('')
     const dialogOpen = mountInDialog(() => h(MenubarRoot, { 'modelValue': value.value, 'onUpdate:modelValue': (next: string) => value.value = next }, () =>
       h(MenubarMenu, { value: 'file' }, () => [
@@ -153,6 +149,9 @@ describe('given a menu inside a Dialog, during its exit, in a real browser', () 
     await expect.poll(() => get('dialog')?.contains(document.activeElement)).toBe(true)
     open.value = true
     await expect.poll(() => get('dialog')?.closest('[aria-hidden="true"]')).not.toBeNull()
+    await expect.poll(() => get('child')?.contains(document.activeElement)).toBe(true)
+    // Let the enter settle: a close in the frame the content opens in skips the exit (Presence).
+    await afterFrames()
 
     open.value = false
     await expect.poll(() => exiting('child')).toBe(true)

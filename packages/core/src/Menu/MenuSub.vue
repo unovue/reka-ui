@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { MenuContext } from './MenuRoot.vue'
 import type { MenuOpenChangeReason } from './useMenu'
 import type { ChangeEventDetails } from '@/shared'
-import { createContext, useControllableState, useId } from '@/shared'
+import { createRekaContext, useControllableState, useId } from '@/shared'
 
 export interface MenuSubContext {
   contentId: string
@@ -14,7 +14,7 @@ export interface MenuSubContext {
 }
 
 export const [injectMenuSubContext, provideMenuSubContext]
-  = createContext<MenuSubContext>('MenuSub')
+  = createRekaContext<MenuSubContext>('MenuSub')
 
 export interface MenuSubProps {
   /** The controlled open state of the menu. Can be used as `v-model:open`. */
@@ -38,6 +38,7 @@ import {
 } from 'vue'
 import { PopperRoot } from '@/Popper'
 import { injectMenuContext, provideMenuContext } from './MenuRoot.vue'
+import { createContentHideHook } from './utils'
 
 const props = withDefaults(defineProps<MenuSubProps>(), {
   open: undefined,
@@ -54,6 +55,7 @@ const { state: open, setState } = useControllableState<boolean, MenuOpenChangeRe
 const parentMenuContext = injectMenuContext()
 const trigger = ref<HTMLElement>()
 const content = ref<HTMLElement>()
+const contentHide = createContentHideHook()
 
 // Prevent the parent menu from reopening with open submenus. A getter-source
 // `watch` (not `watchEffect`): `setState` reads the sub's own `open` for its
@@ -72,6 +74,8 @@ provideMenuContext({
     content.value = element
   },
   notifyOpenComplete: value => emits('update:openComplete', value),
+  onContentHide: contentHide.on,
+  contentHidden: contentHide.trigger,
 })
 
 provideMenuSubContext({
@@ -87,7 +91,7 @@ provideMenuSubContext({
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="menu">
     <slot />
   </PopperRoot>
 </template>

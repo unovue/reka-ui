@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import type { CheckedState } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
-import { createContext, selectionState, useForwardElement } from '@/shared'
+import { createRekaContext, selectionState, useForwardElement } from '@/shared'
 
 interface MenuItemIndicatorContext {
   modelValue: Ref<CheckedState>
@@ -17,7 +17,7 @@ export interface MenuItemIndicatorProps extends PrimitiveProps {
 }
 
 export const [injectMenuItemIndicatorContext, provideMenuItemIndicatorContext]
-  = createContext<MenuItemIndicatorContext>(
+  = createRekaContext<MenuItemIndicatorContext>(
     ['MenuCheckboxItem', 'MenuRadioItem'],
     'MenuItemIndicatorContext',
   )

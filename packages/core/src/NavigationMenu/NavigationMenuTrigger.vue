@@ -2,7 +2,7 @@
 import type { ComponentPublicInstance, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import { COLLECTION_ITEM_ATTRS, useCollectionItem } from '@/Collection/Collection'
-import { useForwardElement } from '@/shared'
+import { disabledAttr, useForwardElement } from '@/shared'
 
 export interface NavigationMenuTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -64,7 +64,7 @@ function setFocusProxyRef(node: Element | ComponentPublicInstance | null) {
 <template>
   <component
     :is="renderAs(as, props.asChild)"
-    v-bind="mergeProps(COLLECTION_ITEM_ATTRS, { type: as === 'button' ? 'button' : undefined }, getTriggerAttrs())"
+    v-bind="mergeProps(COLLECTION_ITEM_ATTRS, { type: as === 'button' ? 'button' : undefined }, getTriggerAttrs(), { disabled: disabledAttr(trigger.attrs.value.disabled as boolean | undefined, as, props.asChild) })"
     :ref="forwardRef"
   >
     <slot />

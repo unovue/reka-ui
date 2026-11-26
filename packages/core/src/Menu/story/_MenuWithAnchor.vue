@@ -14,6 +14,7 @@ interface Props extends MenuProps {
 }
 const props = withDefaults(defineProps<Props>(), {
   open: true,
+  spaceExtendsTypeahead: undefined,
 })
 
 const open = useVModel(props, 'open')

@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ComputedRef, Ref } from 'vue'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState } from '@/shared'
-import { createContext, useId } from '@/shared'
+import { createRekaContext, useId } from '@/shared'
 
 /**
  * Why the tooltip's `open` state changed (#2828); the `reason` of `ChangeEventDetails`.
@@ -109,7 +109,7 @@ export interface TooltipContext {
 }
 
 export const [injectTooltipRootContext, provideTooltipRootContext]
-  = createContext<TooltipContext>('TooltipRoot')
+  = createRekaContext<TooltipContext>('TooltipRoot')
 </script>
 
 <script setup lang="ts">
@@ -183,7 +183,7 @@ provideTooltipRootContext(context)
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="tooltip">
     <slot :open="open" />
   </PopperRoot>
 </template>

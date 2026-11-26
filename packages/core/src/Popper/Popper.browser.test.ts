@@ -80,8 +80,7 @@ describe('popper perpendicular-side fallback', () => {
       expect(Math.round(getRect('content').left - getRect('anchor').right)).toBe(8)
     })
 
-    // TODO(v3-port): #3011 v3's PopperContent has no `fallbackAxisSideDirection`
-    it.skip('moves to a perpendicular side that fits when fallbackAxisSideDirection is set', async () => {
+    it('moves to a perpendicular side that fits when fallbackAxisSideDirection is set', async () => {
       mountConstrained(family, { fallbackAxisSideDirection: 'start' })
 
       await expect.poll(() => getContent()?.dataset.side, POLL).toBe('top')
@@ -96,15 +95,13 @@ describe('popper perpendicular-side fallback', () => {
     })
   })
 
-  // TODO(v3-port): #3011 v3's PopperContent has no `fallbackAxisSideDirection`
-  it.skip('tries the bottom side first with fallbackAxisSideDirection="end"', async () => {
+  it('tries the bottom side first with fallbackAxisSideDirection="end"', async () => {
     mountConstrained('Tooltip', { fallbackAxisSideDirection: 'end' })
 
     await expect.poll(() => getContent()?.dataset.side, POLL).toBe('bottom')
   })
 
-  // TODO(v3-port): #3011 v3's PopperContent has no `fallbackAxisSideDirection`
-  it.skip('does not apply when sideFlip is disabled', async () => {
+  it('does not apply when sideFlip is disabled', async () => {
     mountConstrained('Popover', { fallbackAxisSideDirection: 'start', sideFlip: false })
     await waitForPlaced()
 
@@ -112,8 +109,7 @@ describe('popper perpendicular-side fallback', () => {
     expect(getContent()!.dataset.side).toBe('right')
   })
 
-  // TODO(v3-port): #3011 v3's PopperContent has no `fallbackAxisSideDirection`
-  it.skip('does not apply when avoidCollisions is disabled', async () => {
+  it('does not apply when avoidCollisions is disabled', async () => {
     mountConstrained('Tooltip', { fallbackAxisSideDirection: 'start', avoidCollisions: false })
     await waitForPlaced()
 

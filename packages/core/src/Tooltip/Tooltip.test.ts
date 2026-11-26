@@ -3,7 +3,7 @@ import type { ChangeEventDetails } from '@/shared'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, KeepAlive, nextTick, ref } from 'vue'
 import { injectPopperRootContext } from '@/Popper'
 import { TooltipContent, TooltipPortal, TooltipProvider, TooltipRoot, TooltipTrigger } from '.'
 import Tooltip from './stories/_Tooltip.vue'
@@ -705,5 +705,76 @@ describe('given a tooltip trigger inside a form', () => {
     const { trigger } = mountInForm({ as: 'span' })
 
     expect(trigger.attributes('type')).toBeUndefined()
+  })
+})
+
+describe('given a tooltip waiting to open in a KeepAlive page', () => {
+  it('does not open once the page is deactivated', async () => {
+    const onUpdateOpen = vi.fn()
+    const onPage = ref(true)
+    const Page = defineComponent({
+      name: 'Page',
+      setup: () => () => h(TooltipProvider, { delayDuration: 50 }, () => h(TooltipRoot, { 'onUpdate:open': onUpdateOpen }, () =>
+        h(TooltipTrigger, () => 'trigger'))),
+    })
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(KeepAlive, null, () => onPage.value ? h(Page) : h('p', 'other page')),
+    }), { attachTo: document.body })
+
+    await wrapper.find('button').trigger('pointermove', { pointerType: 'mouse' })
+    onPage.value = false
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    expect(onUpdateOpen).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+})
+
+describe('given a Tooltip trigger that unmounts while it is pressed', () => {
+  it('should remove its document pointerup listener', async () => {
+    const wrapper = mount(
+      () => h(TooltipProvider, null, () => h(TooltipRoot, null, () => h(TooltipTrigger, null, () => 'trigger'))),
+      { attachTo: document.body },
+    )
+    const addSpy = vi.spyOn(document, 'addEventListener')
+    const removeSpy = vi.spyOn(document, 'removeEventListener')
+
+    await wrapper.find('button').trigger('pointerdown')
+    const [, listener] = addSpy.mock.calls.find(([type]) => type === 'pointerup')!
+    wrapper.unmount()
+
+    expect(removeSpy).toHaveBeenCalledWith('pointerup', listener)
+    addSpy.mockRestore()
+    removeSpy.mockRestore()
+  })
+})
+
+describe('given a controlled tooltip whose trigger is pressed', () => {
+  function mountControlled(open: boolean) {
+    const onUpdateOpen = vi.fn()
+    const wrapper = mount(() => h(TooltipProvider, () => h(
+      TooltipRoot,
+      { 'open': open, 'onUpdate:open': onUpdateOpen },
+      () => h(TooltipTrigger, () => 'trigger'),
+    )), { attachTo: document.body })
+    return { wrapper, onUpdateOpen }
+  }
+
+  it('should close the tooltip when it is open', async () => {
+    const { wrapper, onUpdateOpen } = mountControlled(true)
+    await wrapper.get('button').trigger('pointerdown')
+
+    expect(onUpdateOpen).toHaveBeenCalledOnce()
+    expect(onUpdateOpen.mock.calls[0][0]).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('should not emit update:open when it is already closed', async () => {
+    const { wrapper, onUpdateOpen } = mountControlled(false)
+    await wrapper.get('button').trigger('pointerdown')
+
+    expect(onUpdateOpen).not.toHaveBeenCalled()
+    wrapper.unmount()
   })
 })

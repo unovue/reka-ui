@@ -310,8 +310,7 @@ describe('given nested ContextMenus', () => {
     vi.useRealTimers()
   })
 
-  // TODO(v3-port): #3341 v3 nested triggers each start their own long press
-  it.skip.each(['touch', 'pen'])('opens only the inner menu on a %s long press', async (pointerType) => {
+  it.each(['touch', 'pen'])('opens only the inner menu on a %s long press', async (pointerType) => {
     await mountNested(['outer', 'inner'])
     pointerDown('inner', pointerType)
     await vi.advanceTimersByTimeAsync(700)
@@ -320,8 +319,7 @@ describe('given nested ContextMenus', () => {
     expect(document.querySelectorAll('[role="menu"]')).toHaveLength(1)
   })
 
-  // TODO(v3-port): #3341 v3 nested triggers each start their own long press
-  it.skip('opens only the innermost of three menus on a long press', async () => {
+  it('opens only the innermost of three menus on a long press', async () => {
     await mountNested(['outer', 'middle', 'inner'])
     pointerDown('inner')
     await vi.advanceTimersByTimeAsync(700)
@@ -338,8 +336,7 @@ describe('given nested ContextMenus', () => {
   })
 
   // A new touch point cancels the long press already running on the trigger, as on a single trigger.
-  // TODO(v3-port): #3341 v3 nested triggers each start their own long press
-  it.skip('opens only the inner menu when a second finger presses it while the first holds the outer trigger', async () => {
+  it('opens only the inner menu when a second finger presses it while the first holds the outer trigger', async () => {
     await mountNested(['outer', 'inner'])
     pointerDown('outer', 'touch', 1)
     await vi.advanceTimersByTimeAsync(300)

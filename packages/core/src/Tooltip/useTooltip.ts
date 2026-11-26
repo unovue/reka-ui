@@ -1,7 +1,7 @@
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { TooltipContext, TooltipOpenChangeReason } from './TooltipRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
-import { computed, ref, toValue, watch } from 'vue'
+import { computed, getCurrentInstance, getCurrentScope, onDeactivated, onScopeDispose, ref, toValue, watch } from 'vue'
 import { createPartSurface, disclosureState, useControllableState } from '@/shared'
 import { createTimeout } from '@/shared/timeout'
 
@@ -61,8 +61,9 @@ let tooltipCount = 0
  * `pointerdown` / `click` close unless `disableClosingTrigger`.
  *
  * @experimental Signatures may change in 3.x minors.
- * @lifecycle pure — no hooks; the `pointerup` listener is attached to
- * `document` only from inside `onPointerdown`, never at call scope.
+ * @lifecycle pure — the `pointerup` listener is attached to `document` only
+ * from inside `onPointerdown`, never at call scope; inside a component or
+ * `effectScope` it is removed when that scope is disposed.
  */
 export function createTooltipTriggerSurface(context: TooltipContext): PartSurface<TooltipTriggerState> {
   const isPointerDown = ref(false)
@@ -83,6 +84,10 @@ export function createTooltipTriggerSurface(context: TooltipContext): PartSurfac
     isPointerDown.value = true
     document.addEventListener('pointerup', handlePointerUp, { once: true })
   }
+
+  // A trigger unmounted while pressed must not leave its listener on `document`.
+  if (getCurrentScope())
+    onScopeDispose(() => document.removeEventListener('pointerup', handlePointerUp))
 
   function handlePointerMove(event: PointerEvent) {
     if (event.pointerType === 'touch')
@@ -332,6 +337,9 @@ export function useTooltip(props: UseTooltipProps = {}): UseTooltipReturn {
     if (!setState(true, 'trigger-hover', event))
       wasOpenDelayedRef.value = false
   }, delayDuration)
+  // A pending open of a `KeepAlive` page that is left would fire on the page shown instead.
+  if (getCurrentInstance())
+    onDeactivated(() => timer.clear())
 
   function handleOpen(reason?: TooltipOpenChangeReason | BaseChangeReason, event?: Event): boolean {
     timer.clear()

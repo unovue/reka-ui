@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
-import { useForwardElement } from '@/shared'
+import { disabledAttr, useForwardElement } from '@/shared'
 
 export interface MenubarTriggerProps extends PrimitiveProps {
   /** When `true`, prevents the user from interacting with item */
@@ -46,7 +46,7 @@ const trigger = createMenubarTriggerSurface(rootContext, menuContext, {
 onMounted(() => {
   menuContext.triggerElement = triggerElement
 })
-const anchor = usePopperAnchor({ consumerAttrs: true, element: triggerElement })
+const anchor = usePopperAnchor({ consumerAttrs: true, element: triggerElement, scope: 'menu' })
 
 // Arrow-key navigation (as a composable; the menubar handles the keys).
 const roving = useRovingFocusItem({
@@ -60,7 +60,7 @@ const roving = useRovingFocusItem({
   <component
     :is="renderAs(as, asChild)"
     :ref="forwardRef"
-    v-bind="mergeProps(anchor.consumerAttrs($attrs), roving.attrs(), { type: as === 'button' ? 'button' : undefined }, trigger.attrs.value)"
+    v-bind="mergeProps(anchor.consumerAttrs($attrs), roving.attrs(), { type: as === 'button' ? 'button' : undefined }, trigger.attrs.value, { disabled: disabledAttr(trigger.attrs.value.disabled as boolean | undefined, as, asChild) })"
   >
     <slot />
   </component>

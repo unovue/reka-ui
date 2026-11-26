@@ -32,7 +32,7 @@ const active = () => document.activeElement?.textContent?.trim()
 // `'omit'` leaves the prop out, to check its default.
 const spaceExtendsTypeaheadProp = (value: boolean | 'omit') => value === 'omit' ? {} : { spaceExtendsTypeahead: value }
 
-async function openMenu(familyName: string, extra: () => any[] = () => [], spaceExtendsTypeahead: boolean | 'omit' = true) {
+async function openMenu(familyName: string, extra: () => any[] = () => [], spaceExtendsTypeahead: boolean | 'omit' = 'omit') {
   const family = families[familyName]
   const onSelect = vi.fn()
   // The part of this family, like `DropdownMenuItem` for 'Item'
@@ -63,7 +63,7 @@ async function openMenu(familyName: string, extra: () => any[] = () => [], space
 }
 
 describe.each(Object.keys(families))('%s typeahead with Space, in a real browser', (name) => {
-  it.each([['by default', 'omit'], ['with spaceExtendsTypeahead false', false]] as const)('selects the focused item with Space during a search %s', async (_, value) => {
+  it.each([['with spaceExtendsTypeahead false', false]] as const)('selects the focused item with Space during a search %s', async (_, value) => {
     const onSelect = await openMenu(name, undefined, value)
 
     await userEvent.keyboard('new')
@@ -74,8 +74,8 @@ describe.each(Object.keys(families))('%s typeahead with Space, in a real browser
     await expect.poll(() => get('content')).toBeNull()
   })
 
-  it('extends an in-progress search instead of selecting the focused item', async () => {
-    const onSelect = await openMenu(name)
+  it.each([['by default', 'omit'], ['with spaceExtendsTypeahead', true]] as const)('extends an in-progress search instead of selecting the focused item %s', async (_, value) => {
+    const onSelect = await openMenu(name, undefined, value)
 
     await userEvent.keyboard('new p')
     expect(onSelect).not.toHaveBeenCalled()

@@ -114,6 +114,22 @@ describe('given a default Menu', () => {
     expect(space.defaultPrevented).toBe(false)
     button.remove()
   })
+
+  it('should select with Space during a search with spaceExtendsTypeahead false', async () => {
+    wrapper.unmount()
+    document.body.innerHTML = ''
+    wrapper = mount(Menu, { attachTo: document.body, attrs: { spaceExtendsTypeahead: false } })
+    const press = async (key: string, init: KeyboardEventInit = {}) => {
+      document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init }))
+      await nextTick()
+    }
+    ;(await findAllByRole(document.body, 'menuitem'))[0].focus()
+    for (const key of 'beef')
+      await press(key)
+    expect(document.activeElement?.textContent?.trim()).toBe('Beef')
+    await press(' ', { code: 'Space' })
+    expect(wrapper.emitted('select')?.length).toBe(1)
+  })
 })
 
 describe('given a Menu with submenu', () => {
