@@ -3,7 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { PrimitiveProps } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
 import { useCollectionItem } from '@/Collection'
-import { createContext, useForwardElement, useId } from '@/shared'
+import { createRekaContext, useForwardElement, useId } from '@/shared'
 
 export interface SelectItemContext<T = AcceptableValue> {
   /** The item's value (read live from the prop). */
@@ -15,7 +15,7 @@ export interface SelectItemContext<T = AcceptableValue> {
 }
 
 export const [injectSelectItemContext, provideSelectItemContext]
-  = createContext<SelectItemContext>('SelectItem')
+  = createRekaContext<SelectItemContext>('SelectItem')
 
 const DISABLED_ATTRS = Object.freeze({ 'data-disabled': '' })
 

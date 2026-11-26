@@ -6,7 +6,7 @@ import type { AcceptableValue } from '@/shared/types'
 import { useCollection, useCollectionSlot } from '@/Collection'
 import {
   containsComposed,
-  createContext,
+  createRekaContext,
   useFocusGuards,
   useForwardElement,
   useForwardProps,
@@ -104,7 +104,7 @@ export interface SelectContentImplProps extends PopperContentProps, DismissableL
 }
 
 export const [injectSelectContentContext, provideSelectContentContext]
-  = createContext<SelectContentContext>('SelectContent')
+  = createRekaContext<SelectContentContext>('SelectContent')
 </script>
 
 <script setup lang="ts">
