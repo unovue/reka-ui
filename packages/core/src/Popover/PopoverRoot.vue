@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { PopoverHandle } from './handle'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
-import { createContext, useId } from '@/shared'
+import { createRekaContext, useId } from '@/shared'
 
 /** Why the popover's `open` state changed (#2828); the `reason` of `ChangeEventDetails`. */
 export type PopoverOpenChangeReason
@@ -80,7 +80,7 @@ export interface PopoverRootContext {
 }
 
 export const [injectPopoverRootContext, providePopoverRootContext]
-  = createContext<PopoverRootContext>('PopoverRoot')
+  = createRekaContext<PopoverRootContext>('PopoverRoot')
 </script>
 
 <script setup lang="ts" generic="Payload = unknown">
