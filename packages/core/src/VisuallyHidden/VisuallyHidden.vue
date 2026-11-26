@@ -20,7 +20,25 @@ export interface VisuallyHiddenProps extends PrimitiveProps {
 import { renderAsEmpty, rendersChildren } from '@/Primitive/renderAs'
 import { useForwardElement } from '@/shared'
 
-withDefaults(defineProps<VisuallyHiddenProps>(), { as: 'span', feature: 'focusable' })
+const props = withDefaults(defineProps<VisuallyHiddenProps>(), { as: 'span', feature: 'focusable' })
+
+/**
+ * A hidden native form control (the twin a component renders for form
+ * participation) has no label of its own. Checkers that also inspect
+ * `aria-hidden` controls report it, and it is exposed without a name while it
+ * holds focus after a failed native validation. Its form field `name` is the
+ * default label.
+ *
+ * Only an element hidden from assistive technology gets it, through
+ * `feature="fully-hidden"` or an explicit `aria-hidden="true"`: a control left
+ * in the accessibility tree is labelled by its consumer. An `aria-label`
+ * passed by the consumer falls through and wins.
+ */
+function hiddenControlLabel(attrs: Record<string, unknown>) {
+  const { name } = attrs
+  const isHidden = props.feature === 'fully-hidden' || String(attrs['aria-hidden']) === 'true'
+  return isHidden && typeof name === 'string' && name ? name : undefined
+}
 
 const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
@@ -33,6 +51,7 @@ defineExpose(expose)
     :aria-hidden="feature === 'fully-hidden' ? 'true' : undefined"
     :data-hidden="feature === 'fully-hidden' ? '' : undefined"
     :tabindex="feature === 'fully-hidden' ? '-1' : undefined"
+    :aria-label="hiddenControlLabel($attrs)"
     :style="{
       // See: https://github.com/twbs/bootstrap/blob/a360960b8dfdb4bf48f87539c2243458fa0366f7/scss/mixins/_visually-hidden.scss
       position: 'absolute',

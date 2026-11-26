@@ -61,7 +61,8 @@ describe('a required, named component whose value is emptied, in a real browser'
     await expect.poll(() => submission(form)).toEqual(filled('bold'))
 
     await userEvent.click(item)
-    await expect.poll(() => item.getAttribute('data-state')).toBe('off')
+    // v3's toggle group item reports `unchecked`, not v2's `off`
+    await expect.poll(() => item.getAttribute('data-state')).toBe('unchecked')
     await nextTick()
     expect(submission(form)).toEqual(empty)
   })
