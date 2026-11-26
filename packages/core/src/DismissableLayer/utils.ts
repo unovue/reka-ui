@@ -415,13 +415,29 @@ export function preventPressFocusMove(event: PointerDownOutsideEvent) {
     if (!event.defaultPrevented)
       mouseEvent.preventDefault()
   }
+  // WebKit sends no `mousedown` once the pressed backdrop is gone, but still moves focus
+  // as that `mousedown` would, onto nothing. Put back the focus the layer returned.
+  function handleFocusOut(focusEvent: FocusEvent) {
+    const blurred = focusEvent.composedPath()[0]
+    if (focusEvent.relatedTarget || event.defaultPrevented || !(blurred instanceof HTMLElement))
+      return
+    queueMicrotask(() => {
+      const active = ownerDocument.activeElement
+      if (blurred.isConnected && (!active || active === ownerDocument.body)) {
+        release()
+        blurred.focus({ preventScroll: true })
+      }
+    })
+  }
   // A `pointerdown` whose default was prevented has no `mousedown`.
   function release() {
     ownerDocument.removeEventListener('mousedown', handleMouseDown, true)
+    ownerDocument.removeEventListener('focusout', handleFocusOut, true)
     ownerDocument.removeEventListener('pointerup', release, true)
     ownerDocument.removeEventListener('pointercancel', release, true)
   }
   ownerDocument.addEventListener('mousedown', handleMouseDown, true)
+  ownerDocument.addEventListener('focusout', handleFocusOut, true)
   ownerDocument.addEventListener('pointerup', release, true)
   ownerDocument.addEventListener('pointercancel', release, true)
 }

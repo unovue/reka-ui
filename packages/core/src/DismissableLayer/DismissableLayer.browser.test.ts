@@ -1,7 +1,7 @@
 import type { VNode } from 'vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import { cdp, userEvent } from 'vitest/browser'
+import { cdp, server, userEvent } from 'vitest/browser'
 import { defineComponent, h, ref } from 'vue'
 import { DialogContent, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } from '@/Dialog'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
@@ -196,7 +196,11 @@ describe('closing a layer on its own', () => {
       await userEvent.click(get('outside')!, { force: true })
 
       await expect.poll(() => get('first-content')).toBeNull()
-      await expect.poll(() => onTriggerFocus.mock.calls.length).toBe(1)
+      // WebKit sends no `mousedown` once the pressed backdrop is gone, but still blurs the
+      // trigger as that `mousedown` would, and the layer focuses it again. A DropdownMenu
+      // returns focus from a timer, after that blur.
+      const refocused = server.browser === 'webkit' && kind !== 'menu'
+      await expect.poll(() => onTriggerFocus.mock.calls.length).toBe(refocused ? 2 : 1)
       expect(onCloseAutoFocus).toHaveBeenCalled()
       await afterTimers()
       // The press's `mousedown`, on the backdrop, does not drop it on `body` either
