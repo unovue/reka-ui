@@ -7,6 +7,7 @@ import { DialogContent, DialogPortal, DialogRoot, DialogTitle, DialogTrigger } f
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
 import { PopoverClose, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '@/Popover'
 import { SelectContent, SelectItem, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '@/Select'
+import { hasCDP } from '@/test/browser'
 
 type Kind = 'select' | 'menu' | 'modal popover' | 'popover'
 
@@ -121,7 +122,8 @@ describe('opening a layer during a native pointerdown', () => {
     expect(layers.onClosedSelectOpenChange).not.toHaveBeenCalled()
   })
 
-  it('closes an open Select when another one is opened by touch', async () => {
+  // A real tap needs touch input from CDP: see `hasCDP`.
+  it.skipIf(!hasCDP)('closes an open Select when another one is opened by touch', async () => {
     const layers = mountLayers('select', true)
     await open('first')
 
