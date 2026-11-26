@@ -14,6 +14,7 @@ Wraps your app to provide global configurations.
     'Enables all primitives to inherit global reading direction.',
     'Enables changing the behavior of scroll body when setting body lock.',
     'Much more controls to prevent layout shifts.',
+    'Translates the labels the primitives give to assistive technology.',
   ]"
 />
 
@@ -65,6 +66,30 @@ import { ConfigProvider } from 'reka-ui'
   </ConfigProvider>
 </template>
 ```
+
+## Translations
+
+Some primitives give assistive technology text of their own, such as the `aria-label` of `PaginationNext`. It is English by default. Pass `translations` to replace it, by key. Keys that are left out keep the built-in text.
+
+```vue
+<script setup lang="ts">
+import { ConfigProvider } from 'reka-ui'
+</script>
+
+<template>
+  <ConfigProvider
+    :translations="{
+      paginationPrev: 'Vorherige Seite',
+      paginationNext: 'Nächste Seite',
+      paginationPage: 'Seite {page}',
+    }"
+  >
+    <slot />
+  </ConfigProvider>
+</template>
+```
+
+See [Translating built-in labels](/docs/guides/i18n#translating-built-in-labels) for every key and its default.
 
 ## Hydration issue
 
