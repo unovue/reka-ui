@@ -725,3 +725,51 @@ describe('colorArea inside a form', () => {
     }
   })
 })
+
+// ─── changeEnd ───────────────────────────────────────────────────────────────
+
+describe('colorArea changeEnd', () => {
+  function setup() {
+    const changeEnd = vi.fn()
+    const wrapper = mount(ColorAreaRoot, {
+      props: {
+        defaultValue: '#bf40bf',
+        colorSpace: 'hsl',
+        xChannel: 'saturation',
+        yChannel: 'lightness',
+        onChangeEnd: changeEnd,
+      },
+      slots: { default: () => h(ColorAreaArea, null, () => h(ColorAreaThumb)) },
+      attachTo: document.body,
+    })
+    const el = area(wrapper)
+    el.getBoundingClientRect = () => ({ left: 0, top: 0, width: 200, height: 200, right: 200, bottom: 200, x: 0, y: 0, toJSON: () => ({}) })
+    return { wrapper, el, changeEnd }
+  }
+
+  it('should emit once when a drag ends with pointerup', async () => {
+    const { wrapper, el, changeEnd } = setup()
+
+    await fireEvent.pointerDown(el, { clientX: 150, clientY: 100, pointerId: 1 })
+    expect(changeEnd).not.toHaveBeenCalled()
+    await fireEvent.pointerUp(el, { clientX: 150, clientY: 100, pointerId: 1 })
+    // What a real browser fires once the capture is released.
+    await fireEvent(el, new Event('lostpointercapture', { bubbles: true }))
+
+    expect(changeEnd).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
+  it.each(['pointercancel', 'lostpointercapture'])('should end the drag and emit once on %s', async (type) => {
+    const { wrapper, el, changeEnd } = setup()
+
+    await fireEvent.pointerDown(el, { clientX: 150, clientY: 100, pointerId: 1 })
+    await fireEvent(el, new Event(type, { bubbles: true }))
+    expect(changeEnd).toHaveBeenCalledTimes(1)
+
+    // The drag is over: a late pointerup has nothing left to commit.
+    await fireEvent.pointerUp(el, { clientX: 150, clientY: 100, pointerId: 1 })
+    expect(changeEnd).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+})

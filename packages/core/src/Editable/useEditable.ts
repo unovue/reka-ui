@@ -2,8 +2,9 @@ import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import type { ActivationMode, EditableRootContext, EditableState, SubmitMode } from './EditableRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Direction } from '@/shared/types'
-import { computed, ref, toRaw, toValue, watch } from 'vue'
-import { createPartSurface, getterRef, useControllableState } from '@/shared'
+import { computed, hasInjectionContext, ref, toRaw, toValue, watch } from 'vue'
+import { createPartSurface, getterRef, translationKey, useControllableState, useTranslations } from '@/shared'
+import { defaultTranslate } from '@/shared/translations'
 import { resolveDirection } from '@/shared/useDirection'
 
 /**
@@ -126,7 +127,8 @@ export function getEditableAreaSurface(context: EditableRootContext): PartSurfac
 export function getEditablePreviewSurface(context: EditableRootContext): PartSurface<EditablePreviewState> {
   return createPartSurface<EditablePreviewState>(
     () => ({
-      tabindex: 0,
+      // A disabled field cannot enter edit mode, so its preview leaves the tab order.
+      tabindex: context.disabled.value ? -1 : 0,
       hidden: context.autoResize.value ? undefined : context.isEditing.value,
       style: context.autoResize.value
         ? {
@@ -160,7 +162,7 @@ export function getEditableInputSurface(context: EditableRootContext): PartSurfa
       'disabled': context.disabled.value,
       'maxlength': context.maxLength.value,
       'readonly': context.readonly.value,
-      'aria-label': 'editable input',
+      'aria-label': context.t('editableInput'),
       'hidden': context.autoResize.value ? undefined : !context.isEditing.value,
       'style': context.autoResize.value
         ? { all: 'unset', gridArea: '1 / 1 / auto / auto', visibility: !context.isEditing.value ? 'hidden' : undefined }
@@ -190,7 +192,7 @@ type TriggerKind = 'edit' | 'submit' | 'cancel'
 export function getEditableTriggerSurface(context: EditableRootContext, kind: TriggerKind): PartSurface<EditableTriggerState> {
   return createPartSurface<EditableTriggerState>(
     () => ({
-      'aria-label': kind,
+      'aria-label': context.t(translationKey('editable', kind)),
       'aria-disabled': context.disabled.value ? '' : undefined,
       'disabled': context.disabled.value,
       // Edit is visible while previewing; submit/cancel while editing.
@@ -268,6 +270,8 @@ export function useEditable(props: UseEditableProps = {}): UseEditableReturn {
   }
 
   function edit() {
+    if (disabled.value)
+      return
     isEditing.value = true
     inputValue.value = modelValue.value
     emitState('edit')
@@ -328,7 +332,10 @@ export function useEditable(props: UseEditableProps = {}): UseEditableReturn {
     }
   }
 
+  // Outside setup() (a pure call) there is no provider to inject: use the English labels.
+  const t = hasInjectionContext() ? useTranslations() : defaultTranslate
   const context: EditableRootContext = {
+    t,
     id,
     name,
     disabled,

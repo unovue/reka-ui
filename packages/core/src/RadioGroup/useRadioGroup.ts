@@ -100,7 +100,8 @@ export function getRadioSurface(options: RadioSurfaceOptions): PartSurface<Radio
       // `''` (not `true`) — Radio.vue binds `:disabled="disabled ? '' : undefined"`.
       'disabled': isDisabled() ? '' : undefined,
       'value': toValue(options.value),
-      'required': toValue(options.required),
+      // `''` or absent: `required="false"` would still mark the radio required.
+      'required': toValue(options.required) ? '' : undefined,
       'name': toValue(options.name),
       'onClick': onClick,
     }),

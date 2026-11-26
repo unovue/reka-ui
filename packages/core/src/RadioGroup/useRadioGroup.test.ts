@@ -184,11 +184,11 @@ describe('useRadioGroup — item surface', () => {
     const item = r.getItemSurface('a')
     expect(item.state.value.disabled).toBe(true)
     expect(item.props.value.disabled).toBe('')
-    expect(item.props.value.required).toBe(true)
+    expect(item.props.value.required).toBe('')
     const own = useRadioGroup().getItemSurface('a', () => true, () => true)
     expect(own.state.value.disabled).toBe(true)
-    expect(own.props.value.required).toBe(true)
-    expect(useRadioGroup().getItemSurface('a').props.value.required).toBe(false)
+    expect(own.props.value.required).toBe('')
+    expect(useRadioGroup().getItemSurface('a').props.value.required).toBeUndefined()
   })
 
   it('onClick stops propagation, checks the radio with reason item-press and the click event', () => {

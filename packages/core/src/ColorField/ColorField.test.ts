@@ -296,8 +296,7 @@ describe('keyboard interactions', () => {
       expect(input.element.value).toBe('#000000')
     })
 
-    // TODO(v3-port): #3330 hex stepping keeps alpha (fix lived in ColorField source resolved to v3)
-    it.skip('should keep the alpha channel when stepping', async () => {
+    it('should keep the alpha channel when stepping', async () => {
       const wrapper = mount(ColorField, {
         props: {
           defaultValue: '#7f007f80',
@@ -311,8 +310,7 @@ describe('keyboard interactions', () => {
       expect(input.element.value).toBe('#7f007f80')
     })
 
-    // TODO(v3-port): #3330 hex stepping keeps alpha (fix lived in ColorField source resolved to v3)
-    it.skip('should keep the alpha channel on Home and End', async () => {
+    it('should keep the alpha channel on Home and End', async () => {
       const wrapper = mount(ColorField, {
         props: {
           defaultValue: '#33669980',

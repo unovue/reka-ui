@@ -8,7 +8,7 @@ import type { AcceptableValue } from '@/shared/types'
 import { computed, toValue } from 'vue'
 import { createPartSurface, isNullish, isValueEqualOrExist, selectionState, useControllableState } from '@/shared'
 import { isEqual } from '@/shared/compare'
-import { isIndeterminate, toggleArrayValue } from './utils'
+import { getParentCheckedValue, getParentState, getParentToggleValue, getParentUncheckedValue, isIndeterminate, toggleArrayValue } from './utils'
 
 /** Why the checkbox value changed; carried as `details.reason` on every change (#2828). */
 export type CheckboxChangeReason = 'trigger-press'
@@ -29,6 +29,12 @@ export interface UseCheckboxProps<T = boolean> {
    */
   disabled?: MaybeRefOrGetter<boolean | undefined>
   required?: MaybeRefOrGetter<boolean | undefined>
+  /**
+   * When `true` inside a group with `allValues`, the checkbox is the group's parent: it shows
+   * the combined state of those values and checks or unchecks them all. Outside a group it is
+   * a regular checkbox.
+   */
+  parent?: MaybeRefOrGetter<boolean | undefined>
   /** Form submission value and group membership token, default `'on'`. */
   value?: MaybeRefOrGetter<AcceptableValue | undefined>
   /** Value when checked, default `true`. */
@@ -127,11 +133,20 @@ export function useCheckbox<T = boolean>(props: UseCheckboxProps<T> = {}): UseCh
     onUpdate: props.onUpdate as CheckboxModelOptions<T>['onUpdate'],
   })
   const disabled = computed(() => (group?.disabled.value || toValue(props.disabled)) ?? false)
+  // A parent checkbox only means something inside a group.
+  const isParent = computed(() => !!group && !!toValue(props.parent))
+  const allValues = () => group?.allValues?.value ?? []
+  // Disabled checkboxes keep their value when the parent checks or unchecks the others.
+  function isDisabledValue() {
+    const disabledItems = [...(group?.items ?? [])].filter(item => item.disabled() && isValueEqualOrExist(allValues(), item.value()))
+    return (value: AcceptableValue) => disabledItems.some(item => isEqual(item.value(), value))
+  }
   const checked = computed(() => isEqual(modelValue.value, trueValue()))
   // An unchecked checkbox can't be added once its group has reached `max`.
   const isMaxReached = computed(() => {
     const max = group?.max.value
-    if (isNullish(max))
+    // A parent can always uncheck, and checks only up to `max`.
+    if (isNullish(max) || isParent.value)
       return false
     const values = group!.modelValue.value ?? []
     return !isValueEqualOrExist(values, value()) && values.length >= max
@@ -139,6 +154,8 @@ export function useCheckbox<T = boolean>(props: UseCheckboxProps<T> = {}): UseCh
 
   const checkedState = computed<CheckedState>(() => {
     if (!isNullish(group?.modelValue.value)) {
+      if (isParent.value)
+        return getParentState(allValues(), group.modelValue.value)
       return isValueEqualOrExist(group.modelValue.value, value())
     }
     else {
@@ -152,8 +169,12 @@ export function useCheckbox<T = boolean>(props: UseCheckboxProps<T> = {}): UseCh
     // Ported verbatim from CheckboxRoot.vue's `handleClick` — the disabled guard
     // sits on the click handler, not here. Group writes go through the group's
     // `changeModelValue` so its `beforeUpdate` can veto them.
-    if (!isNullish(group?.modelValue.value))
-      return group.changeModelValue(toggleArrayValue(group.modelValue.value, value()), toGroupReason(reason), event)
+    if (!isNullish(group?.modelValue.value)) {
+      const next = isParent.value
+        ? getParentToggleValue(allValues(), group.modelValue.value, isDisabledValue(), group.max.value)
+        : toggleArrayValue(group.modelValue.value, value())
+      return group.changeModelValue(next, toGroupReason(reason), event)
+    }
 
     if (modelValue.value === 'indeterminate')
       return setState(trueValue(), reason, event)
@@ -161,6 +182,19 @@ export function useCheckbox<T = boolean>(props: UseCheckboxProps<T> = {}): UseCh
   }
 
   function setChecked(next: CheckedState, reason: CheckboxChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
+    if (!isNullish(group?.modelValue.value) && isParent.value) {
+      // A parent is indeterminate only through its group; setting it checks or unchecks every
+      // enabled value, and changes nothing when that leaves the model as it is.
+      if (next === 'indeterminate')
+        return false
+      const selected = group.modelValue.value
+      const target = next
+        ? getParentCheckedValue(allValues(), selected, isDisabledValue(), group.max.value)
+        : getParentUncheckedValue(allValues(), selected, isDisabledValue())
+      if (target.length === selected.length)
+        return false
+      return group.changeModelValue(target, toGroupReason(reason), event)
+    }
     if (!isNullish(group?.modelValue.value)) {
       // A group has no indeterminate member; only a membership change is a change.
       if (next === 'indeterminate' || isValueEqualOrExist(group.modelValue.value, value()) === next)

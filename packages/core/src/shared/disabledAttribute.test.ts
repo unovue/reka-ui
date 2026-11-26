@@ -159,27 +159,18 @@ function render(c: Case, disabled: boolean, as: As) {
 // TODO(v3-port): #3327 parts that still render their element with `renderAs`, so an enabled one rendered as a
 // non-button element gets disabled="false". Switching the part to `renderAsControl` fixes it; remove it here then.
 const OMIT_PENDING = new Set([
-  'CheckboxRoot',
-  'ColorFieldInput',
   'ComboboxTrigger',
   'DrawerSwipeArea',
   'DropdownMenuTrigger',
-  'EditableCancelTrigger',
-  'EditableEditTrigger',
-  'EditableInput',
-  'EditableSubmitTrigger',
   'MenubarTrigger',
   'NavigationMenuTrigger',
-  'PinInputInput',
   'SelectTrigger',
-  'SwitchRoot',
   'TagsInputInput',
   'Toggle',
   'ToolbarButton',
 ])
 const itOmits = (c: Case) => OMIT_PENDING.has(c.name) ? it.skip : it
-// TODO(v3-port): #3327 v3's SwitchRoot does not pass `disabled: false` on to a component, custom element or `asChild` child
-const itPassesFalse = (c: Case) => c.name === 'SwitchRoot' ? it.skip : it
+const itPassesFalse = (_c: Case) => it
 
 describe.each(cases)('$name', (c) => {
   itOmits(c).each(['div', 'span', 'a'])('omits the disabled attribute when enabled and rendered as %s', (as) => {
