@@ -852,3 +852,16 @@ describe('given TabsTrigger with consumer event listeners', () => {
     expect(event.defaultPrevented).toBe(true)
   })
 })
+
+describe('given a part whose value is undefined', () => {
+  it('should mount a trigger and a content without a value', () => {
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(TabsRoot, () => [
+        h(TabsList, () => h(TabsTrigger, { value: undefined as unknown as string }, () => 'Tab')),
+        h(TabsContent, { value: undefined as unknown as string }, () => 'Panel'),
+      ]),
+    }))
+    expect(wrapper.find('[role="tab"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+})

@@ -53,7 +53,8 @@ export function useTabsPartId(
   }
 
   watch([() => toValue(value), () => toValue(id)], ([key, next]) => {
-    if (registered?.key === key && registered.id === next)
+    // `registered &&`, not `registered?.key`: an undefined `value` would match the missing entry.
+    if (registered && registered.key === key && registered.id === next)
       return
     release()
     registered = undefined
