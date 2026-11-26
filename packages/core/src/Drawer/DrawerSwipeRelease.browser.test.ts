@@ -55,8 +55,7 @@ describe('given a Drawer swiped with a real pointer', () => {
     await commands.mouseDrag(x, y, x, y + distance, 10, holdMs)
   }
 
-  // TODO(v3-port): #3406 v3 has no release decision by drag size and gesture speed
-  it.skip('settles back open after a slow drag of a quarter of its height', async () => {
+  it('settles back open after a slow drag of a quarter of its height', async () => {
     setup()
     await dragDown(HEIGHT / 4, 300)
 
