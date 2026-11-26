@@ -5,7 +5,7 @@ import type { Direction, Orientation } from './utils'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from '@/DismissableLayer'
 import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface } from '@/shared'
 import { useDebounceFn, useEventListener, useResizeObserver } from '@vueuse/core'
-import { computed, mergeProps, nextTick, ref, toValue, watch, watchEffect } from 'vue'
+import { computed, getCurrentScope, mergeProps, nextTick, ref, toValue, watch, watchEffect } from 'vue'
 import { getTabStopsAfter } from '@/FocusScope/utils'
 import {
   createPartSurface,
@@ -1391,11 +1391,38 @@ export function useNavigationMenuViewport(options: UseNavigationMenuViewportOpti
 
   const content = ref<HTMLElement>()
   const avoidClipping = () => toValue(options.avoidClipping) ?? false
-  const clippingAncestors = computed(() => avoidClipping() && currentElement.value && content.value && open.value
-    ? getClippingAncestors(currentElement.value).map(({ element }) => element)
-    : [])
 
-  watch([modelValue, open], () => {
+  // The clipping ancestors, their resizes and the window's are followed from the first time
+  // `avoidClipping` is set (the watcher below calls this), so a viewport without it observes
+  // nothing and listens to nothing.
+  const scope = getCurrentScope()
+  let isTrackingClipping = false
+  function trackClipping() {
+    if (isTrackingClipping || !avoidClipping())
+      return
+    isTrackingClipping = true
+    const track = () => {
+      const clippingAncestors = computed(() => avoidClipping() && currentElement.value && content.value && open.value
+        ? getClippingAncestors(currentElement.value).map(({ element }) => element)
+        : [])
+      useResizeObserver(clippingAncestors, updatePosition, { box: 'border-box' })
+      useResizeObserver(clippingAncestors, updatePosition, { box: 'content-box' })
+      // The document boundary is only measured on resize of the body, root or content.
+      const updateClippedPositionOnChange = () => {
+        if (avoidClipping())
+          updateClippedPosition()
+      }
+      useEventListener(globalThis.window, 'resize', updateClippedPositionOnChange)
+      useEventListener(globalThis.window, 'scroll', updateClippedPositionOnChange, { capture: true, passive: true })
+    }
+    if (scope)
+      scope.run(track)
+    else
+      track()
+  }
+
+  watch([modelValue, open, avoidClipping], () => {
+    trackClipping()
     nextTick(() => {
       if (!currentElement.value)
         return
@@ -1583,16 +1610,6 @@ export function useNavigationMenuViewport(options: UseNavigationMenuViewportOpti
     }
     updatePosition()
   }, { box: 'border-box' })
-
-  useResizeObserver(clippingAncestors, updatePosition, { box: 'border-box' })
-  useResizeObserver(clippingAncestors, updatePosition, { box: 'content-box' })
-  // The document boundary is only measured on resize of the body, root or content.
-  function updateClippedPositionOnChange() {
-    if (avoidClipping())
-      updateClippedPosition()
-  }
-  useEventListener(globalThis.window, 'resize', updateClippedPositionOnChange)
-  useEventListener(globalThis.window, 'scroll', updateClippedPositionOnChange, { capture: true, passive: true })
 
   return {
     open,
