@@ -4,7 +4,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import { endOfYear, getLocalTimeZone, startOfYear, toCalendar, today } from '@internationalized/date'
 import { computed, nextTick } from 'vue'
 import { isSameYear, isYearBetweenInclusive, toDate } from '@/date'
-import { getCalendarCellTabindex, useKbd } from '@/shared'
+import { getCalendarCellTabindex, getCalendarKey, getRowBoundaryCell, useKbd } from '@/shared'
 
 export interface YearRangePickerCellTriggerProps extends PrimitiveProps {
   /** The date value provided to the cell trigger */
@@ -167,14 +167,15 @@ function handleArrowKey(e: KeyboardEvent) {
     return
   // Modifier combos on Enter/Space (e.g. Ctrl+Enter) are not handled by the cell —
   // let them bubble so parent listeners can react (e.g. submit a form).
-  if ((e.code === kbd.ENTER || e.code === kbd.SPACE_CODE) && (e.ctrlKey || e.metaKey || e.altKey))
+  const key = getCalendarKey(e)
+  if ((key === kbd.ENTER || key === kbd.SPACE_CODE) && (e.ctrlKey || e.metaKey || e.altKey))
     return
   e.preventDefault()
   e.stopPropagation()
   const parentElement = rootContext.parentElement.value!
   const sign = rootContext.dir.value === 'rtl' ? -1 : 1
 
-  switch (e.code) {
+  switch (key) {
     case kbd.ARROW_RIGHT:
       shiftFocus(props.year, sign)
       break
@@ -187,6 +188,12 @@ function handleArrowKey(e: KeyboardEvent) {
     case kbd.ARROW_DOWN:
       shiftFocus(props.year, 4)
       break
+    case kbd.HOME:
+      focusRowBoundary('start')
+      break
+    case kbd.END:
+      focusRowBoundary('end')
+      break
     case kbd.PAGE_UP:
       shiftFocusPage(-1)
       break
@@ -196,6 +203,15 @@ function handleArrowKey(e: KeyboardEvent) {
     case kbd.ENTER:
     case kbd.SPACE_CODE:
       changeYear(e, props.year)
+  }
+
+  // Home and End go to the first and last enabled year of the row.
+  function focusRowBoundary(boundary: 'start' | 'end') {
+    const target = getRowBoundaryCell(e.currentTarget as HTMLElement, boundary, '[data-reka-year-range-picker-cell-trigger]')
+    if (!target || target.offset === 0)
+      return
+    rootContext.onPlaceholderChange(props.year.add({ years: target.offset }))
+    target.element.focus()
   }
 
   function shiftFocus(currentYear: DateValue, add: number, depth = 0) {
@@ -294,7 +310,7 @@ function handleArrowKey(e: KeyboardEvent) {
     @click="handleClick"
     @focusin="handleFocus"
     @mouseenter="handleFocus"
-    @keydown.up.down.left.right.space.enter.page-up.page-down="handleArrowKey"
+    @keydown.up.down.left.right.space.enter.home.end.page-up.page-down="handleArrowKey"
   >
     <slot
       :year-value="yearValue"

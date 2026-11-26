@@ -60,3 +60,11 @@ import {
 The main component that displays a color swatch.
 
 <!-- @include: @/meta/ColorSwatch.md -->
+
+## Accessibility
+
+The swatch renders with `role="img"` and `aria-roledescription="color swatch"`. Its accessible name is the `label` prop when provided, otherwise a color name derived from the `color` value (`transparent` when there is no color or it is fully transparent).
+
+### Keyboard Interactions
+
+Color Swatch is a static element. It is not focusable and has no keyboard interaction.

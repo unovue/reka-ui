@@ -163,6 +163,29 @@ jobs:
       - name: Test (browser)
         run: pnpm --filter reka-ui test:browser src/Carousel
 
+  # The package as it would be published: it is packed, then publint and Are The Types Wrong read the
+  # tarball, Node loads every entry of `exports` with import() and require(), and a small TypeScript
+  # consumer is type-checked against the packed declarations. See packages/core/package-check.
+  package:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup (Install node & pnpm)
+        uses: ./.github/actions/setup
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: reka-ui-dist
+          path: packages/core/dist
+
+      - name: Check the published package
+        run: pnpm package:check
+
   size:
     needs: build
     runs-on: ubuntu-latest

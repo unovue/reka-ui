@@ -44,11 +44,17 @@ const emits = defineEmits<TreeItemEmits<T>>()
 
 defineSlots<{
   default?: (props: {
+    /** Whether the item is currently expanded */
     isExpanded: boolean
+    /** Whether the item is currently selected */
     isSelected: boolean
+    /** Whether the item is partially selected. With `bubbleSelect`: some, but not all, of its descendants are selected. With `propagateSelect`: the item is selected but not all of its descendants are. `undefined` when neither applies. */
     isIndeterminate: boolean | undefined
+    /** Whether the item is disabled, either by its own `disabled` prop or by the root */
     isDisabled: boolean
+    /** Toggle the expanded state of the item */
     handleToggle: () => void
+    /** Select the item, following the root's `selectionBehavior` */
     handleSelect: () => void
   }) => any
 }>()

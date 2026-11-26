@@ -66,12 +66,12 @@ export function registerTools(agent: Agent, { allow }: { allow: AgentAllow }) {
         // A name this call didn't get, like one another registration holds, is never this call's to unregister.
         named.delete(tool.name)
         const name = (error as { name?: string } | undefined)?.name
-        if (import.meta.env.DEV && name !== 'NotAllowedError' && name !== 'AbortError')
+        if (process.env.NODE_ENV !== 'production' && name !== 'NotAllowedError' && name !== 'AbortError')
           console.warn(`[reka-ui] registerTools couldn't register ${tool.name}.`, error)
       })
     }
     catch (error) {
-      if (import.meta.env.DEV)
+      if (process.env.NODE_ENV !== 'production')
         console.warn(`[reka-ui] registerTools couldn't register ${tool.name}.`, error)
     }
   }

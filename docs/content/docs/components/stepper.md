@@ -35,7 +35,7 @@ Import all parts and piece them together.
 
 ```vue
 <script setup>
-import { StepperDescription, StepperIndicator, StepperItem, StepperRoot, StepperTitle, StepperTrigger } from 'reka-ui'
+import { StepperDescription, StepperIndicator, StepperItem, StepperRoot, StepperSeparator, StepperTitle, StepperTrigger } from 'reka-ui'
 </script>
 
 <template>
@@ -140,7 +140,26 @@ An optional accessible description to be announced when the stepper trigger is f
 
 If you want to hide the description, wrap it inside our Visually Hidden utility like this `<VisuallyHidden asChild>`. If you want to remove the description entirely, remove this part.
 
-<!-- @include: @/meta/StepperItem.md -->
+<!-- @include: @/meta/StepperDescription.md -->
+
+### Separator
+
+A visual divider between steps. It is purely decorative, follows the root's `orientation`, and reflects the state of the item it is placed in.
+
+<!-- @include: @/meta/StepperSeparator.md -->
+
+<DataAttributesTable
+  :data="[
+    {
+      attribute: '[data-state]',
+      values: ['active', 'inactive', 'completed'],
+    },
+    {
+      attribute: '[data-orientation]',
+      values: ['vertical', 'horizontal'],
+    },
+  ]"
+/>
 
 ## Examples
 

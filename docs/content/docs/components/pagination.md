@@ -79,7 +79,7 @@ Used to show the list of pages. It also makes pagination accessible to assistive
 
 Used to render the button that changes the current page.
 
-<!-- @include: @/meta/PaginationItem.md -->
+<!-- @include: @/meta/PaginationListItem.md -->
 
 <DataAttributesTable
   :data="[
@@ -227,6 +227,20 @@ const total = ref(100)
   </PaginationRoot>
 </template>
 ```
+
+## Accessibility
+
+`PaginationRoot` renders a `<nav>` landmark named `pagination`. Give it your own name with `aria-label` or `aria-labelledby`, for example when a page has more than one pagination.
+
+```vue
+<template>
+  <PaginationRoot aria-label="Search results pages">
+    …
+  </PaginationRoot>
+</template>
+```
+
+A `PaginationEllipsis` that only holds `…` or an icon is hidden from assistive technology. One with its own text or a focusable element is left as it is.
 
 ## Keyboard Interactions
 

@@ -7,7 +7,9 @@ import { computed, ref, toRefs } from 'vue'
 import { clamp, createRekaContext, isNullish, snapValueToStep, useFormControl, useLocale } from '@/shared'
 
 export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
+  /** The value of the number field when initially rendered. Use when you do not need to control the state of the number field. */
   defaultValue?: number
+  /** The controlled value of the number field. Can be bound as `v-model`. */
   modelValue?: number | null
   /** The smallest value allowed for the input. */
   min?: number
@@ -183,6 +185,8 @@ function handleDecrease(multiplier = 1) {
 }
 
 function handleMinMaxValue(type: 'min' | 'max') {
+  if (props.disabled || props.readonly)
+    return
   if (type === 'min' && min.value !== undefined)
     modelValue.value = clampInputValue(min.value)
   else if (type === 'max' && max.value !== undefined)
