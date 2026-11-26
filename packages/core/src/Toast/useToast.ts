@@ -733,12 +733,22 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
   // changed `as`), but keeps the last one while an `asChild` slot renders nothing, so
   // toasts always have an element to teleport into.
   const viewportElement = shallowRef<HTMLElement>()
+  // Collapse only once closing toasts have finished animating, so the stack does not
+  // shift under the pointer while a toast is dismissed.
+  const pendingPointerLeave = ref(false)
   watch(currentElement, (element) => {
-    if (element)
+    if (element) {
       viewportElement.value = element
-    // An emptied `asChild` slot takes any hover or focus inside it along; keep a window-blur pause.
-    else if (viewportElement.value && document.hasFocus())
-      releasePause(viewportElement.value)
+    }
+    // An emptied `asChild` slot takes any hover or focus inside it along, as a replaced
+    // element does. A window-blur pause is kept.
+    else if (viewportElement.value) {
+      // A removed focused element sends no `focusout`.
+      providerContext.focused.value = false
+      pendingPointerLeave.value = true
+      if (!isPausedByWindowBlur())
+        releasePause(viewportElement.value)
+    }
   }, { immediate: true, flush: 'post' })
 
   // The hotkey is a key combination: every entry must be pressed, a modifier (`altKey`,
@@ -754,9 +764,6 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
     providerContext.onViewportChange(currentElement.value!)
   })
 
-  // Collapse only once closing toasts have finished animating, so the stack does not
-  // shift under the pointer while a toast is dismissed.
-  const pendingPointerLeave = ref(false)
   const windowBlurred = ref(false)
   // A press on a toast, tracked only while the hover pause is off: it then has to hold the
   // pause itself, so a toast is not closed in the middle of a press or a swipe.
