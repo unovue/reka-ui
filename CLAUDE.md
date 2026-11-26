@@ -10,6 +10,7 @@ Vue 3 headless component library. pnpm monorepo. Node ≥ 22, pnpm 10.
 - Type-check: `pnpm --filter reka-ui type-check`
 - Lint: `pnpm lint` (fix: `pnpm lint:fix`)
 - Build: `pnpm --filter reka-ui build` (vue-tsc + tsdown)
+- Published package check (publint, attw, Node load of every `exports` entry, consumer type-check): `pnpm build && pnpm package:check`
 - Regenerate API docs after changing public props/emits/slots: `pnpm docs:gen`
 
 ## Layout

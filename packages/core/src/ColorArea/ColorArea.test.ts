@@ -3,6 +3,8 @@ import { fireEvent } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, h, nextTick, ref } from 'vue'
+import { ColorAreaArea, ColorAreaRoot, ColorAreaThumb } from '.'
 import ColorArea from './story/_ColorArea.vue'
 
 // jsdom doesn't support pointer capture methods
@@ -567,5 +569,91 @@ describe('colorArea RGB Red(x) / Green(y)', () => {
     })
     await keydown(w, 'ArrowLeft')
     expect(getXValue(w)).toBe(0)
+  })
+})
+
+// ─── changeEnd ───────────────────────────────────────────────────────────────
+
+describe('colorArea changeEnd', () => {
+  function setup(controlled = false) {
+    const changeEnd = vi.fn()
+    const model = ref('#bf40bf')
+    const wrapper = mount(defineComponent({
+      setup: () => () => h(ColorAreaRoot, {
+        colorSpace: 'hsl',
+        xChannel: 'saturation',
+        yChannel: 'lightness',
+        ...(controlled
+          ? { 'modelValue': model.value, 'onUpdate:modelValue': (value: string) => model.value = value }
+          : { defaultValue: '#bf40bf' }),
+        onChangeEnd: changeEnd,
+      }, () => h(ColorAreaArea, null, () => h(ColorAreaThumb))),
+    }), { attachTo: document.body })
+    const area = wrapper.find('[role="application"]')
+    area.element.getBoundingClientRect = () => ({ left: 0, top: 0, width: 200, height: 200, right: 200, bottom: 200, x: 0, y: 0, toJSON: () => ({}) })
+    return { wrapper, area, changeEnd, model }
+  }
+
+  it.each(['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'])('should emit once for a %s press', async (key) => {
+    const { wrapper, area, changeEnd } = setup()
+
+    await area.trigger('keydown', { key })
+
+    expect(changeEnd).toHaveBeenCalledTimes(1)
+    expect(changeEnd.mock.calls[0][0]).toMatch(/^#[0-9a-f]{6}$/i)
+    expect(changeEnd.mock.calls[0][0]).not.toBe('#bf40bf')
+    wrapper.unmount()
+  })
+
+  it('should report the new color when the model is controlled', async () => {
+    const { wrapper, area, changeEnd, model } = setup(true)
+
+    await area.trigger('keydown', { key: 'ArrowRight', shiftKey: true })
+    await nextTick()
+
+    expect(model.value).not.toBe('#bf40bf')
+    expect(changeEnd).toHaveBeenCalledTimes(1)
+    expect(changeEnd).toHaveBeenCalledWith(model.value)
+    wrapper.unmount()
+  })
+
+  it('should not emit for a key that changes nothing', async () => {
+    const { wrapper, area, changeEnd } = setup()
+
+    await area.trigger('keydown', { key: 'a' })
+    // 50 → 100 in ten Shift presses, the eleventh is at the edge.
+    for (let i = 0; i < 5; i++)
+      await area.trigger('keydown', { key: 'ArrowRight', shiftKey: true })
+    expect(changeEnd).toHaveBeenCalledTimes(5)
+
+    await area.trigger('keydown', { key: 'ArrowRight', shiftKey: true })
+    expect(changeEnd).toHaveBeenCalledTimes(5)
+    wrapper.unmount()
+  })
+
+  it('should emit once when a drag ends with pointerup', async () => {
+    const { wrapper, area, changeEnd } = setup()
+
+    await fireEvent.pointerDown(area.element, { clientX: 100, clientY: 100, pointerId: 1 })
+    expect(changeEnd).not.toHaveBeenCalled()
+    await fireEvent.pointerUp(area.element, { clientX: 100, clientY: 100, pointerId: 1 })
+    // What a real browser fires once the capture is released.
+    await fireEvent(area.element, new Event('lostpointercapture', { bubbles: true }))
+
+    expect(changeEnd).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
+  it.each(['pointercancel', 'lostpointercapture'])('should end the drag and emit once on %s', async (type) => {
+    const { wrapper, area, changeEnd } = setup()
+
+    await fireEvent.pointerDown(area.element, { clientX: 100, clientY: 100, pointerId: 1 })
+    await fireEvent(area.element, new Event(type, { bubbles: true }))
+    expect(changeEnd).toHaveBeenCalledTimes(1)
+
+    // The drag is over: a late pointerup has nothing left to commit.
+    await fireEvent.pointerUp(area.element, { clientX: 100, clientY: 100, pointerId: 1 })
+    expect(changeEnd).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
   })
 })

@@ -62,7 +62,25 @@ describe('given default TagsInput', () => {
       expect(input.element.value).toBe('')
     })
 
+    it.each(['Home', 'End'])('should leave %s to the input when no tag is active', async (key) => {
+      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+      input.element.dispatchEvent(event)
+      await nextTick()
+
+      expect(tags.map(tag => tag.attributes('data-state'))).toEqual(tags.map(() => 'inactive'))
+      expect(event.defaultPrevented).toBe(false)
+    })
+
     describe('after pressing on ArrowLeft on input', () => {
+      it.each(['Home', 'End'])('should keep %s away from the caret while a tag is active', async (key) => {
+        const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+        input.element.dispatchEvent(event)
+        await nextTick()
+
+        expect(event.defaultPrevented).toBe(true)
+        expect(tags.at(key === 'Home' ? 0 : -1)!.attributes('data-state')).toBe('active')
+      })
+
       beforeEach(async () => {
         await input.trigger('keydown', {
           key: 'ArrowLeft',
