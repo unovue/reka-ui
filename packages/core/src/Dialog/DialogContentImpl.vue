@@ -6,7 +6,7 @@ import type {
   FocusOutsideEvent,
   PointerDownOutsideEvent,
 } from '@/DismissableLayer'
-import { getActiveElement, useForwardElement } from '@/shared'
+import { getActiveElement, useContentElement, useContentMounted, useForwardElement } from '@/shared'
 
 export type DialogContentImplEmits = DismissableLayerEmits & {
   /**
@@ -101,6 +101,11 @@ const layerWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeProps(scop
   onPointerDownOutside: (event: PointerDownOutsideEvent) => emits('pointerDownOutside', event),
 })), DISMISSABLE_LAYER_WRAPPER))
 const layer = useDismissableLayer(dismissableLayerOptions(contentElement, () => layerWrapper.value))
+
+// The trigger's `aria-controls` points at the id this element rendered (a hydrated element
+// keeps the server's), and only while it is rendered.
+useContentElement(rootContext, contentElement)
+useContentMounted(rootContext, contentElement)
 
 onMounted(() => {
   rootContext.contentElement = contentElement

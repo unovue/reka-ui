@@ -18,7 +18,7 @@ export interface DialogTriggerProps<Payload = unknown> extends PrimitiveProps {
 <script setup lang="ts" generic="Payload = unknown">
 import { computed, watch } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
-import { useForwardElement, useId } from '@/shared'
+import { useForwardElement, useId, useRenderedContentId } from '@/shared'
 import { getPopupRootStore, usePopupHandleTrigger } from '@/shared/popupHandle'
 import { injectDialogRootContext } from './DialogRoot.vue'
 import { getDialogTriggerSurface } from './useDialog'
@@ -62,9 +62,11 @@ function getDetachedTrigger() {
 // tag-dependent `type` stays in the SFC. Consumer listeners fall through as
 // `$attrs` AFTER the surface's handler, so they chain instead of clobbering it.
 const trigger = rootContext ? getDialogTriggerSurface(rootContext) : getDetachedTrigger()
+// `aria-controls` references the content only while its element is rendered.
+const contentId = rootContext ? useRenderedContentId(rootContext) : undefined
 const triggerAttrs = computed(() => detached.enabled.value
   ? { ...getDetachedTrigger().attrs.value, id: detached.id.value }
-  : { ...trigger.attrs.value, id: props.id })
+  : { ...trigger.attrs.value, 'id': props.id, 'aria-controls': rootContext!.open.value ? contentId!.value : undefined })
 
 // Write this trigger's element into the Root's existing `triggerElement` ref
 // (never replace the ref: with a `handle` it is a writable computed that
