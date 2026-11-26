@@ -99,6 +99,8 @@ export type ComboboxRootEmits<T = AcceptableValue, M extends boolean = boolean> 
   'update:open': [value: boolean, details: ChangeEventDetails<ComboboxOpenChangeReason>]
   /** Event handler called after the open or close animations of the content have finished. */
   'update:openComplete': [value: boolean]
+  /** Event handler called when a selection is blocked because it would go over `max`. The payload is the first value over the limit. */
+  'invalid': [payload: T]
 }
 
 /**
@@ -270,6 +272,8 @@ const combobox = useComboboxRoot<AcceptableValue>({
   disabled: resolvedDisabled,
   highlightOnHover: () => props.highlightOnHover,
   loop: () => props.loop,
+  max: () => props.max,
+  onInvalid: value => emits('invalid', value as T),
   by: props.by as By<AcceptableValue> | undefined,
   getNavigationIntent: event => props.getNavigationIntent?.(event),
   filter: toRef(() => props.filter) as Ref<ListboxFilterFunction<AcceptableValue> | null | undefined>,

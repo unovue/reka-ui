@@ -1417,8 +1417,7 @@ describe('given a Listbox with `keepFocusOnValueChange`', () => {
   })
 })
 
-// TODO(v3-port): #1922 `max` on a multiple Listbox (Listbox source resolved to v3)
-describe.skip('given a multiple Listbox with `max`', () => {
+describe('given a multiple Listbox with `max`', () => {
   const kbd = useKbd()
   let wrapper: VueWrapper<InstanceType<typeof Listbox>>
   let content: DOMWrapper<Element>
@@ -1549,8 +1548,7 @@ describe('given a virtualized multiple Listbox with `max`', () => {
     document.body.innerHTML = ''
   })
 
-  // TODO(v3-port): #1922 `max` on a multiple Listbox (Listbox source resolved to v3)
-  it.skip('should block select-all that goes over `max`', async () => {
+  it('should block select-all that goes over `max`', async () => {
     const wrapper = mount(VirtualListbox, { props: { max: 3 }, attachTo: document.body })
     await flush()
     const content = wrapper.find('[role=listbox]')
@@ -1560,8 +1558,7 @@ describe('given a virtualized multiple Listbox with `max`', () => {
     expect(onInvalid).toHaveBeenCalledWith('Item 3')
   })
 
-  // TODO(v3-port): #1922 `max` on a multiple Listbox (Listbox source resolved to v3)
-  it.skip('should block a `Shift` range selection that goes over `max`', async () => {
+  it('should block a `Shift` range selection that goes over `max`', async () => {
     const wrapper = mount(VirtualListbox, { props: { max: 2, selectionBehavior: 'replace' }, attachTo: document.body })
     await flush()
     const content = wrapper.find('[role=listbox]')
@@ -1569,7 +1566,8 @@ describe('given a virtualized multiple Listbox with `max`', () => {
     await wrapper.find('[data-index="0"]').trigger('click')
     await content.trigger('keydown', { key: 'End', shiftKey: true })
     await flush()
-    expect(onUpdate).toHaveBeenLastCalledWith(['Item 0'])
+    // v3 emits `(value, details)`.
+    expect(onUpdate).toHaveBeenLastCalledWith(['Item 0'], expect.anything())
     expect(onInvalid).toHaveBeenCalledWith('Item 2')
   })
 

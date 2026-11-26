@@ -395,6 +395,13 @@ export interface UseListboxRootProps<T = AcceptableValue> {
    */
   keepFocusOnValueChange?: MaybeRefOrGetter<boolean | undefined>
   /**
+   * Maximum number of options the user can select when `multiple`; `0` (default) means no limit.
+   * A selection that would go over it is blocked and reported to `onInvalid`.
+   */
+  max?: MaybeRefOrGetter<number | undefined>
+  /** Called when a selection is blocked by `max`, with the first value over the limit. */
+  onInvalid?: (value: T) => void
+  /**
    * The root element (the SFC hands its `usePrimitiveElement` `currentElement`);
    * the root `onFocusout` leaves the highlight only when focus moved outside it.
    */
@@ -505,9 +512,33 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     onBeforeUpdate: props.onBeforeUpdate,
     onUpdate: props.onUpdate,
   })
-  const { modelValue, setModelValue, isSelected, firstValue, lastChangeDetails, isControlled } = selection
+  const { modelValue, isSelected, firstValue, lastChangeDetails, isControlled } = selection
+
+  // Blocks a multiple selection that would go over `max`, reporting the first value over the
+  // limit. Returns `true` when the selection is blocked. A programmatic model is never clamped.
+  function exceedsMax(values: T[]) {
+    const max = toValue(props.max) ?? 0
+    if (!multiple.value || !max || values.length <= max)
+      return false
+    props.onInvalid?.(values[max])
+    return true
+  }
+
+  // Every user-driven write of a whole selection (select-all, range) goes through `max`.
+  function setModelValue(value: T | T[] | undefined, reason?: ListboxChangeReason | BaseChangeReason, event?: Event) {
+    if ((reason === 'select-all' || reason === 'range-select') && Array.isArray(value) && exceedsMax(value))
+      return false
+    return selection.setModelValue(value, reason, event)
+  }
 
   function onValueChange(val: T, reason: ListboxChangeReason | BaseChangeReason = 'imperative-action', event?: Event) {
+    // Check before flagging a user action: a blocked selection changes nothing, so the flag
+    // would never be released and later programmatic changes would skip the highlight.
+    if (multiple.value && selectionBehavior.value === 'toggle' && !isSelected(val)) {
+      const current = Array.isArray(modelValue.value) ? modelValue.value : []
+      if (exceedsMax([...current, val]))
+        return false
+    }
     isUserAction.value = true
     const changed = selection.select(val, reason, event)
     setTimeout(() => {

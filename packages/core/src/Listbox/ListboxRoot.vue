@@ -146,6 +146,14 @@ export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, F
    * @defaultValue false
    */
   keepFocusOnValueChange?: boolean
+  /**
+   * Maximum number of options the user can select. Only applies when `multiple` is `true`.
+   * A selection that would go over it (click, <kbd>Enter</kbd>, range or select-all) is blocked
+   * and emits `invalid`. `0` means no limit. It does not clamp a `modelValue` set programmatically.
+   *
+   * @defaultValue 0
+   */
+  max?: number
 }
 
 /**
@@ -165,6 +173,8 @@ export type ListboxRootEmits<T = AcceptableValue, M extends boolean = boolean> =
   'entryFocus': [event: CustomEvent]
   /** Event handler called when the mouse leave the container */
   'leave': [event: Event]
+  /** Event handler called when a selection is blocked because it would go over `max`. The payload is the first value over the limit. */
+  'invalid': [payload: T]
 }
 </script>
 
@@ -241,6 +251,8 @@ const listbox = useListboxRoot<AcceptableValue>({
   highlightOnHover: () => props.highlightOnHover,
   loop: () => props.loop,
   keepFocusOnValueChange: () => props.keepFocusOnValueChange,
+  max: () => props.max,
+  onInvalid: value => emits('invalid', value),
   by: props.by,
   getNavigationIntent: event => props.getNavigationIntent?.(event),
   filter: toRef(() => props.filter) as Ref<ListboxFilterFunction<AcceptableValue> | null | undefined>,
