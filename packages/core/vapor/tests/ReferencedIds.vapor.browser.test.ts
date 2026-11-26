@@ -29,8 +29,9 @@ describe('referenced ids (Vapor)', () => {
     await until(() => expect(attr('dialog', 'aria-labelledby')).toBe('next-title'))
     expect(find('title').id).toBe('next-title')
     state.descriptionId = ''
-    await until(() => expect(attr('dialog', 'aria-describedby')).toMatch(/^reka-dialog-description-/))
-    expect(find('description').id).toBe('')
+    // v3 names the parts after the root's id, and puts the generated id back on the element.
+    await until(() => expect(attr('dialog', 'aria-describedby')).toMatch(/^reka-dialog-v-\d+-description$/))
+    expect(find('description').id).toBe(attr('dialog', 'aria-describedby'))
   })
 
   it('renders each title\'s own id, references the first and hands over when it unmounts', async () => {
@@ -38,10 +39,10 @@ describe('referenced ids (Vapor)', () => {
     expect(document.getElementById('first-id')).toBeTruthy()
     expect(document.getElementById('second-id')).toBeTruthy()
     expect(attr('dialog-2', 'aria-labelledby')).toBe('first-id')
-    expect(find('plain-title').id).toMatch(/^reka-dialog-title-/)
+    expect(find('plain-title').id).toMatch(/^reka-dialog-v-\d+-title$/)
     exposed<{ showFirst: boolean }>().showFirst = false
     await until(() => expect(attr('dialog-2', 'aria-labelledby')).toBe('second-id'))
-    expect(find('plain-title').id).toMatch(/^reka-dialog-title-/)
+    expect(find('plain-title').id).toMatch(/^reka-dialog-v-\d+-title$/)
   })
 
   it('follows the id on an asChild title\'s child element', async () => {

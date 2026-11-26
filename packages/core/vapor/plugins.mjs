@@ -524,6 +524,11 @@ const PATCHES = {
     ['import { inject, provide } from \'vue\'', `import { inject, provide } from 'vue'\nimport { prepareReferencedIds } from ${JSON.stringify(resolve(here, 'src/shared/useReferencedId.ts'))}`],
     ['provide(injectionKey, contextValue)', 'provide(injectionKey, prepareReferencedIds(contextValue))'],
   ],
+  // A Vapor component's props change without an update, so `onBeforeUpdate` never sees a new `id`
+  // prop: the part id watches it instead.
+  [src('shared/usePartId.ts')]: [
+    ['    refresh()\n    onBeforeUpdate(refresh)', '    refresh()\n    watch(() => toValue(id), refresh, { flush: \'sync\' })'],
+  ],
   // Vapor calls a component's `@vue:mounted` hook without a vnode; `Primitive` calls it again with
   // its element (see vapor/src/Primitive.ts), so the binder skips the call that has none
   [src('shared/formReset.ts')]: [
