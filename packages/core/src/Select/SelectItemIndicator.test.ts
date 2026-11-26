@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { Presence } from '@/Presence'
 import { SelectContent, SelectItem, SelectItemIndicator, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '.'
@@ -17,8 +17,10 @@ beforeAll(() => {
 describe('given a Select whose items each have an indicator', () => {
   const model = ref<string>()
 
+  let mounted: { unmount: () => void } | undefined
+
   function mountSelect(indicator = '') {
-    return mount(defineComponent({
+    const wrapper = mount(defineComponent({
       components: { SelectContent, SelectItem, SelectItemIndicator, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport },
       setup: () => ({ model, options: Array.from({ length: 50 }, (_, index) => `Option ${index + 1}`) }),
       template: `
@@ -36,6 +38,8 @@ describe('given a Select whose items each have an indicator', () => {
           </SelectPortal>
         </SelectRoot>`,
     }), { attachTo: document.body })
+    mounted = wrapper
+    return wrapper
   }
 
   // The `Presence` of the content is the other one
@@ -43,8 +47,14 @@ describe('given a Select whose items each have an indicator', () => {
     wrapper.findAllComponents(SelectItemIndicator).flatMap(indicator => indicator.findAllComponents(Presence))
 
   beforeEach(() => {
-    document.body.innerHTML = ''
     model.value = undefined
+  })
+
+  // Unmount, so the open Select releases its body lock and its effects stop
+  afterEach(() => {
+    mounted?.unmount()
+    mounted = undefined
+    document.body.innerHTML = ''
   })
 
   it('should mount a Presence for the selected item only', async () => {
