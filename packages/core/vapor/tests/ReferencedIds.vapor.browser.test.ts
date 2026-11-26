@@ -60,7 +60,8 @@ describe('referenced ids (Vapor)', () => {
   })
   it('follows a consumer id on a trigger that changes after mount', async () => {
     await mount(Fixture)
-    expect(attr('popover-content', 'aria-labelledby')).toBe('my-trigger')
+    // PopoverContent loads its modal / non-modal part asynchronously, so it is not in the DOM right after mount
+    await until(() => expect(attr('popover-content', 'aria-labelledby')).toBe('my-trigger'))
     exposed<{ triggerId: string }>().triggerId = 'next-trigger'
     await until(() => expect(find('popover-trigger').id).toBe('next-trigger'))
     await until(() => expect(attr('popover-content', 'aria-labelledby')).toBe('next-trigger'))
@@ -68,7 +69,8 @@ describe('referenced ids (Vapor)', () => {
 
   it('follows a consumer id on a content that changes after mount', async () => {
     await mount(Fixture)
-    expect(attr('popover-trigger', 'aria-controls')).toBe('my-content')
+    // The trigger points at the content, which loads asynchronously (see above)
+    await until(() => expect(attr('popover-trigger', 'aria-controls')).toBe('my-content'))
     expect(attr('tab', 'aria-controls')).toBe('my-panel')
     exposed<{ contentId: string }>().contentId = 'next-content'
     exposed<{ panelId: string }>().panelId = 'next-panel'
