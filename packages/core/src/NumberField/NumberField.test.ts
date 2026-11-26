@@ -826,12 +826,10 @@ describe('numberField', () => {
       })
     })
 
-    // TODO(v3-port): #3024 `keepValueOnUnparsableInput` (NumberField source resolved to v3)
-    describe.skip('with keepValueOnUnparsableInput', () => {
+    describe('with keepValueOnUnparsableInput', () => {
       const keep = { keepValueOnUnparsableInput: true }
 
       it.each(cases)('should keep the value and not emit when committing "%s" with %s', async (text, how) => {
-        // @ts-expect-error TODO(v3-port): #3024 v3 has no `keepValueOnUnparsableInput` prop
         const { input, model, emitted, commit } = setupModel(keep)
         await commit(text, how)
         expect(model.value).toBe(5)
@@ -900,7 +898,6 @@ describe('numberField', () => {
       })
 
       it('should leave an empty field empty', async () => {
-        // @ts-expect-error TODO(v3-port): #3024 v3 has no `keepValueOnUnparsableInput` prop
         const { input, model, emitted, commit } = setupModel(keep, null)
         await commit('.', 'enter')
         expect(model.value).toBeUndefined()
@@ -925,8 +922,7 @@ describe('numberField', () => {
         expect(input.value).toBe('')
       })
 
-      // TODO(v3-port): #3024 `keepValueOnUnparsableInput` (NumberField source resolved to v3)
-      it.skip.each(blank)('should clear the value with keepValueOnUnparsableInput when committing %s with %s', async (_label, text, how) => {
+      it.each(blank)('should clear the value with keepValueOnUnparsableInput when committing %s with %s', async (_label, text, how) => {
         const { input, model, emitted, commit } = setupModel(keep, 0.5)
         await commit(text, how)
         expect(model.value).toBeUndefined()
@@ -934,8 +930,7 @@ describe('numberField', () => {
         expect(input.value).toBe('')
       })
 
-      // TODO(v3-port): #3024 `keepValueOnUnparsableInput` (NumberField source resolved to v3)
-      it.skip.each(ways.flatMap(how => ['%', ' %', '.', '-', '-%'].map(text => [text, how] as const)))('should keep the value with keepValueOnUnparsableInput when committing "%s" with %s', async (text, how) => {
+      it.each(ways.flatMap(how => ['%', ' %', '.', '-', '-%'].map(text => [text, how] as const)))('should keep the value with keepValueOnUnparsableInput when committing "%s" with %s', async (text, how) => {
         const { input, model, emitted, commit } = setupModel(keep, 0.5)
         await commit(text, how)
         expect(model.value).toBe(0.5)

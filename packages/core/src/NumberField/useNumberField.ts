@@ -19,6 +19,9 @@ export type NumberFieldChangeReason = 'increment-press' | 'decrement-press' | 'k
 
 type Reason = NumberFieldChangeReason | BaseChangeReason
 
+// Decimal digits of every script, plus the Han decimal numerals (`hanidec`), which Unicode does not class as digits.
+const NUMERAL_REGEX = /[\p{Decimal_Number}〇一二三四五六七八九]/u
+
 // v2 rendered `data-pressed="true"` (not the boolean `""`); kept.
 const buttonStateMapping = {
   pressed: (pressed: boolean) => ({ 'data-pressed': pressed ? 'true' : undefined }),
@@ -42,6 +45,8 @@ export interface UseNumberFieldProps {
   /** @defaultValue `true` */
   stepSnapping?: MaybeRefOrGetter<boolean | undefined>
   allowInvalid?: MaybeRefOrGetter<boolean | undefined>
+  /** When `true`, committing text that cannot be parsed keeps the current value instead of clearing it. */
+  keepValueOnUnparsableInput?: MaybeRefOrGetter<boolean | undefined>
   /** @defaultValue `true` */
   focusOnChange?: MaybeRefOrGetter<boolean | undefined>
   formatOptions?: MaybeRefOrGetter<Intl.NumberFormatOptions | undefined>
@@ -135,6 +140,7 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
   const step = getterRef(() => toValue(props.step) ?? 1)
   const stepSnapping = getterRef(() => toValue(props.stepSnapping) ?? true)
   const allowInvalid = getterRef(() => toValue(props.allowInvalid) ?? false)
+  const keepValueOnUnparsableInput = getterRef(() => toValue(props.keepValueOnUnparsableInput) ?? false)
   const focusOnChange = getterRef(() => toValue(props.focusOnChange) ?? true)
   const id = getterRef(() => toValue(props.id))
   const locale = getterRef(() => toValue(props.locale) || 'en')
@@ -158,6 +164,9 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
   // The input holds text the user typed and has not committed yet. While set, model updates
   // don't overwrite the typed text (typing "1." would otherwise reformat to "1").
   const isEditing = ref(false)
+  // The value when the current edit started: typing updates the model live, so this is what
+  // `keepValueOnUnparsableInput` restores when the edit ends on text that cannot be parsed.
+  let valueBeforeEdit: number | undefined
 
   // `step`: a keyboard or wheel step is a discrete, final change, so it commits right away,
   // together with a typed change still pending when the step lands on the same value.
@@ -320,6 +329,10 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
 
   // The value typed text commits to: clamped unless `allowInvalid`, snapped when `stepSnapping`, `NaN` when it does not parse.
   function parseInputValue(val: string) {
+    // The parser reads empty and numeral-free percent text (``, `%`, `-`) as zero, so both are decided before parsing:
+    // blank text never parses, and `keepValueOnUnparsableInput` treats text without any numeral as unparsable.
+    if (!val.trim().length || (keepValueOnUnparsableInput.value && !NUMERAL_REGEX.test(val)))
+      return Number.NaN
     const parsedValue = numberParser.parse(val)
     if (isNaN(parsedValue))
       return parsedValue
@@ -335,6 +348,8 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
    * or Enter formats it.
    */
   function handleInputText(val: string, event?: Event) {
+    if (!isEditing.value)
+      valueBeforeEdit = modelValue.value
     isEditing.value = true
     if (!val.trim().length) {
       change(undefined, 'input-clear', event)
@@ -349,7 +364,12 @@ export function useNumberField(props: UseNumberFieldProps = {}): UseNumberFieldR
     const wasEditing = isEditing.value
     isEditing.value = false
     const nextValue = parseInputValue(val)
-    const applied = change(isNaN(nextValue) ? undefined : nextValue, reason, event)
+    // Text that cannot be parsed clears the value, unless `keepValueOnUnparsableInput` asks to keep it
+    // (blank text always clears).
+    const keep = isNaN(nextValue) && keepValueOnUnparsableInput.value && !!val.trim().length
+    const applied = keep
+      ? (wasEditing ? change(valueBeforeEdit, reason, event) : false)
+      : change(isNaN(nextValue) ? undefined : nextValue, reason, event)
     // Blur and Enter end the user's edit: report it when they typed or anything changed since
     // the last commit (Base UI's `onValueCommitted` on blur).
     if (reason === 'blur' || reason === 'keyboard')

@@ -20,6 +20,8 @@ export interface NumberFieldRootProps extends PrimitiveProps, FormFieldProps {
   stepSnapping?: boolean
   /** When `true`, a typed value is kept as-is even if invalid (out of `min`/`max` range or off the step grid); step interactions still clamp and snap. The field does not flag the value as invalid (no `aria-invalid`/`data-invalid`), so validating and surfacing the error is up to the consumer. */
   allowInvalid?: boolean
+  /** When `true`, committing text that cannot be parsed as a number (e.g. a lone `.` or `-`) keeps the current value and restores its formatted text, instead of clearing the value. Empty or whitespace-only input still clears the value. */
+  keepValueOnUnparsableInput?: boolean
   /** When `true`, the input will be focused when the value changes. */
   focusOnChange?: boolean
   /** Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user. */
@@ -149,6 +151,7 @@ const { modelValue, textValue, readonly, disabled, root, context, resetValue } =
   step: () => props.step,
   stepSnapping: () => props.stepSnapping,
   allowInvalid: () => props.allowInvalid,
+  keepValueOnUnparsableInput: () => props.keepValueOnUnparsableInput,
   focusOnChange: () => props.focusOnChange,
   formatOptions: () => props.formatOptions,
   locale,

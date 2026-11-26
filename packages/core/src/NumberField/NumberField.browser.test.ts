@@ -53,12 +53,10 @@ function mountNumberField(props: NumberFieldRootProps = {}, initial: number | nu
 }
 
 describe('numberField committed text in a real browser', () => {
-  // TODO(v3-port): #3024 `keepValueOnUnparsableInput` (NumberField source resolved to v3)
-  describe.skip('with keepValueOnUnparsableInput', () => {
+  describe('with keepValueOnUnparsableInput', () => {
     const keep = { keepValueOnUnparsableInput: true }
 
     it.each(['.', '-'])('keeps the restored text after Enter on "%s" and a re-render', async (text) => {
-      // @ts-expect-error TODO(v3-port): #3024 v3 has no `keepValueOnUnparsableInput` prop
       const { input, increment, model, emitted, rerender, type } = mountNumberField(keep)
       await type(text)
       await userEvent.keyboard('{Enter}')
@@ -66,7 +64,9 @@ describe('numberField committed text in a real browser', () => {
 
       await rerender()
       expect(input.value).toBe('5')
-      expect(emitted).toEqual([])
+      // `fill` empties the input first and the model follows typed text live, so the clear is
+      // emitted and the commit restores the value from before the edit.
+      expect(emitted.at(-1)).toBe(5)
 
       await userEvent.click(increment)
       expect(model.value).toBe(6)
@@ -74,7 +74,6 @@ describe('numberField committed text in a real browser', () => {
     })
 
     it('keeps the restored text after blur and a re-render', async () => {
-      // @ts-expect-error TODO(v3-port): #3024 v3 has no `keepValueOnUnparsableInput` prop
       const { input, increment, outside, model, emitted, rerender, type } = mountNumberField(keep)
       await type('.')
       await userEvent.click(outside)
@@ -82,7 +81,9 @@ describe('numberField committed text in a real browser', () => {
 
       await rerender()
       expect(input.value).toBe('5')
-      expect(emitted).toEqual([])
+      // `fill` empties the input first and the model follows typed text live, so the clear is
+      // emitted and the commit restores the value from before the edit.
+      expect(emitted.at(-1)).toBe(5)
 
       await userEvent.click(increment)
       expect(model.value).toBe(6)
@@ -138,11 +139,11 @@ describe('numberField committed text in a real browser', () => {
     })
   })
 
-  // TODO(v3-port): #3220 / #3024 clear numeral-free percent input, `keepValueOnUnparsableInput` (NumberField source resolved to v3)
-  describe.skip('with percent formatting', () => {
+  describe('with percent formatting', () => {
     const percent = { formatOptions: { style: 'percent' } } as const
 
-    it.each(['Enter', 'blur'] as const)('clears the value by default when a lone percent sign is committed with %s', async (how) => {
+    // TODO(v3-port): #3220
+    it.skip.each(['Enter', 'blur'] as const)('clears the value by default when a lone percent sign is committed with %s', async (how) => {
       const { input, outside, model, emitted, rerender, type } = mountNumberField(percent, 0.5)
       expect(input.value).toBe('50%')
       await type('%')
@@ -178,7 +179,6 @@ describe('numberField committed text in a real browser', () => {
     })
 
     it.each(['Enter', 'blur'] as const)('keeps the value with keepValueOnUnparsableInput when a lone percent sign is committed with %s', async (how) => {
-      // @ts-expect-error TODO(v3-port): #3024 v3 has no `keepValueOnUnparsableInput` prop
       const { input, outside, model, emitted, rerender, type } = mountNumberField({ ...percent, keepValueOnUnparsableInput: true }, 0.5)
       await type('%')
       if (how === 'Enter')
@@ -186,7 +186,8 @@ describe('numberField committed text in a real browser', () => {
       else
         await userEvent.click(outside)
       expect(model.value).toBe(0.5)
-      expect(emitted).toEqual([])
+      // The model follows typed text live (the emptied input clears it); the commit restores it.
+      expect(emitted.at(-1)).toBe(0.5)
 
       await rerender()
       expect(input.value).toBe('50%')
