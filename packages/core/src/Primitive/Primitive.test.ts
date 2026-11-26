@@ -328,6 +328,20 @@ describe('test Primitive functionalities', () => {
       expect(instance.setupContext).toBeNull()
   })
 
+  it('should render `asChild` with one component instance', () => {
+    // An `asChild` Primitive used to render a nested `Slot` component around the child
+    const wrapper = mount(Primitive, {
+      props: { asChild: true },
+      attrs: { 'data-parent': '' },
+      slots: { default: '<button class="child">Child</button>' },
+    })
+    expect(wrapper.html()).toBe('<button data-parent="" class="child">Child</button>')
+    // The root of the Primitive is the child element itself, not another component
+    expect(wrapper.vm.$.subTree.component).toBeNull()
+    expect(wrapper.vm.$.subTree.type).toBe('button')
+    expect(wrapper.vm.$el).toBe(wrapper.element)
+  })
+
   it('should not render a plain object without a render function', () => {
     const wrapper = mount(Primitive, {
       props: {
