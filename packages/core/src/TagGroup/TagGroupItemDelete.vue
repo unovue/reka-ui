@@ -9,7 +9,7 @@ export interface TagGroupItemDeleteProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { injectTagGroupItemContext } from './TagGroupItem.vue'
 import { getTagGroupItemDeleteSurface } from './useTagGroup'
 
@@ -22,7 +22,7 @@ const { forwardRef, expose } = useForwardElement()
 defineExpose(expose)
 
 // Same derivation as `useTagGroup().getItemDeleteSurface`; the tag-dependent
-// `type` / `disabled` attributes stay here.
+// `type` stays here; `renderAsControl` turns `disabled` into `aria-disabled` off a button.
 const button = getTagGroupItemDeleteSurface(itemContext, {
   id: useId(undefined, 'reka-tag-group-item-delete'),
   disabled: () => props.disabled,
@@ -31,11 +31,11 @@ const button = getTagGroupItemDeleteSurface(itemContext, {
 
 <template>
   <component
-    :is="renderAs(props.as, props.asChild)"
+    :is="renderAsControl(props.as, props.asChild)"
     :ref="forwardRef"
     :type="props.as === 'button' ? 'button' : undefined"
     v-bind="button.attrs.value"
-    :disabled="props.as === 'button' ? button.state.value.disabled : undefined"
+    :disabled="button.state.value.disabled"
   >
     <slot />
   </component>
