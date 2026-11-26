@@ -119,6 +119,74 @@ export function usePointerDownOutside(
   element?: Readonly<Ref<HTMLElement | null | undefined>>,
   enabled: MaybeRefOrGetter<boolean> = true,
 ) {
+  /**
+   * Work held back while a touch press outside is in flight, i.e. between its
+   * `pointerdown` and the `click` its `pointerDownOutside` is deferred to. The
+   * listeners that end the press live only while one is pending.
+   */
+  let isTouchPressPending = false
+  let heldUntilTouchPressEnds: Array<() => void> = []
+  let removePressEndListeners = () => {}
+
+  function endTouchPress() {
+    if (!isTouchPressPending)
+      return
+    isTouchPressPending = false
+    removePressEndListeners()
+    const held = heldUntilTouchPressEnds
+    heldUntilTouchPressEnds = []
+    held.forEach(run => run())
+  }
+
+  function dropTouchPress() {
+    isTouchPressPending = false
+    heldUntilTouchPressEnds = []
+    removePressEndListeners()
+  }
+
+  function startTouchPress(ownerDocument: Document) {
+    removePressEndListeners()
+    isTouchPressPending = true
+    let timerId: number | undefined
+    // A press that turns into a scroll or a long press is cancelled instead of
+    // clicked, and a press can end without its `click` reaching the document
+    // (its propagation stopped): whatever it held back runs then, the latter in
+    // the next task so that the deferred `pointerDownOutside` still runs first.
+    // The next press ends it too, before anything handles that press.
+    const handleClickCapture = () => {
+      window.clearTimeout(timerId)
+      timerId = window.setTimeout(endTouchPress)
+    }
+    const handleEnd = () => endTouchPress()
+    ownerDocument.addEventListener('click', handleClickCapture, true)
+    ownerDocument.addEventListener('pointercancel', handleEnd, true)
+    ownerDocument.addEventListener('pointerdown', handleEnd, true)
+    removePressEndListeners = () => {
+      window.clearTimeout(timerId)
+      ownerDocument.removeEventListener('click', handleClickCapture, true)
+      ownerDocument.removeEventListener('pointercancel', handleEnd, true)
+      ownerDocument.removeEventListener('pointerdown', handleEnd, true)
+      removePressEndListeners = () => {}
+    }
+  }
+
+  /**
+   * Runs `callback` once the touch press outside in flight has ended (right away
+   * when there is none), after its deferred `pointerDownOutside`.
+   *
+   * iOS WebKit fires a tap's compatibility mouse events in a later task than its
+   * pointer events, and its `mousedown` focuses the tapped button's focusable
+   * ancestor. That focus move belongs to the press, so it must not be handled
+   * before the press is: with a mouse, `pointerDownOutside` comes first, and a
+   * trigger in a focusable container relies on that to close its own layer (#3360).
+   */
+  function runAfterTouchPress(callback: () => void) {
+    if (isTouchPressPending)
+      heldUntilTouchPressEnds.push(callback)
+    else
+      callback()
+  }
+
   const subscriber: OutsideSubscriber = {
     armed: false, // set true a macrotask after registration by the manager
     isPointerInside: false,
@@ -169,10 +237,17 @@ export function usePointerDownOutside(
          * `deferTouch` replaces the previous pending dispatch (= the "continuously
          * remove the previous listener" behavior) via the manager's shared click listener.
          */
-        if (event.pointerType === 'touch')
-          ctx.deferTouch(subscriber, handleAndDispatchPointerDownOutsideEvent)
-        else
+        if (event.pointerType === 'touch') {
+          // Added during this `pointerdown`'s bubble phase, so only a later press ends it.
+          startTouchPress(target.ownerDocument ?? globalThis.document)
+          ctx.deferTouch(subscriber, () => {
+            handleAndDispatchPointerDownOutsideEvent()
+            endTouchPress()
+          })
+        }
+        else {
           handleAndDispatchPointerDownOutsideEvent()
+        }
       }
       else {
         // Cancel a pending deferred dispatch when the outside click was canceled.
@@ -186,7 +261,12 @@ export function usePointerDownOutside(
   watchEffect((cleanupFn) => {
     if (!isClient || !toValue(enabled))
       return
-    cleanupFn(registerOutsideSubscriber(subscriber))
+    const unregister = registerOutsideSubscriber(subscriber)
+    cleanupFn(() => {
+      unregister()
+      // The layer is gone or no longer listening: drop what the press held back.
+      dropTouchPress()
+    })
   })
   useOwnerDocumentListeners(element, enabled)
 
@@ -196,6 +276,7 @@ export function usePointerDownOutside(
         return
       subscriber.isPointerInside = true
     },
+    runAfterTouchPress,
   }
 }
 
@@ -259,4 +340,51 @@ export function useFocusOutside(
     cleanupFn(registerOutsideSubscriber(subscriber))
   })
   useOwnerDocumentListeners(element, enabled)
+}
+
+let pressedTrigger: Element | undefined
+let endTrackedPress = () => {}
+
+/**
+ * Records a primary-button press on a trigger, from its `pointerdown` until the
+ * task after its `click` (or `pointercancel`, or the next press). WebKit does not
+ * focus a pressed button but its focusable ancestor, so a layer uses this to tell
+ * that focus move apart from focus moving on its own (#3360).
+ */
+export function trackTriggerPress(event: PointerEvent) {
+  endTrackedPress()
+  const trigger = event.currentTarget as Element | null
+  if (!isClient || !trigger || event.button !== 0)
+    return
+  const ownerDocument = trigger.ownerDocument
+  let timerId: number | undefined
+  // Kept until the next task, so a focus move handled during the `click` (e.g. one
+  // a layer held back until it) still counts as part of the press.
+  function handleEnd() {
+    removeListeners()
+    timerId = window.setTimeout(release)
+  }
+  function removeListeners() {
+    ownerDocument.removeEventListener('click', handleEnd, true)
+    ownerDocument.removeEventListener('pointercancel', handleEnd, true)
+    ownerDocument.removeEventListener('pointerdown', release, true)
+  }
+  function release() {
+    window.clearTimeout(timerId)
+    removeListeners()
+    if (pressedTrigger === trigger)
+      pressedTrigger = undefined
+    endTrackedPress = () => {}
+  }
+  ownerDocument.addEventListener('click', handleEnd, true)
+  ownerDocument.addEventListener('pointercancel', handleEnd, true)
+  // Added while this `pointerdown` is past the document, so only a later press ends it.
+  ownerDocument.addEventListener('pointerdown', release, true)
+  pressedTrigger = trigger
+  endTrackedPress = release
+}
+
+/** Whether a press tracked by `trackTriggerPress` on `trigger` is in flight. */
+export function isTriggerPressInFlight(trigger: Element | undefined | null) {
+  return !!trigger && pressedTrigger === trigger
 }
