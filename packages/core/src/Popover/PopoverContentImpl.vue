@@ -111,6 +111,7 @@ const layer = useDismissableLayer(dismissableLayerOptions(currentElement, () => 
 <template>
   <PopperContent
     :ref="forwardRef"
+    scope="popover"
     v-bind="mergeProps(layer.attrs(), layerWrapper.rest, forwarded, content.attrs.value, props.id ? { id: props.id } : {})"
     :style="{
       '--reka-popover-content-transform-origin':

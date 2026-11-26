@@ -136,7 +136,10 @@ usePopupHandleAttachment(handleStore)
 </script>
 
 <template>
-  <PopperRoot :reference="handleStore.handle.value ? handleStore.anchor.value : undefined">
+  <PopperRoot
+    scope="popover"
+    :reference="handleStore.handle.value ? handleStore.anchor.value : undefined"
+  >
     <slot
       :open="open"
       :close="() => onOpenChange(false)"

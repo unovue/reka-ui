@@ -273,7 +273,7 @@ provideFormResetDefault(props.defaultValue)
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="popover">
     <slot
       :model-value="modelValue"
       :open="open"
