@@ -161,9 +161,6 @@ function render(c: Case, disabled: boolean, as: As) {
 const OMIT_PENDING = new Set([
   'ComboboxTrigger',
   'DrawerSwipeArea',
-  'DropdownMenuTrigger',
-  'MenubarTrigger',
-  'NavigationMenuTrigger',
   'SelectTrigger',
   'TagsInputInput',
   'Toggle',
