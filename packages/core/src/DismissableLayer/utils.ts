@@ -81,13 +81,22 @@ export function isLayerExist(
   const nodeList = snapshot ?? layerElements()
   const mainIndex = nodeList.indexOf(mainLayer)
 
+  // Another Editable is a sibling, not a layer above this one: focusing or
+  // pressing it ends this one's edit (#3047). Unless it sits in a layer (a
+  // Dialog, a Popover) that this Editable is not in, which is above it.
+  const domTargetLayer = targetElement.closest('[data-dismissable-layer]')
+  if (mainLayer.hasAttribute('data-editable-root') && domTargetLayer?.hasAttribute('data-editable-root')) {
+    const isInAnotherLayer = nodeList.some(layer => containsComposed(layer, targetElement) && !containsComposed(layer, mainLayer))
+    if (!isInAnotherLayer)
+      return false
+  }
+
   // An unregistered `mainLayer` (e.g. an Editable, which only subscribes and
   // never registers a `StackLayer`) has no stack index, so fall back to the
   // document-order rule the `querySelectorAll` snapshot used to encode: a layer
   // that FOLLOWS it in the document counts as above it. This keeps an Editable
   // inside a Dialog ending its edit on a click elsewhere in that Dialog.
   if (mainIndex === -1) {
-    const domTargetLayer = targetElement.closest('[data-dismissable-layer]')
     return !!domTargetLayer
       && !!(mainLayer.compareDocumentPosition(domTargetLayer) & Node.DOCUMENT_POSITION_FOLLOWING)
   }

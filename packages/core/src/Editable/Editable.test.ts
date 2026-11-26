@@ -115,8 +115,7 @@ describe('editable', () => {
     expect(preview).toHaveTextContent('New Value')
   })
 
-  // TODO(v3-port): #3047 submit when focusing another editable: needs the sibling-editable rule in `isLayerExist` (DismissableLayer/utils.ts, overlays lane)
-  it.skip('submits the value when another editable is focused', async () => {
+  it('submits the value when another editable is focused', async () => {
     const { getAllByTestId } = render({
       components: { Editable },
       template: '<Editable /><Editable />',
