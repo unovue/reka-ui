@@ -442,6 +442,23 @@ When the list wraps onto several rows, place the viewport with `--reka-navigatio
 
 In a vertical menu, the same variables give the inline-end edge of the active trigger's column, so `left: var(--reka-navigation-menu-viewport-cross-offset)` (or `right:` with `dir="rtl"`) places the viewport beside it.
 
+### Inside a clipping container
+
+By default, `--reka-navigation-menu-viewport-left` and `--reka-navigation-menu-viewport-top` keep the viewport inside the document. When the menu sits in a container that clips its overflow, such as a scrolling sidebar or a card with `overflow: hidden`, set `avoid-clipping` on `NavigationMenuViewport` to keep it inside that container instead. The viewport is then kept inside every ancestor that clips it (an `overflow` other than `visible`, or paint containment), and both variables are measured from the viewport's containing block rather than from the root.
+
+```vue line=6
+<template>
+  <NavigationMenuRoot>
+    <NavigationMenuList>
+      …
+    </NavigationMenuList>
+    <NavigationMenuViewport avoid-clipping />
+  </NavigationMenuRoot>
+</template>
+```
+
+When the root is the viewport's containing block, the two coordinate systems differ only by the root's border.
+
 ### With submenus
 
 Create a submenu by nesting your `NavigationMenu` and using the `Sub` part in place of its `Root`.
