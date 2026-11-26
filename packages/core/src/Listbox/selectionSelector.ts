@@ -71,9 +71,9 @@ export function selectionKey(value: unknown, by: By<any>, isModelValue: boolean)
   // Vue only makes plain objects, arrays, maps and sets reactive. Any other object (a `Date`, a
   // `URL`, a typed array) can change in place unseen, and so can one nested in the value. Its
   // key would go stale: compare instead.
-  if (!isTracked(value, new Set()))
-    return undefined
   try {
+    if (!isTracked(value, new Set()))
+      return undefined
     return `h:${serialize(value)}`
   }
   catch {

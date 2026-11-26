@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, effect, effectScope, nextTick, reactive, ref } from 'vue'
 import { ListboxContent, ListboxItem, ListboxRoot } from '.'
-import { SelectionSelector } from './selectionSelector'
+import { selectionKey, SelectionSelector } from './selectionSelector'
 import { valueComparator } from './utils'
 
 const shared = { id: 1, name: 'shared' }
@@ -195,6 +195,17 @@ describe('selectionSelector', () => {
       expect(selector.isSelected(copy, selector.createHold())).toBe(valueComparator(model.value, copy))
     })
     scope.stop()
+  })
+
+  it('falls back to the comparator when reading the value throws', () => {
+    const value = {
+      id: 1,
+      get broken(): never {
+        throw new Error('unreadable')
+      },
+    }
+    expect(selectionKey(value, undefined, true)).toBeUndefined()
+    expect(selectionKey({ nested: value }, undefined, false)).toBeUndefined()
   })
 
   it('stops following the model when the listbox unmounts', async () => {
