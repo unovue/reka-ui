@@ -179,6 +179,24 @@ describe('selectionSelector', () => {
     scope.stop()
   })
 
+  it('keeps matching a selected object after a Date inside it is changed in place', () => {
+    const scope = effectScope()
+    scope.run(() => {
+      const selected = { id: 1, when: new Date('2026-01-15T00:00:00Z'), tags: [new Date(0)] }
+      const model = ref<unknown>(selected)
+      const selector = new SelectionSelector<unknown>(() => model.value)
+      expect(selector.isSelected(selected, selector.createHold())).toBe(true)
+
+      selected.when.setTime(selected.when.getTime() + 1000)
+      selected.tags[0].setTime(5)
+      // An item mounted after the change (a new hold), as `valueComparator` answers.
+      expect(selector.isSelected(selected, selector.createHold())).toBe(valueComparator(model.value, selected))
+      const copy = { id: 1, when: new Date(selected.when), tags: [new Date(5)] }
+      expect(selector.isSelected(copy, selector.createHold())).toBe(valueComparator(model.value, copy))
+    })
+    scope.stop()
+  })
+
   it('stops following the model when the listbox unmounts', async () => {
     let reads = 0
     const entry = {
