@@ -121,7 +121,11 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   // @ts-expect-error idk
   defaultValue: props.defaultValue ?? (multiple.value ? [] : undefined),
   passive: true,
-  deep: true,
+  // Emit when the selection is changed in place (`push`, `splice`, a field of a selected item), without
+  // walking the selected items' own `children`: a selected item carries its whole subtree, and a full
+  // deep watch visits every node of it on each selection. One level reaches the fields of a single
+  // selected item, two the fields of each item in a selection array.
+  deep: (multiple.value ? 2 : 1) as unknown as boolean,
 }) as Ref<U | U[]>
 
 const expanded = useVModel(props, 'expanded', emits, {

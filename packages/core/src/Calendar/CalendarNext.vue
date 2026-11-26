@@ -18,11 +18,14 @@ export interface CalendarNextSlot {
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
-import { disabledAttr } from '@/shared'
+import { disabledAttr, useTranslations } from '@/shared'
 import { injectCalendarRootContext } from './CalendarRoot.vue'
 
 const props = withDefaults(defineProps<CalendarNextProps>(), { as: 'button', step: 'month' })
+
 defineSlots<CalendarNextSlot>()
+
+const t = useTranslations()
 
 const disabled = computed(() => rootContext.disabled.value || rootContext.isNextButtonDisabled(props.nextPage))
 
@@ -39,7 +42,7 @@ function handleClick() {
   <Primitive
     :as="props.as"
     :as-child="props.asChild"
-    aria-label="Next page"
+    :aria-label="t('calendarNext')"
     :type="props.as === 'button' ? 'button' : undefined"
     :aria-disabled="disabled || undefined"
     :data-disabled="disabled || undefined"
