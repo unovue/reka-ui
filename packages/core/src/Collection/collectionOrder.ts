@@ -21,6 +21,53 @@ function hasItem(nodes: NodeList) {
   return false
 }
 
+function hasElement(nodes: NodeList) {
+  for (let i = 0; i < nodes.length; i++) {
+    if (nodes[i].nodeType === 1)
+      return true
+  }
+  return false
+}
+
+type ObserverConstructor = typeof MutationObserver
+
+/** The last constructor checked, and whether it works. Checked once per constructor, not per collection. */
+let checkedObserver: ObserverConstructor | undefined
+let checkedObserverWorks = false
+
+/**
+ * Whether the environment's `MutationObserver` really reports mutations and can hand them over
+ * synchronously. Test setups often replace the global with a stub that does neither (or that has
+ * no `takeRecords`), and the cache would then never learn of a reorder. So the constructor is
+ * tried once on a detached element: one child is added, and `takeRecords()` must return it.
+ *
+ * The answer is kept per constructor, so a global stubbed or restored later is checked again, and
+ * every other call costs one comparison. Only called on the client, with an element in hand.
+ */
+function getWorkingObserver(root: HTMLElement): ObserverConstructor | undefined {
+  const Observer = typeof MutationObserver === 'undefined' ? undefined : MutationObserver
+  if (Observer !== checkedObserver) {
+    checkedObserver = Observer
+    checkedObserverWorks = false
+    if (Observer) {
+      try {
+        const document = root.ownerDocument
+        const probe = document.createElement('div')
+        const observer = new Observer(() => {})
+        observer.observe(probe, { childList: true })
+        probe.appendChild(document.createElement('div'))
+        const records = observer.takeRecords()
+        observer.disconnect()
+        checkedObserverWorks = records.length === 1 && records[0].addedNodes.length === 1
+      }
+      catch {
+        checkedObserverWorks = false
+      }
+    }
+  }
+  return checkedObserverWorks ? Observer : undefined
+}
+
 export interface CollectionOrder<Item> {
   /** The registered items in DOM order (a new array on every call). */
   getItems: (includeDisabledItem?: boolean) => Item[]
@@ -43,7 +90,8 @@ export interface CollectionOrder<Item> {
  *   reports those, and every read drains its pending records first, so a change is seen even before
  *   the observer callback has run.
  *
- * Without a `MutationObserver` nothing is kept and every call queries the DOM.
+ * Without a `MutationObserver` that works (see `getWorkingObserver`) nothing is kept and every
+ * call queries the DOM.
  */
 export function createCollectionOrder<Item extends { ref: HTMLElement }>(
   itemMap: Ref<Map<HTMLElement, Item>>,
@@ -57,6 +105,8 @@ export function createCollectionOrder<Item extends { ref: HTMLElement }>(
   /** Whether every item element is under the root, where the observer sees its `data-disabled` change. */
   let allInTree = false
   let observer: MutationObserver | null = null
+  /** The constructor `observer` was made with: a global replaced since then gets a new observer. */
+  let observerType: ObserverConstructor | undefined
   let observed: HTMLElement | null = null
 
   function invalidate() {
@@ -68,7 +118,10 @@ export function createCollectionOrder<Item extends { ref: HTMLElement }>(
   function reset() {
     invalidate()
     if (observed) {
-      observer!.disconnect()
+      try {
+        observer!.disconnect()
+      }
+      catch {}
       observed = null
     }
   }
@@ -82,8 +135,10 @@ export function createCollectionOrder<Item extends { ref: HTMLElement }>(
           continue
         }
       }
-      // A text node or an element without items (an item's indicator, say) leaves the order as it is.
-      else if (!hasItem(record.addedNodes) && !hasItem(record.removedNodes)) {
+      // A text node, or an added element without items (an item's indicator, say), leaves the order
+      // as it is. A removed element always drops it: by the time the record is read an item may
+      // have been moved out of the removed subtree, to a place this observer does not see.
+      else if (!hasItem(record.addedNodes) && !hasElement(record.removedNodes)) {
         continue
       }
       invalidate()
@@ -143,17 +198,25 @@ export function createCollectionOrder<Item extends { ref: HTMLElement }>(
     // when one registers or unregisters.
     const size = itemMap.value.size
 
-    if (typeof MutationObserver === 'undefined') {
+    const Observer = getWorkingObserver(root)
+    if (!Observer) {
+      // No observer, or one that does not report (a stub): nothing would tell a reorder, so
+      // nothing is kept and every call queries the DOM.
+      if (observed)
+        reset()
       build(root)
       const items = includeDisabledItem ? all! : filterEnabled()
       invalidate()
       return items
     }
 
-    if (observed !== root) {
+    if (observed !== root || observerType !== Observer) {
       reset()
-      observer ??= new MutationObserver(onMutations)
-      observer.observe(root, {
+      if (observerType !== Observer) {
+        observer = new Observer(onMutations)
+        observerType = Observer
+      }
+      observer!.observe(root, {
         childList: true,
         subtree: true,
         attributes: true,

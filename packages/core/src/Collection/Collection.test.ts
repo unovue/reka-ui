@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, inject, nextTick, reactive, ref, Teleport } from 'vue'
+import { ToggleGroupItem, ToggleGroupRoot } from '@/ToggleGroup'
 import { useCollection } from './Collection'
 
 // Characterization tests for `useCollection`.
@@ -579,6 +580,155 @@ describe('given repeated getItems() calls', () => {
     expect(seen.size).toBe(1)
     expect(provided.getItems()).toHaveLength(3)
 
+    wrapper.unmount()
+  })
+})
+
+describe('given a MutationObserver that does not report', () => {
+  const RealObserver = globalThis.MutationObserver
+  const values = (items: { value?: any }[]) => items.map(i => i.value)
+
+  afterEach(() => vi.unstubAllGlobals())
+
+  const stubs = {
+    'a no-op stub': class {
+      observe() {}
+      disconnect() {}
+      takeRecords() {
+        return []
+      }
+    },
+    'a stub without takeRecords': class {
+      observe() {}
+      disconnect() {}
+    },
+    'an observer whose takeRecords always returns nothing': class extends RealObserver {
+      takeRecords() {
+        return []
+      }
+    },
+    'a constructor that throws': class {
+      constructor() {
+        throw new Error('not supported')
+      }
+    },
+  }
+
+  describe.each(Object.entries(stubs))('%s', (_, Stub) => {
+    it('should follow a keyed reorder in getItems()', async () => {
+      vi.stubGlobal('MutationObserver', Stub)
+      const { getCollection, wrapper, items } = createWrapper([{ value: 'a' }, { value: 'b' }, { value: 'c' }])
+      await nextTick()
+      const { getItems } = getCollection()
+      expect(values(getItems())).toEqual(['a', 'b', 'c'])
+      expect(values(getItems())).toEqual(['a', 'b', 'c'])
+
+      items.reverse()
+      await nextTick()
+      expect(values(getItems())).toEqual(['c', 'b', 'a'])
+
+      items[1].disabled = true
+      await nextTick()
+      expect(values(getItems())).toEqual(['c', 'a'])
+      expect(values(getItems(true))).toEqual(['c', 'b', 'a'])
+
+      wrapper.unmount()
+    })
+
+    it('should move with the arrow keys in the new order after a reorder', async () => {
+      vi.stubGlobal('MutationObserver', Stub)
+      const list = ref(['a', 'b', 'c'])
+      const wrapper = mount(defineComponent({
+        components: { ToggleGroupRoot, ToggleGroupItem },
+        setup: () => ({ list }),
+        template: `<ToggleGroupRoot type="single"><ToggleGroupItem v-for="i in list" :key="i" :value="i">{{ i }}</ToggleGroupItem></ToggleGroupRoot>`,
+      }), { attachTo: document.body })
+      await nextTick()
+      const press = async (key: string) => {
+        document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+        await nextTick()
+        await nextTick()
+      }
+      const button = (text: string) => wrapper.findAll('button').find(b => b.text() === text)!.element as HTMLElement
+
+      button('a').focus()
+      await press('ArrowRight')
+      expect(document.activeElement?.textContent).toBe('b')
+
+      list.value = ['c', 'b', 'a']
+      await nextTick()
+      button('c').focus()
+      await press('ArrowRight')
+      expect(document.activeElement?.textContent).toBe('b')
+      await press('ArrowRight')
+      expect(document.activeElement?.textContent).toBe('a')
+
+      wrapper.unmount()
+    })
+  })
+
+  it('should stop caching when the global is stubbed after the order was cached, and cache again once restored', async () => {
+    const { getCollection, wrapper, items } = createWrapper([{ value: 'a' }, { value: 'b' }, { value: 'c' }])
+    await nextTick()
+    const { getItems } = getCollection()
+    const query = vi.spyOn(document.querySelector('[data-testid=collection-root]')!, 'querySelectorAll')
+    expect(values(getItems())).toEqual(['a', 'b', 'c'])
+    expect(values(getItems())).toEqual(['a', 'b', 'c'])
+    expect(query).toHaveBeenCalledTimes(1)
+
+    vi.stubGlobal('MutationObserver', stubs['a stub without takeRecords'])
+    items.reverse()
+    await nextTick()
+    expect(values(getItems())).toEqual(['c', 'b', 'a'])
+    items.reverse()
+    await nextTick()
+    expect(values(getItems())).toEqual(['a', 'b', 'c'])
+
+    vi.unstubAllGlobals()
+    query.mockClear()
+    expect(values(getItems())).toEqual(['a', 'b', 'c'])
+    expect(values(getItems())).toEqual(['a', 'b', 'c'])
+    expect(query).toHaveBeenCalledTimes(1)
+    items.reverse()
+    await nextTick()
+    expect(values(getItems())).toEqual(['c', 'b', 'a'])
+
+    wrapper.unmount()
+  })
+})
+
+describe('given an item that leaves a wrapper detached in the same task', () => {
+  it('should put the item, now outside the root, first', async () => {
+    let collection!: ReturnType<typeof useCollection>
+    const Parent = defineComponent({
+      setup() {
+        collection = useCollection({ key: 'detached', isProvider: true })
+        const { CollectionSlot, CollectionItem } = collection
+        return () => h(CollectionSlot, null, () => h('div', [
+          h(CollectionItem, { value: 'a' }, () => h('span')),
+          h('section', [h(CollectionItem, { value: 'b' }, () => h('span', { id: 'detached-b' }))]),
+          h(CollectionItem, { value: 'c' }, () => h('span')),
+        ]))
+      },
+    })
+    const wrapper = mount(Parent, { attachTo: document.body })
+    await nextTick()
+    const values = () => collection.getItems().map(i => i.value)
+    expect(values()).toEqual(['a', 'b', 'c'])
+
+    const section = wrapper.element.querySelector('section')!
+    const item = document.getElementById('detached-b')!
+    const next = section.nextSibling
+    wrapper.element.removeChild(section)
+    section.removeChild(item)
+    document.body.appendChild(item)
+    wrapper.element.insertBefore(section, next)
+
+    expect(values()).toEqual(['b', 'a', 'c'])
+    await new Promise(resolve => setTimeout(resolve))
+    expect(values()).toEqual(['b', 'a', 'c'])
+
+    item.remove()
     wrapper.unmount()
   })
 })
