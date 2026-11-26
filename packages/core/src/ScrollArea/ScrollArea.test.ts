@@ -1,8 +1,8 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import ScrollAreaCorner from './ScrollAreaCorner.vue'
 import ScrollAreaRoot from './ScrollAreaRoot.vue'
 import ScrollAreaScrollbar from './ScrollAreaScrollbar.vue'
@@ -218,5 +218,32 @@ describe('given prop:type="always" ScrollArea thumb state', () => {
 
     expect(wrapper.find('[data-orientation="vertical"] > div').attributes('data-state')).toBe(state)
     wrapper.unmount()
+  })
+})
+
+describe('given a visible scrollbar', () => {
+  // A non-passive wheel listener on the document makes WebKit wait for the main thread
+  // before scrolling anything on the page, so the scrollbar listens on itself.
+  it('listens for wheel events on the scrollbar, not on the document', async () => {
+    // jsdom has no ResizeObserver
+    vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} })
+    onTestFinished(() => vi.unstubAllGlobals())
+    const documentListener = vi.spyOn(document, 'addEventListener')
+    const elementListener = vi.spyOn(HTMLElement.prototype, 'addEventListener')
+    const wrapper = mount(ScrollArea, { attachTo: document.body, props: { type: 'always' } })
+    await nextTick()
+
+    expect(documentListener.mock.calls.filter(([type]) => type === 'wheel')).toEqual([])
+    const scrollbars = Array.from(wrapper.element.querySelectorAll('[data-scrollbarimpl]'))
+    const wheelOnScrollbar = elementListener.mock.contexts
+      .map((context, index) => [context, elementListener.mock.calls[index]] as const)
+      .filter(([context, [type]]) => type === 'wheel' && scrollbars.includes(context as Element))
+    expect(wheelOnScrollbar.length).toBeGreaterThan(0)
+    for (const [, [, , options]] of wheelOnScrollbar)
+      expect(options).toMatchObject({ passive: false })
+
+    wrapper.unmount()
+    documentListener.mockRestore()
+    elementListener.mockRestore()
   })
 })

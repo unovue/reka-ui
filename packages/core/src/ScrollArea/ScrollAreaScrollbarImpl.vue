@@ -11,10 +11,10 @@ export interface ScrollAreaScrollbarImplProps {
 </script>
 
 <script setup lang="ts">
-import { useResizeObserver } from '@vueuse/core'
-import { onMounted, onUnmounted, ref } from 'vue'
+import { useEventListener, useResizeObserver } from '@vueuse/core'
+import { ref } from 'vue'
 import { Primitive } from '@/Primitive'
-import { containsComposed, getEventTarget, getOwnerDocument, useForwardElement } from '@/shared'
+import { getOwnerDocument, useForwardElement } from '@/shared'
 import { injectScrollAreaRootContext } from './ScrollAreaRoot.vue'
 import { injectScrollAreaScrollbarContext } from './ScrollAreaScrollbar.vue'
 import { injectScrollAreaScrollbarVisibleContext } from './ScrollAreaScrollbarVisible.vue'
@@ -74,27 +74,18 @@ function handlePointerUp(event: PointerEvent) {
 }
 
 function handleWheel(event: WheelEvent) {
-  // Document-level listener: read the composed target so a wheel over a
-  // shadow-mounted scrollbar isn't retargeted to the host (which would fail the
-  // containment check and break wheel scrolling).
-  const element = getEventTarget<HTMLElement>(event)
-  // Composed in both directions: also a web component inside the scrollbar.
-  const isScrollbarWheel = !!scrollbar.value && containsComposed(scrollbar.value, element)
   const maxScrollPos
     = scrollbarVisibleContext.sizes.value.content
       - scrollbarVisibleContext.sizes.value.viewport
-  if (isScrollbarWheel)
-    scrollbarVisibleContext.handleWheelScroll(event, maxScrollPos)
+  scrollbarVisibleContext.handleWheelScroll(event, maxScrollPos)
 }
 
-let wheelDoc: Document | undefined
-onMounted(() => {
-  wheelDoc = getOwnerDocument(scrollbar.value)
-  wheelDoc.addEventListener('wheel', handleWheel, { passive: false })
-})
-onUnmounted(() => {
-  wheelDoc?.removeEventListener('wheel', handleWheel)
-})
+// Listen on the scrollbar itself rather than on the document: in WebKit, a
+// non-passive wheel listener on the document makes every wheel scroll on the
+// page wait for the main thread. Non-passive, so `handleWheelScroll` can keep
+// the page from scrolling while the wheel moves this scroll area. A listener on
+// the element also sees wheels from a shadow tree or web component inside it.
+useEventListener(scrollbar, 'wheel', handleWheel, { passive: false })
 
 function handleSizeChange() {
   if (!scrollbar.value)
