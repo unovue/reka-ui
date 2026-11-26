@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { effect, effectScope, shallowRef } from 'vue'
+import { effect, effectScope, ref, shallowRef } from 'vue'
 import { createKeyedSelector, createKeyedSetSelector, KeyedSelectorImpl, SelectorHold, useSelectorKey } from './createKeyedSelector'
 
 /** Counts how often an effect reading `read()` re-runs. */
@@ -145,5 +145,89 @@ describe('useSelectorKey', () => {
     expect(selector.strong!.has('a')).toBe(true)
     scope.stop()
     expect(selector.strong!.has('a')).toBe(false)
+  })
+})
+
+describe('createKeyedSelector edge cases', () => {
+  it('answers the same for NaN whether or not a reader holds it', () => {
+    const scope = effectScope()
+    scope.run(() => {
+      const current = shallowRef<number | undefined>(1)
+      const selector = createKeyedSelector(() => current.value)
+      const hold = new SelectorHold(selector)
+      expect(hold.read(Number.NaN)).toBe(false)
+
+      // `source() === key` never holds for NaN.
+      current.value = Number.NaN
+      expect(hold.read(Number.NaN)).toBe(false)
+      hold.release()
+      expect(selector.is(Number.NaN)).toBe(false)
+    })
+    scope.stop()
+  })
+
+  it('describes the latest source when a reader changes it during an update', () => {
+    const scope = effectScope()
+    scope.run(() => {
+      const current = shallowRef<string | undefined>('a')
+      const selector = createKeyedSelector(() => current.value)
+      const holds = { a: new SelectorHold(selector), b: new SelectorHold(selector), c: new SelectorHold(selector) }
+      // A synchronous reader of `a` that redirects the selection to `c` when `a` is deselected.
+      effect(() => {
+        if (!holds.a.read('a') && current.value === 'b')
+          current.value = 'c'
+      })
+      holds.b.read('b')
+      holds.c.read('c')
+
+      current.value = 'b'
+      expect(current.value).toBe('c')
+      expect([holds.a.read('a'), holds.b.read('b'), holds.c.read('c')]).toEqual([false, false, true])
+      // A reader without a cell reads the current key itself.
+      expect([selector.is('b'), selector.is('c')]).toEqual([false, true])
+      expect(selector.active).toBe(true)
+    })
+    scope.stop()
+  })
+
+  it('describes the latest set when a reader changes it during an update', () => {
+    const scope = effectScope()
+    scope.run(() => {
+      const current = shallowRef<Set<string>>(new Set(['a']))
+      const selector = createKeyedSetSelector(() => current.value)
+      const holds = { a: new SelectorHold(selector), b: new SelectorHold(selector), c: new SelectorHold(selector) }
+      effect(() => {
+        if (!holds.a.read('a') && current.value.has('b'))
+          current.value = new Set(['c'])
+      })
+      holds.b.read('b')
+      holds.c.read('c')
+
+      current.value = new Set(['b'])
+      expect([...current.value]).toEqual(['c'])
+      expect([holds.a.read('a'), holds.b.read('b'), holds.c.read('c')]).toEqual([false, false, true])
+    })
+    scope.stop()
+  })
+
+  it('follows a set that is changed in place', () => {
+    const scope = effectScope()
+    scope.run(() => {
+      const selected = ref(new Set(['a']))
+      const selector = createKeyedSetSelector(() => selected.value)
+      const b = track(useSelectorKey(selector, () => 'b'))
+      expect(b.value).toBe(false)
+
+      selected.value.add('b')
+      expect(b.value).toBe(true)
+      expect(b.count).toBe(2)
+
+      selected.value.delete('b')
+      expect(b.value).toBe(false)
+
+      selected.value.clear()
+      expect(selector.active).toBe(false)
+    })
+    scope.stop()
   })
 })
