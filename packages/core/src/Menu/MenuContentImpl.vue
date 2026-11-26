@@ -106,10 +106,15 @@ export interface MenuContentImplProps
   spaceExtendsTypeahead?: boolean
   /** Internal: whether a content kept mounted while closed (`unmountOnHide: false`) is shown. */
   present?: boolean
+  /**
+   * Internal: whether the dismissal layer and the modal hiding of the page apply. A content
+   * that is only still mounted for its exit animation hands them back at once.
+   */
+  layerPresent?: boolean
 }
 
 export interface MenuRootContentTypeProps
-  extends Omit<MenuContentImplProps, 'disableOutsidePointerEvents' | 'disableOutsideScroll' | 'trapFocus' | 'present'> {}
+  extends Omit<MenuContentImplProps, 'disableOutsidePointerEvents' | 'disableOutsideScroll' | 'trapFocus' | 'present' | 'layerPresent'> {}
 </script>
 
 <script setup lang="ts">
@@ -143,6 +148,7 @@ const props = withDefaults(defineProps<MenuContentImplProps>(), {
   ...PopperContentPropsDefaultValue,
   spaceExtendsTypeahead: true,
   present: true,
+  layerPresent: undefined,
 })
 const emits = defineEmits<MenuContentImplPrivateEmits>()
 const menuContext = injectMenuContext()
@@ -215,7 +221,7 @@ const scope = useFocusScope(focusScopeOptions(contentElement, () => focusScopeWr
 const layerWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeProps(scope.attrs(), focusScopeWrapper.value.rest), {
   asChild: true,
   disableOutsidePointerEvents: disableOutsidePointerEvents.value,
-  present: props.present,
+  present: props.layerPresent ?? props.present,
   backdropCutout: backdropCutoutElement.value,
   onEscapeKeyDown: (event: KeyboardEvent) => emits('escapeKeyDown', event),
   onPointerDownOutside: (event: PointerDownOutsideEvent) => emits('pointerDownOutside', event),
