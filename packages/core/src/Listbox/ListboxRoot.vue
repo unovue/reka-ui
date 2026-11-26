@@ -29,7 +29,7 @@ export type ListboxRootContext<T> = {
   /** The selection as a keyed selector: items read their own cell. */
   selection?: SelectionSelector<T>
   isVirtual: Ref<boolean>
-  virtualFocusHook: EventHook<{ event?: Event, scroll: boolean }>
+  virtualFocusHook: EventHook<{ event?: Event, scroll: boolean, keepFocus?: boolean, isStale?: () => boolean }>
   virtualKeydownHook: EventHook<ListboxVirtualKeydown>
   virtualHighlightHook: EventHook<{ value: any, focus?: boolean }>
   by?: string | ((a: T, b: T) => boolean)
@@ -137,6 +137,15 @@ export interface ListboxRootProps<T = AcceptableValue> extends PrimitiveProps, F
    * Omitted or `null`, the listbox does not filter (filter the items yourself, or on a server).
    */
   filter?: ListboxFilterFunction<T> | null
+  /**
+   * When `true`, a programmatic `modelValue` change made while focus is outside the listbox
+   * (e.g. on a text input) highlights the selected item without focusing it or scrolling the
+   * page to it, so focus stays where it is. A virtualized list still scrolls its own viewport
+   * to the item. When focus is already inside the listbox, focus follows the new highlight as
+   * usual. User interaction (click, keyboard, typeahead) is not affected.
+   * @defaultValue false
+   */
+  keepFocusOnValueChange?: boolean
 }
 
 /**
@@ -231,6 +240,7 @@ const listbox = useListboxRoot<AcceptableValue>({
   selectionBehavior: () => props.selectionBehavior,
   highlightOnHover: () => props.highlightOnHover,
   loop: () => props.loop,
+  keepFocusOnValueChange: () => props.keepFocusOnValueChange,
   by: props.by,
   getNavigationIntent: event => props.getNavigationIntent?.(event),
   filter: toRef(() => props.filter) as Ref<ListboxFilterFunction<AcceptableValue> | null | undefined>,

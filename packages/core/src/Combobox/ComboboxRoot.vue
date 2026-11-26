@@ -107,7 +107,7 @@ export type ComboboxRootEmits<T = AcceptableValue, M extends boolean = boolean> 
  */
 export type ComboboxModelValue<T, M extends boolean = boolean> = boolean extends M ? T | T[] | null : M extends true ? T[] : T | null
 
-export interface ComboboxRootProps<T = AcceptableValue, I = T> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'filter' | 'getNavigationIntent' | 'modelValue' | 'defaultValue'> {
+export interface ComboboxRootProps<T = AcceptableValue, I = T> extends Omit<ListboxRootProps<T>, 'orientation' | 'selectionBehavior' | 'keepFocusOnValueChange' | 'filter' | 'getNavigationIntent' | 'modelValue' | 'defaultValue'> {
   /**
    * The controlled value of the Combobox. Can be binded with `v-model`. An array when `multiple`; `null` is an empty
    * single selection, the value `ComboboxCancel` emits when it clears one.

@@ -7,7 +7,7 @@ import { createEventHook } from '@vueuse/core'
 import { isClient, refAutoReset } from '@vueuse/shared'
 import { computed, getCurrentScope, isRef, nextTick, onScopeDispose, ref, shallowReactive, toValue, watch } from 'vue'
 import { getFocusIntent } from '@/RovingFocus/utils'
-import { compare, createLabelRegistry, createPartSurface, findValuesBetween, handleAndDispatchCustomEvent, selectionState, useControllableState, useKbd, useListSelection, useTypeahead, valueComparator } from '@/shared'
+import { compare, createLabelRegistry, createPartSurface, findValuesBetween, getActiveElement, handleAndDispatchCustomEvent, selectionState, useControllableState, useKbd, useListSelection, useTypeahead, valueComparator } from '@/shared'
 import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
 import { isDisabledItem } from '@/shared/isDisabledItem'
 import { SelectionSelector } from '@/shared/selectionSelector'
@@ -389,6 +389,12 @@ export interface UseListboxRootProps<T = AcceptableValue> {
    */
   highlightScroll?: ListboxHighlightScroll | null
   /**
+   * When `true`, a programmatic `modelValue` change made while focus is outside the listbox
+   * highlights the selected item without focusing it or scrolling the page to it.
+   * @defaultValue `false`
+   */
+  keepFocusOnValueChange?: MaybeRefOrGetter<boolean | undefined>
+  /**
    * The root element (the SFC hands its `usePrimitiveElement` `currentElement`);
    * the root `onFocusout` leaves the highlight only when focus moved outside it.
    */
@@ -516,7 +522,7 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   const previousElement = ref<HTMLElement | null>(null)
   const isVirtual = ref(false)
   const isComposing = ref(false)
-  const virtualFocusHook = createEventHook<{ event?: Event, scroll: boolean }>()
+  const virtualFocusHook = createEventHook<{ event?: Event, scroll: boolean, keepFocus?: boolean, isStale?: () => boolean }>()
   const virtualKeydownHook = createEventHook<ListboxVirtualKeydown>()
   const virtualHighlightHook = createEventHook<{ value: T, focus?: boolean }>()
 
@@ -809,7 +815,14 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     }
   }
 
-  async function highlightSelected(event?: Event, scroll = true) {
+  function highlightSelected(event?: Event, scroll = true) {
+    return highlightSelectedItem(event, scroll, false)
+  }
+
+  // `keepFocus` is set for a programmatic value change under `keepFocusOnValueChange` while focus
+  // is outside the listbox. It implies `scroll` is `false`. `isStale` is set under
+  // `keepFocusOnValueChange`, and is `true` once a later value change has queued its own highlight.
+  async function highlightSelectedItem(event: Event | undefined, scroll: boolean, keepFocus: boolean, isStale?: () => boolean) {
     // highlightSelected is called inside a watch with immediate set to true.
     // This results in code execution during SSR.
     // Ensure this code only runs in a browser environment, since it performs
@@ -817,12 +830,14 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
     if (!isClient)
       return
     await nextTick()
+    if (isStale?.())
+      return
     if (isVirtual.value) {
       // Trigger on nextTick for Virtualizer to be mounted.
       // `scroll` is `false` on the initial mount highlight, so the virtualizer sets
       // its roving-tabindex target without focusing/scrolling — otherwise a
       // virtualized Listbox below the fold would pull the page to it on load.
-      virtualFocusHook.trigger({ event, scroll })
+      virtualFocusHook.trigger({ event, scroll, keepFocus, isStale })
     }
     else {
       const collection = getCollectionItem()
@@ -845,13 +860,26 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
   // rather than via a shared flag released on a later tick.
   let hasHighlightedOnMount = false
 
+  // Counts the value-change highlights queued under `keepFocusOnValueChange`. Each one decides
+  // on focus when its change is made, so an earlier one must not run after a later change.
+  let highlightGeneration = 0
+
   // watch for only programmatic changes
   watch(modelValue, () => {
     if (!isUserAction.value) {
       const scroll = hasHighlightedOnMount
       hasHighlightedOnMount = true
+      // With `keepFocusOnValueChange`, a change made while focus is elsewhere highlights the
+      // item the way the mount highlight does: no focus, and no `scrollIntoView`, which could
+      // scroll the page away from the focused element. Read the focus now, before the update
+      // renders: it may remove the focused item, and the focus would leave with it.
+      const keepFocusOnValueChange = !!toValue(props.keepFocusOnValueChange)
+      const keepFocus = scroll && keepFocusOnValueChange && !toValue(props.element)?.contains(getActiveElement())
+      const generation = keepFocusOnValueChange ? ++highlightGeneration : undefined
+      const isStale = generation === undefined ? undefined : () => generation !== highlightGeneration
       nextTick(() => {
-        highlightSelected(undefined, scroll)
+        if (!isStale?.())
+          highlightSelectedItem(undefined, scroll && !keepFocus, keepFocus, isStale)
       })
     }
   }, { immediate: true, deep: true })

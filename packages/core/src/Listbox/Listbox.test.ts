@@ -1387,8 +1387,7 @@ describe('given a Listbox with `keepFocusOnValueChange`', () => {
     expect(await axe(wrapper.element.parentElement!)).toHaveNoViolations()
   })
 
-  // TODO(v3-port): #3325 `keepFocusOnValueChange` (Listbox source resolved to v3)
-  it.skip.each([
+  it.each([
     ['keeps focus on the input', true],
     ['moves focus to the item by default', undefined],
   ])('%s when the value changes programmatically', async (_, keepFocusOnValueChange) => {
@@ -1406,9 +1405,9 @@ describe('given a Listbox with `keepFocusOnValueChange`', () => {
     expect(window.HTMLElement.prototype.scrollIntoView).toHaveBeenCalledTimes(keepFocusOnValueChange ? 0 : 1)
   })
 
-  // TODO(v3-port): #3325 `keepFocusOnValueChange` (Listbox source resolved to v3)
   const propsOf = (component: unknown) => (component as { props: Record<string, unknown> }).props
 
+  // TODO(v3-port): #3325 ColorSwatchPickerRoot (fields lane) still inherits `keepFocusOnValueChange`
   it.skip('is not a prop of the components built on Listbox', () => {
     expect(propsOf(ListboxRoot)).toHaveProperty('keepFocusOnValueChange')
     expect(propsOf(ComboboxRoot)).toHaveProperty('highlightOnHover')

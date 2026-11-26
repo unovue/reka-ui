@@ -102,7 +102,7 @@ onUnmounted(() => {
 
 const virtualizedItems = list.renderRows(slots as any)
 
-rootContext.virtualFocusHook.on(({ event, scroll }) => {
+rootContext.virtualFocusHook.on(({ event, scroll, keepFocus, isStale }) => {
   // `scroll` is `false` only for the initial mount highlight. There we set the
   // roving-tabindex target without focusing or scrolling, so a virtualized
   // Listbox below the fold doesn't pull the page to it on load. User-driven
@@ -120,11 +120,24 @@ rootContext.virtualFocusHook.on(({ event, scroll }) => {
     // only scrolls the listbox container, never the page.
     list.scrollToOption(index, 'start')
     requestAnimationFrame(() => {
+      // A later value change under `keepFocusOnValueChange` has queued its own highlight.
+      if (isStale?.())
+        return
       const item = queryCheckedElement(parentEl.value)
       if (item) {
         const focus = event ? true : scroll ? undefined : false
         rootContext.changeHighlight(item, scroll, focus)
       }
+    })
+  }
+  else if (scroll && isStale) {
+    // `highlightFirstItem` under `keepFocusOnValueChange`, with a check for a later value change
+    // before the deferred highlight.
+    list.scrollToOption(0)
+    requestAnimationFrame(() => {
+      const item = getItems().find(i => !isDisabledItem(i.ref))?.ref
+      if (item && !isStale())
+        rootContext.changeHighlight(item)
     })
   }
   else if (scroll) {
@@ -134,9 +147,13 @@ rootContext.virtualFocusHook.on(({ event, scroll }) => {
     // Mount highlight with no checked item: highlight the first enabled item only,
     // mirroring the non-virtual path. `highlightFirstItem` is reserved for
     // user-driven PageUp/Home navigation, which focuses and scrolls.
+    // A value cleared under `keepFocusOnValueChange` can find the list scrolled away from
+    // the start, so bring the first options into the list's own viewport first.
+    if (keepFocus)
+      list.scrollToOption(0)
     requestAnimationFrame(() => {
       const item = getItems().find(i => !isDisabledItem(i.ref))?.ref
-      if (item)
+      if (item && !isStale?.())
         rootContext.changeHighlight(item, false, false)
     })
   }
