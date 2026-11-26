@@ -82,6 +82,12 @@
     'required': false
   },
   {
+    'name': 'fallbackAxisSideDirection',
+    'description': '<p>Whether to also try the perpendicular sides when neither the preferred\nside nor its opposite fits within the boundary, and which of them to try first.\nFor <code>side=&quot;left&quot;</code> or <code>&quot;right&quot;</code>, <code>start</code> tries top then bottom and <code>end</code> tries\nbottom then top. For <code>side=&quot;top&quot;</code> or <code>&quot;bottom&quot;</code>, <code>start</code> tries left then right\nand <code>end</code> tries right then left (mirrored in RTL).\n<code>none</code> keeps the content on the axis of the preferred side.</p>\n<p>Only applies when <code>avoidCollisions</code> and <code>sideFlip</code> are enabled.</p>\n',
+    'type': '\'none\' | \'start\' | \'end\'',
+    'required': false
+  },
+  {
     'name': 'finalFocus',
     'description': '<p>The element to focus when the content closes.</p>\n<ul>\n<li><code>undefined</code> (default): <code>true</code> with the input inside the content, <code>false</code> with it outside.</li>\n<li><code>true</code> / <code>null</code>: the trigger with the input inside the content, the input with it outside; only when focus\nwas inside the content or lost with it.</li>\n<li><code>false</code>: focus does not move.</li>\n<li>an element: that element.</li>\n<li>a function: called with how the content was closed; returns an element, <code>true</code> for the default, or\n<code>false</code> / <code>undefined</code> to do nothing.</li>\n</ul>\n',
     'type': 'ComboboxFocusTarget',
@@ -149,13 +155,13 @@
   },
   {
     'name': 'side',
-    'description': '<p>The preferred side of the trigger to render against when open.\nWill be reversed when collisions occur and avoidCollisions\nis enabled.</p>\n',
+    'description': '<p>The preferred side of the trigger to render against when open.\nWill be reversed when collisions occur and <code>avoidCollisions</code>\nis enabled. If the opposite side collides as well, the content\nstays on this axis unless <code>fallbackAxisSideDirection</code> is set.</p>\n',
     'type': '\'left\' | \'top\' | \'right\' | \'bottom\'',
     'required': false
   },
   {
     'name': 'sideFlip',
-    'description': '<p>Flip to the opposite side when colliding with boundary.</p>\n',
+    'description': '<p>Flip to the opposite side when colliding with boundary.\nOnly the opposite side is tried, unless <code>fallbackAxisSideDirection</code> is set.</p>\n',
     'type': 'boolean',
     'required': false
   },
@@ -222,6 +228,7 @@
 | `dir` | The reading direction of the popper content when applicable. \<br> If omitted, inherits globally from `ConfigProvider` or assumes LTR (left-to-right) reading mode. | `"ltr" \| "rtl"` | No | - |
 | `disableOutsidePointerEvents` | When `true`, hover/focus/click interactions will be disabled on elements outside the `DismissableLayer`. Users will need to click twice on outside elements to interact with them: once to close the `DismissableLayer`, and again to trigger the element. Outside elements are covered by a transparent internal backdrop (`[data-reka-internal-backdrop]`) rendered right below the layer; `<body>` styles are never touched. | `boolean` | No | - |
 | `disableUpdateOnLayoutShift` | Whether to disable the update position for the content when the layout shifted. | `boolean` | No | - |
+| `fallbackAxisSideDirection` | Whether to also try the perpendicular sides when neither the preferred side nor its opposite fits within the boundary, and which of them to try first. For `side="left"` or `"right"`, `start` tries top then bottom and `end` tries bottom then top. For `side="top"` or `"bottom"`, `start` tries left then right and `end` tries right then left (mirrored in RTL). `none` keeps the content on the axis of the preferred side. Only applies when `avoidCollisions` and `sideFlip` are enabled. | `"none" \| "start" \| "end"` | No | - |
 | `finalFocus` | The element to focus when the content closes.  `undefined` (default): `true` with the input inside the content, `false` with it outside. `true` / `null`: the trigger with the input inside the content, the input with it outside; only when focus was inside the content or lost with it. `false`: focus does not move. an element: that element. a function: called with how the content was closed; returns an element, `true` for the default, or `false` / `undefined` to do nothing. | `ComboboxFocusTarget` | No | - |
 | `forceMount` | Used to force mounting when more control is needed. Useful when controlling animation with Vue animation libraries. | `boolean` | No | - |
 | `hideShiftedArrow` | When `true`, hides the arrow when it cannot be centered to the reference element. | `boolean` | No | - |
@@ -233,8 +240,8 @@
 | `positionStrategy` | The type of CSS position property to use. | `"fixed" \| "absolute"` | No | - |
 | `prioritizePosition` | Force content to be position within the viewport. Might overlap the reference element, which may not be desired. | `boolean` | No | - |
 | `reference` | The custom element or virtual element that will be set as the reference to position the floating element. If provided, it will replace the default anchor element. | `ReferenceElement` | No | - |
-| `side` | The preferred side of the trigger to render against when open. Will be reversed when collisions occur and avoidCollisions is enabled. | `"left" \| "top" \| "right" \| "bottom"` | No | - |
-| `sideFlip` | Flip to the opposite side when colliding with boundary. | `boolean` | No | - |
+| `side` | The preferred side of the trigger to render against when open. Will be reversed when collisions occur and `avoidCollisions` is enabled. If the opposite side collides as well, the content stays on this axis unless `fallbackAxisSideDirection` is set. | `"left" \| "top" \| "right" \| "bottom"` | No | - |
+| `sideFlip` | Flip to the opposite side when colliding with boundary. Only the opposite side is tried, unless `fallbackAxisSideDirection` is set. | `boolean` | No | - |
 | `sideOffset` | The distance in pixels from the trigger. | `number` | No | - |
 | `sticky` | The sticky behavior on the align axis. `partial` will keep the content in the boundary as long as the trigger is at least partially in the boundary whilst "always" will keep the content in the boundary regardless. | `"partial" \| "always"` | No | - |
 | `updatePositionStrategy` | Strategy to update the position of the floating element on every animation frame. | `"always" \| "optimized"` | No | - |

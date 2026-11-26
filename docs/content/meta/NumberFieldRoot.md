@@ -23,7 +23,7 @@
   },
   {
     'name': 'defaultValue',
-    'description': '',
+    'description': '<p>The value of the number field when initially rendered. Use when you do not need to control the state of the number field.</p>\n',
     'type': 'number',
     'required': false
   },
@@ -65,6 +65,12 @@
     'required': false
   },
   {
+    'name': 'keepValueOnUnparsableInput',
+    'description': '<p>When <code>true</code>, committing text that cannot be parsed as a number (e.g. a lone <code>.</code> or <code>-</code>) keeps the current value and restores its formatted text, instead of clearing the value. Empty or whitespace-only input still clears the value.</p>\n',
+    'type': 'boolean',
+    'required': false
+  },
+  {
     'name': 'locale',
     'description': '<p>The locale to use for formatting and currencies</p>\n',
     'type': 'string',
@@ -84,7 +90,7 @@
   },
   {
     'name': 'modelValue',
-    'description': '',
+    'description': '<p>The controlled value of the number field. Can be bound as <code>v-model</code>.</p>\n',
     'type': 'number | null',
     'required': false
   },
@@ -136,7 +142,7 @@
   },
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value changes.</p>\n',
+    'description': '<p>Event handler called when the value of the control changes. <code>details.reason</code> is always <code>\'none\'</code> and\n<code>details.event</code> is the native <code>input</code> event; there is no <code>beforeUpdate</code>.</p>\n',
     'type': '[val: number | undefined, details: ChangeEventDetails&lt;NumberFieldChangeReason, Event&gt;]'
   },
   {
@@ -174,17 +180,18 @@
 | `allowInvalid` | When `true`, a typed value is kept as-is even if invalid (out of `min`/`max` range or off the step grid); step interactions still clamp and snap. The field does not flag the value as invalid (no `aria-invalid`/`data-invalid`), so validating and surfacing the error is up to the consumer. | `boolean` | No | - |
 | `as` | The element or component this component should render as. Can be overwritten by `asChild`. | `AsTag \| Component` | No | `"div"` |
 | `asChild` | Change the default rendered element for the one passed as a child, merging their props and behavior. Read our Composition guide for more details. | `boolean` | No | - |
-| `defaultValue` |  | `number` | No | - |
+| `defaultValue` | The value of the number field when initially rendered. Use when you do not need to control the state of the number field. | `number` | No | - |
 | `disabled` | When `true`, prevents the user from interacting with the Number Field. | `boolean` | No | - |
 | `disableWheelChange` | When `true`, prevents the value from changing on wheel scroll. | `boolean` | No | - |
 | `focusOnChange` | When `true`, the input will be focused when the value changes. | `boolean` | No | `true` |
 | `formatOptions` | Formatting options for the value displayed in the number field. This also affects what characters are allowed to be typed by the user. | `Intl.NumberFormatOptions` | No | - |
 | `id` | Id of the element | `string` | No | - |
 | `invertWheelChange` | When `true`, inverts the direction of the wheel change. | `boolean` | No | - |
+| `keepValueOnUnparsableInput` | When `true`, committing text that cannot be parsed as a number (e.g. a lone `.` or `-`) keeps the current value and restores its formatted text, instead of clearing the value. Empty or whitespace-only input still clears the value. | `boolean` | No | - |
 | `locale` | The locale to use for formatting and currencies | `string` | No | - |
 | `max` | The largest value allowed for the input. | `number` | No | - |
 | `min` | The smallest value allowed for the input. | `number` | No | - |
-| `modelValue` |  | `number \| null` | No | - |
+| `modelValue` | The controlled value of the number field. Can be bound as `v-model`. | `number \| null` | No | - |
 | `name` | The name of the field. Submitted with its owning form as part of a name/value pair. | `string` | No | - |
 | `readonly` | When `true`, the Number Field is read-only. | `boolean` | No | - |
 | `required` | When `true`, indicates that the user must set the value before the owning form can be submitted. | `boolean` | No | - |
@@ -197,7 +204,7 @@
 | Name | Description | Type |
 | --- | --- | --- |
 | `beforeUpdate:modelValue` | Called before the value changes; `details.cancel()` keeps the current value. | `[val: number \| undefined, details: ChangeEventDetails<NumberFieldChangeReason, Event>]` |
-| `update:modelValue` | Event handler called when the value changes. | `[val: number \| undefined, details: ChangeEventDetails<NumberFieldChangeReason, Event>]` |
+| `update:modelValue` | Event handler called when the value of the control changes. `details.reason` is always `'none'` and `details.event` is the native `input` event; there is no `beforeUpdate`. | `[val: number \| undefined, details: ChangeEventDetails<NumberFieldChangeReason, Event>]` |
 | `valueCommit` | Emitted when the user finishes a change: on blur or Enter after typing, when a held step button is released, and together with `update:modelValue` for keyboard and wheel steps. `update:modelValue` fires on each keystroke whose parsed value differs from the current one. | `[val: number \| undefined]` |
 
 **Slots**

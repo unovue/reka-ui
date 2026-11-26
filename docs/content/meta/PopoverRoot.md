@@ -39,6 +39,13 @@
     'description': '<p>The id of the trigger that owns the popover, for a controlled popover with\ndetached triggers. Use with <code>open</code>.</p>\n',
     'type': 'string | null',
     'required': false
+  },
+  {
+    'name': 'unmountOnHide',
+    'description': '<p>When set to <code>false</code>, the popover content will not be unmounted when closed, but instead hidden with CSS. &lt;br&gt;\nUseful when you want to keep the state of the content, or to improve performance by not remounting it on every open.</p>\n',
+    'type': 'boolean',
+    'required': false,
+    'default': 'true'
   }
 ]" />
 
@@ -96,6 +103,7 @@
 | `modal` | The modality of the popover. When `true`, page scroll is locked, the rest of the page (except the trigger) is covered by an internal backdrop that closes the popover on press, and only the popover content is visible to screen readers. | `boolean` | No | `false` |
 | `open` | The controlled open state of the popover. | `boolean` | No | - |
 | `triggerId` | The id of the trigger that owns the popover, for a controlled popover with detached triggers. Use with `open`. | `string \| null` | No | - |
+| `unmountOnHide` | When set to `false`, the popover content will not be unmounted when closed, but instead hidden with CSS. \<br> Useful when you want to keep the state of the content, or to improve performance by not remounting it on every open. | `boolean` | No | `true` |
 
 **Events**
 

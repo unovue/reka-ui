@@ -38,7 +38,7 @@
 <EmitsTable :data="[
   {
     'name': 'update:modelValue',
-    'description': '<p>Event handler called when the value changes.</p>\n',
+    'description': '<p>Event handler called when the value of the control changes. <code>details.reason</code> is always <code>\'none\'</code> and\n<code>details.event</code> is the native <code>input</code> event; there is no <code>beforeUpdate</code>.</p>\n',
     'type': '[string]'
   }
 ]" />
@@ -68,7 +68,7 @@
 
 | Name | Description | Type |
 | --- | --- | --- |
-| `update:modelValue` | Event handler called when the value changes. | `[string]` |
+| `update:modelValue` | Event handler called when the value of the control changes. `details.reason` is always `'none'` and `details.event` is the native `input` event; there is no `beforeUpdate`. | `[string]` |
 
 **Slots**
 
