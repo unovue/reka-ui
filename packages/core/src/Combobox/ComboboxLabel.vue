@@ -8,7 +8,7 @@ export interface ComboboxLabelProps extends PrimitiveProps {
 
 <script setup lang="ts">
 import { renderAs } from '@/Primitive/renderAs'
-import { useForwardElement, useId } from '@/shared'
+import { claimReferencedId, useForwardElement, useId } from '@/shared'
 import { injectComboboxGroupContext } from './ComboboxGroup.vue'
 
 const props = withDefaults(defineProps<ComboboxLabelProps>(), {
@@ -20,6 +20,8 @@ defineExpose(expose)
 const groupContext = injectComboboxGroupContext({ id: '', labelId: '' })
 
 groupContext.labelId ||= useId(undefined, 'reka-combobox-group-label')
+// A consumer `id` (or one on the asChild child) is the id the group's `aria-labelledby` references.
+claimReferencedId(groupContext, 'labelId')
 </script>
 
 <template>
