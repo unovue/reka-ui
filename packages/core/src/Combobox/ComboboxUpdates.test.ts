@@ -64,8 +64,7 @@ describe.each(['inline', 'popper'] as const)('given a Combobox with many items (
     mounted = undefined
   })
 
-  // TODO(v3-port): #3402 per-item re-render counts (Combobox/Listbox source resolved to v3)
-  it.skip('re-renders only the two items a key press moves the highlight between', async () => {
+  it('re-renders only the two items a key press moves the highlight between', async () => {
     const { updates, input, items } = await setup(position)
     expect(items()).toHaveLength(ITEMS)
     await input.trigger('keydown', { key: 'ArrowDown' })
@@ -73,27 +72,28 @@ describe.each(['inline', 'popper'] as const)('given a Combobox with many items (
     updates.reset()
     await input.trigger('keydown', { key: 'ArrowDown' })
     expect(document.querySelector('[data-highlighted]')?.textContent?.trim()).toBe('Option 2')
+    // ComboboxItem never re-renders: the ListboxItem it wraps follows its own highlight.
     expect(updates.of('ComboboxItem')).toBe(0)
-    expect(updates.of('ListboxItem')).toBe(0)
+    expect(updates.of('ListboxItem')).toBe(2)
     expect(updates.of('Primitive')).toBeLessThan(10)
   })
 
-  // TODO(v3-port): #3402 per-item re-render counts (Combobox/Listbox source resolved to v3)
-  it.skip('re-renders only the items a typed character hides', async () => {
+  it('re-renders only the items a typed character hides', async () => {
     const { updates, input, items } = await setup(position)
 
     updates.reset()
     await input.setValue('9')
     await nextTick()
     expect(items()).toHaveLength(MATCHING_9)
-    // The items that stay are not touched, and no item renders twice.
-    expect(updates.of('ComboboxItem')).toBe(ITEMS - MATCHING_9)
-    expect(updates.of('ListboxItem')).toBe(0)
+    // The items that stay are not touched (apart from the highlight moving to the
+    // first match), and no item renders twice.
+    expect(updates.of('ComboboxItem')).toBe(0)
+    expect(updates.of('ListboxItem')).toBeGreaterThanOrEqual(ITEMS - MATCHING_9)
+    expect(updates.of('ListboxItem')).toBeLessThanOrEqual(ITEMS - MATCHING_9 + 2)
     expect(updates.of('CollectionItem')).toBe(0)
   })
 
-  // TODO(v3-port): #3402 per-item re-render counts (Combobox/Listbox source resolved to v3)
-  it.skip('re-renders only the items clearing the filter brings back', async () => {
+  it('re-renders only the items clearing the filter brings back', async () => {
     const { updates, input, items } = await setup(position)
     await input.setValue('9')
     await nextTick()
@@ -102,7 +102,8 @@ describe.each(['inline', 'popper'] as const)('given a Combobox with many items (
     await input.setValue('')
     await nextTick()
     expect(items()).toHaveLength(ITEMS)
-    expect(updates.of('ComboboxItem')).toBe(ITEMS - MATCHING_9)
-    expect(updates.of('ListboxItem')).toBe(0)
+    expect(updates.of('ComboboxItem')).toBe(0)
+    expect(updates.of('ListboxItem')).toBeGreaterThanOrEqual(ITEMS - MATCHING_9)
+    expect(updates.of('ListboxItem')).toBeLessThanOrEqual(ITEMS - MATCHING_9 + 2)
   })
 })
