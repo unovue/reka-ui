@@ -18,6 +18,21 @@ export function toRangeFormValue(range: { start?: DateValue | Temporal.PlainTime
   return start && end ? `${toIsoString(start)} - ${toIsoString(end)}` : ''
 }
 
+/**
+ * The attributes of a calendar cell trigger for the element it renders. The
+ * surface leaves `tabindex` off a skipped cell (disabled, or outside the view),
+ * which keeps the default `div` out of the tab order. Any other `as` (a tag or
+ * a component) or `asChild` may render something natively focusable, such as
+ * a button, so those cells get `-1` instead.
+ *
+ * @internal
+ */
+export function withCellTriggerTabindex<T extends Record<string, unknown>>(attrs: T, primitive: { as?: unknown, asChild?: boolean }): T {
+  if (attrs.tabindex !== undefined || (primitive.as === 'div' && !primitive.asChild))
+    return attrs
+  return { ...attrs, tabindex: -1 }
+}
+
 export function getOptsByGranularity(granularity: Granularity, hourCycle: HourCycle, isTimeValue: boolean = false) {
   const opts: Intl.DateTimeFormatOptions = {
     year: 'numeric',

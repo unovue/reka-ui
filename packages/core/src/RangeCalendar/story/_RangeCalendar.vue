@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import type { Component } from 'vue'
 import type { RangeCalendarRootProps } from '..'
 import type { DateValue } from '@/date'
 import { RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCalendarGridBody, RangeCalendarGridHead, RangeCalendarGridRow, RangeCalendarHeadCell, RangeCalendarHeader, RangeCalendarHeading, RangeCalendarNext, RangeCalendarPrev, RangeCalendarRoot } from '..'
@@ -6,6 +7,8 @@ import { RangeCalendarCell, RangeCalendarCellTrigger, RangeCalendarGrid, RangeCa
 const props = defineProps<{
   calendarProps?: RangeCalendarRootProps
   emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void }
+  triggerAs?: string | Component
+  triggerAsChild?: boolean
 }>()
 
 function pagingFunc(date: DateValue, sign: -1 | 1) {
@@ -71,9 +74,18 @@ function pagingFunc(date: DateValue, sign: -1 | 1) {
             :value="weekDate"
           >
             <RangeCalendarCellTrigger
+              :as="props.triggerAs"
+              :as-child="props.triggerAsChild"
               :value="weekDate"
               :data-testid="`date-${props.calendarProps?.numberOfMonths ?? 1 > 1 ? `${gridIndex}-` : ''}${weekDate.month}-${weekDate.day}`"
-            />
+            >
+              <template
+                v-if="props.triggerAsChild"
+                #default="{ cellValue }"
+              >
+                <button>{{ cellValue }}</button>
+              </template>
+            </RangeCalendarCellTrigger>
           </RangeCalendarCell>
         </RangeCalendarGridRow>
       </RangeCalendarGridBody>
