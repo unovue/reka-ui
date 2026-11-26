@@ -53,6 +53,10 @@ const props = withDefaults(defineProps<DrawerContentImplProps & {
 })
 const emits = defineEmits<DrawerContentImplEmits>()
 
+// BaseUI swipe-release constants (DrawerViewport.tsx)
+const MIN_SWIPE_THRESHOLD = 10
+const FAST_SWIPE_VELOCITY = 0.5
+
 const rootContext = injectDrawerRootContext()
 const { forwardRef, currentElement } = useForwardExpose()
 useContentId(rootContext, currentElement)
@@ -189,7 +193,7 @@ const { isSwiping, dragOffset, restore: restoreSwipe } = useSwipeDismiss({
         restoreSwipe()
     })
   },
-  onRelease(velocity) {
+  onRelease(velocity, details) {
     // Write the `--drawer-swipe-strength` CSS var so consumer transitions can
     // scale their duration with release velocity. Ported from BaseUI
     // `DrawerViewport.tsx:resolveSwipeRelease`.
@@ -248,7 +252,22 @@ const { isSwiping, dragOffset, restore: restoreSwipe } = useSwipeDismiss({
     // For snap-point drawers, this callback fully decides the open/close +
     // transform outcome above, so tell finishSwipe to skip its own
     // dismiss-vs-cancel branch.
-    return hasSnapPoints.value
+    if (hasSnapPoints.value)
+      return true
+
+    // Without snap points the drawer closes on a fast swipe, or when released
+    // past half of its size; a shorter, slower drag settles back open.
+    // Ported from BaseUI `DrawerViewport.tsx` (`onRelease`).
+    const { direction } = details
+    if (!el || !direction)
+      return { dismiss: false }
+    const directionalDelta = getDisplacement(direction, details.deltaX, details.deltaY)
+    if (directionalDelta <= 0)
+      return { dismiss: false }
+    if (getDisplacement(direction, details.velocityX, details.velocityY) >= FAST_SWIPE_VELOCITY)
+      return { dismiss: true }
+    const size = (direction === 'left' || direction === 'right') ? el.offsetWidth : el.offsetHeight
+    return { dismiss: directionalDelta > Math.max(size * 0.5, MIN_SWIPE_THRESHOLD) }
   },
   onSwipingChange(swiping) {
     rootContext.onSwipingChange(swiping)
