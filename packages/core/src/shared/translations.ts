@@ -32,11 +32,11 @@ export const defaultTranslations = /* @__PURE__ */ Object.freeze({
   /** CarouselAutoplayToggle while the rotation is stopped. */
   carouselStartRotation: 'Start slide rotation',
 
-  /** ColorAreaArea: `aria-roledescription`. */
+  /** @deprecated Unused: ColorArea renders two range inputs, with no element for it. Kept so existing translations still type-check. */
   colorAreaRoleDescription: 'Color picker',
-  /** ColorAreaThumb: `aria-roledescription`. */
+  /** @deprecated Unused: ColorArea renders two range inputs, with no element for it. Kept so existing translations still type-check. */
   colorAreaThumbRoleDescription: 'Color thumb',
-  /** ColorAreaThumb, ColorSliderThumb: the name of a color channel. */
+  /** ColorArea's range inputs, ColorSliderThumb: the name of a color channel. */
   colorChannelRed: 'Red',
   colorChannelGreen: 'Green',
   colorChannelBlue: 'Blue',
@@ -116,7 +116,7 @@ export const defaultTranslations = /* @__PURE__ */ Object.freeze({
   sliderMaximum: 'Maximum',
   /** SliderThumb, SliderAreaThumb: one of three or more thumbs. */
   sliderValue: 'Value {index} of {total}',
-  /** SliderAreaThumb: `aria-roledescription`. */
+  /** SliderAreaThumb, and the range inputs of ColorArea: `aria-roledescription`. */
   sliderAreaRoleDescription: '2D slider',
 
   /** StepperRoot. */
