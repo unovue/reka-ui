@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { PrimitiveProps } from '@/Primitive'
+import type { KeyedSelector } from '@/shared/createKeyedSelector'
 import type { AcceptableValue, DataOrientation, Direction, FormFieldProps } from '@/shared/types'
 import { usePrimitiveElement } from '@/Primitive'
 import { getFocusIntent } from '@/RovingFocus/utils'
@@ -18,6 +19,8 @@ type ListboxRootContext<T> = {
   highlightOnHover: Ref<boolean>
   loop: Ref<boolean>
   highlightedElement: Ref<HTMLElement | null>
+  /** `highlightedElement` as a keyed selector: an item reads its own cell, so a highlight move re-renders two items. */
+  highlight?: KeyedSelector<HTMLElement>
   isVirtual: Ref<boolean>
   virtualFocusHook: EventHook<{ event?: Event, scroll: boolean, keepFocus?: boolean, isStale?: () => boolean }>
   virtualKeydownHook: EventHook<KeyboardEvent>
@@ -123,6 +126,7 @@ import { createEventHook, useVModel } from '@vueuse/core'
 import { isClient } from '@vueuse/shared'
 import { nextTick, ref, toRefs, watch } from 'vue'
 import { useCollection } from '@/Collection'
+import { createKeyedSelector } from '@/shared/createKeyedSelector'
 import { useAgentRegistration } from '@/shared/useAgentRegistration'
 import { VisuallyHiddenInput } from '@/VisuallyHidden'
 import { compare } from './utils'
@@ -216,6 +220,7 @@ function onValueChange(val: T) {
 }
 
 const highlightedElement = ref<HTMLElement | null>(null)
+const highlight = createKeyedSelector<HTMLElement>(() => highlightedElement.value)
 const previousElement = ref<HTMLElement | null>(null)
 const isVirtual = ref(false)
 const isComposing = ref(false)
@@ -546,6 +551,7 @@ const agentContext = provideListboxRootContext({
   highlightOnHover,
   loop,
   highlightedElement,
+  highlight,
   isVirtual,
   virtualFocusHook,
   virtualKeydownHook,
