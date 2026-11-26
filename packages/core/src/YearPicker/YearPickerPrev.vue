@@ -18,11 +18,14 @@ export interface YearPickerPrevSlot {
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Primitive } from '@/Primitive'
-import { disabledAttr } from '@/shared'
+import { disabledAttr, useTranslations } from '@/shared'
 import { injectYearPickerRootContext } from './YearPickerRoot.vue'
 
 const props = withDefaults(defineProps<YearPickerPrevProps>(), { as: 'button' })
+
 defineSlots<YearPickerPrevSlot>()
+
+const t = useTranslations()
 
 const rootContext = injectYearPickerRootContext()
 
@@ -37,7 +40,7 @@ function handleClick() {
 
 <template>
   <Primitive
-    aria-label="Previous page"
+    :aria-label="t('yearPickerPrev')"
     :as="props.as"
     :as-child="props.asChild"
     :type="props.as === 'button' ? 'button' : undefined"

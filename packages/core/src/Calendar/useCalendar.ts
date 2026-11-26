@@ -9,7 +9,7 @@ import type { DateFormatterOptions } from '@/shared/useDateFormatter'
 import { isEqualMonth, isSameDay, isSameMonth } from '@internationalized/date'
 import { computed, ref, watch } from 'vue'
 import { createMonths, getDaysInMonth, isAfter, isBefore, toDate } from '@/date'
-import { useDateFormatter } from '@/shared'
+import { useDateFormatter, useTranslations } from '@/shared'
 
 export type UseCalendarProps = {
   locale: Ref<string>
@@ -123,6 +123,7 @@ function handlePrevPage(date: DateValue, prevPageFunc: (date: DateValue) => Date
 }
 
 export function useCalendar(props: UseCalendarProps) {
+  const t = useTranslations()
   const formatter = useDateFormatter(props.locale.value)
 
   const headingFormatOptions = computed(() => {
@@ -351,7 +352,7 @@ export function useCalendar(props: UseCalendarProps) {
     return content
   })
 
-  const fullCalendarLabel = computed(() => `${props.calendarLabel.value ?? 'Event Date'}, ${headingValue.value}`)
+  const fullCalendarLabel = computed(() => `${props.calendarLabel.value ?? t('calendarLabel')}, ${headingValue.value}`)
 
   const isPlaceholderFocusable = computed(() => {
     return !(isDateDisabled(props.placeholder.value) || isDateUnavailable(props.placeholder.value) || isOutsideVisibleView(props.placeholder.value))

@@ -157,6 +157,8 @@ function cancel() {
 }
 
 function edit() {
+  if (disabled.value)
+    return
   isEditing.value = true
   inputValue.value = modelValue.value
 

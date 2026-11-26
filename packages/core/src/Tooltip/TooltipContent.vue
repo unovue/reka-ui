@@ -3,11 +3,11 @@ import type { TooltipContentImplEmits, TooltipContentImplProps } from './Tooltip
 import { defineAsyncComponent } from 'vue'
 
 const TooltipContentImpl = defineAsyncComponent({
-  loader: () => import('./TooltipContentImpl.vue'),
+  loader: () => import('./TooltipContentImpl.vue').then(m => m.default),
   suspensible: false,
 })
 const TooltipContentHoverable = defineAsyncComponent({
-  loader: () => import('./TooltipContentHoverable.vue'),
+  loader: () => import('./TooltipContentHoverable.vue').then(m => m.default),
   suspensible: false,
 })
 

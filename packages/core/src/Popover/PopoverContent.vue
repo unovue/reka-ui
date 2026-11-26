@@ -6,11 +6,11 @@ import type {
 import { computed, defineAsyncComponent } from 'vue'
 
 const PopoverContentModal = defineAsyncComponent({
-  loader: () => import('./PopoverContentModal.vue'),
+  loader: () => import('./PopoverContentModal.vue').then(m => m.default),
   suspensible: false,
 })
 const PopoverContentNonModal = defineAsyncComponent({
-  loader: () => import('./PopoverContentNonModal.vue'),
+  loader: () => import('./PopoverContentNonModal.vue').then(m => m.default),
   suspensible: false,
 })
 
