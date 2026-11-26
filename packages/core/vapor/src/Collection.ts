@@ -62,6 +62,23 @@ function createCollectionContext<ItemData>() {
     },
   })
 
+  /** Keeps `element` registered as an item, with the value `getValue` returns, for the life of the calling scope. */
+  function registerItem(element: Ref<HTMLElement | null | undefined>, getValue: () => unknown) {
+    watchEffect((cleanup) => {
+      const node = element.value
+      if (node) {
+        const k = markRaw(node)
+        // @ts-expect-error item data is filled by the caller's ItemData
+        itemMap.value.set(k, { ref: node, value: getValue() })
+        order.invalidate()
+        cleanup(() => {
+          itemMap.value.delete(k)
+          order.invalidate()
+        })
+      }
+    })
+  }
+
   const CollectionItem = defineVaporComponent({
     name: 'CollectionItem',
     inheritAttrs: false,
@@ -73,19 +90,7 @@ function createCollectionContext<ItemData>() {
           return root.value
         },
       })
-      watchEffect((cleanup) => {
-        const node = root.value
-        if (node) {
-          const k = markRaw(node)
-          // @ts-expect-error item data is filled by the caller's ItemData
-          itemMap.value.set(k, { ref: node, value: props.value })
-          order.invalidate()
-          cleanup(() => {
-            itemMap.value.delete(k)
-            order.invalidate()
-          })
-        }
-      })
+      registerItem(root, () => props.value)
       return block
     },
   })
@@ -97,9 +102,20 @@ function createCollectionContext<ItemData>() {
     collectionRef,
     itemMap,
     order,
+    registerItem,
     /** What `useCollection()` returns. Built once per provider and shared by every caller under it. */
     api: { getItems: order.getItems, getItem, reactiveItems, itemMapSize, CollectionSlot, CollectionItem },
   }
+}
+
+function injectCollectionContext<ItemData>(key: string) {
+  // Without a provider the collection is empty and stays local to this caller.
+  return inject<CollectionContext<ItemData>>(`${key}CollectionProvider`) ?? createCollectionContext<ItemData>()
+}
+
+/** Registers the calling part as an item of the nearest collection, without the `CollectionItem` wrapper. */
+export function useCollectionItem(element: Ref<HTMLElement | null | undefined>, getValue: () => unknown = () => undefined, options: { key?: string } = {}) {
+  injectCollectionContext(options.key ?? '').registerItem(element, getValue)
 }
 
 export function useCollection<ItemData = {}>(options: { key?: string, isProvider?: boolean } = {}) {
@@ -114,8 +130,7 @@ export function useCollection<ItemData = {}>(options: { key?: string, isProvider
     onScopeDispose(order.reset)
   }
   else {
-    // Without a provider the collection is empty and stays local to this caller.
-    context = inject<CollectionContext<ItemData>>(injectionKey) ?? createCollectionContext<ItemData>()
+    context = injectCollectionContext<ItemData>(key)
   }
 
   const { getItems, getItem, reactiveItems, itemMapSize, CollectionSlot, CollectionItem } = context.api

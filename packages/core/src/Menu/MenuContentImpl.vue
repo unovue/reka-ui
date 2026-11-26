@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { ComponentPublicInstance, Ref } from 'vue'
+import type { ComponentPublicInstance, Ref, ShallowRef } from 'vue'
 import type {
   GraceIntent,
   Side,
@@ -29,6 +29,11 @@ export interface MenuContentContext {
   onTriggerLeave: (event: PointerEvent) => boolean
   searchRef: Ref<string>
   highlightedElement: Ref<HTMLElement | undefined>
+  /**
+   * An item hands over the flag it renders `data-highlighted` from, with its element (and the one
+   * it had before, if any). The content keeps the flag in step with `highlightedElement`.
+   */
+  onItemElementChange: (isHighlighted: ShallowRef<boolean>, element: HTMLElement | undefined, previous: HTMLElement | undefined) => void
   onKeydownNavigation: (event: KeyboardEvent) => void
   onKeydownEnter: (event: KeyboardEvent) => void
   filterElement: Ref<HTMLElement | undefined>
@@ -117,6 +122,7 @@ import {
 import { RovingFocusGroup } from '@/RovingFocus'
 import { injectMenuContext, injectMenuRootContext } from './MenuRoot.vue'
 import {
+  ARROW_NAVIGATION_KEYS,
   FIRST_LAST_KEYS,
   focusFirst,
   getOpenState,
@@ -165,6 +171,19 @@ useContentMounted(menuContext, contentElement)
 const { search, handleTypeaheadSearch, resetTypeahead } = useTypeahead()
 
 const highlightedElement = ref<HTMLElement>()
+// The highlight flag of every mounted item, by element. Only the item that loses the highlight and
+// the one that gets it are told, so a move costs the same in a menu of five items and of a thousand.
+// If every item compared `highlightedElement` with its own element instead, each move would queue
+// a render job per item, and so would the first highlight right after the menu opens.
+const itemHighlightFlags = new Map<HTMLElement, ShallowRef<boolean>>()
+watch(highlightedElement, (element, previous) => {
+  const previousFlag = previous && itemHighlightFlags.get(previous)
+  if (previousFlag)
+    previousFlag.value = false
+  const flag = element && itemHighlightFlags.get(element)
+  if (flag)
+    flag.value = true
+}, { flush: 'sync' })
 
 // A content kept mounted while closed stays in the focus scope and layer stacks' place
 // but leaves them, so no unmount returns focus. Let the menu know once it is hidden, with
@@ -192,7 +211,11 @@ watch(() => props.present, (present, wasPresent) => {
  * The items of this menu, without those of a submenu rendered inside it (without a
  * portal), which a submenu kept mounted while closed leaves in the document.
  */
-function getOwnItems() {
+function getOwnItems(event: KeyboardEvent) {
+  // `useArrowNavigation` only reads the items for these keys. Typeahead and every other key
+  // skip the query.
+  if (!ARROW_NAVIGATION_KEYS.includes(event.key))
+    return []
   const content = contentElement.value
   if (!content)
     return []
@@ -206,7 +229,7 @@ function onKeydownNavigation(event: KeyboardEvent) {
     (highlightedElement.value || getActiveElement()) as HTMLElement,
     undefined,
     {
-      itemsArray: getOwnItems(),
+      itemsArray: getOwnItems(event),
       loop: loop.value,
       arrowKeyOptions: 'vertical',
       dir: rootContext?.dir.value,
@@ -292,7 +315,7 @@ function handleKeyDown(event: KeyboardEvent) {
     getActiveElement() as HTMLElement,
     undefined,
     {
-      itemsArray: getOwnItems(),
+      itemsArray: getOwnItems(event),
       loop: loop.value,
       arrowKeyOptions: 'vertical',
       dir: rootContext?.dir.value,
@@ -405,6 +428,13 @@ provideMenuContentContext({
   // Items skip Space while the filter has text or, with `spaceExtendsTypeahead`, a typeahead search is in progress.
   searchRef: computed({ get: () => (props.spaceExtendsTypeahead && search.value) || searchRef.value, set: (value: string) => { searchRef.value = value } }),
   highlightedElement,
+  onItemElementChange: (isHighlighted, element, previous) => {
+    if (previous && itemHighlightFlags.get(previous) === isHighlighted)
+      itemHighlightFlags.delete(previous)
+    if (element)
+      itemHighlightFlags.set(element, isHighlighted)
+    isHighlighted.value = !!element && highlightedElement.value === element
+  },
   onKeydownNavigation,
   onKeydownEnter,
   filterElement,
