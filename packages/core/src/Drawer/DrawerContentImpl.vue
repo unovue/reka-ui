@@ -113,7 +113,10 @@ useResizeObserver(currentElement, ([entry]) => {
     return
   if (rootContext.hasNestedDrawer.value && rootContext.popupHeight.value > 0)
     return
-  const h = entry.contentRect.height
+  // The border box (BaseUI parity: `offsetHeight`), as the snap offsets translate
+  // the whole popup: the content box leaves a padded or bordered popup short of
+  // its snap points. Without layout (jsdom) the entry's size stands in.
+  const h = currentElement.value?.offsetHeight || entry.contentRect.height
   rootContext.onPopupHeightChange(h)
   currentElement.value?.style.setProperty(DRAWER_CSS_VARS.height, `${h}px`)
 })
