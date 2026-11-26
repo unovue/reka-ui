@@ -23,8 +23,7 @@ function createProbe(scope?: PopperScope) {
   })
 }
 
-// TODO(v3-port): #3213 v3's PopperRoot/PopperAnchor take no `scope`, so families share the nearest root
-describe.skip('scoped popper anchors', () => {
+describe('scoped popper anchors', () => {
   it('keeps an outer family anchor separate from the nearest unscoped anchor', () => {
     const ScopedProbe = createProbe('popover')
     const DefaultProbe = createProbe()
@@ -72,5 +71,29 @@ describe.skip('scoped popper anchors', () => {
 
     expect(wrapper.findComponent(FirstProbe).vm.anchor).toBe(wrapper.get('[data-testid="first"]').element)
     expect(wrapper.findComponent(SecondProbe).vm.anchor).toBe(wrapper.get('[data-testid="second"]').element)
+  })
+})
+
+describe('popper root context keys', () => {
+  it('resolves the default and every scoped context from one root, under distinct keys', () => {
+    const scopes: PopperScope[] = ['combobox', 'hover-card', 'menu', 'popover', 'select', 'tooltip']
+    const resolved: Record<string, unknown> = {}
+    const Probe = defineComponent({
+      setup() {
+        resolved.default = injectPopperRootContext()
+        for (const scope of scopes)
+          resolved[scope] = injectPopperRootContext(scope, null)
+        return {}
+      },
+      render: () => null,
+    })
+    mount(() => h(PopperRoot, { scope: 'tooltip' }, () => h(Probe)))
+
+    // The scoped binding is the same context the default one provides...
+    expect(resolved.default).toBeTruthy()
+    expect(resolved.tooltip).toBe(resolved.default)
+    // ...and no other family's key collides with it (shared `Symbol.for` names).
+    for (const scope of scopes.filter(scope => scope !== 'tooltip'))
+      expect(resolved[scope]).toBeNull()
   })
 })

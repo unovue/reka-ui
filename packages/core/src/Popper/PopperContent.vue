@@ -16,6 +16,7 @@ export const PopperContentPropsDefaultValue = {
   side: 'bottom' as Side,
   sideOffset: 0,
   sideFlip: true,
+  fallbackAxisSideDirection: 'none' as 'none' | 'start' | 'end',
   align: 'center' as Align,
   alignOffset: 0,
   alignFlip: true,
@@ -39,8 +40,9 @@ export interface PopperContentProps extends PrimitiveProps {
 
   /**
    * The preferred side of the trigger to render against when open.
-   * Will be reversed when collisions occur and avoidCollisions
-   * is enabled.
+   * Will be reversed when collisions occur and `avoidCollisions`
+   * is enabled. If the opposite side collides as well, the content
+   * stays on this axis unless `fallbackAxisSideDirection` is set.
    *
    * @defaultValue "bottom"
    */
@@ -55,10 +57,25 @@ export interface PopperContentProps extends PrimitiveProps {
 
   /**
    * Flip to the opposite side when colliding with boundary.
+   * Only the opposite side is tried, unless `fallbackAxisSideDirection` is set.
    *
    * @defaultValue true
    */
   sideFlip?: boolean
+
+  /**
+   * Whether to also try the perpendicular sides when neither the preferred
+   * side nor its opposite fits within the boundary, and which of them to try first.
+   * For `side="left"` or `"right"`, `start` tries top then bottom and `end` tries
+   * bottom then top. For `side="top"` or `"bottom"`, `start` tries left then right
+   * and `end` tries right then left (mirrored in RTL).
+   * `none` keeps the content on the axis of the preferred side.
+   *
+   * Only applies when `avoidCollisions` and `sideFlip` are enabled.
+   *
+   * @defaultValue "none"
+   */
+  fallbackAxisSideDirection?: 'none' | 'start' | 'end'
 
   /**
    * The preferred alignment against the trigger.
@@ -187,6 +204,7 @@ export interface PopperContentProps extends PrimitiveProps {
 </script>
 
 <script setup lang="ts">
+import type { PopperScope } from './PopperRootContext'
 import {
   autoUpdate,
   flip,
@@ -198,10 +216,10 @@ import {
   size,
   useFloating,
 } from '@floating-ui/vue'
-import { computed, ref, watchEffect, watchPostEffect } from 'vue'
+import { computed, onActivated, onDeactivated, ref, watchEffect, watchPostEffect } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
 import { providePopperContentContext } from './PopperContentContext'
-import { injectPopperRootContext } from './PopperRoot.vue'
+import { injectPopperRootContext } from './PopperRootContext'
 import {
   getSideAndAlignFromPlacement,
   isNotNull,
@@ -212,14 +230,20 @@ defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps<PopperContentProps>(), {
+const props = withDefaults(defineProps<PopperContentProps & {
+  /** Internal: the component family whose root positions this content. */
+  scope?: PopperScope
+  /** Internal: kept-mounted content that is hidden should not track position. */
+  present?: boolean
+}>(), {
+  present: true,
   ...PopperContentPropsDefaultValue,
 })
 const emits = defineEmits<{
-  placed: [void]
+  placed: []
 }>()
 
-const rootContext = injectPopperRootContext()
+const rootContext = injectPopperRootContext(props.scope)
 const { forwardRef, currentElement: contentElement, expose } = useForwardElement()
 defineExpose(expose)
 const dir = useDirection(computed(() => props.dir))
@@ -260,6 +284,7 @@ const flipOptions = computed(() => {
   return {
     mainAxis: props.sideFlip,
     crossAxis: props.alignFlip,
+    fallbackAxisSideDirection: props.sideFlip ? props.fallbackAxisSideDirection : 'none',
   }
 })
 
@@ -323,8 +348,15 @@ const computedMiddleware = computed(() => {
   ] as Middleware[]
 })
 
-// If provided custom reference, it will overwrite the default anchor element
-const reference = computed(() => props.reference ?? rootContext.anchor.value)
+// `KeepAlive` takes a deactivated page out of the document, anchor included.
+const isDeactivated = ref(false)
+onDeactivated(() => isDeactivated.value = true)
+onActivated(() => isDeactivated.value = false)
+
+// If provided custom reference, it will overwrite the default anchor element.
+// Content kept mounted while closed, or whose page is deactivated, drops it, which stops tracking
+// the position but keeps the last one, so that a leave transition (e.g. `v-show`) ends in place.
+const reference = computed(() => props.present && !isDeactivated.value ? (props.reference ?? rootContext.anchor.value) : undefined)
 
 const { floatingStyles, placement, isPositioned, middlewareData, update } = useFloating(
   reference,
@@ -360,11 +392,29 @@ const shouldHideArrow = computed(() => {
   return props.hideShiftedArrow && cannotCenterArrow
 })
 
-const contentZIndex = ref('')
+// The wrapper takes the z-index of the content. It is written to the element, like the size
+// variables above, and not bound in the template: the template never sets `zIndex`, so Vue leaves it
+// alone, and no render of the whole content is spent on it.
 watchEffect(() => {
-  if (contentElement.value)
-    contentZIndex.value = window.getComputedStyle(contentElement.value).zIndex
+  if (contentElement.value && floatingRef.value)
+    floatingRef.value.style.zIndex = window.getComputedStyle(contentElement.value).zIndex
 })
+
+// The wrapper style is read value by value. `floatingStyles` is a new object once the wrapper is
+// mounted, and `useFloating` replaces `middlewareData` on every position update, also when nothing
+// the wrapper shows changed. A computed only notifies the template of a new value, so those
+// updates no longer render the wrapper, and with it the whole content, again.
+const wrapperPosition = computed(() => floatingStyles.value.position)
+const wrapperLeft = computed(() => floatingStyles.value.left)
+const wrapperTop = computed(() => floatingStyles.value.top)
+// keep off the page when measuring
+const wrapperTransform = computed(() => isPositioned.value ? floatingStyles.value.transform : 'translate(0, -200%)')
+const wrapperWillChange = computed(() => floatingStyles.value.willChange)
+const wrapperTransformOrigin = computed(() => [
+  middlewareData.value.transformOrigin?.x,
+  middlewareData.value.transformOrigin?.y,
+].join(' '))
+const isReferenceHidden = computed(() => !!middlewareData.value.hide?.referenceHidden)
 
 const arrowX = computed(() => middlewareData.value.arrow?.x ?? 0)
 const arrowY = computed(() => middlewareData.value.arrow?.y ?? 0)
@@ -384,19 +434,18 @@ providePopperContentContext({
     data-reka-popper-content-wrapper=""
     :dir="dir"
     :style="{
-      ...floatingStyles,
-      transform: isPositioned ? floatingStyles.transform : 'translate(0, -200%)', // keep off the page when measuring
+      position: wrapperPosition,
+      left: wrapperLeft,
+      top: wrapperTop,
+      transform: wrapperTransform,
+      ...(wrapperWillChange && { willChange: wrapperWillChange }),
       minWidth: 'max-content',
-      zIndex: contentZIndex,
-      ['--reka-popper-transform-origin' as any]: [
-        middlewareData.transformOrigin?.x,
-        middlewareData.transformOrigin?.y,
-      ].join(' '),
+      ['--reka-popper-transform-origin' as any]: wrapperTransformOrigin,
 
       // hide the content if using the hide middleware and should be hidden
       // set visibility to hidden and disable pointer events so the UI behaves
       // as if the PopperContent isn't there at all
-      ...(middlewareData.hide?.referenceHidden && {
+      ...(isReferenceHidden && {
         visibility: 'hidden',
         pointerEvents: 'none',
       }),
@@ -411,6 +460,7 @@ providePopperContentContext({
         props.as,
         placedSide,
         placedAlign,
+        dir,
         isPositioned,
         ...Object.values($attrs),
         ...props.memoDependencies,
@@ -418,6 +468,7 @@ providePopperContentContext({
       v-bind="$attrs"
       :data-side="placedSide"
       :data-align="placedAlign"
+      :dir="dir"
       :style="{
         // if the PopperContent hasn't been placed yet (not all measurements done)
         // we prevent animations so that users's animation don't kick in too early referring wrong sides

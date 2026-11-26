@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { ReferenceElement } from '@floating-ui/vue'
+import type { PopperScope } from './PopperRootContext'
 import type { PrimitiveProps } from '@/Primitive'
 import { useForwardElement } from '@/shared'
 
@@ -11,18 +12,23 @@ export interface PopperAnchorProps extends PrimitiveProps {
    */
   reference?: ReferenceElement
 }
+
+interface PopperAnchorInternalProps extends PopperAnchorProps {
+  /** The component family whose root this anchor belongs to. */
+  scope?: PopperScope
+}
 </script>
 
 <script setup lang="ts">
 import { renderAs } from '@/Primitive/renderAs'
 import { usePopperAnchor } from './usePopperAnchor'
 
-const props = defineProps<PopperAnchorProps>()
+const props = defineProps<PopperAnchorInternalProps>()
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
-usePopperAnchor({ element: currentElement, reference: () => props.reference })
+usePopperAnchor({ element: currentElement, reference: () => props.reference, scope: props.scope })
 </script>
 
 <template>

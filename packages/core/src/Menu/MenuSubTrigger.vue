@@ -152,7 +152,7 @@ async function handleKeyDown(event: KeyboardEvent) {
 
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
-const anchor = usePopperAnchor({ consumerAttrs: true, element: currentElement })
+const anchor = usePopperAnchor({ consumerAttrs: true, element: currentElement, scope: 'menu' })
 
 function setTriggerRef(item: Element | ComponentPublicInstance | null) {
   forwardRef(item)

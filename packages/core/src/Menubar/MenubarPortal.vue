@@ -11,15 +11,17 @@ const gatedParts = [MenubarContent, MenubarSubContent]
 
 <script setup lang="ts">
 import { MenuPortal } from '@/Menu'
-import { injectMenuContext } from '@/Menu/MenuRoot.vue'
+import { injectMenuContext, injectMenuRootContext } from '@/Menu/MenuRoot.vue'
 import { createPortalGate } from '@/Teleport/portalGate'
 
 const props = defineProps<MenubarPortalProps>()
 
 // A closed popup renders no portal until it first opens (or its content is
-// force-mounted); afterwards the portal stays.
+// force-mounted, or kept mounted while closed with `unmountOnHide: false`);
+// afterwards the portal stays.
 const rootContext = injectMenuContext(null)
-const shouldRender = createPortalGate(rootContext, () => !!rootContext?.open.value, gatedParts)
+const menuRootContext = injectMenuRootContext(null)
+const shouldRender = createPortalGate(rootContext, () => !!rootContext?.open.value || menuRootContext?.unmountOnHide.value === false, gatedParts)
 </script>
 
 <template>

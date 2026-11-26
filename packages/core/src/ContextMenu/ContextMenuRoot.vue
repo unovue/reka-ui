@@ -2,7 +2,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { MenuEmits, MenuOpenChangeReason, MenuProps } from '@/Menu'
 import type { BaseChangeReason, Direction } from '@/shared/types'
-import { createContext, useDirection } from '@/shared'
+import { createRekaContext, useDirection } from '@/shared'
 
 export type ContextMenuRootContext = {
   open: ComputedRef<boolean>
@@ -24,7 +24,7 @@ export interface ContextMenuRootProps extends MenuProps {
 export type ContextMenuRootEmits = MenuEmits
 
 export const [injectContextMenuRootContext, provideContextMenuRootContext]
-  = createContext<ContextMenuRootContext>('ContextMenuRoot')
+  = createRekaContext<ContextMenuRootContext>('ContextMenuRoot')
 </script>
 
 <script setup lang="ts">
@@ -41,6 +41,7 @@ const props = withDefaults(defineProps<ContextMenuRootProps>(), {
   modal: true,
   pressOpenDelay: 700,
   open: undefined,
+  unmountOnHide: true,
 })
 const emits = defineEmits<ContextMenuRootEmits>()
 const { dir: propDir, modal, pressOpenDelay } = toRefs(props)
@@ -55,6 +56,7 @@ const { context, menuContext, menuRootContext } = useContextMenu({
   defaultOpen: props.defaultOpen ?? false,
   dir,
   modal,
+  unmountOnHide: () => props.unmountOnHide,
   pressOpenDelay,
   emit: emits,
   onOpenComplete: value => emits('update:openComplete', value),
@@ -66,7 +68,7 @@ provideContextMenuRootContext(context)
 </script>
 
 <template>
-  <PopperRoot>
+  <PopperRoot scope="menu">
     <slot />
   </PopperRoot>
 </template>

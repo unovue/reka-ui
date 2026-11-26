@@ -5,7 +5,7 @@ import type { MenubarChangeReason } from './useMenubar'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { useCollection, useCollectionSlot } from '@/Collection'
-import { createContext, useDirection, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useForwardElement } from '@/shared'
 
 export interface MenubarRootProps extends PrimitiveProps {
   /** The controlled value of the menu to open. Can be used as `v-model`. */
@@ -20,6 +20,13 @@ export interface MenubarRootProps extends PrimitiveProps {
   dir?: Direction
   /** When `true`, keyboard navigation will loop from last item to first, and vice versa. */
   loop?: boolean
+  /**
+   * When set to `false`, the content of each menu and its submenus will not be unmounted when closed, but instead hidden with CSS.
+   *
+   * Useful when you want to keep the state of the content, or to improve performance by not remounting it on every open.
+   * @defaultValue true
+   */
+  unmountOnHide?: boolean
 }
 export type MenubarRootEmits = {
   /** Called before the value changes; `details.cancel()` keeps the current value. */
@@ -32,6 +39,8 @@ export interface MenubarRootContext {
   modelValue: Readonly<Ref<string>>
   dir: Ref<Direction>
   loop: Ref<boolean>
+  /** When `false`, each menu's content and submenus stay mounted while closed. */
+  unmountOnHide: Ref<boolean>
   /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:modelValue`. */
   onMenuOpen: (value: string, reason?: MenubarChangeReason | BaseChangeReason, event?: Event) => boolean
   /** Returns `false` when the change was a no-op or cancelled via `beforeUpdate:modelValue`. */
@@ -41,7 +50,7 @@ export interface MenubarRootContext {
 }
 
 export const [injectMenubarRootContext, provideMenubarRootContext]
-  = createContext<MenubarRootContext>('MenubarRoot')
+  = createRekaContext<MenubarRootContext>('MenubarRoot')
 </script>
 
 <script setup lang="ts">
@@ -58,6 +67,7 @@ defineOptions({
 
 const props = withDefaults(defineProps<MenubarRootProps>(), {
   loop: false,
+  unmountOnHide: true,
   as: 'div',
 })
 const emit = defineEmits<MenubarRootEmits>()
@@ -85,6 +95,7 @@ const { modelValue, currentTabStopId, root, context } = useMenubar({
   defaultValue: props.defaultValue,
   dir,
   loop,
+  unmountOnHide: () => props.unmountOnHide,
   emit,
 })
 

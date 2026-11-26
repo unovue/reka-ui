@@ -6,7 +6,7 @@ import type { Direction, Orientation } from './utils'
 import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import { useCollection, useCollectionSlot } from '@/Collection'
-import { createContext, useDirection, useForwardElement, useId } from '@/shared'
+import { createRekaContext, useDirection, useForwardElement, useId } from '@/shared'
 import { EVENT_ROOT_CONTENT_DISMISS } from './utils'
 
 export interface NavigationMenuRootProps extends PrimitiveProps {
@@ -98,7 +98,7 @@ export interface NavigationMenuContext {
 }
 
 export const [injectNavigationMenuContext, provideNavigationMenuContext]
-  = createContext<NavigationMenuContext>(['NavigationMenuRoot', 'NavigationMenuSub'], 'NavigationMenuContext')
+  = createRekaContext<NavigationMenuContext>(['NavigationMenuRoot', 'NavigationMenuSub'], 'NavigationMenuContext')
 </script>
 
 <script setup lang="ts">
