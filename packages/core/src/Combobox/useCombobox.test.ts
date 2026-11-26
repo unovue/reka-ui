@@ -422,7 +422,9 @@ describe('comboboxRoot — filter', () => {
     expect(document.body.textContent).not.toContain('Nothing')
     await wrapper.find('input').setValue('xyz')
     await settle()
-    expect(optionTexts()).toEqual([])
+    // Only the empty state is left, as a disabled option (#3258).
+    expect(optionTexts()).toEqual(['Nothing'])
+    expect(document.querySelector('[role=option]')?.getAttribute('aria-disabled')).toBe('true')
     expect(document.body.textContent).toContain('Nothing')
     expect(document.querySelector('[role=listbox]')?.hasAttribute('data-empty')).toBe(true)
     wrapper.unmount()
@@ -521,7 +523,8 @@ describe('comboboxRoot — filter with ComboboxVirtualizer', () => {
     await wrapper.find('input').setValue('nope')
     await flushPromises()
     await settle()
-    expect(document.querySelectorAll('[role=option]')).toHaveLength(0)
+    // Only the empty state is left, as a disabled option (#3258).
+    expect(document.querySelectorAll('[role=option]:not([aria-disabled="true"])')).toHaveLength(0)
     expect(document.body.textContent).toContain('Nothing')
     wrapper.unmount()
   })

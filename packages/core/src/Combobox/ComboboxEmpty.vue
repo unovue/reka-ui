@@ -21,6 +21,8 @@ defineExpose(expose)
     :is="renderAs(as, asChild)"
     v-if="rootContext.filterState.value.count === 0"
     :ref="forwardRef"
+    role="option"
+    aria-disabled="true"
   >
     <slot>No options</slot>
   </component>
