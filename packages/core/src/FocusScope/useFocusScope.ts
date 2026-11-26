@@ -9,11 +9,13 @@ import {
   AUTOFOCUS_ON_MOUNT,
   AUTOFOCUS_ON_UNMOUNT,
   EVENT_OPTIONS,
+  findVisible,
   focus,
   focusFirst,
   focusScopeNodes,
   getTabbableCandidates,
   getTabbableEdges,
+  getTabStopsAfter,
   hasFocusLeftScope,
 } from './utils'
 
@@ -381,7 +383,8 @@ export function useFocusScope(options: UseFocusScopeOptions) {
     const focusedElement = getActiveElement(container) as HTMLElement | null
 
     if (isTabKey && focusedElement) {
-      const [first, last] = getTabbableEdges(container)
+      const candidates = getTabbableCandidates(container)
+      const [first, last] = getTabbableEdges(container, candidates)
       const hasTabbableElementsInside = first && last
 
       // we can only wrap focus if we have tabbable edges
@@ -390,15 +393,12 @@ export function useFocusScope(options: UseFocusScopeOptions) {
           event.preventDefault()
       }
       else {
-        if (!event.shiftKey && focusedElement === last) {
+        // Wrap when no visible tab stop is left in the tabbing direction.
+        const tabbingOrder = event.shiftKey ? [...candidates].reverse() : candidates
+        if (!findVisible(getTabStopsAfter(tabbingOrder, focusedElement), container)) {
           event.preventDefault()
           if (loop())
-            focus(first, { select: true })
-        }
-        else if (event.shiftKey && focusedElement === first) {
-          event.preventDefault()
-          if (loop())
-            focus(last, { select: true })
+            focus(event.shiftKey ? last : first, { select: true })
         }
       }
     }

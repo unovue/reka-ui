@@ -7,7 +7,7 @@ import type { BaseChangeReason, ChangeEventDetails, DisclosureState, PartSurface
 import { onKeyStroke, useEventListener, useRafFn } from '@vueuse/core'
 import { isClient } from '@vueuse/shared'
 import { computed, getCurrentScope, onMounted, onScopeDispose, ref, shallowReactive, shallowRef, toValue, watch, watchEffect } from 'vue'
-import { focusFirst, getTabbableCandidates } from '@/FocusScope/utils'
+import { focusFirst, getTabbableCandidates, getTabStopsAfter } from '@/FocusScope/utils'
 import { createPartSurface, disclosureState, getActiveElement, useControllableState } from '@/shared'
 import { TOAST_MANAGER_SUBSCRIBE } from './createToastManager'
 import { useToastStore } from './useToastStore'
@@ -865,8 +865,7 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
 
           const tabbingDirection = isTabbingBackwards ? 'backwards' : 'forwards'
           const sortedCandidates = getSortedTabbableCandidates({ tabbingDirection })
-          const index = sortedCandidates.findIndex(candidate => candidate === focusedElement)
-          if (focusFirst(sortedCandidates.slice(index + 1))) {
+          if (focusFirst(getTabStopsAfter(sortedCandidates, focusedElement))) {
             event.preventDefault()
           }
           else {
