@@ -25,7 +25,7 @@ import type { PrimitiveHTMLAttributes } from '@/Primitive'
 import type { AcceptableValue } from '@/shared/types'
 import { useParentElement } from '@vueuse/core'
 import { refAutoReset } from '@vueuse/shared'
-import { onUnmounted, useSlots, watch, watchSyncEffect } from 'vue'
+import { nextTick, onUnmounted, shallowRef, useSlots, watch, watchSyncEffect } from 'vue'
 import { useCollection } from '@/Collection'
 import { findValuesBetween, getActiveElement, useForwardElement, useId } from '@/shared'
 import { isDisabledItem } from '@/shared/isDisabledItem'
@@ -61,6 +61,9 @@ rootContext.isVirtual.value = true
 // `aria-setsize`, and is skipped by navigation, typeahead and select-all. A
 // group left with no matching option is dropped.
 let hasWarnedTextContent = false
+// The row index the highlighted option moved to, until its row there has the highlight (#3229).
+let movedRow: number | undefined
+const movedVersion = shallowRef(0)
 const list = useListVirtualizer<T>({
   options: () => props.options,
   grouped: () => props.grouped,
@@ -81,17 +84,64 @@ const list = useListVirtualizer<T>({
   horizontal: () => rootContext.orientation.value === 'horizontal',
   scrollElement: parentEl,
   idPrefix: useId(undefined, 'reka-listbox-virtualizer'),
+  // Keep the highlighted row mounted (#3211), or the row its option moved to (#3229).
+  keepMounted: () => {
+    void movedVersion.value
+    return () => {
+      if (movedRow !== undefined)
+        return movedRow
+      const highlighted = rootContext.highlightedElement.value
+      return highlighted?.isConnected ? Number(highlighted.dataset.index) : Number.NaN
+    }
+  },
 })
 const { options, virtualizer } = list
 
-// Rows are keyed by index, so a highlighted row is reused for another option
-// once the list is filtered. Before the rows re-render, drop the highlight if
-// its option no longer matches.
+// Rows are keyed by index, so the row of a removed, moved or replaced option
+// stays for another option. The highlight belongs to its option: before the
+// rows re-render, it follows the option to its new row, and leaves when the
+// option does (#3229).
 watch(options, (current) => {
   const element = rootContext.highlightedElement.value
   const highlighted = element && getItems(true).find(i => i.ref === element)
-  if (highlighted && !current.some(option => compare(option, highlighted.value, rootContext.by)))
+  if (!highlighted)
+    return
+  const { value } = highlighted
+  const currentRow = movedRow ?? Number(element.dataset.index)
+  // The row the option had now holds (the rows already follow the new options).
+  const rowNow = list.rows.value[currentRow]
+  if (rowNow?.type === 'option' && compare(rowNow.option, value, rootContext.by))
+    return
+
+  const index = current.findIndex(option => compare(option, value, rootContext.by))
+  if (index === -1) {
+    movedRow = undefined
     rootContext.highlightedElement.value = null
+    return
+  }
+
+  // The row of the new index is mounted in the coming render, and then takes the highlight.
+  // The focus goes with it when the previous row has it, without scrolling the list.
+  const row = list.rowIndexOfOption(index)
+  const hadFocus = !!element.contains(getActiveElement())
+  movedRow = row
+  movedVersion.value++
+  nextTick(() => {
+    if (movedRow !== row)
+      return
+    movedRow = undefined
+    // The highlight was cleared or changed after the move was queued, for example when the focus left the list.
+    if (rootContext.highlightedElement.value !== element)
+      return
+    const rowElement = parentEl.value?.querySelector<HTMLElement>(`[data-index="${row}"]`)
+    if (!rowElement) {
+      rootContext.highlightedElement.value = null
+      return
+    }
+    rootContext.changeHighlight(rowElement, false, false)
+    if (hadFocus)
+      rowElement.focus({ preventScroll: true })
+  })
 })
 watchSyncEffect(() => {
   rootContext.virtualFilterCount.value = options.value.length

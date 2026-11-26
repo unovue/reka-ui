@@ -1053,7 +1053,9 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
         const target = (event.relatedTarget || event.target) as HTMLElement | null
         await nextTick()
         const element = toValue(props.element)
-        if (highlightedElement.value && element && !element.contains(target)) {
+        // A removed row loses the focus without a related target. The focus did not leave when a
+        // virtualized list has given it to the new row of the highlighted option by now (#3229).
+        if (highlightedElement.value && element && !element.contains(target) && !element.contains(getActiveElement())) {
           onLeave(event)
         }
       },

@@ -49,6 +49,12 @@ export interface UseListVirtualizerOptions<T> {
   scrollElement: Ref<HTMLElement | undefined>
   /** Prefix for the group header ids. */
   idPrefix: string
+  /**
+   * The row index to keep mounted, with its adjacent rows, outside the rendered window (the
+   * highlighted row), or `NaN`/`undefined` for none. Read on each range extraction; a reactive
+   * read in it gives the virtualizer a new extractor, so a change re-extracts the range.
+   */
+  keepMounted?: () => (() => number | undefined)
 }
 
 export function isVirtualGroup<T>(entry: unknown): entry is VirtualGroup<T> {
@@ -155,16 +161,28 @@ export function useListVirtualizer<T>(options: UseListVirtualizerOptions<T>) {
     // Keep the header row of every rendered option's group mounted, so the
     // option's `aria-describedby` always resolves, also mid-group once the
     // header itself has scrolled out of the window.
-    rangeExtractor(range) {
-      const indexes = defaultRangeExtractor(range)
-      const headers = headerRowIndex.value
-      const extra = new Set<number>()
-      for (const index of indexes) {
-        const header = headers[index] ?? -1
-        if (header !== -1 && header < range.startIndex - range.overscan)
-          extra.add(header)
+    // The highlight is the DOM node of a row, and the virtualizer removes the node of a row
+    // that leaves the rendered window: the highlighted row stays mounted, with its adjacent
+    // rows, because the arrow keys move the highlight to the next mounted row (#3211).
+    get rangeExtractor() {
+      const keepMounted = options.keepMounted?.()
+      return (range: Parameters<typeof defaultRangeExtractor>[0]) => {
+        let indexes = defaultRangeExtractor(range)
+        const kept = keepMounted?.()
+        if (kept !== undefined && !Number.isNaN(kept) && kept >= 0 && kept < range.count) {
+          const around = defaultRangeExtractor({ ...range, startIndex: kept, endIndex: kept, overscan: 1 })
+          if (around.some(index => !indexes.includes(index)))
+            indexes = [...new Set([...around, ...indexes])].sort((a, b) => a - b)
+        }
+        const headers = headerRowIndex.value
+        const extra = new Set<number>()
+        for (const index of indexes) {
+          const header = headers[index] ?? -1
+          if (header !== -1 && !indexes.includes(header))
+            extra.add(header)
+        }
+        return extra.size ? [...new Set([...extra, ...indexes])].sort((a, b) => a - b) : indexes
       }
-      return extra.size ? [...extra].sort((a, b) => a - b).concat(indexes) : indexes
     },
   })
 

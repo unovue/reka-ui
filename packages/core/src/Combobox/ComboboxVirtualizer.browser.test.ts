@@ -35,8 +35,7 @@ function highlightedOption() {
   return id ? document.getElementById(id) : null
 }
 
-// TODO(v3-port): #3211 keep the highlighted row mounted in a virtualized list (v3 useListVirtualizer only keeps group headers mounted)
-describe.skip('given a virtualized Combobox, in a real browser', () => {
+describe('given a virtualized Combobox, in a real browser', () => {
   // jsdom has no layout, so the rows that leave the rendered window can only be observed here.
   it('keeps the highlighted option mounted when the list gets shorter', async () => {
     // Tall enough to render every row, as a list is until Popper sets its available height.
@@ -117,8 +116,7 @@ async function highlightWithArrowDown(text: string, presses: number) {
   await expect.poll(() => highlightedOption()?.textContent).toBe(text)
 }
 
-// TODO(v3-port): #3229 highlight follows its option when a virtualized list reorders (ListboxVirtualizer resolved to v3)
-describe.skip('given a virtualized Combobox whose options change, in a real browser', () => {
+describe('given a virtualized Combobox whose options change, in a real browser', () => {
   it('keeps the highlight on its option when options before it are removed', async () => {
     const { shown, selected } = mountOptionsCombobox(['A', 'B', 'C'])
     await highlightWithArrowDown('B', 1)
