@@ -35,8 +35,10 @@ defineExpose(expose)
 // lifecycle hooks or a watcher, so it follows the element: an `asChild` trigger can swap its
 // element without unmounting.
 let registered: HTMLElement | undefined
-function sync(vnode: VNode | null) {
-  const element = vnode ? (vnodeElement(vnode) ?? currentElement.value ?? undefined) : undefined
+// `null` (unmounted) unregisters. Vapor calls the hooks without a vnode: the element is then
+// read from the forwarded ref.
+function sync(vnode: VNode | null | undefined) {
+  const element = vnode === null ? undefined : ((vnode && vnodeElement(vnode)) ?? currentElement.value ?? undefined)
   if (element === registered)
     return
   if (registered) {
