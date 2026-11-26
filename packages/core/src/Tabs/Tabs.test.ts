@@ -69,8 +69,7 @@ describe('ssr hydration', () => {
     expect(error.mock.calls.flat().join('\n')).not.toContain('Hydration completed but contains mismatches')
   })
 
-  // TODO(v3-port): #3362 pre-mount RovingFocus tab stop (RovingFocus resolved to v3)
-  it.skip('makes the active trigger the tab stop in the server HTML, then hands it to the list', async () => {
+  it('makes the active trigger the tab stop in the server HTML, then hands it to the list', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
