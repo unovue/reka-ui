@@ -49,9 +49,9 @@ export function useForwardExpose<T extends ComponentPublicInstance>() {
       get: (_, key) => resolve(key),
       has: (_, key) => isOwn(key),
       ownKeys: () => keys(),
-      // Only keys this component exposes (or forwards) are own, so an outer `useForwardExpose` that
-      // forwards to this component does not take `toString` and the like for exposed keys either
-      getOwnPropertyDescriptor: (_, key) => isOwn(key) ? { enumerable: true, configurable: true, value: resolve(key) } : undefined,
+      // Accessor, not `value: resolve(key)`: Object.hasOwn on this proxy must not run the getter.
+      // configurable: the target is `{}`, so a non-configurable descriptor would throw.
+      getOwnPropertyDescriptor: (_, key) => isOwn(key) ? { enumerable: true, configurable: true, get: () => resolve(key) } : undefined,
     }))
   }
 
