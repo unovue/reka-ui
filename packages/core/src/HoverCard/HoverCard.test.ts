@@ -455,7 +455,6 @@ describe('given a HoverCardContent with outside interaction listeners', () => {
   })
 })
 
-
 describe('given a HoverCard that unmounts while its open delay is running', () => {
   it('should not leave its open timer pending', async () => {
     vi.useFakeTimers()

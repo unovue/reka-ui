@@ -146,9 +146,9 @@ onUnmounted(() => {
 
 <template>
   <PopperContent
-    scope="hover-card"
     v-bind="mergeProps(mergeProps(layer.attrs(), layerWrapper.rest), mergeProps(forwarded, $attrs, content.attrs.value))"
     :ref="forwardRef"
+    scope="hover-card"
     :style="{
       'userSelect': containSelection ? 'text' : undefined,
       // Safari requires prefix

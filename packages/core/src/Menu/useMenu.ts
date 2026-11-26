@@ -8,7 +8,7 @@ import { createPartSurface, disclosureState, getActiveElement, getterRef, useArr
 import { createKeyedSelector, useSelectorKey } from '@/shared/createKeyedSelector'
 import { resolveDirection } from '@/shared/useDirection'
 import { useIsUsingKeyboard } from '@/shared/useIsUsingKeyboard'
-import { createContentHideHook, FIRST_LAST_KEYS, hasFocusLeftContent, focusFirst, isMouseEvent, isPointerInGraceArea, ITEM_SELECT, LAST_KEYS, SELECTION_KEYS } from './utils'
+import { createContentHideHook, FIRST_LAST_KEYS, focusFirst, hasFocusLeftContent, isMouseEvent, isPointerInGraceArea, ITEM_SELECT, LAST_KEYS, SELECTION_KEYS } from './utils'
 
 // =============================================================================
 // Headless composables for the Menu (overlay) family — issue #2723.
