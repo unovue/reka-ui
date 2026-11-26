@@ -23,7 +23,7 @@ export interface PopoverTriggerProps<Payload = unknown> extends PrimitiveProps {
 <script setup lang="ts" generic="Payload = unknown">
 import { computed, mergeProps, watch } from 'vue'
 import { usePopperAnchor } from '@/Popper/usePopperAnchor'
-import { renderAs } from '@/Primitive/renderAs'
+import { renderAsControl } from '@/Primitive/renderAs'
 import { getPopupRootStore, usePopupHandleTrigger } from '@/shared/popupHandle'
 import { injectPopoverRootContext } from './PopoverRoot.vue'
 import { getPopoverOwnTriggerSlot, getPopoverTriggerSurface } from './usePopover'
@@ -115,7 +115,7 @@ if (rootContext) {
 
 <template>
   <component
-    :is="renderAs(as, props.asChild)"
+    :is="renderAsControl(as, props.asChild)"
     :ref="forwardRef"
     v-bind="mergeProps(anchor.consumerAttrs($attrs), attrs, { type: as === 'button' ? 'button' : undefined })"
   >
