@@ -5,7 +5,7 @@ import type { MenuOpenChangeReason } from '@/Menu'
 import type { MenuContentHideEvent, MenuContext, MenuRootContext } from '@/Menu/MenuRoot.vue'
 import type { BaseChangeReason, ChangeEventDetails, PartSurface } from '@/shared'
 import type { Direction } from '@/shared/types'
-import { computed, ref, toValue, watch } from 'vue'
+import { computed, nextTick, ref, toValue, watch } from 'vue'
 import { useMenuRoot } from '@/Menu/useMenu'
 import { createPartSurface, useControllableState } from '@/shared'
 import { isDisabledItem } from '@/shared/isDisabledItem'
@@ -110,22 +110,37 @@ export function useMenubar(props: UseMenubarProps = {}): UseMenubarReturn {
   const loop = computed<boolean>(() => toValue(props.loop) ?? false)
   const currentTabStopId = ref<string | null>(null)
 
+  /**
+   * Move the tab stop to `value` once the menu is open: a cancelled or no-op
+   * request (or a controlled parent that ignored it) leaves it alone. A
+   * controlled parent applies the new value when it re-renders, so it is
+   * checked again after that flush.
+   */
+  function moveTabStopWhenOpen(value: string) {
+    if (modelValue.value === value) {
+      currentTabStopId.value = value
+      return
+    }
+    nextTick(() => {
+      if (modelValue.value === value)
+        currentTabStopId.value = value
+    })
+  }
   function onMenuOpen(value: string, reason?: MenubarChangeReason | BaseChangeReason, event?: Event) {
     const changed = setState(value, reason, event)
-    // Move the tab stop only when the menu actually opened: a cancelled or
-    // no-op request (or a controlled parent that ignored it) leaves it alone.
-    if (changed && modelValue.value === value)
-      currentTabStopId.value = value
+    if (changed)
+      moveTabStopWhenOpen(value)
     return changed
   }
   function onMenuClose(reason?: MenubarChangeReason | BaseChangeReason, event?: Event) {
     return setState('', reason, event)
   }
   function onMenuToggle(value: string, reason?: MenubarChangeReason | BaseChangeReason, event?: Event) {
-    const changed = setState(modelValue.value ? '' : value, reason, event)
+    const opening = !modelValue.value
+    const changed = setState(opening ? value : '', reason, event)
     // Same rule as `onMenuOpen`: only an open that went through moves the tab stop.
-    if (changed && modelValue.value === value)
-      currentTabStopId.value = value
+    if (changed && opening)
+      moveTabStopWhenOpen(value)
     return changed
   }
 
@@ -310,9 +325,15 @@ export function createMenubarTriggerSurface(
           : rootContext.onMenuToggle(menuContext.value, 'trigger-press', event)
         // Mark a keyboard open only when this key actually opened the menu: a
         // cancelled or no-op request must not leave the flag set for a later
-        // pointer open (which would then get keyboard entry focus).
-        if (changed && open.value)
+        // pointer open (which would then get keyboard entry focus). A controlled
+        // parent applies the open when it re-renders, so it is checked after that flush.
+        if (changed) {
           menuContext.wasKeyboardTriggerOpenRef.value = true
+          nextTick(() => {
+            if (!open.value)
+              menuContext.wasKeyboardTriggerOpenRef.value = false
+          })
+        }
         // prevent keydown from scrolling window / first focused item to execute
         // that keydown (inadvertently closing the menu)
         event.preventDefault()
