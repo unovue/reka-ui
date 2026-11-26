@@ -776,6 +776,13 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
     }
   }
 
+  // Whether a pause that has lost its other reasons still holds because the window is
+  // blurred. Asked of the document, not of `windowBlurred`: a window that never had focus
+  // has not sent a `blur` either.
+  function isPausedByWindowBlur() {
+    return !providerContext.disableWindowBlurPause.value && !document.hasFocus()
+  }
+
   // Releases a window-blur pause, including one left over after the last toast closed,
   // which would otherwise keep later toasts from ever starting their timers.
   useEventListener('focus', () => {
@@ -818,7 +825,7 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
     // The pause listeners on the old element are gone, and focus or hover inside it went
     // with it, so release its pause while the toasts still listen there. A window-blur
     // pause is kept: the window `focus` listener on the new element releases it.
-    if (document.hasFocus())
+    if (!isPausedByWindowBlur())
       releasePause(previous)
     providerContext.focused.value = element.contains(getActiveElement())
     // The old element took its `pointerleave` with it. Collapse as a leave would, and a
@@ -977,7 +984,7 @@ export function useToastViewport(options: UseToastViewportOptions): UseToastView
         // The listeners that would release a hover or focus pause are gone (the last toast
         // closed, or the viewport was replaced), so release it here. A window-blur pause
         // is kept until the window `focus` listener above releases it.
-        if (document.hasFocus())
+        if (!isPausedByWindowBlur())
           releasePause(viewport)
       })
     }
