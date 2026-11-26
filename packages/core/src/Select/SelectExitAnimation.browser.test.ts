@@ -41,7 +41,7 @@ describe('given a Select whose content animates with CSS, in a real browser', ()
         return () => h('div', { style: 'padding: 200px 40px' }, [
           h(SelectRoot, {
             'modelValue': modelValue.value,
-            'onUpdate:modelValue': (value: string) => modelValue.value = value,
+            'onUpdate:modelValue': (value: unknown) => modelValue.value = value as string,
             'open': open.value,
             'onUpdate:open': (value: boolean) => open.value = value,
           }, () => [

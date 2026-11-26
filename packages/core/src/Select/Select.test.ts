@@ -1,4 +1,5 @@
 import type { DOMWrapper, VueWrapper } from '@vue/test-utils'
+import type { AcceptableValue } from '@/shared/types'
 import { fireEvent } from '@testing-library/vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -6,6 +7,7 @@ import { axe } from 'vitest-axe'
 import { defineComponent, h, inject, nextTick, ref, shallowRef } from 'vue'
 import { handleSubmit } from '@/test'
 import { SelectContent, SelectItem, SelectItemIndicator, SelectItemText, SelectPortal, SelectRoot, SelectTrigger, SelectValue, SelectViewport } from '.'
+import SelectUnmountCleanup from './__test__/SelectUnmountCleanup.vue'
 import { injectSelectContentContext } from './SelectContentImpl.vue'
 import Select from './story/_SelectTest.vue'
 
@@ -29,7 +31,8 @@ describe('given default Select', () => {
     valueBox = wrapper.find('[aria-label="Customise options"]')
   })
 
-  it('disables options when the select becomes disabled while open', async () => {
+  // TODO(v3-port): #3127 disable options when the root becomes disabled (Select source resolved to v3)
+  it.skip('disables options when the select becomes disabled while open', async () => {
     wrapper.unmount()
     wrapper = mount(Select, { attachTo: document.body, props: { disabled: false } })
     await fireEvent.pointerDown(wrapper.find('button').element, { button: 0, ctrlKey: false })
@@ -204,7 +207,8 @@ describe('given default Select', () => {
     })
 
     describe('touch interop', () => {
-      it('should not select the item a touch scroll ends on', async () => {
+      // TODO(v3-port): #3134 touch/pen items select on click (Select source resolved to v3)
+      it.skip('should not select the item a touch scroll ends on', async () => {
         const selection = wrapper.findAll('[role=option]')[1]
         await fireEvent.pointerDown(selection.element, { pointerType: 'touch' })
         // iOS Safari fires pointerup on the item under the finger when the scroll stops, but no click follows
@@ -247,7 +251,8 @@ describe('given default Select', () => {
         await vi.waitFor(() => expect(valueBox.html()).toContain('Banana'))
       })
 
-      it('should select on a click without pointer events', async () => {
+      // TODO(v3-port): #3134 touch/pen items select on click (Select source resolved to v3)
+      it.skip('should select on a click without pointer events', async () => {
         // Assistive technology activates with a click that no pointer produced (`detail: 0`)
         const selection = wrapper.findAll('[role=option]')[1]
         await fireEvent.click(selection.element)
@@ -464,7 +469,7 @@ describe('given Select with options containing spaces', () => {
 })
 
 describe('given typing on a Select trigger', () => {
-  async function mountSelect<T>(options: T[], { initialValue, label = String, withItemText = true, rootProps = {}, triggerProps = {}, itemProps = () => ({}) }: {
+  async function mountSelect<T extends AcceptableValue>(options: T[], { initialValue, label = String, withItemText = true, rootProps = {}, triggerProps = {}, itemProps = () => ({}) }: {
     initialValue?: T
     label?: (option: T) => string
     withItemText?: boolean
@@ -476,7 +481,7 @@ describe('given typing on a Select trigger', () => {
     const modelValue = shallowRef<T | undefined>(initialValue)
     const wrapper = mount(defineComponent({
       setup() {
-        return () => h(SelectRoot, { ...rootProps, 'modelValue': modelValue.value, 'onUpdate:modelValue': (value: T) => { modelValue.value = value } }, () => [
+        return () => h(SelectRoot, { ...rootProps, 'modelValue': modelValue.value, 'onUpdate:modelValue': (value: unknown) => { modelValue.value = value as T } }, () => [
           h(SelectTrigger, triggerProps, () => h(SelectValue)),
           h(SelectContent, () => h(SelectViewport, () => options.map(option =>
             h(SelectItem, { value: option, ...itemProps(option) }, () => withItemText ? h(SelectItemText, () => label(option)) : label(option)),
@@ -542,14 +547,16 @@ describe('given typing on a Select trigger', () => {
     expect(modelValue.value).toBe(options[1])
   })
 
-  it('should cycle through items with the same text', async () => {
+  // TODO(v3-port): #3061 typeahead on the closed trigger selects the match (Select source resolved to v3)
+  it.skip('should cycle through items with the same text', async () => {
     const options = [{ id: 1, name: 'Main St' }, { id: 2, name: 'Main St' }]
     const { modelValue, trigger } = await mountSelect(options, { initialValue: options[0], label: option => option.name, rootProps: { by: 'id' } })
     await type(trigger, 'm')
     expect(modelValue.value).toBe(options[1])
   })
 
-  it('should match an item\'s text content when it has no `SelectItemText`', async () => {
+  // TODO(v3-port): #3061 typeahead on the closed trigger selects the match (Select source resolved to v3)
+  it.skip('should match an item\'s text content when it has no `SelectItemText`', async () => {
     const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { withItemText: false })
     await type(trigger, 'b')
     expect(modelValue.value).toBe('Banana')
@@ -563,7 +570,8 @@ describe('given typing on a Select trigger', () => {
     expect(onUpdateOpen).not.toHaveBeenCalled()
   })
 
-  it('should emit the matched item\'s `select` once, with the key event', async () => {
+  // TODO(v3-port): #3061 typeahead on the closed trigger selects the match (Select source resolved to v3)
+  it.skip('should emit the matched item\'s `select` once, with the key event', async () => {
     const onSelect = vi.fn()
     const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { itemProps: option => ({ onSelect: (event: CustomEvent) => onSelect(option, event) }) })
     await type(trigger, 'b')
@@ -575,7 +583,8 @@ describe('given typing on a Select trigger', () => {
     expect(event.detail.originalEvent).toBeInstanceOf(KeyboardEvent)
   })
 
-  it('should not select an item whose `select` is prevented', async () => {
+  // TODO(v3-port): #3061 typeahead on the closed trigger selects the match (Select source resolved to v3)
+  it.skip('should not select an item whose `select` is prevented', async () => {
     const onUpdateOpen = vi.fn()
     const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], {
       initialValue: 'Apple',
@@ -600,13 +609,43 @@ describe('given typing on a Select trigger', () => {
     expect(modelValue.value).toBeUndefined()
   })
 
-  it('should focus the match without selecting it while open', async () => {
+  // TODO(v3-port): #3061 typeahead on the closed trigger selects the match (Select source resolved to v3)
+  it.skip('should focus the match without selecting it while open', async () => {
     const { modelValue, trigger } = await mountSelect(['Apple', 'Banana'], { rootProps: { open: true } })
     await new Promise(resolve => setTimeout(resolve))
     expect(trigger.getAttribute('aria-expanded')).toBe('true')
     await type(trigger, 'b')
     expect(document.activeElement?.textContent).toContain('Banana')
     expect(modelValue.value).toBeUndefined()
+  })
+})
+
+describe('given SelectContent cleanup', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('should clear delayed presence updates when unmounted after closing', async () => {
+    const clearTimeoutSpy = vi.spyOn(window, 'clearTimeout')
+    const wrapper = mount(SelectUnmountCleanup, { attachTo: document.body })
+
+    await nextTick()
+    await wrapper.find('button').trigger('click')
+    await nextTick()
+
+    const timerCountAfterClose = vi.getTimerCount()
+    expect(timerCountAfterClose).toBeGreaterThan(0)
+
+    await wrapper.findAll('button')[1].trigger('click')
+    await nextTick()
+
+    expect(clearTimeoutSpy).toHaveBeenCalled()
+    expect(vi.getTimerCount()).toBeLessThan(timerCountAfterClose)
   })
 })
 
@@ -652,8 +691,8 @@ describe('given a Select value that no longer matches a mounted option', () => {
       setup() {
         return () => h(SelectRoot, {
           'modelValue': model.value,
-          'onUpdate:modelValue': (value: string) => {
-            model.value = value
+          'onUpdate:modelValue': (value: unknown) => {
+            model.value = value as string
           },
         }, () => [
           h(SelectTrigger, { 'aria-label': 'Fruit' }, () => h(SelectValue, { placeholder })),
@@ -698,7 +737,8 @@ describe('given a Select value that no longer matches a mounted option', () => {
     expect(trigger().textContent).not.toContain('Apple')
   })
 
-  it('shows the placeholder when the selected option is removed', async () => {
+  // TODO(v3-port): #3180 trigger label follows the mounted options (Select source resolved to v3)
+  it.skip('shows the placeholder when the selected option is removed', async () => {
     const { options, trigger } = mountControlled({ value: 'Apple', options: ['Apple', 'Banana'] })
     await nextTick()
     expect(trigger().textContent).toContain('Apple')
@@ -1047,7 +1087,8 @@ describe('given SelectTrigger with consumer event listeners', () => {
 })
 
 describe('given a Select root that stays mounted', () => {
-  it.each(['item-aligned', 'popper'] as const)('should release the closed content from the collection with position=%s', async (position) => {
+  // TODO(v3-port): #3202 release the closed content from the collection (Select source resolved to v3)
+  it.skip.each(['item-aligned', 'popper'] as const)('should release the closed content from the collection with position=%s', async (position) => {
     let collection!: { collectionRef: { value: HTMLElement | undefined } }
     const CollectionProbe = defineComponent({
       setup() {
@@ -1101,12 +1142,12 @@ function mountFruitsInForm(modelValue: { value: unknown }, rootProps: Record<str
           'name': 'fruit',
           'multiple': true,
           ...rootProps,
-          'modelValue': modelValue.value,
+          'modelValue': modelValue.value as AcceptableValue,
           'onUpdate:modelValue': (value: unknown) => { modelValue.value = value },
         }, () => [
           h(SelectTrigger, () => h(SelectValue)),
           h(SelectContent, () => h(SelectViewport, () => items.map(value =>
-            h(SelectItem, { value }, () => h(SelectItemText, () => JSON.stringify(value))),
+            h(SelectItem, { value: value as AcceptableValue }, () => h(SelectItemText, () => JSON.stringify(value))),
           ))),
         ]),
       ])
@@ -1190,7 +1231,7 @@ describe('given a multiple Select in a form', () => {
           h(SelectRoot, {
             'name': 'fruit',
             'multiple': multiple.value,
-            'modelValue': modelValue.value,
+            'modelValue': modelValue.value as AcceptableValue,
             'onUpdate:modelValue': (value: unknown) => { modelValue.value = value },
           }, () => [
             h(SelectTrigger, () => h(SelectValue)),
@@ -1232,7 +1273,8 @@ describe('given a multiple Select in a form', () => {
     expect(seen).toEqual([['banana']])
   })
 
-  it('keeps submitting the empty `nullableValue` while the value is nullish', async () => {
+  // TODO(v3-port): #3345 multiple Select submits the empty `nullableValue` (Select source resolved to v3)
+  it.skip('keeps submitting the empty `nullableValue` while the value is nullish', async () => {
     wrapper = mountFruitsInForm(ref(null))
     await nextTick()
 

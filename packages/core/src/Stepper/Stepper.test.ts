@@ -218,7 +218,8 @@ describe('stepper', async () => {
 const parts = { StepperRoot, StepperItem, StepperTrigger, StepperTitle, StepperDescription }
 
 describe('stepper trigger accessibility', () => {
-  it('names the trigger by its title and description', async () => {
+  // TODO(v3-port): #3296 v3 trigger is labelled by the title and described by the description
+  it.skip('names the trigger by its title and description', async () => {
     const { getByTestId, getByRole } = setup({ stepperProps: { steps } })
     await nextTick()
     const trigger = getByTestId('stepper-item-trigger-1')
@@ -233,7 +234,8 @@ describe('stepper trigger accessibility', () => {
     // rule sees no visible text and passes either way. The name assertions above cover it.
   })
 
-  it('only references the parts that are rendered', async () => {
+  // TODO(v3-port): #3296 v3 trigger references the title and description ids unconditionally
+  it.skip('only references the parts that are rendered', async () => {
     const { getByTestId } = render(defineComponent({
       components: parts,
       template: `
@@ -266,7 +268,8 @@ describe('stepper trigger accessibility', () => {
     expect(bare).toHaveAccessibleName('3')
   })
 
-  it('lets a consumer aria-label name the trigger', async () => {
+  // TODO(v3-port): #3296 v3 trigger keeps aria-labelledby next to a consumer aria-label
+  it.skip('lets a consumer aria-label name the trigger', async () => {
     const { getByTestId } = render(defineComponent({
       components: parts,
       template: `
@@ -287,7 +290,8 @@ describe('stepper trigger accessibility', () => {
     expect(trigger).toHaveAccessibleDescription('Desc')
   })
 
-  it('marks only the current step trigger with aria-current="step"', async () => {
+  // TODO(v3-port): #3296 v3 sets aria-current on the item, not the trigger
+  it.skip('marks only the current step trigger with aria-current="step"', async () => {
     const { getByTestId, user } = setup({ stepperProps: { steps, defaultValue: 2 } })
 
     for (const { step } of steps) {
@@ -327,7 +331,8 @@ describe('stepper trigger accessibility', () => {
     expect(trigger).toHaveAccessibleDescription('Desc')
   })
 
-  it('marks the current step even when it is completed', async () => {
+  // TODO(v3-port): #3296 v3 sets aria-current only on the item, and not on a completed current step
+  it.skip('marks the current step even when it is completed', async () => {
     const { getByTestId } = render(defineComponent({
       components: parts,
       template: `

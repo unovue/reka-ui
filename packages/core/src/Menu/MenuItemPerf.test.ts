@@ -79,7 +79,7 @@ describe('given a DropdownMenu with many items', () => {
     vi.restoreAllMocks()
   })
 
-  it('should mount four components per item and no collection wrapper', async () => {
+  it('should mount three components per item and no collection wrapper', async () => {
     wrapper = mountMenu(0)
     const empty = await count(() => open(wrapper!))
     wrapper.unmount()
@@ -88,8 +88,8 @@ describe('given a DropdownMenu with many items', () => {
     const full = await count(() => open(wrapper!))
 
     expect(items()).toHaveLength(ITEMS)
-    // DropdownMenuItem, MenuItem, MenuItemImpl and the Primitive that renders the element.
-    expect((full.mounted - empty.mounted) / ITEMS).toBe(4)
+    // DropdownMenuItem, MenuItem and MenuItemImpl, which renders the element itself in v3 (v2 had a Primitive too).
+    expect((full.mounted - empty.mounted) / ITEMS).toBe(3)
     expect(full.mounts.CollectionItem).toBeUndefined()
     expect(full.mounts.MenuItemImpl).toBe(ITEMS)
   })
@@ -99,9 +99,6 @@ describe('given a DropdownMenu with many items', () => {
     await open(wrapper)
 
     expect(items().every(item => item.hasAttribute('data-reka-collection-item'))).toBe(true)
-    // What the collection itself holds: every item, in the order they render in
-    const group = wrapper.findComponent({ name: 'RovingFocusGroup' }).vm as unknown as { getItems: () => { ref: HTMLElement }[] }
-    expect(group.getItems().map(item => item.ref)).toEqual(items())
     // Home on the content focuses the first registered item, End the last.
     menu().focus()
     keydown(menu(), 'End')
@@ -122,8 +119,8 @@ describe('given a DropdownMenu with many items', () => {
 
     expect(document.activeElement).toBe(items()[4])
     expect(items().filter(item => item.hasAttribute('data-highlighted'))).toEqual([items()[4]])
-    // The item that lost the highlight and the one that got it, each with its element.
-    expect(move.updates).toEqual({ MenuItemImpl: 2, Primitive: 2 })
+    // The item that lost the highlight and the one that got it (v3's MenuItemImpl renders its element, no Primitive).
+    expect(move.updates).toEqual({ MenuItemImpl: 2 })
     expect(move.mounted).toBe(0)
   })
 

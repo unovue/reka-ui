@@ -69,7 +69,7 @@ describe('vertical ScrollArea virtualization in a real browser', () => {
         h(ScrollAreaScrollbar, { 'orientation': 'vertical', 'data-testid': 'scrollbar', 'style': 'width: 10px; height: 320px;' }, () => h(ScrollAreaThumb, { 'data-testid': 'thumb' })),
       ]),
     }), { attachTo: document.body })
-    const virtualizer = wrapper.findComponent(ScrollAreaVirtualizer).vm.virtualizer as Virtualizer<HTMLElement, Element>
+    const virtualizer = (wrapper.findComponent(ScrollAreaVirtualizer).vm as unknown as { virtualizer: Virtualizer<HTMLElement, Element> }).virtualizer
     return { wrapper, virtualizer }
   }
 

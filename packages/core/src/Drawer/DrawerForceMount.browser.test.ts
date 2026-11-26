@@ -5,9 +5,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { PopoverClose, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from '@/Popover'
-import { DrawerClose, DrawerContent, DrawerOverlay, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from '.'
+import { DrawerBackdrop, DrawerClose, DrawerPopup, DrawerPortal, DrawerRoot, DrawerTitle, DrawerTrigger } from '.'
 
-// A `DrawerContent` with `forceMount` stays in the DOM while closed, and must then behave
+// A `DrawerPopup` with `forceMount` stays in the DOM while closed, and must then behave
 // like a drawer that is not there: it neither takes focus, nor disables the page, nor joins
 // the layer stack. Once opened it must behave like a drawer without `forceMount`.
 
@@ -45,10 +45,10 @@ function drawer({ modal, open, forceMount = true, overlay = false, exit = false,
   }, () => [
     h(DrawerTrigger, { 'data-testid': 'drawer-trigger', 'style': 'position: fixed; top: 10px; left: 0;' }, () => 'drawer'),
     h(DrawerPortal, null, () => [
-      overlay ? h(DrawerOverlay, { 'data-testid': 'overlay', forceMount }) : null,
+      overlay ? h(DrawerBackdrop, { 'data-testid': 'overlay', forceMount }) : null,
       content?.value === false
         ? null
-        : h(DrawerContent, {
+        : h(DrawerPopup, {
             'data-testid': 'content',
             'class': exit ? 'exit' : undefined,
             forceMount,
@@ -242,12 +242,12 @@ describe('given a force-mounted Drawer nested in an open Drawer, in a real brows
     mount(defineComponent({
       setup: () => () => h(DrawerRoot, { 'open': parentOpen.value, modal, 'onUpdate:open': (value: boolean) => parentOpen.value = value }, () => [
         h(DrawerTrigger, { 'data-testid': 'parent-trigger' }, () => 'parent'),
-        h(DrawerPortal, null, () => h(DrawerContent, { 'data-testid': 'parent' }, () => [
+        h(DrawerPortal, null, () => h(DrawerPopup, { 'data-testid': 'parent' }, () => [
           h(DrawerTitle, null, () => 'Parent'),
           h('button', { 'data-testid': 'parent-first' }, 'first'),
           h(DrawerRoot, { 'open': childOpen.value, modal, 'onUpdate:open': (value: boolean) => childOpen.value = value }, () => [
             h(DrawerTrigger, { 'data-testid': 'child-trigger' }, () => 'child'),
-            h(DrawerPortal, null, () => h(DrawerContent, { 'data-testid': 'child', 'forceMount': true }, () => [
+            h(DrawerPortal, null, () => h(DrawerPopup, { 'data-testid': 'child', 'forceMount': true }, () => [
               h(DrawerTitle, null, () => 'Child'),
               h('button', { 'data-testid': 'child-first' }, 'first'),
             ])),

@@ -1,3 +1,4 @@
+import type { VNode } from 'vue'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
@@ -273,7 +274,7 @@ describe('given a dialog reopened during its exit animation, in a real browser',
             h(parts.Title, null, () => 'Title'),
             // A custom element whose own input takes focus: `contains` does not see it.
             shadow
-              ? h('div', { 'data-testid': 'host', 'onVnodeMounted': ({ el }: { el: HTMLElement }) => el.attachShadow({ mode: 'open' }).append(document.createElement('input')) })
+              ? h('div', { 'data-testid': 'host', 'onVnodeMounted': (vnode: VNode) => (vnode.el as HTMLElement).attachShadow({ mode: 'open' }).append(document.createElement('input')) })
               : null,
             h(parts.Close, { 'data-testid': 'close' }, () => 'Close'),
           ])),
@@ -316,7 +317,7 @@ describe('given a kept-mounted dialog opened from an input in a shadow root outs
     mount(defineComponent({
       setup: () => () => h('div', [
         h('button', { 'data-testid': 'opener' }, 'opener'),
-        h('div', { 'data-testid': 'host', 'onVnodeMounted': ({ el }: { el: HTMLElement }) => el.attachShadow({ mode: 'open' }).append(document.createElement('input')) }),
+        h('div', { 'data-testid': 'host', 'onVnodeMounted': (vnode: VNode) => (vnode.el as HTMLElement).attachShadow({ mode: 'open' }).append(document.createElement('input')) }),
         h(parts.Root as typeof DialogRoot, {
           'open': open.value,
           'onUpdate:open': (value: boolean) => open.value = value,

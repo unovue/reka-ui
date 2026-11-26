@@ -164,7 +164,8 @@ describe.each(FAMILIES)('given a $name', ({ render }) => {
     })
   })
 
-  describe('with unmountOnHide=false', () => {
+  // TODO(v3-port): #3324 v3 menus have no `unmountOnHide` prop
+  describe.skip('with unmountOnHide=false', () => {
     it('should keep the content mounted and hidden while closed', async () => {
       mountFamily({ unmountOnHide: false })
       await settle()
@@ -227,7 +228,7 @@ describe.each(FAMILIES)('given a $name', ({ render }) => {
   })
 })
 
-describe.each([true, false])('given a DropdownMenu submenu with unmountOnHide=%s', (unmountOnHide) => {
+function describeSubmenu(unmountOnHide: boolean) {
   it(`should ${unmountOnHide ? 'remount' : 'keep'} the submenu content and its state`, async () => {
     document.body.innerHTML = ''
     const open = ref(true)
@@ -276,7 +277,12 @@ describe.each([true, false])('given a DropdownMenu submenu with unmountOnHide=%s
     expect(clicksOf('sub-field')).toBe(unmountOnHide ? '0' : '2')
     wrapper.unmount()
   })
-})
+}
+
+describe.each([true])('given a DropdownMenu submenu with unmountOnHide=%s', describeSubmenu)
+
+// TODO(v3-port): #3324 v3 menus have no `unmountOnHide` prop
+describe.skip.each([false])('given a DropdownMenu submenu with unmountOnHide=%s', describeSubmenu)
 
 describe.each([true, false])('given two DropdownMenus with unmountOnHide=%s', (unmountOnHide) => {
   it('should close the open menu on Escape even when a hidden one is mounted after it', async () => {

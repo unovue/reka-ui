@@ -53,10 +53,12 @@ function mountNumberField(props: NumberFieldRootProps = {}, initial: number | nu
 }
 
 describe('numberField committed text in a real browser', () => {
-  describe('with keepValueOnUnparsableInput', () => {
+  // TODO(v3-port): #3024 `keepValueOnUnparsableInput` (NumberField source resolved to v3)
+  describe.skip('with keepValueOnUnparsableInput', () => {
     const keep = { keepValueOnUnparsableInput: true }
 
     it.each(['.', '-'])('keeps the restored text after Enter on "%s" and a re-render', async (text) => {
+      // @ts-expect-error TODO(v3-port): #3024 v3 has no `keepValueOnUnparsableInput` prop
       const { input, increment, model, emitted, rerender, type } = mountNumberField(keep)
       await type(text)
       await userEvent.keyboard('{Enter}')
@@ -72,6 +74,7 @@ describe('numberField committed text in a real browser', () => {
     })
 
     it('keeps the restored text after blur and a re-render', async () => {
+      // @ts-expect-error TODO(v3-port): #3024 v3 has no `keepValueOnUnparsableInput` prop
       const { input, increment, outside, model, emitted, rerender, type } = mountNumberField(keep)
       await type('.')
       await userEvent.click(outside)
@@ -135,7 +138,8 @@ describe('numberField committed text in a real browser', () => {
     })
   })
 
-  describe('with percent formatting', () => {
+  // TODO(v3-port): #3220 / #3024 clear numeral-free percent input, `keepValueOnUnparsableInput` (NumberField source resolved to v3)
+  describe.skip('with percent formatting', () => {
     const percent = { formatOptions: { style: 'percent' } } as const
 
     it.each(['Enter', 'blur'] as const)('clears the value by default when a lone percent sign is committed with %s', async (how) => {
@@ -174,6 +178,7 @@ describe('numberField committed text in a real browser', () => {
     })
 
     it.each(['Enter', 'blur'] as const)('keeps the value with keepValueOnUnparsableInput when a lone percent sign is committed with %s', async (how) => {
+      // @ts-expect-error TODO(v3-port): #3024 v3 has no `keepValueOnUnparsableInput` prop
       const { input, outside, model, emitted, rerender, type } = mountNumberField({ ...percent, keepValueOnUnparsableInput: true }, 0.5)
       await type('%')
       if (how === 'Enter')

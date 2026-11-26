@@ -2,10 +2,10 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { ContextMenuContent, ContextMenuItem, ContextMenuRoot, ContextMenuTrigger } from '@/ContextMenu'
-import { DismissableLayer } from '@/DismissableLayer'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuRoot, DropdownMenuTrigger } from '@/DropdownMenu'
 import { MenubarContent, MenubarItem, MenubarMenu, MenubarRoot, MenubarTrigger } from '@/Menubar'
 import { MenuAnchor, MenuContent, MenuItem, MenuRoot } from '.'
+import MenuContentImpl from './MenuContentImpl.vue'
 
 globalThis.ResizeObserver = class ResizeObserver {
   observe() {}
@@ -156,9 +156,9 @@ describe('given a modal DropdownMenuContent with a focusOutside listener', () =>
     }), { attachTo: document.body })
     await vi.waitFor(() => expect(document.querySelector('[data-testid="content"]')).not.toBeNull())
 
-    // The focus trap pulls focus back before the layer can report it, so report it for the layer
+    // The focus trap pulls focus back before the layer can report it, so report it for the content
     const event = new CustomEvent('focusOutside', { cancelable: true })
-    wrapper.getComponent(DismissableLayer).vm.$emit('focusOutside', event)
+    wrapper.getComponent(MenuContentImpl).vm.$emit('focusOutside', event)
     await nextTick()
 
     expect(onFocusOutside).toHaveBeenCalledTimes(1)

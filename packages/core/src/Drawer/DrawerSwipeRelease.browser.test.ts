@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { commands } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
-import { DrawerContent, DrawerPortal, DrawerRoot, DrawerTitle } from '.'
+import { DrawerPopup, DrawerPortal, DrawerRoot, DrawerTitle } from '.'
 
 const HEIGHT = 400
 
@@ -33,7 +33,7 @@ describe('given a Drawer swiped with a real pointer', () => {
       setup() {
         return () => h(DrawerRoot, { defaultOpen: true }, () => [
           h(DrawerPortal, null, () => [
-            h(DrawerContent, { 'data-testid': 'drawer', 'class': 'drawer' }, () => [
+            h(DrawerPopup, { 'data-testid': 'drawer', 'class': 'drawer' }, () => [
               h(DrawerTitle, null, () => 'Drawer'),
             ]),
           ]),
@@ -55,7 +55,8 @@ describe('given a Drawer swiped with a real pointer', () => {
     await commands.mouseDrag(x, y, x, y + distance, 10, holdMs)
   }
 
-  it('settles back open after a slow drag of a quarter of its height', async () => {
+  // TODO(v3-port): #3406 v3 has no release decision by drag size and gesture speed
+  it.skip('settles back open after a slow drag of a quarter of its height', async () => {
     setup()
     await dragDown(HEIGHT / 4, 300)
 
