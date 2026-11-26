@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { KeyedSelector } from '@/shared/createKeyedSelector'
 import type { Direction } from '@/shared/types'
-import { createContext, useDirection, useForwardElement } from '@/shared'
+import { createRekaContext, useDirection, useForwardElement } from '@/shared'
 
 export interface TreeRootProps<T = Record<string, any>, U extends Record<string, any> = Record<string, any>, M extends boolean = false> extends PrimitiveProps {
   /** The controlled value of the tree. Can be binded with `v-model`. */
@@ -95,7 +95,7 @@ export type FlattenedItem<T> = {
   }
 }
 
-export const [injectTreeRootContext, provideTreeRootContext] = createContext<TreeRootContext<any>>('TreeRoot')
+export const [injectTreeRootContext, provideTreeRootContext] = createRekaContext<TreeRootContext<any>>('TreeRoot')
 </script>
 
 <script setup lang="ts" generic="T extends Record<string, any>, U extends Record<string, any>, M extends boolean = false">
