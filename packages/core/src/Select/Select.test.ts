@@ -31,8 +31,7 @@ describe('given default Select', () => {
     valueBox = wrapper.find('[aria-label="Customise options"]')
   })
 
-  // TODO(v3-port): #3127 disable options when the root becomes disabled (Select source resolved to v3)
-  it.skip('disables options when the select becomes disabled while open', async () => {
+  it('disables options when the select becomes disabled while open', async () => {
     wrapper.unmount()
     wrapper = mount(Select, { attachTo: document.body, props: { disabled: false } })
     await fireEvent.pointerDown(wrapper.find('button').element, { button: 0, ctrlKey: false })
@@ -50,7 +49,8 @@ describe('given default Select', () => {
     await wrapper.setProps({ disabled: false })
     await option.trigger('pointerup')
     await nextTick()
-    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['Banana'])
+    // v3 emits `(value, details)`.
+    expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toEqual('Banana')
   })
 
   it('should pass axe accessibility tests', async () => {

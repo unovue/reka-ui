@@ -1243,7 +1243,11 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
   const { context } = options
   const contentContext = options.contentContext
   const getValue = () => toValue(options.value)
-  const disabled = getterRef(() => toValue(options.disabled) ?? false)
+  // The item's own `disabled`: what `SelectItemText` registers for the native
+  // `<option>` (the native `<select>` already carries the root's).
+  const ownDisabled = getterRef(() => toValue(options.disabled) ?? false)
+  // A disabled root disables every item too, also while open (#3127).
+  const disabled = getterRef(() => ownDisabled.value || context.disabled.value)
   // A keyed selector cell: a selection change re-renders only the items it
   // flips, and a multiple selection is a set lookup.
   const selectionHold = context.selection?.createHold()
@@ -1345,7 +1349,7 @@ export function useSelectItem<T extends AcceptableValue = AcceptableValue>(optio
       return getValue()
     },
     textId,
-    disabled,
+    disabled: ownDisabled,
     isSelected,
     onItemTextChange: (node) => {
       textValue.value = ((textValue.value || node?.textContent) ?? '').trim()
