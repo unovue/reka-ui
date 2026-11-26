@@ -80,10 +80,12 @@ describe('given a modal Dialog inside a shadow root, in a real browser', () => {
     await userEvent.click(get('first')!)
     expect(get('content')).not.toBeNull()
 
-    // The overlay is covered by the content's internal backdrop (also in the shadow root).
+    // The content's internal backdrop (also in the shadow root) sits right below the overlay,
+    // which takes the press.
     const backdrop = shadowRoot.querySelector<HTMLElement>('[data-reka-internal-backdrop]')
     expect(backdrop).not.toBeNull()
-    await userEvent.click(backdrop!, { position: { x: 5, y: 5 } })
+    expect(backdrop!.nextElementSibling).toBe(get('overlay'))
+    await userEvent.click(get('overlay')!, { position: { x: 5, y: 5 } })
     await expect.poll(() => get('content')).toBeNull()
     expect(onOutsideClick).not.toHaveBeenCalled()
     expect(get('content')?.contains(activeElement())).toBeFalsy()

@@ -29,6 +29,8 @@ export interface UseDismissableLayerOptions {
   present?: () => boolean | undefined
   /** Element left interactive through the internal backdrop (`DismissableLayer`'s `backdropCutout`). */
   backdropCutout?: () => HTMLElement | null | undefined
+  /** The layer's own visible backdrop (a `DialogOverlay`): the internal backdrop goes right below it. */
+  backdropBefore?: () => Element | null | undefined
   /** The `escapeKeyDown` event; can be prevented. */
   onEscapeKeyDown?: (event: KeyboardEvent) => void
   /** The `pointerDownOutside` event; can be prevented. */
@@ -133,11 +135,11 @@ export function useDismissableLayer(options: UseDismissableLayerOptions) {
   // order-independent, and nothing is ever mounted during SSR (`element`
   // only resolves on the client).
   watch(
-    [element, disableOutsidePointerEvents, present, () => options.backdropCutout?.()],
-    ([element, disableOutsidePointerEvents, present, cutout], _, onCleanup) => {
+    [element, disableOutsidePointerEvents, present, () => options.backdropCutout?.(), () => options.backdropBefore?.()],
+    ([element, disableOutsidePointerEvents, present, cutout, before], _, onCleanup) => {
       if (!element || !present || !disableOutsidePointerEvents)
         return
-      onCleanup(mountInternalBackdrop(element, cutout))
+      onCleanup(mountInternalBackdrop(element, cutout, before))
     },
     { immediate: true },
   )

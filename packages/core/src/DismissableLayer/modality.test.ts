@@ -97,7 +97,8 @@ describe('a modal Dialog over a non-modal Popover', () => {
     dialogOpen.value = true
     await settle()
     expect(backdrops()).toHaveLength(1)
-    expect(byTestId('dialog')!.previousElementSibling).toBe(backdrops()[0])
+    // Right below the dialog's overlay, which stays above it
+    expect(byTestId('dialog-overlay')!.previousElementSibling).toBe(backdrops()[0])
     expect(isScrollLocked()).toBe(true)
     // The popover sits below the modal layer
     expect(byTestId('popover')!.closest('[data-reka-popper-content-wrapper]')).not.toBeNull()
