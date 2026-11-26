@@ -6,7 +6,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails, Formatter } from '@/shared'
 import type { DateRange, DateStep, Granularity, HourCycle, SegmentPart, SegmentValueObj } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { createContext, mergeExpose, useDirection, useLocale } from '@/shared'
+import { createRekaContext, mergeExpose, useDirection, useLocale } from '@/shared'
 
 export type DateRangeType = 'start' | 'end'
 
@@ -87,7 +87,7 @@ export type DateRangeFieldRootEmits = {
 }
 
 export const [injectDateRangeFieldRootContext, provideDateRangeFieldRootContext]
-  = createContext<DateRangeFieldRootContext>('DateRangeFieldRoot')
+  = createRekaContext<DateRangeFieldRootContext>('DateRangeFieldRoot')
 </script>
 
 <script setup lang="ts">

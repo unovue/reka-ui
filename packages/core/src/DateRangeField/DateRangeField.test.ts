@@ -367,10 +367,10 @@ describe('dateRangeField (parity with DateField)', () => {
 describe('coderabbit review (#3088)', () => {
   const hiddenInput = (container: Element) => container.querySelector<HTMLInputElement>('input[name="range"]')!
 
-  it('submits an empty endpoint as an empty string, and an empty range as nothing', async () => {
+  it('submits nothing for a half-filled range or an empty range (#3228)', async () => {
     const start = new Temporal.PlainDate(2024, 1, 1)
     const partial = render(DateRangeField, { props: { dateFieldProps: { name: 'range', modelValue: { start, end: undefined } } } })
-    expect(hiddenInput(partial.container).value).toBe('2024-01-01 - ')
+    expect(hiddenInput(partial.container).value).toBe('')
     partial.unmount()
 
     const empty = render(DateRangeField, { props: { dateFieldProps: { name: 'range', modelValue: { start: undefined, end: undefined } } } })
@@ -385,5 +385,64 @@ describe('coderabbit review (#3088)', () => {
 
     await rerender({ dateFieldProps: { modelValue: { start: start.withTimeZone('America/Chicago'), end }, granularity: 'minute', locale: 'en-US' } })
     await vi.waitFor(() => expect(getByTestId('start-timeZoneName')).toHaveTextContent('CDT'))
+  })
+})
+
+describe('unavailable days inside the range', () => {
+  // 2024-01-15 is a Monday, 2024-01-19 a Friday.
+  const isDateUnavailable = (date: any) => date.dayOfWeek >= 6
+
+  it('does not mark a single-day range invalid when the next day is unavailable', () => {
+    const friday = new Temporal.PlainDate(2024, 1, 19)
+    const { input, start } = setup({ dateFieldProps: { modelValue: { start: friday, end: friday }, isDateUnavailable } })
+    expect(input).not.toHaveAttribute('data-invalid')
+    expect(start.day).not.toHaveAttribute('aria-invalid')
+  })
+
+  it('does not check the day after the end of a date-time range', () => {
+    const { input } = setup({
+      dateFieldProps: {
+        modelValue: { start: new Temporal.PlainDateTime(2024, 1, 15, 9), end: new Temporal.PlainDateTime(2024, 1, 19, 17) },
+        granularity: 'hour',
+        isDateUnavailable,
+      },
+    })
+    expect(input).not.toHaveAttribute('data-invalid')
+  })
+
+  it('marks a range with an unavailable day inside invalid', () => {
+    const { input } = setup({
+      dateFieldProps: { modelValue: { start: new Temporal.PlainDate(2024, 1, 18), end: new Temporal.PlainDate(2024, 1, 22) }, isDateUnavailable },
+    })
+    expect(input).toHaveAttribute('data-invalid', '')
+  })
+})
+
+describe('hidden input value', () => {
+  it.each([
+    { label: 'no value', modelValue: undefined, expected: '' },
+    { label: 'only a start', modelValue: { start: calendarDate.start, end: undefined }, expected: '' },
+    { label: 'only an end', modelValue: { start: undefined, end: calendarDate.end }, expected: '' },
+    { label: 'a complete date range', modelValue: calendarDate, expected: '2022-01-01 - 2022-03-01' },
+    { label: 'a complete date time range', modelValue: calendarDateTime, expected: '2022-01-01T12:30:00 - 2022-03-01T12:30:00' },
+  ])('is "$expected" for $label', ({ modelValue, expected }) => {
+    const { container } = setup({ dateFieldProps: { modelValue, name: 'range' } })
+    expect(container.querySelector('input')).toHaveValue(expected)
+  })
+
+  it('is filled once the second date is typed and emptied when a date is cleared', async () => {
+    const { container, start, end, user } = setup({ dateFieldProps: { name: 'range', locale: 'en-US' } })
+    const input = container.querySelector('input')
+
+    await user.click(start.month)
+    await user.keyboard('01012022')
+    expect(input).toHaveValue('')
+
+    await user.keyboard('03012022')
+    expect(input).toHaveValue('2022-01-01 - 2022-03-01')
+
+    await user.click(end.day)
+    await user.keyboard(kbd.BACKSPACE)
+    expect(input).toHaveValue('')
   })
 })

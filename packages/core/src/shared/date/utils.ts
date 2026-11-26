@@ -1,23 +1,50 @@
 import type { Ref } from 'vue'
 import type { Granularity } from './comparators'
 import type { DateInputType, DateStep, DateValue, HourCycle } from './types'
+import type { Translate } from '@/shared/translations'
 import { defu } from 'defu'
-import { nextTick, watch } from 'vue'
+import { hasInjectionContext, nextTick, watch } from 'vue'
 import { toCalendar, toIsoString } from '@/date/temporal'
 import { getActiveElement } from '@/shared/getActiveElement'
+import { defaultTranslate } from '@/shared/translations'
+import { useTranslations } from '@/shared/useTranslations'
 
 /**
  * The value a range field submits in a form: `start - end` as ISO strings.
- * A missing endpoint is empty (`2024-01-01 - `), and an empty range is an
- * empty string, so `required` sees it as missing.
+ * Only a complete range is a value: while either end is missing it is an
+ * empty string, so `required` reports `valueMissing`.
  *
  * @internal
  */
 export function toRangeFormValue(range: { start?: DateValue | Temporal.PlainTime | null, end?: DateValue | Temporal.PlainTime | null }): string {
   const { start, end } = range
-  if (!start && !end)
-    return ''
-  return `${start ? toIsoString(start) : ''} - ${end ? toIsoString(end) : ''}`
+  return start && end ? `${toIsoString(start)} - ${toIsoString(end)}` : ''
+}
+
+/**
+ * The attributes of a calendar cell trigger for the element it renders. The
+ * surface leaves `tabindex` off a skipped cell (disabled, or outside the view),
+ * which keeps the default `div` out of the tab order. Any other `as` (a tag or
+ * a component) or `asChild` may render something natively focusable, such as
+ * a button, so those cells get `-1` instead.
+ *
+ * @internal
+ */
+export function withCellTriggerTabindex<T extends Record<string, unknown>>(attrs: T, primitive: { as?: unknown, asChild?: boolean }): T {
+  if (attrs.tabindex !== undefined || (primitive.as === 'div' && !primitive.asChild))
+    return attrs
+  return { ...attrs, tabindex: -1 }
+}
+
+/**
+ * The translate function of the nearest `ConfigProvider` when called in a
+ * component's setup, else the built-in English one, so the date composables
+ * also run outside a component (e.g. in an `effectScope`).
+ *
+ * @internal
+ */
+export function useDateTranslations(): Translate {
+  return hasInjectionContext() ? useTranslations() : defaultTranslate
 }
 
 export function getOptsByGranularity(granularity: Granularity, hourCycle: HourCycle, isTimeValue: boolean = false) {

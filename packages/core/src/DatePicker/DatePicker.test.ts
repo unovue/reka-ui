@@ -1,12 +1,14 @@
 import type { DatePickerRootProps } from './DatePickerRoot.vue'
 import type { DateTimeField, DateValue } from '@/date'
 import userEvent from '@testing-library/user-event'
-import { render } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, h } from 'vue'
 import { ConfigProvider } from '@/ConfigProvider'
 import { cycleField, getFieldValue } from '@/date'
 import { useTestKbd } from '@/shared'
+import { DatePickerContent, DatePickerRoot, DatePickerTrigger } from '.'
 import DatePicker from './story/_DatePicker.vue'
 
 const calendarDate = new Temporal.PlainDate(1980, 1, 20)
@@ -538,5 +540,27 @@ describe('datePicker', async () => {
 
       expect(getByTestId('heading')).toHaveTextContent('September 1980')
     })
+  })
+})
+
+describe('given a DatePickerContent with an openAutoFocus listener', () => {
+  it('should emit openAutoFocus once per open', async () => {
+    const user = userEvent.setup()
+    const onOpenAutoFocus = vi.fn()
+    const { getByTestId } = render(defineComponent({
+      setup: () => () => h(DatePickerRoot, null, () => [
+        h(DatePickerTrigger, { 'data-testid': 'trigger' }, () => 'Open'),
+        h(DatePickerContent, { onOpenAutoFocus }, () => h('button', 'Inside')),
+      ]),
+    }))
+
+    for (let cycle = 1; cycle <= 2; cycle++) {
+      await user.click(getByTestId('trigger'))
+      await screen.findByRole('dialog')
+      expect(onOpenAutoFocus).toHaveBeenCalledTimes(cycle)
+
+      await user.keyboard('{Escape}')
+      await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    }
   })
 })

@@ -883,6 +883,7 @@ export function useRangeCalendar(props: UseRangeCalendarProps): UseRangeCalendar
     layout: gridApi.layout,
     headingValue: gridApi.headingValue,
     fullCalendarLabel: gridApi.fullCalendarLabel,
+    translate: gridApi.translate,
     isInvalid,
     hasSelectedDate,
     isSelectedDisabled,

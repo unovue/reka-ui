@@ -1,10 +1,12 @@
+import type { Component } from 'vue'
 import type { CalendarRootProps } from './CalendarRoot.vue'
 import type { DateValue } from '@/date'
 import userEvent from '@testing-library/user-event'
-import { render } from '@testing-library/vue'
+import { fireEvent, render } from '@testing-library/vue'
 import { Temporal as BasicTemporal } from 'temporal-polyfill-lite'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { defineComponent, h } from 'vue'
 import { useTestKbd } from '@/shared'
 import { handleCalendarInitialFocus } from '@/shared/date'
 import Calendar from './story/_Calendar.vue'
@@ -23,7 +25,7 @@ const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 
 const kbd = useTestKbd()
 
-function setup(props: { calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void } } = {}) {
+function setup(props: { calendarProps?: CalendarRootProps, emits?: { 'onUpdate:modelValue'?: (data: DateValue) => void }, triggerAs?: string | Component, triggerAsChild?: boolean } = {}) {
   const user = userEvent.setup()
   const returned = render(Calendar, { props })
   const calendar = returned.getByTestId('calendar')
@@ -1470,6 +1472,12 @@ describe('calendar - edge cases', () => {
   })
 })
 
+const ButtonCell = defineComponent({
+  setup(_, { slots }) {
+    return () => h('button', { type: 'button' }, slots.default?.())
+  },
+})
+
 describe('calendar - tabindex states', () => {
   it('sets tabindex to 0 for focused date', async () => {
     const { getByTestId } = setup({
@@ -1554,6 +1562,59 @@ describe('calendar - tabindex states', () => {
     const firstCanTabSelectedDate = getByTestId('date-1-1')
     expect(firstCanTabSelectedDate).toHaveAttribute('tabindex', '0')
   })
+
+  it('sets tabindex to -1 for disabled and outside view dates when rendered as a button', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+        isDateDisabled: (date: DateValue) => date.day === 15,
+      },
+      triggerAs: 'button',
+    })
+
+    expect(getByTestId('date-1-15')).toHaveAttribute('tabindex', '-1')
+    expect(getByTestId('date-12-31')).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('sets tabindex to -1 for disabled and outside view dates when rendered as a component', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+        isDateDisabled: (date: DateValue) => date.day === 15,
+      },
+      triggerAs: ButtonCell,
+    })
+
+    expect(getByTestId('date-1-15').tagName).toBe('BUTTON')
+    expect(getByTestId('date-1-15')).toHaveAttribute('tabindex', '-1')
+    expect(getByTestId('date-12-31')).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('omits tabindex on disabled and outside view dates rendered as the default div', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+        isDateDisabled: (date: DateValue) => date.day === 15,
+      },
+    })
+
+    expect(getByTestId('date-1-15')).not.toHaveAttribute('tabindex')
+    expect(getByTestId('date-12-31')).not.toHaveAttribute('tabindex')
+  })
+
+  it('sets tabindex to -1 for disabled and outside view dates when rendered as a child button', async () => {
+    const { getByTestId } = setup({
+      calendarProps: {
+        modelValue: calendarDate,
+        isDateDisabled: (date: DateValue) => date.day === 15,
+      },
+      triggerAsChild: true,
+    })
+
+    expect(getByTestId('date-1-15').tagName).toBe('BUTTON')
+    expect(getByTestId('date-1-15')).toHaveAttribute('tabindex', '-1')
+    expect(getByTestId('date-12-31')).toHaveAttribute('tabindex', '-1')
+  })
 })
 
 describe('temporal values', () => {
@@ -1634,5 +1695,38 @@ describe('temporal regressions (#3088 review)', () => {
       globalThis.Temporal = temporal
       warn.mockRestore()
     }
+  })
+})
+
+describe('calendar - numeric keypad', () => {
+  it('selects a date with the numeric keypad Enter', async () => {
+    const { getByTestId, calendar } = setup({ calendarProps: { placeholder: new Temporal.PlainDate(1980, 1, 20) } })
+    const cell = getByTestId('date-1-2')
+    cell.focus()
+
+    await fireEvent.keyDown(cell, { key: 'Enter', code: 'NumpadEnter' })
+
+    expect(getSelectedDay(calendar)).toHaveTextContent('2')
+  })
+
+  // Without NumLock the keypad sends the navigation keys with a `Numpad*` code.
+  it('moves focus with the numeric keypad arrows', async () => {
+    const { getByTestId } = setup({ calendarProps: { placeholder: new Temporal.PlainDate(1980, 1, 20) } })
+    const cell = getByTestId('date-1-2')
+    cell.focus()
+
+    await fireEvent.keyDown(cell, { key: 'ArrowRight', code: 'Numpad6' })
+
+    expect(getByTestId('date-1-3')).toHaveFocus()
+  })
+
+  it('moves to the week end with the numeric keypad End', async () => {
+    const { getByTestId } = setup({ calendarProps: { placeholder: new Temporal.PlainDate(1980, 1, 20) } })
+    const cell = getByTestId('date-1-2')
+    cell.focus()
+
+    await fireEvent.keyDown(cell, { key: 'End', code: 'Numpad1' })
+
+    expect(getByTestId('date-1-5')).toHaveFocus()
   })
 })

@@ -19,7 +19,7 @@ export interface RangeCalendarPrevSlot {
 import { computed } from 'vue'
 import { getCalendarNavSurface } from '@/Calendar/useCalendar'
 import { renderAs } from '@/Primitive/renderAs'
-import { useForwardElement } from '@/shared'
+import { disabledAttr, useForwardElement } from '@/shared'
 import { injectRangeCalendarRootContext } from './RangeCalendarRoot.vue'
 
 const props = withDefaults(defineProps<RangeCalendarPrevProps>(), { as: 'button' })
@@ -38,6 +38,7 @@ defineExpose(expose)
     :ref="forwardRef"
     :type="props.as === 'button' ? 'button' : undefined"
     v-bind="surface.attrs.value"
+    :disabled="disabledAttr(surface.state.value.disabled, as, asChild)"
   >
     <slot :disabled="surface.state.value.disabled">
       Prev page

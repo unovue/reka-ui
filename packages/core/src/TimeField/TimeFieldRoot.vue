@@ -6,7 +6,7 @@ import type { PrimitiveProps } from '@/Primitive'
 import type { BaseChangeReason, ChangeEventDetails, Formatter } from '@/shared'
 import type { DateStep, HourCycle, SegmentPart, SegmentValueObj, TimeValue } from '@/shared/date'
 import type { Direction, FormFieldProps } from '@/shared/types'
-import { createContext, mergeExpose, useDirection, useLocale } from '@/shared'
+import { createRekaContext, mergeExpose, useDirection, useLocale } from '@/shared'
 
 export type TimeFieldRootContext = {
   locale: Ref<string>
@@ -84,7 +84,7 @@ export type TimeFieldRootEmits = {
 }
 
 export const [injectTimeFieldRootContext, provideTimeFieldRootContext]
-  = createContext<TimeFieldRootContext>('TimeFieldRoot')
+  = createRekaContext<TimeFieldRootContext>('TimeFieldRoot')
 </script>
 
 <script setup lang="ts">

@@ -18,7 +18,7 @@ export interface CalendarPrevSlot {
 <script setup lang="ts">
 import { computed } from 'vue'
 import { renderAs } from '@/Primitive/renderAs'
-import { useForwardElement } from '@/shared'
+import { disabledAttr, useForwardElement } from '@/shared'
 import { injectCalendarRootContext } from './CalendarRoot.vue'
 import { getCalendarNavSurface } from './useCalendar'
 
@@ -38,6 +38,7 @@ defineExpose(expose)
     :ref="forwardRef"
     :type="props.as === 'button' ? 'button' : undefined"
     v-bind="surface.attrs.value"
+    :disabled="disabledAttr(surface.state.value.disabled, as, asChild)"
   >
     <slot :disabled="surface.state.value.disabled">
       Prev page

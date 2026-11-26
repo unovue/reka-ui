@@ -8,7 +8,7 @@ import type { PopoverOpenChangeReason, PopoverRootProps } from '@/Popover'
 import type { BaseChangeReason, ChangeEventDetails } from '@/shared'
 import type { DateStep, Granularity, HourCycle } from '@/shared/date'
 import type { Direction } from '@/shared/types'
-import { createContext, getElementByIdFrom, useDirection, useId, useLocale } from '@/shared'
+import { createRekaContext, getElementByIdFrom, useDirection, useId, useLocale } from '@/shared'
 
 export type DatePickerRootContext = {
   id: Ref<string | undefined>
@@ -67,7 +67,7 @@ export type DatePickerRootContext = {
  * dates), so the calendar's `granularity` is not exposed here; the drill-down
  * views are.
  */
-export type DatePickerRootProps = Omit<DateFieldRootProps, 'as' | 'asChild' | 'isDateUnavailable'> & Omit<PopoverRootProps, 'handle' | 'triggerId' | 'defaultTriggerId'> & Pick<CalendarRootProps, 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'yearsPerPage' | 'columns'> & {
+export type DatePickerRootProps = Omit<DateFieldRootProps, 'as' | 'asChild' | 'isDateUnavailable'> & Omit<PopoverRootProps, 'handle' | 'triggerId' | 'defaultTriggerId' | 'unmountOnHide'> & Pick<CalendarRootProps, 'weekStartsOn' | 'weekdayFormat' | 'fixedWeeks' | 'numberOfMonths' | 'preventDeselect' | 'yearsPerPage' | 'columns'> & {
   /** A function that returns whether or not a date is disabled. The picker's calendar always commits days, so it is called only for day-view cells (with `'day'` as its second argument); the month and year views apply only `minValue`, `maxValue` and `disabled`. */
   isDateDisabled?: Matcher
   /** A function that returns whether or not a date is unavailable. The field marks an unavailable value invalid. The picker's calendar always commits days, so it is called there only for day-view cells (with `'day'` as its second argument); the month and year views apply only `minValue`, `maxValue` and `disabled`. */
@@ -113,7 +113,7 @@ export type DatePickerRootEmits = {
 }
 
 export const [injectDatePickerRootContext, provideDatePickerRootContext]
-  = createContext<DatePickerRootContext>('DatePickerRoot')
+  = createRekaContext<DatePickerRootContext>('DatePickerRoot')
 </script>
 
 <script setup lang="ts">

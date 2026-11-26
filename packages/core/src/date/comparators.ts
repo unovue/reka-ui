@@ -264,15 +264,17 @@ export function areAllDaysBetweenValid(
   if (isUnavailable === undefined && isDisabled === undefined && isHighlightable === undefined)
     return true
 
-  let dCurrent = start.add({ days: 1 })
-  // Every day after `start`, up to and including `end`. Nothing past `end`:
-  // a single-day range has no day to check.
-  while (compareDateValues(dCurrent, end) <= 0) {
+  // Every day after `start`, up to and including the day of `end`, and nothing
+  // past it: a single-day range has no day to check. Days are compared without
+  // their time, so the time of day of `start` and `end` does not move the bounds.
+  const endDay = toPlainDate(end)
+  let dCurrent = start
+  while (comparePlainDates(toPlainDate(dCurrent), endDay) < 0) {
+    dCurrent = dCurrent.add({ days: 1 })
     if ((isDisabled?.(dCurrent, 'day') || isUnavailable?.(dCurrent, 'day'))
       && !isHighlightable?.(dCurrent, 'day')) {
       return false
     }
-    dCurrent = dCurrent.add({ days: 1 })
   }
   return true
 }

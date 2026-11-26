@@ -10,6 +10,7 @@ import { useKbd } from '@/shared/useKbd'
 import { isSegmentNavigationKey } from './segment'
 import { useDateFieldSegment } from './useDateFieldSegment'
 import { useSegmentNavigation } from './useSegmentNavigation'
+import { useDateTranslations } from './utils'
 
 // =============================================================================
 // Internal building blocks shared by the four segmented field composables
@@ -90,6 +91,7 @@ export function createSegmentFieldSegmentSurface(options: CreateSegmentFieldSegm
     focusNext: context.focusNext,
     modelValue: options.modelValue,
     setModelValue: options.setModelValue,
+    translate: useDateTranslations(),
   })
 
   const snapOnFocusOut = options.snapOnFocusOut ?? true

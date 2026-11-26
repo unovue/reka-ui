@@ -52,8 +52,7 @@ describe.each(fields)('$name native validation', ({ render }) => {
     expect(getFormData()).toEqual([['range', '']])
   })
 
-  // TODO(v3-port): #3228 v3's toRangeFormValue submits a half-filled range ("2022-01-01 - ") instead of an empty value
-  it.skip.each([
+  it.each([
     { label: 'only a start', modelValue: { start, end: undefined } },
     { label: 'only an end', modelValue: { start: undefined, end } },
   ])('blocks submission of a required field with $label', async ({ modelValue }) => {
@@ -96,8 +95,7 @@ describe('dateRangeField native validation', () => {
     expect(getFormData()).toEqual([['range', '2022-01-01T12:30:00 - 2022-03-01T12:30:00']])
   })
 
-  // TODO(v3-port): #3228 v3's toRangeFormValue submits a half-filled range ("2022-01-01 - ") instead of an empty value
-  it.skip('stays missing until both dates are typed', async () => {
+  it('stays missing until both dates are typed', async () => {
     const { wrapper, form, input, getSubmits, getFormData } = await mountForm(() => h(DateRangeField, {
       dateFieldProps: { name: 'range', required: true, locale: 'en-US' },
     }))
