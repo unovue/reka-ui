@@ -594,7 +594,7 @@ useTooltip
 useTree
 withDefault
 
-# types (986)
+# types (987)
 AcceptableInputValue
 AcceptableValue
 AccordionChangeReason
@@ -1026,6 +1026,7 @@ ListboxFilterProps
 ListboxFilterState
 ListboxGroupLabelProps
 ListboxGroupProps
+ListboxHighlightItemOptions
 ListboxItemEmits
 ListboxItemIndicatorProps
 ListboxItemProps

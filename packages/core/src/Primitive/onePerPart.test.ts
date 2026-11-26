@@ -164,8 +164,9 @@ describe('one component per part', () => {
     const names = componentNames(wrapper.vm.$)
     expect(names).not.toContain('RovingFocusItem')
     const [a, b] = wrapper.findAll('button')
-    // The roving bindings land on the checkbox's own button.
-    expect(a.attributes('tabindex')).toBe('-1')
+    // The roving bindings land on the checkbox's own button (the first focusable item is the tab
+    // stop before the group has one, #3362).
+    expect(a.attributes('tabindex')).toBe('0')
     expect(a.attributes('data-reka-collection-item')).toBe('')
     expect(b.attributes('data-disabled')).toBe('')
   })
