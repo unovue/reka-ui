@@ -19,7 +19,7 @@ const wait = (ms = 60) => new Promise(resolve => setTimeout(resolve, ms))
 
 const cases: [string, (attrs: Record<string, unknown>) => VNodeChild, string[]][] = [
   ['Tooltip', attrs => h(TooltipProvider, () => h(TooltipRoot, { defaultOpen: true }, () => [h(TooltipTrigger, () => 'T'), h(TooltipContent, attrs, () => 'tip')])), ['pointer', 'pointerOnce', 'interact', 'interactOnce', 'dismiss', 'dismissOnce']],
-  ['HoverCard', attrs => h(HoverCardRoot, { defaultOpen: true }, () => [h(HoverCardTrigger, () => 'T'), h(HoverCardContent, attrs, () => 'card')]), ['pointer', 'pointerOnce', 'dismiss', 'dismissOnce']],
+  ['HoverCard', attrs => h(HoverCardRoot, { defaultOpen: true }, () => [h(HoverCardTrigger, () => 'T'), h(HoverCardContent, attrs, () => 'card')]), ['pointer', 'pointerOnce', 'interact', 'interactOnce', 'dismiss', 'dismissOnce']],
   ['Popover', attrs => h(PopoverRoot, { defaultOpen: true }, () => [h(PopoverTrigger, () => 'T'), h(PopoverContent, attrs, () => h('input'))]), ['mount', 'mountOnce', 'pointer', 'pointerOnce', 'interact', 'interactOnce', 'dismiss', 'dismissOnce', 'unmount', 'unmountOnce']],
   ['Dialog', attrs => h(DialogRoot, { defaultOpen: true, modal: false }, () => h(DialogContent, { ...attrs, 'aria-describedby': undefined }, () => [h(DialogTitle, () => 'T'), h('input')])), ['mount', 'mountOnce', 'pointer', 'pointerOnce', 'interact', 'interactOnce', 'dismiss', 'dismiss', 'dismissOnce', 'unmount', 'unmountOnce']],
 ]
