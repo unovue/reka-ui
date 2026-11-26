@@ -209,6 +209,7 @@ export function getListboxItemSurface<T extends AcceptableValue = AcceptableValu
         // `rootContext.focusable.value ? isHighlighted ? '0' : '-1' : -1` — the string/number mix is intentional.
         'tabindex': context.focusable.value ? (isHighlighted() ? '0' : '-1') : -1,
         'aria-selected': isSelected(),
+        'aria-disabled': isDisabled() || undefined,
         'disabled': isDisabled() ? '' : undefined,
         onClick,
         onKeydown,
@@ -637,7 +638,9 @@ export function useListboxRoot<T extends AcceptableValue = AcceptableValue>(prop
         if (lastItem)
           changeHighlight(lastItem.ref)
       }
-      else if (!isMetaKey) {
+      // Only printable characters: a named key (`Shift`, `ArrowLeft`) must not
+      // extend the search.
+      else if (!isMetaKey && event.key.length === 1) {
         const el = handleTypeaheadSearch(event.key, getItems())
         if (el)
           changeHighlight(el)

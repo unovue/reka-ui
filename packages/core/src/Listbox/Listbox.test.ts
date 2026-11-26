@@ -119,8 +119,7 @@ describe('given default Listbox', () => {
       await content.trigger('keydown', { key: 'B', shiftKey: true })
     })
 
-    // TODO(v3-port): #3282 typeahead ignores named keys (Listbox source resolved to v3)
-    it.skip('should ignore the named key and highlight text starting with B', () => {
+    it('should ignore the named key and highlight text starting with B', () => {
       const item = items.find(i => i.text().startsWith('B'))
       expect(document.activeElement).toBe(item?.element)
     })
@@ -837,19 +836,21 @@ describe('given ListboxItem with reactive `disabled` prop', () => {
 
     expect(items[0].attributes('data-disabled')).toBeUndefined()
     expect(items[0].attributes('disabled')).toBeUndefined()
-    // TODO(v3-port): #3278 aria-disabled on disabled items (ListboxItem source resolved to v3)
+    expect(items[0].attributes('aria-disabled')).toBeUndefined()
 
     isDisabled.value = true
     await nextTick()
 
     expect(items[0].attributes('data-disabled')).toBe('')
     expect(items[0].attributes('disabled')).toBe('')
+    expect(items[0].attributes('aria-disabled')).toBe('true')
 
     isDisabled.value = false
     await nextTick()
 
     expect(items[0].attributes('data-disabled')).toBeUndefined()
     expect(items[0].attributes('disabled')).toBeUndefined()
+    expect(items[0].attributes('aria-disabled')).toBeUndefined()
   })
 })
 
