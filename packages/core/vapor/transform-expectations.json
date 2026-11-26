@@ -1430,6 +1430,9 @@
       "exposeElement": 1,
       "sfcs": 1
     },
+    "Primitive/Slot.ts": {
+      "getCurrentInstance": 1
+    },
     "Progress/ProgressIndicator.vue": {
       "exposeElement": 1,
       "sfcs": 1,
@@ -2269,7 +2272,7 @@
     "asyncComponents": 3,
     "chains": 59,
     "exposeElement": 476,
-    "getCurrentInstance": 4,
+    "getCurrentInstance": 5,
     "patches": 11,
     "presenceAttrs": 9,
     "sfcs": 476,
