@@ -94,7 +94,9 @@ const focusScopeWrapper = computed(() => splitWrapperAttrs(mergeProps({
 const scope = useFocusScope(focusScopeOptions(currentElement, () => focusScopeWrapper.value))
 const layerWrapper = computed(() => splitWrapperAttrs(mergeProps(mergeProps(scope.attrs(), focusScopeWrapper.value.rest), {
   asChild: true,
-  present: props.present,
+  // A closing content hands Escape and outside interaction back to the layer
+  // below at once, while it animates out.
+  present: rootContext.open.value && props.present,
   disableOutsidePointerEvents: props.disableOutsidePointerEvents,
   backdropCutout: props.backdropCutout,
   onPointerDownOutside: (event: PointerDownOutsideEvent) => emits('pointerDownOutside', event),

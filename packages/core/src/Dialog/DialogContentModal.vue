@@ -23,7 +23,8 @@ const emitsAsProps = useEmitAsProps(emits)
 const { forwardRef, currentElement, expose } = useForwardElement()
 defineExpose(expose)
 
-const ariaHiddenTarget = computed(() => props.present ? currentElement.value : undefined)
+// A closing content hands the accessibility tree back to the layer below at once.
+const ariaHiddenTarget = computed(() => rootContext.open.value && props.present ? currentElement.value : undefined)
 useHideOthers(ariaHiddenTarget)
 
 // A modal dialog locks page scroll whether or not it renders a `DialogOverlay`
