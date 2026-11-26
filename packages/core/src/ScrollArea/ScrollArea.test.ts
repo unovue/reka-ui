@@ -1,4 +1,5 @@
 import type { VueWrapper } from '@vue/test-utils'
+import { renderToString } from '@vue/server-renderer'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -245,5 +246,34 @@ describe('given a visible scrollbar', () => {
     wrapper.unmount()
     documentListener.mockRestore()
     elementListener.mockRestore()
+  })
+})
+
+describe('given a ScrollAreaViewport', () => {
+  it('renders a camelCase tabIndex only once during SSR', async () => {
+    const html = await renderToString(h(ScrollAreaRoot, null, () => h(ScrollAreaViewport, { tabIndex: -1 })))
+    expect(html.match(/\btabindex="[^"]*"/g)).toEqual(['tabindex="-1"'])
+  })
+
+  it.each([
+    { attrs: {}, expected: '0' },
+    { attrs: { tabindex: '-1' }, expected: '-1' },
+    { attrs: { tabindex: null }, expected: undefined },
+  ])('renders $expected for viewport attributes $attrs', ({ attrs, expected }) => {
+    const wrapper = mount(ScrollAreaRoot, {
+      slots: { default: () => h(ScrollAreaViewport, attrs) },
+    })
+
+    expect(wrapper.get('[data-reka-scroll-area-viewport]').attributes('tabindex')).toBe(expected)
+    wrapper.unmount()
+  })
+
+  it('keeps tabindex after the other viewport attributes', () => {
+    const wrapper = mount(ScrollAreaRoot, {
+      slots: { default: () => h(ScrollAreaViewport, { 'class': 'viewport', 'aria-label': 'list' }) },
+    })
+
+    expect(wrapper.get('[data-reka-scroll-area-viewport]').element.getAttributeNames().at(-1)).toBe('tabindex')
+    wrapper.unmount()
   })
 })

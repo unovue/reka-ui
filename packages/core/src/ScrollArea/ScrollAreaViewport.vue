@@ -33,6 +33,18 @@ const content = getScrollAreaContentSurface(rootContext)
 
 const viewportElement = ref<HTMLElement>()
 
+function getViewportAttrs(surfaceAttrs: Record<string, unknown>, attrs: Record<string, unknown>): Record<string, unknown> {
+  // A consumer `tabindex` (or `tabIndex`) overrides the default. Vue's server renderer lowercases both
+  // spellings, so merge them under one key. `tabindex` stays last, so the attribute order is the same
+  // as without an override.
+  const { tabindex: defaultTabindex, ...surface } = surfaceAttrs
+  const { tabIndex, tabindex, ...rest } = attrs
+  return {
+    ...mergeProps(surface, rest),
+    tabindex: 'tabindex' in attrs ? tabindex : 'tabIndex' in attrs ? tabIndex : defaultTabindex,
+  }
+}
+
 onMounted(() => {
   rootContext.onViewportChange(viewportElement.value!)
   rootContext.onContentChange(contentElement.value!)
@@ -47,8 +59,7 @@ defineExpose(mergeExpose(expose, {
 <template>
   <div
     ref="viewportElement"
-    v-bind="mergeProps(viewport.attrs.value, $attrs)"
-    :tabindex="0"
+    v-bind="getViewportAttrs(viewport.attrs.value, $attrs)"
   >
     <Primitive
       :ref="forwardRef"
